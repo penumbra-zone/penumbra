@@ -36,12 +36,15 @@ rand_distr = { version = "0.4", optional = true }
 # Dependencies for live-view
 tokio = { version = "1", features = ["full"], optional = true }
 tokio-util = { version = "0.7", features = ["full"], optional = true }
-axum = { version = "0.5", optional = true }
+axum = { version = "0.5", features = ["headers", "query"], optional = true }
+serde_json = { version = "1", features = ["preserve_order"], optional = true }
+include-flate = { version = "0.1", optional = true }
+bytes = { version = "1.2", optional = true }
 
 [features]
 internal = []
 arbitrary = ["proptest", "proptest-derive", "rand", "rand_chacha", "rand_distr"]
-live-view = ["tokio", "tokio-util", "axum"]
+live-view = ["tokio", "tokio-util", "axum", "serde_json", "include-flate"]
 
 [dev-dependencies]
 static_assertions = "1"
