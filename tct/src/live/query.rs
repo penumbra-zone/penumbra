@@ -1,4 +1,14 @@
-use super::*;
+use axum::{
+    extract::Path,
+    http::StatusCode,
+    routing::{get, MethodRouter},
+    Json, Router,
+};
+
+use serde_json::json;
+use tokio::sync::watch;
+
+use crate::{Commitment, Tree};
 
 /// An [`axum`] [`Router`] that serves a `GET` endpoint mirroring the immutable methods of [`Tree`].
 pub async fn query(tree: watch::Receiver<Tree>) -> Router {

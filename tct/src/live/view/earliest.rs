@@ -2,12 +2,20 @@ use crate::index;
 
 use super::*;
 
+/// Query parameter used in the [`view`] endpoint to specify the earliest version of a tree to
+/// return (otherwise the query long-polls until it is available).
 #[derive(Debug, Clone, Copy, Deserialize)]
 pub struct Earliest {
+    /// Never return an earlier position than this, or if `next` is `true` never return an earlier
+    /// position than this position's successor.
     #[serde(flatten, default)]
     earliest_position: EarliestPosition,
+    /// Never return an earlier forgotten index than this, or if `next` is `true` never return an earlier
+    /// forgotten index than this index's successor.
     #[serde(default)]
     earliest_forgotten: Forgotten,
+    /// If `true`, force the next thing to be returned to be greater than either the position or
+    /// forgotten index specified (it doesn't matter which).
     #[serde(default)]
     next: bool,
 }
