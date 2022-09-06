@@ -7,9 +7,9 @@ use crate::{
     Position, Tree,
 };
 
-const FONT_SIZE: usize = 40;
-const BLOCK_FONT_SIZE: usize = 60;
-const EPOCH_FONT_SIZE: usize = 80;
+const FONT_SIZE: usize = 50;
+const BLOCK_FONT_SIZE: usize = 75;
+const EPOCH_FONT_SIZE: usize = 100;
 const FRONTIER_EDGE_COLOR: &str = "#E800FF:invis:#E800FF";
 const FRONTIER_TERMINUS_COLOR: &str = "#FBD1FF";
 
@@ -96,7 +96,7 @@ impl<W: Write> DotWriter<W> {
         mut writer: W,
         graph: impl FnOnce(&mut Self) -> io::Result<()>,
     ) -> io::Result<()> {
-        writeln!(writer, "strict digraph {{")?;
+        write!(writer, "strict digraph {{")?;
         let mut dot_writer = DotWriter {
             indent: 1,
             writer,
@@ -104,13 +104,18 @@ impl<W: Write> DotWriter<W> {
             // Enable this if ordering=out override isn't sufficient to correctly order tree
             invisible_ordering_edges: false,
         };
+        if dot_writer.pretty {
+            writeln!(dot_writer.writer)?;
+        }
         dot_writer.line(|w| write!(w, "fontsize=\"{FONT_SIZE}\""))?;
         dot_writer.line(|w| write!(w, "fontname=\"Courier New\""))?;
         dot_writer.line(|w| write!(w, "ordering=\"out\""))?;
         dot_writer.line(|w| write!(w, "outputorder=\"edgesfirst\""))?;
         graph(&mut dot_writer)?;
         dot_writer.indent -= 1;
-        writeln!(dot_writer.writer, "}}")
+        write!(dot_writer.writer, "}}")?;
+        writeln!(dot_writer.writer)?;
+        Ok(())
     }
 
     fn nodes_and_edges(&mut self, node: Node) -> io::Result<()> {
@@ -178,7 +183,11 @@ impl<W: Write> DotWriter<W> {
     fn line(&mut self, line: impl FnOnce(&mut W) -> io::Result<()>) -> io::Result<()> {
         self.indent()?;
         line(&mut self.writer)?;
-        writeln!(self.writer, ";")
+        write!(self.writer, ";")?;
+        if self.pretty {
+            writeln!(self.writer)?;
+        }
+        Ok(())
     }
 
     fn subgraph(
@@ -194,7 +203,7 @@ impl<W: Write> DotWriter<W> {
             cluster = if cluster { "cluster_" } else { "" }
         )?;
         id(&mut self.writer)?;
-        writeln!(self.writer, " {{")?;
+        write!(self.writer, " {{")?;
 
         // Increase the indent for everything inside
         self.indent += 1;
@@ -203,7 +212,10 @@ impl<W: Write> DotWriter<W> {
         self.indent()?;
         write!(self.writer, "id=\"")?;
         id(&mut self.writer)?;
-        writeln!(self.writer, "\";")?;
+        write!(self.writer, "\";")?;
+        if self.pretty {
+            writeln!(self.writer)?;
+        }
 
         // Write the full subgraph
         graph(self)?;
@@ -212,7 +224,12 @@ impl<W: Write> DotWriter<W> {
         self.indent -= 1;
 
         self.indent()?;
-        writeln!(self.writer, "}}")
+        write!(self.writer, "}}")?;
+        if self.pretty {
+            writeln!(self.writer)?;
+        }
+
+        Ok(())
     }
 
     fn subtree(
@@ -320,7 +337,7 @@ impl<W: Write> DotWriter<W> {
             write!(w, "\"]")?;
             write!(
                 w,
-                "[tooltip=\"Height: {}\nPosition: {}/{}/{}\nHash: {}\"]",
+                "[tooltip=\"Height: {}\\nPosition: {}/{}/{}\\nHash: {}\"]",
                 node.height(),
                 node.position().epoch(),
                 node.position().block(),
@@ -347,7 +364,7 @@ impl<W: Write> DotWriter<W> {
             write!(w, "[fillcolor=\"gray\"]")?;
             write!(
                 w,
-                "[tooltip=\"Height: {height}\nPosition: {}/{}/{}\nHash: 0\"]",
+                "[tooltip=\"Height: {height}\\nPosition: {}/{}/{}\\nHash: 0\"]",
                 position.epoch(),
                 position.block(),
                 position.commitment()
@@ -398,7 +415,6 @@ impl<W: Write> DotWriter<W> {
                     write!(w, "[label=\"\"]")?;
                     write!(w, "[shape=\"{}\"]", hash_shape(&commitment.0.to_bytes()))?;
                     write!(w, "[style=\"filled,bold\"]")?;
-                    write!(w, "[color=\"black\"]")?;
                     write!(w, "[width=\"1\"]")?;
                     write!(w, "[height=\"1\"]")?;
                     write!(
@@ -418,7 +434,7 @@ impl<W: Write> DotWriter<W> {
                     )?;
                     write!(
                         w,
-                        "[tooltip=\"Position: {}/{}/{}\nCommitment: {}\"]",
+                        "[tooltip=\"Position: {}/{}/{}\\nCommitment: {}\"]",
                         node.position().epoch(),
                         node.position().block(),
                         node.position().commitment(),
