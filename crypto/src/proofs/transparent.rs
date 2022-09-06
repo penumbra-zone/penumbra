@@ -465,15 +465,23 @@ impl SwapClaimProof {
     /// * nullifier of the note to be spent,
     /// * the randomized verification spend key,
     /// * the pre-paid fee amount for the swap,
+    #[allow(clippy::too_many_arguments)]
     pub fn verify(
         &self,
         anchor: tct::Root,
         nullifier: Nullifier,
         output_data: BatchSwapOutputData,
         epoch_duration: u64,
+        note_commitment_1: note::Commitment,
+        note_commitment_2: note::Commitment,
         fee: Fee,
     ) -> anyhow::Result<()> {
-        // Swap NFT note commitment integrity.
+        // Merkle path integrity. Ensure the provided note commitment is in the TCT.
+        self.note_commitment_proof
+            .verify(anchor)
+            .map_err(|_| anyhow!("merkle root mismatch"))?;
+
+        // Check that the provided note commitment is for the proof's Swap NFT.
         let swap_nft_value = Value {
             amount: 1,
             asset_id: self.swap_nft_asset_id,
@@ -497,7 +505,7 @@ impl SwapClaimProof {
             self.trading_pair.clone(),
             self.delta_1,
             self.delta_2,
-            fee.clone(),
+            fee,
             // This should ensure that the claim address matches the address
             // used to construct the Swap NFT.
             self.claim_address,
@@ -508,12 +516,7 @@ impl SwapClaimProof {
             return Err(anyhow!("improper swap NFT asset id"));
         }
 
-        // Merkle path integrity.
-        self.note_commitment_proof
-            .verify(anchor)
-            .map_err(|_| anyhow!("merkle root mismatch"))?;
-
-        // Validate the note commitment was for the proper block height.
+        // Validate the note commitment's height matches the output data's height.
         let position = self.note_commitment_proof.position();
         let block = position.block();
         let epoch = position.epoch();
@@ -525,7 +528,21 @@ impl SwapClaimProof {
             ));
         }
 
-        // Swap NFT nullifier integrity.
+        // Validate that the output data's trading pair matches the note commitment's trading pair.
+        if output_data.trading_pair != self.trading_pair {
+            return Err(anyhow::anyhow!("trading pair mismatch"));
+        }
+
+        // At this point, we've:
+        // * verified the note commitment is in the TCT,
+        // * verified the note commitment commits to the swap NFT for correct SwapPlaintext,
+        // * proved that the prices in the OutputData are for the trading pair at the correct height
+        //
+        // Now we want to:
+        // * spend the swap NFT,
+        // * and verify the output notes
+
+        // Swap NFT nullifier integrity. Ensure the nullifier is correctly formed.
         if nullifier
             != self
                 .nk
@@ -534,21 +551,27 @@ impl SwapClaimProof {
             return Err(anyhow!("bad nullifier"));
         }
 
-        // TODO:
+        // TODO: currently treating all swaps as failed, so delta == lambda
         // The address should be the same for the Swap NFT and SwapClaim outputs
         // Need output notes here, and to validate the amounts and addresses.
         // instructions here: https://github.com/penumbra-zone/penumbra/issues/1126
-        // let lambda_1 = success.into() * (clearing_price_1 * self.delta_2)
-        //     + (1 - success.into()) * self.delta_1;
-        // let lambda_2 = success.into() * (clearing_price_2 * self.delta_1)
-        //     + (1 - success.into()) * self.delta_2;
-        // TODO: currently treating all swaps as failed, so delta == lambda
+        // Replace with some calculation once we have the liquidity positions implemented.
+        let lambda_1 = self.delta_1;
+        let lambda_2 = self.delta_2;
+        let value_1 = Value {
+            amount: lambda_1,
+            asset_id: self.trading_pair.asset_1(),
+        };
+        let value_2 = Value {
+            amount: lambda_2,
+            asset_id: self.trading_pair.asset_2(),
+        };
+
         let proof_1 = OutputProof {
-            value: Value {
-                amount: self.delta_1,
-                asset_id: self.trading_pair.asset_1(),
-            },
-            // TODO: i don't think a zero blinding factor is the thing to use here, but where else would it come from
+            value: value_1,
+            // We use a zero blinding factor here because we haven't properly
+            // factored out the common code between OutputProof and SwapClaimProof,
+            // so we construct a "fake" value commitment internal to this proof.
             v_blinding: Fr::zero(),
             note_blinding: self.note_blinding_1,
             esk: self.esk_1.clone(),
@@ -556,17 +579,20 @@ impl SwapClaimProof {
             pk_d: *self.claim_address.transmission_key(),
             ck_d: *self.claim_address.clue_key(),
         };
-        // TODO: unclear how to call verify here
-        // proof_1
-        //     .verify()
-        //     .map_err(|_| anyhow!("output proof 1 failed"))?;
+        proof_1
+            // This is a dummy value commitment, since we don't have a way of calling the output proof logic otherwise.
+            .verify(
+                value_1.commit(Fr::zero()),
+                note_commitment_1,
+                self.esk_1.public(),
+            )
+            .map_err(|_| anyhow!("output proof 1 failed"))?;
 
         let proof_2 = OutputProof {
-            value: Value {
-                amount: self.delta_2,
-                asset_id: self.trading_pair.asset_2(),
-            },
-            // TODO: i don't think a zero blinding factor is the thing to use here, but where else would it come from
+            value: value_2,
+            // We use a zero blinding factor here because we haven't properly
+            // factored out the common code between OutputProof and SwapClaimProof,
+            // so we construct a "fake" value commitment internal to this proof.
             v_blinding: Fr::zero(),
             note_blinding: self.note_blinding_2,
             esk: self.esk_2.clone(),
@@ -574,10 +600,14 @@ impl SwapClaimProof {
             pk_d: *self.claim_address.transmission_key(),
             ck_d: *self.claim_address.clue_key(),
         };
-        // TODO: unclear how to call verify here
-        // proof_2
-        //     .verify()
-        //     .map_err(|_| anyhow!("output proof 2 failed"))?;
+        proof_2
+            // This is a dummy value commitment, since we don't have a way of calling the output proof logic otherwise.
+            .verify(
+                value_2.commit(Fr::zero()),
+                note_commitment_2,
+                self.esk_2.public(),
+            )
+            .map_err(|_| anyhow!("output proof 2 failed"))?;
 
         Ok(())
     }

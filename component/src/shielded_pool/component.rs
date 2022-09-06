@@ -721,6 +721,9 @@ impl ShieldedPool {
                 source,
             })
             .await;
+
+            // Also spend the nullifier.
+            self.spend_nullifier(swap_claim.nullifier, source).await;
         }
     }
 }
