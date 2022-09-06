@@ -4,7 +4,7 @@ use decaf377::FieldExt;
 
 use crate::{
     structure::{Any, Kind, Node, Place},
-    Position,
+    Position, Tree,
 };
 
 const FONT_SIZE: usize = 40;
@@ -75,25 +75,18 @@ impl crate::Tree {
         DotWriter::digraph(pretty, writer, |w| {
             let root = self.structure();
             w.nodes_and_edges(root)?;
-
-            // Connect the commitments with invisible edges to align them
-            let mut left = None;
-            for (right, _) in self.commitments_ordered() {
-                if let Some(left) = left {
-                    w.commitment_commitment_edge(left, right)?;
-                    // w.commitment_commitment_edge(right, left)?;
-                }
-                left = Some(right);
-            }
-
+            w.connect_commitments(self)?;
             Ok(())
         })
     }
 }
 
 struct DotWriter<W: Write> {
-    indent: usize,
+    // Output properties
     pretty: bool,
+    invisible_ordering_edges: bool,
+    // Inner mutable state
+    indent: usize,
     writer: W,
 }
 
@@ -108,13 +101,13 @@ impl<W: Write> DotWriter<W> {
             indent: 1,
             writer,
             pretty,
+            // Enable this if ordering=out override isn't sufficient to correctly order tree
+            invisible_ordering_edges: false,
         };
         dot_writer.line(|w| write!(w, "fontsize=\"{FONT_SIZE}\""))?;
         dot_writer.line(|w| write!(w, "fontname=\"Courier New\""))?;
         dot_writer.line(|w| write!(w, "ordering=\"out\""))?;
-        // dot_writer.line(|w| write!(w, "splines=false"))?;
-        // dot_writer.line(|w| write!(w, "ranksep=\"1.5\""))?;
-        // dot_writer.line(|w| write!(w, "outputorder=\"edgesfirst\""))?;
+        dot_writer.line(|w| write!(w, "outputorder=\"edgesfirst\""))?;
         graph(&mut dot_writer)?;
         dot_writer.indent -= 1;
         writeln!(dot_writer.writer, "}}")
@@ -151,6 +144,22 @@ impl<W: Write> DotWriter<W> {
             }
         }
         self.outgoing_edges(node)?; // Connect it to its children
+        Ok(())
+    }
+
+    fn connect_commitments(&mut self, tree: &Tree) -> io::Result<()> {
+        // Connect all commitments together to align them
+        if self.invisible_ordering_edges {
+            let mut left = None;
+            for (right, _) in tree.commitments_ordered() {
+                if let Some(left) = left {
+                    self.commitment_commitment_edge(left, right)?;
+                    // w.commitment_commitment_edge(right, left)?;
+                }
+                left = Some(right);
+            }
+        }
+
         Ok(())
     }
 
@@ -293,9 +302,12 @@ impl<W: Write> DotWriter<W> {
             // The node identifier
             id(w)?;
             // The node attributes
-            write!(w, "[fontsize=\"{FONT_SIZE}\"]")?;
-            write!(w, "[fontname=\"Courier New\"]")?;
-            write!(w, "[label=\"{}\"]", node_label(&node))?;
+            let label = node_label(&node);
+            if !label.is_empty() {
+                write!(w, "[fontsize=\"{FONT_SIZE}\"]")?;
+                write!(w, "[fontname=\"Courier New\"]")?;
+            }
+            write!(w, "[label=\"{label}\"]")?;
             write!(w, "[shape=\"{}\"]", node_shape(&node))?;
             write!(w, "[style=\"filled,bold\"]")?;
             write!(w, "[color=\"{}\"]", node_border_color(&node))?;
@@ -424,31 +436,37 @@ impl<W: Write> DotWriter<W> {
         let children = node.children();
         let mut left: Option<Node> = None;
         for &child in children.iter() {
-            if let Some(left) = left {
-                self.sibling_sibling_edge(
-                    left.height(),
-                    left.position(),
-                    child.height(),
-                    child.position(),
-                )?;
+            if self.invisible_ordering_edges {
+                if let Some(left) = left {
+                    self.sibling_sibling_edge(
+                        left.height(),
+                        left.position(),
+                        child.height(),
+                        child.position(),
+                    )?;
+                }
+                left = Some(child);
             }
             self.parent_child_edge(node, child)?;
-            left = Some(child);
         }
         if !children.is_empty() {
             for phantom_index in children.len() as u64..4 {
-                let child_height = node.height() - 1;
                 let left_position: Position =
                     (u64::from(node.position()) + (node.stride() * phantom_index) / 4).into();
-                let right_position: Position =
-                    (u64::from(node.position()) + (node.stride() * phantom_index + 1) / 4).into();
-                if phantom_index < 3 {
-                    self.sibling_sibling_edge(
-                        child_height,
-                        left_position,
-                        child_height,
-                        right_position,
-                    )?;
+
+                if self.invisible_ordering_edges {
+                    let child_height = node.height() - 1;
+                    let right_position: Position = (u64::from(node.position())
+                        + (node.stride() * phantom_index + 1) / 4)
+                        .into();
+                    if phantom_index < 3 {
+                        self.sibling_sibling_edge(
+                            child_height,
+                            left_position,
+                            child_height,
+                            right_position,
+                        )?;
+                    }
                 }
                 self.parent_phantom_edge(node, left_position)?;
             }

@@ -3215,7 +3215,6 @@ dependencies = [
  "rand",
  "rand_chacha",
  "rand_distr",
- "regex",
  "serde",
  "serde_json",
  "static_assertions",

@@ -5,7 +5,7 @@ use std::{
     collections::BTreeMap,
     fmt::Display,
     fs::File,
-    io::{self, BufRead, BufReader, Read, Write},
+    io::{self, Read, Write},
     path::PathBuf,
     process::{Command, Stdio},
     str::FromStr,
@@ -19,7 +19,6 @@ use rand::{seq::SliceRandom, Rng, RngCore, SeedableRng};
 use rand_distr::Binomial;
 
 use penumbra_tct::{self as tct, Commitment, Tree, Witness};
-use regex::Regex;
 use tct::structure::Hash;
 
 /// Visualize the structure of the Tiered Commitment Tree.
@@ -293,7 +292,7 @@ fn write_svg<W: Write>(dot: &[u8], writer: &mut W) -> Result<()> {
             stdin.flush()?;
             Ok::<_, io::Error>(())
         });
-        add_keys(&mut stdout, writer)?;
+        std::io::copy(&mut stdout, writer)?;
         render_thread.join().unwrap()?;
         Ok::<_, anyhow::Error>(())
     })?;
@@ -308,7 +307,7 @@ fn write_svg_direct<W: Write>(tree: &Tree, writer: &mut W) -> Result<()> {
             stdin.flush()?;
             Ok::<_, io::Error>(())
         });
-        add_keys(&mut stdout, writer)?;
+        std::io::copy(&mut stdout, writer)?;
         render_thread.join().unwrap()?;
         Ok::<_, anyhow::Error>(())
     })?;
@@ -324,20 +323,6 @@ fn dot_command() -> io::Result<(impl Write, impl Read)> {
     let stdin = child.stdin.take().unwrap();
     let stdout = child.stdout.take().unwrap();
     Ok((stdin, stdout))
-}
-
-fn add_keys<R: Read, W: Write>(reader: &mut R, writer: &mut W) -> Result<()> {
-    // Add "key" SVG attributes to anything with an "id" attribute
-    let mut out = BufReader::new(reader);
-    let mut line = String::new();
-    let svg_id = Regex::new(r#"id="([a-zA-Z][a-zA-Z0-9_\-]*)""#).unwrap();
-    loop {
-        if let 0 = out.read_line(&mut line)? {
-            break Ok(());
-        }
-        write!(writer, "{}", svg_id.replace(&line, "id=\"$1\" key=\"$1\""))?;
-        line.clear();
-    }
 }
 
 /// Generate a random valid commitment by rejection sampling
