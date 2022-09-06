@@ -31,7 +31,7 @@ impl TransactionsCmd {
         for tx in txs {
             table.add_row(vec![
                 format!("{}", u128::from(tx.0)),
-                format!("{:?}", hex::encode(tx.1)),
+                format!("{}", hex::encode(tx.1)),
             ]);
         }
 
