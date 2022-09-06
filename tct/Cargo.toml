@@ -20,20 +20,28 @@ ark-ff = "0.3"
 ark-serialize = "0.3"
 poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377", branch = "main" }
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
-proptest = { version = "1", optional = true }
-proptest-derive = { version = "0.3", optional = true }
-rand = { version = "0.8", optional = true }
 tracing = { version = "0.1" }
 async-trait = { version = "0.1" }
 async-stream = "0.3"
 futures = "0.3"
 ark-ed-on-bls12-377 = "0.3"
+
+# Dependencies for random testing
+proptest = { version = "1", optional = true }
+proptest-derive = { version = "0.3", optional = true }
+rand = { version = "0.8", optional = true }
 rand_chacha = { version = "0.3", optional = true }
 rand_distr = { version = "0.4", optional = true }
+
+# Dependencies for live-view
+tokio = { version = "1", features = ["full"], optional = true }
+tokio-util = { version = "0.7", features = ["full"], optional = true }
+axum = { version = "0.5", optional = true }
 
 [features]
 internal = []
 arbitrary = ["proptest", "proptest-derive", "rand", "rand_chacha", "rand_distr"]
+live-view = ["tokio", "tokio-util", "axum"]
 
 [dev-dependencies]
 static_assertions = "1"

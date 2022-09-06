@@ -423,6 +423,8 @@ dependencies = [
  "percent-encoding",
  "pin-project-lite",
  "serde",
+ "serde_json",
+ "serde_urlencoded",
  "sync_wrapper",
  "tokio",
  "tower",
@@ -1744,6 +1746,9 @@ name = "hashbrown"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
+dependencies = [
+ "ahash",
+]
 
 [[package]]
 name = "hashlink"
@@ -3197,6 +3202,7 @@ dependencies = [
  "ark-serialize",
  "async-stream 0.3.3",
  "async-trait",
+ "axum",
  "bincode",
  "blake2b_simd 1.0.0",
  "clap 3.2.21",
@@ -3219,6 +3225,8 @@ dependencies = [
  "serde_json",
  "static_assertions",
  "thiserror",
+ "tokio",
+ "tokio-util 0.7.4",
  "tracing",
 ]
 
@@ -5016,8 +5024,12 @@ checksum = "0bb2e075f03b3d66d8d8785356224ba688d2906a371015e225beeb65ca92c740"
 dependencies = [
  "bytes",
  "futures-core",
+ "futures-io",
  "futures-sink",
+ "futures-util",
+ "hashbrown 0.12.3",
  "pin-project-lite",
+ "slab",
  "tokio",
  "tracing",
 ]
