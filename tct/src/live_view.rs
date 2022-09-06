@@ -29,14 +29,29 @@ pub async fn view(mut tree: watch::Receiver<Tree>) -> Router {
         )
         // Required javascript components for rendering and animation
         .route(
-            "/scripts/:script",
+            "/scripts/:script.js",
             get(|Path(script): Path<String>| async move {
                 Ok((
-                    [("content-type", "application/javascript")],
+                    [("content-type", "application/javascript")], // There is no application/javascript in `TypedHeader`
                     match script.as_str() {
-                        "d3.js" => D3_JS.clone(),
-                        "graphviz.js" => GRAPHVIZ_JS.clone(),
-                        "d3-graphviz.js" => D3_GRAPHVIZ_JS.clone(),
+                        "d3" => D3_JS.clone(),
+                        "graphviz" => GRAPHVIZ_JS.clone(),
+                        "d3-graphviz" => D3_GRAPHVIZ_JS.clone(),
+                        _ => return Err(StatusCode::NOT_FOUND),
+                    },
+                ))
+            }),
+        )
+        // Required javascript components for rendering and animation
+        .route(
+            "/scripts/:script/LICENSE",
+            get(|Path(script): Path<String>| async move {
+                Ok((
+                    TypedHeader(ContentType::text_utf8()),
+                    match script.as_str() {
+                        "d3.js" => D3_JS_LICENSE.clone(),
+                        "graphviz.js" => GRAPHVIZ_JS_LICENSE.clone(),
+                        "d3-graphviz.js" => D3_GRAPHVIZ_JS_LICENSE.clone(),
                         _ => return Err(StatusCode::NOT_FOUND),
                     },
                 ))
@@ -64,7 +79,7 @@ pub async fn view(mut tree: watch::Receiver<Tree>) -> Router {
                     json!({
                         "epoch": position.epoch(),
                         "block": position.block(),
-                        "commitment": position.commitment()
+                        "commitment": position.commitment(),
                     })
                 } else {
                     json!(null)
@@ -99,3 +114,8 @@ flate_bytes!(static INDEX from "src/live_view/index.html");
 flate_bytes!(static D3_JS from "node_modules/d3/dist/d3.min.js");
 flate_bytes!(static GRAPHVIZ_JS from "node_modules/@hpcc-js/wasm/dist/index.min.js");
 flate_bytes!(static D3_GRAPHVIZ_JS from "node_modules/d3-graphviz/build/d3-graphviz.js");
+
+// Embed compressed license files for the relevant javascript libraries
+flate_bytes!(static D3_JS_LICENSE from "node_modules/d3/LICENSE");
+flate_bytes!(static GRAPHVIZ_JS_LICENSE from "node_modules/@hpcc-js/wasm/LICENSE");
+flate_bytes!(static D3_GRAPHVIZ_JS_LICENSE from "node_modules/d3-graphviz/LICENSE");
