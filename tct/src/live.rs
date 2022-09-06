@@ -11,7 +11,7 @@ use axum::{
 use serde_json::json;
 use tokio::sync::watch;
 
-use crate::{Forgotten, Position, Tree};
+use crate::{Commitment, Forgotten, Position, Tree};
 
 mod earliest;
 use earliest::Earliest;
@@ -93,6 +93,123 @@ pub async fn view(mut tree: watch::Receiver<Tree>) -> Router {
                 })))
             }),
         )
+}
+
+/// An [`axum`] [`Router`] that serves a `GET` endpoint mirroring the immutable methods of [`Tree`].
+pub async fn query(tree: watch::Receiver<Tree>) -> Router {
+    Router::new()
+        .route("/root", {
+            let tree = tree.clone();
+            get(|| async move { Json(tree.borrow().root().to_string()) })
+        })
+        .route("/current-block-root", {
+            let tree = tree.clone();
+            get(|| async move { Json(tree.borrow().current_block_root().to_string()) })
+        })
+        .route("/current-epoch-root", {
+            let tree = tree.clone();
+            get(|| async move { Json(tree.borrow().current_epoch_root().to_string()) })
+        })
+        .route("/position", {
+            let tree = tree.clone();
+            get(|| async move {
+                Json(if let Some(position) = tree.borrow().position() {
+                    json!({
+                        "epoch": position.epoch(),
+                        "block": position.block(),
+                        "commitment": position.commitment(),
+                    })
+                } else {
+                    json!(null)
+                })
+            })
+        })
+        .route("/forgotten", {
+            let tree = tree.clone();
+            get(|| async move { Json(u64::from(tree.borrow().forgotten())) })
+        })
+        .route("/witness/:commitment", {
+            let tree = tree.clone();
+            get(|Path(commitment): Path<Commitment>| async move {
+                if let Some(witness) = tree.borrow().witness(commitment) {
+                    Ok(Json(json!({
+                        "commitment": witness.commitment(),
+                        "position": {
+                            "epoch": witness.position().epoch(),
+                            "block": witness.position().block(),
+                            "commitment": witness.position().commitment(),
+                        },
+                        "auth_path": witness.auth_path(),
+                    })))
+                } else {
+                    Err(StatusCode::NOT_FOUND)
+                }
+            })
+        })
+        .route("/position-of/:commitment", {
+            let tree = tree.clone();
+            get(|Path(commitment): Path<Commitment>| async move {
+                if let Some(position) = tree.borrow().position_of(commitment) {
+                    Ok(Json(json!({
+                        "epoch": position.epoch(),
+                        "block": position.block(),
+                        "commitment": position.commitment(),
+                    })))
+                } else {
+                    Err(StatusCode::NOT_FOUND)
+                }
+            })
+        })
+        .route("/witnessed-count", {
+            let tree = tree.clone();
+            get(|| async move { Json(tree.borrow().witnessed_count()) })
+        })
+        .route("/is-empty", {
+            let tree = tree.clone();
+            get(|| async move { Json(tree.borrow().is_empty()) })
+        })
+        .route("/is-full", {
+            let tree = tree.clone();
+            get(|| async move { Json(tree.borrow().position().is_none()) })
+        })
+        .route("/commitments", {
+            let tree = tree.clone();
+            get(|| async move {
+                Json(
+                    tree.borrow()
+                        .commitments()
+                        .map(|(commitment, position)| {
+                            json!({
+                            "commitment": commitment,
+                            "position": {
+                                "epoch": position.epoch(),
+                                "block": position.block(),
+                                "commitment": position.commitment()
+                            } })
+                        })
+                        .collect::<Vec<_>>(),
+                )
+            })
+        })
+        .route("/commitments-ordered", {
+            let tree = tree.clone();
+            get(|| async move {
+                Json(
+                    tree.borrow()
+                        .commitments_ordered()
+                        .map(|(position, commitment)| {
+                            json!({
+                            "commitment": commitment,
+                            "position": {
+                                "epoch": position.epoch(),
+                                "block": position.block(),
+                                "commitment": position.commitment()
+                            } })
+                        })
+                        .collect::<Vec<_>>(),
+                )
+            })
+        })
 }
 
 // This is a modified variant of the `flate` macro from the `include_flate` crate, which makes a
