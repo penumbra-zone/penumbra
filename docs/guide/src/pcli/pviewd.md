@@ -14,7 +14,7 @@ export $PATH=$PATH:$HOME/penumbra/target/release
 or copy the binnary file to `/usr/bin` directory:
 
 ```shell
-cp /root/penumbra/target/release/pviewd /usr/bin/
+cp $HOME/penumbra/target/release/pviewd /usr/bin/
 ```
 after, you need to export a viewing key from `pcli`:
 
@@ -29,7 +29,8 @@ pviewd init <YOUR_FULL_VIEWING_KEY>
 ```
 
 The location of the `pviewd` state can be changed with the `-s` parameter.
-Finally, run
+
+Finally, `export RUST_LOG=info` to get pviewd logs visible and run
 
 ```shell
 pviewd start
