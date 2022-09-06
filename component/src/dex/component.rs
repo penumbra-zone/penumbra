@@ -223,8 +223,6 @@ impl Component for Dex {
 
                     // Set the batch swap flow for the trading pair.
                     self.swaps.insert(swap.body.trading_pair, swap_flows);
-
-                    // TODO: tell the shielded pool to mark the Swap NFT nullifier as spent
                 }
                 Action::SwapClaim(swap_claim) => {
                     // Each swap claim gets their portion of the swap based on their contribution.
