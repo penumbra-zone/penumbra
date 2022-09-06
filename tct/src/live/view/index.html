@@ -1,15 +1,12 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <head>
-    <script src="../scripts/d3.js"></script>
-    <script src="../scripts/graphviz.js"></script>
-    <script src="../scripts/d3-graphviz.js"></script>
+    <script src="{url}/scripts/d3.js"></script>
+    <script src="{url}/scripts/graphviz.js" type="javascript/worker"></script>
+    <script src="{url}/scripts/d3-graphviz.js"></script>
+    <link rel="stylesheet" type="text/css" href="{url}/styles/reset.css">
 </head>
 <body>
-    <div id="graph" style="text-align: center;"></div>
-
-    <script>
-    d3.select("#graph").graphviz()
-        .renderDot('digraph  {a -> b}');
-    </script>
+    <div id="graph" style="text-align: center; width: 100%; height: 100%; position: absolute"></div>
+    <script src="{url}/scripts/index.js"></script>
 </body>

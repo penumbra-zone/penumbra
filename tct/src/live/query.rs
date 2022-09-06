@@ -11,7 +11,7 @@ use tokio::sync::watch;
 use crate::{Commitment, Tree};
 
 /// An [`axum`] [`Router`] that serves a `GET` endpoint mirroring the immutable methods of [`Tree`].
-pub async fn query(tree: watch::Receiver<Tree>) -> Router {
+pub fn query(tree: watch::Receiver<Tree>) -> Router {
     Router::new()
         .route("/root", root(tree.clone()))
         .route("/current-block-root", current_block_root(tree.clone()))

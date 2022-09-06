@@ -9,7 +9,7 @@ pub struct Earliest {
     /// Never return an earlier position than this, or if `next` is `true` never return an earlier
     /// position than this position's successor.
     #[serde(flatten, default)]
-    earliest_position: EarliestPosition,
+    earliest_position: Option<EarliestPosition>,
     /// Never return an earlier forgotten index than this, or if `next` is `true` never return an earlier
     /// forgotten index than this index's successor.
     #[serde(default)]
@@ -20,7 +20,7 @@ pub struct Earliest {
     next: bool,
 }
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize, Default)]
 struct EarliestPosition {
     epoch: u16,
     #[serde(flatten, default)]
@@ -62,9 +62,11 @@ impl Earliest {
         // Otherwise, one of the forgotten index or the position must be earlier (strictly
         // earlier if the next parameter is specified)
         if self.next {
-            position > self.earliest_position.into() || tree.forgotten() > self.earliest_forgotten
+            position > self.earliest_position.unwrap_or_default().into()
+                || tree.forgotten() > self.earliest_forgotten
         } else {
-            position >= self.earliest_position.into() || tree.forgotten() >= self.earliest_forgotten
+            position >= self.earliest_position.unwrap_or_default().into()
+                || tree.forgotten() >= self.earliest_forgotten
         }
     }
 }

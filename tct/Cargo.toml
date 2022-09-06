@@ -38,13 +38,13 @@ tokio = { version = "1", features = ["full"], optional = true }
 tokio-util = { version = "0.7", features = ["full"], optional = true }
 axum = { version = "0.5", features = ["headers", "query"], optional = true }
 serde_json = { version = "1", features = ["preserve_order"], optional = true }
-include-flate = { version = "0.1", optional = true }
+include-flate = { version = "0.1", features = ["stable"], optional = true }
 bytes = { version = "1.2", optional = true }
 
 [features]
 internal = []
 arbitrary = ["proptest", "proptest-derive", "rand", "rand_chacha", "rand_distr"]
-live-view = ["tokio", "tokio-util", "axum", "serde_json", "include-flate", "rand"]
+live-view = ["tokio", "tokio-util", "axum", "serde_json", "include-flate", "rand", "bytes"]
 
 [dev-dependencies]
 static_assertions = "1"
@@ -55,7 +55,13 @@ serde_json = "1"
 bincode = "1"
 anyhow = "1"
 clap = { version = "3.2", features = ["derive"] }
+tower-http = { version = "0.3", features = ["trace"] }
+tracing-subscriber = "0.3"
 
 [[example]]
 name = "tct-visualize"
 required-features = ["penumbra-tct/arbitrary"]
+
+[[example]]
+name = "tct-live-edit"
+required-features = ["penumbra-tct/live-view"]
