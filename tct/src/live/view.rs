@@ -1,8 +1,21 @@
-use super::*;
+use axum::{
+    extract::{Path, Query},
+    headers::ContentType,
+    http::StatusCode,
+    routing::{get, MethodRouter},
+    Json, Router, TypedHeader,
+};
+
+use serde_json::json;
+use tokio::sync::watch;
+
+use crate::{Forgotten, Position, Tree};
 
 mod resources;
-use axum::routing::MethodRouter;
 use resources::*;
+
+mod earliest;
+use earliest::Earliest;
 
 /// An [`axum`] [`Router`] that serves a live, animated view of a [`Tree`] at the `/` path.
 ///
