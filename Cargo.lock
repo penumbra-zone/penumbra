@@ -2092,6 +2092,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3a7d6e1419fa3129eb0802b4c99603c0d425c79fb5d76191d5a20d0ab0d664e8"
 dependencies = [
  "libflate",
+ "proc-macro-hack",
  "proc-macro2 1.0.43",
  "quote 1.0.21",
  "syn 1.0.99",
@@ -3289,7 +3290,9 @@ dependencies = [
  "thiserror",
  "tokio",
  "tokio-util 0.7.4",
+ "tower-http",
  "tracing",
+ "tracing-subscriber 0.3.15",
 ]
 
 [[package]]
@@ -5267,6 +5270,7 @@ dependencies = [
  "tower",
  "tower-layer",
  "tower-service",
+ "tracing",
 ]
 
 [[package]]

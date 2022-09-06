@@ -22,7 +22,7 @@ use crate::{
 /// Queries taking arguments pass arguments via URL parameters. Results are returned in JSON format,
 /// with [`StatusCode::BAD_REQUEST`] being returned if the operation failed (i.e. an `Err` variant
 /// was returned).
-pub async fn control<R: Rng + Send + 'static>(rng: R, tree: Arc<watch::Sender<Tree>>) -> Router {
+pub fn control<R: Rng + Send + 'static>(rng: R, tree: Arc<watch::Sender<Tree>>) -> Router {
     // The rng is shared between all methods
     let rng = Arc::new(Mutex::new(rng));
 
