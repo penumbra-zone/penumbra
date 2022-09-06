@@ -108,7 +108,7 @@ macro_rules! flate_bytes {
 }
 
 // Embed compressed index page
-flate_bytes!(static INDEX from "src/live_view/index.html");
+flate_bytes!(static INDEX from "src/live/index.html");
 
 // Embed compressed source for the relevant javascript libraries
 flate_bytes!(static D3_JS from "node_modules/d3/dist/d3.min.js");

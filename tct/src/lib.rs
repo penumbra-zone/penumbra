@@ -77,7 +77,7 @@ mod internal;
 mod visualize;
 
 #[cfg(feature = "live-view")]
-pub mod live_view;
+pub mod live;
 
 pub mod builder {
     //! Builders for individual epochs and blocks: useful when constructing a [`Tree`](super::Tree)
