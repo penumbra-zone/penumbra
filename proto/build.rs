@@ -250,6 +250,7 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.stake.Validator.consensus_key", AS_BASE64),
     (".penumbra.stake.ValidatorDefinition.auth_sig", AS_HEX),
     (".penumbra.stake.Uptime.bitvec", AS_BASE64),
+    (".penumbra.crypto.Clue.inner", AS_HEX),
     (".penumbra.crypto.Address.inner", AS_BECH32_ADDRESS),
     (".penumbra.crypto.AssetId.inner", AS_BECH32_ASSET_ID),
     (".penumbra.crypto.NoteCommitment.inner", AS_HEX),
