@@ -29,6 +29,12 @@ flate_bytes!(pub static RESET_CSS from "src/live/view/reset.css");
 // Embed compressed source for main javascript
 flate_bytes!(pub static INDEX_JS from "src/live/view/index.js");
 
-pub fn index(url: Uri) -> String {
-    format!(include_str!("index.html"), url = url)
+pub fn index(url: Uri, head: &str, before: &str, after: &str) -> String {
+    format!(
+        include_str!("index.html"),
+        url = url,
+        head = head,
+        before = before,
+        after = after
+    )
 }

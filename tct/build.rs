@@ -1,6 +1,7 @@
 fn main() {
     // Inform cargo about the resources that are baked into the binary
     let resources = [
+        "src/live/view/index.html",
         "src/live/view/index.js",
         "src/live/view/reset.css",
         "node_modules/d3/dist/d3.min.js",
