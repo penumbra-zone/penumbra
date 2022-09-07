@@ -1,4 +1,4 @@
-use std::convert::Infallible;
+use std::{convert::Infallible, sync::Arc};
 
 use axum::{
     extract::{OriginalUri, Path, Query},
@@ -25,9 +25,9 @@ use earliest::Earliest;
 ///
 /// To include this in a more complex page, nest this `Router` with another one serving the rest of
 /// another application, and embed the page it serves as an `<iframe>` in another page.
-pub fn view(tree: watch::Receiver<Tree>) -> Router {
+pub fn view(tree: watch::Receiver<Tree>, ext: ViewExtensions) -> Router {
     Router::new()
-        .route("/", index())
+        .route("/", index(ext))
         .route("/scripts/:script", scripts())
         .route("/licenses/:script/LICENSE", licenses())
         .route("/styles/:style", styles())
@@ -35,13 +35,31 @@ pub fn view(tree: watch::Receiver<Tree>) -> Router {
         .route("/dot", render_dot(tree))
 }
 
+/// Extra HTML fragments to insert into the HTML page that renders the view.
+#[derive(Debug, Clone, Eq, PartialEq, Default)]
+pub struct ViewExtensions {
+    /// Extra HTML to insert into the `<head>` of the page after the existing script and style tags.
+    pub head: String,
+    /// Extra HTML to insert into the `<body>` of the page before the graph.
+    pub before: String,
+    /// Extra HTML to insert into the `<body>` of the page after the graph.
+    pub after: String,
+}
+
 /// The index page itself, containing only the animated SVG.
 ///
 /// This templates in the correct absolute URI for each script file, which is necessary because this
 /// `Router` could be nested.
-fn index() -> MethodRouter {
-    get(|OriginalUri(url): OriginalUri| async {
-        (TypedHeader(ContentType::html()), resources::index(url))
+fn index(ext: ViewExtensions) -> MethodRouter {
+    let ext = Arc::new(ext);
+    get(move |OriginalUri(url): OriginalUri| {
+        let ext = ext.clone();
+        async move {
+            (
+                TypedHeader(ContentType::html()),
+                resources::index(url, &ext.head, &ext.before, &ext.after),
+            )
+        }
     })
 }
 

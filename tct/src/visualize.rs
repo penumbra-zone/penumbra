@@ -3,7 +3,7 @@ use std::io::{self, Write};
 use decaf377::FieldExt;
 
 use crate::{
-    structure::{Any, Kind, Node, Place},
+    structure::{Kind, Node, Place},
     Position, Tree,
 };
 
@@ -104,7 +104,6 @@ impl<W: Write> DotWriter<W> {
         dot_writer.line(|w| write!(w, "fontsize=\"{FONT_SIZE}\""))?;
         dot_writer.line(|w| write!(w, "fontname=\"Courier New\""))?;
         dot_writer.line(|w| write!(w, "ordering=\"out\""))?;
-        dot_writer.line(|w| write!(w, "outputorder=\"edgesfirst\""))?;
         dot_writer.line(|w| write!(w, "penwidth={PEN_WIDTH}"))?;
         dot_writer.line(|w| write!(w, "ranksep=\"0.65\""))?;
         graph(&mut dot_writer)?;
@@ -282,7 +281,11 @@ impl<W: Write> DotWriter<W> {
             let (fill_color, color) = if focus {
                 (FRONTIER_TERMINUS_COLOR, FRONTIER_EDGE_COLOR)
             } else if height == 8 || height == 16 {
-                ("none", "grey")
+                if place == Some(Place::Frontier) && terminal {
+                    (FRONTIER_TERMINUS_COLOR, FRONTIER_EDGE_COLOR)
+                } else {
+                    ("none", "grey")
+                }
             } else {
                 ("none", "none")
             };
@@ -307,9 +310,12 @@ impl<W: Write> DotWriter<W> {
                     _ => FONT_SIZE,
                 }
             };
-            if focus {
+            if place == Some(Place::Frontier) && terminal {
                 w.line(|w| write!(w, "peripheries=2"))?;
                 w.line(|w| write!(w, "penwidth={}", PEN_WIDTH * 2))?;
+            }
+            if place == None {
+                w.line(|w| write!(w, "fontcolor=grey"))?;
             }
             w.line(|w| write!(w, "style=\"filled,bold\""))?;
             w.line(|w| write!(w, "color=\"{color}\""))?;
@@ -550,16 +556,7 @@ impl<W: Write> DotWriter<W> {
             write!(w, "[style=\"bold\"]")?;
             write!(w, "[penwidth={PEN_WIDTH}]")?;
             let color = match child.place() {
-                Place::Frontier => match child.height() {
-                    8 if parent.global_position().unwrap().commitment() == 0 => "black".to_string(),
-                    16 if parent.global_position().unwrap().block() == 0
-                        && parent.global_position().unwrap().commitment() == 0 =>
-                    {
-                        "black".to_string()
-                    }
-                    _ if child.height() > 0 && child.children().is_empty() => "black".to_string(),
-                    _ => FRONTIER_EDGE_COLOR.to_string(),
-                },
+                Place::Frontier => FRONTIER_EDGE_COLOR.to_string(),
                 _ => "black".to_string(),
             };
             write!(w, "[color=\"{}\"]", color)
@@ -816,22 +813,32 @@ fn node_shape(node: &Node) -> &'static str {
     hash_shape(&hash.to_bytes())
 }
 
-fn node_label(node: &Node) -> &'static str {
-    if node.cached_hash().is_none() {
-        "?"
-    } else {
-        ""
-    }
+fn node_label(_node: &Node) -> &'static str {
+    // if node.cached_hash().is_none() {
+    //     "?"
+    // } else {
+    //     ""
+    // }
+    ""
 }
 
 fn node_width(node: &Node) -> &'static str {
     if let Some(hash) = node.cached_hash() {
         if hash.is_one() || hash.is_zero() {
-            return "0.15";
+            return match node.height() {
+                17..=24 => "0.6",
+                9..=16 => "0.4",
+                0..=8 => "0.2",
+                _ => unreachable!(),
+            };
         }
     }
 
-    "0.9"
+    if node.place() == Place::Frontier {
+        "0.7"
+    } else {
+        "0.9"
+    }
 }
 
 fn node_height(node: &Node) -> &'static str {
