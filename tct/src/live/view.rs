@@ -1,3 +1,5 @@
+use std::convert::Infallible;
+
 use axum::{
     extract::{OriginalUri, Path, Query},
     headers::ContentType,
@@ -9,7 +11,7 @@ use axum::{
 
 use serde_json::json;
 use tokio::sync::{mpsc, watch};
-use tokio_stream::wrappers::ReceiverStream;
+use tokio_stream::{wrappers::ReceiverStream, StreamExt};
 
 use crate::{Forgotten, Position, Tree};
 
@@ -102,11 +104,13 @@ fn changes(tree: watch::Receiver<Tree>) -> MethodRouter {
         // Forward all changes to the tree as events
         tokio::spawn(async move {
             loop {
+                // Wait for something to change
                 if (tree.changed().await).is_err() {
                     break;
                 }
 
-                let event = {
+                // Form one or two events about it
+                let (reset, change) = {
                     let tree = tree.borrow();
                     let forgotten = tree.forgotten();
                     let position = if let Some(position) = tree.position() {
@@ -119,18 +123,35 @@ fn changes(tree: watch::Receiver<Tree>) -> MethodRouter {
                         json!(null)
                     };
 
-                    sse::Event::default()
+                    // If the tree is empty, issue a "please reset your state" event
+                    let reset = if tree.is_empty() {
+                        Some(sse::Event::default().event("reset"))
+                    } else {
+                        None
+                    };
+
+                    // Always report the current position and forgotten count
+                    let changed = sse::Event::default()
                         .event("changed")
                         .json_data(json!({ "position": position, "forgotten": forgotten }))
+                        .unwrap();
+
+                    (reset, changed)
                 };
 
-                if (tx.send(event).await).is_err() {
+                // Send the two events
+                if let Some(reset) = reset {
+                    if tx.send(reset).await.is_err() {
+                        break;
+                    }
+                }
+                if (tx.send(change).await).is_err() {
                     break;
                 }
             }
         });
 
-        Sse::new(ReceiverStream::new(rx))
+        Sse::new(ReceiverStream::new(rx).map(Ok::<_, Infallible>))
     })
 }
 

@@ -40,16 +40,29 @@ function run() {
     });
 
     // Initial state
-    let changed = false;
-    let renderedRecently = false;
-    let precision = liveViewSettings.initialPrecision;
-    let latestDot = 'digraph {}';
-    let forgotten = 0;
-    let position = {
-        epoch: 0,
-        block: 0,
-        commitment: 0,
-    };
+    let changed;
+    let renderedRecently;
+    let precision;
+    let latestDot;
+    let forgotten;
+    let position;
+
+    // Reset the state
+    function reset() {
+        changed = false;
+        renderedRecently = false;
+        precision = liveViewSettings.initialPrecision;
+        latestDot = 'digraph {}';
+        forgotten = 0;
+        position = {
+            epoch: 0,
+            block: 0,
+            commitment: 0,
+        };
+    }
+
+    // When first initializing, perform the reset
+    reset();
 
     // Long-poll loop to get the latest dot render of the tree
     function poll(long) {
@@ -117,6 +130,11 @@ function run() {
     // forgotten index to advance, so it won't be caught by the long-poll loop: we use the SSE
     // endpoint to monitor for these changes, and trigger an immediate short poll when they occur
     const changes = new EventSource(window.location.href + "/changes");
+    changes.addEventListener("reset", (event) => {
+        // TODO: why doesn't this properly reset the state?
+        reset();
+        poll(false);
+    });
     changes.addEventListener("changed", (event) => {
         // When a change occurs, check to see if *nothing has changed* about the position and
         // forgotten count: only then, do a short poll to get the latest dot.
@@ -124,7 +142,8 @@ function run() {
         // Figure out whether the event was an interior mutation, and only do a short-poll if it was
         // an interior mutation (otherwise we'd be wasting our time because the long poll will get
         // to that change)
-        if (response.position === null && position != null) {
+        if ((response.position === null && position !== null)
+            || (position === null && response.position !== null)) {
             return;
         }
         let interior =
