@@ -102,6 +102,7 @@ fn styles() -> MethodRouter {
             [("content-type", "text/css")],
             match style.as_str() {
                 "reset.css" => RESET_CSS.clone(),
+                "style.css" => STYLE_CSS.clone(),
                 _ => return Err(StatusCode::NOT_FOUND),
             },
         ))
