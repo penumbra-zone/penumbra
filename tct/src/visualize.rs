@@ -12,6 +12,7 @@ const BLOCK_FONT_SIZE: usize = 75;
 const EPOCH_FONT_SIZE: usize = 100;
 const FRONTIER_EDGE_COLOR: &str = "#E800FF:invis:#E800FF";
 const FRONTIER_TERMINUS_COLOR: &str = "#FBD1FF";
+const PEN_WIDTH: usize = 4;
 
 fn hash_shape(bytes: &[u8]) -> &'static str {
     match bytes[3] % 16 {
@@ -111,6 +112,7 @@ impl<W: Write> DotWriter<W> {
         dot_writer.line(|w| write!(w, "fontname=\"Courier New\""))?;
         dot_writer.line(|w| write!(w, "ordering=\"out\""))?;
         dot_writer.line(|w| write!(w, "outputorder=\"edgesfirst\""))?;
+        dot_writer.line(|w| write!(w, "penwidth={PEN_WIDTH}"))?;
         graph(&mut dot_writer)?;
         dot_writer.indent -= 1;
         write!(dot_writer.writer, "}}")?;
@@ -261,6 +263,13 @@ impl<W: Write> DotWriter<W> {
             match height {
                 16 => write!(w, "{}/_/_", position.epoch()),
                 8 => write!(w, "{}/{}/_", position.epoch(), position.block()),
+                0 if !has_commitment && place == Some(Place::Frontier) => write!(
+                    w,
+                    "{}/{}/{}",
+                    position.epoch(),
+                    position.block(),
+                    position.commitment(),
+                ),
                 _ => Ok(()),
             }
         };
@@ -276,12 +285,12 @@ impl<W: Write> DotWriter<W> {
 
             tree(w)?;
 
-            let (fill_color, color, dashed) = if focus {
-                (FRONTIER_TERMINUS_COLOR, FRONTIER_EDGE_COLOR, "")
+            let (fill_color, color) = if focus {
+                (FRONTIER_TERMINUS_COLOR, FRONTIER_EDGE_COLOR)
             } else if height == 8 || height == 16 {
-                ("none", "grey", ",dashed")
+                ("none", "grey")
             } else {
-                ("none", "none", "")
+                ("none", "none")
             };
             let tooltip = match height {
                 17..=24 => "Global Tree".to_string(),
@@ -304,8 +313,11 @@ impl<W: Write> DotWriter<W> {
                     _ => FONT_SIZE,
                 }
             };
+            if focus {
+                w.line(|w| write!(w, "peripheries=2"))?;
+            }
+            w.line(|w| write!(w, "style=\"filled,bold\""))?;
             w.line(|w| write!(w, "color=\"{color}\""))?;
-            w.line(|w| write!(w, "style=\"rounded,filled,bold{dashed}\""))?;
             w.line(|w| write!(w, "tooltip=\"{tooltip}\""))?;
             w.line(|w| write!(w, "fontsize=\"{font_size}\""))?;
             w.line(|w| write!(w, "fillcolor=\"{fill_color}\""))
@@ -332,6 +344,7 @@ impl<W: Write> DotWriter<W> {
             write!(w, "[gradientangle=\"{}\"]", node_gradient_angle(&node))?;
             write!(w, "[width=\"{}\"]", node_width(&node))?;
             write!(w, "[height=\"{}\"]", node_height(&node))?;
+            write!(w, "[penwidth={PEN_WIDTH}]")?;
             write!(w, "[id=\"")?;
             id(w)?;
             write!(w, "\"]")?;
@@ -362,6 +375,7 @@ impl<W: Write> DotWriter<W> {
             write!(w, "[label=\"\"]")?;
             write!(w, "[style=\"filled,bold\"]")?;
             write!(w, "[fillcolor=\"gray\"]")?;
+            write!(w, "[penwidth={PEN_WIDTH}]")?;
             write!(
                 w,
                 "[tooltip=\"Height: {height}\\nPosition: {}/{}/{}\\nHash: 0\"]",
@@ -385,7 +399,7 @@ impl<W: Write> DotWriter<W> {
                 w.line(|w| write!(w, "style=\"filled\""))?;
                 w.line(|w| write!(w, "color=\"black\""))?;
                 w.line(|w| write!(w, "fillcolor=\"lightyellow\""))?;
-                w.line(|w| write!(w, "style=\"rounded,filled,bold\""))?;
+                w.line(|w| write!(w, "style=\"filled,bold\""))?;
                 w.line(|w| {
                     write!(
                         w,
@@ -415,6 +429,7 @@ impl<W: Write> DotWriter<W> {
                     write!(w, "[label=\"\"]")?;
                     write!(w, "[shape=\"{}\"]", hash_shape(&commitment.0.to_bytes()))?;
                     write!(w, "[style=\"filled,bold\"]")?;
+                    write!(w, "[penwidth={PEN_WIDTH}]")?;
                     write!(w, "[width=\"1\"]")?;
                     write!(w, "[height=\"1\"]")?;
                     write!(
@@ -515,6 +530,7 @@ impl<W: Write> DotWriter<W> {
             )?;
             write!(w, "[dir=\"none\"]")?;
             write!(w, "[style=\"bold\"]")?;
+            write!(w, "[penwidth={PEN_WIDTH}]")?;
             let color = match child.place() {
                 Place::Frontier => match child.height() {
                     8 if parent.global_position().unwrap().commitment() == 0 => "black".to_string(),
@@ -550,6 +566,7 @@ impl<W: Write> DotWriter<W> {
             write!(w, "[label=\"\"]",)?;
             write!(w, "[dir=\"none\"]")?;
             write!(w, "[style=\"bold\"]")?;
+            write!(w, "[penwidth={PEN_WIDTH}]")?;
             write!(w, "[color=\"gray\"]")
         })
     }
@@ -626,6 +643,7 @@ impl<W: Write> DotWriter<W> {
                 write!(w, "[label=\"\"]",)?;
                 write!(w, "[dir=\"none\"]")?;
                 write!(w, "[style=\"bold\"]")?;
+                write!(w, "[penwidth={PEN_WIDTH}]")?;
                 let color = "black";
                 write!(w, "[color=\"{}\"]", color)
             })?;
