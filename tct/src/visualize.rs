@@ -424,42 +424,54 @@ impl<W: Write> DotWriter<W> {
                     )?;
                     write!(w, "\"")
                 })?;
-                w.line(|w| {
-                    // The node identifier
-                    id(w)?;
-                    write!(w, "[id=\"")?;
-                    id(w)?;
-                    write!(w, "\"]")?;
-                    write!(w, "[label=\"\"]")?;
-                    write!(w, "[shape=\"{}\"]", hash_shape(&commitment.0.to_bytes()))?;
-                    write!(w, "[style=\"filled,bold\"]")?;
-                    write!(w, "[penwidth={PEN_WIDTH}]")?;
-                    write!(w, "[width=\"1\"]")?;
-                    write!(w, "[height=\"1\"]")?;
-                    write!(
-                        w,
-                        "[fillcolor=\"{}\"]",
-                        hash_color(&commitment.0.to_bytes())
-                    )?;
-                    write!(
-                        w,
-                        "[gradientangle=\"{}\"]",
-                        hash_gradient_angle(&commitment.0.to_bytes())
-                    )?;
-                    write!(
-                        w,
-                        "[orientation=\"{}\"]",
-                        hash_orientation(&commitment.0.to_bytes())
-                    )?;
-                    write!(
-                        w,
-                        "[tooltip=\"Position: {}/{}/{}\\nCommitment: {}\"]",
-                        node.position().epoch(),
-                        node.position().block(),
-                        node.position().commitment(),
-                        commitment
-                    )
-                })
+                // Put the commitment in an invisible cluster to add padding around it
+                w.subgraph(
+                    |w| {
+                        id(w)?;
+                        write!(w, "padding")
+                    },
+                    true,
+                    |w| {
+                        w.line(|w| write!(w, "color=\"invis\""))?;
+                        w.line(|w| write!(w, "label=\"\""))?;
+                        w.line(|w| {
+                            // The node identifier
+                            id(w)?;
+                            write!(w, "[id=\"")?;
+                            id(w)?;
+                            write!(w, "\"]")?;
+                            write!(w, "[label=\"\"]")?;
+                            write!(w, "[shape=\"{}\"]", hash_shape(&commitment.0.to_bytes()))?;
+                            write!(w, "[style=\"filled,bold\"]")?;
+                            write!(w, "[penwidth={PEN_WIDTH}]")?;
+                            write!(w, "[width=\"1\"]")?;
+                            write!(w, "[height=\"1\"]")?;
+                            write!(
+                                w,
+                                "[fillcolor=\"{}\"]",
+                                hash_color(&commitment.0.to_bytes())
+                            )?;
+                            write!(
+                                w,
+                                "[gradientangle=\"{}\"]",
+                                hash_gradient_angle(&commitment.0.to_bytes())
+                            )?;
+                            write!(
+                                w,
+                                "[orientation=\"{}\"]",
+                                hash_orientation(&commitment.0.to_bytes())
+                            )?;
+                            write!(
+                                w,
+                                "[tooltip=\"Position: {}/{}/{}\\nCommitment: {}\"]",
+                                node.position().epoch(),
+                                node.position().block(),
+                                node.position().commitment(),
+                                commitment
+                            )
+                        })
+                    },
+                )
             })?;
         }
 
