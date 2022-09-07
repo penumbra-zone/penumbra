@@ -286,9 +286,10 @@ impl<Item: Focus> From<complete::Top<Item::Complete>> for Tier<Item> {
     }
 }
 
-impl<Item: Focus + GetPosition + Height + structure::Any> structure::Any for Tier<Item>
+impl<'tree, Item: Focus + GetPosition + Height + structure::Any<'tree>> structure::Any<'tree>
+    for Tier<Item>
 where
-    Item::Complete: structure::Any,
+    Item::Complete: structure::Any<'tree>,
 {
     fn kind(&self) -> Kind {
         Kind::Internal {
@@ -308,7 +309,7 @@ where
         }
     }
 
-    fn children(&self) -> Vec<structure::Node> {
+    fn children(&self) -> Vec<structure::Node<'_, 'tree>> {
         match &self.inner {
             Inner::Frontier(frontier) => frontier.children(),
             Inner::Complete(complete) => (complete as &dyn structure::Any).children(),

@@ -56,7 +56,7 @@ impl<Item> GetPosition for Leaf<Item> {
     }
 }
 
-impl<Item: Height + structure::Any> structure::Any for Leaf<Item> {
+impl<'tree, Item: Height + structure::Any<'tree>> structure::Any<'tree> for Leaf<Item> {
     fn kind(&self) -> Kind {
         self.0.kind()
     }
@@ -69,7 +69,7 @@ impl<Item: Height + structure::Any> structure::Any for Leaf<Item> {
         self.0.forgotten()
     }
 
-    fn children(&self) -> Vec<Node> {
+    fn children(&self) -> Vec<Node<'_, 'tree>> {
         self.0.children()
     }
 }

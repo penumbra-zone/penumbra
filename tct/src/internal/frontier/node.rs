@@ -359,9 +359,10 @@ where
     }
 }
 
-impl<Child: Focus + GetPosition + Height + structure::Any> structure::Any for Node<Child>
+impl<'tree, Child: Focus + GetPosition + Height + structure::Any<'tree>> structure::Any<'tree>
+    for Node<Child>
 where
-    Child::Complete: structure::Any,
+    Child::Complete: structure::Any<'tree>,
 {
     fn kind(&self) -> Kind {
         Kind::Internal {
@@ -377,7 +378,7 @@ where
         self.forgotten().iter().copied().max().unwrap_or_default()
     }
 
-    fn children(&self) -> Vec<structure::Node> {
+    fn children(&self) -> Vec<structure::Node<'_, 'tree>> {
         self.forgotten
             .iter()
             .copied()

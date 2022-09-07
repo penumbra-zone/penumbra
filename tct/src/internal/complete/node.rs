@@ -188,7 +188,7 @@ impl<Child> GetPosition for Node<Child> {
     }
 }
 
-impl<Item: Height + structure::Any> structure::Any for Node<Item> {
+impl<'tree, Item: Height + structure::Any<'tree>> structure::Any<'tree> for Node<Item> {
     fn kind(&self) -> Kind {
         Kind::Internal {
             height: <Self as Height>::Height::HEIGHT,
@@ -203,7 +203,7 @@ impl<Item: Height + structure::Any> structure::Any for Node<Item> {
         self.forgotten.iter().copied().max().unwrap_or_default()
     }
 
-    fn children(&self) -> Vec<structure::Node> {
+    fn children(&self) -> Vec<structure::Node<'_, 'tree>> {
         self.forgotten
             .iter()
             .copied()
