@@ -5,6 +5,7 @@ fn main() {
         "src/live/view/index.html",
         "src/live/view/index.js",
         "src/live/view/reset.css",
+        "src/live/view/style.css",
         "node_modules/d3/dist/d3.min.js",
         "node_modules/@hpcc-js/wasm/dist/index.min.js",
         "node_modules/@hpcc-js/wasm/dist/graphvizlib.wasm",

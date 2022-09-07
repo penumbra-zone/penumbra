@@ -23,8 +23,9 @@ flate_bytes!(pub static D3_JS_LICENSE from "node_modules/d3/LICENSE");
 flate_bytes!(pub static GRAPHVIZ_JS_LICENSE from "node_modules/@hpcc-js/wasm/LICENSE");
 flate_bytes!(pub static D3_GRAPHVIZ_JS_LICENSE from "node_modules/d3-graphviz/LICENSE");
 
-// Embed compressed reset stylesheet
+// Embed compressed stylesheets
 flate_bytes!(pub static RESET_CSS from "src/live/view/reset.css");
+flate_bytes!(pub static STYLE_CSS from "src/live/view/style.css");
 
 // Embed compressed source for main javascript
 flate_bytes!(pub static INDEX_JS from "src/live/view/index.js");

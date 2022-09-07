@@ -3,7 +3,7 @@ use std::io::{self, Write};
 use decaf377::FieldExt;
 
 use crate::{
-    structure::{Kind, Node, Place},
+    structure::{Any, Kind, Node, Place},
     Position, Tree,
 };
 
@@ -11,7 +11,7 @@ const FONT_SIZE: usize = 50;
 const BLOCK_FONT_SIZE: usize = 75;
 const EPOCH_FONT_SIZE: usize = 100;
 const FRONTIER_EDGE_COLOR: &str = "#E800FF:invis:#E800FF";
-const FRONTIER_TERMINUS_COLOR: &str = "#FBD1FF";
+const FRONTIER_TERMINUS_COLOR: &str = "#E800FF22";
 const PEN_WIDTH: usize = 4;
 
 fn hash_shape(bytes: &[u8]) -> &'static str {
@@ -104,6 +104,7 @@ impl<W: Write> DotWriter<W> {
         dot_writer.line(|w| write!(w, "fontsize=\"{FONT_SIZE}\""))?;
         dot_writer.line(|w| write!(w, "fontname=\"Courier New\""))?;
         dot_writer.line(|w| write!(w, "ordering=\"out\""))?;
+        dot_writer.line(|w| write!(w, "outputorder=\"edgesfirst\""))?;
         dot_writer.line(|w| write!(w, "penwidth={PEN_WIDTH}"))?;
         dot_writer.line(|w| write!(w, "ranksep=\"0.65\""))?;
         graph(&mut dot_writer)?;
@@ -114,6 +115,7 @@ impl<W: Write> DotWriter<W> {
     }
 
     fn nodes_and_edges(&mut self, node: Node) -> io::Result<()> {
+        let global_position = node.global_position();
         self.node(node)?; // The node itself
         self.node_commitment(node)?; // Its commitment below, if any
         let children = node.children();
@@ -122,6 +124,7 @@ impl<W: Write> DotWriter<W> {
             self.subtree(
                 child.height(),
                 child.position(),
+                global_position,
                 Some(child.place()),
                 child.children().is_empty(),
                 matches!(
@@ -138,7 +141,7 @@ impl<W: Write> DotWriter<W> {
                 let height = node.height() - 1;
                 let position =
                     (u64::from(node.position()) + (node.stride() * phantom_index) / 4).into();
-                self.subtree(height, position, None, true, false, |w| {
+                self.subtree(height, position, global_position, None, true, false, |w| {
                     w.phantom_node(height, position)
                 })?;
             }
@@ -227,10 +230,12 @@ impl<W: Write> DotWriter<W> {
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn subtree(
         &mut self,
         height: u8,
         position: Position,
+        global_position: Option<Position>,
         place: Option<Place>,
         terminal: bool,
         has_commitment: bool,
@@ -283,8 +288,24 @@ impl<W: Write> DotWriter<W> {
             } else if height == 8 || height == 16 {
                 if place == Some(Place::Frontier) && terminal {
                     (FRONTIER_TERMINUS_COLOR, FRONTIER_EDGE_COLOR)
+                } else if place == Some(Place::Frontier) {
+                    if let Some(global_position) = global_position {
+                        if (height == 16 && global_position.epoch() == position.epoch() + 1)
+                            || (height == 8 && global_position.block() == position.block() + 1)
+                        {
+                            ("none", FRONTIER_EDGE_COLOR)
+                        } else {
+                            ("none", "#00000022")
+                        }
+                    } else if (height == 16 && position.epoch() == u16::MAX)
+                        || (height == 8 && position.block() == u16::MAX)
+                    {
+                        ("none", FRONTIER_EDGE_COLOR)
+                    } else {
+                        ("none", "#00000022")
+                    }
                 } else {
-                    ("none", "grey")
+                    ("none", "#00000022")
                 }
             } else {
                 ("none", "none")
@@ -310,12 +331,15 @@ impl<W: Write> DotWriter<W> {
                     _ => FONT_SIZE,
                 }
             };
-            if place == Some(Place::Frontier) && terminal {
-                w.line(|w| write!(w, "peripheries=2"))?;
-                w.line(|w| write!(w, "penwidth={}", PEN_WIDTH * 2))?;
-            }
+            w.line(|w| write!(w, "penwidth={}", PEN_WIDTH * 2))?;
             if place == None {
                 w.line(|w| write!(w, "fontcolor=grey"))?;
+            }
+            match height {
+                16 => w.line(|w| write!(w, "class=\"epoch\""))?,
+                8 => w.line(|w| write!(w, "class=\"block\""))?,
+                0 => w.line(|w| write!(w, "class=\"leaf\""))?,
+                _ => {}
             }
             w.line(|w| write!(w, "style=\"filled,bold\""))?;
             w.line(|w| write!(w, "color=\"{color}\""))?;
@@ -405,6 +429,7 @@ impl<W: Write> DotWriter<W> {
                 w.line(|w| write!(w, "color=\"black\""))?;
                 w.line(|w| write!(w, "fillcolor=\"lightyellow\""))?;
                 w.line(|w| write!(w, "style=\"filled,bold\""))?;
+                w.line(|w| write!(w, "class=\"commitment\""))?;
                 w.line(|w| {
                     write!(
                         w,
@@ -555,9 +580,10 @@ impl<W: Write> DotWriter<W> {
             write!(w, "[dir=\"none\"]")?;
             write!(w, "[style=\"bold\"]")?;
             write!(w, "[penwidth={PEN_WIDTH}]")?;
-            let color = match child.place() {
-                Place::Frontier => FRONTIER_EDGE_COLOR.to_string(),
-                _ => "black".to_string(),
+            let color = match (child.place(), child.height()) {
+                (Place::Frontier, 0 | 8 | 16) => FRONTIER_EDGE_COLOR,
+                (Place::Frontier, _) if !child.children().is_empty() => FRONTIER_EDGE_COLOR,
+                _ => "black",
             };
             write!(w, "[color=\"{}\"]", color)
         })
@@ -825,12 +851,7 @@ fn node_label(_node: &Node) -> &'static str {
 fn node_width(node: &Node) -> &'static str {
     if let Some(hash) = node.cached_hash() {
         if hash.is_one() || hash.is_zero() {
-            return match node.height() {
-                17..=24 => "0.6",
-                9..=16 => "0.4",
-                0..=8 => "0.2",
-                _ => unreachable!(),
-            };
+            return "0.2";
         }
     }
 
