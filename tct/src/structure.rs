@@ -12,16 +12,16 @@ pub use crate::internal::hash::{Forgotten, Hash};
 
 /// Every kind of node in the tree implements [`Node`], and its methods collectively describe every
 /// salient fact about each node, dynamically rather than statically as in the rest of the crate.
-pub(crate) trait Any: GetHash + sealed::Sealed {
+pub(crate) trait Any<'tree>: GetHash + sealed::Sealed {
     /// The parent of this node, if any.
     ///
     /// This defaults to `None`, but is filled in by the [`Any`] implementation of [`Node`].
-    fn parent(&self) -> Option<Node> {
+    fn parent<'a>(&'a self) -> Option<Node<'a, 'tree>> {
         None
     }
 
     /// The children of this node.
-    fn children(&self) -> Vec<Node>;
+    fn children<'a>(&'a self) -> Vec<Node<'a, 'tree>>;
 
     /// The kind of the node: either a [`Kind::Internal`] with a height, or a [`Kind::Leaf`] with an
     /// optional [`Commitment`].
@@ -43,7 +43,7 @@ pub(crate) trait Any: GetHash + sealed::Sealed {
     fn global_position(&self) -> Option<Position>;
 }
 
-impl GetHash for &dyn Any {
+impl GetHash for &dyn Any<'_> {
     fn hash(&self) -> Hash {
         (**self).hash()
     }
@@ -57,7 +57,7 @@ impl GetHash for &dyn Any {
     }
 }
 
-impl<T: Any> Any for &T {
+impl<'tree, T: Any<'tree>> Any<'tree> for &T {
     fn index(&self) -> u64 {
         (**self).index()
     }
@@ -70,7 +70,7 @@ impl<T: Any> Any for &T {
         (**self).global_position()
     }
 
-    fn parent(&self) -> Option<Node> {
+    fn parent(&self) -> Option<Node<'_, 'tree>> {
         (**self).parent()
     }
 
@@ -78,7 +78,7 @@ impl<T: Any> Any for &T {
         (**self).forgotten()
     }
 
-    fn children(&self) -> Vec<Node> {
+    fn children(&self) -> Vec<Node<'_, 'tree>> {
         (**self).children()
     }
 }
@@ -130,14 +130,14 @@ impl Display for Place {
 
 /// An arbitrary node somewhere within a tree.
 #[derive(Copy, Clone)]
-pub struct Node<'a> {
+pub struct Node<'a, 'tree: 'a> {
     offset: u64,
     forgotten: Forgotten,
-    parent: Option<&'a Node<'a>>,
-    this: Insert<&'a (dyn Any + 'a)>,
+    parent: Option<&'a Node<'a, 'tree>>,
+    this: Insert<&'a (dyn Any<'tree> + 'a)>,
 }
 
-impl Debug for Node<'_> {
+impl Debug for Node<'_, '_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let name = format!("{}::{}", self.place(), self.kind());
         let mut s = f.debug_struct(&name);
@@ -165,7 +165,7 @@ impl Debug for Node<'_> {
     }
 }
 
-impl Display for Node<'_> {
+impl Display for Node<'_, '_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct(&format!("{}::{}", self.place(), self.kind()))
             .field("height", &self.height())
@@ -174,9 +174,9 @@ impl Display for Node<'_> {
     }
 }
 
-impl<'a> Node<'a> {
+impl<'a, 'tree: 'a> Node<'a, 'tree> {
     /// Make a root node.
-    pub(crate) fn root(this: &'a dyn Any) -> Self {
+    pub(crate) fn root(this: &'a dyn Any<'tree>) -> Self {
         Self {
             offset: 0,
             forgotten: this.forgotten(),
@@ -186,7 +186,7 @@ impl<'a> Node<'a> {
     }
 
     /// Make a new [`Child`] from a reference to something implementing [`Node`].
-    pub(crate) fn child(forgotten: Forgotten, child: Insert<&'a dyn Any>) -> Self {
+    pub(crate) fn child(forgotten: Forgotten, child: Insert<&'a dyn Any<'tree>>) -> Self {
         Node {
             offset: 0,
             forgotten,
@@ -196,13 +196,13 @@ impl<'a> Node<'a> {
     }
 
     /// The parent of this node, if any.
-    pub fn parent(&self) -> Option<Node> {
-        (self as &dyn Any).parent()
+    pub fn parent(&'a self) -> Option<Node<'a, 'tree>> {
+        (self as &dyn Any<'tree>).parent()
     }
 
     /// The children of this node.
-    pub fn children(&self) -> Vec<Node> {
-        (self as &dyn Any).children()
+    pub fn children(&'a self) -> Vec<Node<'a, 'tree>> {
+        (self as &dyn Any<'tree>).children()
     }
 
     /// The hash of this node.
@@ -285,7 +285,7 @@ impl<'a> Node<'a> {
     }
 }
 
-impl GetHash for Node<'_> {
+impl GetHash for Node<'_, '_> {
     fn hash(&self) -> Hash {
         self.this.hash()
     }
@@ -295,12 +295,12 @@ impl GetHash for Node<'_> {
     }
 }
 
-impl Any for Node<'_> {
+impl<'a, 'tree: 'a> Any<'tree> for Node<'a, 'tree> {
     fn index(&self) -> u64 {
         self.offset
     }
 
-    fn parent(&self) -> Option<Node> {
+    fn parent(&self) -> Option<Node<'a, 'tree>> {
         self.parent.copied()
     }
 
@@ -341,7 +341,7 @@ impl Any for Node<'_> {
         }
     }
 
-    fn children(&self) -> Vec<Node> {
+    fn children(&self) -> Vec<Node<'_, 'tree>> {
         if let Insert::Keep(child) = self.this {
             child
                 .children()
@@ -428,15 +428,15 @@ pub mod traverse {
     ///
     /// Note that because `(): Into<Recur>`, it is valid to pass a function which returns `()` if
     /// the traversal should always recur and never stop before reaching a leaf.
-    pub async fn traverse_async<'a, R: Send + Into<Recur>, Fut>(
-        node: Node<'a>,
+    pub async fn traverse_async<'a, 'tree: 'a, R: Send + Into<Recur>, Fut>(
+        node: Node<'a, 'tree>,
         with: &mut (impl FnMut(Node) -> Fut + Send),
     ) where
         Fut: Future<Output = R> + Send,
     {
         // We need this inner function to correctly specify the lifetimes for the recursive call
-        fn traverse_async_inner<'a, 'b: 'a, R: Send + Into<Recur>, F, Fut>(
-            node: Node<'a>,
+        fn traverse_async_inner<'a, 'tree: 'a, 'b: 'a, R: Send + Into<Recur>, F, Fut>(
+            node: Node<'a, 'tree>,
             with: &'b mut F,
         ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>>
         where
@@ -450,13 +450,13 @@ pub mod traverse {
                         children.reverse();
                     }
                     for child in children {
-                        traverse_async_inner::<'_, '_, R, F, Fut>(child, with).await;
+                        traverse_async_inner::<'_, '_, '_, R, F, Fut>(child, with).await;
                     }
                 }
             })
         }
 
-        traverse_async_inner::<'_, '_, R, _, Fut>(node, with).await
+        traverse_async_inner::<'_, '_, '_, R, _, Fut>(node, with).await
     }
 }
 
@@ -466,7 +466,7 @@ mod sealed {
     pub trait Sealed: Send + Sync {}
 
     impl<T: Sealed> Sealed for &T {}
-    impl Sealed for Node<'_> {}
+    impl Sealed for Node<'_, '_> {}
 
     impl Sealed for complete::Item {}
     impl<T: Sealed> Sealed for complete::Leaf<T> {}

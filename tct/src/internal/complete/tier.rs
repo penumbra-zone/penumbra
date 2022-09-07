@@ -63,7 +63,7 @@ impl<Item: GetHash + Height> GetPosition for Tier<Item> {
     }
 }
 
-impl<Item: Height + structure::Any> structure::Any for Tier<Item> {
+impl<'tree, Item: Height + structure::Any<'tree>> structure::Any<'tree> for Tier<Item> {
     fn kind(&self) -> Kind {
         self.inner.kind()
     }
@@ -76,7 +76,7 @@ impl<Item: Height + structure::Any> structure::Any for Tier<Item> {
         structure::Any::forgotten(&self.inner)
     }
 
-    fn children(&self) -> Vec<Node> {
+    fn children(&self) -> Vec<Node<'_, 'tree>> {
         (&self.inner as &dyn structure::Any).children()
     }
 }
