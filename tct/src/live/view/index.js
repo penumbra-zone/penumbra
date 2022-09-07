@@ -20,9 +20,25 @@ const graphviz = d3.select("#graph").graphviz()
     .growEnteringEdges(false) // d3-graphviz bug: if enabled, this causes an error
     .tweenShapes(false) // Increases performance
     .logEvents(false) // Disabling logging increases performance
+    // Set the SVG to fill the window
+    .width(window.innerWidth)
+    .height(window.innerHeight)
+     // Start the event loop once the graphviz stuff is loaded
     .on("initEnd", run);
 
 function run() {
+    // When the window is resized, resize the graphviz SVG also
+    window.addEventListener("resize", () => {
+        // Immediately resize it
+        d3.select("#graph").select("svg")
+            .width(window.innerWidth)
+            .height(window.innerHeight);
+        // Resize it in all future renders
+        graphviz
+            .width(window.innerWidth)
+            .height(window.innerHeight);
+    });
+
     // Initial state
     let changed = false;
     let renderedRecently = false;
