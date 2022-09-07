@@ -73,7 +73,16 @@ function run() {
             }
         }).catch(error => {
             console.log(error);
-            setTimeout(() => poll(long), liveViewSettings.pollRetry);
+            setTimeout(retry, liveViewSettings.pollRetry);
+        });
+    }
+
+    // Retry polling until we get a response, then reload the page
+    function retry() {
+        d3.text(window.location.href).then(() => {
+            window.location.reload();
+        }).catch(() => {
+            setTimeout(retry, liveViewSettings.pollRetry);
         });
     }
 
@@ -129,7 +138,7 @@ function run() {
     // count or position, we trigger a reload of the page, because the page state doesn't match the
     // tree state, so rather than ensuring we set up all the mutable state correctly again, the
     // easiest thing to do is start fresh.
-    const changes = new EventSource(window.location.href + "/changes");
+    let changes = new EventSource(window.location.href + "/changes");
     changes.addEventListener("changed", (event) => {
         // When a change occurs, check to see if *nothing has changed* about the position and
         // forgotten count: only then, do a short poll to get the latest dot.
