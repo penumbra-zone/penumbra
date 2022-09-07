@@ -1,9 +1,9 @@
-let liveViewSettings = {
+const liveViewSettings = {
     animationDuration: 250,
     animationEasing: d3.easeExpInOut,
     renderInterval: 500,
     pollRetry: 1000,
-    pollDelay: 0,
+    longPollDelay: 0,
     initialPrecision: 1,
     precisionDecreaseThreshold: 100,
     precisionDecreaseFactor: 1.5,
@@ -15,7 +15,7 @@ function transition() {
         .duration(liveViewSettings.animationDuration);
 }
 
-let graphviz = d3.select("#graph").graphviz()
+const graphviz = d3.select("#graph").graphviz()
     .transition(transition)
     .growEnteringEdges(false) // d3-graphviz bug: if enabled, this causes an error
     .tweenShapes(false) // Increases performance
@@ -28,7 +28,6 @@ function run() {
     let renderedRecently = false;
     let precision = liveViewSettings.initialPrecision;
     let latestDot = 'digraph {}';
-    let next = false;
     let forgotten = 0;
     let position = {
         epoch: 0,
@@ -37,23 +36,27 @@ function run() {
     };
 
     // Long-poll loop to get the latest dot render of the tree
-    function poll() {
-        let query_string = "?epoch=" + position.epoch + "&block=" + position.block + "&commitment=" + position.commitment + "&forgotten=" + forgotten + "&next=" + next;
+    function poll(long) {
+        let query_string = "";
+        if (long) {
+            query_string = "?epoch=" + position.epoch + "&block=" + position.block + "&commitment=" + position.commitment + "&forgotten=" + forgotten + "&next=" + long;
+        }
         let url = window.location.href + "/dot" + query_string;
 
         d3.json(url).then(response => {
             latestDot = response.graph;
             forgotten = response.forgotten;
             position = response.position;
-            next = true;
             changed = true;
             // Start a new render task, if one isn't already in progress
             setTimeout(render, 0);
             // Schedule the polling to recur
-            setTimeout(poll, liveViewSettings.pollDelay);
+            if (long) {
+                setTimeout(() => poll(long), liveViewSettings.longPollDelay);
+            }
         }).catch(error => {
             console.log(error);
-            setTimeout(poll, liveViewSettings.pollRetry);
+            setTimeout(() => poll(long), liveViewSettings.pollRetry);
         });
     }
 
@@ -88,5 +91,34 @@ function run() {
         }
     }
 
-    poll();
+    // Do one initial short-poll to get the current state of the graph
+    poll(true);
+
+    // Start the long-poll loop over non-interior changes
+    poll(false);
+
+    // Interior mutation caused by evaluating the lazy frontier hashes won't cause the position or
+    // forgotten index to advance, so it won't be caught by the long-poll loop: we use the SSE
+    // endpoint to monitor for these changes, and trigger an immediate short poll when they occur
+    const changes = new EventSource(window.location.href + "/changes");
+    changes.addEventListener("changed", (event) => {
+        // When a change occurs, check to see if *nothing has changed* about the position and
+        // forgotten count: only then, do a short poll to get the latest dot.
+        let response = JSON.parse(event.data);
+        // Figure out whether the event was an interior mutation, and only do a short-poll if it was
+        // an interior mutation (otherwise we'd be wasting our time because the long poll will get
+        // to that change)
+        if (response.position === null && position != null) {
+            return;
+        }
+        let interior =
+            response.forgotten === forgotten
+            && ((response.position === null && position === null)
+                || (response.position.epoch === position.epoch
+                    && response.position.block === position.block
+                    && response.position.commitment === position.commitment))
+        if (interior) {
+            poll(false);
+        }
+    });
 }

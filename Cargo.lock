@@ -3290,6 +3290,7 @@ dependencies = [
  "static_assertions",
  "thiserror",
  "tokio",
+ "tokio-stream",
  "tokio-util 0.7.4",
  "tower-http",
  "tracing",
