@@ -32,8 +32,8 @@ function run() {
     window.addEventListener("resize", () => {
         // Immediately resize it
         d3.select("#graph > svg")
-            .width(window.innerWidth)
-            .height(window.innerHeight);
+            .attr("width", window.innerWidth)
+            .attr("height", window.innerHeight);
         // Resize it in all future renders
         graphviz
             .width(window.innerWidth)
