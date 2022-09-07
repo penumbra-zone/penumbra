@@ -87,9 +87,29 @@ fn styles() -> MethodRouter {
 
 /// The graphviz DOT endpoint, which is accessed by the index page's javascript.
 fn render_dot(mut tree: watch::Receiver<Tree>) -> MethodRouter {
-    get(move |earliest: Query<Earliest>| async move {
+    get(move |Query(earliest): Query<Earliest>| async move {
         // Wait for the tree to reach the requested position and forgotten index
-        while !earliest.earlier_than(&tree.borrow()) {
+        loop {
+            {
+                // Extra scope necessary to satisfy borrow checker
+                let current = tree.borrow();
+                if earliest.not_too_late_for(&current) {
+                    tracing::debug!(
+                        forgotten = ?current.forgotten(),
+                        position = ?current.position(),
+                        earliest = ?earliest,
+                        "delivering desired tree version"
+                    );
+                    break;
+                } else {
+                    tracing::debug!(
+                        forgotten = ?current.forgotten(),
+                        position = ?current.position(),
+                        earliest = ?earliest,
+                        "waiting for later tree version ..."
+                    );
+                }
+            }
             tree.changed().await.unwrap();
         }
 
