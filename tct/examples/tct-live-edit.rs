@@ -40,10 +40,40 @@ async fn main() {
         .merge(key_control())
         .layer(TraceLayer::new_for_http());
 
-    axum::Server::bind(&([0, 0, 0, 0], args.port).into())
+    let address = ([0, 0, 0, 0], args.port).into();
+    help_text(&address);
+
+    axum::Server::bind(&address)
         .serve(app.into_make_service())
         .await
         .unwrap();
+}
+
+fn help_text(address: &std::net::SocketAddr) {
+    println!("Serving at http://{address}/view ...");
+    println!();
+    println!("Keyboard commands:");
+    println!();
+    println!("  - 'n': reset the tree to new");
+    println!("  - 'c': insert a random commitment without remembering it");
+    println!("  - 'C': insert a random commitment and remember it");
+    println!("  - 'b': end the current block");
+    println!("  - 'B': insert a random block root");
+    println!("  - 'e': end the current epoch");
+    println!("  - 'E': insert a random epoch root");
+    println!("  - 'f': forget a random commitment");
+    println!("  - 'r': evaluate the root of the tree");
+    println!();
+    println!("Prefix a command key with a number to repeat it, vim-style.");
+    println!("For example, '3f' will forget three commitments randomly.");
+    println!();
+    println!("Mouse over an epoch, block, commitment, or hash to see more info.");
+    println!();
+    println!("Scroll and drag to zoom and pan.");
+    println!();
+    println!("Press Ctrl+C in this terminal to stop the server.");
+    println!();
+    println!("Have fun!");
 }
 
 // Serve the static file "key-control.js", which reads keystrokes and translates them into POST
