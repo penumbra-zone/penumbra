@@ -15,8 +15,8 @@ const FRONTIER_TERMINUS_COLOR: &str = "#FBD1FF";
 const PEN_WIDTH: usize = 4;
 
 fn hash_shape(bytes: &[u8]) -> &'static str {
-    match bytes[3] % 16 {
-        0 => "circle",
+    match bytes[3] % 14 {
+        0 => "square",
         1 => "egg",
         2 => "triangle",
         3 => "diamond",
@@ -30,9 +30,7 @@ fn hash_shape(bytes: &[u8]) -> &'static str {
         11 => "invtriangle",
         12 => "invtrapezium",
         13 => "invhouse",
-        14 => "square",
-        15 => "oval",
-        _ => unreachable!("x % 16 < 16"),
+        _ => unreachable!("x % 14 < 14"),
     }
 }
 
@@ -113,6 +111,7 @@ impl<W: Write> DotWriter<W> {
         dot_writer.line(|w| write!(w, "ordering=\"out\""))?;
         dot_writer.line(|w| write!(w, "outputorder=\"edgesfirst\""))?;
         dot_writer.line(|w| write!(w, "penwidth={PEN_WIDTH}"))?;
+        dot_writer.line(|w| write!(w, "ranksep=\"0.65\""))?;
         graph(&mut dot_writer)?;
         dot_writer.indent -= 1;
         write!(dot_writer.writer, "}}")?;
@@ -246,7 +245,7 @@ impl<W: Write> DotWriter<W> {
         // The node is the focus if it is the terminus of the frontier
         let focus = terminal && place == Some(Place::Frontier) && height == 0;
 
-        let subtree_id = self.subtree_name(height, position);
+        let subtree_id = self.subtree_name(height, position, place);
         let id = |w: &mut W| {
             if focus {
                 write!(w, "FOCUS")
@@ -315,9 +314,11 @@ impl<W: Write> DotWriter<W> {
             };
             if focus {
                 w.line(|w| write!(w, "peripheries=2"))?;
+                w.line(|w| write!(w, "penwidth={}", PEN_WIDTH * 2))?;
             }
             w.line(|w| write!(w, "style=\"filled,bold\""))?;
             w.line(|w| write!(w, "color=\"{color}\""))?;
+            w.line(|w| write!(w, "margin=20"))?;
             w.line(|w| write!(w, "tooltip=\"{tooltip}\""))?;
             w.line(|w| write!(w, "fontsize=\"{font_size}\""))?;
             w.line(|w| write!(w, "fillcolor=\"{fill_color}\""))
@@ -325,7 +326,7 @@ impl<W: Write> DotWriter<W> {
     }
 
     fn node(&mut self, node: Node) -> io::Result<()> {
-        let id = self.node_name(node.height(), node.position());
+        let id = self.node_name(node.height(), node.position(), Some(node.place()));
 
         self.line(|w| {
             // The node identifier
@@ -359,12 +360,15 @@ impl<W: Write> DotWriter<W> {
                     .map(|h| format!("{:?}", h))
                     .unwrap_or_else(|| "?".to_string())
             )?;
+            if node.place() == Place::Frontier {
+                write!(w, "[margin=\"0.05\"]")?;
+            }
             write!(w, "[orientation=\"{}\"]", node_orientation(&node))
         })
     }
 
     fn phantom_node(&mut self, height: u8, position: Position) -> io::Result<()> {
-        let id = self.node_name(height, position);
+        let id = self.node_name(height, position, None);
 
         self.line(|w| {
             // The node identifier
@@ -472,8 +476,10 @@ impl<W: Write> DotWriter<W> {
                     self.sibling_sibling_edge(
                         left.height(),
                         left.position(),
+                        Some(left.place()),
                         child.height(),
                         child.position(),
+                        Some(child.place()),
                     )?;
                 }
                 left = Some(child);
@@ -481,6 +487,8 @@ impl<W: Write> DotWriter<W> {
             self.parent_child_edge(node, child)?;
         }
         if !children.is_empty() {
+            let mut left_place = Some(children.last().unwrap().place());
+
             for phantom_index in children.len() as u64..4 {
                 let left_position: Position =
                     (u64::from(node.position()) + (node.stride() * phantom_index) / 4).into();
@@ -494,10 +502,13 @@ impl<W: Write> DotWriter<W> {
                         self.sibling_sibling_edge(
                             child_height,
                             left_position,
+                            left_place,
                             child_height,
                             right_position,
+                            None,
                         )?;
                     }
+                    left_place = None;
                 }
                 self.parent_phantom_edge(node, left_position)?;
             }
@@ -506,8 +517,8 @@ impl<W: Write> DotWriter<W> {
     }
 
     fn parent_child_edge(&mut self, parent: Node, child: Node) -> io::Result<()> {
-        let parent_id = self.node_name(parent.height(), parent.position());
-        let child_id = self.node_name(child.height(), child.position());
+        let parent_id = self.node_name(parent.height(), parent.position(), Some(parent.place()));
+        let child_id = self.node_name(child.height(), child.position(), Some(child.place()));
         let edge_id = self.edge_name(parent_id, child_id);
 
         self.line(|w| {
@@ -549,8 +560,8 @@ impl<W: Write> DotWriter<W> {
     }
 
     fn parent_phantom_edge(&mut self, parent: Node, child_position: Position) -> io::Result<()> {
-        let parent_id = self.node_name(parent.height(), parent.position());
-        let child_id = self.node_name(parent.height() - 1, child_position);
+        let parent_id = self.node_name(parent.height(), parent.position(), Some(parent.place()));
+        let child_id = self.node_name(parent.height() - 1, child_position, None);
         let edge_id = self.edge_name(parent_id, child_id);
 
         self.line(|w| {
@@ -575,11 +586,13 @@ impl<W: Write> DotWriter<W> {
         &mut self,
         left_height: u8,
         left_position: Position,
+        left_place: Option<Place>,
         right_height: u8,
         right_position: Position,
+        right_place: Option<Place>,
     ) -> io::Result<()> {
-        let left_id = self.node_name(left_height, left_position);
-        let right_id = self.node_name(right_height, right_position);
+        let left_id = self.node_name(left_height, left_position, left_place);
+        let right_id = self.node_name(right_height, right_position, right_place);
         let edge_id = self.edge_name(left_id, right_id);
 
         self.line(|w| {
@@ -626,7 +639,7 @@ impl<W: Write> DotWriter<W> {
             commitment: Some(_),
         } = node.kind()
         {
-            let parent_id = self.node_name(node.height(), node.position());
+            let parent_id = self.node_name(node.height(), node.position(), Some(node.place()));
             let child_id = self.commitment_name(node.position());
             let edge_id = self.edge_name(parent_id, child_id);
 
@@ -656,27 +669,41 @@ impl<W: Write> DotWriter<W> {
         &self,
         height: u8,
         position: Position,
+        place: Option<Place>,
     ) -> impl Fn(&mut W) -> io::Result<()> + Copy {
+        // Note: using a special node ID for frontier nodes that only references the height means
+        // that animations between sequential graphs will look nicer, because it will look like the
+        // frontier is moving
+
         let pretty = self.pretty;
         move |w| {
+            #[allow(clippy::collapsible_else_if)]
             if pretty {
-                write!(
-                    w,
-                    "NODE_height_{}_epoch_{}_block_{}_commitment_{}",
-                    height,
-                    position.epoch(),
-                    position.block(),
-                    position.commitment()
-                )
+                if place == Some(Place::Frontier) && height != 0 {
+                    write!(w, "NODE_FRONTIER_height_{}", height)
+                } else {
+                    write!(
+                        w,
+                        "NODE_height_{}_epoch_{}_block_{}_commitment_{}",
+                        height,
+                        position.epoch(),
+                        position.block(),
+                        position.commitment()
+                    )
+                }
             } else {
-                write!(
-                    w,
-                    "N_{}_{}_{}_{}",
-                    height,
-                    position.epoch(),
-                    position.block(),
-                    position.commitment()
-                )
+                if place == Some(Place::Frontier) && height != 0 {
+                    write!(w, "N_F_{}", height)
+                } else {
+                    write!(
+                        w,
+                        "N_{}_{}_{}_{}",
+                        height,
+                        position.epoch(),
+                        position.block(),
+                        position.commitment()
+                    )
+                }
             }
         }
     }
@@ -730,27 +757,37 @@ impl<W: Write> DotWriter<W> {
         &self,
         height: u8,
         position: Position,
+        place: Option<Place>,
     ) -> impl Fn(&mut W) -> io::Result<()> + Copy {
         let pretty = self.pretty;
         move |w| {
+            #[allow(clippy::collapsible_else_if)]
             if pretty {
-                write!(
-                    w,
-                    "SUBTREE_height_{}_epoch_{}_block_{}_commitment_{}",
-                    height,
-                    position.epoch(),
-                    position.block(),
-                    position.commitment()
-                )
+                if place == Some(Place::Frontier) {
+                    write!(w, "SUBTREE_FRONTIER_height_{}", height)
+                } else {
+                    write!(
+                        w,
+                        "SUBTREE_height_{}_epoch_{}_block_{}_commitment_{}",
+                        height,
+                        position.epoch(),
+                        position.block(),
+                        position.commitment()
+                    )
+                }
             } else {
-                write!(
-                    w,
-                    "T_{}_{}_{}_{}",
-                    height,
-                    position.epoch(),
-                    position.block(),
-                    position.commitment()
-                )
+                if place == Some(Place::Frontier) {
+                    write!(w, "T_F_{}", height)
+                } else {
+                    write!(
+                        w,
+                        "T_{}_{}_{}_{}",
+                        height,
+                        position.epoch(),
+                        position.block(),
+                        position.commitment()
+                    )
+                }
             }
         }
     }
