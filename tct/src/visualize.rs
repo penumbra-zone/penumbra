@@ -15,22 +15,17 @@ const FRONTIER_TERMINUS_COLOR: &str = "#FBD1FF";
 const PEN_WIDTH: usize = 4;
 
 fn hash_shape(bytes: &[u8]) -> &'static str {
-    match bytes[3] % 14 {
+    match bytes[3] % 9 {
         0 => "square",
-        1 => "egg",
+        1 => "septagon",
         2 => "triangle",
-        3 => "diamond",
+        3 => "octagon",
         4 => "trapezium",
         5 => "parallelogram",
         6 => "house",
         7 => "pentagon",
         8 => "hexagon",
-        9 => "septagon",
-        10 => "octagon",
-        11 => "invtriangle",
-        12 => "invtrapezium",
-        13 => "invhouse",
-        _ => unreachable!("x % 14 < 14"),
+        _ => unreachable!("x % 9 < 9"),
     }
 }
 
