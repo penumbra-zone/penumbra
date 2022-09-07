@@ -2,12 +2,14 @@ use axum::{
     extract::{OriginalUri, Path, Query},
     headers::ContentType,
     http::StatusCode,
+    response::{sse, Sse},
     routing::{get, MethodRouter},
     Json, Router, TypedHeader,
 };
 
 use serde_json::json;
-use tokio::sync::watch;
+use tokio::sync::{mpsc, watch};
+use tokio_stream::wrappers::ReceiverStream;
 
 use crate::{Forgotten, Position, Tree};
 
@@ -27,6 +29,7 @@ pub fn view(tree: watch::Receiver<Tree>) -> Router {
         .route("/scripts/:script", scripts())
         .route("/licenses/:script/LICENSE", licenses())
         .route("/styles/:style", styles())
+        .route("/changes", changes(tree.clone()))
         .route("/dot", render_dot(tree))
 }
 
@@ -85,9 +88,58 @@ fn styles() -> MethodRouter {
     })
 }
 
+/// SSE endpoint that sends an event with the tree's position and forgotten count every time the
+/// tree is changed.
+///
+/// The returned data will stay the same if the tree experiences interior mutation.
+fn changes(tree: watch::Receiver<Tree>) -> MethodRouter {
+    get(move || async move {
+        // Clone the watch receiver so we don't steal other users' updates
+        let mut tree = tree.clone();
+
+        let (tx, rx) = mpsc::channel(1);
+
+        // Forward all changes to the tree as events
+        tokio::spawn(async move {
+            loop {
+                if (tree.changed().await).is_err() {
+                    break;
+                }
+
+                let event = {
+                    let tree = tree.borrow();
+                    let forgotten = tree.forgotten();
+                    let position = if let Some(position) = tree.position() {
+                        json!({
+                            "epoch": position.epoch(),
+                            "block": position.block(),
+                            "commitment": position.commitment(),
+                        })
+                    } else {
+                        json!(null)
+                    };
+
+                    sse::Event::default()
+                        .event("changed")
+                        .json_data(json!({ "position": position, "forgotten": forgotten }))
+                };
+
+                if (tx.send(event).await).is_err() {
+                    break;
+                }
+            }
+        });
+
+        Sse::new(ReceiverStream::new(rx))
+    })
+}
+
 /// The graphviz DOT endpoint, which is accessed by the index page's javascript.
-fn render_dot(mut tree: watch::Receiver<Tree>) -> MethodRouter {
+fn render_dot(tree: watch::Receiver<Tree>) -> MethodRouter {
     get(move |Query(earliest): Query<Earliest>| async move {
+        // Clone the watch receiver so we don't steal other users' updates
+        let mut tree = tree.clone();
+
         // Wait for the tree to reach the requested position and forgotten index
         loop {
             {
