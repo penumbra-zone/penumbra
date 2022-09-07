@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use axum::{
     extract::Path,
     http::StatusCode,
@@ -8,58 +10,130 @@ use axum::{
 use serde_json::json;
 use tokio::sync::watch;
 
-use crate::{Commitment, Tree};
+use crate::{
+    structure::{self, Hash},
+    Commitment, Tree,
+};
 
 /// An [`axum`] [`Router`] that serves a `GET` endpoint mirroring the immutable methods of [`Tree`].
-pub fn query(tree: watch::Receiver<Tree>) -> Router {
-    Router::new()
-        .route("/root", root(tree.clone()))
-        .route("/current-block-root", current_block_root(tree.clone()))
-        .route("/current-epoch-root", current_epoch_root(tree.clone()))
-        .route("/position", position(tree.clone()))
-        .route("/forgotten", forgotten(tree.clone()))
-        .route("/witness/:commitment", witness(tree.clone()))
-        .route("/position-of/:commitment", position_of(tree.clone()))
-        .route("/witnessed-count", witnessed_count(tree.clone()))
-        .route("/is-empty", is_empty(tree.clone()))
-        .route("/is-full", is_full(tree.clone()))
-        .route("/commitments", commitments(tree.clone()))
-        .route("/commitments-ordered", commitments_ordered(tree))
+///
+/// The returned [`watch::Receiver`] issues a change notification whenever interior mutation causes
+/// the tree's interior hashes to be evaluated when they previously were not.
+pub fn query(tree: watch::Receiver<Tree>) -> (Router, watch::Receiver<()>) {
+    let (mark_change, changed) = watch::channel(());
+    let mark_change = Arc::new(mark_change);
+
+    (
+        Router::new()
+            .route("/root", root(tree.clone(), mark_change.clone()))
+            .route(
+                "/current-block-root",
+                current_block_root(tree.clone(), mark_change.clone()),
+            )
+            .route(
+                "/current-epoch-root",
+                current_epoch_root(tree.clone(), mark_change.clone()),
+            )
+            .route("/position", position(tree.clone(), mark_change.clone()))
+            .route("/forgotten", forgotten(tree.clone(), mark_change.clone()))
+            .route(
+                "/witness/:commitment",
+                witness(tree.clone(), mark_change.clone()),
+            )
+            .route(
+                "/position-of/:commitment",
+                position_of(tree.clone(), mark_change.clone()),
+            )
+            .route(
+                "/witnessed-count",
+                witnessed_count(tree.clone(), mark_change.clone()),
+            )
+            .route("/is-empty", is_empty(tree.clone(), mark_change.clone()))
+            .route("/is-full", is_full(tree.clone(), mark_change.clone()))
+            .route(
+                "/commitments",
+                commitments(tree.clone(), mark_change.clone()),
+            )
+            .route(
+                "/commitments-ordered",
+                commitments_ordered(tree, mark_change),
+            ),
+        changed,
+    )
 }
 
-fn root(tree: watch::Receiver<Tree>) -> MethodRouter {
-    get(|| async move { Json(tree.borrow().root().to_string()) })
+/// Perform the action on the tree, sending a notification to the watch sender if the tree's
+/// frontier has changed
+fn marking_change<R>(
+    mark_change: Arc<watch::Sender<()>>,
+    tree: watch::Receiver<Tree>,
+    f: impl Fn(&Tree) -> R,
+) -> R {
+    let tree = tree.borrow();
+    let before = frontier_hashes(&tree);
+    let result = f(&tree);
+    let after = frontier_hashes(&tree);
+    if before != after {
+        let _ = mark_change.send(());
+    }
+    result
 }
 
-fn current_block_root(tree: watch::Receiver<Tree>) -> MethodRouter {
-    get(|| async move { Json(tree.borrow().current_block_root().to_string()) })
+/// Compute all the frontier hashes of the tree, without forcing them to be evaluated
+fn frontier_hashes(tree: &Tree) -> Vec<Option<Hash>> {
+    fn inner(frontier: &mut Vec<Option<Hash>>, node: structure::Node) {
+        frontier.push(node.cached_hash());
+        if let Some(rightmost) = node.children().last() {
+            inner(frontier, *rightmost);
+        }
+    }
+
+    let mut frontier = Vec::new();
+    inner(&mut frontier, tree.structure());
+    frontier
 }
 
-fn current_epoch_root(tree: watch::Receiver<Tree>) -> MethodRouter {
-    get(|| async move { Json(tree.borrow().current_epoch_root().to_string()) })
+fn root(tree: watch::Receiver<Tree>, mark_change: Arc<watch::Sender<()>>) -> MethodRouter {
+    get(|| async move { Json(marking_change(mark_change, tree, Tree::root)) })
 }
 
-fn position(tree: watch::Receiver<Tree>) -> MethodRouter {
+fn current_block_root(
+    tree: watch::Receiver<Tree>,
+    mark_change: Arc<watch::Sender<()>>,
+) -> MethodRouter {
+    get(|| async move { Json(marking_change(mark_change, tree, Tree::current_block_root)) })
+}
+
+fn current_epoch_root(
+    tree: watch::Receiver<Tree>,
+    mark_change: Arc<watch::Sender<()>>,
+) -> MethodRouter {
+    get(|| async move { Json(marking_change(mark_change, tree, Tree::current_epoch_root)) })
+}
+
+fn position(tree: watch::Receiver<Tree>, mark_change: Arc<watch::Sender<()>>) -> MethodRouter {
     get(|| async move {
-        Json(if let Some(position) = tree.borrow().position() {
-            json!({
-                "epoch": position.epoch(),
-                "block": position.block(),
-                "commitment": position.commitment(),
-            })
-        } else {
-            json!(null)
-        })
+        Json(
+            if let Some(position) = marking_change(mark_change, tree, Tree::position) {
+                json!({
+                    "epoch": position.epoch(),
+                    "block": position.block(),
+                    "commitment": position.commitment(),
+                })
+            } else {
+                json!(null)
+            },
+        )
     })
 }
 
-fn forgotten(tree: watch::Receiver<Tree>) -> MethodRouter {
-    get(|| async move { Json(u64::from(tree.borrow().forgotten())) })
+fn forgotten(tree: watch::Receiver<Tree>, mark_change: Arc<watch::Sender<()>>) -> MethodRouter {
+    get(|| async move { Json(marking_change(mark_change, tree, Tree::forgotten)) })
 }
 
-fn witness(tree: watch::Receiver<Tree>) -> MethodRouter {
+fn witness(tree: watch::Receiver<Tree>, mark_change: Arc<watch::Sender<()>>) -> MethodRouter {
     get(|Path(commitment): Path<Commitment>| async move {
-        if let Some(witness) = tree.borrow().witness(commitment) {
+        if let Some(witness) = marking_change(mark_change, tree, |tree| tree.witness(commitment)) {
             Ok(Json(json!({
                 "commitment": witness.commitment(),
                 "position": {
@@ -75,9 +149,11 @@ fn witness(tree: watch::Receiver<Tree>) -> MethodRouter {
     })
 }
 
-fn position_of(tree: watch::Receiver<Tree>) -> MethodRouter {
+fn position_of(tree: watch::Receiver<Tree>, mark_change: Arc<watch::Sender<()>>) -> MethodRouter {
     get(|Path(commitment): Path<Commitment>| async move {
-        if let Some(position) = tree.borrow().position_of(commitment) {
+        if let Some(position) =
+            marking_change(mark_change, tree, |tree| tree.position_of(commitment))
+        {
             Ok(Json(json!({
                 "epoch": position.epoch(),
                 "block": position.block(),
@@ -89,23 +165,29 @@ fn position_of(tree: watch::Receiver<Tree>) -> MethodRouter {
     })
 }
 
-fn witnessed_count(tree: watch::Receiver<Tree>) -> MethodRouter {
-    get(|| async move { Json(tree.borrow().witnessed_count()) })
+fn witnessed_count(
+    tree: watch::Receiver<Tree>,
+    mark_change: Arc<watch::Sender<()>>,
+) -> MethodRouter {
+    get(|| async move { Json(marking_change(mark_change, tree, Tree::witnessed_count)) })
 }
 
-fn is_empty(tree: watch::Receiver<Tree>) -> MethodRouter {
-    get(|| async move { Json(tree.borrow().is_empty()) })
+fn is_empty(tree: watch::Receiver<Tree>, mark_change: Arc<watch::Sender<()>>) -> MethodRouter {
+    get(|| async move { Json(marking_change(mark_change, tree, Tree::is_empty)) })
 }
 
-fn is_full(tree: watch::Receiver<Tree>) -> MethodRouter {
-    get(|| async move { Json(tree.borrow().position().is_none()) })
-}
-
-fn commitments(tree: watch::Receiver<Tree>) -> MethodRouter {
+fn is_full(tree: watch::Receiver<Tree>, mark_change: Arc<watch::Sender<()>>) -> MethodRouter {
     get(|| async move {
-        Json(
-            tree.borrow()
-                .commitments()
+        Json(marking_change(mark_change, tree, |tree| {
+            tree.position().is_none()
+        }))
+    })
+}
+
+fn commitments(tree: watch::Receiver<Tree>, mark_change: Arc<watch::Sender<()>>) -> MethodRouter {
+    get(|| async move {
+        Json(marking_change(mark_change, tree, |tree| {
+            tree.commitments()
                 .map(|(commitment, position)| {
                     json!({
                         "commitment": commitment,
@@ -115,16 +197,18 @@ fn commitments(tree: watch::Receiver<Tree>) -> MethodRouter {
                             "commitment": position.commitment()
                         } })
                 })
-                .collect::<Vec<_>>(),
-        )
+                .collect::<Vec<_>>()
+        }))
     })
 }
 
-fn commitments_ordered(tree: watch::Receiver<Tree>) -> MethodRouter {
+fn commitments_ordered(
+    tree: watch::Receiver<Tree>,
+    mark_change: Arc<watch::Sender<()>>,
+) -> MethodRouter {
     get(|| async move {
-        Json(
-            tree.borrow()
-                .commitments_ordered()
+        Json(marking_change(mark_change, tree, |tree| {
+            tree.commitments_ordered()
                 .map(|(position, commitment)| {
                     json!({
                         "commitment": commitment,
@@ -134,7 +218,7 @@ fn commitments_ordered(tree: watch::Receiver<Tree>) -> MethodRouter {
                             "commitment": position.commitment()
                         } })
                 })
-                .collect::<Vec<_>>(),
-        )
+                .collect::<Vec<_>>()
+        }))
     })
 }
