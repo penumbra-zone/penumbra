@@ -1,11 +1,11 @@
 const liveViewSettings = {
-    animationDuration: 250,
+    animationDuration: 200,
     animationEasing: d3.easeExpInOut,
-    renderInterval: 500,
+    renderInterval: 450,
     pollRetry: 1000,
     longPollDelay: 0,
     initialPrecision: 1,
-    precisionDecreaseThreshold: 100,
+    precisionDecreaseThreshold: 200,
     precisionDecreaseFactor: 1.5,
 };
 
