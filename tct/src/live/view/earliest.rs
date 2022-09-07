@@ -4,69 +4,74 @@ use super::*;
 
 /// Query parameter used in the [`view`] endpoint to specify the earliest version of a tree to
 /// return (otherwise the query long-polls until it is available).
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize, Eq, PartialEq)]
 pub struct Earliest {
-    /// Never return an earlier position than this, or if `next` is `true` never return an earlier
-    /// position than this position's successor.
-    #[serde(flatten, default)]
-    earliest_position: Option<EarliestPosition>,
-    /// Never return an earlier forgotten index than this, or if `next` is `true` never return an earlier
-    /// forgotten index than this index's successor.
     #[serde(default)]
-    earliest_forgotten: Forgotten,
+    epoch: u16,
+    #[serde(default)]
+    block: u16,
+    #[serde(default)]
+    commitment: u16,
+    #[serde(default)]
+    forgotten: Forgotten,
     /// If `true`, force the next thing to be returned to be greater than either the position or
     /// forgotten index specified (it doesn't matter which).
     #[serde(default)]
     next: bool,
 }
 
-#[derive(Debug, Clone, Copy, Deserialize, Default)]
-struct EarliestPosition {
-    epoch: u16,
-    #[serde(flatten, default)]
-    earliest_block_position: EarliestBlockPosition,
-}
-
-#[derive(Debug, Clone, Copy, Deserialize, Default)]
-struct EarliestBlockPosition {
-    block: u16,
-    #[serde(default)]
-    commitment: u16,
-}
-
-impl From<EarliestPosition> for Position {
-    fn from(earliest_position: EarliestPosition) -> Self {
+impl Earliest {
+    pub fn position(&self) -> Position {
         u64::from(index::within::Tree {
-            epoch: earliest_position.epoch.into(),
-            block: earliest_position.earliest_block_position.block.into(),
-            commitment: earliest_position.earliest_block_position.commitment.into(),
+            epoch: self.epoch.into(),
+            block: self.block.into(),
+            commitment: self.commitment.into(),
         })
         .into()
     }
-}
 
-impl Earliest {
-    pub fn earlier_than(&self, tree: &Tree) -> bool {
+    pub fn not_too_late_for(&self, tree: &Tree) -> bool {
         let position = if let Some(position) = tree.position() {
             position
         } else {
             // If there is no position, the tree is full, so the only way to be earlier than the
             // tree is for the forgotten index to be earlier
             return if self.next {
-                tree.forgotten() > self.earliest_forgotten
+                self.forgotten < tree.forgotten()
             } else {
-                tree.forgotten() >= self.earliest_forgotten
+                self.forgotten <= tree.forgotten()
             };
         };
 
         // Otherwise, one of the forgotten index or the position must be earlier (strictly
         // earlier if the next parameter is specified)
         if self.next {
-            position > self.earliest_position.unwrap_or_default().into()
-                || tree.forgotten() > self.earliest_forgotten
+            self.position() < position || self.forgotten < tree.forgotten()
         } else {
-            position >= self.earliest_position.unwrap_or_default().into()
-                || tree.forgotten() >= self.earliest_forgotten
+            self.position() <= position || self.forgotten <= tree.forgotten()
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn parse_earliest() {
+        let parsed = serde_urlencoded::from_str::<Earliest>(
+            "epoch=1&block=2&commitment=3&forgotten=4&next=true",
+        )
+        .unwrap();
+        assert_eq!(
+            parsed,
+            Earliest {
+                epoch: 1,
+                block: 2,
+                commitment: 3,
+                forgotten: 4.into(),
+                next: true,
+            }
+        );
     }
 }
