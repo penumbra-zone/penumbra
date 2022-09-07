@@ -5,8 +5,8 @@ const liveViewSettings = {
     pollRetry: 1000,
     longPollDelay: 0,
     initialPrecision: 1,
-    precisionDecreaseThreshold: 200,
-    precisionDecreaseFactor: 1.5,
+    targetMaxRenderTime: 200,
+    precisionAdjustFactor: 1.5,
 };
 
 function transition() {
@@ -31,7 +31,7 @@ function run() {
     // When the window is resized, resize the graphviz SVG also
     window.addEventListener("resize", () => {
         // Immediately resize it
-        d3.select("#graph").select("svg")
+        d3.select("#graph > svg")
             .width(window.innerWidth)
             .height(window.innerHeight);
         // Resize it in all future renders
@@ -99,11 +99,19 @@ function run() {
                 // If the pre-calculation took too long, decrease the tweening precision
                 let end = performance.now();
                 let elapsed = end - start;
-                if (elapsed > liveViewSettings.precisionDecreaseThreshold) {
-                    precision = precision * liveViewSettings.precisionDecreaseFactor;
-                } else if (elapsed < liveViewSettings.precisionDecreaseThreshold * liveViewSettings.precisionDecreaseFactor) {
-                    precision = precision / liveViewSettings.precisionDecreaseFactor;
+                if (elapsed > liveViewSettings.targetMaxRenderTime) {
+                    // Increase the precision percentage if rendering took too long
+                    precision = precision * liveViewSettings.precisionAdjustFactor;
+                } else if (elapsed < liveViewSettings.targetMaxRenderTime * liveViewSettings.precisionAdjustFactor) {
+                    // Decrease the precision percentage if rendering was really fast
+                    precision = precision / liveViewSettings.precisionAdjustFactor;
                 }
+                // Round precision to nearest integer
+                precision = Math.round(precision);
+                // Don't let precision go above 100%
+                precision = Math.min(precision, 100);
+                // Don't let precision go below 1%
+                precision = Math.max(precision, 1);
             }).render(render);
         }
     }
