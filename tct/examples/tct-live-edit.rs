@@ -52,7 +52,7 @@ async fn main() {
 fn help_text(address: &std::net::SocketAddr) {
     println!("Serving at http://{address}/view ...");
     println!();
-    println!("Keyboard commands:");
+    println!("Keyboard commands available in the browser:");
     println!();
     println!("  - 'n': reset the tree to new");
     println!("  - 'c': insert a random commitment without remembering it");
