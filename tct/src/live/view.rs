@@ -110,7 +110,7 @@ fn changes(tree: watch::Receiver<Tree>) -> MethodRouter {
                 }
 
                 // Form one or two events about it
-                let (reset, change) = {
+                let changed = {
                     let tree = tree.borrow();
                     let forgotten = tree.forgotten();
                     let position = if let Some(position) = tree.position() {
@@ -123,29 +123,14 @@ fn changes(tree: watch::Receiver<Tree>) -> MethodRouter {
                         json!(null)
                     };
 
-                    // If the tree is empty, issue a "please reset your state" event
-                    let reset = if tree.is_empty() {
-                        Some(sse::Event::default().event("reset"))
-                    } else {
-                        None
-                    };
-
                     // Always report the current position and forgotten count
-                    let changed = sse::Event::default()
+                    sse::Event::default()
                         .event("changed")
                         .json_data(json!({ "position": position, "forgotten": forgotten }))
-                        .unwrap();
-
-                    (reset, changed)
+                        .unwrap()
                 };
 
-                // Send the two events
-                if let Some(reset) = reset {
-                    if tx.send(reset).await.is_err() {
-                        break;
-                    }
-                }
-                if (tx.send(change).await).is_err() {
+                if (tx.send(changed).await).is_err() {
                     break;
                 }
             }

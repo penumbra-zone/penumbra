@@ -23,6 +23,7 @@ const graphviz = d3.select("#graph").graphviz()
     // Set the SVG to fill the window
     .width(window.innerWidth)
     .height(window.innerHeight)
+    .fit(true)
      // Start the event loop once the graphviz stuff is loaded
     .on("initEnd", run);
 
@@ -40,29 +41,16 @@ function run() {
     });
 
     // Initial state
-    let changed;
-    let renderedRecently;
-    let precision;
-    let latestDot;
-    let forgotten;
-    let position;
-
-    // Reset the state
-    function reset() {
-        changed = false;
-        renderedRecently = false;
-        precision = liveViewSettings.initialPrecision;
-        latestDot = 'digraph {}';
-        forgotten = 0;
-        position = {
-            epoch: 0,
-            block: 0,
-            commitment: 0,
-        };
-    }
-
-    // When first initializing, perform the reset
-    reset();
+    let changed = false;
+    let renderedRecently = false;
+    let precision = liveViewSettings.initialPrecision;
+    let latestDot = 'digraph {}';
+    let forgotten = 0;
+    let position = {
+        epoch: 0,
+        block: 0,
+        commitment: 0,
+    };
 
     // Long-poll loop to get the latest dot render of the tree
     function poll(long) {
@@ -128,31 +116,43 @@ function run() {
 
     // Interior mutation caused by evaluating the lazy frontier hashes won't cause the position or
     // forgotten index to advance, so it won't be caught by the long-poll loop: we use the SSE
-    // endpoint to monitor for these changes, and trigger an immediate short poll when they occur
+    // endpoint to monitor for these changes, and trigger an immediate short poll when they occur.
+    // Additionally, if we detect that the tree has gone "backwards in time" either via forgotten
+    // count or position, we trigger a reload of the page, because the page state doesn't match the
+    // tree state, so rather than ensuring we set up all the mutable state correctly again, the
+    // easiest thing to do is start fresh.
     const changes = new EventSource(window.location.href + "/changes");
-    changes.addEventListener("reset", (event) => {
-        // TODO: why doesn't this properly reset the state?
-        reset();
-        poll(false);
-    });
     changes.addEventListener("changed", (event) => {
         // When a change occurs, check to see if *nothing has changed* about the position and
         // forgotten count: only then, do a short poll to get the latest dot.
         let response = JSON.parse(event.data);
+        // If forgotten went strictly backwards or position went strictly backwards, refresh the
+        // page, because this means that the tree has been reset since we last saw it, and our state
+        // doesn't correctly reflect reality, so long polling won't work
+        let forgottenBackwards = response.forgotten < forgotten;
+        let positionBackwards =
+            // Both positions are non-null (i.e. tree went from a non-full state to a non-full state)
+            response.position !== null && position !== null
+            && (response.position.epoch < position.epoch // epoch went back, or...
+                || (response.position.epoch === position.epoch // epoch stayed the same, and...
+                    && response.position.block < position.block) // block went back, or...
+                || (response.position.epoch === position.epoch // epoch stayed the same, and...
+                    && response.position.block === position.block // block stayed the same, and...
+                    && response.position.commitment < position.commitment)); // commitment went back
+        if (forgottenBackwards || positionBackwards) {
+            location.reload();
+        }
         // Figure out whether the event was an interior mutation, and only do a short-poll if it was
         // an interior mutation (otherwise we'd be wasting our time because the long poll will get
         // to that change)
-        if ((response.position === null && position !== null)
-            || (position === null && response.position !== null)) {
-            return;
-        }
-        let interior =
-            response.forgotten === forgotten
-            && ((response.position === null && position === null)
-                || (response.position.epoch === position.epoch
-                    && response.position.block === position.block
-                    && response.position.commitment === position.commitment))
-        if (interior) {
+        let forgottenSame = response.forgotten === forgotten;
+        let positionSame =
+            (response.position === null && position === null)
+            || (response.position !== null && position !== null
+                && response.position.epoch === position.epoch
+                && response.position.block === position.block
+                && response.position.commitment === position.commitment)
+        if (forgottenSame && positionSame) {
             poll(false);
         }
     });
