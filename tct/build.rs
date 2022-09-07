@@ -1,6 +1,7 @@
 fn main() {
     // Inform cargo about the resources that are baked into the binary
     let resources = [
+        "examples/key-control.js",
         "src/live/view/index.html",
         "src/live/view/index.js",
         "src/live/view/reset.css",
