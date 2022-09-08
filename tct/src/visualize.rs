@@ -855,7 +855,7 @@ fn node_width(node: &Node) -> &'static str {
         }
     }
 
-    if node.place() == Place::Frontier {
+    if node.place() == Place::Frontier && node.cached_hash() == None {
         "0.7"
     } else {
         "0.9"
