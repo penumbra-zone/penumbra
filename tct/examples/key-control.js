@@ -160,7 +160,7 @@ function keyControl() {
         // If we didn't exceed the concurrency limit, schedule the action immediately, without
         // waiting for another to finish
         if (concurrently) {
-            setTimeout(doAction, 0);
+            doAction();
         }
     }
 
