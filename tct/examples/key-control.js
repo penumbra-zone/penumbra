@@ -33,7 +33,11 @@ function keyControl() {
             display('^C');
             display("");
         } else if (key in queries) {
-            event.preventDefault();
+            if (event.ctrlKey || event.altKey || event.metaKey) {
+                return;
+            } else {
+                event.preventDefault();
+            }
 
             // How many of this operation to do
             let count = 1;
@@ -83,9 +87,9 @@ function keyControl() {
             return;
         } else {
             if (action.count > 1) {
-                display(action.count + " " + key);
+                display(action.count + " " + (key.toUpperCase() === key ? '⇧' : '') + key);
             } else {
-                display(key);
+                display((key.toUpperCase() === key ? '⇧' : '') + key);
             }
             // Decrement the count
             action.count -= 1;
