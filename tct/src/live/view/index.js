@@ -107,6 +107,8 @@ function run() {
 
     // Retry polling until we get a response, then reload the page
     function retry() {
+        window.location.reload(); // Quick and dirty: don't bother retrying, just kill the page by reloading it
+
         if (!retrying) {
             retrying = true;
             d3.text(window.location.href).then(() => {
