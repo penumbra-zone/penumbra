@@ -43,9 +43,26 @@ pub fn control<R: Rng + Send + 'static>(
         .route("/end-epoch", end_epoch(tree))
 }
 
+fn marking_change<R>(tree: Arc<watch::Sender<Tree>>, f: impl Fn(&mut Tree) -> R) -> R {
+    let mut result = None;
+    tree.send_modify(|tree| {
+        // TODO: make this `send_if_modified` to reduce watch channel churn (right now that doesn't
+        // work because someone fails to get an update if this is what's done)
+        // let forgotten_before = tree.forgotten();
+        // let position_before = tree.position();
+        // let frontier_before = super::query::frontier_hashes(tree);
+        result = Some(f(tree));
+        // // Only produce a change notification if the tree has been changed
+        // forgotten_before != tree.forgotten()
+        //     || position_before != tree.position()
+        //     || frontier_before != super::query::frontier_hashes(tree)
+    });
+    result.unwrap()
+}
+
 fn new(tree: Arc<watch::Sender<Tree>>) -> MethodRouter {
     post(|| async move {
-        tree.send_modify(|tree| {
+        marking_change(tree, |tree| {
             *tree = Tree::new();
         })
     })
@@ -67,8 +84,7 @@ fn insert<R: Rng + Send + 'static>(
                   witness,
                   commitment,
               }): Query<Insert>| async move {
-            let mut result = None;
-            tree.send_modify(|tree| {
+            let result = marking_change(tree, |tree| {
                 if witness == Witness::Keep {
                     // If we're at quota for number of commitments, forget until we're strictly below
                     // quota again, so we can insert something
@@ -83,13 +99,13 @@ fn insert<R: Rng + Send + 'static>(
                     }
                 }
                 // Now actually insert the commitment we wanted to insert
-                result = Some(tree.insert(
+                tree.insert(
                     witness,
                     // If no commitment is specified, generate a random one
                     commitment.unwrap_or_else(|| Commitment::random(&mut *rng.lock())),
-                ));
+                )
             });
-            match result.take().unwrap() {
+            match result {
                 Ok(position) => Ok(Json(json!({
                     "epoch": position.epoch(),
                     "block": position.block(),
@@ -123,22 +139,20 @@ fn forget<R: Rng + Send + 'static>(
     }
 
     post(|Query(Forget { commitment }): Query<Forget>| async move {
-        let mut result = None;
-        tree.send_modify(|tree| {
+        let result = marking_change(tree, |tree| {
             if let Some(commitment) = commitment.or_else(|| {
                 // If no commitment is specified, forget a random extant one
                 random_commitments(&mut *rng.lock(), tree, 1).pop()
             }) {
-                result = Some(tree.forget(commitment));
+                tree.forget(commitment)
             } else {
                 // If no commitment is specified and the tree contains no commitments to
                 // forget, return that no commitments were forgotten
-                result = Some(false);
+                false
             }
         });
-        {
-            Json(json!(result.take().unwrap()))
-        }
+
+        Json(json!(result))
     })
 }
 
@@ -153,14 +167,13 @@ fn insert_block_root<R: Rng + Send + 'static>(
 
     post(
         |Query(InsertBlockRoot { block_root }): Query<InsertBlockRoot>| async move {
-            let mut result = None;
-            tree.send_modify(|tree| {
-                result = Some(tree.insert_block(
+            let result = marking_change(tree, |tree| {
+                tree.insert_block(
                     // If no block root is specified, generate a random one
                     block_root.unwrap_or_else(|| block::Root::random(&mut *rng.lock())),
-                ));
+                )
             });
-            match result.take().unwrap() {
+            match result {
                 Ok(block_root) => Ok(block_root.to_string()),
                 Err(e) => Err((
                     StatusCode::BAD_REQUEST,
@@ -173,11 +186,8 @@ fn insert_block_root<R: Rng + Send + 'static>(
 
 fn end_block(tree: Arc<watch::Sender<Tree>>) -> MethodRouter {
     post(|| async move {
-        let mut result = None;
-        tree.send_modify(|tree| {
-            result = Some(tree.end_block());
-        });
-        match result.take().unwrap() {
+        let result = marking_change(tree, |tree| tree.end_block());
+        match result {
             Ok(block_root) => Ok(Json(block_root.to_string())),
             Err(e) => Err((
                 StatusCode::BAD_REQUEST,
@@ -198,17 +208,15 @@ fn insert_epoch_root<R: Rng + Send + 'static>(
 
     post(
         |Query(InsertEpochRoot { epoch_root }): Query<InsertEpochRoot>| async move {
-            let mut result = None;
-            tree.send_modify(|tree| {
-                result = Some(tree.insert_epoch(
+            let result = marking_change(tree, |tree| {
+                tree.insert_epoch(
                     // If no epoch root is specified, generate a random one
                     epoch_root.unwrap_or_else(|| epoch::Root::random(&mut *rng.lock())),
-                ));
+                )
             });
-            match result.take() {
-                Some(Ok(epoch_root)) => Ok(Json(epoch_root.to_string())),
-                Some(Err(e)) => Err((StatusCode::BAD_REQUEST, e.to_string())),
-                None => Err((StatusCode::INTERNAL_SERVER_ERROR, "".to_string())),
+            match result {
+                Ok(epoch_root) => Ok(Json(epoch_root.to_string())),
+                Err(e) => Err((StatusCode::BAD_REQUEST, e.to_string())),
             }
         },
     )
@@ -216,14 +224,10 @@ fn insert_epoch_root<R: Rng + Send + 'static>(
 
 fn end_epoch(tree: Arc<watch::Sender<Tree>>) -> MethodRouter {
     post(|| async move {
-        let mut result = None;
-        tree.send_modify(|tree| {
-            result = Some(tree.end_epoch());
-        });
-        match result.take() {
-            Some(Ok(epoch_root)) => Ok(Json(epoch_root.to_string())),
-            Some(Err(e)) => Err((StatusCode::BAD_REQUEST, e.to_string())),
-            None => Err((StatusCode::INTERNAL_SERVER_ERROR, "".to_string())),
+        let result = marking_change(tree, |tree| tree.end_epoch());
+        match result {
+            Ok(epoch_root) => Ok(Json(epoch_root.to_string())),
+            Err(e) => Err((StatusCode::BAD_REQUEST, e.to_string())),
         }
     })
 }
