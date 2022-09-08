@@ -11,7 +11,7 @@ const FONT_SIZE: usize = 50;
 const BLOCK_FONT_SIZE: usize = 75;
 const EPOCH_FONT_SIZE: usize = 100;
 const FRONTIER_EDGE_COLOR: &str = "#E800FF:invis:#E800FF";
-const FRONTIER_TERMINUS_COLOR: &str = "#E800FF22";
+const FRONTIER_NODE_FILL_COLOR: &str = "#E800FF22";
 const PEN_WIDTH: usize = 4;
 
 fn hash_shape(bytes: &[u8]) -> &'static str {
@@ -284,10 +284,10 @@ impl<W: Write> DotWriter<W> {
             tree(w)?;
 
             let (fill_color, color) = if focus {
-                (FRONTIER_TERMINUS_COLOR, FRONTIER_EDGE_COLOR)
+                ("none", FRONTIER_EDGE_COLOR)
             } else if height == 8 || height == 16 {
                 if place == Some(Place::Frontier) && terminal {
-                    (FRONTIER_TERMINUS_COLOR, FRONTIER_EDGE_COLOR)
+                    ("none", FRONTIER_EDGE_COLOR)
                 } else if place == Some(Place::Frontier) {
                     if let Some(global_position) = global_position {
                         if (height == 16 && global_position.epoch() == position.epoch() + 1)
@@ -870,7 +870,7 @@ fn node_color(node: &Node) -> String {
     let hash = if let Some(hash) = node.cached_hash() {
         hash
     } else {
-        return FRONTIER_TERMINUS_COLOR.to_string();
+        return FRONTIER_NODE_FILL_COLOR.to_string();
     };
 
     // The "empty block"/"empty epoch" color is black
