@@ -1,6 +1,9 @@
 function keyControl() {
+    const concurrencyLimit = 500;
+
     let actions = [];
     let pendingCount = null;
+    let pendingActions = 0;
 
     const queries = {
         'c': ["post", 'insert?witness=forget'],
@@ -58,7 +61,7 @@ function keyControl() {
             }
 
             // Ensure the operation is done
-            setTimeout(doAction, 0);
+            doAction();
         } else if (digits.has(key)) {
             event.preventDefault();
 
@@ -73,7 +76,12 @@ function keyControl() {
 
     function doAction() {
         if (actions.length === 0) {
-            display("");
+            if (pendingActions > 0 && message !== "...") {
+                // Delay displaying the ellipsis so you can still read the last thing typed
+                setTimeout(() => display("..."), 500);
+            } else {
+                display("");
+            }
             return;
         }
 
@@ -82,8 +90,8 @@ function keyControl() {
 
         if (action.count === 0) {
             // This action is done
-            display("");
             actions.pop();
+            setTimeout(doAction, 0);
             return;
         } else {
             if (action.count > 1) {
@@ -93,20 +101,43 @@ function keyControl() {
             }
             // Decrement the count
             action.count -= 1;
+            pendingActions += 1;
         }
+
+        // Determine whether we should perform the next request concurrently or wait for this one to
+        // finish (this is effectively using a task pool of size `concurrencyLimit`)
+        let concurrently = pendingActions < concurrencyLimit;
 
         let url = window.location.origin + '/' + queries[key][1];
 
-        d3.text(url, {method: queries[key][0]}).then(() => {
-            // Continue doing actions until none are left to do
-            setTimeout(doAction, 0);
+        d3.text(url, { method: queries[key][0] }).then(() => {
+            // Don't repeat `doAction()` here, because then we'd wait for the request to finish;
+            // instead, fire off a new request immediately, so we go as fast as possible.
+            pendingActions -= 1;
+            if (actions.length === 0) {
+                if (pendingActions === 0) {
+                    display("");
+                }
+            }
+            // Only if we exceeded the concurrency limit should we schedule the action after this
+            // one (otherwise we did it below, immediately)
+            if (!concurrently) {
+                doAction();
+            }
         }).catch(error => {
             // If there was an error, stop the loop
             actions = [];
+            pendingActions = 0;
             message.style("color", "red");
             display("");
             console.log(error);
         });
+
+        // If we didn't exceed the concurrency limit, schedule the action immediately, without
+        // waiting for another to finish
+        if (concurrently) {
+            setTimeout(doAction, 0);
+        }
     }
 
     // Set up the visual feedback box
@@ -126,6 +157,7 @@ function keyControl() {
         if (string.length === 0) {
             message.transition()
                 .duration(500)
+                .delay(100)
                 .style("color", "rgba(100, 100, 100, 0.0)")
                 .end()
                 .then(() => message.text(string));
