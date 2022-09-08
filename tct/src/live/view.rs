@@ -133,7 +133,7 @@ fn changes(tree: watch::Receiver<Tree>) -> MethodRouter {
                     break;
                 }
 
-                // Form one or two events about it
+                // Form an event about it
                 let changed = {
                     let tree = tree.borrow();
                     let new_position = tree.position();
@@ -147,11 +147,13 @@ fn changes(tree: watch::Receiver<Tree>) -> MethodRouter {
                         // At least one of them goes forward
                         && (new_position > position || new_forgotten > forgotten);
 
+                    // Keep track of the new position and forgotten for the next loop around
+                    position = new_position;
+                    forgotten = new_forgotten;
+
+                    // If we moved forward, don't emit an event
                     if strictly_forward {
                         continue;
-                    } else {
-                        position = new_position;
-                        forgotten = new_forgotten;
                     }
 
                     let position = if let Some(position) = new_position {
