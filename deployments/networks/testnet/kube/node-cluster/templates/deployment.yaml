@@ -8,6 +8,7 @@ metadata:
   #   {{- include "node-cluster.labels" . | nindent 4 }}
 spec:
 
+  replicas: 1
   
   selector:
     app: {{}}
