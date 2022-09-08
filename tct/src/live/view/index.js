@@ -70,24 +70,30 @@ function run() {
 
         d3.json(url).then(response => {
             // Only update the graph if we asked for it (otherwise it'll be null)
-            if (graph) {
-                latestDot = response.graph;
-            // If changes have happened but we didn't get the latest graph, go fetch it now
-            } else if (response.forgotten !== forgotten || response.position !== position) {
-                poll(long, true);
-                return;
-            // If no changes have happened and we don't have a new graph, stop
-            } else {
-                return;
+            if (!graph) {
+                // If changes have happened but we didn't get the latest graph, go fetch it now
+                if (response.forgotten !== forgotten || response.position !== position) {
+                    poll(long, true);
+                    return;
+                } else {
+                    // If no changes have happened and we don't have a new graph, stop
+                    return;
+                }
             }
 
-            // We've gotten the graph, so update our state and trigger a render
-            forgotten = response.forgotten;
-            position = response.position;
-            changed = true;
-            lastChanged = performance.now();
-            // Start a new render task, if one isn't already in progress
-            setTimeout(render, 0);
+            // Double check that the graph has really changed
+            if (response.forgotten !== forgotten || response.position !== position || response.graph !== latestDot) {
+                latestDot = response.graph;
+                changed = true;
+                lastChanged = performance.now();
+
+                // We've gotten the graph, so update our state and trigger a render
+                forgotten = response.forgotten;
+                position = response.position;
+                // Start a new render task, if one isn't already in progress
+                setTimeout(render, 0);
+            }
+
             // Schedule the polling to recur
             if (long) {
                 setTimeout(() => poll(long, graph), liveViewSettings.longPollDelay);
