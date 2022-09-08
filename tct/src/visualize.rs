@@ -7,9 +7,9 @@ use crate::{
     Position, Tree,
 };
 
-const FONT_SIZE: usize = 50;
-const BLOCK_FONT_SIZE: usize = 75;
-const EPOCH_FONT_SIZE: usize = 100;
+const FONT_SIZE: usize = 70;
+const BLOCK_FONT_SIZE: usize = 110;
+const EPOCH_FONT_SIZE: usize = 150;
 const FRONTIER_EDGE_COLOR: &str = "#E800FF:invis:#E800FF";
 const FRONTIER_NODE_FILL_COLOR: &str = "#E800FF22";
 const PEN_WIDTH: usize = 4;

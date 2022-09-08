@@ -1,6 +1,6 @@
 const liveViewSettings = {
     animationDuration: 200,
-    animationEasing: d3.easeExpInOut,
+    animationEasing: d3.easeCubic,
     renderInterval: 250,
     pollRetry: 1000,
     longPollDelay: 0,
