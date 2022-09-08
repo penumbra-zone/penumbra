@@ -1,14 +1,17 @@
 use std::{convert::Infallible, sync::Arc};
 
 use axum::{
+    body::StreamBody,
     extract::{OriginalUri, Path, Query},
     headers::ContentType,
     http::StatusCode,
     response::{sse, Sse},
     routing::{get, MethodRouter},
-    Json, Router, TypedHeader,
+    Router, TypedHeader,
 };
 
+use bytes::Bytes;
+use futures::stream;
 use serde_json::json;
 use tokio::sync::{mpsc, watch};
 use tokio_stream::{wrappers::ReceiverStream, StreamExt};
@@ -31,7 +34,7 @@ pub fn view(tree: watch::Receiver<Tree>, ext: ViewExtensions) -> Router {
         .route("/scripts/:script", scripts())
         .route("/licenses/:script/LICENSE", licenses())
         .route("/styles/:style", styles())
-        .route("/extra-changes", changes(tree.clone()))
+        .route("/extra-changes", extra_changes(tree.clone()))
         .route("/dot", render_dot(tree))
 }
 
@@ -113,7 +116,7 @@ fn styles() -> MethodRouter {
 /// tree is changed and its position and forgotten count remain the same, or they go backwards.
 ///
 /// This allows the listener to detect interior mutation and resets.
-fn changes(tree: watch::Receiver<Tree>) -> MethodRouter {
+fn extra_changes(tree: watch::Receiver<Tree>) -> MethodRouter {
     get(move || async move {
         // Clone the watch receiver so we don't steal other users' updates
         let mut tree = tree.clone();
@@ -183,11 +186,68 @@ fn changes(tree: watch::Receiver<Tree>) -> MethodRouter {
     })
 }
 
+/// Render a snapshot of the tree in the [`watch::Receiver`] as a DOT graph, then escaped as a JSON string.
+fn render_from_watch(tree: &watch::Receiver<Tree>) -> (Tree, Bytes) {
+    let tree = tree.borrow().clone();
+    let mut dot = Vec::new();
+    tree.render_dot(&mut dot).unwrap();
+    let dot_json_string = serde_json::to_vec(&json!(String::from_utf8(dot).unwrap())).unwrap();
+    (tree, dot_json_string.into())
+}
+
+/// Spawns a render loop which is triggered by new requests.
+///
+/// Returns a closure which triggers a new render and hands back a ticket number, and a watch
+/// receiver which can be used to monitor for updates to the latest rendered version.
+fn spawn_render_worker(
+    tree: &watch::Receiver<Tree>,
+) -> (
+    impl Fn() -> u64 + Send + Sync + 'static,
+    watch::Receiver<(u64, Tree, Bytes)>,
+) {
+    let (request_render, mut receive_request) = watch::channel(0);
+    let (submit_render, receive_render) = watch::channel({
+        let (tree, dot_json_string) = render_from_watch(tree);
+        (0, tree, dot_json_string)
+    });
+
+    tokio::spawn({
+        let tree = tree.clone();
+        async move {
+            while let Ok(()) = receive_request.changed().await {
+                let i = *receive_request.borrow();
+                let (tree, dot_json_string) = render_from_watch(&tree);
+                if submit_render.send((i, tree, dot_json_string)).is_err() {
+                    break;
+                }
+            }
+        }
+    });
+
+    // This closure requests a new render
+    let request_render = move || {
+        let mut ticket = None;
+        request_render.send_modify(|i| {
+            // Increment the render ticket counter
+            *i += 1;
+            // Report the ticket number associated with this request
+            ticket = Some(*i);
+        });
+        ticket.unwrap()
+    };
+
+    (request_render, receive_render)
+}
+
 /// The graphviz DOT endpoint, which is accessed by the index page's javascript.
 fn render_dot(tree: watch::Receiver<Tree>) -> MethodRouter {
+    let (request_render, receive_render) = spawn_render_worker(&tree);
+    let request_render = Arc::new(request_render);
+
     get(move |Query(earliest): Query<Earliest>| async move {
         // Clone the watch receiver so we don't steal other users' updates
         let mut tree = tree.clone();
+        let mut receive_render = receive_render.clone();
 
         // Wait for the tree to reach the requested position and forgotten index
         loop {
@@ -195,35 +255,57 @@ fn render_dot(tree: watch::Receiver<Tree>) -> MethodRouter {
                 // Extra scope necessary to satisfy borrow checker
                 let current = tree.borrow();
                 if earliest.not_too_late_for(&current) {
-                    tracing::debug!(
-                        forgotten = ?current.forgotten(),
-                        position = ?current.position(),
-                        earliest = ?earliest,
-                        "delivering desired tree version"
-                    );
                     break;
-                } else {
-                    tracing::debug!(
-                        forgotten = ?current.forgotten(),
-                        position = ?current.position(),
-                        earliest = ?earliest,
-                        "waiting for later tree version ..."
-                    );
                 }
             }
             tree.changed().await.unwrap();
         }
 
-        // This clone means we don't hold a read lock on the tree for long, because cloning
-        // the tree is much faster than generating the DOT representation
-        let tree = tree.borrow().clone();
+        // Now that the tree is the right version, loop until a suitable render is provided
+        let (position, forgotten, rendered) = loop {
+            // Subscribe to change notifications before sending the render request, to make sure we
+            // don't miss any updates
+            let changed = receive_render.changed();
+            // Each render request is associated with a ticket number, the latest of which is sent
+            // back when a render is completed; this allows us to know whether the render is current
+            // as of when we made the request
+            let ticket = request_render();
+            changed.await.unwrap();
 
-        // Render the tree as a DOT graph
-        let mut graph = Vec::new();
-        tree.render_dot(&mut graph)
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+            {
+                // Once there's an updated render, it might still not be the right version for us,
+                // because it might have been triggered by someone else before we asked, so check to
+                // make sure that the ticket number associated with this render request was from
+                // us, or someone who asked afterwards that
+                let rendered = receive_render.borrow();
+                // We use two different criteria for the tree being the right version:
+                //
+                // - If the request was a long-polling request, then any up-to-date version of the
+                //   tree will do, even if the precise ticket hasn't been fulfilled yet, since there
+                //   will be another update coming again as soon as the long poll completes.
+                //
+                // - If the request was a short-polling request, then we need to wait for the exact
+                //   ticket to be fulfilled, because it's not necessarily the case that there will
+                //   be another repeated request, so we need to serve the absolutely most current
+                //   version of the tree as of the request.
+                //
+                // This precise criterion means that the client will receive responses to
+                // long-polling as soon as something valid is available, even if that valid thing
+                // ends up being a little stale, while requests for something precisely up to date
+                // will wait for the render task to finish past that specific request.
+                if (earliest.next && earliest.not_too_late_for(&rendered.1))
+                    || (!earliest.next && ticket <= rendered.0)
+                {
+                    break (
+                        rendered.1.position(),
+                        rendered.1.forgotten(),
+                        rendered.2.clone(),
+                    );
+                }
+            }
+        };
 
-        let position = if let Some(position) = tree.position() {
+        let position = if let Some(position) = position {
             json!({
                 "epoch": position.epoch(),
                 "block": position.block(),
@@ -233,14 +315,25 @@ fn render_dot(tree: watch::Receiver<Tree>) -> MethodRouter {
             json!(null)
         };
 
-        let graph = String::from_utf8(graph)
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-
         // Return the DOT graph as a response, with appropriate headers
-        Ok::<_, (StatusCode, String)>(Json(json!({
-            "position": position,
-            "forgotten": tree.forgotten(),
-            "graph": graph,
-        })))
+        Ok::<_, (StatusCode, String)>((
+            TypedHeader(ContentType::json()),
+            // Manually construct a streaming response to avoid allocating a copy of the large
+            // rendered bytes: the graph is already rendered as a JSON-escaped string, so we include
+            // it literally in this output
+            StreamBody::new(
+                stream::iter([
+                    "{".into(),
+                    "\"position\":".into(),
+                    serde_json::to_vec(&position).unwrap().into(),
+                    ",\"forgotten\":".into(),
+                    serde_json::to_vec(&forgotten).unwrap().into(),
+                    ",\"graph\":".into(),
+                    rendered,
+                    "}".into(),
+                ])
+                .map(Ok::<Bytes, Infallible>),
+            ),
+        ))
     })
 }
