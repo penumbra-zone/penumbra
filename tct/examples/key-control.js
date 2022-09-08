@@ -109,7 +109,7 @@ function keyControl() {
     // Set up the visual feedback box
     d3.select('#graph').insert("div").attr("id", "message");
     const message = d3.select('#message');
-    const messageColor = "rgba(50, 50, 50, 0.35)";
+    const messageColor = "rgba(50, 50, 50, 0.5)";
     message.style("width", "100%");
     message.style("position", "absolute");
     message.style("bottom", "0");
