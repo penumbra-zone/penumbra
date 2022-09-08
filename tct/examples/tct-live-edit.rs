@@ -46,6 +46,7 @@ async fn main() {
     let app = live::edit(rng, tree, ext, args.max_witnesses)
         .merge(key_control())
         .layer(TraceLayer::new_for_http());
+    // TODO: add rate limit layer here
 
     let address = ([0, 0, 0, 0], args.port).into();
     help_text(&address);
