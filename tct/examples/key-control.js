@@ -102,6 +102,7 @@ function keyControl() {
             doAction();
         }).catch(error => {
             // If there was an error, stop the loop
+            display("");
             console.log(error);
         });
     }
