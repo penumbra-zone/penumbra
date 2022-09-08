@@ -1,3 +1,5 @@
+let keyFeedback = true;
+
 function keyControl() {
     const concurrencyLimit = 10000;
 
@@ -158,16 +160,18 @@ function keyControl() {
     message.style("color", messageColor);
 
     function display(string) {
-        if (string.length === 0) {
-            message.transition()
-                .duration(500)
-                .delay(100)
-                .style("color", "rgba(100, 100, 100, 0.0)")
-                .end()
-                .then(() => message.text(string));
-        } else {
-            message.text(string);
-            message.style("color", messageColor);
+        if (keyFeedback) {
+            if (string.length === 0) {
+                message.transition()
+                    .duration(500)
+                    .delay(100)
+                    .style("color", "rgba(100, 100, 100, 0.0)")
+                    .end()
+                    .then(() => message.text(string));
+            } else {
+                message.text(string);
+                message.style("color", messageColor);
+            }
         }
     }
 }
