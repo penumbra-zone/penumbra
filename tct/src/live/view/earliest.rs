@@ -17,7 +17,7 @@ pub struct Earliest {
     /// If `true`, force the next thing to be returned to be greater than either the position or
     /// forgotten index specified (it doesn't matter which).
     #[serde(default)]
-    next: bool,
+    pub next: bool,
 }
 
 impl Earliest {
