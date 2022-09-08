@@ -1,6 +1,9 @@
 use crate::governance::proposal::Outcome;
 
-use super::{proposal, tally, View as _};
+use super::{
+    proposal::{self, chain_params},
+    tally, View as _,
+};
 use penumbra_chain::View as _;
 use penumbra_storage::State;
 use penumbra_transaction::action::{
@@ -211,10 +214,35 @@ async fn enact_proposal(state: &State, proposal_id: u64) {
         }
         ProposalPayload::ParameterChange {
             effective_height: _,
-            new_parameters: _,
+            new_parameters,
         } => {
-            // TODO: schedule the parameter change for the effective height
-            todo!("implement parameter change execution")
+            let height = state
+                .get_block_height()
+                .await
+                .expect("can get block height");
+
+            // Since other proposals may have changed the chain parameters in the meantime,
+            // and parameter validation must ensure consistency across all parameters, we
+            // need to perform a final validation step prior to applying the new parameters.
+            let old_parameters = state
+                .get_chain_params()
+                .await
+                .expect("can get chain parameters");
+
+            if !chain_params::is_valid_stateless(&new_parameters)
+                || !chain_params::is_valid_stateful(&new_parameters, &old_parameters)
+            {
+                // The parameters are invalid, so we cannot apply them.
+                tracing::info!(proposal = %proposal_id, %height, "chain param proposal passed, however the new parameters are invalid");
+                // TODO: should there be a more descriptive error message here?
+                return;
+            }
+
+            // Apply the new (valid) parameter changes immediately:
+            let new_params = chain_params::resolve_parameters(&new_parameters, &old_parameters)
+                .expect("can resolve validated parameters");
+
+            state.put_chain_params(new_params).await;
         }
         ProposalPayload::DaoSpend {
             schedule_transactions: _,
