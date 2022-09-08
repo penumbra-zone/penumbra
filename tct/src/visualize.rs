@@ -11,7 +11,7 @@ const FONT_SIZE: usize = 50;
 const BLOCK_FONT_SIZE: usize = 75;
 const EPOCH_FONT_SIZE: usize = 100;
 const FRONTIER_EDGE_COLOR: &str = "#E800FF:invis:#E800FF";
-const FRONTIER_NODE_COLOR: &str = "#E800FF22";
+const FRONTIER_TERMINUS_COLOR: &str = "#E800FF22";
 const PEN_WIDTH: usize = 4;
 
 fn hash_shape(bytes: &[u8]) -> &'static str {
@@ -284,10 +284,10 @@ impl<W: Write> DotWriter<W> {
             tree(w)?;
 
             let (fill_color, color) = if focus {
-                ("none", FRONTIER_EDGE_COLOR)
+                (FRONTIER_TERMINUS_COLOR, FRONTIER_EDGE_COLOR)
             } else if height == 8 || height == 16 {
                 if place == Some(Place::Frontier) && terminal {
-                    ("none", FRONTIER_EDGE_COLOR)
+                    (FRONTIER_TERMINUS_COLOR, FRONTIER_EDGE_COLOR)
                 } else if place == Some(Place::Frontier) {
                     if let Some(global_position) = global_position {
                         if (height == 16 && global_position.epoch() == position.epoch() + 1)
@@ -351,7 +351,7 @@ impl<W: Write> DotWriter<W> {
     }
 
     fn node(&mut self, node: Node) -> io::Result<()> {
-        let id = self.node_name(node.height(), node.position(), Some(node.place()), false);
+        let id = self.node_name(node.height(), node.position(), Some(node.place()));
 
         self.line(|w| {
             // The node identifier
@@ -393,7 +393,7 @@ impl<W: Write> DotWriter<W> {
     }
 
     fn phantom_node(&mut self, height: u8, position: Position) -> io::Result<()> {
-        let id = self.node_name(height, position, None, false);
+        let id = self.node_name(height, position, None);
 
         self.line(|w| {
             // The node identifier
@@ -515,11 +515,9 @@ impl<W: Write> DotWriter<W> {
                         left.height(),
                         left.position(),
                         Some(left.place()),
-                        false,
                         child.height(),
                         child.position(),
                         Some(child.place()),
-                        false,
                     )?;
                 }
                 left = Some(child);
@@ -543,11 +541,9 @@ impl<W: Write> DotWriter<W> {
                             child_height,
                             left_position,
                             left_place,
-                            false,
                             child_height,
                             right_position,
                             None,
-                            false,
                         )?;
                     }
                     left_place = None;
@@ -559,13 +555,8 @@ impl<W: Write> DotWriter<W> {
     }
 
     fn parent_child_edge(&mut self, parent: Node, child: Node) -> io::Result<()> {
-        let parent_id = self.node_name(
-            parent.height(),
-            parent.position(),
-            Some(parent.place()),
-            false,
-        );
-        let child_id = self.node_name(child.height(), child.position(), Some(child.place()), false);
+        let parent_id = self.node_name(parent.height(), parent.position(), Some(parent.place()));
+        let child_id = self.node_name(child.height(), child.position(), Some(child.place()));
         let edge_id = self.edge_name(parent_id, child_id);
 
         self.line(|w| {
@@ -599,13 +590,8 @@ impl<W: Write> DotWriter<W> {
     }
 
     fn parent_phantom_edge(&mut self, parent: Node, child_position: Position) -> io::Result<()> {
-        let parent_id = self.node_name(
-            parent.height(),
-            parent.position(),
-            Some(parent.place()),
-            false,
-        );
-        let child_id = self.node_name(parent.height() - 1, child_position, None, false);
+        let parent_id = self.node_name(parent.height(), parent.position(), Some(parent.place()));
+        let child_id = self.node_name(parent.height() - 1, child_position, None);
         let edge_id = self.edge_name(parent_id, child_id);
 
         self.line(|w| {
@@ -626,20 +612,17 @@ impl<W: Write> DotWriter<W> {
         })
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn sibling_sibling_edge(
         &mut self,
         left_height: u8,
         left_position: Position,
         left_place: Option<Place>,
-        left_terminal: bool,
         right_height: u8,
         right_position: Position,
         right_place: Option<Place>,
-        right_terminal: bool,
     ) -> io::Result<()> {
-        let left_id = self.node_name(left_height, left_position, left_place, left_terminal);
-        let right_id = self.node_name(right_height, right_position, right_place, right_terminal);
+        let left_id = self.node_name(left_height, left_position, left_place);
+        let right_id = self.node_name(right_height, right_position, right_place);
         let edge_id = self.edge_name(left_id, right_id);
 
         self.line(|w| {
@@ -686,8 +669,7 @@ impl<W: Write> DotWriter<W> {
             commitment: Some(_),
         } = node.kind()
         {
-            let parent_id =
-                self.node_name(node.height(), node.position(), Some(node.place()), false);
+            let parent_id = self.node_name(node.height(), node.position(), Some(node.place()));
             let child_id = self.commitment_name(node.position());
             let edge_id = self.edge_name(parent_id, child_id);
 
@@ -718,7 +700,6 @@ impl<W: Write> DotWriter<W> {
         height: u8,
         position: Position,
         place: Option<Place>,
-        terminal: bool,
     ) -> impl Fn(&mut W) -> io::Result<()> + Copy {
         // Note: using a special node ID for frontier nodes that only references the height means
         // that animations between sequential graphs will look nicer, because it will look like the
@@ -728,9 +709,7 @@ impl<W: Write> DotWriter<W> {
         move |w| {
             #[allow(clippy::collapsible_else_if)]
             if pretty {
-                if place == Some(Place::Frontier) && terminal {
-                    write!(w, "NODE_FRONTIER_TIP")
-                } else if place == Some(Place::Frontier) && height != 0 {
+                if place == Some(Place::Frontier) && height != 0 {
                     write!(w, "NODE_FRONTIER_height_{}", height)
                 } else {
                     write!(
@@ -743,9 +722,7 @@ impl<W: Write> DotWriter<W> {
                     )
                 }
             } else {
-                if place == Some(Place::Frontier) && terminal {
-                    write!(w, "N_F_T")
-                } else if place == Some(Place::Frontier) && height != 0 {
+                if place == Some(Place::Frontier) && height != 0 {
                     write!(w, "N_F_{}", height)
                 } else {
                     write!(
@@ -893,7 +870,7 @@ fn node_color(node: &Node) -> String {
     let hash = if let Some(hash) = node.cached_hash() {
         hash
     } else {
-        return FRONTIER_NODE_COLOR.to_string();
+        return FRONTIER_TERMINUS_COLOR.to_string();
     };
 
     // The "empty block"/"empty epoch" color is black
