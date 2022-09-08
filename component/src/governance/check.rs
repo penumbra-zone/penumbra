@@ -1,6 +1,6 @@
 use anyhow::{Context as _, Result};
 
-use super::proposal;
+use super::proposal::{self, chain_params};
 use penumbra_transaction::action::{
     ProposalSubmit, ProposalWithdraw, ProposalWithdrawBody, ValidatorVote, ValidatorVoteBody,
 };
@@ -42,10 +42,12 @@ pub mod stateless {
             Emergency { halt_chain: _ } => { /* all emergency proposals are valid */ }
             ParameterChange {
                 effective_height: _,
-                new_parameters: _,
+                new_parameters,
             } => {
-                // TODO: check that new parameters are marked as mutable and within valid bounds
-                anyhow::bail!("parameter change proposals are not yet supported")
+                // Check that new parameters are marked as mutable and within valid bounds
+                if !chain_params::is_valid_stateless(new_parameters) {
+                    return Err(anyhow::anyhow!("invalid chain parameters"));
+                }
             }
             DaoSpend {
                 schedule_transactions: _,
@@ -114,9 +116,16 @@ pub mod stateful {
             ProposalPayload::Emergency { .. } => { /* no stateful checks for emergency */ }
             ProposalPayload::ParameterChange {
                 effective_height,
-                new_parameters: _,
+                new_parameters,
             } => {
                 height_in_future_of_voting_end(state, *effective_height).await?;
+
+                let old_parameters = state.get_chain_params().await?;
+
+                if !chain_params::is_valid_stateful(new_parameters, &old_parameters) {
+                    // TODO: should this return a more descriptive error?
+                    return Err(anyhow::anyhow!("invalid chain parameters"));
+                }
             }
             ProposalPayload::DaoSpend {
                 schedule_transactions,
