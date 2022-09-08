@@ -74,7 +74,7 @@ function run() {
             if (!graph) {
                 // If changes have happened but we didn't get the latest graph, go fetch it now
                 if (response.forgotten !== forgotten || response.position !== position) {
-                    poll(false, true);
+                    poll(long, graph);
                     return;
                 } else {
                     // If no changes have happened and we don't have a new graph, stop
