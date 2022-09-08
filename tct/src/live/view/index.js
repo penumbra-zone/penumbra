@@ -4,6 +4,7 @@ const liveViewSettings = {
     renderInterval: 250,
     pollRetry: 1000,
     longPollDelay: 0,
+    shortPollInterval: 500,
     initialPrecision: 1,
     targetMaxRenderTime: 250,
     precisionAdjustFactor: 1.5,
@@ -42,6 +43,7 @@ function run() {
 
     // Initial state
     let changed = false;
+    let lastChanged = performance.now();
     let renderedRecently = false;
     let precision = liveViewSettings.initialPrecision;
     let latestDot = 'digraph {}';
@@ -53,23 +55,42 @@ function run() {
     };
 
     // Long-poll loop to get the latest dot render of the tree
-    function poll(long) {
-        let query_string = "";
-        if (long) {
-            query_string = "?epoch=" + position.epoch + "&block=" + position.block + "&commitment=" + position.commitment + "&forgotten=" + forgotten + "&next=" + long;
+    function poll(long, graph) {
+        if (graph === undefined) {
+            graph = true;
         }
-        let url = window.location.href + "/dot" + query_string;
+
+        let queryString = "";
+        if (position !== null) {
+            queryString = "?epoch=" + position.epoch + "&block=" + position.block + "&commitment=" + position.commitment + "&forgotten=" + forgotten + "&next=" + long + "&graph=" + graph;
+        } else {
+            queryString = "?full=true&forgotten=" + forgotten + "&next=" + long + "&graph=" + graph;
+        }
+        let url = window.location.href + "/dot" + queryString;
 
         d3.json(url).then(response => {
-            latestDot = response.graph;
+            // Only update the graph if we asked for it (otherwise it'll be null)
+            if (graph) {
+                latestDot = response.graph;
+            // If changes have happened but we didn't get the latest graph, go fetch it now
+            } else if (response.forgotten !== forgotten || response.position !== position) {
+                poll(long, true);
+                return;
+            // If no changes have happened and we don't have a new graph, stop
+            } else {
+                return;
+            }
+
+            // We've gotten the graph, so update our state and trigger a render
             forgotten = response.forgotten;
             position = response.position;
             changed = true;
+            lastChanged = performance.now();
             // Start a new render task, if one isn't already in progress
             setTimeout(render, 0);
             // Schedule the polling to recur
             if (long) {
-                setTimeout(() => poll(long), liveViewSettings.longPollDelay);
+                setTimeout(() => poll(long, graph), liveViewSettings.longPollDelay);
             }
         }).catch(error => {
             console.log(error);
@@ -125,11 +146,21 @@ function run() {
         }
     }
 
-    // Do one initial short-poll to get the current state of the graph
+    // Initially do a short-poll to set up the first state
     poll(true);
 
     // Start the long-poll loop over non-interior changes
     poll(false);
+
+    // Check for changes periodically by doing a short poll without immediate request for the graph:
+    // if it discovers the position has changed, it will initiate another poll where it does a real
+    // update by pulling the graph
+    setInterval(() => {
+        let sinceLastChange = performance.now() - lastChanged;
+        if (sinceLastChange >= liveViewSettings.shortPollInterval) {
+            poll(false, false);
+        }
+    }, liveViewSettings.shortPollInterval);
 
     // Interior mutation caused by evaluating the lazy frontier hashes won't cause the position or
     // forgotten index to advance, so it won't be caught by the long-poll loop: we use the SSE

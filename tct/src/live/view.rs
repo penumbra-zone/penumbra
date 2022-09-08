@@ -22,7 +22,7 @@ mod resources;
 use resources::*;
 
 mod earliest;
-use earliest::Earliest;
+use earliest::DotQuery;
 
 /// An [`axum`] [`Router`] that serves a live, animated view of a [`Tree`] at the `/` path.
 ///
@@ -116,11 +116,8 @@ fn styles() -> MethodRouter {
 /// tree is changed and its position and forgotten count remain the same, or they go backwards.
 ///
 /// This allows the listener to detect interior mutation and resets.
-fn extra_changes(tree: watch::Receiver<Tree>) -> MethodRouter {
+fn extra_changes(mut tree: watch::Receiver<Tree>) -> MethodRouter {
     get(move || async move {
-        // Clone the watch receiver so we don't steal other users' updates
-        let mut tree = tree.clone();
-
         let (tx, rx) = mpsc::channel(1);
 
         // Forward all changes to the tree as events
@@ -240,25 +237,37 @@ fn spawn_render_worker(
 }
 
 /// The graphviz DOT endpoint, which is accessed by the index page's javascript.
-fn render_dot(tree: watch::Receiver<Tree>) -> MethodRouter {
-    let (request_render, receive_render) = spawn_render_worker(&tree);
+fn render_dot(mut tree: watch::Receiver<Tree>) -> MethodRouter {
+    let (request_render, mut receive_render) = spawn_render_worker(&tree);
     let request_render = Arc::new(request_render);
 
-    get(move |Query(earliest): Query<Earliest>| async move {
-        // Clone the watch receiver so we don't steal other users' updates
-        let mut tree = tree.clone();
-        let mut receive_render = receive_render.clone();
-
+    get(move |Query(query): Query<DotQuery>| async move {
         // Wait for the tree to reach the requested position and forgotten index
         loop {
             {
                 // Extra scope necessary to satisfy borrow checker
                 let current = tree.borrow();
-                if earliest.not_too_late_for(&current) {
+                if query.not_too_late_for(&current) {
                     break;
                 }
             }
             tree.changed().await.unwrap();
+        }
+
+        // If the graph is not requested, don't render it, just return the other data
+        if !query.graph {
+            return Ok::<_, (StatusCode, String)>((
+                TypedHeader(ContentType::json()),
+                StreamBody::new(
+                    stream::iter(vec![json!({
+                        "position": tree.borrow().position(),
+                        "forgotten": tree.borrow().forgotten(),
+                    })
+                    .to_string()
+                    .into()])
+                    .map(Ok),
+                ),
+            ));
         }
 
         // Now that the tree is the right version, loop until a suitable render is provided
@@ -293,8 +302,8 @@ fn render_dot(tree: watch::Receiver<Tree>) -> MethodRouter {
                 // long-polling as soon as something valid is available, even if that valid thing
                 // ends up being a little stale, while requests for something precisely up to date
                 // will wait for the render task to finish past that specific request.
-                if (earliest.next && earliest.not_too_late_for(&rendered.1))
-                    || (!earliest.next && ticket <= rendered.0)
+                if (query.next && query.not_too_late_for(&rendered.1))
+                    || (!query.next && ticket <= rendered.0)
                 {
                     break (
                         rendered.1.position(),
@@ -322,7 +331,7 @@ fn render_dot(tree: watch::Receiver<Tree>) -> MethodRouter {
             // rendered bytes: the graph is already rendered as a JSON-escaped string, so we include
             // it literally in this output
             StreamBody::new(
-                stream::iter([
+                stream::iter(vec![
                     "{".into(),
                     "\"position\":".into(),
                     serde_json::to_vec(&position).unwrap().into(),

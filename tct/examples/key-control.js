@@ -58,7 +58,7 @@ function keyControl() {
             }
 
             // Ensure the operation is done
-            doAction();
+            setTimeout(doAction, 0);
         } else if (digits.has(key)) {
             event.preventDefault();
 
@@ -99,9 +99,10 @@ function keyControl() {
 
         d3.text(url, {method: queries[key][0]}).then(() => {
             // Continue doing actions until none are left to do
-            doAction();
+            setTimeout(doAction, 0);
         }).catch(error => {
             // If there was an error, stop the loop
+            actions = [];
             display("");
             console.log(error);
         });
