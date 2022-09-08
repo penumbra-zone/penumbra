@@ -1,22 +1,25 @@
 let keyFeedback = true;
 
 function keyControl() {
-    const concurrencyLimit = 10000;
+    // This can be set much higher when random concurrency is enabled (suggestion: 50000)
+    const concurrencyLimit = 500;
+    // Disable random concurrency for more quick but less responsive behavior
+    const randomConcurrency = false;
 
     let actions = [];
     let pendingCount = null;
     let pendingActions = 0;
 
     const queries = {
-        'c': ["post", 'insert?witness=forget'],
-        'C': ["post", 'insert?witness=keep'],
-        'b': ["post", 'end-block'],
-        'B': ["post", 'insert-block-root'],
-        'e': ["post", 'end-epoch'],
-        'E': ["post", 'insert-epoch-root'],
-        'f': ["post", 'forget'],
-        'n': ["post", 'new'],
-        'r': ["get", 'root'],
+        'c': ["post", 'insert?witness=forget', 'insert (keep)'],
+        'C': ["post", 'insert?witness=keep', 'insert (forget)'],
+        'b': ["post", 'end-block', 'end block'],
+        'B': ["post", 'insert-block-root', 'insert block root'],
+        'e': ["post", 'end-epoch', 'end epoch'],
+        'E': ["post", 'insert-epoch-root', 'insert epoch root'],
+        'f': ["post", 'forget', 'forget'],
+        'n': ["post", 'new', 'new'],
+        'r': ["get", 'root', 'evaluate root'],
     };
 
     const digits = new Set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
@@ -31,6 +34,16 @@ function keyControl() {
             pendingCount = null;
             display(key);
             display("");
+        } else if (key === '!') {
+            let currentKeyFeedback = keyFeedback;
+            keyFeedback = true;
+            if (currentKeyFeedback) {
+                display("echo off");
+            } else {
+                display("echo on");
+            }
+            setTimeout(display(""), 1000);
+            keyFeedback = !currentKeyFeedback;
         } else if (key === 'c' && event.ctrlKey) {
             event.preventDefault();
             actions = [];
@@ -112,7 +125,12 @@ function keyControl() {
         // the probability of being concurrently scheduled goes down, until at 2 times the
         // concurrency limit, it's impossible to be concurrently scheduled. This leads to an
         // expected concurrency of the limit.
-        let concurrently = pendingActions < Math.random() * concurrencyLimit * 2;
+        let concurrently;
+        if (!randomConcurrency) {
+            concurrently = pendingActions < concurrencyLimit;
+        } else {
+            concurrently = pendingActions < Math.random() * concurrencyLimit * 2;
+        }
 
         let url = window.location.origin + '/' + queries[key][1];
 
