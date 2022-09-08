@@ -1,5 +1,5 @@
 function keyControl() {
-    const concurrencyLimit = 500;
+    const concurrencyLimit = 10000;
 
     let actions = [];
     let pendingCount = null;
@@ -105,8 +105,12 @@ function keyControl() {
         }
 
         // Determine whether we should perform the next request concurrently or wait for this one to
-        // finish (this is effectively using a task pool of size `concurrencyLimit`)
-        let concurrently = pendingActions < concurrencyLimit;
+        // finish (this is effectively using a task pool of size `concurrencyLimit`). This is
+        // randomized so that the user experience is less glitchy: as the pending actions goes up,
+        // the probability of being concurrently scheduled goes down, until at 2 times the
+        // concurrency limit, it's impossible to be concurrently scheduled. This leads to an
+        // expected concurrency of the limit.
+        let concurrently = pendingActions < Math.random() * concurrencyLimit * 2;
 
         let url = window.location.origin + '/' + queries[key][1];
 
