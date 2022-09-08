@@ -867,6 +867,10 @@ fn node_height(node: &Node) -> &'static str {
 }
 
 fn node_color(node: &Node) -> String {
+    if node.height() == 24 && node.children().is_empty() {
+        return "white".to_string();
+    }
+
     let hash = if let Some(hash) = node.cached_hash() {
         hash
     } else {
