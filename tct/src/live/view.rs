@@ -31,7 +31,7 @@ pub fn view(tree: watch::Receiver<Tree>, ext: ViewExtensions) -> Router {
         .route("/scripts/:script", scripts())
         .route("/licenses/:script/LICENSE", licenses())
         .route("/styles/:style", styles())
-        .route("/changes", changes(tree.clone()))
+        .route("/extra-changes", changes(tree.clone()))
         .route("/dot", render_dot(tree))
 }
 
@@ -110,9 +110,9 @@ fn styles() -> MethodRouter {
 }
 
 /// SSE endpoint that sends an event with the tree's position and forgotten count every time the
-/// tree is changed.
+/// tree is changed and its position and forgotten count remain the same, or they go backwards.
 ///
-/// The returned data will stay the same if the tree experiences interior mutation.
+/// This allows the listener to detect interior mutation and resets.
 fn changes(tree: watch::Receiver<Tree>) -> MethodRouter {
     get(move || async move {
         // Clone the watch receiver so we don't steal other users' updates
@@ -122,6 +122,11 @@ fn changes(tree: watch::Receiver<Tree>) -> MethodRouter {
 
         // Forward all changes to the tree as events
         tokio::spawn(async move {
+            let (mut position, mut forgotten) = {
+                let tree = tree.borrow();
+                (tree.position(), tree.forgotten())
+            };
+
             loop {
                 // Wait for something to change
                 if (tree.changed().await).is_err() {
@@ -131,8 +136,25 @@ fn changes(tree: watch::Receiver<Tree>) -> MethodRouter {
                 // Form one or two events about it
                 let changed = {
                     let tree = tree.borrow();
-                    let forgotten = tree.forgotten();
-                    let position = if let Some(position) = tree.position() {
+                    let new_position = tree.position();
+                    let new_forgotten = tree.forgotten();
+
+                    // If the position or forgotten has changed, don't emit an event, because the
+                    // subscriber only cares about changes they can't detect with long-polling
+                    let strictly_forward =
+                        // Position and forgotten both don't go backward
+                        (new_position >= position && new_forgotten >= forgotten)
+                        // At least one of them goes forward
+                        && (new_position > position || new_forgotten > forgotten);
+
+                    if strictly_forward {
+                        continue;
+                    } else {
+                        position = new_position;
+                        forgotten = new_forgotten;
+                    }
+
+                    let position = if let Some(position) = new_position {
                         json!({
                             "epoch": position.epoch(),
                             "block": position.block(),
