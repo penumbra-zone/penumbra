@@ -3,15 +3,15 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Values.name }}-{{$i}}
+  name: "{{ .Values.network }}-{{ .Values.name }}-{{$i}}"
   # labels:
   #   {{- include "node-cluster.labels" . | nindent 4 }}
 spec:
 
-  replicas: 1
+  replicas: {{ .Values.replicaCount }}
   
   selector:
-    app: {{}}
+    app: "{{ .Values.network }}-{{ .Values.name }}-{{$i}}"
     # matchLabels:
     #   {{- include "node-cluster.selectorLabels" . | nindent 6 }}
   template:
@@ -20,46 +20,134 @@ spec:
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      name: "{{ .Values.network }}-{{ .Values.name }}-{{$i}}"
       labels:
         {{- include "node-cluster.selectorLabels" . | nindent 8 }}
+        app: "{{ .Values.network }}-{{ .Values.name }}-{{$i}}"
+        network: "{{ .Values.network }}"
     spec:
-      {{- with .Values.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      serviceAccountName: {{ include "node-cluster.serviceAccountName" . }}
-      securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
-      containers:
-        - name: {{ .Chart.Name }}
+      volumes:
+        - name: "pv-{{ .Values.network }}-pd-{{ .Values.name }}-{{$i}}"
+          persistentVolumeClaim:
+            claimName: "pvc-{{ .Values.network }}-pd-{{ .Values.name }}-{{$i}}"
+        - name: "pv-{{ .Values.network }}-tm-{{ .Values.name }}-{{$i}}"
+          persistentVolumeClaim:
+            claimName: "pvc-{{ .Values.network }}-tm-{{ .Values.name }}-{{$i}}"
+        - name: tm-config
+          configMap:
+            name: tm-config
+            items:
+              - key: "config.toml"
+                path: "config.toml"
+      initContainers:
+        - name: heighliner-ownership
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+                chown -R 1025:1025 "/home/pv-{{ .Values.network }}-tm-{{ .Values.name }}-{{$i}}"
+                chown -R 1025:1025 "/home/pv-{{ .Values.network }}-pd-{{ .Values.name }}-{{$i}}"
+          volumeMounts:
+            - name: "pv-{{ .Values.network }}-tm-{{ .Values.name }}-{{$i}}"
+              mountPath: "/home/pv-{{ .Values.network }}-tm-{{ .Values.name }}-{{$i}}"
+            - name: "pv-{{ .Values.network }}-pd-{{ .Values.name }}-{{$i}}"
+              mountPath: "/home/pv-{{ .Values.network }}-pd-{{ .Values.name }}-{{$i}}"
+        - name: config-init
+          image: "{{ .Values.tendermintImage }}:{{ .Values.tendermintVersion }}"
+          command:
+            - sh
+            - -c
+            - |
+              set -eux
+              CHAIN_DIR=/home/heighliner/.tendermint
+              if [ ! -d $CHAIN_DIR ]; then
+                tendermint init full --home $CHAIN_DIR
+              else
+                CONFIG_DIR=$CHAIN_DIR/config
+                rm -rf $CONFIG_DIR/*.toml
+                TMP_DIR=/home/heighliner/tmpConfig
+                tendermint init full --home $TMP_DIR
+                mv $TMP_DIR/config/*.toml $CONFIG_DIR/
+                rm -rf $TMP_DIR
+              fi
+          volumeMounts:
+            - name: "pv-{{ .Values.network }}-tm-{{ .Values.name }}-{{$i}}"
+              mountPath: /home/heighliner
+        - name: config-merge
+          image: "{{ .Values.toolkitImage }}:{{ .Values.toolkitVersion }}"
+          command:
+            - sh
+            - -c
+            - |
+              set -eux
+              CONFIG_DIR=/home/heighliner/.tendermint/config
+              # curl -X GET "http://testnet.penumbra.zone:26657/genesis" -H "accept: application/json" | jq '.result.genesis' > $CONFIG_DIR/genesis.json
+              MERGE_DIR=/tmp/configMerge
+              OVERLAY_DIR=/config
+              mkdir $MERGE_DIR
+              config-merge -f toml $CONFIG_DIR/config.toml $OVERLAY_DIR/config.toml > $MERGE_DIR/config.toml
+              dasel put string -f $MERGE_DIR/config.toml -p toml ".p2p.external_address" $(curl -s ifconfig.me):26656
+              mv $MERGE_DIR/* $CONFIG_DIR/
           securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+            runAsUser: 1025
+            runAsGroup: 1025
+          volumeMounts:
+            - name: "pv-{{ .Values.network }}-tm-{{ .Values.name }}-{{$i}}"
+              mountPath: /home/heighliner
+            - name: tm-config
+              mountPath: "/config"
+              readOnly: true
+      containers:
+        - name: tm
+          image: "{{ .Values.tendermintImage }}:{{ .Values.tendermintVersion }}"
+          imagePullPolicy: Always
           ports:
-            - name: http
-              containerPort: 80
+            - containerPort: 26657
               protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /
-              port: http
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
-      {{- with .Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+              name: rpc
+            - containerPort: 26656
+              protocol: TCP
+              name: p2p
+          volumeMounts:
+            - name: "pv-{{ .Values.network }}-tm-{{ .Values.name }}-{{$i}}"
+              mountPath: /home/heighliner
+          command:
+            # - sleep
+            # - "1000"
+            - tendermint
+            - start
+            - --proxy-app=tcp://localhost:26658
+        - name: pd
+          image: "{{ .Values.penumbraImage }}:{{ .Values.penumbraVersion }}"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+              name: grpc
+            - containerPort: 9000
+              protocol: TCP
+              name: metrics
+          volumeMounts:
+            - name: "pv-{{ .Values.network }}-pd-{{ .Values.name }}-{{$i}}"
+              mountPath: /home/heighliner
+          command:
+            # - sleep
+            # - "1000"
+            - pd
+            - start
+            - --home
+            - /home/heighliner/pd
+        - name: health-check
+          image: "{{ .Values.healthImage }}:{{ .Values.healthVersion }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 1251
+              protocol: TCP
+              name: health
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 30
+
 {{ end }}
