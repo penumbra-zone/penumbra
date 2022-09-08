@@ -22,13 +22,17 @@ use crate::{
 /// Queries taking arguments pass arguments via URL parameters. Results are returned in JSON format,
 /// with [`StatusCode::BAD_REQUEST`] being returned if the operation failed (i.e. an `Err` variant
 /// was returned).
-pub fn control<R: Rng + Send + 'static>(rng: R, tree: Arc<watch::Sender<Tree>>) -> Router {
+pub fn control<R: Rng + Send + 'static>(
+    rng: R,
+    tree: Arc<watch::Sender<Tree>>,
+    max_witnesses: Option<usize>,
+) -> Router {
     // The rng is shared between all methods
     let rng = Arc::new(Mutex::new(rng));
 
     Router::new()
         .route("/new", new(tree.clone()))
-        .route("/insert", insert(rng.clone(), tree.clone()))
+        .route("/insert", insert(rng.clone(), tree.clone(), max_witnesses))
         .route("/forget", forget(rng.clone(), tree.clone()))
         .route(
             "/insert-block-root",
@@ -50,6 +54,7 @@ fn new(tree: Arc<watch::Sender<Tree>>) -> MethodRouter {
 fn insert<R: Rng + Send + 'static>(
     rng: Arc<Mutex<R>>,
     tree: Arc<watch::Sender<Tree>>,
+    max_witnesses: Option<usize>,
 ) -> MethodRouter {
     #[derive(Deserialize)]
     struct Insert {
@@ -58,12 +63,26 @@ fn insert<R: Rng + Send + 'static>(
     }
 
     post(
-        |Query(Insert {
-             witness,
-             commitment,
-         }): Query<Insert>| async move {
+        move |Query(Insert {
+                  witness,
+                  commitment,
+              }): Query<Insert>| async move {
             let mut result = None;
             tree.send_modify(|tree| {
+                if witness == Witness::Keep {
+                    // If we're at quota for number of commitments, forget until we're strictly below
+                    // quota again, so we can insert something
+                    if let Some(max_witnesses) = max_witnesses {
+                        let required_forgessions =
+                            (1 + tree.witnessed_count()).saturating_sub(max_witnesses);
+                        for commitment in
+                            random_commitments(&mut *rng.lock(), tree, required_forgessions)
+                        {
+                            tree.forget(commitment);
+                        }
+                    }
+                }
+                // Now actually insert the commitment we wanted to insert
                 result = Some(tree.insert(
                     witness,
                     // If no commitment is specified, generate a random one
@@ -85,6 +104,15 @@ fn insert<R: Rng + Send + 'static>(
     )
 }
 
+fn random_commitments<R: Rng>(mut rng: R, tree: &Tree, amount: usize) -> Vec<Commitment> {
+    tree.commitments()
+        .map(|(c, _)| c)
+        .collect::<Vec<_>>()
+        .choose_multiple(&mut rng, amount)
+        .copied()
+        .collect()
+}
+
 fn forget<R: Rng + Send + 'static>(
     rng: Arc<Mutex<R>>,
     tree: Arc<watch::Sender<Tree>>,
@@ -98,13 +126,8 @@ fn forget<R: Rng + Send + 'static>(
         let mut result = None;
         tree.send_modify(|tree| {
             if let Some(commitment) = commitment.or_else(|| {
-                // If no commitment is specified, forget a random one that is present in
-                // the tree
-                tree.commitments()
-                    .map(|(c, _)| c)
-                    .collect::<Vec<_>>()
-                    .choose(&mut *rng.lock())
-                    .copied()
+                // If no commitment is specified, forget a random extant one
+                random_commitments(&mut *rng.lock(), tree, 1).pop()
             }) {
                 result = Some(tree.forget(commitment));
             } else {
