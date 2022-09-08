@@ -80,7 +80,7 @@ fn marking_change<R>(
 }
 
 /// Compute all the frontier hashes of the tree, without forcing them to be evaluated
-fn frontier_hashes(tree: &Tree) -> Vec<Option<Hash>> {
+pub(super) fn frontier_hashes(tree: &Tree) -> Vec<Option<Hash>> {
     fn inner(frontier: &mut Vec<Option<Hash>>, node: structure::Node) {
         frontier.push(node.cached_hash());
         if let Some(rightmost) = node.children().last() {
