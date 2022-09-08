@@ -19,6 +19,13 @@ struct Args {
     /// The port on which to serve the visualization and control API.
     #[clap(short, long, default_value = "8080")]
     port: u16,
+    /// The maximum number of commitments to permit witnessing before shedding them randomly.
+    ///
+    /// This is good to set if exposing this server to concurrent users, because it prevents a DoS
+    /// attack where someone keeps adding witnesses until the server runs out of memory and/or
+    /// clients fall over because they can't handle the size of the tree.
+    #[clap(long)]
+    max_witnesses: Option<usize>,
 }
 
 #[tokio::main]
@@ -36,7 +43,7 @@ async fn main() {
         ..Default::default()
     };
 
-    let app = live::edit(rng, tree, ext)
+    let app = live::edit(rng, tree, ext, args.max_witnesses)
         .merge(key_control())
         .layer(TraceLayer::new_for_http());
 
