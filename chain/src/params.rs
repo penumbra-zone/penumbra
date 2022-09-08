@@ -145,7 +145,7 @@ impl Default for ChainParameters {
     fn default() -> Self {
         Self {
             chain_id: String::new(),
-            epoch_duration: 8640,
+            epoch_duration: 719,
             unbonding_epochs: 30,
             active_validator_limit: 10,
             // copied from cosmos hub
@@ -161,7 +161,7 @@ impl Default for ChainParameters {
             inbound_ics20_transfers_enabled: false,
             outbound_ics20_transfers_enabled: false,
             // governance
-            proposal_voting_blocks: 100,
+            proposal_voting_blocks: 720,
             proposal_deposit_amount: 10_000_000, // 10,000,000 upenumbra = 10 penumbra
             // governance parameters copied from cosmos hub
             proposal_valid_quorum: Ratio::new(2, 5),

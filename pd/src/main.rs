@@ -81,7 +81,7 @@ enum TestnetCommand {
     /// configuration.
     Generate {
         /// Number of blocks per epoch.
-        #[clap(long, default_value = "40")]
+        #[clap(long, default_value = "719")]
         epoch_duration: u64,
         /// Number of epochs before unbonding stake is released.
         #[clap(long, default_value = "2")]
