@@ -42,6 +42,7 @@ function run() {
     });
 
     // Initial state
+    let retrying = false;
     let changed = false;
     let lastChanged = performance.now();
     let renderedRecently = false;
@@ -73,7 +74,7 @@ function run() {
             if (!graph) {
                 // If changes have happened but we didn't get the latest graph, go fetch it now
                 if (response.forgotten !== forgotten || response.position !== position) {
-                    poll(long, true);
+                    poll(false, true);
                     return;
                 } else {
                     // If no changes have happened and we don't have a new graph, stop
@@ -100,17 +101,20 @@ function run() {
             }
         }).catch(error => {
             console.log(error);
-            setTimeout(retry, liveViewSettings.pollRetry);
+            retry();
         });
     }
 
     // Retry polling until we get a response, then reload the page
     function retry() {
-        d3.text(window.location.href).then(() => {
-            window.location.reload();
-        }).catch(() => {
-            setTimeout(retry, liveViewSettings.pollRetry);
-        });
+        if (!retrying) {
+            retrying = true;
+            d3.text(window.location.href).then(() => {
+                window.location.reload();
+            }).catch(() => {
+                setTimeout(retry, liveViewSettings.pollRetry);
+            });
+        }
     }
 
     // Render the current dot, if it has changed, and continue rendering until it hasn't changed
