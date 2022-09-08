@@ -103,6 +103,7 @@ function keyControl() {
         }).catch(error => {
             // If there was an error, stop the loop
             actions = [];
+            message.style("color", "red");
             display("");
             console.log(error);
         });
