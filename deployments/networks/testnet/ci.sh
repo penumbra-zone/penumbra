@@ -25,7 +25,7 @@ do
     --file "$CONTAINERHOME"/val.json
 done
 
-find "$WORKDIR" -name "val.json" -exec jq . {} \; | jq -s > "$WORKDIR/vals.json"
+find "$WORKDIR" -name "val.json" -exec cat {} + | jq -s > "$WORKDIR/vals.json"
 
 
 docker run --user 0:0 \
