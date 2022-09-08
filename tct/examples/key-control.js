@@ -34,8 +34,6 @@ function keyControl() {
             pendingCount = null;
             display(key);
             display("");
-        } else if (key === '?') {
-            help.style("display", "block");
         } else if (key === '!') {
             let currentKeyFeedback = keyFeedback;
             keyFeedback = true;
@@ -194,44 +192,6 @@ function keyControl() {
             }
         }
     }
-
-    const helpText = `Keyboard commands for the interactive tree:
-
-  - 'n': reset the tree to new
-  - 'c': insert a random commitment without remembering it
-  - 'C': insert a random commitment and remember it
-  - 'b': end the current block
-  - 'B': insert a random block root
-  - 'e': end the current epoch
-  - 'E': insert a random epoch root
-  - 'f': forget a random commitment
-  - 'r': evaluate the root of the tree
-  - '!': toggle keyboard input display
-  - '?': display this help text again
-
-Prefix a command key with a number to repeat it, vim-style:
-For example, '3f' will forget three commitments randomly.
-
-Mouse over an epoch, block, commitment, or hash to see more info.
-Scroll and drag to zoom and pan.
-
-Click anywhere to get started!
-`;
-
-    d3.select('body').insert("pre").attr("id", "help");
-    const help = d3.select('#help');
-    help.style("width", "100%");
-    help.style("height", "100%");
-    help.style("background-color", "white");
-    help.style("position", "absolute");
-    help.style("font-size", "20pt");
-    help.style("font-family", "Courier New");
-    help.style("padding", "50pt");
-    help.text(helpText);
-
-    help.on("click", () => {
-        help.style("display", "none");
-    });
 }
 
 keyControl();
