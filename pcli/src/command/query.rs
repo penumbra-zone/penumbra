@@ -6,8 +6,8 @@ mod tx;
 use tx::Tx;
 mod chain;
 use chain::ChainCmd;
-mod proposal;
-use proposal::ProposalCmd;
+mod governance;
+use governance::GovernanceCmd;
 mod validator;
 pub(super) use validator::ValidatorCmd;
 
@@ -32,8 +32,8 @@ pub enum QueryCmd {
     #[clap(subcommand)]
     Validator(ValidatorCmd),
     /// Queries information about governance proposals.
-    #[clap(flatten)]
-    Proposal(ProposalCmd),
+    #[clap(subcommand)]
+    Governance(GovernanceCmd),
 }
 
 impl QueryCmd {
@@ -51,15 +51,15 @@ impl QueryCmd {
             return validator.exec(app).await;
         }
 
-        if let QueryCmd::Proposal(proposal) = self {
-            return proposal.exec(app).await;
+        if let QueryCmd::Governance(governance) = self {
+            return governance.exec(app).await;
         }
 
         let key = match self {
             QueryCmd::Tx(_)
             | QueryCmd::Chain(_)
             | QueryCmd::Validator(_)
-            | QueryCmd::Proposal(_) => {
+            | QueryCmd::Governance(_) => {
                 unreachable!("query handled in guard");
             }
             QueryCmd::ShieldedPool(p) => p.key().as_bytes().to_vec(),
@@ -89,7 +89,7 @@ impl QueryCmd {
             QueryCmd::Tx { .. }
             | QueryCmd::Chain { .. }
             | QueryCmd::Validator { .. }
-            | QueryCmd::Proposal { .. } => {
+            | QueryCmd::Governance { .. } => {
                 unreachable!("query is special cased")
             }
         }
