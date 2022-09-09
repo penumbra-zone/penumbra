@@ -27,7 +27,7 @@ pub mod value;
 pub use address::Address;
 pub use asset::Asset;
 pub use delegation_token::DelegationToken;
-pub use flow::MockFlowCiphertext;
+pub use flow::{MockFlowCiphertext, SwapFlow};
 pub use governance_key::GovernanceKey;
 pub use identity_key::IdentityKey;
 pub use keys::FullViewingKey;

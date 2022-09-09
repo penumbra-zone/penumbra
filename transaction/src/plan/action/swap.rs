@@ -50,7 +50,11 @@ impl SwapPlan {
 
     /// Construct the [`swap::Body`] described by this [`SwapPlan`].
     pub fn swap_body(&self, _fvk: &FullViewingKey) -> swap::Body {
-        let fee_commitment = self.swap_plaintext.fee.value().commit(self.fee_blinding);
+        let fee_commitment = self
+            .swap_plaintext
+            .claim_fee
+            .value()
+            .commit(self.fee_blinding);
 
         let swap_nft_asset_id = self.swap_plaintext.asset_id();
 
@@ -97,7 +101,7 @@ impl SwapPlan {
         SwapProof {
             claim_address: self.swap_plaintext.claim_address,
             note_blinding: self.note_blinding,
-            fee_delta: self.swap_plaintext.fee.clone(),
+            fee_delta: self.swap_plaintext.claim_fee.clone(),
             value_t1: Value {
                 amount: self.swap_plaintext.delta_1,
                 asset_id: self.swap_plaintext.trading_pair.asset_1(),

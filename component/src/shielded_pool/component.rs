@@ -22,7 +22,10 @@ use penumbra_crypto::{
 };
 use penumbra_storage::{State, StateExt};
 use penumbra_tct as tct;
-use penumbra_transaction::{action::Undelegate, Action, Transaction};
+use penumbra_transaction::{
+    action::{swap_claim::List as SwapClaimBodyList, Undelegate},
+    Action, Transaction,
+};
 use tendermint::abci;
 use tracing::instrument;
 
@@ -278,6 +281,9 @@ impl Component for ShieldedPool {
         }
 
         // TODO: execute any scheduled DAO spend transactions for this block
+
+        // Include all output notes from DEX swaps for this block
+        self.output_dex_swaps().await;
 
         // Schedule all unquarantining that was set up in this block
         self.schedule_unquarantine().await;
@@ -688,6 +694,38 @@ impl ShieldedPool {
             .expect("can mint proposal deposit refund");
         }
     }
+
+    #[instrument(skip(self))]
+    async fn output_dex_swaps(&mut self) {
+        let block_height = self.height().await;
+
+        for claimed_swap in self
+            .state
+            .claimed_swap_outputs(block_height)
+            .await
+            .expect("claimed swap outputs can be fetched")
+            .expect("claimed swap outputs was set")
+            .0
+        {
+            let (swap_claim, txid) = (claimed_swap.0, claimed_swap.1);
+            let source = NoteSource::Transaction { id: txid };
+            let payload_1 = swap_claim.output_1;
+            let payload_2 = swap_claim.output_2;
+            self.add_note(AnnotatedNotePayload {
+                payload: payload_1,
+                source,
+            })
+            .await;
+            self.add_note(AnnotatedNotePayload {
+                payload: payload_2,
+                source,
+            })
+            .await;
+
+            // Also spend the nullifier.
+            self.spend_nullifier(swap_claim.nullifier, source).await;
+        }
+    }
 }
 
 /// Extension trait providing read/write access to shielded pool data.
@@ -1012,6 +1050,16 @@ pub trait View: StateExt {
 
     async fn set_commission_amounts(&self, height: u64, notes: CommissionAmounts) {
         self.put_domain(state_key::commission_amounts(height).into(), notes)
+            .await
+    }
+
+    async fn claimed_swap_outputs(&self, height: u64) -> Result<Option<SwapClaimBodyList>> {
+        self.get_domain(state_key::claimed_swap_outputs(height).into())
+            .await
+    }
+
+    async fn set_claimed_swap_outputs(&self, height: u64, claims: SwapClaimBodyList) {
+        self.put_domain(state_key::claimed_swap_outputs(height).into(), claims)
             .await
     }
 }

@@ -6,6 +6,7 @@ option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
 import "transaction.proto";
 import "crypto.proto";
 import "chain.proto";
+import "dex.proto";
 
 // The view protocol is used by a view client, who wants to do some
 // transaction-related actions, to request data from a view service, which is

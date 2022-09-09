@@ -7,7 +7,7 @@ import "crypto.proto";
 // A transaction action that submits a swap to the dex.
 message Swap {
   // Contains the Swap proof.
-  bytes zkproof = 1;
+  bytes proof = 1;
   // MockFlowCiphertext dropped until flow encryption/ABCI++ available
   // // Encrypted amount of asset 1 of the trading pair.
   // MockFlowCiphertext enc_amount_1 = 2;
@@ -23,7 +23,7 @@ message Swap {
 // Swap transaction.
 message SwapClaim {
   // Contains the SwapClaim proof.
-  bytes zkproof = 1;
+  bytes proof = 1;
   // Encapsulates the authorized fields of the SwapClaim action, used in signing.
   SwapClaimBody body = 2;
 }
@@ -38,12 +38,21 @@ message SwapClaimBody {
   crypto.NotePayload output_1 = 3;
   // Note output for asset 2.
   crypto.NotePayload output_2 = 4;
-  // Block root for the associated `Swap` action, identifying the block the `Swap` was included in.
-  // crypto.MerkleRoot anchor = 5;
-  // Input and output amounts for the assets in the swap.
+  // Input and output amounts, and asset IDs for the assets in the swap.
   BatchSwapOutputData output_data = 6;
-  // The trading pair to swap.
-  TradingPair trading_pair = 7;
+  // The epoch duration of the chain when the swap claim took place.
+  uint64 epoch_duration = 7;
+}
+
+// For storing the list of claimed swaps between the dex and shielded pool components.
+message ClaimedSwapList {
+  repeated ClaimedSwap claims = 1;
+}
+
+// Represents a swap claimed in a particular transaction.
+message ClaimedSwap {
+  SwapClaimBody claim = 1;
+  bytes txid = 2;
 }
 
 // The authorized data of a Swap transaction.
@@ -74,8 +83,8 @@ message SwapPlaintext {
     uint64 delta_1 = 2;
     // Input amount of asset 2
     uint64 delta_2 = 3;
-    // Fee
-    crypto.Fee fee = 4;
+    // Pre-paid fee to claim the swap
+    crypto.Fee claim_fee = 4;
     // Address that will claim the swap outputs via SwapClaim.
     crypto.Address claim_address = 5;
 }
@@ -110,6 +119,10 @@ message BatchSwapOutputData {
   uint64 lambda_2 = 4;
   // Whether the swap succeeded or not.
   bool success = 5;
+  // The height for which the batch swap data is valid.
+  uint64 height = 6;
+  // The trading pair associated with the batch swap.
+  TradingPair trading_pair = 7;
 }
 
 // The data describing a trading function.

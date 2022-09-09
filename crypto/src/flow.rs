@@ -1,4 +1,4 @@
-use std::ops::Add;
+use std::ops::{Add, AddAssign, Deref, DerefMut};
 
 use penumbra_proto::{dex as pb, Protobuf};
 use serde::{Deserialize, Serialize};
@@ -21,11 +21,23 @@ impl MockFlowCiphertext {
     }
 }
 
+impl Default for MockFlowCiphertext {
+    fn default() -> Self {
+        Self::new(0)
+    }
+}
+
 impl Add for MockFlowCiphertext {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
         Self(self.0 + other.0)
+    }
+}
+
+impl AddAssign for MockFlowCiphertext {
+    fn add_assign(&mut self, other: Self) {
+        *self = self.clone() + other;
     }
 }
 
@@ -41,5 +53,25 @@ impl TryFrom<pb::MockFlowCiphertext> for MockFlowCiphertext {
     type Error = anyhow::Error;
     fn try_from(ct: pb::MockFlowCiphertext) -> Result<Self, Self::Error> {
         Ok(Self(ct.value))
+    }
+}
+
+// Tuple represents:
+// ((amount of asset 1 being exchanged for asset 2),
+//  (amount of asset 2 being exchanged for asset 1))
+#[derive(Default, Clone)]
+pub struct SwapFlow((MockFlowCiphertext, MockFlowCiphertext));
+
+impl Deref for SwapFlow {
+    type Target = (MockFlowCiphertext, MockFlowCiphertext);
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for SwapFlow {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }

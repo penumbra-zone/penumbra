@@ -79,7 +79,7 @@ message Spend {
   // The spend authorization signature is effecting data.
   crypto.SpendAuthSignature auth_sig = 2;
   // The spend proof is effecting data.
-  bytes zkproof = 3;
+  bytes proof = 3;
 }
 
 // The body of a spend description, containing only the "authorizing" data
@@ -99,7 +99,7 @@ message Output {
   // The authorizing data for the output.
   OutputBody body = 1;
   // The output proof is effecting data.
-  bytes zkproof = 2;
+  bytes proof = 2;
 }
 
 // The body of an output description, containing only the "authorizing" data
@@ -166,7 +166,7 @@ message DelegatorVote {
   // The vote authorization signature is effecting data.
   crypto.SpendAuthSignature auth_sig = 2;
   // The vote proof is effecting data.
-  bytes zkproof = 3;
+  bytes proof = 3;
 }
 
 message DelegatorVoteBody {
@@ -334,6 +334,9 @@ message SwapClaimPlan {
     bytes esk_1 = 17;
     // The ephemeral secret key used for the second output note encryption.
     bytes esk_2 = 18;
+    
+    // The epoch duration when the swap claim took place.
+    uint64 epoch_duration = 20;
 }
 
 message ProposalWithdrawPlan {

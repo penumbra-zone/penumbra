@@ -226,6 +226,8 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.dex.SwapBody", SERIALIZE),
     (".penumbra.dex.SwapClaim", SERIALIZE),
     (".penumbra.dex.SwapClaimBody", SERIALIZE),
+    (".penumbra.dex.ClaimedSwap", SERIALIZE),
+    (".penumbra.dex.ClaimedSwapList", SERIALIZE),
     (".penumbra.dex.SwapPlaintext", SERIALIZE),
     (".penumbra.dex.BatchSwapOutputData", SERIALIZE),
     ("penumbra.governance.Vote", SERIALIZE),
@@ -334,7 +336,7 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         ".penumbra.transaction.Transaction.binding_sig",
         AS_HEX_FOR_BYTES,
     ),
-    (".penumbra.transaction.Output.zkproof", AS_BASE64_FOR_BYTES),
+    (".penumbra.transaction.Output.proof", AS_BASE64_FOR_BYTES),
     (
         ".penumbra.transaction.OutputBody.encrypted_memo",
         AS_BASE64_FOR_BYTES,
@@ -343,7 +345,9 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         ".penumbra.transaction.OutputBody.ovk_wrapped_key",
         AS_BASE64_FOR_BYTES,
     ),
-    (".penumbra.transaction.Spend.zkproof", AS_BASE64_FOR_BYTES),
+    (".penumbra.transaction.Swap.proof", AS_BASE64_FOR_BYTES),
+    (".penumbra.transaction.SwapClaim.proof", AS_BASE64_FOR_BYTES),
+    (".penumbra.transaction.Spend.proof", AS_BASE64_FOR_BYTES),
     (".penumbra.transaction.SpendBody.rk", AS_HEX_FOR_BYTES),
     (
         ".penumbra.transaction.SpendBody.nullifier",
