@@ -173,7 +173,6 @@ where
     // swap NFT will be automatically consumed when the SwapClaim action
     // is processed by the validators.
 
-
     Ok(plan)
 }
 

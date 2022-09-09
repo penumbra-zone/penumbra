@@ -2,6 +2,7 @@ use anyhow::Result;
 use penumbra_crypto::FullViewingKey;
 use penumbra_custody::{AuthorizeRequest, CustodyClient};
 use penumbra_proto::view::WitnessRequest;
+use penumbra_tct::Proof;
 use penumbra_transaction::{plan::TransactionPlan, Transaction};
 use penumbra_view::ViewClient;
 use rand_core::{CryptoRng, RngCore};
@@ -42,18 +43,12 @@ where
 
     // Now we need to augment the witness data with dummy proofs such that
     // note commitments corresponding to dummy spends also have proofs.
-    let (_, dummy_proof) = witness_data
-        .clone()
-        .note_commitment_proofs
-        .into_iter()
-        .last()
-        .expect("all transactions will have at least one spend");
     for nc in plan
         .spend_plans()
         .filter(|plan| plan.note.amount() == 0)
         .map(|plan| plan.note.commit())
     {
-        witness_data.add_proof(nc, dummy_proof.clone());
+        witness_data.add_proof(nc, Proof::dummy(&mut rng, nc));
     }
 
     // ... and then build the transaction:

@@ -1,3 +1,6 @@
+use ark_ff::UniformRand;
+use poseidon377::Fq;
+
 use crate::prelude::*;
 
 /// A proof of the inclusion of some [`Commitment`] in a [`Tree`] with a particular [`Root`].
@@ -47,6 +50,13 @@ impl Proof {
             position,
             auth_path: child,
         })
+    }
+
+    /// Generate a dummy [`Proof`] for a given commitment.
+    pub fn dummy<R: CryptoRng + Rng>(rng: &mut R, commitment: Commitment) -> Self {
+        let dummy_position = 0u64.into();
+        let dummy_auth_path: [[Hash; 3]; 24] = [[Hash::new(Fq::rand(rng)); 3]; 24];
+        Self::new(commitment, dummy_position, dummy_auth_path)
     }
 
     /// Verify a [`Proof`] of inclusion against the [`Root`] of a [`Tree`].
@@ -104,6 +114,7 @@ impl Proof {
 }
 
 use penumbra_proto::crypto as pb;
+use rand::{CryptoRng, Rng};
 
 impl From<Proof> for pb::NoteCommitmentProof {
     fn from(proof: Proof) -> Self {
