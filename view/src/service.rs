@@ -516,7 +516,10 @@ impl ViewProtocol for ViewService {
 
         let witness_data = WitnessData {
             anchor,
-            note_commitment_proofs: auth_paths,
+            note_commitment_proofs: auth_paths
+                .into_iter()
+                .map(|proof| (proof.commitment(), proof))
+                .collect(),
         };
         Ok(tonic::Response::new(witness_data.into()))
     }

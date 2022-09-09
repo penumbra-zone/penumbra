@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use penumbra_crypto::{
     memo::MemoCiphertext, rdsa, symmetric::PayloadKey, Fr, FullViewingKey, Zero,
 };
@@ -59,14 +59,19 @@ impl TransactionPlan {
         // transaction we'll build here without actually building it.
 
         // Build the transaction's spends.
-        for ((spend_plan, auth_sig), auth_path) in self
-            .spend_plans()
-            .zip(auth_data.spend_auths.into_iter())
-            .zip(witness_data.note_commitment_proofs.into_iter())
-        {
-            // Spends add to the transaction's value balance.
+        for (spend_plan, auth_sig) in self.spend_plans().zip(auth_data.spend_auths.into_iter()) {
+            let note_commitment = spend_plan.note.commit();
+            let auth_path = witness_data
+                .note_commitment_proofs
+                .get(&note_commitment)
+                .context("could not get proof for this item")?;
+
             synthetic_blinding_factor += spend_plan.value_blinding;
-            actions.push(Action::Spend(spend_plan.spend(fvk, auth_sig, auth_path)));
+            actions.push(Action::Spend(spend_plan.spend(
+                fvk,
+                auth_sig,
+                auth_path.clone(),
+            )));
         }
 
         // Build the transaction's outputs.
