@@ -85,7 +85,7 @@ impl TransactionPlan {
 
         // Build the transaction's swaps.
         for swap_plan in self.swap_plans() {
-            synthetic_blinding_factor += swap_plan.fee_blinding;
+            synthetic_blinding_factor -= swap_plan.fee_blinding;
             actions.push(Action::Swap(swap_plan.swap(fvk)));
         }
 
