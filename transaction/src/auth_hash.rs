@@ -152,11 +152,6 @@ impl TransactionPlan {
         for swap_claim in self.swap_claim_plans() {
             state.update(swap_claim.swap_claim_body(fvk).auth_hash().as_bytes());
         }
-        let num_clues = self.clue_plans.len() as u32;
-        state.update(&num_clues.to_le_bytes());
-        for clue_plan in self.clue_plans() {
-            state.update(clue_plan.clue().auth_hash().as_bytes());
-        }
         for delegation in self.delegations() {
             state.update(delegation.auth_hash().as_bytes());
         }
@@ -188,6 +183,11 @@ impl TransactionPlan {
                 .personal(b"PAH:ibc_action")
                 .hash(&payload.encode_to_vec());
             state.update(auth_hash.as_bytes());
+        }
+        let num_clues = self.clue_plans.len() as u32;
+        state.update(&num_clues.to_le_bytes());
+        for clue_plan in self.clue_plans() {
+            state.update(clue_plan.clue().auth_hash().as_bytes());
         }
 
         AuthHash(*state.finalize().as_array())
