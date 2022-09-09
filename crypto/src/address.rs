@@ -91,8 +91,8 @@ impl Address {
         f4jumble(bytes.get_ref()).expect("can jumble")
     }
 
-    /// A randomized dummy address for dummy `Clue` generation.
-    pub fn dummy<R: CryptoRng + Rng>(mut rng: R) -> Self {
+    /// A randomized dummy address.
+    pub fn dummy<R: CryptoRng + Rng>(rng: &mut R) -> Self {
         let mut diversifier_bytes = [0u8; 16];
         rng.fill_bytes(&mut diversifier_bytes);
 

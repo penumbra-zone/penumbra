@@ -1,6 +1,9 @@
 use ark_ff::UniformRand;
 use decaf377_rdsa::{Signature, SpendAuth};
-use penumbra_crypto::{proofs::transparent::SpendProof, FieldExt, Fr, FullViewingKey, Note};
+use penumbra_crypto::{
+    proofs::transparent::SpendProof, Address, FieldExt, Fq, Fr, FullViewingKey, Note, Value,
+    STAKING_TOKEN_ASSET_ID,
+};
 use penumbra_proto::{transaction as pb, Protobuf};
 use penumbra_tct as tct;
 use rand_core::{CryptoRng, RngCore};
@@ -31,6 +34,23 @@ impl SpendPlan {
             randomizer: Fr::rand(rng),
             value_blinding: Fr::rand(rng),
         }
+    }
+
+    /// Create a dummy [`SpendPlan`].
+    pub fn dummy<R: CryptoRng + RngCore>(rng: &mut R) -> SpendPlan {
+        let dummy_address = Address::dummy(rng);
+        let note_blinding = Fq::rand(rng);
+        let dummy_note = Note::from_parts(
+            dummy_address,
+            Value {
+                amount: 0,
+                asset_id: *STAKING_TOKEN_ASSET_ID,
+            },
+            note_blinding,
+        )
+        .expect("dummy note is valid");
+
+        Self::new(rng, dummy_note, 0u64.into())
     }
 
     /// Convenience method to construct the [`Spend`] described by this [`SpendPlan`].
