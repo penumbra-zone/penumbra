@@ -22,7 +22,7 @@ poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377", branch = "
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 proptest = { version = "1", optional = true }
 proptest-derive = { version = "0.3", optional = true }
-rand = { version = "0.8", optional = true }
+rand = { version = "0.8" }
 tracing = { version = "0.1" }
 async-trait = { version = "0.1" }
 async-stream = "0.3"
@@ -31,7 +31,7 @@ ark-ed-on-bls12-377 = "0.3"
 
 [features]
 internal = []
-arbitrary = ["proptest", "proptest-derive", "rand"]
+arbitrary = ["proptest", "proptest-derive"]
 
 [dev-dependencies]
 static_assertions = "1"
