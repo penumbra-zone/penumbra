@@ -598,7 +598,12 @@ mod tests {
             anchor: nct.root(),
             note_commitment_proofs: plan
                 .spend_plans()
-                .map(|spend| nct.witness(spend.note.commit()).unwrap())
+                .map(|spend| {
+                    (
+                        spend.note.commit(),
+                        nct.witness(spend.note.commit()).unwrap(),
+                    )
+                })
                 .collect(),
         };
         let transaction = plan
