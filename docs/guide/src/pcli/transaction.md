@@ -79,13 +79,13 @@ proposal` subcommand.
 To list all the active proposals by their ID, use:
 
 ```bash
-cargo run --release --bin pcli query proposals
+cargo run --release --bin pcli query governance list-proposals
 ```
 
 Other proposal query commands all follow the form:
 
 ```bash
-cargo run --release --bin pcli query proposal [PROPOSAL_ID] [QUERY]
+cargo run --release --bin pcli query governance proposal [PROPOSAL_ID] [QUERY]
 ```
 
 These are the queries currently defined:
