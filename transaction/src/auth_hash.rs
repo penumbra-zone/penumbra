@@ -518,6 +518,8 @@ impl AuthorizingData for Clue {
 #[cfg(test)]
 mod tests {
     use penumbra_crypto::{
+        asset,
+        dex::{swap::SwapPlaintext, TradingPair},
         keys::{SeedPhrase, SpendKey},
         memo::MemoPlaintext,
         transaction::Fee,
@@ -527,7 +529,7 @@ mod tests {
     use rand_core::OsRng;
 
     use crate::{
-        plan::{CluePlan, MemoPlan, OutputPlan, SpendPlan, TransactionPlan},
+        plan::{CluePlan, MemoPlan, OutputPlan, SpendPlan, SwapPlan, TransactionPlan},
         WitnessData,
     };
 
@@ -566,6 +568,23 @@ mod tests {
         nct.insert(tct::Witness::Keep, note0.commit()).unwrap();
         nct.insert(tct::Witness::Keep, note1.commit()).unwrap();
 
+        let trading_pair = TradingPair::new(
+            asset::REGISTRY.parse_denom("nala").unwrap().id(),
+            asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+        )
+        .unwrap();
+
+        let swap_plaintext = SwapPlaintext {
+            trading_pair,
+            delta_1: 100000,
+            delta_2: 1,
+            claim_fee: Fee(Value {
+                amount: 3,
+                asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            }),
+            claim_address: addr,
+        };
+
         let plan = TransactionPlan {
             expiry_height: 0,
             fee: Fee::default(),
@@ -584,6 +603,7 @@ mod tests {
                 .into(),
                 SpendPlan::new(&mut OsRng, note0, 0u64.into()).into(),
                 SpendPlan::new(&mut OsRng, note1, 1u64.into()).into(),
+                SwapPlan::new(&mut OsRng, swap_plaintext).into(),
             ],
             clue_plans: vec![CluePlan::new(&mut OsRng, addr, 1)],
             memo_plan: Some(MemoPlan::new(&mut OsRng, MemoPlaintext::default())),
