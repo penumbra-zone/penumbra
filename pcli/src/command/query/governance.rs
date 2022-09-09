@@ -8,7 +8,6 @@ use penumbra_component::{
     governance::{
         proposal::{self, ProposalList},
         state_key::*,
-        Governance,
     },
     stake::validator,
 };
@@ -59,7 +58,7 @@ impl GovernanceCmd {
 
         match self {
             GovernanceCmd::ListProposals { inactive } => {
-                let list: Vec<u64> = if *inactive {
+                let proposal_id_list: Vec<u64> = if *inactive {
                     let latest: u64 = client.key_proto(latest_proposal_id()).await?;
                     (0..=latest).collect()
                 } else {
@@ -67,7 +66,20 @@ impl GovernanceCmd {
                         client.key_domain(unfinished_proposals()).await?;
                     unfinished.proposals.into_iter().collect()
                 };
-                json(&list)?;
+
+                let mut writer = stdout();
+                for proposal_id in proposal_id_list {
+                    let proposal_title: String =
+                        client.key_proto(proposal_title(proposal_id)).await?;
+                    let proposal_state: proposal::State =
+                        client.key_domain(proposal_state(proposal_id)).await?;
+
+                    writeln!(
+                        writer,
+                        "#{} {:?}    {}",
+                        proposal_id, proposal_state, proposal_title
+                    )?;
+                }
             }
             GovernanceCmd::Proposal { proposal_id, query } => match query {
                 Definition => {
