@@ -10,6 +10,13 @@ pub struct WitnessData {
     pub note_commitment_proofs: BTreeMap<note::Commitment, tct::Proof>,
 }
 
+impl WitnessData {
+    /// Add proof to the existing witness data
+    pub fn add_proof(&mut self, nc: note::Commitment, proof: tct::Proof) {
+        self.note_commitment_proofs.insert(nc, proof);
+    }
+}
+
 impl Protobuf<pb::WitnessData> for WitnessData {}
 
 impl From<WitnessData> for pb::WitnessData {

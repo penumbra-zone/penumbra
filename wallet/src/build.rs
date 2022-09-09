@@ -33,12 +33,28 @@ where
         .filter(|plan| plan.note.amount() != 0)
         .map(|spend| spend.note.commit().into())
         .collect();
-    let witness_data = view
+    let mut witness_data = view
         .witness(WitnessRequest {
             account_id: Some(fvk.hash().into()),
             note_commitments,
         })
         .await?;
+
+    // Now we need to augment the witness data with dummy proofs such that
+    // note commitments corresponding to dummy spends also have proofs.
+    let (_, dummy_proof) = witness_data
+        .clone()
+        .note_commitment_proofs
+        .into_iter()
+        .last()
+        .expect("all transactions will have at least one spend");
+    for nc in plan
+        .spend_plans()
+        .filter(|plan| plan.note.amount() == 0)
+        .map(|plan| plan.note.commit())
+    {
+        witness_data.add_proof(nc, dummy_proof.clone());
+    }
 
     // ... and then build the transaction:
     plan.build(&mut rng, fvk, auth_data, witness_data)
