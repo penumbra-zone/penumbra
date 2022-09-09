@@ -8,6 +8,7 @@ use penumbra_component::{
     governance::{
         proposal::{self, ProposalList},
         state_key::*,
+        Governance,
     },
     stake::validator,
 };
@@ -19,9 +20,9 @@ use serde_json::json;
 use crate::App;
 
 #[derive(Debug, clap::Subcommand)]
-pub enum ProposalCmd {
+pub enum GovernanceCmd {
     /// List all governance proposals by number.
-    Proposals {
+    ListProposals {
         /// Whether to include proposals which have already finished voting.
         #[clap(short, long)]
         inactive: bool,
@@ -50,14 +51,14 @@ pub enum PerProposalCmd {
     ValidatorVotes,
 }
 
-impl ProposalCmd {
+impl GovernanceCmd {
     pub async fn exec(&self, app: &mut App) -> Result<()> {
         use PerProposalCmd::*;
 
         let mut client = app.specific_client().await?;
 
         match self {
-            ProposalCmd::Proposals { inactive } => {
+            GovernanceCmd::ListProposals { inactive } => {
                 let list: Vec<u64> = if *inactive {
                     let latest: u64 = client.key_proto(latest_proposal_id()).await?;
                     (0..=latest).collect()
@@ -68,7 +69,7 @@ impl ProposalCmd {
                 };
                 json(&list)?;
             }
-            ProposalCmd::Proposal { proposal_id, query } => match query {
+            GovernanceCmd::Proposal { proposal_id, query } => match query {
                 Definition => {
                     let title: String = client.key_proto(proposal_title(*proposal_id)).await?;
                     let description: String =
