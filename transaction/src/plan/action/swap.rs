@@ -87,6 +87,7 @@ impl SwapPlan {
             fee_commitment,
             swap_nft,
             swap_ciphertext,
+            fee_blinding: self.fee_blinding,
         }
     }
 

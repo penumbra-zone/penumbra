@@ -773,6 +773,7 @@ impl SwapProof {
         value_fee_commitment: value::Commitment,
         note_commitment: note::Commitment,
         epk: ka::Public,
+        fee_blinding: Fr,
     ) -> anyhow::Result<(), Error> {
         // Note commitment integrity.
         let transmission_key_s = self.claim_address.transmission_key_s();
@@ -803,8 +804,7 @@ impl SwapProof {
         //     return Err(anyhow!("value commitment mismatch"));
         // }
 
-        let fee_blinding = Fr::zero();
-        if value_fee_commitment != -self.fee_delta.commit(fee_blinding) {
+        if value_fee_commitment != self.fee_delta.commit(fee_blinding) {
             return Err(anyhow!("value commitment mismatch"));
         }
 

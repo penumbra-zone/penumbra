@@ -71,30 +71,26 @@ impl Component for Dex {
                     )?;
 
                     // 2. Check swap proof
-                    if swap
-                        .proof
-                        .verify(
-                            // TODO: no value commitments until flow encryption is available
-                            // so we pass placeholder values here, the proof doesn't check these right now
-                            // and will fail when checking is re-enabled.
-                            Value {
-                                amount: 0,
-                                asset_id: *STAKING_TOKEN_ASSET_ID,
-                            }
-                            .commit(Fr::zero()),
-                            Value {
-                                amount: 0,
-                                asset_id: *STAKING_TOKEN_ASSET_ID,
-                            }
-                            .commit(Fr::zero()),
-                            swap.body.fee_commitment,
-                            swap.body.swap_nft.note_commitment,
-                            swap.body.swap_nft.ephemeral_key,
-                        )
-                        .is_err()
-                    {
-                        // TODO: should the verification error be bubbled up here?
-                        return Err(anyhow::anyhow!("A swap proof did not verify"));
+                    if let Err(err) = swap.proof.verify(
+                        // TODO: no value commitments until flow encryption is available
+                        // so we pass placeholder values here, the proof doesn't check these right now
+                        // and will fail when checking is re-enabled.
+                        Value {
+                            amount: 0,
+                            asset_id: *STAKING_TOKEN_ASSET_ID,
+                        }
+                        .commit(Fr::zero()),
+                        Value {
+                            amount: 0,
+                            asset_id: *STAKING_TOKEN_ASSET_ID,
+                        }
+                        .commit(Fr::zero()),
+                        swap.body.fee_commitment,
+                        swap.body.swap_nft.note_commitment,
+                        swap.body.swap_nft.ephemeral_key,
+                        swap.body.fee_blinding,
+                    ) {
+                        return Err(anyhow::anyhow!("A swap proof did not verify: {}", err));
                     }
 
                     // TODO: are any other checks necessary?
