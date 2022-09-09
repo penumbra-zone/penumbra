@@ -59,6 +59,11 @@ impl SpendProof {
         nullifier: Nullifier,
         rk: VerificationKey<SpendAuth>,
     ) -> anyhow::Result<()> {
+        // Short circuit to true if value released is 0. That means this is a _dummy_ spend.
+        if self.value.amount == 0 {
+            return Ok(());
+        }
+
         // Note commitment integrity.
         let s_component_transmission_key = Fq::from_bytes(self.pk_d.0);
         if let Ok(transmission_key_s) = s_component_transmission_key {
