@@ -84,29 +84,23 @@ impl TransactionPlan {
         }
 
         // Build the transaction's swaps.
-        // TODO: figure this out
-        //         the swap plans shouldn't require pulling in spend auth signatures, because the Swap just draws from the transaction's value balance. but we'll need to figure out how we handle the authentication paths (note commitment proofs) -- in the existing WitnessData struct, there's just one for each spend, in order, because (now-broken assumption) the only place they were needed was for spends.
-
-        // wondering if we should change the WitnessData domain type to store a BTreeMap<note::Commitment, tct::Proof>, and when deserializing from the proto, instead of just deserializing a list of proofs, call .commitment() on each one and use it as the key for the BTreeMap.
-
-        // then instead of having to do zips or whatever, or figure out how to maintain a brittle order dependency, we can just query for exactly the proof we want.
-        // for ((swap_plan, auth_sig), auth_path) in self
-        //     .swap_plans()
-        //     .zip(auth_data.spend_auths.into_iter())
-        //     .zip(witness_data.note_commitment_proofs.into_iter())
-        // {
-        //     actions.push(Action::Swap(swap_plan.swap(fvk, witness_data.anchor)));
-        // }
+        for swap_plan in self.swap_plans() {
+            synthetic_blinding_factor += swap_plan.fee_blinding;
+            actions.push(Action::Swap(swap_plan.swap(fvk)));
+        }
 
         // Build the transaction's swap claims.
-        // for swap_claim_plan in self.swap_claim_plans().cloned() {
-        //     actions.push(Action::SwapClaim(swap_claim_plan.swap_claim(
-        //         fvk,
-        //         note_commitment_proof,
-        //         nk,
-        //         note_blinding,
-        //     )));
-        // }
+        for swap_claim_plan in self.swap_claim_plans().cloned() {
+            let note_commitment = swap_claim_plan.swap_nft_note.commit();
+            let auth_path = witness_data
+                .note_commitment_proofs
+                .get(&note_commitment)
+                .context("could not get proof for this item")?;
+
+            actions.push(Action::SwapClaim(
+                swap_claim_plan.swap_claim(fvk, auth_path),
+            ));
+        }
 
         // Build the clue plans.
         for clue_plan in self.clue_plans() {

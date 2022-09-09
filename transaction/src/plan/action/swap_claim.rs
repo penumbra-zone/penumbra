@@ -75,13 +75,11 @@ impl SwapClaimPlan {
     pub fn swap_claim(
         &self,
         fvk: &FullViewingKey,
-        note_commitment_proof: tct::Proof,
-        nk: NullifierKey,
-        note_blinding: Fq,
+        note_commitment_proof: &tct::Proof,
     ) -> SwapClaim {
         SwapClaim {
             body: self.swap_claim_body(fvk),
-            proof: self.swap_claim_proof(note_commitment_proof, nk, note_blinding),
+            proof: self.swap_claim_proof(note_commitment_proof, fvk.nullifier_key()),
         }
     }
 
@@ -89,16 +87,15 @@ impl SwapClaimPlan {
     /// by this plan.
     pub fn swap_claim_proof(
         &self,
-        note_commitment_proof: tct::Proof,
-        nk: NullifierKey,
-        note_blinding: Fq,
+        note_commitment_proof: &tct::Proof,
+        nk: &NullifierKey,
     ) -> SwapClaimProof {
         SwapClaimProof {
             swap_nft_asset_id: self.swap_plaintext.asset_id(),
             claim_address: self.swap_nft_note.address(),
-            note_commitment_proof,
+            note_commitment_proof: note_commitment_proof.clone(),
             trading_pair: self.swap_plaintext.trading_pair,
-            note_blinding,
+            note_blinding: self.swap_nft_note.note_blinding(),
             delta_1: self.output_data.delta_1,
             delta_2: self.output_data.delta_2,
             lambda_1: self.output_data.lambda_1,
