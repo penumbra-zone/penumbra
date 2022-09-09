@@ -41,10 +41,10 @@ impl SwapPlan {
     }
 
     /// Convenience method to construct the [`Swap`] described by this [`SwapPlan`].
-    pub fn swap(&self, fvk: &FullViewingKey, auth_path: tct::Proof) -> Swap {
+    pub fn swap(&self, fvk: &FullViewingKey) -> Swap {
         Swap {
             body: self.swap_body(fvk),
-            proof: self.swap_proof(fvk, auth_path),
+            proof: self.swap_proof(),
         }
     }
 
@@ -72,9 +72,10 @@ impl SwapPlan {
         let note_commitment = swap_nft_note.commit();
 
         let encrypted_note = swap_nft_note.encrypt(&self.esk);
+        let diversified_generator = swap_nft_note.diversified_generator();
         let swap_nft = NotePayload {
             note_commitment,
-            ephemeral_key: self.esk.public(),
+            ephemeral_key: self.esk.diversified_public(&diversified_generator),
             encrypted_note,
         };
 
@@ -87,15 +88,12 @@ impl SwapPlan {
             fee_commitment,
             swap_nft,
             swap_ciphertext,
+            fee_blinding: self.fee_blinding,
         }
     }
 
     /// Construct the [`SwapProof`] required by the [`swap::Body`] described by this [`SwapPlan`].
-    pub fn swap_proof(
-        &self,
-        _fvk: &FullViewingKey,
-        _note_commitment_proof: tct::Proof,
-    ) -> SwapProof {
+    pub fn swap_proof(&self) -> SwapProof {
         let swap_nft_asset_id = self.swap_plaintext.asset_id();
 
         SwapProof {

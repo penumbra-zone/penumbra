@@ -12,7 +12,7 @@ use penumbra_crypto::{
     keys::AddressIndex,
     memo::MemoPlaintext,
     transaction::Fee,
-    Address, FullViewingKey, Note, Value, STAKING_TOKEN_DENOM,
+    Address, FullViewingKey, Note, Value,
 };
 use penumbra_proto::view::NotesRequest;
 use penumbra_transaction::{

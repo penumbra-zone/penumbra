@@ -14,7 +14,7 @@ use penumbra_crypto::{
 use penumbra_proto::{
     chain as pbp,
     crypto::{self as pbc},
-    dex as pbd, transaction as pbt,
+    transaction as pbt,
     view::{
         self as pb, view_protocol_server::ViewProtocol, StatusResponse,
         TransactionHashStreamResponse,
