@@ -527,7 +527,7 @@ mod tests {
     use rand_core::OsRng;
 
     use crate::{
-        plan::{MemoPlan, OutputPlan, SpendPlan, TransactionPlan},
+        plan::{CluePlan, MemoPlan, OutputPlan, SpendPlan, TransactionPlan},
         WitnessData,
     };
 
@@ -585,7 +585,7 @@ mod tests {
                 SpendPlan::new(&mut OsRng, note0, 0u64.into()).into(),
                 SpendPlan::new(&mut OsRng, note1, 1u64.into()).into(),
             ],
-            clue_plans: vec![],
+            clue_plans: vec![CluePlan::new(&mut OsRng, addr, 1)],
             memo_plan: Some(MemoPlan::new(&mut OsRng, MemoPlaintext::default())),
         };
 
