@@ -118,3 +118,22 @@ cargo run --release --bin pcli validator vote yes --on 1
 ```
 
 Validators, like delegators, cannot change their votes after they have voted.
+
+## Swapping Assets
+
+One of the most exciting features of Penumbra is that by using IBC (inter-blockchain communication)
+and our shielded pool design, **any** tokens can be exchanged in a private way.
+
+**NOTE:** Since there's not yet a way to open liquidity positions, there's never liquidity available
+to complete swaps. This means all swaps will currently fail and your inputs (minus any fees) will be
+returned to you.
+
+If you wanted to exchange 1 `penumbra` tokens for `gm` tokens, you could do so like so:
+
+```bash
+cargo run --release --bin pcli -- tx swap --into gm 1penumbra
+```
+
+This will handle generating the swap transaction and you'd soon have the market-rate equivalent of 1 `penumbra`
+in `gm` tokens returned to you, or the original investment of 1 `penumbra` tokens returned if there wasn't
+enough liquidity available to perform the swap.

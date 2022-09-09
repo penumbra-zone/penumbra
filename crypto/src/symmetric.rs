@@ -1,33 +1,43 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use chacha20poly1305::{
     aead::{Aead, NewAead},
     ChaCha20Poly1305, Key, Nonce,
 };
+use rand::{CryptoRng, RngCore};
 
-use crate::{ka, keys::OutgoingViewingKey, note, value};
+use crate::{
+    ka,
+    keys::{IncomingViewingKey, OutgoingViewingKey},
+    note, value,
+};
 
+pub const PAYLOAD_KEY_LEN_BYTES: usize = 32;
 pub const OVK_WRAPPED_LEN_BYTES: usize = 48;
+pub const MEMOKEY_WRAPPED_LEN_BYTES: usize = 48;
 
 /// Represents the item to be encrypted/decrypted with the [`PayloadKey`].
 pub enum PayloadKind {
     Note,
-    Memo,
+    MemoKey,
     Swap,
+    Memo,
 }
 
 impl PayloadKind {
     pub(crate) fn nonce(&self) -> [u8; 12] {
         match self {
             Self::Note => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            Self::Memo => [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            Self::MemoKey => [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             Self::Swap => [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            Self::Memo => [3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         }
     }
 }
 
 /// Represents a symmetric `ChaCha20Poly1305` key.
 ///
-/// Used for encrypting and decrypting notes, memos and swaps.
+/// Used for encrypting and decrypting notes, memos, memo keys, and swaps.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PayloadKey(Key);
 
 impl PayloadKey {
@@ -43,7 +53,18 @@ impl PayloadKey {
         Self(*Key::from_slice(key.as_bytes()))
     }
 
-    /// Encrypt a note, swap, or memo using the `PayloadKey`.
+    /// Derive a random `PayloadKey`. Used for memo key wrapping.
+    pub fn random_key<R: CryptoRng + RngCore>(rng: &mut R) -> Self {
+        let mut key_bytes = [0u8; 32];
+        rng.fill_bytes(&mut key_bytes);
+        Self(*Key::from_slice(&key_bytes[..]))
+    }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_vec()
+    }
+
+    /// Encrypt a note, swap, memo, or memo key using the `PayloadKey`.
     pub fn encrypt(&self, plaintext: Vec<u8>, kind: PayloadKind) -> Vec<u8> {
         let cipher = ChaCha20Poly1305::new(&self.0);
         let nonce_bytes = kind.nonce();
@@ -54,7 +75,7 @@ impl PayloadKey {
             .expect("encryption succeeded")
     }
 
-    /// Decrypt a note, swap, or memo using the `PayloadKey`.
+    /// Decrypt a note, swap, memo, or memo key using the `PayloadKey`.
     pub fn decrypt(&self, ciphertext: Vec<u8>, kind: PayloadKind) -> Result<Vec<u8>> {
         let cipher = ChaCha20Poly1305::new(&self.0);
         let nonce_bytes = kind.nonce();
@@ -63,6 +84,17 @@ impl PayloadKey {
         cipher
             .decrypt(nonce, ciphertext.as_ref())
             .map_err(|_| anyhow::anyhow!("decryption error"))
+    }
+}
+
+impl TryFrom<Vec<u8>> for PayloadKey {
+    type Error = anyhow::Error;
+
+    fn try_from(vector: Vec<u8>) -> Result<Self, Self::Error> {
+        let bytes: [u8; PAYLOAD_KEY_LEN_BYTES] = vector
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("PayloadKey incorrect len"))?;
+        Ok(Self(*Key::from_slice(&bytes)))
     }
 }
 
@@ -156,6 +188,85 @@ impl TryFrom<&[u8]> for OvkWrappedKey {
         let bytes: [u8; OVK_WRAPPED_LEN_BYTES] = arr
             .try_into()
             .map_err(|_| anyhow::anyhow!("wrapped OVK malformed"))?;
+        Ok(Self(bytes))
+    }
+}
+
+/// Represents encrypted key material used to decrypt a `MemoCiphertext`.
+#[derive(Clone, Debug)]
+pub struct WrappedMemoKey(pub [u8; MEMOKEY_WRAPPED_LEN_BYTES]);
+
+impl WrappedMemoKey {
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_vec()
+    }
+
+    /// Encrypt a memo key using the action-specific `PayloadKey`.
+    pub fn encrypt(
+        memo_key: &PayloadKey,
+        esk: ka::Secret,
+        transmission_key: &ka::Public,
+        diversified_generator: &decaf377::Element,
+    ) -> Self {
+        // 1. Construct the per-action PayloadKey.
+        let epk = esk.diversified_public(diversified_generator);
+        let shared_secret = esk
+            .key_agreement_with(transmission_key)
+            .expect("key agreement succeeded");
+
+        let action_key = PayloadKey::derive(&shared_secret, &epk);
+        // 2. Now use the per-action key to encrypt the memo key.
+        let encrypted_memo_key = action_key.encrypt(memo_key.to_vec(), PayloadKind::MemoKey);
+        let wrapped_memo_key_bytes: [u8; MEMOKEY_WRAPPED_LEN_BYTES] = encrypted_memo_key
+            .try_into()
+            .expect("memo key must fit in wrapped memo key field");
+
+        WrappedMemoKey(wrapped_memo_key_bytes)
+    }
+
+    /// Decrypt a wrapped memo key by first deriving the action-specific `PayloadKey`.
+    pub fn decrypt(&self, epk: ka::Public, ivk: &IncomingViewingKey) -> Result<PayloadKey> {
+        // 1. Construct the per-action PayloadKey.
+        let shared_secret = ivk
+            .key_agreement_with(&epk)
+            .expect("key agreement succeeded");
+
+        let action_key = PayloadKey::derive(&shared_secret, &epk);
+        // 2. Now use the per-action key to decrypt the memo key.
+        let decrypted_memo_key = action_key
+            .decrypt(self.to_vec(), PayloadKind::MemoKey)
+            .map_err(|_| anyhow!("decryption error"))?;
+
+        decrypted_memo_key.try_into()
+    }
+
+    /// Decrypt a wrapped memo key using the action-specific `PayloadKey`.
+    pub fn decrypt_outgoing(&self, action_key: &PayloadKey) -> Result<PayloadKey> {
+        let decrypted_memo_key = action_key
+            .decrypt(self.to_vec(), PayloadKind::MemoKey)
+            .map_err(|_| anyhow!("decryption error"))?;
+        decrypted_memo_key.try_into()
+    }
+}
+
+impl TryFrom<Vec<u8>> for WrappedMemoKey {
+    type Error = anyhow::Error;
+
+    fn try_from(vector: Vec<u8>) -> Result<Self, Self::Error> {
+        let bytes: [u8; MEMOKEY_WRAPPED_LEN_BYTES] = vector
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("wrapped memo key malformed"))?;
+        Ok(Self(bytes))
+    }
+}
+
+impl TryFrom<&[u8]> for WrappedMemoKey {
+    type Error = anyhow::Error;
+
+    fn try_from(arr: &[u8]) -> Result<Self, Self::Error> {
+        let bytes: [u8; MEMOKEY_WRAPPED_LEN_BYTES] = arr
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("wrapped memo key malformed"))?;
         Ok(Self(bytes))
     }
 }

@@ -2,9 +2,9 @@ use ark_ff::UniformRand;
 use penumbra_crypto::{
     ka,
     keys::{IncomingViewingKey, OutgoingViewingKey},
-    memo::MemoPlaintext,
     proofs::transparent::OutputProof,
-    Address, FieldExt, Fq, Fr, Note, NotePayload, Value,
+    symmetric::WrappedMemoKey,
+    Address, FieldExt, Fq, Fr, Note, NotePayload, PayloadKey, Value,
 };
 use penumbra_proto::{transaction as pb, Protobuf};
 use rand_core::{CryptoRng, RngCore};
@@ -18,20 +18,17 @@ use crate::action::{output, Output};
 pub struct OutputPlan {
     pub value: Value,
     pub dest_address: Address,
-    pub memo: MemoPlaintext,
     pub note_blinding: Fq,
     pub value_blinding: Fr,
     pub esk: ka::Secret,
 }
 
 impl OutputPlan {
-    /// Create a new [`OutputPlan`] that sends `value` to `dest_address` with
-    /// the provided `memo`.
+    /// Create a new [`OutputPlan`] that sends `value` to `dest_address`.
     pub fn new<R: RngCore + CryptoRng>(
         rng: &mut R,
         value: Value,
         dest_address: Address,
-        memo: MemoPlaintext,
     ) -> OutputPlan {
         let note_blinding = Fq::rand(rng);
         let value_blinding = Fr::rand(rng);
@@ -39,7 +36,6 @@ impl OutputPlan {
         Self {
             value,
             dest_address,
-            memo,
             note_blinding,
             value_blinding,
             esk,
@@ -48,9 +44,9 @@ impl OutputPlan {
 
     /// Convenience method to construct the [`Output`] described by this
     /// [`OutputPlan`].
-    pub fn output(&self, ovk: &OutgoingViewingKey) -> Output {
+    pub fn output(&self, ovk: &OutgoingViewingKey, memo_key: &PayloadKey) -> Output {
         Output {
-            body: self.output_body(ovk),
+            body: self.output_body(ovk, memo_key),
             proof: self.output_proof(),
         }
     }
@@ -75,7 +71,7 @@ impl OutputPlan {
     }
 
     /// Construct the [`output::Body`] described by this plan.
-    pub fn output_body(&self, ovk: &OutgoingViewingKey) -> output::Body {
+    pub fn output_body(&self, ovk: &OutgoingViewingKey, memo_key: &PayloadKey) -> output::Body {
         // Prepare the output note and commitment.
         let note = self.output_note();
         let note_commitment = note.commit();
@@ -88,9 +84,15 @@ impl OutputPlan {
         let diversified_generator = note.diversified_generator();
         let ephemeral_key = self.esk.diversified_public(&diversified_generator);
         let encrypted_note = note.encrypt(&self.esk);
-        let encrypted_memo = self.memo.encrypt(&self.esk, &self.dest_address);
         // ... and wrap the encryption key to ourselves.
         let ovk_wrapped_key = note.encrypt_key(&self.esk, ovk, value_commitment);
+
+        let wrapped_memo_key = WrappedMemoKey::encrypt(
+            memo_key,
+            self.esk.clone(),
+            note.transmission_key(),
+            &note.diversified_generator(),
+        );
 
         output::Body {
             note_payload: NotePayload {
@@ -99,8 +101,8 @@ impl OutputPlan {
                 encrypted_note,
             },
             value_commitment,
-            encrypted_memo,
             ovk_wrapped_key,
+            wrapped_memo_key,
         }
     }
 
@@ -117,7 +119,6 @@ impl From<OutputPlan> for pb::OutputPlan {
         Self {
             value: Some(msg.value.into()),
             dest_address: Some(msg.dest_address.into()),
-            memo: msg.memo.0.to_vec().into(),
             note_blinding: msg.note_blinding.to_bytes().to_vec().into(),
             value_blinding: msg.value_blinding.to_bytes().to_vec().into(),
             esk: msg.esk.to_bytes().to_vec().into(),
@@ -137,7 +138,6 @@ impl TryFrom<pb::OutputPlan> for OutputPlan {
                 .dest_address
                 .ok_or_else(|| anyhow::anyhow!("missing address"))?
                 .try_into()?,
-            memo: msg.memo.as_ref().try_into()?,
             note_blinding: Fq::from_bytes(msg.note_blinding.as_ref().try_into()?)?,
             value_blinding: Fr::from_bytes(msg.value_blinding.as_ref().try_into()?)?,
             esk: msg.esk.as_ref().try_into()?,

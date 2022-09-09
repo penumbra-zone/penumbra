@@ -7,10 +7,10 @@ use anyhow::anyhow;
 
 use crate::{
     ka,
-    keys::{IncomingViewingKey, OutgoingViewingKey},
+    keys::OutgoingViewingKey,
     note,
-    symmetric::{OvkWrappedKey, PayloadKey, PayloadKind},
-    value, Address, Note,
+    symmetric::{OvkWrappedKey, PayloadKey, PayloadKind, WrappedMemoKey},
+    value, Note,
 };
 
 pub const MEMO_CIPHERTEXT_LEN_BYTES: usize = 528;
@@ -49,16 +49,13 @@ impl TryFrom<&[u8]> for MemoPlaintext {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct MemoCiphertext(pub [u8; MEMO_CIPHERTEXT_LEN_BYTES]);
+
 impl MemoPlaintext {
     /// Encrypt a memo, returning its ciphertext.
-    pub fn encrypt(&self, esk: &ka::Secret, address: &Address) -> MemoCiphertext {
-        let epk = esk.diversified_public(address.diversified_generator());
-        let shared_secret = esk
-            .key_agreement_with(address.transmission_key())
-            .expect("key agreement succeeds");
-
-        let key = PayloadKey::derive(&shared_secret, &epk);
-        let encryption_result = key.encrypt(self.0.to_vec(), PayloadKind::Memo);
+    pub fn encrypt(&self, memo_key: PayloadKey) -> MemoCiphertext {
+        let encryption_result = memo_key.encrypt(self.0.to_vec(), PayloadKind::Memo);
         let ciphertext: [u8; MEMO_CIPHERTEXT_LEN_BYTES] = encryption_result
             .try_into()
             .expect("memo encryption result fits in ciphertext len");
@@ -69,19 +66,12 @@ impl MemoPlaintext {
     /// Decrypt a `MemoCiphertext` to generate a plaintext `Memo`.
     pub fn decrypt(
         ciphertext: MemoCiphertext,
-        ivk: &IncomingViewingKey,
-        epk: &ka::Public,
+        memo_key: &PayloadKey,
     ) -> Result<MemoPlaintext, anyhow::Error> {
-        let shared_secret = ivk
-            .key_agreement_with(epk)
-            .map_err(|_| anyhow!("could not perform key agreement"))?;
-
-        let key = PayloadKey::derive(&shared_secret, epk);
-        let plaintext = key
+        let encryption_result = memo_key
             .decrypt(ciphertext.0.to_vec(), PayloadKind::Memo)
             .map_err(|_| anyhow!("decryption error"))?;
-
-        let plaintext_bytes: [u8; MEMO_LEN_BYTES] = plaintext
+        let plaintext_bytes: [u8; MEMO_LEN_BYTES] = encryption_result
             .try_into()
             .map_err(|_| anyhow!("could not fit plaintext into memo size"))?;
 
@@ -96,12 +86,17 @@ impl MemoPlaintext {
         cv: value::Commitment,
         ovk: &OutgoingViewingKey,
         epk: &ka::Public,
+        wrapped_memo_key: &WrappedMemoKey,
     ) -> Result<MemoPlaintext, anyhow::Error> {
         let shared_secret = Note::decrypt_key(wrapped_ovk, cm, cv, ovk, epk)
             .map_err(|_| anyhow!("key decryption error"))?;
 
-        let key = PayloadKey::derive(&shared_secret, epk);
-        let plaintext = key
+        let action_key = PayloadKey::derive(&shared_secret, epk);
+        let memo_key = wrapped_memo_key
+            .decrypt_outgoing(&action_key)
+            .map_err(|_| anyhow!("could not decrypt wrapped memo key"))?;
+
+        let plaintext = memo_key
             .decrypt(ciphertext.0.to_vec(), PayloadKind::Memo)
             .map_err(|_| anyhow!("decryption error"))?;
 
@@ -113,8 +108,21 @@ impl MemoPlaintext {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct MemoCiphertext(pub [u8; MEMO_CIPHERTEXT_LEN_BYTES]);
+impl TryFrom<&[u8]> for MemoCiphertext {
+    type Error = anyhow::Error;
+
+    fn try_from(input: &[u8]) -> Result<MemoCiphertext, Self::Error> {
+        if input.len() > MEMO_CIPHERTEXT_LEN_BYTES {
+            return Err(anyhow::anyhow!(
+                "provided memo ciphertext exceeds maximum memo size"
+            ));
+        }
+        let mut mc = [0u8; MEMO_CIPHERTEXT_LEN_BYTES];
+        mc[..input.len()].copy_from_slice(input);
+
+        Ok(MemoCiphertext(mc))
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -144,13 +152,27 @@ mod tests {
 
         let esk = ka::Secret::new(&mut rng);
 
+        // On the sender side, we have to encrypt the memo to put into the transaction-level,
+        // and also the memo key to put on the action-level (output).
         let memo = MemoPlaintext(memo_bytes);
+        let memo_key = PayloadKey::random_key(&mut OsRng);
+        let ciphertext = memo.encrypt(memo_key.clone());
+        let wrapped_memo_key = WrappedMemoKey::encrypt(
+            &memo_key,
+            esk.clone(),
+            dest.transmission_key(),
+            dest.diversified_generator(),
+        );
 
-        let ciphertext = memo.encrypt(&esk, &dest);
-
+        // On the recipient side, we have to decrypt the wrapped memo key, and then the memo.
         let epk = esk.diversified_public(dest.diversified_generator());
-        let plaintext = MemoPlaintext::decrypt(ciphertext, ivk, &epk).expect("can decrypt memo");
+        let decrypted_memo_key = wrapped_memo_key
+            .decrypt(epk, ivk)
+            .expect("can decrypt memo key");
+        let plaintext =
+            MemoPlaintext::decrypt(ciphertext, &decrypted_memo_key).expect("can decrypt memo");
 
+        assert_eq!(memo_key, decrypted_memo_key);
         assert_eq!(plaintext, memo);
     }
 
@@ -176,18 +198,34 @@ mod tests {
         };
         let note = Note::generate(&mut rng, &dest, value);
 
+        // On the sender side, we have to encrypt the memo to put into the transaction-level,
+        // and also the memo key to put on the action-level (output).
         let memo = MemoPlaintext(memo_bytes);
+        let memo_key = PayloadKey::random_key(&mut OsRng);
+        let ciphertext = memo.encrypt(memo_key.clone());
+        let wrapped_memo_key = WrappedMemoKey::encrypt(
+            &memo_key,
+            esk.clone(),
+            dest.transmission_key(),
+            dest.diversified_generator(),
+        );
 
         let value_blinding = Fr::rand(&mut rng);
         let cv = note.value().commit(value_blinding);
-
         let wrapped_ovk = note.encrypt_key(&esk, ovk, cv);
-        let ciphertext = memo.encrypt(&esk, &dest);
 
+        // Later, still on the sender side, we decrypt the memo by using the decrypt_outgoing method.
         let epk = esk.diversified_public(dest.diversified_generator());
-        let plaintext =
-            MemoPlaintext::decrypt_outgoing(ciphertext, wrapped_ovk, note.commit(), cv, ovk, &epk)
-                .expect("can decrypt memo");
+        let plaintext = MemoPlaintext::decrypt_outgoing(
+            ciphertext,
+            wrapped_ovk,
+            note.commit(),
+            cv,
+            ovk,
+            &epk,
+            &wrapped_memo_key,
+        )
+        .expect("can decrypt memo");
 
         assert_eq!(plaintext, memo);
     }

@@ -38,6 +38,9 @@ message TransactionBody {
   crypto.Fee fee = 4;
   // A list of clues for use with Fuzzy Message Detection.
   repeated crypto.Clue fmd_clues = 5;
+  // An optional encrypted memo. It will only be populated if there are
+  // outputs in the actions of this transaction. 528 bytes.
+  optional bytes encrypted_memo = 6;
 }
 
 // A state change performed by a transaction.
@@ -107,8 +110,8 @@ message OutputBody {
   crypto.NotePayload note_payload = 1;
   // A commitment to the value of the output note. 32 bytes.
   crypto.ValueCommitment value_commitment = 2;
-  // An encrypted memo. 528 bytes.
-  bytes encrypted_memo = 3;
+  // An encrypted key for decrypting the memo.
+  bytes wrapped_memo_key = 3;
   // The key material used for note encryption, wrapped in encryption to the
   // sender's outgoing viewing key. 80 bytes.
   bytes ovk_wrapped_key = 4;
@@ -219,6 +222,7 @@ message TransactionPlan {
     string chain_id = 3;
     crypto.Fee fee = 4;
     repeated CluePlan clue_plans = 5;
+    MemoPlan memo_plan = 6;
 }
 
 // Describes a planned transaction action.
@@ -265,6 +269,14 @@ message CluePlan {
   uint64 precision_bits = 3;
 }
 
+// Describes a plan for forming a `Memo`.
+message MemoPlan {
+  // The plaintext.
+  bytes plaintext = 1;
+  // The key to use to encrypt the memo.
+  bytes key = 2;
+}
+
 message SpendPlan {
     // The plaintext note we plan to spend.
     crypto.Note note = 1;
@@ -281,14 +293,12 @@ message OutputPlan {
     crypto.Value value = 1;
     // The destination address to send it to.
     crypto.Address dest_address = 2;
-    // The memo describing the output.
-    bytes memo = 3;
     // The blinding factor to use for the new note.
-    bytes note_blinding = 4;
+    bytes note_blinding = 3;
     // The blinding factor to use for the value commitment.
-    bytes value_blinding = 5;
+    bytes value_blinding = 4;
     // The ephemeral secret key to use for the note encryption.
-    bytes esk = 6;
+    bytes esk = 5;
 }
 
 message SwapPlan {
