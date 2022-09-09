@@ -4,7 +4,7 @@ use penumbra_crypto::{
     keys::{IncomingViewingKey, OutgoingViewingKey},
     proofs::transparent::OutputProof,
     symmetric::WrappedMemoKey,
-    Address, FieldExt, Fq, Fr, Note, NotePayload, PayloadKey, Value,
+    Address, FieldExt, Fq, Fr, Note, NotePayload, PayloadKey, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::{transaction as pb, Protobuf};
 use rand_core::{CryptoRng, RngCore};
@@ -40,6 +40,19 @@ impl OutputPlan {
             value_blinding,
             esk,
         }
+    }
+
+    /// Create a dummy [`OutputPlan`].
+    pub fn dummy<R: CryptoRng + RngCore>(rng: &mut R) -> OutputPlan {
+        let dummy_address = Address::dummy(rng);
+        Self::new(
+            rng,
+            Value {
+                amount: 0,
+                asset_id: *STAKING_TOKEN_ASSET_ID,
+            },
+            dummy_address,
+        )
     }
 
     /// Convenience method to construct the [`Output`] described by this
