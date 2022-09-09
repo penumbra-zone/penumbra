@@ -72,9 +72,10 @@ impl SwapPlan {
         let note_commitment = swap_nft_note.commit();
 
         let encrypted_note = swap_nft_note.encrypt(&self.esk);
+        let diversified_generator = swap_nft_note.diversified_generator();
         let swap_nft = NotePayload {
             note_commitment,
-            ephemeral_key: self.esk.public(),
+            ephemeral_key: self.esk.diversified_public(&diversified_generator),
             encrypted_note,
         };
 
