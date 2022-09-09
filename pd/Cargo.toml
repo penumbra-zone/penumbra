@@ -60,6 +60,8 @@ regex = "1.5"
 reqwest = { version = "0.11", features = ["json"] }
 prost-types = "0.9"
 tonic = "0.6.1"
+# TODO: update to 0.4, which requires tonic 0.8, which requires changes to tendermint crates (:C)
+tonic-web = "0.2"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "ansi"] }
 pin-project = "1"
 futures = "0.3"
