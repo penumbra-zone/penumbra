@@ -197,8 +197,11 @@ async fn main() -> anyhow::Result<()> {
                         }
                         None => tracing::error_span!("grpc"),
                     })
-                    .add_service(ObliviousQueryServer::new(info.clone()))
-                    .add_service(SpecificQueryServer::new(info.clone()))
+                    // Allow HTTP/1, which will be used by grpc-web connections.
+                    .accept_http1(true)
+                    // Wrap each of the gRPC services in a tonic-web proxy:
+                    .add_service(tonic_web::enable(ObliviousQueryServer::new(info.clone())))
+                    .add_service(tonic_web::enable(SpecificQueryServer::new(info.clone())))
                     .serve(
                         format!("{}:{}", host, grpc_port)
                             .parse()
