@@ -4,36 +4,44 @@
     <style type="text/css">
         code {
             font-weight: bold;
+            color: white;
+            background: black;
+            padding-left: 5pt;
+            padding-right: 5pt;
+        }
+        body {
+            font-size: 16pt;
+            font-family: sans-serif;
         }
     </style>
 </head>
 <body>
-    <p>Welcome to the <b>Tiered Commitment Tree</b> live demo!</p>
+    <h1>Welcome to the <b>Tiered Commitment Tree</b>!</h1>
     <p>
-        When you enter the demo, you can edit the tree in front of you using various keyboard
+        Within the demo, you can edit the tree using keyboard
         commands:
     </p>
     <ul>
-        <li><code>'c'</code> inserts a random commitment without remembering it</li>
-        <li><code>'⇧C'</code> inserts a random commitment and remembers it</li>
-        <li><code>'b'</code> ends the current block</li>
-        <li><code>'⇧B'</code> inserts a random block root</li>
-        <li><code>'e'</code> ends the current epoch</li>
-        <li><code>'⇧E'</code> inserts a random epoch root</li>
-        <li><code>'f'</code> forgets a random commitment</li>
-        <li><code>'r'</code> evaluates the root of the tree</li>
-        <li><code>'n'</code> resets the tree to new</li>
-        <li><code>'?'</code> shows this help text again</li>
+        <li><code>c</code> inserts a random commitment without remembering it</li>
+        <li><code>⇧C</code> inserts a random commitment and remembers it</li>
+        <li><code>b</code> ends the current block</li>
+        <li><code>⇧B</code> inserts a random block root</li>
+        <li><code>e</code> ends the current epoch</li>
+        <li><code>⇧E</code> inserts a random epoch root</li>
+        <li><code>f</code> forgets a random commitment</li>
+        <li><code>r</code> evaluates the root of the tree</li>
+        <li><code>n</code> resets the tree to new</li>
+        <li><code>?</code> shows this help text again</li>
     </ul>
     <p>
-        Prefix a command key with a number to repeat it, vim-style. For example, <code>'3f'</code> will
+        Prefix a command key with a number to repeat it, vim-style. For example, <code>3f</code> will
         forget three commitments randomly.
     </p>
+    <p>Scroll and drag the page to zoom and pan across the tree.</p>
     <p>
-        Mouse over an epoch, block, commitment, or hash to see more info.
-        Scroll and drag to zoom and pan.
+        If you mouse over an epoch, block, commitment, or hash, the tooltip will show more info.
     </p>
-    <p>
-        <a href="/view" style="font-size: 20pt">Click here to start!</a>
-    </p>
+    <h2>
+        <a href="/view">Click here to start!</a>
+    </h2>
 </body>
