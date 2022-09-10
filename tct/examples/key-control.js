@@ -34,6 +34,8 @@ function keyControl() {
             pendingCount = null;
             display(key);
             display("");
+        } else if (key === '?') {
+            document.location.href = window.location.origin;
         } else if (key === '!') {
             let currentKeyFeedback = keyFeedback;
             keyFeedback = true;

@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use axum::{routing::get, Router};
+use axum::{headers::ContentType, routing::get, Router, TypedHeader};
 use clap::Parser;
 use include_flate::flate;
 use tokio::sync::watch;
@@ -45,6 +45,7 @@ async fn main() {
 
     let app = live::edit(rng, tree, ext, args.max_witnesses)
         .merge(key_control())
+        .merge(main_help())
         .layer(TraceLayer::new_for_http());
     // TODO: add rate limit layer here
 
@@ -58,30 +59,7 @@ async fn main() {
 }
 
 fn help_text(address: &std::net::SocketAddr) {
-    println!("Serving at http://{address}/view ...");
-    println!();
-    println!("Keyboard commands available in the browser:");
-    println!();
-    println!("  - 'n': reset the tree to new");
-    println!("  - 'c': insert a random commitment without remembering it");
-    println!("  - 'C': insert a random commitment and remember it");
-    println!("  - 'b': end the current block");
-    println!("  - 'B': insert a random block root");
-    println!("  - 'e': end the current epoch");
-    println!("  - 'E': insert a random epoch root");
-    println!("  - 'f': forget a random commitment");
-    println!("  - 'r': evaluate the root of the tree");
-    println!();
-    println!("Prefix a command key with a number to repeat it, vim-style.");
-    println!("For example, '3f' will forget three commitments randomly.");
-    println!();
-    println!("Mouse over an epoch, block, commitment, or hash to see more info.");
-    println!();
-    println!("Scroll and drag to zoom and pan.");
-    println!();
-    println!("Press Ctrl+C in this terminal to stop the server.");
-    println!();
-    println!("Have fun!");
+    println!("Serving at http://{address} ...");
 }
 
 // Serve the static file "key-control.js", which reads keystrokes and translates them into POST
@@ -99,5 +77,14 @@ fn key_control() -> Router {
                 KEY_CONTROL_JS.clone(),
             )
         }),
+    )
+}
+
+flate!(static HELP_HTML: str from "examples/tct-live-edit-help.html");
+
+fn main_help() -> Router {
+    Router::new().route(
+        "/",
+        get(|| async { (TypedHeader(ContentType::html()), HELP_HTML.clone()) }),
     )
 }
