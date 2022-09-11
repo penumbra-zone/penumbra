@@ -122,26 +122,31 @@ impl Transaction {
         })
     }
 
-    // TODO: make sure payloads from Swap actions included
     pub fn note_payloads(&self) -> impl Iterator<Item = &NotePayload> {
-        self.actions().filter_map(|action| {
-            if let Action::Output(output) = action {
-                Some(&output.body.note_payload)
-            } else {
-                None
-            }
-        })
+        // This is somewhat cursed but avoids the need to allocate or erase types, I guess?
+        self.actions()
+            .flat_map(|action| match action {
+                Action::Output(output) => [Some(&output.body.note_payload), None],
+                Action::Swap(swap) => [Some(&swap.body.swap_nft), None],
+                Action::SwapClaim(swap_claim) => [
+                    Some(&swap_claim.body.output_1),
+                    Some(&swap_claim.body.output_2),
+                ],
+                _ => [None, None],
+            })
+            // We've padded arrays with None to be able to unify types, now strip the
+            // bogus padding values away:
+            .filter_map(|x| x)
     }
 
-    // TODO: make sure nullifiers from SwapClaim actions included
     pub fn spent_nullifiers(&self) -> impl Iterator<Item = Nullifier> + '_ {
         self.actions().filter_map(|action| {
             // Note: adding future actions that include nullifiers
             // will need to be matched here as well as Spends
-            if let Action::Spend(spend) = action {
-                Some(spend.body.nullifier)
-            } else {
-                None
+            match action {
+                Action::Spend(spend) => Some(spend.body.nullifier),
+                Action::SwapClaim(swap_claim) => Some(swap_claim.body.nullifier),
+                _ => None,
             }
         })
     }
