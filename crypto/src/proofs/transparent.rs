@@ -174,7 +174,11 @@ impl OutputProof {
             );
 
             if note_commitment != note_commitment_test {
-                return Err(anyhow!("note commitment mismatch"));
+                return Err(anyhow!(
+                    "note commitment mismatch, public input {:?} does not match witnessed data {:?}",
+                     note_commitment,
+                     note_commitment_test,
+                ));
             }
         } else {
             return Err(anyhow!("transmission key mismatch"));
