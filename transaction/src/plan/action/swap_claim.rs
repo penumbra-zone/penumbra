@@ -5,8 +5,7 @@ use penumbra_crypto::{
     ka,
     keys::{IncomingViewingKey, NullifierKey},
     proofs::transparent::SwapClaimProof,
-    transaction::Fee,
-    Address, Fq, FullViewingKey, Note, NotePayload, Value,
+    Fq, FullViewingKey, Note, NotePayload, Value,
 };
 use penumbra_proto::{transaction as pb, Protobuf};
 use penumbra_tct as tct;
@@ -37,25 +36,16 @@ impl SwapClaimPlan {
     #[allow(clippy::too_many_arguments)]
     pub fn new<R: RngCore + CryptoRng>(
         rng: &mut R,
+        swap_plaintext: SwapPlaintext,
         swap_nft_note: Note,
         swap_nft_position: Position,
-        claim_address: Address,
-        fee: Fee,
-        output_data: BatchSwapOutputData,
         epoch_duration: u64,
+        output_data: BatchSwapOutputData,
     ) -> SwapClaimPlan {
         let output_1_blinding = Fq::rand(rng);
         let output_2_blinding = Fq::rand(rng);
         let esk_1 = ka::Secret::new(rng);
         let esk_2 = ka::Secret::new(rng);
-        let swap_plaintext = SwapPlaintext::from_parts(
-            output_data.trading_pair,
-            output_data.delta_1,
-            output_data.delta_2,
-            fee,
-            claim_address,
-        )
-        .expect("unable to instantiate swap plaintext");
 
         Self {
             swap_nft_note,
@@ -110,10 +100,14 @@ impl SwapClaimPlan {
 
     /// Construct the [`swap_claim::Body`] described by this plan.
     pub fn swap_claim_body(&self, fvk: &FullViewingKey) -> swap_claim::Body {
+        let (lambda_1, lambda_2) = self
+            .output_data
+            .pro_rata_outputs((self.swap_plaintext.delta_1, self.swap_plaintext.delta_2));
+
         let output_1_note = Note::from_parts(
             self.swap_nft_note.address(),
             Value {
-                amount: self.output_data.lambda_1,
+                amount: lambda_1,
                 asset_id: self.swap_plaintext.trading_pair.asset_1(),
             },
             self.output_1_blinding,
@@ -122,7 +116,7 @@ impl SwapClaimPlan {
         let output_2_note = Note::from_parts(
             self.swap_nft_note.address(),
             Value {
-                amount: self.output_data.lambda_2,
+                amount: lambda_2,
                 asset_id: self.swap_plaintext.trading_pair.asset_2(),
             },
             self.output_2_blinding,
@@ -130,14 +124,16 @@ impl SwapClaimPlan {
         .expect("transmission key in address is always valid");
         tracing::debug!(?output_1_note, ?output_2_note);
 
+        // We need to get the correct diversified generator to use with DH:
+        let g_d = self.swap_plaintext.claim_address.diversified_generator();
         let output_1 = NotePayload {
             note_commitment: output_1_note.commit(),
-            ephemeral_key: self.esk_1.public(),
+            ephemeral_key: self.esk_1.diversified_public(&g_d),
             encrypted_note: output_1_note.encrypt(&self.esk_1),
         };
         let output_2 = NotePayload {
             note_commitment: output_2_note.commit(),
-            ephemeral_key: self.esk_2.public(),
+            ephemeral_key: self.esk_2.diversified_public(&g_d),
             encrypted_note: output_2_note.encrypt(&self.esk_2),
         };
 

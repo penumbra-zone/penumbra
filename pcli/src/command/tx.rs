@@ -3,7 +3,8 @@ use std::{fs::File, io::Write};
 use anyhow::{anyhow, Context, Result};
 use penumbra_component::stake::rate::RateData;
 use penumbra_crypto::{
-    asset, transaction::Fee, Address, DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID,
+    asset, dex::BatchSwapOutputData, transaction::Fee, Address, DelegationToken, IdentityKey,
+    Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::{
     client::specific::{BatchSwapOutputDataRequest, KeyValueRequest},
@@ -224,7 +225,7 @@ impl TxCmd {
                 let account_id = app.fvk.hash();
                 let note_commitment = swap_plan_inner.swap_body(&app.fvk).swap_nft.note_commitment;
                 // Find the swap NFT note associated with the swap plan.
-                let swap_nft_note = tokio::time::timeout(
+                let swap_nft_record = tokio::time::timeout(
                     std::time::Duration::from_secs(20),
                     app.view()
                         .await_note_by_commitment(account_id, note_commitment),
@@ -234,9 +235,7 @@ impl TxCmd {
                 .context("error while waiting for detection of submitted transaction")?;
 
                 // Now that the note commitment is detected, we can submit the `SwapClaim` transaction.
-                let position = swap_nft_note.position;
-                let swap_height = swap_nft_note.height_created;
-                let trading_pair = swap_plan_inner.swap_plaintext.trading_pair;
+                let swap_plaintext = swap_plan_inner.swap_plaintext;
 
                 // Fetch the batch swap output data associated with the block height
                 // and trading pair of the swap action.
@@ -245,23 +244,24 @@ impl TxCmd {
                 // the client has to encrypt the SwapPlaintext, however the validators *must*
                 // validate that the BatchSwapOutputData is correct when processing the SwapClaim!
                 let mut client = app.specific_client().await?;
-                let output_data = client
+                let output_data: BatchSwapOutputData = client
                     .batch_swap_output_data(BatchSwapOutputDataRequest {
-                        height: swap_height,
-                        trading_pair: Some(trading_pair.into()),
+                        height: swap_nft_record.height_created,
+                        trading_pair: Some(swap_plaintext.trading_pair.into()),
                     })
                     .await?
-                    .get_ref()
-                    .clone();
+                    .into_inner()
+                    .try_into()
+                    .context("cannot parse batch swap output data")?;
 
                 let claim_plan = plan::swap_claim(
                     &app.fvk,
                     &mut app.view,
                     OsRng,
-                    swap_nft_note.note.clone(),
-                    position,
-                    swap_claim_fee,
-                    output_data.try_into()?,
+                    swap_plaintext,
+                    swap_nft_record.note,
+                    swap_nft_record.position,
+                    output_data,
                 )
                 .await?;
 

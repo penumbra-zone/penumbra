@@ -123,35 +123,39 @@ where
 
 #[allow(clippy::too_many_arguments)]
 #[allow(dead_code)]
-#[instrument(skip(_fvk, view, rng, swap_nft_note, swap_nft_position, fee, output_data))]
+#[instrument(skip(
+    _fvk,
+    view,
+    rng,
+    swap_plaintext,
+    swap_nft_note,
+    swap_nft_position,
+    output_data
+))]
 pub async fn swap_claim<V, R>(
     _fvk: &FullViewingKey,
     view: &mut V,
     mut rng: R,
+    swap_plaintext: SwapPlaintext,
     swap_nft_note: Note,
     swap_nft_position: Position,
-    fee: u64,
     output_data: BatchSwapOutputData,
 ) -> Result<TransactionPlan, anyhow::Error>
 where
     V: ViewClient,
     R: RngCore + CryptoRng,
 {
-    tracing::debug!(?swap_nft_note, ?fee);
+    tracing::debug!(?swap_plaintext, ?swap_nft_note);
 
     let chain_params = view.chain_params().await?;
 
     let mut plan = TransactionPlan {
         chain_id: chain_params.chain_id,
-        fee: Fee::from_staking_token_amount(fee),
-        // SwapClaim will create outputs, so we add a memo.
-        memo_plan: Some(MemoPlan::new(&mut rng, MemoPlaintext::default())),
+        fee: swap_plaintext.claim_fee.clone(),
+        // The transaction doesn't need a memo, because it's to ourselves.
+        memo_plan: None,
         ..Default::default()
     };
-
-    // The swap claim output notes must go to the same address associated with
-    // the swap action.
-    let claim_address = swap_nft_note.address();
 
     let epoch_duration = chain_params.epoch_duration;
 
@@ -159,12 +163,11 @@ where
     plan.actions.push(
         SwapClaimPlan::new(
             &mut rng,
+            swap_plaintext,
             swap_nft_note,
             swap_nft_position,
-            claim_address,
-            Fee::from_staking_token_amount(fee),
-            output_data,
             epoch_duration,
+            output_data,
         )
         .into(),
     );

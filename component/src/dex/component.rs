@@ -102,6 +102,8 @@ impl Component for Dex {
                             swap_claim.body.output_1.note_commitment,
                             swap_claim.body.output_2.note_commitment,
                             fee,
+                            swap_claim.body.output_1.ephemeral_key,
+                            swap_claim.body.output_2.ephemeral_key,
                         )
                         .context("a swap claim proof did not verify")?;
 
