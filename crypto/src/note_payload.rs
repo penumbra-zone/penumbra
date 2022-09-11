@@ -30,16 +30,21 @@ impl NotePayload {
         // Verification logic (if any fails, return None & log error)
         // Reject notes with zero amount
         if note.amount() == 0 {
-            tracing::warn!("note contains zero assets");
+            // This is only debug-level because it can happen honestly (e.g., swap claims).
+            tracing::debug!("ignoring note recording zero assets");
             return None;
         }
         // Make sure spendable by keys
         if !fvk.controls(&note) {
-            tracing::warn!("note is not spendable by provided full viewing key");
+            // This should be a warning, because no honestly generated note plaintext should
+            // mismatch the FVK that can detect and decrypt it.
+            tracing::warn!("decrypted note that is not spendable by provided full viewing key");
             return None;
         }
         // Make sure note commitment matches
         if note.commit() != self.note_commitment {
+            // This should be a warning, because no honestly generated note plaintext should
+            // fail to match the note commitment actually included in the chain.
             tracing::warn!("decrypted note does not match provided note commitment");
             return None;
         }
