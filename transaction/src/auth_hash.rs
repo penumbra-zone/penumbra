@@ -287,7 +287,7 @@ impl AuthorizingData for swap::Body {
 impl AuthorizingData for swap_claim::Body {
     fn auth_hash(&self) -> Hash {
         let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:swap_claim_body")
+            .personal(b"PAH:swapclaimbdy")
             .to_state();
 
         // All of these fields are fixed-length, so we can just throw them

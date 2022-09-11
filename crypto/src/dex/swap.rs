@@ -38,7 +38,7 @@ pub struct BatchSwapOutputData {
 impl BatchSwapOutputData {
     pub fn auth_hash(&self) -> Hash {
         blake2b_simd::Params::default()
-            .personal(b"PAH:batch_swap_output_data")
+            .personal(b"PAH:btchswp_otpt")
             .to_state()
             .update(&self.delta_1.to_le_bytes())
             .update(&self.delta_2.to_le_bytes())
