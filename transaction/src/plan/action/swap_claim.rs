@@ -128,6 +128,7 @@ impl SwapClaimPlan {
             self.output_2_blinding,
         )
         .expect("transmission key in address is always valid");
+        tracing::debug!(?output_1_note, ?output_2_note);
 
         let output_1 = NotePayload {
             note_commitment: output_1_note.commit(),

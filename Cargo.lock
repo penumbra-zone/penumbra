@@ -3273,6 +3273,7 @@ dependencies = [
  "serde_with",
  "sha2 0.9.9",
  "thiserror",
+ "tracing",
 ]
 
 [[package]]
