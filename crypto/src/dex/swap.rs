@@ -36,6 +36,32 @@ pub struct BatchSwapOutputData {
 }
 
 impl BatchSwapOutputData {
+    /// Given a user's inputs `(delta_1_i, delta_2_i)`, compute their pro rata share
+    /// of the batch output `(lambda_1_i, lambda_2_i)`.
+    pub fn pro_rata_outputs(&self, (delta_1_i, delta_2_i): (u64, u64)) -> (u64, u64) {
+        if self.success {
+            // The swap succeeded, so the pro rata share is a share of the output amount of
+            // the opposite token type.
+            // The pro rata fraction is delta_j_i / delta_j, which we can multiply through:
+            //   lambda_2_i = (delta_1_i / delta_1) * lambda_2
+            //   lambda_1_i = (delta_2_i / delta_2) * lambda_1
+            // But we want to compute these as
+            //   lambda_2_i = (delta_1_i * lambda_2) / delta_1
+            //   lambda_1_i = (delta_2_i * lambda_1) / delta_2
+            // so that we can do division and rounding at the end.
+            let lambda_1_i =
+                ((delta_1_i as u128) * (self.lambda_2 as u128)) / (self.delta_1 as u128);
+            let lambda_2_i =
+                ((delta_2_i as u128) * (self.lambda_1 as u128)) / (self.delta_2 as u128);
+
+            (lambda_1_i as u64, lambda_2_i as u64)
+        } else {
+            // The swap failed, so the pro rata share is a share of the input amount of
+            // the same token type. But this is exactly the delta_j_i.
+            (delta_1_i, delta_2_i)
+        }
+    }
+
     pub fn auth_hash(&self) -> Hash {
         blake2b_simd::Params::default()
             .personal(b"PAH:btchswp_otpt")
