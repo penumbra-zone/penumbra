@@ -6,7 +6,6 @@ use penumbra_crypto::{
     proofs::transparent::SwapProof, FieldExt, Fr, FullViewingKey, Note, NotePayload, Value,
 };
 use penumbra_proto::{transaction as pb, Protobuf};
-use penumbra_tct as tct;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
