@@ -60,17 +60,7 @@ impl Component for Dex {
                     return Err(anyhow::anyhow!("lp actions not supported yet"));
                 }
                 Action::Swap(swap) => {
-                    // TODO: add a check that ephemeral_key is not identity to prevent scanning dos attack ?
-                    let auth_hash = tx.transaction_body().auth_hash();
-
-                    // 1. Check binding signature.
-                    anyhow::Context::context(
-                        tx.binding_verification_key()
-                            .verify(auth_hash.as_ref(), tx.binding_sig()),
-                        "binding signature failed to verify",
-                    )?;
-
-                    // 2. Check swap proof
+                    // Check swap proof
                     swap.proof
                         .verify(
                             // TODO: no value commitments until flow encryption is available
@@ -98,19 +88,9 @@ impl Component for Dex {
                     return Ok(());
                 }
                 Action::SwapClaim(swap_claim) => {
-                    // TODO: add a check that ephemeral_key is not identity to prevent scanning dos attack ?
-                    let auth_hash = tx.transaction_body().auth_hash();
-
-                    // 1. Check binding signature.
-                    anyhow::Context::context(
-                        tx.binding_verification_key()
-                            .verify(auth_hash.as_ref(), tx.binding_sig()),
-                        "binding signature failed to verify",
-                    )?;
-
                     let fee = swap_claim.body.fee.clone();
 
-                    // 2. Check swap claim proof
+                    // Check swap claim proof
                     let anchor = tx.anchor;
                     swap_claim
                         .proof
