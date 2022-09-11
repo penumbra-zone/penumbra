@@ -198,17 +198,10 @@ impl TryFrom<AddressIndex> for u64 {
     fn try_from(address_index: AddressIndex) -> Result<Self, Self::Error> {
         match address_index {
             AddressIndex::Numeric(x) => Ok(x),
-            AddressIndex::Random(bytes) => {
-                if bytes[8..16] == [0u8; 8] {
-                    Ok(u64::from_le_bytes(
-                        bytes[0..8]
-                            .try_into()
-                            .expect("can take first 8 bytes of 16-byte array"),
-                    ))
-                } else {
-                    Err(anyhow::anyhow!("address index out of range"))
-                }
-            }
+            AddressIndex::Random(_) => Err(anyhow::anyhow!(
+                "address index {:?} is not AddressIndex::Numeric",
+                address_index
+            )),
         }
     }
 }
