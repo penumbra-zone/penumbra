@@ -502,6 +502,9 @@ impl ViewProtocol for ViewService {
                     "Unable to deserialize note commitment",
                 )
             })?;
+
+        tracing::debug!(?requested_note_commitments);
+
         let auth_paths: Vec<Proof> = requested_note_commitments
             .iter()
             .map(|nc| {
@@ -521,6 +524,7 @@ impl ViewProtocol for ViewService {
                 .map(|proof| (proof.commitment(), proof))
                 .collect(),
         };
+        tracing::debug!(?witness_data);
         Ok(tonic::Response::new(witness_data.into()))
     }
 

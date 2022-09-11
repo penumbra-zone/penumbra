@@ -33,6 +33,10 @@ where
         .spend_plans()
         .filter(|plan| plan.note.amount() != 0)
         .map(|spend| spend.note.commit().into())
+        .chain(
+            plan.swap_claim_plans()
+                .map(|swap_claim| swap_claim.swap_nft_note.commit().into()),
+        )
         .collect();
     let mut witness_data = view
         .witness(WitnessRequest {

@@ -32,13 +32,6 @@ impl TransactionPlan {
                 auth_data.spend_auths.len()
             ));
         }
-        if witness_data.note_commitment_proofs.len() != spend_count {
-            return Err(anyhow::anyhow!(
-                "expected {} auth paths but got {}",
-                spend_count,
-                witness_data.note_commitment_proofs.len()
-            ));
-        }
 
         let mut actions = Vec::new();
         let mut fmd_clues = Vec::new();
@@ -64,7 +57,7 @@ impl TransactionPlan {
             let auth_path = witness_data
                 .note_commitment_proofs
                 .get(&note_commitment)
-                .context("could not get proof for this item")?;
+                .context(format!("could not get proof for {:?}", note_commitment))?;
 
             synthetic_blinding_factor += spend_plan.value_blinding;
             actions.push(Action::Spend(spend_plan.spend(
@@ -95,7 +88,7 @@ impl TransactionPlan {
             let auth_path = witness_data
                 .note_commitment_proofs
                 .get(&note_commitment)
-                .context("could not get proof for this item")?;
+                .context(format!("could not get proof for {:?}", note_commitment))?;
 
             actions.push(Action::SwapClaim(
                 swap_claim_plan.swap_claim(fvk, auth_path),
