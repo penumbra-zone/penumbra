@@ -226,15 +226,10 @@ where
     // and `delta_2` is 0.
     //
     // Otherwise, `delta_1` is 0, and `delta_2` is the input amount.
-    let delta_1 = if trading_pair.asset_1() == input_value.asset_id {
-        input_value.amount
+    let (delta_1, delta_2) = if trading_pair.asset_1() == input_value.asset_id {
+        (input_value.amount, 0)
     } else {
-        0
-    };
-    let delta_2 = if trading_pair.asset_1() == input_value.asset_id {
-        0
-    } else {
-        input_value.amount
+        (0, input_value.amount)
     };
 
     // If there is no input, then there is no swap.
