@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::shielded_pool::View as _;
 use crate::{Component, Context};
-use anyhow::Result;
+use anyhow::{Context as _, Result};
 use ark_ff::Zero;
 use async_trait::async_trait;
 use decaf377::Fr;
@@ -71,27 +71,27 @@ impl Component for Dex {
                     )?;
 
                     // 2. Check swap proof
-                    if let Err(err) = swap.proof.verify(
-                        // TODO: no value commitments until flow encryption is available
-                        // so we pass placeholder values here, the proof doesn't check these right now
-                        // and will fail when checking is re-enabled.
-                        Value {
-                            amount: 0,
-                            asset_id: *STAKING_TOKEN_ASSET_ID,
-                        }
-                        .commit(Fr::zero()),
-                        Value {
-                            amount: 0,
-                            asset_id: *STAKING_TOKEN_ASSET_ID,
-                        }
-                        .commit(Fr::zero()),
-                        swap.body.fee_commitment,
-                        swap.body.swap_nft.note_commitment,
-                        swap.body.swap_nft.ephemeral_key,
-                        swap.body.fee_blinding,
-                    ) {
-                        return Err(anyhow::anyhow!("A swap proof did not verify: {}", err));
-                    }
+                    swap.proof
+                        .verify(
+                            // TODO: no value commitments until flow encryption is available
+                            // so we pass placeholder values here, the proof doesn't check these right now
+                            // and will fail when checking is re-enabled.
+                            Value {
+                                amount: 0,
+                                asset_id: *STAKING_TOKEN_ASSET_ID,
+                            }
+                            .commit(Fr::zero()),
+                            Value {
+                                amount: 0,
+                                asset_id: *STAKING_TOKEN_ASSET_ID,
+                            }
+                            .commit(Fr::zero()),
+                            swap.body.fee_commitment,
+                            swap.body.swap_nft.note_commitment,
+                            swap.body.swap_nft.ephemeral_key,
+                            swap.body.fee_blinding,
+                        )
+                        .context("A swap proof did not verify")?;
 
                     // TODO: are any other checks necessary?
 
@@ -112,7 +112,7 @@ impl Component for Dex {
 
                     // 2. Check swap claim proof
                     let anchor = tx.anchor;
-                    if swap_claim
+                    swap_claim
                         .proof
                         .verify(
                             anchor,
@@ -123,11 +123,7 @@ impl Component for Dex {
                             swap_claim.body.output_2.note_commitment,
                             fee,
                         )
-                        .is_err()
-                    {
-                        // TODO: should the verification error be bubbled up here?
-                        return Err(anyhow::anyhow!("A swap claim proof did not verify"));
-                    }
+                        .context("a swap claim proof did not verify")?;
 
                     // TODO: any other stateless checks?
 

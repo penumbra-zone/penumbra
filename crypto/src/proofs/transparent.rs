@@ -1,6 +1,6 @@
 //! Transparent proofs for `MVP1` of the Penumbra system.
 
-use anyhow::{anyhow, Error, Result};
+use anyhow::{anyhow, Context as _, Error, Result};
 use ark_ff::{PrimeField, Zero};
 use std::convert::{TryFrom, TryInto};
 
@@ -591,7 +591,7 @@ impl SwapClaimProof {
                 note_commitment_1,
                 self.esk_1.public(),
             )
-            .map_err(|_| anyhow!("output proof 1 failed"))?;
+            .context("output proof 1 failed")?;
 
         let proof_2 = OutputProof {
             value: value_2,
@@ -612,7 +612,7 @@ impl SwapClaimProof {
                 note_commitment_2,
                 self.esk_2.public(),
             )
-            .map_err(|_| anyhow!("output proof 2 failed"))?;
+            .context("output proof 2 failed")?;
 
         Ok(())
     }
