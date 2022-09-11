@@ -240,8 +240,11 @@ where
         return Err(anyhow!("No input value for swap"));
     }
 
-    // Use a random ephemeral address for claiming the swap.
-    let (claim_address, _dtk) = fvk.incoming().ephemeral_address(OsRng);
+    // If a source address was specified, use it for the swap, otherwise,
+    // use the default address.
+    let (claim_address, _dtk_d) = fvk
+        .incoming()
+        .payment_address(source_address.unwrap_or(0).into());
 
     // Create the `SwapPlaintext` representing the swap to be performed:
     let swap_plaintext = SwapPlaintext::from_parts(
