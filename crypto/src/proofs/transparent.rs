@@ -484,6 +484,8 @@ impl SwapClaimProof {
         note_commitment_1: note::Commitment,
         note_commitment_2: note::Commitment,
         fee: Fee,
+        epk_1: ka::Public,
+        epk_2: ka::Public,
     ) -> anyhow::Result<()> {
         // Merkle path integrity. Ensure the provided note commitment is in the TCT.
         self.note_commitment_proof
@@ -560,13 +562,7 @@ impl SwapClaimProof {
             return Err(anyhow!("bad nullifier"));
         }
 
-        // TODO: currently treating all swaps as failed, so delta == lambda
-        // The address should be the same for the Swap NFT and SwapClaim outputs
-        // Need output notes here, and to validate the amounts and addresses.
-        // instructions here: https://github.com/penumbra-zone/penumbra/issues/1126
-        // Replace with some calculation once we have the liquidity positions implemented.
-        let lambda_1 = self.delta_1;
-        let lambda_2 = self.delta_2;
+        let (lambda_1, lambda_2) = output_data.pro_rata_outputs((self.delta_1, self.delta_2));
         let value_1 = Value {
             amount: lambda_1,
             asset_id: self.trading_pair.asset_1(),
@@ -590,11 +586,8 @@ impl SwapClaimProof {
         };
         proof_1
             // This is a dummy value commitment, since we don't have a way of calling the output proof logic otherwise.
-            .verify(
-                value_1.commit(Fr::zero()),
-                note_commitment_1,
-                self.esk_1.public(),
-            )
+            // It has to be -, since an output proof would expect to consume the value
+            .verify(-value_1.commit(Fr::zero()), note_commitment_1, epk_1)
             .context("output proof 1 failed")?;
 
         let proof_2 = OutputProof {
@@ -611,11 +604,8 @@ impl SwapClaimProof {
         };
         proof_2
             // This is a dummy value commitment, since we don't have a way of calling the output proof logic otherwise.
-            .verify(
-                value_2.commit(Fr::zero()),
-                note_commitment_2,
-                self.esk_2.public(),
-            )
+            // It has to be -, since an output proof would expect to consume the value
+            .verify(-value_2.commit(Fr::zero()), note_commitment_2, epk_2)
             .context("output proof 2 failed")?;
 
         Ok(())
