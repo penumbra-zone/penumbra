@@ -298,7 +298,7 @@ mod tests {
     #[test]
     fn format_picks_best_unit() {
         let upenumbra_base_denom = asset::REGISTRY.parse_denom("upenumbra").unwrap();
-        let gm_base_denom = asset::REGISTRY.parse_denom("gm").unwrap();
+        let gm_base_denom = asset::REGISTRY.parse_denom("ugm").unwrap();
         let cache = [upenumbra_base_denom.clone()]
             .into_iter()
             .collect::<asset::Cache>();
