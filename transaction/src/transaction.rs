@@ -146,7 +146,7 @@ impl Transaction {
             })
             // We've padded arrays with None to be able to unify types, now strip the
             // bogus padding values away:
-            .filter_map(|x| x)
+            .flatten()
     }
 
     pub fn spent_nullifiers(&self) -> impl Iterator<Item = Nullifier> + '_ {

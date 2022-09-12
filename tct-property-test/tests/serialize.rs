@@ -101,6 +101,7 @@ proptest! {
             assert_eq!(incremental, non_incremental, "incremental storage mismatches non-incremental storage");
 
             // Higher-order helper function to factor out common behavior of validation assertions
+            #[allow(clippy::type_complexity)]
             fn v<E: Display + Debug + 'static>(validate: fn(&Tree) -> Result<(), E>) -> Box<dyn Fn(&Tree, &Tree, &InMemory)> {
                 Box::new(move |original, deserialized, storage| if let Err(error) = validate(deserialized) {
                     panic!("{error}:\n\nERROR: {error:?}\n\nORIGINAL: {original:?}\n\nDESERIALIZED: {deserialized:?}\n\nSTORAGE: {:?}", storage);

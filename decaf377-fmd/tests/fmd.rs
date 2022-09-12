@@ -48,6 +48,5 @@ fn fails_to_generate_clue() {
 
     expanded_clue_key
         .create_clue(fmd::MAX_PRECISION + 1, OsRng)
-        .err()
-        .expect("fails to generate clue with excessive precision");
+        .expect_err("fails to generate clue with excessive precision");
 }

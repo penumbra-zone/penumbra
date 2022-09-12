@@ -1,5 +1,4 @@
 use penumbra_tct::Position;
-use rand_core::OsRng;
 use std::collections::{BTreeMap, HashMap};
 
 use anyhow::{anyhow, Context, Result};

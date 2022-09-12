@@ -110,7 +110,7 @@ impl AppHandlerCheck for ICS20Transfer {
                     format!("ics20-value-balance/{}", msg.packet.destination_channel).into(),
                 )
                 .await?
-                .ok_or(anyhow::anyhow!("value balance not found"))?;
+                .ok_or_else(|| anyhow::anyhow!("value balance not found"))?;
 
             // convert the amount to a u64 from u256.
             //  TODO: the amount is given by the ICS20 spec to be a u256, but we parse it to u64
@@ -138,7 +138,7 @@ impl AppHandlerCheck for ICS20Transfer {
                     format!("ics20-value-balance/{}", msg.packet.destination_channel).into(),
                 )
                 .await?
-                .ok_or(anyhow::anyhow!("value balance not found"))?;
+                .ok_or_else(|| anyhow::anyhow!("value balance not found"))?;
 
             // convert the amount to a u64 from u256.
             //  TODO: the amount is given by the ICS20 spec to be a u256, but we parse it to u64
