@@ -208,6 +208,11 @@ impl Unit {
         }
     }
 
+    /// Return the [`asset::Id`] associated with this denomination.
+    pub fn id(&self) -> asset::Id {
+        self.inner.id.clone()
+    }
+
     pub fn format_value(&self, value: u64) -> String {
         let power_of_ten = 10u64.pow(self.exponent().into());
         let v1 = value / power_of_ten;
@@ -263,7 +268,7 @@ impl Unit {
         }
     }
 
-    fn exponent(&self) -> u8 {
+    pub fn exponent(&self) -> u8 {
         self.inner
             .units
             .get(self.unit_index as usize)

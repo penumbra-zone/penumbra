@@ -7,7 +7,9 @@ use ark_ff::Zero;
 use async_trait::async_trait;
 use decaf377::Fr;
 use penumbra_chain::{genesis, View as _};
+use penumbra_crypto::dex::lp::Reserves;
 use penumbra_crypto::{
+    asset,
     dex::{BatchSwapOutputData, TradingPair},
     MockFlowCiphertext, SwapFlow, Value, STAKING_TOKEN_ASSET_ID,
 };
@@ -18,6 +20,7 @@ use tendermint::abci;
 use tracing::instrument;
 
 use super::state_key;
+use super::StubCpmm;
 
 pub struct Dex {
     state: State,
@@ -41,7 +44,42 @@ impl Dex {
 #[async_trait]
 impl Component for Dex {
     #[instrument(name = "dex", skip(self, _app_state))]
-    async fn init_chain(&mut self, _app_state: &genesis::AppState) {}
+    async fn init_chain(&mut self, _app_state: &genesis::AppState) {
+        // Hardcode some AMMs
+        let gm = asset::REGISTRY.parse_unit("gm");
+        let gn = asset::REGISTRY.parse_unit("gn");
+        let penumbra = asset::REGISTRY.parse_unit("penumbra");
+
+        self.state
+            .set_stub_cpmm_reserves(
+                &TradingPair::canonical_order_for((gm.id(), gn.id())).unwrap(),
+                Reserves {
+                    r1: 10000 * 10u64.pow(gm.exponent().into()),
+                    r2: 10000 * 10u64.pow(gn.exponent().into()),
+                },
+            )
+            .await;
+
+        self.state
+            .set_stub_cpmm_reserves(
+                &TradingPair::canonical_order_for((gm.id(), penumbra.id())).unwrap(),
+                Reserves {
+                    r1: 10000 * 10u64.pow(gm.exponent().into()),
+                    r2: 10000 * 10u64.pow(penumbra.exponent().into()),
+                },
+            )
+            .await;
+
+        self.state
+            .set_stub_cpmm_reserves(
+                &TradingPair::canonical_order_for((gn.id(), penumbra.id())).unwrap(),
+                Reserves {
+                    r1: 10000 * 10u64.pow(gn.exponent().into()),
+                    r2: 10000 * 10u64.pow(penumbra.exponent().into()),
+                },
+            )
+            .await;
+    }
 
     #[instrument(name = "dex", skip(self, _ctx, _begin_block))]
     async fn begin_block(&mut self, _ctx: Context, _begin_block: &abci::request::BeginBlock) {}
@@ -215,8 +253,23 @@ impl Component for Dex {
         // batch swaps to fail
         for (trading_pair, swap_flows) in self.swaps.iter() {
             let (delta_1, delta_2) = (swap_flows.0.mock_decrypt(), swap_flows.1.mock_decrypt());
-            let lambda_1 = 0;
-            let lambda_2 = 0;
+
+            tracing::debug!(?delta_1, ?delta_2, ?trading_pair);
+            let (lambda_1, lambda_2, success) =
+                match self.state.stub_cpmm_reserves(trading_pair).await.unwrap() {
+                    Some(reserves) => {
+                        tracing::debug!(?reserves, "stub cpmm is present");
+                        let mut amm = StubCpmm { reserves };
+                        let (lambda_1, lambda_2) = amm.trade_netted((delta_1, delta_2));
+                        tracing::debug!(?lambda_1, ?lambda_2, new_reserves = ?amm.reserves);
+                        self.state
+                            .set_stub_cpmm_reserves(trading_pair, amm.reserves)
+                            .await;
+                        (lambda_1, lambda_2, true)
+                    }
+                    None => (0, 0, false),
+                };
+
             let output_data = BatchSwapOutputData {
                 height: end_block.height.try_into().unwrap(),
                 trading_pair: *trading_pair,
@@ -224,8 +277,9 @@ impl Component for Dex {
                 delta_2,
                 lambda_1,
                 lambda_2,
-                success: false,
+                success,
             };
+            tracing::debug!(?output_data);
             self.state.set_output_data(output_data).await;
         }
 
@@ -261,6 +315,16 @@ pub trait View: StateExt {
             output_data,
         )
         .await;
+    }
+
+    async fn stub_cpmm_reserves(&self, trading_pair: &TradingPair) -> Result<Option<Reserves>> {
+        self.get_domain(state_key::stub_cpmm_reserves(trading_pair).into())
+            .await
+    }
+
+    async fn set_stub_cpmm_reserves(&self, trading_pair: &TradingPair, reserves: Reserves) {
+        self.put_domain(state_key::stub_cpmm_reserves(trading_pair).into(), reserves)
+            .await
     }
 }
 
