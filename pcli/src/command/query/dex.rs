@@ -15,7 +15,7 @@ pub enum DexCmd {
     /// Display information about a specific trading pair & height's batch swap.
     BatchOutputs {
         /// The height to query for batch outputs.
-        #[clap(short, long)]
+        #[clap(long)]
         height: u64,
         /// The trading pair to query for batch outputs.
         trading_pair: TradingPair,
