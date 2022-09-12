@@ -107,3 +107,20 @@ fn transaction_send_from_addr_0_to_addr_1() {
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
 }
+
+#[ignore]
+#[test]
+fn transaction_sweep() {
+    let tmpdir = load_wallet_into_tmpdir();
+
+    let mut sweep_cmd = Command::cargo_bin("pcli").unwrap();
+    sweep_cmd
+        .args(&[
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "sweep",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    sweep_cmd.assert().success();
+}
