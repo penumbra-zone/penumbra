@@ -345,14 +345,14 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         ".penumbra.transaction.OutputBody.ovk_wrapped_key",
         AS_BASE64_FOR_BYTES,
     ),
-    (".penumbra.transaction.Swap.proof", AS_BASE64_FOR_BYTES),
-    (".penumbra.transaction.SwapClaim.proof", AS_BASE64_FOR_BYTES),
     (".penumbra.transaction.Spend.proof", AS_BASE64_FOR_BYTES),
     (".penumbra.transaction.SpendBody.rk", AS_HEX_FOR_BYTES),
     (
         ".penumbra.transaction.SpendBody.nullifier",
         AS_HEX_FOR_BYTES,
     ),
+    (".penumbra.dex.Swap.proof", AS_BASE64),
+    (".penumbra.dex.SwapClaim.proof", AS_BASE64),
     (".penumbra.dex.Position.nonce", AS_HEX),
     (".penumbra.dex.PositionId.inner", AS_BECH32_LP_ID),
     // Proposal JSON formatting
