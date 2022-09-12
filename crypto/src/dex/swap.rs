@@ -49,10 +49,12 @@ impl BatchSwapOutputData {
             //   lambda_2_i = (delta_1_i * lambda_2) / delta_1
             //   lambda_1_i = (delta_2_i * lambda_1) / delta_2
             // so that we can do division and rounding at the end.
-            let lambda_1_i =
-                ((delta_1_i as u128) * (self.lambda_2 as u128)) / (self.delta_1 as u128);
-            let lambda_2_i =
-                ((delta_2_i as u128) * (self.lambda_1 as u128)) / (self.delta_2 as u128);
+            let lambda_2_i = ((delta_1_i as u128) * (self.lambda_2 as u128))
+                .checked_div(self.delta_1 as u128)
+                .unwrap_or(0);
+            let lambda_1_i = ((delta_2_i as u128) * (self.lambda_1 as u128))
+                .checked_div(self.delta_2 as u128)
+                .unwrap_or(0);
 
             (lambda_1_i as u64, lambda_2_i as u64)
         } else {
