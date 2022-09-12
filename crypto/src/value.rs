@@ -325,9 +325,6 @@ mod tests {
         assert_eq!(v1.format(&cache), "999upenumbra");
         assert_eq!(v2.format(&cache), "1mpenumbra");
         assert_eq!(v3.format(&cache), "4penumbra");
-        assert_eq!(
-            v4.format(&cache),
-            "1passet1ucz7d7n90gpw92s7lye2xl93syr3m08r38a2r49039g5sc940ygqhz4xa0"
-        );
+        assert_eq!(&v4.format(&cache)[..8], "1passet1");
     }
 }
