@@ -1,11 +1,7 @@
 use anyhow::{Context, Result};
 use comfy_table::{presets, Table};
-use futures::TryStreamExt;
-use penumbra_chain::Epoch;
-use penumbra_component::stake::validator;
 use penumbra_crypto::dex::{lp::Reserves, BatchSwapOutputData, TradingPair};
-use penumbra_proto::client::specific::StubCpmmReservesRequest;
-use penumbra_view::ViewClient;
+use penumbra_proto::client::specific::{BatchSwapOutputDataRequest, StubCpmmReservesRequest};
 
 use crate::App;
 
@@ -60,83 +56,22 @@ impl DexCmd {
         Ok(())
     }
 
-    // pub async fn get_stats(&self, app: &mut App) -> Result<Stats> {
-    //     use penumbra_proto::client::oblivious::ValidatorInfoRequest;
-
-    //     let mut client = app.oblivious_client().await?;
-    //     let fvk = &app.fvk;
-    //     let view: &mut dyn ViewClient = &mut app.view;
-
-    //     let current_block_height = view.status(fvk.hash()).await?.sync_height;
-    //     let chain_params = view.chain_params().await?;
-
-    //     let epoch_duration = chain_params.epoch_duration;
-    //     let current_epoch = Epoch::from_height(current_block_height, epoch_duration).index;
-
-    //     // Fetch validators.
-    //     let validators = client
-    //         .validator_info(ValidatorInfoRequest {
-    //             show_inactive: true,
-    //             chain_id: chain_params.chain_id,
-    //         })
-    //         .await?
-    //         .into_inner()
-    //         .try_collect::<Vec<_>>()
-    //         .await?
-    //         .into_iter()
-    //         .map(TryInto::try_into)
-    //         .collect::<Result<Vec<validator::Info>, _>>()?;
-
-    //     let total_validators = validators.len() as u64;
-    //     let active_validators = validators
-    //         .iter()
-    //         .filter(|v| v.status.state == validator::State::Active)
-    //         .count() as u64;
-    //     let inactive_validators = validators
-    //         .iter()
-    //         .filter(|v| v.status.state == validator::State::Inactive)
-    //         .count() as u64;
-    //     let jailed_validators = validators
-    //         .iter()
-    //         .filter(|v| v.status.state == validator::State::Jailed)
-    //         .count() as u64;
-    //     let tombstoned_validators = validators
-    //         .iter()
-    //         .filter(|v| v.status.state == validator::State::Tombstoned)
-    //         .count() as u64;
-    //     let disabled_validators = validators
-    //         .iter()
-    //         .filter(|v| v.status.state == validator::State::Disabled)
-    //         .count() as u64;
-
-    //     Ok(Stats {
-    //         current_block_height,
-    //         current_epoch,
-    //         total_validators,
-    //         active_validators,
-    //         inactive_validators,
-    //         jailed_validators,
-    //         tombstoned_validators,
-    //         disabled_validators,
-    //     })
-    // }
     pub async fn get_batch_outputs(
         &self,
         app: &mut App,
         height: &u64,
         trading_pair: &TradingPair,
     ) -> Result<BatchSwapOutputData> {
-        Err(anyhow::anyhow!("not implemented"))
-        // let mut client = app.specific_client().await?;
-        // let output_data: BatchSwapOutputData = client
-        //     .batch_swap_output_data(BatchSwapOutputDataRequest {
-        //         height: swap_nft_record.height_created,
-        //         trading_pair: Some(swap_plaintext.trading_pair.into()),
-        //     })
-        //     .await?
-        //     .into_inner()
-        //     .try_into()
-        //     .context("cannot parse batch swap output data")?;
+        let mut client = app.specific_client().await?;
+        client
+            .batch_swap_output_data(BatchSwapOutputDataRequest {
+                height: *height,
+                trading_pair: Some((*trading_pair).into()),
+            })
+            .await?
+            .into_inner()
+            .try_into()
+            .context("cannot parse batch swap output data")
     }
 
     pub async fn exec(&self, app: &mut App) -> Result<()> {
@@ -150,42 +85,31 @@ impl DexCmd {
             } => {
                 let outputs = self.get_batch_outputs(app, height, trading_pair).await?;
 
-                println!("Batch Outputs:");
-                // let mut table = Table::new();
-                // table.load_preset(presets::NOTHING);
-                // table
-                //     .set_header(vec!["", ""])
-                //     .add_row(vec![
-                //         "Current Block Height",
-                //         &format!("{}", stats.current_block_height),
-                //     ])
-                //     .add_row(vec!["Current Epoch", &format!("{}", stats.current_epoch)])
-                //     .add_row(vec![
-                //         "Total Validators",
-                //         &format!("{}", stats.total_validators),
-                //     ])
-                //     .add_row(vec![
-                //         "Active Validators",
-                //         &format!("{}", stats.active_validators),
-                //     ])
-                //     .add_row(vec![
-                //         "Inactive Validators",
-                //         &format!("{}", stats.inactive_validators),
-                //     ])
-                //     .add_row(vec![
-                //         "Jailed Validators",
-                //         &format!("{}", stats.jailed_validators),
-                //     ])
-                //     .add_row(vec![
-                //         "Tombstoned Validators",
-                //         &format!("{}", stats.tombstoned_validators),
-                //     ])
-                //     .add_row(vec![
-                //         "Disabled Validators",
-                //         &format!("{}", stats.disabled_validators),
-                //     ]);
+                println!(
+                    "Batch Swap Output status was: {}",
+                    if outputs.success {
+                        "Success"
+                    } else {
+                        "Failure"
+                    }
+                );
+                println!("Batch Swap Outputs for height {}:", outputs.height);
+                let mut table = Table::new();
+                table.load_preset(presets::NOTHING);
+                table
+                    .set_header(vec!["Asset ID", "Input Amount", "Output Amount"])
+                    .add_row(vec![
+                        outputs.trading_pair.asset_1().to_string(),
+                        outputs.delta_1.to_string(),
+                        outputs.lambda_1.to_string(),
+                    ])
+                    .add_row(vec![
+                        outputs.trading_pair.asset_2().to_string(),
+                        outputs.delta_2.to_string(),
+                        outputs.lambda_2.to_string(),
+                    ]);
 
-                // println!("{}", table);
+                println!("{}", table);
             }
         };
 
