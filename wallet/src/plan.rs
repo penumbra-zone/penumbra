@@ -422,6 +422,7 @@ where
             // chunks, ignoring the biggest notes in the remainder.
             for group in records.chunks_exact(SWEEP_COUNT) {
                 let mut planner = Planner::new(&mut rng);
+                planner.memo(MemoPlaintext::default());
 
                 for record in group {
                     planner.spend(record.note.clone(), record.position);
