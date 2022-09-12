@@ -91,7 +91,7 @@ impl Value {
                     display_denom
                 )
             })
-            .unwrap_or(format!("{}{}", self.amount, self.asset_id))
+            .unwrap_or_else(|| format!("{}{}", self.amount, self.asset_id))
     }
 }
 
