@@ -2,6 +2,7 @@ use anyhow::{Context, Result};
 use comfy_table::{presets, Table};
 use penumbra_crypto::dex::{lp::Reserves, BatchSwapOutputData, TradingPair};
 use penumbra_proto::client::specific::{BatchSwapOutputDataRequest, StubCpmmReservesRequest};
+use penumbra_view::ViewClient;
 
 use crate::App;
 
@@ -39,17 +40,43 @@ impl DexCmd {
             .context("cannot parse stub CPMM reserves data")?;
         println!("Constant-Product Market Maker Reserves:");
         let mut table = Table::new();
+        let view_client: &mut dyn ViewClient = &mut app.view;
+        let asset_cache = view_client.assets().await?;
+        let asset_1 = asset_cache
+            .get(&trading_pair.asset_1())
+            .map(|base_denom| {
+                let display_denom = base_denom.best_unit_for(reserves_data.r1);
+                (
+                    format!("{}", display_denom),
+                    display_denom.format_value(reserves_data.r1),
+                )
+            })
+            .unwrap_or_else(|| {
+                (
+                    format!("{}", trading_pair.asset_1()),
+                    reserves_data.r1.to_string(),
+                )
+            });
+        let asset_2 = asset_cache
+            .get(&trading_pair.asset_2())
+            .map(|base_denom| {
+                let display_denom = base_denom.best_unit_for(reserves_data.r2);
+                (
+                    format!("{}", display_denom),
+                    display_denom.format_value(reserves_data.r2),
+                )
+            })
+            .unwrap_or_else(|| {
+                (
+                    format!("{}", trading_pair.asset_2()),
+                    reserves_data.r2.to_string(),
+                )
+            });
         table.load_preset(presets::NOTHING);
         table
-            .set_header(vec!["Asset ID", "Reserve Amount"])
-            .add_row(vec![
-                trading_pair.asset_1().to_string(),
-                reserves_data.r1.to_string(),
-            ])
-            .add_row(vec![
-                trading_pair.asset_2().to_string(),
-                reserves_data.r2.to_string(),
-            ]);
+            .set_header(vec!["Denomination", "Reserve Amount"])
+            .add_row(vec![asset_1.0, asset_1.1])
+            .add_row(vec![asset_2.0, asset_2.1]);
 
         println!("{}", table);
 
