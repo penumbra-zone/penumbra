@@ -79,16 +79,19 @@ impl Value {
 
     /// Use the provided [`asset::Cache`] to format this value.
     ///
-    /// Returns `None` if the denomination is not known.
-    pub fn try_format(&self, cache: &asset::Cache) -> Option<String> {
-        cache.get(&self.asset_id).map(|base_denom| {
-            let display_denom = base_denom.best_unit_for(self.amount);
-            format!(
-                "{}{}",
-                display_denom.format_value(self.amount),
-                display_denom
-            )
-        })
+    /// Returns the amount in terms of the asset ID if the denomination is not known.
+    pub fn format(&self, cache: &asset::Cache) -> String {
+        cache
+            .get(&self.asset_id)
+            .map(|base_denom| {
+                let display_denom = base_denom.best_unit_for(self.amount);
+                format!(
+                    "{}{}",
+                    display_denom.format_value(self.amount),
+                    display_denom
+                )
+            })
+            .unwrap_or(format!("{}{}", self.amount, self.asset_id))
     }
 }
 
@@ -190,6 +193,12 @@ impl TryFrom<pb::ValueCommitment> for Commitment {
 
 #[cfg(test)]
 mod tests {
+    use crate::{
+        dex::{swap::SwapPlaintext, TradingPair},
+        transaction::Fee,
+        Address,
+    };
+
     use super::*;
 
     #[test]
@@ -267,17 +276,17 @@ mod tests {
         assert_eq!(v1.amount, 1823298000);
         assert_eq!(v1.asset_id, upenumbra_base_denom.id());
         // Check that we can also parse the output of try_format
-        assert_eq!(v1, v1.try_format(&cache).unwrap().parse().unwrap());
+        assert_eq!(v1, v1.format(&cache).parse().unwrap());
 
         let v2: Value = "3930upenumbra".parse().unwrap();
         assert_eq!(v2.amount, 3930);
         assert_eq!(v2.asset_id, upenumbra_base_denom.id());
-        assert_eq!(v2, v2.try_format(&cache).unwrap().parse().unwrap());
+        assert_eq!(v2, v2.format(&cache).parse().unwrap());
 
         let v1: Value = "1nala".parse().unwrap();
         assert_eq!(v1.amount, 1);
         assert_eq!(v1.asset_id, nala_base_denom.id());
-        assert_eq!(v1, v1.try_format(&cache).unwrap().parse().unwrap());
+        assert_eq!(v1, v1.format(&cache).parse().unwrap());
     }
 
     #[test]
@@ -287,16 +296,38 @@ mod tests {
     }
 
     #[test]
-    fn try_format_picks_best_unit() {
+    fn format_picks_best_unit() {
         let upenumbra_base_denom = asset::REGISTRY.parse_denom("upenumbra").unwrap();
-        let cache = [upenumbra_base_denom].into_iter().collect::<asset::Cache>();
+        let gm_base_denom = asset::REGISTRY.parse_denom("gm").unwrap();
+        let cache = [upenumbra_base_denom.clone()]
+            .into_iter()
+            .collect::<asset::Cache>();
 
         let v1: Value = "999upenumbra".parse().unwrap();
         let v2: Value = "1000upenumbra".parse().unwrap();
         let v3: Value = "4000000upenumbra".parse().unwrap();
+        // Swap NFTs have no associated denom, make sure the formatter doesn't blow up.
+        let sp = SwapPlaintext::from_parts(
+            TradingPair::new(
+                asset::Id::from(gm_base_denom),
+                asset::Id::from(upenumbra_base_denom),
+            ).unwrap(),
+            1,
+            0,
+            Fee::default(),
+            Address::from_str("penumbrav2t13vh0fkf3qkqjacpm59g23ufea9n5us45e4p5h6hty8vg73r2t8g5l3kynad87u0n9eragf3hhkgkhqe5vhngq2cw493k48c9qg9ms4epllcmndd6ly4v4dw2jcnxaxzjqnlvnw").unwrap()
+        ).unwrap();
+        let v4: Value = Value {
+            amount: 1,
+            asset_id: sp.asset_id(),
+        };
 
-        assert_eq!(v1.try_format(&cache).unwrap(), "999upenumbra");
-        assert_eq!(v2.try_format(&cache).unwrap(), "1mpenumbra");
-        assert_eq!(v3.try_format(&cache).unwrap(), "4penumbra");
+        assert_eq!(v1.format(&cache), "999upenumbra");
+        assert_eq!(v2.format(&cache), "1mpenumbra");
+        assert_eq!(v3.format(&cache), "4penumbra");
+        assert_eq!(
+            v4.format(&cache),
+            "1passet1ucz7d7n90gpw92s7lye2xl93syr3m08r38a2r49039g5sc940ygqhz4xa0"
+        );
     }
 }

@@ -88,9 +88,9 @@ impl StakedCmd {
 
             table.add_row(vec![
                 info.validator.name.clone(),
-                unbonded.try_format(&asset_cache).unwrap(),
+                unbonded.format(&asset_cache),
                 format!("{:.4}", rate),
-                delegation.try_format(&asset_cache).unwrap(),
+                delegation.format(&asset_cache),
             ]);
 
             total += unbonded.amount;
@@ -110,9 +110,9 @@ impl StakedCmd {
 
         table.add_row(vec![
             "Unbonded Stake".to_string(),
-            unbonded.try_format(&asset_cache).unwrap(),
+            unbonded.format(&asset_cache),
             format!("{:.4}", 1.0),
-            unbonded.try_format(&asset_cache).unwrap(),
+            unbonded.format(&asset_cache),
         ]);
 
         let total = Value {
@@ -122,7 +122,7 @@ impl StakedCmd {
 
         table.add_row(vec![
             "Total".to_string(),
-            total.try_format(&asset_cache).unwrap(),
+            total.format(&asset_cache),
             String::new(),
             String::new(),
         ]);

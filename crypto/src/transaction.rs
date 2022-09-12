@@ -33,8 +33,8 @@ impl Fee {
         self.0.commit(blinding)
     }
 
-    pub fn try_format(&self, cache: &asset::Cache) -> Option<String> {
-        self.0.try_format(cache)
+    pub fn format(&self, cache: &asset::Cache) -> String {
+        self.0.format(cache)
     }
 }
 
