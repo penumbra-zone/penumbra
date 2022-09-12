@@ -13,7 +13,10 @@ use penumbra_proto::{
     dex::BatchSwapOutputData,
 };
 
-use proto::client::specific::BatchSwapOutputDataRequest;
+use proto::{
+    client::specific::{BatchSwapOutputDataRequest, StubCpmmReservesRequest},
+    dex::Reserves,
+};
 use tonic::Status;
 use tracing::instrument;
 
@@ -94,6 +97,31 @@ impl SpecificQuery for Info {
         match output_data {
             Some(o) => Ok(tonic::Response::new(o.into())),
             None => Err(Status::not_found("batch swap output data not found")),
+        }
+    }
+
+    #[instrument(skip(self, request))]
+    /// Get the batch swap data associated with a given trading pair and height.
+    async fn stub_cpmm_reserves(
+        &self,
+        request: tonic::Request<StubCpmmReservesRequest>,
+    ) -> Result<tonic::Response<Reserves>, Status> {
+        let state = self.state_tonic().await?;
+        let request_inner = request.into_inner();
+        let trading_pair = request_inner
+            .trading_pair
+            .ok_or_else(|| Status::invalid_argument("missing trading_pair"))?
+            .try_into()
+            .map_err(|_| Status::invalid_argument("invalid trading_pair"))?;
+
+        let cpmm_reserves = state
+            .stub_cpmm_reserves(&trading_pair)
+            .await
+            .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+        match cpmm_reserves {
+            Some(o) => Ok(tonic::Response::new(o.into())),
+            None => Err(Status::not_found("CPMM reserves not found")),
         }
     }
 

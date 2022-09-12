@@ -1,9 +1,11 @@
+use std::str::FromStr;
+
 use anyhow::{anyhow, Result};
 use blake2b_simd::Hash;
 use decaf377::FieldExt;
 use penumbra_proto::{dex as pb, Protobuf};
 
-use crate::asset;
+use crate::asset::{self, REGISTRY};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
 pub struct TradingPair {
@@ -101,5 +103,25 @@ impl From<TradingPair> for pb::TradingPair {
             asset_1: Some(tp.asset_1.into()),
             asset_2: Some(tp.asset_2.into()),
         }
+    }
+}
+
+impl FromStr for TradingPair {
+    type Err = anyhow::Error;
+
+    /// Takes an input of the form DENOM1:DENOM2,
+    /// splits on the `:` (erroring if there is more than one `:`),
+    /// parses the first and second halves using `asset::REGISTRY.parse_unit`,
+    /// then computes the asset IDs and then the canonically-ordered trading pair.
+    fn from_str(s: &str) -> anyhow::Result<Self> {
+        let parts: Vec<&str> = s.split(':').collect();
+
+        if parts.len() != 2 {
+            return Err(anyhow!("invalid trading pair string"));
+        }
+
+        let denom_1 = REGISTRY.parse_unit(parts[0]);
+        let denom_2 = REGISTRY.parse_unit(parts[1]);
+        Self::canonical_order_for((denom_1.id(), denom_2.id()))
     }
 }
