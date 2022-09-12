@@ -68,12 +68,16 @@ impl TransactionPlan {
         }
 
         // Build the transaction's outputs.
+        let dummy_payload_key: PayloadKey = [0u8; 32].into();
+        // If the memo_key is None, then there is no memo, and we populate the memo key
+        // field with a dummy key.
         for output_plan in self.output_plans() {
             // Outputs subtract from the transaction's value balance.
             synthetic_blinding_factor -= output_plan.value_blinding;
-            actions.push(Action::Output(
-                output_plan.output(fvk.outgoing(), &memo_key.clone().unwrap()),
-            ));
+            actions.push(Action::Output(output_plan.output(
+                fvk.outgoing(),
+                memo_key.as_ref().unwrap_or(&dummy_payload_key),
+            )));
         }
 
         // Build the transaction's swaps.

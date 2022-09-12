@@ -101,7 +101,7 @@ impl OutputPlan {
         let ovk_wrapped_key = note.encrypt_key(&self.esk, ovk, value_commitment);
 
         let wrapped_memo_key = WrappedMemoKey::encrypt(
-            memo_key,
+            &memo_key,
             self.esk.clone(),
             note.transmission_key(),
             &note.diversified_generator(),

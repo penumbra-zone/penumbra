@@ -138,10 +138,17 @@ impl TransactionPlan {
         for spend in self.spend_plans() {
             state.update(spend.spend_body(fvk).auth_hash().as_bytes());
         }
+
+        // If the memo_key is None, then there is no memo, and we populate the memo key
+        // field with a dummy key.
+        let dummy_payload_key: PayloadKey = [0u8; 32].into();
         for output in self.output_plans() {
             state.update(
                 output
-                    .output_body(fvk.outgoing(), &memo_key.clone().unwrap())
+                    .output_body(
+                        fvk.outgoing(),
+                        memo_key.as_ref().unwrap_or(&dummy_payload_key),
+                    )
                     .auth_hash()
                     .as_bytes(),
             );
