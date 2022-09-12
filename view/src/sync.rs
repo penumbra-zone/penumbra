@@ -102,7 +102,7 @@ pub async fn scan_block(
                     new_quarantined_notes.push(QuarantinedNoteRecord {
                         note_commitment: note.commit(),
                         height_created: height,
-                        address_index: fvk.incoming().index_for_diversifier(&note.diversifier()),
+                        address_index: fvk.incoming().index_for_diversifier(note.diversifier()),
                         note,
                         unbonding_epoch,
                         identity_key,

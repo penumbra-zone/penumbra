@@ -24,7 +24,7 @@ pub use memo::MemoPlan;
 
 /// A declaration of a planned [`Transaction`](crate::Transaction),
 /// for use in transaction authorization and creation.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(try_from = "pb::TransactionPlan", into = "pb::TransactionPlan")]
 pub struct TransactionPlan {
     /// A list of this transaction's actions.
@@ -34,19 +34,6 @@ pub struct TransactionPlan {
     pub fee: Fee,
     pub clue_plans: Vec<CluePlan>,
     pub memo_plan: Option<MemoPlan>,
-}
-
-impl Default for TransactionPlan {
-    fn default() -> Self {
-        Self {
-            actions: Default::default(),
-            expiry_height: 0,
-            chain_id: String::new(),
-            fee: Default::default(),
-            clue_plans: vec![],
-            memo_plan: None,
-        }
-    }
 }
 
 impl TransactionPlan {

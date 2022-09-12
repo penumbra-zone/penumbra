@@ -27,6 +27,7 @@ use crate::action::{
 /// openings of commitments and other private data.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(try_from = "pb_t::ActionPlan", into = "pb_t::ActionPlan")]
+#[allow(clippy::large_enum_variant)]
 pub enum ActionPlan {
     /// Describes a proposed spend.
     Spend(SpendPlan),

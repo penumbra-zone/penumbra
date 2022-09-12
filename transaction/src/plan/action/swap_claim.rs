@@ -128,12 +128,12 @@ impl SwapClaimPlan {
         let g_d = self.swap_plaintext.claim_address.diversified_generator();
         let output_1 = NotePayload {
             note_commitment: output_1_note.commit(),
-            ephemeral_key: self.esk_1.diversified_public(&g_d),
+            ephemeral_key: self.esk_1.diversified_public(g_d),
             encrypted_note: output_1_note.encrypt(&self.esk_1),
         };
         let output_2 = NotePayload {
             note_commitment: output_2_note.commit(),
-            ephemeral_key: self.esk_2.diversified_public(&g_d),
+            ephemeral_key: self.esk_2.diversified_public(g_d),
             encrypted_note: output_2_note.encrypt(&self.esk_2),
         };
 

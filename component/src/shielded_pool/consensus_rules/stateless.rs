@@ -10,6 +10,7 @@ pub fn num_clues_equal_to_num_outputs(tx: &Transaction) -> anyhow::Result<()> {
     }
 }
 
+#[allow(clippy::if_same_then_else)]
 pub fn check_memo_exists_if_outputs_absent_if_not(tx: &Transaction) -> anyhow::Result<()> {
     let num_outputs = tx.outputs().count();
     if num_outputs > 0 && tx.transaction_body().memo.is_none() {

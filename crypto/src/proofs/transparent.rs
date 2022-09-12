@@ -781,7 +781,7 @@ impl SwapProof {
             },
             *self.claim_address.diversified_generator(),
             *transmission_key_s,
-            &self.claim_address.clue_key(),
+            self.claim_address.clue_key(),
         );
 
         if note_commitment != note_commitment_test {
@@ -866,7 +866,7 @@ impl TryFrom<transparent_proofs::SwapProof> for SwapProof {
         Ok(SwapProof {
             claim_address: proto
                 .claim_address
-                .ok_or(anyhow!("proto malformed"))?
+                .ok_or_else(|| anyhow!("proto malformed"))?
                 .try_into()
                 .map_err(|_| anyhow!("proto malformed"))?,
             value_t1: Value {
