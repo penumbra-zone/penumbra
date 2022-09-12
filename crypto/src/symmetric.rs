@@ -98,6 +98,12 @@ impl TryFrom<Vec<u8>> for PayloadKey {
     }
 }
 
+impl From<[u8; 32]> for PayloadKey {
+    fn from(bytes: [u8; 32]) -> Self {
+        Self(*Key::from_slice(&bytes))
+    }
+}
+
 /// Represents a symmetric `ChaCha20Poly1305` key.
 ///
 /// Used for encrypting and decrypting [`OvkWrappedKey`] material used to decrypt
