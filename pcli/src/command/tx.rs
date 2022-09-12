@@ -254,6 +254,8 @@ impl TxCmd {
                     .try_into()
                     .context("cannot parse batch swap output data")?;
 
+                let view_client: &mut dyn ViewClient = &mut app.view;
+                let asset_cache = view_client.assets().await?;
                 let pro_rata_outputs =
                     output_data.pro_rata_outputs((swap_plaintext.delta_1, swap_plaintext.delta_2));
                 println!("Swap submitted and batch confirmed!");
@@ -268,13 +270,15 @@ impl TxCmd {
                 println!(
                     "You will receive outputs of {} and {}. Claiming now...",
                     Value {
-                        amount: pro_rata_outputs[0],
-                        asset_id: output_data.asset_1()
-                    },
+                        amount: pro_rata_outputs.0,
+                        asset_id: output_data.trading_pair.asset_1()
+                    }
+                    .format(&asset_cache),
                     Value {
-                        amount: pro_rata_outputs[1],
-                        asset_id: output_data.asset_2()
-                    },
+                        amount: pro_rata_outputs.1,
+                        asset_id: output_data.trading_pair.asset_2()
+                    }
+                    .format(&asset_cache),
                 );
 
                 let claim_plan = plan::swap_claim(
