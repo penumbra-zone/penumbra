@@ -104,7 +104,7 @@ impl BalanceCmd {
                     format!("{}", u128::from(index)),
                     format!(
                         "{}{}",
-                        value.try_format(&asset_cache).unwrap(),
+                        value.format(&asset_cache),
                         if let Some(unbonding_epoch) = quarantined {
                             format!(" (unbonding until epoch {})", unbonding_epoch)
                         } else {
@@ -173,7 +173,7 @@ impl BalanceCmd {
             for (value, quarantined) in rows {
                 table.add_row(vec![format!(
                     "{}{}",
-                    value.try_format(&asset_cache).unwrap(),
+                    value.format(&asset_cache),
                     if let Some(unbonding_epoch) = quarantined {
                         format!(" (unbonding until epoch {})", unbonding_epoch)
                     } else {
