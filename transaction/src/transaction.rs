@@ -15,7 +15,7 @@ use penumbra_tct as tct;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    action::{Delegate, ProposalSubmit, ProposalWithdraw, Undelegate, ValidatorVote},
+    action::{Delegate, Output, ProposalSubmit, ProposalWithdraw, Undelegate, ValidatorVote},
     Action,
 };
 
@@ -115,6 +115,16 @@ impl Transaction {
     pub fn validator_definitions(&self) -> impl Iterator<Item = &pbs::ValidatorDefinition> {
         self.actions().filter_map(|action| {
             if let Action::ValidatorDefinition(d) = action {
+                Some(d)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn outputs(&self) -> impl Iterator<Item = &Output> {
+        self.actions().filter_map(|action| {
+            if let Action::Output(d) = action {
                 Some(d)
             } else {
                 None
