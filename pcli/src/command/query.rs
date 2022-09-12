@@ -6,6 +6,8 @@ mod tx;
 use tx::Tx;
 mod chain;
 use chain::ChainCmd;
+mod dex;
+use dex::DexCmd;
 mod governance;
 use governance::GovernanceCmd;
 mod validator;
@@ -34,6 +36,9 @@ pub enum QueryCmd {
     /// Queries information about governance proposals.
     #[clap(subcommand)]
     Governance(GovernanceCmd),
+    /// Queries information about the decentralized exchange.
+    #[clap(subcommand)]
+    Dex(DexCmd),
 }
 
 impl QueryCmd {
@@ -51,6 +56,10 @@ impl QueryCmd {
             return validator.exec(app).await;
         }
 
+        if let QueryCmd::Dex(dex) = self {
+            return dex.exec(app).await;
+        }
+
         if let QueryCmd::Governance(governance) = self {
             return governance.exec(app).await;
         }
@@ -59,6 +68,7 @@ impl QueryCmd {
             QueryCmd::Tx(_)
             | QueryCmd::Chain(_)
             | QueryCmd::Validator(_)
+            | QueryCmd::Dex(_)
             | QueryCmd::Governance(_) => {
                 unreachable!("query handled in guard");
             }
@@ -89,6 +99,7 @@ impl QueryCmd {
             QueryCmd::Tx { .. }
             | QueryCmd::Chain { .. }
             | QueryCmd::Validator { .. }
+            | QueryCmd::Dex { .. }
             | QueryCmd::Governance { .. } => {
                 unreachable!("query is special cased")
             }

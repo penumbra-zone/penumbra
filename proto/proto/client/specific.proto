@@ -18,6 +18,7 @@ service SpecificQuery {
   rpc ValidatorStatus(ValidatorStatusRequest) returns (stake.ValidatorStatus);
   rpc NextValidatorRate(crypto.IdentityKey) returns (stake.RateData);
   rpc BatchSwapOutputData(BatchSwapOutputDataRequest) returns (dex.BatchSwapOutputData);
+  rpc StubCPMMReserves(StubCPMMReservesRequest) returns (dex.Reserves);
 
   // General-purpose key-value state query API, that can be used to query
   // arbitrary keys in the JMT storage.
@@ -28,6 +29,11 @@ service SpecificQuery {
 message BatchSwapOutputDataRequest {
     uint64 height = 1;
     dex.TradingPair trading_pair = 2;
+}
+
+// Requests CPMM reserves data associated with a given trading pair from the view service.
+message StubCPMMReservesRequest {
+    dex.TradingPair trading_pair = 1;
 }
 
 message ValidatorStatusRequest {
