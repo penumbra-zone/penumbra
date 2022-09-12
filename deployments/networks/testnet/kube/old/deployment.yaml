@@ -1,38 +1,38 @@
-{{ range $i,$e := until .Values.replicaCount }}
-{{nodeName := printf}}
+{{ $count := (.Values.count | int) }}
+{{ $network := (.Values.network | toString) }}
+{{ $name := (.Values.name | toString) }}
+{{ range $i,$e := until $count }}
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: "{{ .Values.network }}-{{ .Values.name }}-{{$i}}"
-  # labels:
-  #   {{- include "node-cluster.labels" . | nindent 4 }}
+  name: "{{ $network }}-{{ $name }}-{{$i}}"
 spec:
 
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ $count }}
   
   selector:
-    app: "{{ .Values.network }}-{{ .Values.name }}-{{$i}}"
-    # matchLabels:
-    #   {{- include "node-cluster.selectorLabels" . | nindent 6 }}
+    app: "{{ $network }}-{{ $name }}-{{$i}}"
+
   template:
     metadata:
       {{- with .Values.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      name: "{{ .Values.network }}-{{ .Values.name }}-{{$i}}"
+      name: "{{ $network }}-{{ $name }}-{{$i}}"
       labels:
         {{- include "node-cluster.selectorLabels" . | nindent 8 }}
-        app: "{{ .Values.network }}-{{ .Values.name }}-{{$i}}"
-        network: "{{ .Values.network }}"
+        app: "{{ $network }}-{{ $name }}-{{$i}}"
+        network: "{{ $network }}"
     spec:
       volumes:
-        - name: "pv-{{ .Values.network }}-pd-{{ .Values.name }}-{{$i}}"
+        - name: "pv-{{ $network }}-pd-{{ $name }}-{{$i}}"
           persistentVolumeClaim:
-            claimName: "pvc-{{ .Values.network }}-pd-{{ .Values.name }}-{{$i}}"
-        - name: "pv-{{ .Values.network }}-tm-{{ .Values.name }}-{{$i}}"
+            claimName: "pvc-{{ $network }}-pd-{{ $name }}-{{$i}}"
+        - name: "pv-{{ $network }}-tm-{{ $name }}-{{$i}}"
           persistentVolumeClaim:
-            claimName: "pvc-{{ .Values.network }}-tm-{{ .Values.name }}-{{$i}}"
+            claimName: "pvc-{{ $network }}-tm-{{ $name }}-{{$i}}"
         - name: tm-config
           configMap:
             name: tm-config
@@ -46,13 +46,13 @@ spec:
             - sh
             - -c
             - |
-                chown -R 1025:1025 "/home/pv-{{ .Values.network }}-tm-{{ .Values.name }}-{{$i}}"
-                chown -R 1025:1025 "/home/pv-{{ .Values.network }}-pd-{{ .Values.name }}-{{$i}}"
+                chown -R 1025:1025 "/home/pv-{{ $network }}-tm-{{ $name }}-{{$i}}"
+                chown -R 1025:1025 "/home/pv-{{ $network }}-pd-{{ $name }}-{{$i}}"
           volumeMounts:
-            - name: "pv-{{ .Values.network }}-tm-{{ .Values.name }}-{{$i}}"
-              mountPath: "/home/pv-{{ .Values.network }}-tm-{{ .Values.name }}-{{$i}}"
-            - name: "pv-{{ .Values.network }}-pd-{{ .Values.name }}-{{$i}}"
-              mountPath: "/home/pv-{{ .Values.network }}-pd-{{ .Values.name }}-{{$i}}"
+            - name: "pv-{{ $network }}-tm-{{ $name }}-{{$i}}"
+              mountPath: "/home/pv-{{ $network }}-tm-{{ $name }}-{{$i}}"
+            - name: "pv-{{ $network }}-pd-{{ $name }}-{{$i}}"
+              mountPath: "/home/pv-{{ $network }}-pd-{{ $name }}-{{$i}}"
         - name: config-init
           image: "{{ .Values.tendermintImage }}:{{ .Values.tendermintVersion }}"
           command:
@@ -72,7 +72,7 @@ spec:
                 rm -rf $TMP_DIR
               fi
           volumeMounts:
-            - name: "pv-{{ .Values.network }}-tm-{{ .Values.name }}-{{$i}}"
+            - name: "pv-{{ $network }}-tm-{{ $name }}-{{$i}}"
               mountPath: /home/heighliner
         - name: config-merge
           image: "{{ .Values.toolkitImage }}:{{ .Values.toolkitVersion }}"
@@ -93,7 +93,7 @@ spec:
             runAsUser: 1025
             runAsGroup: 1025
           volumeMounts:
-            - name: "pv-{{ .Values.network }}-tm-{{ .Values.name }}-{{$i}}"
+            - name: "pv-{{ $network }}-tm-{{ $name }}-{{$i}}"
               mountPath: /home/heighliner
             - name: tm-config
               mountPath: "/config"
@@ -110,7 +110,7 @@ spec:
               protocol: TCP
               name: p2p
           volumeMounts:
-            - name: "pv-{{ .Values.network }}-tm-{{ .Values.name }}-{{$i}}"
+            - name: "pv-{{ $network }}-tm-{{ $name }}-{{$i}}"
               mountPath: /home/heighliner
           command:
             # - sleep
@@ -129,7 +129,7 @@ spec:
               protocol: TCP
               name: metrics
           volumeMounts:
-            - name: "pv-{{ .Values.network }}-pd-{{ .Values.name }}-{{$i}}"
+            - name: "pv-{{ $network }}-pd-{{ $name }}-{{$i}}"
               mountPath: /home/heighliner
           command:
             # - sleep

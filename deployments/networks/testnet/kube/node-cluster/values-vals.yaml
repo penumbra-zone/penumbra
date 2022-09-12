@@ -1,8 +1,4 @@
-# Default values for node-cluster.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-
-replicaCount: 1
+count: 1
 name: val
 network: testnet
 tendermintImage: ghcr.io/strangelove-ventures/heighliner/tendermint
