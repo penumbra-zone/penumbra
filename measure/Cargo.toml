@@ -9,7 +9,7 @@ edition = "2021"
 penumbra-proto = { path = "../proto" }
 penumbra-chain = { path = "../chain" }
 
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1.21.1", features = ["full"] }
 tonic = "0.6"
 anyhow = "1"
 clap = { version = "3", features = ["derive", "env"] }

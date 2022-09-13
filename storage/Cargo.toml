@@ -10,7 +10,7 @@ penumbra-proto = { path = "../proto" }
 penumbra-crypto = { path = "../crypto" }
 penumbra-tct = { path = "../tct" }
 
-tokio = { version = "1.16", features = ["full", "tracing"]}
+tokio = { version = "1.21.1", features = ["full", "tracing"]}
 sha2 = "0.9"
 tempfile = "3.3.0"
 jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "main" }

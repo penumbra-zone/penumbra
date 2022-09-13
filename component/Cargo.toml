@@ -19,7 +19,7 @@ tendermint = "0.24.0-pre.1"
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "main" }
 
-tokio = { version = "1.16", features = ["full", "tracing"]}
+tokio = { version = "1.21.1", features = ["full", "tracing"]}
 async-trait = "0.1.52"
 tonic = "0.6.1"
 anyhow = "1"

@@ -20,4 +20,4 @@ ark-std = "0.3"
 thiserror = "1"
 
 [dev-dependencies]
-tokio = { version = "1", features = ["full"]}
+tokio = { version = "1.21.1", features = ["full"]}
