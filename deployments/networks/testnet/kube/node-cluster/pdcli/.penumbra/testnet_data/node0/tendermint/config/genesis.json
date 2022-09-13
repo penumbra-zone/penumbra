@@ -1,0 +1,279 @@
+{
+  "genesis_time": "2022-09-13T04:44:05Z",
+  "chain_id": "penumbra-testnet-hermippe-9842ade9",
+  "initial_height": "0",
+  "consensus_params": {
+    "block": {
+      "max_bytes": "22020096",
+      "max_gas": "-1",
+      "time_iota_ms": "500"
+    },
+    "evidence": {
+      "max_age_num_blocks": "100000",
+      "max_age_duration": "86400000000000",
+      "max_bytes": "1048576"
+    },
+    "validator": {
+      "pub_key_types": [
+        "ed25519"
+      ]
+    }
+  },
+  "validators": [],
+  "app_hash": "",
+  "app_state": {
+    "chain_params": {
+      "chain_id": "penumbra-testnet-hermippe-9842ade9",
+      "epoch_duration": 40,
+      "unbonding_epochs": 2,
+      "active_validator_limit": 32,
+      "base_reward_rate": 30000,
+      "slashing_penalty_misbehavior_bps": 1000,
+      "slashing_penalty_downtime_bps": 1,
+      "signed_blocks_window_len": 10000,
+      "missed_blocks_maximum": 9500,
+      "ibc_enabled": true,
+      "inbound_ics20_transfers_enabled": false,
+      "outbound_ics20_transfers_enabled": false
+    },
+    "validators": [
+      {
+        "identity_key": "penumbravalid10zrh7s2wyjevyq3wse0z5qmeh96aj344rg2gmfhfl9alneln2qxsujpyjz",
+        "consensus_key": "Z0p1XGnDl8Hgb1ScxwyHAcilKbfE8YaoeYb4Hy2d5cY=",
+        "name": "",
+        "website": "",
+        "description": "",
+        "enabled": true,
+        "funding_streams": [
+          {
+            "address": "penumbrav2t1u8rm0m95xnwv37rmasmy2t3wsl9vx5dycrqmlwwew9zjep4kmc8kmf5dg7e00akqrrj8j8lhhu7t69cecj055j7wwtj7ktn27aca34p72k9e724da2tgur36ghn4rdt50f0e9a",
+            "rate_bps": 100
+          }
+        ],
+        "sequence_number": 0
+      },
+      {
+        "identity_key": "penumbravalid1ppk5k77vth58jvuxq5eka9rv7ympr0p4c3l2vd7g6xvhpcedhqxsguhshf",
+        "consensus_key": "CNy4ZLmuQXNyTiBJAGPGHBjTaix7fPq64SFHJF7PD/s=",
+        "name": "",
+        "website": "",
+        "description": "",
+        "enabled": true,
+        "funding_streams": [
+          {
+            "address": "penumbrav2t1yxn6n00jl3ewgf8tfnfd2el9p7s5acp43zrlw9vx83wak84ahwl2lh6qcwvw5v9e3qmqr4vuprverxx3tkrefnfnvlntgvsdfdtlae0eqsfmmt2qkkm80njuu2fhcvvyv92r44",
+            "rate_bps": 100
+          }
+        ],
+        "sequence_number": 0
+      }
+    ],
+    "allocations": [
+      {
+        "amount": 1000000000000,
+        "denom": "upenumbra",
+        "address": "penumbrav2t1fcy6crf6u4r450k8y4nye43puxet2ytfh7s0dzxsxjk68czej9mp37xv49np0clv4dc8cwg4re0xfs79uwlfehnja4p0revmlek0drezxfse8spg3qc6gux6vyuzuuls6v6mmr"
+      },
+      {
+        "amount": 20000,
+        "denom": "gm",
+        "address": "penumbrav2t1fcy6crf6u4r450k8y4nye43puxet2ytfh7s0dzxsxjk68czej9mp37xv49np0clv4dc8cwg4re0xfs79uwlfehnja4p0revmlek0drezxfse8spg3qc6gux6vyuzuuls6v6mmr"
+      },
+      {
+        "amount": 20000,
+        "denom": "gn",
+        "address": "penumbrav2t1fcy6crf6u4r450k8y4nye43puxet2ytfh7s0dzxsxjk68czej9mp37xv49np0clv4dc8cwg4re0xfs79uwlfehnja4p0revmlek0drezxfse8spg3qc6gux6vyuzuuls6v6mmr"
+      },
+      {
+        "amount": 10000,
+        "denom": "pizza",
+        "address": "penumbrav2t1fcy6crf6u4r450k8y4nye43puxet2ytfh7s0dzxsxjk68czej9mp37xv49np0clv4dc8cwg4re0xfs79uwlfehnja4p0revmlek0drezxfse8spg3qc6gux6vyuzuuls6v6mmr"
+      },
+      {
+        "amount": 100,
+        "denom": "cube",
+        "address": "penumbrav2t1fcy6crf6u4r450k8y4nye43puxet2ytfh7s0dzxsxjk68czej9mp37xv49np0clv4dc8cwg4re0xfs79uwlfehnja4p0revmlek0drezxfse8spg3qc6gux6vyuzuuls6v6mmr"
+      },
+      {
+        "amount": 5000,
+        "denom": "nala",
+        "address": "penumbrav2t1fcy6crf6u4r450k8y4nye43puxet2ytfh7s0dzxsxjk68czej9mp37xv49np0clv4dc8cwg4re0xfs79uwlfehnja4p0revmlek0drezxfse8spg3qc6gux6vyuzuuls6v6mmr"
+      },
+      {
+        "amount": 1000000000,
+        "denom": "upenumbra",
+        "address": "penumbrav2t13vh0fkf3qkqjacpm59g23ufea9n5us45e4p5h6hty8vg73r2t8g5l3kynad87u0n9eragf3hhkgkhqe5vhngq2cw493k48c9qg9ms4epllcmndd6ly4v4dw2jcnxaxzjqnlvnw"
+      },
+      {
+        "amount": 100,
+        "denom": "gm",
+        "address": "penumbrav2t13vh0fkf3qkqjacpm59g23ufea9n5us45e4p5h6hty8vg73r2t8g5l3kynad87u0n9eragf3hhkgkhqe5vhngq2cw493k48c9qg9ms4epllcmndd6ly4v4dw2jcnxaxzjqnlvnw"
+      },
+      {
+        "amount": 1,
+        "denom": "cube",
+        "address": "penumbrav2t13vh0fkf3qkqjacpm59g23ufea9n5us45e4p5h6hty8vg73r2t8g5l3kynad87u0n9eragf3hhkgkhqe5vhngq2cw493k48c9qg9ms4epllcmndd6ly4v4dw2jcnxaxzjqnlvnw"
+      },
+      {
+        "amount": 1000000000000,
+        "denom": "upenumbra",
+        "address": "penumbrav2t13ahs2s8ms6q0utgetty3zflwteepg87gqm88sqqcdj2mjhhydkykwu6n7dk557x84aa9a6cqhdytw0zk33xjgmuedprrlunc86up6zps8juej9rpuuydjtk7jaxpmrw2a64mcf"
+      },
+      {
+        "amount": 20000,
+        "denom": "gm",
+        "address": "penumbrav2t13ahs2s8ms6q0utgetty3zflwteepg87gqm88sqqcdj2mjhhydkykwu6n7dk557x84aa9a6cqhdytw0zk33xjgmuedprrlunc86up6zps8juej9rpuuydjtk7jaxpmrw2a64mcf"
+      },
+      {
+        "amount": 20000,
+        "denom": "gn",
+        "address": "penumbrav2t13ahs2s8ms6q0utgetty3zflwteepg87gqm88sqqcdj2mjhhydkykwu6n7dk557x84aa9a6cqhdytw0zk33xjgmuedprrlunc86up6zps8juej9rpuuydjtk7jaxpmrw2a64mcf"
+      },
+      {
+        "amount": 10000,
+        "denom": "pizza",
+        "address": "penumbrav2t13ahs2s8ms6q0utgetty3zflwteepg87gqm88sqqcdj2mjhhydkykwu6n7dk557x84aa9a6cqhdytw0zk33xjgmuedprrlunc86up6zps8juej9rpuuydjtk7jaxpmrw2a64mcf"
+      },
+      {
+        "amount": 100,
+        "denom": "cube",
+        "address": "penumbrav2t13ahs2s8ms6q0utgetty3zflwteepg87gqm88sqqcdj2mjhhydkykwu6n7dk557x84aa9a6cqhdytw0zk33xjgmuedprrlunc86up6zps8juej9rpuuydjtk7jaxpmrw2a64mcf"
+      },
+      {
+        "amount": 1000000000000,
+        "denom": "upenumbra",
+        "address": "penumbrav2t1uw03wyt49u7wm5wgu4nvkdt0v48fdaw5y4az4xlgmnp6ucs6th4xd0zg8wqxwndwfv286ktjwgemyhrxqu0d5qjf8dapr57l3k8yqs09vw9m5ywxsx9hjj2dj4qwnrl2qs6222"
+      },
+      {
+        "amount": 20000,
+        "denom": "gm",
+        "address": "penumbrav2t1uw03wyt49u7wm5wgu4nvkdt0v48fdaw5y4az4xlgmnp6ucs6th4xd0zg8wqxwndwfv286ktjwgemyhrxqu0d5qjf8dapr57l3k8yqs09vw9m5ywxsx9hjj2dj4qwnrl2qs6222"
+      },
+      {
+        "amount": 20000,
+        "denom": "gn",
+        "address": "penumbrav2t1uw03wyt49u7wm5wgu4nvkdt0v48fdaw5y4az4xlgmnp6ucs6th4xd0zg8wqxwndwfv286ktjwgemyhrxqu0d5qjf8dapr57l3k8yqs09vw9m5ywxsx9hjj2dj4qwnrl2qs6222"
+      },
+      {
+        "amount": 10000,
+        "denom": "pizza",
+        "address": "penumbrav2t1uw03wyt49u7wm5wgu4nvkdt0v48fdaw5y4az4xlgmnp6ucs6th4xd0zg8wqxwndwfv286ktjwgemyhrxqu0d5qjf8dapr57l3k8yqs09vw9m5ywxsx9hjj2dj4qwnrl2qs6222"
+      },
+      {
+        "amount": 100,
+        "denom": "cube",
+        "address": "penumbrav2t1uw03wyt49u7wm5wgu4nvkdt0v48fdaw5y4az4xlgmnp6ucs6th4xd0zg8wqxwndwfv286ktjwgemyhrxqu0d5qjf8dapr57l3k8yqs09vw9m5ywxsx9hjj2dj4qwnrl2qs6222"
+      },
+      {
+        "amount": 1000000000000,
+        "denom": "upenumbra",
+        "address": "penumbrav2t1w6em8sdx0467ug9kk0s0sng254tqjfk9gglv6ff7dq2v8arwekevkjte9udzmsj9l83mz74747tj0a49w2vhecxj7ac4upr5c5pvjqhsy7dwn422m8dgdekt7y4lmad0fg04dr"
+      },
+      {
+        "amount": 20000,
+        "denom": "gm",
+        "address": "penumbrav2t1w6em8sdx0467ug9kk0s0sng254tqjfk9gglv6ff7dq2v8arwekevkjte9udzmsj9l83mz74747tj0a49w2vhecxj7ac4upr5c5pvjqhsy7dwn422m8dgdekt7y4lmad0fg04dr"
+      },
+      {
+        "amount": 20000,
+        "denom": "gn",
+        "address": "penumbrav2t1w6em8sdx0467ug9kk0s0sng254tqjfk9gglv6ff7dq2v8arwekevkjte9udzmsj9l83mz74747tj0a49w2vhecxj7ac4upr5c5pvjqhsy7dwn422m8dgdekt7y4lmad0fg04dr"
+      },
+      {
+        "amount": 10000,
+        "denom": "pizza",
+        "address": "penumbrav2t1w6em8sdx0467ug9kk0s0sng254tqjfk9gglv6ff7dq2v8arwekevkjte9udzmsj9l83mz74747tj0a49w2vhecxj7ac4upr5c5pvjqhsy7dwn422m8dgdekt7y4lmad0fg04dr"
+      },
+      {
+        "amount": 100,
+        "denom": "cube",
+        "address": "penumbrav2t1w6em8sdx0467ug9kk0s0sng254tqjfk9gglv6ff7dq2v8arwekevkjte9udzmsj9l83mz74747tj0a49w2vhecxj7ac4upr5c5pvjqhsy7dwn422m8dgdekt7y4lmad0fg04dr"
+      },
+      {
+        "amount": 1000000000000,
+        "denom": "upenumbra",
+        "address": "penumbrav2t1jp4pryqqmh65pq8e7zwk6k2674vwhn4qqphxjk0vukxln0crmp2tdld0mhavuyrspwuajnsk5t5t33u2auxvheunr7qde4l068ez0euvtu08z7rwj6shlh64ndz0wvz7mfqdcd"
+      },
+      {
+        "amount": 20000,
+        "denom": "gm",
+        "address": "penumbrav2t1jp4pryqqmh65pq8e7zwk6k2674vwhn4qqphxjk0vukxln0crmp2tdld0mhavuyrspwuajnsk5t5t33u2auxvheunr7qde4l068ez0euvtu08z7rwj6shlh64ndz0wvz7mfqdcd"
+      },
+      {
+        "amount": 20000,
+        "denom": "gn",
+        "address": "penumbrav2t1jp4pryqqmh65pq8e7zwk6k2674vwhn4qqphxjk0vukxln0crmp2tdld0mhavuyrspwuajnsk5t5t33u2auxvheunr7qde4l068ez0euvtu08z7rwj6shlh64ndz0wvz7mfqdcd"
+      },
+      {
+        "amount": 10000,
+        "denom": "pizza",
+        "address": "penumbrav2t1jp4pryqqmh65pq8e7zwk6k2674vwhn4qqphxjk0vukxln0crmp2tdld0mhavuyrspwuajnsk5t5t33u2auxvheunr7qde4l068ez0euvtu08z7rwj6shlh64ndz0wvz7mfqdcd"
+      },
+      {
+        "amount": 100,
+        "denom": "cube",
+        "address": "penumbrav2t1jp4pryqqmh65pq8e7zwk6k2674vwhn4qqphxjk0vukxln0crmp2tdld0mhavuyrspwuajnsk5t5t33u2auxvheunr7qde4l068ez0euvtu08z7rwj6shlh64ndz0wvz7mfqdcd"
+      },
+      {
+        "amount": 1000000000000,
+        "denom": "upenumbra",
+        "address": "penumbrav2t1tyha9sze7g7552r4ue6fmna4xjng6fatmtmyxxe4j8lqz4wj5en85s34n0r0m4m0pxrdvr0teyalsgptrr6p69jtj6agxzjgyt5463htrjdymr0c5eclvvw5pax9589k882gke"
+      },
+      {
+        "amount": 20000,
+        "denom": "gm",
+        "address": "penumbrav2t1tyha9sze7g7552r4ue6fmna4xjng6fatmtmyxxe4j8lqz4wj5en85s34n0r0m4m0pxrdvr0teyalsgptrr6p69jtj6agxzjgyt5463htrjdymr0c5eclvvw5pax9589k882gke"
+      },
+      {
+        "amount": 20000,
+        "denom": "gn",
+        "address": "penumbrav2t1tyha9sze7g7552r4ue6fmna4xjng6fatmtmyxxe4j8lqz4wj5en85s34n0r0m4m0pxrdvr0teyalsgptrr6p69jtj6agxzjgyt5463htrjdymr0c5eclvvw5pax9589k882gke"
+      },
+      {
+        "amount": 10000,
+        "denom": "pizza",
+        "address": "penumbrav2t1tyha9sze7g7552r4ue6fmna4xjng6fatmtmyxxe4j8lqz4wj5en85s34n0r0m4m0pxrdvr0teyalsgptrr6p69jtj6agxzjgyt5463htrjdymr0c5eclvvw5pax9589k882gke"
+      },
+      {
+        "amount": 100,
+        "denom": "cube",
+        "address": "penumbrav2t1tyha9sze7g7552r4ue6fmna4xjng6fatmtmyxxe4j8lqz4wj5en85s34n0r0m4m0pxrdvr0teyalsgptrr6p69jtj6agxzjgyt5463htrjdymr0c5eclvvw5pax9589k882gke"
+      },
+      {
+        "amount": 1000000000000,
+        "denom": "upenumbra",
+        "address": "penumbrav2t1hum845ches70c8kp8zfx7nerjwfe653hxsrpgwepwtspcp4jy6ytnxhe5kwn56sku684x6zzqcwp5ycrkee5mmg9kdl3jkr5lqn2xq3kqxvp4d7gwqdue5jznk2ter2t66mk4n"
+      },
+      {
+        "amount": 20000,
+        "denom": "gm",
+        "address": "penumbrav2t1hum845ches70c8kp8zfx7nerjwfe653hxsrpgwepwtspcp4jy6ytnxhe5kwn56sku684x6zzqcwp5ycrkee5mmg9kdl3jkr5lqn2xq3kqxvp4d7gwqdue5jznk2ter2t66mk4n"
+      },
+      {
+        "amount": 20000,
+        "denom": "gn",
+        "address": "penumbrav2t1hum845ches70c8kp8zfx7nerjwfe653hxsrpgwepwtspcp4jy6ytnxhe5kwn56sku684x6zzqcwp5ycrkee5mmg9kdl3jkr5lqn2xq3kqxvp4d7gwqdue5jznk2ter2t66mk4n"
+      },
+      {
+        "amount": 10000,
+        "denom": "pizza",
+        "address": "penumbrav2t1hum845ches70c8kp8zfx7nerjwfe653hxsrpgwepwtspcp4jy6ytnxhe5kwn56sku684x6zzqcwp5ycrkee5mmg9kdl3jkr5lqn2xq3kqxvp4d7gwqdue5jznk2ter2t66mk4n"
+      },
+      {
+        "amount": 100,
+        "denom": "cube",
+        "address": "penumbrav2t1hum845ches70c8kp8zfx7nerjwfe653hxsrpgwepwtspcp4jy6ytnxhe5kwn56sku684x6zzqcwp5ycrkee5mmg9kdl3jkr5lqn2xq3kqxvp4d7gwqdue5jznk2ter2t66mk4n"
+      },
+      {
+        "amount": 50000000000,
+        "denom": "udelegation_penumbravalid10zrh7s2wyjevyq3wse0z5qmeh96aj344rg2gmfhfl9alneln2qxsujpyjz",
+        "address": "penumbrav2t1f8etze6rkcjyaewwwqncj0ups04c9lnwcs463l4y44f2ed2u78wjslj80p3svjd7qfx0u9yya5zfeveadlx2vndfhsntfq93n3tldgr5r0jsud6kxhx0cz2pmy42sfz2c8g25s"
+      },
+      {
+        "amount": 50000000000,
+        "denom": "udelegation_penumbravalid1ppk5k77vth58jvuxq5eka9rv7ympr0p4c3l2vd7g6xvhpcedhqxsguhshf",
+        "address": "penumbrav2t1mspwc8naqvpvrk99lwpfdfs6g2vzkgmms90xud3wm49x65djrz7c0a6vcymvwn2uthah58cs4sgt772mkg0gyq3xx6372cglgt58sy3xeu4mwfcm7wdk5kgdkycs3wh4hpxhpv"
+      }
+    ]
+  }
+}

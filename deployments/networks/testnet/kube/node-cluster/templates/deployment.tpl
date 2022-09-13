@@ -90,7 +90,7 @@ spec:
             - name: tm-config
               mountPath: "/config"
               readOnly: true
-  
+
       containers:
         - name: tm
           image: "{{ $.Values.tendermintImage }}:{{ $.Values.tendermintVersion }}"
