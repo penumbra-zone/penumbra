@@ -32,7 +32,7 @@ jobs:
           docker-compose up --detach
 
       - name: Run integration tests against localhost.
-        run: cargo test --package pcli -- --ignored
+        run: cargo test --package pcli -- --ignored --test-threads 1
         env:
           PENUMBRA_NODE_HOSTNAME: 127.0.0.1
           PCLI_UNLEASH_DANGER: yes
