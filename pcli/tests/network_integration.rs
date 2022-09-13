@@ -169,5 +169,17 @@ fn delegate() {
     let block_time = time::Duration::from_secs(2 * BLOCK_TIME_SECONDS);
     thread::sleep(block_time);
 
-    // TODO: Undelegate
+    // Check we have some of the delegation token for that validator now.
+    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+    balance_cmd
+        .args(&[
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "view",
+            "balance",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    balance_cmd
+        .assert()
+        .stdout(predicate::str::is_match(format!("{}", validator.as_str())).unwrap());
 }
