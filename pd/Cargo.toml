@@ -51,7 +51,7 @@ chrono = { version = "0.4", default-features = false, features = ["serde"] }
 csv = "1.1"
 directories = "4.0"
 # Temporarily pin due to https://github.com/penumbra-zone/penumbra/issues/1355
-tokio = { version = "=1.20.1", features = ["full"]}
+tokio = { version = "=1.21.1", features = ["full"]}
 tokio-stream = "0.1"
 tokio-util = "0.7"
 tower = { version = "0.4", features = ["full"]}
@@ -88,7 +88,7 @@ tempfile = "3.3.0"
 base64 = "0.13.0"
 # Temporarily pin due to https://github.com/penumbra-zone/penumbra/issues/1355 since 0.1.8 contains
 # a fix that only works with tokio 1.21.0
-console-subscriber = "=0.1.7"
+console-subscriber = "=0.1.8"
 metrics-tracing-context = "0.11.0"
 metrics-util = "0.13"
 clap = { version = "3", features = ["derive"] }

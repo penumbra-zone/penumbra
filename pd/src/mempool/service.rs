@@ -36,7 +36,8 @@ impl Mempool {
 
         tokio::task::Builder::new()
             .name("mempool::Worker")
-            .spawn(Worker::new(storage, queue_rx, height_rx).await?.run());
+            .spawn(Worker::new(storage, queue_rx, height_rx).await?.run())
+            .expect("failed to spawn mempool worker");
 
         Ok(Self {
             queue: PollSender::new(queue_tx),

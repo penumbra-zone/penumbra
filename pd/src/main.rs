@@ -178,36 +178,42 @@ async fn main() -> anyhow::Result<()> {
             let info = pd::Info::new(storage.clone(), height_rx);
             let snapshot = pd::Snapshot {};
 
-            let abci_server = tokio::task::Builder::new().name("abci_server").spawn(
-                tower_abci::Server::builder()
-                    .consensus(consensus)
-                    .snapshot(snapshot)
-                    .mempool(mempool)
-                    .info(info.clone())
-                    .finish()
-                    .unwrap()
-                    .listen(format!("{}:{}", host, abci_port)),
-            );
+            let abci_server = tokio::task::Builder::new()
+                .name("abci_server")
+                .spawn(
+                    tower_abci::Server::builder()
+                        .consensus(consensus)
+                        .snapshot(snapshot)
+                        .mempool(mempool)
+                        .info(info.clone())
+                        .finish()
+                        .unwrap()
+                        .listen(format!("{}:{}", host, abci_port)),
+                )
+                .expect("failed to spawn abci server");
 
-            let grpc_server = tokio::task::Builder::new().name("grpc_server").spawn(
-                Server::builder()
-                    .trace_fn(|req| match remote_addr(req) {
-                        Some(remote_addr) => {
-                            tracing::error_span!("grpc", ?remote_addr)
-                        }
-                        None => tracing::error_span!("grpc"),
-                    })
-                    // Allow HTTP/1, which will be used by grpc-web connections.
-                    .accept_http1(true)
-                    // Wrap each of the gRPC services in a tonic-web proxy:
-                    .add_service(tonic_web::enable(ObliviousQueryServer::new(info.clone())))
-                    .add_service(tonic_web::enable(SpecificQueryServer::new(info.clone())))
-                    .serve(
-                        format!("{}:{}", host, grpc_port)
-                            .parse()
-                            .expect("this is a valid address"),
-                    ),
-            );
+            let grpc_server = tokio::task::Builder::new()
+                .name("grpc_server")
+                .spawn(
+                    Server::builder()
+                        .trace_fn(|req| match remote_addr(req) {
+                            Some(remote_addr) => {
+                                tracing::error_span!("grpc", ?remote_addr)
+                            }
+                            None => tracing::error_span!("grpc"),
+                        })
+                        // Allow HTTP/1, which will be used by grpc-web connections.
+                        .accept_http1(true)
+                        // Wrap each of the gRPC services in a tonic-web proxy:
+                        .add_service(tonic_web::enable(ObliviousQueryServer::new(info.clone())))
+                        .add_service(tonic_web::enable(SpecificQueryServer::new(info.clone())))
+                        .serve(
+                            format!("{}:{}", host, grpc_port)
+                                .parse()
+                                .expect("this is a valid address"),
+                        ),
+                )
+                .expect("failed to spawn grpc server");
 
             // Configure a Prometheus recorder and exporter.
             let (recorder, exporter) = PrometheusBuilder::new()

@@ -33,6 +33,7 @@ impl Storage {
                     Ok(Self(Arc::new(DB::open_cf(&opts, path, ["jmt", "nct"])?)))
                 })
             })
+            .unwrap()
             .await
             .unwrap()
     }
@@ -92,6 +93,7 @@ impl Storage {
                     Ok::<_, anyhow::Error>(())
                 })
             })
+            .unwrap()
             .await?
     }
 
@@ -110,6 +112,7 @@ impl Storage {
                     }
                 })
             })
+            .unwrap()
             .await?
     }
 }
@@ -146,6 +149,7 @@ impl TreeWriter for Storage {
                         Ok(())
                     })
                 })
+                .unwrap()
                 .await
                 .unwrap()
         })
@@ -180,6 +184,7 @@ impl TreeReader for Storage {
                         Ok(value)
                     })
                 })
+                .unwrap()
                 .await
                 .unwrap()
         })
@@ -214,6 +219,7 @@ impl TreeReader for Storage {
                         Ok(ret)
                     })
                 })
+                .unwrap()
                 .await
                 .unwrap()
         })

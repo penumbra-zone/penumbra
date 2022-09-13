@@ -12,5 +12,5 @@ static_assertions = "1"
 proptest = "1"
 proptest-derive = "0.3"
 penumbra-tct = { path = "../tct", features = ["arbitrary"] }
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1.21.1", features = ["full"] }
 futures = "0.3"

@@ -34,7 +34,8 @@ impl Consensus {
 
         tokio::task::Builder::new()
             .name("consensus::Worker")
-            .spawn(Worker::new(storage, queue_rx, height_tx).await?.run());
+            .spawn(Worker::new(storage, queue_rx, height_tx).await?.run())
+            .expect("failed to spawn consensus worker");
 
         Ok((
             Self {
