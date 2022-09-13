@@ -1,7 +1,7 @@
 //! Basic integration testing of `pcli` versus a target testnet.
 //!
 //! These tests are marked with `#[ignore]`, but can be run with:
-//! `cargo test --package pcli -- --ignored`
+//! `cargo test --package pcli -- --ignored --test-threads 1`
 //!
 //! Tests against the network in the `PENUMBRA_NODE_HOSTNAME` environment variable.
 //!
@@ -107,6 +107,10 @@ fn transaction_send_from_addr_0_to_addr_1() {
             TEST_ADDRESS_0,
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+
+    // Wait for a couple blocks for the transaction to be confirmed before doing other tests.
+    let block_time = time::Duration::from_secs(2 * BLOCK_TIME_SECONDS);
+    thread::sleep(block_time);
 }
 
 #[ignore]
@@ -124,6 +128,10 @@ fn transaction_sweep() {
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     sweep_cmd.assert().success();
+
+    // Wait for a couple blocks for the transaction to be confirmed before doing other tests.
+    let block_time = time::Duration::from_secs(2 * BLOCK_TIME_SECONDS);
+    thread::sleep(block_time);
 }
 
 #[ignore]
@@ -196,4 +204,52 @@ fn delegate_and_undelegate() {
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     undelegate_cmd.assert().success();
+
+    // Wait for a couple blocks for the transaction to be confirmed before doing other tests.
+    let block_time = time::Duration::from_secs(2 * BLOCK_TIME_SECONDS);
+    thread::sleep(block_time);
+}
+
+#[ignore]
+#[test]
+fn swap() {
+    let tmpdir = load_wallet_into_tmpdir();
+
+    // Swap 1penumbra for some gn.
+    let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
+    swap_cmd
+        .args(&[
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "swap",
+            "--into",
+            "gn",
+            "1penumbra",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    swap_cmd.assert().success();
+
+    // Wait for a couple blocks for the transaction to be confirmed.
+    let block_time = time::Duration::from_secs(2 * BLOCK_TIME_SECONDS);
+    thread::sleep(block_time);
+
+    // Cleanup: Swap the gn back (will fail if we received no gn in the above swap).
+    let mut swap_back_cmd = Command::cargo_bin("pcli").unwrap();
+    swap_back_cmd
+        .args(&[
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "swap",
+            "--into",
+            "penumbra",
+            "0.9gn",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    swap_back_cmd.assert().success();
+
+    // Wait for a couple blocks for the transaction to be confirmed before doing other tests.
+    let block_time = time::Duration::from_secs(2 * BLOCK_TIME_SECONDS);
+    thread::sleep(block_time);
 }
