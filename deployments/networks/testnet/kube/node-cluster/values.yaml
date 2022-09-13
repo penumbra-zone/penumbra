@@ -1,0 +1,17 @@
+count: 2
+name: penumbra
+network: testnet
+
+tendermintImage: ghcr.io/strangelove-ventures/heighliner/tendermint
+tendermintVersion: v0.35.9
+toolkitImage: ghcr.io/strangelove-ventures/infra-toolkit
+toolkitVersion: v0.0.1
+penumbraImage: ghcr.io/strangelove-ventures/heighliner/penumbra
+penumbraVersion: 026-hermippe
+healthImage: ghcr.io/strangelove-ventures/ignite-health-check
+healthVersion: v0.0.1
+
+
+# tendermint:
+#   Image: ghcr.io/strangelove-ventures/tendermint
+#   Version: v0.35.9

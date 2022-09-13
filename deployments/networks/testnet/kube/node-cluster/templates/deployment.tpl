@@ -1,38 +1,29 @@
 {{ $count := (.Values.count | int) }}
-{{ $network := (.Values.network | toString) }}
-{{ $name := (.Values.name | toString) }}
 {{ range $i,$e := until $count }}
-
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: "{{ $network }}-{{ $name }}-{{$i}}"
+  name: "penumbra-{{$i}}"
 spec:
-
-  replicas: {{ $count }}
-  
+  replicas: 1
   selector:
-    app: "{{ $network }}-{{ $name }}-{{$i}}"
-
+    matchLabels:
+      app: "penumbra-{{$i}}"
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
-      annotations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      name: "{{ $network }}-{{ $name }}-{{$i}}"
+      name: "penumbra-{{$i}}"
       labels:
-        {{- include "node-cluster.selectorLabels" . | nindent 8 }}
-        app: "{{ $network }}-{{ $name }}-{{$i}}"
-        network: "{{ $network }}"
+        app: "penumbra-{{$i}}"
+        network: "{{ $.Values.network }}"
     spec:
       volumes:
-        - name: "pv-{{ $network }}-pd-{{ $name }}-{{$i}}"
+        - name: "pv-{{ include "penumbra.name" $ }}-{{$i}}"
           persistentVolumeClaim:
-            claimName: "pvc-{{ $network }}-pd-{{ $name }}-{{$i}}"
-        - name: "pv-{{ $network }}-tm-{{ $name }}-{{$i}}"
+            claimName: "pvc-{{ include "penumbra.name" $ }}-{{$i}}"
+        - name: "pv-{{ include "tendermint.name" $ }}-{{$i}}"
           persistentVolumeClaim:
-            claimName: "pvc-{{ $network }}-tm-{{ $name }}-{{$i}}"
+            claimName: "pvc-{{ include "tendermint.name" $ }}-{{$i}}"
         - name: tm-config
           configMap:
             name: tm-config
@@ -46,15 +37,15 @@ spec:
             - sh
             - -c
             - |
-                chown -R 1025:1025 "/home/pv-{{ $network }}-tm-{{ $name }}-{{$i}}"
-                chown -R 1025:1025 "/home/pv-{{ $network }}-pd-{{ $name }}-{{$i}}"
+                chown -R 1025:1025 "/home/pv-{{ include "tendermint.name" $ }}-{{$i}}"
+                chown -R 1025:1025 "/home/pv-{{ include "penumbra.name" $ }}-{{$i}}"
           volumeMounts:
-            - name: "pv-{{ $network }}-tm-{{ $name }}-{{$i}}"
-              mountPath: "/home/pv-{{ $network }}-tm-{{ $name }}-{{$i}}"
-            - name: "pv-{{ $network }}-pd-{{ $name }}-{{$i}}"
-              mountPath: "/home/pv-{{ $network }}-pd-{{ $name }}-{{$i}}"
+            - name: "pv-{{ include "tendermint.name" $ }}-{{$i}}"
+              mountPath: "/home/pv-{{ include "tendermint.name" $ }}-{{$i}}"
+            - name: "pv-{{ include "penumbra.name" $ }}-{{$i}}"
+              mountPath: "/home/pv-{{ include "penumbra.name" $ }}-{{$i}}"
         - name: config-init
-          image: "{{ .Values.tendermintImage }}:{{ .Values.tendermintVersion }}"
+          image: "{{ $.Values.tendermintImage }}:{{ $.Values.tendermintVersion }}"
           command:
             - sh
             - -c
@@ -64,43 +55,45 @@ spec:
               if [ ! -d $CHAIN_DIR ]; then
                 tendermint init full --home $CHAIN_DIR
               else
-                CONFIG_DIR=$CHAIN_DIR/config
-                rm -rf $CONFIG_DIR/*.toml
                 TMP_DIR=/home/heighliner/tmpConfig
                 tendermint init full --home $TMP_DIR
-                mv $TMP_DIR/config/*.toml $CONFIG_DIR/
-                rm -rf $TMP_DIR
               fi
           volumeMounts:
-            - name: "pv-{{ $network }}-tm-{{ $name }}-{{$i}}"
+            - name: "pv-{{ include "tendermint.name" $ }}-{{$i}}"
               mountPath: /home/heighliner
         - name: config-merge
-          image: "{{ .Values.toolkitImage }}:{{ .Values.toolkitVersion }}"
+          image: "{{ $.Values.toolkitImage }}:{{ $.Values.toolkitVersion }}"
           command:
             - sh
             - -c
             - |
               set -eux
               CONFIG_DIR=/home/heighliner/.tendermint/config
-              # curl -X GET "http://testnet.penumbra.zone:26657/genesis" -H "accept: application/json" | jq '.result.genesis' > $CONFIG_DIR/genesis.json
               MERGE_DIR=/tmp/configMerge
               OVERLAY_DIR=/config
+              TMP_DIR=/home/heighliner/tmpConfig
+              if [ -d $TMP_DIR/config ]; then
+                mv $TMP_DIR/config/*.toml $CONFIG_DIR/
+                rm -rf $TMP_DIR
+              fi
               mkdir $MERGE_DIR
               config-merge -f toml $CONFIG_DIR/config.toml $OVERLAY_DIR/config.toml > $MERGE_DIR/config.toml
               dasel put string -f $MERGE_DIR/config.toml -p toml ".p2p.external_address" $(curl -s ifconfig.me):26656
+              curl -X GET "http://testnet.penumbra.zone:26657/genesis" -H "accept: application/json" | jq '.result.genesis' > $CONFIG_DIR/genesis.json
               mv $MERGE_DIR/* $CONFIG_DIR/
           securityContext:
             runAsUser: 1025
             runAsGroup: 1025
           volumeMounts:
-            - name: "pv-{{ $network }}-tm-{{ $name }}-{{$i}}"
+            - name: "pv-{{ include "tendermint.name" $ }}-{{$i}}"
               mountPath: /home/heighliner
             - name: tm-config
               mountPath: "/config"
               readOnly: true
+  
       containers:
         - name: tm
-          image: "{{ .Values.tendermintImage }}:{{ .Values.tendermintVersion }}"
+          image: "{{ $.Values.tendermintImage }}:{{ $.Values.tendermintVersion }}"
           imagePullPolicy: Always
           ports:
             - containerPort: 26657
@@ -110,16 +103,14 @@ spec:
               protocol: TCP
               name: p2p
           volumeMounts:
-            - name: "pv-{{ $network }}-tm-{{ $name }}-{{$i}}"
+            - name: "pv-{{ include "tendermint.name" $ }}-{{$i}}"
               mountPath: /home/heighliner
           command:
-            # - sleep
-            # - "1000"
             - tendermint
             - start
             - --proxy-app=tcp://localhost:26658
         - name: pd
-          image: "{{ .Values.penumbraImage }}:{{ .Values.penumbraVersion }}"
+          image: "{{ $.Values.penumbraImage }}:{{ $.Values.penumbraVersion }}"
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
@@ -129,7 +120,7 @@ spec:
               protocol: TCP
               name: metrics
           volumeMounts:
-            - name: "pv-{{ $network }}-pd-{{ $name }}-{{$i}}"
+            - name: "pv-{{ include "penumbra.name" $ }}-{{$i}}"
               mountPath: /home/heighliner
           command:
             # - sleep
@@ -139,7 +130,7 @@ spec:
             - --home
             - /home/heighliner/pd
         - name: health-check
-          image: "{{ .Values.healthImage }}:{{ .Values.healthVersion }}"
+          image: "{{ $.Values.healthImage }}:{{ $.Values.healthVersion }}"
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 1251

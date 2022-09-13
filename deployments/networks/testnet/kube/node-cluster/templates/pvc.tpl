@@ -1,15 +1,10 @@
 {{ $count := (.Values.count | int) }}
-{{ $network := (.Values.network | toString) }}
-{{ $name := (.Values.name | toString) }}
-
 {{ range $i,$e := until $count }}
+---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-    {{- include "node-cluster.selectorLabels" . | nindent 8 }}
-    name: "pvc-{{ $network }}-pd-{{ $name }}-{{$i}}"
-
-  name: "pvc-{{ $network }}-pd-{{ $name }}-{{$i}}"
+  name: "pvc-{{ include "tendermint.name" $ }}-{{$i}}"
 spec:
   accessModes:
     - ReadWriteOnce
@@ -21,7 +16,7 @@ spec:
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: "pvc-{{ $.Values.network }}-tm-{{ $.Values.name }}-{{$i}}"
+  name: "pvc-{{ include "penumbra.name" $ }}-{{$i}}"
 spec:
   accessModes:
     - ReadWriteOnce

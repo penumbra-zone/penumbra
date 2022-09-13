@@ -1,4 +1,4 @@
-files: ^deployments/
+files: .*deployments/
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.2.0
@@ -21,4 +21,7 @@ repos:
       - id: terraform_tflint
       # - id: terraform_tfsec
       # - id: terraform_providers_lock
-      # - id: infracost_breakdown
+  - repo: https://github.com/gruntwork-io/pre-commit
+    rev: v0.1.17
+    hooks:
+      - id: helmlint
