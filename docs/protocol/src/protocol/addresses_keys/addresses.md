@@ -83,6 +83,52 @@ human-readable prefixes:
 * `penumbra_tnXYZ_` for testnets, where XYZ is the current testnet number padded
   to three decimal places.
 
+### Short Address Form
+
+Addresses can be displayed in a short form. A short form of length $100$ bits (excludes the human-readable
+prefix) is recommended to mitigate address replacement attacks. The attacker's goal is to find a partially
+colliding prefix for any of $N$ addresses they have targeted. 
+
+#### Untargeted attack
+
+In an untargeted attack, the attacker wants to find two different addresses that have a colliding short form of length $M$ bits.
+
+A collision is found in $\sqrt(2^M)$ steps due to the birthday bound, where $M$ is the number of bits of the prefix.
+
+Thus we'd need to double the length $2M$ to provide a desired security level of $M$ bits.
+
+This is equivalent to $2M/5$ characters of the Bech32m address, excluding the human-readable prefix. Thus for a targeted security
+level of 80 bits, we'd need a prefix length of 160 bits, which corresponds to 32 characters of the Bech32m address, excluding the
+human-readable prefix.
+
+The short form is not intended to mitigate this attack.
+
+#### Single-target attack
+
+In a targeted attack, the attacker's goal is to find one address that collides with a target prefix of length $M$ bits.
+
+Here the birthday bound does not apply. To find a colliding prefix of the first M bits, they need to search $2^M$ addresses.
+
+The short form is intended to mitigate this attack.
+
+#### Multi-target attack
+
+In a multi-target attack, the attacker's goal is to be able to generate one address that collides with the short form of 1 of $N$ different addresses.
+
+They are searching for a collision between the following two sets:
+* set of the short forms of the N targeted addresses. This set has $N$ elements (where each element has length $2^M$ bits).
+* set of the short forms of all addresses, which has size $2^M$ elements.
+
+A collision is found in $2^{M}/N$ steps.
+
+For example if the attacker has a target set of $N=2^{20} = 1,048,576$ addresses,
+she can find a collision after $2^{M/20}$ steps. Thus for a prefix length of $M$ bits,
+we get $M-20$ bits of security$. For a targeted security level of 100 bits,
+we need a prefix length of 100 bits, which corresponds to 20 characters of the Bech32m
+address, excluding the human-readable prefix and separator.
+
+The short form is intended to mitigate this attack.
+
 [^1]: This convention is not enforced by the protocol; client software could in
 principle construct diversifiers in another way, although deviating from this
 mechanism risks compromising privacy.
