@@ -11,8 +11,10 @@ pub fn num_clues_equal_to_num_outputs(tx: &Transaction) -> anyhow::Result<()> {
 }
 
 #[allow(clippy::if_same_then_else)]
-pub fn check_memo_exists_if_outputs_absent_if_not(tx: &Transaction) -> anyhow::Result<()> {
+pub fn check_memo_exists_if_outputs_absent_if_not(_tx: &Transaction) -> anyhow::Result<()> {
+    /*
     let num_outputs = tx.outputs().count();
+    Disabling due to: https://github.com/penumbra-zone/penumbra/issues/1416
     if num_outputs > 0 && tx.transaction_body().memo.is_none() {
         Err(anyhow::anyhow!(
             "consensus rule violated: must have memo if outputs present"
@@ -26,4 +28,6 @@ pub fn check_memo_exists_if_outputs_absent_if_not(tx: &Transaction) -> anyhow::R
             "consensus rule violated: cannot have memo if no outputs present"
         ))
     }
+    */
+    Ok(())
 }
