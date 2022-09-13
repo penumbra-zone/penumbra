@@ -39,7 +39,7 @@ git clone https://github.com/penumbra-zone/penumbra
 To build the version of `pcli` compatible with the current testnet, navigate to the penumbra folder, fetch the latest from the repository, and check out the latest tag for the current [testnet](https://github.com/penumbra-zone/penumbra/releases):
 
 ```bash
-cd penumbra && git fetch && git checkout 028-harpalyke && cargo update
+cd penumbra && git fetch && git checkout 029-eukelade && cargo update
 ```
 
 ### Building the `pcli` client software
