@@ -69,21 +69,13 @@ impl Component for ShieldedPool {
                 "Genesis allocations contain empty note",
             );
 
-            let denom = asset::REGISTRY
-                .parse_denom(&allocation.denom)
-                .ok_or_else(|| {
-                    anyhow!(
-                        "Genesis denomination {} is not a base denom",
-                        allocation.denom
-                    )
-                })
-                .unwrap();
+            let unit = asset::REGISTRY.parse_unit(&allocation.denom);
 
-            self.state.register_denom(&denom).await.unwrap();
+            self.state.register_denom(&unit.base()).await.unwrap();
             self.mint_note(
                 Value {
-                    amount: allocation.amount,
-                    asset_id: denom.id(),
+                    amount: allocation.amount * 10u64.pow(unit.exponent().into()),
+                    asset_id: unit.id(),
                 },
                 &allocation.address,
                 NoteSource::Genesis,
