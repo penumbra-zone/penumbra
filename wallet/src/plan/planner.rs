@@ -303,6 +303,13 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             self.output(value, self_address);
         }
 
+        // If there are outputs, we check that a memo has been added. If not, we add a default memo.
+        if self.plan.num_outputs() > 0 && self.plan.memo_plan.is_none() {
+            self.memo(MemoPlaintext::default());
+        } else if self.plan.num_outputs() == 0 && self.plan.memo_plan.is_some() {
+            anyhow::bail!("if no outputs, no memo should be added");
+        }
+
         // TODO: add dummy change outputs in the staking token denomination (this means they'll pass
         // the undelegate rules check)
 
