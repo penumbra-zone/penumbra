@@ -13,6 +13,7 @@ use std::{thread, time};
 
 use assert_cmd::Command;
 use predicates::prelude::*;
+use regex::Regex;
 use tempfile::{tempdir, TempDir};
 
 // This address is for test purposes, allocations were added beginning with
@@ -123,4 +124,50 @@ fn transaction_sweep() {
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     sweep_cmd.assert().success();
+}
+
+#[ignore]
+#[test]
+fn delegate() {
+    let tmpdir = load_wallet_into_tmpdir();
+
+    // Get the list of validators.
+    let mut validator_cmd = Command::cargo_bin("pcli").unwrap();
+    validator_cmd
+        .args(&[
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "query",
+            "validator",
+            "list",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    validator_cmd.assert().success();
+
+    // Pull out one of the validators from stdout.
+    let stdout_vec = validator_cmd.unwrap().stdout;
+    let validator_regex = Regex::new(r"penumbravalid1\w{58}").unwrap();
+    let captures = validator_regex.captures(std::str::from_utf8(&stdout_vec).unwrap());
+    let validator = captures.unwrap()[0].to_string();
+
+    // Delegate a tiny bit of penumbra to the validator.
+    let mut delegate_cmd = Command::cargo_bin("pcli").unwrap();
+    delegate_cmd
+        .args(&[
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "delegate",
+            "1penumbra",
+            "--to",
+            validator.as_str(),
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    delegate_cmd.assert().success();
+
+    // Wait for a couple blocks for the transaction to be confirmed.
+    let block_time = time::Duration::from_secs(2 * BLOCK_TIME_SECONDS);
+    thread::sleep(block_time);
+
+    // TODO: Undelegate
 }
