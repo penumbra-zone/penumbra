@@ -128,7 +128,7 @@ fn transaction_sweep() {
 
 #[ignore]
 #[test]
-fn delegate() {
+fn delegate_and_undelegate() {
     let tmpdir = load_wallet_into_tmpdir();
 
     // Get the list of validators.
@@ -182,4 +182,18 @@ fn delegate() {
     balance_cmd
         .assert()
         .stdout(predicate::str::is_match(format!("{}", validator.as_str())).unwrap());
+
+    // Now undelegate.
+    let amount_to_undelegate = format!("0.99delegation_{}", validator.as_str());
+    let mut undelegate_cmd = Command::cargo_bin("pcli").unwrap();
+    undelegate_cmd
+        .args(&[
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "undelegate",
+            amount_to_undelegate.as_str(),
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    undelegate_cmd.assert().success();
 }
