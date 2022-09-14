@@ -28,12 +28,12 @@ struct Args {
     #[clap(long)]
     max_witnesses: Option<usize>,
     /// The path to a TLS certificate file to use when serving the demo.
-    #[clap(long)]
+    #[clap(long, required_if("tls_key", "is_some"))]
     tls_cert: Option<PathBuf>,
     /// The path to a TLS private key file to use when serving the demo.
     ///
     /// This must be the private key corresponding to the certificate given by `--tls-cert`.
-    #[clap(long)]
+    #[clap(long, required_if("tls_cert", "is_some"))]
     tls_key: Option<PathBuf>,
 }
 
@@ -69,15 +69,13 @@ async fn main() -> anyhow::Result<()> {
                 .await
                 .unwrap()
         }
-        (Some(_), None) | (None, Some(_)) => {
-            anyhow::bail!("Both --tls-cert and --tls-key must be provided to enable TLS");
-        }
         (None, None) => {
             axum::Server::bind(&address)
                 .serve(app.into_make_service())
                 .await
                 .unwrap();
         }
+        _ => unreachable!("both --tls-cert and --tls-key are mandated together"),
     }
 
     Ok(())
