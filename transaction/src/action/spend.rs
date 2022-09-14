@@ -10,6 +10,8 @@ use penumbra_crypto::{
 };
 use penumbra_proto::{core::transaction::v1alpha1 as transaction, Protobuf};
 
+use crate::{transaction_view::action_view::SpendView, ActionView, TransactionPerspective};
+
 use super::IsAction;
 
 #[derive(Clone, Debug)]
@@ -22,6 +24,18 @@ pub struct Spend {
 impl IsAction for Spend {
     fn balance_commitment(&self) -> balance::Commitment {
         self.body.balance_commitment
+    }
+
+    fn decrypt_with_perspective(
+        &self,
+        txp: &TransactionPerspective,
+    ) -> anyhow::Result<Option<ActionView>> {
+        let decrypted_note = txp
+            .spend_nullifiers
+            .get(&self.body.nullifier)
+            .ok_or_else(|| anyhow::anyhow!("no note found for nullifier"))?
+            .to_owned();
+        Ok(Some(ActionView::Spend(SpendView { decrypted_note })))
     }
 }
 

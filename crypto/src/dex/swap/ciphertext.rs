@@ -63,6 +63,24 @@ impl SwapCiphertext {
             anyhow::anyhow!("unable to convert swap plaintext bytes into SwapPlaintext")
         })
     }
+
+    /// Decrypt a swap ciphertext using the [`PayloadKey`].
+    pub fn decrypt_with_payload_key(
+        ciphertext: &SwapCiphertext,
+        payload_key: &PayloadKey,
+    ) -> Result<SwapPlaintext> {
+        let plaintext = payload_key
+            .decrypt(ciphertext.0.to_vec(), PayloadKind::Swap)
+            .map_err(|_| anyhow::anyhow!("unable to decrypt swap ciphertext"))?;
+
+        let plaintext_bytes: [u8; SWAP_LEN_BYTES] = plaintext
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("swap decryption result did not fit in plaintext len"))?;
+
+        plaintext_bytes.try_into().map_err(|_| {
+            anyhow::anyhow!("unable to convert swap plaintext bytes into SwapPlaintext")
+        })
+    }
 }
 
 impl TryFrom<[u8; SWAP_CIPHERTEXT_BYTES]> for SwapCiphertext {

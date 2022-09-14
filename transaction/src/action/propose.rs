@@ -6,7 +6,7 @@ use std::{collections::BTreeMap, str::FromStr};
 use penumbra_crypto::{asset::Amount, Address, Balance, Fr, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::{core::transaction::v1alpha1 as pb, Protobuf};
 
-use crate::{plan::TransactionPlan, AuthHash, IsAction};
+use crate::{plan::TransactionPlan, ActionView, AuthHash, IsAction, TransactionPerspective};
 
 /// A governance proposal.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -321,6 +321,13 @@ impl IsAction for ProposalSubmit {
     fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
         self.balance().commit(Fr::zero())
     }
+
+    fn decrypt_with_perspective(
+        &self,
+        txp: &TransactionPerspective,
+    ) -> anyhow::Result<Option<ActionView>> {
+        todo!()
+    }
 }
 
 impl ProposalSubmit {
@@ -386,6 +393,13 @@ pub struct ProposalWithdraw {
 impl IsAction for ProposalWithdraw {
     fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
         Default::default()
+    }
+
+    fn decrypt_with_perspective(
+        &self,
+        txp: &TransactionPerspective,
+    ) -> anyhow::Result<Option<ActionView>> {
+        todo!()
     }
 }
 

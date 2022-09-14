@@ -3,6 +3,8 @@ use penumbra_crypto::{value, Address, Balance, Fr};
 use penumbra_proto::{core::ibc::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
+use crate::{ActionView, TransactionPerspective};
+
 use super::IsAction;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -30,6 +32,13 @@ pub struct ICS20Withdrawal {
 impl IsAction for ICS20Withdrawal {
     fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
         self.balance().commit(Fr::zero())
+    }
+
+    fn decrypt_with_perspective(
+        &self,
+        txp: &TransactionPerspective,
+    ) -> anyhow::Result<Option<ActionView>> {
+        todo!()
     }
 }
 

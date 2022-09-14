@@ -5,6 +5,8 @@ use penumbra_crypto::{
 use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
+use crate::{ActionView, TransactionPerspective};
+
 use super::IsAction;
 
 /// A transaction action adding stake to a validator's delegation pool.
@@ -30,6 +32,13 @@ pub struct Delegate {
 impl IsAction for Delegate {
     fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
         self.balance().commit(Fr::zero())
+    }
+
+    fn decrypt_with_perspective(
+        &self,
+        txp: &TransactionPerspective,
+    ) -> anyhow::Result<Option<ActionView>> {
+        todo!()
     }
 }
 

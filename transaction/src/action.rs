@@ -17,6 +17,8 @@ pub mod swap_claim;
 mod undelegate;
 mod vote;
 
+use crate::{ActionView, TransactionPerspective};
+
 pub use self::ibc::ICS20Withdrawal;
 pub use delegate::Delegate;
 pub use output::Output;
@@ -33,6 +35,10 @@ pub use vote::{DelegatorVote, ValidatorVote, ValidatorVoteBody, Vote};
 /// Common behavior between Penumbra actions.
 pub trait IsAction {
     fn balance_commitment(&self) -> balance::Commitment;
+    fn decrypt_with_perspective(
+        &self,
+        txp: &TransactionPerspective,
+    ) -> anyhow::Result<Option<ActionView>>;
 }
 
 /// An action performed by a Penumbra transaction.
@@ -82,6 +88,19 @@ impl IsAction for Action {
             // value balance unchanged.
             Action::ValidatorDefinition(_) => balance::Commitment::default(),
             Action::IBCAction(_) => balance::Commitment::default(),
+        }
+    }
+
+    fn decrypt_with_perspective(
+        &self,
+        txp: &TransactionPerspective,
+    ) -> anyhow::Result<Option<ActionView>> {
+        match self {
+            Action::Swap(swap) => swap.decrypt_with_perspective(txp),
+            Action::SwapClaim(swap_claim) => swap_claim.decrypt_with_perspective(txp),
+            Action::Output(output) => output.decrypt_with_perspective(txp),
+            Action::Spend(spend) => spend.decrypt_with_perspective(txp),
+            _ => Ok(None),
         }
     }
 }
