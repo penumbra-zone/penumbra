@@ -1,5 +1,7 @@
 {
     "rust-analyzer.server.extraEnv": {
         "DATABASE_URL": "sqlite:///tmp/pviewd-dev-db.sqlite"
-    }
+    },
+    "rust-analyzer.checkOnSave.command": "clippy",
+    "rust-analyzer.checkOnSave.enable": true
 }
