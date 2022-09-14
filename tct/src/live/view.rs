@@ -1,11 +1,14 @@
-use std::{convert::Infallible, sync::Arc};
+use std::{convert::Infallible, sync::Arc, time::Duration};
 
 use axum::{
     body::StreamBody,
     extract::{OriginalUri, Path, Query},
     headers::ContentType,
     http::StatusCode,
-    response::{sse, Sse},
+    response::{
+        sse::{self, KeepAlive},
+        Sse,
+    },
     routing::{get, MethodRouter},
     Router, TypedHeader,
 };
@@ -180,6 +183,7 @@ fn extra_changes(mut tree: watch::Receiver<Tree>) -> MethodRouter {
         });
 
         Sse::new(ReceiverStream::new(rx).map(Ok::<_, Infallible>))
+            .keep_alive(KeepAlive::new().interval(Duration::from_secs(5)))
     })
 }
 
