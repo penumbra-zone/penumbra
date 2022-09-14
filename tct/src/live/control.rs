@@ -25,22 +25,29 @@ use crate::{
 pub fn control<R: Rng + Send + 'static>(
     rng: R,
     tree: Arc<watch::Sender<Tree>>,
-    max_witnesses: Option<usize>,
+    max_witnesses: usize,
+    max_repeat: u16,
 ) -> Router {
     // The rng is shared between all methods
     let rng = Arc::new(Mutex::new(rng));
 
     Router::new()
         .route("/new", new(tree.clone()))
-        .route("/insert", insert(rng.clone(), tree.clone(), max_witnesses))
-        .route("/forget", forget(rng.clone(), tree.clone()))
+        .route(
+            "/insert",
+            insert(rng.clone(), tree.clone(), max_witnesses, max_repeat),
+        )
+        .route("/forget", forget(rng.clone(), tree.clone(), max_repeat))
         .route(
             "/insert-block-root",
-            insert_block_root(rng.clone(), tree.clone()),
+            insert_block_root(rng.clone(), tree.clone(), max_repeat),
         )
-        .route("/end-block", end_block(tree.clone()))
-        .route("/insert-epoch-root", insert_epoch_root(rng, tree.clone()))
-        .route("/end-epoch", end_epoch(tree))
+        .route("/end-block", end_block(tree.clone(), max_repeat))
+        .route(
+            "/insert-epoch-root",
+            insert_epoch_root(rng, tree.clone(), max_repeat),
+        )
+        .route("/end-epoch", end_epoch(tree, max_repeat))
 }
 
 fn marking_change<R>(tree: Arc<watch::Sender<Tree>>, f: impl Fn(&mut Tree) -> R) -> R {
@@ -71,7 +78,8 @@ fn new(tree: Arc<watch::Sender<Tree>>) -> MethodRouter {
 fn insert<R: Rng + Send + 'static>(
     rng: Arc<Mutex<R>>,
     tree: Arc<watch::Sender<Tree>>,
-    max_witnesses: Option<usize>,
+    max_witnesses: usize,
+    max_repeat: u16,
 ) -> MethodRouter {
     #[derive(Deserialize)]
     struct Insert {
@@ -87,6 +95,16 @@ fn insert<R: Rng + Send + 'static>(
                   commitment,
                   repeat,
               }): Query<Insert>| async move {
+            if repeat > max_repeat {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(json!({
+                        "error":
+                            format!("repeat must not exceed maximum repeat limit of {max_repeat}")
+                    })),
+                ));
+            }
+
             spawn_blocking(move || {
                 let mut result = None;
 
@@ -95,14 +113,12 @@ fn insert<R: Rng + Send + 'static>(
                         if witness == Witness::Keep {
                             // If we're at quota for number of commitments, forget until we're strictly below
                             // quota again, so we can insert something
-                            if let Some(max_witnesses) = max_witnesses {
-                                let required_forgessions =
-                                    (1 + tree.witnessed_count()).saturating_sub(max_witnesses);
-                                for commitment in
-                                    random_commitments(&mut *rng.lock(), tree, required_forgessions)
-                                {
-                                    tree.forget(commitment);
-                                }
+                            let required_forgessions =
+                                (1 + tree.witnessed_count()).saturating_sub(max_witnesses);
+                            for commitment in
+                                random_commitments(&mut *rng.lock(), tree, required_forgessions)
+                            {
+                                tree.forget(commitment);
                             }
                         }
                         // Now actually insert the commitment we wanted to insert
@@ -147,6 +163,7 @@ fn random_commitments<R: Rng>(mut rng: R, tree: &Tree, amount: usize) -> Vec<Com
 fn forget<R: Rng + Send + 'static>(
     rng: Arc<Mutex<R>>,
     tree: Arc<watch::Sender<Tree>>,
+    max_repeat: u16,
 ) -> MethodRouter {
     #[derive(Deserialize)]
     struct Forget {
@@ -156,7 +173,17 @@ fn forget<R: Rng + Send + 'static>(
     }
 
     post(
-        |Query(Forget { commitment, repeat }): Query<Forget>| async move {
+        move |Query(Forget { commitment, repeat }): Query<Forget>| async move {
+            if repeat > max_repeat {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(json!({
+                        "error":
+                            format!("repeat must not exceed maximum repeat limit of {max_repeat}")
+                    })),
+                ));
+            }
+
             spawn_blocking(move || {
                 let mut result = None;
                 for _ in 0..repeat {
@@ -191,6 +218,7 @@ fn forget<R: Rng + Send + 'static>(
 fn insert_block_root<R: Rng + Send + 'static>(
     rng: Arc<Mutex<R>>,
     tree: Arc<watch::Sender<Tree>>,
+    max_repeat: u16,
 ) -> MethodRouter {
     #[derive(Deserialize)]
     struct InsertBlockRoot {
@@ -200,7 +228,17 @@ fn insert_block_root<R: Rng + Send + 'static>(
     }
 
     post(
-        |Query(InsertBlockRoot { block_root, repeat }): Query<InsertBlockRoot>| async move {
+        move |Query(InsertBlockRoot { block_root, repeat }): Query<InsertBlockRoot>| async move {
+            if repeat > max_repeat {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(json!({
+                        "error":
+                            format!("repeat must not exceed maximum repeat limit of {max_repeat}")
+                    })),
+                ));
+            }
+
             spawn_blocking(move || {
                 let mut result = None;
                 for _ in 0..repeat {
@@ -229,39 +267,52 @@ fn insert_block_root<R: Rng + Send + 'static>(
     )
 }
 
-fn end_block(tree: Arc<watch::Sender<Tree>>) -> MethodRouter {
+fn end_block(tree: Arc<watch::Sender<Tree>>, max_repeat: u16) -> MethodRouter {
     #[derive(Deserialize)]
     struct EndBlock {
         #[serde(default = "one")]
         repeat: u16,
     }
 
-    post(|Query(EndBlock { repeat }): Query<EndBlock>| async move {
-        spawn_blocking(move || {
-            let mut result = None;
-            for _ in 0..repeat {
-                result = Some(marking_change(tree.clone(), |tree| tree.end_block()));
-            }
-            match result {
-                Some(Ok(block_root)) => Ok(Json(block_root.to_string())),
-                Some(Err(e)) => Err((
+    post(
+        move |Query(EndBlock { repeat }): Query<EndBlock>| async move {
+            if repeat > max_repeat {
+                return Err((
                     StatusCode::BAD_REQUEST,
-                    Json(json!({ "error": e.to_string() })),
-                )),
-                None => Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(json!({ "error": "repeat must be greater than zero" })),
-                )),
+                    Json(json!({
+                        "error":
+                            format!("repeat must not exceed maximum repeat limit of {max_repeat}")
+                    })),
+                ));
             }
-        })
-        .await
-        .unwrap()
-    })
+
+            spawn_blocking(move || {
+                let mut result = None;
+                for _ in 0..repeat {
+                    result = Some(marking_change(tree.clone(), |tree| tree.end_block()));
+                }
+                match result {
+                    Some(Ok(block_root)) => Ok(Json(block_root.to_string())),
+                    Some(Err(e)) => Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(json!({ "error": e.to_string() })),
+                    )),
+                    None => Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(json!({ "error": "repeat must be greater than zero" })),
+                    )),
+                }
+            })
+            .await
+            .unwrap()
+        },
+    )
 }
 
 fn insert_epoch_root<R: Rng + Send + 'static>(
     rng: Arc<Mutex<R>>,
     tree: Arc<watch::Sender<Tree>>,
+    max_repeat: u16,
 ) -> MethodRouter {
     #[derive(Deserialize)]
     struct InsertEpochRoot {
@@ -271,7 +322,17 @@ fn insert_epoch_root<R: Rng + Send + 'static>(
     }
 
     post(
-        |Query(InsertEpochRoot { epoch_root, repeat }): Query<InsertEpochRoot>| async move {
+        move |Query(InsertEpochRoot { epoch_root, repeat }): Query<InsertEpochRoot>| async move {
+            if repeat > max_repeat {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(json!({
+                        "error":
+                            format!("repeat must not exceed maximum repeat limit of {max_repeat}")
+                    })),
+                ));
+            }
+
             spawn_blocking(move || {
                 let mut result = None;
                 for _ in 0..repeat {
@@ -300,34 +361,46 @@ fn insert_epoch_root<R: Rng + Send + 'static>(
     )
 }
 
-fn end_epoch(tree: Arc<watch::Sender<Tree>>) -> MethodRouter {
+fn end_epoch(tree: Arc<watch::Sender<Tree>>, max_repeat: u16) -> MethodRouter {
     #[derive(Deserialize)]
     struct EndEpoch {
         #[serde(default = "one")]
         repeat: u16,
     }
 
-    post(|Query(EndEpoch { repeat }): Query<EndEpoch>| async move {
-        spawn_blocking(move || {
-            let mut result = None;
-            for _ in 0..repeat {
-                result = Some(marking_change(tree.clone(), |tree| tree.end_epoch()));
-            }
-            match result {
-                Some(Ok(epoch_root)) => Ok(Json(epoch_root.to_string())),
-                Some(Err(e)) => Err((
+    post(
+        move |Query(EndEpoch { repeat }): Query<EndEpoch>| async move {
+            if repeat > max_repeat {
+                return Err((
                     StatusCode::BAD_REQUEST,
-                    Json(json!({"error": e.to_string()})),
-                )),
-                None => Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(json!({ "error": "repeat must be greater than zero" })),
-                )),
+                    Json(json!({
+                        "error":
+                            format!("repeat must not exceed maximum repeat limit of {max_repeat}")
+                    })),
+                ));
             }
-        })
-        .await
-        .unwrap()
-    })
+
+            spawn_blocking(move || {
+                let mut result = None;
+                for _ in 0..repeat {
+                    result = Some(marking_change(tree.clone(), |tree| tree.end_epoch()));
+                }
+                match result {
+                    Some(Ok(epoch_root)) => Ok(Json(epoch_root.to_string())),
+                    Some(Err(e)) => Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(json!({"error": e.to_string()})),
+                    )),
+                    None => Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(json!({ "error": "repeat must be greater than zero" })),
+                    )),
+                }
+            })
+            .await
+            .unwrap()
+        },
+    )
 }
 
 fn one() -> u16 {
