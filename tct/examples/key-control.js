@@ -8,18 +8,19 @@ function keyControl() {
 
     let actions = [];
     let pendingCount = null;
-    let pendingActions = 0;
+    let pendingQueries = 0;
 
     const queries = {
-        'c': ["post", 'insert?witness=forget', 'insert (keep)'],
-        'C': ["post", 'insert?witness=keep', 'insert (forget)'],
-        'b': ["post", 'end-block', 'end block'],
-        'B': ["post", 'insert-block-root', 'insert block root'],
-        'e': ["post", 'end-epoch', 'end epoch'],
-        'E': ["post", 'insert-epoch-root', 'insert epoch root'],
-        'f': ["post", 'forget', 'forget'],
-        'n': ["post", 'new', 'new'],
-        'r': ["get", 'root', 'evaluate root'],
+        // key => method, path, query parameter(s), allows "repeat=n" parameter (true/false)
+        'c': ["post", 'insert', 'witness=forget', true],
+        'C': ["post", 'insert', 'witness=keep', true],
+        'b': ["post", 'end-block', '', true],
+        'B': ["post", 'insert-block-root', '', true],
+        'e': ["post", 'end-epoch', '', true],
+        'E': ["post", 'insert-epoch-root', '', true],
+        'f': ["post", 'forget', '', true],
+        'n': ["post", 'new', '', false],
+        'r': ["get", 'root', '', false],
     };
 
     const digits = new Set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
@@ -93,7 +94,7 @@ function keyControl() {
 
     function doAction() {
         if (actions.length === 0) {
-            if (pendingActions > 0 && message !== "...") {
+            if (pendingQueries > 0 && message !== "...") {
                 // Delay displaying the ellipsis so you can still read the last thing typed
                 setTimeout(() => display("..."), 500);
             } else {
@@ -104,6 +105,10 @@ function keyControl() {
 
         let action = actions[actions.length - 1];
         let key = action.key;
+        // How many times left do we have to repeat this action?
+        let repeat = action.count;
+        // Can the action be repeated on the server, or do we have to submit multiple requests?
+        let queryRepeatable = queries[key][3];
 
         if (action.count === 0) {
             // This action is done
@@ -117,8 +122,8 @@ function keyControl() {
                 display((key.toUpperCase() === key ? '⇧' : '') + key);
             }
             // Decrement the count
-            action.count -= 1;
-            pendingActions += 1;
+            action.count -= queryRepeatable ? action.count : 1;
+            pendingQueries += 1;
         }
 
         // Determine whether we should perform the next request concurrently or wait for this one to
@@ -129,19 +134,23 @@ function keyControl() {
         // expected concurrency of the limit.
         let concurrently;
         if (!randomConcurrency) {
-            concurrently = pendingActions < concurrencyLimit;
+            concurrently = pendingQueries < concurrencyLimit;
         } else {
-            concurrently = pendingActions < Math.random() * concurrencyLimit * 2;
+            concurrently = pendingQueries < Math.random() * concurrencyLimit * 2;
         }
 
-        let url = window.location.origin + '/' + queries[key][1];
+        let url =
+            window.location.origin + '/'
+            + queries[key][1]
+            + '?' + queries[key][2]
+            + (queryRepeatable ? '&repeat=' + repeat : '');
 
         d3.text(url, { method: queries[key][0] }).then(() => {
             // Don't repeat `doAction()` here, because then we'd wait for the request to finish;
             // instead, fire off a new request immediately, so we go as fast as possible.
-            pendingActions -= 1;
+            pendingQueries -= 1;
             if (actions.length === 0) {
-                if (pendingActions === 0) {
+                if (pendingQueries === 0) {
                     display("");
                 }
             }
@@ -153,7 +162,7 @@ function keyControl() {
         }).catch(error => {
             // If there was an error, stop the loop
             actions = [];
-            pendingActions = 0;
+            pendingQueries = 0;
             message.style("color", "red");
             display("");
             console.log(error);
