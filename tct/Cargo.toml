@@ -28,11 +28,12 @@ async-trait = { version = "0.1" }
 async-stream = "0.3"
 futures = "0.3"
 ark-ed-on-bls12-377 = "0.3"
-dot = { version = "0.1", optional = true }
+rand_chacha = { version = "0.3", optional = true }
+rand_distr = { version = "0.4", optional = true }
 
 [features]
 internal = []
-arbitrary = ["proptest", "proptest-derive"]
+arbitrary = ["proptest", "proptest-derive", "rand", "rand_chacha", "rand_distr"]
 
 [dev-dependencies]
 static_assertions = "1"
@@ -46,4 +47,4 @@ clap = { version = "3.2", features = ["derive"] }
 
 [[example]]
 name = "tct-visualize"
-required-features = ["dot"]
+required-features = ["penumbra-tct/arbitrary"]
