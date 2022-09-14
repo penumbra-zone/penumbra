@@ -124,9 +124,18 @@ Validators, like delegators, cannot change their votes after they have voted.
 One of the most exciting features of Penumbra is that by using IBC (inter-blockchain communication)
 and our shielded pool design, **any** tokens can be exchanged in a private way.
 
-**NOTE:** Since there's not yet a way to open liquidity positions, there's never liquidity available
-to complete swaps. This means all swaps will currently fail and your inputs (minus any fees) will be
-returned to you.
+**NOTE:** Since there's not yet a way to open liquidity positions, we have implemented a stub
+[Uniswap-V2-style](https://uniswap.org/blog/uniswap-v2) constant-product market maker with some
+hardcoded liquidity for a few trading pairs: `gm:gn`, `penumbra:gm`, and `penumbra:gn`.
+
+This allows testing the shielded pool integration, and will cause a floating exchange rate based
+on the volume of swaps occurring in each pair. 
+
+You can check the current reserves for a trading pair using the `cpmm-reserves` dex query:
+
+```bash
+cargo run --release --bin pcli -- q dex cpmm-reserves gm:penumbra
+```
 
 If you wanted to exchange 1 `penumbra` tokens for `gm` tokens, you could do so like so:
 
