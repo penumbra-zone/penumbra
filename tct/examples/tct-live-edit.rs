@@ -1,8 +1,9 @@
 #![recursion_limit = "256"]
 
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use axum::{headers::ContentType, routing::get, Router, TypedHeader};
+use axum_server::tls_rustls::RustlsConfig;
 use clap::Parser;
 use include_flate::flate;
 use tokio::sync::watch;
@@ -26,10 +27,18 @@ struct Args {
     /// clients fall over because they can't handle the size of the tree.
     #[clap(long)]
     max_witnesses: Option<usize>,
+    /// The path to a TLS certificate file to use when serving the demo.
+    #[clap(long)]
+    tls_cert: Option<PathBuf>,
+    /// The path to a TLS private key file to use when serving the demo.
+    ///
+    /// This must be the private key corresponding to the certificate given by `--tls-cert`.
+    #[clap(long)]
+    tls_key: Option<PathBuf>,
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
     let args = Args::parse();
     let rng = rand::rngs::OsRng;
@@ -52,10 +61,26 @@ async fn main() {
     let address = ([0, 0, 0, 0], args.port).into();
     help_text(&address);
 
-    axum::Server::bind(&address)
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+    match (args.tls_cert, args.tls_key) {
+        (Some(cert_path), Some(key_path)) => {
+            let config = RustlsConfig::from_pem_file(cert_path, key_path).await?;
+            axum_server::bind_rustls(address, config)
+                .serve(app.into_make_service())
+                .await
+                .unwrap()
+        }
+        (Some(_), None) | (None, Some(_)) => {
+            anyhow::bail!("Both --tls-cert and --tls-key must be provided to enable TLS");
+        }
+        (None, None) => {
+            axum::Server::bind(&address)
+                .serve(app.into_make_service())
+                .await
+                .unwrap();
+        }
+    }
+
+    Ok(())
 }
 
 fn help_text(address: &std::net::SocketAddr) {
