@@ -25,10 +25,11 @@ pub fn edit<R: Rng + Send + 'static>(
     rng: R,
     tree: Arc<watch::Sender<Tree>>,
     ext: ViewExtensions,
-    max_commitments: Option<usize>,
+    max_witnesses: usize,
+    max_repeat: u16,
 ) -> Router {
     // The three endpoints
-    let control = control(rng, tree.clone(), max_commitments);
+    let control = control(rng, tree.clone(), max_witnesses, max_repeat);
     let (query, mut changed) = query(tree.subscribe());
     let view = view(tree.subscribe(), ext);
 
