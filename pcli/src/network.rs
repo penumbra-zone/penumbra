@@ -71,12 +71,21 @@ impl App {
 
         let client = reqwest::Client::new();
         let req_id: u8 = rand::thread_rng().gen();
+        let tx_encoding = &transaction.encode_to_vec();
+
+        // 499974 is the observed maximum byte size of a transaction before the "request body too large" error appears.
+        if tx_encoding.len() > 499974 {
+            return Err(anyhow::anyhow!(
+                "Transaction is too large to be broadcasted to the network. Please run `pcli tx sweep` and then re-try the transaction."
+            ));
+        }
+
         let rsp: serde_json::Value = client
             .post(self.tendermint_url.clone())
             .json(&serde_json::json!(
                 {
                     "method": "broadcast_tx_sync",
-                    "params": [&transaction.encode_to_vec()],
+                    "params": [&tx_encoding],
                     "id": req_id,
                 }
             ))
@@ -90,6 +99,34 @@ impl App {
         // Sometimes the result is in a result key, and sometimes it's bare? (??)
         let result = rsp.get("result").unwrap_or(&rsp);
 
+        // Just in case something changes in the wrapping JSON resulting in a different byte-size triggering the
+        // "request body too large" error, check any error message:
+        if let Some(error) = result.get("error") {
+            let error = error
+                .as_object()
+                .ok_or_else(|| anyhow::anyhow!("could not parse JSON response"))?;
+            let code = error
+                .get("code")
+                .and_then(|c| c.as_i64())
+                .ok_or_else(|| anyhow::anyhow!("could not parse JSON response"))?;
+            let data = error
+                .get("data")
+                .and_then(|c| c.as_str())
+                .ok_or_else(|| anyhow::anyhow!("could not parse JSON response"))?;
+            if data.contains("request body too large") {
+                return Err(anyhow::anyhow!(
+                "Transaction is too large to be broadcasted to the network. Please run `pcli tx sweep` and then re-try the transaction."
+            ));
+            } else {
+                return Err(anyhow::anyhow!(
+                    "Error submitting transaction: code {}, data: {}",
+                    code,
+                    data
+                ));
+            }
+        }
+
+        // Some other errors are structured differently in the JSON:
         let code = result
             .get("code")
             .and_then(|c| c.as_i64())
