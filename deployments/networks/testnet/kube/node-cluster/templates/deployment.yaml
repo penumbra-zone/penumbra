@@ -1,15 +1,14 @@
 {{ $count := (.Values.count | int) }}
 {{ range $i,$e := until $count }}
 ---
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: v1
+kind: ReplicationController
 metadata:
   name: "penumbra-{{$i}}"
 spec:
   replicas: 1
   selector:
-    matchLabels:
-      app: "penumbra-{{$i}}"
+    app: "penumbra-{{$i}}"
   template:
     metadata:
       name: "penumbra-{{$i}}"
@@ -30,6 +29,18 @@ spec:
             items:
               - key: "config.toml"
                 path: "config.toml"
+        - name: genesis-config
+          configMap:
+            name: genesis-config
+            items:
+              - key: "genesis.json"
+                path: "genesis.json"
+        - name: privval-config
+          configMap:
+            name: "privval-{{$i}}"
+            items:
+              - key: "priv_validator_key.json"
+                path: "priv_validator_key.json"
       initContainers:
         - name: heighliner-ownership
           image: busybox
@@ -81,6 +92,8 @@ spec:
               dasel put string -f $MERGE_DIR/config.toml -p toml ".p2p.external_address" $(curl -s ifconfig.me):26656
               curl -X GET "http://testnet.penumbra.zone:26657/genesis" -H "accept: application/json" | jq '.result.genesis' > $CONFIG_DIR/genesis.json
               mv $MERGE_DIR/* $CONFIG_DIR/
+              cp /genesis/genesis.json $CONFIG_DIR/
+              cp /privval/priv_validator_key.json $CONFIG_DIR/
           securityContext:
             runAsUser: 1025
             runAsGroup: 1025
@@ -89,6 +102,12 @@ spec:
               mountPath: /home/heighliner
             - name: tm-config
               mountPath: "/config"
+              readOnly: true
+            - name: genesis-config
+              mountPath: "/genesis"
+              readOnly: true
+            - name: privval-config
+              mountPath: "/privval"
               readOnly: true
 
       containers:
