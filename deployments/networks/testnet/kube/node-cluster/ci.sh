@@ -35,12 +35,14 @@ $IMAGE:$VERSION \
 testnet generate \
 --validators-input-file "$CONTAINERHOME/vals.json"
 
+sudo chown -R "$(whoami)" "$WORKDIR"
+
 for i in $(seq $NVALS)
 do
     CONFIGPATH=./pdcli/.penumbra/testnet_data/node$((i-1))/tendermint/config/
     pushd $CONFIGPATH || exit
-    jq -r '.priv_key.value' node_key.json | base64 --decode | tail -c 32 | sha256sum  | cut -c -40  > "$WORKDIR"/p2p_id.txt
-    popd ... || exit
+    jq -r '.priv_key.value' node_key.json | base64 --decode | tail -c 32 | sha256sum  | cut -c -40  > p2p_id.txt
+    popd || exit
 done
 
 # helm install testnet . --set count=$NVALS

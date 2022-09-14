@@ -1,0 +1,15 @@
+{
+  "identity_key": "penumbravalid1ge5k482j2w9x3672lveehsl9n4zm8k3rwkw6lhh08gkatkft25xqzkk8s7",
+  "consensus_key": "YLRUec2WU9MfPS69kbeBwsxrPcseWc9xC0nMDd63eUU=",
+  "name": "",
+  "website": "",
+  "description": "",
+  "enabled": false,
+  "funding_streams": [
+    {
+      "address": "penumbrav2t1dvdsy75mcls2cf98dq3j08evfrwht3v275k70djhq4d8mcsfe4h9k4pqa3ay0r4uyh9eh83c56de8lp53ch7m6gkqnvkreytwcvk0zyn9kvaym2lr3m78e3hqf4thut3ywwz83",
+      "rate_bps": 100
+    }
+  ],
+  "sequence_number": 0
+}
