@@ -1,13 +1,13 @@
+use crate::transaction_view::action_view::SwapClaimView;
+use crate::{ActionView, IsAction, TransactionPerspective};
 use ark_ff::Zero;
 use penumbra_crypto::dex::BatchSwapOutputData;
 use penumbra_crypto::transaction::Fee;
 use penumbra_crypto::{proofs::transparent::SwapClaimProof, Fr, NotePayload};
-use penumbra_crypto::{Balance, Nullifier};
+use penumbra_crypto::{Balance, Note, Nullifier};
 use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 use serde::Deserialize;
 use serde::Serialize;
-
-use crate::IsAction;
 
 #[derive(Debug, Clone)]
 pub struct SwapClaim {
@@ -18,6 +18,34 @@ pub struct SwapClaim {
 impl IsAction for SwapClaim {
     fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
         self.balance().commit(Fr::zero())
+    }
+
+    fn decrypt_with_perspective(
+        &self,
+        txp: &TransactionPerspective,
+    ) -> anyhow::Result<Option<crate::ActionView>> {
+        // For each note payload (output_1, output_2)
+        let note_commitment_1 = self.body.output_1.note_commitment;
+        let note_commitment_2 = self.body.output_2.note_commitment;
+        // Get payload key for note commitment of note payload
+        let payload_key_1 = txp
+            .payload_keys
+            .get(&note_commitment_1)
+            .ok_or_else(|| anyhow::anyhow!("corresponding payload key not found"))?;
+        let payload_key_2 = txp
+            .payload_keys
+            .get(&note_commitment_2)
+            .ok_or_else(|| anyhow::anyhow!("corresponding payload key not found"))?;
+        // * Decrypt notes
+        let decrypted_note_1 =
+            Note::decrypt_with_payload_key(&self.body.output_1.encrypted_note, payload_key_1)?;
+        let decrypted_note_2 =
+            Note::decrypt_with_payload_key(&self.body.output_2.encrypted_note, payload_key_2)?;
+
+        Ok(Some(ActionView::SwapClaim(SwapClaimView {
+            decrypted_note_1,
+            decrypted_note_2,
+        })))
     }
 }
 

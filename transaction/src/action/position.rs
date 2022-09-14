@@ -10,6 +10,8 @@ use penumbra_crypto::{
 };
 use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 
+use crate::{ActionView, TransactionPerspective};
+
 use super::IsAction;
 
 /// A transaction action that opens a new position.
@@ -32,6 +34,13 @@ pub struct PositionOpen {
 impl IsAction for PositionOpen {
     fn balance_commitment(&self) -> balance::Commitment {
         self.balance().commit(Fr::zero())
+    }
+
+    fn decrypt_with_perspective(
+        &self,
+        txp: &TransactionPerspective,
+    ) -> anyhow::Result<Option<ActionView>> {
+        todo!()
     }
 }
 
@@ -79,6 +88,13 @@ impl IsAction for PositionClose {
     fn balance_commitment(&self) -> balance::Commitment {
         self.balance().commit(Fr::zero())
     }
+
+    fn decrypt_with_perspective(
+        &self,
+        txp: &TransactionPerspective,
+    ) -> anyhow::Result<Option<ActionView>> {
+        todo!()
+    }
 }
 
 impl PositionClose {
@@ -125,6 +141,13 @@ impl IsAction for PositionWithdraw {
         // The action consumes a closed position and produces the position's reserves.
         self.reserves_commitment - closed_position_nft
     }
+
+    fn decrypt_with_perspective(
+        &self,
+        txp: &TransactionPerspective,
+    ) -> anyhow::Result<Option<ActionView>> {
+        todo!()
+    }
 }
 
 /// A transaction action that claims retroactive rewards for a historical
@@ -152,6 +175,13 @@ impl IsAction for PositionRewardClaim {
 
         // The action consumes a closed position and produces the position's reserves.
         self.rewards_commitment - withdrawn_position_nft
+    }
+
+    fn decrypt_with_perspective(
+        &self,
+        txp: &TransactionPerspective,
+    ) -> anyhow::Result<Option<ActionView>> {
+        todo!()
     }
 }
 

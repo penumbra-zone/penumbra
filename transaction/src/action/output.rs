@@ -4,11 +4,14 @@ use anyhow::Error;
 use bytes::Bytes;
 use penumbra_crypto::{
     balance,
+    memo::MemoPlaintext,
     proofs::transparent::OutputProof,
     symmetric::{OvkWrappedKey, WrappedMemoKey},
-    NotePayload,
+    Note, NotePayload,
 };
 use penumbra_proto::{core::transaction::v1alpha1 as pb, Protobuf};
+
+use crate::{transaction_view::action_view::OutputView, ActionView, TransactionPerspective};
 
 use super::IsAction;
 
@@ -21,6 +24,45 @@ pub struct Output {
 impl IsAction for Output {
     fn balance_commitment(&self) -> balance::Commitment {
         self.body.balance_commitment
+    }
+
+    fn decrypt_with_perspective(
+        &self,
+        txp: &TransactionPerspective,
+    ) -> anyhow::Result<Option<ActionView>> {
+        // Get payload key for note commitment of note payload
+
+        let note_commitment = self.body.note_payload.note_commitment;
+
+        // Get payload key for note commitment of swap NFT.
+        let payload_key = txp
+            .payload_keys
+            .get(&note_commitment)
+            .ok_or_else(|| anyhow::anyhow!("corresponding payload key not found"))?;
+
+        // Decrypt note
+
+        let decrypted_note =
+            Note::decrypt_with_payload_key(&self.body.note_payload.encrypted_note, payload_key)?;
+        // If memo has not been decrypted yet
+        // * Decrypt wrapped_memo_key
+
+        let decrypted_memo_key = self.body.wrapped_memo_key.decrypt_outgoing(payload_key)?;
+
+        // * Decrypt memo using wrapped memo key
+
+        let memo_cipher_text = txp
+            .memo_cipher_text
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("no memo present"))?
+            .to_owned();
+
+        let memo = MemoPlaintext::decrypt(memo_cipher_text, &decrypted_memo_key)?;
+
+        Ok(Some(ActionView::Output(OutputView {
+            decrypted_note,
+            memo,
+        })))
     }
 }
 

@@ -5,7 +5,7 @@ use penumbra_crypto::{
 use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use crate::IsAction;
+use crate::{ActionView, IsAction, TransactionPerspective};
 
 /// A transaction action withdrawing stake from a validator's delegation pool.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -29,6 +29,13 @@ pub struct Undelegate {
 impl IsAction for Undelegate {
     fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
         self.balance().commit(Fr::zero())
+    }
+
+    fn decrypt_with_perspective(
+        &self,
+        txp: &TransactionPerspective,
+    ) -> anyhow::Result<Option<ActionView>> {
+        todo!()
     }
 }
 

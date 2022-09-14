@@ -8,10 +8,12 @@ mod witness_data;
 
 pub mod action;
 pub mod plan;
+pub mod transaction_view;
 
 pub use action::{Action, IsAction};
 pub use auth_data::AuthorizationData;
 pub use auth_hash::AuthHash;
 pub use error::Error;
 pub use transaction::{Transaction, TransactionBody};
+pub use transaction_view::{ActionView, TransactionPerspective, TransactionView};
 pub use witness_data::WitnessData;

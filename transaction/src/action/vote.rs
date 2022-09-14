@@ -10,7 +10,7 @@ use penumbra_proto::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::IsAction;
+use crate::{ActionView, IsAction, TransactionPerspective};
 
 /// A vote on a proposal.
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Eq, PartialEq)]
@@ -118,6 +118,13 @@ pub struct ValidatorVote {
 impl IsAction for ValidatorVote {
     fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
         Default::default()
+    }
+
+    fn decrypt_with_perspective(
+        &self,
+        txp: &TransactionPerspective,
+    ) -> anyhow::Result<Option<ActionView>> {
+        todo!()
     }
 }
 

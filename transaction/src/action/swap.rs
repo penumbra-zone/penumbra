@@ -4,10 +4,11 @@ use penumbra_crypto::asset::Amount;
 use penumbra_crypto::dex::TradingPair;
 use penumbra_crypto::proofs::transparent::SwapProof;
 use penumbra_crypto::{balance, dex::swap::SwapCiphertext};
-use penumbra_crypto::{NotePayload, Value};
+use penumbra_crypto::{Note, NotePayload, Value};
 use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 
-use crate::IsAction;
+use crate::transaction_view::action_view::SwapView;
+use crate::{ActionView, IsAction, TransactionPerspective};
 
 #[derive(Clone, Debug)]
 pub struct Swap {
@@ -37,6 +38,33 @@ impl IsAction for Swap {
         .commit(Fr::zero());
 
         -(input_1 + input_2 + self.body.fee_commitment)
+    }
+
+    fn decrypt_with_perspective(
+        &self,
+        txp: &TransactionPerspective,
+    ) -> anyhow::Result<Option<ActionView>> {
+        let note_commitment = self.body.swap_nft.note_commitment;
+
+        // Get payload key for note commitment of swap NFT.
+        let payload_key = txp
+            .payload_keys
+            .get(&note_commitment)
+            .ok_or_else(|| anyhow::anyhow!("corresponding payload key not found"))?;
+
+        // Decrypt swap NFT
+        let swap_nft =
+            Note::decrypt_with_payload_key(&self.body.swap_nft.encrypted_note, payload_key)?;
+
+        // Decrypt swap ciphertext
+        //TODO: decide on a data structure incorporating this encrypted data
+        let swap_plaintext =
+            SwapCiphertext::decrypt_with_payload_key(&self.body.swap_ciphertext, payload_key)?;
+
+        Ok(Some(ActionView::Swap(SwapView {
+            swap_nft,
+            swap_plaintext,
+        })))
     }
 }
 

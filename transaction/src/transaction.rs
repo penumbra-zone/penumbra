@@ -5,10 +5,11 @@ use ark_ff::Zero;
 use bytes::Bytes;
 use decaf377_fmd::Clue;
 use penumbra_crypto::{
-    memo::MemoCiphertext,
+    dex::swap::SwapCiphertext,
+    memo::{MemoCiphertext, MemoPlaintext},
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
     transaction::Fee,
-    Fr, NotePayload, Nullifier,
+    Fr, Note, NotePayload, Nullifier,
 };
 use penumbra_proto::{
     core::ibc::v1alpha1 as pb_ibc, core::stake::v1alpha1 as pbs,
@@ -19,7 +20,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     action::{Delegate, Output, ProposalSubmit, ProposalWithdraw, Swap, Undelegate, ValidatorVote},
-    Action, IsAction,
+    transaction_view::action_view::{OutputView, SpendView, SwapClaimView, SwapView},
+    Action, ActionView, IsAction, TransactionPerspective, TransactionView,
 };
 
 #[derive(Clone, Debug)]
@@ -41,6 +43,22 @@ pub struct Transaction {
 }
 
 impl Transaction {
+    pub fn decrypt_with_perspective(
+        &self,
+        txp: &TransactionPerspective,
+    ) -> anyhow::Result<TransactionView> {
+        let mut avs = Vec::new();
+
+        for action in self.actions() {
+            match action.decrypt_with_perspective(txp)? {
+                Some(action) => avs.push(action),
+                None => (),
+            };
+        }
+
+        Ok(TransactionView { actions: avs })
+    }
+
     pub fn actions(&self) -> impl Iterator<Item = &Action> {
         self.transaction_body.actions.iter()
     }

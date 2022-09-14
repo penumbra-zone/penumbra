@@ -17,9 +17,13 @@ pub const MEMOKEY_WRAPPED_LEN_BYTES: usize = 48;
 
 /// Represents the item to be encrypted/decrypted with the [`PayloadKey`].
 pub enum PayloadKind {
+    /// Note is action-scoped.
     Note,
+    /// MemoKey is action-scoped.
     MemoKey,
+    /// Swap is action-scoped.
     Swap,
+    /// Memo is transaction-scoped.
     Memo,
 }
 
