@@ -74,7 +74,6 @@ pub mod internal;
 #[cfg(not(any(doc, feature = "internal")))]
 mod internal;
 
-#[cfg(feature = "dot")]
 mod visualize;
 
 pub mod builder {

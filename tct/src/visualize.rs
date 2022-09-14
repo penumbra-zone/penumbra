@@ -7,6 +7,7 @@ use crate::{
     Position,
 };
 
+const FONT_SIZE: usize = 40;
 const FRONTIER_EDGE_COLOR: &str = "#E800FF";
 const FRONTIER_TERMINUS_COLOR: &str = "#FBD1FF";
 
@@ -86,7 +87,7 @@ struct DotWriter<W: Write> {
 impl<W: Write> DotWriter<W> {
     fn digraph(mut writer: W, graph: impl FnOnce(&mut Self) -> io::Result<()>) -> io::Result<()> {
         writeln!(writer, "digraph {{")?;
-        writeln!(writer, "  fontsize=\"24\";")?;
+        writeln!(writer, "  fontsize=\"{FONT_SIZE}\";")?;
         writeln!(writer, "  fontname=\"Courier New\";")?;
         writeln!(writer, "  ordering=\"out\";")?;
         let mut dot_writer = DotWriter { indent: 1, writer };
@@ -201,15 +202,16 @@ impl<W: Write> DotWriter<W> {
                 return Ok(());
             }
             match height {
-                16 => write!(w, "{}", position.epoch()),
-                8 => write!(w, "{}/{}", position.epoch(), position.block()),
-                0 => write!(
-                    w,
-                    "{}/{}/{}",
-                    position.epoch(),
-                    position.block(),
-                    position.commitment()
-                ),
+                16 => write!(w, "{}/_/_", position.epoch()),
+                8 => write!(w, "{}/{}/_", position.epoch(), position.block()),
+                // Disabled because it makes the tree very wide:
+                // 0 => write!(
+                //     w,
+                //     "{}/{}/{}",
+                //     position.epoch(),
+                //     position.block(),
+                //     position.commitment()
+                // ),
                 _ => Ok(()),
             }
         };
@@ -226,7 +228,7 @@ impl<W: Write> DotWriter<W> {
             tree(w)?;
 
             // The node is the focus if it is the terminus of the frontier
-            let focus = terminal && place == Some(Place::Frontier);
+            let focus = terminal && place == Some(Place::Frontier) && height == 0;
             let (fill_color, color, dashed) = if focus {
                 (FRONTIER_TERMINUS_COLOR, "black", "")
             } else if height == 8 || height == 16 {
@@ -253,8 +255,7 @@ impl<W: Write> DotWriter<W> {
     }
 
     fn node(&mut self, node: Node) -> io::Result<()> {
-        self.line(|w| {
-            // The node identifier
+        let id = |w: &mut W| {
             write!(
                 w,
                 "NODE_height_{}_epoch_{}_block_{}_commitment_{}",
@@ -262,9 +263,14 @@ impl<W: Write> DotWriter<W> {
                 node.position().epoch(),
                 node.position().block(),
                 node.position().commitment(),
-            )?;
+            )
+        };
+
+        self.line(|w| {
+            // The node identifier
+            id(w)?;
             // The node attributes
-            write!(w, "[fontsize=\"20\"]")?;
+            write!(w, "[fontsize=\"{FONT_SIZE}\"]")?;
             write!(w, "[fontname=\"Courier New\"]")?;
             write!(w, "[ordering=\"out\"]")?;
             write!(w, "[label=\"{}\"]", node_label(&node))?;
@@ -275,6 +281,9 @@ impl<W: Write> DotWriter<W> {
             write!(w, "[gradientangle=\"{}\"]", node_gradient_angle(&node))?;
             write!(w, "[width=\"{}\"]", node_width(&node))?;
             write!(w, "[height=\"{}\"]", node_height(&node))?;
+            write!(w, "[id=\"")?;
+            id(w)?;
+            write!(w, "\"]")?;
             write!(
                 w,
                 "[tooltip=\"Hash: {}\"]",
@@ -287,8 +296,7 @@ impl<W: Write> DotWriter<W> {
     }
 
     fn phantom_node(&mut self, height: u8, position: Position) -> io::Result<()> {
-        self.line(|w| {
-            // The node identifier
+        let id = |w: &mut W| {
             write!(
                 w,
                 "NODE_height_{}_epoch_{}_block_{}_commitment_{}",
@@ -296,9 +304,17 @@ impl<W: Write> DotWriter<W> {
                 position.epoch(),
                 position.block(),
                 position.commitment(),
-            )?;
+            )
+        };
+
+        self.line(|w| {
+            // The node identifier
+            id(w)?;
             // The node attributes
-            write!(w, "[fontsize=\"20\"]")?;
+            write!(w, "[id=\"")?;
+            id(w)?;
+            write!(w, "\"]")?;
+            write!(w, "[fontsize=\"{FONT_SIZE}\"]")?;
             write!(w, "[fontname=\"Courier New\"]")?;
             write!(w, "[ordering=\"out\"]")?;
             write!(w, "[label=\"\"]")?;
@@ -355,6 +371,9 @@ impl<W: Write> DotWriter<W> {
                 w.line(|w| {
                     // The node identifier
                     id(w)?;
+                    write!(w, "[id=\"")?;
+                    id(w)?;
+                    write!(w, "\"]")?;
                     write!(w, "[label=\"\"]")?;
                     write!(w, "[shape=\"{}\"]", hash_shape(&commitment.0.to_bytes()))?;
                     write!(w, "[style=\"filled,bold\"]")?;
@@ -422,7 +441,7 @@ impl<W: Write> DotWriter<W> {
     }
 
     fn parent_child_edge(&mut self, parent: Node, child: Node) -> io::Result<()> {
-        self.line(|w| {
+        let parent_id = |w: &mut W| {
             write!(
                 w,
                 "NODE_height_{}_epoch_{}_block_{}_commitment_{}",
@@ -430,8 +449,10 @@ impl<W: Write> DotWriter<W> {
                 parent.position().epoch(),
                 parent.position().block(),
                 parent.position().commitment()
-            )?;
-            write!(w, " -> ")?;
+            )
+        };
+
+        let child_id = |w: &mut W| {
             write!(
                 w,
                 "NODE_height_{}_epoch_{}_block_{}_commitment_{}",
@@ -439,7 +460,23 @@ impl<W: Write> DotWriter<W> {
                 child.position().epoch(),
                 child.position().block(),
                 child.position().commitment()
-            )?;
+            )
+        };
+
+        self.line(|w| {
+            // Edge specification
+            parent_id(w)?;
+            write!(w, " -> ")?;
+            child_id(w)?;
+
+            // Edge id
+            write!(w, "[id=\"")?;
+            write!(w, "EDGE_FROM_")?;
+            parent_id(w)?;
+            write!(w, "_TO_")?;
+            child_id(w)?;
+            write!(w, "\"]")?;
+
             write!(w, "[label=\"\"]",)?;
             // Allow more vertical space above blocks and epochs
             write!(
