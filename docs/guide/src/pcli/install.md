@@ -7,6 +7,9 @@ of the Rust compiler, installation instructions for which you can find
 [here](https://www.rust-lang.org/learn/get-started). Don't forget to reload your shell so that
 `cargo` is available in your `\$PATH`!
 
+`pcli` requires `rustfmt` as part of the build process --- depending on your
+OS/install method for Rust, you may have to install that separately.
+
 ### Installing build prerequisites
 
 #### Linux
@@ -17,6 +20,12 @@ run:
 
 ```bash
 sudo apt-get install build-essential pkg-config libssl-dev clang
+```
+
+For a minimal Fedora image, you can run:
+
+```bash
+sudo dnf install openssl-dev clang
 ```
 
 #### macOS
