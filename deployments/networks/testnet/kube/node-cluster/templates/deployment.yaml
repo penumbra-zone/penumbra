@@ -43,6 +43,8 @@ spec:
                 path: "priv_validator_key.json"
               - key: "node_key.json"
                 path: "node_key.json"
+              - key: "validator_custody.json"
+                path: "validator_custody.json"
       initContainers:
         - name: heighliner-ownership
           image: busybox
@@ -97,6 +99,7 @@ spec:
               cp /genesis/genesis.json $CONFIG_DIR/
               cp /val/priv_validator_key.json $CONFIG_DIR/
               cp /val/node_key.json $CONFIG_DIR/
+              cp /val/validator_custody.json $CONFIG_DIR/
           securityContext:
             runAsUser: 1025
             runAsGroup: 1025

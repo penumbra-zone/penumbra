@@ -9,7 +9,7 @@ CONTAINERHOME=${CONTAINERHOME:=/root}
 HELM_RELEASE=${HELM_RELEASE:=testnet}
 
 # Use fresh working directory
-rm -rf ${WORKDIR}
+sudo rm -rf ${WORKDIR}
 mkdir -p "${WORKDIR}"
 
 echo "Shutting down existing testnet if necessary..."
