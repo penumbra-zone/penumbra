@@ -5,6 +5,7 @@ use std::{
 
 use penumbra_component::stake::{rate::RateData, validator};
 use penumbra_crypto::{
+    balance::Balance,
     keys::AddressIndex,
     memo::MemoPlaintext,
     rdsa::{SpendAuth, VerificationKey},
@@ -20,8 +21,6 @@ use penumbra_transaction::{
 use penumbra_view::ViewClient;
 use rand::{CryptoRng, RngCore};
 use tracing::instrument;
-
-pub use super::balance::Balance;
 
 /// A planner for a [`TransactionPlan`] that can fill in the required spends and change outputs upon
 /// finalization to make a transaction balance.

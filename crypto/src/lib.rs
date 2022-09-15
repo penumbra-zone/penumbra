@@ -7,6 +7,7 @@ pub use decaf377_rdsa as rdsa;
 
 mod address;
 pub mod asset;
+pub mod balance;
 mod delegation_token;
 pub mod dex;
 pub mod eddy;

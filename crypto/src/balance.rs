@@ -7,7 +7,7 @@ use std::{
     ops::{Add, AddAssign, Neg, Sub, SubAssign},
 };
 
-use penumbra_crypto::{asset, Value};
+use crate::{asset, Value};
 
 mod imbalance;
 mod iter;

@@ -5,7 +5,7 @@ use std::{
     num::NonZeroU64,
 };
 
-use penumbra_crypto::{asset, Value};
+use super::super::{asset, Value};
 
 use super::{Balance, Imbalance};
 
