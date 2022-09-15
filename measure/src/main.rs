@@ -127,24 +127,19 @@ impl Opt {
             .ok_or_else(|| anyhow::anyhow!("could not parse latest_block_height in JSON response"))?
             .parse()?;
 
-        let max_peer_block_height = sync_info
-            .get("max_peer_block_height")
-            .and_then(|c| c.as_str())
-            .ok_or_else(|| {
-                anyhow::anyhow!("could not parse max_peer_block_height in JSON response")
-            })?
-            .parse()?;
-
         let node_catching_up = sync_info
             .get("catching_up")
             .and_then(|c| c.as_bool())
             .ok_or_else(|| anyhow::anyhow!("could not parse catching_up in JSON response"))?;
 
-        let latest_known_block_height = std::cmp::max(latest_block_height, max_peer_block_height);
+        // There is a `max_peer_block_height` available in TM 0.35, however it should not be used
+        // as it does not seem to reflect the consensus height. Since clients use `latest_known_block_height`
+        // to determine the height to attempt syncing to, a validator reporting a non-consensus height
+        // can cause a DoS to clients attempting to sync if `max_peer_block_height` is used.
+        let latest_known_block_height = latest_block_height;
 
         tracing::debug!(
             ?latest_block_height,
-            ?max_peer_block_height,
             ?node_catching_up,
             ?latest_known_block_height
         );
