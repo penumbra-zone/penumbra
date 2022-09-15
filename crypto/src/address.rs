@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 use crate::{fmd, ka, keys::Diversifier, Fq};
 
 pub const ADDRESS_LEN_BYTES: usize = 80;
+/// Number of bits in the address short form divided by the number of bits per Bech32m character
+pub const ADDRESS_NUM_CHARS_SHORT_FORM: usize = 20;
 
 /// A valid payment address.
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -108,6 +110,16 @@ impl Address {
             fmd::ClueKey(clue_key_bytes),
         )
         .expect("generated dummy address")
+    }
+
+    /// Short form suitable for displaying in a UI.
+    pub fn display_short_form(&self) -> String {
+        let full_address = format!("{}", self);
+        // Fixed prefix is `penumbrav2t` plus the Bech32m separator `1`.
+        let fixed_prefix = format!("{}{}", bech32str::address::BECH32_PREFIX, '1');
+        let num_chars_to_display = fixed_prefix.len() + ADDRESS_NUM_CHARS_SHORT_FORM;
+
+        format!("{}…", &full_address[0..num_chars_to_display])
     }
 }
 
