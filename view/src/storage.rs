@@ -12,7 +12,7 @@ use penumbra_proto::{
     Protobuf,
 };
 use penumbra_tct as tct;
-use penumbra_transaction::Transaction;
+use penumbra_transaction::{Transaction, TransactionPerspective, TransactionView};
 use sha2::Digest;
 use sqlx::{migrate::MigrateDatabase, query, Pool, Sqlite};
 use std::{num::NonZeroU64, sync::Arc};
@@ -173,7 +173,7 @@ impl Storage {
             // Check if we already have the note
             if let Some(record) = sqlx::query_as::<_, SpendableNoteRecord>(
                 format!(
-                    "SELECT
+                    "SELECT 
                         notes.note_commitment,
                         notes.height_created,
                         notes.address,
@@ -410,6 +410,38 @@ impl Storage {
         Ok(output)
     }
 
+    pub async fn transaction_by_hash(
+        &mut self,
+        tx_hash: &[u8],
+    ) -> anyhow::Result<Option<Transaction>> {
+        let result = sqlx::query!(
+            "SELECT block_height, tx_hash, tx_bytes
+            FROM tx
+            WHERE tx_hash = ?",
+            tx_hash
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(match result {
+            Some(record) => Some(Transaction::decode(record.tx_bytes.as_slice())?),
+            None => None,
+        })
+    }
+
+    pub async fn generate_full_perspective(
+        &mut self,
+        tx_hash: &[u8],
+        fvk: FullViewingKey,
+    ) -> anyhow::Result<TransactionPerspective> {
+        let output = TransactionPerspective {
+            payload_keys: todo!(),
+            spend_nullifiers: todo!(),
+        };
+
+        Ok(output)
+    }
+
     pub async fn assets(&self) -> anyhow::Result<Vec<Asset>> {
         let result = sqlx::query!(
             "SELECT *
@@ -532,8 +564,8 @@ impl Storage {
                         notes.source,
                         quarantined_notes.unbonding_epoch,
                         quarantined_notes.identity_key
-                        FROM notes
-                        JOIN quarantined_notes
+                        FROM notes 
+                        JOIN quarantined_notes 
                         ON quarantined_notes.note_commitment = notes.note_commitment",
         )
         .fetch_all(&self.pool)
@@ -739,47 +771,8 @@ impl Storage {
             let position = (u64::from(note_record.position)) as i64;
             let source = note_record.source.to_bytes().to_vec();
 
-            // If this note corresponded to a previously quarantined note, delete it from quarantine
-            // also, because it is now applied
-            let was_quarantined = sqlx::query!(
-                "DELETE FROM quarantined_notes WHERE note_commitment = ?",
-                note_commitment,
-            )
-            .execute(&mut dbtx)
-            .await?
-            .rows_affected()
-                > 0;
-
-            if was_quarantined {
-                // If the note was quarantined, that means it's already present in the notes table,
-                // so instead of inserting it again (which would conflict with the uniqueness
-                // constraint), we check to make sure that the update *would have been* a no-op (if
-                // it wouldn't, that's a bug in our implementation or a malicious server):
-                let existing = sqlx::query!(
-                    "SELECT * FROM notes WHERE note_commitment = ?",
-                    note_commitment
-                )
-                .fetch_one(&mut dbtx)
-                .await?;
-                if existing.address != address
-                    || existing.amount != amount
-                    || existing.asset_id != asset_id
-                    || existing.blinding_factor != blinding_factor
-                    || existing.address_index != address_index
-                    || existing.source != source
-                // note: we don't check the height created because that will be different;
-                // however, we use the *original* height created when it comes out of
-                // quarantine, which is a difference from previous behavior, where
-                // unquarantining notes would get the height set to the block where they come
-                // out of quarantine
-                {
-                    anyhow::bail!(
-                        "unquarantined note with commitment {:?} did not match note quarantined at height {}", note_commitment, height_created
-                    );
-                }
-            } else {
-                sqlx::query!(
-                    "INSERT INTO notes
+            sqlx::query!(
+                "INSERT INTO notes
                     (
                         note_commitment,
                         height_created,
@@ -791,18 +784,17 @@ impl Storage {
                         source
                     )
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                    note_commitment,
-                    height_created,
-                    address,
-                    amount,
-                    asset_id,
-                    blinding_factor,
-                    address_index,
-                    source,
-                )
-                .execute(&mut dbtx)
-                .await?;
-            }
+                note_commitment,
+                height_created,
+                address,
+                amount,
+                asset_id,
+                blinding_factor,
+                address_index,
+                source,
+            )
+            .execute(&mut dbtx)
+            .await?;
 
             sqlx::query!(
                 "INSERT INTO spendable_notes
@@ -823,6 +815,15 @@ impl Storage {
                 // height_spent is NULL
                 nullifier,
                 position
+            )
+            .execute(&mut dbtx)
+            .await?;
+
+            // If this note corresponded to a previously quarantined note, delete it from quarantine
+            // also, because it is now applied
+            sqlx::query!(
+                "DELETE FROM quarantined_notes WHERE note_commitment = ?",
+                note_commitment,
             )
             .execute(&mut dbtx)
             .await?;
