@@ -71,4 +71,4 @@ else
   HELM_CMD=install
 fi
 
-helm $HELM_CMD $HELM_RELEASE . --set count=$NVALS --set penumbraVersion=$PENUMBRA_VERSION --set tendermintVersion=$TENDERMINT_VERSION
+helm $HELM_CMD $HELM_RELEASE . --set count=$NVALS,penumbraVersion=$PENUMBRA_VERSION,tendermintVersion=$TENDERMINT_VERSION
