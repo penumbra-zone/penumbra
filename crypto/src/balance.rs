@@ -4,13 +4,19 @@ use std::{
     iter::FusedIterator,
     mem,
     num::NonZeroU64,
+    ops::Deref,
     ops::{Add, AddAssign, Neg, Sub, SubAssign},
 };
 
-use crate::{asset, Value};
+use crate::{
+    asset,
+    value::{Commitment, VALUE_BLINDING_GENERATOR},
+    Value,
+};
 
 mod imbalance;
 mod iter;
+use decaf377::Fr;
 use imbalance::Imbalance;
 
 /// A `Balance` is a "vector of [`Value`]s", where some values may be required, while others may be
@@ -53,11 +59,28 @@ impl Balance {
         self.iter().filter_map(Imbalance::required)
     }
 
-    // Iterate over all the provisions of the balance, as [`Value`]s.
+    /// Iterate over all the provisions of the balance, as [`Value`]s.
     pub fn provided(
         &self,
     ) -> impl Iterator<Item = Value> + DoubleEndedIterator + FusedIterator + '_ {
         self.iter().filter_map(Imbalance::provided)
+    }
+
+    /// Commit to the [`Value`]s in this balance with a given blinding factor.
+    #[allow(non_snake_case)]
+    pub fn commit(&self, blinding_factor: Fr) -> Commitment {
+        let H = VALUE_BLINDING_GENERATOR.deref();
+        let blinding_term = Commitment(blinding_factor * H);
+
+        // TODO(erwan): REVIEWER SCRUTINY NEEDED HERE (pls)
+        // For a blinding factor b \in F, and a vector of values: V = <v_1, ... v_n>
+        // commit(V, b) = bH + (v_1 + ... + v_n)G
+        // note: could use `decaf377::vartime_multiscala_mul`
+        self.iter().fold(blinding_term, |acc, imbalance| {
+            let (_sign, value) = imbalance.into_inner();
+            let commitment = value.commit(0.into());
+            acc + commitment
+        })
     }
 }
 
