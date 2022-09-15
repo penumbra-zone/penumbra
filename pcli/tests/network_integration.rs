@@ -253,3 +253,45 @@ fn swap() {
     let block_time = time::Duration::from_secs(2 * BLOCK_TIME_SECONDS);
     thread::sleep(block_time);
 }
+
+#[ignore]
+#[test]
+fn governance_submit_proposal() {
+    let tmpdir = load_wallet_into_tmpdir();
+
+    // Get template for signaling proposal.
+    let mut template_cmd = Command::cargo_bin("pcli").unwrap();
+    template_cmd
+        .args(&[
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "proposal",
+            "template",
+            "--kind",
+            "signaling",
+            "--file",
+            "proposal.json",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    template_cmd.assert().success();
+
+    // Submit signaling proposal.
+    let mut submit_cmd = Command::cargo_bin("pcli").unwrap();
+    submit_cmd
+        .args(&[
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "proposal",
+            "submit",
+            "--file",
+            "proposal.json",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    submit_cmd.assert().success();
+
+    // Wait for a couple blocks for the transaction to be confirmed.
+    let block_time = time::Duration::from_secs(2 * BLOCK_TIME_SECONDS);
+    thread::sleep(block_time);
+}

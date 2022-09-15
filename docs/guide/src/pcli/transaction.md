@@ -53,7 +53,7 @@ To submit a proposal, first generate a proposal template for the kind of proposa
 submit. For example, suppose we want to create a signaling proposal:
 
 ```bash
-cargo run --release --bin pcli tx proposal template --file proposal.json
+cargo run --release --bin pcli tx proposal template --kind signaling --file proposal.json
 ```
 
 This outputs a JSON template for the proposal to the file `proposal.json`, where you can edit the
