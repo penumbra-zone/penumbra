@@ -1,4 +1,4 @@
-{{ $count := (.Values.count | int) }}
+{{ $count := (.Values.numValidators | int) }}
 {{ range $i,$e := until $count }}
 ---
 kind: Service
@@ -9,7 +9,7 @@ metadata:
     app: "p2p-{{$i}}"
 spec:
   selector:
-    app: "p2p-{{$i}}"
+    app: "penumbra-val-{{$i}}"
   ports:
     - protocol: TCP
       port: 26656

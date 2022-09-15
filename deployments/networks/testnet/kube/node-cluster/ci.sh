@@ -56,19 +56,19 @@ do
     I=$((i-1))
     NODE_ID=$(jq -r '.priv_key.value' ./pdcli/.penumbra/testnet_data/node$I/tendermint/config/node_key.json | base64 --decode | tail -c 32 | sha256sum  | cut -c -40)
     if [ "$I" -eq "0" ]; then
-      PERSISTENT_PEERS=$NODE_ID@p2p-$I
+      PERSISTENT_PEERS="$NODE_ID@p2p-$I:26656"
     else
-      PERSISTENT_PEERS="$PERSISTENT_PEERS,$NODE_ID@p2p-$I"
+      PERSISTENT_PEERS="$PERSISTENT_PEERS,$NODE_ID@p2p-$I:26656"
     fi
 done
 
 echo "$PERSISTENT_PEERS" > persistent_peers.txt
 
-helm get values $HELM_RELEASE
+helm get values $HELM_RELEASE 2>&1 > /dev/null
 if [ "$?" -eq "0" ]; then
   HELM_CMD=upgrade
 else
   HELM_CMD=install
 fi
 
-helm $HELM_CMD $HELM_RELEASE . --set count=$NVALS,penumbraVersion=$PENUMBRA_VERSION,tendermintVersion=$TENDERMINT_VERSION
+helm $HELM_CMD $HELM_RELEASE . --set numValidators=$NVALS,numFullNodes=$NFULLNODES,penumbraVersion=$PENUMBRA_VERSION,tendermintVersion=$TENDERMINT_VERSION 

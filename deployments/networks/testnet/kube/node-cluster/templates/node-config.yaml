@@ -7,10 +7,10 @@ data:
     [p2p]
     seeds = ""
 
-    persistent_peers = "{{ $.Files.Get "persistent_peers.txt" | trim }}"
+    persistent-peers = "{{ $.Files.Get "persistent_peers.txt" | trim }}"
 
-    max_num_inbound_peers = 50
-    max_num_outbound_peers = 50
+    max-num-inbound_peers = 50
+    max-num-outbound_peers = 50
 
     [tx_index]
     indexer = "null"

@@ -1,28 +1,28 @@
-{{ $count := (.Values.count | int) }}
+{{ $count := (.Values.numFullNodes | int) }}
 {{ range $i,$e := until $count }}
 ---
 apiVersion: v1
 kind: ReplicationController
 metadata:
-  name: "penumbra-{{$i}}"
+  name: "penumbra-fn-{{$i}}"
 spec:
   replicas: 1
   selector:
-    app: "penumbra-{{$i}}"
+    app: "penumbra-fn-{{$i}}"
   template:
     metadata:
-      name: "penumbra-{{$i}}"
+      name: "penumbra-fn-{{$i}}"
       labels:
-        app: "penumbra-{{$i}}"
+        app: "penumbra-fn-{{$i}}"
         network: "{{ $.Values.network }}"
     spec:
       volumes:
         - name: "pv-{{ include "penumbra.name" $ }}-{{$i}}"
           persistentVolumeClaim:
-            claimName: "pvc-{{ include "penumbra.name" $ }}-{{$i}}"
+            claimName: "pvc-fn-{{ include "penumbra.name" $ }}-{{$i}}"
         - name: "pv-{{ include "tendermint.name" $ }}-{{$i}}"
           persistentVolumeClaim:
-            claimName: "pvc-{{ include "tendermint.name" $ }}-{{$i}}"
+            claimName: "pvc-fn-{{ include "tendermint.name" $ }}-{{$i}}"
         - name: tm-config
           configMap:
             name: tm-config
@@ -35,16 +35,6 @@ spec:
             items:
               - key: "genesis.json"
                 path: "genesis.json"
-        - name: val-secrets
-          secret:
-            secretName: "val-secrets-{{$i}}"
-            items:
-              - key: "priv_validator_key.json"
-                path: "priv_validator_key.json"
-              - key: "node_key.json"
-                path: "node_key.json"
-              - key: "validator_custody.json"
-                path: "validator_custody.json"
       initContainers:
         - name: heighliner-ownership
           image: busybox
@@ -68,10 +58,10 @@ spec:
               set -eux
               CHAIN_DIR=/home/heighliner/.tendermint
               if [ ! -d $CHAIN_DIR ]; then
-                tendermint init validator --home $CHAIN_DIR
+                tendermint init full --home $CHAIN_DIR
               else
                 TMP_DIR=/home/heighliner/tmpConfig
-                tendermint init validator --home $TMP_DIR
+                tendermint init full --home $TMP_DIR
               fi
           volumeMounts:
             - name: "pv-{{ include "tendermint.name" $ }}-{{$i}}"
@@ -97,9 +87,6 @@ spec:
               curl -X GET "http://testnet.penumbra.zone:26657/genesis" -H "accept: application/json" | jq '.result.genesis' > $CONFIG_DIR/genesis.json
               mv $MERGE_DIR/* $CONFIG_DIR/
               cp /genesis/genesis.json $CONFIG_DIR/
-              cp /val/priv_validator_key.json $CONFIG_DIR/
-              cp /val/node_key.json $CONFIG_DIR/
-              cp /val/validator_custody.json $CONFIG_DIR/
           securityContext:
             runAsUser: 1025
             runAsGroup: 1025
@@ -112,10 +99,6 @@ spec:
             - name: genesis-config
               mountPath: "/genesis"
               readOnly: true
-            - name: val-secrets
-              mountPath: "/val"
-              readOnly: true
-
       containers:
         - name: tm
           image: "{{ $.Values.tendermintImage }}:{{ $.Values.tendermintVersion }}"
@@ -148,8 +131,6 @@ spec:
             - name: "pv-{{ include "penumbra.name" $ }}-{{$i}}"
               mountPath: /home/heighliner
           command:
-            # - sleep
-            # - "1000"
             - pd
             - start
             - --home

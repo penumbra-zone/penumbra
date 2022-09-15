@@ -1,4 +1,5 @@
-count: 2
+numValidators: 2
+numFullNodes: 1
 name: penumbra
 network: testnet
 
