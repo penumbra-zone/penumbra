@@ -35,12 +35,14 @@ spec:
             items:
               - key: "genesis.json"
                 path: "genesis.json"
-        - name: privval-config
-          configMap:
-            name: "privval-{{$i}}"
+        - name: val-secrets
+          secret:
+            secretName: "val-secrets-{{$i}}"
             items:
               - key: "priv_validator_key.json"
                 path: "priv_validator_key.json"
+              - key: "node_key.json"
+                path: "node_key.json"
       initContainers:
         - name: heighliner-ownership
           image: busybox
@@ -64,10 +66,10 @@ spec:
               set -eux
               CHAIN_DIR=/home/heighliner/.tendermint
               if [ ! -d $CHAIN_DIR ]; then
-                tendermint init full --home $CHAIN_DIR
+                tendermint init validator --home $CHAIN_DIR
               else
                 TMP_DIR=/home/heighliner/tmpConfig
-                tendermint init full --home $TMP_DIR
+                tendermint init validator --home $TMP_DIR
               fi
           volumeMounts:
             - name: "pv-{{ include "tendermint.name" $ }}-{{$i}}"
@@ -93,7 +95,8 @@ spec:
               curl -X GET "http://testnet.penumbra.zone:26657/genesis" -H "accept: application/json" | jq '.result.genesis' > $CONFIG_DIR/genesis.json
               mv $MERGE_DIR/* $CONFIG_DIR/
               cp /genesis/genesis.json $CONFIG_DIR/
-              cp /privval/priv_validator_key.json $CONFIG_DIR/
+              cp /val/priv_validator_key.json $CONFIG_DIR/
+              cp /val/node_key.json $CONFIG_DIR/
           securityContext:
             runAsUser: 1025
             runAsGroup: 1025
@@ -106,8 +109,8 @@ spec:
             - name: genesis-config
               mountPath: "/genesis"
               readOnly: true
-            - name: privval-config
-              mountPath: "/privval"
+            - name: val-secrets
+              mountPath: "/val"
               readOnly: true
 
       containers:

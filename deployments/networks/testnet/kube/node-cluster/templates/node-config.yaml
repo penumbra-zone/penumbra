@@ -1,13 +1,3 @@
-
-{{ $peerstring := "" }}
-{{ $count := (.Values.count | int) }}
-{{ range $i,$e := until $count }}
-{{ $path := printf "pdcli/.penumbra/testnet_data/node%d/tendermint/config/p2p_id.txt" $i }}
-{{ $peerstring = printf "%s,%s@p2p-%d:26656" $peerstring $.Files.Get $path $i }}
-{{end}}
-
-
-
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -15,9 +5,9 @@ metadata:
 data:
   config.toml: |
     [p2p]
-    seeds = "0f04c4610b7511a64b8644944b907416db568590@104.155.134.255:26656"
+    seeds = ""
 
-    persistent_peers = "{{ $peerstring }}"
+    persistent_peers = "{{ $.Files.Get "persistent_peers.txt" | trim }}"
 
     max_num_inbound_peers = 50
     max_num_outbound_peers = 50
