@@ -4,26 +4,26 @@ use penumbra_crypto::FullViewingKey;
 use penumbra_view::ViewClient;
 
 #[derive(Debug, clap::Args)]
-pub struct TransactionsCmd {
+pub struct TransactionHashesCmd {
     #[clap(short, long)]
     pub start_height: Option<u64>,
     #[clap(short, long)]
     pub end_height: Option<u64>,
 }
 
-impl TransactionsCmd {
+impl TransactionHashesCmd {
     pub fn needs_sync(&self) -> bool {
         true
     }
 
-    pub async fn exec<V: ViewClient>(&self, fvk: &FullViewingKey, view: &mut V) -> Result<()> {
+    pub async fn exec<V: ViewClient>(&self, _fvk: &FullViewingKey, view: &mut V) -> Result<()> {
         // Initialize the table
 
         let mut table = Table::new();
         table.load_preset(presets::NOTHING);
 
         let txs = view
-            .transactions(fvk.hash(), self.start_height, self.end_height)
+            .transaction_hashes(self.start_height, self.end_height)
             .await?;
 
         table.set_header(vec!["Block Height", "Transaction Hash"]);

@@ -218,6 +218,36 @@
       "nullable": []
     }
   },
+  "8b1b113ce163b0c5a5c0bd64be67b36fcc64d1396953483cb6e76fbf51dff639": {
+    "query": "SELECT block_height, tx_hash, tx_bytes\n            FROM tx\n            WHERE block_height BETWEEN ? AND ?",
+    "describe": {
+      "columns": [
+        {
+          "name": "block_height",
+          "ordinal": 0,
+          "type_info": "Int64"
+        },
+        {
+          "name": "tx_hash",
+          "ordinal": 1,
+          "type_info": "Blob"
+        },
+        {
+          "name": "tx_bytes",
+          "ordinal": 2,
+          "type_info": "Blob"
+        }
+      ],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": [
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "8ecf6591d5fcf8d364e7457ef4b5d927d9c079c23e633dc4475d6c2c60192c8f": {
     "query": "DELETE FROM quarantined_nullifiers WHERE identity_key = ? RETURNING nullifier",
     "describe": {

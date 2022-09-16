@@ -11,8 +11,8 @@ mod address;
 use address::AddressCmd;
 mod staked;
 use staked::StakedCmd;
-pub mod transactions;
-use transactions::TransactionsCmd;
+pub mod transaction_hashes;
+use transaction_hashes::TransactionHashesCmd;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum ViewCmd {
@@ -30,7 +30,8 @@ pub enum ViewCmd {
     /// but this command can be used to "pre-sync" before interactive use.
     Sync,
     /// Get transaction hashes and block heights of spendable notes.
-    ListTransactions(TransactionsCmd),
+    #[clap(visible_alias = "list-tx-hashes")]
+    ListTransactionHashes(TransactionHashesCmd),
 }
 
 impl ViewCmd {
@@ -41,7 +42,7 @@ impl ViewCmd {
             ViewCmd::Staked(staked_cmd) => staked_cmd.needs_sync(),
             ViewCmd::Reset(_) => false,
             ViewCmd::Sync => true,
-            ViewCmd::ListTransactions(transactions_cmd) => transactions_cmd.needs_sync(),
+            ViewCmd::ListTransactionHashes(transactions_cmd) => transactions_cmd.needs_sync(),
         }
     }
 
@@ -52,7 +53,7 @@ impl ViewCmd {
         oblivious_client: &mut ObliviousQueryClient<Channel>,
     ) -> Result<()> {
         match self {
-            ViewCmd::ListTransactions(transactions_cmd) => {
+            ViewCmd::ListTransactionHashes(transactions_cmd) => {
                 transactions_cmd.exec(full_viewing_key, view_client).await?;
             }
             ViewCmd::Sync => {

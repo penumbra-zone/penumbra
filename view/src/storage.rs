@@ -9,7 +9,7 @@ use penumbra_crypto::{
 };
 use penumbra_proto::{
     client::oblivious::{oblivious_query_client::ObliviousQueryClient, ChainParamsRequest},
-    view::TransactionHashStreamResponse,
+    view::{TransactionHashStreamResponse, TransactionStreamResponse},
     Protobuf,
 };
 use penumbra_tct as tct;
@@ -336,7 +336,7 @@ impl Storage {
         Ok(tree)
     }
 
-    pub async fn transactions(
+    pub async fn transaction_hashes(
         &self,
         start_height: Option<u64>,
         end_height: Option<u64>,
@@ -362,6 +362,38 @@ impl Storage {
                 tx_hash: record.tx_hash,
             };
             output.push(tx_hash_response);
+        }
+
+        Ok(output)
+    }
+
+    pub async fn transactions(
+        &self,
+        start_height: Option<u64>,
+        end_height: Option<u64>,
+    ) -> anyhow::Result<Vec<TransactionStreamResponse>> {
+        let starting_block = start_height.unwrap_or(0) as i64;
+        let ending_block = end_height.unwrap_or(self.last_sync_height().await?.unwrap_or(0)) as i64;
+
+        let result = sqlx::query!(
+            "SELECT block_height, tx_hash, tx_bytes
+            FROM tx
+            WHERE block_height BETWEEN ? AND ?",
+            starting_block,
+            ending_block
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let mut output: Vec<TransactionStreamResponse> = Vec::new();
+
+        for record in result {
+            let tx_response = TransactionStreamResponse {
+                block_height: record.block_height as u64,
+                tx_hash: record.tx_hash,
+                tx: Some(Transaction::decode(record.tx_bytes.as_slice())?.into()),
+            };
+            output.push(tx_response);
         }
 
         Ok(output)

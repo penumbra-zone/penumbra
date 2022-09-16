@@ -54,22 +54,29 @@ service ViewProtocol {
     rpc NullifierStatus(NullifierStatusRequest) returns (NullifierStatusResponse);
 
     // Query for the transaction hashes in the given range of blocks.
-    rpc Transactions(TransactionsRequest) returns (stream TransactionHashStreamResponse);
+    rpc TransactionHashes(TransactionsRequest) returns (stream TransactionHashStreamResponse);
+    // Query for the full transactions in the given range of blocks.
+    rpc Transactions(TransactionsRequest) returns (stream TransactionStreamResponse);
 }
 
 message TransactionsRequest {
-    // Identifies the FVK for the notes to query.
-    crypto.AccountID account_id = 1;
     // If present, return only transactions after this height.
-    optional uint64 start_height = 2;
+    optional uint64 start_height = 1;
     // If present, return only transactions before this height.
-    optional uint64 end_height = 3;
+    optional uint64 end_height = 2;
 }
 
-// A streaming sync status update
+// A streaming transaction hash response
 message TransactionHashStreamResponse {
     uint64 block_height = 1;
     bytes tx_hash = 2;
+}
+
+// A streaming full transaction response
+message TransactionStreamResponse {
+    uint64 block_height = 1;
+    bytes tx_hash = 2;
+    transaction.Transaction tx = 3;
 }
 
 message NoteByCommitmentRequest {

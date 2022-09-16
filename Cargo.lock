@@ -804,9 +804,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "3.2.21"
+version = "3.2.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ed5341b2301a26ab80be5cbdced622e80ed808483c52e45e3310a877d3b37d7"
+checksum = "86447ad904c7fb335a790c9d7fe3d0d971dc523b8ccd1561a520de9a85302750"
 dependencies = [
  "atty",
  "bitflags",
@@ -2909,7 +2909,7 @@ dependencies = [
  "blake2b_simd 0.5.11",
  "bytes",
  "camino",
- "clap 3.2.21",
+ "clap 3.2.22",
  "colored_json",
  "comfy-table",
  "decaf377",
@@ -2969,7 +2969,7 @@ dependencies = [
  "blake2b_simd 0.5.11",
  "bytes",
  "chrono",
- "clap 3.2.21",
+ "clap 3.2.22",
  "console-subscriber",
  "csv",
  "decaf377",
@@ -3214,7 +3214,7 @@ name = "penumbra-measure"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "clap 3.2.21",
+ "clap 3.2.22",
  "indicatif",
  "penumbra-chain",
  "penumbra-proto",
@@ -3332,7 +3332,7 @@ dependencies = [
  "axum",
  "axum-server",
  "bytes",
- "clap 3.2.21",
+ "clap 3.2.22",
  "decaf377",
  "futures",
  "hex",
@@ -3404,7 +3404,7 @@ dependencies = [
  "bincode",
  "bytes",
  "camino",
- "clap 3.2.21",
+ "clap 3.2.22",
  "directories",
  "futures",
  "hex",
@@ -4548,9 +4548,9 @@ dependencies = [
 
 [[package]]
 name = "signature"
-version = "1.6.2"
+version = "1.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a622c5fc69cf2a070d3217981bded5071cdd1b1ac17ae906646debae83579b54"
+checksum = "deb766570a2825fa972bceff0d195727876a9cdf2460ab2e52d455dc2de47fd9"
 
 [[package]]
 name = "sketches-ddsketch"
@@ -5509,9 +5509,9 @@ checksum = "dcc811dc4066ac62f84f11307873c4850cb653bfa9b1719cee2bd2204a4bc5dd"
 
 [[package]]
 name = "unicode-normalization"
-version = "0.1.21"
+version = "0.1.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "854cbdc4f7bc6ae19c820d44abdc3277ac3e1b2b93db20a636825d9322fb60e6"
+checksum = "5c5713f0fc4b5db668a2ac63cdb7bb4469d8c9fed047b1d0292cc7b0ce2ba921"
 dependencies = [
  "tinyvec",
 ]
