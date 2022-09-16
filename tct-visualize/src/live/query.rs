@@ -10,7 +10,7 @@ use axum::{
 use serde_json::json;
 use tokio::sync::watch;
 
-use crate::{
+use penumbra_tct::{
     structure::{self, Hash},
     Commitment, Tree,
 };

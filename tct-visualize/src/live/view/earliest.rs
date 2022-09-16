@@ -1,5 +1,3 @@
-use crate::index;
-
 use super::*;
 
 /// Query parameter used in the [`view`] endpoint to specify the earliest version of a tree to
@@ -37,14 +35,7 @@ impl DotQuery {
             return None;
         }
 
-        Some(
-            u64::from(index::within::Tree {
-                epoch: self.epoch.into(),
-                block: self.block.into(),
-                commitment: self.commitment.into(),
-            })
-            .into(),
-        )
+        Some((self.epoch, self.block, self.commitment).into())
     }
 
     pub fn not_too_late_for(&self, tree: &Tree) -> bool {

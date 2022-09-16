@@ -9,10 +9,8 @@ use include_flate::flate;
 use tokio::sync::watch;
 use tower_http::trace::TraceLayer;
 
-use penumbra_tct::{
-    live::{self, ViewExtensions},
-    Tree,
-};
+use penumbra_tct::Tree;
+use penumbra_tct_visualize::live::{self, ViewExtensions};
 
 /// Visualize the structure of the Tiered Commitment Tree.
 #[derive(Parser, Debug)]
@@ -102,7 +100,7 @@ fn help_text(address: &std::net::SocketAddr) {
 // requests to the control endpoint:
 
 const KEY_CONTROL_JS_URL: &str = "/scripts/key-control.js";
-flate!(static KEY_CONTROL_JS: str from "examples/key-control.js");
+flate!(static KEY_CONTROL_JS: str from "src/bin/key-control.js");
 
 fn key_control() -> Router {
     Router::new().route(
@@ -116,7 +114,7 @@ fn key_control() -> Router {
     )
 }
 
-flate!(static HELP_HTML: str from "examples/tct-live-edit-help.html");
+flate!(static HELP_HTML: str from "src/bin/tct-live-edit-help.html");
 
 fn main_help() -> Router {
     Router::new().route(

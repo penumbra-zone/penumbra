@@ -60,7 +60,6 @@ mod index;
 mod proof;
 mod random;
 mod tree;
-mod visualize;
 mod witness;
 
 pub mod error;
@@ -78,9 +77,6 @@ pub use witness::Witness;
 pub mod internal;
 #[cfg(not(any(doc, feature = "internal")))]
 mod internal;
-
-#[cfg(feature = "live-view")]
-pub mod live;
 
 pub mod builder {
     //! Builders for individual epochs and blocks: useful when constructing a [`Tree`](super::Tree)

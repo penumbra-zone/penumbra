@@ -19,7 +19,7 @@ use serde_json::json;
 use tokio::sync::{mpsc, watch};
 use tokio_stream::{wrappers::ReceiverStream, StreamExt};
 
-use crate::{Forgotten, Position, Tree};
+use penumbra_tct::{Forgotten, Position, Tree};
 
 mod resources;
 use resources::*;
@@ -191,7 +191,7 @@ fn extra_changes(mut tree: watch::Receiver<Tree>) -> MethodRouter {
 fn render_from_watch(tree: &watch::Receiver<Tree>) -> (Tree, Bytes) {
     let tree = tree.borrow().clone();
     let mut dot = Vec::new();
-    tree.render_dot(&mut dot).unwrap();
+    crate::render::dot(&tree, &mut dot).unwrap();
     let dot_json_string = serde_json::to_vec(&json!(String::from_utf8(dot).unwrap())).unwrap();
     (tree, dot_json_string.into())
 }

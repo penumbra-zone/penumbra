@@ -125,6 +125,22 @@ impl From<u64> for Position {
     }
 }
 
+impl From<(u16, u16, u16)> for Position {
+    fn from((epoch, block, commitment): (u16, u16, u16)) -> Self {
+        Position(index::within::Tree {
+            epoch: epoch.into(),
+            block: block.into(),
+            commitment: commitment.into(),
+        })
+    }
+}
+
+impl From<Position> for (u16, u16, u16) {
+    fn from(position: Position) -> Self {
+        (position.epoch(), position.block(), position.commitment())
+    }
+}
+
 impl Tree {
     /// Create a new empty [`Tree`] for storing all commitments to the end of time.
     pub fn new() -> Self {
