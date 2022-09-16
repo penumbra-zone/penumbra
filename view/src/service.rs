@@ -17,7 +17,7 @@ use penumbra_proto::{
     transaction as pbt,
     view::{
         self as pb, view_protocol_server::ViewProtocol, StatusResponse,
-        TransactionHashStreamResponse,
+        TransactionHashStreamResponse, TransactionStreamResponse,
     },
 };
 use penumbra_tct::{Commitment, Proof};
@@ -230,10 +230,13 @@ impl ViewProtocol for ViewService {
     type StatusStreamStream = Pin<
         Box<dyn futures::Stream<Item = Result<pb::StatusStreamResponse, tonic::Status>> + Send>,
     >;
-    type TransactionsStream = Pin<
+    type TransactionHashesStream = Pin<
         Box<
             dyn futures::Stream<Item = Result<TransactionHashStreamResponse, tonic::Status>> + Send,
         >,
+    >;
+    type TransactionsStream = Pin<
+        Box<dyn futures::Stream<Item = Result<TransactionStreamResponse, tonic::Status>> + Send>,
     >;
 
     async fn note_by_commitment(
@@ -434,6 +437,36 @@ impl ViewProtocol for ViewService {
             stream
                 .map_err(|e: anyhow::Error| {
                     tonic::Status::unavailable(format!("error getting assets: {}", e))
+                })
+                .boxed(),
+        ))
+    }
+
+    async fn transaction_hashes(
+        &self,
+        request: tonic::Request<pb::TransactionsRequest>,
+    ) -> Result<tonic::Response<Self::TransactionHashesStream>, tonic::Status> {
+        self.check_worker().await?;
+
+        // Fetch transactions from storage.
+        let txs = self
+            .storage
+            .transaction_hashes(request.get_ref().start_height, request.get_ref().end_height)
+            .await
+            .map_err(|e| {
+                tonic::Status::unavailable(format!("error fetching transactions: {}", e))
+            })?;
+
+        let stream = try_stream! {
+            for tx in txs {
+                yield tx.into()
+            }
+        };
+
+        Ok(tonic::Response::new(
+            stream
+                .map_err(|e: anyhow::Error| {
+                    tonic::Status::unavailable(format!("error getting transactions: {}", e))
                 })
                 .boxed(),
         ))
