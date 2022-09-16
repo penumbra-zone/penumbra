@@ -117,6 +117,7 @@ spec:
             - tendermint
             - start
             - --proxy-app=tcp://localhost:26658
+            - --p2p.persistent-peers="{{ $.Files.Get "pdcli/persistent_peers.txt" | trim }}"
         - name: pd
           image: "{{ $.Values.penumbraImage }}:{{ $.Values.penumbraVersion }}"
           imagePullPolicy: Always

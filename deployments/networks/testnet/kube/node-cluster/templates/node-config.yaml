@@ -5,12 +5,8 @@ metadata:
 data:
   config.toml: |
     [p2p]
-    seeds = ""
-
-    persistent-peers = "{{ $.Files.Get "persistent_peers.txt" | trim }}"
-
-    max-num-inbound_peers = 50
-    max-num-outbound_peers = 50
+    max-num-inbound-peers = 50
+    max-num-outbound-peers = 50
 
     [tx_index]
     indexer = "null"

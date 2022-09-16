@@ -55,14 +55,33 @@ for i in $(seq $NVALS)
 do
     I=$((i-1))
     NODE_ID=$(jq -r '.priv_key.value' ./pdcli/.penumbra/testnet_data/node$I/tendermint/config/node_key.json | base64 --decode | tail -c 32 | sha256sum  | cut -c -40)
-    if [ "$I" -eq "0" ]; then
+    for j in $(seq $NVALS)
+    do
+      J=$((j-1))
+      if [ "$I" -ne "$J" ]; then
+        PVAR=PERSISTENT_PEERS_$J
+        if [ -z "${!PVAR}" ]; then
+          declare PERSISTENT_PEERS_$J="$NODE_ID@p2p-$I:26656"
+        else
+          declare PERSISTENT_PEERS_$J="$PERSISTENT_PEERS,$NODE_ID@p2p-$I:26656"
+        fi
+      fi
+    done
+    if [ -z "$PERSISTENT_PEERS" ]; then
       PERSISTENT_PEERS="$NODE_ID@p2p-$I:26656"
     else
       PERSISTENT_PEERS="$PERSISTENT_PEERS,$NODE_ID@p2p-$I:26656"
     fi
 done
 
-echo "$PERSISTENT_PEERS" > persistent_peers.txt
+for i in $(seq $NVALS)
+do
+  I=$((i-1))
+  PVAR=PERSISTENT_PEERS_$I
+  echo "${!PVAR}" > $WORKDIR/persistent_peers_$I.txt
+done
+
+echo "$PERSISTENT_PEERS" > $WORKDIR/persistent_peers.txt
 
 helm get values $HELM_RELEASE 2>&1 > /dev/null
 if [ "$?" -eq "0" ]; then

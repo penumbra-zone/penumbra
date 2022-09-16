@@ -4,7 +4,7 @@
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: "pvc-{{ include "tendermint.name" $ }}-{{$i}}"
+  name: "pvc-val-{{ include "tendermint.name" $ }}-{{$i}}"
 spec:
   accessModes:
     - ReadWriteOnce
@@ -16,7 +16,7 @@ spec:
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: "pvc-{{ include "penumbra.name" $ }}-{{$i}}"
+  name: "pvc-val-{{ include "penumbra.name" $ }}-{{$i}}"
 spec:
   accessModes:
     - ReadWriteOnce

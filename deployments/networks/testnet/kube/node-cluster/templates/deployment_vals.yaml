@@ -19,10 +19,10 @@ spec:
       volumes:
         - name: "pv-{{ include "penumbra.name" $ }}-{{$i}}"
           persistentVolumeClaim:
-            claimName: "pvc-{{ include "penumbra.name" $ }}-{{$i}}"
+            claimName: "pvc-val-{{ include "penumbra.name" $ }}-{{$i}}"
         - name: "pv-{{ include "tendermint.name" $ }}-{{$i}}"
           persistentVolumeClaim:
-            claimName: "pvc-{{ include "tendermint.name" $ }}-{{$i}}"
+            claimName: "pvc-val-{{ include "tendermint.name" $ }}-{{$i}}"
         - name: tm-config
           configMap:
             name: tm-config
@@ -131,6 +131,7 @@ spec:
             - tendermint
             - start
             - --proxy-app=tcp://localhost:26658
+            - --p2p.persistent-peers="{{ $.Files.Get (printf "pdcli/persistent_peers_%d.txt" $i) | trim }}"
         - name: pd
           image: "{{ $.Values.penumbraImage }}:{{ $.Values.penumbraVersion }}"
           imagePullPolicy: Always
