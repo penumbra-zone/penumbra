@@ -1,3 +1,25 @@
+apiVersion: networking.gke.io/v1beta1
+kind: FrontendConfig
+metadata:
+  name: testnet-ingress-frontend-config
+spec:
+  redirectToHttps:
+    enabled: true
+---
+apiVersion: cloud.google.com/v1beta1
+kind: BackendConfig
+metadata:
+  name: testnet-ingress-backend-config
+spec:
+  timeoutSec: 600
+  healthCheck:
+    checkIntervalSec: 10
+    timeoutSec: 10
+    healthyThreshold: 1
+    unhealthyThreshold: 5
+    port: 1251
+    type: HTTP
+    requestPath: /
 # Ingress (HTTPS load balancer)
 apiVersion: networking.k8s.io/v1
 kind: Ingress

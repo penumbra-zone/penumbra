@@ -16,3 +16,28 @@ module "gke_testnet" {
   cluster_zones = ["us-central1-a", "us-central1-b"]
   machine_type  = "n2d-standard-4"
 }
+
+
+resource "google_compute_address" "testnet-rpc" {
+  name = "testnet-rpc-ip"
+}
+
+resource "google_compute_address" "testnet-grpc" {
+  name = "testnet-grpc-ip"
+}
+
+resource "google_compute_managed_ssl_certificate" "testnet-rpc" {
+  name = "testnet-rpc-cert"
+
+  managed {
+    domains = ["rpc.testnet.penumbra.strange.love"]
+  }
+}
+
+resource "google_compute_managed_ssl_certificate" "testnet-grpc" {
+  name = "testnet-grpc-cert"
+
+  managed {
+    domains = ["grpc.testnet.penumbra.strange.love"]
+  }
+}

@@ -1,8 +1,0 @@
-# RPC Managed Certificate
-apiVersion: networking.gke.io/v1
-kind: ManagedCertificate
-metadata:
-  name: testnet-rpc-cert
-spec:
-  domains:
-    - rpc.testnet.penumbra.zone

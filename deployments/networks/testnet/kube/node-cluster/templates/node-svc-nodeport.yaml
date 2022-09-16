@@ -10,7 +10,7 @@ spec:
   type: NodePort
   selector:
     network: testnet
-    type: full
+    type: fullnode
   ports:
     - protocol: TCP
       port: 26657

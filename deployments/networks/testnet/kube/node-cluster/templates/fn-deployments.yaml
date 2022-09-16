@@ -15,6 +15,7 @@ spec:
       labels:
         app: "penumbra-fn-{{$i}}"
         network: "{{ $.Values.network }}"
+        type: fullnode
     spec:
       volumes:
         - name: "pv-{{ include "penumbra.name" $ }}-{{$i}}"

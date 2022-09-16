@@ -2,7 +2,7 @@
 apiVersion: compute.cnrm.cloud.google.com/v1beta1
 kind: ComputeAddress
 metadata:
-  name: testnet-rpc-ip
+  name: testnet-rpc-ip-addr
   annotations:
     cnrm.cloud.google.com/project-id: penumbra-sl-testnet
 spec:
@@ -12,7 +12,7 @@ spec:
 apiVersion: compute.cnrm.cloud.google.com/v1beta1
 kind: ComputeAddress
 metadata:
-  name: testnet-grpc-ip
+  name: testnet-grpc-ip-addr
   annotations:
     cnrm.cloud.google.com/project-id: penumbra-sl-testnet
 spec:
