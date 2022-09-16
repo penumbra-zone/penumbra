@@ -1,5 +1,5 @@
 use ark_ff::Zero;
-use decaf377::{FieldExt, Fr};
+use decaf377::Fr;
 use penumbra_crypto::dex::TradingPair;
 use penumbra_crypto::proofs::transparent::SwapProof;
 use penumbra_crypto::{dex::swap::SwapCiphertext, value};
@@ -73,7 +73,6 @@ pub struct Body {
     pub delta_1: u64,
     pub delta_2: u64,
     pub fee_commitment: value::Commitment,
-    pub fee_blinding: Fr,
     // TODO: rename to note_payload
     pub swap_nft: NotePayload,
     pub swap_ciphertext: SwapCiphertext,
@@ -87,7 +86,6 @@ impl From<Body> for pb::SwapBody {
             trading_pair: Some(s.trading_pair.into()),
             delta_1: s.delta_1,
             delta_2: s.delta_2,
-            fee_blinding: s.fee_blinding.to_bytes().to_vec(),
             fee_commitment: s.fee_commitment.to_bytes().to_vec(),
             swap_nft: Some(s.swap_nft.into()),
             swap_ciphertext: s.swap_ciphertext.0.to_vec(),
@@ -98,10 +96,6 @@ impl From<Body> for pb::SwapBody {
 impl TryFrom<pb::SwapBody> for Body {
     type Error = anyhow::Error;
     fn try_from(s: pb::SwapBody) -> Result<Self, Self::Error> {
-        let fee_blinding_bytes: [u8; 32] = s.fee_blinding[..]
-            .try_into()
-            .map_err(|_| anyhow::anyhow!("proto malformed"))?;
-
         Ok(Self {
             trading_pair: s
                 .trading_pair
@@ -115,7 +109,6 @@ impl TryFrom<pb::SwapBody> for Body {
                 .ok_or_else(|| anyhow::anyhow!("missing swap_nft"))?
                 .try_into()?,
             swap_ciphertext: (&s.swap_ciphertext[..]).try_into()?,
-            fee_blinding: Fr::from_bytes(fee_blinding_bytes)?,
         })
     }
 }
