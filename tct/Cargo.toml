@@ -25,11 +25,11 @@ async-trait = { version = "0.1" }
 async-stream = "0.3"
 futures = "0.3"
 ark-ed-on-bls12-377 = "0.3"
+rand = "0.8"
 
 # Dependencies for random testing
 proptest = { version = "1", optional = true }
 proptest-derive = { version = "0.3", optional = true }
-rand = { version = "0.8", optional = true }
 rand_chacha = { version = "0.3", optional = true }
 rand_distr = { version = "0.4", optional = true }
 
@@ -45,8 +45,8 @@ bytes = { version = "1.2", optional = true }
 
 [features]
 internal = []
-arbitrary = ["proptest", "proptest-derive", "rand", "rand_chacha", "rand_distr"]
-live-view = ["tokio", "tokio-util", "tokio-stream", "axum", "axum-server", "serde_json", "include-flate", "rand", "bytes"]
+arbitrary = ["proptest", "proptest-derive", "rand_chacha", "rand_distr"]
+live-view = ["tokio", "tokio-util", "tokio-stream", "axum", "axum-server", "serde_json", "include-flate", "bytes"]
 
 [dev-dependencies]
 static_assertions = "1"
