@@ -3283,7 +3283,6 @@ dependencies = [
 name = "penumbra-tct"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "ark-ed-on-bls12-377",
  "ark-ff",
  "ark-serialize",
@@ -3291,7 +3290,6 @@ dependencies = [
  "async-trait",
  "bincode",
  "blake2b_simd 1.0.0",
- "clap 3.2.21",
  "decaf377",
  "derivative",
  "futures",
@@ -3307,12 +3305,9 @@ dependencies = [
  "rand",
  "serde",
  "serde_json",
- "serde_urlencoded",
  "static_assertions",
  "thiserror",
- "tower-http",
  "tracing",
- "tracing-subscriber 0.3.15",
 ]
 
 [[package]]
