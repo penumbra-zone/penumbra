@@ -36,6 +36,7 @@ COPY decaf377-ka ./decaf377-ka
 COPY measure ./measure
 COPY eddy ./eddy
 COPY tct-property-test ./tct-property-test
+COPY tct-visualize ./tct-visualize
 COPY transaction ./transaction
 COPY wallet ./wallet
 COPY view ./view
