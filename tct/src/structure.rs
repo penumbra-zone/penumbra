@@ -258,6 +258,11 @@ impl<'a, 'tree: 'a> Node<'a, 'tree> {
         position.into()..(position + self.stride()).min(4u64.pow(24) - 1).into()
     }
 
+    /// The global position of the tree inside of which this node exists.
+    pub fn global_position(&self) -> Option<Position> {
+        <Self as Any>::global_position(self)
+    }
+
     /// The place on the tree where this node occurs.
     pub fn place(&self) -> Place {
         if let Some(global_position) = self.global_position() {

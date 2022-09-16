@@ -15,7 +15,7 @@ pub use query::query;
 mod control;
 pub use control::control;
 
-use crate::Tree;
+use penumbra_tct::Tree;
 
 /// Combine the [`control`], [`query`], and [`view`] endpoints into a single [`Router`].
 ///

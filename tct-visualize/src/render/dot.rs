@@ -1,11 +1,4 @@
-use std::io::{self, Write};
-
-use decaf377::FieldExt;
-
-use crate::{
-    structure::{Any, Kind, Node, Place},
-    Position, Tree,
-};
+use super::*;
 
 const FONT_SIZE: usize = 70;
 const BLOCK_FONT_SIZE: usize = 110;
@@ -53,29 +46,7 @@ fn hash_color(bytes: &[u8]) -> String {
     format!("{}:{}", nibble_color(nibble_1), nibble_color(nibble_2))
 }
 
-impl crate::Tree {
-    /// Renders the tree as a DOT format graph, for visualization of its structure.
-    pub fn render_dot<W: Write>(&self, writer: &mut W) -> io::Result<()> {
-        self.render_dot_inner(false, writer)
-    }
-
-    /// Renders the tree as a DOT format graph, like [`Tree::render_dot`], but with the formatting
-    /// of the DOT file more human-readable and well-indented.
-    pub fn render_dot_pretty<W: Write>(&self, writer: &mut W) -> io::Result<()> {
-        self.render_dot_inner(true, writer)
-    }
-
-    fn render_dot_inner<W: Write>(&self, pretty: bool, writer: &mut W) -> io::Result<()> {
-        DotWriter::digraph(pretty, writer, |w| {
-            let root = self.structure();
-            w.nodes_and_edges(root)?;
-            w.connect_commitments(self)?;
-            Ok(())
-        })
-    }
-}
-
-struct DotWriter<W: Write> {
+pub struct Writer<W: Write> {
     // Output properties
     pretty: bool,
     invisible_ordering_edges: bool,
@@ -84,14 +55,23 @@ struct DotWriter<W: Write> {
     writer: W,
 }
 
-impl<W: Write> DotWriter<W> {
+pub fn render<W: Write>(tree: &Tree, pretty: bool, writer: &mut W) -> io::Result<()> {
+    dot::Writer::digraph(pretty, writer, |w| {
+        let root = tree.structure();
+        w.nodes_and_edges(root)?;
+        w.connect_commitments(tree)?;
+        Ok(())
+    })
+}
+
+impl<W: Write> Writer<W> {
     fn digraph(
         pretty: bool,
         mut writer: W,
         graph: impl FnOnce(&mut Self) -> io::Result<()>,
     ) -> io::Result<()> {
         write!(writer, "strict digraph {{")?;
-        let mut dot_writer = DotWriter {
+        let mut dot_writer = Writer {
             indent: 1,
             writer,
             pretty,

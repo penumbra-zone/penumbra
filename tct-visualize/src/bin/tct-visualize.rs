@@ -15,6 +15,7 @@ use std::{
 
 use anyhow::Result;
 use clap::Parser;
+use penumbra_tct_visualize::render;
 use rand::{seq::SliceRandom, Rng, RngCore, SeedableRng};
 use rand_distr::Binomial;
 
@@ -241,9 +242,9 @@ fn write_to_file(tree: &Tree, args: &Args) -> Result<()> {
             let start = Instant::now();
             let mut dot_file = File::create(dot_path)?;
             if args.pretty_dot {
-                tree.render_dot_pretty(&mut dot_file)?;
+                render::dot_pretty(tree, &mut dot_file)?;
             } else {
-                tree.render_dot(&mut dot_file)?;
+                render::dot(tree, &mut dot_file)?;
             }
             println!("({:?})", start.elapsed());
         }
@@ -260,9 +261,9 @@ fn write_to_file(tree: &Tree, args: &Args) -> Result<()> {
         let start = Instant::now();
         let mut dot = Vec::new();
         if args.pretty_dot {
-            tree.render_dot_pretty(&mut dot)?;
+            render::dot_pretty(tree, &mut dot)?;
         } else {
-            tree.render_dot(&mut dot)?;
+            render::dot(tree, &mut dot)?;
         }
         println!("({:?})", start.elapsed());
 
@@ -303,7 +304,7 @@ fn write_svg_direct<W: Write>(tree: &Tree, writer: &mut W) -> Result<()> {
     let (mut stdin, mut stdout) = dot_command()?;
     thread::scope(|scope| {
         let render_thread = scope.spawn(move || {
-            tree.render_dot(&mut stdin)?;
+            render::dot(tree, &mut stdin)?;
             stdin.flush()?;
             Ok::<_, io::Error>(())
         });

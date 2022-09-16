@@ -60,11 +60,3 @@ clap = { version = "3.2", features = ["derive"] }
 tower-http = { version = "0.3", features = ["trace"] }
 tracing-subscriber = "0.3"
 serde_urlencoded = "0.7"
-
-[[example]]
-name = "tct-visualize"
-required-features = ["penumbra-tct/arbitrary"]
-
-[[example]]
-name = "tct-live-edit"
-required-features = ["penumbra-tct/live-view"]
