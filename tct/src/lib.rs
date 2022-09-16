@@ -128,7 +128,6 @@ pub mod proptest {
     pub use super::commitment::FqStrategy;
 }
 
-#[cfg(feature = "rand")]
 mod random;
 
 #[cfg(test)]
