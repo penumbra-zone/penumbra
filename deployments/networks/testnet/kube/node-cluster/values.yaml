@@ -1,0 +1,18 @@
+name: penumbra
+network: testnet
+
+numValidators: 2
+numFullNodes: 1
+
+tendermint:
+  image: ghcr.io/strangelove-ventures/heighliner/tendermint
+  version: v0.35.9
+toolkit:
+  image: ghcr.io/strangelove-ventures/infra-toolkit
+  version: v0.0.1
+penumbra:
+  image: ghcr.io/strangelove-ventures/heighliner/penumbra
+  version: 029-eukelade
+health:
+  image: ghcr.io/strangelove-ventures/ignite-health-check
+  version: v0.0.1

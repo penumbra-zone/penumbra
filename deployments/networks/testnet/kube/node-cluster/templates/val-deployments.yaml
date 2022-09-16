@@ -1,0 +1,154 @@
+{{ $count := (.Values.numValidators | int) }}
+{{ range $i,$e := until $count }}
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: "penumbra-val-{{$i}}"
+spec:
+  replicas: 1
+  selector:
+    app: "penumbra-val-{{$i}}"
+  template:
+    metadata:
+      name: "penumbra-val-{{$i}}"
+      labels:
+        app: "penumbra-val-{{$i}}"
+        network: "{{ $.Values.network }}"
+    spec:
+      volumes:
+        - name: "pv-{{ include "penumbra.name" $ }}-{{$i}}"
+          persistentVolumeClaim:
+            claimName: "pvc-val-{{ include "penumbra.name" $ }}-{{$i}}"
+        - name: "pv-{{ include "tendermint.name" $ }}-{{$i}}"
+          persistentVolumeClaim:
+            claimName: "pvc-val-{{ include "tendermint.name" $ }}-{{$i}}"
+        - name: tm-config
+          configMap:
+            name: "tm-config-val-{{$i}}"
+            items:
+              - key: "config.toml"
+                path: "config.toml"
+        - name: genesis-config
+          configMap:
+            name: genesis-config
+            items:
+              - key: "genesis.json"
+                path: "genesis.json"
+        - name: val-secrets
+          secret:
+            secretName: "val-secrets-{{$i}}"
+            items:
+              - key: "priv_validator_key.json"
+                path: "priv_validator_key.json"
+              - key: "node_key.json"
+                path: "node_key.json"
+              - key: "validator_custody.json"
+                path: "validator_custody.json"
+      initContainers:
+        - name: heighliner-ownership
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+                chown -R 1025:1025 "/home/pv-{{ include "tendermint.name" $ }}-{{$i}}"
+                chown -R 1025:1025 "/home/pv-{{ include "penumbra.name" $ }}-{{$i}}"
+          volumeMounts:
+            - name: "pv-{{ include "tendermint.name" $ }}-{{$i}}"
+              mountPath: "/home/pv-{{ include "tendermint.name" $ }}-{{$i}}"
+            - name: "pv-{{ include "penumbra.name" $ }}-{{$i}}"
+              mountPath: "/home/pv-{{ include "penumbra.name" $ }}-{{$i}}"
+        - name: config-init
+          image: "{{ $.Values.tendermint.image }}:{{ $.Values.tendermint.version }}"
+          command:
+            - sh
+            - -c
+            - |
+              set -eux
+              CHAIN_DIR=/home/heighliner/.tendermint
+              if [ ! -d $CHAIN_DIR ]; then
+                tendermint init validator --home $CHAIN_DIR
+              else
+                TMP_DIR=/home/heighliner/tmpConfig
+                tendermint init validator --home $TMP_DIR
+              fi
+          volumeMounts:
+            - name: "pv-{{ include "tendermint.name" $ }}-{{$i}}"
+              mountPath: /home/heighliner
+        - name: config-merge
+          image: "{{ $.Values.toolkit.image }}:{{ $.Values.toolkit.version }}"
+          command:
+            - sh
+            - -c
+            - |
+              set -eux
+              CONFIG_DIR=/home/heighliner/.tendermint/config
+              MERGE_DIR=/tmp/configMerge
+              OVERLAY_DIR=/config
+              TMP_DIR=/home/heighliner/tmpConfig
+              if [ -d $TMP_DIR/config ]; then
+                mv $TMP_DIR/config/*.toml $CONFIG_DIR/
+                rm -rf $TMP_DIR
+              fi
+              mkdir $MERGE_DIR
+              config-merge -f toml $CONFIG_DIR/config.toml $OVERLAY_DIR/config.toml > $MERGE_DIR/config.toml
+              mv $MERGE_DIR/* $CONFIG_DIR/
+              cp /genesis/genesis.json $CONFIG_DIR/
+              cp /val/priv_validator_key.json $CONFIG_DIR/
+              cp /val/node_key.json $CONFIG_DIR/
+              cp /val/validator_custody.json $CONFIG_DIR/
+          securityContext:
+            runAsUser: 1025
+            runAsGroup: 1025
+          volumeMounts:
+            - name: "pv-{{ include "tendermint.name" $ }}-{{$i}}"
+              mountPath: /home/heighliner
+            - name: tm-config
+              mountPath: "/config"
+              readOnly: true
+            - name: genesis-config
+              mountPath: "/genesis"
+              readOnly: true
+            - name: val-secrets
+              mountPath: "/val"
+              readOnly: true
+
+      containers:
+        - name: tm
+          image: "{{ $.Values.tendermint.image }}:{{ $.Values.tendermint.version }}"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 26656
+              protocol: TCP
+              name: p2p
+          volumeMounts:
+            - name: "pv-{{ include "tendermint.name" $ }}-{{$i}}"
+              mountPath: /home/heighliner
+          command:
+            - tendermint
+            - start
+        - name: pd
+          image: "{{ $.Values.penumbra.image }}:{{ $.Values.penumbra.version }}"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+              name: grpc
+            - containerPort: 9000
+              protocol: TCP
+              name: metrics
+          volumeMounts:
+            - name: "pv-{{ include "penumbra.name" $ }}-{{$i}}"
+              mountPath: /home/heighliner
+          command:
+            - pd
+            - start
+            - --home
+            - /home/heighliner/pd
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 30
+
+{{ end }}
