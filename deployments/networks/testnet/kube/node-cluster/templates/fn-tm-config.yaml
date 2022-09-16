@@ -1,12 +1,17 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: tm-config
+  name: tm-config-fn
 data:
   config.toml: |
+    proxy-app = "tcp://localhost:26658"
+
     [p2p]
     max-num-inbound-peers = 50
     max-num-outbound-peers = 50
+
+    persistent-peers = "{{ $.Files.Get "pdcli/persistent_peers.txt" | trim }}"
+    private-peer-ids = "{{ $.Files.Get "pdcli/private_peers.txt" | trim }}"
 
     [tx_index]
     indexer = "null"

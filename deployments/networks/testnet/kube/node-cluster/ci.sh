@@ -1,7 +1,7 @@
 #!/bin/bash
 WORKDIR=${WORKDIR:=$(pwd)/pdcli}
 IMAGE=${IMAGE:=ghcr.io/strangelove-ventures/heighliner/penumbra}
-PENUMBRA_VERSION=${PENUMBRA_VERSION:=026-hermippe}
+PENUMBRA_VERSION=${PENUMBRA_VERSION:=029-eukelade}
 TENDERMINT_VERSION=${TENDERMINT_VERSION:=v0.35.9}
 NVALS=${NVALS:=2}
 NFULLNODES=${NFULLNODES:=1}
@@ -69,8 +69,10 @@ do
     done
     if [ -z "$PERSISTENT_PEERS" ]; then
       PERSISTENT_PEERS="$NODE_ID@p2p-$I:26656"
+      PRIVATE_PEERS="$NODE_ID"
     else
       PERSISTENT_PEERS="$PERSISTENT_PEERS,$NODE_ID@p2p-$I:26656"
+      PRIVATE_PEERS="$PRIVATE_PEERS,$NODE_ID"
     fi
 done
 
@@ -82,6 +84,7 @@ do
 done
 
 echo "$PERSISTENT_PEERS" > $WORKDIR/persistent_peers.txt
+echo "$PRIVATE_PEERS" > $WORKDIR/private_peers.txt
 
 helm get values $HELM_RELEASE 2>&1 > /dev/null
 if [ "$?" -eq "0" ]; then
@@ -90,4 +93,4 @@ else
   HELM_CMD=install
 fi
 
-helm $HELM_CMD $HELM_RELEASE . --set numValidators=$NVALS,numFullNodes=$NFULLNODES,penumbraVersion=$PENUMBRA_VERSION,tendermintVersion=$TENDERMINT_VERSION 
+helm $HELM_CMD $HELM_RELEASE . --set numValidators=$NVALS,numFullNodes=$NFULLNODES,penumbra.version=$PENUMBRA_VERSION,tendermint.version=$TENDERMINT_VERSION 

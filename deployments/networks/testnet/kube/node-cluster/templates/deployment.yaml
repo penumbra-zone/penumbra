@@ -1,28 +1,28 @@
-{{ $count := (.Values.numValidators | int) }}
+{{ $count := (.Values.count | int) }}
 {{ range $i,$e := until $count }}
 ---
 apiVersion: v1
 kind: ReplicationController
 metadata:
-  name: "penumbra-val-{{$i}}"
+  name: "penumbra-{{$i}}"
 spec:
   replicas: 1
   selector:
-    app: "penumbra-val-{{$i}}"
+    app: "penumbra-{{$i}}"
   template:
     metadata:
-      name: "penumbra-val-{{$i}}"
+      name: "penumbra-{{$i}}"
       labels:
-        app: "penumbra-val-{{$i}}"
+        app: "penumbra-{{$i}}"
         network: "{{ $.Values.network }}"
     spec:
       volumes:
         - name: "pv-{{ include "penumbra.name" $ }}-{{$i}}"
           persistentVolumeClaim:
-            claimName: "pvc-val-{{ include "penumbra.name" $ }}-{{$i}}"
+            claimName: "pvc-{{ include "penumbra.name" $ }}-{{$i}}"
         - name: "pv-{{ include "tendermint.name" $ }}-{{$i}}"
           persistentVolumeClaim:
-            claimName: "pvc-val-{{ include "tendermint.name" $ }}-{{$i}}"
+            claimName: "pvc-{{ include "tendermint.name" $ }}-{{$i}}"
         - name: tm-config
           configMap:
             name: tm-config
@@ -60,7 +60,7 @@ spec:
             - name: "pv-{{ include "penumbra.name" $ }}-{{$i}}"
               mountPath: "/home/pv-{{ include "penumbra.name" $ }}-{{$i}}"
         - name: config-init
-          image: "{{ $.Values.tendermintImage }}:{{ $.Values.tendermintVersion }}"
+          image: "{{ $.Values.tendermint.image }}:{{ $.Values.tendermint.version }}"
           command:
             - sh
             - -c
@@ -77,7 +77,7 @@ spec:
             - name: "pv-{{ include "tendermint.name" $ }}-{{$i}}"
               mountPath: /home/heighliner
         - name: config-merge
-          image: "{{ $.Values.toolkitImage }}:{{ $.Values.toolkitVersion }}"
+          image: "{{ $.Values.toolkit.image }}:{{ $.Values.toolkit.version }}"
           command:
             - sh
             - -c
@@ -118,9 +118,12 @@ spec:
 
       containers:
         - name: tm
-          image: "{{ $.Values.tendermintImage }}:{{ $.Values.tendermintVersion }}"
+          image: "{{ $.Values.tendermint.image }}:{{ $.Values.tendermint.version }}"
           imagePullPolicy: Always
           ports:
+            - containerPort: 26657
+              protocol: TCP
+              name: rpc
             - containerPort: 26656
               protocol: TCP
               name: p2p
@@ -131,9 +134,8 @@ spec:
             - tendermint
             - start
             - --proxy-app=tcp://localhost:26658
-            - --p2p.persistent-peers="{{ $.Files.Get (printf "pdcli/persistent_peers_%d.txt" $i) | trim }}"
         - name: pd
-          image: "{{ $.Values.penumbraImage }}:{{ $.Values.penumbraVersion }}"
+          image: "{{ $.Values.penumbra.image }}:{{ $.Values.penumbra.version }}"
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
@@ -152,6 +154,13 @@ spec:
             - start
             - --home
             - /home/heighliner/pd
+        - name: health-check
+          image: "{{ $.Values.health.image }}:{{ $.Values.health.version }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 1251
+              protocol: TCP
+              name: health
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler
