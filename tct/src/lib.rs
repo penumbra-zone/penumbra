@@ -58,6 +58,7 @@ extern crate async_stream;
 mod commitment;
 mod index;
 mod proof;
+mod random;
 mod tree;
 mod visualize;
 mod witness;
@@ -127,8 +128,6 @@ pub mod proptest {
     #[doc(inline)]
     pub use super::commitment::FqStrategy;
 }
-
-mod random;
 
 #[cfg(test)]
 mod test {
