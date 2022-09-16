@@ -89,6 +89,14 @@ pub trait ViewClient {
     /// Queries for all known assets.
     async fn assets(&mut self) -> Result<asset::Cache>;
 
+    /// Queries for full transaction data in a range of block heights
+    async fn transactions_full(
+        &mut self,
+        account_id: AccountID,
+        start_height: Option<u64>,
+        end_height: Option<u64>,
+    ) -> Result<Vec<(u64, Vec<u8>)>>;
+
     /// Queries for transaction hashes in a range of block heights
     async fn transaction_hashes(
         &mut self,

@@ -386,6 +386,113 @@ where
     V: ViewClient,
     R: RngCore + CryptoRng,
 {
+    let mut plans = Vec::new();
+
+    // First, find any un-claimed swaps and add `SwapClaim` plans for them.
+    plans.extend(claim_unclaimed_swaps(fvk, view, &mut rng).await?);
+
+    // Finally, sweep dust notes by spending them to their owner's address.
+    // This will consolidate small-value notes into larger ones.
+    plans.extend(sweep_notes(fvk, view, &mut rng).await?);
+
+    Ok(plans)
+}
+
+#[instrument(skip(fvk, view, rng))]
+pub async fn claim_unclaimed_swaps<V, R>(
+    fvk: &FullViewingKey,
+    view: &mut V,
+    mut rng: R,
+) -> Result<Vec<TransactionPlan>, anyhow::Error>
+where
+    V: ViewClient,
+    R: RngCore + CryptoRng,
+{
+    // fetch all transactions
+    // check if they contain Swap actions
+    // if they do, check if the associated notes are unspent
+    // if they are, decrypt the SwapCiphertext in the Swap action and construct a SwapClaim
+
+    // Unclaimed swaps will appear as Swap NFT notes.
+    // We can find unclaimed swaps by first searching for all transactions containing a swap,
+    // then finding all unspent notes associated with a swap transaction.
+    let txs = view.transactions(fvk.hash(), None, None).await?;
+
+    // TODO: should we do some tokio magic to make this concurrent?
+    for (block_height, tx_hash) in txs.iter() {
+        let rsp = view.tx(self.hash.parse()?, false).await?;
+
+        let tx = Transaction::decode(rsp.tx.as_bytes())?;
+        let tx_json = serde_json::to_string_pretty(&tx)?;
+
+        println!("{}", tx_json.to_colored_json_auto()?);
+        println!("\nresult code: {:?}", rsp.tx_result.code);
+    }
+
+    // We can only determine that they're a Swap NFT note by attempting to decrypt.
+    let all_notes = view
+        .notes(NotesRequest {
+            account_id: Some(fvk.hash().into()),
+            ..Default::default()
+        })
+        .await?;
+
+    // let mut notes_by_addr_and_denom: BTreeMap<AddressIndex, BTreeMap<_, Vec<SpendableNoteRecord>>> =
+    //     BTreeMap::new();
+
+    // for record in all_notes {
+    //     notes_by_addr_and_denom
+    //         .entry(record.address_index)
+    //         .or_default()
+    //         .entry(record.note.asset_id())
+    //         .or_default()
+    //         .push(record);
+    // }
+
+    let mut plans = Vec::new();
+
+    // for (index, notes_by_denom) in notes_by_addr_and_denom {
+    //     tracing::info!(?index, "processing address");
+
+    //     for (asset_id, mut records) in notes_by_denom {
+    //         tracing::debug!(?asset_id, "processing asset");
+
+    //         // Sort notes by amount, ascending, so the biggest notes are at the end...
+    //         records.sort_by(|a, b| a.note.value().amount.cmp(&b.note.value().amount));
+    //         // ... so that when we use chunks_exact, we get SWEEP_COUNT sized
+    //         // chunks, ignoring the biggest notes in the remainder.
+    //         for group in records.chunks_exact(SWEEP_COUNT) {
+    //             let mut planner = Planner::new(&mut rng);
+    //             planner.memo(MemoPlaintext::default());
+
+    //             for record in group {
+    //                 planner.spend(record.note.clone(), record.position);
+    //             }
+
+    //             let plan = planner
+    //                 .plan(view, fvk, Some(index))
+    //                 .await
+    //                 .context("can't build sweep transaction")?;
+
+    //             tracing::debug!(?plan);
+    //             plans.push(plan);
+    //         }
+    //     }
+    // }
+
+    Ok(plans)
+}
+
+#[instrument(skip(fvk, view, rng))]
+pub async fn sweep_notes<V, R>(
+    fvk: &FullViewingKey,
+    view: &mut V,
+    mut rng: R,
+) -> Result<Vec<TransactionPlan>, anyhow::Error>
+where
+    V: ViewClient,
+    R: RngCore + CryptoRng,
+{
     const SWEEP_COUNT: usize = 8;
 
     let all_notes = view
