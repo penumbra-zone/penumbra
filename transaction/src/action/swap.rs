@@ -23,12 +23,12 @@ impl Swap {
     /// Will subtract (v1,t1), (v2,t2), and (f,fee_token)
     pub fn value_commitment(&self) -> value::Commitment {
         let input_1 = Value {
-            amount: self.body.delta_1,
+            amount: self.body.delta_1_i,
             asset_id: self.body.trading_pair.asset_1(),
         }
         .commit(Fr::zero());
         let input_2 = Value {
-            amount: self.body.delta_2,
+            amount: self.body.delta_2_i,
             asset_id: self.body.trading_pair.asset_2(),
         }
         .commit(Fr::zero());
@@ -70,8 +70,8 @@ pub struct Body {
     // until flow encryption is available
     // pub asset_1_commitment: value::Commitment,
     // pub asset_2_commitment: value::Commitment,
-    pub delta_1: u64,
-    pub delta_2: u64,
+    pub delta_1_i: u64,
+    pub delta_2_i: u64,
     pub fee_commitment: value::Commitment,
     // TODO: rename to note_payload
     pub swap_nft: NotePayload,
@@ -84,8 +84,8 @@ impl From<Body> for pb::SwapBody {
     fn from(s: Body) -> Self {
         pb::SwapBody {
             trading_pair: Some(s.trading_pair.into()),
-            delta_1: s.delta_1,
-            delta_2: s.delta_2,
+            delta_1_i: s.delta_1_i,
+            delta_2_i: s.delta_2_i,
             fee_commitment: s.fee_commitment.to_bytes().to_vec(),
             swap_nft: Some(s.swap_nft.into()),
             swap_ciphertext: s.swap_ciphertext.0.to_vec(),
@@ -101,8 +101,8 @@ impl TryFrom<pb::SwapBody> for Body {
                 .trading_pair
                 .ok_or_else(|| anyhow::anyhow!("missing trading_pair"))?
                 .try_into()?,
-            delta_1: s.delta_1,
-            delta_2: s.delta_2,
+            delta_1_i: s.delta_1_i,
+            delta_2_i: s.delta_2_i,
             fee_commitment: (&s.fee_commitment[..]).try_into()?,
             swap_nft: s
                 .swap_nft

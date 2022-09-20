@@ -61,9 +61,9 @@ message SwapBody {
   TradingPair trading_pair = 1;
   // @exclude These will become commitments when flow encryption/ABCI++ are available
   // The amount for asset 1.
-  uint64 delta_1 = 2;
+  uint64 delta_1_i = 2;
   // The amount for asset 2.
-  uint64 delta_2 = 3;
+  uint64 delta_2_i = 3;
   // @exclude // Commitment to the amount for asset 1 (delta 1).
   // @exclude bytes delta_1_commitment = 2;
   // @exclude // Commitment to the amount for asset 2 (delta 2).
@@ -79,10 +79,10 @@ message SwapBody {
 message SwapPlaintext {
     // The trading pair to swap.
     TradingPair trading_pair = 1;
-    // Input amount of asset 1
-    uint64 delta_1 = 2;
-    // Input amount of asset 2
-    uint64 delta_2 = 3;
+    // User's input amount of asset 1
+    uint64 delta_1_i = 2;
+    // User's input amount of asset 2
+    uint64 delta_2_i = 3;
     // Pre-paid fee to claim the swap
     crypto.Fee claim_fee = 4;
     // Address that will claim the swap outputs via SwapClaim.

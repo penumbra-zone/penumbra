@@ -281,8 +281,8 @@ impl AuthorizingData for swap::Body {
         // All of these fields are fixed-length, so we can just throw them
         // in the hash one after the other.
         state.update(self.trading_pair.auth_hash().as_bytes());
-        state.update(&self.delta_1.to_le_bytes());
-        state.update(&self.delta_2.to_le_bytes());
+        state.update(&self.delta_1_i.to_le_bytes());
+        state.update(&self.delta_2_i.to_le_bytes());
         state.update(&self.fee_commitment.to_bytes());
         state.update(self.swap_nft.auth_hash().as_bytes());
         state.update(&self.swap_ciphertext.0);
@@ -583,8 +583,8 @@ mod tests {
 
         let swap_plaintext = SwapPlaintext {
             trading_pair,
-            delta_1: 100000,
-            delta_2: 1,
+            delta_1_i: 100000,
+            delta_2_i: 1,
             claim_fee: Fee(Value {
                 amount: 3,
                 asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),

@@ -229,8 +229,8 @@ impl Component for Dex {
                         .unwrap_or_default();
 
                     // Add the amount of each asset being swapped to the batch swap flow.
-                    swap_flows.0 += MockFlowCiphertext::new(swap.body.delta_1);
-                    swap_flows.1 += MockFlowCiphertext::new(swap.body.delta_2);
+                    swap_flows.0 += MockFlowCiphertext::new(swap.body.delta_1_i);
+                    swap_flows.1 += MockFlowCiphertext::new(swap.body.delta_2_i);
 
                     // Set the batch swap flow for the trading pair.
                     self.swaps.insert(swap.body.trading_pair, swap_flows);

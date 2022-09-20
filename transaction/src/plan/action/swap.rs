@@ -82,8 +82,8 @@ impl SwapPlan {
 
         swap::Body {
             trading_pair: self.swap_plaintext.trading_pair,
-            delta_1: self.swap_plaintext.delta_1,
-            delta_2: self.swap_plaintext.delta_2,
+            delta_1_i: self.swap_plaintext.delta_1_i,
+            delta_2_i: self.swap_plaintext.delta_2_i,
             fee_commitment,
             swap_nft,
             swap_ciphertext,
@@ -100,11 +100,11 @@ impl SwapPlan {
             fee_delta: self.swap_plaintext.claim_fee.clone(),
             fee_blinding: self.fee_blinding,
             value_t1: Value {
-                amount: self.swap_plaintext.delta_1,
+                amount: self.swap_plaintext.delta_1_i,
                 asset_id: self.swap_plaintext.trading_pair.asset_1(),
             },
             value_t2: Value {
-                amount: self.swap_plaintext.delta_2,
+                amount: self.swap_plaintext.delta_2_i,
                 asset_id: self.swap_plaintext.trading_pair.asset_2(),
             },
             swap_nft_asset_id,
