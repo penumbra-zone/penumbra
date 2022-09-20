@@ -738,6 +738,8 @@ pub struct SwapProof {
     pub value_t2: Value,
     // The fee amount associated with the swap.
     pub fee_delta: Fee,
+    // The blinding factor for the fee.
+    pub fee_blinding: Fr,
     // The asset ID of the Swap NFT.
     pub swap_nft_asset_id: asset::Id,
     // The blinding factor used for generating the note commitment for the Swap NFT.
@@ -767,7 +769,6 @@ impl SwapProof {
         value_fee_commitment: value::Commitment,
         note_commitment: note::Commitment,
         epk: ka::Public,
-        fee_blinding: Fr,
     ) -> anyhow::Result<(), Error> {
         // Note commitment integrity.
         let transmission_key_s = self.claim_address.transmission_key_s();
@@ -798,7 +799,7 @@ impl SwapProof {
         //     return Err(anyhow!("value commitment mismatch"));
         // }
 
-        if value_fee_commitment != self.fee_delta.commit(fee_blinding) {
+        if value_fee_commitment != self.fee_delta.commit(self.fee_blinding) {
             return Err(anyhow!("value commitment mismatch"));
         }
 
@@ -833,6 +834,7 @@ impl From<SwapProof> for transparent_proofs::SwapProof {
             delta_2: msg.value_t2.amount,
             t2: msg.value_t2.asset_id.0.to_bytes().to_vec(),
             fee: Some(msg.fee_delta.into()),
+            fee_blinding: msg.fee_blinding.to_bytes().to_vec(),
             swap_nft_asset_id: msg.swap_nft_asset_id.0.to_bytes().to_vec(),
             // TODO: no value commitments for delta 1/delta 2 until flow encryption is available
             // delta_1_blinding: msg.delta_1_blinding.to_bytes().to_vec(),
@@ -853,6 +855,10 @@ impl TryFrom<transparent_proofs::SwapProof> for SwapProof {
         // let delta_2_blinding_bytes: [u8; 32] = proto.delta_2_blinding[..]
         //     .try_into()
         //     .map_err(|_| anyhow!("proto malformed"))?;
+
+        let fee_blinding_bytes: [u8; 32] = proto.fee_blinding[..]
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("proto malformed"))?;
 
         let esk_bytes: [u8; 32] = proto.esk[..]
             .try_into()
@@ -898,6 +904,7 @@ impl TryFrom<transparent_proofs::SwapProof> for SwapProof {
                 .ok_or_else(|| anyhow::anyhow!("proto malformed"))?
                 .try_into()
                 .map_err(|_| anyhow!("proto malformed"))?,
+            fee_blinding: Fr::from_bytes(fee_blinding_bytes)?,
             swap_nft_asset_id: asset::Id(
                 Fq::from_bytes(
                     proto
