@@ -453,7 +453,6 @@ where
                 let epk = swap.body.swap_nft.ephemeral_key;
                 let ivk = fvk.incoming();
                 let swap_plaintext = swap_ciphertext.decrypt2(ivk, &epk)?;
-                println!("swap_plaintext: {:?}", swap_plaintext);
 
                 let output_data = specific_client
                     .batch_swap_output_data(BatchSwapOutputDataRequest {
