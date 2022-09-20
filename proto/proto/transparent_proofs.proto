@@ -102,6 +102,8 @@ message SwapProof {
 
   // Fee
   crypto.Fee fee = 10;
+  // Fee blinding factor.
+  bytes fee_blinding = 11;
 
   /**
    * @exclude

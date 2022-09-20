@@ -459,7 +459,10 @@ impl ViewProtocol for ViewService {
 
         let stream = try_stream! {
             for tx in txs {
-                yield tx.into()
+                yield TransactionHashStreamResponse {
+                    block_height: tx.0,
+                    tx_hash: tx.1,
+                }
             }
         };
 
@@ -489,7 +492,11 @@ impl ViewProtocol for ViewService {
 
         let stream = try_stream! {
             for tx in txs {
-                yield tx.into()
+                yield TransactionStreamResponse {
+                    block_height: tx.0,
+                    tx_hash: tx.1,
+                    tx: Some(tx.2.into())
+                }
             }
         };
 

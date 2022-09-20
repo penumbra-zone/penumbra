@@ -117,7 +117,6 @@ impl Component for Dex {
                             swap.body.fee_commitment,
                             swap.body.swap_nft.note_commitment,
                             swap.body.swap_nft.ephemeral_key,
-                            swap.body.fee_blinding,
                         )
                         .context("A swap proof did not verify")?;
 

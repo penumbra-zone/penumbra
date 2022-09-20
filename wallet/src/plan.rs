@@ -1,5 +1,6 @@
 use penumbra_tct::Position;
 use std::collections::{BTreeMap, HashMap};
+use tonic::transport::Channel;
 
 use anyhow::{anyhow, Context, Result};
 use penumbra_component::stake::rate::RateData;
@@ -13,7 +14,10 @@ use penumbra_crypto::{
     transaction::Fee,
     Address, FullViewingKey, Note, Value,
 };
-use penumbra_proto::view::NotesRequest;
+use penumbra_proto::{
+    client::specific::{specific_query_client::SpecificQueryClient, BatchSwapOutputDataRequest},
+    view::NotesRequest,
+};
 use penumbra_transaction::{
     action::{Proposal, ValidatorVote},
     plan::{MemoPlan, OutputPlan, SpendPlan, SwapClaimPlan, SwapPlan, TransactionPlan},
@@ -378,6 +382,115 @@ where
 
 #[instrument(skip(fvk, view, rng))]
 pub async fn sweep<V, R>(
+    fvk: &FullViewingKey,
+    view: &mut V,
+    mut rng: R,
+    specific_client: SpecificQueryClient<Channel>,
+) -> Result<Vec<TransactionPlan>, anyhow::Error>
+where
+    V: ViewClient,
+    R: RngCore + CryptoRng,
+{
+    let mut plans = Vec::new();
+
+    // First, find any un-claimed swaps and add `SwapClaim` plans for them.
+    plans.extend(claim_unclaimed_swaps(fvk, view, &mut rng, specific_client).await?);
+
+    // Finally, sweep dust notes by spending them to their owner's address.
+    // This will consolidate small-value notes into larger ones.
+    plans.extend(sweep_notes(fvk, view, &mut rng).await?);
+
+    Ok(plans)
+}
+
+#[instrument(skip(fvk, view, rng))]
+pub async fn claim_unclaimed_swaps<V, R>(
+    fvk: &FullViewingKey,
+    view: &mut V,
+    mut rng: R,
+    mut specific_client: SpecificQueryClient<Channel>,
+) -> Result<Vec<TransactionPlan>, anyhow::Error>
+where
+    V: ViewClient,
+    R: RngCore + CryptoRng,
+{
+    let mut plans = Vec::new();
+    // fetch all transactions
+    // check if they contain Swap actions
+    // if they do, check if the associated notes are unspent
+    // if they are, decrypt the SwapCiphertext in the Swap action and construct a SwapClaim
+
+    let chain_params = view.chain_params().await?;
+    let epoch_duration = chain_params.clone().epoch_duration;
+
+    // Unclaimed swaps will appear as Swap NFT notes.
+    // We can find unclaimed swaps by first searching for all transactions containing a swap,
+    // then finding all unspent notes associated with a swap transaction.
+    let txs = view.transactions(None, None).await?;
+
+    // TODO: should we do some tokio magic to make this concurrent?
+    // Fetch all spendable notes ahead of time so we can see which swap NFTs are unspent.
+    let all_notes = view
+        .notes(NotesRequest {
+            account_id: Some(fvk.hash().into()),
+            ..Default::default()
+        })
+        .await?;
+    for (block_height, tx) in txs.iter() {
+        for swap in tx.swaps() {
+            // See if the swap is unspent.
+            let swap_nft = swap.body.swap_nft.clone();
+            let swap_nft_record = all_notes
+                .iter()
+                .find(|note_record| note_record.note_commitment == swap_nft.note_commitment)
+                .cloned();
+
+            if let Some(swap_nft_record) = swap_nft_record {
+                assert!(*block_height == swap_nft_record.height_created);
+                // We found an unspent swap NFT, so we can claim it.
+                // Decrypt the swap ciphertext and construct a SwapClaim.
+                let swap_ciphertext = swap.body.swap_ciphertext.clone();
+                let epk = swap.body.swap_nft.ephemeral_key;
+                let ivk = fvk.incoming();
+                let swap_plaintext = swap_ciphertext.decrypt2(ivk, &epk)?;
+
+                let output_data = specific_client
+                    .batch_swap_output_data(BatchSwapOutputDataRequest {
+                        height: swap_nft_record.height_created,
+                        trading_pair: Some(swap_plaintext.trading_pair.into()),
+                    })
+                    .await?
+                    .into_inner()
+                    .try_into()
+                    .context("cannot parse batch swap output data")?;
+
+                let mut plan = TransactionPlan {
+                    chain_id: chain_params.clone().chain_id,
+                    fee: swap_plaintext.claim_fee.clone(),
+                    // The transaction doesn't need a memo, because it's to ourselves.
+                    memo_plan: None,
+                    ..Default::default()
+                };
+                let action_plan = SwapClaimPlan::new(
+                    &mut rng,
+                    swap_plaintext,
+                    swap_nft_record.note,
+                    swap_nft_record.position,
+                    epoch_duration,
+                    output_data,
+                )
+                .into();
+                plan.actions.push(action_plan);
+                plans.push(plan);
+            }
+        }
+    }
+
+    Ok(plans)
+}
+
+#[instrument(skip(fvk, view, rng))]
+pub async fn sweep_notes<V, R>(
     fvk: &FullViewingKey,
     view: &mut V,
     mut rng: R,
