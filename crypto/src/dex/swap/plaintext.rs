@@ -5,7 +5,7 @@ use anyhow::{anyhow, Error, Result};
 use ark_ff::PrimeField;
 use decaf377::Fq;
 use penumbra_proto::{crypto as pb_crypto, dex as pb, Protobuf};
-use poseidon377::hash_5;
+use poseidon377::{hash_4, hash_6};
 
 use crate::dex::TradingPair;
 use crate::{
@@ -38,25 +38,25 @@ impl SwapPlaintext {
     //
     // https://protocol.penumbra.zone/main/zswap/swap.html#swap-actions
     pub fn asset_id(&self) -> asset::Id {
-        let packed_values = {
-            let mut bytes = [0u8; 56];
-            bytes[0..8].copy_from_slice(&self.delta_1.to_le_bytes());
-            bytes[8..16].copy_from_slice(&self.delta_2.to_le_bytes());
-            bytes[16..24].copy_from_slice(&self.claim_fee.0.amount.to_le_bytes());
-            bytes[24..56].copy_from_slice(&self.claim_fee.0.asset_id.to_bytes());
-            Fq::from_le_bytes_mod_order(&bytes)
-        };
-
-        let asset_id_hash = hash_5(
+        let asset_id_hash = hash_6(
             &DOMAIN_SEPARATOR,
             (
-                self.trading_pair.asset_1().0,
-                self.trading_pair.asset_2().0,
-                packed_values,
+                self.claim_fee.0.amount.into(),
+                self.claim_fee.0.asset_id.0,
                 self.claim_address
                     .diversified_generator()
                     .vartime_compress_to_field(),
                 *self.claim_address.transmission_key_s(),
+                Fq::from_le_bytes_mod_order(&self.claim_address.clue_key().0[..]),
+                hash_4(
+                    &DOMAIN_SEPARATOR,
+                    (
+                        self.trading_pair.asset_1().0,
+                        self.trading_pair.asset_2().0,
+                        self.delta_1.into(),
+                        self.delta_2.into(),
+                    ),
+                ),
             ),
         );
 
