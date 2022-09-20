@@ -12,6 +12,7 @@ use super::{SwapPlaintext, SWAP_CIPHERTEXT_BYTES, SWAP_LEN_BYTES};
 pub struct SwapCiphertext(pub [u8; SWAP_CIPHERTEXT_BYTES]);
 
 impl SwapCiphertext {
+    // TODO: do we need the other decrypt method?
     pub fn decrypt2(&self, ivk: &IncomingViewingKey, epk: &ka::Public) -> Result<SwapPlaintext> {
         let shared_secret = ivk
             .key_agreement_with(epk)

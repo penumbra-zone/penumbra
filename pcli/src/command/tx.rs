@@ -171,7 +171,7 @@ impl TxCmd {
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Sweep => loop {
-                let mut specific_client = app.specific_client().await?;
+                let specific_client = app.specific_client().await?;
                 let plans = plan::sweep(&app.fvk, &mut app.view, OsRng, specific_client).await?;
                 let num_plans = plans.len();
 

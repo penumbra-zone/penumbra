@@ -3,7 +3,6 @@ use std::collections::{BTreeMap, HashMap};
 use tonic::transport::Channel;
 
 use anyhow::{anyhow, Context, Result};
-use colored_json::prelude::*;
 use penumbra_component::stake::rate::RateData;
 use penumbra_component::stake::validator;
 use penumbra_crypto::{
@@ -386,7 +385,7 @@ pub async fn sweep<V, R>(
     fvk: &FullViewingKey,
     view: &mut V,
     mut rng: R,
-    mut specific_client: SpecificQueryClient<Channel>,
+    specific_client: SpecificQueryClient<Channel>,
 ) -> Result<Vec<TransactionPlan>, anyhow::Error>
 where
     V: ViewClient,
@@ -444,9 +443,10 @@ where
             let swap_nft_record = all_notes
                 .iter()
                 .find(|note_record| note_record.note_commitment == swap_nft.note_commitment)
-                .map(|note_record| note_record.clone());
+                .cloned();
 
             if let Some(swap_nft_record) = swap_nft_record {
+                assert!(*block_height == swap_nft_record.height_created);
                 // We found an unspent swap NFT, so we can claim it.
                 // Decrypt the swap ciphertext and construct a SwapClaim.
                 let swap_ciphertext = swap.body.swap_ciphertext.clone();
@@ -454,7 +454,6 @@ where
                 let ivk = fvk.incoming();
                 let swap_plaintext = swap_ciphertext.decrypt2(ivk, &epk)?;
                 println!("swap_plaintext: {:?}", swap_plaintext);
-                // let swap_json = serde_json::to_string_pretty(&swap_nft_note)?;
 
                 let output_data = specific_client
                     .batch_swap_output_data(BatchSwapOutputDataRequest {
@@ -484,51 +483,9 @@ where
                 .into();
                 plan.actions.push(action_plan);
                 plans.push(plan);
-                // println!("spend unclaimed swap {}", swap_json.to_colored_json_auto()?);
             }
         }
     }
-
-    // let mut notes_by_addr_and_denom: BTreeMap<AddressIndex, BTreeMap<_, Vec<SpendableNoteRecord>>> =
-    //     BTreeMap::new();
-
-    // for record in all_notes {
-    //     notes_by_addr_and_denom
-    //         .entry(record.address_index)
-    //         .or_default()
-    //         .entry(record.note.asset_id())
-    //         .or_default()
-    //         .push(record);
-    // }
-
-    // for (index, notes_by_denom) in notes_by_addr_and_denom {
-    //     tracing::info!(?index, "processing address");
-
-    //     for (asset_id, mut records) in notes_by_denom {
-    //         tracing::debug!(?asset_id, "processing asset");
-
-    //         // Sort notes by amount, ascending, so the biggest notes are at the end...
-    //         records.sort_by(|a, b| a.note.value().amount.cmp(&b.note.value().amount));
-    //         // ... so that when we use chunks_exact, we get SWEEP_COUNT sized
-    //         // chunks, ignoring the biggest notes in the remainder.
-    //         for group in records.chunks_exact(SWEEP_COUNT) {
-    //             let mut planner = Planner::new(&mut rng);
-    //             planner.memo(MemoPlaintext::default());
-
-    //             for record in group {
-    //                 planner.spend(record.note.clone(), record.position);
-    //             }
-
-    //             let plan = planner
-    //                 .plan(view, fvk, Some(index))
-    //                 .await
-    //                 .context("can't build sweep transaction")?;
-
-    //             tracing::debug!(?plan);
-    //             plans.push(plan);
-    //         }
-    //     }
-    // }
 
     Ok(plans)
 }
