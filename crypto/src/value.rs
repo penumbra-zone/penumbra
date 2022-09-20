@@ -99,9 +99,18 @@ impl FromStr for Value {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let re = Regex::new(r"^([0-9.]+)([^0-9.].*)$").unwrap();
+        let asset_id_re = Regex::new(r"^([0-9.]+)(passet[0-9].*)$").unwrap();
+        let denom_re = Regex::new(r"^([0-9.]+)([^0-9.].*)$").unwrap();
 
-        if let Some(captures) = re.captures(s) {
+        if let Some(captures) = asset_id_re.captures(s) {
+            let numeric_str = captures.get(1).expect("matched regex").as_str();
+            let asset_id_str = captures.get(2).expect("matched regex").as_str();
+
+            let asset_id = asset::Id::from_str(asset_id_str).expect("able to parse asset ID");
+            let amount = numeric_str.parse::<u64>().unwrap();
+
+            Ok(Value { amount, asset_id })
+        } else if let Some(captures) = denom_re.captures(s) {
             let numeric_str = captures.get(1).expect("matched regex").as_str();
             let denom_str = captures.get(2).expect("matched regex").as_str();
 
@@ -287,6 +296,25 @@ mod tests {
         assert_eq!(v1.amount, 1);
         assert_eq!(v1.asset_id, nala_base_denom.id());
         assert_eq!(v1, v1.format(&cache).parse().unwrap());
+
+        // Swap NFTs have no associated denom, make sure we can roundtrip parse/format.
+        let gm_base_denom = asset::REGISTRY.parse_denom("ugm").unwrap();
+        let sp = SwapPlaintext::from_parts(
+            TradingPair::new(
+                asset::Id::from(gm_base_denom),
+                asset::Id::from(upenumbra_base_denom),
+            ).unwrap(),
+            1,
+            0,
+            Fee::default(),
+            Address::from_str("penumbrav2t13vh0fkf3qkqjacpm59g23ufea9n5us45e4p5h6hty8vg73r2t8g5l3kynad87u0n9eragf3hhkgkhqe5vhngq2cw493k48c9qg9ms4epllcmndd6ly4v4dw2jcnxaxzjqnlvnw").unwrap()
+        ).unwrap();
+        let v3: Value = Value {
+            amount: 1,
+            asset_id: sp.asset_id(),
+        };
+        let asset_id = v3.format(&cache);
+        assert_eq!(v3, asset_id.parse().unwrap());
     }
 
     #[test]
