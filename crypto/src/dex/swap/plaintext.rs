@@ -23,10 +23,10 @@ use super::{
 pub struct SwapPlaintext {
     // Trading pair for the swap
     pub trading_pair: TradingPair,
-    // Input amount of asset 1
-    pub delta_1: u64,
-    // Input amount of asset 2
-    pub delta_2: u64,
+    // User's input amount of asset 1
+    pub delta_1_i: u64,
+    // User's input amount of asset 2
+    pub delta_2_i: u64,
     // Prepaid fee to claim the swap
     pub claim_fee: Fee,
     // Address to receive the Swap NFT and SwapClaim outputs
@@ -40,8 +40,8 @@ impl SwapPlaintext {
     pub fn asset_id(&self) -> asset::Id {
         let packed_values = {
             let mut bytes = [0u8; 56];
-            bytes[0..8].copy_from_slice(&self.delta_1.to_le_bytes());
-            bytes[8..16].copy_from_slice(&self.delta_2.to_le_bytes());
+            bytes[0..8].copy_from_slice(&self.delta_1_i.to_le_bytes());
+            bytes[8..16].copy_from_slice(&self.delta_2_i.to_le_bytes());
             bytes[16..24].copy_from_slice(&self.claim_fee.0.amount.to_le_bytes());
             bytes[24..56].copy_from_slice(&self.claim_fee.0.asset_id.to_bytes());
             Fq::from_le_bytes_mod_order(&bytes)
@@ -114,15 +114,15 @@ impl SwapPlaintext {
 
     pub fn from_parts(
         trading_pair: TradingPair,
-        delta_1: u64,
-        delta_2: u64,
+        delta_1_i: u64,
+        delta_2_i: u64,
         claim_fee: Fee,
         claim_address: Address,
     ) -> Result<Self, Error> {
         Ok(SwapPlaintext {
             trading_pair,
-            delta_1,
-            delta_2,
+            delta_1_i,
+            delta_2_i,
             claim_fee,
             claim_address,
         })
@@ -135,8 +135,8 @@ impl TryFrom<pb::SwapPlaintext> for SwapPlaintext {
     type Error = anyhow::Error;
     fn try_from(plaintext: pb::SwapPlaintext) -> anyhow::Result<Self> {
         Ok(Self {
-            delta_1: plaintext.delta_1,
-            delta_2: plaintext.delta_2,
+            delta_1_i: plaintext.delta_1_i,
+            delta_2_i: plaintext.delta_2_i,
             claim_address: plaintext
                 .claim_address
                 .ok_or_else(|| anyhow::anyhow!("missing SwapPlaintext claim address"))?
@@ -157,8 +157,8 @@ impl TryFrom<pb::SwapPlaintext> for SwapPlaintext {
 impl From<SwapPlaintext> for pb::SwapPlaintext {
     fn from(plaintext: SwapPlaintext) -> Self {
         Self {
-            delta_1: plaintext.delta_1,
-            delta_2: plaintext.delta_2,
+            delta_1_i: plaintext.delta_1_i,
+            delta_2_i: plaintext.delta_2_i,
             claim_fee: Some(plaintext.claim_fee.into()),
             claim_address: Some(plaintext.claim_address.into()),
             trading_pair: Some(plaintext.trading_pair.into()),
@@ -170,8 +170,8 @@ impl From<&SwapPlaintext> for [u8; SWAP_LEN_BYTES] {
     fn from(swap: &SwapPlaintext) -> [u8; SWAP_LEN_BYTES] {
         let mut bytes = [0u8; SWAP_LEN_BYTES];
         bytes[0..64].copy_from_slice(&swap.trading_pair.to_bytes());
-        bytes[64..72].copy_from_slice(&swap.delta_1.to_le_bytes());
-        bytes[72..80].copy_from_slice(&swap.delta_2.to_le_bytes());
+        bytes[64..72].copy_from_slice(&swap.delta_1_i.to_le_bytes());
+        bytes[72..80].copy_from_slice(&swap.delta_2_i.to_le_bytes());
         bytes[80..88].copy_from_slice(&swap.claim_fee.0.amount.to_le_bytes());
         bytes[88..120].copy_from_slice(&swap.claim_fee.0.asset_id.to_bytes());
         let pb_address = pb_crypto::Address::from(swap.claim_address);
@@ -266,8 +266,8 @@ mod tests {
 
         let swap = SwapPlaintext {
             trading_pair,
-            delta_1: 100000,
-            delta_2: 1,
+            delta_1_i: 100000,
+            delta_2_i: 1,
             claim_fee: Fee(Value {
                 amount: 3,
                 asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),

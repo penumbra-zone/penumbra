@@ -256,8 +256,8 @@ impl TxCmd {
 
                 let view_client: &mut dyn ViewClient = &mut app.view;
                 let asset_cache = view_client.assets().await?;
-                let pro_rata_outputs =
-                    output_data.pro_rata_outputs((swap_plaintext.delta_1, swap_plaintext.delta_2));
+                let pro_rata_outputs = output_data
+                    .pro_rata_outputs((swap_plaintext.delta_1_i, swap_plaintext.delta_2_i));
                 println!("Swap submitted and batch confirmed!");
                 println!(
                     "Swap was: {}",

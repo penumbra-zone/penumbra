@@ -86,8 +86,8 @@ impl SwapClaimPlan {
             note_commitment_proof: note_commitment_proof.clone(),
             trading_pair: self.swap_plaintext.trading_pair,
             note_blinding: self.swap_nft_note.note_blinding(),
-            delta_1: self.swap_plaintext.delta_1,
-            delta_2: self.swap_plaintext.delta_2,
+            delta_1_i: self.swap_plaintext.delta_1_i,
+            delta_2_i: self.swap_plaintext.delta_2_i,
             lambda_1: self.output_data.lambda_1,
             lambda_2: self.output_data.lambda_2,
             note_blinding_1: self.output_1_blinding,
@@ -102,7 +102,7 @@ impl SwapClaimPlan {
     pub fn swap_claim_body(&self, fvk: &FullViewingKey) -> swap_claim::Body {
         let (lambda_1, lambda_2) = self
             .output_data
-            .pro_rata_outputs((self.swap_plaintext.delta_1, self.swap_plaintext.delta_2));
+            .pro_rata_outputs((self.swap_plaintext.delta_1_i, self.swap_plaintext.delta_2_i));
 
         let output_1_note = Note::from_parts(
             self.swap_nft_note.address(),

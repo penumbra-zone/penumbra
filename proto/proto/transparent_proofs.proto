@@ -59,8 +59,9 @@ message SwapClaimProof {
   */
   dex.TradingPair trading_pair = 10;
   // uint64 fee = 7; // fee is public data so not included in client's submitted SwapClaimProof
-  uint64 delta_1 = 11;
-  uint64 delta_2 = 12;
+  // The user's contribution to the swap
+  uint64 delta_1_i = 11;
+  uint64 delta_2_i = 12;
 
   /**
    * @exclude

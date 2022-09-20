@@ -449,8 +449,8 @@ pub struct SwapClaimProof {
 
     // Describes opening of Swap NFT asset ID for commitment verification
     pub trading_pair: TradingPair,
-    pub delta_1: u64,
-    pub delta_2: u64,
+    pub delta_1_i: u64,
+    pub delta_2_i: u64,
 
     // Describes output amounts
     pub lambda_1: u64,
@@ -514,8 +514,8 @@ impl SwapClaimProof {
         let asset_id = self.swap_nft_asset_id;
         let expected_plaintext = SwapPlaintext::from_parts(
             self.trading_pair.clone(),
-            self.delta_1,
-            self.delta_2,
+            self.delta_1_i,
+            self.delta_2_i,
             fee,
             // This should ensure that the claim address matches the address
             // used to construct the Swap NFT.
@@ -562,7 +562,7 @@ impl SwapClaimProof {
             return Err(anyhow!("bad nullifier"));
         }
 
-        let (lambda_1, lambda_2) = output_data.pro_rata_outputs((self.delta_1, self.delta_2));
+        let (lambda_1, lambda_2) = output_data.pro_rata_outputs((self.delta_1_i, self.delta_2_i));
         let value_1 = Value {
             amount: lambda_1,
             asset_id: self.trading_pair.asset_1(),
@@ -640,8 +640,8 @@ impl From<SwapClaimProof> for transparent_proofs::SwapClaimProof {
             note_commitment_proof: Some(msg.note_commitment_proof.into()),
             claim_address: Some(msg.claim_address.into()),
             trading_pair: Some(msg.trading_pair.into()),
-            delta_1: msg.delta_1,
-            delta_2: msg.delta_2,
+            delta_1_i: msg.delta_1_i,
+            delta_2_i: msg.delta_2_i,
             lambda_1: msg.lambda_1,
             lambda_2: msg.lambda_2,
             note_blinding_1: msg.note_blinding_1.to_bytes().to_vec(),
@@ -679,8 +679,8 @@ impl TryFrom<transparent_proofs::SwapClaimProof> for SwapClaimProof {
             note_blinding_2: Fq::from_le_bytes_mod_order(&proto.note_blinding_2),
             lambda_2: proto.lambda_2,
             lambda_1: proto.lambda_1,
-            delta_2: proto.delta_2,
-            delta_1: proto.delta_1,
+            delta_2_i: proto.delta_2_i,
+            delta_1_i: proto.delta_1_i,
             trading_pair: proto
                 .trading_pair
                 .ok_or_else(|| anyhow!("proto malformed"))?
