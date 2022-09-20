@@ -9,7 +9,6 @@ use penumbra_crypto::{
 };
 use penumbra_proto::{
     client::oblivious::{oblivious_query_client::ObliviousQueryClient, ChainParamsRequest},
-    view::{TransactionHashStreamResponse, TransactionStreamResponse},
     Protobuf,
 };
 use penumbra_tct as tct;
@@ -335,12 +334,12 @@ impl Storage {
         tx.commit().await?;
         Ok(tree)
     }
-
+    /// Returns a tuple of (block height, transaction hash) for all transactions in a given range of block heights.
     pub async fn transaction_hashes(
         &self,
         start_height: Option<u64>,
         end_height: Option<u64>,
-    ) -> anyhow::Result<Vec<TransactionHashStreamResponse>> {
+    ) -> anyhow::Result<Vec<(u64, Vec<u8>)>> {
         let starting_block = start_height.unwrap_or(0) as i64;
         let ending_block = end_height.unwrap_or(self.last_sync_height().await?.unwrap_or(0)) as i64;
 
@@ -354,24 +353,20 @@ impl Storage {
         .fetch_all(&self.pool)
         .await?;
 
-        let mut output: Vec<TransactionHashStreamResponse> = Vec::new();
+        let mut output: Vec<(u64, Vec<u8>)> = Vec::new();
 
         for record in result {
-            let tx_hash_response = TransactionHashStreamResponse {
-                block_height: record.block_height as u64,
-                tx_hash: record.tx_hash,
-            };
-            output.push(tx_hash_response);
+            output.push((record.block_height as u64, record.tx_hash));
         }
 
         Ok(output)
     }
-
+    /// Returns a tuple of (block height, transaction hash, transaction) for all transactions in a given range of block heights.
     pub async fn transactions(
         &self,
         start_height: Option<u64>,
         end_height: Option<u64>,
-    ) -> anyhow::Result<Vec<TransactionStreamResponse>> {
+    ) -> anyhow::Result<Vec<(u64, Vec<u8>, Transaction)>> {
         let starting_block = start_height.unwrap_or(0) as i64;
         let ending_block = end_height.unwrap_or(self.last_sync_height().await?.unwrap_or(0)) as i64;
 
@@ -385,15 +380,14 @@ impl Storage {
         .fetch_all(&self.pool)
         .await?;
 
-        let mut output: Vec<TransactionStreamResponse> = Vec::new();
+        let mut output: Vec<(u64, Vec<u8>, Transaction)> = Vec::new();
 
         for record in result {
-            let tx_response = TransactionStreamResponse {
-                block_height: record.block_height as u64,
-                tx_hash: record.tx_hash,
-                tx: Some(Transaction::decode(record.tx_bytes.as_slice())?.into()),
-            };
-            output.push(tx_response);
+            output.push((
+                record.block_height as u64,
+                record.tx_hash,
+                Transaction::decode(record.tx_bytes.as_slice())?,
+            ));
         }
 
         Ok(output)
