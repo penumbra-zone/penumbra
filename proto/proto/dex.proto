@@ -76,6 +76,10 @@ message SwapBody {
   bytes swap_ciphertext = 6;
   // Fee blinding factor.
   bytes fee_blinding = 7;
+  // TODO: is this necessary? we can re-derive based on the IVK and epk
+  // The key material used for note and plaintext encryption, wrapped in encryption to the
+  // sender's outgoing viewing key. 80 bytes.
+  // bytes ovk_wrapped_key = 8;
 }
 
 message SwapPlaintext {

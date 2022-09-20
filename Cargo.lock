@@ -3441,6 +3441,7 @@ dependencies = [
  "anyhow",
  "bincode",
  "bytes",
+ "colored_json",
  "hex",
  "once_cell",
  "penumbra-chain",

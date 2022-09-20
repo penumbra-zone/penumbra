@@ -79,6 +79,7 @@ impl SwapPlan {
         };
 
         let swap_ciphertext = self.swap_plaintext.encrypt(&self.esk);
+        // let ovk_wrapped_key = note.encrypt_key(&self.esk, ovk, value_commitment);
 
         swap::Body {
             trading_pair: self.swap_plaintext.trading_pair,
@@ -88,6 +89,7 @@ impl SwapPlan {
             swap_nft,
             swap_ciphertext,
             fee_blinding: self.fee_blinding,
+            // ovk_wrapped_key,
         }
     }
 

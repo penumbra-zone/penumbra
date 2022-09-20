@@ -15,7 +15,7 @@ use penumbra_tct as tct;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    action::{Delegate, Output, ProposalSubmit, ProposalWithdraw, Undelegate, ValidatorVote},
+    action::{Delegate, Output, ProposalSubmit, ProposalWithdraw, Swap, Undelegate, ValidatorVote},
     Action,
 };
 
@@ -126,6 +126,16 @@ impl Transaction {
         self.actions().filter_map(|action| {
             if let Action::Output(d) = action {
                 Some(d)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn swaps(&self) -> impl Iterator<Item = &Swap> {
+        self.actions().filter_map(|action| {
+            if let Action::Swap(s) = action {
+                Some(s)
             } else {
                 None
             }

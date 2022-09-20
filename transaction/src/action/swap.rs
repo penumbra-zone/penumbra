@@ -2,6 +2,7 @@ use ark_ff::Zero;
 use decaf377::{FieldExt, Fr};
 use penumbra_crypto::dex::TradingPair;
 use penumbra_crypto::proofs::transparent::SwapProof;
+use penumbra_crypto::symmetric::OvkWrappedKey;
 use penumbra_crypto::{dex::swap::SwapCiphertext, value};
 use penumbra_crypto::{NotePayload, Value};
 use penumbra_proto::{dex as pb, Protobuf};
@@ -77,6 +78,9 @@ pub struct Body {
     // TODO: rename to note_payload
     pub swap_nft: NotePayload,
     pub swap_ciphertext: SwapCiphertext,
+    // ESK used to encrypt the swap ciphertext/swap NFT NotePayload
+    // pub ovk_wrapped_key: OvkWrappedKey,
+    // TODO: do we need to put the wrapped memo key in here similar to Output?
 }
 
 impl Protobuf<pb::SwapBody> for Body {}
@@ -101,6 +105,9 @@ impl TryFrom<pb::SwapBody> for Body {
         let fee_blinding_bytes: [u8; 32] = s.fee_blinding[..]
             .try_into()
             .map_err(|_| anyhow::anyhow!("proto malformed"))?;
+        // let ovk_wrapped_key: OvkWrappedKey = proto.ovk_wrapped_key[..]
+        //     .try_into()
+        //     .map_err(|_| anyhow::anyhow!("output malformed"))?;
 
         Ok(Self {
             trading_pair: s
@@ -116,6 +123,7 @@ impl TryFrom<pb::SwapBody> for Body {
                 .try_into()?,
             swap_ciphertext: (&s.swap_ciphertext[..]).try_into()?,
             fee_blinding: Fr::from_bytes(fee_blinding_bytes)?,
+            // ovk_wrapped_key,
         })
     }
 }

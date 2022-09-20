@@ -2,6 +2,7 @@ use anyhow::Result;
 
 use crate::{
     ka,
+    keys::IncomingViewingKey,
     symmetric::{PayloadKey, PayloadKind},
 };
 
@@ -11,6 +12,29 @@ use super::{SwapPlaintext, SWAP_CIPHERTEXT_BYTES, SWAP_LEN_BYTES};
 pub struct SwapCiphertext(pub [u8; SWAP_CIPHERTEXT_BYTES]);
 
 impl SwapCiphertext {
+    pub fn decrypt2(&self, ivk: &IncomingViewingKey, epk: &ka::Public) -> Result<SwapPlaintext> {
+        let shared_secret = ivk
+            .key_agreement_with(epk)
+            .map_err(|_| anyhow::anyhow!("unable to decrypt swap ciphertext"))?;
+
+        let key = PayloadKey::derive(&shared_secret, epk);
+        let swap_ciphertext = self.0;
+        let decryption_result = key
+            .decrypt(swap_ciphertext.to_vec(), PayloadKind::Swap)
+            .map_err(|_| anyhow::anyhow!("unable to decrypt swap ciphertext"))?;
+
+        // TODO: encapsulate plaintext encoding by making this a
+        // pub(super) parse_decryption method on SwapPlaintext
+        // and removing the TryFrom impls
+        let plaintext: [u8; SWAP_LEN_BYTES] = decryption_result
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("swap decryption result did not fit in plaintext len"))?;
+
+        plaintext.try_into().map_err(|_| {
+            anyhow::anyhow!("unable to convert swap plaintext bytes into SwapPlaintext")
+        })
+    }
+
     pub fn decrypt(
         &self,
         esk: &ka::Secret,
