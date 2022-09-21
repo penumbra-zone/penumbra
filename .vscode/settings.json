@@ -3,5 +3,9 @@
         "DATABASE_URL": "sqlite:///tmp/pviewd-dev-db.sqlite"
     },
     "rust-analyzer.checkOnSave.command": "clippy",
-    "rust-analyzer.checkOnSave.enable": true
+    "rust-analyzer.checkOnSave.enable": true,
+    "[rust]": {
+        "editor.defaultFormatter": "rust-lang.rust-analyzer",
+        "editor.formatOnSave": true
+    }
 }
