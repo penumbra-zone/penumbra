@@ -12,7 +12,7 @@ use penumbra_tct as tct;
 use crate::{
     asset,
     dex::{swap::SwapPlaintext, BatchSwapOutputData, TradingPair},
-    fmd, ka, keys, note,
+    ka, keys, note,
     transaction::Fee,
     value, Address, Fq, Fr, Note, Nullifier, Value,
 };
@@ -123,18 +123,10 @@ impl SpendProof {
 /// This structure keeps track of the auxiliary (private) inputs.
 #[derive(Clone, Debug)]
 pub struct OutputProof {
-    // The diversified base for the destination address.
-    pub g_d: decaf377::Element,
-    // The transmission key for the destination address.
-    pub pk_d: ka::Public,
-    // The clue key for the address.
-    pub ck_d: fmd::ClueKey,
-    // The value of the newly created note.
-    pub value: Value,
+    // The note being created.
+    pub note: Note,
     // The blinding factor used for generating the value commitment.
     pub v_blinding: Fr,
-    // The blinding factor used for generating the note commitment.
-    pub note_blinding: Fq,
     // The ephemeral secret key that corresponds to the public key.
     pub esk: ka::Secret,
 }
@@ -153,41 +145,41 @@ impl OutputProof {
         epk: ka::Public,
     ) -> anyhow::Result<()> {
         // Note commitment integrity.
-        let s_component_transmission_key = Fq::from_bytes(self.pk_d.0);
-        if let Ok(transmission_key_s) = s_component_transmission_key {
-            let note_commitment_test = note::commitment(
-                self.note_blinding,
-                self.value,
-                self.g_d,
-                transmission_key_s,
-                &self.ck_d,
-            );
+        let s_component_transmission_key = self.note.transmission_key_s();
+        let note_commitment_test = note::commitment(
+            self.note.note_blinding(),
+            self.note.value(),
+            self.note.diversified_generator(),
+            s_component_transmission_key,
+            self.note.clue_key(),
+        );
 
-            if note_commitment != note_commitment_test {
-                return Err(anyhow!(
-                    "note commitment mismatch, public input {:?} does not match witnessed data {:?}",
-                     note_commitment,
-                     note_commitment_test,
-                ));
-            }
-        } else {
-            return Err(anyhow!("transmission key mismatch"));
+        if note_commitment != note_commitment_test {
+            return Err(anyhow!(
+                "note commitment mismatch, public input {:?} does not match witnessed data {:?}",
+                note_commitment,
+                note_commitment_test,
+            ));
         }
 
         // Value commitment integrity.
-        if value_commitment != -self.value.commit(self.v_blinding) {
+        if value_commitment != -self.note.value().commit(self.v_blinding) {
             return Err(anyhow!("value commitment mismatch"));
         }
 
         // Ephemeral public key integrity.
-        if self.esk.diversified_public(&self.g_d) != epk {
+        if self
+            .esk
+            .diversified_public(&self.note.diversified_generator())
+            != epk
+        {
             return Err(anyhow!("ephemeral public key mismatch"));
         }
 
         // The use of decaf means that we do not need to check that the
         // diversified basepoint is of small order. However we instead
         // check it is not identity.
-        if self.g_d.is_identity() {
+        if self.note.diversified_generator().is_identity() {
             return Err(anyhow!("unexpected identity"));
         }
 
@@ -265,13 +257,8 @@ impl Protobuf<transparent_proofs::OutputProof> for OutputProof {}
 impl From<OutputProof> for transparent_proofs::OutputProof {
     fn from(msg: OutputProof) -> Self {
         transparent_proofs::OutputProof {
-            g_d: msg.g_d.vartime_compress().0.to_vec(),
-            pk_d: msg.pk_d.0.to_vec(),
-            ck_d: msg.ck_d.0.to_vec(),
-            value_amount: msg.value.amount,
-            value_asset_id: msg.value.asset_id.0.to_bytes().to_vec(),
+            note: Some(msg.note.into()),
             v_blinding: msg.v_blinding.to_bytes().to_vec(),
-            note_blinding: msg.note_blinding.to_bytes().to_vec(),
             esk: msg.esk.to_bytes().to_vec(),
         }
     }
@@ -281,12 +268,6 @@ impl TryFrom<transparent_proofs::OutputProof> for OutputProof {
     type Error = Error;
 
     fn try_from(proto: transparent_proofs::OutputProof) -> anyhow::Result<Self, Self::Error> {
-        let g_d_bytes: [u8; 32] = proto
-            .g_d
-            .try_into()
-            .map_err(|_| anyhow!("proto malformed"))?;
-        let g_d_encoding = decaf377::Encoding(g_d_bytes);
-
         let v_blinding_bytes: [u8; 32] = proto.v_blinding[..]
             .try_into()
             .map_err(|_| anyhow!("proto malformed"))?;
@@ -298,40 +279,13 @@ impl TryFrom<transparent_proofs::OutputProof> for OutputProof {
             Fr::from_bytes(esk_bytes).map_err(|_| anyhow!("proto malformed"))?,
         );
 
-        let ck_bytes: [u8; 32] = proto.ck_d[..]
-            .try_into()
-            .map_err(|_| anyhow!("proto malformed"))?;
-
         Ok(OutputProof {
-            g_d: g_d_encoding
-                .vartime_decompress()
+            note: proto
+                .note
+                .ok_or_else(|| anyhow!("proto malformed"))?
+                .try_into()
                 .map_err(|_| anyhow!("proto malformed"))?,
-            pk_d: ka::Public(
-                proto
-                    .pk_d
-                    .try_into()
-                    .map_err(|_| anyhow!("proto malformed"))?,
-            ),
-            ck_d: fmd::ClueKey(ck_bytes),
-            value: Value {
-                amount: proto.value_amount,
-                asset_id: asset::Id(
-                    Fq::from_bytes(
-                        proto
-                            .value_asset_id
-                            .try_into()
-                            .map_err(|_| anyhow!("proto malformed"))?,
-                    )
-                    .map_err(|_| anyhow!("proto malformed"))?,
-                ),
-            },
             v_blinding: Fr::from_bytes(v_blinding_bytes).map_err(|_| anyhow!("proto malformed"))?,
-            note_blinding: Fq::from_bytes(
-                proto.note_blinding[..]
-                    .try_into()
-                    .map_err(|_| anyhow!("proto malformed"))?,
-            )
-            .map_err(|_| anyhow!("proto malformed"))?,
             esk,
         })
     }
@@ -523,16 +477,12 @@ impl SwapClaimProof {
         };
 
         let proof_1 = OutputProof {
-            value: value_1,
+            note: Note::from_parts(self.claim_address, value_1, self.note_blinding_1)?,
             // We use a zero blinding factor here because we haven't properly
             // factored out the common code between OutputProof and SwapClaimProof,
             // so we construct a "fake" value commitment internal to this proof.
             v_blinding: Fr::zero(),
-            note_blinding: self.note_blinding_1,
             esk: self.esk_1.clone(),
-            g_d: *self.claim_address.diversified_generator(),
-            pk_d: *self.claim_address.transmission_key(),
-            ck_d: *self.claim_address.clue_key(),
         };
         proof_1
             // This is a dummy value commitment, since we don't have a way of calling the output proof logic otherwise.
@@ -541,16 +491,12 @@ impl SwapClaimProof {
             .context("output proof 1 failed")?;
 
         let proof_2 = OutputProof {
-            value: value_2,
+            note: Note::from_parts(self.claim_address, value_2, self.note_blinding_2)?,
             // We use a zero blinding factor here because we haven't properly
             // factored out the common code between OutputProof and SwapClaimProof,
             // so we construct a "fake" value commitment internal to this proof.
             v_blinding: Fr::zero(),
-            note_blinding: self.note_blinding_2,
             esk: self.esk_2.clone(),
-            g_d: *self.claim_address.diversified_generator(),
-            pk_d: *self.claim_address.transmission_key(),
-            ck_d: *self.claim_address.clue_key(),
         };
         proof_2
             // This is a dummy value commitment, since we don't have a way of calling the output proof logic otherwise.
@@ -902,11 +848,12 @@ impl TryFrom<&[u8]> for SwapProof {
 #[cfg(test)]
 mod tests {
     use ark_ff::UniformRand;
+    use rand::RngCore;
     use rand_core::OsRng;
 
     use super::*;
     use crate::{
-        keys::{SeedPhrase, SpendKey},
+        keys::{Diversifier, SeedPhrase, SpendKey},
         note, Note, Value,
     };
 
@@ -930,12 +877,8 @@ mod tests {
         let epk = esk.diversified_public(&note.diversified_generator());
 
         let proof = OutputProof {
-            g_d: *dest.diversified_generator(),
-            pk_d: *dest.transmission_key(),
-            ck_d: *dest.clue_key(),
-            value: value_to_send,
+            note: note.clone(),
             v_blinding,
-            note_blinding: note.note_blinding(),
             esk,
         };
 
@@ -964,12 +907,8 @@ mod tests {
         let epk = esk.diversified_public(&note.diversified_generator());
 
         let proof = OutputProof {
-            g_d: *dest.diversified_generator(),
-            pk_d: *dest.transmission_key(),
-            ck_d: *dest.clue_key(),
-            value: value_to_send,
+            note: note.clone(),
             v_blinding,
-            note_blinding: note.note_blinding(),
             esk,
         };
 
@@ -1010,12 +949,8 @@ mod tests {
         let correct_epk = esk.diversified_public(&note.diversified_generator());
 
         let proof = OutputProof {
-            g_d: *dest.diversified_generator(),
-            pk_d: *dest.transmission_key(),
-            ck_d: *dest.clue_key(),
-            value: value_to_send,
+            note: note.clone(),
             v_blinding,
-            note_blinding: note.note_blinding(),
             esk,
         };
         let incorrect_value_commitment = value_to_send.commit(Fr::rand(&mut rng));
@@ -1044,12 +979,8 @@ mod tests {
         let esk = ka::Secret::new(&mut rng);
 
         let proof = OutputProof {
-            g_d: *dest.diversified_generator(),
-            pk_d: *dest.transmission_key(),
-            ck_d: *dest.clue_key(),
-            value: value_to_send,
+            note: note.clone(),
             v_blinding,
-            note_blinding: note.note_blinding(),
             esk,
         };
         let incorrect_esk = ka::Secret::new(&mut rng);
@@ -1072,7 +1003,18 @@ mod tests {
         let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk_recipient = sk_recipient.full_viewing_key();
         let ivk_recipient = fvk_recipient.incoming();
-        let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
+        let (dest1, _dtk_d) = ivk_recipient.payment_address(0u64.into());
+        let diversifier_bytes = [0u8; 16];
+
+        let d = Diversifier(diversifier_bytes);
+        let dest = Address::from_components(
+            d,
+            // Use the identity element as the diversified generator for the destination
+            decaf377::Element::default(),
+            *dest1.transmission_key(),
+            *dest1.clue_key(),
+        )
+        .expect("able to generate address");
 
         let value_to_send = Value {
             amount: 10,
@@ -1082,14 +1024,13 @@ mod tests {
         let note = Note::generate(&mut rng, &dest, value_to_send);
         let esk = ka::Secret::new(&mut rng);
         let epk = esk.diversified_public(&note.diversified_generator());
+        let dg = note.diversified_generator();
+        assert_eq!(*dest.diversified_generator(), decaf377::Element::default());
+        assert_eq!(dg, decaf377::Element::default());
 
         let proof = OutputProof {
-            g_d: decaf377::Element::default(),
-            pk_d: *dest.transmission_key(),
-            ck_d: *dest.clue_key(),
-            value: value_to_send,
+            note: note.clone(),
             v_blinding,
-            note_blinding: note.note_blinding(),
             esk,
         };
 
