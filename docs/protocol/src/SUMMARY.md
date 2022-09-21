@@ -35,7 +35,7 @@
   - [Poseidon for BLS12-377](./crypto/poseidon.md)
     - [Overview of Poseidon Construction](./crypto/poseidon/overview.md)
     - [Poseidon Parameter Generation](./crypto/poseidon/paramgen.md)
-    - [Test Vectors]()
+    - [Test Vectors](./crypto/poseidon/test_vectors.md)
   - [Fuzzy Message Detection](./crypto/fmd.md)
     - [Sender and Receiver FMD](./crypto/fmd/sender-receiver.md)
     - [Constructing S-FMD](./crypto/fmd/construction.md)
