@@ -1,20 +1,3 @@
-name: buf-pull-request
-on: pull_request
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: bufbuild/buf-setup-action@v1
-        with:
-          input: 'proto'
-      # - uses: bufbuild/buf-lint-action@v1
-      - uses: bufbuild/buf-breaking-action@v1
-        with:
-          # The 'main' branch of the GitHub repository that defines the module.
-          against: 'https://github.com/${GITHUB_REPOSITORY}.git#branch=main'
-          input: 'proto'
-
 name: buf-push
 on:
   push:
