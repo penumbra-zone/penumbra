@@ -7,6 +7,7 @@ pub use decaf377_rdsa as rdsa;
 
 mod address;
 pub mod asset;
+pub mod balance;
 mod delegation_token;
 pub mod dex;
 pub mod eddy;
@@ -27,6 +28,7 @@ pub mod value;
 pub use address::Address;
 pub use asset::Amount;
 pub use asset::Asset;
+pub use balance::Balance;
 pub use delegation_token::DelegationToken;
 pub use flow::{MockFlowCiphertext, SwapFlow};
 pub use governance_key::GovernanceKey;

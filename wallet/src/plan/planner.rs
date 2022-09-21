@@ -29,7 +29,7 @@ use penumbra_view::ViewClient;
 use rand::{CryptoRng, RngCore};
 use tracing::instrument;
 
-pub use super::balance::Balance;
+use penumbra_crypto::Balance;
 
 /// A planner for a [`TransactionPlan`] that can fill in the required spends and change outputs upon
 /// finalization to make a transaction balance.

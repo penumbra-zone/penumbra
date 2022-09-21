@@ -7,7 +7,7 @@ use std::{
     ops::{Add, AddAssign, Neg, Sub, SubAssign},
 };
 
-use penumbra_crypto::{asset, Value};
+use crate::{asset, Value};
 
 mod imbalance;
 mod iter;
@@ -215,8 +215,8 @@ impl From<Value> for Balance {
 
 #[cfg(test)]
 mod test {
+    use crate::{value, Fr, Zero, STAKING_TOKEN_ASSET_ID};
     use once_cell::sync::Lazy;
-    use penumbra_crypto::{value, Fr, Zero, STAKING_TOKEN_ASSET_ID};
     use proptest::prelude::*;
 
     use super::*;
