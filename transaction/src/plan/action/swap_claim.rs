@@ -154,6 +154,17 @@ impl SwapClaimPlan {
     pub fn is_viewed_by(&self, ivk: &IncomingViewingKey) -> bool {
         ivk.views_address(&self.swap_nft_note.address())
     }
+
+    pub fn balance(&self) -> penumbra_crypto::Balance {
+        // Only the pre-paid fee is contributed to the value balance
+        // The rest is handled internally to the SwapClaim action.
+        let value_fee = Value {
+            amount: self.swap_plaintext.claim_fee.amount(),
+            asset_id: self.swap_plaintext.claim_fee.asset_id(),
+        };
+
+        value_fee.into()
+    }
 }
 
 impl Protobuf<pb::SwapClaimPlan> for SwapClaimPlan {}

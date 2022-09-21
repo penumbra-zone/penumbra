@@ -39,7 +39,7 @@ pub static VALUE_BLINDING_GENERATOR: Lazy<decaf377::Element> = Lazy::new(|| {
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("Invalid valid commitment")]
-    InvalidValueCommitment,
+    InvalidBalanceCommitment,
 }
 
 impl std::ops::Add<Commitment> for Commitment {
@@ -75,7 +75,7 @@ impl TryFrom<[u8; 32]> for Commitment {
     fn try_from(bytes: [u8; 32]) -> Result<Commitment, Self::Error> {
         let inner = decaf377::Encoding(bytes)
             .vartime_decompress()
-            .map_err(|_| Error::InvalidValueCommitment)?;
+            .map_err(|_| Error::InvalidBalanceCommitment)?;
 
         Ok(Commitment(inner))
     }
@@ -87,19 +87,19 @@ impl TryFrom<&[u8]> for Commitment {
     fn try_from(slice: &[u8]) -> Result<Commitment, Self::Error> {
         let bytes = slice[..]
             .try_into()
-            .map_err(|_| Error::InvalidValueCommitment)?;
+            .map_err(|_| Error::InvalidBalanceCommitment)?;
 
         let inner = decaf377::Encoding(bytes)
             .vartime_decompress()
-            .map_err(|_| Error::InvalidValueCommitment)?;
+            .map_err(|_| Error::InvalidBalanceCommitment)?;
 
         Ok(Commitment(inner))
     }
 }
 
-impl Protobuf<pb::ValueCommitment> for Commitment {}
+impl Protobuf<pb::BalanceCommitment> for Commitment {}
 
-impl From<Commitment> for pb::ValueCommitment {
+impl From<Commitment> for pb::BalanceCommitment {
     fn from(cv: Commitment) -> Self {
         Self {
             inner: cv.to_bytes().to_vec(),
@@ -107,9 +107,9 @@ impl From<Commitment> for pb::ValueCommitment {
     }
 }
 
-impl TryFrom<pb::ValueCommitment> for Commitment {
+impl TryFrom<pb::BalanceCommitment> for Commitment {
     type Error = anyhow::Error;
-    fn try_from(value: pb::ValueCommitment) -> Result<Self, Self::Error> {
+    fn try_from(value: pb::BalanceCommitment) -> Result<Self, Self::Error> {
         value.inner.as_slice().try_into().map_err(Into::into)
     }
 }

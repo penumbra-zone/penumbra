@@ -22,7 +22,7 @@ pub struct Swap {
 impl Swap {
     /// Compute a commitment to the value contributed to a transaction by this swap.
     /// Will subtract (v1,t1), (v2,t2), and (f,fee_token)
-    pub fn value_commitment(&self) -> balance::Commitment {
+    pub fn balance_commitment(&self) -> balance::Commitment {
         let input_1 = Value {
             amount: self.body.delta_1_i,
             asset_id: self.body.trading_pair.asset_1(),

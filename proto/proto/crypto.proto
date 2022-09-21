@@ -44,7 +44,7 @@ message NoteCommitment {
     bytes inner = 1;
 }
 
-message ValueCommitment {
+message BalanceCommitment {
     bytes inner = 1;
 }
 

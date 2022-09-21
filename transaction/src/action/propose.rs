@@ -1,10 +1,8 @@
-use ark_ff::Zero;
-use decaf377::Fr;
 use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, str::FromStr};
 
-use penumbra_crypto::{asset::Amount, balance, Address, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_crypto::{asset::Amount, Address, Balance, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::{transaction as pb, Protobuf};
 
 use crate::{plan::TransactionPlan, AuthHash};
@@ -320,17 +318,15 @@ pub struct ProposalSubmit {
 
 impl ProposalSubmit {
     /// Compute a commitment to the value contributed to a transaction by this proposal submission.
-    pub fn value_commitment(&self) -> balance::Commitment {
+    pub fn balance(&self) -> Balance {
         let deposit = Value {
             amount: self.deposit_amount,
             asset_id: STAKING_TOKEN_ASSET_ID.clone(),
-        }
-        // We can use the zero blinding factor for the value commitment because the value is public.
-        .commit(Fr::zero());
+        };
 
         // Proposal submissions *require* the deposit amount in order to be accepted, so they
         // contribute (-deposit) to the value balance of the transaction
-        -deposit
+        -Balance::from(deposit)
     }
 }
 

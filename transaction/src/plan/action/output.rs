@@ -87,14 +87,14 @@ impl OutputPlan {
 
         // Prepare the value commitment.  Outputs subtract from the transaction
         // value balance, so flip the sign of the commitment.
-        let value_commitment = -self.value.commit(self.value_blinding);
+        let balance_commitment = -self.value.commit(self.value_blinding);
 
         // Encrypt the note to the recipient...
         let diversified_generator = note.diversified_generator();
         let ephemeral_key = self.esk.diversified_public(&diversified_generator);
         let encrypted_note = note.encrypt(&self.esk);
         // ... and wrap the encryption key to ourselves.
-        let ovk_wrapped_key = note.encrypt_key(&self.esk, ovk, value_commitment);
+        let ovk_wrapped_key = note.encrypt_key(&self.esk, ovk, balance_commitment);
 
         let wrapped_memo_key = WrappedMemoKey::encrypt(
             memo_key,
@@ -109,7 +109,7 @@ impl OutputPlan {
                 ephemeral_key,
                 encrypted_note,
             },
-            balance_commitment: value_commitment,
+            balance_commitment,
             ovk_wrapped_key,
             wrapped_memo_key,
         }
@@ -118,6 +118,10 @@ impl OutputPlan {
     /// Checks whether this plan's output is viewed by the given IVK.
     pub fn is_viewed_by(&self, ivk: &IncomingViewingKey) -> bool {
         ivk.views_address(&self.dest_address)
+    }
+
+    pub fn balance(&self) -> penumbra_crypto::Balance {
+        -penumbra_crypto::Balance::from(self.value)
     }
 }
 
