@@ -1,4 +1,4 @@
-use penumbra_crypto::{value, Address, Fr, Zero};
+use penumbra_crypto::{balance, value, Address, Fr, Zero};
 use penumbra_proto::{ibc as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
@@ -25,7 +25,7 @@ pub struct ICS20Withdrawal {
 }
 
 impl ICS20Withdrawal {
-    pub fn value_commitment(&self) -> value::Commitment {
+    pub fn value_commitment(&self) -> balance::Commitment {
         // we need to compute a value commitment to the transparent value of this withdrawal
         let withdrawal_value = self.value.commit(Fr::zero());
 

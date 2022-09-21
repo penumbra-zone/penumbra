@@ -3,7 +3,7 @@ use decaf377::Fr;
 use penumbra_crypto::asset::Amount;
 use penumbra_crypto::dex::TradingPair;
 use penumbra_crypto::proofs::transparent::SwapProof;
-use penumbra_crypto::{dex::swap::SwapCiphertext, value};
+use penumbra_crypto::{balance, dex::swap::SwapCiphertext};
 use penumbra_crypto::{NotePayload, Value};
 use penumbra_proto::{dex as pb, Protobuf};
 
@@ -22,7 +22,7 @@ pub struct Swap {
 impl Swap {
     /// Compute a commitment to the value contributed to a transaction by this swap.
     /// Will subtract (v1,t1), (v2,t2), and (f,fee_token)
-    pub fn value_commitment(&self) -> value::Commitment {
+    pub fn value_commitment(&self) -> balance::Commitment {
         let input_1 = Value {
             amount: self.body.delta_1_i,
             asset_id: self.body.trading_pair.asset_1(),
@@ -69,11 +69,11 @@ pub struct Body {
     pub trading_pair: TradingPair,
     // No commitments for the values, as they're plaintext
     // until flow encryption is available
-    // pub asset_1_commitment: value::Commitment,
-    // pub asset_2_commitment: value::Commitment,
+    // pub asset_1_commitment: balance::Commitment,
+    // pub asset_2_commitment: balance::Commitment,
     pub delta_1_i: Amount,
     pub delta_2_i: Amount,
-    pub fee_commitment: value::Commitment,
+    pub fee_commitment: balance::Commitment,
     // TODO: rename to note_payload
     pub swap_nft: NotePayload,
     pub swap_ciphertext: SwapCiphertext,

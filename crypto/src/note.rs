@@ -12,10 +12,10 @@ use thiserror;
 pub use penumbra_tct::Commitment;
 
 use crate::{
-    asset, fmd, ka,
+    asset, balance, fmd, ka,
     keys::{Diversifier, IncomingViewingKey, OutgoingViewingKey},
     symmetric::{OutgoingCipherKey, OvkWrappedKey, PayloadKey, PayloadKind},
-    value, Address, Fq, Value,
+    Address, Fq, Value,
 };
 
 pub const NOTE_LEN_BYTES: usize = 152;
@@ -139,7 +139,7 @@ impl Note {
         &self,
         esk: &ka::Secret,
         ovk: &OutgoingViewingKey,
-        cv: value::Commitment,
+        cv: balance::Commitment,
     ) -> OvkWrappedKey {
         let epk = esk.diversified_public(&self.diversified_generator());
         let ock = OutgoingCipherKey::derive(ovk, cv, self.commit(), &epk);
@@ -160,7 +160,7 @@ impl Note {
     pub(crate) fn decrypt_key(
         wrapped_ovk: OvkWrappedKey,
         cm: Commitment,
-        cv: value::Commitment,
+        cv: balance::Commitment,
         ovk: &OutgoingViewingKey,
         epk: &ka::Public,
     ) -> Result<ka::SharedSecret, Error> {
@@ -185,7 +185,7 @@ impl Note {
         ciphertext: &[u8],
         wrapped_ovk: OvkWrappedKey,
         cm: Commitment,
-        cv: value::Commitment,
+        cv: balance::Commitment,
         ovk: &OutgoingViewingKey,
         epk: &ka::Public,
     ) -> Result<Note, Error> {

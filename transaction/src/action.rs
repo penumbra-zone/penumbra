@@ -1,6 +1,6 @@
 use std::convert::{TryFrom, TryInto};
 
-use penumbra_crypto::value;
+use penumbra_crypto::balance;
 use penumbra_proto::{ibc as pb_ibc, stake as pbs, transaction as pb, Protobuf};
 
 mod delegate;
@@ -55,22 +55,22 @@ pub enum Action {
 impl Action {
     /// Obtains or computes a commitment to the (typed) value added or subtracted from
     /// the transaction's balance by this action.
-    pub fn value_commitment(&self) -> value::Commitment {
+    pub fn value_commitment(&self) -> balance::Commitment {
         match self {
-            Action::Output(output) => output.body.value_commitment,
-            Action::Spend(spend) => spend.body.value_commitment,
+            Action::Output(output) => output.body.balance_commitment,
+            Action::Spend(spend) => spend.body.balance_commitment,
             Action::Delegate(delegate) => delegate.value_commitment(),
             Action::Undelegate(undelegate) => undelegate.value_commitment(),
             Action::Swap(swap) => swap.value_commitment(),
             Action::SwapClaim(swap_claim) => swap_claim.value_commitment(),
             // These actions just post data to the chain, and leave the value balance
             // unchanged.
-            Action::ValidatorDefinition(_) => value::Commitment::default(),
-            Action::IBCAction(_) => value::Commitment::default(),
+            Action::ValidatorDefinition(_) => balance::Commitment::default(),
+            Action::IBCAction(_) => balance::Commitment::default(),
             Action::ProposalSubmit(submit) => submit.value_commitment(),
-            Action::ProposalWithdraw(_) => value::Commitment::default(),
-            // Action::DelegatorVote(_) => value::Commitment::default(),
-            Action::ValidatorVote(_) => value::Commitment::default(),
+            Action::ProposalWithdraw(_) => balance::Commitment::default(),
+            // Action::DelegatorVote(_) => balance::Commitment::default(),
+            Action::ValidatorVote(_) => balance::Commitment::default(),
 
             Action::PositionOpen(p) => p.value_commitment(),
             Action::PositionClose(p) => p.value_commitment(),

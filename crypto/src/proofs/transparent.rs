@@ -10,11 +10,11 @@ use penumbra_proto::{transparent_proofs, Message, Protobuf};
 use penumbra_tct as tct;
 
 use crate::{
-    asset,
+    asset, balance,
     dex::{swap::SwapPlaintext, BatchSwapOutputData, TradingPair},
     ka, keys, note,
     transaction::Fee,
-    value, Address, Fq, Fr, Note, Nullifier, Value,
+    Address, Fq, Fr, Note, Nullifier, Value,
 };
 
 /// Transparent proof for spending existing notes.
@@ -47,7 +47,7 @@ impl SpendProof {
     pub fn verify(
         &self,
         anchor: tct::Root,
-        value_commitment: value::Commitment,
+        value_commitment: balance::Commitment,
         nullifier: Nullifier,
         rk: VerificationKey<SpendAuth>,
     ) -> anyhow::Result<()> {
@@ -140,7 +140,7 @@ impl OutputProof {
     /// * the ephemeral public key used to generate the new note.
     pub fn verify(
         &self,
-        value_commitment: value::Commitment,
+        value_commitment: balance::Commitment,
         note_commitment: note::Commitment,
         epk: ka::Public,
     ) -> anyhow::Result<()> {
@@ -466,8 +466,7 @@ impl SwapClaimProof {
             return Err(anyhow!("bad nullifier"));
         }
 
-        let (lambda_1, lambda_2) =
-            output_data.pro_rata_outputs((self.delta_1_i.into(), self.delta_2_i.into()));
+        let (lambda_1, lambda_2) = output_data.pro_rata_outputs((self.delta_1_i, self.delta_2_i));
 
         let value_1 = Value {
             amount: lambda_1.into(),
@@ -662,9 +661,9 @@ impl SwapProof {
     /// * the ephemeral public key used to generate the new swap NFT note.
     pub fn verify(
         &self,
-        _value_1_commitment: value::Commitment,
-        _value_2_commitment: value::Commitment,
-        value_fee_commitment: value::Commitment,
+        _value_1_commitment: balance::Commitment,
+        _value_2_commitment: balance::Commitment,
+        value_fee_commitment: balance::Commitment,
         note_commitment: note::Commitment,
         epk: ka::Public,
     ) -> anyhow::Result<(), Error> {

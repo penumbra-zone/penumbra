@@ -7,14 +7,14 @@ use std::{
     ops::{Add, AddAssign, Deref, Neg, Sub, SubAssign},
 };
 
-use crate::{
-    asset,
-    value::{self, VALUE_BLINDING_GENERATOR},
-    Value,
-};
+use crate::{asset, Value};
+
+pub mod commitment;
+pub use commitment::Commitment;
 
 mod imbalance;
 mod iter;
+use commitment::VALUE_BLINDING_GENERATOR;
 use decaf377::Fr;
 use imbalance::Imbalance;
 
@@ -69,7 +69,7 @@ impl Balance {
     ///
     /// This is like a vectorized [`Value::commit`].
     #[allow(non_snake_case)]
-    pub fn commit(&self, blinding_factor: Fr) -> value::Commitment {
+    pub fn commit(&self, blinding_factor: Fr) -> Commitment {
         // Accumulate all the elements for the values
         let mut commitment = decaf377::Element::default();
         for imbalance in self.iter() {
@@ -89,7 +89,7 @@ impl Balance {
 
         // Add the blinding factor only once, after the accumulation
         commitment += blinding_factor * VALUE_BLINDING_GENERATOR.deref();
-        value::Commitment(commitment)
+        Commitment(commitment)
     }
 }
 
@@ -247,7 +247,7 @@ impl From<Value> for Balance {
 
 #[cfg(test)]
 mod test {
-    use crate::{value, Fr, Zero, STAKING_TOKEN_ASSET_ID};
+    use crate::{Fr, Zero, STAKING_TOKEN_ASSET_ID};
     use once_cell::sync::Lazy;
     use proptest::prelude::*;
 
@@ -318,15 +318,15 @@ mod test {
     }
 
     impl Expression {
-        fn transparent_value_commitment(&self) -> value::Commitment {
+        fn transparent_balance_commitment(&self) -> Commitment {
             match self {
                 Expression::Value(value) => value.commit(Fr::zero()),
-                Expression::Neg(expr) => -expr.transparent_value_commitment(),
+                Expression::Neg(expr) => -expr.transparent_balance_commitment(),
                 Expression::Add(lhs, rhs) => {
-                    lhs.transparent_value_commitment() + rhs.transparent_value_commitment()
+                    lhs.transparent_balance_commitment() + rhs.transparent_balance_commitment()
                 }
                 Expression::Sub(lhs, rhs) => {
-                    lhs.transparent_value_commitment() - rhs.transparent_value_commitment()
+                    lhs.transparent_balance_commitment() - rhs.transparent_balance_commitment()
                 }
             }
         }
@@ -387,10 +387,10 @@ mod test {
             let balance = expr.balance();
 
             // Compute the transparent commitment for the expression
-            let commitment = expr.transparent_value_commitment();
+            let commitment = expr.transparent_balance_commitment();
 
             // Compute the transparent commitment for the balance
-            let mut balance_commitment = value::Commitment::default();
+            let mut balance_commitment = Commitment::default();
             for required in balance.required() {
                 balance_commitment = balance_commitment - required.commit(Fr::zero());
             }

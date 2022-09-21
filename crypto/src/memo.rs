@@ -6,11 +6,11 @@ use std::{
 use anyhow::anyhow;
 
 use crate::{
-    ka,
+    balance, ka,
     keys::OutgoingViewingKey,
     note,
     symmetric::{OvkWrappedKey, PayloadKey, PayloadKind, WrappedMemoKey},
-    value, Note,
+    Note,
 };
 
 pub const MEMO_CIPHERTEXT_LEN_BYTES: usize = 528;
@@ -83,7 +83,7 @@ impl MemoPlaintext {
         ciphertext: MemoCiphertext,
         wrapped_ovk: OvkWrappedKey,
         cm: note::Commitment,
-        cv: value::Commitment,
+        cv: balance::Commitment,
         ovk: &OutgoingViewingKey,
         epk: &ka::Public,
         wrapped_memo_key: &WrappedMemoKey,

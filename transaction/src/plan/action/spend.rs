@@ -70,7 +70,7 @@ impl SpendPlan {
     /// Construct the [`spend::Body`] described by this [`SpendPlan`].
     pub fn spend_body(&self, fvk: &FullViewingKey) -> spend::Body {
         spend::Body {
-            value_commitment: self.note.value().commit(self.value_blinding),
+            balance_commitment: self.note.value().commit(self.value_blinding),
             nullifier: fvk.derive_nullifier(self.position, &self.note.commit()),
             rk: fvk.spend_verification_key().randomize(&self.randomizer),
         }

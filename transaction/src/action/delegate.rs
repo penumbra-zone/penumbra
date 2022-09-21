@@ -1,5 +1,5 @@
 use penumbra_crypto::{
-    asset::Amount, value, DelegationToken, Fr, IdentityKey, Value, Zero, STAKING_TOKEN_ASSET_ID,
+    asset::Amount, balance, DelegationToken, Fr, IdentityKey, Value, Zero, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::{stake as pb, Protobuf};
 use serde::{Deserialize, Serialize};
@@ -26,7 +26,7 @@ pub struct Delegate {
 
 impl Delegate {
     /// Compute a commitment to the value contributed to a transaction by this delegation.
-    pub fn value_commitment(&self) -> value::Commitment {
+    pub fn value_commitment(&self) -> balance::Commitment {
         let stake = Value {
             amount: self.unbonded_amount,
             asset_id: STAKING_TOKEN_ASSET_ID.clone(),

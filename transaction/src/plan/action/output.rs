@@ -109,7 +109,7 @@ impl OutputPlan {
                 ephemeral_key,
                 encrypted_note,
             },
-            value_commitment,
+            balance_commitment: value_commitment,
             ovk_wrapped_key,
             wrapped_memo_key,
         }

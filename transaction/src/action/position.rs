@@ -1,11 +1,12 @@
 use serde::{Deserialize, Serialize};
 
 use penumbra_crypto::{
+    balance,
     dex::lp::{
         position::{self, Position},
         LpNft, Reserves,
     },
-    value, Fr, Value, Zero,
+    Fr, Value, Zero,
 };
 use penumbra_proto::{
     dex::{self as pb},
@@ -31,7 +32,7 @@ pub struct PositionOpen {
 
 impl PositionOpen {
     /// Compute a commitment to the value this action contributes to its transaction.
-    pub fn value_commitment(&self) -> value::Commitment {
+    pub fn value_commitment(&self) -> balance::Commitment {
         let opened_position_nft = Value {
             amount: 1u64.into(),
             asset_id: LpNft::new(self.position.id(), position::State::Opened).asset_id(),
@@ -73,7 +74,7 @@ pub struct PositionClose {
 
 impl PositionClose {
     /// Compute a commitment to the value this action contributes to its transaction.
-    pub fn value_commitment(&self) -> value::Commitment {
+    pub fn value_commitment(&self) -> balance::Commitment {
         let opened_position_nft = Value {
             amount: 1u64.into(),
             asset_id: LpNft::new(self.position_id, position::State::Opened).asset_id(),
@@ -102,12 +103,12 @@ pub struct PositionWithdraw {
     /// A transparent (zero blinding factor) commitment to the position's final reserves and fees.
     ///
     /// The chain will check this commitment by recomputing it with the on-chain state.
-    pub reserves_commitment: value::Commitment,
+    pub reserves_commitment: balance::Commitment,
 }
 
 impl PositionWithdraw {
     /// Compute a commitment to the value this action contributes to its transaction.
-    pub fn value_commitment(&self) -> value::Commitment {
+    pub fn value_commitment(&self) -> balance::Commitment {
         let closed_position_nft = Value {
             amount: 1u64.into(),
             asset_id: LpNft::new(self.position_id, position::State::Closed).asset_id(),
@@ -131,12 +132,12 @@ pub struct PositionRewardClaim {
     /// A transparent (zero blinding factor) commitment to the position's accumulated rewards.
     ///
     /// The chain will check this commitment by recomputing it with the on-chain state.
-    pub rewards_commitment: value::Commitment,
+    pub rewards_commitment: balance::Commitment,
 }
 
 impl PositionRewardClaim {
     /// Compute a commitment to the value this action contributes to its transaction.
-    pub fn value_commitment(&self) -> value::Commitment {
+    pub fn value_commitment(&self) -> balance::Commitment {
         let withdrawn_position_nft = Value {
             amount: 1u64.into(),
             asset_id: LpNft::new(self.position_id, position::State::Withdrawn).asset_id(),
