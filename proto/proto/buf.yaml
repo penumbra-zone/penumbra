@@ -1,0 +1,10 @@
+version: v1
+name: buf.build/penumbra-zone/penumbra
+deps:
+  - buf.build/penumbra-zone/ibc-go-vendor
+breaking:
+  use:
+    - FILE
+lint:
+  use:
+    - DEFAULT
