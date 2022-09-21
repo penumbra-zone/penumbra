@@ -320,24 +320,14 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                 self.balance -= value_fee;
             }
             SwapClaim(swap_claim) => {
-                // The Swap Claim releases output notes corresponding to
-                // the user's pro rata share of the batch swap output.
-                let (lambda_1, lambda_2) = swap_claim.output_data.pro_rata_outputs((
-                    swap_claim.swap_plaintext.delta_1_i,
-                    swap_claim.swap_plaintext.delta_2_i,
-                ));
-
-                let value_1 = Value {
-                    amount: lambda_1,
-                    asset_id: swap_claim.swap_plaintext.trading_pair.asset_1(),
-                };
-                let value_2 = Value {
-                    amount: lambda_2,
-                    asset_id: swap_claim.swap_plaintext.trading_pair.asset_2(),
+                // Only the pre-paid fee is contributed to the value balance
+                // The rest is handled internally to the SwapClaim action.
+                let value_fee = Value {
+                    amount: swap_claim.swap_plaintext.claim_fee.amount(),
+                    asset_id: swap_claim.swap_plaintext.claim_fee.asset_id(),
                 };
 
-                self.balance += value_1;
-                self.balance += value_2;
+                self.balance += value_fee;
             }
             IBCAction(_) => todo!(),
             ValidatorDefinition(_) | ProposalWithdraw(_) | DelegatorVote(_) | ValidatorVote(_) => {
