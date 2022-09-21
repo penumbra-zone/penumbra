@@ -85,9 +85,9 @@ human-readable prefixes:
 
 ### Short Address Form
 
-Addresses can be displayed in a short form. A short form of length $100$ bits (excludes the human-readable
+Addresses can be displayed in a short form. A short form of length $120$ bits (excludes the human-readable
 prefix) is recommended to mitigate address replacement attacks. The attacker's goal is to find a partially
-colliding prefix for any of $N$ addresses they have targeted. 
+colliding prefix for any of $2^N$ addresses they have targeted. 
 
 #### Untargeted attack
 
@@ -113,18 +113,16 @@ The short form is intended to mitigate this attack.
 
 #### Multi-target attack
 
-In a multi-target attack, the attacker's goal is to be able to generate one address that collides with the short form of 1 of $N$ different addresses.
+In a multi-target attack, the attacker's goal is to be able to generate one address that collides with the short form of 1 of $2^N$ different addresses.
 
 They are searching for a collision between the following two sets:
-* set of the short forms of the N targeted addresses. This set has $N$ elements (where each element has length $2^M$ bits).
+* set of the short forms of the targeted addresses, which has size $2^N$ elements, and each element has length $2^M$ bits.
 * set of the short forms of all addresses, which has size $2^M$ elements.
 
-A collision is found in $2^{M}/N$ steps.
-
-For example if the attacker has a target set of $N=2^{20} = 1,048,576$ addresses,
-she can find a collision after $2^{M/20}$ steps. Thus for a prefix length of $M$ bits,
-we get $M-20$ bits of security$. For a targeted security level of 100 bits,
-we need a prefix length of 100 bits, which corresponds to 20 characters of the Bech32m
+If the attacker has a target set of $2^{N}$ addresses, she can find a collision
+after $2^{M - N}$ steps. Thus for a prefix length of $M$ bits, we get $M-N$ bits
+of security$. For a targeted security level of 80 bits and a target set of size $2^{40}$,
+we need a prefix length of 120 bits, which corresponds to 24 characters of the Bech32m
 address, excluding the human-readable prefix and separator.
 
 The short form is intended to mitigate this attack.
