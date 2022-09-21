@@ -17,7 +17,7 @@ use sha2::Digest;
 use sqlx::{migrate::MigrateDatabase, query, Pool, Sqlite};
 use std::{num::NonZeroU64, sync::Arc};
 use tct::Commitment;
-use tokio::sync::broadcast;
+use tokio::sync::broadcast::{self, error::RecvError};
 
 use crate::{sync::FilteredBlock, QuarantinedNoteRecord, SpendableNoteRecord};
 
@@ -204,12 +204,29 @@ impl Storage {
 
             // Otherwise, wait for newly detected notes and check whether they're
             // the requested one.
-            loop {
-                let record = rx.recv().await.context("Change subscriber failed")?;
 
-                if record.note_commitment == note_commitment {
-                    return Ok(record);
-                }
+            loop {
+                match rx.recv().await {
+                    Ok(record) => {
+                        if record.note_commitment == note_commitment {
+                            return Ok(record);
+                        }
+                    }
+
+                    Err(e) => match e {
+                        RecvError::Closed => {
+                            return Err(anyhow!(
+                            "Receiver error during note detection: closed (no more active senders)"
+                        ))
+                        }
+                        RecvError::Lagged(count) => {
+                            return Err(anyhow!(
+                                "Receiver error during note detection: lagged (by {:?} messages)",
+                                count
+                            ))
+                        }
+                    },
+                };
             }
         }
     }
