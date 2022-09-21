@@ -43,7 +43,7 @@ impl SpendPlan {
         let dummy_note = Note::from_parts(
             dummy_address,
             Value {
-                amount: 0,
+                amount: 0u64.into(),
                 asset_id: *STAKING_TOKEN_ASSET_ID,
             },
             note_blinding,

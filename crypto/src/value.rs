@@ -18,7 +18,7 @@ use crate::{asset, Fq, Fr};
 #[derive(Deserialize, Serialize, Copy, Clone, Debug, PartialEq, Eq)]
 #[serde(try_from = "pb::Value", into = "pb::Value")]
 pub struct Value {
-    pub amount: u64,
+    pub amount: asset::Amount,
     // The asset ID. 256 bits.
     pub asset_id: asset::Id,
 }
@@ -26,7 +26,7 @@ pub struct Value {
 impl From<Value> for pb::Value {
     fn from(v: Value) -> Self {
         pb::Value {
-            amount: v.amount,
+            amount: Some(v.amount.into()),
             asset_id: Some(v.asset_id.into()),
         }
     }
@@ -36,7 +36,12 @@ impl TryFrom<pb::Value> for Value {
     type Error = anyhow::Error;
     fn try_from(value: pb::Value) -> Result<Self, Self::Error> {
         Ok(Value {
-            amount: value.amount,
+            amount: value
+                .amount
+                .ok_or_else(|| {
+                    anyhow::anyhow!("could not deserialize Value: missing amount field")
+                })?
+                .try_into()?,
             asset_id: value
                 .asset_id
                 .ok_or_else(|| anyhow::anyhow!("missing value commitment"))?
@@ -109,7 +114,10 @@ impl FromStr for Value {
             let asset_id = asset::Id::from_str(asset_id_str).expect("able to parse asset ID");
             let amount = numeric_str.parse::<u64>().unwrap();
 
-            Ok(Value { amount, asset_id })
+            Ok(Value {
+                amount: amount.into(),
+                asset_id,
+            })
         } else if let Some(captures) = denom_re.captures(s) {
             let numeric_str = captures.get(1).expect("matched regex").as_str();
             let denom_str = captures.get(2).expect("matched regex").as_str();
@@ -224,27 +232,27 @@ mod tests {
 
         // some values of different types
         let v1 = Value {
-            amount: 10,
+            amount: 10u64.into(),
             asset_id: pen_id,
         };
         let v2 = Value {
-            amount: 8,
+            amount: 8u64.into(),
             asset_id: pen_id,
         };
         let v3 = Value {
-            amount: 2,
+            amount: 2u64.into(),
             asset_id: pen_id,
         };
         let v4 = Value {
-            amount: 13,
+            amount: 13u64.into(),
             asset_id: atom_id,
         };
         let v5 = Value {
-            amount: 17,
+            amount: 17u64.into(),
             asset_id: atom_id,
         };
         let v6 = Value {
-            amount: 30,
+            amount: 30u64.into(),
             asset_id: atom_id,
         };
 
@@ -282,18 +290,18 @@ mod tests {
             .collect::<asset::Cache>();
 
         let v1: Value = "1823.298penumbra".parse().unwrap();
-        assert_eq!(v1.amount, 1823298000);
+        assert_eq!(v1.amount, 1823298000u64.into());
         assert_eq!(v1.asset_id, upenumbra_base_denom.id());
         // Check that we can also parse the output of try_format
         assert_eq!(v1, v1.format(&cache).parse().unwrap());
 
         let v2: Value = "3930upenumbra".parse().unwrap();
-        assert_eq!(v2.amount, 3930);
+        assert_eq!(v2.amount, 3930u64.into());
         assert_eq!(v2.asset_id, upenumbra_base_denom.id());
         assert_eq!(v2, v2.format(&cache).parse().unwrap());
 
         let v1: Value = "1nala".parse().unwrap();
-        assert_eq!(v1.amount, 1);
+        assert_eq!(v1.amount, 1u64.into());
         assert_eq!(v1.asset_id, nala_base_denom.id());
         assert_eq!(v1, v1.format(&cache).parse().unwrap());
 
@@ -304,13 +312,13 @@ mod tests {
                 asset::Id::from(gm_base_denom),
                 asset::Id::from(upenumbra_base_denom),
             ).unwrap(),
-            1,
-            0,
+            1u64.into(),
+            0u64.into(),
             Fee::default(),
             Address::from_str("penumbrav2t13vh0fkf3qkqjacpm59g23ufea9n5us45e4p5h6hty8vg73r2t8g5l3kynad87u0n9eragf3hhkgkhqe5vhngq2cw493k48c9qg9ms4epllcmndd6ly4v4dw2jcnxaxzjqnlvnw").unwrap()
         ).unwrap();
         let v3: Value = Value {
-            amount: 1,
+            amount: 1u64.into(),
             asset_id: sp.asset_id(),
         };
         let asset_id = v3.format(&cache);
@@ -340,13 +348,13 @@ mod tests {
                 asset::Id::from(gm_base_denom),
                 asset::Id::from(upenumbra_base_denom),
             ).unwrap(),
-            1,
-            0,
+            1u64.into(),
+            0u64.into(),
             Fee::default(),
             Address::from_str("penumbrav2t13vh0fkf3qkqjacpm59g23ufea9n5us45e4p5h6hty8vg73r2t8g5l3kynad87u0n9eragf3hhkgkhqe5vhngq2cw493k48c9qg9ms4epllcmndd6ly4v4dw2jcnxaxzjqnlvnw").unwrap()
         ).unwrap();
         let v4: Value = Value {
-            amount: 1,
+            amount: 1u64.into(),
             asset_id: sp.asset_id(),
         };
 

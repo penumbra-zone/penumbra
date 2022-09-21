@@ -7,6 +7,7 @@ use anyhow::{anyhow, Result};
 
 use penumbra_component::stake::{rate::RateData, validator};
 use penumbra_crypto::{
+    asset::Amount,
     asset::Denom,
     dex::{swap::SwapPlaintext, BatchSwapOutputData, TradingPair},
     keys::AddressIndex,
@@ -149,13 +150,13 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         //
         // Otherwise, `delta_1` is 0, and `delta_2` is the input amount.
         let (delta_1, delta_2) = if trading_pair.asset_1() == input_value.asset_id {
-            (input_value.amount, 0)
+            (input_value.amount, 0u64.into())
         } else {
-            (0, input_value.amount)
+            (0u64.into(), input_value.amount)
         };
 
         // If there is no input, then there is no swap.
-        if delta_1 == 0 && delta_2 == 0 {
+        if delta_1 == Amount::zero() && delta_2 == Amount::zero() {
             return Err(anyhow!("No input value for swap"));
         }
 
@@ -390,7 +391,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                     account_id: Some(fvk.hash().into()),
                     asset_id: Some(asset_id.into()),
                     address_index: source.map(Into::into),
-                    amount_to_spend: amount,
+                    amount_to_spend: amount.into(),
                     include_spent: false,
                 })
                 .await?,

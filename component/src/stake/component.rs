@@ -358,12 +358,12 @@ impl Staking {
             let total_delegations = delegations_by_validator
                 .get(&validator.identity_key)
                 .into_iter()
-                .flat_map(|ds| ds.iter().map(|d| d.delegation_amount))
+                .flat_map(|ds| ds.iter().map(|d| u64::from(d.delegation_amount)))
                 .sum::<u64>();
             let total_undelegations = undelegations_by_validator
                 .get(&validator.identity_key)
                 .into_iter()
-                .flat_map(|us| us.iter().map(|u| u.delegation_amount))
+                .flat_map(|us| us.iter().map(|u| u64::from(u.delegation_amount)))
                 .sum::<u64>();
             let delegation_delta = (total_delegations as i64) - (total_undelegations as i64);
 
@@ -427,7 +427,7 @@ impl Staking {
                     // A note needs to be minted by the ShieldedPool component. Add it to the
                     // JMT here so it can be processed during the ShieldedPool's end_block phase.
                     commission_amounts.push(CommissionAmount {
-                        amount: commission_reward_amount,
+                        amount: commission_reward_amount.into(),
                         destination: stream.address,
                     })
                 }
@@ -862,7 +862,8 @@ impl Component for Staking {
         // to compute the delegation tokens for each validator.
         let mut genesis_allocations = HashMap::new();
         for allocation in &app_state.allocations {
-            *genesis_allocations.entry(&allocation.denom).or_insert(0) += allocation.amount;
+            *genesis_allocations.entry(&allocation.denom).or_insert(0) +=
+                u64::from(allocation.amount);
         }
 
         // Add initial validators to the JMT
@@ -1031,9 +1032,10 @@ impl Component for Staking {
             //
             // should give approximately the same results, they may not give
             // exactly the same results.
-            let expected_delegation_amount = next_rate_data.delegation_amount(d.unbonded_amount);
+            let expected_delegation_amount =
+                next_rate_data.delegation_amount(d.unbonded_amount.into());
 
-            if expected_delegation_amount == d.delegation_amount {
+            if expected_delegation_amount == u64::from(d.delegation_amount) {
                 // The delegation amount is added to the delegation token supply.
                 *delegation_changes
                     .entry(d.validator_identity.clone())
@@ -1080,9 +1082,9 @@ impl Component for Staking {
             //
             // should give approximately the same results, they may not give
             // exactly the same results.
-            let expected_unbonded_amount = rate_data.unbonded_amount(u.delegation_amount);
+            let expected_unbonded_amount = rate_data.unbonded_amount(u.delegation_amount.into());
 
-            if expected_unbonded_amount == u.unbonded_amount {
+            if expected_unbonded_amount == u64::from(u.unbonded_amount) {
                 // TODO: in order to have exact tracking of the token supply, we probably
                 // need to change this to record the changes to the unbonded stake and
                 // the delegation token separately

@@ -58,7 +58,7 @@ impl SwapPlan {
         let swap_nft_asset_id = self.swap_plaintext.asset_id();
 
         let swap_nft_value = Value {
-            amount: 1,
+            amount: 1u64.into(),
             asset_id: swap_nft_asset_id,
         };
 

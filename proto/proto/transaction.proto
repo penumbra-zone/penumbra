@@ -123,7 +123,7 @@ message ProposalSubmit {
   // The ephemeral transparent refund address for the refund of the proposal deposit.
   crypto.Address deposit_refund_address = 2;
   // The amount of the proposal deposit.
-  uint64 deposit_amount = 3;
+  crypto.Amount deposit_amount = 3;
   // The randomized proposer key (a randomization of the proposer's spend verification key).
   bytes rk = 4;
 }

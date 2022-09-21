@@ -70,8 +70,11 @@ impl BalanceCmd {
                     .flat_map(|(index, notes_by_asset)| {
                         // Sum the notes for each asset:
                         notes_by_asset.iter().map(|(asset, notes)| {
-                            let sum = notes.iter().map(|record| record.note.amount()).sum();
-                            (*index, asset.value(sum), None)
+                            let sum: u64 = notes
+                                .iter()
+                                .map(|record| u64::from(record.note.amount()))
+                                .sum();
+                            (*index, asset.value(sum.into()), None)
                         })
                     })
                     .chain(
@@ -85,11 +88,11 @@ impl BalanceCmd {
                                         let unbonding_epoch = record.unbonding_epoch;
                                         *sums_by_unbonding_epoch
                                             .entry(unbonding_epoch)
-                                            .or_default() += record.note.amount();
+                                            .or_default() += u64::from(record.note.amount());
                                     }
                                     sums_by_unbonding_epoch.into_iter().map(
                                         |(unbonding_epoch, sum)| {
-                                            (*index, asset.value(sum), Some(unbonding_epoch))
+                                            (*index, asset.value(sum.into()), Some(unbonding_epoch))
                                         },
                                     )
                                 })
@@ -147,11 +150,13 @@ impl BalanceCmd {
                     .iter()
                     .map(|(asset, notes)| {
                         // Sum the notes for each index:
-                        let sum = notes
+                        let sum: u64 = notes
                             .values()
-                            .flat_map(|records| records.iter().map(|record| record.note.amount()))
+                            .flat_map(|records| {
+                                records.iter().map(|record| u64::from(record.note.amount()))
+                            })
                             .sum();
-                        (asset.value(sum), None)
+                        (asset.value(sum.into()), None)
                     })
                     .chain(quarantined_notes.iter().flat_map(|(asset, records)| {
                         // Sum the notes for each index, separating them by unbonding epoch:
@@ -160,12 +165,14 @@ impl BalanceCmd {
                             for record in records {
                                 let unbonding_epoch = record.unbonding_epoch;
                                 *sums_by_unbonding_epoch.entry(unbonding_epoch).or_default() +=
-                                    record.note.amount();
+                                    u64::from(record.note.amount());
                             }
                         }
                         sums_by_unbonding_epoch
                             .into_iter()
-                            .map(|(unbonding_epoch, sum)| (asset.value(sum), Some(unbonding_epoch)))
+                            .map(|(unbonding_epoch, sum)| {
+                                (asset.value(sum.into()), Some(unbonding_epoch))
+                            })
                     }))
                     .collect()
             };

@@ -6,7 +6,7 @@ package penumbra.crypto;
 // Specifies fees paid by a transaction.
 message Fee {
     // The amount of the token used to pay fees.
-    uint64 amount = 1;
+    crypto.Amount amount = 1;
     // If present, the asset ID of the token used to pay fees.
     // If absent, specifies the staking token implicitly.
     crypto.AssetId asset_id = 2;
@@ -52,12 +52,16 @@ message AssetId {
     bytes inner = 1;
 }
 
+message Amount {
+    bytes inner = 1;
+}
+
 message Denom {
     string denom = 1;
 }
 
 message Value {
-    uint64 amount = 1;
+    Amount amount = 1;
     AssetId asset_id = 2;
 }
 

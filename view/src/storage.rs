@@ -5,7 +5,7 @@ use parking_lot::Mutex;
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::{
     asset::{self, Id},
-    Asset, FieldExt, FullViewingKey, Nullifier,
+    Amount, Asset, FieldExt, FullViewingKey, Nullifier,
 };
 use penumbra_proto::{
     client::oblivious::{oblivious_query_client::ObliviousQueryClient, ChainParamsRequest},
@@ -491,7 +491,7 @@ impl Storage {
         // uint64 amount_to_spend = 5;
         //TODO: figure out a clever way to only return notes up to the sum using SQL
         let amount_cutoff = (amount_to_spend != 0) && !(include_spent || asset_id.is_none());
-        let mut amount_total = 0;
+        let mut amount_total = Amount::zero();
 
         let mut output: Vec<SpendableNoteRecord> = Vec::new();
 
@@ -502,14 +502,14 @@ impl Storage {
             // and check if we should break out of the loop.
             if amount_cutoff {
                 // We know all the notes are of the same type, so adding raw quantities makes sense.
-                amount_total += amount;
-                if amount_total >= amount_to_spend {
+                amount_total = amount_total + amount;
+                if amount_total >= amount_to_spend.into() {
                     break;
                 }
             }
         }
 
-        if amount_total < amount_to_spend {
+        if amount_total < amount_to_spend.into() {
             return Err(anyhow!(
                 "requested amount of {} exceeds total of {}",
                 amount_to_spend,
@@ -668,7 +668,7 @@ impl Storage {
                 .to_vec();
             let height_created = filtered_block.height as i64;
             let address = quarantined_note_record.note.address().to_vec();
-            let amount = quarantined_note_record.note.amount() as i64;
+            let amount = u64::from(quarantined_note_record.note.amount()) as i64;
             let asset_id = quarantined_note_record.note.asset_id().to_bytes().to_vec();
             let blinding_factor = quarantined_note_record
                 .note
@@ -731,7 +731,7 @@ impl Storage {
             let note_commitment = note_record.note_commitment.0.to_bytes().to_vec();
             let height_created = filtered_block.height as i64;
             let address = note_record.note.address().to_vec();
-            let amount = note_record.note.amount() as i64;
+            let amount = u64::from(note_record.note.amount()) as i64;
             let asset_id = note_record.note.asset_id().to_bytes().to_vec();
             let blinding_factor = note_record.note.note_blinding().to_bytes().to_vec();
             let address_index = note_record.address_index.to_bytes().to_vec();

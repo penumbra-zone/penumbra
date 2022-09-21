@@ -46,7 +46,7 @@ impl StakedCmd {
         let notes = view_client
             .unspent_notes_by_asset_and_address(account_id)
             .await?;
-        let mut total = 0;
+        let mut total = 0u64;
 
         let mut table = Table::new();
         table.load_preset(presets::NOTHING);
@@ -74,13 +74,17 @@ impl StakedCmd {
             let delegation = Value {
                 amount: notes_by_address
                     .values()
-                    .flat_map(|notes| notes.iter().map(|n| n.note.amount()))
-                    .sum::<u64>(),
+                    .flat_map(|notes| notes.iter().map(|n| u64::from(n.note.amount())))
+                    .sum::<u64>()
+                    .into(),
                 asset_id: dt.id(),
             };
 
             let unbonded = Value {
-                amount: info.rate_data.unbonded_amount(delegation.amount),
+                amount: info
+                    .rate_data
+                    .unbonded_amount(delegation.amount.into())
+                    .into(),
                 asset_id: *STAKING_TOKEN_ASSET_ID,
             };
 
@@ -93,7 +97,7 @@ impl StakedCmd {
                 delegation.format(&asset_cache),
             ]);
 
-            total += unbonded.amount;
+            total += u64::from(unbonded.amount);
         }
 
         let unbonded = Value {
@@ -101,12 +105,13 @@ impl StakedCmd {
                 .get(&*STAKING_TOKEN_ASSET_ID)
                 .unwrap_or(&BTreeMap::default())
                 .values()
-                .flat_map(|notes| notes.iter().map(|n| n.note.amount()))
-                .sum::<u64>(),
+                .flat_map(|notes| notes.iter().map(|n| u64::from(n.note.amount())))
+                .sum::<u64>()
+                .into(),
             asset_id: *STAKING_TOKEN_ASSET_ID,
         };
 
-        total += unbonded.amount;
+        total += u64::from(unbonded.amount);
 
         table.add_row(vec![
             "Unbonded Stake".to_string(),
@@ -116,7 +121,7 @@ impl StakedCmd {
         ]);
 
         let total = Value {
-            amount: total,
+            amount: total.into(),
             asset_id: *STAKING_TOKEN_ASSET_ID,
         };
 

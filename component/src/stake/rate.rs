@@ -141,9 +141,9 @@ impl RateData {
     /// delegates `unbonded_amount` of the staking token.
     pub fn build_delegate(&self, unbonded_amount: u64) -> Delegate {
         Delegate {
-            delegation_amount: self.delegation_amount(unbonded_amount),
+            delegation_amount: self.delegation_amount(unbonded_amount).into(),
             epoch_index: self.epoch_index,
-            unbonded_amount,
+            unbonded_amount: unbonded_amount.into(),
             validator_identity: self.identity_key.clone(),
         }
     }
@@ -153,8 +153,8 @@ impl RateData {
     pub fn build_undelegate(&self, delegation_amount: u64) -> Undelegate {
         Undelegate {
             epoch_index: self.epoch_index,
-            delegation_amount,
-            unbonded_amount: self.unbonded_amount(delegation_amount),
+            delegation_amount: delegation_amount.into(),
+            unbonded_amount: self.unbonded_amount(delegation_amount).into(),
             validator_identity: self.identity_key.clone(),
         }
     }

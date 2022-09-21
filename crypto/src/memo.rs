@@ -193,7 +193,7 @@ mod tests {
         let esk = ka::Secret::new(&mut rng);
 
         let value = Value {
-            amount: 10,
+            amount: 10u64.into(),
             asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
         };
         let note = Note::generate(&mut rng, &dest, value);

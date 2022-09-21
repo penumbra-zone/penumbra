@@ -5,7 +5,7 @@ use decaf377::FieldExt;
 use penumbra_proto::{crypto as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use crate::{ka, note, FullViewingKey, Note};
+use crate::{asset::Amount, ka, note, FullViewingKey, Note};
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::NotePayload", into = "pb::NotePayload")]
@@ -29,7 +29,7 @@ impl NotePayload {
 
         // Verification logic (if any fails, return None & log error)
         // Reject notes with zero amount
-        if note.amount() == 0 {
+        if note.amount() == Amount::zero() {
             // This is only debug-level because it can happen honestly (e.g., swap claims, dummy spends).
             tracing::debug!("ignoring note recording zero assets");
             return None;

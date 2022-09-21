@@ -1,12 +1,3 @@
-use std::{
-    env::current_dir,
-    fmt,
-    fs::{self, File},
-    io::{Read, Write},
-    path::PathBuf,
-    str::FromStr,
-};
-
 use anyhow::{Context, Result};
 use directories::UserDirs;
 use penumbra_chain::genesis::{self, AppState};
@@ -20,6 +11,14 @@ use rand::Rng;
 use rand_core::OsRng;
 use regex::{Captures, Regex};
 use serde::{de, Deserialize};
+use std::{
+    env::current_dir,
+    fmt,
+    fs::{self, File},
+    io::{Read, Write},
+    path::PathBuf,
+    str::FromStr,
+};
 use tendermint::{node::Id, Genesis, PrivateKey};
 use tendermint_config::{NodeKey, PrivValidatorKey};
 
@@ -41,38 +40,6 @@ pub fn parse_allocations(input: impl Read) -> Result<Vec<genesis::Allocation>> {
 
 pub fn parse_validators(input: impl Read) -> Result<Vec<TestnetValidator>> {
     Ok(serde_json::from_reader(input)?)
-}
-
-fn string_u64<'de, D>(deserializer: D) -> Result<u64, D::Error>
-where
-    D: de::Deserializer<'de>,
-{
-    struct U64StringVisitor;
-
-    impl<'de> de::Visitor<'de> for U64StringVisitor {
-        type Value = u64;
-
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("a string containing a u64 with optional underscores")
-        }
-
-        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-        where
-            E: de::Error,
-        {
-            let r = v.replace('_', "");
-            r.parse::<u64>().map_err(E::custom)
-        }
-
-        fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
-        where
-            E: de::Error,
-        {
-            Ok(v)
-        }
-    }
-
-    deserializer.deserialize_any(U64StringVisitor)
 }
 
 /// Hardcoded Tendermint config template. Should produce tendermint config similar to
@@ -144,6 +111,38 @@ impl ValidatorKeys {
     }
 }
 
+fn string_u64<'de, D>(deserializer: D) -> Result<u64, D::Error>
+where
+    D: de::Deserializer<'de>,
+{
+    struct U64StringVisitor;
+
+    impl<'de> de::Visitor<'de> for U64StringVisitor {
+        type Value = u64;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a string containing a u64 with optional underscores")
+        }
+
+        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            let r = v.replace('_', "");
+            r.parse::<u64>().map_err(E::custom)
+        }
+
+        fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(v)
+        }
+    }
+
+    deserializer.deserialize_any(U64StringVisitor)
+}
+
 /// Represents initial allocations to the testnet.
 #[derive(Debug, Deserialize)]
 pub struct TestnetAllocation {
@@ -175,7 +174,7 @@ impl TryFrom<TestnetAllocation> for genesis::Allocation {
 
     fn try_from(a: TestnetAllocation) -> anyhow::Result<genesis::Allocation> {
         Ok(genesis::Allocation {
-            amount: a.amount,
+            amount: a.amount.into(),
             denom: a.denom.clone(),
             address: Address::from_str(&a.address)
                 .context("invalid address format in genesis allocations")?,

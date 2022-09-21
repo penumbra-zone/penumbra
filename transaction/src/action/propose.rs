@@ -4,7 +4,7 @@ use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, str::FromStr};
 
-use penumbra_crypto::{value, Address, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_crypto::{asset::Amount, value, Address, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::{transaction as pb, Protobuf};
 
 use crate::{plan::TransactionPlan, AuthHash};
@@ -313,7 +313,7 @@ pub struct ProposalSubmit {
     /// The refund address for the proposal's proposer.
     pub deposit_refund_address: Address,
     /// The amount deposited for the proposal.
-    pub deposit_amount: u64,
+    pub deposit_amount: Amount,
     /// The verification key to be used when withdrawing the proposal.
     pub withdraw_proposal_key: VerificationKey<SpendAuth>,
 }
@@ -339,7 +339,7 @@ impl From<ProposalSubmit> for pb::ProposalSubmit {
         pb::ProposalSubmit {
             proposal: Some(value.proposal.into()),
             deposit_refund_address: Some(value.deposit_refund_address.into()),
-            deposit_amount: value.deposit_amount,
+            deposit_amount: Some(value.deposit_amount.into()),
             rk: value.withdraw_proposal_key.to_bytes().to_vec().into(),
         }
     }
@@ -358,7 +358,10 @@ impl TryFrom<pb::ProposalSubmit> for ProposalSubmit {
                 .deposit_refund_address
                 .ok_or_else(|| anyhow::anyhow!("missing deposit refund address in `Propose`"))?
                 .try_into()?,
-            deposit_amount: msg.deposit_amount,
+            deposit_amount: msg
+                .deposit_amount
+                .ok_or_else(|| anyhow::anyhow!("missing deposit amount in `Propose`"))?
+                .try_into()?,
             withdraw_proposal_key: <[u8; 32]>::try_from(msg.rk.to_vec())
                 .map_err(|_| anyhow::anyhow!("invalid length for withdraw proposal key"))?
                 .try_into()?,

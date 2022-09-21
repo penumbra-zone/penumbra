@@ -101,7 +101,7 @@ impl Denom {
     }
 
     /// Create a value of this denomination.
-    pub fn value(&self, amount: u64) -> Value {
+    pub fn value(&self, amount: asset::Amount) -> Value {
         Value {
             amount,
             asset_id: self.id(),
@@ -143,9 +143,9 @@ impl Denom {
     ///
     /// This is defined as the largest unit smaller than the given value (so it
     /// has no leading zeros when formatted).
-    pub fn best_unit_for(&self, amount: u64) -> Unit {
+    pub fn best_unit_for(&self, amount: asset::Amount) -> Unit {
         for (unit_index, unit) in self.inner.units.iter().enumerate() {
-            let unit_amount = 10u64.pow(unit.exponent as u32);
+            let unit_amount = asset::Amount::from(10u64.pow(unit.exponent as u32));
             if amount >= unit_amount {
                 return Unit {
                     unit_index,
@@ -213,25 +213,30 @@ impl Unit {
         self.inner.id.clone()
     }
 
-    pub fn format_value(&self, value: u64) -> String {
-        let power_of_ten = 10u64.pow(self.exponent().into());
+    pub fn format_value(&self, value: asset::Amount) -> String {
+        let power_of_ten = asset::Amount::from(10u64.pow(self.exponent().into()));
         let v1 = value / power_of_ten;
         let v2 = value % power_of_ten;
 
         // Pad `v2` to exponent digits.
-        let v2_str = format!("{:0width$}", v2, width = self.exponent() as usize);
+        let v2_str = format!(
+            "{:0width$}",
+            u64::from(v2),
+            width = self.exponent() as usize
+        );
+
         // For `v2`, there may be trailing zeros that should be stripped
         // since they are after the decimal point.
         let v2_stripped = v2_str.trim_end_matches('0');
 
-        if v2 != 0 {
+        if v2 != asset::Amount::zero() {
             format!("{}.{}", v1, v2_stripped)
         } else {
             format!("{}", v1)
         }
     }
 
-    pub fn parse_value(&self, value: &str) -> Result<u64, anyhow::Error> {
+    pub fn parse_value(&self, value: &str) -> Result<asset::Amount, anyhow::Error> {
         let split: Vec<&str> = value.split('.').collect();
         if split.len() > 2 {
             Err(anyhow::anyhow!("expected only one decimal point"))
@@ -248,7 +253,7 @@ impl Unit {
 
             if right.len() == (self.exponent() + 1) as usize && v2 == 0 {
                 // This stanza means that the value is the base unit. Simply return v1.
-                return Ok(v1);
+                return Ok(v1.into());
             } else if right.len() > self.exponent().into() {
                 return Err(anyhow::anyhow!("cannot represent this value"));
             }
@@ -261,7 +266,7 @@ impl Unit {
                 .and_then(|x| x.checked_add(v2));
 
             if let Some(value) = v {
-                Ok(value)
+                Ok(value.into())
             } else {
                 Err(anyhow::anyhow!("overflow!"))
             }

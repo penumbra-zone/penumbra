@@ -63,7 +63,7 @@ impl Allocation {
         Note::from_parts(
             self.address,
             Value {
-                amount: self.amount,
+                amount: self.amount.into(),
                 asset_id: asset::REGISTRY
                     .parse_denom(&self.denom)
                     .ok_or_else(|| anyhow::anyhow!("invalid denomination"))?

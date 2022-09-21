@@ -37,7 +37,7 @@ message ChainParameters {
   // The number of blocks during which a proposal is voted on.
   uint64 proposal_voting_blocks = 20;
   // The deposit required to create a proposal.
-  uint64 proposal_deposit_amount = 21;
+  crypto.Amount proposal_deposit_amount = 21;
   // The quorum required for a proposal to be considered valid, as a fraction of the total stake
   // weight of the network.
   Ratio proposal_valid_quorum = 22;

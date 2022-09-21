@@ -33,3 +33,11 @@ These datagrams are implemented as protocol buffers, with the enclosing
 `IBCAction` type using profobuf's `OneOf` directive to encapsulate all possible
 IBC datagram types.
 
+## Handling Bridged Assets 
+
+Penumbra's native state model uses notes, which contain an amount of a
+particular asset. Amounts in Penumbra are 128-bit unsigned integers, in order
+to support assets which have potentially large base denoms (such as Ethereum).
+When receiving an IBC transfer, if the amount being transferred is greater than
+`u128`, we return an error. 
+

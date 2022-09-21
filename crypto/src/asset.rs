@@ -3,11 +3,13 @@
 use penumbra_proto::{crypto as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
+mod amount;
 mod cache;
 mod denom;
 mod id;
 mod registry;
 
+pub use amount::Amount;
 pub use cache::Cache;
 pub use denom::{Denom, Unit};
 pub use id::Id;
@@ -89,28 +91,55 @@ mod tests {
     fn test_displaydenom_format_value() {
         // with exponent 6, 1782000 formats to 1.782
         let penumbra_display_denom = REGISTRY.parse_unit("penumbra");
-        assert_eq!(penumbra_display_denom.format_value(1782000), "1.782");
-        assert_eq!(penumbra_display_denom.format_value(6700001), "6.700001");
-        assert_eq!(penumbra_display_denom.format_value(1), "0.000001");
+        assert_eq!(
+            penumbra_display_denom.format_value(1782000u64.into()),
+            "1.782"
+        );
+        assert_eq!(
+            penumbra_display_denom.format_value(6700001u64.into()),
+            "6.700001"
+        );
+        assert_eq!(penumbra_display_denom.format_value(1u64.into()), "0.000001");
 
         // with exponent 3, 1782000 formats to 1782
         let mpenumbra_display_denom = REGISTRY.parse_unit("mpenumbra");
-        assert_eq!(mpenumbra_display_denom.format_value(1782000), "1782");
+        assert_eq!(
+            mpenumbra_display_denom.format_value(1782000u64.into()),
+            "1782"
+        );
 
         // with exponent 0, 1782000 formats to 1782000
         let upenumbra_display_denom = REGISTRY.parse_unit("upenumbra");
-        assert_eq!(upenumbra_display_denom.format_value(1782000), "1782000");
+        assert_eq!(
+            upenumbra_display_denom.format_value(1782000u64.into()),
+            "1782000"
+        );
     }
 
     #[test]
     fn best_unit_for() {
         let base_denom = REGISTRY.parse_denom("upenumbra").unwrap();
 
-        assert_eq!(base_denom.best_unit_for(0).to_string(), "upenumbra");
-        assert_eq!(base_denom.best_unit_for(999).to_string(), "upenumbra");
-        assert_eq!(base_denom.best_unit_for(1_000).to_string(), "mpenumbra");
-        assert_eq!(base_denom.best_unit_for(999_999).to_string(), "mpenumbra");
-        assert_eq!(base_denom.best_unit_for(1_000_000).to_string(), "penumbra");
+        assert_eq!(
+            base_denom.best_unit_for(0u64.into()).to_string(),
+            "upenumbra"
+        );
+        assert_eq!(
+            base_denom.best_unit_for(999u64.into()).to_string(),
+            "upenumbra"
+        );
+        assert_eq!(
+            base_denom.best_unit_for(1_000u64.into()).to_string(),
+            "mpenumbra"
+        );
+        assert_eq!(
+            base_denom.best_unit_for(999_999u64.into()).to_string(),
+            "mpenumbra"
+        );
+        assert_eq!(
+            base_denom.best_unit_for(1_000_000u64.into()).to_string(),
+            "penumbra"
+        );
     }
 
     #[test]
@@ -120,24 +149,24 @@ mod tests {
 
         assert_eq!(
             penumbra_display_denom.parse_value("1.782").unwrap(),
-            1782000
+            1782000u64.into()
         );
         assert_eq!(
             penumbra_display_denom.parse_value("6.700001").unwrap(),
-            6700001
+            6700001u64.into()
         );
 
         let mpenumbra_display_denom = REGISTRY.parse_unit("mpenumbra");
         assert_eq!(
             mpenumbra_display_denom.parse_value("1782").unwrap(),
-            1782000
+            1782000u64.into()
         );
         assert!(mpenumbra_display_denom.parse_value("1782.0001").is_err());
 
         let upenumbra_display_denom = REGISTRY.parse_unit("upenumbra");
         assert_eq!(
             upenumbra_display_denom.parse_value("1782000").unwrap(),
-            1782000
+            1782000u64.into()
         );
     }
 
@@ -157,12 +186,12 @@ mod tests {
             let penumbra_display_denom = REGISTRY.parse_unit("penumbra");
             let formatted = penumbra_display_denom.format_value(v.into());
             let parsed = penumbra_display_denom.parse_value(&formatted);
-            assert_eq!(v, parsed.unwrap() as u32);
+            assert_eq!(v, u32::from(parsed.unwrap()));
 
             let mpenumbra_display_denom = REGISTRY.parse_unit("mpenumbra");
             let formatted = mpenumbra_display_denom.format_value(v.into());
             let parsed = mpenumbra_display_denom.parse_value(&formatted);
-            assert_eq!(v, parsed.unwrap() as u32);
+            assert_eq!(v, u32::from(parsed.unwrap()));
         }
     }
 }

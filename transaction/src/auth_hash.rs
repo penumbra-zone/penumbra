@@ -559,7 +559,7 @@ mod tests {
             &mut OsRng,
             &addr,
             penumbra_crypto::Value {
-                amount: 10000,
+                amount: 10000u64.into(),
                 asset_id: *STAKING_TOKEN_ASSET_ID,
             },
         );
@@ -567,7 +567,7 @@ mod tests {
             &mut OsRng,
             &addr,
             penumbra_crypto::Value {
-                amount: 20000,
+                amount: 20000u64.into(),
                 asset_id: *STAKING_TOKEN_ASSET_ID,
             },
         );
@@ -583,10 +583,10 @@ mod tests {
 
         let swap_plaintext = SwapPlaintext {
             trading_pair,
-            delta_1_i: 100000,
-            delta_2_i: 1,
+            delta_1_i: 100000u64.into(),
+            delta_2_i: 1u64.into(),
             claim_fee: Fee(Value {
-                amount: 3,
+                amount: 3u64.into(),
                 asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
             }),
             claim_address: addr,
@@ -602,7 +602,7 @@ mod tests {
                 OutputPlan::new(
                     &mut OsRng,
                     Value {
-                        amount: 30000,
+                        amount: 30000u64.into(),
                         asset_id: *STAKING_TOKEN_ASSET_ID,
                     },
                     addr.clone(),
