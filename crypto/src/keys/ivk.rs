@@ -27,7 +27,7 @@ impl IncomingViewingKey {
         let ck_d = dtk_d.clue_key();
 
         (
-            Address::from_components(d, g_d, pk_d, ck_d).expect("pk_d is valid"),
+            Address::from_components(d, pk_d, ck_d).expect("pk_d is valid"),
             dtk_d,
         )
     }

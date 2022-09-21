@@ -848,12 +848,11 @@ impl TryFrom<&[u8]> for SwapProof {
 #[cfg(test)]
 mod tests {
     use ark_ff::UniformRand;
-    use rand::RngCore;
     use rand_core::OsRng;
 
     use super::*;
     use crate::{
-        keys::{Diversifier, SeedPhrase, SpendKey},
+        keys::{SeedPhrase, SpendKey},
         note, Note, Value,
     };
 
@@ -992,47 +991,6 @@ mod tests {
                 note.commit(),
                 incorrect_epk
             )
-            .is_err());
-    }
-
-    #[test]
-    fn test_output_proof_verification_identity_check_failure() {
-        let mut rng = OsRng;
-
-        let seed_phrase = SeedPhrase::generate(&mut rng);
-        let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
-        let fvk_recipient = sk_recipient.full_viewing_key();
-        let ivk_recipient = fvk_recipient.incoming();
-        let (dest1, _dtk_d) = ivk_recipient.payment_address(0u64.into());
-        let diversifier_bytes = [0u8; 16];
-
-        let d = Diversifier(diversifier_bytes);
-        let dest = Address::from_components(
-            d,
-            // Use the identity element as the diversified generator for the destination
-            decaf377::Element::default(),
-            *dest1.transmission_key(),
-            *dest1.clue_key(),
-        )
-        .expect("able to generate address");
-
-        let value_to_send = Value {
-            amount: 10,
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
-        };
-        let v_blinding = Fr::rand(&mut rng);
-        let note = Note::generate(&mut rng, &dest, value_to_send);
-        let esk = ka::Secret::new(&mut rng);
-        let epk = esk.diversified_public(&note.diversified_generator());
-
-        let proof = OutputProof {
-            note: note.clone(),
-            v_blinding,
-            esk,
-        };
-
-        assert!(proof
-            .verify(-value_to_send.commit(v_blinding), note.commit(), epk)
             .is_err());
     }
 
