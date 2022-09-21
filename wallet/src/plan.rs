@@ -108,7 +108,7 @@ where
 {
     let delegation_amount = delegation_notes
         .iter()
-        .map(|record| record.note.amount())
+        .map(|record| u64::from(record.note.amount()))
         .sum();
 
     let mut planner = Planner::new(rng);
@@ -383,7 +383,9 @@ where
             tracing::debug!(?asset_id, "processing asset");
 
             // Sort notes by amount, ascending, so the biggest notes are at the end...
-            records.sort_by(|a, b| a.note.value().amount.cmp(&b.note.value().amount));
+            records.sort_by(|a, b| {
+                u64::from(a.note.value().amount).cmp(&u64::from(b.note.value().amount))
+            });
             // ... so that when we use chunks_exact, we get SWEEP_COUNT sized
             // chunks, ignoring the biggest notes in the remainder.
             for group in records.chunks_exact(SWEEP_COUNT) {

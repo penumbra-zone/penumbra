@@ -48,7 +48,7 @@ impl OutputPlan {
         Self::new(
             rng,
             Value {
-                amount: 0,
+                amount: 0u64.into(),
                 asset_id: *STAKING_TOKEN_ASSET_ID,
             },
             dummy_address,

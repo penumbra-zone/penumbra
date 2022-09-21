@@ -52,7 +52,7 @@ impl SpendProof {
         rk: VerificationKey<SpendAuth>,
     ) -> anyhow::Result<()> {
         // Short circuit to true if value released is 0. That means this is a _dummy_ spend.
-        if self.note.value().amount == 0 {
+        if self.note.value().amount == asset::Amount::zero() {
             return Ok(());
         }
 
@@ -398,7 +398,7 @@ impl SwapClaimProof {
 
         // Check that the provided note commitment is for the proof's Swap NFT.
         let swap_nft_value = Value {
-            amount: 1,
+            amount: 1u64.into(),
             asset_id: self.swap_nft_asset_id,
         };
         let transmission_key_s = self.claim_address.transmission_key_s();
@@ -418,8 +418,8 @@ impl SwapClaimProof {
         let asset_id = self.swap_nft_asset_id;
         let expected_plaintext = SwapPlaintext::from_parts(
             self.trading_pair.clone(),
-            self.delta_1_i,
-            self.delta_2_i,
+            self.delta_1_i.into(),
+            self.delta_2_i.into(),
             fee,
             // This should ensure that the claim address matches the address
             // used to construct the Swap NFT.
@@ -466,13 +466,15 @@ impl SwapClaimProof {
             return Err(anyhow!("bad nullifier"));
         }
 
-        let (lambda_1, lambda_2) = output_data.pro_rata_outputs((self.delta_1_i, self.delta_2_i));
+        let (lambda_1, lambda_2) =
+            output_data.pro_rata_outputs((self.delta_1_i.into(), self.delta_2_i.into()));
+
         let value_1 = Value {
-            amount: lambda_1,
+            amount: lambda_1.into(),
             asset_id: self.trading_pair.asset_1(),
         };
         let value_2 = Value {
-            amount: lambda_2,
+            amount: lambda_2.into(),
             asset_id: self.trading_pair.asset_2(),
         };
 
@@ -673,7 +675,7 @@ impl SwapProof {
             self.note_blinding,
             Value {
                 // The swap NFT is always amount 1.
-                amount: 1,
+                amount: 1u64.into(),
                 asset_id: self.swap_nft_asset_id,
             },
             *self.claim_address.diversified_generator(),
@@ -725,9 +727,9 @@ impl From<SwapProof> for transparent_proofs::SwapProof {
     fn from(msg: SwapProof) -> Self {
         transparent_proofs::SwapProof {
             claim_address: Some(msg.claim_address.into()),
-            delta_1: msg.value_t1.amount,
+            delta_1: msg.value_t1.amount.into(),
             t1: msg.value_t1.asset_id.0.to_bytes().to_vec(),
-            delta_2: msg.value_t2.amount,
+            delta_2: msg.value_t2.amount.into(),
             t2: msg.value_t2.asset_id.0.to_bytes().to_vec(),
             fee: Some(msg.fee_delta.into()),
             fee_blinding: msg.fee_blinding.to_bytes().to_vec(),
@@ -772,7 +774,7 @@ impl TryFrom<transparent_proofs::SwapProof> for SwapProof {
                 .try_into()
                 .map_err(|_| anyhow!("proto malformed"))?,
             value_t1: Value {
-                amount: proto.delta_1,
+                amount: proto.delta_1.into(),
                 asset_id: asset::Id(
                     Fq::from_bytes(
                         proto
@@ -784,7 +786,7 @@ impl TryFrom<transparent_proofs::SwapProof> for SwapProof {
                 ),
             },
             value_t2: Value {
-                amount: proto.delta_2,
+                amount: proto.delta_2.into(),
                 asset_id: asset::Id(
                     Fq::from_bytes(
                         proto
@@ -867,7 +869,7 @@ mod tests {
         let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
 
         let value_to_send = Value {
-            amount: 10,
+            amount: 10u64.into(),
             asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
         };
         let v_blinding = Fr::rand(&mut rng);
@@ -897,7 +899,7 @@ mod tests {
         let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
 
         let value_to_send = Value {
-            amount: 10,
+            amount: 10u64.into(),
             asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
         };
         let v_blinding = Fr::rand(&mut rng);
@@ -939,7 +941,7 @@ mod tests {
         let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
 
         let value_to_send = Value {
-            amount: 10,
+            amount: 10u64.into(),
             asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
         };
         let v_blinding = Fr::rand(&mut rng);
@@ -970,7 +972,7 @@ mod tests {
         let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
 
         let value_to_send = Value {
-            amount: 10,
+            amount: 10u64.into(),
             asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
         };
         let v_blinding = Fr::rand(&mut rng);
@@ -1005,7 +1007,7 @@ mod tests {
         let (sender, _dtk_d) = ivk_sender.payment_address(0u64.into());
 
         let value_to_send = Value {
-            amount: 10,
+            amount: 10u64.into(),
             asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
         };
         let v_blinding = Fr::rand(&mut rng);
@@ -1047,7 +1049,7 @@ mod tests {
         let (sender, _dtk_d) = ivk_sender.payment_address(0u64.into());
 
         let value_to_send = Value {
-            amount: 10,
+            amount: 10u64.into(),
             asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
         };
         let v_blinding = Fr::rand(&mut rng);
@@ -1089,7 +1091,7 @@ mod tests {
         let (sender, _dtk_d) = ivk_sender.payment_address(0u64.into());
 
         let value_to_send = Value {
-            amount: 10,
+            amount: 10u64.into(),
             asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
         };
         let v_blinding = Fr::rand(&mut rng);
@@ -1130,7 +1132,7 @@ mod tests {
         let (sender, _dtk_d) = ivk_sender.payment_address(0u64.into());
 
         let value_to_send = Value {
-            amount: 10,
+            amount: 10u64.into(),
             asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
         };
         let v_blinding = Fr::rand(&mut rng);

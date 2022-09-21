@@ -1,6 +1,6 @@
 use crate::symmetric::OutgoingCipherKey;
 use crate::transaction::Fee;
-use crate::{asset, ka, Address, Value};
+use crate::{asset, ka, Address, Amount, Value};
 use anyhow::{anyhow, Error, Result};
 use ark_ff::PrimeField;
 use decaf377::Fq;
@@ -23,10 +23,10 @@ use super::{
 pub struct SwapPlaintext {
     // Trading pair for the swap
     pub trading_pair: TradingPair,
-    // User's input amount of asset 1
-    pub delta_1_i: u64,
-    // User's input amount of asset 2
-    pub delta_2_i: u64,
+    // Input amount of asset 1
+    pub delta_1_i: Amount,
+    // Input amount of asset 2
+    pub delta_2_i: Amount,
     // Prepaid fee to claim the swap
     pub claim_fee: Fee,
     // Address to receive the Swap NFT and SwapClaim outputs
@@ -114,15 +114,15 @@ impl SwapPlaintext {
 
     pub fn from_parts(
         trading_pair: TradingPair,
-        delta_1_i: u64,
-        delta_2_i: u64,
+        delta_1_i: Amount,
+        delta_2_i: Amount,
         claim_fee: Fee,
         claim_address: Address,
     ) -> Result<Self, Error> {
         Ok(SwapPlaintext {
             trading_pair,
-            delta_1_i,
-            delta_2_i,
+            delta_1_i: delta_1_i.into(),
+            delta_2_i: delta_2_i.into(),
             claim_fee,
             claim_address,
         })
@@ -135,8 +135,14 @@ impl TryFrom<pb::SwapPlaintext> for SwapPlaintext {
     type Error = anyhow::Error;
     fn try_from(plaintext: pb::SwapPlaintext) -> anyhow::Result<Self> {
         Ok(Self {
-            delta_1_i: plaintext.delta_1_i,
-            delta_2_i: plaintext.delta_2_i,
+            delta_1_i: plaintext
+                .delta_1_i
+                .ok_or_else(|| anyhow!("missing delta_1_i"))?
+                .try_into()?,
+            delta_2_i: plaintext
+                .delta_2_i
+                .ok_or_else(|| anyhow!("missing delta_2_i"))?
+                .try_into()?,
             claim_address: plaintext
                 .claim_address
                 .ok_or_else(|| anyhow::anyhow!("missing SwapPlaintext claim address"))?
@@ -157,8 +163,8 @@ impl TryFrom<pb::SwapPlaintext> for SwapPlaintext {
 impl From<SwapPlaintext> for pb::SwapPlaintext {
     fn from(plaintext: SwapPlaintext) -> Self {
         Self {
-            delta_1_i: plaintext.delta_1_i,
-            delta_2_i: plaintext.delta_2_i,
+            delta_1_i: Some(plaintext.delta_1_i.into()),
+            delta_2_i: Some(plaintext.delta_2_i.into()),
             claim_fee: Some(plaintext.claim_fee.into()),
             claim_address: Some(plaintext.claim_address.into()),
             trading_pair: Some(plaintext.trading_pair.into()),
@@ -220,10 +226,10 @@ impl TryFrom<&[u8]> for SwapPlaintext {
             tp_bytes
                 .try_into()
                 .map_err(|_| anyhow!("error deserializing trading pair"))?,
-            u64::from_le_bytes(delta_1_bytes),
-            u64::from_le_bytes(delta_2_bytes),
+            Amount::from_le_bytes(delta_1_bytes),
+            Amount::from_le_bytes(delta_2_bytes),
             Fee(Value {
-                amount: u64::from_le_bytes(fee_amount_bytes),
+                amount: asset::Amount::from_le_bytes(fee_amount_bytes),
                 asset_id: asset::Id::try_from(fee_asset_id_bytes)?,
             }),
             pb_address.try_into()?,
@@ -266,10 +272,10 @@ mod tests {
 
         let swap = SwapPlaintext {
             trading_pair,
-            delta_1_i: 100000,
-            delta_2_i: 1,
+            delta_1_i: 100000u64.into(),
+            delta_2_i: 1u64.into(),
             claim_fee: Fee(Value {
-                amount: 3,
+                amount: 3u64.into(),
                 asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
             }),
             claim_address: dest,

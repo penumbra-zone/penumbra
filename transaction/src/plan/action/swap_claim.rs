@@ -86,8 +86,8 @@ impl SwapClaimPlan {
             note_commitment_proof: note_commitment_proof.clone(),
             trading_pair: self.swap_plaintext.trading_pair,
             note_blinding: self.swap_nft_note.note_blinding(),
-            delta_1_i: self.swap_plaintext.delta_1_i,
-            delta_2_i: self.swap_plaintext.delta_2_i,
+            delta_1_i: self.swap_plaintext.delta_1_i.into(),
+            delta_2_i: self.swap_plaintext.delta_2_i.into(),
             lambda_1: self.output_data.lambda_1,
             lambda_2: self.output_data.lambda_2,
             note_blinding_1: self.output_1_blinding,
@@ -100,14 +100,15 @@ impl SwapClaimPlan {
 
     /// Construct the [`swap_claim::Body`] described by this plan.
     pub fn swap_claim_body(&self, fvk: &FullViewingKey) -> swap_claim::Body {
-        let (lambda_1, lambda_2) = self
-            .output_data
-            .pro_rata_outputs((self.swap_plaintext.delta_1_i, self.swap_plaintext.delta_2_i));
+        let (lambda_1, lambda_2) = self.output_data.pro_rata_outputs((
+            self.swap_plaintext.delta_1_i.into(),
+            self.swap_plaintext.delta_2_i.into(),
+        ));
 
         let output_1_note = Note::from_parts(
             self.swap_nft_note.address(),
             Value {
-                amount: lambda_1,
+                amount: lambda_1.into(),
                 asset_id: self.swap_plaintext.trading_pair.asset_1(),
             },
             self.output_1_blinding,
@@ -116,7 +117,7 @@ impl SwapClaimPlan {
         let output_2_note = Note::from_parts(
             self.swap_nft_note.address(),
             Value {
-                amount: lambda_2,
+                amount: lambda_2.into(),
                 asset_id: self.swap_plaintext.trading_pair.asset_2(),
             },
             self.output_2_blinding,

@@ -152,7 +152,7 @@ impl TxCmd {
                     .iter()
                     .map(|v| v.parse())
                     .collect::<Result<Vec<Value>, _>>()?;
-                let fee = Fee::from_staking_token_amount(*fee);
+                let fee = Fee::from_staking_token_amount((*fee as u64).into());
                 let to = to
                     .parse()
                     .map_err(|_| anyhow::anyhow!("address is invalid"))?;
@@ -208,8 +208,8 @@ impl TxCmd {
                     OsRng,
                     input,
                     into,
-                    Fee::from_staking_token_amount(swap_fee),
-                    Fee::from_staking_token_amount(swap_claim_fee),
+                    Fee::from_staking_token_amount(swap_fee.into()),
+                    Fee::from_staking_token_amount(swap_claim_fee.into()),
                     *source,
                 )
                 .await?;
@@ -257,8 +257,11 @@ impl TxCmd {
 
                 let view_client: &mut dyn ViewClient = &mut app.view;
                 let asset_cache = view_client.assets().await?;
-                let pro_rata_outputs = output_data
-                    .pro_rata_outputs((swap_plaintext.delta_1_i, swap_plaintext.delta_2_i));
+
+                let pro_rata_outputs = output_data.pro_rata_outputs((
+                    swap_plaintext.delta_1_i.into(),
+                    swap_plaintext.delta_2_i.into(),
+                ));
                 println!("Swap submitted and batch confirmed!");
                 println!(
                     "Swap was: {}",
@@ -271,12 +274,12 @@ impl TxCmd {
                 println!(
                     "You will receive outputs of {} and {}. Claiming now...",
                     Value {
-                        amount: pro_rata_outputs.0,
+                        amount: pro_rata_outputs.0.into(),
                         asset_id: output_data.trading_pair.asset_1()
                     }
                     .format(&asset_cache),
                     Value {
-                        amount: pro_rata_outputs.1,
+                        amount: pro_rata_outputs.1.into(),
                         asset_id: output_data.trading_pair.asset_2()
                     }
                     .format(&asset_cache),
@@ -319,14 +322,14 @@ impl TxCmd {
                     .await?
                     .into_inner()
                     .try_into()?;
-                let fee = Fee::from_staking_token_amount(*fee);
+                let fee = Fee::from_staking_token_amount((*fee as u64).into());
 
                 let plan = plan::delegate(
                     &app.fvk,
                     &mut app.view,
                     OsRng,
                     rate_data,
-                    unbonded_amount,
+                    unbonded_amount.into(),
                     fee,
                     *source,
                 )
@@ -348,7 +351,7 @@ impl TxCmd {
                     amount: _,
                     asset_id,
                 } = amount.parse::<Value>()?;
-                let fee = Fee::from_staking_token_amount(*fee);
+                let fee = Fee::from_staking_token_amount((*fee as u64).into());
 
                 let delegation_token: DelegationToken = app
                     .view()
@@ -439,7 +442,7 @@ impl TxCmd {
             }
             TxCmd::Proposal(ProposalCmd::Submit { file, fee, source }) => {
                 let proposal: Proposal = serde_json::from_reader(File::open(&file)?)?;
-                let fee = Fee::from_staking_token_amount(*fee);
+                let fee = Fee::from_staking_token_amount((*fee as u64).into());
                 let plan =
                     plan::proposal_submit(&app.fvk, &mut app.view, OsRng, proposal, fee, *source)
                         .await?;
@@ -472,7 +475,7 @@ impl TxCmd {
                         .value[..],
                 )?;
 
-                let fee = Fee::from_staking_token_amount(*fee);
+                let fee = Fee::from_staking_token_amount((*fee as u64).into());
                 let plan = plan::proposal_withdraw(
                     &app.fvk,
                     &mut app.view,

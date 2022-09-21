@@ -25,6 +25,7 @@ pub mod transaction;
 pub mod value;
 
 pub use address::Address;
+pub use asset::Amount;
 pub use asset::Asset;
 pub use delegation_token::DelegationToken;
 pub use flow::{MockFlowCiphertext, SwapFlow};

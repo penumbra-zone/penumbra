@@ -136,7 +136,10 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for QuarantinedNoteRecord {
 
         let unbonding_epoch = row.get::<'r, i64, _>("unbonding_epoch") as u64;
 
-        let value = Value { amount, asset_id };
+        let value = Value {
+            amount: amount.into(),
+            asset_id,
+        };
         let note = Note::from_parts(address, value, note_blinding).map_err(|e| {
             sqlx::Error::ColumnDecode {
                 index: "note".to_string(),

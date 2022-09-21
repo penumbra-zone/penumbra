@@ -138,7 +138,10 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for SpendableNoteRecord {
             .map(|v| v as u64);
         let position = (row.get::<'r, i64, _>("position") as u64).into();
 
-        let value = Value { amount, asset_id };
+        let value = Value {
+            amount: amount.into(),
+            asset_id,
+        };
         let note = Note::from_parts(address, value, note_blinding).map_err(|e| {
             sqlx::Error::ColumnDecode {
                 index: "note".to_string(),

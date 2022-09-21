@@ -54,8 +54,8 @@ impl Component for Dex {
             .set_stub_cpmm_reserves(
                 &TradingPair::canonical_order_for((gm.id(), gn.id())).unwrap(),
                 Reserves {
-                    r1: 10000 * 10u64.pow(gm.exponent().into()),
-                    r2: 10000 * 10u64.pow(gn.exponent().into()),
+                    r1: (10000 * 10u64.pow(gm.exponent().into())).into(),
+                    r2: (10000 * 10u64.pow(gn.exponent().into())).into(),
                 },
             )
             .await;
@@ -64,8 +64,8 @@ impl Component for Dex {
             .set_stub_cpmm_reserves(
                 &TradingPair::canonical_order_for((gm.id(), penumbra.id())).unwrap(),
                 Reserves {
-                    r1: 10000 * 10u64.pow(gm.exponent().into()),
-                    r2: 10000 * 10u64.pow(penumbra.exponent().into()),
+                    r1: (10000 * 10u64.pow(gm.exponent().into())).into(),
+                    r2: (10000 * 10u64.pow(penumbra.exponent().into())).into(),
                 },
             )
             .await;
@@ -74,8 +74,8 @@ impl Component for Dex {
             .set_stub_cpmm_reserves(
                 &TradingPair::canonical_order_for((gn.id(), penumbra.id())).unwrap(),
                 Reserves {
-                    r1: 10000 * 10u64.pow(gn.exponent().into()),
-                    r2: 10000 * 10u64.pow(penumbra.exponent().into()),
+                    r1: (10000 * 10u64.pow(gn.exponent().into())).into(),
+                    r2: (10000 * 10u64.pow(penumbra.exponent().into())).into(),
                 },
             )
             .await;
@@ -105,12 +105,12 @@ impl Component for Dex {
                             // so we pass placeholder values here, the proof doesn't check these right now
                             // and will fail when checking is re-enabled.
                             Value {
-                                amount: 0,
+                                amount: 0u64.into(),
                                 asset_id: *STAKING_TOKEN_ASSET_ID,
                             }
                             .commit(Fr::zero()),
                             Value {
-                                amount: 0,
+                                amount: 0u64.into(),
                                 asset_id: *STAKING_TOKEN_ASSET_ID,
                             }
                             .commit(Fr::zero()),
@@ -229,8 +229,8 @@ impl Component for Dex {
                         .unwrap_or_default();
 
                     // Add the amount of each asset being swapped to the batch swap flow.
-                    swap_flows.0 += MockFlowCiphertext::new(swap.body.delta_1_i);
-                    swap_flows.1 += MockFlowCiphertext::new(swap.body.delta_2_i);
+                    swap_flows.0 += MockFlowCiphertext::new(swap.body.delta_1_i.into());
+                    swap_flows.1 += MockFlowCiphertext::new(swap.body.delta_2_i.into());
 
                     // Set the batch swap flow for the trading pair.
                     self.swaps.insert(swap.body.trading_pair, swap_flows);

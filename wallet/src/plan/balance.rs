@@ -109,7 +109,7 @@ impl Add for Balance {
         for imbalance in other.into_iter() {
             // Convert back into an asset id key and imbalance value
             let (sign, Value { asset_id, amount }) = imbalance.into_inner();
-            let (asset_id, mut imbalance) = if let Some(amount) = NonZeroU64::new(amount) {
+            let (asset_id, mut imbalance) = if let Some(amount) = NonZeroU64::new(amount.into()) {
                 (asset_id, sign.imbalance(amount))
             } else {
                 unreachable!("values stored in balance are always nonzero")
@@ -203,7 +203,7 @@ impl SubAssign<Value> for Balance {
 impl From<Value> for Balance {
     fn from(Value { amount, asset_id }: Value) -> Self {
         let mut balance = BTreeMap::new();
-        if let Some(amount) = NonZeroU64::new(amount) {
+        if let Some(amount) = NonZeroU64::new(amount.into()) {
             balance.insert(asset_id, Imbalance::Provided(amount));
         }
         Balance {
@@ -225,11 +225,11 @@ mod test {
     fn provide_then_require() {
         let mut balance = Balance::zero();
         balance += Value {
-            amount: 1,
+            amount: 1u64.into(),
             asset_id: *STAKING_TOKEN_ASSET_ID,
         };
         balance -= Value {
-            amount: 1,
+            amount: 1u64.into(),
             asset_id: *STAKING_TOKEN_ASSET_ID,
         };
         assert!(balance.is_zero());
@@ -239,11 +239,11 @@ mod test {
     fn require_then_provide() {
         let mut balance = Balance::zero();
         balance -= Value {
-            amount: 1,
+            amount: 1u64.into(),
             asset_id: *STAKING_TOKEN_ASSET_ID,
         };
         balance += Value {
-            amount: 1,
+            amount: 1u64.into(),
             asset_id: *STAKING_TOKEN_ASSET_ID,
         };
         assert!(balance.is_zero());
@@ -253,11 +253,11 @@ mod test {
     fn provide_then_require_negative_zero() {
         let mut balance = -Balance::zero();
         balance += Value {
-            amount: 1,
+            amount: 1u64.into(),
             asset_id: *STAKING_TOKEN_ASSET_ID,
         };
         balance -= Value {
-            amount: 1,
+            amount: 1u64.into(),
             asset_id: *STAKING_TOKEN_ASSET_ID,
         };
         assert!(balance.is_zero());
@@ -267,11 +267,11 @@ mod test {
     fn require_then_provide_negative_zero() {
         let mut balance = -Balance::zero();
         balance -= Value {
-            amount: 1,
+            amount: 1u64.into(),
             asset_id: *STAKING_TOKEN_ASSET_ID,
         };
         balance += Value {
-            amount: 1,
+            amount: 1u64.into(),
             asset_id: *STAKING_TOKEN_ASSET_ID,
         };
         assert!(balance.is_zero());
@@ -321,7 +321,12 @@ mod test {
             (0u64..u32::MAX as u64), // limit amounts so that there is no overflow
             prop_oneof![Just(*ASSET_ID_1), Just(*ASSET_ID_2)],
         )
-            .prop_map(|(amount, asset_id)| Expression::Value(Value { amount, asset_id }))
+            .prop_map(|(amount, asset_id)| {
+                Expression::Value(Value {
+                    amount: amount.into(),
+                    asset_id,
+                })
+            })
             .prop_recursive(8, 256, 2, |inner| {
                 prop_oneof![
                     inner

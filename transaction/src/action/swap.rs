@@ -1,5 +1,6 @@
 use ark_ff::Zero;
 use decaf377::Fr;
+use penumbra_crypto::asset::Amount;
 use penumbra_crypto::dex::TradingPair;
 use penumbra_crypto::proofs::transparent::SwapProof;
 use penumbra_crypto::{dex::swap::SwapCiphertext, value};
@@ -70,8 +71,8 @@ pub struct Body {
     // until flow encryption is available
     // pub asset_1_commitment: value::Commitment,
     // pub asset_2_commitment: value::Commitment,
-    pub delta_1_i: u64,
-    pub delta_2_i: u64,
+    pub delta_1_i: Amount,
+    pub delta_2_i: Amount,
     pub fee_commitment: value::Commitment,
     // TODO: rename to note_payload
     pub swap_nft: NotePayload,
@@ -84,8 +85,8 @@ impl From<Body> for pb::SwapBody {
     fn from(s: Body) -> Self {
         pb::SwapBody {
             trading_pair: Some(s.trading_pair.into()),
-            delta_1_i: s.delta_1_i,
-            delta_2_i: s.delta_2_i,
+            delta_1_i: Some(s.delta_1_i.into()),
+            delta_2_i: Some(s.delta_2_i.into()),
             fee_commitment: s.fee_commitment.to_bytes().to_vec(),
             swap_nft: Some(s.swap_nft.into()),
             swap_ciphertext: s.swap_ciphertext.0.to_vec(),
@@ -101,8 +102,16 @@ impl TryFrom<pb::SwapBody> for Body {
                 .trading_pair
                 .ok_or_else(|| anyhow::anyhow!("missing trading_pair"))?
                 .try_into()?,
-            delta_1_i: s.delta_1_i,
-            delta_2_i: s.delta_2_i,
+
+            delta_1_i: s
+                .delta_1_i
+                .ok_or_else(|| anyhow::anyhow!("missing delta_1"))?
+                .try_into()?,
+            delta_2_i: s
+                .delta_2_i
+                .ok_or_else(|| anyhow::anyhow!("missing delta_2"))?
+                .try_into()?,
+
             fee_commitment: (&s.fee_commitment[..]).try_into()?,
             swap_nft: s
                 .swap_nft

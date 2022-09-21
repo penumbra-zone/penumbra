@@ -33,7 +33,7 @@ impl PositionOpen {
     /// Compute a commitment to the value this action contributes to its transaction.
     pub fn value_commitment(&self) -> value::Commitment {
         let opened_position_nft = Value {
-            amount: 1,
+            amount: 1u64.into(),
             asset_id: LpNft::new(self.position.id(), position::State::Opened).asset_id(),
         }
         .commit(Fr::zero());
@@ -75,12 +75,12 @@ impl PositionClose {
     /// Compute a commitment to the value this action contributes to its transaction.
     pub fn value_commitment(&self) -> value::Commitment {
         let opened_position_nft = Value {
-            amount: 1,
+            amount: 1u64.into(),
             asset_id: LpNft::new(self.position_id, position::State::Opened).asset_id(),
         }
         .commit(Fr::zero());
         let closed_position_nft = Value {
-            amount: 1,
+            amount: 1u64.into(),
             asset_id: LpNft::new(self.position_id, position::State::Closed).asset_id(),
         }
         .commit(Fr::zero());
@@ -109,7 +109,7 @@ impl PositionWithdraw {
     /// Compute a commitment to the value this action contributes to its transaction.
     pub fn value_commitment(&self) -> value::Commitment {
         let closed_position_nft = Value {
-            amount: 1,
+            amount: 1u64.into(),
             asset_id: LpNft::new(self.position_id, position::State::Closed).asset_id(),
         }
         .commit(Fr::zero());
@@ -138,7 +138,7 @@ impl PositionRewardClaim {
     /// Compute a commitment to the value this action contributes to its transaction.
     pub fn value_commitment(&self) -> value::Commitment {
         let withdrawn_position_nft = Value {
-            amount: 1,
+            amount: 1u64.into(),
             asset_id: LpNft::new(self.position_id, position::State::Withdrawn).asset_id(),
         }
         .commit(Fr::zero());

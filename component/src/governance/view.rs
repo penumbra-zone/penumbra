@@ -3,6 +3,7 @@ use std::collections::BTreeSet;
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_crypto::{
+    asset::Amount,
     rdsa::{SpendAuth, VerificationKey},
     Address, IdentityKey, Value, STAKING_TOKEN_ASSET_ID,
 };
@@ -100,8 +101,8 @@ pub trait View: StateExt {
     }
 
     /// Store the proposal deposit amount.
-    async fn put_deposit_amount(&self, proposal_id: u64, amount: u64) {
-        self.put_proto(
+    async fn put_deposit_amount(&self, proposal_id: u64, amount: Amount) {
+        self.put_domain(
             state_key::proposal_deposit_amount(proposal_id).into(),
             amount,
         )
@@ -146,8 +147,8 @@ pub trait View: StateExt {
                 .proposal_deposit_refund_address(proposal_id)
                 .await?
                 .expect("address must exist for proposal");
-            let amount: u64 = self
-                .get_proto(state_key::proposal_deposit_amount(proposal_id).into())
+            let amount: Amount = self
+                .get_domain(state_key::proposal_deposit_amount(proposal_id).into())
                 .await?
                 .expect("deposit amount must exist for proposal");
             result.push((

@@ -136,6 +136,7 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.crypto.AssetId", SERIALIZE),
     (".penumbra.crypto.AssetId", SERDE_TRANSPARENT),
     (".penumbra.crypto.Value", SERIALIZE),
+    (".penumbra.crypto.Amount", SERIALIZE),
     (".penumbra.crypto.Denom", SERIALIZE),
     (".penumbra.crypto.Denom", SERDE_TRANSPARENT),
     (".penumbra.crypto.Asset", SERIALIZE),

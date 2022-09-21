@@ -1,3 +1,4 @@
+use crate::Amount;
 use ark_ff::fields::PrimeField;
 use ark_serialize::CanonicalDeserialize;
 use decaf377::FieldExt;
@@ -115,7 +116,7 @@ impl Id {
     }
 
     /// Create a value of this denomination.
-    pub fn value(&self, amount: u64) -> Value {
+    pub fn value(&self, amount: Amount) -> Value {
         Value {
             amount,
             asset_id: self.clone(),

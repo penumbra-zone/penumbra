@@ -127,11 +127,11 @@ impl DexCmd {
                     .get(&trading_pair.asset_1())
                     .map(|base_denom| {
                         let display_denom = base_denom
-                            .best_unit_for(std::cmp::max(outputs.delta_1, outputs.lambda_1));
+                            .best_unit_for(std::cmp::max(outputs.delta_1, outputs.lambda_1).into());
                         (
                             format!("{}", display_denom),
-                            display_denom.format_value(outputs.delta_1),
-                            display_denom.format_value(outputs.lambda_1),
+                            display_denom.format_value(outputs.delta_1.into()),
+                            display_denom.format_value(outputs.lambda_1.into()),
                         )
                     })
                     .unwrap_or_else(|| {
@@ -145,11 +145,11 @@ impl DexCmd {
                     .get(&trading_pair.asset_2())
                     .map(|base_denom| {
                         let display_denom = base_denom
-                            .best_unit_for(std::cmp::max(outputs.delta_2, outputs.lambda_2));
+                            .best_unit_for(std::cmp::max(outputs.delta_2, outputs.lambda_2).into());
                         (
                             format!("{}", display_denom),
-                            display_denom.format_value(outputs.delta_2),
-                            display_denom.format_value(outputs.lambda_2),
+                            display_denom.format_value(outputs.delta_2.into()),
+                            display_denom.format_value(outputs.lambda_2.into()),
                         )
                     })
                     .unwrap_or_else(|| {

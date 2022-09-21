@@ -65,7 +65,7 @@ impl Component for ShieldedPool {
             tracing::info!(?allocation, "processing allocation");
 
             assert_ne!(
-                allocation.amount, 0,
+                allocation.amount, 0u64,
                 "Genesis allocations contain empty note",
             );
 
@@ -74,7 +74,7 @@ impl Component for ShieldedPool {
             self.state.register_denom(&unit.base()).await.unwrap();
             self.mint_note(
                 Value {
-                    amount: allocation.amount * 10u64.pow(unit.exponent().into()),
+                    amount: (allocation.amount * 10u64.pow(unit.exponent().into())).into(),
                     asset_id: unit.id(),
                 },
                 &allocation.address,
@@ -363,7 +363,7 @@ impl ShieldedPool {
 
         // Now record the note and update the total supply:
         self.state
-            .update_token_supply(&value.asset_id, value.amount as i64)
+            .update_token_supply(&value.asset_id, i64::from(value.amount))
             .await?;
         self.add_note(AnnotatedNotePayload {
             payload: NotePayload {

@@ -16,15 +16,15 @@ impl StubCpmm {
 
         let Reserves { r1, r2 } = self.reserves;
 
-        let num = r2 as u128 * delta_1 as u128;
-        let den = r1 as u128 + delta_1 as u128;
+        let num = u128::from(r2) * delta_1 as u128;
+        let den = u128::from(r1) + delta_1 as u128;
         // Not that correctness really matters here,
         // but this rounds *down* the output amount.
         let lambda_2 = (num / den) as u64;
 
         self.reserves = Reserves {
-            r1: r1 + delta_1,
-            r2: r2 - lambda_2,
+            r1: r1 + delta_1.into(),
+            r2: r2 - lambda_2.into(),
         };
 
         lambda_2
@@ -39,15 +39,15 @@ impl StubCpmm {
 
         let Reserves { r1, r2 } = self.reserves;
 
-        let num = r1 as u128 * delta_2 as u128;
-        let den = r2 as u128 + delta_2 as u128;
+        let num = u128::from(r1) + delta_2 as u128;
+        let den = u128::from(r2) + delta_2 as u128;
         // Not that correctness really matters here,
         // but this rounds *down* the output amount.
         let lambda_1 = (num / den) as u64;
 
         self.reserves = Reserves {
-            r1: r1 - lambda_1,
-            r2: r2 + delta_2,
+            r1: r1 - lambda_1.into(),
+            r2: r2 + delta_2.into(),
         };
 
         lambda_1
@@ -66,9 +66,11 @@ impl StubCpmm {
                 let Reserves { r1, r2 } = self.reserves;
 
                 // The amount of asset 2 we get from asset 1 at current prices.
-                let lambda_2_netted = ((delta_1 as u128 * r2 as u128) / (r1 as u128)) as u64;
+                let lambda_2_netted =
+                    ((delta_1 as u128 * u128::from(r2)) / (u128::from(r1))) as u64;
                 // The amount of asset 1 we get from asset 2 at current prices.
-                let lambda_1_netted = ((delta_2 as u128 * r1 as u128) / (r2 as u128)) as u64;
+                let lambda_1_netted =
+                    ((delta_2 as u128 * u128::from(r1)) / (u128::from(r2))) as u64;
 
                 match (lambda_1_netted <= delta_1, lambda_2_netted <= delta_2) {
                     // We have more delta_1 than is needed to net out delta_2.
@@ -100,7 +102,10 @@ mod tests {
         // test:
         //   inputs (100,100) reserves (1,1) outputs should be (100,100)
         let mut cpmm = StubCpmm {
-            reserves: Reserves { r1: 1, r2: 1 },
+            reserves: Reserves {
+                r1: 1u64.into(),
+                r2: 1u64.into(),
+            },
         };
 
         assert_eq!(cpmm.trade_netted((100, 100)), (100, 100));

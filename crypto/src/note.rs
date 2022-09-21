@@ -112,7 +112,7 @@ impl Note {
         self.value.asset_id
     }
 
-    pub fn amount(&self) -> u64 {
+    pub fn amount(&self) -> asset::Amount {
         self.value.amount
     }
 
@@ -366,7 +366,7 @@ impl TryFrom<&[u8]> for Note {
                 .try_into()
                 .map_err(|_| Error::NoteDeserializationError)?,
             Value {
-                amount: u64::from_le_bytes(amount_bytes),
+                amount: amount_bytes.into(),
                 asset_id: asset::Id(
                     Fq::from_bytes(asset_id_bytes).map_err(|_| Error::NoteDeserializationError)?,
                 ),
@@ -403,7 +403,7 @@ mod tests {
         let (dest, _dtk_d) = ivk.payment_address(0u64.into());
 
         let value = Value {
-            amount: 10,
+            amount: 10u64.into(),
             asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
         };
         let note = Note::generate(&mut rng, &dest, value);
@@ -436,7 +436,7 @@ mod tests {
         let (dest, _dtk_d) = ivk.payment_address(0u64.into());
 
         let value = Value {
-            amount: 10,
+            amount: 10u64.into(),
             asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
         };
         let note = Note::generate(&mut rng, &dest, value);
