@@ -121,7 +121,7 @@ impl Component for ShieldedPool {
                     if output
                         .proof
                         .verify(
-                            output.body.value_commitment,
+                            output.body.balance_commitment,
                             output.body.note_payload.note_commitment,
                             output.body.note_payload.ephemeral_key,
                         )
@@ -142,7 +142,7 @@ impl Component for ShieldedPool {
                         .proof
                         .verify(
                             tx.anchor,
-                            spend.body.value_commitment,
+                            spend.body.balance_commitment,
                             spend.body.nullifier,
                             spend.body.rk,
                         )

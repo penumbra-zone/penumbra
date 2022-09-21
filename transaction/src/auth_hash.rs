@@ -248,7 +248,7 @@ impl AuthorizingData for output::Body {
         state.update(&self.note_payload.note_commitment.0.to_bytes());
         state.update(&self.note_payload.ephemeral_key.0);
         state.update(&self.note_payload.encrypted_note);
-        state.update(&self.value_commitment.to_bytes());
+        state.update(&self.balance_commitment.to_bytes());
         state.update(&self.wrapped_memo_key.0);
         state.update(&self.ovk_wrapped_key.0);
 
@@ -264,7 +264,7 @@ impl AuthorizingData for spend::Body {
 
         // All of these fields are fixed-length, so we can just throw them
         // in the hash one after the other.
-        state.update(&self.value_commitment.to_bytes());
+        state.update(&self.balance_commitment.to_bytes());
         state.update(&self.nullifier.0.to_bytes());
         state.update(&self.rk.to_bytes());
 

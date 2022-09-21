@@ -17,8 +17,8 @@ use crate::action::{swap, Swap};
 pub struct SwapPlan {
     // No commitments for the values, as they're plaintext
     // until flow encryption is available
-    // pub asset_1_commitment: value::Commitment,
-    // pub asset_2_commitment: value::Commitment,
+    // pub asset_1_commitment: balance::Commitment,
+    // pub asset_2_commitment: balance::Commitment,
     pub swap_plaintext: SwapPlaintext,
     pub fee_blinding: Fr,
     pub note_blinding: Fq,

@@ -4,7 +4,7 @@ use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, str::FromStr};
 
-use penumbra_crypto::{asset::Amount, value, Address, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_crypto::{asset::Amount, balance, Address, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::{transaction as pb, Protobuf};
 
 use crate::{plan::TransactionPlan, AuthHash};
@@ -320,7 +320,7 @@ pub struct ProposalSubmit {
 
 impl ProposalSubmit {
     /// Compute a commitment to the value contributed to a transaction by this proposal submission.
-    pub fn value_commitment(&self) -> value::Commitment {
+    pub fn value_commitment(&self) -> balance::Commitment {
         let deposit = Value {
             amount: self.deposit_amount,
             asset_id: STAKING_TOKEN_ASSET_ID.clone(),

@@ -9,10 +9,10 @@ use poseidon377::{hash_4, hash_6};
 
 use crate::dex::TradingPair;
 use crate::{
+    balance,
     keys::OutgoingViewingKey,
     note,
     symmetric::{PayloadKey, PayloadKind},
-    value,
 };
 
 use super::{
@@ -76,7 +76,7 @@ impl SwapPlaintext {
         &self,
         esk: &ka::Secret,
         ovk: &OutgoingViewingKey,
-        cv: value::Commitment,
+        cv: balance::Commitment,
         cm: note::Commitment,
     ) -> [u8; OVK_WRAPPED_LEN_BYTES] {
         let epk = esk.diversified_public(self.diversified_generator());
@@ -121,8 +121,8 @@ impl SwapPlaintext {
     ) -> Result<Self, Error> {
         Ok(SwapPlaintext {
             trading_pair,
-            delta_1_i: delta_1_i.into(),
-            delta_2_i: delta_2_i.into(),
+            delta_1_i,
+            delta_2_i,
             claim_fee,
             claim_address,
         })

@@ -3,9 +3,10 @@ use std::convert::{TryFrom, TryInto};
 use anyhow::Error;
 use bytes::Bytes;
 use penumbra_crypto::{
+    balance,
     proofs::transparent::OutputProof,
     symmetric::{OvkWrappedKey, WrappedMemoKey},
-    value, NotePayload,
+    NotePayload,
 };
 use penumbra_proto::{transaction as pb, Protobuf};
 
@@ -18,7 +19,7 @@ pub struct Output {
 #[derive(Clone, Debug)]
 pub struct Body {
     pub note_payload: NotePayload,
-    pub value_commitment: value::Commitment,
+    pub balance_commitment: balance::Commitment,
     pub ovk_wrapped_key: OvkWrappedKey,
     pub wrapped_memo_key: WrappedMemoKey,
 }
@@ -57,7 +58,7 @@ impl From<Body> for pb::OutputBody {
     fn from(output: Body) -> Self {
         pb::OutputBody {
             note_payload: Some(output.note_payload.into()),
-            value_commitment: Some(output.value_commitment.into()),
+            value_commitment: Some(output.balance_commitment.into()),
             wrapped_memo_key: Bytes::copy_from_slice(&output.wrapped_memo_key.0),
             ovk_wrapped_key: Bytes::copy_from_slice(&output.ovk_wrapped_key.0),
         }
@@ -91,7 +92,7 @@ impl TryFrom<pb::OutputBody> for Body {
             note_payload,
             wrapped_memo_key,
             ovk_wrapped_key,
-            value_commitment,
+            balance_commitment: value_commitment,
         })
     }
 }
