@@ -25,14 +25,9 @@ message SpendProof {
 // A Penumbra transparent output proof.
 message OutputProof {
   // Auxiliary inputs
-  bytes g_d = 1;
-  bytes pk_d = 2;
-  uint64 value_amount = 3;
-  bytes value_asset_id = 4;
+  crypto.Note note = 1;
   bytes v_blinding = 5;
-  bytes note_blinding = 6;
   bytes esk = 7;
-  bytes ck_d = 8;
 }
 
 // A Penumbra transparent SwapClaimProof.

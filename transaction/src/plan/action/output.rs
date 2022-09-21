@@ -73,12 +73,8 @@ impl OutputPlan {
     /// by this plan.
     pub fn output_proof(&self) -> OutputProof {
         OutputProof {
-            g_d: self.output_note().diversified_generator(),
-            pk_d: self.dest_address.transmission_key().clone(),
-            ck_d: self.dest_address.clue_key().clone(),
-            value: self.value,
+            note: self.output_note(),
             v_blinding: self.value_blinding,
-            note_blinding: self.note_blinding,
             esk: self.esk.clone(),
         }
     }
