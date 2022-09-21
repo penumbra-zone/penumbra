@@ -14,7 +14,7 @@ use crate::{
     dex::{swap::SwapPlaintext, BatchSwapOutputData, TradingPair},
     fmd, ka, keys, note,
     transaction::Fee,
-    value, Address, Fq, Fr, Nullifier, Value,
+    value, Address, Fq, Fr, Note, Nullifier, Value,
 };
 
 /// Transparent proof for spending existing notes.
@@ -24,18 +24,10 @@ use crate::{
 pub struct SpendProof {
     // Inclusion proof for the note commitment.
     pub note_commitment_proof: tct::Proof,
-    // The diversified base for the address.
-    pub g_d: decaf377::Element,
-    // The transmission key for the address.
-    pub pk_d: ka::Public,
-    // The clue key for the address.
-    pub ck_d: fmd::ClueKey,
-    // The value of the note.
-    pub value: Value,
+    // The note being spent.
+    pub note: Note,
     // The blinding factor used for generating the value commitment.
     pub v_blinding: Fr,
-    // The blinding factor used for generating the note commitment.
-    pub note_blinding: Fq,
     // The randomizer used for generating the randomized spend auth key.
     pub spend_auth_randomizer: Fr,
     // The spend authorization key.
@@ -60,26 +52,22 @@ impl SpendProof {
         rk: VerificationKey<SpendAuth>,
     ) -> anyhow::Result<()> {
         // Short circuit to true if value released is 0. That means this is a _dummy_ spend.
-        if self.value.amount == 0 {
+        if self.note.value().amount == 0 {
             return Ok(());
         }
 
         // Note commitment integrity.
-        let s_component_transmission_key = Fq::from_bytes(self.pk_d.0);
-        if let Ok(transmission_key_s) = s_component_transmission_key {
-            let note_commitment_test = note::commitment(
-                self.note_blinding,
-                self.value,
-                self.g_d,
-                transmission_key_s,
-                &self.ck_d,
-            );
+        let s_component_transmission_key = self.note.transmission_key_s();
+        let note_commitment_test = note::commitment(
+            self.note.note_blinding(),
+            self.note.value(),
+            self.note.diversified_generator(),
+            s_component_transmission_key,
+            self.note.clue_key(),
+        );
 
-            if self.note_commitment_proof.commitment() != note_commitment_test {
-                return Err(anyhow!("note commitment mismatch"));
-            }
-        } else {
-            return Err(anyhow!("transmission key mismatch"));
+        if self.note_commitment_proof.commitment() != note_commitment_test {
+            return Err(anyhow!("note commitment mismatch"));
         }
 
         // Merkle path integrity.
@@ -88,14 +76,14 @@ impl SpendProof {
             .map_err(|_| anyhow!("merkle root mismatch"))?;
 
         // Value commitment integrity.
-        if self.value.commit(self.v_blinding) != value_commitment {
+        if self.note.value().commit(self.v_blinding) != value_commitment {
             return Err(anyhow!("value commitment mismatch"));
         }
 
         // The use of decaf means that we do not need to check that the
         // diversified basepoint is of small order. However we instead
         // check it is not identity.
-        if self.g_d.is_identity() || self.ak.is_identity() {
+        if self.note.diversified_generator().is_identity() || self.ak.is_identity() {
             return Err(anyhow!("unexpected identity"));
         }
 
@@ -120,7 +108,9 @@ impl SpendProof {
         // Diversified address integrity.
         let fvk = keys::FullViewingKey::from_components(self.ak, self.nk);
         let ivk = fvk.incoming();
-        if self.pk_d != ivk.diversified_public(&self.g_d) {
+        if *self.note.transmission_key()
+            != ivk.diversified_public(&self.note.diversified_generator())
+        {
             return Err(anyhow!("invalid diversified address"));
         }
 
@@ -213,19 +203,13 @@ impl From<SpendProof> for transparent_proofs::SpendProof {
     fn from(msg: SpendProof) -> Self {
         let ak_bytes: [u8; 32] = msg.ak.into();
         let nk_bytes: [u8; 32] = msg.nk.0.to_bytes();
-        let ck_d_bytes: [u8; 32] = msg.ck_d.0;
         transparent_proofs::SpendProof {
             note_commitment_proof: Some(msg.note_commitment_proof.into()),
-            g_d: msg.g_d.vartime_compress().0.to_vec(),
-            pk_d: msg.pk_d.0.to_vec(),
-            value_amount: msg.value.amount,
-            value_asset_id: msg.value.asset_id.0.to_bytes().to_vec(),
+            note: Some(msg.note.into()),
             v_blinding: msg.v_blinding.to_bytes().to_vec(),
-            note_blinding: msg.note_blinding.to_bytes().to_vec(),
             spend_auth_randomizer: msg.spend_auth_randomizer.to_bytes().to_vec(),
             ak: ak_bytes.into(),
             nk: nk_bytes.into(),
-            ck_d: ck_d_bytes.into(),
         }
     }
 }
@@ -234,17 +218,6 @@ impl TryFrom<transparent_proofs::SpendProof> for SpendProof {
     type Error = Error;
 
     fn try_from(proto: transparent_proofs::SpendProof) -> anyhow::Result<Self, Self::Error> {
-        let g_d_bytes: [u8; 32] = proto
-            .g_d
-            .try_into()
-            .map_err(|_| anyhow!("proto malformed"))?;
-        let g_d_encoding = decaf377::Encoding(g_d_bytes);
-
-        let ck_d_bytes: [u8; 32] = proto
-            .ck_d
-            .try_into()
-            .map_err(|_| anyhow!("proto malformed"))?;
-
         let v_blinding_bytes: [u8; 32] = proto.v_blinding[..]
             .try_into()
             .map_err(|_| anyhow!("proto malformed"))?;
@@ -262,35 +235,12 @@ impl TryFrom<transparent_proofs::SpendProof> for SpendProof {
                 .ok_or_else(|| anyhow!("proto malformed"))?
                 .try_into()
                 .map_err(|_| anyhow!("proto malformed"))?,
-            g_d: g_d_encoding
-                .vartime_decompress()
+            note: proto
+                .note
+                .ok_or_else(|| anyhow!("proto malformed"))?
+                .try_into()
                 .map_err(|_| anyhow!("proto malformed"))?,
-            pk_d: ka::Public(
-                proto
-                    .pk_d
-                    .try_into()
-                    .map_err(|_| anyhow!("proto malformed"))?,
-            ),
-            ck_d: fmd::ClueKey(ck_d_bytes),
-            value: Value {
-                amount: proto.value_amount,
-                asset_id: asset::Id(
-                    Fq::from_bytes(
-                        proto
-                            .value_asset_id
-                            .try_into()
-                            .map_err(|_| anyhow!("proto malformed"))?,
-                    )
-                    .map_err(|_| anyhow!("proto malformed"))?,
-                ),
-            },
             v_blinding: Fr::from_bytes(v_blinding_bytes).map_err(|_| anyhow!("proto malformed"))?,
-            note_blinding: Fq::from_bytes(
-                proto.note_blinding[..]
-                    .try_into()
-                    .map_err(|_| anyhow!("proto malformed"))?,
-            )
-            .map_err(|_| anyhow!("proto malformed"))?,
             spend_auth_randomizer: Fr::from_bytes(
                 proto.spend_auth_randomizer[..]
                     .try_into()
@@ -1177,12 +1127,8 @@ mod tests {
 
         let proof = SpendProof {
             note_commitment_proof,
-            g_d: *sender.diversified_generator(),
-            pk_d: *sender.transmission_key(),
-            ck_d: *sender.clue_key(),
-            value: value_to_send,
+            note,
             v_blinding,
-            note_blinding: note.note_blinding(),
             spend_auth_randomizer,
             ak,
             nk,
@@ -1223,12 +1169,8 @@ mod tests {
 
         let proof = SpendProof {
             note_commitment_proof,
-            g_d: *sender.diversified_generator(),
-            pk_d: *sender.transmission_key(),
-            ck_d: *sender.clue_key(),
-            value: value_to_send,
+            note,
             v_blinding,
-            note_blinding: note.note_blinding(),
             spend_auth_randomizer,
             ak,
             nk,
@@ -1268,12 +1210,8 @@ mod tests {
 
         let proof = SpendProof {
             note_commitment_proof,
-            g_d: *sender.diversified_generator(),
-            pk_d: *sender.transmission_key(),
-            ck_d: *sender.clue_key(),
-            value: value_to_send,
+            note,
             v_blinding,
-            note_blinding: note.note_blinding(),
             spend_auth_randomizer,
             ak,
             nk,
@@ -1313,12 +1251,8 @@ mod tests {
 
         let proof = SpendProof {
             note_commitment_proof,
-            g_d: *sender.diversified_generator(),
-            pk_d: *sender.transmission_key(),
-            ck_d: *sender.clue_key(),
-            value: value_to_send,
+            note,
             v_blinding,
-            note_blinding: note.note_blinding(),
             spend_auth_randomizer,
             ak,
             nk,
