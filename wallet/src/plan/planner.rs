@@ -3,8 +3,12 @@ use std::{
     mem,
 };
 
+use anyhow::{anyhow, Result};
+
 use penumbra_component::stake::{rate::RateData, validator};
 use penumbra_crypto::{
+    asset::Denom,
+    dex::{swap::SwapPlaintext, BatchSwapOutputData, TradingPair},
     keys::AddressIndex,
     memo::MemoPlaintext,
     rdsa::{SpendAuth, VerificationKey},
@@ -15,7 +19,10 @@ use penumbra_proto::view::NotesRequest;
 use penumbra_tct as tct;
 use penumbra_transaction::{
     action::{Proposal, ProposalSubmit, ProposalWithdrawBody, ValidatorVote},
-    plan::{ActionPlan, MemoPlan, OutputPlan, ProposalWithdrawPlan, SpendPlan, TransactionPlan},
+    plan::{
+        ActionPlan, MemoPlan, OutputPlan, ProposalWithdrawPlan, SpendPlan, SwapClaimPlan, SwapPlan,
+        TransactionPlan,
+    },
 };
 use penumbra_view::ViewClient;
 use rand::{CryptoRng, RngCore};
@@ -93,6 +100,79 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         let spend = SpendPlan::new(&mut self.rng, note, position).into();
         self.action(spend);
         self
+    }
+
+    /// Perform a swap claim based on an input swap NFT with a pre-paid fee.
+    #[instrument(skip(self))]
+    pub fn swap_claim(
+        &mut self,
+        swap_plaintext: SwapPlaintext,
+        swap_nft_note: Note,
+        swap_nft_position: tct::Position,
+        epoch_duration: u64,
+        output_data: BatchSwapOutputData,
+    ) -> &mut Self {
+        // Add a `SwapClaimPlan` action:
+        let swap_claim = SwapClaimPlan::new(
+            &mut self.rng,
+            swap_plaintext,
+            swap_nft_note,
+            swap_nft_position,
+            epoch_duration,
+            output_data,
+        )
+        .into();
+
+        // Nothing needs to be spent, since the fee is pre-paid and the
+        // swap NFT will be automatically consumed when the SwapClaim action
+        // is processed by the validators.
+        self.action(swap_claim);
+        self
+    }
+
+    /// Perform a swap based on input notes in the transaction.
+    #[instrument(skip(self))]
+    pub fn swap(
+        &mut self,
+        input_value: Value,
+        into_denom: Denom,
+        swap_claim_fee: Fee,
+        claim_address: Address,
+    ) -> Result<&mut Self> {
+        // Determine the canonical order for the assets being swapped.
+        // This will determine whether the input amount is assigned to delta_1 or delta_2.
+        let trading_pair =
+            TradingPair::canonical_order_for((input_value.asset_id, into_denom.id()))?;
+
+        // If `trading_pair.asset_1` is the input asset, then `delta_1` is the input amount,
+        // and `delta_2` is 0.
+        //
+        // Otherwise, `delta_1` is 0, and `delta_2` is the input amount.
+        let (delta_1, delta_2) = if trading_pair.asset_1() == input_value.asset_id {
+            (input_value.amount, 0)
+        } else {
+            (0, input_value.amount)
+        };
+
+        // If there is no input, then there is no swap.
+        if delta_1 == 0 && delta_2 == 0 {
+            return Err(anyhow!("No input value for swap"));
+        }
+
+        // Create the `SwapPlaintext` representing the swap to be performed:
+        let swap_plaintext = SwapPlaintext::from_parts(
+            trading_pair,
+            delta_1,
+            delta_2,
+            swap_claim_fee,
+            claim_address,
+        )
+        .map_err(|_| anyhow!("error generating swap plaintext"))?;
+
+        let swap = SwapPlan::new(&mut self.rng, swap_plaintext).into();
+        self.action(swap);
+
+        Ok(self)
     }
 
     /// Add an output note from this transaction.
@@ -218,8 +298,37 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             PositionClose(_) => todo!(),
             PositionWithdraw(_) => todo!(),
             PositionRewardClaim(_) => todo!(),
-            Swap(_) => todo!(),
-            SwapClaim(_) => todo!(),
+            Swap(swap) => {
+                // Swaps must have spends corresponding to:
+                // - the input amount of asset 1
+                // - the input amount of asset 2
+                // - the pre-paid swap claim fee
+                let value_1 = Value {
+                    amount: swap.swap_plaintext.delta_1_i,
+                    asset_id: swap.swap_plaintext.trading_pair.asset_1(),
+                };
+                let value_2 = Value {
+                    amount: swap.swap_plaintext.delta_2_i,
+                    asset_id: swap.swap_plaintext.trading_pair.asset_2(),
+                };
+                let value_fee = Value {
+                    amount: swap.swap_plaintext.claim_fee.amount(),
+                    asset_id: swap.swap_plaintext.claim_fee.asset_id(),
+                };
+                self.balance -= value_1;
+                self.balance -= value_2;
+                self.balance -= value_fee;
+            }
+            SwapClaim(swap_claim) => {
+                // Only the pre-paid fee is contributed to the value balance
+                // The rest is handled internally to the SwapClaim action.
+                let value_fee = Value {
+                    amount: swap_claim.swap_plaintext.claim_fee.amount(),
+                    asset_id: swap_claim.swap_plaintext.claim_fee.asset_id(),
+                };
+
+                self.balance += value_fee;
+            }
             IBCAction(_) => todo!(),
             ValidatorDefinition(_) | ProposalWithdraw(_) | DelegatorVote(_) | ValidatorVote(_) => {
                 // No contribution to the value balance of the transaction
