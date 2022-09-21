@@ -4,13 +4,18 @@ use std::{
     iter::FusedIterator,
     mem,
     num::NonZeroU64,
-    ops::{Add, AddAssign, Neg, Sub, SubAssign},
+    ops::{Add, AddAssign, Deref, Neg, Sub, SubAssign},
 };
 
-use crate::{asset, Value};
+use crate::{
+    asset,
+    value::{self, VALUE_BLINDING_GENERATOR},
+    Value,
+};
 
 mod imbalance;
 mod iter;
+use decaf377::Fr;
 use imbalance::Imbalance;
 
 /// A `Balance` is a "vector of [`Value`]s", where some values may be required, while others may be
@@ -58,6 +63,33 @@ impl Balance {
         &self,
     ) -> impl Iterator<Item = Value> + DoubleEndedIterator + FusedIterator + '_ {
         self.iter().filter_map(Imbalance::provided)
+    }
+
+    /// Commit to a [`Balance`] using a provided blinding factor.
+    ///
+    /// This is like a vectorized [`Value::commit`].
+    #[allow(non_snake_case)]
+    pub fn commit(&self, blinding_factor: Fr) -> value::Commitment {
+        // Accumulate all the elements for the values
+        let mut commitment = decaf377::Element::default();
+        for imbalance in self.iter() {
+            let (sign, value) = imbalance.into_inner();
+            let G_v = value.asset_id.value_generator();
+
+            // Depending on the sign, either subtract or add
+            match sign {
+                imbalance::Sign::Required => {
+                    commitment -= G_v * Fr::from(value.amount);
+                }
+                imbalance::Sign::Provided => {
+                    commitment += G_v * Fr::from(value.amount);
+                }
+            }
+        }
+
+        // Add the blinding factor only once, after the accumulation
+        commitment += blinding_factor * VALUE_BLINDING_GENERATOR.deref();
+        value::Commitment(commitment)
     }
 }
 
