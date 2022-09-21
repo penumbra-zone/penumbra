@@ -110,6 +110,9 @@ enum TestnetCommand {
     Join {
         #[clap(default_value = "testnet.penumbra.zone")]
         node: String,
+        // Default: node-#
+        #[clap(long)]
+        moniker: Option<String>,
     },
 
     /// Reset all `pd` testnet state.
@@ -260,7 +263,7 @@ async fn main() -> anyhow::Result<()> {
         }
 
         RootCommand::Testnet {
-            tn_cmd: TestnetCommand::Join { node },
+            tn_cmd: TestnetCommand::Join { node, moniker },
             testnet_dir,
         } => {
             // By default output directory will be in `~/.penumbra/testnet_data/`
@@ -312,7 +315,11 @@ async fn main() -> anyhow::Result<()> {
             let node_id = serde_json::value::from_value(node_id)?;
             tracing::info!(?node_id, "fetched node id");
 
-            let node_name = format!("node-{}", hex::encode(OsRng.gen::<u32>().to_le_bytes()));
+            let node_name = if let Some(moniker) = moniker {
+                moniker
+            } else {
+                format!("node-{}", hex::encode(OsRng.gen::<u32>().to_le_bytes()))
+            };
             let tm_config = generate_tm_config(&node_name, &[(node_id, node)]);
 
             write_configs(node_dir, &vk, &genesis, tm_config)?;
