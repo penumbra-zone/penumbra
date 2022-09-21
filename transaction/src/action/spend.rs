@@ -69,7 +69,7 @@ impl From<Body> for transaction::SpendBody {
         let nullifier_bytes: [u8; 32] = msg.nullifier.into();
         let rk_bytes: [u8; 32] = msg.rk.into();
         transaction::SpendBody {
-            value_commitment: Some(msg.balance_commitment.into()),
+            balance_commitment: Some(msg.balance_commitment.into()),
             nullifier: Bytes::copy_from_slice(&nullifier_bytes),
             rk: Bytes::copy_from_slice(&rk_bytes),
         }
@@ -80,8 +80,8 @@ impl TryFrom<transaction::SpendBody> for Body {
     type Error = Error;
 
     fn try_from(proto: transaction::SpendBody) -> anyhow::Result<Self, Self::Error> {
-        let value_commitment: balance::Commitment = proto
-            .value_commitment
+        let balance_commitment: balance::Commitment = proto
+            .balance_commitment
             .ok_or_else(|| anyhow::anyhow!("missing value commitment"))?
             .try_into()?;
 
@@ -97,7 +97,7 @@ impl TryFrom<transaction::SpendBody> for Body {
             .map_err(|_| anyhow::anyhow!("spend body malformed"))?;
 
         Ok(Body {
-            balance_commitment: value_commitment,
+            balance_commitment,
             nullifier,
             rk,
         })

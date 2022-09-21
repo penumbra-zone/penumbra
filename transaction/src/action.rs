@@ -1,5 +1,7 @@
 use std::convert::{TryFrom, TryInto};
 
+use ark_ff::Zero;
+use decaf377::Fr;
 use penumbra_crypto::balance;
 use penumbra_proto::{ibc as pb_ibc, stake as pbs, transaction as pb, Protobuf};
 
@@ -53,30 +55,30 @@ pub enum Action {
 }
 
 impl Action {
-    /// Obtains or computes a commitment to the (typed) value added or subtracted from
+    /// Obtains or computes a commitment to the (typed) balance added or subtracted from
     /// the transaction's balance by this action.
-    pub fn value_commitment(&self) -> balance::Commitment {
+    pub fn balance_commitment(&self) -> balance::Commitment {
         match self {
             Action::Output(output) => output.body.balance_commitment,
             Action::Spend(spend) => spend.body.balance_commitment,
-            Action::Delegate(delegate) => delegate.value_commitment(),
-            Action::Undelegate(undelegate) => undelegate.value_commitment(),
-            Action::Swap(swap) => swap.value_commitment(),
-            Action::SwapClaim(swap_claim) => swap_claim.value_commitment(),
+            Action::Delegate(delegate) => delegate.balance().commit(Fr::zero()),
+            Action::Undelegate(undelegate) => undelegate.balance().commit(Fr::zero()),
+            Action::Swap(swap) => swap.balance_commitment(),
+            Action::SwapClaim(swap_claim) => swap_claim.balance().commit(Fr::zero()),
             // These actions just post data to the chain, and leave the value balance
             // unchanged.
             Action::ValidatorDefinition(_) => balance::Commitment::default(),
             Action::IBCAction(_) => balance::Commitment::default(),
-            Action::ProposalSubmit(submit) => submit.value_commitment(),
+            Action::ProposalSubmit(submit) => submit.balance().commit(Fr::zero()),
             Action::ProposalWithdraw(_) => balance::Commitment::default(),
             // Action::DelegatorVote(_) => balance::Commitment::default(),
             Action::ValidatorVote(_) => balance::Commitment::default(),
 
-            Action::PositionOpen(p) => p.value_commitment(),
-            Action::PositionClose(p) => p.value_commitment(),
-            Action::PositionWithdraw(p) => p.value_commitment(),
-            Action::PositionRewardClaim(p) => p.value_commitment(),
-            Action::ICS20Withdrawal(withdrawal) => withdrawal.value_commitment(),
+            Action::PositionOpen(p) => p.balance().commit(Fr::zero()),
+            Action::PositionClose(p) => p.balance().commit(Fr::zero()),
+            Action::PositionWithdraw(p) => p.balance_commitment(),
+            Action::PositionRewardClaim(p) => p.balance_commitment(),
+            Action::ICS20Withdrawal(withdrawal) => withdrawal.balance().commit(Fr::zero()),
         }
     }
 }

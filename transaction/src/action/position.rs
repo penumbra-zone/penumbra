@@ -6,7 +6,7 @@ use penumbra_crypto::{
         position::{self, Position},
         LpNft, Reserves,
     },
-    Fr, Value, Zero,
+    Balance, Fr, Value, Zero,
 };
 use penumbra_proto::{
     dex::{self as pb},
@@ -32,28 +32,26 @@ pub struct PositionOpen {
 
 impl PositionOpen {
     /// Compute a commitment to the value this action contributes to its transaction.
-    pub fn value_commitment(&self) -> balance::Commitment {
+    pub fn balance(&self) -> Balance {
         let opened_position_nft = Value {
             amount: 1u64.into(),
             asset_id: LpNft::new(self.position.id(), position::State::Opened).asset_id(),
-        }
-        .commit(Fr::zero());
+        };
 
         let r1 = Value {
             amount: self.initial_reserves.r1,
             asset_id: self.position.pair.asset_1(),
-        }
-        .commit(Fr::zero());
+        };
+
         let r2 = Value {
             amount: self.initial_reserves.r2,
             asset_id: self.position.pair.asset_2(),
-        }
-        .commit(Fr::zero());
+        };
 
-        let reserves = r1 + r2;
+        let reserves = Balance::from(r1) + r2;
 
         // The action consumes the reserves and produces an LP NFT
-        opened_position_nft - reserves
+        Balance::from(opened_position_nft) - reserves
     }
 }
 
@@ -74,20 +72,19 @@ pub struct PositionClose {
 
 impl PositionClose {
     /// Compute a commitment to the value this action contributes to its transaction.
-    pub fn value_commitment(&self) -> balance::Commitment {
+    pub fn balance(&self) -> Balance {
         let opened_position_nft = Value {
             amount: 1u64.into(),
             asset_id: LpNft::new(self.position_id, position::State::Opened).asset_id(),
-        }
-        .commit(Fr::zero());
+        };
+
         let closed_position_nft = Value {
             amount: 1u64.into(),
             asset_id: LpNft::new(self.position_id, position::State::Closed).asset_id(),
-        }
-        .commit(Fr::zero());
+        };
 
         // The action consumes an opened position and produces a closed position.
-        closed_position_nft - opened_position_nft
+        Balance::from(closed_position_nft) - opened_position_nft
     }
 }
 
@@ -108,7 +105,7 @@ pub struct PositionWithdraw {
 
 impl PositionWithdraw {
     /// Compute a commitment to the value this action contributes to its transaction.
-    pub fn value_commitment(&self) -> balance::Commitment {
+    pub fn balance_commitment(&self) -> balance::Commitment {
         let closed_position_nft = Value {
             amount: 1u64.into(),
             asset_id: LpNft::new(self.position_id, position::State::Closed).asset_id(),
@@ -137,7 +134,7 @@ pub struct PositionRewardClaim {
 
 impl PositionRewardClaim {
     /// Compute a commitment to the value this action contributes to its transaction.
-    pub fn value_commitment(&self) -> balance::Commitment {
+    pub fn balance_commitment(&self) -> balance::Commitment {
         let withdrawn_position_nft = Value {
             amount: 1u64.into(),
             asset_id: LpNft::new(self.position_id, position::State::Withdrawn).asset_id(),
@@ -222,7 +219,7 @@ impl TryFrom<pb::PositionWithdraw> for PositionWithdraw {
                 .try_into()?,
             reserves_commitment: value
                 .reserves_commitment
-                .ok_or_else(|| anyhow::anyhow!("missing value_commitment"))?
+                .ok_or_else(|| anyhow::anyhow!("missing balance_commitment"))?
                 .try_into()?,
         })
     }
@@ -250,7 +247,7 @@ impl TryFrom<pb::PositionRewardClaim> for PositionRewardClaim {
                 .try_into()?,
             rewards_commitment: value
                 .rewards_commitment
-                .ok_or_else(|| anyhow::anyhow!("missing value_commitment"))?
+                .ok_or_else(|| anyhow::anyhow!("missing balance_commitment"))?
                 .try_into()?,
         })
     }

@@ -1,4 +1,4 @@
-use penumbra_crypto::{balance, value, Address, Fr, Zero};
+use penumbra_crypto::{value, Address, Balance};
 use penumbra_proto::{ibc as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
@@ -25,15 +25,8 @@ pub struct ICS20Withdrawal {
 }
 
 impl ICS20Withdrawal {
-    pub fn value_commitment(&self) -> balance::Commitment {
-        // we need to compute a value commitment to the transparent value of this withdrawal
-        let withdrawal_value = self.value.commit(Fr::zero());
-
-        // Consume from the withdrawal value. This should be negative because it consumes from the value
-        // balance of the transaction. when we compute the binding verification key, we sum all of
-        // the value commitments. Thus, there should be a spend that ouputs a positive value
-        // balance to this tx prior to this withdrawal action.
-        -withdrawal_value
+    pub fn balance(&self) -> Balance {
+        -Balance::from(self.value)
     }
 }
 

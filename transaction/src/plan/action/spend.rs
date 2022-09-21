@@ -91,6 +91,14 @@ impl SpendPlan {
             nk: *fvk.nullifier_key(),
         }
     }
+
+    pub fn balance(&self) -> penumbra_crypto::Balance {
+        penumbra_crypto::Value {
+            amount: self.note.value().amount,
+            asset_id: self.note.value().asset_id,
+        }
+        .into()
+    }
 }
 
 impl Protobuf<pb::SpendPlan> for SpendPlan {}

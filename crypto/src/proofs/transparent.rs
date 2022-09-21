@@ -47,7 +47,7 @@ impl SpendProof {
     pub fn verify(
         &self,
         anchor: tct::Root,
-        value_commitment: balance::Commitment,
+        balance_commitment: balance::Commitment,
         nullifier: Nullifier,
         rk: VerificationKey<SpendAuth>,
     ) -> anyhow::Result<()> {
@@ -76,7 +76,7 @@ impl SpendProof {
             .map_err(|_| anyhow!("merkle root mismatch"))?;
 
         // Value commitment integrity.
-        if self.note.value().commit(self.v_blinding) != value_commitment {
+        if self.note.value().commit(self.v_blinding) != balance_commitment {
             return Err(anyhow!("value commitment mismatch"));
         }
 
@@ -140,7 +140,7 @@ impl OutputProof {
     /// * the ephemeral public key used to generate the new note.
     pub fn verify(
         &self,
-        value_commitment: balance::Commitment,
+        balance_commitment: balance::Commitment,
         note_commitment: note::Commitment,
         epk: ka::Public,
     ) -> anyhow::Result<()> {
@@ -163,7 +163,7 @@ impl OutputProof {
         }
 
         // Value commitment integrity.
-        if value_commitment != -self.note.value().commit(self.v_blinding) {
+        if balance_commitment != -self.note.value().commit(self.v_blinding) {
             return Err(anyhow!("value commitment mismatch"));
         }
 
@@ -930,7 +930,7 @@ mod tests {
     }
 
     #[test]
-    fn test_output_proof_verification_value_commitment_integrity_failure() {
+    fn test_output_proof_verification_balance_commitment_integrity_failure() {
         let mut rng = OsRng;
 
         let seed_phrase = SeedPhrase::generate(&mut rng);
@@ -953,10 +953,10 @@ mod tests {
             v_blinding,
             esk,
         };
-        let incorrect_value_commitment = value_to_send.commit(Fr::rand(&mut rng));
+        let incorrect_balance_commitment = value_to_send.commit(Fr::rand(&mut rng));
 
         assert!(proof
-            .verify(incorrect_value_commitment, note.commit(), correct_epk)
+            .verify(incorrect_balance_commitment, note.commit(), correct_epk)
             .is_err());
     }
 
@@ -1081,7 +1081,7 @@ mod tests {
     }
 
     #[test]
-    fn test_spend_proof_verification_value_commitment_integrity_failure() {
+    fn test_spend_proof_verification_balance_commitment_integrity_failure() {
         let mut rng = OsRng;
         let seed_phrase = SeedPhrase::generate(&mut rng);
         let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);

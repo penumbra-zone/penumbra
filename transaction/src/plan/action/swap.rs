@@ -2,6 +2,7 @@ use anyhow::{anyhow, Result};
 use ark_ff::UniformRand;
 use decaf377::Fq;
 use penumbra_crypto::dex::swap::SwapPlaintext;
+use penumbra_crypto::Balance;
 use penumbra_crypto::{
     proofs::transparent::SwapProof, FieldExt, Fr, FullViewingKey, Note, NotePayload, Value,
 };
@@ -114,6 +115,31 @@ impl SwapPlan {
             // delta_1_blinding: self.delta_1_blinding(),
             // delta_2_blinding: self.delta_2_blinding(),
         }
+    }
+
+    pub fn balance(&self) -> penumbra_crypto::Balance {
+        // Swaps must have spends corresponding to:
+        // - the input amount of asset 1
+        // - the input amount of asset 2
+        // - the pre-paid swap claim fee
+        let value_1 = Value {
+            amount: self.swap_plaintext.delta_1_i,
+            asset_id: self.swap_plaintext.trading_pair.asset_1(),
+        };
+        let value_2 = Value {
+            amount: self.swap_plaintext.delta_2_i,
+            asset_id: self.swap_plaintext.trading_pair.asset_2(),
+        };
+        let value_fee = Value {
+            amount: self.swap_plaintext.claim_fee.amount(),
+            asset_id: self.swap_plaintext.claim_fee.asset_id(),
+        };
+
+        let mut balance = Balance::default();
+        balance -= value_1;
+        balance -= value_2;
+        balance -= value_fee;
+        balance
     }
 }
 

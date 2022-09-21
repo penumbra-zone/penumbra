@@ -259,82 +259,8 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     }
 
     fn action(&mut self, action: ActionPlan) -> &mut Self {
-        use ActionPlan::*;
-
-        // Track this action's contribution to the value balance of the transaction: this must match
-        // the actual contribution to the value commitment, but this isn't checked, so make sure
-        // that when you're adding a new action, you correctly match this up to the calculation of
-        // the value commitment for the transaction, or else the planner will submit transactions
-        // that are not balanced!
-        match &action {
-            Spend(spend) => self.balance += spend.note.value(),
-            Output(output) => self.balance -= output.value,
-            Delegate(delegate) => {
-                self.balance -= Value {
-                    amount: delegate.unbonded_amount,
-                    asset_id: *STAKING_TOKEN_ASSET_ID,
-                };
-                self.balance += Value {
-                    amount: delegate.delegation_amount,
-                    asset_id: DelegationToken::new(delegate.validator_identity).id(),
-                };
-            }
-            Undelegate(undelegate) => {
-                self.balance += Value {
-                    amount: undelegate.unbonded_amount,
-                    asset_id: *STAKING_TOKEN_ASSET_ID,
-                };
-                self.balance -= Value {
-                    amount: undelegate.delegation_amount,
-                    asset_id: DelegationToken::new(undelegate.validator_identity).id(),
-                };
-            }
-            ProposalSubmit(proposal_submit) => {
-                self.balance -= Value {
-                    amount: proposal_submit.deposit_amount,
-                    asset_id: *STAKING_TOKEN_ASSET_ID,
-                };
-            }
-            PositionOpen(_) => todo!(),
-            PositionClose(_) => todo!(),
-            PositionWithdraw(_) => todo!(),
-            PositionRewardClaim(_) => todo!(),
-            Swap(swap) => {
-                // Swaps must have spends corresponding to:
-                // - the input amount of asset 1
-                // - the input amount of asset 2
-                // - the pre-paid swap claim fee
-                let value_1 = Value {
-                    amount: swap.swap_plaintext.delta_1_i,
-                    asset_id: swap.swap_plaintext.trading_pair.asset_1(),
-                };
-                let value_2 = Value {
-                    amount: swap.swap_plaintext.delta_2_i,
-                    asset_id: swap.swap_plaintext.trading_pair.asset_2(),
-                };
-                let value_fee = Value {
-                    amount: swap.swap_plaintext.claim_fee.amount(),
-                    asset_id: swap.swap_plaintext.claim_fee.asset_id(),
-                };
-                self.balance -= value_1;
-                self.balance -= value_2;
-                self.balance -= value_fee;
-            }
-            SwapClaim(swap_claim) => {
-                // Only the pre-paid fee is contributed to the value balance
-                // The rest is handled internally to the SwapClaim action.
-                let value_fee = Value {
-                    amount: swap_claim.swap_plaintext.claim_fee.amount(),
-                    asset_id: swap_claim.swap_plaintext.claim_fee.asset_id(),
-                };
-
-                self.balance += value_fee;
-            }
-            IBCAction(_) => todo!(),
-            ValidatorDefinition(_) | ProposalWithdraw(_) | DelegatorVote(_) | ValidatorVote(_) => {
-                // No contribution to the value balance of the transaction
-            }
-        };
+        // Track the contribution of the action to the transaction's balance
+        self.balance += action.balance();
 
         // Add the action to the plan
         self.plan.actions.push(action);

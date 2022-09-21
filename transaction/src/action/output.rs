@@ -58,7 +58,7 @@ impl From<Body> for pb::OutputBody {
     fn from(output: Body) -> Self {
         pb::OutputBody {
             note_payload: Some(output.note_payload.into()),
-            value_commitment: Some(output.balance_commitment.into()),
+            balance_commitment: Some(output.balance_commitment.into()),
             wrapped_memo_key: Bytes::copy_from_slice(&output.wrapped_memo_key.0),
             ovk_wrapped_key: Bytes::copy_from_slice(&output.ovk_wrapped_key.0),
         }
@@ -83,8 +83,8 @@ impl TryFrom<pb::OutputBody> for Body {
             .try_into()
             .map_err(|_| anyhow::anyhow!("output malformed"))?;
 
-        let value_commitment = proto
-            .value_commitment
+        let balance_commitment = proto
+            .balance_commitment
             .ok_or_else(|| anyhow::anyhow!("missing value commitment"))?
             .try_into()?;
 
@@ -92,7 +92,7 @@ impl TryFrom<pb::OutputBody> for Body {
             note_payload,
             wrapped_memo_key,
             ovk_wrapped_key,
-            balance_commitment: value_commitment,
+            balance_commitment,
         })
     }
 }

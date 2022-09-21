@@ -1,10 +1,7 @@
-use ark_ff::Zero;
-use decaf377::Fr;
-use penumbra_crypto::balance;
 use penumbra_crypto::dex::BatchSwapOutputData;
 use penumbra_crypto::transaction::Fee;
-use penumbra_crypto::Nullifier;
 use penumbra_crypto::{proofs::transparent::SwapClaimProof, NotePayload};
+use penumbra_crypto::{Balance, Nullifier};
 use penumbra_proto::{dex as pb, Protobuf};
 use serde::Deserialize;
 use serde::Serialize;
@@ -18,8 +15,8 @@ pub struct SwapClaim {
 impl SwapClaim {
     /// Compute a commitment to the value contributed to a transaction by this swap claim.
     /// Will add (f,fee_token) representing the pre-paid fee
-    pub fn value_commitment(&self) -> balance::Commitment {
-        self.body.fee.commit(Fr::zero())
+    pub fn balance(&self) -> Balance {
+        self.body.fee.value().into()
     }
 }
 

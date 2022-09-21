@@ -191,18 +191,18 @@ impl Transaction {
 
     /// Compute the binding verification key from the transaction data.
     pub fn binding_verification_key(&self) -> VerificationKey<Binding> {
-        let mut value_commitments = decaf377::Element::default();
+        let mut balance_commitments = decaf377::Element::default();
         for action in &self.transaction_body.actions {
-            value_commitments += action.value_commitment().0;
+            balance_commitments += action.balance_commitment().0;
         }
 
         // Add fee into binding verification key computation.
         let fee_v_blinding = Fr::zero();
-        let fee_value_commitment = self.transaction_body.fee.commit(fee_v_blinding);
-        value_commitments -= fee_value_commitment.0;
+        let fee_balance_commitment = self.transaction_body.fee.commit(fee_v_blinding);
+        balance_commitments -= fee_balance_commitment.0;
 
         let binding_verification_key_bytes: VerificationKeyBytes<Binding> =
-            value_commitments.vartime_compress().0.into();
+            balance_commitments.vartime_compress().0.into();
 
         binding_verification_key_bytes
             .try_into()
