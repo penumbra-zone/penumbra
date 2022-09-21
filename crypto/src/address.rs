@@ -10,7 +10,7 @@ use crate::{fmd, ka, keys::Diversifier, Fq};
 
 pub const ADDRESS_LEN_BYTES: usize = 80;
 /// Number of bits in the address short form divided by the number of bits per Bech32m character
-pub const ADDRESS_NUM_CHARS_SHORT_FORM: usize = 20;
+pub const ADDRESS_NUM_CHARS_SHORT_FORM: usize = 24;
 
 /// A valid payment address.
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
