@@ -72,21 +72,37 @@ impl StubCpmm {
 
                 match (lambda_1_netted <= delta_1, lambda_2_netted <= delta_2) {
                     // We have more delta_1 than is needed to net out delta_2.
-                    (true, false) => (
+                    (true, _) => (
                         lambda_1_netted,
-                        self.trade_1_to_2(delta_1 - lambda_1_netted),
+                        self.trade_1_to_2(delta_1 - lambda_1_netted) + delta_2,
                     ),
                     // We have more delta_2 than is needed to net out delta_1.
-                    (false, true) => (
-                        self.trade_2_to_1(delta_2 - lambda_2_netted),
+                    (_, true) => (
+                        self.trade_2_to_1(delta_2 - lambda_2_netted) + delta_1,
                         lambda_2_netted,
                     ),
                     // Intuitively, these should never happen -- but skipping
                     // handling them would require justifying why, so instead,
                     // just burn all the input funds (lol)
-                    (true, true) | (false, false) => (0, 0),
+                    (false, false) => (0, 0),
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_cpmm() {
+        // test:
+        //   inputs (100,100) reserves (1,1) outputs should be (100,100)
+        let mut cpmm = StubCpmm {
+            reserves: Reserves { r1: 1, r2: 1 },
+        };
+
+        assert_eq!(cpmm.trade_netted((100, 100)), (100, 100));
     }
 }
