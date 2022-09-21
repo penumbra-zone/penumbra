@@ -115,7 +115,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
+        "h": 11,
         "w": 24,
         "x": 0,
         "y": 0
@@ -138,11 +138,47 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "tendermint_p2p_peers",
+          "expr": "penumbra_stake_validators_active{role=\"consensus\"}",
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "penumbra_stake_validators_disabled{role=\"consensus\"}",
+          "hide": false,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "penumbra_stake_validators_inactive{role=\"consensus\"}",
+          "hide": false,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "penumbra_stake_validators_jailed{role=\"consensus\"}",
+          "hide": false,
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "penumbra_stake_validators_tombstoned{role=\"consensus\"}",
+          "hide": false,
+          "refId": "E"
         }
       ],
-      "title": "Peer Count",
+      "title": "Panel Title",
       "type": "timeseries"
     },
     {
@@ -196,16 +232,15 @@
                 "value": 80
               }
             ]
-          },
-          "unit": "Bps"
+          }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
+        "h": 10,
         "w": 24,
         "x": 0,
-        "y": 7
+        "y": 11
       },
       "id": 4,
       "options": {
@@ -225,24 +260,14 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum(rate(tendermint_p2p_peer_send_bytes_total[1m])) by (peer_id)",
+          "expr": "penumbra_stake_missed_blocks{role=\"consensus\"}",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "expr": "sum(rate(tendermint_p2p_peer_receive_bytes_total[1m])) by(peer_id)",
-          "hide": false,
-          "refId": "B"
         }
       ],
-      "title": "P2P Send Bytes",
+      "title": "Panel Title",
       "type": "timeseries"
     }
   ],
-  "refresh": "",
   "schemaVersion": 36,
   "style": "dark",
   "tags": [],
@@ -255,8 +280,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "P2P",
-  "uid": "6mG97ulnk",
-  "version": 4,
+  "title": "Validators",
+  "uid": "9p3YN83nk",
+  "version": 3,
   "weekStart": ""
 }

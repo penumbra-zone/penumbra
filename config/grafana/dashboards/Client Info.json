@@ -115,7 +115,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
+        "h": 8,
         "w": 24,
         "x": 0,
         "y": 0
@@ -138,11 +138,26 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "tendermint_p2p_peers",
+          "editorMode": "code",
+          "expr": "rate(penumbra_pd_oblivious_client_compact_block_served_total[5m])",
+          "legendFormat": "Rate of served compact blocks (5m)",
+          "range": true,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "editorMode": "code",
+          "expr": "rate(penumbra_pd_oblivious_client_compact_block_served_total[30s])",
+          "hide": false,
+          "legendFormat": "Rate of served compact blocks (30s)",
+          "range": true,
+          "refId": "B"
         }
       ],
-      "title": "Peer Count",
+      "title": "Compact Blocks",
       "type": "timeseries"
     },
     {
@@ -158,6 +173,7 @@
           "custom": {
             "axisLabel": "",
             "axisPlacement": "auto",
+            "axisSoftMin": 0,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -196,16 +212,15 @@
                 "value": 80
               }
             ]
-          },
-          "unit": "Bps"
+          }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
+        "h": 8,
         "w": 24,
         "x": 0,
-        "y": 7
+        "y": 8
       },
       "id": 4,
       "options": {
@@ -225,24 +240,14 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum(rate(tendermint_p2p_peer_send_bytes_total[1m])) by (peer_id)",
+          "expr": "penumbra_pd_oblivious_client_compact_active_connections",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "expr": "sum(rate(tendermint_p2p_peer_receive_bytes_total[1m])) by(peer_id)",
-          "hide": false,
-          "refId": "B"
         }
       ],
-      "title": "P2P Send Bytes",
+      "title": "Active Client Connections",
       "type": "timeseries"
     }
   ],
-  "refresh": "",
   "schemaVersion": 36,
   "style": "dark",
   "tags": [],
@@ -255,8 +260,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "P2P",
-  "uid": "6mG97ulnk",
-  "version": 4,
+  "title": "Client Info",
+  "uid": "Uq0N5097k",
+  "version": 5,
   "weekStart": ""
 }
