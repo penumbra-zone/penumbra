@@ -84,12 +84,8 @@ impl SpendPlan {
     ) -> SpendProof {
         SpendProof {
             note_commitment_proof,
-            g_d: self.note.diversified_generator(),
-            pk_d: *self.note.transmission_key(),
-            ck_d: *self.note.clue_key(),
-            value: self.note.value(),
+            note: self.note.clone(),
             v_blinding: self.value_blinding,
-            note_blinding: self.note.note_blinding(),
             spend_auth_randomizer: self.randomizer,
             ak: *fvk.spend_verification_key(),
             nk: *fvk.nullifier_key(),

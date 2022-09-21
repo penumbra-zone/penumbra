@@ -14,17 +14,12 @@ message SpendProof {
    * @exclude
    * From the note being spent
   */
-  bytes g_d = 2;
-  bytes pk_d = 3;
+  crypto.Note note = 2;
 
-  uint64 value_amount = 4;
-  bytes value_asset_id = 5;
   bytes v_blinding = 6;
-  bytes note_blinding = 8;
   bytes spend_auth_randomizer = 9;
   bytes ak = 10;
   bytes nk = 11;
-  bytes ck_d = 12;
 }
 
 // A Penumbra transparent output proof.
