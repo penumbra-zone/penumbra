@@ -36,7 +36,6 @@ impl Address {
     /// of an [`Fq`] `s` value.
     pub(crate) fn from_components(
         d: Diversifier,
-        g_d: decaf377::Element,
         pk_d: ka::Public,
         ck_d: fmd::ClueKey,
     ) -> Option<Self> {
@@ -46,7 +45,7 @@ impl Address {
             // don't need an error type here, caller will probably .expect anyways
             Some(Self {
                 d,
-                g_d,
+                g_d: d.diversified_generator(),
                 pk_d,
                 ck_d,
                 transmission_key_s,
@@ -105,7 +104,6 @@ impl Address {
         let diversifier = Diversifier(diversifier_bytes);
         Address::from_components(
             diversifier,
-            diversifier.diversified_generator(),
             ka::Public(pk_d_bytes),
             fmd::ClueKey(clue_key_bytes),
         )
@@ -204,7 +202,6 @@ impl TryFrom<&[u8]> for Address {
 
         let address = Address::from_components(
             diversifier,
-            diversifier.diversified_generator(),
             ka::Public(pk_d_bytes),
             fmd::ClueKey(clue_key_bytes),
         );
