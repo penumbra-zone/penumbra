@@ -179,7 +179,7 @@ impl OutputProof {
         // The use of decaf means that we do not need to check that the
         // diversified basepoint is of small order. However we instead
         // check it is not identity.
-        if self.note.diversified_generator().is_identity() {
+        if self.note.address().diversified_generator().is_identity() {
             return Err(anyhow!("unexpected identity"));
         }
 
@@ -1024,9 +1024,6 @@ mod tests {
         let note = Note::generate(&mut rng, &dest, value_to_send);
         let esk = ka::Secret::new(&mut rng);
         let epk = esk.diversified_public(&note.diversified_generator());
-        let dg = note.diversified_generator();
-        assert_eq!(*dest.diversified_generator(), decaf377::Element::default());
-        assert_eq!(dg, decaf377::Element::default());
 
         let proof = OutputProof {
             note: note.clone(),
