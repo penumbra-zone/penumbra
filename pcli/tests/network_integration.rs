@@ -189,7 +189,7 @@ fn delegate_and_undelegate() {
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     balance_cmd
         .assert()
-        .stdout(predicate::str::is_match(validator.as_str().to_string()).unwrap());
+        .stdout(predicate::str::is_match(validator.as_str()).unwrap());
 
     // Now undelegate.
     let amount_to_undelegate = format!("0.99delegation_{}", validator.as_str());
