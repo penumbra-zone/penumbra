@@ -1,0 +1,28 @@
+name: buf-push
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: bufbuild/buf-setup-action@v1
+        with:
+          input: 'proto'
+      # Disabled because we have a lot of lint errors we can't fix while there
+      # are in-flight proto changes
+      # - uses: bufbuild/buf-lint-action@v1
+      #  with:
+      #    input: 'proto'
+      # Disabled because we don't have any changes to compare against
+      # - uses: bufbuild/buf-breaking-action@v1
+      #   with:
+      #     # The 'main' branch of the GitHub repository that defines the module.
+      #     against: 'https://github.com/${GITHUB_REPOSITORY}.git#branch=main'
+      #     input: 'proto'
+      - uses: bufbuild/buf-push-action@v1
+        with:
+          buf_token: ${{ secrets.BUF_TOKEN }}
+          input: 'proto'
