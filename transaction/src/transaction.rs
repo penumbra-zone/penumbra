@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     action::{Delegate, Output, ProposalSubmit, ProposalWithdraw, Swap, Undelegate, ValidatorVote},
-    Action,
+    Action, IsAction,
 };
 
 #[derive(Clone, Debug)]

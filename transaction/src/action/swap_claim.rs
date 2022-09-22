@@ -1,15 +1,24 @@
+use ark_ff::Zero;
 use penumbra_crypto::dex::BatchSwapOutputData;
 use penumbra_crypto::transaction::Fee;
-use penumbra_crypto::{proofs::transparent::SwapClaimProof, NotePayload};
+use penumbra_crypto::{proofs::transparent::SwapClaimProof, Fr, NotePayload};
 use penumbra_crypto::{Balance, Nullifier};
 use penumbra_proto::{dex as pb, Protobuf};
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::IsAction;
+
 #[derive(Debug, Clone)]
 pub struct SwapClaim {
     pub proof: SwapClaimProof,
     pub body: Body,
+}
+
+impl IsAction for SwapClaim {
+    fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
+        self.balance().commit(Fr::zero())
+    }
 }
 
 impl SwapClaim {

@@ -9,7 +9,7 @@ mod witness_data;
 pub mod action;
 pub mod plan;
 
-pub use action::Action;
+pub use action::{Action, IsAction};
 pub use auth_data::AuthorizationData;
 pub use auth_hash::AuthHash;
 pub use error::Error;

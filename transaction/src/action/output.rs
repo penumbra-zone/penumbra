@@ -10,10 +10,18 @@ use penumbra_crypto::{
 };
 use penumbra_proto::{transaction as pb, Protobuf};
 
+use super::IsAction;
+
 #[derive(Clone, Debug)]
 pub struct Output {
     pub body: Body,
     pub proof: OutputProof,
+}
+
+impl IsAction for Output {
+    fn balance_commitment(&self) -> balance::Commitment {
+        self.body.balance_commitment
+    }
 }
 
 #[derive(Clone, Debug)]

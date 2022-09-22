@@ -1,6 +1,9 @@
-use penumbra_crypto::{value, Address, Balance};
+use ark_ff::Zero;
+use penumbra_crypto::{value, Address, Balance, Fr};
 use penumbra_proto::{ibc as pb, Protobuf};
 use serde::{Deserialize, Serialize};
+
+use super::IsAction;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::Ics20Withdrawal", into = "pb::Ics20Withdrawal")]
@@ -22,6 +25,12 @@ pub struct ICS20Withdrawal {
     pub timeout_height: u64,
     // the timestamp at which this transfer expires.
     pub timeout_time: u64,
+}
+
+impl IsAction for ICS20Withdrawal {
+    fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
+        self.balance().commit(Fr::zero())
+    }
 }
 
 impl ICS20Withdrawal {

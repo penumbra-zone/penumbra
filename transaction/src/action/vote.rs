@@ -8,6 +8,8 @@ use penumbra_crypto::{GovernanceKey, IdentityKey};
 use penumbra_proto::{governance as pb_g, transaction as pb_t, Protobuf};
 use serde::{Deserialize, Serialize};
 
+use crate::IsAction;
+
 /// A vote on a proposal.
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(try_from = "pb_g::Vote", into = "pb_g::Vote")]
@@ -109,6 +111,12 @@ pub struct ValidatorVote {
     pub body: ValidatorVoteBody,
     /// The signature authorizing the vote (signed with governance key over the body).
     pub auth_sig: Signature<SpendAuth>,
+}
+
+impl IsAction for ValidatorVote {
+    fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
+        Default::default()
+    }
 }
 
 impl From<ValidatorVote> for pb_t::ValidatorVote {
