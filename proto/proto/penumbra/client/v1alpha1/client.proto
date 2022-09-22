@@ -18,6 +18,7 @@ import "penumbra/core/dex/v1alpha1/dex.proto";
 service ObliviousQuery {
   rpc CompactBlockRange(CompactBlockRangeRequest) returns (stream core.chain.v1alpha1.CompactBlock);
   rpc ChainParameters(ChainParamsRequest) returns (core.chain.v1alpha1.ChainParameters);
+  rpc MutableParameters(MutableParametersRequest) returns (stream governance.MutableChainParameter);
   rpc ValidatorInfo(ValidatorInfoRequest) returns (stream core.stake.v1alpha1.ValidatorInfo);
   rpc AssetList(AssetListRequest) returns (core.chain.v1alpha1.KnownAssets);
 }
@@ -41,6 +42,10 @@ message CompactBlockRangeRequest {
   // If set, keep the connection alive past end_height,
   // streaming new compact blocks as they are created.
   bool keep_alive = 4;
+}
+
+// Requests the governance-mutable parameters available for the chain.
+message MutableParametersRequest {
 }
 
 // Requests the global configuration data for the chain.

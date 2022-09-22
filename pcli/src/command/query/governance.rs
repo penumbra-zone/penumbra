@@ -34,6 +34,8 @@ pub enum GovernanceCmd {
         #[clap(subcommand)]
         query: PerProposalCmd,
     },
+    /// Query for the governance-modifiable chain parameters.
+    Parameters,
 }
 
 #[derive(Debug, clap::Subcommand)]
@@ -57,6 +59,22 @@ impl GovernanceCmd {
         let mut client = app.specific_client().await?;
 
         match self {
+            GovernanceCmd::Parameters => {
+                let mut client = app.oblivious_client().await?;
+
+                let params = client
+                    .mutable_params(MutableParametersRequest {})
+                    .await?
+                    .into_inner()
+                    .try_collect::<Vec<_>>()
+                    .await?
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<Vec<String>, _>>()?;
+
+                println!("{}", serde_json::to_string_pretty(&params)?);
+                json(&params)?;
+            }
             GovernanceCmd::ListProposals { inactive } => {
                 let proposal_id_list: Vec<u64> = if *inactive {
                     let latest: u64 = client.key_proto(latest_proposal_id()).await?;
