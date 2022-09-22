@@ -1,5 +1,5 @@
 #!/bin/bash
-WORKDIR=${WORKDIR:=$(pwd)/pdcli}
+WORKDIR=${WORKDIR:=$(pwd)/helm/pdcli}
 IMAGE=${IMAGE:=ghcr.io/strangelove-ventures/heighliner/penumbra}
 PENUMBRA_VERSION=${PENUMBRA_VERSION:=030-isonoe}
 TENDERMINT_VERSION=${TENDERMINT_VERSION:=v0.34.21}
@@ -54,7 +54,7 @@ sudo chown -R "$(whoami)" "$WORKDIR"
 for i in $(seq $NVALS)
 do
     I=$((i-1))
-    NODE_ID=$(jq -r '.priv_key.value' ./pdcli/.penumbra/testnet_data/node$I/tendermint/config/node_key.json | base64 --decode | tail -c 32 | sha256sum  | cut -c -40)
+    NODE_ID=$(jq -r '.priv_key.value' ${WORKDIR}/.penumbra/testnet_data/node$I/tendermint/config/node_key.json | base64 --decode | tail -c 32 | sha256sum  | cut -c -40)
     for j in $(seq $NVALS)
     do
       J=$((j-1))
@@ -93,4 +93,4 @@ else
   HELM_CMD=install
 fi
 
-helm $HELM_CMD $HELM_RELEASE . --set numValidators=$NVALS,numFullNodes=$NFULLNODES,penumbra.version=$PENUMBRA_VERSION,tendermint.version=$TENDERMINT_VERSION 
+helm $HELM_CMD $HELM_RELEASE helm --set numValidators=$NVALS,numFullNodes=$NFULLNODES,penumbra.version=$PENUMBRA_VERSION,tendermint.version=$TENDERMINT_VERSION
