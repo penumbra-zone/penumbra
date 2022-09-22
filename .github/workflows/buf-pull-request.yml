@@ -9,6 +9,10 @@ jobs:
         with:
           input: 'proto'
       # - uses: bufbuild/buf-lint-action@v1
+      - name: Print dir structure
+        run: |
+          ls -la .
+          ls -la ./proto
       - uses: bufbuild/buf-breaking-action@v1
         with:
           # The 'main' branch of the GitHub repository that defines the module.
