@@ -17,4 +17,4 @@ jobs:
         with:
           # The 'main' branch of the GitHub repository that defines the module.
           against: 'https://github.com/${GITHUB_REPOSITORY}.git#branch=main'
-          input: 'proto'
+          input: 'proto/proto'
