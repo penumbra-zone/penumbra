@@ -6,6 +6,9 @@ data:
   config.toml: |
     proxy-app = "tcp://localhost:26658"
 
+    [rpc]
+    laddr = "tcp://0.0.0.0:26657"
+
     [p2p]
     max-num-inbound-peers = 50
     max-num-outbound-peers = 50

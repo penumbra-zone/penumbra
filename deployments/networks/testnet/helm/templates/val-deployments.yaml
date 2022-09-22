@@ -16,6 +16,16 @@ spec:
         app: "penumbra-val-{{$i}}"
         network: "{{ $.Values.network }}"
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - "penumbra-val-{{$i}}"
+              topologyKey: kubernetes.io/hostname
       volumes:
         - name: "pv-{{ include "penumbra.name" $ }}-{{$i}}"
           persistentVolumeClaim:
