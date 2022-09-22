@@ -1,12 +1,12 @@
 syntax = "proto3";
-package penumbra.view;
 
 option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
 
-import "transaction.proto";
-import "crypto.proto";
-import "chain.proto";
-import "dex.proto";
+package penumbra.view.v1alpha1;
+
+import "penumbra/core/transaction/v1alpha1/transaction.proto";
+import "penumbra/core/crypto/v1alpha1/crypto.proto";
+import "penumbra/core/chain/v1alpha1/chain.proto";
 
 // The view protocol is used by a view client, who wants to do some
 // transaction-related actions, to request data from a view service, which is
@@ -21,10 +21,10 @@ service ViewProtocol {
     // Get current status of chain sync
     rpc Status(StatusRequest) returns (StatusResponse);
 
-    // Stream sync status updates until the view service has caught up with the chain.
+    // Stream sync status updates until the view service has caught up with the core.chain.v1alpha1.
     rpc StatusStream(StatusStreamRequest) returns (stream StatusStreamResponse);
 
-    // Queries for notes that have been accepted by the chain.
+    // Queries for notes that have been accepted by the core.chain.v1alpha1.
     rpc Notes(NotesRequest) returns (stream SpendableNoteRecord);
 
     // Queries for notes that have been quarantined until the end of an unbonding period.
@@ -36,16 +36,16 @@ service ViewProtocol {
     // that the client can get a consistent set of authentication paths to a
     // common root.  (Otherwise, if a client made multiple requests, the wallet
     // service could have advanced the note commitment tree state between queries).
-    rpc Witness(WitnessRequest) returns (transaction.WitnessData);
+    rpc Witness(WitnessRequest) returns (core.transaction.v1alpha1.WitnessData);
 
     // Queries for assets.
-    rpc Assets(AssetRequest) returns (stream crypto.Asset);
+    rpc Assets(AssetRequest) returns (stream core.crypto.v1alpha1.Asset);
 
     // Query for the current chain parameters.
-    rpc ChainParameters(ChainParamsRequest) returns (chain.ChainParameters);
+    rpc ChainParameters(ChainParamsRequest) returns (core.chain.v1alpha1.ChainParameters);
 
     // Query for the current FMD parameters.
-    rpc FMDParameters(FMDParametersRequest) returns (chain.FmdParameters);
+    rpc FMDParameters(FMDParametersRequest) returns (core.chain.v1alpha1.FmdParameters);
 
     // Query for a note by its note commitment, optionally waiting until the note is detected.
     rpc NoteByCommitment(NoteByCommitmentRequest) returns (SpendableNoteRecord);
@@ -75,12 +75,12 @@ message TransactionHashStreamResponse {
 message TransactionStreamResponse {
     uint64 block_height = 1;
     bytes tx_hash = 2;
-    transaction.Transaction tx = 3;
+    core.transaction.v1alpha1.Transaction tx = 3;
 }
 
 message NoteByCommitmentRequest {
-  crypto.AccountID account_id = 1;
-  crypto.NoteCommitment note_commitment = 2;
+  core.crypto.v1alpha1.AccountID account_id = 1;
+  core.crypto.v1alpha1.NoteCommitment note_commitment = 2;
   // If set to true, waits to return until the requested note is detected.
   bool await_detection = 3;
 }
@@ -100,7 +100,7 @@ message AssetRequest {
 // Requests sync status of the view service.
 message StatusRequest {
     // Identifies the FVK for the notes to query.
-    crypto.AccountID account_id = 1;
+    core.crypto.v1alpha1.AccountID account_id = 1;
 }
 
 // Returns the status of the view service and whether it is synchronized with the chain state.
@@ -114,7 +114,7 @@ message StatusResponse {
 // Requests streaming updates on the sync height until the view service is synchronized.
 message StatusStreamRequest {
     // Identifies the FVK for the notes to query.
-    crypto.AccountID account_id = 1;
+    core.crypto.v1alpha1.AccountID account_id = 1;
 }
 
 // A streaming sync status update
@@ -126,13 +126,13 @@ message StatusStreamResponse {
 // A note plaintext with associated metadata about its status.
 message SpendableNoteRecord {
     // The note commitment, identifying the note.
-    crypto.NoteCommitment note_commitment = 1;
+    core.crypto.v1alpha1.NoteCommitment note_commitment = 1;
     // The note plaintext itself.
-    crypto.Note note = 2;
-    // A precomputed decryption of the note's address index.
-    crypto.AddressIndex address_index = 3;
+    core.crypto.v1alpha1.Note note = 2;
+    // A precomputed decryption of the note's address incore.dex.v1alpha1.
+    core.crypto.v1alpha1.AddressIndex address_index = 3;
     // The note's nullifier.
-    crypto.Nullifier nullifier = 4;
+    core.crypto.v1alpha1.Nullifier nullifier = 4;
     // The height at which the note was created.
     uint64 height_created = 5;
     // Records whether the note was spent (and if so, at what height).
@@ -140,7 +140,7 @@ message SpendableNoteRecord {
     // The note position.
     uint64 position = 7;
     // The source of the note (a tx hash or otherwise)
-    chain.NoteSource source = 8;
+    core.chain.v1alpha1.NoteSource source = 8;
 }
 
 // A query for notes known by the view service.
@@ -149,16 +149,16 @@ message SpendableNoteRecord {
 // to allow various filtering on the returned notes.
 message NotesRequest {
     // Identifies the FVK for the notes to query.
-    crypto.AccountID account_id = 1;
+    core.crypto.v1alpha1.AccountID account_id = 1;
 
     // If set, return spent notes as well as unspent notes.
     bool include_spent = 2;
 
     // If set, only return notes with the specified asset id.
-    crypto.AssetId asset_id = 3;
+    core.crypto.v1alpha1.AssetId asset_id = 3;
 
-    // If set, only return notes with the specified address index.
-    crypto.AddressIndex address_index = 4;
+    // If set, only return notes with the specified address incore.dex.v1alpha1.
+    core.crypto.v1alpha1.AddressIndex address_index = 4;
 
     // If set, stop returning notes once the total exceeds this amount.
     //
@@ -168,39 +168,39 @@ message NotesRequest {
 
 message WitnessRequest {
     // Identifies the FVK for the note commitments to query.
-    crypto.AccountID account_id = 1;
+    core.crypto.v1alpha1.AccountID account_id = 1;
 
     // The note commitments to obtain auth paths for.
-    repeated crypto.NoteCommitment note_commitments = 2;
+    repeated core.crypto.v1alpha1.NoteCommitment note_commitments = 2;
 }
 
 // The plaintext of a note that has been quarantined until the end of an unbonding period.
 message QuarantinedNoteRecord {
     // The note commitment, identifying the note.
-    crypto.NoteCommitment note_commitment = 1;
+    core.crypto.v1alpha1.NoteCommitment note_commitment = 1;
     // The note plaintext itself.
-    crypto.Note note = 2;
-    // A precomputed decryption of the note's address index.
-    crypto.AddressIndex address_index = 3;
+    core.crypto.v1alpha1.Note note = 2;
+    // A precomputed decryption of the note's address incore.dex.v1alpha1.
+    core.crypto.v1alpha1.AddressIndex address_index = 3;
     // The height at which the note was created.
     uint64 height_created = 4;
     // The epoch at which the note will exit quarantine, if unbonding is not interrupted by slashing.
     uint64 unbonding_epoch = 5;
     // The validator identity the quarantining is bound to.
-    crypto.IdentityKey identity_key = 6;
+    core.crypto.v1alpha1.IdentityKey identity_key = 6;
     // The source of the note (a tx hash or otherwise)
-    chain.NoteSource source = 7;
+    core.chain.v1alpha1.NoteSource source = 7;
 }
 
 // A query for quarantined notes known by the view service.
 message QuarantinedNotesRequest {
     // Identifies the FVK for the notes to query.
-    crypto.AccountID account_id = 1;
+    core.crypto.v1alpha1.AccountID account_id = 1;
 }
 
 message NullifierStatusRequest {
-  crypto.AccountID account_id = 1;
-  crypto.Nullifier nullifier = 2;
+  core.crypto.v1alpha1.AccountID account_id = 1;
+  core.crypto.v1alpha1.Nullifier nullifier = 2;
   bool await_detection = 3;
 }
 

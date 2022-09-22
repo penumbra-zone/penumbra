@@ -1,9 +1,10 @@
 syntax = "proto3";
-package penumbra.chain;
 option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
 
-import "crypto.proto";
-import "stake.proto";
+package penumbra.core.chain.v1alpha1;
+
+import "penumbra/core/crypto/v1alpha1/crypto.proto";
+import "penumbra/core/stake/v1alpha1/stake.proto";
 
 // Global chain configuration data, such as chain ID, epoch duration, etc.
 message ChainParameters {
@@ -37,7 +38,7 @@ message ChainParameters {
   // The number of blocks during which a proposal is voted on.
   uint64 proposal_voting_blocks = 20;
   // The deposit required to create a proposal.
-  crypto.Amount proposal_deposit_amount = 21;
+  crypto.v1alpha1.Amount proposal_deposit_amount = 21;
   // The quorum required for a proposal to be considered valid, as a fraction of the total stake
   // weight of the network.
   Ratio proposal_valid_quorum = 22;
@@ -66,8 +67,8 @@ message FmdParameters {
 // Information about a given asset at a given time (as specified by block
 // height). Currently this only contains the total supply.
 message AssetInfo {
-  crypto.AssetId asset_id = 1;
-  crypto.Denom denom = 2;
+  crypto.v1alpha1.AssetId asset_id = 1;
+  crypto.v1alpha1.Denom denom = 2;
   uint64 as_of_block_height = 3;
   uint64 total_supply = 4;
 }
@@ -78,15 +79,15 @@ message CompactBlock {
   // NotePayloads describing new notes.
   repeated AnnotatedNotePayload note_payloads = 2;
   // Nullifiers identifying spent notes.
-  repeated crypto.Nullifier nullifiers = 3;
+  repeated crypto.v1alpha1.Nullifier nullifiers = 3;
   // The block root of this block.
-  crypto.MerkleRoot block_root = 4;
+  crypto.v1alpha1.MerkleRoot block_root = 4;
   // The epoch root of this epoch (only present when the block is the last in an epoch).
-  crypto.MerkleRoot epoch_root = 5;
+  crypto.v1alpha1.MerkleRoot epoch_root = 5;
   // Newly quarantined things in this block.
   Quarantined quarantined = 6;
   // Validators slashed in this block.
-  repeated crypto.IdentityKey slashed = 16;
+  repeated crypto.v1alpha1.IdentityKey slashed = 16;
   // If a proposal started voting in this block, this is set to `true`.
   bool proposal_started = 20;
   // Latest Fuzzy Message Detection parameters.
@@ -95,12 +96,12 @@ message CompactBlock {
 
 // A note payload, annotated with the note source.
 message AnnotatedNotePayload {
-  crypto.NotePayload payload = 1;
+  crypto.v1alpha1.NotePayload payload = 1;
   NoteSource source = 2;
 }
 
 message KnownAssets {
-  repeated crypto.Asset assets = 1;
+  repeated crypto.v1alpha1.Asset assets = 1;
 }
 
 // A spicy transaction ID
@@ -117,22 +118,22 @@ message GenesisAppState {
     message Allocation {
         uint64 amount = 1;
         string denom = 2;
-        crypto.Address address = 3;
+        crypto.v1alpha1.Address address = 3;
     }
 
-    chain.ChainParameters chain_params = 1;
-    repeated stake.Validator validators = 2;
+    ChainParameters chain_params = 1;
+    repeated stake.v1alpha1.Validator validators = 2;
     repeated Allocation allocations = 3;
 }
 
 message Quarantined {
   message Unbonding {
     repeated AnnotatedNotePayload note_payloads = 1;
-    repeated crypto.Nullifier nullifiers = 2;
+    repeated crypto.v1alpha1.Nullifier nullifiers = 2;
   }
 
   message ValidatorEntry {
-    crypto.IdentityKey identity_key = 1;
+    crypto.v1alpha1.IdentityKey identity_key = 1;
     Unbonding unbonding = 2;
   }
 
@@ -149,5 +150,5 @@ message Quarantined {
 }
 
 message Slashed {
-  repeated crypto.IdentityKey validators = 1;
+  repeated crypto.v1alpha1.IdentityKey validators = 1;
 }

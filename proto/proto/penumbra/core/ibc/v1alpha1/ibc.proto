@@ -1,18 +1,16 @@
 syntax = "proto3";
 option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
 
+package penumbra.core.ibc.v1alpha1;
+
+import "penumbra/core/crypto/v1alpha1/crypto.proto";
+
 import "ibc/core/connection/v1/tx.proto";
-import "ibc/core/connection/v1/connection.proto";
-
 import "ibc/core/channel/v1/tx.proto";
-
 import "ibc/core/client/v1/tx.proto";
 import "ibc/core/client/v1/client.proto";
-import "crypto.proto";
 
 import "google/protobuf/any.proto";
-
-package penumbra.ibc;
 
 message IBCAction {
     oneof action {
@@ -58,14 +56,14 @@ message ICS20Withdrawal {
   string destination_chain_id = 1;
 
   // a transparent value consisting of an amount and an asset ID.
-  crypto.Value value = 2;
+  crypto.v1alpha1.Value value = 2;
 
   // the address on the destination chain to send the transfer to 
   string destination_chain_address = 3;
 
   // a "sender" penumbra address to use to return funds from this withdrawal.
   // this should be an ephemeral address
-  crypto.Address return_address = 5;
+  crypto.v1alpha1.Address return_address = 5;
 
   // the height (on Penumbra) at which this transfer expires (and funds are sent
   // back to the sender address?). NOTE: if funds are sent back to the sender,
