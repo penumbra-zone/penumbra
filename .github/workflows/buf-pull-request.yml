@@ -8,13 +8,11 @@ jobs:
       - uses: bufbuild/buf-setup-action@v1
         with:
           input: 'proto'
-      # - uses: bufbuild/buf-lint-action@v1
-      - name: Print dir structure
-        run: |
-          ls -la .
-          ls -la ./proto
-      - uses: bufbuild/buf-breaking-action@v1
+      - uses: bufbuild/buf-lint-action@v1
         with:
-          # The 'main' branch of the GitHub repository that defines the module.
-          against: 'https://github.com/${GITHUB_REPOSITORY}.git#branch=main'
           input: 'proto'
+      # - uses: bufbuild/buf-breaking-action@v1
+      #   with:
+      #     # The 'main' branch of the GitHub repository that defines the module.
+      #     against: 'https://github.com/${GITHUB_REPOSITORY}.git#branch=main'
+      #     input: 'proto'
