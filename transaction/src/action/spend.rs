@@ -10,11 +10,19 @@ use penumbra_crypto::{
 };
 use penumbra_proto::{transaction, Protobuf};
 
+use super::IsAction;
+
 #[derive(Clone, Debug)]
 pub struct Spend {
     pub body: Body,
     pub auth_sig: Signature<SpendAuth>,
     pub proof: SpendProof,
+}
+
+impl IsAction for Spend {
+    fn balance_commitment(&self) -> balance::Commitment {
+        self.body.balance_commitment
+    }
 }
 
 impl Protobuf<transaction::Spend> for Spend {}

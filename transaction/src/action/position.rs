@@ -8,10 +8,9 @@ use penumbra_crypto::{
     },
     Balance, Fr, Value, Zero,
 };
-use penumbra_proto::{
-    dex::{self as pb},
-    Protobuf,
-};
+use penumbra_proto::{dex as pb, Protobuf};
+
+use super::IsAction;
 
 /// A transaction action that opens a new position.
 ///
@@ -28,6 +27,12 @@ pub struct PositionOpen {
     /// The initial reserves of the position.  Unlike the `PositionData`, the
     /// reserves evolve over time as trades are executed against the position.
     pub initial_reserves: Reserves,
+}
+
+impl IsAction for PositionOpen {
+    fn balance_commitment(&self) -> balance::Commitment {
+        self.balance().commit(Fr::zero())
+    }
 }
 
 impl PositionOpen {
@@ -70,6 +75,12 @@ pub struct PositionClose {
     pub position_id: position::Id,
 }
 
+impl IsAction for PositionClose {
+    fn balance_commitment(&self) -> balance::Commitment {
+        self.balance().commit(Fr::zero())
+    }
+}
+
 impl PositionClose {
     /// Compute a commitment to the value this action contributes to its transaction.
     pub fn balance(&self) -> Balance {
@@ -103,9 +114,8 @@ pub struct PositionWithdraw {
     pub reserves_commitment: balance::Commitment,
 }
 
-impl PositionWithdraw {
-    /// Compute a commitment to the value this action contributes to its transaction.
-    pub fn balance_commitment(&self) -> balance::Commitment {
+impl IsAction for PositionWithdraw {
+    fn balance_commitment(&self) -> balance::Commitment {
         let closed_position_nft = Value {
             amount: 1u64.into(),
             asset_id: LpNft::new(self.position_id, position::State::Closed).asset_id(),
@@ -132,9 +142,8 @@ pub struct PositionRewardClaim {
     pub rewards_commitment: balance::Commitment,
 }
 
-impl PositionRewardClaim {
-    /// Compute a commitment to the value this action contributes to its transaction.
-    pub fn balance_commitment(&self) -> balance::Commitment {
+impl IsAction for PositionRewardClaim {
+    fn balance_commitment(&self) -> balance::Commitment {
         let withdrawn_position_nft = Value {
             amount: 1u64.into(),
             asset_id: LpNft::new(self.position_id, position::State::Withdrawn).asset_id(),

@@ -1,7 +1,5 @@
 use std::convert::{TryFrom, TryInto};
 
-use ark_ff::Zero;
-use decaf377::Fr;
 use penumbra_crypto::balance;
 use penumbra_proto::{ibc as pb_ibc, stake as pbs, transaction as pb, Protobuf};
 
@@ -29,6 +27,11 @@ pub use swap_claim::SwapClaim;
 pub use undelegate::Undelegate;
 pub use vote::{DelegatorVote, ValidatorVote, ValidatorVoteBody, Vote};
 
+/// Common behavior between Penumbra actions.
+pub trait IsAction {
+    fn balance_commitment(&self) -> balance::Commitment;
+}
+
 /// An action performed by a Penumbra transaction.
 #[derive(Clone, Debug)]
 #[allow(clippy::large_enum_variant)]
@@ -54,31 +57,28 @@ pub enum Action {
     ICS20Withdrawal(ICS20Withdrawal),
 }
 
-impl Action {
-    /// Obtains or computes a commitment to the (typed) balance added or subtracted from
-    /// the transaction's balance by this action.
-    pub fn balance_commitment(&self) -> balance::Commitment {
+impl IsAction for Action {
+    fn balance_commitment(&self) -> balance::Commitment {
         match self {
-            Action::Output(output) => output.body.balance_commitment,
-            Action::Spend(spend) => spend.body.balance_commitment,
-            Action::Delegate(delegate) => delegate.balance().commit(Fr::zero()),
-            Action::Undelegate(undelegate) => undelegate.balance().commit(Fr::zero()),
+            Action::Output(output) => output.balance_commitment(),
+            Action::Spend(spend) => spend.balance_commitment(),
+            Action::Delegate(delegate) => delegate.balance_commitment(),
+            Action::Undelegate(undelegate) => undelegate.balance_commitment(),
             Action::Swap(swap) => swap.balance_commitment(),
-            Action::SwapClaim(swap_claim) => swap_claim.balance().commit(Fr::zero()),
-            // These actions just post data to the chain, and leave the value balance
-            // unchanged.
-            Action::ValidatorDefinition(_) => balance::Commitment::default(),
-            Action::IBCAction(_) => balance::Commitment::default(),
-            Action::ProposalSubmit(submit) => submit.balance().commit(Fr::zero()),
-            Action::ProposalWithdraw(_) => balance::Commitment::default(),
-            // Action::DelegatorVote(_) => balance::Commitment::default(),
-            Action::ValidatorVote(_) => balance::Commitment::default(),
-
-            Action::PositionOpen(p) => p.balance().commit(Fr::zero()),
-            Action::PositionClose(p) => p.balance().commit(Fr::zero()),
+            Action::SwapClaim(swap_claim) => swap_claim.balance_commitment(),
+            Action::ProposalSubmit(submit) => submit.balance_commitment(),
+            Action::ProposalWithdraw(withdraw) => withdraw.balance_commitment(),
+            // Action::DelegatorVote(_) => ...
+            Action::ValidatorVote(v) => v.balance_commitment(),
+            Action::PositionOpen(p) => p.balance_commitment(),
+            Action::PositionClose(p) => p.balance_commitment(),
             Action::PositionWithdraw(p) => p.balance_commitment(),
             Action::PositionRewardClaim(p) => p.balance_commitment(),
-            Action::ICS20Withdrawal(withdrawal) => withdrawal.balance().commit(Fr::zero()),
+            Action::ICS20Withdrawal(withdrawal) => withdrawal.balance_commitment(),
+            // These actions just post Protobuf data to the chain, and leave the
+            // value balance unchanged.
+            Action::ValidatorDefinition(_) => balance::Commitment::default(),
+            Action::IBCAction(_) => balance::Commitment::default(),
         }
     }
 }

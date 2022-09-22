@@ -1,11 +1,12 @@
+use ark_ff::Zero;
 use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, str::FromStr};
 
-use penumbra_crypto::{asset::Amount, Address, Balance, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_crypto::{asset::Amount, Address, Balance, Fr, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::{transaction as pb, Protobuf};
 
-use crate::{plan::TransactionPlan, AuthHash};
+use crate::{plan::TransactionPlan, AuthHash, IsAction};
 
 /// A governance proposal.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -316,6 +317,12 @@ pub struct ProposalSubmit {
     pub withdraw_proposal_key: VerificationKey<SpendAuth>,
 }
 
+impl IsAction for ProposalSubmit {
+    fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
+        self.balance().commit(Fr::zero())
+    }
+}
+
 impl ProposalSubmit {
     /// Compute a commitment to the value contributed to a transaction by this proposal submission.
     pub fn balance(&self) -> Balance {
@@ -374,6 +381,12 @@ pub struct ProposalWithdraw {
     pub body: ProposalWithdrawBody,
     /// The signature authorizing the withdrawal.
     pub auth_sig: Signature<SpendAuth>,
+}
+
+impl IsAction for ProposalWithdraw {
+    fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
+        Default::default()
+    }
 }
 
 impl From<ProposalWithdraw> for pb::ProposalWithdraw {

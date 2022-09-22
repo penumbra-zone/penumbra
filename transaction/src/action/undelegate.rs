@@ -1,8 +1,11 @@
+use ark_ff::Zero;
 use penumbra_crypto::{
-    asset::Amount, Balance, DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID,
+    asset::Amount, Balance, DelegationToken, Fr, IdentityKey, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::{stake as pb, Protobuf};
 use serde::{Deserialize, Serialize};
+
+use crate::IsAction;
 
 /// A transaction action withdrawing stake from a validator's delegation pool.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -21,6 +24,12 @@ pub struct Undelegate {
     /// (and should be checked in transaction validation!), but including it allows
     /// stateless verification that the transaction is internally consistent.
     pub delegation_amount: Amount,
+}
+
+impl IsAction for Undelegate {
+    fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
+        self.balance().commit(Fr::zero())
+    }
 }
 
 impl Undelegate {
