@@ -25,4 +25,8 @@ jobs:
       - uses: bufbuild/buf-push-action@v1
         with:
           buf_token: ${{ secrets.BUF_TOKEN }}
-          input: 'proto'
+          input: 'proto/ibc-go-vendor'
+      - uses: bufbuild/buf-push-action@v1
+        with:
+          buf_token: ${{ secrets.BUF_TOKEN }}
+          input: 'proto/proto'
