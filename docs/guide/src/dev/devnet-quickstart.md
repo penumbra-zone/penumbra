@@ -3,7 +3,7 @@
 This page describes a quickstart method for running `pd`+`tendermint` to test
 changes during development.
 
-To start, you'll need to [install Tendermint `v0.35`](https://docs.tendermint.com/v0.35/introduction/install.html).
+To start, you'll need to [install Tendermint `v0.34`](https://docs.tendermint.com/v0.34/introduction/install.html).
 
 ## Generating configs
 
