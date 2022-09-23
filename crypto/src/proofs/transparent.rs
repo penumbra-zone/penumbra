@@ -391,22 +391,15 @@ impl SwapClaimProof {
             self.note_commitment_proof.commitment(),
         )?;
 
-        // check the swap NFT Asset ID is properly constructed
-        let asset_id = self.swap_nft_asset_id;
-        let expected_plaintext = SwapPlaintext::from_parts(
+        // Check that the Swap NFT asset ID is properly constructed.
+        gadgets::asset_id_integrity(
+            self.swap_nft_asset_id,
             self.trading_pair.clone(),
             self.delta_1_i.into(),
             self.delta_2_i.into(),
             fee,
-            // This should ensure that the claim address matches the address
-            // used to construct the Swap NFT.
             self.claim_address,
-        )
-        .map_err(|_| anyhow!("error generating expected swap plaintext"))?;
-        let expected_asset_id = expected_plaintext.asset_id();
-        if expected_asset_id != asset_id {
-            return Err(anyhow!("improper swap NFT asset id"));
-        }
+        )?;
 
         // Validate the note commitment's height matches the output data's height.
         let position = self.note_commitment_proof.position();
