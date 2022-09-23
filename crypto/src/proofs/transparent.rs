@@ -71,10 +71,11 @@ impl SpendProof {
             .verify(anchor)
             .map_err(|_| anyhow!("merkle root mismatch"))?;
 
-        // Value commitment integrity.
-        if self.note.value().commit(self.v_blinding) != balance_commitment {
-            return Err(anyhow!("value commitment mismatch"));
-        }
+        gadgets::value_commitment_integrity(
+            balance_commitment,
+            self.v_blinding,
+            self.note.value(),
+        )?;
 
         // The use of decaf means that we do not need to check that the
         // diversified basepoint is of small order. However we instead
@@ -146,10 +147,11 @@ impl OutputProof {
             note_commitment,
         )?;
 
-        // Value commitment integrity.
-        if balance_commitment != -self.note.value().commit(self.v_blinding) {
-            return Err(anyhow!("value commitment mismatch"));
-        }
+        gadgets::value_commitment_integrity(
+            -balance_commitment,
+            self.v_blinding,
+            self.note.value(),
+        )?;
 
         // Ephemeral public key integrity.
         if self
@@ -670,9 +672,11 @@ impl SwapProof {
         //     return Err(anyhow!("value commitment mismatch"));
         // }
 
-        if value_fee_commitment != self.fee_delta.commit(self.fee_blinding) {
-            return Err(anyhow!("value commitment mismatch"));
-        }
+        gadgets::value_commitment_integrity(
+            value_fee_commitment,
+            self.fee_blinding,
+            self.fee_delta.0,
+        )?;
 
         // Ephemeral public key integrity.
         if self

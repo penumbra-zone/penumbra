@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use decaf377_fmd as fmd;
 use penumbra_tct as tct;
 
-use crate::{keys, note, Fq, Nullifier, Value};
+use crate::{balance, keys, note, Fq, Fr, Nullifier, Value};
 
 /// Check the integrity of the nullifier.
 pub(crate) fn nullifier_integrity(
@@ -37,5 +37,18 @@ pub(crate) fn note_commitment_integrity(
     if note_commitment != note_commitment_test {
         return Err(anyhow!("note commitment mismatch"));
     }
+    Ok(())
+}
+
+/// Check the integrity of the value commitment.
+pub(crate) fn value_commitment_integrity(
+    balance_commitment: balance::Commitment,
+    value_blinding: Fr,
+    value: Value,
+) -> Result<()> {
+    if balance_commitment != value.commit(value_blinding) {
+        return Err(anyhow!("value commitment mismatch"));
+    }
+
     Ok(())
 }
