@@ -125,3 +125,19 @@ pub(crate) fn diversified_basepoint_not_identity(point: decaf377::Element) -> Re
         Ok(())
     }
 }
+
+/// Check spend authority.
+pub(crate) fn check_spend_authority(
+    spend_auth_randomizer: Fr,
+    rk: VerificationKey<SpendAuth>,
+    ak: VerificationKey<SpendAuth>,
+) -> Result<()> {
+    let rk_bytes: [u8; 32] = rk.into();
+    let rk_test = ak.randomize(&spend_auth_randomizer);
+    let rk_test_bytes: [u8; 32] = rk_test.into();
+    if rk_bytes != rk_test_bytes {
+        Err(anyhow!("invalid spend auth randomizer"))
+    } else {
+        Ok(())
+    }
+}

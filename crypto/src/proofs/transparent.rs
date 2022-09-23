@@ -1,7 +1,7 @@
 //! Transparent proofs for `MVP1` of the Penumbra system.
 
-use anyhow::{anyhow, Context as _, Error, Result};
-use ark_ff::{PrimeField, Zero};
+use anyhow::{anyhow, Error, Result};
+use ark_ff::PrimeField;
 use std::convert::{TryFrom, TryInto};
 
 use decaf377::FieldExt;
@@ -89,13 +89,7 @@ impl SpendProof {
             self.note_commitment_proof.commitment(),
         )?;
 
-        // Spend authority.
-        let rk_bytes: [u8; 32] = rk.into();
-        let rk_test = self.ak.randomize(&self.spend_auth_randomizer);
-        let rk_test_bytes: [u8; 32] = rk_test.into();
-        if rk_bytes != rk_test_bytes {
-            return Err(anyhow!("invalid spend auth randomizer"));
-        }
+        gadgets::check_spend_authority(self.spend_auth_randomizer, rk, self.ak)?;
 
         gadgets::diversified_address_integrity(
             self.ak,
