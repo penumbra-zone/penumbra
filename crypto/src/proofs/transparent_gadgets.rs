@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
 use decaf377_fmd as fmd;
+use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_tct as tct;
 
 use crate::{balance, ka, keys, note, Fq, Fr, Nullifier, Value};
@@ -61,6 +62,22 @@ pub(crate) fn ephemeral_public_key_integrity(
 ) -> Result<()> {
     if secret_key.diversified_public(&diversified_generator) != public_key {
         return Err(anyhow!("ephemeral public key mismatch"));
+    }
+
+    Ok(())
+}
+
+/// Check the integrity of a diversified address.
+pub(crate) fn diversified_address_integrity(
+    ak: VerificationKey<SpendAuth>,
+    nk: keys::NullifierKey,
+    transmission_key: ka::Public,
+    diversified_generator: decaf377::Element,
+) -> Result<()> {
+    let fvk = keys::FullViewingKey::from_components(ak, nk);
+    let ivk = fvk.incoming();
+    if transmission_key != ivk.diversified_public(&diversified_generator) {
+        return Err(anyhow!("invalid diversified address"));
     }
 
     Ok(())

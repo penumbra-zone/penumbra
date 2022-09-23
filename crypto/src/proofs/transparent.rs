@@ -99,14 +99,12 @@ impl SpendProof {
             return Err(anyhow!("invalid spend auth randomizer"));
         }
 
-        // Diversified address integrity.
-        let fvk = keys::FullViewingKey::from_components(self.ak, self.nk);
-        let ivk = fvk.incoming();
-        if *self.note.transmission_key()
-            != ivk.diversified_public(&self.note.diversified_generator())
-        {
-            return Err(anyhow!("invalid diversified address"));
-        }
+        gadgets::diversified_address_integrity(
+            self.ak,
+            self.nk,
+            self.note.transmission_key().clone(),
+            self.note.diversified_generator(),
+        )?;
 
         Ok(())
     }
