@@ -2,6 +2,7 @@ use anyhow::Result;
 use penumbra_proto::custody::v1alpha1::custody_protocol_client::CustodyProtocolClient;
 use penumbra_transaction::AuthorizationData;
 use tonic::async_trait;
+use tonic::codegen::Bytes;
 
 use crate::AuthorizeRequest;
 
@@ -39,7 +40,7 @@ pub trait CustodyClient: Sized {
 impl<T> CustodyClient for CustodyProtocolClient<T>
 where
     T: tonic::client::GrpcService<tonic::body::BoxBody>,
-    T::ResponseBody: tonic::codegen::Body + Send + 'static,
+    T::ResponseBody: tonic::codegen::Body<Data = Bytes> + Send + 'static,
     T::Error: Into<tonic::codegen::StdError>,
     <T::ResponseBody as tonic::codegen::Body>::Error: Into<tonic::codegen::StdError> + Send,
 {
