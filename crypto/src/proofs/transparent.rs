@@ -153,14 +153,11 @@ impl OutputProof {
             self.note.value(),
         )?;
 
-        // Ephemeral public key integrity.
-        if self
-            .esk
-            .diversified_public(&self.note.diversified_generator())
-            != epk
-        {
-            return Err(anyhow!("ephemeral public key mismatch"));
-        }
+        gadgets::ephemeral_public_key_integrity(
+            epk,
+            self.esk.clone(),
+            self.note.diversified_generator(),
+        )?;
 
         // The use of decaf means that we do not need to check that the
         // diversified basepoint is of small order. However we instead
@@ -678,14 +675,11 @@ impl SwapProof {
             self.fee_delta.0,
         )?;
 
-        // Ephemeral public key integrity.
-        if self
-            .esk
-            .diversified_public(self.claim_address.diversified_generator())
-            != epk
-        {
-            return Err(anyhow!("ephemeral public key mismatch"));
-        }
+        gadgets::ephemeral_public_key_integrity(
+            epk,
+            self.esk.clone(),
+            self.claim_address.diversified_generator().clone(),
+        )?;
 
         // The use of decaf means that we do not need to check that the
         // diversified basepoint is of small order. However we instead
