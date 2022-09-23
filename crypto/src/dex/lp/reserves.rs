@@ -1,5 +1,5 @@
 use crate::asset::Amount;
-use penumbra_proto::{dex as pb, Protobuf};
+use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 
 /// The reserves of a position.
 ///

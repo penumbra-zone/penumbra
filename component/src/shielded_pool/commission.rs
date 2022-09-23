@@ -3,7 +3,7 @@
 
 use anyhow::Result;
 use penumbra_crypto::{Address, Amount};
-use penumbra_proto::{stake as pb, Protobuf};
+use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
 /// A commission amount to be minted as part of processing the epoch transition.

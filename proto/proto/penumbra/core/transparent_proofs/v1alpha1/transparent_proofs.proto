@@ -1,20 +1,21 @@
 syntax = "proto3";
-package penumbra.transparent_proofs;
 option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
 
-import "crypto.proto";
-import "dex.proto";
+package penumbra.core.transparent_proofs.v1alpha1;
+
+import "penumbra/core/crypto/v1alpha1/crypto.proto";
+import "penumbra/core/dex/v1alpha1/dex.proto";
 
 // A Penumbra transparent Spend Proof.
 message SpendProof {
   // Auxiliary inputs
-  crypto.NoteCommitmentProof note_commitment_proof = 1;
+  crypto.v1alpha1.NoteCommitmentProof note_commitment_proof = 1;
 
   /**
    * @exclude
    * From the note being spent
   */
-  crypto.Note note = 2;
+  crypto.v1alpha1.Note note = 2;
 
   bytes v_blinding = 6;
   bytes spend_auth_randomizer = 9;
@@ -25,7 +26,7 @@ message SpendProof {
 // A Penumbra transparent output proof.
 message OutputProof {
   // Auxiliary inputs
-  crypto.Note note = 1;
+  crypto.v1alpha1.Note note = 1;
   bytes v_blinding = 5;
   bytes esk = 7;
 }
@@ -37,9 +38,9 @@ message SwapClaimProof {
    * Describes the input note with the Swap NFT
    */
   bytes swap_nft_asset_id = 1;
-  crypto.Address claim_address = 2;
+  crypto.v1alpha1.Address claim_address = 2;
   // Inclusion proof for the Swap NFT
-  crypto.NoteCommitmentProof note_commitment_proof = 4;
+  crypto.v1alpha1.NoteCommitmentProof note_commitment_proof = 4;
   bytes note_blinding = 5;
   bytes nk = 6;
 
@@ -47,7 +48,7 @@ message SwapClaimProof {
    * @exclude
    * Describes opening of Swap NFT asset ID for commitment verification
   */
-  dex.TradingPair trading_pair = 10;
+  dex.v1alpha1.TradingPair trading_pair = 10;
   // uint64 fee = 7; // fee is public data so not included in client's submitted SwapClaimProof
   // The user's contribution to the swap
   uint64 delta_1_i = 11;
@@ -91,7 +92,7 @@ message SwapProof {
   bytes t2 = 4;
 
   // Fee
-  crypto.Fee fee = 10;
+  crypto.v1alpha1.Fee fee = 10;
   // Fee blinding factor.
   bytes fee_blinding = 11;
 
@@ -115,7 +116,7 @@ message SwapProof {
    * Data about the output note recording the Swap NFT.
   */
   // Address associated with the swap.
-  crypto.Address claim_address = 40;
+  crypto.v1alpha1.Address claim_address = 40;
   // Note blinding factor
   bytes note_blinding = 42;
   // Ephemeral secret key

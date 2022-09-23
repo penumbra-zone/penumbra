@@ -90,7 +90,7 @@ impl ChainCmd {
     }
 
     pub async fn get_stats(&self, app: &mut App) -> Result<Stats> {
-        use penumbra_proto::client::oblivious::ValidatorInfoRequest;
+        use penumbra_proto::client::v1alpha1::ValidatorInfoRequest;
 
         let mut client = app.oblivious_client().await?;
         let fvk = &app.fvk;

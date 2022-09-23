@@ -32,7 +32,7 @@ where
 // This should only be done here in cases where the domain type lives in a crate
 // that shouldn't depend on the Penumbra proto framework.
 
-use crate::crypto::{BindingSignature, SpendAuthSignature, SpendVerificationKey};
+use crate::core::crypto::v1alpha1::{BindingSignature, SpendAuthSignature, SpendVerificationKey};
 use decaf377_rdsa::{Binding, Signature, SpendAuth, VerificationKey};
 
 impl Protobuf<SpendAuthSignature> for Signature<SpendAuth> {}
@@ -85,7 +85,7 @@ impl TryFrom<SpendVerificationKey> for VerificationKey<SpendAuth> {
 }
 
 // Fuzzy Message Detection
-use crate::crypto::Clue as ProtoClue;
+use crate::core::crypto::v1alpha1::Clue as ProtoClue;
 use decaf377_fmd::Clue;
 
 impl Protobuf<ProtoClue> for Clue {}
@@ -116,9 +116,9 @@ impl TryFrom<ProtoClue> for Clue {
 // this redefines its proto, because the encodings are consensus-critical
 // and we don't vendor all of the tendermint protos.
 
-impl Protobuf<crate::crypto::ConsensusKey> for tendermint::PublicKey {}
+impl Protobuf<crate::core::crypto::v1alpha1::ConsensusKey> for tendermint::PublicKey {}
 
-impl From<tendermint::PublicKey> for crate::crypto::ConsensusKey {
+impl From<tendermint::PublicKey> for crate::core::crypto::v1alpha1::ConsensusKey {
     fn from(v: tendermint::PublicKey) -> Self {
         Self {
             inner: v.to_bytes(),
@@ -126,17 +126,17 @@ impl From<tendermint::PublicKey> for crate::crypto::ConsensusKey {
     }
 }
 
-impl TryFrom<crate::crypto::ConsensusKey> for tendermint::PublicKey {
+impl TryFrom<crate::core::crypto::v1alpha1::ConsensusKey> for tendermint::PublicKey {
     type Error = anyhow::Error;
-    fn try_from(value: crate::crypto::ConsensusKey) -> Result<Self, Self::Error> {
+    fn try_from(value: crate::core::crypto::v1alpha1::ConsensusKey) -> Result<Self, Self::Error> {
         Self::from_raw_ed25519(value.inner.as_slice())
             .ok_or_else(|| anyhow::anyhow!("invalid ed25519 key"))
     }
 }
 
-impl Protobuf<crate::chain::Ratio> for num_rational::Ratio<u64> {}
+impl Protobuf<crate::core::chain::v1alpha1::Ratio> for num_rational::Ratio<u64> {}
 
-impl From<num_rational::Ratio<u64>> for crate::chain::Ratio {
+impl From<num_rational::Ratio<u64>> for crate::core::chain::v1alpha1::Ratio {
     fn from(v: num_rational::Ratio<u64>) -> Self {
         Self {
             numerator: *v.numer(),
@@ -145,8 +145,8 @@ impl From<num_rational::Ratio<u64>> for crate::chain::Ratio {
     }
 }
 
-impl From<crate::chain::Ratio> for num_rational::Ratio<u64> {
-    fn from(value: crate::chain::Ratio) -> Self {
+impl From<crate::core::chain::v1alpha1::Ratio> for num_rational::Ratio<u64> {
+    fn from(value: crate::core::chain::v1alpha1::Ratio) -> Self {
         Self::new(value.numerator, value.denominator)
     }
 }

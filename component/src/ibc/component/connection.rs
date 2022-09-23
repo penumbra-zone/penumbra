@@ -17,7 +17,7 @@ use ibc::core::ics03_connection::version::{pick_version, Version};
 use ibc::core::ics24_host::identifier::ConnectionId;
 use ibc::Height as IBCHeight;
 use penumbra_chain::{genesis, View as _};
-use penumbra_proto::ibc::ibc_action::Action::{
+use penumbra_proto::core::ibc::v1alpha1::ibc_action::Action::{
     ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
 };
 use penumbra_storage::{State, StateExt};

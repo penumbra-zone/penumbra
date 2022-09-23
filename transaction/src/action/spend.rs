@@ -8,7 +8,7 @@ use penumbra_crypto::{
     rdsa::{Signature, SpendAuth, VerificationKey},
     Nullifier,
 };
-use penumbra_proto::{transaction, Protobuf};
+use penumbra_proto::{core::transaction::v1alpha1 as transaction, Protobuf};
 
 use super::IsAction;
 

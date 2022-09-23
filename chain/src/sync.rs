@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 
 use anyhow::Result;
 use penumbra_crypto::{IdentityKey, NotePayload, Nullifier};
-use penumbra_proto::{chain as pb, Protobuf};
+use penumbra_proto::{core::chain::v1alpha1 as pb, Protobuf};
 use penumbra_tct::builder::{block, epoch};
 use serde::{Deserialize, Serialize};
 

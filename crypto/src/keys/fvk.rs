@@ -3,7 +3,7 @@ use ark_ff::PrimeField;
 use ark_serialize::CanonicalDeserialize;
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
-use penumbra_proto::{crypto as pb, serializers::bech32str, Protobuf};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, serializers::bech32str, Protobuf};
 use poseidon377::hash_2;
 use serde::{Deserialize, Serialize};
 

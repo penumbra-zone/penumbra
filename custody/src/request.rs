@@ -1,5 +1,5 @@
 use penumbra_crypto::keys::AccountID;
-use penumbra_proto::{custody as pb, Protobuf};
+use penumbra_proto::{custody::v1alpha1 as pb, Protobuf};
 use penumbra_transaction::plan::TransactionPlan;
 
 /// A transaction authorization request submitted to a custody service for approval.

@@ -1,4 +1,4 @@
-use penumbra_proto::{dex as pb, Protobuf};
+use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 use regex::Regex;
 
 use super::position::{Id, State};

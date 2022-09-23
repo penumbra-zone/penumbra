@@ -6,7 +6,7 @@ use std::{
 use penumbra_chain::{sync::CompactBlock, Epoch};
 use penumbra_crypto::{Asset, FullViewingKey, Nullifier};
 use penumbra_proto::{
-    client::oblivious::{
+    client::v1alpha1::{
         oblivious_query_client::ObliviousQueryClient, AssetListRequest, CompactBlockRangeRequest,
     },
     Protobuf,

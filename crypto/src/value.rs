@@ -5,7 +5,7 @@ use std::{
     str::FromStr,
 };
 
-use penumbra_proto::crypto as pb;
+use penumbra_proto::core::crypto::v1alpha1 as pb;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 

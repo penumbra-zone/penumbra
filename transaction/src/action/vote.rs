@@ -5,7 +5,9 @@ use std::{
 
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_crypto::{GovernanceKey, IdentityKey};
-use penumbra_proto::{governance as pb_g, transaction as pb_t, Protobuf};
+use penumbra_proto::{
+    core::governance::v1alpha1 as pb_g, core::transaction::v1alpha1 as pb_t, Protobuf,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::IsAction;

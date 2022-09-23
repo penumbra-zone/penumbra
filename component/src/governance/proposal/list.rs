@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
-use penumbra_proto::{governance as pb, Protobuf};
+use penumbra_proto::{core::governance::v1alpha1 as pb, Protobuf};
 
 /// A protobuf-represented duplicate-free set of proposal ids.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

@@ -1,12 +1,10 @@
 syntax = "proto3";
-package penumbra.custody;
-
 option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
 
-import "transaction.proto";
-import "crypto.proto";
-import "stake.proto";
-import "ibc.proto";
+package penumbra.custody.v1alpha1;
+
+import "penumbra/core/transaction/v1alpha1/transaction.proto";
+import "penumbra/core/crypto/v1alpha1/crypto.proto";
 
 // The custody protocol is used by a wallet client to request authorization for
 // a transaction they've constructed.
@@ -21,12 +19,12 @@ import "ibc.proto";
 // authorized.
 service CustodyProtocol {
     // Requests authorization of the transaction with the given description.
-    rpc Authorize(AuthorizeRequest) returns (transaction.AuthorizationData);
+    rpc Authorize(AuthorizeRequest) returns (core.transaction.v1alpha1.AuthorizationData);
 }
 
 message AuthorizeRequest {
     // The transaction plan to authorize.
-    transaction.TransactionPlan plan = 1;
+    core.transaction.v1alpha1.TransactionPlan plan = 1;
     // Identifies the FVK (and hence the spend authorization key) to use for signing.
-    crypto.AccountID account_id = 2;
+    core.crypto.v1alpha1.AccountID account_id = 2;
 }

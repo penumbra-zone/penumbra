@@ -5,7 +5,7 @@ use comfy_table::{presets, Table};
 use futures::TryStreamExt;
 use penumbra_component::stake::validator;
 use penumbra_crypto::IdentityKey;
-use penumbra_proto::client::oblivious::ValidatorInfoRequest;
+use penumbra_proto::client::v1alpha1::ValidatorInfoRequest;
 
 use crate::App;
 

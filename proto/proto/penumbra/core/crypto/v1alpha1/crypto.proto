@@ -1,15 +1,15 @@
 syntax = "proto3";
-
 option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
-package penumbra.crypto;
+
+package penumbra.core.crypto.v1alpha1;
 
 // Specifies fees paid by a transaction.
 message Fee {
     // The amount of the token used to pay fees.
-    crypto.Amount amount = 1;
+    Amount amount = 1;
     // If present, the asset ID of the token used to pay fees.
     // If absent, specifies the staking token implicitly.
-    crypto.AssetId asset_id = 2;
+    AssetId asset_id = 2;
 }
 
 message Address {

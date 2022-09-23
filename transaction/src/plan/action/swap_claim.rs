@@ -7,7 +7,7 @@ use penumbra_crypto::{
     proofs::transparent::SwapClaimProof,
     Fq, FullViewingKey, Note, NotePayload, Value,
 };
-use penumbra_proto::{transaction as pb, Protobuf};
+use penumbra_proto::{core::transaction::v1alpha1 as pb, Protobuf};
 use penumbra_tct as tct;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};

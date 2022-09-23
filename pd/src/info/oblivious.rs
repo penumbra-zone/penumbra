@@ -9,12 +9,14 @@ use penumbra_chain::View as _;
 use penumbra_component::shielded_pool::View as _;
 use penumbra_component::stake::{validator, View as _};
 use penumbra_proto::{
-    chain::{ChainParameters, CompactBlock, KnownAssets},
-    client::oblivious::{
+    client::v1alpha1::{
         oblivious_query_server::ObliviousQuery, AssetListRequest, ChainParamsRequest,
         CompactBlockRangeRequest, ValidatorInfoRequest,
     },
-    stake::ValidatorInfo,
+    core::{
+        chain::v1alpha1::{ChainParameters, CompactBlock, KnownAssets},
+        stake::v1alpha1::ValidatorInfo,
+    },
     Protobuf,
 };
 use tokio::sync::mpsc;

@@ -6,7 +6,7 @@ use std::{
 };
 
 use ark_ff::fields::PrimeField;
-use penumbra_proto::{crypto as pb, Protobuf};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
 use crate::{asset, Fq, Value};

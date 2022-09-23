@@ -5,7 +5,7 @@ use std::{
 
 use serde::{Deserialize, Deserializer, Serializer};
 
-use crate::governance::vote::Vote;
+use crate::core::governance::v1alpha1::vote::Vote;
 
 /// Deserialize hexstring into Vec<u8>
 pub fn deserialize<'de, D>(deserializer: D) -> Result<i32, D::Error>

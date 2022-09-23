@@ -1,7 +1,7 @@
 //! Penumbra validators and related structures.
 
 use penumbra_crypto::GovernanceKey;
-use penumbra_proto::{stake as pb, Protobuf};
+use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
 use crate::stake::{FundingStream, FundingStreams, IdentityKey};

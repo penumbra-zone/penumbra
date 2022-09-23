@@ -3,7 +3,10 @@
 
 use anyhow::Result;
 use penumbra_crypto::{transaction::Fee, Address};
-use penumbra_proto::{ibc as pb_ibc, stake as pb_stake, transaction as pb, Protobuf};
+use penumbra_proto::{
+    core::ibc::v1alpha1 as pb_ibc, core::stake::v1alpha1 as pb_stake,
+    core::transaction::v1alpha1 as pb, Protobuf,
+};
 use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 

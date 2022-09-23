@@ -1,6 +1,7 @@
 syntax = "proto3";
-package penumbra.governance;
 option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
+
+package penumbra.core.governance.v1alpha1;
 
 // A vote on a proposal.
 message Vote {

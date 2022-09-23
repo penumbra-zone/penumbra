@@ -5,7 +5,7 @@ use clap::Parser;
 use tracing_subscriber::EnvFilter;
 
 use penumbra_chain::{params::ChainParameters, sync::CompactBlock};
-use penumbra_proto::client::oblivious::{
+use penumbra_proto::client::v1alpha1::{
     oblivious_query_client::ObliviousQueryClient, ChainParamsRequest, CompactBlockRangeRequest,
 };
 

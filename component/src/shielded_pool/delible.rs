@@ -1,5 +1,5 @@
 use penumbra_chain::NoteSource;
-use penumbra_proto::{chain as pb, Protobuf};
+use penumbra_proto::{core::chain::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
 /// A thing which can be deleted (we use this in the state because the JMT does not support

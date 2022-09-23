@@ -1,5 +1,8 @@
 use penumbra_crypto::Balance;
-use penumbra_proto::{ibc as pb_ibc, stake as pb_stake, transaction as pb_t, Protobuf};
+use penumbra_proto::{
+    core::ibc::v1alpha1 as pb_ibc, core::stake::v1alpha1 as pb_stake,
+    core::transaction::v1alpha1 as pb_t, Protobuf,
+};
 use serde::{Deserialize, Serialize};
 
 mod delegator_vote;

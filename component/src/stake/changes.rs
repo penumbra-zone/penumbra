@@ -1,5 +1,5 @@
 use anyhow::Result;
-use penumbra_proto::{stake as pb, Protobuf};
+use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
 use penumbra_transaction::action::{Delegate, Undelegate};
 use serde::{Deserialize, Serialize};
 

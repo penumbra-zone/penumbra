@@ -3,7 +3,7 @@ use ibc::core::ics02_client::{client_state::AnyClientState, height::Height};
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::core::ics24_host::identifier::ConnectionId;
 use ibc::downcast;
-use penumbra_proto::{ibc as pb, Protobuf};
+use penumbra_proto::{core::ibc::v1alpha1 as pb, Protobuf};
 
 #[derive(Clone, Debug)]
 pub struct ClientCounter(pub u64);

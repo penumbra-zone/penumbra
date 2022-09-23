@@ -23,43 +23,72 @@ pub mod serializers;
 mod protobuf;
 pub use protobuf::Protobuf;
 
-/// Crypto structures.
-pub mod crypto {
-    include!(concat!(env!("OUT_DIR"), "/penumbra.crypto.rs"));
-}
+/// Core protocol structures.
+pub mod core {
+    /// Crypto structures.
+    pub mod crypto {
+        pub mod v1alpha1 {
+            tonic::include_proto!("penumbra.core.crypto.v1alpha1");
+        }
+    }
 
-/// Staking structures.
-pub mod stake {
-    include!(concat!(env!("OUT_DIR"), "/penumbra.stake.rs"));
-}
+    /// Staking structures.
+    pub mod stake {
+        pub mod v1alpha1 {
+            tonic::include_proto!("penumbra.core.stake.v1alpha1");
+        }
+    }
 
-/// Decentralized exchange structures.
-pub mod dex {
-    include!(concat!(env!("OUT_DIR"), "/penumbra.dex.rs"));
-}
+    /// Decentralized exchange structures.
+    pub mod dex {
+        pub mod v1alpha1 {
+            tonic::include_proto!("penumbra.core.dex.v1alpha1");
+        }
+    }
 
-/// Governance structures.
-pub mod governance {
-    include!(concat!(env!("OUT_DIR"), "/penumbra.governance.rs"));
-}
+    /// Governance structures.
+    pub mod governance {
+        pub mod v1alpha1 {
+            tonic::include_proto!("penumbra.core.governance.v1alpha1");
+        }
+    }
 
-/// Transaction structures.
-pub mod transaction {
-    include!(concat!(env!("OUT_DIR"), "/penumbra.transaction.rs"));
-}
+    /// Transaction structures.
+    pub mod transaction {
+        pub mod v1alpha1 {
+            tonic::include_proto!("penumbra.core.transaction.v1alpha1");
+        }
+    }
 
-/// Chain-related structures.
-pub mod chain {
-    tonic::include_proto!("penumbra.chain");
+    /// Chain-related structures.
+    pub mod chain {
+        pub mod v1alpha1 {
+            tonic::include_proto!("penumbra.core.chain.v1alpha1");
+        }
+    }
+
+    /// IBC protocol structures.
+    pub mod ibc {
+        pub mod v1alpha1 {
+            tonic::include_proto!("penumbra.core.ibc.v1alpha1");
+        }
+    }
+
+    /// Transparent proofs.
+    ///
+    /// Note that these are protos for the "MVP" transparent version of Penumbra,
+    /// i.e. not for production use and intentionally not private.
+    pub mod transparent_proofs {
+        pub mod v1alpha1 {
+            tonic::include_proto!("penumbra.core.transparent_proofs.v1alpha1");
+        }
+    }
 }
 
 /// Client protocol structures.
 pub mod client {
-    pub mod oblivious {
-        tonic::include_proto!("penumbra.client.oblivious");
-    }
-    pub mod specific {
-        tonic::include_proto!("penumbra.client.specific");
+    pub mod v1alpha1 {
+        tonic::include_proto!("penumbra.client.v1alpha1");
 
         use specific_query_client::SpecificQueryClient;
         use tonic::{
@@ -114,25 +143,16 @@ pub mod client {
     }
 }
 
-/// IBC protocol structures.
-pub mod ibc {
-    tonic::include_proto!("penumbra.ibc");
-}
-
 /// View protocol structures.
 pub mod view {
-    tonic::include_proto!("penumbra.view");
+    pub mod v1alpha1 {
+        tonic::include_proto!("penumbra.view.v1alpha1");
+    }
 }
 
 /// Custody protocol structures.
 pub mod custody {
-    tonic::include_proto!("penumbra.custody");
-}
-
-/// Transparent proofs.
-///
-/// Note that these are protos for the "MVP" transparent version of Penumbra,
-/// i.e. not for production use and intentionally not private.
-pub mod transparent_proofs {
-    include!(concat!(env!("OUT_DIR"), "/penumbra.transparent_proofs.rs"));
+    pub mod v1alpha1 {
+        tonic::include_proto!("penumbra.custody.v1alpha1");
+    }
 }

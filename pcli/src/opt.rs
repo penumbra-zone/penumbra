@@ -9,11 +9,13 @@ use directories::ProjectDirs;
 use penumbra_crypto::FullViewingKey;
 use penumbra_custody::SoftHSM;
 use penumbra_proto::{
-    custody::{
+    custody::v1alpha1::{
         custody_protocol_client::CustodyProtocolClient,
         custody_protocol_server::CustodyProtocolServer,
     },
-    view::{view_protocol_client::ViewProtocolClient, view_protocol_server::ViewProtocolServer},
+    view::v1alpha1::{
+        view_protocol_client::ViewProtocolClient, view_protocol_server::ViewProtocolServer,
+    },
 };
 use penumbra_view::ViewService;
 use penumbra_wallet::KeyStore;

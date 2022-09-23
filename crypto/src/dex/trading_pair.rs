@@ -3,7 +3,7 @@ use std::str::FromStr;
 use anyhow::{anyhow, Result};
 use blake2b_simd::Hash;
 use decaf377::FieldExt;
-use penumbra_proto::{dex as pb, Protobuf};
+use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 
 use crate::asset::{self, REGISTRY};
 

@@ -1,13 +1,14 @@
 syntax = "proto3";
-package penumbra.stake;
 option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
 
-import "crypto.proto";
+package penumbra.core.stake.v1alpha1;
+
+import "penumbra/core/crypto/v1alpha1/crypto.proto";
 
 // Describes a validator's configuration data.
 message Validator {
   // The validator's identity verification key.
-  crypto.IdentityKey identity_key = 1;
+  crypto.v1alpha1.IdentityKey identity_key = 1;
   // The validator's consensus pubkey for use in Tendermint (Ed25519).
   bytes consensus_key = 2;
   // The validator's (human-readable) name.
@@ -27,12 +28,12 @@ message Validator {
   // with increasing sequence numbers.
   uint32 sequence_number = 7;
   // The validator's governance key.
-  crypto.GovernanceKey governance_key = 9;
+  crypto.v1alpha1.GovernanceKey governance_key = 9;
 }
 
 // For storing the list of keys of known validators.
 message ValidatorList {
-  repeated crypto.IdentityKey validator_keys = 1;
+  repeated crypto.v1alpha1.IdentityKey validator_keys = 1;
 }
 
 // A portion of a validator's commission.
@@ -46,7 +47,7 @@ message FundingStream {
 
 // Describes the reward and exchange rates and voting power for a validator in some epoch.
 message RateData {
-  crypto.IdentityKey identity_key = 1;
+  crypto.v1alpha1.IdentityKey identity_key = 1;
   uint64 epoch_index = 2;
   uint64 validator_reward_rate = 4;
   uint64 validator_exchange_rate = 5;
@@ -61,7 +62,7 @@ message BaseRateData {
 
 // Describes the current state of a validator on-chain
 message ValidatorStatus {
-  crypto.IdentityKey identity_key = 1;
+  crypto.v1alpha1.IdentityKey identity_key = 1;
   ValidatorState state = 2;
   uint64 voting_power = 3;
   BondingState bonding_state = 4;
@@ -109,41 +110,41 @@ message ValidatorDefinition {
 // A transaction action adding stake to a validator's delegation pool.
 message Delegate {
   // The identity key of the validator to delegate to.
-  crypto.IdentityKey validator_identity = 1;
+  crypto.v1alpha1.IdentityKey validator_identity = 1;
   // The index of the epoch in which this delegation was performed.
   // The delegation takes effect in the next epoch.
   uint64 epoch_index = 2;
   // The delegation amount, in units of unbonded stake.
   // TODO: use flow aggregation to hide this, replacing it with bytes amount_ciphertext;
-  crypto.Amount unbonded_amount = 3;
+  crypto.v1alpha1.Amount unbonded_amount = 3;
   // The amount of delegation tokens produced by this action.
   //
   // This is implied by the validator's exchange rate in the specified epoch
   // (and should be checked in transaction validation!), but including it allows
   // stateless verification that the transaction is internally consistent.
-  crypto.Amount delegation_amount = 4;
+  crypto.v1alpha1.Amount delegation_amount = 4;
 }
 
 // A transaction action withdrawing stake from a validator's delegation pool.
 message Undelegate {
   // The identity key of the validator to undelegate from.
-  crypto.IdentityKey validator_identity = 1;
+  crypto.v1alpha1.IdentityKey validator_identity = 1;
   // The index of the epoch in which this undelegation was performed.
   uint64 epoch_index = 2;
   // The amount to undelegate, in units of unbonded stake.
-  crypto.Amount unbonded_amount = 3;
+  crypto.v1alpha1.Amount unbonded_amount = 3;
   // The amount of delegation tokens consumed by this action.
   //
   // This is implied by the validator's exchange rate in the specified epoch
   // (and should be checked in transaction validation!), but including it allows
   // stateless verification that the transaction is internally consistent.
-  crypto.Amount delegation_amount = 4;
+  crypto.v1alpha1.Amount delegation_amount = 4;
 }
 
 // A commission amount to be minted as part of processing the epoch transition.
 message CommissionAmount {
-  crypto.Amount amount = 1;
-  crypto.Address destination = 2;
+  crypto.v1alpha1.Amount amount = 1;
+  crypto.v1alpha1.Address destination = 2;
 }
 
 // A list of commission amounts to be minted as part of processing the epoch transition.
@@ -167,5 +168,5 @@ message Uptime {
 // Tracks our view of Tendermint's view of the validator set, so we can keep it
 // from getting confused.
 message CurrentConsensusKeys {
-  repeated crypto.ConsensusKey consensus_keys = 1;
+  repeated crypto.v1alpha1.ConsensusKey consensus_keys = 1;
 }

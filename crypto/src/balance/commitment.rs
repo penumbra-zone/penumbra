@@ -4,7 +4,7 @@ use ark_ff::PrimeField;
 use decaf377::Fq;
 use decaf377::Fr;
 use once_cell::sync::Lazy;
-use penumbra_proto::crypto as pb;
+use penumbra_proto::core::crypto::v1alpha1 as pb;
 use penumbra_proto::Protobuf;
 
 use crate::Value;

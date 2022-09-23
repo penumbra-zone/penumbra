@@ -6,7 +6,7 @@ use std::convert::{TryFrom, TryInto};
 
 use decaf377::FieldExt;
 use decaf377_rdsa::{SpendAuth, VerificationKey};
-use penumbra_proto::{transparent_proofs, Message, Protobuf};
+use penumbra_proto::{core::transparent_proofs::v1alpha1 as transparent_proofs, Message, Protobuf};
 use penumbra_tct as tct;
 
 use crate::{

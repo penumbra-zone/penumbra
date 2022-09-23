@@ -2,7 +2,7 @@ use penumbra_chain::NoteSource;
 use penumbra_crypto::{
     asset, keys::AddressIndex, note, Address, FieldExt, Fq, IdentityKey, Note, Value,
 };
-use penumbra_proto::{view as pb, Protobuf};
+use penumbra_proto::{view::v1alpha1 as pb, Protobuf};
 
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
