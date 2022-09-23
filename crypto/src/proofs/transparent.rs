@@ -390,8 +390,8 @@ impl SwapClaimProof {
         gadgets::asset_id_integrity(
             self.swap_nft_asset_id,
             self.trading_pair.clone(),
-            self.delta_1_i.into(),
-            self.delta_2_i.into(),
+            self.delta_1_i,
+            self.delta_2_i,
             fee,
             self.claim_address,
         )?;
@@ -432,42 +432,47 @@ impl SwapClaimProof {
 
         let (lambda_1, lambda_2) = output_data.pro_rata_outputs((self.delta_1_i, self.delta_2_i));
 
+        gadgets::diversified_basepoint_not_identity(
+            self.claim_address.diversified_generator().clone(),
+        )?;
+
+        // Check output 1
         let value_1 = Value {
             amount: lambda_1.into(),
             asset_id: self.trading_pair.asset_1(),
         };
+        gadgets::note_commitment_integrity(
+            self.note_blinding_1,
+            value_1,
+            self.claim_address.diversified_generator().clone(),
+            self.claim_address.transmission_key_s().clone(),
+            self.claim_address.clue_key().clone(),
+            note_commitment_1,
+        )?;
+        gadgets::ephemeral_public_key_integrity(
+            epk_1,
+            self.esk_1.clone(),
+            self.claim_address.diversified_generator().clone(),
+        )?;
+
+        // Check output 2
         let value_2 = Value {
             amount: lambda_2.into(),
             asset_id: self.trading_pair.asset_2(),
         };
-
-        let proof_1 = OutputProof {
-            note: Note::from_parts(self.claim_address, value_1, self.note_blinding_1)?,
-            // We use a zero blinding factor here because we haven't properly
-            // factored out the common code between OutputProof and SwapClaimProof,
-            // so we construct a "fake" value commitment internal to this proof.
-            v_blinding: Fr::zero(),
-            esk: self.esk_1.clone(),
-        };
-        proof_1
-            // This is a dummy value commitment, since we don't have a way of calling the output proof logic otherwise.
-            // It has to be -, since an output proof would expect to consume the value
-            .verify(-value_1.commit(Fr::zero()), note_commitment_1, epk_1)
-            .context("output proof 1 failed")?;
-
-        let proof_2 = OutputProof {
-            note: Note::from_parts(self.claim_address, value_2, self.note_blinding_2)?,
-            // We use a zero blinding factor here because we haven't properly
-            // factored out the common code between OutputProof and SwapClaimProof,
-            // so we construct a "fake" value commitment internal to this proof.
-            v_blinding: Fr::zero(),
-            esk: self.esk_2.clone(),
-        };
-        proof_2
-            // This is a dummy value commitment, since we don't have a way of calling the output proof logic otherwise.
-            // It has to be -, since an output proof would expect to consume the value
-            .verify(-value_2.commit(Fr::zero()), note_commitment_2, epk_2)
-            .context("output proof 2 failed")?;
+        gadgets::note_commitment_integrity(
+            self.note_blinding_2,
+            value_2,
+            self.claim_address.diversified_generator().clone(),
+            self.claim_address.transmission_key_s().clone(),
+            self.claim_address.clue_key().clone(),
+            note_commitment_2,
+        )?;
+        gadgets::ephemeral_public_key_integrity(
+            epk_2,
+            self.esk_2.clone(),
+            self.claim_address.diversified_generator().clone(),
+        )?;
 
         Ok(())
     }
