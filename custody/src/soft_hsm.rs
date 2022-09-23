@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use penumbra_crypto::keys::{AccountID, SpendKey};
-use penumbra_proto::{custody as pb, transaction as pb_transaction};
+use penumbra_proto::{core::transaction::v1alpha1 as pb_transaction, custody::v1alpha1 as pb};
 use penumbra_transaction::AuthorizationData;
 use rand_core::OsRng;
 use tonic::{async_trait, Request, Response, Status};

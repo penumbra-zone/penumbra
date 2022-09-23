@@ -1,6 +1,6 @@
 use ibc::core::ics03_connection::version::Version;
 use once_cell::sync::Lazy;
-use penumbra_proto::{ibc as pb, Protobuf};
+use penumbra_proto::{core::ibc::v1alpha1 as pb, Protobuf};
 
 #[derive(Debug, Clone)]
 pub struct ConnectionCounter(pub u64);

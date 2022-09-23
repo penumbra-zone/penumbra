@@ -7,7 +7,7 @@ use penumbra_crypto::{
     Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::{
-    client::specific::{BatchSwapOutputDataRequest, KeyValueRequest},
+    client::v1alpha1::{BatchSwapOutputDataRequest, KeyValueRequest},
     Protobuf,
 };
 use penumbra_transaction::action::Proposal;

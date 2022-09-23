@@ -1,7 +1,7 @@
 use anyhow::Result;
 use penumbra_crypto::FullViewingKey;
 use penumbra_custody::{AuthorizeRequest, CustodyClient};
-use penumbra_proto::view::WitnessRequest;
+use penumbra_proto::view::v1alpha1::WitnessRequest;
 use penumbra_tct::Proof;
 use penumbra_transaction::{plan::TransactionPlan, Transaction};
 use penumbra_view::ViewClient;

@@ -1,4 +1,4 @@
-use penumbra_proto::{chain as pb, stake as pb_stake, Protobuf};
+use penumbra_proto::{core::chain::v1alpha1 as pb, core::stake::v1alpha1 as pb_stake, Protobuf};
 use serde::{Deserialize, Serialize};
 
 use super::Allocation;

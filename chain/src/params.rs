@@ -1,7 +1,7 @@
 use num_rational::Ratio;
 use penumbra_crypto::asset;
 use penumbra_crypto::asset::Amount;
-use penumbra_proto::{chain as pb, crypto as pbc, Protobuf};
+use penumbra_proto::{core::chain::v1alpha1 as pb, core::crypto::v1alpha1 as pbc, Protobuf};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug)]

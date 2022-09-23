@@ -6,8 +6,8 @@ use clap::Parser;
 use futures::StreamExt;
 use penumbra_crypto::FullViewingKey;
 use penumbra_proto::{
-    custody::custody_protocol_client::CustodyProtocolClient,
-    view::view_protocol_client::ViewProtocolClient,
+    custody::v1alpha1::custody_protocol_client::CustodyProtocolClient,
+    view::v1alpha1::view_protocol_client::ViewProtocolClient,
 };
 use penumbra_view::ViewClient;
 use url::Url;

@@ -8,7 +8,7 @@ use penumbra_crypto::{
     symmetric::{OvkWrappedKey, WrappedMemoKey},
     NotePayload,
 };
-use penumbra_proto::{transaction as pb, Protobuf};
+use penumbra_proto::{core::transaction::v1alpha1 as pb, Protobuf};
 
 use super::IsAction;
 

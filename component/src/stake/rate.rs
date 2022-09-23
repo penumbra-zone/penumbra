@@ -1,9 +1,6 @@
 //! Staking reward and delegation token exchange rates.
 
-use penumbra_proto::{
-    stake::{self as pb},
-    Protobuf,
-};
+use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
 use penumbra_transaction::action::{Delegate, Undelegate};
 use serde::{Deserialize, Serialize};
 

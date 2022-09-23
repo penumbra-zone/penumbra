@@ -77,7 +77,7 @@ impl QueryCmd {
         };
 
         let mut client = app.specific_client().await?;
-        let req = penumbra_proto::client::specific::KeyValueRequest {
+        let req = penumbra_proto::client::v1alpha1::KeyValueRequest {
             key,
             ..Default::default()
         };

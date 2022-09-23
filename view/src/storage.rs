@@ -8,7 +8,7 @@ use penumbra_crypto::{
     Amount, Asset, FieldExt, FullViewingKey, Nullifier,
 };
 use penumbra_proto::{
-    client::oblivious::{oblivious_query_client::ObliviousQueryClient, ChainParamsRequest},
+    client::v1alpha1::{oblivious_query_client::ObliviousQueryClient, ChainParamsRequest},
     Protobuf,
 };
 use penumbra_tct as tct;

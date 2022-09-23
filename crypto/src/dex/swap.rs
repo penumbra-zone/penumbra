@@ -10,7 +10,7 @@ pub use plaintext::SwapPlaintext;
 
 use once_cell::sync::Lazy;
 
-use penumbra_proto::{dex as pb, Protobuf};
+use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 
 use super::TradingPair;
 

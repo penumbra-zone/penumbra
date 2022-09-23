@@ -1,6 +1,6 @@
 use ark_ff::Zero;
 use penumbra_crypto::{value, Address, Balance, Fr};
-use penumbra_proto::{ibc as pb, Protobuf};
+use penumbra_proto::{core::ibc::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
 use super::IsAction;

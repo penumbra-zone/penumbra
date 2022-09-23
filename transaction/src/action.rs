@@ -1,7 +1,10 @@
 use std::convert::{TryFrom, TryInto};
 
 use penumbra_crypto::balance;
-use penumbra_proto::{ibc as pb_ibc, stake as pbs, transaction as pb, Protobuf};
+use penumbra_proto::{
+    core::ibc::v1alpha1 as pb_ibc, core::stake::v1alpha1 as pbs, core::transaction::v1alpha1 as pb,
+    Protobuf,
+};
 
 mod delegate;
 mod ibc;

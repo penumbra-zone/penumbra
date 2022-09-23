@@ -2,10 +2,7 @@ use blake2b_simd::{Hash, Params};
 use decaf377::FieldExt;
 use decaf377_fmd::Clue;
 use penumbra_crypto::{FullViewingKey, PayloadKey};
-use penumbra_proto::{
-    transaction::{self as pb},
-    Message, Protobuf,
-};
+use penumbra_proto::{core::transaction::v1alpha1 as pb, Message, Protobuf};
 
 use crate::{
     action::{

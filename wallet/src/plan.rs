@@ -14,8 +14,8 @@ use penumbra_crypto::{
     Address, FullViewingKey, Note, Value,
 };
 use penumbra_proto::{
-    client::specific::{specific_query_client::SpecificQueryClient, BatchSwapOutputDataRequest},
-    view::NotesRequest,
+    client::v1alpha1::{specific_query_client::SpecificQueryClient, BatchSwapOutputDataRequest},
+    view::v1alpha1::NotesRequest,
 };
 use penumbra_transaction::{
     action::{Proposal, ValidatorVote},

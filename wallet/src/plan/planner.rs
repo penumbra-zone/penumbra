@@ -16,7 +16,7 @@ use penumbra_crypto::{
     transaction::Fee,
     Address, DelegationToken, FieldExt, Fr, FullViewingKey, Note, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_proto::view::NotesRequest;
+use penumbra_proto::view::v1alpha1::NotesRequest;
 use penumbra_tct as tct;
 use penumbra_transaction::{
     action::{Proposal, ProposalSubmit, ProposalWithdrawBody, ValidatorVote},

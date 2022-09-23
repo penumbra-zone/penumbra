@@ -1,6 +1,6 @@
 use bitvec::prelude::*;
 
-use penumbra_proto::{stake as pb, Protobuf};
+use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
 /// Records information on a validator's uptime.

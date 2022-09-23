@@ -4,7 +4,7 @@ use ark_ff::{PrimeField, UniformRand};
 use blake2b_simd;
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
-use penumbra_proto::crypto as pb;
+use penumbra_proto::core::crypto::v1alpha1 as pb;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use thiserror;

@@ -1,7 +1,7 @@
 use anyhow::Result;
 
 use penumbra_crypto::FullViewingKey;
-use penumbra_proto::client::oblivious::oblivious_query_client::ObliviousQueryClient;
+use penumbra_proto::client::v1alpha1::oblivious_query_client::ObliviousQueryClient;
 use penumbra_view::ViewClient;
 use tonic::transport::Channel;
 

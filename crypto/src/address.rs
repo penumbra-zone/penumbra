@@ -2,7 +2,7 @@ use std::io::{Cursor, Read, Write};
 
 use ark_serialize::CanonicalDeserialize;
 use f4jumble::{f4jumble, f4jumble_inv};
-use penumbra_proto::{crypto as pb, serializers::bech32str, Protobuf};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, serializers::bech32str, Protobuf};
 use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 

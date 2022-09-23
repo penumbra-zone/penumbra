@@ -1,5 +1,5 @@
 use crate::{Fq, Fr};
-use penumbra_proto::{crypto as pb, Protobuf};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, num::NonZeroU64, ops};
 

@@ -12,10 +12,10 @@ use penumbra_crypto::{
     keys::{AccountID, AddressIndex, FullViewingKey},
 };
 use penumbra_proto::{
-    chain as pbp,
-    crypto::{self as pbc},
-    transaction as pbt,
-    view::{
+    core::chain::v1alpha1 as pbp,
+    core::crypto::v1alpha1 as pbc,
+    core::transaction::v1alpha1 as pbt,
+    view::v1alpha1::{
         self as pb, view_protocol_server::ViewProtocol, StatusResponse,
         TransactionHashStreamResponse, TransactionStreamResponse,
     },

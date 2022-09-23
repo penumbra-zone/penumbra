@@ -4,19 +4,18 @@ use penumbra_component::shielded_pool::View as _;
 use penumbra_component::stake::View as _;
 use penumbra_proto::{
     self as proto,
-    chain::NoteSource,
-    client::specific::{
-        specific_query_server::SpecificQuery, KeyValueRequest, KeyValueResponse,
-        ValidatorStatusRequest,
+    client::v1alpha1::{
+        specific_query_server::SpecificQuery, BatchSwapOutputDataRequest, KeyValueRequest,
+        KeyValueResponse, StubCpmmReservesRequest, ValidatorStatusRequest,
     },
-    crypto::NoteCommitment,
-    dex::BatchSwapOutputData,
+    core::{
+        chain::v1alpha1::NoteSource,
+        crypto::v1alpha1::NoteCommitment,
+        dex::v1alpha1::{BatchSwapOutputData, Reserves},
+        stake::v1alpha1::ValidatorStatus,
+    },
 };
 
-use proto::{
-    client::specific::{BatchSwapOutputDataRequest, StubCpmmReservesRequest},
-    dex::Reserves,
-};
 use tonic::Status;
 use tracing::instrument;
 
@@ -54,7 +53,7 @@ impl SpecificQuery for Info {
     async fn validator_status(
         &self,
         request: tonic::Request<ValidatorStatusRequest>,
-    ) -> Result<tonic::Response<proto::stake::ValidatorStatus>, Status> {
+    ) -> Result<tonic::Response<ValidatorStatus>, Status> {
         let state = self.state_tonic().await?;
         state.check_chain_id(&request.get_ref().chain_id).await?;
 
@@ -128,8 +127,8 @@ impl SpecificQuery for Info {
     #[instrument(skip(self, request))]
     async fn next_validator_rate(
         &self,
-        request: tonic::Request<proto::crypto::IdentityKey>,
-    ) -> Result<tonic::Response<proto::stake::RateData>, Status> {
+        request: tonic::Request<proto::core::crypto::v1alpha1::IdentityKey>,
+    ) -> Result<tonic::Response<proto::core::stake::v1alpha1::RateData>, Status> {
         let state = self.state_tonic().await?;
         let identity_key = request
             .into_inner()

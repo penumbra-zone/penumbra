@@ -1,5 +1,5 @@
 use penumbra_proto::{
-    crypto as pb,
+    core::crypto::v1alpha1 as pb,
     serializers::bech32str::{self, validator_identity_key::BECH32_PREFIX},
     Protobuf,
 };

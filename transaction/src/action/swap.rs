@@ -5,7 +5,7 @@ use penumbra_crypto::dex::TradingPair;
 use penumbra_crypto::proofs::transparent::SwapProof;
 use penumbra_crypto::{balance, dex::swap::SwapCiphertext};
 use penumbra_crypto::{NotePayload, Value};
-use penumbra_proto::{dex as pb, Protobuf};
+use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 
 use crate::IsAction;
 

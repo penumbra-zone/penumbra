@@ -1,6 +1,6 @@
 use blake2b_simd::Hash;
 
-use penumbra_proto::{crypto as pb, Protobuf};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
 
 use crate::{asset, balance, Fr, Value, STAKING_TOKEN_ASSET_ID};
 

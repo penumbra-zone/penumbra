@@ -4,7 +4,7 @@ use crate::{asset, ka, Address, Amount, Value};
 use anyhow::{anyhow, Error, Result};
 use ark_ff::PrimeField;
 use decaf377::Fq;
-use penumbra_proto::{crypto as pb_crypto, dex as pb, Protobuf};
+use penumbra_proto::{core::crypto::v1alpha1 as pb_crypto, core::dex::v1alpha1 as pb, Protobuf};
 use poseidon377::{hash_4, hash_6};
 
 use crate::dex::TradingPair;

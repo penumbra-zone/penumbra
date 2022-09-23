@@ -16,9 +16,8 @@ use pd::testnet::{canonicalize_path, generate_tm_config, write_configs, Validato
 use penumbra_chain::{genesis::Allocation, params::ChainParameters};
 use penumbra_component::stake::{validator::Validator, FundingStream, FundingStreams};
 use penumbra_crypto::{keys::SpendKey, DelegationToken, GovernanceKey};
-use penumbra_proto::client::{
-    oblivious::oblivious_query_server::ObliviousQueryServer,
-    specific::specific_query_server::SpecificQueryServer,
+use penumbra_proto::client::v1alpha1::{
+    oblivious_query_server::ObliviousQueryServer, specific_query_server::SpecificQueryServer,
 };
 use penumbra_storage::Storage;
 use rand::Rng;

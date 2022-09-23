@@ -8,7 +8,7 @@ use penumbra_crypto::{
     },
     Balance, Fr, Value, Zero,
 };
-use penumbra_proto::{dex as pb, Protobuf};
+use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 
 use super::IsAction;
 

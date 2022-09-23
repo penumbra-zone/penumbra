@@ -1,4 +1,4 @@
-use penumbra_proto::{view as pb, Protobuf};
+use penumbra_proto::{view::v1alpha1 as pb, Protobuf};
 
 #[derive(Clone, Copy, Debug)]
 pub struct StatusStreamResponse {

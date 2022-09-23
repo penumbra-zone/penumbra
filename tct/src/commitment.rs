@@ -1,5 +1,5 @@
 use decaf377::FieldExt;
-use penumbra_proto::{crypto as pb, Protobuf};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
 use poseidon377::Fq;
 
 /// A commitment to the value of a note.

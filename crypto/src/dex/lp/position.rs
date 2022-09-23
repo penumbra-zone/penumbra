@@ -1,5 +1,5 @@
 use anyhow::Context;
-use penumbra_proto::{dex as pb, serializers::bech32str, Protobuf};
+use penumbra_proto::{core::dex::v1alpha1 as pb, serializers::bech32str, Protobuf};
 use serde::{Deserialize, Serialize};
 
 use super::{super::TradingPair, TradingFunction};

@@ -113,7 +113,7 @@ impl Proof {
     }
 }
 
-use penumbra_proto::crypto as pb;
+use penumbra_proto::core::crypto::v1alpha1 as pb;
 use rand::{CryptoRng, Rng};
 
 impl From<Proof> for pb::NoteCommitmentProof {

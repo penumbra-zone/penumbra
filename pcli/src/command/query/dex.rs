@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use comfy_table::{presets, Table};
 use penumbra_crypto::dex::{lp::Reserves, BatchSwapOutputData, TradingPair};
-use penumbra_proto::client::specific::{BatchSwapOutputDataRequest, StubCpmmReservesRequest};
+use penumbra_proto::client::v1alpha1::{BatchSwapOutputDataRequest, StubCpmmReservesRequest};
 use penumbra_view::ViewClient;
 
 use crate::App;

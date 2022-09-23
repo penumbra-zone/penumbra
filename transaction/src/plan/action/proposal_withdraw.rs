@@ -1,6 +1,6 @@
 use decaf377::{FieldExt, Fr};
 use decaf377_rdsa::{Signature, SpendAuth};
-use penumbra_proto::{transaction as pb, Protobuf};
+use penumbra_proto::{core::transaction::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
 use crate::action::{ProposalWithdraw, ProposalWithdrawBody};

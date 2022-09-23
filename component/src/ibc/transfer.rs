@@ -13,7 +13,7 @@ use ibc::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use ibc::core::ics04_channel::msgs::timeout::MsgTimeout;
 use ibc::core::ics04_channel::Version;
-use penumbra_proto::ibc::FungibleTokenPacketData;
+use penumbra_proto::core::ibc::v1alpha1::FungibleTokenPacketData;
 use penumbra_storage::{State, StateExt};
 use prost::Message;
 use tracing::instrument;

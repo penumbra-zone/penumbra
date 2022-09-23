@@ -2,7 +2,7 @@ use penumbra_chain::NoteSource;
 use penumbra_crypto::{
     asset, keys::AddressIndex, note, Address, FieldExt, Fq, Note, Nullifier, Value,
 };
-use penumbra_proto::{view as pb, Protobuf};
+use penumbra_proto::{view::v1alpha1 as pb, Protobuf};
 use penumbra_tct as tct;
 
 use serde::{Deserialize, Serialize};

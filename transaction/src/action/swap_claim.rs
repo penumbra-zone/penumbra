@@ -3,7 +3,7 @@ use penumbra_crypto::dex::BatchSwapOutputData;
 use penumbra_crypto::transaction::Fee;
 use penumbra_crypto::{proofs::transparent::SwapClaimProof, Fr, NotePayload};
 use penumbra_crypto::{Balance, Nullifier};
-use penumbra_proto::{dex as pb, Protobuf};
+use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 use serde::Deserialize;
 use serde::Serialize;
 

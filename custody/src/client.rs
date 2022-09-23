@@ -1,5 +1,5 @@
 use anyhow::Result;
-use penumbra_proto::custody::custody_protocol_client::CustodyProtocolClient;
+use penumbra_proto::custody::v1alpha1::custody_protocol_client::CustodyProtocolClient;
 use penumbra_transaction::AuthorizationData;
 use tonic::async_trait;
 
