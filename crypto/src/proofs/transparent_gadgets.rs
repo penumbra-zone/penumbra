@@ -15,9 +15,10 @@ pub(crate) fn nullifier_integrity(
     note_commitment: note::Commitment,
 ) -> Result<()> {
     if public_nullifier != nk.derive_nullifier(position, &note_commitment) {
-        return Err(anyhow!("bad nullifier"));
+        Err(anyhow!("bad nullifier"))
+    } else {
+        Ok(())
     }
-    Ok(())
 }
 
 /// Check the integrity of the note commitment.
@@ -38,9 +39,10 @@ pub(crate) fn note_commitment_integrity(
     );
 
     if note_commitment != note_commitment_test {
-        return Err(anyhow!("note commitment mismatch"));
+        Err(anyhow!("note commitment mismatch"))
+    } else {
+        Ok(())
     }
-    Ok(())
 }
 
 /// Check the integrity of the value commitment.
@@ -50,10 +52,10 @@ pub(crate) fn value_commitment_integrity(
     value: Value,
 ) -> Result<()> {
     if balance_commitment != value.commit(value_blinding) {
-        return Err(anyhow!("value commitment mismatch"));
+        Err(anyhow!("value commitment mismatch"))
+    } else {
+        Ok(())
     }
-
-    Ok(())
 }
 
 /// Check the integrity of an ephemeral public key.
@@ -63,10 +65,10 @@ pub(crate) fn ephemeral_public_key_integrity(
     diversified_generator: decaf377::Element,
 ) -> Result<()> {
     if secret_key.diversified_public(&diversified_generator) != public_key {
-        return Err(anyhow!("ephemeral public key mismatch"));
+        Err(anyhow!("ephemeral public key mismatch"))
+    } else {
+        Ok(())
     }
-
-    Ok(())
 }
 
 /// Check the integrity of a diversified address.
@@ -79,10 +81,10 @@ pub(crate) fn diversified_address_integrity(
     let fvk = keys::FullViewingKey::from_components(ak, nk);
     let ivk = fvk.incoming();
     if transmission_key != ivk.diversified_public(&diversified_generator) {
-        return Err(anyhow!("invalid diversified address"));
+        Err(anyhow!("invalid diversified address"))
+    } else {
+        Ok(())
     }
-
-    Ok(())
 }
 
 /// Check the integrity of the asset ID of a swap NFT.
@@ -106,8 +108,20 @@ pub(crate) fn asset_id_integrity(
     .map_err(|_| anyhow!("error generating expected swap plaintext"))?;
     let expected_asset_id = expected_plaintext.asset_id();
     if expected_asset_id != asset_id {
-        return Err(anyhow!("improper swap NFT asset id"));
+        Err(anyhow!("improper swap NFT asset id"))
+    } else {
+        Ok(())
     }
+}
 
-    Ok(())
+/// Check diversified basepoint is not identity.
+///
+/// The use of decaf means that we do not need to check that the
+/// diversified basepoint is of small order, we instead check it is not identity.
+pub(crate) fn diversified_basepoint_not_identity(point: decaf377::Element) -> Result<()> {
+    if point.is_identity() {
+        Err(anyhow!("unexpected identity"))
+    } else {
+        Ok(())
+    }
 }
