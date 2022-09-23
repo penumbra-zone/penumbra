@@ -1127,19 +1127,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "curve25519-dalek"
-version = "3.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b9fdf9972b2bd6af2d913799d9ebc165ea4d2e65878e329d9c6b372c4491b61"
-dependencies = [
- "byteorder",
- "digest 0.9.0",
- "rand_core 0.5.1",
- "subtle",
- "zeroize",
-]
-
-[[package]]
 name = "curve25519-dalek-ng"
 version = "4.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1147,7 +1134,7 @@ checksum = "1c359b7249347e46fb28804470d071c921156ad62b3eef5d34e2ba867533dec8"
 dependencies = [
  "byteorder",
  "digest 0.9.0",
- "rand_core 0.6.4",
+ "rand_core",
  "subtle-ng",
  "zeroize",
 ]
@@ -1220,7 +1207,7 @@ dependencies = [
  "criterion",
  "decaf377",
  "proptest",
- "rand_core 0.6.4",
+ "rand_core",
  "thiserror",
 ]
 
@@ -1232,7 +1219,7 @@ dependencies = [
  "decaf377",
  "hex",
  "proptest",
- "rand_core 0.6.4",
+ "rand_core",
  "thiserror",
  "zeroize",
  "zeroize_derive",
@@ -1250,7 +1237,7 @@ dependencies = [
  "decaf377",
  "digest 0.9.0",
  "hex",
- "rand_core 0.6.4",
+ "rand_core",
  "serde",
  "thiserror",
 ]
@@ -1361,7 +1348,7 @@ checksum = "758e2a0cd8a6cdf483e1d369e7d081647e00b88d8953e34d8f2cbba05ae28368"
 dependencies = [
  "curve25519-dalek-ng",
  "hex",
- "rand_core 0.6.4",
+ "rand_core",
  "serde",
  "sha2 0.9.9",
  "thiserror",
@@ -1376,22 +1363,10 @@ checksum = "e1dd91246c940272326f665724138660a183577ffb77b384a5e10d67d2d5075a"
 dependencies = [
  "curve25519-dalek-ng",
  "hex",
- "rand_core 0.6.4",
+ "rand_core",
  "serde",
  "sha2 0.9.9",
  "thiserror",
- "zeroize",
-]
-
-[[package]]
-name = "ed25519-dalek"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c762bae6dcaf24c4c84667b8579785430908723d5c889f469d76a41d59cc7a9d"
-dependencies = [
- "curve25519-dalek",
- "ed25519",
- "sha2 0.9.9",
  "zeroize",
 ]
 
@@ -2473,7 +2448,7 @@ checksum = "58c38e2799fc0978b65dfff8023ec7843e2330bb462f19198840b34b6582397d"
 dependencies = [
  "byteorder",
  "keccak",
- "rand_core 0.6.4",
+ "rand_core",
  "zeroize",
 ]
 
@@ -2896,7 +2871,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d791538a6dcc1e7cb7fe6f6b58aca40e7f79403c45b2bc274008b5e647af1d8"
 dependencies = [
  "base64ct",
- "rand_core 0.6.4",
+ "rand_core",
  "subtle",
 ]
 
@@ -2956,7 +2931,7 @@ dependencies = [
  "predicates",
  "rand",
  "rand_chacha",
- "rand_core 0.6.4",
+ "rand_core",
  "regex",
  "reqwest",
  "serde",
@@ -3020,7 +2995,7 @@ dependencies = [
  "prost-types",
  "rand",
  "rand_chacha",
- "rand_core 0.6.4",
+ "rand_core",
  "regex",
  "reqwest",
  "rocksdb",
@@ -3131,7 +3106,7 @@ dependencies = [
  "penumbra-transaction",
  "prost",
  "prost-types",
- "rand_core 0.6.4",
+ "rand_core",
  "regex",
  "serde",
  "serde_json",
@@ -3179,7 +3154,7 @@ dependencies = [
  "poseidon377",
  "proptest",
  "rand",
- "rand_core 0.6.4",
+ "rand_core",
  "regex",
  "serde",
  "serde_json",
@@ -3203,7 +3178,7 @@ dependencies = [
  "penumbra-proto",
  "penumbra-transaction",
  "prost",
- "rand_core 0.6.4",
+ "rand_core",
  "serde",
  "serde_json",
  "serde_with",
@@ -3227,7 +3202,7 @@ dependencies = [
  "parking_lot 0.12.1",
  "proptest",
  "rand",
- "rand_core 0.6.4",
+ "rand_core",
  "thiserror",
  "tokio",
 ]
@@ -3407,7 +3382,7 @@ dependencies = [
  "proptest",
  "proptest-derive",
  "rand",
- "rand_core 0.6.4",
+ "rand_core",
  "regex",
  "serde",
  "serde_json",
@@ -3440,7 +3415,7 @@ dependencies = [
  "penumbra-transaction",
  "prost",
  "rand",
- "rand_core 0.6.4",
+ "rand_core",
  "reqwest",
  "serde",
  "serde_json",
@@ -3478,7 +3453,7 @@ dependencies = [
  "proptest",
  "proptest-derive",
  "rand",
- "rand_core 0.6.4",
+ "rand_core",
  "serde",
  "serde_json",
  "serde_with",
@@ -3603,7 +3578,7 @@ dependencies = [
  "merlin",
  "num",
  "num-bigint",
- "rand_core 0.6.4",
+ "rand_core",
 ]
 
 [[package]]
@@ -3905,7 +3880,7 @@ checksum = "34af8d1a0e25924bc5b7c43c079c942339d8f0a8b57c39049bef581b46327404"
 dependencies = [
  "libc",
  "rand_chacha",
- "rand_core 0.6.4",
+ "rand_core",
 ]
 
 [[package]]
@@ -3915,14 +3890,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6c10a63a0fa32252be49d21e7709d4d4baf8d231c2dbce1eaa8141b9b127d88"
 dependencies = [
  "ppv-lite86",
- "rand_core 0.6.4",
+ "rand_core",
 ]
-
-[[package]]
-name = "rand_core"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90bde5296fc891b0cef12a6d03ddccc162ce7b2aff54160af9338f8d40df6d19"
 
 [[package]]
 name = "rand_core"
@@ -3949,7 +3918,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d25bf25ec5ae4a3f1b92f929810509a2f53d7dca2f50b794ff57e3face536c8f"
 dependencies = [
- "rand_core 0.6.4",
+ "rand_core",
 ]
 
 [[package]]
@@ -4849,12 +4818,12 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.23.9"
-source = "git+https://github.com/penumbra-zone/tendermint-rs?branch=penumbra-034#61e6bf5792bf7e6ed3bffe7aef9a03bf29f312b5"
+source = "git+https://github.com/penumbra-zone/tendermint-rs?branch=penumbra-034#0b2f1f24b08b9c97b8803adfe62b5863287b227a"
 dependencies = [
  "async-trait",
  "bytes",
  "ed25519",
- "ed25519-dalek",
+ "ed25519-consensus 1.2.1",
  "flex-error",
  "futures",
  "num-traits",
@@ -4877,7 +4846,7 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.23.9"
-source = "git+https://github.com/penumbra-zone/tendermint-rs?branch=penumbra-034#61e6bf5792bf7e6ed3bffe7aef9a03bf29f312b5"
+source = "git+https://github.com/penumbra-zone/tendermint-rs?branch=penumbra-034#0b2f1f24b08b9c97b8803adfe62b5863287b227a"
 dependencies = [
  "flex-error",
  "serde",
@@ -4890,7 +4859,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client-verifier"
 version = "0.23.9"
-source = "git+https://github.com/penumbra-zone/tendermint-rs?branch=penumbra-034#61e6bf5792bf7e6ed3bffe7aef9a03bf29f312b5"
+source = "git+https://github.com/penumbra-zone/tendermint-rs?branch=penumbra-034#0b2f1f24b08b9c97b8803adfe62b5863287b227a"
 dependencies = [
  "derive_more",
  "flex-error",
@@ -4902,7 +4871,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.23.9"
-source = "git+https://github.com/penumbra-zone/tendermint-rs?branch=penumbra-034#61e6bf5792bf7e6ed3bffe7aef9a03bf29f312b5"
+source = "git+https://github.com/penumbra-zone/tendermint-rs?branch=penumbra-034#0b2f1f24b08b9c97b8803adfe62b5863287b227a"
 dependencies = [
  "bytes",
  "flex-error",
@@ -4919,7 +4888,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.23.9"
-source = "git+https://github.com/penumbra-zone/tendermint-rs?branch=penumbra-034#61e6bf5792bf7e6ed3bffe7aef9a03bf29f312b5"
+source = "git+https://github.com/penumbra-zone/tendermint-rs?branch=penumbra-034#0b2f1f24b08b9c97b8803adfe62b5863287b227a"
 dependencies = [
  "async-trait",
  "bytes",
