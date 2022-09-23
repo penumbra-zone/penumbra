@@ -57,19 +57,14 @@ impl SpendProof {
             return Ok(());
         }
 
-        // Note commitment integrity.
-        let s_component_transmission_key = self.note.transmission_key_s();
-        let note_commitment_test = note::commitment(
+        gadgets::note_commitment_integrity(
             self.note.note_blinding(),
             self.note.value(),
             self.note.diversified_generator(),
-            s_component_transmission_key,
-            self.note.clue_key(),
-        );
-
-        if self.note_commitment_proof.commitment() != note_commitment_test {
-            return Err(anyhow!("note commitment mismatch"));
-        }
+            self.note.transmission_key_s(),
+            self.note.clue_key().clone(),
+            self.note_commitment_proof.commitment(),
+        )?;
 
         // Merkle path integrity.
         self.note_commitment_proof
@@ -142,23 +137,14 @@ impl OutputProof {
         note_commitment: note::Commitment,
         epk: ka::Public,
     ) -> anyhow::Result<()> {
-        // Note commitment integrity.
-        let s_component_transmission_key = self.note.transmission_key_s();
-        let note_commitment_test = note::commitment(
+        gadgets::note_commitment_integrity(
             self.note.note_blinding(),
             self.note.value(),
             self.note.diversified_generator(),
-            s_component_transmission_key,
-            self.note.clue_key(),
-        );
-
-        if note_commitment != note_commitment_test {
-            return Err(anyhow!(
-                "note commitment mismatch, public input {:?} does not match witnessed data {:?}",
-                note_commitment,
-                note_commitment_test,
-            ));
-        }
+            self.note.transmission_key_s(),
+            self.note.clue_key().clone(),
+            note_commitment,
+        )?;
 
         // Value commitment integrity.
         if balance_commitment != -self.note.value().commit(self.v_blinding) {
@@ -376,6 +362,7 @@ impl SwapClaimProof {
     /// * nullifier of the note to be spent,
     /// * the randomized verification spend key,
     /// * the pre-paid fee amount for the swap,
+    /// * the note commitments for the outputs,
     #[allow(clippy::too_many_arguments)]
     pub fn verify(
         &self,
@@ -395,22 +382,17 @@ impl SwapClaimProof {
             .map_err(|_| anyhow!("merkle root mismatch"))?;
 
         // Check that the provided note commitment is for the proof's Swap NFT.
-        let swap_nft_value = Value {
-            amount: 1u64.into(),
-            asset_id: self.swap_nft_asset_id,
-        };
-        let transmission_key_s = self.claim_address.transmission_key_s();
-        let note_commitment_test = note::commitment(
+        gadgets::note_commitment_integrity(
             self.note_blinding,
-            swap_nft_value.clone(),
-            *self.claim_address.diversified_generator(),
-            *transmission_key_s,
-            self.claim_address.clue_key(),
-        );
-
-        if self.note_commitment_proof.commitment() != note_commitment_test {
-            return Err(anyhow!("note commitment mismatch"));
-        }
+            Value {
+                amount: 1u64.into(),
+                asset_id: self.swap_nft_asset_id,
+            },
+            self.claim_address.diversified_generator().clone(),
+            self.claim_address.transmission_key_s().clone(),
+            self.claim_address.clue_key().clone(),
+            self.note_commitment_proof.commitment(),
+        )?;
 
         // check the swap NFT Asset ID is properly constructed
         let asset_id = self.swap_nft_asset_id;
@@ -664,24 +646,19 @@ impl SwapProof {
         note_commitment: note::Commitment,
         epk: ka::Public,
     ) -> anyhow::Result<(), Error> {
-        // Note commitment integrity.
-        let transmission_key_s = self.claim_address.transmission_key_s();
         // Checks the note commitment of the Swap NFT.
-        let note_commitment_test = note::commitment(
+        gadgets::note_commitment_integrity(
             self.note_blinding,
             Value {
                 // The swap NFT is always amount 1.
                 amount: 1u64.into(),
                 asset_id: self.swap_nft_asset_id,
             },
-            *self.claim_address.diversified_generator(),
-            *transmission_key_s,
-            self.claim_address.clue_key(),
-        );
-
-        if note_commitment != note_commitment_test {
-            return Err(anyhow!("note commitment mismatch"));
-        }
+            self.claim_address.diversified_generator().clone(),
+            self.claim_address.transmission_key_s().clone(),
+            self.claim_address.clue_key().clone(),
+            note_commitment,
+        )?;
 
         // TODO: no value commitment checks until flow encryption is available
         // // Value commitment integrity.
