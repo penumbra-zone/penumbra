@@ -80,7 +80,7 @@ metrics-exporter-prometheus = { version = "0.10.0", features = [
     "http-listener",
 ] }
 http = "0.2"
-ed25519-consensus = "1.2"
+ed25519-consensus = "2"
 async-trait = "0.1.52"
 once_cell = "1.7.2"
 rocksdb = "0.18.0"

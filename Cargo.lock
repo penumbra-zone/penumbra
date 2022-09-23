@@ -1342,21 +1342,6 @@ dependencies = [
 
 [[package]]
 name = "ed25519-consensus"
-version = "1.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "758e2a0cd8a6cdf483e1d369e7d081647e00b88d8953e34d8f2cbba05ae28368"
-dependencies = [
- "curve25519-dalek-ng",
- "hex",
- "rand_core",
- "serde",
- "sha2 0.9.9",
- "thiserror",
- "zeroize",
-]
-
-[[package]]
-name = "ed25519-consensus"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e1dd91246c940272326f665724138660a183577ffb77b384a5e10d67d2d5075a"
@@ -2910,7 +2895,7 @@ dependencies = [
  "comfy-table",
  "decaf377",
  "directories",
- "ed25519-consensus 1.2.1",
+ "ed25519-consensus",
  "fslock",
  "futures",
  "hex",
@@ -2970,7 +2955,7 @@ dependencies = [
  "csv",
  "decaf377",
  "directories",
- "ed25519-consensus 1.2.1",
+ "ed25519-consensus",
  "futures",
  "hex",
  "http",
@@ -3090,7 +3075,7 @@ dependencies = [
  "bitvec 1.0.1",
  "blake2b_simd 0.5.11",
  "decaf377",
- "ed25519-consensus 2.0.1",
+ "ed25519-consensus",
  "hex",
  "ibc",
  "ibc-proto",
@@ -4818,12 +4803,12 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.23.9"
-source = "git+https://github.com/penumbra-zone/tendermint-rs?branch=penumbra-034#0b2f1f24b08b9c97b8803adfe62b5863287b227a"
+source = "git+https://github.com/penumbra-zone/tendermint-rs?branch=penumbra-034#906ced69312c70937859b638a7d0e11f185c4d3d"
 dependencies = [
  "async-trait",
  "bytes",
  "ed25519",
- "ed25519-consensus 1.2.1",
+ "ed25519-consensus",
  "flex-error",
  "futures",
  "num-traits",
@@ -4846,7 +4831,7 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.23.9"
-source = "git+https://github.com/penumbra-zone/tendermint-rs?branch=penumbra-034#0b2f1f24b08b9c97b8803adfe62b5863287b227a"
+source = "git+https://github.com/penumbra-zone/tendermint-rs?branch=penumbra-034#906ced69312c70937859b638a7d0e11f185c4d3d"
 dependencies = [
  "flex-error",
  "serde",
@@ -4859,7 +4844,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client-verifier"
 version = "0.23.9"
-source = "git+https://github.com/penumbra-zone/tendermint-rs?branch=penumbra-034#0b2f1f24b08b9c97b8803adfe62b5863287b227a"
+source = "git+https://github.com/penumbra-zone/tendermint-rs?branch=penumbra-034#906ced69312c70937859b638a7d0e11f185c4d3d"
 dependencies = [
  "derive_more",
  "flex-error",
@@ -4871,7 +4856,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.23.9"
-source = "git+https://github.com/penumbra-zone/tendermint-rs?branch=penumbra-034#0b2f1f24b08b9c97b8803adfe62b5863287b227a"
+source = "git+https://github.com/penumbra-zone/tendermint-rs?branch=penumbra-034#906ced69312c70937859b638a7d0e11f185c4d3d"
 dependencies = [
  "bytes",
  "flex-error",
@@ -4888,7 +4873,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.23.9"
-source = "git+https://github.com/penumbra-zone/tendermint-rs?branch=penumbra-034#0b2f1f24b08b9c97b8803adfe62b5863287b227a"
+source = "git+https://github.com/penumbra-zone/tendermint-rs?branch=penumbra-034#906ced69312c70937859b638a7d0e11f185c4d3d"
 dependencies = [
  "async-trait",
  "bytes",

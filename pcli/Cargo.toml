@@ -39,7 +39,7 @@ tendermint-rpc = { git = "https://github.com/penumbra-zone/tendermint-rs", branc
 
 # External dependencies
 ark-ff = "0.3"
-ed25519-consensus = "1.2"                                   # 1.2 required because tendermint 0.24.0-pre.1 uses it
+ed25519-consensus = "2"
 futures = "0.3"
 async-stream = "0.2"
 bincode = "1.3.3"
