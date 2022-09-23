@@ -45,7 +45,7 @@ impl Mempool {
     }
 }
 
-impl tower::Service<MempoolRequest> for Mempool {
+impl tower_service::Service<MempoolRequest> for Mempool {
     type Response = MempoolResponse;
     type Error = BoxError;
     type Future = Pin<Box<dyn Future<Output = Result<MempoolResponse, BoxError>> + Send + 'static>>;

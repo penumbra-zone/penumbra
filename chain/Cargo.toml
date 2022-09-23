@@ -13,10 +13,11 @@ penumbra-tct = { path = "../tct" }
 
 # Penumbra dependencies
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
-jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "main" }
+jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "penumbra-034" }
 
 # Crates.io deps
-tendermint = "0.24.0-pre.1"
+tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs", branch = "penumbra-034" }
+
 ark-ff = "0.3"
 anyhow = "1"
 bytes = "1"
@@ -24,5 +25,5 @@ hex = "0.4"
 serde = { version = "1", features = ["derive"] }
 async-trait = "0.1.52"
 tracing = "0.1"
-tonic = "0.6"
+tonic = "0.8.1"
 num-rational = "0.4"

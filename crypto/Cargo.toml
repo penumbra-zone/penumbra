@@ -18,7 +18,7 @@ decaf377-rdsa = { version = "0.5", git = "https://github.com/penumbra-zone/decaf
 poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377", branch = "main" }
 poseidon-paramgen = { git = "https://github.com/penumbra-zone/poseidon377", branch = "main" }
 jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "main" }
-f4jumble = { git = "https://github.com/zcash/librustzcash", rev="2425a0869098e3b0588ccd73c42716bcf418612c" }
+f4jumble = { git = "https://github.com/zcash/librustzcash", rev = "2425a0869098e3b0588ccd73c42716bcf418612c" }
 
 # Crates.io deps
 ark-ff = "0.3"

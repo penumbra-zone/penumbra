@@ -23,24 +23,25 @@ penumbra-wallet = { path = "../wallet" }
 
 # Penumbra dependencies
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
-tower-abci = { git = "https://github.com/penumbra-zone/tower-abci/", branch =  "with-tendermintrs-24" }
+tower-abci = { git = "https://github.com/penumbra-zone/tower-abci/", branch = "penumbra-034" }
 jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "main" }
 
 
 # External dependencies
-tendermint-config = "0.24.0-pre.1"
+tendermint-config = { git = "https://github.com/penumbra-zone/tendermint-rs", branch = "penumbra-034" }
 # These are = dependencies to force the whole workspace's dependency tree to go
 # back onto 0.24.0-pre.1, which, unlike 0.24.0-pre.2, doesn't have
 # ecosystem-incompatible breaking changes to the prost version.
 #
 # Longer-term, we can't rely on the upstream to publish versions, so we should plan
 # to fork the crates and maintain our fork.
-tendermint-proto = "=0.24.0-pre.1"
-tendermint = "=0.24.0-pre.1"
+tendermint-proto = { git = "https://github.com/penumbra-zone/tendermint-rs", branch = "penumbra-034" }
+tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs", branch = "penumbra-034" }
+prost = "0.11"
 # We don't need this crate at all, but its upstream published a breaking change as
 # 0.7.1 (also prost-related), and depending on an exact version here will exclude
 # the bad update until it's yanked.
-ics23 = "=0.7.0"
+ics23 = { git = "https://github.com/penumbra-zone/ics23", branch = "penumbra-034" }
 
 ark-ff = "0.3"
 async-stream = "0.2"
@@ -51,17 +52,17 @@ chrono = { version = "0.4", default-features = false, features = ["serde"] }
 csv = "1.1"
 directories = "4.0"
 # Temporarily pin due to https://github.com/penumbra-zone/penumbra/issues/1355
-tokio = { version = "=1.21.1", features = ["full"]}
+tokio = { version = "=1.21.1", features = ["full"] }
 tokio-stream = "0.1"
 tokio-util = "0.7"
-tower = { version = "0.4", features = ["full"]}
+tower = { version = "0.4", features = ["full"] }
+tower-service = "0.3.2"
 tracing = "0.1"
 regex = "1.5"
 reqwest = { version = "0.11", features = ["json"] }
-prost-types = "0.9"
-tonic = "0.6.1"
-# TODO: update to 0.4, which requires tonic 0.8, which requires changes to tendermint crates (:C)
-tonic-web = "0.2"
+prost-types = "0.11"
+tonic = "0.8.1"
+tonic-web = "0.4.0"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "ansi"] }
 pin-project = "1"
 futures = "0.3"
@@ -75,15 +76,17 @@ rand = "0.8"
 rand_chacha = "0.3.1"
 rand_core = { version = "0.6.3", features = ["getrandom"] }
 metrics = "0.19.0"
-metrics-exporter-prometheus = { version = "0.10.0", features = ["http-listener"] }
+metrics-exporter-prometheus = { version = "0.10.0", features = [
+    "http-listener",
+] }
 http = "0.2"
 ed25519-consensus = "1.2"
 async-trait = "0.1.52"
 once_cell = "1.7.2"
 rocksdb = "0.18.0"
-ibc = { git = "https://github.com/penumbra-zone/ibc-rs.git", branch = "with-tendermintrs-24" }
-ibc-proto = { git = "https://github.com/penumbra-zone/ibc-rs.git", branch = "with-tendermintrs-24" }
-tendermint-light-client-verifier = "0.24.0-pre.1"
+ibc = { git = "https://github.com/penumbra-zone/ibc-rs", branch = "penumbra-034" }
+ibc-proto = { git = "https://github.com/penumbra-zone/ibc-rs", branch = "penumbra-034" }
+tendermint-light-client-verifier = { git = "https://github.com/penumbra-zone/tendermint-rs", branch = "penumbra-034" }
 tempfile = "3.3.0"
 base64 = "0.13.0"
 # Temporarily pin due to https://github.com/penumbra-zone/penumbra/issues/1355 since 0.1.8 contains
