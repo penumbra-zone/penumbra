@@ -12,7 +12,7 @@ use penumbra_tct as tct;
 use super::transparent_gadgets as gadgets;
 use crate::{
     asset, balance,
-    dex::{swap::SwapPlaintext, BatchSwapOutputData, TradingPair},
+    dex::{BatchSwapOutputData, TradingPair},
     ka, keys, note,
     transaction::Fee,
     Address, Fq, Fr, Note, Nullifier, Value,
@@ -77,10 +77,8 @@ impl SpendProof {
             self.note.value(),
         )?;
 
-        // The use of decaf means that we do not need to check that the
-        // diversified basepoint is of small order. However we instead
-        // check it is not identity.
-        if self.note.diversified_generator().is_identity() || self.ak.is_identity() {
+        gadgets::diversified_basepoint_not_identity(self.note.diversified_generator().clone())?;
+        if self.ak.is_identity() {
             return Err(anyhow!("unexpected identity"));
         }
 
@@ -157,12 +155,9 @@ impl OutputProof {
             self.note.diversified_generator(),
         )?;
 
-        // The use of decaf means that we do not need to check that the
-        // diversified basepoint is of small order. However we instead
-        // check it is not identity.
-        if self.note.address().diversified_generator().is_identity() {
-            return Err(anyhow!("unexpected identity"));
-        }
+        gadgets::diversified_basepoint_not_identity(
+            self.note.address().diversified_generator().clone(),
+        )?;
 
         Ok(())
     }
@@ -672,12 +667,9 @@ impl SwapProof {
             self.claim_address.diversified_generator().clone(),
         )?;
 
-        // The use of decaf means that we do not need to check that the
-        // diversified basepoint is of small order. However we instead
-        // check it is not identity.
-        if self.claim_address.diversified_generator().is_identity() {
-            return Err(anyhow!("unexpected identity"));
-        }
+        gadgets::diversified_basepoint_not_identity(
+            self.claim_address.diversified_generator().clone(),
+        )?;
 
         Ok(())
     }
