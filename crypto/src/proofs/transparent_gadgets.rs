@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use decaf377_fmd as fmd;
 use penumbra_tct as tct;
 
-use crate::{balance, keys, note, Fq, Fr, Nullifier, Value};
+use crate::{balance, ka, keys, note, Fq, Fr, Nullifier, Value};
 
 /// Check the integrity of the nullifier.
 pub(crate) fn nullifier_integrity(
@@ -48,6 +48,19 @@ pub(crate) fn value_commitment_integrity(
 ) -> Result<()> {
     if balance_commitment != value.commit(value_blinding) {
         return Err(anyhow!("value commitment mismatch"));
+    }
+
+    Ok(())
+}
+
+/// Check the integrity of an ephemeral public key.
+pub(crate) fn ephemeral_public_key_integrity(
+    public_key: ka::Public,
+    secret_key: ka::Secret,
+    diversified_generator: decaf377::Element,
+) -> Result<()> {
+    if secret_key.diversified_public(&diversified_generator) != public_key {
+        return Err(anyhow!("ephemeral public key mismatch"));
     }
 
     Ok(())
