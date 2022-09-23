@@ -9,6 +9,7 @@ use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_proto::{core::transparent_proofs::v1alpha1 as transparent_proofs, Message, Protobuf};
 use penumbra_tct as tct;
 
+use super::transparent_gadgets as gadgets;
 use crate::{
     asset, balance,
     dex::{swap::SwapPlaintext, BatchSwapOutputData, TradingPair},
@@ -87,15 +88,12 @@ impl SpendProof {
             return Err(anyhow!("unexpected identity"));
         }
 
-        // Nullifier integrity.
-        if nullifier
-            != self.nk.derive_nullifier(
-                self.note_commitment_proof.position(),
-                &self.note_commitment_proof.commitment(),
-            )
-        {
-            return Err(anyhow!("bad nullifier"));
-        }
+        gadgets::nullifier_integrity(
+            nullifier,
+            self.nk,
+            self.note_commitment_proof.position(),
+            self.note_commitment_proof.commitment(),
+        )?;
 
         // Spend authority.
         let rk_bytes: [u8; 32] = rk.into();
@@ -458,13 +456,12 @@ impl SwapClaimProof {
         // * and verify the output notes
 
         // Swap NFT nullifier integrity. Ensure the nullifier is correctly formed.
-        if nullifier
-            != self
-                .nk
-                .derive_nullifier(position, &self.note_commitment_proof.commitment())
-        {
-            return Err(anyhow!("bad nullifier"));
-        }
+        gadgets::nullifier_integrity(
+            nullifier,
+            self.nk,
+            position,
+            self.note_commitment_proof.commitment(),
+        )?;
 
         let (lambda_1, lambda_2) = output_data.pro_rata_outputs((self.delta_1_i, self.delta_2_i));
 
