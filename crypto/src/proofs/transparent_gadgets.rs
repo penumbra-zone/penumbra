@@ -3,7 +3,9 @@ use decaf377_fmd as fmd;
 use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_tct as tct;
 
-use crate::{balance, ka, keys, note, Fq, Fr, Nullifier, Value};
+use crate::{
+    asset, balance, dex, ka, keys, note, transaction::Fee, Address, Fq, Fr, Nullifier, Value,
+};
 
 /// Check the integrity of the nullifier.
 pub(crate) fn nullifier_integrity(
@@ -78,6 +80,33 @@ pub(crate) fn diversified_address_integrity(
     let ivk = fvk.incoming();
     if transmission_key != ivk.diversified_public(&diversified_generator) {
         return Err(anyhow!("invalid diversified address"));
+    }
+
+    Ok(())
+}
+
+/// Check the integrity of the asset ID of a swap NFT.
+pub(crate) fn asset_id_integrity(
+    asset_id: asset::Id,
+    trading_pair: dex::TradingPair,
+    delta_1_i: u64,
+    delta_2_i: u64,
+    fee: Fee,
+    claim_address: Address,
+) -> Result<()> {
+    let expected_plaintext = dex::swap::SwapPlaintext::from_parts(
+        trading_pair,
+        delta_1_i.into(),
+        delta_2_i.into(),
+        fee,
+        // This should ensure that the claim address matches the address
+        // used to construct the Swap NFT.
+        claim_address,
+    )
+    .map_err(|_| anyhow!("error generating expected swap plaintext"))?;
+    let expected_asset_id = expected_plaintext.asset_id();
+    if expected_asset_id != asset_id {
+        return Err(anyhow!("improper swap NFT asset id"));
     }
 
     Ok(())
