@@ -19,22 +19,27 @@ depending on your distribution. For a bare-bones Ubuntu installation, you can
 run:
 
 ```bash
-sudo apt-get install build-essential pkg-config libssl-dev clang
+sudo apt-get install build-essential pkg-config libssl-dev clang protobuf-compiler
 ```
 
 For a minimal Fedora image, you can run:
 
 ```bash
-sudo dnf install openssl-dev clang
+sudo dnf install openssl-dev clang protobuf-compiler
 ```
 
 #### macOS
 
 You may need to install the command-line developer tools if you have never done
 so:
-
 ```bash
 xcode-select --install
+```
+
+You will need to install the Protobuf compiler, using Homebrew or [another
+method](https://grpc.io/docs/protoc-installation/):
+```
+brew install protobuf
 ```
 
 ### Cloning the repository
