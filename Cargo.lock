@@ -5239,7 +5239,7 @@ dependencies = [
 [[package]]
 name = "tower-abci"
 version = "0.1.0"
-source = "git+https://github.com/penumbra-zone/tower-abci/?branch=penumbra-034#a9b506f92570fa3e7b4e62386643bc544c62494e"
+source = "git+https://github.com/penumbra-zone/tower-abci/?branch=penumbra-034#91b209f61ccc941683c16dfc34e4a3e3efae57fc"
 dependencies = [
  "bytes",
  "futures",

@@ -46,7 +46,7 @@ spec:
               mountPath: /home/pv-testnet-pd-node-1
 
         - name: config-init
-          image: ghcr.io/strangelove-ventures/heighliner/tendermint:v0.35.9
+          image: ghcr.io/strangelove-ventures/heighliner/tendermint:v0.34.21
           command:
             - sh
             - -c
@@ -93,7 +93,7 @@ spec:
               readOnly: true
       containers:
         - name: tm
-          image: ghcr.io/strangelove-ventures/heighliner/tendermint:v0.35.9
+          image: ghcr.io/strangelove-ventures/heighliner/tendermint:v0.34.21
           imagePullPolicy: Always
           ports:
             - containerPort: 26657
