@@ -48,7 +48,7 @@ services:
       - "27657:26657"
     volumes:
       - ~/.penumbra/testnet_data/node1/tendermint:/tendermint
-    command: start --proxy-app=tcp://pd-node1:26658
+    command: start --proxy_app=tcp://pd-node1:26658
     environment:
       - ID=1
       - LOG=${LOG:-tendermint.log}
