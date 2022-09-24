@@ -25,15 +25,8 @@ sudo apt-get install build-essential pkg-config libssl-dev clang protobuf-compil
 For a minimal Fedora image, you can run:
 
 ```bash
-sudo dnf install openssl-dev clang protobuf-compiler
+sudo dnf install openssl-dev clang 
 ```
-
-**Ensure that the `protoc` version is at least 3.16:**
-```
-protoc --version
-```
-If your package manager's version is too old, try [another
-method][protoc-install] to install it.
 
 #### macOS
 
@@ -76,5 +69,3 @@ cargo build --release --bin pcli
 
 Because you are building a work-in-progress version of the client, you may see compilation warnings,
 which you can safely ignore.
-
-[protoc-install]: https://grpc.io/docs/protoc-installation/

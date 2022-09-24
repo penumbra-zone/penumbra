@@ -1,6 +1,7 @@
 use std::io::Result;
 
 fn main() -> Result<()> {
+    std::env::set_var("PROTOC", protobuf_src::protoc());
     let mut config = prost_build::Config::new();
 
     // Specify which parts of the protos should have their `bytes` fields
