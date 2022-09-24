@@ -28,6 +28,13 @@ For a minimal Fedora image, you can run:
 sudo dnf install openssl-dev clang protobuf-compiler
 ```
 
+**Ensure that the `protoc` version is at least 3.16:**
+```
+protoc --version
+```
+If your package manager's version is too old, try [another
+method][protoc-install] to install it.
+
 #### macOS
 
 You may need to install the command-line developer tools if you have never done
@@ -37,7 +44,7 @@ xcode-select --install
 ```
 
 You will need to install the Protobuf compiler, using Homebrew or [another
-method](https://grpc.io/docs/protoc-installation/):
+method][protoc-install]:
 ```
 brew install protobuf
 ```
@@ -50,7 +57,10 @@ Once you have installed the above tools, you can clone the repository:
 git clone https://github.com/penumbra-zone/penumbra
 ```
 
-To build the version of `pcli` compatible with the current testnet, navigate to the penumbra folder, fetch the latest from the repository, and check out the latest tag for the current [testnet](https://github.com/penumbra-zone/penumbra/releases):
+To build the version of `pcli` compatible with the current testnet, navigate to
+the penumbra folder, fetch the latest from the repository, and check out the
+latest tag for the current
+[testnet](https://github.com/penumbra-zone/penumbra/releases):
 
 ```bash
 cd penumbra && git fetch && git checkout 029-eukelade.2 && cargo update
@@ -66,3 +76,5 @@ cargo build --release --bin pcli
 
 Because you are building a work-in-progress version of the client, you may see compilation warnings,
 which you can safely ignore.
+
+[protoc-install]: https://grpc.io/docs/protoc-installation/

@@ -18,6 +18,8 @@ jobs:
     - name: Get the git tag
       id: get_tag
       run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+    - name: Reinstall protoc
+      run: curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v3.20.2/protoc-3.20.2-linux-x86_64.zip && sudo unzip protoc-3.20.2-linux-x86_64.zip -d /usr && sudo chmod +x /usr/bin/protoc && protoc --version
     - name: Update git repository
       uses: appleboy/ssh-action@master
       env:

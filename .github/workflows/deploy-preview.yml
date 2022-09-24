@@ -15,6 +15,8 @@ jobs:
     timeout-minutes: 30
     environment: testnet-preview
     steps:
+    - name: Reinstall protoc
+      run: curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v3.20.2/protoc-3.20.2-linux-x86_64.zip && sudo unzip protoc-3.20.2-linux-x86_64.zip -d /usr && sudo chmod +x /usr/bin/protoc && protoc --version
     - name: Update git repository
       uses: appleboy/ssh-action@master
       env:
