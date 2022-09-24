@@ -218,12 +218,12 @@ external-address = ""
 # NOTE: not used by the new PEX reactor. Please use BootstrapPeers instead.
 # TODO: Remove once p2p refactor is complete
 # ref: https:#github.com/tendermint/tendermint/issues/5670
-seeds = ""
+seeds = "{}"
 
 # Comma separated list of peers to be added to the peer store
 # on startup. Either BootstrapPeers or PersistentPeers are
 # needed for peer discovery
-bootstrap-peers = "{}"
+bootstrap-peers = ""
 
 # Comma separated list of nodes to keep persistent connections to
 persistent-peers = ""
