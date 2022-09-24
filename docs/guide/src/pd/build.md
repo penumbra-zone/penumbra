@@ -8,14 +8,8 @@ depending on your distribution. For a bare-bones Ubuntu installation, you can
 run
 
 ```bash
-sudo apt-get install clang protobuf-compiler
+sudo apt-get install clang
 ```
-**Ensure that the `protoc` version is at least 3.16:**
-```
-protoc --version
-```
-If your package manager's version is too old, try [another
-method][protoc-install] to install it.
 
 To build `pd`, run
 

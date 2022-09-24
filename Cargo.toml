@@ -1,5 +1,9 @@
 [workspace]
 
+exclude = [
+    "tools/proto-compiler",
+]
+
 # Also remember to add to .github/workflows/notes.yml
 members = [
   "decaf377-fmd",
