@@ -108,6 +108,8 @@ pub mod client {
                 P: prost::Message + Default + From<P>,
                 C: tonic::client::GrpcService<BoxBody> + 'static,
                 C::ResponseBody: Send,
+                <C as tonic::client::GrpcService<BoxBody>>::ResponseBody:
+                    tonic::codegen::Body<Data = bytes::Bytes>,
                 <C::ResponseBody as Body>::Error: Into<StdError> + Send,
             {
                 let request = KeyValueRequest {
@@ -128,6 +130,8 @@ pub mod client {
                 P: prost::Message + Default + From<T>,
                 C: tonic::client::GrpcService<BoxBody> + 'static,
                 C::ResponseBody: Send,
+                <C as tonic::client::GrpcService<BoxBody>>::ResponseBody:
+                    tonic::codegen::Body<Data = bytes::Bytes>,
                 <C::ResponseBody as Body>::Error: Into<StdError> + Send,
             {
                 let request = KeyValueRequest {

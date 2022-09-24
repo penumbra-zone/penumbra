@@ -9,24 +9,25 @@ edition = "2021"
 decaf377-fmd = { path ="../decaf377-fmd" }
 decaf377-rdsa = { version = "0.5", git = "https://github.com/penumbra-zone/decaf377-rdsa" }
 bytes = { version = "1", features = ["serde"] }
-prost = "0.9"
-tonic = "0.6"
+prost = "0.11"
+tonic = "0.8.1"
 serde = { version = "1", features = ["derive"] }
 hex = "0.4"
 anyhow = "1.0"
 subtle-encoding = "0.5"
 bech32 = "0.8"
-ibc-proto = { git = "https://github.com/penumbra-zone/ibc-rs.git", branch = "with-tendermintrs-24" }
-ibc = { git = "https://github.com/penumbra-zone/ibc-rs.git", branch = "with-tendermintrs-24" }
-ics23 = { version = "0.7" }
-prost-types = "0.9"
-tendermint = "0.24.0-pre.1"
+ibc-proto = { git = "https://github.com/penumbra-zone/ibc-rs", branch = "penumbra-034" }
+ibc = { git = "https://github.com/penumbra-zone/ibc-rs", branch = "penumbra-034" }
+ics23 = { git = "https://github.com/penumbra-zone/ics23", branch = "penumbra-034" }
+prost-types = "0.11"
+tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs", branch = "penumbra-034" }
+
 num-rational = "0.4"
 
 [build-dependencies]
-prost = "0.9"
-prost-types = "0.9"
-prost-build = "0.9"
-ibc-proto = { git = "https://github.com/penumbra-zone/ibc-rs.git", branch = "with-tendermintrs-24" }
-ics23 = { version = "0.7" }
-tonic-build = "0.6"
+prost = "0.11"
+prost-types = "0.11"
+prost-build = "0.11"
+ibc-proto = { git = "https://github.com/penumbra-zone/ibc-rs", branch = "penumbra-034" }
+ics23 = { git = "https://github.com/penumbra-zone/ics23", branch = "penumbra-034" }
+tonic-build = "0.8.0"

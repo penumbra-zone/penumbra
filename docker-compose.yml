@@ -20,14 +20,14 @@ services:
 
   # The Tendermint node
   tendermint-node0:
-    image: "tendermint/tendermint:v0.35.9"
+    image: "tendermint/tendermint:v0.34.21"
     container_name: tendermint-node0
     ports:
       - "26656:26656"
       - "26657:26657"
     volumes:
       - ~/.penumbra/testnet_data/node0/tendermint:/tendermint
-    command: start --proxy-app=tcp://pd-node0:26658
+    command: start --proxy_app=tcp://pd-node0:26658
     environment:
       - ID=0
       - LOG=${LOG:-tendermint.log}

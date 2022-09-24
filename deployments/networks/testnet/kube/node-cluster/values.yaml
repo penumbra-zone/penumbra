@@ -6,7 +6,7 @@ numFullNodes: 1
 
 tendermint:
   image: ghcr.io/strangelove-ventures/heighliner/tendermint
-  version: v0.35.9
+  version: v0.34.21
 toolkit:
   image: ghcr.io/strangelove-ventures/infra-toolkit
   version: v0.0.1

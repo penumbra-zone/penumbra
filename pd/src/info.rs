@@ -92,7 +92,7 @@ impl Info {
     }
 }
 
-impl tower::Service<InfoRequest> for Info {
+impl tower_service::Service<InfoRequest> for Info {
     type Response = InfoResponse;
     type Error = BoxError;
     type Future = Pin<Box<dyn Future<Output = Result<InfoResponse, BoxError>> + Send + 'static>>;
@@ -124,6 +124,7 @@ impl tower::Service<InfoRequest> for Info {
                 InfoRequest::Echo(echo) => Ok(InfoResponse::Echo(Echo {
                     message: echo.message,
                 })),
+                InfoRequest::SetOption(_) => todo!(),
             }
         }
         .instrument(span)

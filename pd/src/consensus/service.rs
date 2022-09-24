@@ -46,7 +46,7 @@ impl Consensus {
     }
 }
 
-impl tower::Service<ConsensusRequest> for Consensus {
+impl tower_service::Service<ConsensusRequest> for Consensus {
     type Response = ConsensusResponse;
     type Error = BoxError;
     type Future =

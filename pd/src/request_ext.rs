@@ -60,6 +60,7 @@ impl RequestExt for InfoRequest {
                 error_span!(parent: &p, "Query", ?path, ?height, prove)
             }
             InfoRequest::Echo(_) => error_span!(parent: &p, "Echo"),
+            InfoRequest::SetOption(_) => todo!("not implemented"),
         }
     }
 }
@@ -111,6 +112,7 @@ impl RequestExt for Request {
             Request::OfferSnapshot(_) => error_span!(parent: &p, "OfferSnapshot"),
             Request::LoadSnapshotChunk(_) => error_span!(parent: &p, "LoadSnapshotChunk"),
             Request::ApplySnapshotChunk(_) => error_span!(parent: &p, "ApplySnapshotChunk"),
+            Request::SetOption(_) => todo!("not implemented"),
         }
     }
 }

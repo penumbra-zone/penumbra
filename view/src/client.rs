@@ -8,6 +8,7 @@ use penumbra_crypto::{asset, keys::AddressIndex, note, Asset, Nullifier};
 use penumbra_proto::view::v1alpha1::{self as pb, view_protocol_client::ViewProtocolClient};
 use penumbra_transaction::{Transaction, WitnessData};
 use tonic::async_trait;
+use tonic::codegen::Bytes;
 use tracing::instrument;
 
 use crate::{QuarantinedNoteRecord, SpendableNoteRecord, StatusStreamResponse};
@@ -229,7 +230,7 @@ pub trait ViewClient {
 impl<T> ViewClient for ViewProtocolClient<T>
 where
     T: tonic::client::GrpcService<tonic::body::BoxBody>,
-    T::ResponseBody: tonic::codegen::Body + Send + 'static,
+    T::ResponseBody: tonic::codegen::Body<Data = Bytes> + Send + 'static,
     T::Error: Into<tonic::codegen::StdError>,
     <T::ResponseBody as tonic::codegen::Body>::Error: Into<tonic::codegen::StdError> + Send,
 {

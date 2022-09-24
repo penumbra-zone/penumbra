@@ -11,7 +11,7 @@ use tower_abci::BoxError;
 #[derive(Clone, Debug)]
 pub struct Snapshot {}
 
-impl tower::Service<SnapshotRequest> for Snapshot {
+impl tower_service::Service<SnapshotRequest> for Snapshot {
     type Response = SnapshotResponse;
     type Error = BoxError;
     type Future =

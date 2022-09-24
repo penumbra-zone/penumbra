@@ -13,8 +13,8 @@ decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 # Dependencies for live-view server
 tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.7", features = ["full"] }
-tonic = { version = "0.6" }
-prost = { version = "0.9" }
+tonic = { version = "0.8.1" }
+prost = { version = "0.11" }
 tokio-stream = { version = "0.1" }
 axum = { version = "0.5", features = ["headers", "query"] }
 axum-server = { version = "0.4", features = ["tls-rustls"] }

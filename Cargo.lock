@@ -611,7 +611,6 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4152116fd6e9dadb291ae18fc1ec3575ed6d84c29642d97890f4b4a3417297e4"
 dependencies = [
- "block-padding",
  "generic-array",
 ]
 
@@ -782,9 +781,9 @@ dependencies = [
 
 [[package]]
 name = "clang-sys"
-version = "1.3.3"
+version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a050e2153c5be08febd6734e29298e844fdb0fa21aeddd63b4eb7baa106c69b"
+checksum = "fa2e27ae6ab525c3d369ded447057bca5438d86dc3a68f6faafb8269ba82ebf3"
 dependencies = [
  "glob",
  "libc",
@@ -885,9 +884,9 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e57ff02e8ad8e06ab9731d5dc72dc23bef9200778eae1a89d555d8c42e5d4a86"
 dependencies = [
- "prost 0.11.0",
- "prost-types 0.11.1",
- "tonic 0.8.1",
+ "prost",
+ "prost-types",
+ "tonic",
  "tracing-core",
 ]
 
@@ -903,13 +902,13 @@ dependencies = [
  "futures",
  "hdrhistogram",
  "humantime",
- "prost-types 0.11.1",
+ "prost-types",
  "serde",
  "serde_json",
  "thread_local",
  "tokio",
  "tokio-stream",
- "tonic 0.8.1",
+ "tonic",
  "tracing",
  "tracing-core",
  "tracing-subscriber 0.3.15",
@@ -1339,21 +1338,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e9c280362032ea4203659fc489832d0204ef09f247a0506f170dafcac08c369"
 dependencies = [
  "signature",
-]
-
-[[package]]
-name = "ed25519-consensus"
-version = "1.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "758e2a0cd8a6cdf483e1d369e7d081647e00b88d8953e34d8f2cbba05ae28368"
-dependencies = [
- "curve25519-dalek-ng",
- "hex",
- "rand_core",
- "serde",
- "sha2 0.9.9",
- "thiserror",
- "zeroize",
 ]
 
 [[package]]
@@ -2015,14 +1999,13 @@ dependencies = [
 
 [[package]]
 name = "iana-time-zone"
-version = "0.1.48"
+version = "0.1.50"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "237a0714f28b1ee39ccec0770ccb544eb02c9ef2c82bb096230eefcffa6468b0"
+checksum = "fd911b35d940d2bd0bea0f9100068e5b97b51a1cbe13d13382f132e0365257a0"
 dependencies = [
  "android_system_properties",
  "core-foundation-sys",
  "js-sys",
- "once_cell",
  "wasm-bindgen",
  "winapi",
 ]
@@ -2030,7 +2013,7 @@ dependencies = [
 [[package]]
 name = "ibc"
 version = "0.14.0"
-source = "git+https://github.com/penumbra-zone/ibc-rs.git?branch=with-tendermintrs-24#09a244b77a27ab0510c5c7bda2a0ee5f7d1c127a"
+source = "git+https://github.com/penumbra-zone/ibc-rs?branch=penumbra-034#27639da98a81c1eb5d8c411d7720626e4f08d7e3"
 dependencies = [
  "bytes",
  "derive_more",
@@ -2038,8 +2021,8 @@ dependencies = [
  "ibc-proto",
  "ics23",
  "num-traits",
- "prost 0.9.0",
- "prost-types 0.9.0",
+ "prost",
+ "prost-types",
  "safe-regex",
  "serde",
  "serde_derive",
@@ -2050,38 +2033,36 @@ dependencies = [
  "tendermint-light-client-verifier",
  "tendermint-proto",
  "tendermint-rpc",
- "time 0.3.14",
+ "time 0.3.11",
  "tracing",
 ]
 
 [[package]]
 name = "ibc-proto"
 version = "0.17.1"
-source = "git+https://github.com/penumbra-zone/ibc-rs.git?branch=with-tendermintrs-24#09a244b77a27ab0510c5c7bda2a0ee5f7d1c127a"
+source = "git+https://github.com/penumbra-zone/ibc-rs?branch=penumbra-034#27639da98a81c1eb5d8c411d7720626e4f08d7e3"
 dependencies = [
  "base64",
  "bytes",
- "prost 0.9.0",
- "prost-types 0.9.0",
+ "prost",
+ "prost-types",
  "serde",
  "tendermint-proto",
- "tonic 0.6.2",
+ "tonic",
 ]
 
 [[package]]
 name = "ics23"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d454cc0a22bd556cc3d3c69f9d75a392a36244634840697a4b9eb81bc5c8ae0"
+version = "0.8.1"
+source = "git+https://github.com/penumbra-zone/ics23?branch=penumbra-034#9c4e35da499e4c99043b5a4d1c8638c151fe20d5"
 dependencies = [
  "anyhow",
  "bytes",
  "hex",
- "prost 0.9.0",
- "ripemd160",
- "sha2 0.9.9",
+ "prost",
+ "ripemd",
+ "sha2 0.10.6",
  "sha3",
- "sp-std",
 ]
 
 [[package]]
@@ -2210,7 +2191,7 @@ checksum = "6c8af84674fe1f223a982c933a0ee1086ac4d4052aa0fb8060c12c6ad838e754"
 [[package]]
 name = "jmt"
 version = "0.1.0"
-source = "git+https://github.com/penumbra-zone/jellyfish-merkle.git?branch=main#c03a0da427f92932e2e801cdecdab99df599d1e6"
+source = "git+https://github.com/penumbra-zone/jellyfish-merkle.git?branch=penumbra-034#94bc1cfe188f9d70e2261377ec70bdd22f423e5a"
 dependencies = [
  "anyhow",
  "async-recursion",
@@ -2236,9 +2217,9 @@ dependencies = [
 
 [[package]]
 name = "jobserver"
-version = "0.1.24"
+version = "0.1.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af25a77299a7f711a01975c35a6a424eb6862092cc2d6c72c4ed6cbc56dfc1fa"
+checksum = "068b1ee6743e4d11fb9c6a1e6064b3693a1b600e7f5f5988047d98b3dc9fb90b"
 dependencies = [
  "libc",
 ]
@@ -2422,9 +2403,9 @@ checksum = "73cbba799671b762df5a175adf59ce145165747bb891505c43d09aefbbf38beb"
 
 [[package]]
 name = "md-5"
-version = "0.10.4"
+version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "66b48670c893079d3c2ed79114e3644b7004df1c361a4e0ad52e2e6940d07c3d"
+checksum = "6365506850d44bff6e2fbcb5176cf63650e48bd45ef2fe2665ae1570e0f4b9ca"
 dependencies = [
  "digest 0.10.5",
 ]
@@ -2744,9 +2725,9 @@ checksum = "830b246a0e5f20af87141b25c173cd1b609bd7779a4617d6ec582abaf90870f3"
 
 [[package]]
 name = "once_cell"
-version = "1.14.0"
+version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f7254b99e31cad77da24b08ebf628882739a608578bb1bcdfc1f9c21260d7c0"
+checksum = "e82dad04139b71a90c080c8463fe0dc7902db5192d939bd0950f074d014339e1"
 
 [[package]]
 name = "oorandom"
@@ -2914,7 +2895,7 @@ dependencies = [
  "comfy-table",
  "decaf377",
  "directories",
- "ed25519-consensus 1.2.1",
+ "ed25519-consensus",
  "fslock",
  "futures",
  "hex",
@@ -2948,7 +2929,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tokio-util 0.6.10",
- "tonic 0.6.2",
+ "tonic",
  "tower",
  "tracing",
  "tracing-subscriber 0.3.15",
@@ -2974,7 +2955,7 @@ dependencies = [
  "csv",
  "decaf377",
  "directories",
- "ed25519-consensus 1.2.1",
+ "ed25519-consensus",
  "futures",
  "hex",
  "http",
@@ -2995,7 +2976,8 @@ dependencies = [
  "penumbra-transaction",
  "penumbra-wallet",
  "pin-project",
- "prost-types 0.9.0",
+ "prost",
+ "prost-types",
  "rand",
  "rand_chacha",
  "rand_core",
@@ -3014,10 +2996,11 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tokio-util 0.7.4",
- "tonic 0.6.2",
+ "tonic",
  "tonic-web",
  "tower",
  "tower-abci",
+ "tower-service",
  "tracing",
  "tracing-subscriber 0.3.15",
  "vergen",
@@ -3075,7 +3058,7 @@ dependencies = [
  "penumbra-transaction",
  "serde",
  "tendermint",
- "tonic 0.6.2",
+ "tonic",
  "tracing",
 ]
 
@@ -3092,7 +3075,7 @@ dependencies = [
  "bitvec 1.0.1",
  "blake2b_simd 0.5.11",
  "decaf377",
- "ed25519-consensus 2.0.1",
+ "ed25519-consensus",
  "hex",
  "ibc",
  "ibc-proto",
@@ -3106,8 +3089,8 @@ dependencies = [
  "penumbra-storage",
  "penumbra-tct",
  "penumbra-transaction",
- "prost 0.9.0",
- "prost-types 0.9.0",
+ "prost",
+ "prost-types",
  "rand_core",
  "regex",
  "serde",
@@ -3118,7 +3101,7 @@ dependencies = [
  "tendermint-light-client-verifier",
  "tendermint-proto",
  "tokio",
- "tonic 0.6.2",
+ "tonic",
  "tracing",
  "vergen",
 ]
@@ -3179,13 +3162,13 @@ dependencies = [
  "penumbra-crypto",
  "penumbra-proto",
  "penumbra-transaction",
- "prost 0.9.0",
+ "prost",
  "rand_core",
  "serde",
  "serde_json",
  "serde_with",
  "tokio",
- "tonic 0.6.2",
+ "tonic",
  "tracing",
  "vergen",
 ]
@@ -3221,7 +3204,7 @@ dependencies = [
  "reqwest",
  "serde_json",
  "tokio",
- "tonic 0.6.2",
+ "tonic",
  "tracing",
  "tracing-subscriber 0.3.15",
  "url",
@@ -3242,13 +3225,13 @@ dependencies = [
  "ibc-proto",
  "ics23",
  "num-rational",
- "prost 0.9.0",
+ "prost",
  "prost-build",
- "prost-types 0.9.0",
+ "prost-types",
  "serde",
  "subtle-encoding",
  "tendermint",
- "tonic 0.6.2",
+ "tonic",
  "tonic-build",
 ]
 
@@ -3275,7 +3258,7 @@ dependencies = [
  "tempfile",
  "tendermint",
  "tokio",
- "tonic 0.6.2",
+ "tonic",
  "tracing",
 ]
 
@@ -3339,7 +3322,7 @@ dependencies = [
  "include-flate",
  "parking_lot 0.12.1",
  "penumbra-tct",
- "prost 0.9.0",
+ "prost",
  "rand",
  "rand_chacha",
  "rand_distr",
@@ -3349,7 +3332,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tokio-util 0.7.4",
- "tonic 0.6.2",
+ "tonic",
  "tower-http",
  "tracing-subscriber 0.3.15",
 ]
@@ -3415,7 +3398,7 @@ dependencies = [
  "penumbra-proto",
  "penumbra-tct",
  "penumbra-transaction",
- "prost 0.9.0",
+ "prost",
  "rand",
  "rand_core",
  "reqwest",
@@ -3428,7 +3411,7 @@ dependencies = [
  "tendermint-rpc",
  "tokio",
  "tokio-stream",
- "tonic 0.6.2",
+ "tonic",
  "tracing",
  "tracing-subscriber 0.2.25",
  "vergen",
@@ -3460,7 +3443,7 @@ dependencies = [
  "serde_json",
  "serde_with",
  "tokio",
- "tonic 0.6.2",
+ "tonic",
  "tower",
  "tracing",
  "tracing-subscriber 0.3.15",
@@ -3572,7 +3555,7 @@ dependencies = [
 [[package]]
 name = "poseidon-paramgen"
 version = "0.1.0"
-source = "git+https://github.com/penumbra-zone/poseidon377?branch=main#0ec63f9a42fc68e5ed80a94e474d6d4a320ad3cf"
+source = "git+https://github.com/penumbra-zone/poseidon377?branch=main#8e29a2434a751727e23d9b92026d4c218a4fbc17"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -3586,7 +3569,7 @@ dependencies = [
 [[package]]
 name = "poseidon-permutation"
 version = "0.1.0"
-source = "git+https://github.com/penumbra-zone/poseidon377?branch=main#0ec63f9a42fc68e5ed80a94e474d6d4a320ad3cf"
+source = "git+https://github.com/penumbra-zone/poseidon377?branch=main#8e29a2434a751727e23d9b92026d4c218a4fbc17"
 dependencies = [
  "ark-ff",
  "once_cell",
@@ -3596,7 +3579,7 @@ dependencies = [
 [[package]]
 name = "poseidon377"
 version = "0.1.0"
-source = "git+https://github.com/penumbra-zone/poseidon377?branch=main#0ec63f9a42fc68e5ed80a94e474d6d4a320ad3cf"
+source = "git+https://github.com/penumbra-zone/poseidon377?branch=main#8e29a2434a751727e23d9b92026d4c218a4fbc17"
 dependencies = [
  "ark-ed-on-bls12-377",
  "ark-ff",
@@ -3641,6 +3624,16 @@ checksum = "4d86de6de25020a36c6d3643a86d9a6a9f552107c0559c60ea03551b5e16c032"
 dependencies = [
  "predicates-core",
  "termtree",
+]
+
+[[package]]
+name = "prettyplease"
+version = "0.1.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a49e86d2c26a24059894a3afa13fd17d063419b05dfb83f06d9c3566060c3f5a"
+dependencies = [
+ "proc-macro2 1.0.43",
+ "syn 1.0.100",
 ]
 
 [[package]]
@@ -3739,55 +3732,32 @@ dependencies = [
 
 [[package]]
 name = "prost"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "444879275cb4fd84958b1a1d5420d15e6fcf7c235fe47f053c9c2a80aceb6001"
-dependencies = [
- "bytes",
- "prost-derive 0.9.0",
-]
-
-[[package]]
-name = "prost"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "399c3c31cdec40583bb68f0b18403400d01ec4289c383aa047560439952c4dd7"
 dependencies = [
  "bytes",
- "prost-derive 0.11.0",
+ "prost-derive",
 ]
 
 [[package]]
 name = "prost-build"
-version = "0.9.0"
+version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62941722fb675d463659e49c4f3fe1fe792ff24fe5bbaa9c08cd3b98a1c354f5"
+checksum = "7f835c582e6bd972ba8347313300219fed5bfa52caf175298d860b61ff6069bb"
 dependencies = [
  "bytes",
- "heck 0.3.3",
+ "heck 0.4.0",
  "itertools",
  "lazy_static",
  "log",
  "multimap",
  "petgraph",
- "prost 0.9.0",
- "prost-types 0.9.0",
+ "prost",
+ "prost-types",
  "regex",
  "tempfile",
  "which",
-]
-
-[[package]]
-name = "prost-derive"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f9cc1a3263e07e0bf68e96268f37665207b49560d98739662cdfaae215c720fe"
-dependencies = [
- "anyhow",
- "itertools",
- "proc-macro2 1.0.43",
- "quote 1.0.21",
- "syn 1.0.100",
 ]
 
 [[package]]
@@ -3805,22 +3775,12 @@ dependencies = [
 
 [[package]]
 name = "prost-types"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "534b7a0e836e3c482d2693070f982e39e7611da9695d4d1f5a4b186b51faef0a"
-dependencies = [
- "bytes",
- "prost 0.9.0",
-]
-
-[[package]]
-name = "prost-types"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4dfaa718ad76a44b3415e6c4d53b17c8f99160dcb3a99b10470fce8ad43f6e3e"
 dependencies = [
  "bytes",
- "prost 0.11.0",
+ "prost",
 ]
 
 [[package]]
@@ -4036,9 +3996,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.11.11"
+version = "0.11.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b75aa69a3f06bbcc66ede33af2af253c6f7a86b1ca0033f60c580a27074fbf92"
+checksum = "431949c384f4e2ae07605ccaa56d1d9d2ecdb5cadd4f9577ccfab29f2e5149fc"
 dependencies = [
  "base64",
  "bytes",
@@ -4052,10 +4012,10 @@ dependencies = [
  "hyper-tls",
  "ipnet",
  "js-sys",
- "lazy_static",
  "log",
  "mime",
  "native-tls",
+ "once_cell",
  "percent-encoding",
  "pin-project-lite",
  "serde",
@@ -4087,14 +4047,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "ripemd160"
-version = "0.9.1"
+name = "ripemd"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2eca4ecc81b7f313189bf73ce724400a07da2a6dac19588b03c8bd76a2dcc251"
+checksum = "bd124222d17ad93a644ed9d011a40f4fb64aa54275c08cc216524a9ea82fb09f"
 dependencies = [
- "block-buffer 0.9.0",
- "digest 0.9.0",
- "opaque-debug",
+ "digest 0.10.5",
 ]
 
 [[package]]
@@ -4348,9 +4306,9 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.144"
+version = "1.0.145"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f747710de3dcd43b88c9168773254e809d8ddbdf9653b84e2554ab219f17860"
+checksum = "728eb6351430bccb993660dfffc5a72f91ccc1295abaa8ce19b27ebe4f75568b"
 dependencies = [
  "serde_derive",
 ]
@@ -4376,9 +4334,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.144"
+version = "1.0.145"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94ed3a816fb1d101812f83e789f888322c34e291f894f19590dc310963e87a00"
+checksum = "81fa1584d3d1bcacd84c277a0dfe21f5b0f6accf4a23d04d4c6d61f1af522b4c"
 dependencies = [
  "proc-macro2 1.0.43",
  "quote 1.0.21",
@@ -4491,14 +4449,12 @@ dependencies = [
 
 [[package]]
 name = "sha3"
-version = "0.9.1"
+version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f81199417d4e5de3f04b1e871023acea7389672c4135918f05aa9cbf2f2fa809"
+checksum = "e2904bea16a1ae962b483322a1c7b81d976029203aea1f461e51cd7705db7ba9"
 dependencies = [
- "block-buffer 0.9.0",
- "digest 0.9.0",
+ "digest 0.10.5",
  "keccak",
- "opaque-debug",
 ]
 
 [[package]]
@@ -4582,12 +4538,6 @@ dependencies = [
  "libc",
  "winapi",
 ]
-
-[[package]]
-name = "sp-std"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35391ea974fa5ee869cb094d5b437688fbf3d8127d64d1b9fed5822a1ed39b12"
 
 [[package]]
 name = "spin"
@@ -4852,20 +4802,19 @@ dependencies = [
 
 [[package]]
 name = "tendermint"
-version = "0.24.0-pre.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d8cb35949678917f0c3feb22e990a97235e0a15a4ae37f40613600d42ceae1f"
+version = "0.23.9"
+source = "git+https://github.com/penumbra-zone/tendermint-rs?branch=penumbra-034#906ced69312c70937859b638a7d0e11f185c4d3d"
 dependencies = [
  "async-trait",
  "bytes",
  "ed25519",
- "ed25519-consensus 1.2.1",
+ "ed25519-consensus",
  "flex-error",
  "futures",
  "num-traits",
  "once_cell",
- "prost 0.9.0",
- "prost-types 0.9.0",
+ "prost",
+ "prost-types",
  "serde",
  "serde_bytes",
  "serde_json",
@@ -4875,15 +4824,14 @@ dependencies = [
  "subtle",
  "subtle-encoding",
  "tendermint-proto",
- "time 0.3.14",
+ "time 0.3.11",
  "zeroize",
 ]
 
 [[package]]
 name = "tendermint-config"
-version = "0.24.0-pre.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aeed04e2aee04db71a53fcdc7b7db117c8bced6750c1d204ae8a19022751c192"
+version = "0.23.9"
+source = "git+https://github.com/penumbra-zone/tendermint-rs?branch=penumbra-034#906ced69312c70937859b638a7d0e11f185c4d3d"
 dependencies = [
  "flex-error",
  "serde",
@@ -4895,41 +4843,37 @@ dependencies = [
 
 [[package]]
 name = "tendermint-light-client-verifier"
-version = "0.24.0-pre.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37291ea29d7e42479d1de8b7bf17fe04c8a6878567ea0a490b7469478e255508"
+version = "0.23.9"
+source = "git+https://github.com/penumbra-zone/tendermint-rs?branch=penumbra-034#906ced69312c70937859b638a7d0e11f185c4d3d"
 dependencies = [
  "derive_more",
  "flex-error",
  "serde",
  "tendermint",
- "tendermint-rpc",
- "time 0.3.14",
+ "time 0.3.11",
 ]
 
 [[package]]
 name = "tendermint-proto"
-version = "0.24.0-pre.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2c18b28854f0eb894c25656dc93fa2d946e020a08eab2f7f1c67595606d7789"
+version = "0.23.9"
+source = "git+https://github.com/penumbra-zone/tendermint-rs?branch=penumbra-034#906ced69312c70937859b638a7d0e11f185c4d3d"
 dependencies = [
  "bytes",
  "flex-error",
  "num-derive",
  "num-traits",
- "prost 0.9.0",
- "prost-types 0.9.0",
+ "prost",
+ "prost-types",
  "serde",
  "serde_bytes",
  "subtle-encoding",
- "time 0.3.14",
+ "time 0.3.11",
 ]
 
 [[package]]
 name = "tendermint-rpc"
-version = "0.24.0-pre.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "549985c0c0afe6302f1e81fbef92dc07f56c81992cd864cc2127aeefa6cec454"
+version = "0.23.9"
+source = "git+https://github.com/penumbra-zone/tendermint-rs?branch=penumbra-034#906ced69312c70937859b638a7d0e11f185c4d3d"
 dependencies = [
  "async-trait",
  "bytes",
@@ -4951,7 +4895,7 @@ dependencies = [
  "tendermint-config",
  "tendermint-proto",
  "thiserror",
- "time 0.3.14",
+ "time 0.3.11",
  "tokio",
  "tracing",
  "url",
@@ -5040,9 +4984,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.14"
+version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c3f9a28b618c3a6b9251b6908e9c99e04b9e5c02e6581ccbb67d59c34ef7f9b"
+checksum = "72c91f41dcb2f096c05f0873d667dceec1087ce5bcf984ec8ffb19acddbb3217"
 dependencies = [
  "libc",
  "num_threads",
@@ -5210,37 +5154,6 @@ dependencies = [
 
 [[package]]
 name = "tonic"
-version = "0.6.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff08f4649d10a70ffa3522ca559031285d8e421d727ac85c60825761818f5d0a"
-dependencies = [
- "async-stream 0.3.3",
- "async-trait",
- "base64",
- "bytes",
- "futures-core",
- "futures-util",
- "h2",
- "http",
- "http-body",
- "hyper",
- "hyper-timeout",
- "percent-encoding",
- "pin-project",
- "prost 0.9.0",
- "prost-derive 0.9.0",
- "tokio",
- "tokio-stream",
- "tokio-util 0.6.10",
- "tower",
- "tower-layer",
- "tower-service",
- "tracing",
- "tracing-futures",
-]
-
-[[package]]
-name = "tonic"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "11cd56bdb54ef93935a6a79dbd1d91f1ebd4c64150fd61654031fd6b8b775c91"
@@ -5259,8 +5172,8 @@ dependencies = [
  "hyper-timeout",
  "percent-encoding",
  "pin-project",
- "prost 0.11.0",
- "prost-derive 0.11.0",
+ "prost",
+ "prost-derive",
  "tokio",
  "tokio-stream",
  "tokio-util 0.7.4",
@@ -5273,10 +5186,11 @@ dependencies = [
 
 [[package]]
 name = "tonic-build"
-version = "0.6.2"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9403f1bafde247186684b230dc6f38b5cd514584e8bec1dd32514be4745fa757"
+checksum = "2fbcd2800e34e743b9ae795867d5f77b535d3a3be69fd731e39145719752df8c"
 dependencies = [
+ "prettyplease",
  "proc-macro2 1.0.43",
  "prost-build",
  "quote 1.0.21",
@@ -5285,9 +5199,9 @@ dependencies = [
 
 [[package]]
 name = "tonic-web"
-version = "0.2.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c5802af338d3f01590a5c0777783f0e0897df05e9b053ac0084e310a9319a456"
+checksum = "e392f7556972523aa87ddb0fc7f2d2ce530559956706aa081bb0bd8fed158559"
 dependencies = [
  "base64",
  "bytes",
@@ -5296,7 +5210,7 @@ dependencies = [
  "http-body",
  "hyper",
  "pin-project",
- "tonic 0.6.2",
+ "tonic",
  "tower-service",
  "tracing",
 ]
@@ -5325,17 +5239,17 @@ dependencies = [
 [[package]]
 name = "tower-abci"
 version = "0.1.0"
-source = "git+https://github.com/penumbra-zone/tower-abci/?branch=with-tendermintrs-24#e89371aea0ceda2b08a320a9f0cf2b6d697675af"
+source = "git+https://github.com/penumbra-zone/tower-abci/?branch=penumbra-034#91b209f61ccc941683c16dfc34e4a3e3efae57fc"
 dependencies = [
  "bytes",
  "futures",
  "pin-project",
- "prost 0.9.0",
+ "prost",
  "tendermint",
  "tendermint-proto",
  "tokio",
  "tokio-stream",
- "tokio-util 0.6.10",
+ "tokio-util 0.7.4",
  "tower",
  "tracing",
 ]

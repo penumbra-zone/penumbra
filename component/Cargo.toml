@@ -15,13 +15,13 @@ penumbra-chain = { path = "../chain" }
 penumbra-tct = { path = "../tct" }
 
 # Penumbra dependencies
-tendermint = "0.24.0-pre.1"
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
-jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "main" }
+tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs", branch = "penumbra-034" }
 
-tokio = { version = "1.21.1", features = ["full", "tracing"]}
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
+jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "penumbra-034" }
+tokio = { version = "1.21.1", features = ["full", "tracing"] }
 async-trait = "0.1.52"
-tonic = "0.6.1"
+tonic = "0.8.1"
 anyhow = "1"
 tracing = "0.1"
 ark-ff = "0.3"
@@ -38,12 +38,12 @@ bitvec = "1"
 hex = "0.4"
 base64 = "0.13.0"
 tempfile = "3.3.0"
-prost-types = "0.9"
-tendermint-proto = "0.24.0-pre.1"
-prost = "0.9"
-ibc = { git = "https://github.com/penumbra-zone/ibc-rs.git", branch = "with-tendermintrs-24" }
-ibc-proto = { git = "https://github.com/penumbra-zone/ibc-rs.git", branch = "with-tendermintrs-24" }
-tendermint-light-client-verifier = "0.24.0-pre.1"
+prost-types = "0.11"
+tendermint-proto = { git = "https://github.com/penumbra-zone/tendermint-rs", branch = "penumbra-034" }
+prost = "0.11"
+ibc = { git = "https://github.com/penumbra-zone/ibc-rs", branch = "penumbra-034" }
+ibc-proto = { git = "https://github.com/penumbra-zone/ibc-rs", branch = "penumbra-034" }
+tendermint-light-client-verifier = { git = "https://github.com/penumbra-zone/tendermint-rs", branch = "penumbra-034" }
 num-rational = "0.4"
 
 [dev-dependencies]

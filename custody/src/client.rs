@@ -2,6 +2,7 @@ use anyhow::Result;
 use penumbra_proto::custody::v1alpha1::custody_protocol_client::CustodyProtocolClient;
 use penumbra_transaction::AuthorizationData;
 use tonic::async_trait;
+use tonic::codegen::Bytes;
 
 use crate::AuthorizeRequest;
 
@@ -22,7 +23,7 @@ use crate::AuthorizeRequest;
 /// 1. It works on domain types rather than proto-generated types, avoiding conversions;
 /// 2. It's easier to write as a trait bound than the `CustodyProtocolClient`,
 ///   which requires complex bounds on its inner type to enforce that it is a
-///   tower `Service`.
+///   tower `Service`
 #[async_trait(?Send)]
 pub trait CustodyClient: Sized {
     /// Requests authorization of the transaction with the given description.
@@ -39,7 +40,7 @@ pub trait CustodyClient: Sized {
 impl<T> CustodyClient for CustodyProtocolClient<T>
 where
     T: tonic::client::GrpcService<tonic::body::BoxBody>,
-    T::ResponseBody: tonic::codegen::Body + Send + 'static,
+    T::ResponseBody: tonic::codegen::Body<Data = Bytes> + Send + 'static,
     T::Error: Into<tonic::codegen::StdError>,
     <T::ResponseBody as tonic::codegen::Body>::Error: Into<tonic::codegen::StdError> + Send,
 {
