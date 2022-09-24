@@ -3,6 +3,7 @@ FROM rust:latest as build
 RUN curl https://sh.rustup.rs -sSf | sh -s -- --no-modify-path --default-toolchain none -y
 RUN rustup component add rustfmt
 RUN apt-get update && apt-get install -y clang libclang-dev
+RUN curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v3.20.2/protoc-3.20.2-linux-x86_64.zip && unzip protoc-3.20.2-linux-x86_64.zip -d /usr && chmod +x /usr/bin/protoc && protoc --version
 
 WORKDIR /usr/src
 
