@@ -1,7 +1,19 @@
 use std::io::Result;
+use std::path::PathBuf;
 
 fn main() -> Result<()> {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    println!("{}", root.display());
+    let target_dir = root
+        .join("..")
+        .join("..")
+        .join("proto")
+        .join("src")
+        .join("gen");
+    println!("{}", target_dir.display());
+
     let mut config = prost_build::Config::new();
+    config.out_dir(&target_dir);
 
     // Specify which parts of the protos should have their `bytes` fields
     // converted to Rust `Bytes` (= zero-copy view into a shared buffer) rather
@@ -42,28 +54,30 @@ fn main() -> Result<()> {
 
     config.compile_protos(
         &[
-            "proto/penumbra/core/crypto/v1alpha1/crypto.proto",
-            "proto/penumbra/core/transaction/v1alpha1/transaction.proto",
-            "proto/penumbra/core/stake/v1alpha1/stake.proto",
-            "proto/penumbra/core/chain/v1alpha1/chain.proto",
-            "proto/penumbra/core/ibc/v1alpha1/ibc.proto",
-            "proto/penumbra/core/dex/v1alpha1/dex.proto",
-            "proto/penumbra/core/transparent_proofs/v1alpha1/transparent_proofs.proto",
-            "proto/penumbra/core/governance/v1alpha1/governance.proto",
+            "../../proto/proto/penumbra/core/crypto/v1alpha1/crypto.proto",
+            "../../proto/proto/penumbra/core/transaction/v1alpha1/transaction.proto",
+            "../../proto/proto/penumbra/core/stake/v1alpha1/stake.proto",
+            "../../proto/proto/penumbra/core/chain/v1alpha1/chain.proto",
+            "../../proto/proto/penumbra/core/ibc/v1alpha1/ibc.proto",
+            "../../proto/proto/penumbra/core/dex/v1alpha1/dex.proto",
+            "../../proto/proto/penumbra/core/transparent_proofs/v1alpha1/transparent_proofs.proto",
+            "../../proto/proto/penumbra/core/governance/v1alpha1/governance.proto",
         ],
-        &["proto/", "ibc-go-vendor/"],
+        &["../../proto/proto/", "../../proto/ibc-go-vendor/"],
     )?;
 
     // For the client code, we also want to generate RPC instances, so compile via tonic:
-    tonic_build::configure().compile_with_config(
-        config,
-        &[
-            "proto/penumbra/client/v1alpha1/client.proto",
-            "proto/penumbra/view/v1alpha1/view.proto",
-            "proto/penumbra/custody/v1alpha1/custody.proto",
-        ],
-        &["proto/", "ibc-go-vendor/"],
-    )?;
+    tonic_build::configure()
+        .out_dir(&target_dir)
+        .compile_with_config(
+            config,
+            &[
+                "../../proto/proto/penumbra/client/v1alpha1/client.proto",
+                "../../proto/proto/penumbra/view/v1alpha1/view.proto",
+                "../../proto/proto/penumbra/custody/v1alpha1/custody.proto",
+            ],
+            &["../../proto/proto/", "../../proto/ibc-go-vendor/"],
+        )?;
 
     Ok(())
 }

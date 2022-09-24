@@ -23,11 +23,3 @@ prost-types = "0.11"
 tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs", branch = "penumbra-034" }
 
 num-rational = "0.4"
-
-[build-dependencies]
-prost = "0.11"
-prost-types = "0.11"
-prost-build = "0.11"
-ibc-proto = { git = "https://github.com/penumbra-zone/ibc-rs", branch = "penumbra-034" }
-ics23 = { git = "https://github.com/penumbra-zone/ics23", branch = "penumbra-034" }
-tonic-build = "0.8.0"

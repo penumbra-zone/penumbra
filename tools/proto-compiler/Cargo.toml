@@ -1,0 +1,13 @@
+[package]
+name = "penumbra-proto-compiler"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+prost = "0.11"
+prost-types = "0.11"
+prost-build = "0.11"
+ibc-proto = { git = "https://github.com/penumbra-zone/ibc-rs", branch = "penumbra-034" }
+ics23 = { git = "https://github.com/penumbra-zone/ics23", branch = "penumbra-034" }
+tonic-build = "0.8.0"

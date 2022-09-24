@@ -28,49 +28,49 @@ pub mod core {
     /// Crypto structures.
     pub mod crypto {
         pub mod v1alpha1 {
-            tonic::include_proto!("penumbra.core.crypto.v1alpha1");
+            include!("gen/penumbra.core.crypto.v1alpha1.rs");
         }
     }
 
     /// Staking structures.
     pub mod stake {
         pub mod v1alpha1 {
-            tonic::include_proto!("penumbra.core.stake.v1alpha1");
+            include!("gen/penumbra.core.stake.v1alpha1.rs");
         }
     }
 
     /// Decentralized exchange structures.
     pub mod dex {
         pub mod v1alpha1 {
-            tonic::include_proto!("penumbra.core.dex.v1alpha1");
+            include!("gen/penumbra.core.dex.v1alpha1.rs");
         }
     }
 
     /// Governance structures.
     pub mod governance {
         pub mod v1alpha1 {
-            tonic::include_proto!("penumbra.core.governance.v1alpha1");
+            include!("gen/penumbra.core.governance.v1alpha1.rs");
         }
     }
 
     /// Transaction structures.
     pub mod transaction {
         pub mod v1alpha1 {
-            tonic::include_proto!("penumbra.core.transaction.v1alpha1");
+            include!("gen/penumbra.core.transaction.v1alpha1.rs");
         }
     }
 
     /// Chain-related structures.
     pub mod chain {
         pub mod v1alpha1 {
-            tonic::include_proto!("penumbra.core.chain.v1alpha1");
+            include!("gen/penumbra.core.chain.v1alpha1.rs");
         }
     }
 
     /// IBC protocol structures.
     pub mod ibc {
         pub mod v1alpha1 {
-            tonic::include_proto!("penumbra.core.ibc.v1alpha1");
+            include!("gen/penumbra.core.ibc.v1alpha1.rs");
         }
     }
 
@@ -80,7 +80,7 @@ pub mod core {
     /// i.e. not for production use and intentionally not private.
     pub mod transparent_proofs {
         pub mod v1alpha1 {
-            tonic::include_proto!("penumbra.core.transparent_proofs.v1alpha1");
+            include!("gen/penumbra.core.transparent_proofs.v1alpha1.rs");
         }
     }
 }
@@ -88,7 +88,7 @@ pub mod core {
 /// Client protocol structures.
 pub mod client {
     pub mod v1alpha1 {
-        tonic::include_proto!("penumbra.client.v1alpha1");
+        include!("gen/penumbra.client.v1alpha1.rs");
 
         use specific_query_client::SpecificQueryClient;
         use tonic::{
@@ -150,13 +150,13 @@ pub mod client {
 /// View protocol structures.
 pub mod view {
     pub mod v1alpha1 {
-        tonic::include_proto!("penumbra.view.v1alpha1");
+        include!("gen/penumbra.view.v1alpha1.rs");
     }
 }
 
 /// Custody protocol structures.
 pub mod custody {
     pub mod v1alpha1 {
-        tonic::include_proto!("penumbra.custody.v1alpha1");
+        include!("gen/penumbra.custody.v1alpha1.rs");
     }
 }

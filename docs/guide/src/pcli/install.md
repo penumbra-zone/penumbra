@@ -19,21 +19,14 @@ depending on your distribution. For a bare-bones Ubuntu installation, you can
 run:
 
 ```bash
-sudo apt-get install build-essential pkg-config libssl-dev clang protobuf-compiler
+sudo apt-get install build-essential pkg-config libssl-dev clang
 ```
 
 For a minimal Fedora image, you can run:
 
 ```bash
-sudo dnf install openssl-dev clang protobuf-compiler
+sudo dnf install openssl-dev clang
 ```
-
-**Ensure that the `protoc` version is at least 3.16:**
-```
-protoc --version
-```
-If your package manager's version is too old, try [another
-method][protoc-install] to install it.
 
 #### macOS
 
