@@ -12,7 +12,7 @@ toolkit:
   version: v0.0.1
 penumbra:
   image: ghcr.io/strangelove-ventures/heighliner/penumbra
-  version: 029-eukelade
+  version: 030-isonoe
 health:
   image: ghcr.io/strangelove-ventures/ignite-health-check
   version: v0.0.1

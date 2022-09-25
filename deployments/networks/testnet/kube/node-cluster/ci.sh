@@ -1,7 +1,7 @@
 #!/bin/bash
 WORKDIR=${WORKDIR:=$(pwd)/pdcli}
 IMAGE=${IMAGE:=ghcr.io/strangelove-ventures/heighliner/penumbra}
-PENUMBRA_VERSION=${PENUMBRA_VERSION:=029-eukelade}
+PENUMBRA_VERSION=${PENUMBRA_VERSION:=030-isonoe}
 TENDERMINT_VERSION=${TENDERMINT_VERSION:=v0.34.21}
 NVALS=${NVALS:=2}
 NFULLNODES=${NFULLNODES:=1}
