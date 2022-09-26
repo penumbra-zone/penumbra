@@ -368,7 +368,7 @@ impl SwapClaimProof {
         gadgets::note_commitment_integrity(note, self.note_commitment_proof.commitment())?;
 
         // Check that the Swap NFT asset ID is properly constructed.
-        gadgets::asset_id_integrity(
+        gadgets::swap_nft_asset_id_integrity(
             self.swap_nft_asset_id,
             self.trading_pair.clone(),
             self.delta_1_i,
