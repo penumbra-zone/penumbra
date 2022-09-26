@@ -87,12 +87,7 @@ impl SpendProof {
 
         gadgets::rk_integrity(self.spend_auth_randomizer, rk, self.ak)?;
 
-        gadgets::diversified_address_integrity(
-            self.ak,
-            self.nk,
-            self.note.transmission_key().clone(),
-            self.note.diversified_generator(),
-        )?;
+        gadgets::diversified_address_integrity(self.ak, self.nk, self.note.clone())?;
 
         Ok(())
     }

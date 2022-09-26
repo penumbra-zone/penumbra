@@ -66,16 +66,17 @@ pub(crate) fn ephemeral_public_key_integrity(
     }
 }
 
-/// Check the integrity of a diversified address.
+/// Check the integrity of a diversified address given a `Note`.
 pub(crate) fn diversified_address_integrity(
     ak: VerificationKey<SpendAuth>,
     nk: keys::NullifierKey,
-    transmission_key: ka::Public,
-    diversified_generator: decaf377::Element,
+    note: Note,
 ) -> Result<()> {
+    let transmission_key = note.transmission_key();
+    let diversified_generator = note.diversified_generator();
     let fvk = keys::FullViewingKey::from_components(ak, nk);
     let ivk = fvk.incoming();
-    if transmission_key != ivk.diversified_public(&diversified_generator) {
+    if *transmission_key != ivk.diversified_public(&diversified_generator) {
         Err(anyhow!("invalid diversified address"))
     } else {
         Ok(())
