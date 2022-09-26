@@ -121,8 +121,8 @@ pub(crate) fn diversified_basepoint_not_identity(point: decaf377::Element) -> Re
     }
 }
 
-/// Check spend authority.
-pub(crate) fn check_spend_authority(
+/// Check randomized verification key is generated from the spend verification key `ak`.
+pub(crate) fn rk_integrity(
     spend_auth_randomizer: Fr,
     rk: VerificationKey<SpendAuth>,
     ak: VerificationKey<SpendAuth>,
