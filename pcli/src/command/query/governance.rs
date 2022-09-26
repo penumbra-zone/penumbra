@@ -74,7 +74,6 @@ impl GovernanceCmd {
                     .try_collect::<Vec<_>>()
                     .await?;
 
-                println!("{}", serde_json::to_string_pretty(&params)?);
                 json(&params)?;
             }
             GovernanceCmd::ListProposals { inactive } => {
