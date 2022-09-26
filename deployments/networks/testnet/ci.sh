@@ -22,21 +22,9 @@ for i in $(seq $NVALS)
 do
     I="$((i-1))"
     NODEDIR="node$I"
-    echo "node$I - generating keys"
     mkdir -p "${WORKDIR}/$NODEDIR"
-    docker run --user 0:0 \
-    -v "$WORKDIR/$NODEDIR":"$CONTAINERHOME" -it --rm \
-    --entrypoint pcli \
-    $IMAGE:$PENUMBRA_VERSION \
-    -d "$CONTAINERHOME" keys generate > /dev/null
-
-    echo "node$I - generating validator template definition"
-    docker run --user 0:0 \
-    -v "$WORKDIR/$NODEDIR":"$CONTAINERHOME" -it --rm \
-    --entrypoint pcli \
-    $IMAGE:$PENUMBRA_VERSION \
-    -d "$CONTAINERHOME" validator definition template \
-    --file "$CONTAINERHOME"/val.json > /dev/null
+    # This will be overwritten by pd testnet generate.
+    echo '{"identity_key": "penumbravalid1lr73zgd726gpk7rl45hvpg9f7r9wchgg8gpjhx2gqntx4md6gg9sser05u","consensus_key": "9OQ8HOy4YsryEPLbTtPKoKdmmjSqEJhzvS+x0WC8YoM=","name": "","website": "","description": "","enabled": false,"funding_streams": [{"address": "penumbrav2t1wz70yfqlgzfgwml5ne04vhnhahg8axmaupuv7x0gpuzesfhhz63y52cqffv93k7qvuuq6yqtgcj0z267v59qxpjuvc0hvfaynaaemgmqzyj38xhj8yjx7vcftnyq9q28exjrdj","rate_bps": 100}],"sequence_number": 0,"governance_key": "penumbragovern1lr73zgd726gpk7rl45hvpg9f7r9wchgg8gpjhx2gqntx4md6gg9sthagp6"}' > "${WORKDIR}/$NODEDIR/val.json"
 done
 
 find "$WORKDIR" -name "val.json" -exec cat {} + | jq -s > "$WORKDIR/vals.json"
