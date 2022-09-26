@@ -67,7 +67,7 @@ impl SpendProof {
             .verify(anchor)
             .map_err(|_| anyhow!("merkle root mismatch"))?;
 
-        gadgets::value_commitment_integrity(
+        gadgets::balance_commitment_integrity(
             balance_commitment,
             self.v_blinding,
             self.note.value(),
@@ -126,7 +126,7 @@ impl OutputProof {
     ) -> anyhow::Result<()> {
         gadgets::note_commitment_integrity(self.note.clone(), note_commitment)?;
 
-        gadgets::value_commitment_integrity(
+        gadgets::balance_commitment_integrity(
             -balance_commitment,
             self.v_blinding,
             self.note.value(),
@@ -633,7 +633,7 @@ impl SwapProof {
         //     return Err(anyhow!("value commitment mismatch"));
         // }
 
-        gadgets::value_commitment_integrity(
+        gadgets::balance_commitment_integrity(
             value_fee_commitment,
             self.fee_blinding,
             self.fee_delta.0,
