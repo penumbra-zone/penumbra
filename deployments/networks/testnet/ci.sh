@@ -18,8 +18,7 @@ kubectl delete rc --all --wait=false 2>&1 > /dev/null
 # Delete all existing PVCs so that fresh testnet is created
 kubectl delete pvc --all 2>&1 > /dev/null
 
-for i in $(seq $NVALS)
-do
+for i in $(seq $NVALS); do
     I="$((i-1))"
     NODEDIR="node$I"
     mkdir -p "${WORKDIR}/$NODEDIR"
@@ -39,8 +38,7 @@ testnet generate \
 
 sudo chown -R "$(whoami)" "$WORKDIR"
 
-for i in $(seq $NVALS)
-do
+for i in $(seq $NVALS); do
     I=$((i-1))
     NODE_ID=$(jq -r '.priv_key.value' ${WORKDIR}/.penumbra/testnet_data/node$I/tendermint/config/node_key.json | base64 --decode | tail -c 32 | sha256sum  | cut -c -40)
     for j in $(seq $NVALS)
@@ -64,8 +62,7 @@ do
     fi
 done
 
-for i in $(seq $NVALS)
-do
+for i in $(seq $NVALS); do
   I=$((i-1))
   PVAR=PERSISTENT_PEERS_$I
   echo "${!PVAR}" > $WORKDIR/persistent_peers_$I.txt
@@ -81,4 +78,75 @@ else
   HELM_CMD=install
 fi
 
+echo "Deploying network..."
+
 helm $HELM_CMD $HELM_RELEASE helm --set numValidators=$NVALS,numFullNodes=$NFULLNODES,penumbra.version=$PENUMBRA_VERSION,tendermint.version=$TENDERMINT_VERSION
+
+while true; do
+  echo "Waiting for load balancer external IPs to be provisioned..."
+  STATUSES=($(kubectl get svc --no-headers | grep p2p | awk '{print $4}'))
+  FOUND_PENDING=false
+  for STATUS in "${STATUSES[@]}"; do
+    if [[ "$STATUS" == "<pending>" ]]; then
+      sleep 5
+      FOUND_PENDING=true
+      break
+    fi
+  done
+  if [[ "$FOUND_PENDING" == "false" ]]; then
+    break
+  fi
+done
+
+RETRIES=0
+while true; do
+  echo "Waiting for pods to be running..."
+  PODS=($(kubectl get pods --no-headers | awk '{print $1}'))
+  FOUND_PENDING=false
+  for POD in "${PODS[@]}"; do
+    STATUS=$(kubectl get pod --no-headers "$POD" | awk '{print $3}')
+    if [[ "$STATUS" == "Error" ]] || [[ "$STATUS" == "CrashLoopBackOff" ]]; then
+      echo "Node $POD startup failed!"
+      kubectl logs $POD
+      exit 1
+    fi
+    if [[ "$STATUS" != "Running" ]]; then
+      RETRIES=$((RETRIES+1))
+      if [[ "$RETRIES" == "50" ]]; then
+        echo "Giving up starting nodes"
+        exit 1
+      fi
+      sleep 5
+      FOUND_PENDING=true
+      break
+    fi
+  done
+  if [[ "$FOUND_PENDING" == "false" ]]; then
+    break
+  fi
+done
+
+PPE=""
+
+for i in $(seq $NVALS); do
+  I=$((i-1))
+  echo "Getting public peer string for validator $I"
+  NODE_ID="$(kubectl exec -it $(kubectl get pods | grep penumbra-val-$I | awk '{print $1}') -c tm -- tendermint show-node-id | tr -d '\r')"
+  IP="$(kubectl get svc p2p-$I -o json | jq -r .status.loadBalancer.ingress[0].ip | tr -d '\r')"
+  if [ -z "$PPE" ]; then
+    PPE="$NODE_ID@$IP:26656"
+  else
+    PPE="$PPE,$NODE_ID@$IP:26656"
+  fi
+done
+
+for i in $(seq $NFULLNODES); do
+  I=$((i-1))
+  echo "Getting public peer string for fullnode $I"
+  NODE_ID="$(kubectl exec -it $(kubectl get pods | grep penumbra-fn-$I | awk '{print $1}') -c tm -- tendermint show-node-id | tr -d '\r')"
+  IP="$(kubectl get svc p2p-fn-$I -o json | jq -r .status.loadBalancer.ingress[0].ip | tr -d '\r')"
+  PPE="$PPE,$NODE_ID@$IP:26656"
+done
+
+echo "persistent_peers = \"$PPE\""
+
