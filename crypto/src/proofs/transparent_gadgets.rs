@@ -83,7 +83,7 @@ pub(crate) fn diversified_address_integrity(
 }
 
 /// Check the integrity of the asset ID of a swap NFT.
-pub(crate) fn asset_id_integrity(
+pub(crate) fn swap_nft_asset_id_integrity(
     asset_id: asset::Id,
     trading_pair: dex::TradingPair,
     delta_1_i: u64,
