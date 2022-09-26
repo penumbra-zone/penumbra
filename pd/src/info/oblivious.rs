@@ -6,15 +6,18 @@ use futures::{
     TryFutureExt,
 };
 use penumbra_chain::View as _;
-use penumbra_component::shielded_pool::View as _;
 use penumbra_component::stake::{validator, View as _};
+use penumbra_component::{
+    governance::proposal::chain_params::MutableParam, shielded_pool::View as _,
+};
 use penumbra_proto::{
     client::v1alpha1::{
         oblivious_query_server::ObliviousQuery, AssetListRequest, ChainParamsRequest,
-        CompactBlockRangeRequest, ValidatorInfoRequest,
+        CompactBlockRangeRequest, MutableParametersRequest, ValidatorInfoRequest,
     },
     core::{
         chain::v1alpha1::{ChainParameters, CompactBlock, KnownAssets},
+        governance::v1alpha1::MutableChainParameter,
         stake::v1alpha1::ValidatorInfo,
     },
     Protobuf,
@@ -59,6 +62,9 @@ impl ObliviousQuery for Info {
     type ValidatorInfoStream =
         Pin<Box<dyn futures::Stream<Item = Result<ValidatorInfo, tonic::Status>> + Send>>;
 
+    type MutableParametersStream =
+        Pin<Box<dyn futures::Stream<Item = Result<MutableChainParameter, tonic::Status>> + Send>>;
+
     #[instrument(skip(self, request))]
     async fn chain_parameters(
         &self,
@@ -72,6 +78,33 @@ impl ObliviousQuery for Info {
         })?;
 
         Ok(tonic::Response::new(chain_params.into()))
+    }
+
+    #[instrument(skip(self, request))]
+    async fn mutable_parameters(
+        &self,
+        request: tonic::Request<MutableParametersRequest>,
+    ) -> Result<tonic::Response<Self::MutableParametersStream>, Status> {
+        let state = self.state_tonic().await?;
+        state.check_chain_id(&request.get_ref().chain_id).await?;
+
+        let mutable_params = MutableParam::iter();
+
+        let s = try_stream! {
+            for param in mutable_params {
+                yield param.to_proto();
+            }
+        };
+
+        Ok(tonic::Response::new(
+            s.map_err(|e: anyhow::Error| {
+                // Should be impossible, but.
+                tonic::Status::unavailable(format!("error getting mutable params: {}", e))
+            })
+            // TODO: how do we instrument a Stream
+            //.instrument(Span::current())
+            .boxed(),
+        ))
     }
 
     #[instrument(skip(self, request))]

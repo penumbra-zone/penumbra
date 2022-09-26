@@ -3,7 +3,14 @@ use std::{collections::BTreeMap, str::FromStr};
 
 use anyhow::{Context as _, Result};
 use penumbra_chain::params::ChainParameters;
+use penumbra_proto::{core::governance::v1alpha1 as pb, Protobuf};
+use serde::{Deserialize, Serialize};
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(
+    try_from = "pb::MutableChainParameter",
+    into = "pb::MutableChainParameter"
+)]
 pub enum MutableParam {
     UnbondingEpochs,
     ActiveValidatorLimit,
@@ -12,6 +19,54 @@ pub enum MutableParam {
     SlashingPenaltyDowntimeBps,
     SignedBlocksWindowLen,
     MissedBlocksMaximum,
+}
+
+impl Protobuf<pb::MutableChainParameter> for MutableParam {}
+
+impl TryFrom<pb::MutableChainParameter> for MutableParam {
+    type Error = anyhow::Error;
+
+    fn try_from(msg: pb::MutableChainParameter) -> Result<Self, Self::Error> {
+        MutableParam::from_str(&msg.identifier)
+    }
+}
+
+impl From<MutableParam> for pb::MutableChainParameter {
+    fn from(param: MutableParam) -> Self {
+        pb::MutableChainParameter {
+            identifier: param.to_string(),
+            description: param.description().to_string(),
+        }
+    }
+}
+
+impl MutableParam {
+    // TODO: would be nicer as a macro but after a bit of fiddling i couldn't get it right
+    pub const fn iter() -> [MutableParam; 7] {
+        [
+            MutableParam::UnbondingEpochs,
+            MutableParam::ActiveValidatorLimit,
+            MutableParam::BaseRewardRate,
+            MutableParam::SlashingPenaltyMisbehaviorBps,
+            MutableParam::SlashingPenaltyDowntimeBps,
+            MutableParam::SignedBlocksWindowLen,
+            MutableParam::MissedBlocksMaximum,
+        ]
+    }
+
+    pub const fn description(&self) -> &'static str {
+        match self {
+            MutableParam::UnbondingEpochs => {
+                "The number of epochs stake is locked up after being undelegated. Must be at least 1."
+            }
+            MutableParam::ActiveValidatorLimit => "The number of validators that may be in the active validator set. Must be at least 1.",
+            MutableParam::BaseRewardRate => "The base reward rate for delegator pools, expressed in basis points of basis points, and accrued each epoch. Must be at least 1.",
+            MutableParam::SlashingPenaltyMisbehaviorBps => "Slashing penalty specified in basis points applied to validator reward rates for as punishment for misbehavior. Must be at least 1.",
+            MutableParam::SlashingPenaltyDowntimeBps => "Slashing penalty specified in basis points applied to validator reward rates as punishment for downtime. Must be at least 1.",
+            MutableParam::SignedBlocksWindowLen => "Number of blocks to use as the window for detecting validator downtime. Must be at least 2 and greater than or equal to missed_blocks_maximum.",
+            MutableParam::MissedBlocksMaximum => "The maximum number of blocks a validator may miss in the signed_blocks_window_len before being slashed for downtime. Must be at least 1 and less than or equal to signed_blocks_window_len.",
+        }
+    }
 }
 
 impl std::str::FromStr for MutableParam {

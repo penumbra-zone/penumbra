@@ -17,6 +17,14 @@ message Vote {
   Vote vote = 1;
 }
 
+// A chain parameter that can be modified by governance.
+message MutableChainParameter {
+    // The identifier of the parameter, used for submitting change proposals.
+    string identifier = 1;
+    // A textual description of the parameter and valid values.
+    string description = 2;
+}
+
 // The current state of a proposal.
 message ProposalState {
     // Voting is in progress and the proposal has not yet concluded voting or been withdrawn.

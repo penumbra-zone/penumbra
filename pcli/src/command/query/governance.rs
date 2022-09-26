@@ -4,6 +4,7 @@ use std::{
 };
 
 use anyhow::Result;
+use futures::TryStreamExt;
 use penumbra_component::{
     governance::{
         proposal::{self, ProposalList},
@@ -12,7 +13,9 @@ use penumbra_component::{
     stake::validator,
 };
 use penumbra_crypto::IdentityKey;
+use penumbra_proto::client::v1alpha1::MutableParametersRequest;
 use penumbra_transaction::action::{Proposal, ProposalPayload, Vote};
+use penumbra_view::ViewClient;
 use serde::Serialize;
 use serde_json::json;
 
@@ -63,14 +66,13 @@ impl GovernanceCmd {
                 let mut client = app.oblivious_client().await?;
 
                 let params = client
-                    .mutable_params(MutableParametersRequest {})
+                    .mutable_parameters(MutableParametersRequest {
+                        chain_id: app.view().chain_params().await?.chain_id,
+                    })
                     .await?
                     .into_inner()
                     .try_collect::<Vec<_>>()
-                    .await?
-                    .into_iter()
-                    .map(TryInto::try_into)
-                    .collect::<Result<Vec<String>, _>>()?;
+                    .await?;
 
                 println!("{}", serde_json::to_string_pretty(&params)?);
                 json(&params)?;
