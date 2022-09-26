@@ -85,7 +85,7 @@ impl SpendProof {
             self.note_commitment_proof.commitment(),
         )?;
 
-        gadgets::check_spend_authority(self.spend_auth_randomizer, rk, self.ak)?;
+        gadgets::rk_integrity(self.spend_auth_randomizer, rk, self.ak)?;
 
         gadgets::diversified_address_integrity(
             self.ak,
