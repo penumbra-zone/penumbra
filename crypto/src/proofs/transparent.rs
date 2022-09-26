@@ -58,11 +58,7 @@ impl SpendProof {
         }
 
         gadgets::note_commitment_integrity(
-            self.note.note_blinding(),
-            self.note.value(),
-            self.note.diversified_generator(),
-            self.note.transmission_key_s(),
-            self.note.clue_key().clone(),
+            self.note.clone(),
             self.note_commitment_proof.commitment(),
         )?;
 
@@ -128,14 +124,7 @@ impl OutputProof {
         note_commitment: note::Commitment,
         epk: ka::Public,
     ) -> anyhow::Result<()> {
-        gadgets::note_commitment_integrity(
-            self.note.note_blinding(),
-            self.note.value(),
-            self.note.diversified_generator(),
-            self.note.transmission_key_s(),
-            self.note.clue_key().clone(),
-            note_commitment,
-        )?;
+        gadgets::note_commitment_integrity(self.note.clone(), note_commitment)?;
 
         gadgets::value_commitment_integrity(
             -balance_commitment,
@@ -368,17 +357,15 @@ impl SwapClaimProof {
             .map_err(|_| anyhow!("merkle root mismatch"))?;
 
         // Check that the provided note commitment is for the proof's Swap NFT.
-        gadgets::note_commitment_integrity(
-            self.note_blinding,
+        let note = Note::from_parts(
+            self.claim_address,
             Value {
                 amount: 1u64.into(),
                 asset_id: self.swap_nft_asset_id,
             },
-            self.claim_address.diversified_generator().clone(),
-            self.claim_address.transmission_key_s().clone(),
-            self.claim_address.clue_key().clone(),
-            self.note_commitment_proof.commitment(),
+            self.note_blinding,
         )?;
+        gadgets::note_commitment_integrity(note, self.note_commitment_proof.commitment())?;
 
         // Check that the Swap NFT asset ID is properly constructed.
         gadgets::asset_id_integrity(
@@ -436,11 +423,7 @@ impl SwapClaimProof {
             asset_id: self.trading_pair.asset_1(),
         };
         gadgets::note_commitment_integrity(
-            self.note_blinding_1,
-            value_1,
-            self.claim_address.diversified_generator().clone(),
-            self.claim_address.transmission_key_s().clone(),
-            self.claim_address.clue_key().clone(),
+            Note::from_parts(self.claim_address, value_1, self.note_blinding_1)?,
             note_commitment_1,
         )?;
         gadgets::ephemeral_public_key_integrity(
@@ -455,11 +438,7 @@ impl SwapClaimProof {
             asset_id: self.trading_pair.asset_2(),
         };
         gadgets::note_commitment_integrity(
-            self.note_blinding_2,
-            value_2,
-            self.claim_address.diversified_generator().clone(),
-            self.claim_address.transmission_key_s().clone(),
-            self.claim_address.clue_key().clone(),
+            Note::from_parts(self.claim_address, value_2, self.note_blinding_2)?,
             note_commitment_2,
         )?;
         gadgets::ephemeral_public_key_integrity(
@@ -632,15 +611,15 @@ impl SwapProof {
     ) -> anyhow::Result<(), Error> {
         // Checks the note commitment of the Swap NFT.
         gadgets::note_commitment_integrity(
-            self.note_blinding,
-            Value {
-                // The swap NFT is always amount 1.
-                amount: 1u64.into(),
-                asset_id: self.swap_nft_asset_id,
-            },
-            self.claim_address.diversified_generator().clone(),
-            self.claim_address.transmission_key_s().clone(),
-            self.claim_address.clue_key().clone(),
+            Note::from_parts(
+                self.claim_address,
+                Value {
+                    // The swap NFT is always amount 1.
+                    amount: 1u64.into(),
+                    asset_id: self.swap_nft_asset_id,
+                },
+                self.note_blinding,
+            )?,
             note_commitment,
         )?;
 

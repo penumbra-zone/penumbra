@@ -4,7 +4,7 @@ use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_tct as tct;
 
 use crate::{
-    asset, balance, dex, ka, keys, note, transaction::Fee, Address, Fq, Fr, Nullifier, Value,
+    asset, balance, dex, ka, keys, note, transaction::Fee, Address, Fq, Fr, Note, Nullifier, Value,
 };
 
 /// Check the integrity of the nullifier.
@@ -23,19 +23,15 @@ pub(crate) fn nullifier_integrity(
 
 /// Check the integrity of the note commitment.
 pub(crate) fn note_commitment_integrity(
-    note_blinding: Fq,
-    note_value: Value,
-    note_diversified_generator: decaf377::Element,
-    note_s_component_transmission_key: Fq,
-    note_clue_key: fmd::ClueKey,
+    note: Note,
     note_commitment: note::Commitment,
 ) -> Result<()> {
     let note_commitment_test = note::commitment(
-        note_blinding,
-        note_value,
-        note_diversified_generator,
-        note_s_component_transmission_key,
-        &note_clue_key,
+        note.note_blinding(),
+        note.value(),
+        note.diversified_generator(),
+        note.transmission_key_s(),
+        note.clue_key(),
     );
 
     if note_commitment != note_commitment_test {
