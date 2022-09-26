@@ -406,15 +406,13 @@ impl SwapClaimProof {
             self.note_commitment_proof.commitment(),
         )?;
 
-        let (lambda_1, lambda_2) = output_data.pro_rata_outputs((self.delta_1_i, self.delta_2_i));
-
         gadgets::diversified_basepoint_not_identity(
             self.claim_address.diversified_generator().clone(),
         )?;
 
         // Check output 1
         let value_1 = Value {
-            amount: lambda_1.into(),
+            amount: self.lambda_1.into(),
             asset_id: self.trading_pair.asset_1(),
         };
         gadgets::note_commitment_integrity(
@@ -429,7 +427,7 @@ impl SwapClaimProof {
 
         // Check output 2
         let value_2 = Value {
-            amount: lambda_2.into(),
+            amount: self.lambda_2.into(),
             asset_id: self.trading_pair.asset_2(),
         };
         gadgets::note_commitment_integrity(
