@@ -294,4 +294,17 @@ fn governance_submit_proposal() {
     // Wait for a couple blocks for the transaction to be confirmed.
     let block_time = time::Duration::from_secs(2 * BLOCK_TIME_SECONDS);
     thread::sleep(block_time);
+
+    // Now list the proposals.
+    let mut proposals_cmd = Command::cargo_bin("pcli").unwrap();
+    proposals_cmd
+        .args(&[
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "query",
+            "governance",
+            "list-proposals",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    proposals_cmd.assert().success();
 }
