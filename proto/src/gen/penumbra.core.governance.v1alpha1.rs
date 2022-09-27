@@ -34,6 +34,17 @@ pub mod vote {
         }
     }
 }
+/// A chain parameter that can be modified by governance.
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MutableChainParameter {
+    /// The identifier of the parameter, used for submitting change proposals.
+    #[prost(string, tag="1")]
+    pub identifier: ::prost::alloc::string::String,
+    /// A textual description of the parameter and valid values.
+    #[prost(string, tag="2")]
+    pub description: ::prost::alloc::string::String,
+}
 /// The current state of a proposal.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]

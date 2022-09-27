@@ -349,6 +349,10 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     ("penumbra.core.governance.v1alpha1.Vote", SERIALIZE),
     ("penumbra.core.governance.v1alpha1.Vote", SERDE_TRANSPARENT),
     (
+        "penumbra.core.governance.v1alpha1.MutableChainParameter",
+        SERIALIZE,
+    ),
+    (
         ".penumbra.core.governance.v1alpha1.ProposalState",
         SERIALIZE,
     ),

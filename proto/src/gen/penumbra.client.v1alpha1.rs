@@ -24,6 +24,13 @@ pub struct CompactBlockRangeRequest {
     #[prost(bool, tag="4")]
     pub keep_alive: bool,
 }
+/// Requests the governance-mutable parameters available for the chain.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MutableParametersRequest {
+    /// The expected chain id (empty string if no expectation).
+    #[prost(string, tag="1")]
+    pub chain_id: ::prost::alloc::string::String,
+}
 /// Requests the global configuration data for the chain.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ChainParamsRequest {
@@ -206,6 +213,32 @@ pub mod oblivious_query_client {
                 "/penumbra.client.v1alpha1.ObliviousQuery/ChainParameters",
             );
             self.inner.unary(request.into_request(), path, codec).await
+        }
+        pub async fn mutable_parameters(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MutableParametersRequest>,
+        ) -> Result<
+            tonic::Response<
+                tonic::codec::Streaming<
+                    super::super::super::core::governance::v1alpha1::MutableChainParameter,
+                >,
+            >,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.client.v1alpha1.ObliviousQuery/MutableParameters",
+            );
+            self.inner.server_streaming(request.into_request(), path, codec).await
         }
         pub async fn validator_info(
             &mut self,
@@ -497,6 +530,19 @@ pub mod oblivious_query_server {
             tonic::Response<super::super::super::core::chain::v1alpha1::ChainParameters>,
             tonic::Status,
         >;
+        ///Server streaming response type for the MutableParameters method.
+        type MutableParametersStream: futures_core::Stream<
+                Item = Result<
+                    super::super::super::core::governance::v1alpha1::MutableChainParameter,
+                    tonic::Status,
+                >,
+            >
+            + Send
+            + 'static;
+        async fn mutable_parameters(
+            &self,
+            request: tonic::Request<super::MutableParametersRequest>,
+        ) -> Result<tonic::Response<Self::MutableParametersStream>, tonic::Status>;
         ///Server streaming response type for the ValidatorInfo method.
         type ValidatorInfoStream: futures_core::Stream<
                 Item = Result<
@@ -660,6 +706,48 @@ pub mod oblivious_query_server {
                                 send_compression_encodings,
                             );
                         let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.client.v1alpha1.ObliviousQuery/MutableParameters" => {
+                    #[allow(non_camel_case_types)]
+                    struct MutableParametersSvc<T: ObliviousQuery>(pub Arc<T>);
+                    impl<
+                        T: ObliviousQuery,
+                    > tonic::server::ServerStreamingService<
+                        super::MutableParametersRequest,
+                    > for MutableParametersSvc<T> {
+                        type Response = super::super::super::core::governance::v1alpha1::MutableChainParameter;
+                        type ResponseStream = T::MutableParametersStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::MutableParametersRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).mutable_parameters(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = MutableParametersSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)

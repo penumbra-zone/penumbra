@@ -4,6 +4,7 @@ use std::{
 };
 
 use anyhow::Result;
+use futures::TryStreamExt;
 use penumbra_component::{
     governance::{
         proposal::{self, ProposalList},
@@ -12,7 +13,9 @@ use penumbra_component::{
     stake::validator,
 };
 use penumbra_crypto::IdentityKey;
+use penumbra_proto::client::v1alpha1::MutableParametersRequest;
 use penumbra_transaction::action::{Proposal, ProposalPayload, Vote};
+use penumbra_view::ViewClient;
 use serde::Serialize;
 use serde_json::json;
 
@@ -34,6 +37,8 @@ pub enum GovernanceCmd {
         #[clap(subcommand)]
         query: PerProposalCmd,
     },
+    /// Query for the governance-modifiable chain parameters.
+    Parameters,
 }
 
 #[derive(Debug, clap::Subcommand)]
@@ -57,6 +62,20 @@ impl GovernanceCmd {
         let mut client = app.specific_client().await?;
 
         match self {
+            GovernanceCmd::Parameters => {
+                let mut client = app.oblivious_client().await?;
+
+                let params = client
+                    .mutable_parameters(MutableParametersRequest {
+                        chain_id: app.view().chain_params().await?.chain_id,
+                    })
+                    .await?
+                    .into_inner()
+                    .try_collect::<Vec<_>>()
+                    .await?;
+
+                json(&params)?;
+            }
             GovernanceCmd::ListProposals { inactive } => {
                 let proposal_id_list: Vec<u64> = if *inactive {
                     let latest: u64 = client.key_proto(latest_proposal_id()).await?;

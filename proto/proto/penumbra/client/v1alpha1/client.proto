@@ -9,6 +9,7 @@ import "penumbra/core/crypto/v1alpha1/crypto.proto";
 import "penumbra/core/chain/v1alpha1/chain.proto";
 import "penumbra/core/stake/v1alpha1/stake.proto";
 import "penumbra/core/dex/v1alpha1/dex.proto";
+import "penumbra/core/governance/v1alpha1/governance.proto";
 
 // Methods for accessing chain state that are "oblivious" in the sense that they
 // do not request specific portions of the chain state that could reveal private
@@ -18,6 +19,7 @@ import "penumbra/core/dex/v1alpha1/dex.proto";
 service ObliviousQuery {
   rpc CompactBlockRange(CompactBlockRangeRequest) returns (stream core.chain.v1alpha1.CompactBlock);
   rpc ChainParameters(ChainParamsRequest) returns (core.chain.v1alpha1.ChainParameters);
+  rpc MutableParameters(MutableParametersRequest) returns (stream core.governance.v1alpha1.MutableChainParameter);
   rpc ValidatorInfo(ValidatorInfoRequest) returns (stream core.stake.v1alpha1.ValidatorInfo);
   rpc AssetList(AssetListRequest) returns (core.chain.v1alpha1.KnownAssets);
 }
@@ -41,6 +43,12 @@ message CompactBlockRangeRequest {
   // If set, keep the connection alive past end_height,
   // streaming new compact blocks as they are created.
   bool keep_alive = 4;
+}
+
+// Requests the governance-mutable parameters available for the chain.
+message MutableParametersRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
 }
 
 // Requests the global configuration data for the chain.

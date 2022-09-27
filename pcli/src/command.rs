@@ -26,7 +26,7 @@ pub use view::ViewCmd;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum Command {
-    /// Query the  public chain state, like the validator set.
+    /// Query the public chain state, like the validator set.
     ///
     /// This command has two modes: it can be used to query raw bytes of
     /// arbitrary keys with the `key` subcommand, or it can be used to query
