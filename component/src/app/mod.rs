@@ -104,7 +104,7 @@ impl Component for App {
             .put_chain_params(app_state.chain_params.clone())
             .await;
 
-        // TEMP: Hardcoding FMD parameters until we have a mechanism to change them. See issue #1226.
+        // FMD parameters are initially set to their default value, then are updated in `EndBlock`.
         self.state
             .put_current_fmd_parameters(FmdParameters::default())
             .await;
@@ -189,6 +189,21 @@ impl Component for App {
         self.ibc.end_block(ctx.clone(), end_block).await;
         self.dex.end_block(ctx.clone(), end_block).await;
         self.governance.end_block(ctx.clone(), end_block).await;
+
+        // Update FMD parameters
+        let active_fmd_parameters = self
+            .state
+            .get_current_fmd_parameters()
+            .await
+            .expect("FMDParameters should always be defined by EndBlock");
+        if let Some(new_parameters) =
+            FmdParameters::update(&active_fmd_parameters, end_block.height.try_into().unwrap())
+        {
+            self.state.put_current_fmd_parameters(new_parameters).await;
+            self.state
+                .put_previous_fmd_parameters(active_fmd_parameters)
+                .await;
+        };
 
         // Shielded pool always executes last.
         self.shielded_pool.end_block(ctx.clone(), end_block).await;

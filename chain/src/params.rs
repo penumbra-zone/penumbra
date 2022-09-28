@@ -186,6 +186,17 @@ pub struct FmdParameters {
     pub as_of_block_height: u64,
 }
 
+impl FmdParameters {
+    /// Optionally updates `FmdParameters` based on network conditions.
+    pub fn update(
+        current_fmd_parameters: &FmdParameters,
+        current_block_height: u64,
+    ) -> Option<Self> {
+        // this will need to take some timeseries information about outputs on the network
+        todo!()
+    }
+}
+
 impl Protobuf<pb::FmdParameters> for FmdParameters {}
 
 impl TryFrom<pb::FmdParameters> for FmdParameters {
@@ -211,6 +222,8 @@ impl From<FmdParameters> for pb::FmdParameters {
 impl Default for FmdParameters {
     fn default() -> Self {
         Self {
+            // Precision bits is initially set to the most conservative
+            // choice, which yields a false positive rate of p=1
             precision_bits: 0,
             as_of_block_height: 1,
         }
