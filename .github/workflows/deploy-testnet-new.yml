@@ -1,0 +1,47 @@
+# One day, this would be better handled via pushing Docker images up
+# and using Kubernetes or similar, but this will work for now.
+name: Deploy Testnet New
+on:
+  workflow_dispatch:
+    inputs:
+      nvals:
+        description: 'Number of validators at genesis'
+        required: true
+        default: '2'
+      nfullnodes:
+        description: 'Number of fullnodes at genesis'
+        required: true
+        default: '2'
+  push:
+    tags:
+      - '[0-9][0-9][0-9]-*'
+
+jobs:
+  deploy:
+    name: Deploy to Testnet
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: testnet
+    steps:
+      - id: gcloud auth
+        uses: google-github-actions/auth@v0
+        with:
+          credentials_json: '${{ secrets.gcp_credentials }}'
+
+      - name: get gke credentials
+        uses: google-github-actions/get-gke-credentials@v0
+        with:
+          cluster_name: testnet
+          location: us-central1
+
+      - name: checkout
+        uses: actions/checkout@v3
+
+      - name: deploy 
+        run: |-
+          cd deployments/networks/testnet
+          export NVALS='${{ github.event.inputs.nvals }}'
+          export NFULLNODES='${{ github.event.inputs.nfullnodes }}'
+          export TENDERMINT_VERSION=v0.34.21
+          export PENUMBRA_VERSION=TODO
+          ./ci.sh
