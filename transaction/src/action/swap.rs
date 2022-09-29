@@ -7,7 +7,7 @@ use penumbra_crypto::{balance, dex::swap::SwapCiphertext};
 use penumbra_crypto::{Note, NotePayload, Value};
 use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 
-use crate::transaction_view::action_view::SwapView;
+use crate::view::action_view::SwapView;
 use crate::{ActionView, IsAction, TransactionPerspective};
 
 #[derive(Clone, Debug)]

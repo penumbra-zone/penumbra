@@ -5,11 +5,10 @@ use ark_ff::Zero;
 use bytes::Bytes;
 use decaf377_fmd::Clue;
 use penumbra_crypto::{
-    dex::swap::SwapCiphertext,
-    memo::{MemoCiphertext, MemoPlaintext},
+    memo::MemoCiphertext,
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
     transaction::Fee,
-    Fr, Note, NotePayload, Nullifier,
+    Fr, NotePayload, Nullifier,
 };
 use penumbra_proto::{
     core::ibc::v1alpha1 as pb_ibc, core::stake::v1alpha1 as pbs,
@@ -20,8 +19,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     action::{Delegate, Output, ProposalSubmit, ProposalWithdraw, Swap, Undelegate, ValidatorVote},
-    transaction_view::action_view::{OutputView, SpendView, SwapClaimView, SwapView},
-    Action, ActionView, IsAction, TransactionPerspective, TransactionView,
+    Action, IsAction, TransactionPerspective, TransactionView,
 };
 
 #[derive(Clone, Debug)]

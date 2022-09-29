@@ -1,4 +1,4 @@
-use crate::transaction_view::action_view::SwapClaimView;
+use crate::view::action_view::SwapClaimView;
 use crate::{ActionView, IsAction, TransactionPerspective};
 use ark_ff::Zero;
 use penumbra_crypto::dex::BatchSwapOutputData;
