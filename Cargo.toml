@@ -16,6 +16,7 @@ members = [
   "custody",
   "measure",
   "storage",
+  "storage2",
   "tct",
   "tct-property-test",
   "tct-visualize",

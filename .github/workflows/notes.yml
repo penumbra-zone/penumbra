@@ -94,6 +94,7 @@ jobs:
             -p penumbra-custody \
             -p penumbra-measure \
             -p penumbra-storage \
+            -p penumbra-storage2 \
             -p penumbra-tct \
             -p penumbra-transaction \
             -p penumbra-wallet \
