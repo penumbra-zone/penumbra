@@ -4,7 +4,6 @@ use anyhow::Error;
 use bytes::Bytes;
 use penumbra_crypto::{
     balance,
-    memo::MemoPlaintext,
     proofs::transparent::OutputProof,
     symmetric::{OvkWrappedKey, WrappedMemoKey},
     Note, NotePayload,
@@ -26,10 +25,7 @@ impl IsAction for Output {
         self.body.balance_commitment
     }
 
-    fn decrypt_with_perspective(
-        &self,
-        txp: &TransactionPerspective,
-    ) -> anyhow::Result<Option<ActionView>> {
+    fn view_from_perspective(&self, txp: &TransactionPerspective) -> anyhow::Result<ActionView> {
         // Get payload key for note commitment of note payload
 
         let note_commitment = self.body.note_payload.note_commitment;
@@ -49,20 +45,10 @@ impl IsAction for Output {
 
         let decrypted_memo_key = self.body.wrapped_memo_key.decrypt_outgoing(payload_key)?;
 
-        // * Decrypt memo using wrapped memo key
-
-        let memo_cipher_text = txp
-            .memo_cipher_text
-            .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("no memo present"))?
-            .to_owned();
-
-        let memo = MemoPlaintext::decrypt(memo_cipher_text, &decrypted_memo_key)?;
-
-        Ok(Some(ActionView::Output(OutputView {
+        Ok(ActionView::Output(OutputView {
             decrypted_note,
-            memo,
-        })))
+            decrypted_memo_key,
+        }))
     }
 }
 

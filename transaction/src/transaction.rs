@@ -5,7 +5,7 @@ use ark_ff::Zero;
 use bytes::Bytes;
 use decaf377_fmd::Clue;
 use penumbra_crypto::{
-    memo::MemoCiphertext,
+    memo::{MemoCiphertext, MemoPlaintext},
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
     transaction::Fee,
     Fr, NotePayload, Nullifier,
@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     action::{Delegate, Output, ProposalSubmit, ProposalWithdraw, Swap, Undelegate, ValidatorVote},
-    Action, IsAction, TransactionPerspective, TransactionView,
+    Action, ActionView, IsAction, TransactionPerspective, TransactionView,
 };
 
 #[derive(Clone, Debug)]
@@ -47,14 +47,36 @@ impl Transaction {
     ) -> anyhow::Result<TransactionView> {
         let mut avs = Vec::new();
 
+        let mut memo_plaintext: Option<MemoPlaintext> = None;
+
         for action in self.actions() {
-            match action.decrypt_with_perspective(txp)? {
-                Some(action) => avs.push(action),
-                None => (),
-            };
+            let action_view = action.view_from_perspective(txp)?;
+
+            // In the case of Output actions, decrypt the transaction memo if this hasn't already been done.
+            if let ActionView::Output(output) = &action_view {
+                if memo_plaintext.is_none() {
+                    memo_plaintext = match self.transaction_body().memo {
+                        Some(ciphertext) => Some(MemoPlaintext::decrypt(
+                            ciphertext,
+                            &output.decrypted_memo_key,
+                        )?),
+                        None => None,
+                    }
+                }
+            }
+
+            avs.push(action_view);
         }
 
-        Ok(TransactionView { actions: avs })
+        Ok(TransactionView {
+            actions: avs,
+            expiry_height: self.transaction_body().expiry_height,
+            chain_id: self.transaction_body().chain_id,
+            fee: self.transaction_body().fee,
+            fmd_clues: self.transaction_body().fmd_clues,
+            //TODO: this MemoPlaintext -> String conversion is a bit eklig & should be fixed up when we get rid of MemoPlaintext entirely
+            memo: memo_plaintext.map(|x| String::from_utf8(x.0.to_vec()).unwrap()),
+        })
     }
 
     pub fn actions(&self) -> impl Iterator<Item = &Action> {

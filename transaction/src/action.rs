@@ -35,10 +35,7 @@ pub use vote::{DelegatorVote, ValidatorVote, ValidatorVoteBody, Vote};
 /// Common behavior between Penumbra actions.
 pub trait IsAction {
     fn balance_commitment(&self) -> balance::Commitment;
-    fn decrypt_with_perspective(
-        &self,
-        txp: &TransactionPerspective,
-    ) -> anyhow::Result<Option<ActionView>>;
+    fn view_from_perspective(&self, txp: &TransactionPerspective) -> anyhow::Result<ActionView>;
 }
 
 /// An action performed by a Penumbra transaction.
@@ -91,16 +88,25 @@ impl IsAction for Action {
         }
     }
 
-    fn decrypt_with_perspective(
-        &self,
-        txp: &TransactionPerspective,
-    ) -> anyhow::Result<Option<ActionView>> {
+    fn view_from_perspective(&self, txp: &TransactionPerspective) -> anyhow::Result<ActionView> {
         match self {
-            Action::Swap(swap) => swap.decrypt_with_perspective(txp),
-            Action::SwapClaim(swap_claim) => swap_claim.decrypt_with_perspective(txp),
-            Action::Output(output) => output.decrypt_with_perspective(txp),
-            Action::Spend(spend) => spend.decrypt_with_perspective(txp),
-            _ => Ok(None),
+            Action::Swap(x) => x.view_from_perspective(txp),
+            Action::SwapClaim(x) => x.view_from_perspective(txp),
+            Action::Output(x) => x.view_from_perspective(txp),
+            Action::Spend(x) => x.view_from_perspective(txp),
+            Action::Delegate(x) => x.view_from_perspective(txp),
+            Action::Undelegate(x) => x.view_from_perspective(txp),
+            Action::ProposalSubmit(x) => x.view_from_perspective(txp),
+            Action::ProposalWithdraw(x) => x.view_from_perspective(txp),
+            Action::ValidatorVote(x) => x.view_from_perspective(txp),
+            Action::PositionOpen(x) => x.view_from_perspective(txp),
+            Action::PositionClose(x) => x.view_from_perspective(txp),
+            Action::PositionWithdraw(x) => x.view_from_perspective(txp),
+            Action::PositionRewardClaim(x) => x.view_from_perspective(txp),
+            Action::ICS20Withdrawal(x) => x.view_from_perspective(txp),
+            // TODO: figure out where to implement the actual decryption methods for these? where are their action definitions?
+            Action::ValidatorDefinition(x) => Ok(ActionView::ValidatorDefinition(x.to_owned())),
+            Action::IBCAction(x) => Ok(ActionView::IBCAction(x.to_owned())),
         }
     }
 }

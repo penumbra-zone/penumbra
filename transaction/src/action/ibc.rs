@@ -34,11 +34,8 @@ impl IsAction for ICS20Withdrawal {
         self.balance().commit(Fr::zero())
     }
 
-    fn decrypt_with_perspective(
-        &self,
-        txp: &TransactionPerspective,
-    ) -> anyhow::Result<Option<ActionView>> {
-        todo!()
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> anyhow::Result<ActionView> {
+        Ok(ActionView::ICS20Withdrawal(self.to_owned()))
     }
 }
 
