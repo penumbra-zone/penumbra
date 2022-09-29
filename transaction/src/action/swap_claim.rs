@@ -20,10 +20,7 @@ impl IsAction for SwapClaim {
         self.balance().commit(Fr::zero())
     }
 
-    fn decrypt_with_perspective(
-        &self,
-        txp: &TransactionPerspective,
-    ) -> anyhow::Result<Option<crate::ActionView>> {
+    fn view_from_perspective(&self, txp: &TransactionPerspective) -> anyhow::Result<ActionView> {
         // For each note payload (output_1, output_2)
         let note_commitment_1 = self.body.output_1.note_commitment;
         let note_commitment_2 = self.body.output_2.note_commitment;
@@ -42,10 +39,10 @@ impl IsAction for SwapClaim {
         let decrypted_note_2 =
             Note::decrypt_with_payload_key(&self.body.output_2.encrypted_note, payload_key_2)?;
 
-        Ok(Some(ActionView::SwapClaim(SwapClaimView {
+        Ok(ActionView::SwapClaim(SwapClaimView {
             decrypted_note_1,
             decrypted_note_2,
-        })))
+        }))
     }
 }
 

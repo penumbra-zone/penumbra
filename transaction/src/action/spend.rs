@@ -26,16 +26,13 @@ impl IsAction for Spend {
         self.body.balance_commitment
     }
 
-    fn decrypt_with_perspective(
-        &self,
-        txp: &TransactionPerspective,
-    ) -> anyhow::Result<Option<ActionView>> {
+    fn view_from_perspective(&self, txp: &TransactionPerspective) -> anyhow::Result<ActionView> {
         let decrypted_note = txp
             .spend_nullifiers
             .get(&self.body.nullifier)
             .ok_or_else(|| anyhow::anyhow!("no note found for nullifier"))?
             .to_owned();
-        Ok(Some(ActionView::Spend(SpendView { decrypted_note })))
+        Ok(ActionView::Spend(SpendView { decrypted_note }))
     }
 }
 

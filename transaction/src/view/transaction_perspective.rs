@@ -1,9 +1,6 @@
 use std::collections::BTreeMap;
 
-use penumbra_crypto::{
-    memo::{MemoCiphertext, MemoPlaintext},
-    note, Note, Nullifier, PayloadKey,
-};
+use penumbra_crypto::{note, Note, Nullifier, PayloadKey};
 
 /// This represents the data to understand an individual transaction without
 /// disclosing viewing keys.
@@ -25,10 +22,6 @@ pub struct TransactionPerspective {
     pub payload_keys: BTreeMap<note::Commitment, PayloadKey>,
     /// Mapping of nullifiers spent in this transaction to notes.
     pub spend_nullifiers: BTreeMap<Nullifier, Note>,
-
-    pub memo_cipher_text: Option<MemoCiphertext>,
-
-    pub memo_plaintext: Option<MemoPlaintext>,
 }
 
 impl TransactionPerspective {}

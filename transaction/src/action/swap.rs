@@ -40,10 +40,7 @@ impl IsAction for Swap {
         -(input_1 + input_2 + self.body.fee_commitment)
     }
 
-    fn decrypt_with_perspective(
-        &self,
-        txp: &TransactionPerspective,
-    ) -> anyhow::Result<Option<ActionView>> {
+    fn view_from_perspective(&self, txp: &TransactionPerspective) -> anyhow::Result<ActionView> {
         let note_commitment = self.body.swap_nft.note_commitment;
 
         // Get payload key for note commitment of swap NFT.
@@ -61,10 +58,10 @@ impl IsAction for Swap {
         let swap_plaintext =
             SwapCiphertext::decrypt_with_payload_key(&self.body.swap_ciphertext, payload_key)?;
 
-        Ok(Some(ActionView::Swap(SwapView {
+        Ok(ActionView::Swap(SwapView {
             swap_nft,
             swap_plaintext,
-        })))
+        }))
     }
 }
 

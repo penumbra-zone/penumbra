@@ -322,11 +322,8 @@ impl IsAction for ProposalSubmit {
         self.balance().commit(Fr::zero())
     }
 
-    fn decrypt_with_perspective(
-        &self,
-        txp: &TransactionPerspective,
-    ) -> anyhow::Result<Option<ActionView>> {
-        todo!()
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> anyhow::Result<ActionView> {
+        Ok(ActionView::ProposalSubmit(self.to_owned()))
     }
 }
 
@@ -395,11 +392,8 @@ impl IsAction for ProposalWithdraw {
         Default::default()
     }
 
-    fn decrypt_with_perspective(
-        &self,
-        txp: &TransactionPerspective,
-    ) -> anyhow::Result<Option<ActionView>> {
-        todo!()
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> anyhow::Result<ActionView> {
+        Ok(ActionView::ProposalWithdraw(self.to_owned()))
     }
 }
 

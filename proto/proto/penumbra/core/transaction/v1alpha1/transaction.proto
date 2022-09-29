@@ -73,6 +73,54 @@ message Action {
   }
 }
 
+message TransactionView {
+  // A list views into of actions (state changes) performed by this transaction.
+  repeated ActionView action_views = 1;
+  // The maximum height that this transaction can be included in the chain.
+  //
+  // If zero, there is no maximum.
+  uint64 expiry_height = 2;
+  // The chain this transaction is intended for.  Including this prevents
+  // replaying a transaction on one chain onto a different chain.
+  string chain_id = 3;
+  // The transaction fee.
+  crypto.v1alpha1.Fee fee = 4;
+  // A list of clues for use with Fuzzy Message Detection.
+  repeated crypto.v1alpha1.Clue fmd_clues = 5;
+  // An optional plaintext memo. It will only be populated if there are
+  // outputs in the actions of this transaction.
+  optional string memo = 6;
+}
+
+// A view of a specific state change action performed by a transaction.
+message ActionView {
+  oneof action {
+    SpendView spend = 1;
+    OutputView output = 2;
+    stake.v1alpha1.Delegate delegate = 3;
+    stake.v1alpha1.Undelegate undelegate = 4;
+    SwapView swap = 5;
+    SwapClaimView swap_claim = 6;
+
+    stake.v1alpha1.ValidatorDefinition validator_definition = 16;
+    ibc.v1alpha1.IBCAction ibc_action = 17;
+
+    // Governance:
+    ProposalSubmit proposal_submit = 18;
+    ProposalWithdraw proposal_withdraw = 19;
+    ValidatorVote validator_vote = 20;
+    // DelegatorVote delegator_vote = 21;
+
+    dex.v1alpha1.PositionOpen position_open = 30;
+    dex.v1alpha1.PositionClose position_close = 31;
+    dex.v1alpha1.PositionWithdraw position_withdraw = 32;
+    dex.v1alpha1.PositionRewardClaim position_reward_claim = 34;
+
+    ibc.v1alpha1.ICS20Withdrawal ics20_withdrawal = 200;
+
+  }
+}
+
 // Spends a shielded note.
 message Spend {
   // The authorizing data for the spend, which is included in the authorization hash used for signing.
