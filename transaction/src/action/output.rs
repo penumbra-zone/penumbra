@@ -11,7 +11,7 @@ use penumbra_crypto::{
 };
 use penumbra_proto::{core::transaction::v1alpha1 as pb, Protobuf};
 
-use crate::{transaction_view::action_view::OutputView, ActionView, TransactionPerspective};
+use crate::{view::action_view::OutputView, ActionView, TransactionPerspective};
 
 use super::IsAction;
 

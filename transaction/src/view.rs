@@ -1,5 +1,3 @@
-use penumbra_crypto::memo::MemoPlaintext;
-
 pub mod action_view;
 mod transaction_perspective;
 
