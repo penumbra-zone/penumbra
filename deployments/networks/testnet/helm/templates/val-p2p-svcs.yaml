@@ -8,6 +8,7 @@ metadata:
   labels:
     app: "p2p-{{$i}}"
 spec:
+  type: LoadBalancer
   selector:
     app: "penumbra-val-{{$i}}"
   ports:

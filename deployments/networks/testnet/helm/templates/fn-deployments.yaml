@@ -1,35 +1,51 @@
+{{ $count := (.Values.numFullNodes | int) }}
+{{ range $i,$e := until $count }}
+---
 apiVersion: v1
 kind: ReplicationController
 metadata:
-  generation: 1
-  name: testnet-node-1
-  namespace: default
+  name: "penumbra-fn-{{$i}}"
 spec:
   replicas: 1
   selector:
-    app: testnet-node-1
+    app: "penumbra-fn-{{$i}}"
   template:
     metadata:
-      name: testnet-node-1
+      name: "penumbra-fn-{{$i}}"
       labels:
-        app: testnet-node-1
-        network: testnet
-        type: full
+        app: "penumbra-fn-{{$i}}"
+        network: "{{ $.Values.network }}"
+        type: fullnode
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - "penumbra-fn-{{$i}}"
+              topologyKey: kubernetes.io/hostname
       volumes:
-        - name: pv-testnet-pd-node-1
+        - name: "pv-{{ include "penumbra.name" $ }}-{{$i}}"
           persistentVolumeClaim:
-            claimName: pvc-testnet-pd-node-1
-        - name: pv-testnet-tm-node-1
+            claimName: "pvc-fn-{{ include "penumbra.name" $ }}-{{$i}}"
+        - name: "pv-{{ include "tendermint.name" $ }}-{{$i}}"
           persistentVolumeClaim:
-            claimName: pvc-testnet-tm-node-1
+            claimName: "pvc-fn-{{ include "tendermint.name" $ }}-{{$i}}"
         - name: tm-config
           configMap:
-            name: tm-config
+            name: tm-config-fn
             items:
               - key: "config.toml"
                 path: "config.toml"
-
+        - name: genesis-config
+          configMap:
+            name: genesis-config
+            items:
+              - key: "genesis.json"
+                path: "genesis.json"
       initContainers:
         - name: heighliner-ownership
           image: busybox
@@ -37,16 +53,15 @@ spec:
             - sh
             - -c
             - |
-                chown -R 1025:1025 /home/pv-testnet-tm-node-1
-                chown -R 1025:1025 /home/pv-testnet-pd-node-1
+                chown -R 1025:1025 "/home/pv-{{ include "tendermint.name" $ }}-{{$i}}"
+                chown -R 1025:1025 "/home/pv-{{ include "penumbra.name" $ }}-{{$i}}"
           volumeMounts:
-            - name: pv-testnet-tm-node-1
-              mountPath: /home/pv-testnet-tm-node-1
-            - name: pv-testnet-pd-node-1
-              mountPath: /home/pv-testnet-pd-node-1
-
+            - name: "pv-{{ include "tendermint.name" $ }}-{{$i}}"
+              mountPath: "/home/pv-{{ include "tendermint.name" $ }}-{{$i}}"
+            - name: "pv-{{ include "penumbra.name" $ }}-{{$i}}"
+              mountPath: "/home/pv-{{ include "penumbra.name" $ }}-{{$i}}"
         - name: config-init
-          image: ghcr.io/strangelove-ventures/heighliner/tendermint:v0.34.21
+          image: "{{ $.Values.tendermint.image }}:{{ $.Values.tendermint.version }}"
           command:
             - sh
             - -c
@@ -56,44 +71,46 @@ spec:
               if [ ! -d $CHAIN_DIR ]; then
                 tendermint init full --home $CHAIN_DIR
               else
-                CONFIG_DIR=$CHAIN_DIR/config
-                rm -rf $CONFIG_DIR/*.toml
                 TMP_DIR=/home/heighliner/tmpConfig
                 tendermint init full --home $TMP_DIR
-                mv $TMP_DIR/config/*.toml $CONFIG_DIR/
-                rm -rf $TMP_DIR
               fi
           volumeMounts:
-            - name: pv-testnet-tm-node-1
+            - name: "pv-{{ include "tendermint.name" $ }}-{{$i}}"
               mountPath: /home/heighliner
-
         - name: config-merge
-          image: ghcr.io/strangelove-ventures/infra-toolkit
+          image: "{{ $.Values.toolkit.image }}:{{ $.Values.toolkit.version }}"
           command:
             - sh
             - -c
             - |
               set -eux
               CONFIG_DIR=/home/heighliner/.tendermint/config
-              # curl -X GET "http://testnet.penumbra.zone:26657/genesis" -H "accept: application/json" | jq '.result.genesis' > $CONFIG_DIR/genesis.json
               MERGE_DIR=/tmp/configMerge
               OVERLAY_DIR=/config
+              TMP_DIR=/home/heighliner/tmpConfig
+              if [ -d $TMP_DIR/config ]; then
+                mv $TMP_DIR/config/*.toml $CONFIG_DIR/
+                rm -rf $TMP_DIR
+              fi
               mkdir $MERGE_DIR
               config-merge -f toml $CONFIG_DIR/config.toml $OVERLAY_DIR/config.toml > $MERGE_DIR/config.toml
-              dasel put string -f $MERGE_DIR/config.toml -p toml ".p2p.external_address" $(curl -s ifconfig.me):26656
               mv $MERGE_DIR/* $CONFIG_DIR/
+              cp /genesis/genesis.json $CONFIG_DIR/
           securityContext:
             runAsUser: 1025
             runAsGroup: 1025
           volumeMounts:
-            - name: pv-testnet-tm-node-1
+            - name: "pv-{{ include "tendermint.name" $ }}-{{$i}}"
               mountPath: /home/heighliner
             - name: tm-config
               mountPath: "/config"
               readOnly: true
+            - name: genesis-config
+              mountPath: "/genesis"
+              readOnly: true
       containers:
         - name: tm
-          image: ghcr.io/strangelove-ventures/heighliner/tendermint:v0.34.21
+          image: "{{ $.Values.tendermint.image }}:{{ $.Values.tendermint.version }}"
           imagePullPolicy: Always
           ports:
             - containerPort: 26657
@@ -103,16 +120,13 @@ spec:
               protocol: TCP
               name: p2p
           volumeMounts:
-            - name: pv-testnet-tm-node-1
+            - name: "pv-{{ include "tendermint.name" $ }}-{{$i}}"
               mountPath: /home/heighliner
           command:
-            # - sleep
-            # - "1000"
             - tendermint
             - start
-            - --proxy-app=tcp://localhost:26658
         - name: pd
-          image: ghcr.io/strangelove-ventures/heighliner/penumbra:026-hermippe
+          image: "{{ $.Values.penumbra.image }}:{{ $.Values.penumbra.version }}"
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
@@ -122,17 +136,15 @@ spec:
               protocol: TCP
               name: metrics
           volumeMounts:
-            - name: pv-testnet-pd-node-1
+            - name: "pv-{{ include "penumbra.name" $ }}-{{$i}}"
               mountPath: /home/heighliner
           command:
-            # - sleep
-            # - "1000"
             - pd
             - start
             - --home
             - /home/heighliner/pd
         - name: health-check
-          image: ghcr.io/strangelove-ventures/ignite-health-check:latest
+          image: "{{ $.Values.health.image }}:{{ $.Values.health.version }}"
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 1251
@@ -142,3 +154,5 @@ spec:
       restartPolicy: Always
       schedulerName: default-scheduler
       terminationGracePeriodSeconds: 30
+
+{{ end }}

@@ -7,14 +7,14 @@ metadata:
   name: "tm-config-val-{{$i}}"
 data:
   config.toml: |
-    proxy-app = "tcp://localhost:26658"
+    proxy_app = "tcp://localhost:26658"
 
     [p2p]
-    max-num-inbound-peers = 50
-    max-num-outbound-peers = 50
+    max_num_inbound-peers = 50
+    max_num_outbound-peers = 50
 
-    persistent-peers = "{{ $.Files.Get (printf "pdcli/persistent_peers_%d.txt" $i) | trim }}"
-    private-peer-ids = "{{ $.Files.Get "pdcli/private_peers.txt" | trim }}"
+    persistent_peers = "{{ $.Files.Get (printf "pdcli/persistent_peers_%d.txt" $i) | trim }}"
+    private_peer_ids = "{{ $.Files.Get "pdcli/private_peers.txt" | trim }}"
 
     [tx_index]
     indexer = "null"

@@ -1,0 +1,38 @@
+apiVersion: cloud.google.com/v1beta1
+kind: BackendConfig
+metadata:
+  name: testnet-backend-config
+spec:
+  timeoutSec: 600
+  healthCheck:
+    checkIntervalSec: 10
+    timeoutSec: 10
+    healthyThreshold: 1
+    unhealthyThreshold: 5
+    port: 1251
+    type: HTTP
+    requestPath: /
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: testnet
+  labels:
+    network: testnet
+  annotations:
+    cloud.google.com/backend-config: '{"default": "testnet-backend-config"}'
+    cloud.google.com/app-protocols: '{"grpc":"HTTP2"}'
+spec:
+  type: NodePort
+  selector:
+    network: testnet
+    type: fullnode
+  ports:
+    - protocol: TCP
+      port: 26657
+      targetPort: rpc
+      name: rpc
+    - protocol: TCP
+      port: 8080
+      targetPort: grpc
+      name: grpc

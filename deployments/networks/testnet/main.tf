@@ -16,3 +16,8 @@ module "gke_testnet" {
   cluster_zones = ["us-central1-a", "us-central1-b"]
   machine_type  = "n2d-standard-4"
 }
+
+resource "google_compute_global_address" "testnet-ingress" {
+  name       = "testnet-ingress-ip"
+  project    = "penumbra-sl-testnet"
+}

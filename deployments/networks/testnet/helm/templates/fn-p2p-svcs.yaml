@@ -1,0 +1,19 @@
+{{ $count := (.Values.numFullNodes | int) }}
+{{ range $i,$e := until $count }}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: "p2p-fn-{{$i}}"
+  labels:
+    app: "p2p-fn-{{$i}}"
+spec:
+  type: LoadBalancer
+  selector:
+    app: "penumbra-fn-{{$i}}"
+  ports:
+    - protocol: TCP
+      port: 26656
+      targetPort: p2p
+      name: tm-p2p
+{{ end }}
