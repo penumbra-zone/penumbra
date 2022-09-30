@@ -37,6 +37,23 @@ impl ICS20Withdrawal {
     pub fn balance(&self) -> Balance {
         -Balance::from(self.value)
     }
+
+    // stateless validation of an ICS20 withdrawal action.
+    pub fn validate(&self) -> anyhow::Result<()> {
+        if self.timeout_height == 0 {
+            anyhow::bail!("timeout height must be non-zero");
+        }
+        if self.timeout_time == 0 {
+            anyhow::bail!("timeout time must be non-zero");
+        }
+
+        // NOTE: all strings are valid chain IDs, so we don't validate destination_chain_id here.
+
+        // NOTE: we could validate the destination chain address as bech32 to prevent mistyped
+        // addresses, but this would preclude sending to chains that don't use bech32 addresses.
+
+        Ok(())
+    }
 }
 
 impl Protobuf<pb::Ics20Withdrawal> for ICS20Withdrawal {}
@@ -71,5 +88,16 @@ impl TryFrom<pb::Ics20Withdrawal> for ICS20Withdrawal {
             timeout_height: s.timeout_height,
             timeout_time: s.timeout_time,
         })
+    }
+}
+
+impl From<ICS20Withdrawal> for pb::FungibleTokenPacketData {
+    fn from(w: ICS20Withdrawal) -> Self {
+        pb::FungibleTokenPacketData {
+            amount: w.value.amount.to_string(),
+            denom: w.value.asset_id.to_string(), // NOTE: should this be a `Denom` instead?
+            receiver: w.destination_chain_address,
+            sender: w.return_address.to_string(),
+        }
     }
 }

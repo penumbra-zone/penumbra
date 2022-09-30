@@ -3,9 +3,9 @@
 // marked as unreachable only when not building in test configuration.
 #![allow(unreachable_patterns)]
 
-mod channel;
-mod client;
-mod connection;
+pub(crate) mod channel;
+pub(crate) mod client;
+pub(crate) mod connection;
 pub(crate) mod state_key;
 
 use crate::ibc::ibc_handler::AppRouter;
@@ -16,6 +16,7 @@ use async_trait::async_trait;
 use client::Ics2Client;
 use ibc::core::ics24_host::identifier::PortId;
 use penumbra_chain::{genesis, View as _};
+use penumbra_proto::core::ibc::v1alpha1 as ibc_pb;
 use penumbra_storage::State;
 use penumbra_transaction::{Action, Transaction};
 use tendermint::abci;
@@ -69,12 +70,6 @@ impl Component for IBCComponent {
 
     #[instrument(name = "ibc", skip(tx, ctx))]
     fn check_tx_stateless(ctx: Context, tx: &Transaction) -> Result<()> {
-        for action in tx.transaction_body.actions.iter() {
-            if let Action::ICS20Withdrawal { .. } = action {
-                return Err(anyhow::anyhow!("ics20 withdrawals not supported yet"));
-            }
-        }
-
         client::Ics2Client::check_tx_stateless(ctx.clone(), tx)?;
         connection::ConnectionComponent::check_tx_stateless(ctx.clone(), tx)?;
         channel::ICS4Channel::check_tx_stateless(ctx, tx)?;

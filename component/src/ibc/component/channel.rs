@@ -11,6 +11,7 @@ use ibc::core::ics02_client::client_consensus::ConsensusState;
 use ibc::core::ics02_client::client_def::AnyClient;
 use ibc::core::ics02_client::client_def::ClientDef;
 use ibc::core::ics02_client::client_state::ClientState;
+use ibc::core::ics02_client::height::Height;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, State as ConnectionState};
 use ibc::core::ics04_channel::channel::Order as ChannelOrder;
 use ibc::core::ics04_channel::channel::State as ChannelState;
@@ -27,6 +28,7 @@ use ibc::core::ics04_channel::msgs::timeout::MsgTimeout;
 use ibc::core::ics04_channel::packet::Packet;
 use ibc::core::ics24_host::identifier::ChannelId;
 use ibc::core::ics24_host::identifier::PortId;
+use ibc::timestamp::Timestamp;
 use penumbra_chain::genesis;
 use penumbra_proto::core::ibc::v1alpha1::ibc_action::Action::{
     Acknowledgement, ChannelCloseConfirm, ChannelCloseInit, ChannelOpenAck, ChannelOpenConfirm,
@@ -40,6 +42,8 @@ use tracing::instrument;
 mod execution;
 mod stateful;
 mod stateless;
+
+use stateful::proof_verification::commit_packet;
 
 pub struct ICS4Channel {
     state: State,
@@ -348,6 +352,11 @@ pub trait View: StateExt {
             .await
             .map(|sequence| sequence.unwrap_or(0))
     }
+    async fn get_send_sequence(&self, channel_id: &ChannelId, port_id: &PortId) -> Result<u64> {
+        self.get_proto::<u64>(state_key::seq_send(channel_id, port_id).into())
+            .await
+            .map(|sequence| sequence.unwrap_or(0))
+    }
     async fn put_ack_sequence(&mut self, channel_id: &ChannelId, port_id: &PortId, sequence: u64) {
         self.put_proto::<u64>(state_key::seq_ack(channel_id, port_id).into(), sequence)
             .await;
@@ -368,6 +377,13 @@ pub trait View: StateExt {
         self.get_proto::<String>(state_key::packet_receipt(packet).into())
             .await
             .map(|res| res.is_some())
+    }
+    async fn put_packet_commitment(&self, packet: &Packet) {
+        let commitment_key = state_key::packet_commitment(packet);
+        let packet_hash = commit_packet(packet);
+
+        self.put_proto::<Vec<u8>>(commitment_key.into(), packet_hash)
+            .await;
     }
     async fn get_packet_commitment(&self, packet: &Packet) -> Result<Option<Vec<u8>>> {
         let commitment = self
