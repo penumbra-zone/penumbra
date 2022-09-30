@@ -8,6 +8,7 @@ mod component;
 mod connection;
 pub(crate) mod event;
 mod ibc_token;
+mod packet;
 pub use ibc_token::IBCToken;
 mod ibc_handler;
 mod metrics;
