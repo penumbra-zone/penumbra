@@ -30,6 +30,7 @@ COPY crypto ./crypto
 COPY custody ./custody
 COPY component ./component
 COPY storage ./storage
+COPY storage2 ./storage2
 COPY tct ./tct
 COPY decaf377-fmd ./decaf377-fmd
 COPY decaf377-ka ./decaf377-ka
