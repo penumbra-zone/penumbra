@@ -58,8 +58,8 @@ message SwapClaimProof {
    * @exclude
    * Describes output amounts
   */
-  uint64 lambda_1 = 20;
-  uint64 lambda_2 = 21;
+  uint64 lambda_1_i = 20;
+  uint64 lambda_2_i = 21;
 
   /**
    * @exclude

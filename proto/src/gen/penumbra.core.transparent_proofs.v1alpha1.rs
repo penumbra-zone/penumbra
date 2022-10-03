@@ -61,9 +61,9 @@ pub struct SwapClaimProof {
     /// @exclude
     /// Describes output amounts
     #[prost(uint64, tag="20")]
-    pub lambda_1: u64,
+    pub lambda_1_i: u64,
     #[prost(uint64, tag="21")]
-    pub lambda_2: u64,
+    pub lambda_2_i: u64,
     /// *
     /// @exclude
     /// Describes first output note (lambda 1)
