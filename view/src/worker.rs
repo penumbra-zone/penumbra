@@ -18,7 +18,7 @@ use tokio::sync::{watch, RwLock};
 use tonic::transport::Channel;
 
 #[cfg(feature = "nct-divergence-check")]
-use penumbra_proto::client::specific::specific_query_client::SpecificQueryClient;
+use penumbra_proto::client::v1alpha1::specific_query_client::SpecificQueryClient;
 
 use crate::{
     sync::{scan_block, FilteredBlock},
@@ -312,7 +312,7 @@ async fn nct_divergence_check(
     actual_root: penumbra_tct::Root,
 ) -> anyhow::Result<()> {
     let value = client
-        .key_value(penumbra_proto::client::specific::KeyValueRequest {
+        .key_value(penumbra_proto::client::v1alpha1::KeyValueRequest {
             key: format!("shielded_pool/anchor/{}", height).into_bytes(),
             ..Default::default()
         })
