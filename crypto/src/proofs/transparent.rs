@@ -311,8 +311,8 @@ pub struct SwapClaimProof {
     pub delta_2_i: u64,
 
     // Describes output amounts
-    pub lambda_1: u64,
-    pub lambda_2: u64,
+    pub lambda_1_i: u64,
+    pub lambda_2_i: u64,
 
     // Describes first output note (lambda 1)
     pub note_blinding_1: Fq,
@@ -412,7 +412,7 @@ impl SwapClaimProof {
 
         // Check output 1
         let value_1 = Value {
-            amount: self.lambda_1.into(),
+            amount: self.lambda_1_i.into(),
             asset_id: self.trading_pair.asset_1(),
         };
         gadgets::note_commitment_integrity(
@@ -427,7 +427,7 @@ impl SwapClaimProof {
 
         // Check output 2
         let value_2 = Value {
-            amount: self.lambda_2.into(),
+            amount: self.lambda_2_i.into(),
             asset_id: self.trading_pair.asset_2(),
         };
         gadgets::note_commitment_integrity(
@@ -474,8 +474,8 @@ impl From<SwapClaimProof> for transparent_proofs::SwapClaimProof {
             trading_pair: Some(msg.trading_pair.into()),
             delta_1_i: msg.delta_1_i,
             delta_2_i: msg.delta_2_i,
-            lambda_1: msg.lambda_1,
-            lambda_2: msg.lambda_2,
+            lambda_1_i: msg.lambda_1_i,
+            lambda_2_i: msg.lambda_2_i,
             note_blinding_1: msg.note_blinding_1.to_bytes().to_vec(),
             note_blinding_2: msg.note_blinding_2.to_bytes().to_vec(),
             esk_1: msg.esk_1.to_bytes().to_vec(),
@@ -509,8 +509,8 @@ impl TryFrom<transparent_proofs::SwapClaimProof> for SwapClaimProof {
             esk_2,
             note_blinding_1: Fq::from_le_bytes_mod_order(&proto.note_blinding_1),
             note_blinding_2: Fq::from_le_bytes_mod_order(&proto.note_blinding_2),
-            lambda_2: proto.lambda_2,
-            lambda_1: proto.lambda_1,
+            lambda_2_i: proto.lambda_2_i,
+            lambda_1_i: proto.lambda_1_i,
             delta_2_i: proto.delta_2_i,
             delta_1_i: proto.delta_1_i,
             trading_pair: proto

@@ -80,6 +80,11 @@ impl SwapClaimPlan {
         note_commitment_proof: &tct::Proof,
         nk: &NullifierKey,
     ) -> SwapClaimProof {
+        let (lambda_1_i, lambda_2_i) = self.output_data.pro_rata_outputs((
+            self.swap_plaintext.delta_1_i.into(),
+            self.swap_plaintext.delta_2_i.into(),
+        ));
+
         SwapClaimProof {
             swap_nft_asset_id: self.swap_plaintext.asset_id(),
             claim_address: self.swap_nft_note.address(),
@@ -88,8 +93,8 @@ impl SwapClaimPlan {
             note_blinding: self.swap_nft_note.note_blinding(),
             delta_1_i: self.swap_plaintext.delta_1_i.into(),
             delta_2_i: self.swap_plaintext.delta_2_i.into(),
-            lambda_1: self.output_data.lambda_1,
-            lambda_2: self.output_data.lambda_2,
+            lambda_1_i: lambda_1_i,
+            lambda_2_i: lambda_2_i,
             note_blinding_1: self.output_1_blinding,
             note_blinding_2: self.output_2_blinding,
             esk_1: self.esk_1.clone(),
@@ -100,7 +105,7 @@ impl SwapClaimPlan {
 
     /// Construct the [`swap_claim::Body`] described by this plan.
     pub fn swap_claim_body(&self, fvk: &FullViewingKey) -> swap_claim::Body {
-        let (lambda_1, lambda_2) = self.output_data.pro_rata_outputs((
+        let (lambda_1_i, lambda_2_i) = self.output_data.pro_rata_outputs((
             self.swap_plaintext.delta_1_i.into(),
             self.swap_plaintext.delta_2_i.into(),
         ));
@@ -108,7 +113,7 @@ impl SwapClaimPlan {
         let output_1_note = Note::from_parts(
             self.swap_nft_note.address(),
             Value {
-                amount: lambda_1.into(),
+                amount: lambda_1_i.into(),
                 asset_id: self.swap_plaintext.trading_pair.asset_1(),
             },
             self.output_1_blinding,
@@ -117,7 +122,7 @@ impl SwapClaimPlan {
         let output_2_note = Note::from_parts(
             self.swap_nft_note.address(),
             Value {
-                amount: lambda_2.into(),
+                amount: lambda_2_i.into(),
                 asset_id: self.swap_plaintext.trading_pair.asset_2(),
             },
             self.output_2_blinding,
