@@ -40,6 +40,7 @@ using a variant of one of the original FMD constructions, and extend it in two w
 Unfortunately, these extensions are not mutually compatible, so we only use the
 first one, and record the second for posterity.
 
+* In [S-FMD Threat Model](./fmd/threat_model.md), we describe the threat model for S-FMD on Penumbra. 
 * In [Parameter Considerations](./fmd/considerations.md), we discuss how the
 false positive rates should be chosen.
 

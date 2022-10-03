@@ -39,6 +39,7 @@
   - [Fuzzy Message Detection](./crypto/fmd.md)
     - [Sender and Receiver FMD](./crypto/fmd/sender-receiver.md)
     - [Constructing S-FMD](./crypto/fmd/construction.md)
+    - [S-FMD Threat Model](./crypto/fmd/threat_model.md)
     - [Parameter Considerations](./crypto/fmd/considerations.md)
   - [Flow Encryption](./crypto/flow.md)
     - [Ideal Functionality](./crypto/flow/ideal.md)
