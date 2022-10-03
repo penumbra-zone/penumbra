@@ -97,6 +97,103 @@ pub mod action {
         Ics20Withdrawal(super::super::super::ibc::v1alpha1::Ics20Withdrawal),
     }
 }
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransactionView {
+    /// A list views into of actions (state changes) performed by this transaction.
+    #[prost(message, repeated, tag="1")]
+    pub action_views: ::prost::alloc::vec::Vec<ActionView>,
+    /// The maximum height that this transaction can be included in the chain.
+    ///
+    /// If zero, there is no maximum.
+    #[prost(uint64, tag="2")]
+    pub expiry_height: u64,
+    /// The chain this transaction is intended for.  Including this prevents
+    /// replaying a transaction on one chain onto a different chain.
+    #[prost(string, tag="3")]
+    pub chain_id: ::prost::alloc::string::String,
+    /// The transaction fee.
+    #[prost(message, optional, tag="4")]
+    pub fee: ::core::option::Option<super::super::crypto::v1alpha1::Fee>,
+    /// A list of clues for use with Fuzzy Message Detection.
+    #[prost(message, repeated, tag="5")]
+    pub fmd_clues: ::prost::alloc::vec::Vec<super::super::crypto::v1alpha1::Clue>,
+    /// An optional plaintext memo. It will only be populated if there are
+    /// outputs in the actions of this transaction.
+    #[prost(string, optional, tag="6")]
+    pub memo: ::core::option::Option<::prost::alloc::string::String>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SpendView {
+    #[prost(message, optional, tag="1")]
+    pub note: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct OutputView {
+    #[prost(message, optional, tag="1")]
+    pub note: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
+    #[prost(bytes="bytes", tag="2")]
+    pub payload_key: ::prost::bytes::Bytes,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SwapView {
+    #[prost(message, optional, tag="1")]
+    pub note: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
+    #[prost(message, optional, tag="2")]
+    pub swap_plaintext: ::core::option::Option<super::super::dex::v1alpha1::SwapPlaintext>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SwapClaimView {
+    #[prost(message, optional, tag="1")]
+    pub note_1: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
+    #[prost(message, optional, tag="2")]
+    pub note_2: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
+}
+/// A view of a specific state change action performed by a transaction.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ActionView {
+    #[prost(oneof="action_view::Action", tags="1, 2, 3, 4, 5, 6, 16, 17, 18, 19, 20, 30, 31, 32, 34, 200")]
+    pub action: ::core::option::Option<action_view::Action>,
+}
+/// Nested message and enum types in `ActionView`.
+pub mod action_view {
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Action {
+        #[prost(message, tag="1")]
+        Spend(super::SpendView),
+        #[prost(message, tag="2")]
+        Output(super::OutputView),
+        #[prost(message, tag="3")]
+        Delegate(super::super::super::stake::v1alpha1::Delegate),
+        #[prost(message, tag="4")]
+        Undelegate(super::super::super::stake::v1alpha1::Undelegate),
+        #[prost(message, tag="5")]
+        Swap(super::SwapView),
+        #[prost(message, tag="6")]
+        SwapClaim(super::SwapClaimView),
+        #[prost(message, tag="16")]
+        ValidatorDefinition(super::super::super::stake::v1alpha1::ValidatorDefinition),
+        #[prost(message, tag="17")]
+        IbcAction(super::super::super::ibc::v1alpha1::IbcAction),
+        /// Governance:
+        #[prost(message, tag="18")]
+        ProposalSubmit(super::ProposalSubmit),
+        #[prost(message, tag="19")]
+        ProposalWithdraw(super::ProposalWithdraw),
+        /// DelegatorVote delegator_vote = 21;
+        #[prost(message, tag="20")]
+        ValidatorVote(super::ValidatorVote),
+        #[prost(message, tag="30")]
+        PositionOpen(super::super::super::dex::v1alpha1::PositionOpen),
+        #[prost(message, tag="31")]
+        PositionClose(super::super::super::dex::v1alpha1::PositionClose),
+        #[prost(message, tag="32")]
+        PositionWithdraw(super::super::super::dex::v1alpha1::PositionWithdraw),
+        #[prost(message, tag="34")]
+        PositionRewardClaim(super::super::super::dex::v1alpha1::PositionRewardClaim),
+        #[prost(message, tag="200")]
+        Ics20Withdrawal(super::super::super::ibc::v1alpha1::Ics20Withdrawal),
+    }
+}
 /// Spends a shielded note.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]

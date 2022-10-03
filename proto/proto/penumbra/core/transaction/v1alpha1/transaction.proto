@@ -92,6 +92,27 @@ message TransactionView {
   optional string memo = 6;
 }
 
+message SpendView {
+    crypto.v1alpha1.Note note = 1;
+}
+
+message OutputView {
+    crypto.v1alpha1.Note note = 1;
+    bytes payload_key = 2;
+}
+
+message SwapView {
+
+    crypto.v1alpha1.Note note = 1;
+    dex.v1alpha1.SwapPlaintext swap_plaintext = 2;
+}
+
+message SwapClaimView {
+
+    crypto.v1alpha1.Note note_1 = 1;
+    crypto.v1alpha1.Note note_2 = 2;
+}
+
 // A view of a specific state change action performed by a transaction.
 message ActionView {
   oneof action {

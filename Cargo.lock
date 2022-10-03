@@ -3249,6 +3249,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "penumbra-storage2"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bincode",
+ "futures",
+ "hex",
+ "ibc",
+ "ibc-proto",
+ "ics23",
+ "jmt",
+ "metrics",
+ "once_cell",
+ "penumbra-crypto",
+ "penumbra-proto",
+ "penumbra-tct",
+ "rocksdb",
+ "sha2 0.9.9",
+ "tempfile",
+ "tendermint",
+ "tokio",
+ "tonic",
+ "tracing",
+]
+
+[[package]]
 name = "penumbra-tct"
 version = "0.1.0"
 dependencies = [
