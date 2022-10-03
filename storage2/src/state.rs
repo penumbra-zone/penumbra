@@ -24,6 +24,10 @@ impl<'a, R: TreeReader + TreeWriter> State<'a, R> {
             jmt: todo!(),
         }
     }
+
+    pub fn begin_transaction(&mut self) -> StateTransaction<'a, R> {
+        StateTransaction::new()
+    }
 }
 
 impl<'a, R: TreeReader + TreeWriter> StateRead for State<'a, R> {
@@ -39,5 +43,5 @@ pub trait StateRead {
 
 pub trait StateWrite {
     /// Copy-on-write put
-    fn put(&mut self, key: jmt::KeyHash, value: jmt::OwnedValue) -> Self;
+    fn put(&mut self, key: jmt::KeyHash, value: Option<jmt::OwnedValue>) -> Self;
 }

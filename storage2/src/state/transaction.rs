@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use anyhow::Result;
+
 use jmt::storage::{TreeReader, TreeWriter};
 
 use super::{State, StateWrite};
@@ -22,19 +24,15 @@ impl<'a, R: TreeReader + TreeWriter> Transaction<'a, R> {
         }
     }
 
-    pub fn begin_transaction(&mut self) {
-        // Wipe the unwritten changes
-        todo!()
-    }
-
-    pub fn end_transaction(&mut self) {
+    pub fn commit(self) -> Result<()> {
         // Write unwritten_changes to the state
+        // `self` will be consumed afterwards
         todo!()
     }
 }
 
 impl<'a, R: TreeReader + TreeWriter> StateWrite for Transaction<'a, R> {
-    fn put(&mut self, key: jmt::KeyHash, value: jmt::OwnedValue) -> Transaction<'a, R> {
+    fn put(&mut self, key: jmt::KeyHash, value: Option<jmt::OwnedValue>) -> Transaction<'a, R> {
         todo!()
     }
 }
