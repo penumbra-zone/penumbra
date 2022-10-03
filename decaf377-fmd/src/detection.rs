@@ -36,7 +36,7 @@ impl DetectionKey {
         let root_pub = dtk * decaf377::basepoint();
         let root_pub_enc = root_pub.vartime_compress();
 
-        let xs: [_; MAX_PRECISION] = (0..MAX_PRECISION)
+        let xs: [_; MAX_PRECISION] = (1..=MAX_PRECISION)
             .into_iter()
             .map(|i| {
                 hkd::derive_private(
