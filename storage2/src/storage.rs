@@ -1,19 +1,9 @@
 use std::{path::PathBuf, sync::Arc};
 
-use ::metrics::gauge;
 use anyhow::Result;
-use futures::future::BoxFuture;
-use jmt::{
-    storage::{Node, NodeBatch, NodeKey, TreeReader, TreeWriter},
-    WriteOverlay,
-};
-use rocksdb::{Options, DB};
-use tokio::sync::RwLock;
-use tracing::Span;
+use rocksdb::DB;
 
-use penumbra_tct as tct;
-
-use crate::{metrics, State};
+use crate::State;
 
 #[derive(Clone, Debug)]
 pub struct Storage(Arc<DB>);

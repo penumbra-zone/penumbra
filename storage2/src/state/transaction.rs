@@ -1,10 +1,4 @@
-use std::collections::HashMap;
-
-use anyhow::Result;
-
-use jmt::storage::{TreeReader, TreeWriter};
-
-use super::{State, StateWrite};
+use super::StateWrite;
 
 /// Represents a transactional set of changes to a `State` fork,
 /// implemented as a RYW cache over a `State`.
