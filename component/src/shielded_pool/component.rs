@@ -162,6 +162,7 @@ impl Component for ShieldedPool {
 
         consensus_rules::stateless::num_clues_equal_to_num_outputs(tx)?;
         consensus_rules::stateless::check_memo_exists_if_outputs_absent_if_not(tx)?;
+        consensus_rules::stateless::check_never_one_spend_or_one_output(tx)?;
 
         Ok(())
     }
