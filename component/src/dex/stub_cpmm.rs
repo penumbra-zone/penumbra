@@ -39,7 +39,7 @@ impl StubCpmm {
 
         let Reserves { r1, r2 } = self.reserves;
 
-        let num = u128::from(r1) + delta_2 as u128;
+        let num = u128::from(r1) * delta_2 as u128;
         let den = u128::from(r2) + delta_2 as u128;
         // Not that correctness really matters here,
         // but this rounds *down* the output amount.
