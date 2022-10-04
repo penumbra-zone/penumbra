@@ -7,6 +7,5 @@ mod state;
 mod storage;
 
 pub use crate::metrics::register_metrics;
+pub use state::State;
 pub use storage::Storage;
-
-pub type State = Arc<RwLock<WriteOverlay<Storage>>>;

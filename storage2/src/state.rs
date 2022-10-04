@@ -6,11 +6,11 @@ use jmt::{
 };
 
 mod transaction;
-use transaction::Transaction as StateTransaction;
+pub use transaction::Transaction as StateTransaction;
 
 /// State is a lightweight copy-on-write fork of the chain state,
 /// implemented as a RYW cache over a pinned JMT version.
-pub(crate) struct State {
+pub struct State {
     // TODO: determine which fields to include
     // cache: HashMap<jmt::KeyHash, jmt::OwnedValue>,
     // jmt_version: jmt::Version,

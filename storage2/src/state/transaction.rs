@@ -8,7 +8,7 @@ use super::{State, StateWrite};
 
 /// Represents a transactional set of changes to a `State` fork,
 /// implemented as a RYW cache over a `State`.
-pub(crate) struct Transaction {
+pub struct Transaction {
     // TODO determine which fields to include (#1490)
     // cache: HashMap<jmt::KeyHash, jmt::OwnedValue>,
     // unwritten_changes: Vec<(jmt::KeyHash, jmt::OwnedValue)>,
