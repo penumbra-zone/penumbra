@@ -18,7 +18,7 @@ impl Transaction {
 }
 
 impl StateWrite for Transaction {
-    fn put(&mut self, key: String, value: jmt::OwnedValue) {
+    fn put_raw(&mut self, key: String, value: jmt::OwnedValue) {
         todo!()
     }
 
