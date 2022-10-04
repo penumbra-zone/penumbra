@@ -48,6 +48,7 @@ Monday (release day):
   - [ ] `screen -r` to start a screen session
   - [ ] start Galileo again: `RUST_LOG=galileo=info DISCORD_TOKEN={token} cargo run --release -- serve 100penumbra  --catch-up https://discord.com/channels/824484045370818580/915710851917439060/968238177229897789`
   - [ ] exit `screen` (`^A d`) without stopping `galileo`
-  - [ ] confirm that Galileo is dispensing tokens, resupply Galileo wallet as needed
+  - [ ] **confirm that Galileo is dispensing tokens** by testing the faucet channel with your own address
+  - [ ] resupply Galileo wallet as needed
 - [ ] Make GitHub release object and draft an announcement for peer review to ensure major changes included are comprehensive.
 - [ ] Make the announcement to Discord! 🎉🎉🎉
