@@ -26,8 +26,3 @@ impl StateWrite for Transaction {
         todo!()
     }
 }
-
-pub trait StateRead {
-    /// Get
-    fn get(&self, key: String) -> Option<&jmt::OwnedValue>;
-}
