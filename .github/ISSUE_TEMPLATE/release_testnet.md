@@ -46,7 +46,7 @@ Monday (release day):
   - [ ] `killall galileo` to stop the running galileo process
   - [ ] `git pull origin main` in `~/galileo` to update the checkout
   - [ ] `screen -r` to start a screen session
-  - [ ] start Galileo again: `RUST_LOG=galileo=info DISCORD_TOKEN={token} cargo run --release -- serve 100penumbra  --catch-up https://discord.com/channels/824484045370818580/915710851917439060/968238177229897789`
+  - [ ] start Galileo again: `RUST_LOG=galileo=info DISCORD_TOKEN={token} cargo run --release -- serve 100penumbra 10pizza 10gm 10gn 1cube --catch-up https://discord.com/channels/824484045370818580/915710851917439060/968238177229897789`
   - [ ] exit `screen` (`^A d`) without stopping `galileo`
   - [ ] **confirm that Galileo is dispensing tokens** by testing the faucet channel with your own address
   - [ ] resupply Galileo wallet as needed
