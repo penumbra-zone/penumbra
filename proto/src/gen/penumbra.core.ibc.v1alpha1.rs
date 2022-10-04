@@ -69,11 +69,12 @@ pub struct Ics20Withdrawal {
     /// the chain ID of the destination chain for this ICS20 transfer
     #[prost(string, tag="1")]
     pub destination_chain_id: ::prost::alloc::string::String,
-    /// a transparent value consisting of an amount and an asset ID.
     #[prost(message, optional, tag="2")]
-    pub value: ::core::option::Option<super::super::crypto::v1alpha1::Value>,
+    pub denom: ::core::option::Option<super::super::crypto::v1alpha1::Denom>,
+    #[prost(message, optional, tag="3")]
+    pub amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
     /// the address on the destination chain to send the transfer to 
-    #[prost(string, tag="3")]
+    #[prost(string, tag="4")]
     pub destination_chain_address: ::prost::alloc::string::String,
     /// a "sender" penumbra address to use to return funds from this withdrawal.
     /// this should be an ephemeral address
@@ -89,6 +90,12 @@ pub struct Ics20Withdrawal {
     /// the timestamp at which this transfer expires.
     #[prost(uint64, tag="7")]
     pub timeout_time: u64,
+    /// the source port that identifies the channel used for the withdrawal
+    #[prost(string, tag="8")]
+    pub source_port: ::prost::alloc::string::String,
+    /// the source channel used for the withdrawal
+    #[prost(string, tag="9")]
+    pub source_channel: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientData {
