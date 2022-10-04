@@ -8,36 +8,32 @@ use super::{State, StateWrite};
 
 /// Represents a transactional set of changes to a `State` fork,
 /// implemented as a RYW cache over a `State`.
-pub(crate) struct Transaction<'a, R: TreeReader + TreeWriter> {
-    // TODO: should higher-level types be used here instead of jmt types?
-    cache: HashMap<jmt::KeyHash, jmt::OwnedValue>,
-    unwritten_changes: Vec<(jmt::KeyHash, jmt::OwnedValue)>,
-    state: &'a State<'a, R>,
+pub(crate) struct Transaction {
+    // TODO determine which fields to include (#1490)
+    // cache: HashMap<jmt::KeyHash, jmt::OwnedValue>,
+    // unwritten_changes: Vec<(jmt::KeyHash, jmt::OwnedValue)>,
+    // state: &'a mut State<'a>,
 }
 
-impl<'a, R: TreeReader + TreeWriter> Transaction<'a, R> {
-    pub fn new() -> Self {
-        Self {
-            cache: todo!(),
-            unwritten_changes: todo!(),
-            state: todo!(),
-        }
-    }
-
-    pub fn commit(self) -> Result<()> {
+impl Transaction {
+    pub fn finish(self) {
         // Write unwritten_changes to the state
         // `self` will be consumed afterwards
         todo!()
     }
 }
 
-impl<'a, R: TreeReader + TreeWriter> StateWrite for Transaction<'a, R> {
-    fn put(&mut self, key: jmt::KeyHash, value: Option<jmt::OwnedValue>) -> Transaction<'a, R> {
+impl StateWrite for Transaction {
+    fn put(&mut self, key: String, value: jmt::OwnedValue) {
+        todo!()
+    }
+
+    fn delete(&mut self, key: String) {
         todo!()
     }
 }
 
 pub trait StateRead {
     /// Get
-    fn get(&self, key: jmt::KeyHash) -> Option<&jmt::OwnedValue>;
+    fn get(&self, key: String) -> Option<&jmt::OwnedValue>;
 }

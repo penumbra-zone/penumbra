@@ -10,38 +10,46 @@ use transaction::Transaction as StateTransaction;
 
 /// State is a lightweight copy-on-write fork of the chain state,
 /// implemented as a RYW cache over a pinned JMT version.
-pub(crate) struct State<'a, R: TreeReader + TreeWriter> {
-    cache: HashMap<jmt::KeyHash, jmt::OwnedValue>,
-    jmt_version: jmt::Version,
-    jmt: &'a JellyfishMerkleTree<'a, R>,
+pub(crate) struct State {
+    // TODO: determine which fields to include
+    // cache: HashMap<jmt::KeyHash, jmt::OwnedValue>,
+    // jmt_version: jmt::Version,
+    // jmt: &'a JellyfishMerkleTree<'a, R>,
 }
 
-impl<'a, R: TreeReader + TreeWriter> State<'a, R> {
+impl State {
     pub fn new() -> Self {
         Self {
-            cache: todo!(),
-            jmt_version: todo!(),
-            jmt: todo!(),
+            // cache: todo!(),
+            // jmt_version: todo!(),
+            // jmt: todo!(),
         }
     }
 
-    pub fn begin_transaction(&mut self) -> StateTransaction<'a, R> {
-        StateTransaction::new()
+    pub fn begin_transaction(&mut self) -> StateTransaction {
+        StateTransaction{
+            // cache: todo!(),
+            // unwritten_changes: todo!(),
+            // state: self,
+        }
     }
 }
 
-impl<'a, R: TreeReader + TreeWriter> StateRead for State<'a, R> {
-    fn get(&self, key: jmt::KeyHash) -> Option<&jmt::OwnedValue> {
+impl StateRead for State {
+    fn get(&self, key: String) -> Option<&jmt::OwnedValue> {
         todo!()
     }
 }
 
 pub trait StateRead {
     /// Get
-    fn get(&self, key: jmt::KeyHash) -> Option<&jmt::OwnedValue>;
+    fn get(&self, key: String) -> Option<&jmt::OwnedValue>;
 }
 
 pub trait StateWrite {
     /// Copy-on-write put
-    fn put(&mut self, key: jmt::KeyHash, value: Option<jmt::OwnedValue>) -> Self;
+    fn put(&mut self, key: String, value: jmt::OwnedValue);
+
+    /// Delete a key from state.
+    fn delete(&mut self, key: String);
 }
