@@ -1,4 +1,3 @@
-use crate::governance::proposal::Withdrawn;
 use crate::ibc::ibc_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute};
 use crate::{Component, Context};
 use anyhow::Result;
@@ -35,7 +34,34 @@ impl ICS20Transfer {
     }
 
     pub async fn withdrawal_check(&self, ctx: Context, withdrawal: &ICS20Withdrawal) -> Result<()> {
+        // TODO: we should probably encapsulate this in a type
         let prefix = format!("{}/{}/", withdrawal.source_port, withdrawal.source_channel);
+        // we are the source if the denomination is not prefixed with the source port and source
+        // channel
+        let is_source = !withdrawal.denom.starts_with(&prefix);
+        if is_source {
+            // determine escrow account
+            // escrow source tokens, fail if not enough balance
+        } else {
+            // receiver is the source, burn vouchers
+        }
+
+        // create FTPD
+        let ftpd: FungibleTokenPacketData = withdrawal.clone().into();
+
+        // send packet
+        use crate::ibc::packet::SendPacket;
+        self.state
+            .send_packet_check(
+                ctx.clone(),
+                &withdrawal.source_port,
+                &withdrawal.source_channel,
+                ibc::Height::zero().with_revision_height(withdrawal.timeout_height),
+                withdrawal.timeout_time.into(),
+                ftpd.encode_to_vec(),
+            )
+            .await?;
+
         Ok(())
     }
 }
@@ -214,7 +240,7 @@ impl Component for ICS20Transfer {
         for action in tx.actions() {
             match action {
                 Action::ICS20Withdrawal(withdrawal) => {
-                    self.withdrawal_check(ctx, withdrawal).await?;
+                    self.withdrawal_check(ctx.clone(), withdrawal).await?;
                 }
                 _ => {}
             }

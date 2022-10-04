@@ -55,11 +55,11 @@ message ICS20Withdrawal {
   // the chain ID of the destination chain for this ICS20 transfer
   string destination_chain_id = 1;
 
-  // a transparent value consisting of an amount and an asset ID.
-  crypto.v1alpha1.Value value = 2;
+  crypto.v1alpha1.Denom denom = 2;
+  crypto.v1alpha1.Amount amount = 3;
 
   // the address on the destination chain to send the transfer to 
-  string destination_chain_address = 3;
+  string destination_chain_address = 4;
 
   // a "sender" penumbra address to use to return funds from this withdrawal.
   // this should be an ephemeral address
@@ -74,6 +74,11 @@ message ICS20Withdrawal {
 
   // the timestamp at which this transfer expires.
   uint64 timeout_time = 7;
+
+  // the source port that identifies the channel used for the withdrawal
+  string source_port = 8;
+  // the source channel used for the withdrawal
+  string source_channel = 9;
 }
 
 message ClientData {

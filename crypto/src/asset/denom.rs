@@ -40,6 +40,16 @@ impl TryFrom<pb::Denom> for Denom {
     }
 }
 
+impl TryFrom<&str> for Denom {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        asset::REGISTRY
+            .parse_denom(value)
+            .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", value))
+    }
+}
+
 /// A unit of some asset denomination.
 #[derive(Clone)]
 pub struct Unit {
@@ -154,6 +164,10 @@ impl Denom {
             }
         }
         self.base_unit()
+    }
+
+    pub fn starts_with(&self, prefix: &str) -> bool {
+        self.inner.base_denom.starts_with(prefix)
     }
 }
 

@@ -1,6 +1,6 @@
-use crate::ibc::component::channel::View as ChannelView;
-use crate::ibc::component::client::View as ClientView;
-use crate::ibc::component::connection::View as ConnectionView;
+use crate::ibc::component::channel::View as _;
+use crate::ibc::component::client::View as _;
+use crate::ibc::component::connection::View as _;
 use crate::Context;
 use anyhow::Result;
 use async_trait::async_trait;
@@ -16,23 +16,51 @@ use penumbra_storage::StateExt;
 /// This trait, an extension of the Channel, Connection, and Client views, allows a component to
 /// send a packet.
 #[async_trait]
-pub trait SendPacket: ChannelView + ConnectionView + ClientView {
+pub trait SendPacket: StateExt {
     async fn send_packet_execute(
         &mut self,
         ctx: Context,
         source_port: &PortId,
         source_channel: &ChannelId,
         timeout_height: Height,
-        timeout_timestamp: Timestamp,
+        timeout_timestamp: u64,
+        data: Vec<u8>,
     ) {
+        // increment the send sequence counter
+        let sequence = self
+            .get_send_sequence(source_channel, source_port)
+            .await
+            .unwrap();
+        self.put_send_sequence(source_channel, source_port, sequence + 1)
+            .await;
+
+        // store commitment to the packet data & packet timeout
+        let packet = Packet {
+            source_channel: source_channel.clone(),
+            source_port: source_port.clone(),
+            sequence: sequence.into(),
+
+            // NOTE: the packet commitment is solely a function of the source port and channel, so
+            // these fields do not affect the commitment. Thus, we can set them to empty values.
+            destination_port: PortId::default(),
+            destination_channel: ChannelId::default(),
+
+            timeout_height,
+            timeout_timestamp: ibc::timestamp::Timestamp::from_nanoseconds(timeout_timestamp)
+                .unwrap(),
+
+            data,
+        };
+
+        self.put_packet_commitment(&packet).await;
     }
     async fn send_packet_check(
-        &mut self,
+        &self,
         ctx: Context,
         source_port: &PortId,
         source_channel: &ChannelId,
         timeout_height: Height,
-        timeout_timestamp: Timestamp,
+        timeout_timestamp: u64,
         data: Vec<u8>,
     ) -> Result<()> {
         let channel = self
@@ -83,35 +111,11 @@ pub trait SendPacket: ChannelView + ConnectionView + ClientView {
             ));
         }
 
-        // increment the send sequence counter
-        let sequence = self.get_send_sequence(source_channel, source_port).await?;
-
-        // increment send sequence counter
-        self.put_send_sequence(source_channel, source_port, sequence + 1)
-            .await;
-
-        // store commitment to the packet data & packet timeout
-        let packet = Packet {
-            source_channel: source_channel.clone(),
-            source_port: source_port.clone(),
-            sequence: sequence.into(),
-
-            // NOTE: the packet commitment is solely a function of the source port and channel, so
-            // these fields do not affect the commitment. Thus, we can set them to empty values.
-            destination_port: PortId::default(),
-            destination_channel: ChannelId::default(),
-
-            timeout_height,
-            timeout_timestamp: timeout_timestamp.into(),
-
-            data,
-        };
-
-        self.put_packet_commitment(&packet).await;
-
         Ok(())
     }
 }
+
+impl<T: StateExt> SendPacket for T {}
 
 #[async_trait]
 pub trait WriteAcknowledgement: StateExt {}
