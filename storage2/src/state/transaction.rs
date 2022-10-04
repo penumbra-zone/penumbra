@@ -10,8 +10,9 @@ pub struct Transaction {
 }
 
 impl Transaction {
-    pub fn finish(self) {
-        // Write unwritten_changes to the state
+    pub fn commit(self) {
+        // Write unwritten_changes to our parent in-memory state fork.
+        // The state will not be written to storage until `State::commit` is called.
         // `self` will be consumed afterwards
         todo!()
     }
