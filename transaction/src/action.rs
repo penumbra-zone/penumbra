@@ -35,7 +35,7 @@ pub use vote::{DelegatorVote, ValidatorVote, ValidatorVoteBody, Vote};
 /// Common behavior between Penumbra actions.
 pub trait IsAction {
     fn balance_commitment(&self) -> balance::Commitment;
-    fn view_from_perspective(&self, txp: &TransactionPerspective) -> anyhow::Result<ActionView>;
+    fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView;
 }
 
 /// An action performed by a Penumbra transaction.
@@ -88,7 +88,7 @@ impl IsAction for Action {
         }
     }
 
-    fn view_from_perspective(&self, txp: &TransactionPerspective) -> anyhow::Result<ActionView> {
+    fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {
         match self {
             Action::Swap(x) => x.view_from_perspective(txp),
             Action::SwapClaim(x) => x.view_from_perspective(txp),
@@ -105,8 +105,8 @@ impl IsAction for Action {
             Action::PositionRewardClaim(x) => x.view_from_perspective(txp),
             Action::ICS20Withdrawal(x) => x.view_from_perspective(txp),
             // TODO: figure out where to implement the actual decryption methods for these? where are their action definitions?
-            Action::ValidatorDefinition(x) => Ok(ActionView::ValidatorDefinition(x.to_owned())),
-            Action::IBCAction(x) => Ok(ActionView::IBCAction(x.to_owned())),
+            Action::ValidatorDefinition(x) => ActionView::ValidatorDefinition(x.to_owned()),
+            Action::IBCAction(x) => ActionView::IBCAction(x.to_owned()),
         }
     }
 }

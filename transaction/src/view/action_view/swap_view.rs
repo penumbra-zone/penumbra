@@ -1,6 +1,14 @@
 use penumbra_crypto::{dex::swap::SwapPlaintext, Note};
 
-pub struct SwapView {
-    pub swap_nft: Note,
-    pub swap_plaintext: SwapPlaintext,
+use crate::action::Swap;
+#[allow(clippy::large_enum_variant)]
+pub enum SwapView {
+    Visible {
+        swap: Swap,
+        swap_nft: Note,
+        swap_plaintext: SwapPlaintext,
+    },
+    Opaque {
+        swap: Swap,
+    },
 }

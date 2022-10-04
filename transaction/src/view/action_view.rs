@@ -13,7 +13,7 @@ use crate::action::{
     Delegate, ICS20Withdrawal, PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw,
     ProposalSubmit, ProposalWithdraw, Undelegate, ValidatorVote,
 };
-
+#[allow(clippy::large_enum_variant)]
 pub enum ActionView {
     // Action types with encrypted contents
     Swap(SwapView),

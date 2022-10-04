@@ -40,28 +40,38 @@ impl IsAction for Swap {
         -(input_1 + input_2 + self.body.fee_commitment)
     }
 
-    fn view_from_perspective(&self, txp: &TransactionPerspective) -> anyhow::Result<ActionView> {
+    fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {
         let note_commitment = self.body.swap_nft.note_commitment;
 
         // Get payload key for note commitment of swap NFT.
-        let payload_key = txp
-            .payload_keys
-            .get(&note_commitment)
-            .ok_or_else(|| anyhow::anyhow!("corresponding payload key not found"))?;
 
-        // Decrypt swap NFT
-        let swap_nft =
-            Note::decrypt_with_payload_key(&self.body.swap_nft.encrypted_note, payload_key)?;
+        let swap_view = if let Some(payload_key) = txp.payload_keys.get(&note_commitment) {
+            // Decrypt swap NFT
+            let swap_nft =
+                Note::decrypt_with_payload_key(&self.body.swap_nft.encrypted_note, payload_key);
 
-        // Decrypt swap ciphertext
-        //TODO: decide on a data structure incorporating this encrypted data
-        let swap_plaintext =
-            SwapCiphertext::decrypt_with_payload_key(&self.body.swap_ciphertext, payload_key)?;
+            // Decrypt swap ciphertext
+            let swap_plaintext =
+                SwapCiphertext::decrypt_with_payload_key(&self.body.swap_ciphertext, payload_key);
 
-        Ok(ActionView::Swap(SwapView {
-            swap_nft,
-            swap_plaintext,
-        }))
+            if let (Ok(swap_nft), Ok(swap_plaintext)) = (swap_nft, swap_plaintext) {
+                SwapView::Visible {
+                    swap: self.to_owned(),
+                    swap_nft,
+                    swap_plaintext,
+                }
+            } else {
+                SwapView::Opaque {
+                    swap: self.to_owned(),
+                }
+            }
+        } else {
+            SwapView::Opaque {
+                swap: self.to_owned(),
+            }
+        };
+
+        ActionView::Swap(swap_view)
     }
 }
 
