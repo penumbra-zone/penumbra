@@ -31,8 +31,8 @@ impl IsAction for Undelegate {
         self.balance().commit(Fr::zero())
     }
 
-    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> anyhow::Result<ActionView> {
-        Ok(ActionView::Undelegate(self.to_owned()))
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        ActionView::Undelegate(self.to_owned())
     }
 }
 

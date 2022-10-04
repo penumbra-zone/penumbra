@@ -20,29 +20,43 @@ impl IsAction for SwapClaim {
         self.balance().commit(Fr::zero())
     }
 
-    fn view_from_perspective(&self, txp: &TransactionPerspective) -> anyhow::Result<ActionView> {
+    fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {
         // For each note payload (output_1, output_2)
         let note_commitment_1 = self.body.output_1.note_commitment;
         let note_commitment_2 = self.body.output_2.note_commitment;
         // Get payload key for note commitment of note payload
-        let payload_key_1 = txp
-            .payload_keys
-            .get(&note_commitment_1)
-            .ok_or_else(|| anyhow::anyhow!("corresponding payload key not found"))?;
-        let payload_key_2 = txp
-            .payload_keys
-            .get(&note_commitment_2)
-            .ok_or_else(|| anyhow::anyhow!("corresponding payload key not found"))?;
-        // * Decrypt notes
-        let decrypted_note_1 =
-            Note::decrypt_with_payload_key(&self.body.output_1.encrypted_note, payload_key_1)?;
-        let decrypted_note_2 =
-            Note::decrypt_with_payload_key(&self.body.output_2.encrypted_note, payload_key_2)?;
+        let payload_key_1 = txp.payload_keys.get(&note_commitment_1);
+        let payload_key_2 = txp.payload_keys.get(&note_commitment_2);
 
-        Ok(ActionView::SwapClaim(SwapClaimView {
-            decrypted_note_1,
-            decrypted_note_2,
-        }))
+        let swap_claim_view = if let (Some(payload_key_1), Some(payload_key_2)) =
+            (payload_key_1, payload_key_2)
+        {
+            // * Decrypt notes
+            let decrypted_note_1 =
+                Note::decrypt_with_payload_key(&self.body.output_1.encrypted_note, payload_key_1);
+            let decrypted_note_2 =
+                Note::decrypt_with_payload_key(&self.body.output_2.encrypted_note, payload_key_2);
+
+            if let (Ok(decrypted_note_1), Ok(decrypted_note_2)) =
+                (decrypted_note_1, decrypted_note_2)
+            {
+                SwapClaimView::Visible {
+                    swap_claim: self.to_owned(),
+                    decrypted_note_1,
+                    decrypted_note_2,
+                }
+            } else {
+                SwapClaimView::Opaque {
+                    swap_claim: self.to_owned(),
+                }
+            }
+        } else {
+            SwapClaimView::Opaque {
+                swap_claim: self.to_owned(),
+            }
+        };
+
+        ActionView::SwapClaim(swap_claim_view)
     }
 }
 

@@ -120,8 +120,8 @@ impl IsAction for ValidatorVote {
         Default::default()
     }
 
-    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> anyhow::Result<ActionView> {
-        Ok(ActionView::ValidatorVote(self.to_owned()))
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        ActionView::ValidatorVote(self.to_owned())
     }
 }
 

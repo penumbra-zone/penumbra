@@ -36,8 +36,8 @@ impl IsAction for PositionOpen {
         self.balance().commit(Fr::zero())
     }
 
-    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> anyhow::Result<ActionView> {
-        Ok(ActionView::PositionOpen(self.to_owned()))
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        ActionView::PositionOpen(self.to_owned())
     }
 }
 
@@ -86,8 +86,8 @@ impl IsAction for PositionClose {
         self.balance().commit(Fr::zero())
     }
 
-    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> anyhow::Result<ActionView> {
-        Ok(ActionView::PositionClose(self.to_owned()))
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        ActionView::PositionClose(self.to_owned())
     }
 }
 
@@ -136,8 +136,8 @@ impl IsAction for PositionWithdraw {
         self.reserves_commitment - closed_position_nft
     }
 
-    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> anyhow::Result<ActionView> {
-        Ok(ActionView::PositionWithdraw(self.to_owned()))
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        ActionView::PositionWithdraw(self.to_owned())
     }
 }
 
@@ -168,8 +168,8 @@ impl IsAction for PositionRewardClaim {
         self.rewards_commitment - withdrawn_position_nft
     }
 
-    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> anyhow::Result<ActionView> {
-        Ok(ActionView::PositionRewardClaim(self.to_owned()))
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        ActionView::PositionRewardClaim(self.to_owned())
     }
 }
 

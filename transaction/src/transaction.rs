@@ -19,6 +19,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     action::{Delegate, Output, ProposalSubmit, ProposalWithdraw, Swap, Undelegate, ValidatorVote},
+    view::action_view::OutputView,
     Action, ActionView, IsAction, TransactionPerspective, TransactionView,
 };
 
@@ -41,25 +42,26 @@ pub struct Transaction {
 }
 
 impl Transaction {
-    pub fn decrypt_with_perspective(
-        &self,
-        txp: &TransactionPerspective,
-    ) -> anyhow::Result<TransactionView> {
+    pub fn decrypt_with_perspective(&self, txp: &TransactionPerspective) -> TransactionView {
         let mut avs = Vec::new();
 
         let mut memo_plaintext: Option<MemoPlaintext> = None;
 
         for action in self.actions() {
-            let action_view = action.view_from_perspective(txp)?;
+            let action_view = action.view_from_perspective(txp);
 
             // In the case of Output actions, decrypt the transaction memo if this hasn't already been done.
             if let ActionView::Output(output) = &action_view {
                 if memo_plaintext.is_none() {
                     memo_plaintext = match self.transaction_body().memo {
-                        Some(ciphertext) => Some(MemoPlaintext::decrypt(
-                            ciphertext,
-                            &output.decrypted_memo_key,
-                        )?),
+                        Some(ciphertext) => match output {
+                            OutputView::Visible {
+                                output: _,
+                                decrypted_note: _,
+                                decrypted_memo_key,
+                            } => MemoPlaintext::decrypt(ciphertext, decrypted_memo_key).ok(),
+                            OutputView::Opaque { output: _ } => None,
+                        },
                         None => None,
                     }
                 }
@@ -68,7 +70,8 @@ impl Transaction {
             avs.push(action_view);
         }
 
-        Ok(TransactionView {
+        TransactionView {
+            tx: self.clone(),
             actions: avs,
             expiry_height: self.transaction_body().expiry_height,
             chain_id: self.transaction_body().chain_id,
@@ -76,7 +79,7 @@ impl Transaction {
             fmd_clues: self.transaction_body().fmd_clues,
             //TODO: this MemoPlaintext -> String conversion is a bit eklig & should be fixed up when we get rid of MemoPlaintext entirely
             memo: memo_plaintext.map(|x| String::from_utf8(x.0.to_vec()).unwrap()),
-        })
+        }
     }
 
     pub fn actions(&self) -> impl Iterator<Item = &Action> {

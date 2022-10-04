@@ -322,8 +322,8 @@ impl IsAction for ProposalSubmit {
         self.balance().commit(Fr::zero())
     }
 
-    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> anyhow::Result<ActionView> {
-        Ok(ActionView::ProposalSubmit(self.to_owned()))
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        ActionView::ProposalSubmit(self.to_owned())
     }
 }
 
@@ -392,8 +392,8 @@ impl IsAction for ProposalWithdraw {
         Default::default()
     }
 
-    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> anyhow::Result<ActionView> {
-        Ok(ActionView::ProposalWithdraw(self.to_owned()))
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        ActionView::ProposalWithdraw(self.to_owned())
     }
 }
 

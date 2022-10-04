@@ -121,11 +121,16 @@ pub struct TransactionView {
     /// outputs in the actions of this transaction.
     #[prost(string, optional, tag="6")]
     pub memo: ::core::option::Option<::prost::alloc::string::String>,
+    /// The parent transaction
+    #[prost(message, optional, tag="7")]
+    pub transaction: ::core::option::Option<Transaction>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SpendView {
     #[prost(message, optional, tag="1")]
     pub note: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
+    #[prost(message, optional, tag="2")]
+    pub spend: ::core::option::Option<Action>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct OutputView {
@@ -133,6 +138,8 @@ pub struct OutputView {
     pub note: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
     #[prost(bytes="bytes", tag="2")]
     pub payload_key: ::prost::bytes::Bytes,
+    #[prost(message, optional, tag="3")]
+    pub output: ::core::option::Option<Action>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapView {
@@ -140,6 +147,8 @@ pub struct SwapView {
     pub note: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
     #[prost(message, optional, tag="2")]
     pub swap_plaintext: ::core::option::Option<super::super::dex::v1alpha1::SwapPlaintext>,
+    #[prost(message, optional, tag="3")]
+    pub swap: ::core::option::Option<Action>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapClaimView {
@@ -147,6 +156,8 @@ pub struct SwapClaimView {
     pub note_1: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
     #[prost(message, optional, tag="2")]
     pub note_2: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
+    #[prost(message, optional, tag="3")]
+    pub swap_claim: ::core::option::Option<Action>,
 }
 /// A view of a specific state change action performed by a transaction.
 #[derive(Clone, PartialEq, ::prost::Message)]

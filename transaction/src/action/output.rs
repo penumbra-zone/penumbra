@@ -25,30 +25,38 @@ impl IsAction for Output {
         self.body.balance_commitment
     }
 
-    fn view_from_perspective(&self, txp: &TransactionPerspective) -> anyhow::Result<ActionView> {
-        // Get payload key for note commitment of note payload
-
+    fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {
         let note_commitment = self.body.note_payload.note_commitment;
+        // Retrieve payload key for associated note commitment
+        let output_view = if let Some(payload_key) = txp.payload_keys.get(&note_commitment) {
+            let decrypted_note =
+                Note::decrypt_with_payload_key(&self.body.note_payload.encrypted_note, payload_key);
 
-        // Get payload key for note commitment of swap NFT.
-        let payload_key = txp
-            .payload_keys
-            .get(&note_commitment)
-            .ok_or_else(|| anyhow::anyhow!("corresponding payload key not found"))?;
+            let decrypted_memo_key = self.body.wrapped_memo_key.decrypt_outgoing(payload_key);
 
-        // Decrypt note
+            if let (Ok(decrypted_note), Ok(decrypted_memo_key)) =
+                (decrypted_note, decrypted_memo_key)
+            {
+                // Neither decryption failed, so return the visible ActionView
+                OutputView::Visible {
+                    output: self.to_owned(),
+                    decrypted_note,
+                    decrypted_memo_key,
+                }
+            } else {
+                // One or both of the note or memo key is missing, so return the opaque ActionView
+                OutputView::Opaque {
+                    output: self.to_owned(),
+                }
+            }
+        } else {
+            // There was no payload key found, so return the opaque ActionView
+            OutputView::Opaque {
+                output: self.to_owned(),
+            }
+        };
 
-        let decrypted_note =
-            Note::decrypt_with_payload_key(&self.body.note_payload.encrypted_note, payload_key)?;
-        // If memo has not been decrypted yet
-        // * Decrypt wrapped_memo_key
-
-        let decrypted_memo_key = self.body.wrapped_memo_key.decrypt_outgoing(payload_key)?;
-
-        Ok(ActionView::Output(OutputView {
-            decrypted_note,
-            decrypted_memo_key,
-        }))
+        ActionView::Output(output_view)
     }
 }
 
