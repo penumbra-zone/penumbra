@@ -8,7 +8,7 @@ use crate::State;
 
 #[derive(Clone)]
 pub struct Storage {
-    snapshot: Arc<Snapshot<'static>>,
+    snapshot: Arc<Snapshot>,
     db: Arc<DB>,
 }
 
@@ -40,6 +40,7 @@ impl Storage {
             .map_err(|e| tonic::Status::internal(e.to_string()))
     }
 
+    // TODO: this probably can't be 'static long-term
     pub async fn apply(&'static mut self, state: State) {
         // TODO: 1. write the index tables and JMT to RocksDB
         // 2. update the snapshot

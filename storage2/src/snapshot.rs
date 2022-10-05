@@ -3,13 +3,16 @@
 ///
 /// This is implemented as a wrapper around a [RocksDB snapshot](https://github.com/facebook/rocksdb/wiki/Snapshot)
 /// with an associated JMT version number for the snapshot.
-pub(crate) struct Snapshot<'a> {
-    rocksdb_snapshot: rocksdb::Snapshot<'a>,
+pub(crate) struct Snapshot {
+    rocksdb_snapshot: rocksdb::Snapshot<'static>,
     jmt_version: jmt::Version,
 }
 
-impl<'a> Snapshot<'a> {
-    pub(crate) fn new(rocksdb_snapshot: rocksdb::Snapshot<'a>, jmt_version: jmt::Version) -> Self {
+impl Snapshot {
+    pub(crate) fn new(
+        rocksdb_snapshot: rocksdb::Snapshot<'static>,
+        jmt_version: jmt::Version,
+    ) -> Self {
         Self {
             rocksdb_snapshot,
             jmt_version,
