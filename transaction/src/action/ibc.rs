@@ -1,7 +1,10 @@
 use ark_ff::Zero;
 use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 use penumbra_crypto::{asset, value, Address, Amount, Balance, Fr};
-use penumbra_proto::{core::ibc::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{
+    core::ibc::v1alpha1::{self as pb, FungibleTokenPacketData},
+    Message, Protobuf,
+};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
@@ -50,6 +53,12 @@ impl ICS20Withdrawal {
 
     pub fn balance(&self) -> Balance {
         -Balance::from(self.value())
+    }
+
+    pub fn packet_data(&self) -> Vec<u8> {
+        let ftpd: FungibleTokenPacketData = self.clone().into();
+
+        ftpd.encode_to_vec()
     }
 
     // stateless validation of an ICS20 withdrawal action.
