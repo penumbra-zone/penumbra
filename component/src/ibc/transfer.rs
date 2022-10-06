@@ -183,7 +183,7 @@ impl AppHandlerCheck for ICS20Transfer {
                     state_key::ics20_value_balance(&msg.packet.source_channel, &denom.id()).into(),
                 )
                 .await?
-                .ok_or_else(|| anyhow::anyhow!("value balance not found"))?;
+                .unwrap_or(Amount::zero());
 
             let amount_penumbra: Amount = packet_data.amount.try_into()?;
             if value_balance < amount_penumbra {
@@ -209,7 +209,7 @@ impl AppHandlerCheck for ICS20Transfer {
                     state_key::ics20_value_balance(&msg.packet.source_channel, &denom.id()).into(),
                 )
                 .await?
-                .ok_or_else(|| anyhow::anyhow!("value balance not found"))?;
+                .unwrap_or(Amount::zero());
 
             let amount_penumbra: Amount = packet_data.amount.try_into()?;
             if value_balance < amount_penumbra {
@@ -234,16 +234,8 @@ impl AppHandlerCheck for ICS20Transfer {
 impl AppHandlerExecute for ICS20Transfer {
     async fn chan_open_init_execute(&mut self, _ctx: Context, _msg: &MsgChannelOpenInit) {}
     async fn chan_open_try_execute(&mut self, _ctx: Context, _msg: &MsgChannelOpenTry) {}
-    async fn chan_open_ack_execute(&mut self, _ctx: Context, msg: &MsgChannelOpenAck) {
-        self.state
-            .put_proto::<u64>(format!("ics20-value-balance/{}", msg.channel_id).into(), 0)
-            .await;
-    }
-    async fn chan_open_confirm_execute(&mut self, _ctx: Context, msg: &MsgChannelOpenConfirm) {
-        self.state
-            .put_proto::<u64>(format!("ics20-value-balance/{}", msg.channel_id).into(), 0)
-            .await;
-    }
+    async fn chan_open_ack_execute(&mut self, _ctx: Context, _msg: &MsgChannelOpenAck) {}
+    async fn chan_open_confirm_execute(&mut self, _ctx: Context, _msg: &MsgChannelOpenConfirm) {}
     async fn chan_close_confirm_execute(&mut self, _ctx: Context, _msg: &MsgChannelCloseConfirm) {}
     async fn chan_close_init_execute(&mut self, _ctx: Context, _msg: &MsgChannelCloseInit) {}
     async fn recv_packet_execute(&mut self, _ctx: Context, _msg: &MsgRecvPacket) {
