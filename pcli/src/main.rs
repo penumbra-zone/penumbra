@@ -1,7 +1,9 @@
 // Rust analyzer complains without this (but rustc is happy regardless)
 #![recursion_limit = "256"]
 #![allow(clippy::clone_on_copy)]
-use anyhow::Result;
+use std::fs;
+
+use anyhow::{Context, Result};
 use clap::Parser;
 use futures::StreamExt;
 use penumbra_crypto::FullViewingKey;
@@ -91,6 +93,10 @@ async fn main() -> Result<()> {
     // Initialize tracing here, rather than when converting into an `App`, so
     // that tracing is set up even for wallet commands that don't build the `App`.
     opt.init_tracing();
+
+    //Ensure that the data_path exists, in case this is a cold start
+    fs::create_dir_all(&opt.data_path)
+        .with_context(|| format!("Failed to create data directory {}", opt.data_path))?;
 
     // The keys command takes the data dir directly, since it may need to
     // create the client state, so handle it specially here so that we can have
