@@ -16,6 +16,15 @@ impl From<Amount> for pb::Amount {
     }
 }
 
+impl TryFrom<std::string::String> for Amount {
+    type Error = anyhow::Error;
+
+    fn try_from(s: std::string::String) -> Result<Self, Self::Error> {
+        let inner = s.parse::<u64>()?;
+        Ok(Amount { inner })
+    }
+}
+
 impl TryFrom<pb::Amount> for Amount {
     type Error = anyhow::Error;
 
