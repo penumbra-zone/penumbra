@@ -10,7 +10,6 @@ use ibc::core::ics04_channel::channel::State as ChannelState;
 use ibc::core::ics04_channel::packet::Packet;
 use ibc::core::ics24_host::identifier::ChannelId;
 use ibc::core::ics24_host::identifier::PortId;
-use ibc::timestamp::Timestamp;
 use penumbra_storage::StateExt;
 use penumbra_transaction::action::ICS20Withdrawal;
 
@@ -62,7 +61,7 @@ impl From<ICS20Withdrawal> for IBCPacket<Unchecked> {
 pub trait SendPacket: StateExt {
     /// Send a packet on a channel. This assumes that send_packet_check has already been called on
     /// the provided packet.
-    async fn send_packet_execute(&mut self, ctx: Context, packet: IBCPacket<Checked>) {
+    async fn send_packet_execute(&mut self, _ctx: Context, packet: IBCPacket<Checked>) {
         // increment the send sequence counter
         let sequence = self
             .get_send_sequence(&packet.source_channel, &packet.source_port)
@@ -97,7 +96,7 @@ pub trait SendPacket: StateExt {
     /// send_packet_check verifies that a packet can be sent using the provided parameters.
     async fn send_packet_check(
         &self,
-        ctx: Context,
+        _ctx: Context,
         packet: IBCPacket<Unchecked>,
     ) -> Result<IBCPacket<Checked>> {
         let channel = self

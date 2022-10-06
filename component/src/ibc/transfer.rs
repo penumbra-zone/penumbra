@@ -25,7 +25,7 @@ use prost::Message;
 use tendermint::abci;
 use tracing::instrument;
 
-#[allow(dead_code)]
+#[derive(Clone)]
 pub struct ICS20Transfer {
     state: State,
 }
@@ -211,9 +211,6 @@ impl AppHandlerCheck for ICS20Transfer {
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("value balance not found"))?;
 
-            // convert the amount to a u64 from u256.
-            //  TODO: the amount is given by the ICS20 spec to be a u256, but we parse it to u64
-            //  for now. should we round, or error, or something else in this conversion?
             let amount_penumbra: Amount = packet_data.amount.try_into()?;
             if value_balance < amount_penumbra {
                 return Err(anyhow::anyhow!(
@@ -268,6 +265,15 @@ impl Component for ICS20Transfer {
 
     #[instrument(name = "ics20_transfer", skip(_ctx, tx))]
     fn check_tx_stateless(_ctx: Context, tx: &Transaction) -> Result<()> {
+        for action in tx.actions() {
+            match action {
+                Action::ICS20Withdrawal(withdrawal) => {
+                    withdrawal.validate()?;
+                }
+
+                _ => {}
+            }
+        }
         Ok(())
     }
     #[instrument(name = "ics20_transfer", skip(self, ctx, tx))]
@@ -283,7 +289,16 @@ impl Component for ICS20Transfer {
         Ok(())
     }
     #[instrument(name = "ics20_transfer", skip(self, ctx, tx))]
-    async fn execute_tx(&mut self, ctx: Context, tx: &Transaction) {}
+    async fn execute_tx(&mut self, ctx: Context, tx: &Transaction) {
+        for action in tx.actions() {
+            match action {
+                Action::ICS20Withdrawal(withdrawal) => {
+                    self.withdrawal_execute(ctx.clone(), withdrawal).await;
+                }
+                _ => {}
+            }
+        }
+    }
 
     #[instrument(name = "ics20_channel", skip(self, _ctx, _end_block))]
     async fn end_block(&mut self, _ctx: Context, _end_block: &abci::request::EndBlock) {}
