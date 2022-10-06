@@ -681,7 +681,7 @@ impl Storage {
             let source = quarantined_note_record.source.to_bytes().to_vec();
 
             sqlx::query!(
-                "INSERT INTO notes
+                "INSERT OR IGNORE INTO notes
                     (
                         note_commitment,
                         height_created,
@@ -706,7 +706,7 @@ impl Storage {
             .await?;
 
             sqlx::query!(
-                "INSERT INTO quarantined_notes
+                "INSERT OR IGNORE INTO quarantined_notes
                     (
                         note_commitment,
                         unbonding_epoch,
@@ -740,7 +740,7 @@ impl Storage {
             let source = note_record.source.to_bytes().to_vec();
 
             sqlx::query!(
-                "INSERT INTO notes
+                "INSERT OR IGNORE INTO notes
                     (
                         note_commitment,
                         height_created,
@@ -765,7 +765,7 @@ impl Storage {
             .await?;
 
             sqlx::query!(
-                "INSERT INTO spendable_notes
+                "INSERT OR IGNORE INTO spendable_notes
                     (
                         note_commitment,
                         height_spent,

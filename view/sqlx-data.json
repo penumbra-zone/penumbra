@@ -58,16 +58,6 @@
       "nullable": []
     }
   },
-  "240f35a686d912511ad6db5342cf7f3eafa0452b0979233f48eb5c56871ad152": {
-    "query": "INSERT INTO spendable_notes\n                    (\n                        note_commitment,\n                        height_spent,\n                        nullifier,\n                        position\n                    )\n                    VALUES\n                    (\n                        ?,\n                        NULL,\n                        ?,\n                        ?\n                    )",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Right": 3
-      },
-      "nullable": []
-    }
-  },
   "2547294717840bcb1bef870394b99cf275bcba98d005f1f18b03c7a3d93909e1": {
     "query": "INSERT INTO assets\n                    (\n                        asset_id,\n                        denom\n                    )\n                    VALUES\n                    (\n                        ?,\n                        ?\n                    )",
     "describe": {
@@ -162,16 +152,6 @@
       "nullable": []
     }
   },
-  "5b0931e85f189748ade34b5b64f218ae43800c48283a98fbbb4755a9b4231035": {
-    "query": "INSERT INTO notes\n                    (\n                        note_commitment,\n                        height_created,\n                        address,\n                        amount,\n                        asset_id,\n                        blinding_factor,\n                        address_index,\n                        source\n                    )\n                VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Right": 8
-      },
-      "nullable": []
-    }
-  },
   "63aad4faac1ffefd5525595f9ca5a82186181368251da9fbacf65a4d48671a01": {
     "query": "\n            SELECT bytes\n            FROM full_viewing_key\n            LIMIT 1\n            ",
     "describe": {
@@ -208,12 +188,32 @@
       ]
     }
   },
+  "6ba4338edcc940fe34631af52c95235e0b35ed1233f067b2d19b4c60706aee56": {
+    "query": "INSERT OR IGNORE INTO quarantined_notes\n                    (\n                        note_commitment,\n                        unbonding_epoch,\n                        identity_key\n                    )\n                VALUES (?, ?, ?)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 3
+      },
+      "nullable": []
+    }
+  },
   "6fbdcaea60547ae9c260428c23ddd835986cdd03553e485df2fe4ad31ccaa8d6": {
     "query": "INSERT INTO nct_commitments (position, commitment) VALUES (?, ?) ON CONFLICT DO NOTHING",
     "describe": {
       "columns": [],
       "parameters": {
         "Right": 2
+      },
+      "nullable": []
+    }
+  },
+  "7b43003c269998ab9e7343c95d23846cba560e4dbd374135f7bc22fd34a040dd": {
+    "query": "INSERT OR IGNORE INTO spendable_notes\n                    (\n                        note_commitment,\n                        height_spent,\n                        nullifier,\n                        position\n                    )\n                    VALUES\n                    (\n                        ?,\n                        NULL,\n                        ?,\n                        ?\n                    )",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 3
       },
       "nullable": []
     }
@@ -296,16 +296,6 @@
       ]
     }
   },
-  "982b5f03b4628f7fb3ae7ab903b964e77fd3f5b626be440b672f182503204f2d": {
-    "query": "INSERT INTO quarantined_notes\n                    (\n                        note_commitment,\n                        unbonding_epoch,\n                        identity_key\n                    )\n                VALUES (?, ?, ?)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Right": 3
-      },
-      "nullable": []
-    }
-  },
   "9d43e7b6d12a9610329e29651fa0d8134ebf18735ba93630b5f8a987dc17642f": {
     "query": "SELECT position, commitment FROM nct_commitments",
     "describe": {
@@ -366,6 +356,16 @@
       "columns": [],
       "parameters": {
         "Right": 1
+      },
+      "nullable": []
+    }
+  },
+  "c297cd9f4196d83a193c40fd3b7de4b43082f81cb5a48f6bcd35e2290f837010": {
+    "query": "INSERT OR IGNORE INTO notes\n                    (\n                        note_commitment,\n                        height_created,\n                        address,\n                        amount,\n                        asset_id,\n                        blinding_factor,\n                        address_index,\n                        source\n                    )\n                VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 8
       },
       "nullable": []
     }
