@@ -27,7 +27,7 @@ impl State {
     }
 
     pub fn begin_transaction(&mut self) -> StateTransaction {
-        StateTransaction {}
+        StateTransaction::new(self)
     }
 }
 

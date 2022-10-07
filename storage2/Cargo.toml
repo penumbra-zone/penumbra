@@ -27,4 +27,5 @@ futures = "0.3"
 tonic = "0.8.1"
 hex = "0.4"
 metrics = "0.19.0"
+parking_lot = "0.12"
 ics23 = { git = "https://github.com/penumbra-zone/ics23", branch = "penumbra-034" }
