@@ -15,6 +15,9 @@
 //! The [`Protobuf`] marker trait can be implemented on a domain type to ensure
 //! these conversions exist.
 
+// The autogen code is not clippy-clean, so we disable some clippy warnings for this crate.
+#![allow(clippy::derive_partial_eq_without_eq)]
+
 pub use prost::Message;
 
 /// Helper methods used for shaping the JSON (and other Serde) formats derived from the protos.
