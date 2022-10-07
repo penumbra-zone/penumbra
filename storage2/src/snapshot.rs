@@ -4,6 +4,7 @@
 /// This is implemented as a wrapper around a [RocksDB snapshot](https://github.com/facebook/rocksdb/wiki/Snapshot)
 /// with an associated JMT version number for the snapshot.
 pub(crate) struct Snapshot {
+    // TODO: the `'static` lifetime is a temporary hack and we'll need to find a workaround separately (tracked in #1512)
     rocksdb_snapshot: rocksdb::Snapshot<'static>,
     jmt_version: jmt::Version,
 }
