@@ -29,6 +29,7 @@ const TEST_ASSET: &str = "1cube";
 const BLOCK_TIME_SECONDS: u64 = 10;
 // We need to wait for syncing to occur.
 const TIMEOUT_COMMAND_SECONDS: u64 = 360;
+const EPOCH_DURATION: u64 = 10;
 
 /// Import the wallet from seed phrase into a temporary directory.
 fn load_wallet_into_tmpdir() -> TempDir {
@@ -205,9 +206,21 @@ fn delegate_and_undelegate() {
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     undelegate_cmd.assert().success();
 
-    // Wait for a couple blocks for the transaction to be confirmed before doing other tests.
-    let block_time = time::Duration::from_secs(2 * BLOCK_TIME_SECONDS);
+    // Wait for the epoch duration.
+    let block_time = time::Duration::from_secs(EPOCH_DURATION * BLOCK_TIME_SECONDS);
     thread::sleep(block_time);
+
+    // Now sync.
+    let mut sync_cmd = Command::cargo_bin("pcli").unwrap();
+    sync_cmd
+        .args(&[
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "view",
+            "sync",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    sync_cmd.assert().success();
 }
 
 #[ignore]
