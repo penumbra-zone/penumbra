@@ -761,13 +761,17 @@ impl Storage {
                 )
                 .fetch_one(&mut dbtx)
                 .await?;
-                if existing.height_created != height_created
-                    || existing.address != address
+                if existing.address != address
                     || existing.amount != amount
                     || existing.asset_id != asset_id
                     || existing.blinding_factor != blinding_factor
                     || existing.address_index != address_index
                     || existing.source != source
+                // note: we don't check the height created because that will be different;
+                // however, we use the *original* height created when it comes out of
+                // quarantine, which is a difference from previous behavior, where
+                // unquarantining notes would get the height set to the block where they come
+                // out of quarantine
                 {
                     anyhow::bail!(
                         "unquarantined note with commitment {:?} did not match note quarantined at height {}", note_commitment, height_created
