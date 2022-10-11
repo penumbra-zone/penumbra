@@ -173,7 +173,7 @@ impl Storage {
             // Check if we already have the note
             if let Some(record) = sqlx::query_as::<_, SpendableNoteRecord>(
                 format!(
-                    "SELECT
+                    "SELECT 
                         notes.note_commitment,
                         notes.height_created,
                         notes.address,
@@ -532,8 +532,8 @@ impl Storage {
                         notes.source,
                         quarantined_notes.unbonding_epoch,
                         quarantined_notes.identity_key
-                        FROM notes
-                        JOIN quarantined_notes
+                        FROM notes 
+                        JOIN quarantined_notes 
                         ON quarantined_notes.note_commitment = notes.note_commitment",
         )
         .fetch_all(&self.pool)
@@ -739,43 +739,8 @@ impl Storage {
             let position = (u64::from(note_record.position)) as i64;
             let source = note_record.source.to_bytes().to_vec();
 
-            // If this note corresponded to a previously quarantined note, delete it from quarantine
-            // also, because it is now applied
-            let was_quarantined = sqlx::query!(
-                "DELETE FROM quarantined_notes WHERE note_commitment = ?",
-                note_commitment,
-            )
-            .execute(&mut dbtx)
-            .await?
-            .rows_affected()
-                > 0;
-
-            if was_quarantined {
-                // If the note was quarantined, that means it's already present in the notes table,
-                // so instead of inserting it again (which would conflict with the uniqueness
-                // constraint), we check to make sure that the update *would have been* a no-op (if
-                // it wouldn't, that's a bug in our implementation or a malicious server):
-                let existing = sqlx::query!(
-                    "SELECT * FROM notes WHERE note_commitment = ?",
-                    note_commitment
-                )
-                .fetch_one(&mut dbtx)
-                .await?;
-                if existing.height_created != height_created
-                    || existing.address != address
-                    || existing.amount != amount
-                    || existing.asset_id != asset_id
-                    || existing.blinding_factor != blinding_factor
-                    || existing.address_index != address_index
-                    || existing.source != source
-                {
-                    anyhow::bail!(
-                        "unquarantined note with commitment {:?} did not match note quarantined at height {}", note_commitment, height_created
-                    );
-                }
-            } else {
-                sqlx::query!(
-                    "INSERT INTO notes
+            sqlx::query!(
+                "INSERT INTO notes
                     (
                         note_commitment,
                         height_created,
@@ -787,18 +752,17 @@ impl Storage {
                         source
                     )
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                    note_commitment,
-                    height_created,
-                    address,
-                    amount,
-                    asset_id,
-                    blinding_factor,
-                    address_index,
-                    source,
-                )
-                .execute(&mut dbtx)
-                .await?;
-            }
+                note_commitment,
+                height_created,
+                address,
+                amount,
+                asset_id,
+                blinding_factor,
+                address_index,
+                source,
+            )
+            .execute(&mut dbtx)
+            .await?;
 
             sqlx::query!(
                 "INSERT INTO spendable_notes
@@ -819,6 +783,15 @@ impl Storage {
                 // height_spent is NULL
                 nullifier,
                 position
+            )
+            .execute(&mut dbtx)
+            .await?;
+
+            // If this note corresponded to a previously quarantined note, delete it from quarantine
+            // also, because it is now applied
+            sqlx::query!(
+                "DELETE FROM quarantined_notes WHERE note_commitment = ?",
+                note_commitment,
             )
             .execute(&mut dbtx)
             .await?;
