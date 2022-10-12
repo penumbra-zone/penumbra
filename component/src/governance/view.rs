@@ -12,7 +12,10 @@ use penumbra_transaction::action::{Proposal, ProposalPayload, Vote};
 
 use crate::stake::{self, validator, View as _};
 
-use super::{proposal, state_key};
+use super::{
+    proposal::{self, ProposalList},
+    state_key,
+};
 
 impl<T: StateExt> View for T {}
 
@@ -180,6 +183,15 @@ pub trait View: StateExt {
             .proposals)
     }
 
+    /// Set all the unfinished proposal ids.
+    async fn put_unfinished_proposals(&self, unfinished_proposals: ProposalList) {
+        self.put_domain(
+            state_key::unfinished_proposals().into(),
+            unfinished_proposals,
+        )
+        .await;
+    }
+
     /// Set the state of a proposal.
     async fn put_proposal_state(&self, proposal_id: u64, state: proposal::State) -> Result<()> {
         // Set the state of the proposal
@@ -205,11 +217,7 @@ pub trait View: StateExt {
         }
 
         // Put the modified list back into the state
-        self.put_domain(
-            state_key::unfinished_proposals().into(),
-            unfinished_proposals,
-        )
-        .await;
+        self.put_unfinished_proposals(unfinished_proposals).await;
 
         Ok(())
     }

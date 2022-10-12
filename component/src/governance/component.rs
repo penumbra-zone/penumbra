@@ -6,9 +6,10 @@ use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tracing::instrument;
 
+use crate::governance::view::View as _;
 use crate::{Component, Context};
 
-use super::{check, execute};
+use super::{check, execute, proposal::ProposalList};
 
 pub struct Governance {
     state: State,
@@ -23,7 +24,12 @@ impl Governance {
 #[async_trait]
 impl Component for Governance {
     #[instrument(name = "governance", skip(self, _app_state))]
-    async fn init_chain(&mut self, _app_state: &genesis::AppState) {}
+    async fn init_chain(&mut self, _app_state: &genesis::AppState) {
+        // Initialize the unfinished proposals tracking key in the JMT.
+        self.state
+            .put_unfinished_proposals(ProposalList::default())
+            .await;
+    }
 
     #[instrument(name = "governance", skip(self, _ctx, _begin_block))]
     async fn begin_block(&mut self, _ctx: Context, _begin_block: &abci::request::BeginBlock) {}
