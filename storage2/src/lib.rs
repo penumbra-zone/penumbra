@@ -3,6 +3,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 mod metrics;
+mod snapshot;
 mod state;
 mod storage;
 

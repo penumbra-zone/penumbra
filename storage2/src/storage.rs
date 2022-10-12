@@ -1,12 +1,16 @@
 use std::{path::PathBuf, sync::Arc};
 
 use anyhow::Result;
+use parking_lot::RwLock;
 use rocksdb::DB;
 
+use crate::snapshot::Snapshot;
 use crate::State;
 
-#[derive(Clone, Debug)]
-pub struct Storage(Arc<DB>);
+pub struct Storage {
+    latest_snapshot: RwLock<Arc<Snapshot>>,
+    db: Arc<DB>,
+}
 
 impl Storage {
     pub async fn load(path: PathBuf) -> Result<Self> {
@@ -20,19 +24,21 @@ impl Storage {
     }
 
     /// Returns a new [`State`] on top of the latest version of the tree.
-    pub async fn state(&self) -> Result<State> {
-        todo!()
+    pub async fn state(&self) -> State {
+        State::new(self.latest_snapshot.read().clone())
     }
 
-    /// Like [`Self::state`], but bundles in a [`tonic`] error conversion.
-    ///
-    /// This is useful for implementing gRPC services that query the storage:
-    /// each gRPC request can create an ephemeral [`State`] pinning the current
-    /// version at the time the request was received, and then query it using
-    /// component `View`s to handle the request.
-    pub async fn state_tonic(&self) -> std::result::Result<State, tonic::Status> {
-        self.state()
-            .await
-            .map_err(|e| tonic::Status::internal(e.to_string()))
+    // TODO: this probably can't be 'static long-term
+    pub async fn apply(&'static mut self, state: State) {
+        // TODO: 1. write the index tables and JMT to RocksDB
+        // 2. update the snapshot
+        // TODO: set jmt_version correctly
+        let jmt_version = 0;
+        let snapshot = self.db.snapshot();
+        // Obtain the write-lock for the latest snapshot, and replace it with the new snapshot.
+        let mut guard = self.latest_snapshot.write();
+        *guard = Arc::new(Snapshot::new(snapshot, jmt_version));
+        // Drop the write-lock (this will happen implicitly anyways, but it's good to be explicit).
+        drop(guard);
     }
 }

@@ -1,3 +1,5 @@
+use std::{collections::HashMap, sync::Arc};
+
 use async_trait::async_trait;
 
 mod read;
@@ -7,36 +9,37 @@ pub use read::StateRead;
 pub use transaction::Transaction as StateTransaction;
 pub use write::StateWrite;
 
+use crate::snapshot::Snapshot;
+
 /// State is a lightweight copy-on-write fork of the chain state,
 /// implemented as a RYW cache over a pinned JMT version.
 pub struct State {
-    // TODO: determine which fields to include
-    // cache: HashMap<jmt::KeyHash, jmt::OwnedValue>,
-    // jmt_version: jmt::Version,
-    // jmt: &'a JellyfishMerkleTree<'a, R>,
+    snapshot: Arc<Snapshot>,
+    unwritten_changes: HashMap<String, Vec<u8>>,
 }
 
 impl State {
-    pub fn new() -> Self {
+    pub(crate) fn new(snapshot: Arc<Snapshot>) -> Self {
         Self {
-            // cache: todo!(),
-            // jmt_version: todo!(),
-            // jmt: todo!(),
+            snapshot,
+            unwritten_changes: HashMap::new(),
         }
     }
 
     pub fn begin_transaction(&mut self) -> StateTransaction {
-        StateTransaction{
-            // cache: todo!(),
-            // unwritten_changes: todo!(),
-            // state: self,
-        }
+        StateTransaction::new(self)
     }
 }
 
 #[async_trait]
 impl StateRead for State {
     fn get_raw(&self, key: String) -> Option<Vec<u8>> {
-        todo!()
+        // If the key is available in the unwritten_changes cache, return it.
+        if let Some(value) = self.unwritten_changes.get(&key) {
+            return Some(value.clone());
+        }
+
+        // If the key is available in the snapshot, return it.
+        self.snapshot.get_raw(key)
     }
 }
