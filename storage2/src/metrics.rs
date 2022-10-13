@@ -14,4 +14,13 @@
 pub use metrics::*;
 
 /// Registers all metrics used by this crate.
-pub fn register_metrics() {}
+pub fn register_metrics() {
+    register_gauge!(NCT_SIZE_BYTES);
+    describe_gauge!(
+        NCT_SIZE_BYTES,
+        Unit::Bytes,
+        "The size of the serialized NCT in bytes"
+    );
+}
+
+pub const NCT_SIZE_BYTES: &str = "penumbra_storage2_nct_size_bytes";
