@@ -40,6 +40,7 @@
     - [Sender and Receiver FMD](./crypto/fmd/sender-receiver.md)
     - [Constructing S-FMD](./crypto/fmd/construction.md)
     - [S-FMD Threat Model](./crypto/fmd/threat_model.md)
+    - [S-FMD in Penumbra](./crypto/fmd/system_mapping.md)
     - [Parameter Considerations](./crypto/fmd/considerations.md)
   - [Flow Encryption](./crypto/flow.md)
     - [Ideal Functionality](./crypto/flow/ideal.md)
