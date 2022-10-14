@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 /// IBC "app handlers" for the IBC component.
 ///
 /// An app handler defines an interface for any IBC application to consume verified IBC events from
@@ -19,7 +21,6 @@ use ibc::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use ibc::core::ics04_channel::msgs::timeout::MsgTimeout;
 use ibc::core::ics24_host::identifier::PortId;
-use std::collections::HashMap;
 
 /// AppHandlerCheck defines the interface for an IBC application to consume IBC channel and packet
 /// events, and apply their validation logic. This validation logic is used for stateful validation
@@ -68,13 +69,13 @@ pub trait AppHandler: AppHandlerCheck + AppHandlerExecute {}
 /// an AppRouter is an implementation of AppHandler that is the root router for all IBC
 /// applications. Applications can register themselves on an IBC port by calling AppRouter.bind().
 pub struct AppRouter {
-    handlers: HashMap<PortId, Box<dyn AppHandler>>,
+    handlers: BTreeMap<PortId, Box<dyn AppHandler>>,
 }
 
 impl AppRouter {
     pub fn new() -> Self {
         AppRouter {
-            handlers: HashMap::new(),
+            handlers: BTreeMap::new(),
         }
     }
 
