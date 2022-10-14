@@ -1,5 +1,5 @@
 // Implementation of a pd component for the staking system.
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::shielded_pool::{CommissionAmount, CommissionAmounts, View as _};
 use crate::{Component, Context};
@@ -686,7 +686,7 @@ impl Staking {
     /// state with power assigned.
     async fn add_genesis_validator(
         &mut self,
-        genesis_allocations: &HashMap<&String, u64>,
+        genesis_allocations: &BTreeMap<&String, u64>,
         genesis_base_rate: &BaseRateData,
         validator: Validator,
     ) -> Result<()> {
@@ -860,7 +860,7 @@ impl Component for Staking {
 
         // Compile totals of genesis allocations by denom, which we can use
         // to compute the delegation tokens for each validator.
-        let mut genesis_allocations = HashMap::new();
+        let mut genesis_allocations = BTreeMap::new();
         for allocation in &app_state.allocations {
             *genesis_allocations.entry(&allocation.denom).or_insert(0) +=
                 u64::from(allocation.amount);
