@@ -8,10 +8,10 @@ use penumbra_proto::{Message, Protobuf};
 #[async_trait]
 pub trait StateWrite {
     /// Copy-on-write put
-    fn put_raw(&mut self, key: String, value: Vec<u8>) -> Result<()>;
+    fn put_raw(&mut self, key: String, value: Vec<u8>);
 
     /// Sets a domain type from the State.
-    fn put<D, P>(&self, key: String, value: D) -> Result<()>
+    fn put<D, P>(&self, key: String, value: D)
     where
         D: Protobuf<P>,
         // TODO: does this get less awful if P is an associated type of D?
@@ -24,7 +24,7 @@ pub trait StateWrite {
     }
 
     /// Puts a proto type on the State.
-    fn put_proto<D, P>(&self, key: String, value: P) -> Result<()>
+    fn put_proto<D, P>(&self, key: String, value: P)
     where
         D: Protobuf<P>,
         // TODO: does this get less awful if P is an associated type of D?
@@ -37,8 +37,11 @@ pub trait StateWrite {
     }
 
     /// Delete a key from state.
-    fn delete(&mut self, key: String) -> Result<()>;
+    fn delete(&mut self, key: String);
+
+    /// Delete a key from sidecar storage.
+    fn delete_sidecar(&mut self, key: Vec<u8>);
 
     /// Put a key/value pair into non-consensus-critical ("sidecar") state.
-    fn put_sidecar(&mut self, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
+    fn put_sidecar(&mut self, key: Vec<u8>, value: Vec<u8>);
 }

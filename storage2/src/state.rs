@@ -20,7 +20,9 @@ use crate::snapshot::Snapshot;
 pub struct State {
     snapshot: Arc<Snapshot>,
     // A `None` value represents deletion.
-    unwritten_changes: BTreeMap<String, Option<Vec<u8>>>,
+    pub(crate) unwritten_changes: BTreeMap<String, Option<Vec<u8>>>,
+    // A `None` value represents deletion.
+    pub(crate) sidecar_changes: BTreeMap<Vec<u8>, Option<Vec<u8>>>,
 }
 
 impl State {
@@ -28,6 +30,7 @@ impl State {
         Self {
             snapshot,
             unwritten_changes: BTreeMap::new(),
+            sidecar_changes: BTreeMap::new(),
         }
     }
 
@@ -37,11 +40,11 @@ impl State {
 
     // Apply the unwritten changes of a transaction to this state fork.
     pub fn apply_transaction(&mut self, transaction: StateTransaction) {
-        for (key, value) in transaction.unwritten_changes.iter() {
-            self.unwritten_changes.insert(key.clone(), value.clone());
-        }
+        // Write the unwritten consensus-critical changes to the state:
+        self.unwritten_changes.extend(transaction.unwritten_changes);
 
-        // TODO: Write sidecar changes to the underlying storage.
+        // Write the unwritten sidechar changes to the state:
+        self.sidecar_changes.extend(transaction.sidecar_changes);
     }
 }
 
@@ -49,16 +52,21 @@ impl State {
 impl StateRead for State {
     fn get_raw(&self, key: String) -> Result<Option<Vec<u8>>> {
         // If the key is available in the unwritten_changes cache, return it.
-        // A `None` value represents that the key has been deleted.
-        if let Some(value) = self.unwritten_changes.get(&key) {
-            return Ok(value.clone());
+        if let Some(v) = self.unwritten_changes.get(&key) {
+            return Ok(v.clone());
         }
 
-        // If the key is available in the snapshot, return it.
-        Ok(self.snapshot.get_raw(key))
+        // Otherwise, if the key is available in the snapshot, return it.
+        self.snapshot.get_raw(&key)
     }
 
     fn get_sidecar(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        todo!()
+        // If the key is available in the sidecar cache, return it.
+        if let Some(v) = self.sidecar_changes.get(key) {
+            return Ok(v.clone());
+        }
+
+        // Otherwise, if the key is available in the snapshot, return it.
+        self.snapshot.get_sidecar(key)
     }
 }

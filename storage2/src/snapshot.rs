@@ -29,8 +29,26 @@ impl Snapshot {
         }
     }
 
-    pub fn get_raw(&self, key: String) -> Result<Option<Vec<u8>>> {
-        self.rocksdb_snapshot.get(key).map_err(Into::into)
+    /// Fetch a key from the JMT column family.
+    pub fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>> {
+        let jmt_cf = self
+            .db
+            .cf_handle("jmt")
+            .expect("jmt column family not found");
+        self.rocksdb_snapshot
+            .get_cf(jmt_cf, key)
+            .map_err(Into::into)
+    }
+
+    /// Fetch a key from the sidecar column family.
+    pub fn get_sidecar(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+        let sidecar_cf = self
+            .db
+            .cf_handle("sidecar")
+            .expect("sidecar column family not found");
+        self.rocksdb_snapshot
+            .get_cf(sidecar_cf, key)
+            .map_err(Into::into)
     }
 
     pub fn jmt_version(&self) -> jmt::Version {
@@ -43,9 +61,8 @@ impl Snapshot {
 impl TreeReader for Snapshot {
     /// Gets node given a node key. Returns `None` if the node does not exist.
     fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node>> {
-        let node_key = node_key.clone();
-
-        let span = Span::current();
+        let node_key = node_key;
+        tracing::trace!(?node_key);
 
         let jmt_cf = self
             .db
@@ -67,7 +84,6 @@ impl TreeReader for Snapshot {
             .cf_handle("jmt")
             .expect("jmt column family not found");
         let mut iter = self.rocksdb_snapshot.raw_iterator_cf(jmt_cf);
-        let mut ret = None;
         iter.seek_to_last();
 
         if iter.valid() {
@@ -75,12 +91,12 @@ impl TreeReader for Snapshot {
             let node = Node::decode(iter.value().unwrap())?;
 
             if let Node::Leaf(leaf_node) = node {
-                ret = Some((node_key, leaf_node));
+                return Ok(Some((node_key, leaf_node)));
             }
         } else {
             // There are no keys in the database
         }
 
-        Ok(ret)
+        Ok(None)
     }
 }

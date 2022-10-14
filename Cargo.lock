@@ -2292,7 +2292,7 @@ dependencies = [
 [[package]]
 name = "jmt"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/jellyfish-merkle.git?branch=newmain#12ca7089483b84ee7df6affed31af51a299b1ba5"
+source = "git+https://github.com/penumbra-zone/jellyfish-merkle.git?branch=newmain#2f2fab25fbd3763debc776c9cf1df79ebd3a84f7"
 dependencies = [
  "anyhow",
  "bcs",

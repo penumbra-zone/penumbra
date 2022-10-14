@@ -64,25 +64,28 @@ impl Storage {
         State::new(self.0.latest_snapshot.read().clone())
     }
 
-    pub async fn apply(&mut self, state: State) -> Result<()> {
+    pub async fn apply(&'static mut self, state: State) -> Result<()> {
         // 1. Write the NCT
-        tracing::debug!("serializing NCT");
-        let tct_data = bincode::serialize(nct)?;
-        tracing::debug!(tct_bytes = tct_data.len(), "serialized NCT");
+        // TODO: move this higher up in the call stack, and use `put_sidechain` to store
+        // the NCT.
+        // tracing::debug!("serializing NCT");
+        // let tct_data = bincode::serialize(nct)?;
+        // tracing::debug!(tct_bytes = tct_data.len(), "serialized NCT");
 
-        let db = self.db;
+        // let db = self.db;
 
-        let span = Span::current();
-        tokio::task::Builder::new()
-            .name("put_nct")
-            .spawn_blocking(move || {
-                span.in_scope(|| {
-                    let nct_cf = db.cf_handle("nct").expect("nct column family not found");
-                    db.put_cf(nct_cf, "nct", &tct_data)
-                })
-            })
-            .unwrap()
-            .await??;
+        // let span = Span::current();
+        // tokio::task::Builder::new()
+        //     .name("put_nct")
+        //     .spawn_blocking(move || {
+        //         span.in_scope(|| {
+        //             let nct_cf = db.cf_handle("nct").expect("nct column family not found");
+        //             db.put_cf(nct_cf, "nct", &tct_data)
+        //         })
+        //     })
+        //     .unwrap()
+        //     .await??;
+        let db = self.0.db;
 
         // 2. Write the JMT to RocksDB
         // We use wrapping_add here so that we can write `new_version = 0` by
@@ -95,7 +98,7 @@ impl Storage {
             .name("Storage::write_node_batch")
             .spawn_blocking(move || {
                 span.in_scope(|| {
-                    let snap = self.latest_snapshot.read().clone();
+                    let snap = self.0.latest_snapshot.read().clone();
                     let jmt = JellyfishMerkleTree::new(snap.as_ref());
                     // Write the unwritten changes from the state to the JMT.
                     let (jmt_root_hash, batch) = jmt.put_value_set(
@@ -107,7 +110,7 @@ impl Storage {
                     )?;
 
                     // Apply the JMT changes to the DB.
-                    self.write_node_batch(&batch.node_batch)?;
+                    self.0.write_node_batch(&batch.node_batch)?;
                     tracing::trace!(?jmt_root_hash, "wrote node batch to backing store");
 
                     // TODO: 3. write the index tables to RocksDB
@@ -118,7 +121,7 @@ impl Storage {
                     let jmt_version = new_version;
                     let snapshot = db.snapshot();
                     // Obtain the write-lock for the latest snapshot, and replace it with the new snapshot.
-                    let mut guard = self.latest_snapshot.write();
+                    let mut guard = self.0.latest_snapshot.write();
                     *guard = Arc::new(Snapshot::new(snapshot, jmt_version, db));
                     // Drop the write-lock (this will happen implicitly anyways, but it's good to be explicit).
                     drop(guard);
@@ -127,9 +130,7 @@ impl Storage {
             })
             .unwrap()
             .await
-            .unwrap();
-
-        Ok(())
+            .unwrap()
     }
 }
 
@@ -160,9 +161,6 @@ impl TreeWriter for Inner {
 
 // TODO: maybe these should live elsewhere?
 fn get_rightmost_leaf(db: &DB) -> Result<Option<(NodeKey, LeafNode)>> {
-    let span = Span::current();
-
-    // TODO: should this be in a tokio task like before?
     let jmt_cf = db.cf_handle("jmt").expect("jmt column family not found");
     let mut iter = db.raw_iterator_cf(jmt_cf);
     let mut ret = None;
