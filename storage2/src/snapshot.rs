@@ -29,8 +29,8 @@ impl Snapshot {
         }
     }
 
-    pub fn get_raw(&self, key: String) -> Option<Vec<u8>> {
-        self.rocksdb_snapshot.get(key).ok().flatten()
+    pub fn get_raw(&self, key: String) -> Result<Option<Vec<u8>>> {
+        self.rocksdb_snapshot.get(key).map_err(Into::into)
     }
 
     pub fn jmt_version(&self) -> jmt::Version {

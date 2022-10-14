@@ -40,19 +40,25 @@ impl State {
         for (key, value) in transaction.unwritten_changes.iter() {
             self.unwritten_changes.insert(key.clone(), value.clone());
         }
+
+        // TODO: Write sidecar changes to the underlying storage.
     }
 }
 
 #[async_trait]
 impl StateRead for State {
-    fn get_raw(&self, key: String) -> Option<Vec<u8>> {
+    fn get_raw(&self, key: String) -> Result<Option<Vec<u8>>> {
         // If the key is available in the unwritten_changes cache, return it.
         // A `None` value represents that the key has been deleted.
         if let Some(value) = self.unwritten_changes.get(&key) {
-            return value.clone();
+            return Ok(value.clone());
         }
 
         // If the key is available in the snapshot, return it.
-        self.snapshot.get_raw(key)
+        Ok(self.snapshot.get_raw(key))
+    }
+
+    fn get_sidecar(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+        todo!()
     }
 }

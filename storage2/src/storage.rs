@@ -6,16 +6,17 @@ use jmt::{
     JellyfishMerkleTree, KeyHash,
 };
 use parking_lot::RwLock;
-use penumbra_tct::Tree;
 use rocksdb::{Options, DB};
 use tracing::Span;
 
-use crate::metrics;
 use crate::snapshot::Snapshot;
 use crate::State;
-use ::metrics::gauge;
 
-pub struct Storage {
+// A private inner element to prevent the `TreeWriter` implementation
+// from leaking outside of this crate.
+pub struct Storage(Inner);
+
+struct Inner {
     latest_snapshot: RwLock<Arc<Snapshot>>,
     db: &'static DB,
 }
@@ -40,10 +41,10 @@ impl Storage {
                         Snapshot::new(snap, jmt_version, static_db)
                     };
 
-                    Ok(Self {
+                    Ok(Self(Inner {
                         latest_snapshot: RwLock::new(Arc::new(latest_snapshot)),
                         db: static_db,
-                    })
+                    }))
                 })
             })
             .unwrap()
@@ -55,21 +56,19 @@ impl Storage {
     /// `Storage`, or `None` if the tree is empty.
     pub async fn latest_version(&self) -> Result<Option<jmt::Version>> {
         // TODO: do better
-        Ok(latest_version(self.db).unwrap())
+        Ok(latest_version(self.0.db).unwrap())
     }
 
     /// Returns a new [`State`] on top of the latest version of the tree.
     pub async fn state(&self) -> State {
-        State::new(self.latest_snapshot.read().clone())
+        State::new(self.0.latest_snapshot.read().clone())
     }
 
-    // TODO: this probably can't be 'static long-term
-    pub async fn apply(&'static mut self, state: State, nct: &Tree) -> Result<()> {
+    pub async fn apply(&mut self, state: State) -> Result<()> {
         // 1. Write the NCT
         tracing::debug!("serializing NCT");
         let tct_data = bincode::serialize(nct)?;
         tracing::debug!(tct_bytes = tct_data.len(), "serialized NCT");
-        gauge!(metrics::NCT_SIZE_BYTES, tct_data.len() as f64);
 
         let db = self.db;
 
@@ -79,7 +78,7 @@ impl Storage {
             .spawn_blocking(move || {
                 span.in_scope(|| {
                     let nct_cf = db.cf_handle("nct").expect("nct column family not found");
-                    db.put_cf(nct_cf, "tct", &tct_data)
+                    db.put_cf(nct_cf, "nct", &tct_data)
                 })
             })
             .unwrap()
@@ -103,8 +102,7 @@ impl Storage {
                         state
                             .unwritten_changes
                             .into_iter()
-                            .map(|x| (KeyHash::from(x.0), x.1))
-                            .collect(),
+                            .map(|x| (KeyHash::from(x.0), x.1)),
                         new_version,
                     )?;
 
@@ -135,7 +133,7 @@ impl Storage {
     }
 }
 
-impl TreeWriter for Storage {
+impl TreeWriter for Inner {
     /// Writes a node batch into storage.
     //TODO: Change JMT traits to accept owned NodeBatch
     fn write_node_batch(&self, node_batch: &NodeBatch) -> Result<()> {
