@@ -1,7 +1,7 @@
 //! Validation checks to ensure that [`Tree`]s are well-formed.
 
 use std::{
-    collections::HashMap,
+    collections::BTreeMap,
     fmt::{Display, Write},
 };
 
@@ -16,8 +16,9 @@ use crate::prelude::*;
 /// If this ever returns `Err`, it indicates either a bug in this crate, or a tree that was
 /// deserialized from an untrustworthy source.
 pub fn index(tree: &Tree) -> Result<(), IndexMalformed> {
-    // A reverse index from positions back to the commitments that are supposed to map to their hashes
-    let reverse_index: HashMap<Position, Commitment> = tree
+    // A reverse index from positions back to the commitments that are supposed to map to their
+    // hashes
+    let reverse_index: BTreeMap<Position, Commitment> = tree
         .commitments()
         .map(|(commitment, position)| (position, commitment))
         .collect();
