@@ -1,0 +1,4 @@
+disallowed-types = [
+    # Don't permit the use of `HashMap` because it's not ordered stably
+    { path = "std::collections::HashMap", reason = "prefer `std::collections::BTreeMap` to provide a stable ordering" },
+]
