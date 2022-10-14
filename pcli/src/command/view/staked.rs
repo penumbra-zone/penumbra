@@ -15,8 +15,8 @@ use tonic::transport::Channel;
 pub struct StakedCmd {}
 
 impl StakedCmd {
-    pub fn needs_sync(&self) -> bool {
-        true
+    pub fn offline(&self) -> bool {
+        false
     }
 
     pub async fn exec(

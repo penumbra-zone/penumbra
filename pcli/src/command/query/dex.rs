@@ -40,7 +40,7 @@ impl DexCmd {
             .context("cannot parse stub CPMM reserves data")?;
         println!("Constant-Product Market Maker Reserves:");
         let mut table = Table::new();
-        let view_client: &mut dyn ViewClient = &mut app.view;
+        let view_client: &mut dyn ViewClient = app.view.as_mut().unwrap();
         let asset_cache = view_client.assets().await?;
         let asset_1 = asset_cache
             .get(&trading_pair.asset_1())
@@ -121,7 +121,7 @@ impl DexCmd {
                     }
                 );
 
-                let view_client: &mut dyn ViewClient = &mut app.view;
+                let view_client: &mut dyn ViewClient = app.view.as_mut().unwrap();
                 let asset_cache = view_client.assets().await?;
                 let asset_1 = asset_cache
                     .get(&trading_pair.asset_1())

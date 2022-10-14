@@ -12,8 +12,8 @@ pub struct TransactionHashesCmd {
 }
 
 impl TransactionHashesCmd {
-    pub fn needs_sync(&self) -> bool {
-        true
+    pub fn offline(&self) -> bool {
+        false
     }
 
     pub async fn exec<V: ViewClient>(&self, _fvk: &FullViewingKey, view: &mut V) -> Result<()> {

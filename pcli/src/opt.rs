@@ -66,9 +66,6 @@ impl Opt {
     }
 
     pub async fn into_app(self) -> Result<(App, Command)> {
-        // Create the data directory if it is missing.
-        std::fs::create_dir_all(&self.data_path).context("Failed to create data directory")?;
-
         let custody_path = self.data_path.join(crate::CUSTODY_FILE_NAME);
         let legacy_wallet_path = self.data_path.join(legacy::WALLET_FILE_NAME);
 
@@ -88,7 +85,11 @@ impl Opt {
         let fvk = wallet.spend_key.full_viewing_key().clone();
 
         // ...and the view service...
-        let view = self.view_client(&fvk).await?;
+        let view = if !self.cmd.offline() {
+            Some(self.view_client(&fvk).await?)
+        } else {
+            None
+        };
 
         let mut tendermint_url = format!("http://{}", self.node)
             .parse::<Url>()

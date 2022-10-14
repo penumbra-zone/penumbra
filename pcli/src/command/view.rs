@@ -35,14 +35,14 @@ pub enum ViewCmd {
 }
 
 impl ViewCmd {
-    pub fn needs_sync(&self) -> bool {
+    pub fn offline(&self) -> bool {
         match self {
-            ViewCmd::Address(address_cmd) => address_cmd.needs_sync(),
-            ViewCmd::Balance(balance_cmd) => balance_cmd.needs_sync(),
-            ViewCmd::Staked(staked_cmd) => staked_cmd.needs_sync(),
-            ViewCmd::Reset(_) => false,
-            ViewCmd::Sync => true,
-            ViewCmd::ListTransactionHashes(transactions_cmd) => transactions_cmd.needs_sync(),
+            ViewCmd::Address(address_cmd) => address_cmd.offline(),
+            ViewCmd::Balance(balance_cmd) => balance_cmd.offline(),
+            ViewCmd::Staked(staked_cmd) => staked_cmd.offline(),
+            ViewCmd::Reset(_) => true,
+            ViewCmd::Sync => false,
+            ViewCmd::ListTransactionHashes(transactions_cmd) => transactions_cmd.offline(),
         }
     }
 

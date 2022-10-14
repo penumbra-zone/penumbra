@@ -41,7 +41,7 @@ impl App {
     ) -> impl Future<Output = Result<Transaction>> + '_ {
         penumbra_wallet::build_transaction(
             &self.fvk,
-            &mut self.view,
+            self.view.as_mut().unwrap(),
             &mut self.custody,
             OsRng,
             plan,

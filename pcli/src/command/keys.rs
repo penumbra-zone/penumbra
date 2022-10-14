@@ -39,8 +39,8 @@ pub enum ExportCmd {
 
 impl KeysCmd {
     /// Determine if this command requires a network sync before it executes.
-    pub fn needs_sync(&self) -> bool {
-        false
+    pub fn offline(&self) -> bool {
+        true
     }
 
     fn archive_wallet(&self, wallet: &KeyStore) -> Result<()> {

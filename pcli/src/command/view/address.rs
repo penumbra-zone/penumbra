@@ -14,8 +14,8 @@ pub struct AddressCmd {
 
 impl AddressCmd {
     /// Determine if this command requires a network sync before it executes.
-    pub fn needs_sync(&self) -> bool {
-        false
+    pub fn offline(&self) -> bool {
+        true
     }
 
     pub fn exec(&self, fvk: &FullViewingKey) -> Result<()> {

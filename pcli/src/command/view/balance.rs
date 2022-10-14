@@ -18,8 +18,8 @@ pub struct BalanceCmd {
 }
 
 impl BalanceCmd {
-    pub fn needs_sync(&self) -> bool {
-        !self.offline
+    pub fn offline(&self) -> bool {
+        self.offline
     }
 
     pub async fn exec<V: ViewClient>(&self, fvk: &FullViewingKey, view: &mut V) -> Result<()> {
