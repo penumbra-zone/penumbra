@@ -21,9 +21,11 @@ not.
 ## Clues
 
 Each Penumbra transaction can have multiple outputs, to the same or different
-recipients.
-
-Clues are attached to transactions such that there is a single clue per recipient
+recipients. If a transaction contains $n$ outputs for the same recipient,
+then the FMD false positive rate $p$ will be $p^{n} << p$ if the detector uses
+the detection key that does not correspond to that recipient. To ensure that
+transactions are detected with false positive rate $p$, we attach clues to
+transactions such that there is a single clue per recipient
 clue key per transaction.
 
 In order not to leak the number of distinct recipients to a passive observer
