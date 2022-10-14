@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::BTreeMap, sync::Arc};
 
 use async_trait::async_trait;
 
@@ -15,14 +15,14 @@ use crate::snapshot::Snapshot;
 /// implemented as a RYW cache over a pinned JMT version.
 pub struct State {
     snapshot: Arc<Snapshot>,
-    unwritten_changes: HashMap<String, Vec<u8>>,
+    unwritten_changes: BTreeMap<String, Vec<u8>>,
 }
 
 impl State {
     pub(crate) fn new(snapshot: Arc<Snapshot>) -> Self {
         Self {
             snapshot,
-            unwritten_changes: HashMap::new(),
+            unwritten_changes: BTreeMap::new(),
         }
     }
 
