@@ -59,7 +59,7 @@ pub enum ProposalCmd {
 impl ProposalCmd {
     pub fn offline(&self) -> bool {
         match self {
-            ProposalCmd::Template { .. } => true,
+            ProposalCmd::Template { .. } => false,
             ProposalCmd::Submit { .. } => false,
             ProposalCmd::Withdraw { .. } => false,
             ProposalCmd::Vote { .. } => false,
