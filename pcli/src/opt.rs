@@ -86,9 +86,7 @@ impl Opt {
         let fvk = wallet.spend_key.full_viewing_key().clone();
 
         // ...and the view service...
-        // There is one command that is both offline and *un*synced:
-        // `pcli view balance --offline`. Hence, this check.
-        let view = if !self.cmd.offline() || matches!(self.cmd, Command::View(Balance(_))) {
+        let view = if !self.cmd.offline() {
             Some(self.view_client(&fvk).await?)
         } else {
             None

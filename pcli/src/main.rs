@@ -32,6 +32,9 @@ const VIEW_FILE_NAME: &str = "pcli-view.sqlite";
 
 #[derive(Debug)]
 pub struct App {
+    /// view will be `None` when a command indicates that it can be run offline via
+    /// `.offline()` and Some(_) otherwise. Assuming `.offline()` has been implemenented
+    /// correctly, this can be unwrapped safely.
     pub view: Option<ViewProtocolClient<BoxGrpcService>>,
     pub custody: CustodyProtocolClient<BoxGrpcService>,
     pub fvk: FullViewingKey,
@@ -128,15 +131,11 @@ async fn main() -> Result<()> {
         Command::Keys(_) => unreachable!("wallet command already executed"),
         Command::Transaction(tx_cmd) => tx_cmd.exec(&mut app).await?,
         Command::View(view_cmd) => {
-            if let ViewCmd::Address(address_cmd) = view_cmd {
-                address_cmd.exec(&app.fvk)?;
-            } else {
-                let mut oblivious_client = app.oblivious_client().await?;
+            let mut oblivious_client = app.oblivious_client().await?;
 
-                view_cmd
-                    .exec(&app.fvk, app.view.as_mut().unwrap(), &mut oblivious_client)
-                    .await?
-            }
+            view_cmd
+                .exec(&app.fvk, app.view.as_mut(), &mut oblivious_client)
+                .await?
         }
         Command::Validator(cmd) => cmd.exec(&mut app).await?,
         Command::Query(cmd) => cmd.exec(&mut app).await?,

@@ -49,12 +49,14 @@ impl ViewCmd {
     pub async fn exec(
         &self,
         full_viewing_key: &FullViewingKey,
-        view_client: &mut impl ViewClient,
+        view_client: Option<&mut impl ViewClient>,
         oblivious_client: &mut ObliviousQueryClient<Channel>,
     ) -> Result<()> {
         match self {
             ViewCmd::ListTransactionHashes(transactions_cmd) => {
-                transactions_cmd.exec(full_viewing_key, view_client).await?;
+                transactions_cmd
+                    .exec(full_viewing_key, view_client.unwrap())
+                    .await?;
             }
             ViewCmd::Sync => {
                 // We set needs_sync() -> true, so by this point, we have
@@ -63,15 +65,17 @@ impl ViewCmd {
             ViewCmd::Reset(_reset) => {
                 // The wallet has already been reset by a short-circuiting path.
             }
-            ViewCmd::Address(_address) => {
-                // Already done previously
+            ViewCmd::Address(address_cmd) => {
+                address_cmd.exec(full_viewing_key)?;
             }
             ViewCmd::Balance(balance_cmd) => {
-                balance_cmd.exec(full_viewing_key, view_client).await?;
+                balance_cmd
+                    .exec(full_viewing_key, view_client.unwrap())
+                    .await?;
             }
             ViewCmd::Staked(staked_cmd) => {
                 staked_cmd
-                    .exec(full_viewing_key, view_client, oblivious_client)
+                    .exec(full_viewing_key, view_client.unwrap(), oblivious_client)
                     .await?;
             }
         }

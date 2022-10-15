@@ -10,16 +10,13 @@ pub struct BalanceCmd {
     #[clap(short, long)]
     pub by_address: bool,
     #[clap(long)]
-    /// If set, does not attempt to synchronize the wallet before printing the balance.
-    pub offline: bool,
-    #[clap(long)]
     /// If set, prints the value of each note individually.
     pub by_note: bool,
 }
 
 impl BalanceCmd {
     pub fn offline(&self) -> bool {
-        self.offline
+        false
     }
 
     pub async fn exec<V: ViewClient>(&self, fvk: &FullViewingKey, view: &mut V) -> Result<()> {
