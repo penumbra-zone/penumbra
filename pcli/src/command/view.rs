@@ -63,8 +63,8 @@ impl ViewCmd {
             ViewCmd::Reset(_reset) => {
                 // The wallet has already been reset by a short-circuiting path.
             }
-            ViewCmd::Address(address_cmd) => {
-                address_cmd.exec(full_viewing_key)?;
+            ViewCmd::Address(_address) => {
+                // Already done previously
             }
             ViewCmd::Balance(balance_cmd) => {
                 balance_cmd.exec(full_viewing_key, view_client).await?;

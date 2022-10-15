@@ -128,11 +128,15 @@ async fn main() -> Result<()> {
         Command::Keys(_) => unreachable!("wallet command already executed"),
         Command::Transaction(tx_cmd) => tx_cmd.exec(&mut app).await?,
         Command::View(view_cmd) => {
-            let mut oblivious_client = app.oblivious_client().await?;
+            if let ViewCmd::Address(address_cmd) = view_cmd {
+                address_cmd.exec(&app.fvk)?;
+            } else {
+                let mut oblivious_client = app.oblivious_client().await?;
 
-            view_cmd
-                .exec(&app.fvk, app.view.as_mut().unwrap(), &mut oblivious_client)
-                .await?
+                view_cmd
+                    .exec(&app.fvk, app.view.as_mut().unwrap(), &mut oblivious_client)
+                    .await?
+            }
         }
         Command::Validator(cmd) => cmd.exec(&mut app).await?,
         Command::Query(cmd) => cmd.exec(&mut app).await?,

@@ -55,7 +55,7 @@ impl Command {
             Command::View(cmd) => cmd.offline(),
             Command::Keys(cmd) => cmd.offline(),
             Command::Validator(cmd) => cmd.offline(),
-            Command::Query(_) => true,
+            Command::Query(_) => false,
         }
     }
 }
