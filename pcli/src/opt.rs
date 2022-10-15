@@ -1,3 +1,4 @@
+use crate::command::ViewCmd::Balance;
 use crate::{
     box_grpc_svc::{self, BoxGrpcService},
     legacy, App, Command,
@@ -85,7 +86,9 @@ impl Opt {
         let fvk = wallet.spend_key.full_viewing_key().clone();
 
         // ...and the view service...
-        let view = if !self.cmd.offline() {
+        // There is one command that is both offline and *un*synced:
+        // `pcli view balance --offline`. Hence, this check.
+        let view = if !self.cmd.offline() || matches!(self.cmd, Command::View(Balance(_))) {
             Some(self.view_client(&fvk).await?)
         } else {
             None
