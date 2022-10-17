@@ -1,10 +1,14 @@
+use futures::future::BoxFuture;
 use std::{collections::BTreeMap, sync::Arc};
+use tracing::Span;
 
+use anyhow::Result;
 use async_trait::async_trait;
 
 mod read;
 mod transaction;
 mod write;
+use jmt::storage::{NodeBatch, TreeWriter};
 pub use read::StateRead;
 pub use transaction::Transaction as StateTransaction;
 pub use write::StateWrite;
@@ -15,7 +19,10 @@ use crate::snapshot::Snapshot;
 /// implemented as a RYW cache over a pinned JMT version.
 pub struct State {
     snapshot: Arc<Snapshot>,
-    unwritten_changes: BTreeMap<String, Vec<u8>>,
+    // A `None` value represents deletion.
+    pub(crate) unwritten_changes: BTreeMap<String, Option<Vec<u8>>>,
+    // A `None` value represents deletion.
+    pub(crate) sidecar_changes: BTreeMap<Vec<u8>, Option<Vec<u8>>>,
 }
 
 impl State {
@@ -23,23 +30,43 @@ impl State {
         Self {
             snapshot,
             unwritten_changes: BTreeMap::new(),
+            sidecar_changes: BTreeMap::new(),
         }
     }
 
     pub fn begin_transaction(&mut self) -> StateTransaction {
         StateTransaction::new(self)
     }
+
+    // Apply the unwritten changes of a transaction to this state fork.
+    pub fn apply_transaction(&mut self, transaction: StateTransaction) {
+        // Write the unwritten consensus-critical changes to the state:
+        self.unwritten_changes.extend(transaction.unwritten_changes);
+
+        // Write the unwritten sidechar changes to the state:
+        self.sidecar_changes.extend(transaction.sidecar_changes);
+    }
 }
 
 #[async_trait]
 impl StateRead for State {
-    fn get_raw(&self, key: String) -> Option<Vec<u8>> {
+    fn get_raw(&self, key: String) -> Result<Option<Vec<u8>>> {
         // If the key is available in the unwritten_changes cache, return it.
-        if let Some(value) = self.unwritten_changes.get(&key) {
-            return Some(value.clone());
+        if let Some(v) = self.unwritten_changes.get(&key) {
+            return Ok(v.clone());
         }
 
-        // If the key is available in the snapshot, return it.
-        self.snapshot.get_raw(key)
+        // Otherwise, if the key is available in the snapshot, return it.
+        self.snapshot.get_raw(&key)
+    }
+
+    fn get_sidecar(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+        // If the key is available in the sidecar cache, return it.
+        if let Some(v) = self.sidecar_changes.get(key) {
+            return Ok(v.clone());
+        }
+
+        // Otherwise, if the key is available in the snapshot, return it.
+        self.snapshot.get_sidecar(key)
     }
 }
