@@ -108,6 +108,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "ark-crypto-primitives"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ff773c0ef8c655c98071d3026a63950798a66b2f45baef22d8334c1756f1bd18"
+dependencies = [
+ "ark-ec",
+ "ark-ff",
+ "ark-relations",
+ "ark-serialize",
+ "ark-snark",
+ "ark-std",
+ "blake2",
+ "derivative",
+ "digest 0.9.0",
+ "rayon",
+]
+
+[[package]]
 name = "ark-ec"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -118,6 +136,7 @@ dependencies = [
  "ark-std",
  "derivative",
  "num-traits",
+ "rayon",
  "zeroize",
 ]
 
@@ -148,6 +167,7 @@ dependencies = [
  "num-bigint",
  "num-traits",
  "paste",
+ "rayon",
  "rustc_version 0.3.3",
  "zeroize",
 ]
@@ -172,6 +192,22 @@ dependencies = [
  "num-traits",
  "quote 1.0.21",
  "syn 1.0.101",
+]
+
+[[package]]
+name = "ark-groth16"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "38f8fff7468e947130b5caf9bdd27de8b913cf30e15104b4f0cd301726b3d897"
+dependencies = [
+ "ark-crypto-primitives",
+ "ark-ec",
+ "ark-ff",
+ "ark-poly",
+ "ark-relations",
+ "ark-serialize",
+ "ark-std",
+ "rayon",
 ]
 
 [[package]]
@@ -203,6 +239,7 @@ dependencies = [
  "ark-std",
  "derivative",
  "hashbrown 0.11.2",
+ "rayon",
 ]
 
 [[package]]
@@ -256,6 +293,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "ark-snark"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0dc3dff1a5f67a9c0b34df32b079752d8dd17f1e9d06253da0453db6c1b7cc8a"
+dependencies = [
+ "ark-ff",
+ "ark-relations",
+ "ark-std",
+]
+
+[[package]]
 name = "ark-sponge"
 version = "0.3.0"
 source = "git+https://github.com/penumbra-zone/sponge?branch=split-sponge#d82203c69427a852ef4abdc262e4e40784485c0c"
@@ -281,6 +329,7 @@ checksum = "1df2c09229cbc5a028b1d70e00fdb2acee28b1055dfb5ca73eea49c5a25c4e7c"
 dependencies = [
  "num-traits",
  "rand",
+ "rayon",
 ]
 
 [[package]]
@@ -581,6 +630,17 @@ dependencies = [
  "radium 0.7.0",
  "tap",
  "wyz 0.5.0",
+]
+
+[[package]]
+name = "blake2"
+version = "0.9.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0a4e37d16930f5459780f5621038b6382b9bb37c19016f39fb6b5808d831f174"
+dependencies = [
+ "crypto-mac",
+ "digest 0.9.0",
+ "opaque-debug",
 ]
 
 [[package]]
@@ -1093,6 +1153,16 @@ checksum = "1bfb12502f3fc46cca1bb51ac28df9d618d813cdc3d2f25b9fe775a34af26bb3"
 dependencies = [
  "generic-array",
  "typenum",
+]
+
+[[package]]
+name = "crypto-mac"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b584a330336237c1eecd3e94266efb216c56ed91225d634cb2991c5f3fd1aeab"
+dependencies = [
+ "generic-array",
+ "subtle",
 ]
 
 [[package]]
@@ -3100,8 +3170,12 @@ version = "0.1.0"
 dependencies = [
  "aes 0.8.1",
  "anyhow",
+ "ark-ec",
  "ark-ff",
+ "ark-groth16",
+ "ark-relations",
  "ark-serialize",
+ "ark-snark",
  "ark-std",
  "bech32",
  "bincode",
