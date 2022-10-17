@@ -1,12 +1,8 @@
 use anyhow::Result;
 use decaf377::{Bls12_377, Fq, Fr};
 
-use ark_ec::{bls12::Bls12, PairingEngine, ProjectiveCurve};
 use ark_ff::UniformRand;
-use ark_groth16::{
-    generate_parameters, prepare_verifying_key, verify_proof, Groth16, PreparedVerifyingKey, Proof,
-    ProvingKey,
-};
+use ark_groth16::{Groth16, Proof, ProvingKey, VerifyingKey};
 use ark_relations::r1cs::{
     ConstraintSynthesizer, ConstraintSystem, ConstraintSystemRef, OptimizationGoal,
 };
@@ -44,36 +40,14 @@ struct OutputProof {
 }
 
 impl OutputProof {
-    /// Decentralized setup for the OutputProof
-    // pub fn decentralized_setup<
-    //     E: PairingEngine,
-    //     R: RngCore + CryptoRng,
-    //     C: ConstraintSynthesizer<Fq>,
-    // >(
-    //     circuit: C,
-    //     rng: &mut R,
-    // ) -> R1CSResult<ProvingKey<E>> {
-    //     let alpha = Fq::rand(rng);
-    //     let beta = Fq::rand(rng);
-    //     let gamma = Fq::rand(rng);
-    //     let delta = Fq::rand(rng);
-
-    //     let g1_generator = E::G1Projective::prime_subgroup_generator();
-    //     let g2_generator = E::G2Projective::prime_subgroup_generator();
-
-    //     let pk = generate_parameters::<E, C, R>(
-    //         circuit,
-    //         alpha,
-    //         beta,
-    //         gamma,
-    //         delta,
-    //         g1_generator,
-    //         g2_generator,
-    //         rng,
-    //     )?;
-
-    //     Ok(pk)
-    // }
+    /// Setup (will become the decentralized setup)
+    pub fn setup<R: RngCore + CryptoRng>(
+        rng: &mut R,
+    ) -> Result<(ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>)> {
+        let circuit = OutputCircuit {};
+        Groth16::circuit_specific_setup(circuit, rng)
+            .map_err(|_| anyhow::anyhow!("failure to perform setup"))
+    }
 
     /// Prover POV
     pub fn new<R: RngCore + CryptoRng>(
@@ -86,13 +60,11 @@ impl OutputProof {
     }
 
     /// Verifier POV
-    pub fn verify(
-        self,
-        circuit_pvk: &PreparedVerifyingKey<Bls12_377>,
-        public_input: &[Fq],
-    ) -> Result<bool> {
-        Groth16::verify_with_processed_vk(circuit_pvk, public_input, &self.groth16_proof)
-                .map_err(|_| anyhow::anyhow!("boom")),
+    pub fn verify(self, vk: &VerifyingKey<Bls12_377>, public_input: &[Fq]) -> Result<bool> {
+        let circuit_pvk = Groth16::process_vk(vk)
+            .map_err(|_| anyhow::anyhow!("could not process verifying key"))?;
+        Groth16::verify_with_processed_vk(&circuit_pvk, public_input, &self.groth16_proof)
+            .map_err(|_| anyhow::anyhow!("boom"))
     }
 }
 
