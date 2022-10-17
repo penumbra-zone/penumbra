@@ -3,7 +3,7 @@
 Follow the [same steps](https://guide.penumbra.zone/main/pcli/install.html#cloning-the-repository) to update to the latest testnet [release](https://github.com/penumbra-zone/penumbra/releases)
 
 ```
-cd penumbra && git fetch && git checkout 032-chaldene && cargo update
+cd penumbra && git fetch && git checkout 032-chaldene.1 && cargo update
 ```
 
 Once again, build `pcli` with cargo
