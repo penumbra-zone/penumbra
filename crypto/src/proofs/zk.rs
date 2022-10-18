@@ -1,15 +1,16 @@
 use anyhow::Result;
+use ark_r1cs_std::fields::fp::AllocatedFp;
+use ark_r1cs_std::prelude::Boolean;
 use decaf377::{Bls12_377, FieldExt, Fq};
 
+use super::zk_gadgets;
 use ark_ff::UniformRand;
 use ark_groth16::{Groth16, Proof, ProvingKey, VerifyingKey};
-use ark_relations::r1cs::{
-    ConstraintSynthesizer, ConstraintSystem, ConstraintSystemRef, OptimizationGoal,
-};
+use ark_r1cs_std::prelude::AllocVar;
+use ark_relations::ns;
+use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
 use rand::{CryptoRng, RngCore};
-
-use super::zk_gadgets;
 
 // Public:
 // * vcm (value commitment)
@@ -36,7 +37,22 @@ struct OutputCircuit {
 
 impl ConstraintSynthesizer<Fq> for OutputCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
-        zk_gadgets::diversified_basepoint_not_identity(cs);
+        // First we generate constraints for all the witnesses included on the struct
+
+        // TODO: Use decaf Element gadget for all points here instead of compressing to Fq
+        //let g_d = cs.new_witness_variable(|| Ok(self.g_d.vartime_compress_to_field()))?;
+        let g_d = AllocatedFp::new_witness(ns!(cs, "diversified_base"), || {
+            Ok(self.g_d.vartime_compress_to_field())
+        })?;
+
+        let identity_fq: Fq = decaf377::Element::default().vartime_compress_to_field();
+        //let identity = FpVar::<Fq>::new_constant(ns!(cs, "decaf_identity"), identity_fq)?;
+        let identity = AllocatedFp::new_constant(ns!(cs, "decaf_identity"), identity_fq)?;
+
+        identity.conditional_enforce_not_equal(&g_d, &Boolean::TRUE);
+
+        // TODO: Figure out how to best factor this logic into gadgets
+
         Ok(())
     }
 }
