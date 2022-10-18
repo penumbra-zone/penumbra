@@ -1,5 +1,5 @@
 use anyhow::Result;
-use decaf377::{Bls12_377, Fq, Fr};
+use decaf377::{Bls12_377, FieldExt, Fq};
 
 use ark_ff::UniformRand;
 use ark_groth16::{Groth16, Proof, ProvingKey, VerifyingKey};
@@ -8,6 +8,8 @@ use ark_relations::r1cs::{
 };
 use ark_snark::SNARK;
 use rand::{CryptoRng, RngCore};
+
+use super::zk_gadgets;
 
 // Public:
 // * vcm (value commitment)
@@ -27,11 +29,23 @@ use rand::{CryptoRng, RngCore};
 // 2. Ephemeral public key integrity (not implemented).
 // 3. Value commitment integrity (not implemented).
 // 4. Note commitment integrity (not implemented).
-struct OutputCircuit {}
+struct OutputCircuit {
+    /// Diversified basepoint.
+    g_d: decaf377::Element,
+}
 
 impl ConstraintSynthesizer<Fq> for OutputCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
-        todo!()
+        zk_gadgets::diversified_basepoint_not_identity(cs);
+        Ok(())
+    }
+}
+
+impl OutputCircuit {
+    fn setup_random_circuit<R: RngCore + CryptoRng>(rng: &mut R) -> Result<OutputCircuit> {
+        let random_fq = Fq::rand(rng);
+        let g_d = decaf377::Encoding(random_fq.to_bytes()).vartime_decompress()?;
+        Ok(OutputCircuit { g_d })
     }
 }
 
@@ -44,7 +58,7 @@ impl OutputProof {
     pub fn setup<R: RngCore + CryptoRng>(
         rng: &mut R,
     ) -> Result<(ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>)> {
-        let circuit = OutputCircuit {};
+        let circuit = OutputCircuit::setup_random_circuit(rng)?;
         Groth16::circuit_specific_setup(circuit, rng)
             .map_err(|_| anyhow::anyhow!("failure to perform setup"))
     }
@@ -53,8 +67,9 @@ impl OutputProof {
     pub fn new<R: RngCore + CryptoRng>(
         rng: &mut R,
         pk: ProvingKey<Bls12_377>,
+        g_d: decaf377::Element,
     ) -> Result<OutputProof> {
-        let circuit = OutputCircuit {};
+        let circuit = OutputCircuit { g_d };
         let groth16_proof = Groth16::prove(&pk, circuit, rng).expect("can prove");
         Ok(OutputProof { groth16_proof })
     }
