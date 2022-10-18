@@ -46,7 +46,7 @@ impl StateRead for Snapshot {
     }
 
     /// Fetch a key from the sidecar column family.
-    fn get_sidecar_raw(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+    fn get_sidecar(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
         let sidecar_cf = self
             .db
             .cf_handle("sidecar")

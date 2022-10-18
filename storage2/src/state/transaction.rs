@@ -45,7 +45,7 @@ impl<'a> StateWrite for Transaction<'a> {
         self.sidecar_changes.insert(key, None);
     }
 
-    fn put_sidecar_raw(&mut self, key: Vec<u8>, value: Vec<u8>) {
+    fn put_sidecar(&mut self, key: Vec<u8>, value: Vec<u8>) {
         self.sidecar_changes.insert(key, Some(value));
     }
 }

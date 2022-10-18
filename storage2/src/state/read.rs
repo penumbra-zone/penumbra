@@ -55,51 +55,5 @@ pub trait StateRead {
     }
 
     /// Retrieve a raw value from non-consensus-critical ("sidecar") state.
-    fn get_sidecar_raw(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
-
-    /// Gets a proto type from non-consensus-critical ("sidecar") state.
-    fn get_sidecar_proto<D, P>(&self, key: &[u8]) -> Result<Option<P>>
-    where
-        D: Protobuf<P>,
-        // TODO: does this get less awful if P is an associated type of D?
-        P: Message + Default,
-        P: From<D>,
-        D: TryFrom<P> + Clone + Debug,
-        <D as TryFrom<P>>::Error: Into<anyhow::Error>,
-    {
-        let bytes = match self.get_sidecar_raw(key)? {
-            None => return Ok(None),
-            Some(bytes) => bytes,
-        };
-
-        Message::decode(bytes.as_slice())
-            .map_err(|e| anyhow::anyhow!(e))
-            .map(|v| Some(v))
-    }
-
-    /// Gets a domain type from non-consensus-critical ("sidecar") state.
-    fn get_sidecar<D, P>(&self, key: &[u8]) -> Result<Option<D>>
-    where
-        D: Protobuf<P>,
-        // TODO: does this get less awful if P is an associated type of D?
-        P: Message + Default,
-        P: From<D>,
-        D: TryFrom<P> + Clone + Debug,
-        <D as TryFrom<P>>::Error: Into<anyhow::Error>,
-    {
-        match self.get_sidecar_proto(key) {
-            Ok(Some(p)) => match D::try_from(p) {
-                Ok(d) => {
-                    tracing::trace!(?key, value = ?d);
-                    Ok(Some(d))
-                }
-                Err(e) => Err(e.into()),
-            },
-            Ok(None) => {
-                tracing::trace!(?key, "no entry in DB");
-                Ok(None)
-            }
-            Err(e) => Err(e),
-        }
-    }
+    fn get_sidecar(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
 }

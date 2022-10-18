@@ -1,6 +1,4 @@
-use futures::future::BoxFuture;
 use std::{collections::BTreeMap, sync::Arc};
-use tracing::Span;
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -8,7 +6,6 @@ use async_trait::async_trait;
 mod read;
 mod transaction;
 mod write;
-use jmt::storage::{NodeBatch, TreeWriter};
 pub use read::StateRead;
 pub use transaction::Transaction as StateTransaction;
 pub use write::StateWrite;
@@ -51,13 +48,13 @@ impl StateRead for State {
         self.snapshot.get_raw(key)
     }
 
-    fn get_sidecar_raw(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+    fn get_sidecar(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
         // If the key is available in the sidecar cache, return it.
         if let Some(v) = self.sidecar_changes.get(key) {
             return Ok(v.clone());
         }
 
         // Otherwise, if the key is available in the snapshot, return it.
-        self.snapshot.get_sidecar_raw(key)
+        self.snapshot.get_sidecar(key)
     }
 }

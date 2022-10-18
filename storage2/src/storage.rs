@@ -33,7 +33,7 @@ impl Storage {
                     opts.create_if_missing(true);
                     opts.create_missing_column_families(true);
 
-                    let db = Box::new(DB::open_cf(&opts, path, ["jmt", "nct", "indices"])?);
+                    let db = Box::new(DB::open_cf(&opts, path, ["jmt", "sidecar", "jmt_keys"])?);
                     let static_db: &'static DB = Box::leak(db);
                     let jmt_version = latest_version(static_db).unwrap().unwrap();
                     let latest_snapshot = {
@@ -66,7 +66,7 @@ impl Storage {
 
     pub async fn apply(&'static mut self, state: State) -> Result<()> {
         // 1. Write the NCT
-        // TODO: move this higher up in the call stack, and use `put_sidechain` to store
+        // TODO: move this higher up in the call stack, and use `put_sidecar` to store
         // the NCT.
         // tracing::debug!("serializing NCT");
         // let tct_data = bincode::serialize(nct)?;
@@ -100,12 +100,32 @@ impl Storage {
                 span.in_scope(|| {
                     let snap = self.0.latest_snapshot.read().clone();
                     let jmt = JellyfishMerkleTree::new(snap.as_ref());
+
+                    let unwritten_changes: Vec<_> = state
+                        .unwritten_changes
+                        .into_iter()
+                        // Pre-calculate all KeyHashes for later storage in `jmt_keys`
+                        .map(|x| (KeyHash::from(&x.0), x.0, x.1))
+                        .collect();
+
+                    // Write the JMT key lookups to RocksDB
+                    let jmt_keys_cf = db
+                        .cf_handle("jmt_keys")
+                        .expect("jmt_keys column family not found");
+                    for (keyhash, key_preimage, v) in unwritten_changes.iter() {
+                        match v {
+                            // Key still exists, so we need to store the key preimage
+                            Some(_) => db.put_cf(jmt_keys_cf, key_preimage, keyhash.0)?,
+                            // Key was deleted, so delete the key preimage
+                            None => {
+                                db.delete_cf(jmt_keys_cf, key_preimage)?;
+                            }
+                        };
+                    }
+
                     // Write the unwritten changes from the state to the JMT.
                     let (jmt_root_hash, batch) = jmt.put_value_set(
-                        state
-                            .unwritten_changes
-                            .into_iter()
-                            .map(|x| (KeyHash::from(x.0), x.1)),
+                        unwritten_changes.into_iter().map(|x| (x.0, x.2)),
                         new_version,
                     )?;
 
@@ -126,8 +146,6 @@ impl Storage {
                             }
                         };
                     }
-                    // TODO: 3. write the index tables to RocksDB
-                    // not yet implemented because the API for vectorized keys is not yet designed
 
                     // 4. update the snapshot
                     // Now that we've successfully written the new nodes, update the version.
