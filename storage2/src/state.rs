@@ -50,14 +50,14 @@ impl State {
 
 #[async_trait]
 impl StateRead for State {
-    fn get_raw(&self, key: String) -> Result<Option<Vec<u8>>> {
+    fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>> {
         // If the key is available in the unwritten_changes cache, return it.
-        if let Some(v) = self.unwritten_changes.get(&key) {
+        if let Some(v) = self.unwritten_changes.get(key) {
             return Ok(v.clone());
         }
 
         // Otherwise, if the key is available in the snapshot, return it.
-        self.snapshot.get_raw(&key)
+        self.snapshot.get_raw(key)
     }
 
     fn get_sidecar(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {

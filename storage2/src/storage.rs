@@ -2,7 +2,7 @@ use std::{path::PathBuf, sync::Arc};
 
 use anyhow::Result;
 use jmt::{
-    storage::{LeafNode, Node, NodeBatch, NodeKey, TreeReader, TreeWriter},
+    storage::{LeafNode, Node, NodeBatch, NodeKey, TreeWriter},
     JellyfishMerkleTree, KeyHash,
 };
 use parking_lot::RwLock;
@@ -141,12 +141,7 @@ impl TreeWriter for Inner {
         let db = self.db;
         let node_batch = node_batch.clone();
 
-        // The writes have to happen on a separate spawn_blocking task, but we
-        // want tracing events to occur in the context of the current span, so
-        // propagate it explicitly:
-        let span = Span::current();
-
-        for (node_key, node) in node_batch.clone() {
+        for (node_key, node) in node_batch {
             let key_bytes = &node_key.encode()?;
             let value_bytes = &node.encode()?;
             tracing::trace!(?key_bytes, value_bytes = ?hex::encode(&value_bytes));
@@ -181,8 +176,5 @@ fn get_rightmost_leaf(db: &DB) -> Result<Option<(NodeKey, LeafNode)>> {
 }
 
 pub fn latest_version(db: &DB) -> Result<Option<jmt::Version>> {
-    Ok(get_rightmost_leaf(db)
-        // TODO: do better
-        .unwrap()
-        .map(|(node_key, _)| node_key.version()))
+    Ok(get_rightmost_leaf(db)?.map(|(node_key, _)| node_key.version()))
 }
