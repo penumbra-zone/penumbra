@@ -87,7 +87,7 @@ impl Storage {
         //     .await??;
         let db = self.0.db;
 
-        // 2. Write the JMT to RocksDB
+        // 2. Write the JMT and sidecar data to RocksDB
         // We use wrapping_add here so that we can write `new_version = 0` by
         // overflowing `PRE_GENESIS_VERSION`.
         let old_version = self.latest_version().await?.unwrap();
@@ -113,6 +113,19 @@ impl Storage {
                     self.0.write_node_batch(&batch.node_batch)?;
                     tracing::trace!(?jmt_root_hash, "wrote node batch to backing store");
 
+                    // Write the unwritten changes from the sidecar to RocksDB.
+                    for (k, v) in state.sidecar_changes.into_iter() {
+                        let sidecar_cf = db
+                            .cf_handle("sidecar")
+                            .expect("sidecar column family not found");
+
+                        match v {
+                            Some(v) => db.put_cf(sidecar_cf, k, &v)?,
+                            None => {
+                                db.delete_cf(sidecar_cf, k)?;
+                            }
+                        };
+                    }
                     // TODO: 3. write the index tables to RocksDB
                     // not yet implemented because the API for vectorized keys is not yet designed
 

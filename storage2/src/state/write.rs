@@ -1,10 +1,7 @@
 use std::fmt::Debug;
 
-use async_trait::async_trait;
-
 use penumbra_proto::{Message, Protobuf};
 
-#[async_trait]
 pub trait StateWrite {
     /// Copy-on-write put
     fn put_raw(&mut self, key: String, value: Vec<u8>);

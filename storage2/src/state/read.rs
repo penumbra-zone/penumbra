@@ -1,11 +1,9 @@
 use std::fmt::Debug;
 
 use anyhow::Result;
-use async_trait::async_trait;
 
 use penumbra_proto::{Message, Protobuf};
 
-#[async_trait]
 pub trait StateRead {
     /// Get
     fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>>;

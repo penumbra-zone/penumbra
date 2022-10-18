@@ -58,6 +58,6 @@ impl StateRead for State {
         }
 
         // Otherwise, if the key is available in the snapshot, return it.
-        self.snapshot.get_sidecar(key)
+        self.snapshot.get_sidecar_raw(key)
     }
 }
