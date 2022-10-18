@@ -1,6 +1,5 @@
 use std::fmt::Debug;
 
-use anyhow::Result;
 use async_trait::async_trait;
 
 use penumbra_proto::{Message, Protobuf};

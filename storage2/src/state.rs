@@ -37,15 +37,6 @@ impl State {
     pub fn begin_transaction(&mut self) -> StateTransaction {
         StateTransaction::new(self)
     }
-
-    // Apply the unwritten changes of a transaction to this state fork.
-    pub fn apply_transaction(&mut self, transaction: StateTransaction) {
-        // Write the unwritten consensus-critical changes to the state:
-        self.unwritten_changes.extend(transaction.unwritten_changes);
-
-        // Write the unwritten sidechar changes to the state:
-        self.sidecar_changes.extend(transaction.sidecar_changes);
-    }
 }
 
 #[async_trait]
