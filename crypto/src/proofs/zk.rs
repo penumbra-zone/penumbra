@@ -1,7 +1,7 @@
 use anyhow::Result;
 use ark_r1cs_std::fields::fp::AllocatedFp;
 use ark_r1cs_std::prelude::Boolean;
-use decaf377::{Bls12_377, FieldExt, Fq};
+use decaf377::{Bls12_377, Fq};
 
 use super::zk_gadgets;
 use ark_ff::UniformRand;
@@ -86,7 +86,8 @@ impl OutputProof {
         g_d: decaf377::Element,
     ) -> Result<OutputProof> {
         let circuit = OutputCircuit { g_d };
-        let groth16_proof = Groth16::prove(&pk, circuit, rng).expect("can prove");
+        let groth16_proof =
+            Groth16::prove(&pk, circuit, rng).map_err(|_| anyhow::anyhow!("invalid proof"))?;
         Ok(OutputProof { groth16_proof })
     }
 
@@ -119,5 +120,18 @@ mod test {
             OutputProof::new(&mut rng, &pk, g_d).expect("can prove using a test output circuit");
 
         assert!(proof.verify(&vk, &[]).unwrap());
+    }
+
+    #[test]
+    fn groth16_output_diversified_base_expected_failure() {
+        let mut rng = OsRng;
+
+        // Invalid (identity) diversified base
+        let g_d = decaf377::Element::default();
+        let (pk, vk) = OutputProof::setup(&mut rng)
+            .expect("can perform test Groth16 setup for output circuit");
+
+        // Cannot form proof with invalid diversified base - this involves only constants and witnesses
+        assert!(OutputProof::new(&mut rng, &pk, g_d).is_err());
     }
 }
