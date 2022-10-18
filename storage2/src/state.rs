@@ -51,7 +51,7 @@ impl StateRead for State {
         self.snapshot.get_raw(key)
     }
 
-    fn get_sidecar(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+    fn get_sidecar_raw(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
         // If the key is available in the sidecar cache, return it.
         if let Some(v) = self.sidecar_changes.get(key) {
             return Ok(v.clone());
