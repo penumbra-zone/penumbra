@@ -41,6 +41,7 @@ Unfortunately, these extensions are not mutually compatible, so we only use the
 first one, and record the second for posterity.
 
 * In [S-FMD Threat Model](./fmd/threat_model.md), we describe the threat model for S-FMD on Penumbra. 
+* In [S-FMD in Penumbra](./fmd/system_mapping.md), we describe how S-FMD is integrated into Penumbra.
 * In [Parameter Considerations](./fmd/considerations.md), we discuss how the
 false positive rates should be chosen.
 

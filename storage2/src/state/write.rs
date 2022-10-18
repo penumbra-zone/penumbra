@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 
+use anyhow::Result;
 use async_trait::async_trait;
 
 use penumbra_proto::{Message, Protobuf};
@@ -37,4 +38,10 @@ pub trait StateWrite {
 
     /// Delete a key from state.
     fn delete(&mut self, key: String);
+
+    /// Delete a key from sidecar storage.
+    fn delete_sidecar(&mut self, key: Vec<u8>);
+
+    /// Put a key/value pair into non-consensus-critical ("sidecar") state.
+    fn put_sidecar(&mut self, key: Vec<u8>, value: Vec<u8>);
 }

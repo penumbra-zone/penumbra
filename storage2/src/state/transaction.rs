@@ -1,35 +1,45 @@
+use std::collections::BTreeMap;
+
 use crate::State;
+
+use anyhow::Result;
 
 use super::StateWrite;
 
 /// Represents a transactional set of changes to a `State` fork,
 /// implemented as a RYW cache over a `State`.
 pub struct Transaction<'a> {
-    // TODO determine which fields to include (#1490)
-    // cache: HashMap<jmt::KeyHash, jmt::OwnedValue>,
-    // unwritten_changes: Vec<(jmt::KeyHash, jmt::OwnedValue)>,
+    /// Unwritten changes to the consensus-critical state (stored in the JMT).
+    pub(crate) unwritten_changes: BTreeMap<String, Option<Vec<u8>>>,
+    /// Unwritten changes to non-consensus-critical state (stored in the sidecar).
+    pub(crate) sidecar_changes: BTreeMap<Vec<u8>, Option<Vec<u8>>>,
     state: &'a mut State,
 }
 
 impl<'a> Transaction<'a> {
     pub fn new(state: &'a mut State) -> Self {
-        Self { state }
-    }
-
-    pub fn commit(self) {
-        // Write unwritten_changes to our parent in-memory state fork.
-        // The state will not be written to storage until `State::commit` is called.
-        // `self` will be consumed afterwards
-        todo!()
+        Self {
+            state,
+            unwritten_changes: BTreeMap::new(),
+            sidecar_changes: BTreeMap::new(),
+        }
     }
 }
 
 impl<'a> StateWrite for Transaction<'a> {
     fn put_raw(&mut self, key: String, value: jmt::OwnedValue) {
-        todo!()
+        self.unwritten_changes.insert(key, Some(value));
+    }
+
+    fn put_sidecar(&mut self, key: Vec<u8>, value: Vec<u8>) {
+        self.sidecar_changes.insert(key, Some(value));
     }
 
     fn delete(&mut self, key: String) {
-        todo!()
+        self.unwritten_changes.insert(key, None);
+    }
+
+    fn delete_sidecar(&mut self, key: Vec<u8>) {
+        self.sidecar_changes.insert(key, None);
     }
 }
