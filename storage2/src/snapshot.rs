@@ -1,8 +1,5 @@
-use std::collections::HashMap;
-
 use anyhow::Result;
 use jmt::storage::{LeafNode, Node, NodeKey, TreeReader};
-use tracing::Span;
 
 /// Snapshots maintain a point-in-time view of the underlying storage, suitable
 /// for read-only access by multiple threads, i.e. RPC calls.

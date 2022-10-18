@@ -37,15 +37,15 @@ impl<'a> StateWrite for Transaction<'a> {
         self.unwritten_changes.insert(key, Some(value));
     }
 
-    fn put_sidecar(&mut self, key: Vec<u8>, value: Vec<u8>) {
-        self.sidecar_changes.insert(key, Some(value));
-    }
-
     fn delete(&mut self, key: String) {
         self.unwritten_changes.insert(key, None);
     }
 
     fn delete_sidecar(&mut self, key: Vec<u8>) {
         self.sidecar_changes.insert(key, None);
+    }
+
+    fn put_sidecar_raw(&mut self, key: Vec<u8>, value: Vec<u8>) {
+        self.sidecar_changes.insert(key, Some(value));
     }
 }
