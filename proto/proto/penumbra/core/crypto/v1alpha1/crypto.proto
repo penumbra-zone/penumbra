@@ -28,6 +28,10 @@ message FullViewingKey {
     bytes inner = 1;
 }
 
+message PayloadKey {
+    bytes inner = 1;
+}
+
 message AccountID {
     bytes inner = 1;
 }

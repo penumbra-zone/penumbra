@@ -1,6 +1,6 @@
 use penumbra_chain::NoteSource;
 use penumbra_crypto::{
-    asset, keys::AddressIndex, note, Address, FieldExt, Fq, Note, Nullifier, Value,
+    asset, keys::AddressIndex, note, Address, FieldExt, Fq, Note, Nullifier, PayloadKey, Value,
 };
 use penumbra_proto::{view::v1alpha1 as pb, Protobuf};
 use penumbra_tct as tct;
@@ -20,6 +20,7 @@ pub struct SpendableNoteRecord {
     pub height_spent: Option<u64>,
     pub position: tct::Position,
     pub source: NoteSource,
+    pub payload_key: PayloadKey,
 }
 
 impl Protobuf<pb::SpendableNoteRecord> for SpendableNoteRecord {}
@@ -34,6 +35,7 @@ impl From<SpendableNoteRecord> for pb::SpendableNoteRecord {
             height_spent: v.height_spent,
             position: v.position.into(),
             source: Some(v.source.into()),
+            payload_key: Some(v.payload_key.into()),
         }
     }
 }
@@ -64,6 +66,10 @@ impl TryFrom<pb::SpendableNoteRecord> for SpendableNoteRecord {
             source: v
                 .source
                 .ok_or_else(|| anyhow::anyhow!("missing note source"))?
+                .try_into()?,
+            payload_key: v
+                .payload_key
+                .ok_or_else(|| anyhow::anyhow!("missing payload key"))?
                 .try_into()?,
         })
     }
@@ -156,6 +162,14 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for SpendableNoteRecord {
             }
         })?;
 
+        let payload_key =
+            PayloadKey::try_from(row.get::<'r, Vec<u8>, _>("payload_key")).map_err(|e| {
+                sqlx::Error::ColumnDecode {
+                    index: "payload_key".to_string(),
+                    source: e.into(),
+                }
+            })?;
+
         Ok(SpendableNoteRecord {
             note_commitment,
             note,
@@ -165,6 +179,7 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for SpendableNoteRecord {
             height_created,
             height_spent,
             source,
+            payload_key,
         })
     }
 }

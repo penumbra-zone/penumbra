@@ -40,6 +40,12 @@ pub struct FullViewingKey {
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
 #[derive(::serde::Deserialize, ::serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PayloadKey {
+    #[prost(bytes="vec", tag="1")]
+    pub inner: ::prost::alloc::vec::Vec<u8>,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[serde(transparent)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AccountId {

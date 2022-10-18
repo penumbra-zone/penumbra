@@ -187,6 +187,7 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
         ".penumbra.core.crypto.v1alpha1.FullViewingKey",
         SERDE_TRANSPARENT,
     ),
+    (".penumbra.core.crypto.v1alpha1.PayloadKey", SERIALIZE),
     (".penumbra.core.crypto.v1alpha1.AccountID", SERIALIZE),
     (
         ".penumbra.core.crypto.v1alpha1.AccountID",

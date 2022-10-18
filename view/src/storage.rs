@@ -434,7 +434,12 @@ impl Storage {
         tx_hash: &[u8],
         fvk: FullViewingKey,
     ) -> anyhow::Result<TransactionPerspective> {
+
+        //We need ephemeral key and incoming viewing key to derive
+
+
         let output = TransactionPerspective {
+            //Iterate over note commitments for the transaction,
             payload_keys: todo!(),
             spend_nullifiers: todo!(),
         };

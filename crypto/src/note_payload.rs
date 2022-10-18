@@ -5,7 +5,7 @@ use decaf377::FieldExt;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use crate::{asset::Amount, ka, note, FullViewingKey, Note};
+use crate::{asset::Amount, ka, note, FullViewingKey, Note, PayloadKey};
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::NotePayload", into = "pb::NotePayload")]
@@ -16,15 +16,17 @@ pub struct NotePayload {
 }
 
 impl NotePayload {
-    pub fn trial_decrypt(&self, fvk: &FullViewingKey) -> Option<Note> {
+    pub fn trial_decrypt(&self, fvk: &FullViewingKey) -> Option<(Note, PayloadKey)> {
         // Try to decrypt the encrypted note using the ephemeral key and persistent incoming
         // viewing key -- if it doesn't decrypt, it wasn't meant for us.
-        let note = Note::decrypt(
-            self.encrypted_note.as_ref(),
-            fvk.incoming(),
-            &self.ephemeral_key,
-        )
-        .ok()?;
+        let epk = &self.ephemeral_key;
+
+        let shared_secret = fvk.incoming().key_agreement_with(epk).ok()?;
+
+        let key = PayloadKey::derive(&shared_secret, epk);
+
+        let note = Note::decrypt_with_payload_key(self.encrypted_note.as_ref(), &key).ok()?;
+
         tracing::debug!(note_commitment = ?note.commit(), ?note, "found note while scanning");
 
         // Verification logic (if any fails, return None & log error)
@@ -58,7 +60,7 @@ impl NotePayload {
         //
         // See "REJECT" attack (CVE-2019-16930) for a similar attack in ZCash
         // Section 4.1 in https://crypto.stanford.edu/timings/pingreject.pdf
-        Some(note)
+        Some((note, key))
     }
 
     pub fn auth_hash(&self) -> Hash {
