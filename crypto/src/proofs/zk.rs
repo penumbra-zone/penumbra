@@ -26,7 +26,7 @@ use rand::{CryptoRng, RngCore};
 // * esk (scalar)
 //
 // Output circuits check:
-// 1. Diversified base is not identity (not implemented).
+// 1. Diversified base is not identity (implemented).
 // 2. Ephemeral public key integrity (not implemented).
 // 3. Value commitment integrity (not implemented).
 // 4. Note commitment integrity (not implemented).
@@ -49,7 +49,7 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
         //let identity = FpVar::<Fq>::new_constant(ns!(cs, "decaf_identity"), identity_fq)?;
         let identity = AllocatedFp::new_constant(ns!(cs, "decaf_identity"), identity_fq)?;
 
-        identity.conditional_enforce_not_equal(&g_d, &Boolean::TRUE);
+        identity.conditional_enforce_not_equal(&g_d, &Boolean::TRUE)?;
 
         // TODO: Figure out how to best factor this logic into gadgets
 
@@ -60,7 +60,7 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
 impl OutputCircuit {
     fn setup_random_circuit<R: RngCore + CryptoRng>(rng: &mut R) -> Result<OutputCircuit> {
         let random_fq = Fq::rand(rng);
-        let g_d = decaf377::Encoding(random_fq.to_bytes()).vartime_decompress()?;
+        let g_d = decaf377::Element::encode_to_curve(&random_fq);
         Ok(OutputCircuit { g_d })
     }
 }
@@ -82,7 +82,7 @@ impl OutputProof {
     /// Prover POV
     pub fn new<R: RngCore + CryptoRng>(
         rng: &mut R,
-        pk: ProvingKey<Bls12_377>,
+        pk: &ProvingKey<Bls12_377>,
         g_d: decaf377::Element,
     ) -> Result<OutputProof> {
         let circuit = OutputCircuit { g_d };
@@ -99,6 +99,25 @@ impl OutputProof {
     }
 }
 
-// Test:
-// Run decentralized_setup
-// Use pk as input in new
+#[cfg(test)]
+mod test {
+    use rand_core::OsRng;
+
+    use super::*;
+
+    #[test]
+    fn groth16_output_diversified_base_happy() {
+        let mut rng = OsRng;
+
+        // Random (non-zero) diversified base
+        let random_fq = Fq::rand(&mut rng);
+        let g_d = decaf377::Element::encode_to_curve(&random_fq);
+        let (pk, vk) = OutputProof::setup(&mut rng)
+            .expect("can perform test Groth16 setup for output circuit");
+
+        let proof =
+            OutputProof::new(&mut rng, &pk, g_d).expect("can prove using a test output circuit");
+
+        assert!(proof.verify(&vk, &[]).unwrap());
+    }
+}
