@@ -3,9 +3,7 @@ use chacha20poly1305::{
     aead::{Aead, NewAead},
     ChaCha20Poly1305, Key, Nonce,
 };
-use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
 use rand::{CryptoRng, RngCore};
-use serde::{Deserialize, Serialize};
 
 use crate::{
     balance, ka,
@@ -43,8 +41,7 @@ impl PayloadKind {
 /// Represents a symmetric `ChaCha20Poly1305` key.
 ///
 /// Used for encrypting and decrypting notes, memos, memo keys, and swaps.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(into = "pb::PayloadKey", try_from = "pb::PayloadKey")]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PayloadKey(Key);
 
 impl PayloadKey {
@@ -91,27 +88,6 @@ impl PayloadKey {
         cipher
             .decrypt(nonce, ciphertext.as_ref())
             .map_err(|_| anyhow::anyhow!("decryption error"))
-    }
-}
-
-impl Protobuf<pb::PayloadKey> for PayloadKey {}
-
-impl TryFrom<pb::PayloadKey> for PayloadKey {
-    type Error = anyhow::Error;
-    fn try_from(msg: pb::PayloadKey) -> Result<Self, Self::Error> {
-        let bytes: [u8; PAYLOAD_KEY_LEN_BYTES] = msg
-            .inner
-            .try_into()
-            .map_err(|_| anyhow::anyhow!("PayloadKey incorrect len"))?;
-        Ok(Self(*Key::from_slice(&bytes)))
-    }
-}
-
-impl From<PayloadKey> for pb::PayloadKey {
-    fn from(msg: PayloadKey) -> Self {
-        pb::PayloadKey {
-            inner: msg.to_vec(),
-        }
     }
 }
 

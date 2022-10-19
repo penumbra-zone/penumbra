@@ -141,8 +141,6 @@ message SpendableNoteRecord {
     uint64 position = 7;
     // The source of the note (a tx hash or otherwise)
     core.chain.v1alpha1.NoteSource source = 8;
-    // The payload key for the note
-    core.crypto.v1alpha1.PayloadKey payload_key = 9;
 }
 
 // A query for notes known by the view service.
@@ -192,8 +190,6 @@ message QuarantinedNoteRecord {
     core.crypto.v1alpha1.IdentityKey identity_key = 6;
     // The source of the note (a tx hash or otherwise)
     core.chain.v1alpha1.NoteSource source = 7;
-    // The payload key for the note
-    core.crypto.v1alpha1.PayloadKey payload_key = 8;
 }
 
 // A query for quarantined notes known by the view service.

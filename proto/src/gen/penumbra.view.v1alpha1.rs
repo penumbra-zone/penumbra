@@ -106,9 +106,6 @@ pub struct SpendableNoteRecord {
     /// The source of the note (a tx hash or otherwise)
     #[prost(message, optional, tag="8")]
     pub source: ::core::option::Option<super::super::core::chain::v1alpha1::NoteSource>,
-    /// The payload key for the note
-    #[prost(message, optional, tag="9")]
-    pub payload_key: ::core::option::Option<super::super::core::crypto::v1alpha1::PayloadKey>,
 }
 /// A query for notes known by the view service.
 ///
@@ -168,9 +165,6 @@ pub struct QuarantinedNoteRecord {
     /// The source of the note (a tx hash or otherwise)
     #[prost(message, optional, tag="7")]
     pub source: ::core::option::Option<super::super::core::chain::v1alpha1::NoteSource>,
-    /// The payload key for the note
-    #[prost(message, optional, tag="8")]
-    pub payload_key: ::core::option::Option<super::super::core::crypto::v1alpha1::PayloadKey>,
 }
 /// A query for quarantined notes known by the view service.
 #[derive(Clone, PartialEq, ::prost::Message)]

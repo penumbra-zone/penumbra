@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use penumbra_chain::{
     params::FmdParameters, AnnotatedNotePayload, CompactBlock, Epoch, NoteSource,
 };
-use penumbra_crypto::{FullViewingKey, IdentityKey, Note, NotePayload, Nullifier, PayloadKey};
+use penumbra_crypto::{FullViewingKey, IdentityKey, Note, NotePayload, Nullifier};
 use penumbra_tct as tct;
 
 use crate::{QuarantinedNoteRecord, SpendableNoteRecord, Storage};
@@ -60,15 +60,12 @@ pub async fn scan_block(
     storage: &Storage,
 ) -> anyhow::Result<FilteredBlock> {
     // Trial-decrypt a note with our own specific viewing key
-    let trial_decrypt =
-        |note_payload: NotePayload| -> tokio::task::JoinHandle<Option<(Note, PayloadKey)>> {
-            // TODO: change fvk to Arc<FVK> in Worker and pass to scan_block as Arc
-            // need this so the task is 'static and not dependent on key lifetime
-            let fvk2 = fvk.clone();
-            tokio::spawn(async move { note_payload.trial_decrypt(&fvk2) })
-        };
-
-    //The NotePayload contains the EphemeralKey, which can be used with the IVK from the FVK to derive the PayloadKey
+    let trial_decrypt = |note_payload: NotePayload| -> tokio::task::JoinHandle<Option<Note>> {
+        // TODO: change fvk to Arc<FVK> in Worker and pass to scan_block as Arc
+        // need this so the task is 'static and not dependent on key lifetime
+        let fvk2 = fvk.clone();
+        tokio::spawn(async move { note_payload.trial_decrypt(&fvk2) })
+    };
 
     // Notes we've found in this block that are meant for us
     let new_notes: Vec<SpendableNoteRecord>;
@@ -101,7 +98,7 @@ pub async fn scan_block(
                 .map(|AnnotatedNotePayload { payload, source }| (trial_decrypt(payload), source))
                 .collect::<Vec<_>>();
             for (decryption, source) in decryptions {
-                if let Some((note, payload_key)) = decryption.await.unwrap() {
+                if let Some(note) = decryption.await.unwrap() {
                     new_quarantined_notes.push(QuarantinedNoteRecord {
                         note_commitment: note.commit(),
                         height_created: height,
@@ -110,7 +107,6 @@ pub async fn scan_block(
                         unbonding_epoch,
                         identity_key,
                         source,
-                        payload_key,
                     });
                 }
             }
@@ -124,7 +120,7 @@ pub async fn scan_block(
         .collect::<Vec<_>>();
     let mut decrypted_applied_notes = BTreeMap::new();
     for decryption in decryptions {
-        if let Some((note, key)) = decryption.await.unwrap() {
+        if let Some(note) = decryption.await.unwrap() {
             decrypted_applied_notes.insert(note.commit(), note);
         }
     }
@@ -156,9 +152,7 @@ pub async fn scan_block(
 
                     let diversifier = note.diversifier();
                     let address_index = fvk.incoming().index_for_diversifier(diversifier);
-                    let epk = &payload.ephemeral_key;
-                    let shared_secret = fvk.incoming().key_agreement_with(epk).ok()?;
-                    let payload_key = PayloadKey::derive(&shared_secret, epk);
+
                     let record = SpendableNoteRecord {
                         note_commitment,
                         height_spent: None,
@@ -168,7 +162,6 @@ pub async fn scan_block(
                         nullifier,
                         position,
                         source,
-                        payload_key,
                     };
 
                     Some(record)
