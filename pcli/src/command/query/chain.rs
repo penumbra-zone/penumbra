@@ -94,7 +94,7 @@ impl ChainCmd {
 
         let mut client = app.oblivious_client().await?;
         let fvk = &app.fvk;
-        let view: &mut dyn ViewClient = &mut app.view;
+        let view: &mut dyn ViewClient = app.view.as_mut().unwrap();
 
         let current_block_height = view.status(fvk.hash()).await?.sync_height;
         let chain_params = view.chain_params().await?;
@@ -153,14 +153,14 @@ impl ChainCmd {
     pub async fn exec(&self, app: &mut App) -> Result<()> {
         match self {
             ChainCmd::Params => {
-                self.print_chain_params(&mut app.view).await?;
+                self.print_chain_params(app.view.as_mut().unwrap()).await?;
             }
             // TODO: we could implement this as an RPC call using the metrics
             // subsystems once #829 is complete
             // OR (hdevalence): fold it into pcli q
             ChainCmd::Info { verbose } => {
                 if *verbose {
-                    self.print_chain_params(&mut app.view).await?;
+                    self.print_chain_params(app.view.as_mut().unwrap()).await?;
                 }
 
                 let stats = self.get_stats(app).await?;

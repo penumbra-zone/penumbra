@@ -35,26 +35,28 @@ pub enum ViewCmd {
 }
 
 impl ViewCmd {
-    pub fn needs_sync(&self) -> bool {
+    pub fn offline(&self) -> bool {
         match self {
-            ViewCmd::Address(address_cmd) => address_cmd.needs_sync(),
-            ViewCmd::Balance(balance_cmd) => balance_cmd.needs_sync(),
-            ViewCmd::Staked(staked_cmd) => staked_cmd.needs_sync(),
-            ViewCmd::Reset(_) => false,
-            ViewCmd::Sync => true,
-            ViewCmd::ListTransactionHashes(transactions_cmd) => transactions_cmd.needs_sync(),
+            ViewCmd::Address(address_cmd) => address_cmd.offline(),
+            ViewCmd::Balance(balance_cmd) => balance_cmd.offline(),
+            ViewCmd::Staked(staked_cmd) => staked_cmd.offline(),
+            ViewCmd::Reset(_) => true,
+            ViewCmd::Sync => false,
+            ViewCmd::ListTransactionHashes(transactions_cmd) => transactions_cmd.offline(),
         }
     }
 
     pub async fn exec(
         &self,
         full_viewing_key: &FullViewingKey,
-        view_client: &mut impl ViewClient,
+        view_client: Option<&mut impl ViewClient>,
         oblivious_client: &mut ObliviousQueryClient<Channel>,
     ) -> Result<()> {
         match self {
             ViewCmd::ListTransactionHashes(transactions_cmd) => {
-                transactions_cmd.exec(full_viewing_key, view_client).await?;
+                transactions_cmd
+                    .exec(full_viewing_key, view_client.unwrap())
+                    .await?;
             }
             ViewCmd::Sync => {
                 // We set needs_sync() -> true, so by this point, we have
@@ -67,11 +69,13 @@ impl ViewCmd {
                 address_cmd.exec(full_viewing_key)?;
             }
             ViewCmd::Balance(balance_cmd) => {
-                balance_cmd.exec(full_viewing_key, view_client).await?;
+                balance_cmd
+                    .exec(full_viewing_key, view_client.unwrap())
+                    .await?;
             }
             ViewCmd::Staked(staked_cmd) => {
                 staked_cmd
-                    .exec(full_viewing_key, view_client, oblivious_client)
+                    .exec(full_viewing_key, view_client.unwrap(), oblivious_client)
                     .await?;
             }
         }

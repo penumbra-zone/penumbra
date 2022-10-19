@@ -68,14 +68,14 @@ pub enum DefinitionCmd {
 }
 
 impl ValidatorCmd {
-    pub fn needs_sync(&self) -> bool {
+    pub fn offline(&self) -> bool {
         match self {
-            ValidatorCmd::Identity => false,
-            ValidatorCmd::Definition(DefinitionCmd::Upload { .. }) => true,
+            ValidatorCmd::Identity => true,
+            ValidatorCmd::Definition(DefinitionCmd::Upload { .. }) => false,
             ValidatorCmd::Definition(
                 DefinitionCmd::Template { .. } | DefinitionCmd::Fetch { .. },
-            ) => false,
-            ValidatorCmd::Vote { .. } => true,
+            ) => true,
+            ValidatorCmd::Vote { .. } => false,
         }
     }
 
@@ -114,9 +114,15 @@ impl ValidatorCmd {
                     auth_sig,
                 };
                 // Construct a new transaction and include the validator definition.
-                let plan =
-                    plan::validator_definition(&app.fvk, &mut app.view, OsRng, vd, fee, *source)
-                        .await?;
+                let plan = plan::validator_definition(
+                    &app.fvk,
+                    app.view.as_mut().unwrap(),
+                    OsRng,
+                    vd,
+                    fee,
+                    *source,
+                )
+                .await?;
                 app.build_and_submit_transaction(plan).await?;
                 // Only commit the state if the transaction was submitted
                 // successfully, so that we don't store pending notes that will
@@ -153,8 +159,15 @@ impl ValidatorCmd {
 
                 // Construct a new transaction and include the validator definition.
                 let fee = Fee::from_staking_token_amount((*fee as u64).into());
-                let plan = plan::validator_vote(&app.fvk, &mut app.view, OsRng, vote, fee, *source)
-                    .await?;
+                let plan = plan::validator_vote(
+                    &app.fvk,
+                    app.view.as_mut().unwrap(),
+                    OsRng,
+                    vote,
+                    fee,
+                    *source,
+                )
+                .await?;
                 app.build_and_submit_transaction(plan).await?;
 
                 println!("Cast validator vote");

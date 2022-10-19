@@ -57,12 +57,12 @@ pub enum ProposalCmd {
 }
 
 impl ProposalCmd {
-    pub fn needs_sync(&self) -> bool {
+    pub fn offline(&self) -> bool {
         match self {
             ProposalCmd::Template { .. } => false,
-            ProposalCmd::Submit { .. } => true,
-            ProposalCmd::Withdraw { .. } => true,
-            ProposalCmd::Vote { .. } => true,
+            ProposalCmd::Submit { .. } => false,
+            ProposalCmd::Withdraw { .. } => false,
+            ProposalCmd::Vote { .. } => false,
         }
     }
 }

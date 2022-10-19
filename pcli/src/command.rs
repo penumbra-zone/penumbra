@@ -49,12 +49,12 @@ pub enum Command {
 
 impl Command {
     /// Determine if this command requires a network sync before it executes.
-    pub fn needs_sync(&self) -> bool {
+    pub fn offline(&self) -> bool {
         match self {
-            Command::Transaction(cmd) => cmd.needs_sync(),
-            Command::View(cmd) => cmd.needs_sync(),
-            Command::Keys(cmd) => cmd.needs_sync(),
-            Command::Validator(cmd) => cmd.needs_sync(),
+            Command::Transaction(cmd) => cmd.offline(),
+            Command::View(cmd) => cmd.offline(),
+            Command::Keys(cmd) => cmd.offline(),
+            Command::Validator(cmd) => cmd.offline(),
             Command::Query(_) => false,
         }
     }
