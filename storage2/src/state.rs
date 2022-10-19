@@ -1,6 +1,4 @@
-use futures::future::BoxFuture;
 use std::{collections::BTreeMap, sync::Arc};
-use tracing::Span;
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -8,7 +6,6 @@ use async_trait::async_trait;
 mod read;
 mod transaction;
 mod write;
-use jmt::storage::{NodeBatch, TreeWriter};
 pub use read::StateRead;
 pub use transaction::Transaction as StateTransaction;
 pub use write::StateWrite;
@@ -37,27 +34,18 @@ impl State {
     pub fn begin_transaction(&mut self) -> StateTransaction {
         StateTransaction::new(self)
     }
-
-    // Apply the unwritten changes of a transaction to this state fork.
-    pub fn apply_transaction(&mut self, transaction: StateTransaction) {
-        // Write the unwritten consensus-critical changes to the state:
-        self.unwritten_changes.extend(transaction.unwritten_changes);
-
-        // Write the unwritten sidechar changes to the state:
-        self.sidecar_changes.extend(transaction.sidecar_changes);
-    }
 }
 
 #[async_trait]
 impl StateRead for State {
-    fn get_raw(&self, key: String) -> Result<Option<Vec<u8>>> {
+    fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>> {
         // If the key is available in the unwritten_changes cache, return it.
-        if let Some(v) = self.unwritten_changes.get(&key) {
+        if let Some(v) = self.unwritten_changes.get(key) {
             return Ok(v.clone());
         }
 
         // Otherwise, if the key is available in the snapshot, return it.
-        self.snapshot.get_raw(&key)
+        self.snapshot.get_raw(key)
     }
 
     fn get_sidecar(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
