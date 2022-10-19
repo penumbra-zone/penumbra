@@ -1,8 +1,7 @@
-use std::collections::HashMap;
-
 use anyhow::Result;
 use jmt::storage::{LeafNode, Node, NodeKey, TreeReader};
-use tracing::Span;
+
+use crate::state::StateRead;
 
 /// Snapshots maintain a point-in-time view of the underlying storage, suitable
 /// for read-only access by multiple threads, i.e. RPC calls.
@@ -29,8 +28,14 @@ impl Snapshot {
         }
     }
 
+    pub fn jmt_version(&self) -> jmt::Version {
+        self.jmt_version
+    }
+}
+
+impl StateRead for Snapshot {
     /// Fetch a key from the JMT column family.
-    pub fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>> {
+    fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>> {
         let jmt_cf = self
             .db
             .cf_handle("jmt")
@@ -41,7 +46,7 @@ impl Snapshot {
     }
 
     /// Fetch a key from the sidecar column family.
-    pub fn get_sidecar(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+    fn get_sidecar(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
         let sidecar_cf = self
             .db
             .cf_handle("sidecar")
@@ -49,10 +54,6 @@ impl Snapshot {
         self.rocksdb_snapshot
             .get_cf(sidecar_cf, key)
             .map_err(Into::into)
-    }
-
-    pub fn jmt_version(&self) -> jmt::Version {
-        self.jmt_version
     }
 }
 

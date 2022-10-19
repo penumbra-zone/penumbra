@@ -2,8 +2,6 @@ use std::collections::BTreeMap;
 
 use crate::State;
 
-use anyhow::Result;
-
 use super::StateWrite;
 
 /// Represents a transactional set of changes to a `State` fork,
@@ -24,15 +22,19 @@ impl<'a> Transaction<'a> {
             sidecar_changes: BTreeMap::new(),
         }
     }
+
+    pub fn commit(self) {
+        // Write the unwritten consensus-critical changes to the state:
+        self.state.unwritten_changes.extend(self.unwritten_changes);
+
+        // Write the unwritten sidechar changes to the state:
+        self.state.sidecar_changes.extend(self.sidecar_changes);
+    }
 }
 
 impl<'a> StateWrite for Transaction<'a> {
     fn put_raw(&mut self, key: String, value: jmt::OwnedValue) {
         self.unwritten_changes.insert(key, Some(value));
-    }
-
-    fn put_sidecar(&mut self, key: Vec<u8>, value: Vec<u8>) {
-        self.sidecar_changes.insert(key, Some(value));
     }
 
     fn delete(&mut self, key: String) {
@@ -41,5 +43,9 @@ impl<'a> StateWrite for Transaction<'a> {
 
     fn delete_sidecar(&mut self, key: Vec<u8>) {
         self.sidecar_changes.insert(key, None);
+    }
+
+    fn put_sidecar(&mut self, key: Vec<u8>, value: Vec<u8>) {
+        self.sidecar_changes.insert(key, Some(value));
     }
 }
