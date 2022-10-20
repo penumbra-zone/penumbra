@@ -1,4 +1,5 @@
 use std::{
+    collections::BTreeMap,
     pin::Pin,
     sync::{Arc, Mutex},
 };
@@ -14,14 +15,14 @@ use penumbra_crypto::{
 use penumbra_proto::{
     core::chain::v1alpha1 as pbp,
     core::crypto::v1alpha1 as pbc,
-    core::transaction::v1alpha1 as pbt,
+    core::transaction::v1alpha1::{self as pbt},
     view::v1alpha1::{
         self as pb, view_protocol_server::ViewProtocol, StatusResponse,
         TransactionHashStreamResponse, TransactionStreamResponse,
     },
 };
 use penumbra_tct::{Commitment, Proof};
-use penumbra_transaction::WitnessData;
+use penumbra_transaction::{TransactionPerspective, WitnessData};
 use tokio::sync::{watch, RwLock};
 use tokio_stream::wrappers::WatchStream;
 use tonic::async_trait;
@@ -239,6 +240,62 @@ impl ViewProtocol for ViewService {
         Box<dyn futures::Stream<Item = Result<TransactionStreamResponse, tonic::Status>> + Send>,
     >;
 
+    async fn perspective(
+        &self,
+        request: tonic::Request<pb::PerspectiveRequest>,
+    ) -> Result<tonic::Response<pb::PerspectiveResponse>, tonic::Status> {
+        self.check_worker().await?;
+
+        let request = request.into_inner();
+
+        let fvk =
+            self.storage.full_viewing_key().await.map_err(|_| {
+                tonic::Status::failed_precondition("Error retrieving full viewing key")
+            })?;
+
+        let tx = self
+            .storage
+            .transaction_by_hash(&request.tx_hash)
+            .await
+            .map_err(|_| {
+                tonic::Status::failed_precondition("Error retrieving transaction by hash")
+            })?
+            .ok_or_else(|| {
+                tonic::Status::failed_precondition("No transaction found with this hash")
+            })?;
+
+        let payload_keys = tx
+            .payload_keys(&fvk)
+            .map_err(|_| tonic::Status::failed_precondition("Error generating payload keys"))?;
+
+        let mut spend_nullifiers = BTreeMap::new();
+
+        for action in tx.actions() {
+            if let penumbra_transaction::Action::Spend(spend) = action {
+                let nullifier = spend.body.nullifier;
+                let spendable_note_record = self
+                    .storage
+                    .note_by_nullifier(nullifier, false)
+                    .await
+                    .map_err(|_| {
+                        tonic::Status::failed_precondition("Error retrieving note by nullifier")
+                    })?;
+                spend_nullifiers.insert(nullifier, spendable_note_record.note);
+            }
+        }
+
+        let txp = TransactionPerspective {
+            payload_keys,
+            spend_nullifiers,
+        };
+
+        let response = pb::PerspectiveResponse {
+            txp: Some(txp.into()),
+            tx: Some(tx.into()),
+        };
+
+        Ok(tonic::Response::new(response))
+    }
     async fn note_by_commitment(
         &self,
         request: tonic::Request<pb::NoteByCommitmentRequest>,

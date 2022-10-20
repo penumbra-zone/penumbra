@@ -1,4 +1,7 @@
-use std::convert::{TryFrom, TryInto};
+use std::{
+    collections::BTreeMap,
+    convert::{TryFrom, TryInto},
+};
 
 use anyhow::Error;
 use ark_ff::Zero;
@@ -6,9 +9,10 @@ use bytes::Bytes;
 use decaf377_fmd::Clue;
 use penumbra_crypto::{
     memo::{MemoCiphertext, MemoPlaintext},
+    note::Commitment,
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
     transaction::Fee,
-    Fr, NotePayload, Nullifier,
+    Fr, FullViewingKey, NotePayload, Nullifier, PayloadKey,
 };
 use penumbra_proto::{
     core::ibc::v1alpha1 as pb_ibc, core::stake::v1alpha1 as pbs,
@@ -42,6 +46,49 @@ pub struct Transaction {
 }
 
 impl Transaction {
+    pub fn payload_keys(
+        &self,
+        fvk: &FullViewingKey,
+    ) -> anyhow::Result<BTreeMap<Commitment, PayloadKey>> {
+        let mut result = BTreeMap::new();
+
+        for action in self.actions() {
+            match action {
+                Action::Swap(swap) => {
+                    let epk = &swap.body.swap_nft.ephemeral_key;
+                    let shared_secret = fvk.incoming().key_agreement_with(epk)?;
+                    let payload_key = PayloadKey::derive(&shared_secret, epk);
+                    let commitment = swap.body.swap_nft.note_commitment;
+
+                    result.insert(commitment, payload_key);
+                }
+                Action::SwapClaim(swap_claim) => {
+                    let epk_1 = &swap_claim.body.output_1.ephemeral_key;
+                    let epk_2 = &swap_claim.body.output_2.ephemeral_key;
+                    let shared_secret_1 = fvk.incoming().key_agreement_with(epk_1)?;
+                    let shared_secret_2 = fvk.incoming().key_agreement_with(epk_2)?;
+                    let payload_key_1 = PayloadKey::derive(&shared_secret_1, epk_1);
+                    let payload_key_2 = PayloadKey::derive(&shared_secret_2, epk_2);
+                    let commitment_1 = swap_claim.body.output_1.note_commitment;
+                    let commitment_2 = swap_claim.body.output_2.note_commitment;
+
+                    result.insert(commitment_1, payload_key_1);
+                    result.insert(commitment_2, payload_key_2);
+                }
+                Action::Output(output) => {
+                    let epk = &output.body.note_payload.ephemeral_key;
+                    let shared_secret = fvk.incoming().key_agreement_with(epk)?;
+                    let payload_key = PayloadKey::derive(&shared_secret, epk);
+                    let commitment = output.body.note_payload.note_commitment;
+
+                    result.insert(commitment, payload_key);
+                }
+                _ => {}
+            }
+        }
+
+        Ok(result)
+    }
     pub fn decrypt_with_perspective(&self, txp: &TransactionPerspective) -> TransactionView {
         let mut avs = Vec::new();
 

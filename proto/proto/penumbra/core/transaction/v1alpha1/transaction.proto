@@ -73,6 +73,23 @@ message Action {
   }
 }
 
+message TransactionPerspective {
+
+  repeated PayloadKeyWithCommitment payload_keys = 1;
+  repeated NullifierWithNote spend_nullifiers = 2;
+
+}
+
+message PayloadKeyWithCommitment {
+  bytes payload_key = 1;
+  crypto.v1alpha1.NoteCommitment commitment = 2;
+}
+
+message NullifierWithNote {
+  crypto.v1alpha1.Nullifier nullifier = 1;
+  crypto.v1alpha1.Note note = 2;
+}
+
 message TransactionView {
   // A list views into of actions (state changes) performed by this transaction.
   repeated ActionView action_views = 1;

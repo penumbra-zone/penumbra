@@ -98,6 +98,27 @@ pub mod action {
     }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransactionPerspective {
+    #[prost(message, repeated, tag="1")]
+    pub payload_keys: ::prost::alloc::vec::Vec<PayloadKeyWithCommitment>,
+    #[prost(message, repeated, tag="2")]
+    pub spend_nullifiers: ::prost::alloc::vec::Vec<NullifierWithNote>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PayloadKeyWithCommitment {
+    #[prost(bytes="bytes", tag="1")]
+    pub payload_key: ::prost::bytes::Bytes,
+    #[prost(message, optional, tag="2")]
+    pub commitment: ::core::option::Option<super::super::crypto::v1alpha1::NoteCommitment>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct NullifierWithNote {
+    #[prost(message, optional, tag="1")]
+    pub nullifier: ::core::option::Option<super::super::crypto::v1alpha1::Nullifier>,
+    #[prost(message, optional, tag="2")]
+    pub note: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionView {
     /// A list views into of actions (state changes) performed by this transaction.
     #[prost(message, repeated, tag="1")]

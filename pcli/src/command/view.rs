@@ -47,6 +47,7 @@ impl ViewCmd {
             ViewCmd::Reset(_) => true,
             ViewCmd::Sync => false,
             ViewCmd::ListTransactionHashes(transactions_cmd) => transactions_cmd.offline(),
+            ViewCmd::Tx(tx_cmd) => tx_cmd.offline(),
         }
     }
 
@@ -58,7 +59,7 @@ impl ViewCmd {
     ) -> Result<()> {
         match self {
             ViewCmd::Tx(tx_cmd) => {
-                tx_cmd.exec(full_viewing_key, view_client).await?;
+                tx_cmd.exec(full_viewing_key, view_client.unwrap()).await?;
             }
             ViewCmd::ListTransactionHashes(transactions_cmd) => {
                 transactions_cmd

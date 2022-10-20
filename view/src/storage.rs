@@ -12,7 +12,7 @@ use penumbra_proto::{
     Protobuf,
 };
 use penumbra_tct as tct;
-use penumbra_transaction::{Transaction, TransactionPerspective, TransactionView};
+use penumbra_transaction::Transaction;
 use sha2::Digest;
 use sqlx::{migrate::MigrateDatabase, query, Pool, Sqlite};
 use std::{num::NonZeroU64, sync::Arc};
@@ -410,10 +410,7 @@ impl Storage {
         Ok(output)
     }
 
-    pub async fn transaction_by_hash(
-        &mut self,
-        tx_hash: &[u8],
-    ) -> anyhow::Result<Option<Transaction>> {
+    pub async fn transaction_by_hash(&self, tx_hash: &[u8]) -> anyhow::Result<Option<Transaction>> {
         let result = sqlx::query!(
             "SELECT block_height, tx_hash, tx_bytes
             FROM tx
@@ -429,19 +426,84 @@ impl Storage {
         })
     }
 
-    pub async fn generate_full_perspective(
-        &mut self,
-        tx_hash: &[u8],
-        fvk: FullViewingKey,
-    ) -> anyhow::Result<TransactionPerspective> {
-        let output = TransactionPerspective {
-            payload_keys: todo!(),
-            spend_nullifiers: todo!(),
-        };
+    // Query for a note by its note commitment, optionally waiting until the note is detected.
+    pub fn note_by_nullifier(
+        &self,
+        nullifier: Nullifier,
+        await_detection: bool,
+    ) -> impl Future<Output = anyhow::Result<SpendableNoteRecord>> {
+        // Start subscribing now, before querying for whether we already
+        // have the record, so that we can't miss it if we race a write.
+        let mut rx = self.scanned_notes_tx.subscribe();
 
-        Ok(output)
+        // Clone the pool handle so that the returned future is 'static
+        let pool = self.pool.clone();
+
+        let nullifier_bytes = nullifier.to_bytes().to_vec();
+        async move {
+            // Check if we already have the note
+            if let Some(record) = sqlx::query_as::<_, SpendableNoteRecord>(
+                format!(
+                    "SELECT 
+                        notes.note_commitment,
+                        notes.height_created,
+                        notes.address,
+                        notes.amount,
+                        notes.asset_id,
+                        notes.blinding_factor,
+                        notes.address_index,
+                        notes.source,
+                        spendable_notes.height_spent,
+                        spendable_notes.nullifier,
+                        spendable_notes.position
+                    FROM notes
+                    JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
+                    WHERE spendable_notes.nullifier = {:?}",
+                    nullifier_bytes
+                )
+                .as_str(),
+            )
+            .fetch_optional(&pool)
+            .await?
+            {
+                return Ok(record);
+            }
+
+            if !await_detection {
+                return Err(anyhow!(
+                    "Note commitment for nullifier {:?} not found",
+                    nullifier
+                ));
+            }
+
+            // Otherwise, wait for newly detected notes and check whether they're
+            // the requested one.
+
+            loop {
+                match rx.recv().await {
+                    Ok(record) => {
+                        if record.nullifier == nullifier {
+                            return Ok(record);
+                        }
+                    }
+
+                    Err(e) => match e {
+                        RecvError::Closed => {
+                            return Err(anyhow!(
+                            "Receiver error during note detection: closed (no more active senders)"
+                        ))
+                        }
+                        RecvError::Lagged(count) => {
+                            return Err(anyhow!(
+                                "Receiver error during note detection: lagged (by {:?} messages)",
+                                count
+                            ))
+                        }
+                    },
+                };
+            }
+        }
     }
-
     pub async fn assets(&self) -> anyhow::Result<Vec<Asset>> {
         let result = sqlx::query!(
             "SELECT *
