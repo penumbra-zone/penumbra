@@ -77,7 +77,7 @@ jobs:
           cargo doc --no-deps \
             -p tendermint \
             -p tower-abci \
-            -p jmt \
+            -p jmt@0.2.0 \
             -p ark-ff \
             -p ark-serialize \
             -p ark-sponge \
