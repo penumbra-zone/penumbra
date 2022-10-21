@@ -65,7 +65,7 @@ impl App {
     /// as an empty state over top of the newly written storage.
     #[instrument(skip(self, storage))]
     pub async fn commit(&mut self, storage: Storage) -> Result<(AppHash, Version)> {
-        // We want to store the latest NCT in a sidecar part of the storage,
+        // We want to store the latest NCT in a nonconsensus part of the storage,
         // rather than the Penumbra state, because the serialization format for
         // the NCT should not be consensus-critical.  We need to grab a copy of
         // the entire NCT, so we can use it to re-instantiate the ShieldedPool.

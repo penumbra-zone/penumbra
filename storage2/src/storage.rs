@@ -33,11 +33,16 @@ impl Storage {
                     opts.create_if_missing(true);
                     opts.create_missing_column_families(true);
 
-                    let db = Box::new(DB::open_cf(&opts, path, ["jmt", "sidecar", "jmt_keys"])?);
+                    let db = Box::new(DB::open_cf(
+                        &opts,
+                        path,
+                        ["jmt", "nonconsensus", "jmt_keys"],
+                    )?);
                     let static_db: &'static DB = Box::leak(db);
-                    let jmt_version = latest_version(static_db).unwrap().unwrap();
+                    let jmt_version = latest_version(static_db)?
+                        .ok_or(anyhow::anyhow!("no jmt version found"))?;
                     let latest_snapshot = {
-                        let snap = static_db.snapshot();
+                        let snap = Arc::new(static_db.snapshot());
                         Snapshot::new(snap, jmt_version, static_db)
                     };
 
@@ -46,10 +51,8 @@ impl Storage {
                         db: static_db,
                     }))
                 })
-            })
-            .unwrap()
-            .await
-            .unwrap()
+            })?
+            .await?
     }
 
     /// Returns the latest version (block height) of the tree recorded by the
@@ -66,7 +69,7 @@ impl Storage {
 
     pub async fn apply(&'static mut self, state: State) -> Result<()> {
         // 1. Write the NCT
-        // TODO: move this higher up in the call stack, and use `put_sidecar` to store
+        // TODO: move this higher up in the call stack, and use `put_nonconsensus` to store
         // the NCT.
         // tracing::debug!("serializing NCT");
         // let tct_data = bincode::serialize(nct)?;
@@ -87,7 +90,7 @@ impl Storage {
         //     .await??;
         let db = self.0.db;
 
-        // 2. Write the JMT and sidecar data to RocksDB
+        // 2. Write the JMT and nonconsensus data to RocksDB
         // We use wrapping_add here so that we can write `new_version = 0` by
         // overflowing `PRE_GENESIS_VERSION`.
         let old_version = self.latest_version().await?.unwrap();
@@ -99,7 +102,7 @@ impl Storage {
             .spawn_blocking(move || {
                 span.in_scope(|| {
                     let snap = self.0.latest_snapshot.read().clone();
-                    let jmt = JellyfishMerkleTree::new(snap.as_ref());
+                    let jmt = JellyfishMerkleTree::new(&snap.as_ref().0);
 
                     let unwritten_changes: Vec<_> = state
                         .unwritten_changes
@@ -133,16 +136,16 @@ impl Storage {
                     self.0.write_node_batch(&batch.node_batch)?;
                     tracing::trace!(?jmt_root_hash, "wrote node batch to backing store");
 
-                    // Write the unwritten changes from the sidecar to RocksDB.
-                    for (k, v) in state.sidecar_changes.into_iter() {
-                        let sidecar_cf = db
-                            .cf_handle("sidecar")
-                            .expect("sidecar column family not found");
+                    // Write the unwritten changes from the nonconsensus to RocksDB.
+                    for (k, v) in state.nonconsensus_changes.into_iter() {
+                        let nonconsensus_cf = db
+                            .cf_handle("nonconsensus")
+                            .expect("nonconsensus column family not found");
 
                         match v {
-                            Some(v) => db.put_cf(sidecar_cf, k, &v)?,
+                            Some(v) => db.put_cf(nonconsensus_cf, k, &v)?,
                             None => {
-                                db.delete_cf(sidecar_cf, k)?;
+                                db.delete_cf(nonconsensus_cf, k)?;
                             }
                         };
                     }
@@ -150,7 +153,7 @@ impl Storage {
                     // 4. update the snapshot
                     // Now that we've successfully written the new nodes, update the version.
                     let jmt_version = new_version;
-                    let snapshot = db.snapshot();
+                    let snapshot = Arc::new(db.snapshot());
                     // Obtain the write-lock for the latest snapshot, and replace it with the new snapshot.
                     let mut guard = self.0.latest_snapshot.write();
                     *guard = Arc::new(Snapshot::new(snapshot, jmt_version, db));
@@ -158,10 +161,8 @@ impl Storage {
                     drop(guard);
                     anyhow::Result::<()>::Ok(())
                 })
-            })
-            .unwrap()
-            .await
-            .unwrap()
+            })?
+            .await?
     }
 }
 

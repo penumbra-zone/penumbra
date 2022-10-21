@@ -35,9 +35,9 @@ pub trait StateWrite {
     /// Delete a key from state.
     fn delete(&mut self, key: String);
 
-    /// Delete a key from sidecar storage.
-    fn delete_sidecar(&mut self, key: Vec<u8>);
+    /// Delete a key from nonconsensus storage.
+    fn delete_nonconsensus(&mut self, key: Vec<u8>);
 
-    /// Put a key/value raw pair into non-consensus-critical ("sidecar") state.
-    fn put_sidecar(&mut self, key: Vec<u8>, value: Vec<u8>);
+    /// Put a key/value raw pair into non-consensus-critical ("nonconsensus") state.
+    fn put_nonconsensus(&mut self, key: Vec<u8>, value: Vec<u8>);
 }

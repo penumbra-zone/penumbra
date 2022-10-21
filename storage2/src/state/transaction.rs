@@ -1,3 +1,4 @@
+use anyhow::Result;
 use std::collections::BTreeMap;
 
 use crate::State;
@@ -9,9 +10,11 @@ use super::StateWrite;
 pub struct Transaction<'a> {
     /// Unwritten changes to the consensus-critical state (stored in the JMT).
     pub(crate) unwritten_changes: BTreeMap<String, Option<Vec<u8>>>,
-    /// Unwritten changes to non-consensus-critical state (stored in the sidecar).
-    pub(crate) sidecar_changes: BTreeMap<Vec<u8>, Option<Vec<u8>>>,
+    /// Unwritten changes to non-consensus-critical state (stored in the nonconsensus storage).
+    pub(crate) nonconsensus_changes: BTreeMap<Vec<u8>, Option<Vec<u8>>>,
     state: &'a mut State,
+    pub(crate) failed: bool,
+    pub(crate) failure_reason: String,
 }
 
 impl<'a> Transaction<'a> {
@@ -19,16 +22,15 @@ impl<'a> Transaction<'a> {
         Self {
             state,
             unwritten_changes: BTreeMap::new(),
-            sidecar_changes: BTreeMap::new(),
+            nonconsensus_changes: BTreeMap::new(),
+            failed: false,
+            failure_reason: String::new(),
         }
     }
 
-    pub fn commit(self) {
-        // Write the unwritten consensus-critical changes to the state:
-        self.state.unwritten_changes.extend(self.unwritten_changes);
-
-        // Write the unwritten sidechar changes to the state:
-        self.state.sidecar_changes.extend(self.sidecar_changes);
+    pub fn fail(&mut self, reason: String) {
+        self.failed = true;
+        self.failure_reason = reason;
     }
 }
 
@@ -41,11 +43,11 @@ impl<'a> StateWrite for Transaction<'a> {
         self.unwritten_changes.insert(key, None);
     }
 
-    fn delete_sidecar(&mut self, key: Vec<u8>) {
-        self.sidecar_changes.insert(key, None);
+    fn delete_nonconsensus(&mut self, key: Vec<u8>) {
+        self.nonconsensus_changes.insert(key, None);
     }
 
-    fn put_sidecar(&mut self, key: Vec<u8>, value: Vec<u8>) {
-        self.sidecar_changes.insert(key, Some(value));
+    fn put_nonconsensus(&mut self, key: Vec<u8>, value: Vec<u8>) {
+        self.nonconsensus_changes.insert(key, Some(value));
     }
 }
