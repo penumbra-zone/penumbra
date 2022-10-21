@@ -25,4 +25,5 @@ members = [
   "view",
   "pd",
   "pcli",
+  "schema",
 ]
