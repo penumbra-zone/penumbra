@@ -192,19 +192,32 @@ fn delegate_and_undelegate() {
         .assert()
         .stdout(predicate::str::is_match(validator.as_str()).unwrap());
 
-    // Now undelegate.
-    let amount_to_undelegate = format!("0.99delegation_{}", validator.as_str());
-    let mut undelegate_cmd = Command::cargo_bin("pcli").unwrap();
-    undelegate_cmd
-        .args(&[
-            "--data-path",
-            tmpdir.path().to_str().unwrap(),
-            "tx",
-            "undelegate",
-            amount_to_undelegate.as_str(),
-        ])
-        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-    undelegate_cmd.assert().success();
+    // Now undelegate. We attempt `num_attempts` times in case an epoch boundary passes
+    // while we prepare the delegation. See issue #1522.
+    let num_attempts = 3;
+    for _ in 0..num_attempts {
+        let amount_to_undelegate = format!("0.99delegation_{}", validator.as_str());
+        let mut undelegate_cmd = Command::cargo_bin("pcli").unwrap();
+        undelegate_cmd
+            .args(&[
+                "--data-path",
+                tmpdir.path().to_str().unwrap(),
+                "tx",
+                "undelegate",
+                amount_to_undelegate.as_str(),
+            ])
+            .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+        let undelegation_result = undelegate_cmd.assert().try_success();
+
+        // If the undelegation command succeeded, we can exit this loop.
+        if undelegation_result.is_ok() {
+            break;
+        }
+
+        // Wait for a couple blocks for the transaction to be confirmed.
+        let block_time = time::Duration::from_secs(2 * BLOCK_TIME_SECONDS);
+        thread::sleep(block_time);
+    }
 
     // Wait for the epoch duration.
     let block_time = time::Duration::from_secs(EPOCH_DURATION * BLOCK_TIME_SECONDS);
