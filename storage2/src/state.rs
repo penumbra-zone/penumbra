@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, sync::Arc};
+use std::{collections::BTreeMap, pin::Pin, sync::Arc};
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -6,7 +6,10 @@ use async_trait::async_trait;
 mod read;
 mod transaction;
 mod write;
+use futures::Stream;
 pub use read::StateRead;
+use tokio::sync::mpsc;
+use tracing::Span;
 pub use transaction::Transaction as StateTransaction;
 pub use write::StateWrite;
 
@@ -52,7 +55,6 @@ impl State {
 }
 
 #[async_trait]
-// TODO: @hdevalence does this really need to be a trait?
 impl StateRead for State {
     async fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>> {
         // If the key is available in the unwritten_changes cache, return it.
@@ -72,5 +74,15 @@ impl StateRead for State {
 
         // Otherwise, if the key is available in the snapshot, return it.
         self.snapshot.get_nonconsensus(key).await
+    }
+
+    async fn prefix_raw(
+        &self,
+        prefix: &str,
+    ) -> Result<
+        Pin<Box<dyn Stream<Item = (std::boxed::Box<[u8]>, std::boxed::Box<[u8]>)> + Send + '_>>,
+    > {
+        // TODO: Interleave the unwritten_changes cache with the snapshot.
+        todo!()
     }
 }

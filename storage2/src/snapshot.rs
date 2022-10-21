@@ -1,8 +1,10 @@
-use std::sync::Arc;
+use std::{pin::Pin, sync::Arc};
 
 use anyhow::Result;
 use async_trait::async_trait;
+use futures::Stream;
 use jmt::storage::{LeafNode, Node, NodeKey, TreeReader};
+use tokio::sync::mpsc;
 use tracing::Span;
 
 use crate::state::StateRead;
@@ -78,6 +80,38 @@ impl StateRead for Snapshot {
                 })
             })?
             .await?
+    }
+
+    async fn prefix_raw(
+        &self,
+        prefix: &str,
+    ) -> Result<
+        Pin<Box<dyn Stream<Item = (std::boxed::Box<[u8]>, std::boxed::Box<[u8]>)> + Send + '_>>,
+    > {
+        let span = Span::current();
+        let db = self.0.db;
+        let rocksdb_snapshot = self.0.rocksdb_snapshot.clone();
+        let mut options = rocksdb::ReadOptions::default();
+        options.set_iterate_range(rocksdb::PrefixRange(prefix.as_bytes()));
+        let mode = rocksdb::IteratorMode::Start;
+
+        let (mut tx, mut rx) = mpsc::channel(100);
+
+        tokio::task::Builder::new()
+            .name("Snapshot::prefix_raw")
+            .spawn_blocking(|| async move {
+                span.in_scope(|| async {
+                    let jmt_cf = db.cf_handle("jmt").expect("jmt column family not found");
+                    let iter = rocksdb_snapshot.iterator_cf_opt(jmt_cf, options, mode);
+                    for i in iter {
+                        tx.send(i?).await?;
+                    }
+                    Ok::<(), anyhow::Error>(())
+                });
+                Ok::<(), anyhow::Error>(())
+            });
+
+        Ok(Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx)))
     }
 }
 
