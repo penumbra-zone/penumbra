@@ -99,7 +99,7 @@ impl StateRead for Snapshot {
 
         tokio::task::Builder::new()
             .name("Snapshot::prefix_raw")
-            .spawn_blocking(|| async move {
+            .spawn_blocking(move || async move {
                 span.in_scope(|| async {
                     let jmt_cf = db.cf_handle("jmt").expect("jmt column family not found");
                     let iter = rocksdb_snapshot.iterator_cf_opt(jmt_cf, options, mode);

@@ -69,15 +69,18 @@ pub trait StateRead {
     ) -> Result<Pin<Box<dyn Stream<Item = Result<(std::boxed::Box<[u8]>, D)>> + Send + '_>>>
     where
         D: Protobuf<P>,
-        P: Message + Default,
+        P: Message + Default + 'static,
         P: From<D>,
         D: TryFrom<P> + Clone + Debug,
         <D as TryFrom<P>>::Error: Into<anyhow::Error>,
     {
         Ok(Box::pin(self.prefix_proto(prefix).await?.map(
-            |p| match D::try_from(p?.1) {
-                Ok(d) => Ok((p?.0, d)),
-                Err(e) => Err(e.into()),
+            |p| match p {
+                Ok(p) => match D::try_from(p.1) {
+                    Ok(d) => Ok((p.0, d)),
+                    Err(e) => Err(e.into()),
+                },
+                Err(e) => Err(e),
             },
         )))
     }
