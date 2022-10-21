@@ -52,6 +52,7 @@ impl State {
 }
 
 #[async_trait]
+// TODO: @hdevalence does this really need to be a trait?
 impl StateRead for State {
     async fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>> {
         // If the key is available in the unwritten_changes cache, return it.

@@ -50,6 +50,7 @@ impl<'a> StateWrite for Transaction<'a> {
 
     fn put_nonconsensus(&mut self, key: Vec<u8>, value: Vec<u8>) {
         self.nonconsensus_changes.insert(key, Some(value));
+<<<<<<< HEAD
     }
 }
 
@@ -73,5 +74,7 @@ impl<'a> StateRead for Transaction<'a> {
 
         // Otherwise, if the key is available in the state, return it.
         self.state.get_nonconsensus(key).await
+=======
+>>>>>>> 62ba82b8 (Asyncify storage code)
     }
 }
