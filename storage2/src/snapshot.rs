@@ -95,21 +95,21 @@ impl StateRead for Snapshot {
         options.set_iterate_range(rocksdb::PrefixRange(prefix.as_bytes()));
         let mode = rocksdb::IteratorMode::Start;
 
-        let (mut tx, mut rx) = mpsc::channel(100);
+        let (tx, rx) = mpsc::channel(100);
 
         tokio::task::Builder::new()
             .name("Snapshot::prefix_raw")
-            .spawn_blocking(move || async move {
-                span.in_scope(|| async {
+            .spawn_blocking(move || {
+                span.in_scope(|| {
                     let jmt_cf = db.cf_handle("jmt").expect("jmt column family not found");
                     let iter = rocksdb_snapshot.iterator_cf_opt(jmt_cf, options, mode);
                     for i in iter {
-                        tx.send(i?).await?;
+                        tx.blocking_send(i?)?;
                     }
                     Ok::<(), anyhow::Error>(())
-                });
-                Ok::<(), anyhow::Error>(())
-            });
+                })
+            })?
+            .await??;
 
         Ok(Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx)))
     }
