@@ -1,204 +1,652 @@
-// #[macro_use]
-// extern crate penumbra_schema_macro;
+use core::fmt;
 
-// use penumbra_schema_core::Key;
+pub trait FormatPath {
+    fn fmt(&self, separator: &str, f: &mut fmt::Formatter<'_>) -> fmt::Result;
+}
 
-use std::{any::TypeId, convert::Infallible, fmt::Display};
+pub trait FormatSegment<Schema> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result;
+}
 
-pub trait Key {
+pub struct FormatKey<'key, K: 'key>(pub &'key str, pub &'key K);
+
+impl<'key, K: FormatPath + 'key> ::core::fmt::Display for FormatKey<'key, K> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.1.fmt(self.0, f)
+    }
+}
+
+pub trait Typed<'a> {
     type Value;
-
-    fn key(self) -> String;
 }
 
-pub trait Collection {
-    type Value;
-
-    fn key(self) -> String;
+pub trait Any<TryFrom, Error, Into> {
+    fn convert(&self, try_from: TryFrom) -> Result<Into, Error>;
 }
 
-pub trait Input<In, T, Err> {
-    fn input(input: In) -> Result<T, Err>;
+// An example:
+
+pub fn getter<'key, 'de, P, K: Typed<'key>>(
+    key: K,
+) -> (String, fn(&'de [u8]) -> Result<K::Value, anyhow::Error>)
+where
+    P: prost::Message + Default + From<<K as Typed<'key>>::Value>,
+    K::Value: penumbra_proto::Protobuf<P>,
+    <K::Value as TryFrom<P>>::Error: Into<anyhow::Error>,
+    schema::Key<'key>: From<K>,
+{
+    (
+        format!("{}", FormatKey("/", &schema::Key::from(key))),
+        <K::Value as penumbra_proto::Protobuf<P>>::decode,
+    )
 }
 
-pub trait Output<T, Out> {
-    fn output(output: T) -> Out;
+pub fn putter<'key, P, K: Typed<'key>>(key: K, value: &K::Value) -> (String, Vec<u8>)
+where
+    P: prost::Message + Default + From<<K as Typed<'key>>::Value>,
+    K::Value: penumbra_proto::Protobuf<P>,
+    <K::Value as TryFrom<P>>::Error: Into<anyhow::Error>,
+    schema::Key<'key>: From<K>,
+{
+    (
+        format!("{}", FormatKey("/", &schema::Key::from(key))),
+        penumbra_proto::Protobuf::encode_to_vec(value),
+    )
 }
 
-pub struct Builder<In, Out, Err> {
-    #[allow(clippy::type_complexity)]
-    registry: Vec<(TypeId, fn(In) -> Result<Out, Err>)>,
+#[test]
+fn example() {
+    let (path, decode) = getter(schema::governance().proposal().id(&5).voting_start());
+    assert_eq!(path, "governance/proposal/5/voting_start");
 }
 
-impl<In, Out, Err> Builder<In, Out, Err> {
-    pub fn new() -> Self {
-        Self {
-            registry: Vec::new(),
-        }
-    }
-
-    pub fn register<I: Input<In, T, Err>, O: Output<T, Out>, T: 'static>(&mut self) {
-        const fn converter<I: Input<In, T, Err>, O: Output<T, Out>, In, Out, Err, T>(
-        ) -> fn(In) -> Result<Out, Err> {
-            fn convert<In, Out, Err, I, O, T>(input: In) -> Result<Out, Err>
-            where
-                I: Input<In, T, Err>,
-                O: Output<T, Out>,
-            {
-                I::input(input).map(O::output)
-            }
-
-            convert::<In, Out, Err, I, O, T>
-        }
-
-        self.registry
-            .push((TypeId::of::<T>(), converter::<I, O, In, Out, Err, T>()));
-    }
-}
-
-impl<In, Out, Err> Default for Builder<In, Out, Err> {
-    fn default() -> Self {
-        Self::new()
+impl FormatSegment<schema::Schema> for u64 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self)
     }
 }
 
-impl<In, Out, Err> From<Builder<In, Out, Err>> for Converter<In, Out, Err> {
-    fn from(mut builder: Builder<In, Out, Err>) -> Self {
-        builder.registry.sort_by_key(|(id, _)| *id);
-        Self {
-            registry: builder.registry,
-        }
-    }
-}
-
-pub struct Converter<In, Out, Err> {
-    #[allow(clippy::type_complexity)]
-    registry: Vec<(TypeId, fn(In) -> Result<Out, Err>)>,
-}
-
-impl<In, Out, Err> Converter<In, Out, Err> {
-    pub fn convert<T: 'static>(&self, input: In) -> Option<Result<Out, Err>> {
-        self.registry
-            .binary_search_by_key(&TypeId::of::<T>(), |(id, _)| *id)
-            .map(|index| (self.registry[index].1)(input))
-            .ok()
-    }
-}
-
-// schema! {
-//     self as pub mod root;
-
-//     governance {
-//         proposal(id: ProposalId) {
-//             voting_start: u64;
+// pub mod schema {
+//     schema! {
+//          governance {
+//             proposal(id: &u64) {
+//                 voting_start: u64;
+//             }
 //         }
 //     }
 // }
 
 // Generates:
 
-pub mod root {
-    pub fn converter<In, I, O, Out, Err>() -> crate::Converter<In, Out, Err>
-    where
-        I: crate::Input<In, u64, Err>,
-        O: crate::Output<u64, Out>,
-    {
-        let mut builder: crate::Builder<In, Out, Err> = crate::Builder::new();
-        builder.register::<I, O, u64>();
-        // ...
-        builder.into()
+pub mod schema {
+    #[derive(::core::clone::Clone)]
+    pub struct Schema;
+
+    pub fn governance<'a>() -> governance::Root<'a> {
+        Root {
+            params: Params {
+                __: ::std::marker::PhantomData,
+            },
+        }
+        .governance()
     }
-}
 
-fn main() {
-    struct BytesTruncated;
-    struct Displayed;
+    #[derive(::core::clone::Clone)]
+    pub struct Root<'a> {
+        params: Params<'a>,
+    }
 
-    impl Input<&[u8], u64, Infallible> for BytesTruncated {
-        fn input(input: &[u8]) -> Result<u64, Infallible> {
-            let mut bytes = [0u8; 8];
-            for (to, from) in bytes.as_mut_slice().iter_mut().zip(input.iter()) {
-                *to = *from;
+    #[derive(::core::clone::Clone)]
+    pub struct Params<'a> {
+        __: ::core::marker::PhantomData<&'a ()>,
+    }
+
+    #[derive(::core::clone::Clone)]
+    pub struct Prefix<'a> {
+        params: Params<'a>,
+        child: ::core::option::Option<SubPrefix<'a>>,
+    }
+
+    #[derive(::core::clone::Clone)]
+    pub struct Key<'a> {
+        params: Params<'a>,
+        child: SubKey<'a>,
+    }
+
+    #[allow(non_camel_case_types)]
+    #[non_exhaustive]
+    #[derive(::core::clone::Clone)]
+    pub enum SubPrefix<'a> {
+        governance(governance::Prefix<'a>),
+    }
+
+    #[allow(non_camel_case_types)]
+    #[non_exhaustive]
+    #[derive(::core::clone::Clone)]
+    pub enum SubKey<'a> {
+        governance(governance::Key<'a>),
+    }
+
+    impl<'a> crate::FormatPath for Key<'a> {
+        fn fmt(&self, separator: &str, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+            match &self.child {
+                SubKey::governance(child) => {
+                    child.fmt(separator, f)?;
+                }
             }
-            Ok(u64::from_le_bytes(bytes))
+            Ok(())
         }
     }
 
-    impl<T: Display> Output<T, String> for Displayed {
-        fn output(output: T) -> String {
-            format!("{}", output)
+    impl<'a, TryFrom, Error, Into> crate::Any<TryFrom, Error, Into> for Key<'a>
+    where
+        governance::Key<'a>: crate::Any<TryFrom, Error, Into>,
+    {
+        fn convert(&self, try_from: TryFrom) -> Result<Into, Error> {
+            match self.child {
+                SubKey::governance(ref key) => crate::Any::convert(key, try_from),
+            }
         }
     }
 
-    let converter = root::converter::<&[u8], BytesTruncated, Displayed, String, Infallible>();
+    impl<'a> From<Root<'a>> for Prefix<'a> {
+        fn from(root: Root<'a>) -> Self {
+            let Root { params } = root;
+            let key = Prefix {
+                params,
+                child: None,
+            };
 
-    let output = converter.convert::<u64>(&[1]);
+            key
+        }
+    }
+
+    pub mod governance {
+        #[derive(::core::clone::Clone)]
+        pub struct Root<'a> {
+            parent: super::Root<'a>,
+            params: Params<'a>,
+        }
+
+        #[derive(::core::clone::Clone)]
+        pub struct Params<'a> {
+            __: ::core::marker::PhantomData<&'a ()>,
+        }
+
+        #[derive(::core::clone::Clone)]
+        pub struct Prefix<'a> {
+            params: Params<'a>,
+            child: ::core::option::Option<SubPrefix<'a>>,
+        }
+
+        #[derive(::core::clone::Clone)]
+        pub struct Key<'a> {
+            params: Params<'a>,
+            child: SubKey<'a>,
+        }
+
+        #[allow(non_camel_case_types)]
+        #[non_exhaustive]
+        #[derive(::core::clone::Clone)]
+        pub enum SubPrefix<'a> {
+            proposal(proposal::Prefix<'a>),
+        }
+
+        #[allow(non_camel_case_types)]
+        #[non_exhaustive]
+        #[derive(::core::clone::Clone)]
+        pub enum SubKey<'a> {
+            proposal(proposal::Key<'a>),
+        }
+
+        impl<'a> super::Root<'a> {
+            pub fn governance(self) -> Root<'a> {
+                Root {
+                    parent: self,
+                    params: Params {
+                        __: ::core::marker::PhantomData,
+                    },
+                }
+            }
+        }
+
+        impl<'a> crate::FormatPath for Key<'a> {
+            fn fmt(
+                &self,
+                separator: &str,
+                f: &mut ::core::fmt::Formatter<'_>,
+            ) -> ::core::fmt::Result {
+                write!(f, "governance")?;
+                write!(f, "{}", separator)?;
+                match &self.child {
+                    SubKey::proposal(child) => {
+                        child.fmt(separator, f)?;
+                    }
+                }
+                Ok(())
+            }
+        }
+
+        impl<'a, TryFrom, Error, Into> crate::Any<TryFrom, Error, Into> for Key<'a>
+        where
+            proposal::Key<'a>: crate::Any<TryFrom, Error, Into>,
+        {
+            fn convert(&self, try_from: TryFrom) -> Result<Into, Error> {
+                match self.child {
+                    SubKey::proposal(ref key) => crate::Any::convert(key, try_from),
+                }
+            }
+        }
+
+        impl<'a> From<Root<'a>> for super::Prefix<'a> {
+            fn from(root: Root<'a>) -> Self {
+                let Root {
+                    parent: root,
+                    params,
+                } = root;
+                let key = Prefix {
+                    params,
+                    child: None,
+                };
+
+                let super::Root { params } = root;
+                let key = super::Prefix {
+                    params,
+                    child: Some(super::SubPrefix::governance(key)),
+                };
+
+                key
+            }
+        }
+
+        pub mod proposal {
+            #[derive(::core::clone::Clone)]
+            pub struct Root<'a> {
+                parent: super::Root<'a>,
+                params: Params<'a>,
+            }
+
+            #[derive(::core::clone::Clone)]
+            pub struct Params<'a> {
+                __: ::core::marker::PhantomData<&'a ()>,
+            }
+
+            #[derive(::core::clone::Clone)]
+            pub struct Prefix<'a> {
+                params: Params<'a>,
+                child: ::core::option::Option<SubPrefix<'a>>,
+            }
+
+            #[derive(::core::clone::Clone)]
+            pub struct Key<'a> {
+                params: Params<'a>,
+                child: SubKey<'a>,
+            }
+
+            #[allow(non_camel_case_types)]
+            #[non_exhaustive]
+            #[derive(::core::clone::Clone)]
+            pub enum SubPrefix<'a> {
+                id(id::Prefix<'a>),
+            }
+
+            #[allow(non_camel_case_types)]
+            #[non_exhaustive]
+            #[derive(::core::clone::Clone)]
+            pub enum SubKey<'a> {
+                id(id::Key<'a>),
+            }
+
+            impl<'a> super::Root<'a> {
+                pub fn proposal(self) -> Root<'a> {
+                    Root {
+                        parent: self,
+                        params: Params {
+                            __: ::core::marker::PhantomData,
+                        },
+                    }
+                }
+            }
+
+            impl<'a> crate::FormatPath for Key<'a> {
+                fn fmt(
+                    &self,
+                    separator: &str,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
+                    write!(f, "proposal")?;
+                    write!(f, "{}", separator)?;
+                    match &self.child {
+                        SubKey::id(child) => {
+                            child.fmt(separator, f)?;
+                        }
+                    }
+                    Ok(())
+                }
+            }
+
+            impl<'a, TryFrom, Error, Into> crate::Any<TryFrom, Error, Into> for Key<'a>
+            where
+                id::Key<'a>: crate::Any<TryFrom, Error, Into>,
+            {
+                fn convert(&self, try_from: TryFrom) -> Result<Into, Error> {
+                    match self.child {
+                        SubKey::id(ref key) => crate::Any::convert(key, try_from),
+                    }
+                }
+            }
+
+            impl<'a> From<Root<'a>> for super::super::Prefix<'a> {
+                fn from(root: Root<'a>) -> Self {
+                    let Root {
+                        parent: root,
+                        params,
+                    } = root;
+                    let key = Prefix {
+                        params,
+                        child: None,
+                    };
+
+                    let super::Root {
+                        parent: root,
+                        params,
+                    } = root;
+                    let key = super::Prefix {
+                        params,
+                        child: Some(super::SubPrefix::proposal(key)),
+                    };
+
+                    let super::super::Root { params } = root;
+                    let key = super::super::Prefix {
+                        params,
+                        child: Some(super::super::SubPrefix::governance(key)),
+                    };
+
+                    key
+                }
+            }
+
+            pub mod id {
+                #[derive(::core::clone::Clone)]
+                pub struct Root<'a> {
+                    parent: super::Root<'a>,
+                    params: Params<'a>,
+                }
+
+                #[derive(::core::clone::Clone)]
+                pub struct Params<'a> {
+                    id: ::std::borrow::Cow<'a, u64>,
+                }
+
+                #[derive(::core::clone::Clone)]
+                pub struct Prefix<'a> {
+                    params: Params<'a>,
+                    child: ::core::option::Option<SubPrefix<'a>>,
+                }
+
+                #[derive(::core::clone::Clone)]
+                pub struct Key<'a> {
+                    params: Params<'a>,
+                    child: SubKey<'a>,
+                }
+
+                #[allow(non_camel_case_types)]
+                #[non_exhaustive]
+                #[derive(::core::clone::Clone)]
+                pub enum SubPrefix<'a> {
+                    voting_start(voting_start::Prefix<'a>),
+                }
+
+                #[allow(non_camel_case_types)]
+                #[non_exhaustive]
+                #[derive(::core::clone::Clone)]
+                pub enum SubKey<'a> {
+                    voting_start(voting_start::Key<'a>),
+                }
+
+                impl<'a> super::Root<'a> {
+                    pub fn id(self, id: &'a u64) -> Root<'a> {
+                        Root {
+                            parent: self,
+                            params: Params {
+                                id: ::std::borrow::Cow::Borrowed(id),
+                            },
+                        }
+                    }
+                }
+
+                impl<'a> crate::FormatPath for Key<'a> {
+                    fn fmt(
+                        &self,
+                        separator: &str,
+                        f: &mut ::core::fmt::Formatter<'_>,
+                    ) -> ::core::fmt::Result {
+                        <u64 as crate::FormatSegment<super::super::super::Schema>>::fmt(
+                            &self.params.id,
+                            f,
+                        )?;
+                        write!(f, "{}", separator)?;
+                        match &self.child {
+                            SubKey::voting_start(child) => {
+                                child.fmt(separator, f)?;
+                            }
+                        }
+                        Ok(())
+                    }
+                }
+
+                impl<'a, TryFrom, Error, Into> crate::Any<TryFrom, Error, Into> for Key<'a>
+                where
+                    voting_start::Key<'a>: crate::Any<TryFrom, Error, Into>,
+                {
+                    fn convert(&self, try_from: TryFrom) -> Result<Into, Error> {
+                        match self.child {
+                            SubKey::voting_start(ref key) => crate::Any::convert(key, try_from),
+                        }
+                    }
+                }
+
+                impl<'a> From<Root<'a>> for super::super::super::Prefix<'a> {
+                    fn from(root: Root<'a>) -> Self {
+                        let Root {
+                            parent: root,
+                            params,
+                        } = root;
+                        let key = Prefix {
+                            params,
+                            child: None,
+                        };
+
+                        let super::Root {
+                            parent: root,
+                            params,
+                        } = root;
+                        let key = super::Prefix {
+                            params,
+                            child: Some(super::SubPrefix::id(key)),
+                        };
+
+                        let super::super::Root {
+                            parent: root,
+                            params,
+                        } = root;
+                        let key = super::super::Prefix {
+                            params,
+                            child: Some(super::super::SubPrefix::proposal(key)),
+                        };
+
+                        let super::super::super::Root { params } = root;
+                        let key = super::super::super::Prefix {
+                            params,
+                            child: Some(super::super::super::SubPrefix::governance(key)),
+                        };
+
+                        key
+                    }
+                }
+
+                pub mod voting_start {
+                    #[derive(::core::clone::Clone)]
+                    pub struct Root<'a> {
+                        parent: super::Root<'a>,
+                        params: Params<'a>,
+                    }
+
+                    #[derive(::core::clone::Clone)]
+                    pub struct Params<'a> {
+                        __: ::core::marker::PhantomData<&'a ()>,
+                    }
+
+                    #[derive(::core::clone::Clone)]
+                    pub struct Prefix<'a> {
+                        params: Params<'a>,
+                        child: ::core::option::Option<SubPrefix>,
+                    }
+
+                    #[derive(::core::clone::Clone)]
+                    pub struct Key<'a> {
+                        params: Params<'a>,
+                    }
+
+                    #[allow(non_camel_case_types)]
+                    #[non_exhaustive]
+                    #[derive(::core::clone::Clone)]
+                    pub enum SubPrefix {}
+
+                    impl<'a> super::Root<'a> {
+                        pub fn voting_start(self) -> Root<'a> {
+                            Root {
+                                parent: self,
+                                params: Params {
+                                    __: ::core::marker::PhantomData,
+                                },
+                            }
+                        }
+                    }
+
+                    impl<'a> crate::FormatPath for Key<'a> {
+                        fn fmt(
+                            &self,
+                            separator: &str,
+                            f: &mut ::core::fmt::Formatter<'_>,
+                        ) -> ::core::fmt::Result {
+                            write!(f, "voting_start")?;
+                            Ok(())
+                        }
+                    }
+
+                    impl<'a> crate::Typed<'a> for Root<'a> {
+                        type Value = u64;
+                    }
+
+                    impl<'a, TryFrom, Error, Into> crate::Any<TryFrom, Error, Into> for Key<'a>
+                    where
+                        u64: ::core::convert::TryFrom<TryFrom>,
+                        Into: ::core::convert::From<u64>,
+                        Error: ::core::convert::From<
+                            <u64 as ::core::convert::TryFrom<TryFrom>>::Error,
+                        >,
+                    {
+                        fn convert(&self, try_from: TryFrom) -> Result<Into, Error> {
+                            let value: u64 = ::core::convert::TryFrom::try_from(try_from)?;
+                            Ok(value.into())
+                        }
+                    }
+
+                    impl<'a> From<Root<'a>> for super::super::super::super::Prefix<'a> {
+                        fn from(root: Root<'a>) -> Self {
+                            let Root {
+                                parent: root,
+                                params,
+                            } = root;
+                            let key = Prefix {
+                                params,
+                                child: None,
+                            };
+
+                            let super::Root {
+                                parent: root,
+                                params,
+                            } = root;
+                            let key = super::Prefix {
+                                params,
+                                child: Some(super::SubPrefix::voting_start(key)),
+                            };
+
+                            let super::super::Root {
+                                parent: root,
+                                params,
+                            } = root;
+                            let key = super::super::Prefix {
+                                params,
+                                child: Some(super::super::SubPrefix::id(key)),
+                            };
+
+                            let super::super::super::Root {
+                                parent: root,
+                                params,
+                            } = root;
+                            let key = super::super::super::Prefix {
+                                params,
+                                child: Some(super::super::super::SubPrefix::proposal(key)),
+                            };
+
+                            let super::super::super::super::Root { params } = root;
+                            let key = super::super::super::super::Prefix {
+                                params,
+                                child: Some(super::super::super::super::SubPrefix::governance(key)),
+                            };
+
+                            key
+                        }
+                    }
+
+                    impl<'a> From<Root<'a>> for super::super::super::super::Key<'a> {
+                        fn from(root: Root<'a>) -> Self {
+                            let Root {
+                                parent: root,
+                                params,
+                            } = root;
+                            let key = Key { params };
+
+                            let super::Root {
+                                parent: root,
+                                params,
+                            } = root;
+                            let key = super::Key {
+                                params,
+                                child: super::SubKey::voting_start(key),
+                            };
+
+                            let super::super::Root {
+                                parent: root,
+                                params,
+                            } = root;
+                            let key = super::super::Key {
+                                params,
+                                child: super::super::SubKey::id(key),
+                            };
+
+                            let super::super::super::Root {
+                                parent: root,
+                                params,
+                            } = root;
+                            let key = super::super::super::Key {
+                                params,
+                                child: super::super::super::SubKey::proposal(key),
+                            };
+
+                            let super::super::super::super::Root { params } = root;
+                            let key = super::super::super::super::Key {
+                                params,
+                                child: super::super::super::super::SubKey::governance(key),
+                            };
+
+                            key
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
-
-//     pub mod governance {
-//         #[derive(Clone)]
-//         pub struct Path(pub(super) String);
-
-//         // this is because it was top-level
-//         impl Path {
-//             pub fn root() -> Path {
-//                 Path("governance".to_string())
-//             }
-//         }
-
-//         impl Path {
-//             pub fn proposal(self) -> proposal::Path {
-//                 self.0.push_str("/");
-//                 self.0.push_str("proposal");
-//                 proposal::Path(self.0)
-//             }
-//         }
-
-//         pub mod proposal {
-//             #[derive(Clone)]
-//             pub struct Path(pub(super) String);
-
-//             impl Path {
-//                 pub fn with(self, id: ProposalId) -> id::Path {
-//                     self.0.push_str("/");
-//                     self.0.push_str(&id.to_string());
-//                     id::Path(self.0)
-//                 }
-//             }
-
-//             pub mod id {
-//                 #[derive(Clone)]
-//                 pub struct Path(pub(super) String);
-
-//                 impl Path {
-//                     pub fn voting_start(self) -> voting_start::Path {
-//                         self.0.push_str("/");
-//                         self.0.push_str("voting_start");
-//                         voting_start::Path(self.0)
-//                     }
-//                 }
-
-//                 pub mod voting_start {
-//                     #[derive(Clone)]
-//                     pub struct Path(pub(super) String);
-
-//                     // These are only here because it's a leaf
-
-//                     impl Key for Path {
-//                         type Value = u64;
-
-//                         fn key(self) -> String {
-//                             self.0
-//                         }
-//                     }
-//                 }
-//             }
-//         }
-//     }
-// }
-
-// state.get(key!("governance/proposal/{id}/voting_start" in root))
-
-// // generates:
-
-// state.get(root::governance::Path::root().proposal().with(id).voting_start())
