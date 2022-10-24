@@ -9,6 +9,7 @@ mod write;
 use futures::Stream;
 pub use read::StateRead;
 use tokio::sync::mpsc;
+use tokio_stream::StreamExt;
 use tracing::Span;
 pub use transaction::Transaction as StateTransaction;
 pub use write::StateWrite;
@@ -80,31 +81,43 @@ impl StateRead for State {
         &self,
         prefix: &str,
     ) -> Result<Pin<Box<dyn Stream<Item = (String, Box<[u8]>)> + Send + '_>>> {
-        // TODO: Interleave the unwritten_changes cache with the snapshot.
-        todo!()
-        // let span = Span::current();
-        // let db = self.0.db;
-        // let rocksdb_snapshot = self.0.rocksdb_snapshot.clone();
-        // let mut options = rocksdb::ReadOptions::default();
-        // options.set_iterate_range(rocksdb::PrefixRange(prefix.as_bytes()));
-        // let mode = rocksdb::IteratorMode::Start;
+        // Interleave the unwritten_changes cache with the snapshot.
+        let (tx, rx) = mpsc::channel(100);
 
-        // let (tx, rx) = mpsc::channel(100);
+        let mut snapshotted_stream = self.snapshot.prefix_raw(prefix).await?;
+        let mut snapshotted_match = snapshotted_stream.next().await;
+        for (key, value) in self.unwritten_changes.iter() {
+            // Iterate the unwritten_changes cache (sorted by key) until we reach the keys
+            // that match the prefix.
+            //
+            // If value is `None`, then the key has been deleted, and we should skip it.
+            if !key.starts_with(prefix) || value.is_none() {
+                continue;
+            }
 
-        // tokio::task::Builder::new()
-        //     .name("Snapshot::prefix_raw")
-        //     .spawn_blocking(move || {
-        //         span.in_scope(|| {
-        //             let jmt_cf = db.cf_handle("jmt").expect("jmt column family not found");
-        //             let iter = rocksdb_snapshot.iterator_cf_opt(jmt_cf, options, mode);
-        //             for i in iter {
-        //                 tx.blocking_send(i?)?;
-        //             }
-        //             Ok::<(), anyhow::Error>(())
-        //         })
-        //     })?
-        //     .await??;
+            let value = value.clone().unwrap();
 
-        // Ok(Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx)))
+            // This key matches the prefix.
+            // While the snapshot prefix stream returns keys that lexicographically precede this key,
+            // return those.
+            while let Some((snapshotted_key, snapshotted_value)) = snapshotted_match {
+                if &snapshotted_key < key {
+                    // The snapshot key is less than the unwritten_changes key, so return
+                    // the snapshot key.
+                    tx.send((snapshotted_key, snapshotted_value)).await?;
+                    // And then advance the snapshot stream to the next match.
+                    snapshotted_match = snapshotted_stream.next().await;
+                } else {
+                    // Keep this match around for another iteration.
+                    snapshotted_match = Some((snapshotted_key, snapshotted_value));
+                }
+            }
+
+            // All snapshot matches preceding this unwritten_changes key have been sent to the channel,
+            // so send this key.
+            tx.send((key.to_string(), value.into_boxed_slice())).await?;
+        }
+
+        Ok(Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx)))
     }
 }
