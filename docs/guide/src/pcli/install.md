@@ -56,7 +56,7 @@ latest tag for the current
 [testnet](https://github.com/penumbra-zone/penumbra/releases):
 
 ```bash
-cd penumbra && git fetch && git checkout 032-chaldene.1 && cargo update
+cd penumbra && git fetch && git checkout 033-eirene && cargo update
 ```
 
 ### Building the `pcli` client software
