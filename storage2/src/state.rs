@@ -86,8 +86,6 @@ impl StateRead for State {
 
         let mut snapshotted_stream = self.snapshot.prefix_raw(prefix).await?;
         let mut snapshotted_match = snapshotted_stream.next().await;
-        // TODO: a bug exists where if unwritten_changes is empty, nothing from the Snapshot will be
-        // returned, fix this
         for (key, value) in self.unwritten_changes.iter() {
             // Iterate the unwritten_changes cache (sorted by key) until we reach the keys
             // that match the prefix.
@@ -118,6 +116,13 @@ impl StateRead for State {
             // All snapshot matches preceding this unwritten_changes key have been sent to the channel,
             // so send this key.
             tx.send((key.to_string(), value.into_boxed_slice())).await?;
+        }
+
+        // Send any remaining data from the snapshot stream.
+        while let Some((snapshotted_key, snapshotted_value)) = snapshotted_match {
+            tx.send((snapshotted_key, snapshotted_value)).await?;
+            // Advance the snapshot stream to the next match.
+            snapshotted_match = snapshotted_stream.next().await;
         }
 
         Ok(Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx)))
