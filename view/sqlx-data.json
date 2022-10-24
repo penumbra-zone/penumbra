@@ -208,6 +208,36 @@
     },
     "query": "\n            SELECT height\n            FROM sync_height\n            ORDER BY height DESC\n            LIMIT 1\n        "
   },
+  "6bc5184c7eedf8c67bbcd7ea89a05d6777ed03e141f4bccf3de668f5d64bd8aa": {
+    "describe": {
+      "columns": [
+        {
+          "name": "block_height",
+          "ordinal": 0,
+          "type_info": "Int64"
+        },
+        {
+          "name": "tx_hash",
+          "ordinal": 1,
+          "type_info": "Blob"
+        },
+        {
+          "name": "tx_bytes",
+          "ordinal": 2,
+          "type_info": "Blob"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT block_height, tx_hash, tx_bytes\n            FROM tx\n            WHERE tx_hash = ?"
+  },
   "6fbdcaea60547ae9c260428c23ddd835986cdd03553e485df2fe4ad31ccaa8d6": {
     "describe": {
       "columns": [],
@@ -295,66 +325,6 @@
       }
     },
     "query": "SELECT position, height, hash FROM nct_hashes"
-  },
-  "94781fd10341bb230d568592af61265d3043df96c84cc0659904ac1804eec10b": {
-    "describe": {
-      "columns": [
-        {
-          "name": "note_commitment",
-          "ordinal": 0,
-          "type_info": "Blob"
-        },
-        {
-          "name": "address",
-          "ordinal": 1,
-          "type_info": "Blob"
-        },
-        {
-          "name": "amount",
-          "ordinal": 2,
-          "type_info": "Int64"
-        },
-        {
-          "name": "asset_id",
-          "ordinal": 3,
-          "type_info": "Blob"
-        },
-        {
-          "name": "blinding_factor",
-          "ordinal": 4,
-          "type_info": "Blob"
-        },
-        {
-          "name": "height_created",
-          "ordinal": 5,
-          "type_info": "Int64"
-        },
-        {
-          "name": "address_index",
-          "ordinal": 6,
-          "type_info": "Blob"
-        },
-        {
-          "name": "source",
-          "ordinal": 7,
-          "type_info": "Blob"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "SELECT * FROM notes WHERE note_commitment = ?"
   },
   "982b5f03b4628f7fb3ae7ab903b964e77fd3f5b626be440b672f182503204f2d": {
     "describe": {
