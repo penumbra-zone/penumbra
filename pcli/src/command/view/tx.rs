@@ -45,36 +45,40 @@ impl TxCmd {
 
             for av in txv.actions {
                 table.add_row(vec![match av {
-                    penumbra_transaction::ActionView::Swap(swap_view) => match swap_view {
-                        SwapView::Visible {
-                            swap,
-                            swap_nft,
-                            swap_plaintext,
-                        } => format!("{:?}", "Swap"),
-                        SwapView::Opaque { swap } => format!("{:?}", "Swap"),
-                    },
-                    penumbra_transaction::ActionView::SwapClaim(swap_claim_view) => {
-                        match swap_claim_view {
-                            SwapClaimView::Visible {
-                                swap_claim,
-                                decrypted_note_1,
-                                decrypted_note_2,
-                            } => format!("{:?}", "SwapClaim"),
-                            SwapClaimView::Opaque { swap_claim } => format!("{:?}", "SwapClaim"),
-                        }
+                    penumbra_transaction::ActionView::Swap(SwapView::Visible {
+                        swap,
+                        swap_nft,
+                        swap_plaintext,
+                    }) => format!("{:?} {:?} {:?}", swap, swap_nft, swap_plaintext),
+                    penumbra_transaction::ActionView::Swap(SwapView::Opaque { swap }) => {
+                        format!("{:?}", swap)
                     }
-                    penumbra_transaction::ActionView::Output(output_view) => match output_view {
-                        OutputView::Visible {
-                            output,
-                            decrypted_note,
-                            decrypted_memo_key,
-                        } => format!("{:?}", "Output"),
-                        OutputView::Opaque { output } => format!("{:?}", "Output"),
-                    },
-                    penumbra_transaction::ActionView::Spend(spend_view) => match spend_view {
-                        SpendView::Visible { spend, note } => format!("{:?}", "Spend"),
-                        SpendView::Opaque { spend } => format!("{:?}", "Spend"),
-                    },
+                    penumbra_transaction::ActionView::SwapClaim(SwapClaimView::Visible {
+                        swap_claim,
+                        decrypted_note_1,
+                        decrypted_note_2,
+                    }) => format!(
+                        "{:?} {:?} {:?}",
+                        swap_claim, decrypted_note_1, decrypted_note_2
+                    ),
+                    penumbra_transaction::ActionView::SwapClaim(SwapClaimView::Opaque {
+                        swap_claim,
+                    }) => format!("{:?}", swap_claim),
+
+                    penumbra_transaction::ActionView::Output(OutputView::Visible {
+                        output,
+                        decrypted_note,
+                        decrypted_memo_key,
+                    }) => format!("{:?} {:?} {:?}", output, decrypted_note, decrypted_memo_key),
+                    penumbra_transaction::ActionView::Output(OutputView::Opaque { output }) => {
+                        format!("{:?}", output)
+                    }
+                    penumbra_transaction::ActionView::Spend(SpendView::Visible { spend, note }) => {
+                        format!("{:?} {:?}", spend, note)
+                    }
+                    penumbra_transaction::ActionView::Spend(SpendView::Opaque { spend }) => {
+                        format!("{:?}", spend)
+                    }
                     _ => String::from(""),
                 }]);
             }
