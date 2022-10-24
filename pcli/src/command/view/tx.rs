@@ -16,7 +16,7 @@ pub struct TxCmd {
 
 impl TxCmd {
     pub fn offline(&self) -> bool {
-        true
+        false
     }
     pub async fn exec<V: ViewClient>(&self, fvk: &FullViewingKey, view: &mut V) -> Result<()> {
         // Initialize the table
