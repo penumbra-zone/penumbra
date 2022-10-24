@@ -25,7 +25,7 @@ impl TxCmd {
         table.set_header(vec!["Action Type", "Net Change"]);
 
         // Retrieve Transaction
-        let tx = view.transaction_by_hash(self.hash.as_bytes()).await?;
+        let tx = view.transaction_by_hash(self.hash.parse()?).await?;
 
         table.add_row(vec![
             format!("{}", "Action Type"),
@@ -35,7 +35,7 @@ impl TxCmd {
         if let Some(tx) = &tx {
             // Retrieve full TxP
 
-            let txp = view.perspective(self.hash.as_bytes()).await?;
+            let txp = view.perspective(self.hash.parse()?).await?;
 
             // Generate TxV using TxP
 

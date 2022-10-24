@@ -566,6 +566,26 @@ impl ViewProtocol for ViewService {
         ))
     }
 
+    async fn transaction_by_hash(
+        &self,
+        request: tonic::Request<pb::TransactionByHashRequest>,
+    ) -> Result<tonic::Response<pb::TransactionByHashResponse>, tonic::Status> {
+        self.check_worker().await?;
+
+        // Fetch transactions from storage.
+        let tx = self
+            .storage
+            .transaction_by_hash(&request.get_ref().tx_hash)
+            .await
+            .map_err(|e| {
+                tonic::Status::unavailable(format!("error fetching transaction: {}", e))
+            })?;
+
+        Ok(tonic::Response::new(pb::TransactionByHashResponse {
+            tx: tx.map(Into::into),
+        }))
+    }
+
     async fn witness(
         &self,
         request: tonic::Request<pb::WitnessRequest>,

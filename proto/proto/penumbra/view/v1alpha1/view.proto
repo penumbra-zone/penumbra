@@ -55,6 +55,8 @@ service ViewProtocol {
 
     // Query for the transaction hashes in the given range of blocks.
     rpc TransactionHashes(TransactionsRequest) returns (stream TransactionHashStreamResponse);
+    // Query for a given transaction hash.
+    rpc TransactionByHash(TransactionByHashRequest) returns (TransactionByHashResponse);
     // Query for the full transactions in the given range of blocks.
     rpc Transactions(TransactionsRequest) returns (stream TransactionStreamResponse);
     // Query for the transaction perspective of the given transaction
@@ -77,6 +79,11 @@ message TransactionsRequest {
     optional uint64 end_height = 2;
 }
 
+message TransactionByHashRequest {
+    // The transaction hash to query for.
+    bytes tx_hash = 1;
+}
+
 message TransactionHashStreamResponse {
     uint64 block_height = 1;
     bytes tx_hash = 2;
@@ -87,6 +94,11 @@ message TransactionStreamResponse {
     uint64 block_height = 1;
     bytes tx_hash = 2;
     core.transaction.v1alpha1.Transaction tx = 3;
+}
+
+// A full transaction response
+message TransactionByHashResponse {
+    core.transaction.v1alpha1.Transaction tx = 1;
 }
 
 message NoteByCommitmentRequest {
