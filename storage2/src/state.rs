@@ -86,6 +86,8 @@ impl StateRead for State {
 
         let mut snapshotted_stream = self.snapshot.prefix_raw(prefix).await?;
         let mut snapshotted_match = snapshotted_stream.next().await;
+        // TODO: a bug exists where if unwritten_changes is empty, nothing from the Snapshot will be
+        // returned, fix this
         for (key, value) in self.unwritten_changes.iter() {
             // Iterate the unwritten_changes cache (sorted by key) until we reach the keys
             // that match the prefix.
