@@ -129,6 +129,7 @@ pub mod schema {
 
     impl<'a> crate::FormatPath for Key<'a> {
         fn fmt(&self, separator: &str, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+            let Params { .. } = &self.params;
             match &self.child {
                 SubKey::governance(child) => {
                     child.fmt(separator, f)?;
@@ -216,6 +217,7 @@ pub mod schema {
                 separator: &str,
                 f: &mut ::core::fmt::Formatter<'_>,
             ) -> ::core::fmt::Result {
+                let Params { .. } = &self.params;
                 write!(f, "governance")?;
                 write!(f, "{}", separator)?;
                 match &self.child {
@@ -314,6 +316,7 @@ pub mod schema {
                     separator: &str,
                     f: &mut ::core::fmt::Formatter<'_>,
                 ) -> ::core::fmt::Result {
+                    let Params { .. } = &self.params;
                     write!(f, "proposal")?;
                     write!(f, "{}", separator)?;
                     match &self.child {
@@ -381,7 +384,7 @@ pub mod schema {
                 #[derive(::core::clone::Clone)]
                 pub struct Prefix<'a> {
                     params: Params<'a>,
-                    child: ::core::option::Option<SubPrefix<'a>>,
+                    // no child because no children are themselves prefixes
                 }
 
                 #[derive(::core::clone::Clone)]
@@ -390,12 +393,7 @@ pub mod schema {
                     child: SubKey<'a>,
                 }
 
-                #[allow(non_camel_case_types)]
-                #[non_exhaustive]
-                #[derive(::core::clone::Clone)]
-                pub enum SubPrefix<'a> {
-                    voting_start(voting_start::Prefix<'a>),
-                }
+                // no subprefix because no children are themselves prefixes
 
                 #[allow(non_camel_case_types)]
                 #[non_exhaustive]
@@ -421,10 +419,8 @@ pub mod schema {
                         separator: &str,
                         f: &mut ::core::fmt::Formatter<'_>,
                     ) -> ::core::fmt::Result {
-                        <u64 as crate::FormatSegment<super::super::super::Schema>>::fmt(
-                            &self.params.id,
-                            f,
-                        )?;
+                        let Params { id, .. } = &self.params;
+                        <u64 as crate::FormatSegment<super::super::super::Schema>>::fmt(id, f)?;
                         write!(f, "{}", separator)?;
                         match &self.child {
                             SubKey::voting_start(child) => {
@@ -452,10 +448,7 @@ pub mod schema {
                             parent: root,
                             params,
                         } = root;
-                        let key = Prefix {
-                            params,
-                            child: None,
-                        };
+                        let key = Prefix { params };
 
                         let super::Root {
                             parent: root,
@@ -497,21 +490,15 @@ pub mod schema {
                         __: ::core::marker::PhantomData<&'a ()>,
                     }
 
-                    #[derive(::core::clone::Clone)]
-                    pub struct Prefix<'a> {
-                        params: Params<'a>,
-                        child: ::core::option::Option<SubPrefix>,
-                    }
+                    // no prefix or subprefix because this is a leaf key
 
                     #[derive(::core::clone::Clone)]
                     pub struct Key<'a> {
                         params: Params<'a>,
+                        // no child because this is a leaf key
                     }
 
-                    #[allow(non_camel_case_types)]
-                    #[non_exhaustive]
-                    #[derive(::core::clone::Clone)]
-                    pub enum SubPrefix {}
+                    // no subkey because this is a leaf key
 
                     impl<'a> super::Root<'a> {
                         pub fn voting_start(self) -> Root<'a> {
@@ -530,6 +517,7 @@ pub mod schema {
                             separator: &str,
                             f: &mut ::core::fmt::Formatter<'_>,
                         ) -> ::core::fmt::Result {
+                            let Params { .. } = &self.params;
                             write!(f, "voting_start")?;
                             Ok(())
                         }
@@ -550,54 +538,6 @@ pub mod schema {
                         fn convert(&self, try_from: TryFrom) -> Result<Into, Error> {
                             let value: u64 = ::core::convert::TryFrom::try_from(try_from)?;
                             Ok(value.into())
-                        }
-                    }
-
-                    impl<'a> From<Root<'a>> for super::super::super::super::Prefix<'a> {
-                        fn from(root: Root<'a>) -> Self {
-                            let Root {
-                                parent: root,
-                                params,
-                            } = root;
-                            let key = Prefix {
-                                params,
-                                child: None,
-                            };
-
-                            let super::Root {
-                                parent: root,
-                                params,
-                            } = root;
-                            let key = super::Prefix {
-                                params,
-                                child: Some(super::SubPrefix::voting_start(key)),
-                            };
-
-                            let super::super::Root {
-                                parent: root,
-                                params,
-                            } = root;
-                            let key = super::super::Prefix {
-                                params,
-                                child: Some(super::super::SubPrefix::id(key)),
-                            };
-
-                            let super::super::super::Root {
-                                parent: root,
-                                params,
-                            } = root;
-                            let key = super::super::super::Prefix {
-                                params,
-                                child: Some(super::super::super::SubPrefix::proposal(key)),
-                            };
-
-                            let super::super::super::super::Root { params } = root;
-                            let key = super::super::super::super::Prefix {
-                                params,
-                                child: Some(super::super::super::super::SubPrefix::governance(key)),
-                            };
-
-                            key
                         }
                     }
 
