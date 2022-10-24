@@ -95,16 +95,27 @@ impl StateRead for Snapshot {
 
         let (tx, rx) = mpsc::channel(100);
 
+        // Since the JMT keys are hashed, we can't use a prefix iterator directly.
+        // We need to first prefix range the key preimages column family, then use the hashed matches to fetch the values
+        // from the JMT column family.
         tokio::task::Builder::new()
             .name("Snapshot::prefix_raw")
             .spawn_blocking(move || {
                 span.in_scope(|| {
                     let jmt_cf = db.cf_handle("jmt").expect("jmt column family not found");
-                    let iter = rocksdb_snapshot.iterator_cf_opt(jmt_cf, options, mode);
+                    let keys_cf = db
+                        .cf_handle("jmt_keys")
+                        .expect("jmt_keys column family not found");
+                    let iter = rocksdb_snapshot.iterator_cf_opt(keys_cf, options, mode);
                     for i in iter {
-                        let i = i?;
-                        let k = std::str::from_utf8(i.0.as_ref())?;
-                        tx.blocking_send((k.to_string(), i.1))?;
+                        // For each key that matches the prefix, fetch the value from the JMT column family.
+                        let (key_preimage, key_hash) = i?;
+
+                        let j = rocksdb_snapshot
+                            .get_pinned_cf(jmt_cf, key_hash)?
+                            .expect("keys in jmt_keys should have a corresponding value in jmt");
+                        let k = std::str::from_utf8(key_preimage.as_ref())?;
+                        tx.blocking_send((k.to_string(), Box::from(j.as_ref())))?;
                     }
                     Ok::<(), anyhow::Error>(())
                 })
