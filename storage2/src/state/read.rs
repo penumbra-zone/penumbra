@@ -66,7 +66,7 @@ pub trait StateRead {
     async fn prefix<D, P>(
         &self,
         prefix: &str,
-    ) -> Result<Pin<Box<dyn Stream<Item = Result<(std::boxed::Box<[u8]>, D)>> + Send + '_>>>
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<(String, D)>> + Send + '_>>>
     where
         D: Protobuf<P>,
         P: Message + Default + 'static,
@@ -89,7 +89,7 @@ pub trait StateRead {
     async fn prefix_proto<D, P>(
         &self,
         prefix: &str,
-    ) -> Result<Pin<Box<dyn Stream<Item = Result<(std::boxed::Box<[u8]>, P)>> + Send + '_>>>
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<(String, P)>> + Send + '_>>>
     where
         D: Protobuf<P>,
         P: Message + Default,
@@ -110,7 +110,7 @@ pub trait StateRead {
     async fn prefix_raw(
         &self,
         prefix: &str,
-    ) -> Result<
-        Pin<Box<dyn Stream<Item = (std::boxed::Box<[u8]>, std::boxed::Box<[u8]>)> + Send + '_>>,
-    >;
+        // TODO: it might be possible to make this zero-allocation by representing the key as a `Box<&str>` but
+        // the lifetimes weren't working out, so allocating a new `String` was easier for now.
+    ) -> Result<Pin<Box<dyn Stream<Item = (String, std::boxed::Box<[u8]>)> + Send + '_>>>;
 }

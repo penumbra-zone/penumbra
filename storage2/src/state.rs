@@ -79,10 +79,32 @@ impl StateRead for State {
     async fn prefix_raw(
         &self,
         prefix: &str,
-    ) -> Result<
-        Pin<Box<dyn Stream<Item = (std::boxed::Box<[u8]>, std::boxed::Box<[u8]>)> + Send + '_>>,
-    > {
+    ) -> Result<Pin<Box<dyn Stream<Item = (String, Box<[u8]>)> + Send + '_>>> {
         // TODO: Interleave the unwritten_changes cache with the snapshot.
         todo!()
+        // let span = Span::current();
+        // let db = self.0.db;
+        // let rocksdb_snapshot = self.0.rocksdb_snapshot.clone();
+        // let mut options = rocksdb::ReadOptions::default();
+        // options.set_iterate_range(rocksdb::PrefixRange(prefix.as_bytes()));
+        // let mode = rocksdb::IteratorMode::Start;
+
+        // let (tx, rx) = mpsc::channel(100);
+
+        // tokio::task::Builder::new()
+        //     .name("Snapshot::prefix_raw")
+        //     .spawn_blocking(move || {
+        //         span.in_scope(|| {
+        //             let jmt_cf = db.cf_handle("jmt").expect("jmt column family not found");
+        //             let iter = rocksdb_snapshot.iterator_cf_opt(jmt_cf, options, mode);
+        //             for i in iter {
+        //                 tx.blocking_send(i?)?;
+        //             }
+        //             Ok::<(), anyhow::Error>(())
+        //         })
+        //     })?
+        //     .await??;
+
+        // Ok(Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx)))
     }
 }

@@ -85,9 +85,7 @@ impl StateRead for Snapshot {
     async fn prefix_raw(
         &self,
         prefix: &str,
-    ) -> Result<
-        Pin<Box<dyn Stream<Item = (std::boxed::Box<[u8]>, std::boxed::Box<[u8]>)> + Send + '_>>,
-    > {
+    ) -> Result<Pin<Box<dyn Stream<Item = (String, Box<[u8]>)> + Send + '_>>> {
         let span = Span::current();
         let db = self.0.db;
         let rocksdb_snapshot = self.0.rocksdb_snapshot.clone();
@@ -104,7 +102,9 @@ impl StateRead for Snapshot {
                     let jmt_cf = db.cf_handle("jmt").expect("jmt column family not found");
                     let iter = rocksdb_snapshot.iterator_cf_opt(jmt_cf, options, mode);
                     for i in iter {
-                        tx.blocking_send(i?)?;
+                        let i = i?;
+                        let k = std::str::from_utf8(i.0.as_ref())?;
+                        tx.blocking_send((k.to_string(), i.1))?;
                     }
                     Ok::<(), anyhow::Error>(())
                 })
