@@ -36,6 +36,22 @@ impl<'a> Transaction<'a> {
         self.failed = true;
         self.failure_reason = reason;
     }
+
+    pub fn commit(self) -> Result<()> {
+        if self.failed {
+            return Err(anyhow::anyhow!("transaction failed").context(self.failure_reason));
+        }
+
+        // Write the unwritten consensus-critical changes to the state:
+        self.state.unwritten_changes.extend(self.unwritten_changes);
+
+        // Write the unwritten nonconsensus changes to the state:
+        self.state
+            .nonconsensus_changes
+            .extend(self.nonconsensus_changes);
+
+        Ok(())
+    }
 }
 
 impl<'a> StateWrite for Transaction<'a> {
