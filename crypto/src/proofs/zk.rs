@@ -8,7 +8,7 @@ use decaf377_ka as ka;
 use super::zk_gadgets;
 use ark_ff::UniformRand;
 use ark_groth16::{Groth16, Proof, ProvingKey, VerifyingKey};
-use ark_r1cs_std::prelude::AllocVar;
+use ark_r1cs_std::{groups::curves::short_weierstrass::ProjectiveVar, prelude::AllocVar};
 use ark_relations::ns;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
@@ -69,6 +69,7 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
             .vartime_decompress()
             .expect("valid public key");
         let epk = cs.new_input_variable(|| Ok(pk.vartime_compress_to_field()))?;
+        //let epk = ProjectiveVar::new()
 
         // TODO: Figure out how to best factor this logic into gadgets
 
@@ -127,6 +128,8 @@ impl OutputProof {
 
 #[cfg(test)]
 mod test {
+    use std::time::Instant;
+
     use rand_core::OsRng;
 
     use super::*;
@@ -138,20 +141,29 @@ mod test {
         // Random (non-zero) diversified base
         let random_fq = Fq::rand(&mut rng);
         let g_d = decaf377::Element::encode_to_curve(&random_fq);
+        let start = Instant::now();
         let (pk, vk) = OutputProof::setup(&mut rng)
             .expect("can perform test Groth16 setup for output circuit");
+        let duration = start.elapsed();
+        println!("Time elapsed in setup: {:?}", duration);
 
         let esk = ka::Secret::new(&mut rng);
         let epk = esk.public();
 
+        let start = Instant::now();
         let proof = OutputProof::new(&mut rng, &pk, g_d, esk, epk)
             .expect("can prove using a test output circuit");
+        let duration = start.elapsed();
+        println!("Time elapsed in proof creation: {:?}", duration);
 
         let pk = decaf377::Encoding(epk.0)
             .vartime_decompress()
             .expect("valid public key");
         let epk_fq = pk.vartime_compress_to_field();
+        let start = Instant::now();
         assert!(proof.verify(&vk, &[epk_fq]).unwrap());
+        let duration = start.elapsed();
+        println!("Time elapsed in proof verification: {:?}", duration);
     }
 
     #[test]
