@@ -6,6 +6,8 @@ use async_trait::async_trait;
 use penumbra_proto::{Message, Protobuf};
 
 #[async_trait]
+// This needs to be a trait because we want to implement it over both `State` and `StateTransaction`,
+// mainly to support RPC methods.
 pub trait StateRead {
     /// Get
     async fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>>;

@@ -1,9 +1,10 @@
 use anyhow::Result;
+use async_trait::async_trait;
 use std::collections::BTreeMap;
 
 use crate::State;
 
-use super::StateWrite;
+use super::{StateRead, StateWrite};
 
 /// Represents a transactional set of changes to a `State` fork,
 /// implemented as a RYW cache over a `State`.
@@ -49,5 +50,28 @@ impl<'a> StateWrite for Transaction<'a> {
 
     fn put_nonconsensus(&mut self, key: Vec<u8>, value: Vec<u8>) {
         self.nonconsensus_changes.insert(key, Some(value));
+    }
+}
+
+#[async_trait]
+impl<'a> StateRead for Transaction<'a> {
+    async fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>> {
+        // If the key is available in the unwritten_changes cache, return it.
+        if let Some(v) = self.unwritten_changes.get(key) {
+            return Ok(v.clone());
+        }
+
+        // Otherwise, if the key is available in the state, return it.
+        self.state.get_raw(key).await
+    }
+
+    async fn get_nonconsensus(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+        // If the key is available in the nonconsensus cache, return it.
+        if let Some(v) = self.nonconsensus_changes.get(key) {
+            return Ok(v.clone());
+        }
+
+        // Otherwise, if the key is available in the state, return it.
+        self.state.get_nonconsensus(key).await
     }
 }
