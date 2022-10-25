@@ -85,9 +85,7 @@ impl OutputPlan {
         let note = self.output_note();
         let note_commitment = note.commit();
 
-        // Prepare the value commitment.  Outputs subtract from the transaction
-        // value balance, so flip the sign of the commitment.
-        let balance_commitment = -self.value.commit(self.value_blinding);
+        let balance_commitment = self.balance().commit(self.value_blinding);
 
         // Encrypt the note to the recipient...
         let diversified_generator = note.diversified_generator();

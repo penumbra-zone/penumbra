@@ -100,7 +100,7 @@ impl SpendProof {
 pub struct OutputProof {
     // The note being created.
     pub note: Note,
-    // The blinding factor used for generating the value commitment.
+    // The blinding factor used for generating the balance commitment.
     pub v_blinding: Fr,
     // The ephemeral secret key that corresponds to the public key.
     pub esk: ka::Secret,
@@ -110,7 +110,7 @@ impl OutputProof {
     /// Called to verify the proof using the provided public inputs.
     ///
     /// The public inputs are:
-    /// * value commitment of the new note,
+    /// * balance commitment of the new note,
     /// * note commitment of the new note,
     /// * the ephemeral public key used to generate the new note.
     pub fn verify(
@@ -122,7 +122,7 @@ impl OutputProof {
         gadgets::note_commitment_integrity(self.note.clone(), note_commitment)?;
 
         gadgets::balance_commitment_integrity(
-            -balance_commitment,
+            balance_commitment,
             self.v_blinding,
             self.note.value(),
         )?;
@@ -797,6 +797,7 @@ mod tests {
             amount: 10u64.into(),
             asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
         };
+
         let v_blinding = Fr::rand(&mut rng);
         let note = Note::generate(&mut rng, &dest, value_to_send);
         let esk = ka::Secret::new(&mut rng);
