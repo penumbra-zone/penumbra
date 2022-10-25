@@ -231,7 +231,43 @@ impl TxCmd {
                     penumbra_transaction::ActionView::Spend(SpendView::Opaque { spend: _ }) => {
                         ["Spend".to_string(), "Opaque spend".to_string()]
                     }
-                    _ => [String::from("Unknown"), String::from("")],
+                    penumbra_transaction::ActionView::Delegate(_) => {
+                        ["Delegation".to_string(), "".to_string()]
+                    }
+                    penumbra_transaction::ActionView::Undelegate(_) => {
+                        ["Undelegation".to_string(), "".to_string()]
+                    }
+                    penumbra_transaction::ActionView::ValidatorDefinition(_) => {
+                        ["Upload Validator Definition".to_string(), "".to_string()]
+                    }
+                    penumbra_transaction::ActionView::IBCAction(_) => {
+                        ["IBC Action".to_string(), "".to_string()]
+                    }
+                    penumbra_transaction::ActionView::ProposalSubmit(_) => {
+                        ["Submit Governance Proposal".to_string(), "".to_string()]
+                    }
+                    penumbra_transaction::ActionView::ProposalWithdraw(_) => {
+                        ["Governance Withdrawal Proposal".to_string(), "".to_string()]
+                    }
+                    penumbra_transaction::ActionView::ValidatorVote(_) => {
+                        ["Validator Vote".to_string(), "".to_string()]
+                    }
+                    penumbra_transaction::ActionView::PositionOpen(_) => {
+                        ["Open Liquidity Position".to_string(), "".to_string()]
+                    }
+                    penumbra_transaction::ActionView::PositionClose(_) => {
+                        ["Close Liquidity Position".to_string(), "".to_string()]
+                    }
+                    penumbra_transaction::ActionView::PositionWithdraw(_) => {
+                        ["Withdraw Liquidity Position".to_string(), "".to_string()]
+                    }
+                    penumbra_transaction::ActionView::PositionRewardClaim(_) => [
+                        "Claim Liquidity Position Reward".to_string(),
+                        "".to_string(),
+                    ],
+                    penumbra_transaction::ActionView::ICS20Withdrawal(_) => {
+                        ["ICS20 Withdrawal".to_string(), "".to_string()]
+                    }
                 });
             }
 
