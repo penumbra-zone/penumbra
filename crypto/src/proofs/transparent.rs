@@ -798,6 +798,8 @@ mod tests {
             asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
         };
 
+        let balance = -crate::Balance::from(value_to_send);
+
         let v_blinding = Fr::rand(&mut rng);
         let note = Note::generate(&mut rng, &dest, value_to_send);
         let esk = ka::Secret::new(&mut rng);
@@ -810,7 +812,7 @@ mod tests {
         };
 
         assert!(proof
-            .verify(-value_to_send.commit(v_blinding), note.commit(), epk)
+            .verify(balance.commit(v_blinding), note.commit(), epk)
             .is_ok());
     }
 
