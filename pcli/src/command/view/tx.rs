@@ -1,8 +1,10 @@
 use anyhow::Result;
 use comfy_table::{presets, Table};
-use penumbra_crypto::{asset::Cache, dex::swap::SwapPlaintext, FullViewingKey, Note, Value};
+use penumbra_crypto::{
+    asset::Cache, dex::swap::SwapPlaintext, FullViewingKey, Note, PayloadKey, Value,
+};
 use penumbra_transaction::{
-    action::{Swap, SwapClaim},
+    action::{Output, Swap, SwapClaim},
     view::action_view::{OutputView, SpendView, SwapClaimView, SwapView},
     Transaction,
 };
@@ -134,15 +136,35 @@ fn format_visible_swap_claim_row(
     )
 }
 
+fn format_visible_output_row(asset_cache: &Cache, decrypted_note: &Note) -> String {
+    format!(
+        "{} to address {}",
+        decrypted_note.value().format(asset_cache),
+        decrypted_note.address(),
+    )
+}
+
+fn format_visible_spend_row(asset_cache: &Cache, decrypted_note: &Note) -> String {
+    format!(
+        "address {} spent {}",
+        decrypted_note.address(),
+        decrypted_note.value().format(asset_cache),
+    )
+}
+
 impl TxCmd {
     pub fn offline(&self) -> bool {
         false
     }
     pub async fn exec<V: ViewClient>(&self, fvk: &FullViewingKey, view: &mut V) -> Result<()> {
-        // Initialize the table
-        let mut table = Table::new();
-        table.load_preset(presets::NOTHING);
-        table.set_header(vec!["Action Type", "Description"]);
+        // Initialize the tables
+        let mut actions_table = Table::new();
+        actions_table.load_preset(presets::NOTHING);
+        actions_table.set_header(vec!["Action Type", "Description"]);
+
+        let mut metadata_table = Table::new();
+        metadata_table.load_preset(presets::NOTHING);
+        metadata_table.set_header(vec!["", ""]);
 
         // Retrieve Transaction
         let tx = view.transaction_by_hash(self.hash.parse()?).await?;
@@ -159,10 +181,10 @@ impl TxCmd {
             // Iterate over the ActionViews in the TxV & display as appropriate
 
             for av in txv.actions {
-                table.add_row(match av {
+                actions_table.add_row(match av {
                     penumbra_transaction::ActionView::Swap(SwapView::Visible {
-                        swap,
-                        swap_nft,
+                        swap: _,
+                        swap_nft: _,
                         swap_plaintext,
                     }) => [
                         "Swap".to_string(),
@@ -192,28 +214,48 @@ impl TxCmd {
                     ],
 
                     penumbra_transaction::ActionView::Output(OutputView::Visible {
-                        output,
+                        output: _,
                         decrypted_note,
-                        decrypted_memo_key,
-                    }) => ["Output".to_string(), "todo".to_string()],
-                    penumbra_transaction::ActionView::Output(OutputView::Opaque { output }) => {
-                        ["Output".to_string(), "todo".to_string()]
+                        decrypted_memo_key: _,
+                    }) => [
+                        "Output".to_string(),
+                        format_visible_output_row(&asset_cache, &decrypted_note),
+                    ],
+                    penumbra_transaction::ActionView::Output(OutputView::Opaque { output: _ }) => {
+                        ["Output".to_string(), "Opaque output".to_string()]
                     }
-                    penumbra_transaction::ActionView::Spend(SpendView::Visible { spend, note }) => {
-                        ["Spend".to_string(), "todo".to_string()]
+                    penumbra_transaction::ActionView::Spend(SpendView::Visible {
+                        spend: _,
+                        note,
+                    }) => [
+                        "Spend".to_string(),
+                        format_visible_spend_row(&asset_cache, &note),
+                    ],
+                    penumbra_transaction::ActionView::Spend(SpendView::Opaque { spend: _ }) => {
+                        ["Spend".to_string(), "Opaque spend".to_string()]
                     }
-                    penumbra_transaction::ActionView::Spend(SpendView::Opaque { spend }) => {
-                        ["Spend".to_string(), "todo".to_string()]
-                    }
-                    _ => [String::from("todo"), String::from("todo")],
+                    _ => [String::from("Unknown"), String::from("")],
                 });
             }
+
+            metadata_table.add_row(vec![
+                "Transaction Fee",
+                &txv.fee.value().format(&asset_cache),
+            ]);
+            if let Some(memo) = txv.memo {
+                metadata_table.add_row(vec!["Transaction Memo", &memo]);
+            }
+            metadata_table.add_row(vec![
+                "Transaction Expiration Height",
+                &format!("{}", txv.expiry_height),
+            ]);
         }
 
-        // Print table of actions and their change to the balance
-        println!("{}", table);
+        // Print table of actions and their descriptions
+        println!("{}", actions_table);
 
-        // Print total change for entire tx
+        // Print transaction metadata
+        println!("{}", metadata_table);
 
         Ok(())
     }
