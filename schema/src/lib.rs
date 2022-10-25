@@ -27,7 +27,7 @@ pub trait Typed {
     type Value;
 }
 
-pub trait Any<TryFrom, Error, Into> {
+pub trait Homogenize<TryFrom, Error, Into> {
     fn convert(&self, try_from: TryFrom) -> Result<Into, Error>;
 }
 
@@ -130,6 +130,11 @@ pub mod schema {
         }
     }
 
+    // Only for the root of the schema, generate these:
+    pub fn governance<'a>() -> governance::Path<'a> {
+        Schema::root().governance()
+    }
+
     #[derive(
         ::core::clone::Clone, ::core::marker::Copy, ::core::cmp::PartialEq, ::core::cmp::Eq,
     )]
@@ -173,11 +178,6 @@ pub mod schema {
         params: OwnedParams,
         #[clap(subcommand)]
         child: OwnedSubKey,
-    }
-
-    // Only for the root of the schema, generate these:
-    pub fn governance<'a>() -> governance::Path<'a> {
-        Schema::root().governance()
     }
 
     #[derive(
@@ -284,13 +284,53 @@ pub mod schema {
         }
     }
 
-    impl<'a, TryFrom, Error, Into> crate::Any<TryFrom, Error, Into> for Key<'a>
+    impl crate::FormatPath for OwnedKey {
+        fn fmt(&self, separator: &str, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+            let OwnedParams { .. } = &self.params;
+            // special: don't print anything, because we're at the root of the schema
+            match &self.child {
+                OwnedSubKey::governance(child) => {
+                    child.fmt(separator, f)?;
+                }
+            }
+            Ok(())
+        }
+    }
+
+    impl crate::FormatPath for OwnedPrefix {
+        fn fmt(&self, separator: &str, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+            let OwnedParams { .. } = &self.params;
+            // special: don't print anything, because we're at the root of the schema
+            match &self.child {
+                ::core::option::Option::Some(OwnedSubPrefix::governance(child)) => {
+                    child.fmt(separator, f)?;
+                }
+                ::core::option::Option::None => {
+                    write!(f, "{}", separator)?;
+                }
+            }
+            Ok(())
+        }
+    }
+
+    impl<'a, TryFrom, Error, Into> crate::Homogenize<TryFrom, Error, Into> for Key<'a>
     where
-        governance::Key<'a>: crate::Any<TryFrom, Error, Into>,
+        governance::Key<'a>: crate::Homogenize<TryFrom, Error, Into>,
     {
         fn convert(&self, try_from: TryFrom) -> Result<Into, Error> {
             match self.child {
-                SubKey::governance(ref key) => crate::Any::convert(key, try_from),
+                SubKey::governance(ref key) => crate::Homogenize::convert(key, try_from),
+            }
+        }
+    }
+
+    impl<TryFrom, Error, Into> crate::Homogenize<TryFrom, Error, Into> for OwnedKey
+    where
+        governance::OwnedKey: crate::Homogenize<TryFrom, Error, Into>,
+    {
+        fn convert(&self, try_from: TryFrom) -> Result<Into, Error> {
+            match self.child {
+                OwnedSubKey::governance(ref key) => crate::Homogenize::convert(key, try_from),
             }
         }
     }
@@ -575,13 +615,61 @@ pub mod schema {
             }
         }
 
-        impl<'a, TryFrom, Error, Into> crate::Any<TryFrom, Error, Into> for Key<'a>
+        impl crate::FormatPath for OwnedKey {
+            fn fmt(
+                &self,
+                separator: &str,
+                f: &mut ::core::fmt::Formatter<'_>,
+            ) -> ::core::fmt::Result {
+                let OwnedParams { .. } = &self.params;
+                write!(f, "governance")?;
+                write!(f, "{}", separator)?;
+                match &self.child {
+                    OwnedSubKey::proposal(child) => {
+                        child.fmt(separator, f)?;
+                    }
+                }
+                Ok(())
+            }
+        }
+
+        impl crate::FormatPath for OwnedPrefix {
+            fn fmt(
+                &self,
+                separator: &str,
+                f: &mut ::core::fmt::Formatter<'_>,
+            ) -> ::core::fmt::Result {
+                let OwnedParams { .. } = &self.params;
+                write!(f, "governance")?;
+                write!(f, "{}", separator)?;
+                match &self.child {
+                    ::core::option::Option::Some(OwnedSubPrefix::proposal(child)) => {
+                        child.fmt(separator, f)?;
+                    }
+                    ::core::option::Option::None => {}
+                }
+                Ok(())
+            }
+        }
+
+        impl<'a, TryFrom, Error, Into> crate::Homogenize<TryFrom, Error, Into> for Key<'a>
         where
-            proposal::Key<'a>: crate::Any<TryFrom, Error, Into>,
+            proposal::Key<'a>: crate::Homogenize<TryFrom, Error, Into>,
         {
             fn convert(&self, try_from: TryFrom) -> Result<Into, Error> {
                 match self.child {
-                    SubKey::proposal(ref key) => crate::Any::convert(key, try_from),
+                    SubKey::proposal(ref key) => crate::Homogenize::convert(key, try_from),
+                }
+            }
+        }
+
+        impl<TryFrom, Error, Into> crate::Homogenize<TryFrom, Error, Into> for OwnedKey
+        where
+            proposal::OwnedKey: crate::Homogenize<TryFrom, Error, Into>,
+        {
+            fn convert(&self, try_from: TryFrom) -> Result<Into, Error> {
+                match self.child {
+                    OwnedSubKey::proposal(ref key) => crate::Homogenize::convert(key, try_from),
                 }
             }
         }
@@ -912,13 +1000,61 @@ pub mod schema {
                 }
             }
 
-            impl<'a, TryFrom, Error, Into> crate::Any<TryFrom, Error, Into> for Key<'a>
+            impl crate::FormatPath for OwnedKey {
+                fn fmt(
+                    &self,
+                    separator: &str,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
+                    let OwnedParams { .. } = &self.params;
+                    write!(f, "proposal")?;
+                    write!(f, "{}", separator)?;
+                    match &self.child {
+                        OwnedSubKey::id(child) => {
+                            child.fmt(separator, f)?;
+                        }
+                    }
+                    Ok(())
+                }
+            }
+
+            impl crate::FormatPath for OwnedPrefix {
+                fn fmt(
+                    &self,
+                    separator: &str,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
+                    let OwnedParams { .. } = &self.params;
+                    write!(f, "proposal")?;
+                    write!(f, "{}", separator)?;
+                    match &self.child {
+                        ::core::option::Option::Some(OwnedSubPrefix::id(child)) => {
+                            child.fmt(separator, f)?;
+                        }
+                        ::core::option::Option::None => {}
+                    }
+                    Ok(())
+                }
+            }
+
+            impl<'a, TryFrom, Error, Into> crate::Homogenize<TryFrom, Error, Into> for Key<'a>
             where
-                id::Key<'a>: crate::Any<TryFrom, Error, Into>,
+                id::Key<'a>: crate::Homogenize<TryFrom, Error, Into>,
             {
                 fn convert(&self, try_from: TryFrom) -> Result<Into, Error> {
                     match &self.child {
                         SubKey::id(child) => child.convert(try_from),
+                    }
+                }
+            }
+
+            impl<TryFrom, Error, Into> crate::Homogenize<TryFrom, Error, Into> for OwnedKey
+            where
+                id::OwnedKey: crate::Homogenize<TryFrom, Error, Into>,
+            {
+                fn convert(&self, try_from: TryFrom) -> Result<Into, Error> {
+                    match self.child {
+                        OwnedSubKey::id(ref key) => crate::Homogenize::convert(key, try_from),
                     }
                 }
             }
@@ -1271,13 +1407,64 @@ pub mod schema {
                     }
                 }
 
-                impl<'a, TryFrom, Error, Into> crate::Any<TryFrom, Error, Into> for Key<'a>
+                impl crate::FormatPath for OwnedKey {
+                    fn fmt(
+                        &self,
+                        separator: &str,
+                        f: &mut ::core::fmt::Formatter<'_>,
+                    ) -> ::core::fmt::Result {
+                        let OwnedParams { id, .. } = &self.params;
+                        <u64 as crate::FormatSegment<super::super::super::Schema>>::fmt(id, f)?;
+                        write!(f, "{}", separator)?;
+                        match &self.child {
+                            OwnedSubKey::voting_start(child) => {
+                                child.fmt(separator, f)?;
+                            }
+                        }
+                        Ok(())
+                    }
+                }
+
+                impl crate::FormatPath for OwnedPrefix {
+                    fn fmt(
+                        &self,
+                        separator: &str,
+                        f: &mut ::core::fmt::Formatter<'_>,
+                    ) -> ::core::fmt::Result {
+                        let OwnedParams { id, .. } = &self.params;
+                        <u64 as crate::FormatSegment<super::super::super::Schema>>::fmt(id, f)?;
+                        write!(f, "{}", separator)?;
+                        match &self.child {
+                            // special: there is no sub-prefix
+                            ::core::option::Option::Some(prefix) => match *prefix {}, // prove it's empty
+                            ::core::option::Option::None => {}
+                        }
+                        Ok(())
+                    }
+                }
+
+                impl<'a, TryFrom, Error, Into> crate::Homogenize<TryFrom, Error, Into> for Key<'a>
                 where
-                    voting_start::Key<'a>: crate::Any<TryFrom, Error, Into>,
+                    voting_start::Key<'a>: crate::Homogenize<TryFrom, Error, Into>,
                 {
                     fn convert(&self, try_from: TryFrom) -> Result<Into, Error> {
                         match self.child {
-                            SubKey::voting_start(ref key) => crate::Any::convert(key, try_from),
+                            SubKey::voting_start(ref key) => {
+                                crate::Homogenize::convert(key, try_from)
+                            }
+                        }
+                    }
+                }
+
+                impl<TryFrom, Error, Into> crate::Homogenize<TryFrom, Error, Into> for OwnedKey
+                where
+                    voting_start::OwnedKey: crate::Homogenize<TryFrom, Error, Into>,
+                {
+                    fn convert(&self, try_from: TryFrom) -> Result<Into, Error> {
+                        match self.child {
+                            OwnedSubKey::voting_start(ref key) => {
+                                crate::Homogenize::convert(key, try_from)
+                            }
                         }
                     }
                 }
@@ -1523,11 +1710,23 @@ pub mod schema {
                         }
                     }
 
+                    impl crate::FormatPath for OwnedKey {
+                        fn fmt(
+                            &self,
+                            separator: &str,
+                            f: &mut ::core::fmt::Formatter<'_>,
+                        ) -> ::core::fmt::Result {
+                            let OwnedParams { .. } = &self.params;
+                            write!(f, "voting_start")?;
+                            Ok(())
+                        }
+                    }
+
                     impl<'a> crate::Typed for Path<'a> {
                         type Value = u64;
                     }
 
-                    impl<'a, TryFrom, Error, Into> crate::Any<TryFrom, Error, Into> for Key<'a>
+                    impl<'a, TryFrom, Error, Into> crate::Homogenize<TryFrom, Error, Into> for Key<'a>
                     where
                         u64: ::core::convert::TryFrom<TryFrom>,
                         Into: ::core::convert::From<u64>,
