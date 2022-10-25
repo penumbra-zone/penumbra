@@ -7,17 +7,29 @@ extern crate clap;
 
 mod clap_extracted;
 
-pub trait FormatPath {
+pub trait DisplayPath {
     fn fmt(&self, separator: &str, f: &mut fmt::Formatter<'_>) -> fmt::Result;
 }
 
-pub trait FormatSegment<Schema> {
+impl<T: DisplayPath> DisplayPath for &T {
+    fn fmt(&self, separator: &str, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        T::fmt(self, separator, f)
+    }
+}
+
+impl<T: DisplayPath> DisplayPath for &mut T {
+    fn fmt(&self, separator: &str, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        T::fmt(self, separator, f)
+    }
+}
+
+pub trait DisplaySegment<Schema> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result;
 }
 
-pub struct FormatKey<'key, K: 'key>(pub &'key str, pub &'key K);
+pub struct FormatPath<P>(pub &'static str, pub P);
 
-impl<'key, K: FormatPath + 'key> ::core::fmt::Display for FormatKey<'key, K> {
+impl<P: DisplayPath> ::core::fmt::Display for FormatPath<P> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.1.fmt(self.0, f)
     }
@@ -43,7 +55,7 @@ where
     schema::Key<'key>: From<K>,
 {
     (
-        format!("{}", FormatKey("/", &schema::Key::from(key))),
+        format!("{}", FormatPath("/", schema::Key::from(key))),
         <K::Value as penumbra_proto::Protobuf<P>>::decode,
     )
 }
@@ -56,7 +68,7 @@ where
     schema::Key<'key>: From<K>,
 {
     (
-        format!("{}", FormatKey("/", &schema::Key::from(key))),
+        format!("{}", FormatPath("/", schema::Key::from(key))),
         penumbra_proto::Protobuf::encode_to_vec(value),
     )
 }
@@ -78,11 +90,11 @@ fn main() {
     let opts = Opts::parse();
 
     match opts.query {
-        Query::Key(key) => println!("{}", FormatKey("/", &schema::Key::from(&key))),
+        Query::Key(key) => println!("{}", FormatPath("/", key)),
     }
 }
 
-impl FormatSegment<schema::Schema> for u64 {
+impl DisplaySegment<schema::Schema> for u64 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self)
     }
@@ -148,7 +160,7 @@ pub mod schema {
     )]
     pub struct Prefix<'a> {
         params: Params<'a>,
-        child: Option<SubPrefix<'a>>,
+        child: ::core::option::Option<SubPrefix<'a>>,
     }
 
     #[derive(
@@ -168,7 +180,7 @@ pub mod schema {
     #[derive(::core::clone::Clone, ::core::cmp::PartialEq, ::core::cmp::Eq)]
     pub struct OwnedPrefix {
         params: OwnedParams,
-        child: Option<OwnedSubPrefix>,
+        child: ::core::option::Option<OwnedSubPrefix>,
     }
 
     #[derive(::core::clone::Clone, ::core::cmp::PartialEq, ::core::cmp::Eq, ::clap::Args)]
@@ -255,7 +267,7 @@ pub mod schema {
         }
     }
 
-    impl<'a> crate::FormatPath for Key<'a> {
+    impl<'a> crate::DisplayPath for Key<'a> {
         fn fmt(&self, separator: &str, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
             let Params { .. } = &self.params;
             // special: don't print anything, because we're at the root of the schema
@@ -268,7 +280,7 @@ pub mod schema {
         }
     }
 
-    impl<'a> crate::FormatPath for Prefix<'a> {
+    impl<'a> crate::DisplayPath for Prefix<'a> {
         fn fmt(&self, separator: &str, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
             let Params { .. } = &self.params;
             // special: don't print anything, because we're at the root of the schema
@@ -284,7 +296,7 @@ pub mod schema {
         }
     }
 
-    impl crate::FormatPath for OwnedKey {
+    impl crate::DisplayPath for OwnedKey {
         fn fmt(&self, separator: &str, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
             let OwnedParams { .. } = &self.params;
             // special: don't print anything, because we're at the root of the schema
@@ -297,7 +309,7 @@ pub mod schema {
         }
     }
 
-    impl crate::FormatPath for OwnedPrefix {
+    impl crate::DisplayPath for OwnedPrefix {
         fn fmt(&self, separator: &str, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
             let OwnedParams { .. } = &self.params;
             // special: don't print anything, because we're at the root of the schema
@@ -310,6 +322,21 @@ pub mod schema {
                 }
             }
             Ok(())
+        }
+    }
+
+    impl<'a> crate::DisplayPath for Path<'a> {
+        fn fmt(&self, separator: &str, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+            let key: Prefix<'a> = (*self).into();
+            key.fmt(separator, f)
+        }
+    }
+
+    impl crate::DisplayPath for OwnedPath {
+        fn fmt(&self, separator: &str, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+            let path: Path<'_> = self.into();
+            let key: Prefix<'_> = path.into();
+            key.fmt(separator, f)
         }
     }
 
@@ -449,7 +476,7 @@ pub mod schema {
         )]
         pub struct Prefix<'a> {
             params: Params<'a>,
-            child: Option<SubPrefix<'a>>,
+            child: ::core::option::Option<SubPrefix<'a>>,
         }
 
         #[derive(
@@ -469,7 +496,7 @@ pub mod schema {
         #[derive(::core::clone::Clone, ::core::cmp::PartialEq, ::core::cmp::Eq)]
         pub struct OwnedPrefix {
             params: OwnedParams,
-            child: Option<OwnedSubPrefix>,
+            child: ::core::option::Option<OwnedSubPrefix>,
         }
 
         #[derive(::core::clone::Clone, ::core::cmp::PartialEq, ::core::cmp::Eq, ::clap::Args)]
@@ -578,7 +605,7 @@ pub mod schema {
             }
         }
 
-        impl<'a> crate::FormatPath for Key<'a> {
+        impl<'a> crate::DisplayPath for Key<'a> {
             fn fmt(
                 &self,
                 separator: &str,
@@ -596,7 +623,7 @@ pub mod schema {
             }
         }
 
-        impl<'a> crate::FormatPath for Prefix<'a> {
+        impl<'a> crate::DisplayPath for Prefix<'a> {
             fn fmt(
                 &self,
                 separator: &str,
@@ -615,7 +642,7 @@ pub mod schema {
             }
         }
 
-        impl crate::FormatPath for OwnedKey {
+        impl crate::DisplayPath for OwnedKey {
             fn fmt(
                 &self,
                 separator: &str,
@@ -633,7 +660,7 @@ pub mod schema {
             }
         }
 
-        impl crate::FormatPath for OwnedPrefix {
+        impl crate::DisplayPath for OwnedPrefix {
             fn fmt(
                 &self,
                 separator: &str,
@@ -649,6 +676,29 @@ pub mod schema {
                     ::core::option::Option::None => {}
                 }
                 Ok(())
+            }
+        }
+
+        impl<'a> crate::DisplayPath for Path<'a> {
+            fn fmt(
+                &self,
+                separator: &str,
+                f: &mut ::core::fmt::Formatter<'_>,
+            ) -> ::core::fmt::Result {
+                let key: super::Prefix<'a> = (*self).into();
+                key.fmt(separator, f)
+            }
+        }
+
+        impl crate::DisplayPath for OwnedPath {
+            fn fmt(
+                &self,
+                separator: &str,
+                f: &mut ::core::fmt::Formatter<'_>,
+            ) -> ::core::fmt::Result {
+                let path: Path<'_> = self.into();
+                let key: super::Prefix<'_> = path.into();
+                key.fmt(separator, f)
             }
         }
 
@@ -806,7 +856,7 @@ pub mod schema {
             )]
             pub struct Prefix<'a> {
                 params: Params<'a>,
-                child: Option<SubPrefix<'a>>,
+                child: ::core::option::Option<SubPrefix<'a>>,
             }
 
             #[derive(
@@ -826,7 +876,7 @@ pub mod schema {
             #[derive(::core::clone::Clone, ::core::cmp::PartialEq, ::core::cmp::Eq)]
             pub struct OwnedPrefix {
                 params: OwnedParams,
-                child: Option<OwnedSubPrefix>,
+                child: ::core::option::Option<OwnedSubPrefix>,
             }
 
             #[derive(
@@ -963,7 +1013,7 @@ pub mod schema {
                 }
             }
 
-            impl<'a> crate::FormatPath for Key<'a> {
+            impl<'a> crate::DisplayPath for Key<'a> {
                 fn fmt(
                     &self,
                     separator: &str,
@@ -979,7 +1029,7 @@ pub mod schema {
                 }
             }
 
-            impl<'a> crate::FormatPath for Prefix<'a> {
+            impl<'a> crate::DisplayPath for Prefix<'a> {
                 fn fmt(
                     &self,
                     separator: &str,
@@ -1000,7 +1050,7 @@ pub mod schema {
                 }
             }
 
-            impl crate::FormatPath for OwnedKey {
+            impl crate::DisplayPath for OwnedKey {
                 fn fmt(
                     &self,
                     separator: &str,
@@ -1018,7 +1068,7 @@ pub mod schema {
                 }
             }
 
-            impl crate::FormatPath for OwnedPrefix {
+            impl crate::DisplayPath for OwnedPrefix {
                 fn fmt(
                     &self,
                     separator: &str,
@@ -1034,6 +1084,29 @@ pub mod schema {
                         ::core::option::Option::None => {}
                     }
                     Ok(())
+                }
+            }
+
+            impl<'a> crate::DisplayPath for Path<'a> {
+                fn fmt(
+                    &self,
+                    separator: &str,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
+                    let key: super::super::Prefix<'a> = (*self).into();
+                    key.fmt(separator, f)
+                }
+            }
+
+            impl crate::DisplayPath for OwnedPath {
+                fn fmt(
+                    &self,
+                    separator: &str,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
+                    let path: Path<'_> = self.into();
+                    let key: super::super::Prefix<'_> = path.into();
+                    key.fmt(separator, f)
                 }
             }
 
@@ -1215,7 +1288,7 @@ pub mod schema {
                 )]
                 pub struct Prefix<'a> {
                     params: Params<'a>,
-                    child: Option<SubPrefix<'a>>,
+                    child: ::core::option::Option<SubPrefix<'a>>,
                 }
 
                 #[derive(
@@ -1367,14 +1440,14 @@ pub mod schema {
                     }
                 }
 
-                impl<'a> crate::FormatPath for Key<'a> {
+                impl<'a> crate::DisplayPath for Key<'a> {
                     fn fmt(
                         &self,
                         separator: &str,
                         f: &mut ::core::fmt::Formatter<'_>,
                     ) -> ::core::fmt::Result {
                         let Params { id, .. } = &self.params;
-                        <u64 as crate::FormatSegment<super::super::super::Schema>>::fmt(id, f)?;
+                        <u64 as crate::DisplaySegment<super::super::super::Schema>>::fmt(id, f)?;
                         write!(f, "{}", separator)?;
                         match &self.child {
                             SubKey::voting_start(child) => {
@@ -1385,14 +1458,14 @@ pub mod schema {
                     }
                 }
 
-                impl<'a> crate::FormatPath for Prefix<'a> {
+                impl<'a> crate::DisplayPath for Prefix<'a> {
                     fn fmt(
                         &self,
                         separator: &str,
                         f: &mut ::core::fmt::Formatter<'_>,
                     ) -> ::core::fmt::Result {
                         let Params { id, .. } = &self.params;
-                        <u64 as crate::FormatSegment<super::super::super::Schema>>::fmt(id, f)?;
+                        <u64 as crate::DisplaySegment<super::super::super::Schema>>::fmt(id, f)?;
                         write!(f, "{}", separator)?;
                         match &self.child {
                             // special: there is no sub-prefix
@@ -1407,14 +1480,14 @@ pub mod schema {
                     }
                 }
 
-                impl crate::FormatPath for OwnedKey {
+                impl crate::DisplayPath for OwnedKey {
                     fn fmt(
                         &self,
                         separator: &str,
                         f: &mut ::core::fmt::Formatter<'_>,
                     ) -> ::core::fmt::Result {
                         let OwnedParams { id, .. } = &self.params;
-                        <u64 as crate::FormatSegment<super::super::super::Schema>>::fmt(id, f)?;
+                        <u64 as crate::DisplaySegment<super::super::super::Schema>>::fmt(id, f)?;
                         write!(f, "{}", separator)?;
                         match &self.child {
                             OwnedSubKey::voting_start(child) => {
@@ -1425,14 +1498,14 @@ pub mod schema {
                     }
                 }
 
-                impl crate::FormatPath for OwnedPrefix {
+                impl crate::DisplayPath for OwnedPrefix {
                     fn fmt(
                         &self,
                         separator: &str,
                         f: &mut ::core::fmt::Formatter<'_>,
                     ) -> ::core::fmt::Result {
                         let OwnedParams { id, .. } = &self.params;
-                        <u64 as crate::FormatSegment<super::super::super::Schema>>::fmt(id, f)?;
+                        <u64 as crate::DisplaySegment<super::super::super::Schema>>::fmt(id, f)?;
                         write!(f, "{}", separator)?;
                         match &self.child {
                             // special: there is no sub-prefix
@@ -1440,6 +1513,29 @@ pub mod schema {
                             ::core::option::Option::None => {}
                         }
                         Ok(())
+                    }
+                }
+
+                impl<'a> crate::DisplayPath for Path<'a> {
+                    fn fmt(
+                        &self,
+                        separator: &str,
+                        f: &mut ::core::fmt::Formatter<'_>,
+                    ) -> ::core::fmt::Result {
+                        let key: super::super::super::Prefix<'a> = (*self).into();
+                        key.fmt(separator, f)
+                    }
+                }
+
+                impl crate::DisplayPath for OwnedPath {
+                    fn fmt(
+                        &self,
+                        separator: &str,
+                        f: &mut ::core::fmt::Formatter<'_>,
+                    ) -> ::core::fmt::Result {
+                        let path: Path<'_> = self.into();
+                        let key: super::super::super::Prefix<'_> = path.into();
+                        key.fmt(separator, f)
                     }
                 }
 
@@ -1698,7 +1794,7 @@ pub mod schema {
                         }
                     }
 
-                    impl<'a> crate::FormatPath for Key<'a> {
+                    impl<'a> crate::DisplayPath for Key<'a> {
                         fn fmt(
                             &self,
                             separator: &str,
@@ -1710,7 +1806,7 @@ pub mod schema {
                         }
                     }
 
-                    impl crate::FormatPath for OwnedKey {
+                    impl crate::DisplayPath for OwnedKey {
                         fn fmt(
                             &self,
                             separator: &str,
@@ -1719,6 +1815,29 @@ pub mod schema {
                             let OwnedParams { .. } = &self.params;
                             write!(f, "voting_start")?;
                             Ok(())
+                        }
+                    }
+
+                    impl<'a> crate::DisplayPath for Path<'a> {
+                        fn fmt(
+                            &self,
+                            separator: &str,
+                            f: &mut ::core::fmt::Formatter<'_>,
+                        ) -> ::core::fmt::Result {
+                            let key: super::super::super::super::Key<'a> = (*self).into();
+                            key.fmt(separator, f)
+                        }
+                    }
+
+                    impl crate::DisplayPath for OwnedPath {
+                        fn fmt(
+                            &self,
+                            separator: &str,
+                            f: &mut ::core::fmt::Formatter<'_>,
+                        ) -> ::core::fmt::Result {
+                            let path: Path<'_> = self.into();
+                            let key: super::super::super::super::Key<'_> = path.into();
+                            key.fmt(separator, f)
                         }
                     }
 
