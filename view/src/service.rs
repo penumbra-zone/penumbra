@@ -277,8 +277,11 @@ impl ViewProtocol for ViewService {
                     .storage
                     .note_by_nullifier(nullifier, false)
                     .await
-                    .map_err(|_| {
-                        tonic::Status::failed_precondition("Error retrieving note by nullifier")
+                    .map_err(|e| {
+                        tonic::Status::failed_precondition(format!(
+                            "Error retrieving note by nullifier: {}",
+                            e
+                        ))
                     })?;
                 spend_nullifiers.insert(nullifier, spendable_note_record.note);
             }

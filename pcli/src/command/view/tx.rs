@@ -1,7 +1,8 @@
 use anyhow::Result;
 use comfy_table::{presets, Table};
-use penumbra_crypto::FullViewingKey;
+use penumbra_crypto::{asset::Cache, dex::swap::SwapPlaintext, FullViewingKey, Note, Value};
 use penumbra_transaction::{
+    action::{Swap, SwapClaim},
     view::action_view::{OutputView, SpendView, SwapClaimView, SwapView},
     Transaction,
 };
@@ -14,6 +15,125 @@ pub struct TxCmd {
     hash: String,
 }
 
+fn format_visible_swap_row(asset_cache: &Cache, swap: &SwapPlaintext) -> String {
+    // Typical swaps are one asset for another, but we can't know that for sure.
+
+    // For the non-pathological case:
+    let (from_asset, from_value, to_asset) =
+        if swap.delta_1_i.inner == 0 && swap.delta_2_i.inner > 0 {
+            (
+                swap.trading_pair.asset_2(),
+                swap.delta_2_i,
+                swap.trading_pair.asset_1(),
+            )
+        } else if swap.delta_2_i.inner == 0 && swap.delta_1_i.inner > 0 {
+            (
+                swap.trading_pair.asset_1(),
+                swap.delta_1_i,
+                swap.trading_pair.asset_2(),
+            )
+        } else {
+            // The pathological case (both assets have input values).
+            let value_1 = Value {
+                amount: swap.delta_1_i,
+                asset_id: swap.trading_pair.asset_1(),
+            }
+            .format(asset_cache);
+            let value_2 = Value {
+                amount: swap.delta_1_i,
+                asset_id: swap.trading_pair.asset_1(),
+            }
+            .format(asset_cache);
+            let value_fee = Value {
+                amount: swap.claim_fee.amount(),
+                asset_id: swap.claim_fee.asset_id(),
+            }
+            .format(asset_cache);
+
+            return format!(
+                "{} for {} and paid claim fee {}",
+                value_1, value_2, value_fee,
+            );
+        };
+
+    let from = Value {
+        amount: from_value,
+        asset_id: from_asset,
+    }
+    .format(asset_cache);
+    let to = asset_cache.get(&to_asset).map_or_else(
+        || format!("{}", to_asset),
+        |to_denom| format!("{}", to_denom),
+    );
+    let value_fee = Value {
+        amount: swap.claim_fee.amount(),
+        asset_id: swap.claim_fee.asset_id(),
+    }
+    .format(asset_cache);
+
+    format!("{} for {} and paid claim fee {}", from, to, value_fee)
+}
+
+fn format_opaque_swap_row(swap: &Swap) -> String {
+    // An opaque swap has no plaintext amount information for us to display, how sad.
+    format!(
+        "Opaque swap for trading pair: {} <=> {}",
+        swap.body.trading_pair.asset_1(),
+        swap.body.trading_pair.asset_2()
+    )
+}
+
+fn format_opaque_swap_claim_row(asset_cache: &Cache, swap: &SwapClaim) -> String {
+    // An opaque swap claim has no plaintext amount information for us to display, how sad.
+    let value_fee = Value {
+        amount: swap.body.fee.amount(),
+        asset_id: swap.body.fee.asset_id(),
+    }
+    .format(asset_cache);
+    format!(
+        "Opaque swap claim for trading pair: {} <=> {} with fee {}",
+        swap.body.output_data.trading_pair.asset_1(),
+        swap.body.output_data.trading_pair.asset_2(),
+        value_fee,
+    )
+}
+
+fn format_visible_swap_claim_row(
+    asset_cache: &Cache,
+    swap: &SwapClaim,
+    note_1: &Note,
+    note_2: &Note,
+) -> String {
+    // Typical swap claims only have a single output note with value, but we can't know that for sure.
+
+    let value_fee = Value {
+        amount: swap.body.fee.amount(),
+        asset_id: swap.body.fee.asset_id(),
+    }
+    .format(asset_cache);
+
+    // For the non-pathological case:
+    let claimed_value = if note_1.amount().inner == 0 && note_2.amount().inner > 0 {
+        note_2.value()
+    } else if note_2.amount().inner == 0 && note_1.amount().inner > 0 {
+        note_1.value()
+    } else {
+        // The pathological case (both assets have output values).
+        return format!(
+            "Claimed {} and {} with fee {}",
+            note_1.value().format(asset_cache),
+            note_2.value().format(asset_cache),
+            value_fee,
+        );
+    };
+
+    format!(
+        "Claimed {} with fee {}",
+        claimed_value.format(asset_cache),
+        value_fee
+    )
+}
+
 impl TxCmd {
     pub fn offline(&self) -> bool {
         false
@@ -22,65 +142,71 @@ impl TxCmd {
         // Initialize the table
         let mut table = Table::new();
         table.load_preset(presets::NOTHING);
-        table.set_header(vec!["Action Type", "Net Change"]);
+        table.set_header(vec!["Action Type", "Description"]);
 
         // Retrieve Transaction
         let tx = view.transaction_by_hash(self.hash.parse()?).await?;
 
-        table.add_row(vec![
-            format!("{}", "Action Type"),
-            format!("{:?}", "Net Change"),
-        ]);
-
         if let Some(tx) = &tx {
             // Retrieve full TxP
-
             let txp = view.perspective(self.hash.parse()?).await?;
 
             // Generate TxV using TxP
 
             let txv = tx.decrypt_with_perspective(&txp);
 
+            let asset_cache = view.assets().await?;
             // Iterate over the ActionViews in the TxV & display as appropriate
 
             for av in txv.actions {
-                table.add_row(vec![match av {
+                table.add_row(match av {
                     penumbra_transaction::ActionView::Swap(SwapView::Visible {
                         swap,
                         swap_nft,
                         swap_plaintext,
-                    }) => format!("{:?} {:?} {:?}", swap, swap_nft, swap_plaintext),
+                    }) => [
+                        "Swap".to_string(),
+                        format_visible_swap_row(&asset_cache, &swap_plaintext),
+                    ],
                     penumbra_transaction::ActionView::Swap(SwapView::Opaque { swap }) => {
-                        format!("{:?}", swap)
+                        ["Swap".to_string(), format_opaque_swap_row(&swap)]
                     }
                     penumbra_transaction::ActionView::SwapClaim(SwapClaimView::Visible {
                         swap_claim,
                         decrypted_note_1,
                         decrypted_note_2,
-                    }) => format!(
-                        "{:?} {:?} {:?}",
-                        swap_claim, decrypted_note_1, decrypted_note_2
-                    ),
+                    }) => [
+                        "Swap Claim".to_string(),
+                        format_visible_swap_claim_row(
+                            &asset_cache,
+                            &swap_claim,
+                            &decrypted_note_1,
+                            &decrypted_note_2,
+                        ),
+                    ],
                     penumbra_transaction::ActionView::SwapClaim(SwapClaimView::Opaque {
                         swap_claim,
-                    }) => format!("{:?}", swap_claim),
+                    }) => [
+                        "Swap Claim".to_string(),
+                        format_opaque_swap_claim_row(&asset_cache, &swap_claim),
+                    ],
 
                     penumbra_transaction::ActionView::Output(OutputView::Visible {
                         output,
                         decrypted_note,
                         decrypted_memo_key,
-                    }) => format!("{:?} {:?} {:?}", output, decrypted_note, decrypted_memo_key),
+                    }) => ["Output".to_string(), "todo".to_string()],
                     penumbra_transaction::ActionView::Output(OutputView::Opaque { output }) => {
-                        format!("{:?}", output)
+                        ["Output".to_string(), "todo".to_string()]
                     }
                     penumbra_transaction::ActionView::Spend(SpendView::Visible { spend, note }) => {
-                        format!("{:?} {:?}", spend, note)
+                        ["Spend".to_string(), "todo".to_string()]
                     }
                     penumbra_transaction::ActionView::Spend(SpendView::Opaque { spend }) => {
-                        format!("{:?}", spend)
+                        ["Spend".to_string(), "todo".to_string()]
                     }
-                    _ => String::from(""),
-                }]);
+                    _ => [String::from("todo"), String::from("todo")],
+                });
             }
         }
 

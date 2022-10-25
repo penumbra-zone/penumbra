@@ -443,6 +443,9 @@ impl Storage {
         async move {
             // Check if we already have the note
             if let Some(record) = sqlx::query_as::<_, SpendableNoteRecord>(
+                // TODO: would really be better to use a prepared statement here rather than manually
+                // quoting the nullifier bytes. tried to get the `sqlx::query_as!` macro to work
+                // but the types didn't work out easily.
                 format!(
                     "SELECT 
                         notes.note_commitment,
@@ -458,8 +461,8 @@ impl Storage {
                         spendable_notes.position
                     FROM notes
                     JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
-                    WHERE spendable_notes.nullifier = {:?}",
-                    nullifier_bytes
+                    WHERE hex(spendable_notes.nullifier) = \"{}\"",
+                    hex::encode_upper(nullifier_bytes)
                 )
                 .as_str(),
             )
