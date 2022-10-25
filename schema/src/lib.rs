@@ -23,8 +23,13 @@ impl<T: DisplayPath> DisplayPath for &mut T {
     }
 }
 
-pub trait DisplaySegment<Schema> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result;
+// The separator argument must be used to (un)escape separators if they occur in the segment string
+pub trait Segment<Schema>: Sized {
+    type ParseError;
+
+    fn fmt(&self, separator: &str, f: &mut fmt::Formatter<'_>) -> fmt::Result;
+
+    fn parse(separator: &str, string: &str) -> Result<Self, Self::ParseError>;
 }
 
 pub struct FormatPath<P>(pub &'static str, pub P);
@@ -43,35 +48,57 @@ pub trait Homogenize<TryFrom, Error, Into> {
     fn convert(&self, try_from: TryFrom) -> Result<Into, Error>;
 }
 
+pub trait Parse<Error>: Sized {
+    // TODO: rework this to remove the generic
+    fn parse(separator: &str, segments: &[&str]) -> Result<Self, Error>;
+}
+
+pub struct InvalidPath {
+    pub depth: usize,
+}
+
+pub struct ParseError<'s, P> {
+    pub prefix: P, // TODO: actually ends up being an OwnedPath of some kind
+    pub remainder: &'s [&'s str],
+    pub error: ParseErrorKind,
+}
+
+pub enum ParseErrorKind {
+    InvalidSegment(Box<dyn ::std::error::Error>),
+    WrongLength { expected: usize, actual: usize },
+}
+
+// TODO: parsing should build a path, then convert it to a key
+
 // An example:
 
-pub fn getter<'de, 'key, P, K: Typed>(
-    key: K,
-) -> (String, fn(&'de [u8]) -> Result<K::Value, anyhow::Error>)
-where
-    P: prost::Message + Default + From<<K as Typed>::Value>,
-    K::Value: penumbra_proto::Protobuf<P>,
-    <K::Value as TryFrom<P>>::Error: Into<anyhow::Error>,
-    schema::Key<'key>: From<K>,
-{
-    (
-        format!("{}", FormatPath("/", schema::Key::from(key))),
-        <K::Value as penumbra_proto::Protobuf<P>>::decode,
-    )
-}
+// pub fn getter<'de, 'key, P, K: Typed>(
+//     key: K,
+// ) -> (String, fn(&'de [u8]) -> Result<K::Value, anyhow::Error>)
+// where
+//     P: prost::Message + Default + From<<K as Typed>::Value>,
+//     K::Value: penumbra_proto::Protobuf<P>,
+//     <K::Value as TryFrom<P>>::Error: Into<anyhow::Error>,
+//     schema::Key<'key>: From<K>,
+// {
+//     (
+//         format!("{}", FormatPath("/", schema::Key::from(key))),
+//         <K::Value as penumbra_proto::Protobuf<P>>::decode,
+//     )
+// }
 
-pub fn putter<'key, P, K: Typed>(key: K, value: &K::Value) -> (String, Vec<u8>)
-where
-    P: prost::Message + Default + From<<K as Typed>::Value>,
-    K::Value: penumbra_proto::Protobuf<P>,
-    <K::Value as TryFrom<P>>::Error: Into<anyhow::Error>,
-    schema::Key<'key>: From<K>,
-{
-    (
-        format!("{}", FormatPath("/", schema::Key::from(key))),
-        penumbra_proto::Protobuf::encode_to_vec(value),
-    )
-}
+// pub fn putter<'key, P, K: Typed>(key: K, value: &K::Value) -> (String, Vec<u8>)
+// where
+//     P: prost::Message + Default + From<<K as Typed>::Value>,
+//     K::Value: penumbra_proto::Protobuf<P>,
+//     <K::Value as TryFrom<P>>::Error: Into<anyhow::Error>,
+//     schema::Key<'key>: From<K>,
+// {
+//     (
+//         format!("{}", FormatPath("/", schema::Key::from(key))),
+//         penumbra_proto::Protobuf::encode_to_vec(value),
+//     )
+// }
 
 fn main() {
     // let (path, decode) = getter(schema::governance().proposal().id(&5).voting_start());
@@ -94,9 +121,16 @@ fn main() {
     }
 }
 
-impl DisplaySegment<schema::Schema> for u64 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+// This will need to be done for all used types -- a quick macro to make it easy?
+impl Segment<schema::Schema> for u64 {
+    type ParseError = <u64 as core::str::FromStr>::Err;
+
+    fn fmt(&self, _separator: &str, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self)
+    }
+
+    fn parse(_separator: &str, string: &str) -> Result<Self, Self::ParseError> {
+        string.parse()
     }
 }
 
@@ -154,6 +188,8 @@ pub mod schema {
         params: Params<'a>,
         parent: Schema, // special when root of schema
     }
+
+    // Prefix, Key, OwnedPrefix, and OwnedKey are only pub in the root of the schema
 
     #[derive(
         ::core::clone::Clone, ::core::marker::Copy, ::core::cmp::PartialEq, ::core::cmp::Eq,
@@ -233,6 +269,24 @@ pub mod schema {
     #[derive(::core::clone::Clone, ::core::cmp::PartialEq, ::core::cmp::Eq, ::clap::Subcommand)]
     enum OwnedSubKey {
         governance(governance::OwnedKey),
+    }
+
+    impl<Error> crate::Parse<Error> for OwnedKey
+    where
+        Error: ::core::convert::From<<u64 as crate::Segment<Schema>>::ParseError>
+            + ::core::convert::From<crate::InvalidPath>,
+    {
+        fn parse(separator: &str, segments: &[&str]) -> Result<Self, Error> {
+            match segments {
+                ["governance", rest @ ..] => Ok(OwnedKey {
+                    params: OwnedParams {},
+                    child: OwnedSubKey::governance(<governance::OwnedKey as crate::Parse<
+                        Error,
+                    >>::parse(separator, rest)?),
+                }),
+                _ => Err(crate::InvalidPath { depth: 0 }.into()),
+            }
+        }
     }
 
     impl<'a> From<&'a OwnedSubPrefix> for SubPrefix<'a> {
@@ -474,7 +528,7 @@ pub mod schema {
         #[derive(
             ::core::clone::Clone, ::core::marker::Copy, ::core::cmp::PartialEq, ::core::cmp::Eq,
         )]
-        pub struct Prefix<'a> {
+        pub(super) struct Prefix<'a> {
             params: Params<'a>,
             child: ::core::option::Option<SubPrefix<'a>>,
         }
@@ -482,7 +536,7 @@ pub mod schema {
         #[derive(
             ::core::clone::Clone, ::core::marker::Copy, ::core::cmp::PartialEq, ::core::cmp::Eq,
         )]
-        pub struct Key<'a> {
+        pub(super) struct Key<'a> {
             params: Params<'a>,
             child: SubKey<'a>,
         }
@@ -494,14 +548,14 @@ pub mod schema {
         }
 
         #[derive(::core::clone::Clone, ::core::cmp::PartialEq, ::core::cmp::Eq)]
-        pub struct OwnedPrefix {
+        pub(super) struct OwnedPrefix {
             params: OwnedParams,
             child: ::core::option::Option<OwnedSubPrefix>,
         }
 
         #[derive(::core::clone::Clone, ::core::cmp::PartialEq, ::core::cmp::Eq, ::clap::Args)]
         #[group(skip)]
-        pub struct OwnedKey {
+        pub(super) struct OwnedKey {
             #[clap(flatten)]
             params: OwnedParams,
             #[clap(subcommand)]
@@ -551,6 +605,26 @@ pub mod schema {
         )]
         enum OwnedSubKey {
             proposal(proposal::OwnedKey),
+        }
+
+        impl<Error> crate::Parse<Error> for OwnedKey
+        where
+            Error: ::core::convert::From<<u64 as crate::Segment<super::Schema>>::ParseError>
+                + ::core::convert::From<crate::InvalidPath>,
+        {
+            fn parse(separator: &str, segments: &[&str]) -> Result<Self, Error> {
+                match segments {
+                    ["proposal", rest @ ..] => Ok(OwnedKey {
+                        params: OwnedParams {},
+                        child: OwnedSubKey::proposal(<proposal::OwnedKey as crate::Parse<
+                            Error,
+                        >>::parse(
+                            separator, rest
+                        )?),
+                    }),
+                    _ => Err(crate::InvalidPath { depth: 1 }.into()),
+                }
+            }
         }
 
         impl<'a> From<&'a OwnedSubPrefix> for SubPrefix<'a> {
@@ -854,7 +928,7 @@ pub mod schema {
             #[derive(
                 ::core::clone::Clone, ::core::marker::Copy, ::core::cmp::PartialEq, ::core::cmp::Eq,
             )]
-            pub struct Prefix<'a> {
+            pub(super) struct Prefix<'a> {
                 params: Params<'a>,
                 child: ::core::option::Option<SubPrefix<'a>>,
             }
@@ -862,7 +936,7 @@ pub mod schema {
             #[derive(
                 ::core::clone::Clone, ::core::marker::Copy, ::core::cmp::PartialEq, ::core::cmp::Eq,
             )]
-            pub struct Key<'a> {
+            pub(super) struct Key<'a> {
                 params: Params<'a>,
                 child: SubKey<'a>,
             }
@@ -874,7 +948,7 @@ pub mod schema {
             }
 
             #[derive(::core::clone::Clone, ::core::cmp::PartialEq, ::core::cmp::Eq)]
-            pub struct OwnedPrefix {
+            pub(super) struct OwnedPrefix {
                 params: OwnedParams,
                 child: ::core::option::Option<OwnedSubPrefix>,
             }
@@ -883,7 +957,7 @@ pub mod schema {
                 ::core::clone::Clone, ::core::cmp::PartialEq, ::core::cmp::Eq, ::clap::Args,
             )]
             #[group(skip)]
-            pub struct OwnedKey {
+            pub(super) struct OwnedKey {
                 #[clap(flatten)]
                 params: OwnedParams,
                 #[clap(flatten)] // special: child has args
@@ -933,6 +1007,22 @@ pub mod schema {
             #[derive(::core::clone::Clone, ::core::cmp::PartialEq, ::core::cmp::Eq)]
             enum OwnedSubKey {
                 id(id::OwnedKey),
+            }
+
+            impl<Error> crate::Parse<Error> for OwnedKey
+            where
+                Error: ::core::convert::From<<u64 as crate::Segment<super::super::Schema>>::ParseError>
+                    + ::core::convert::From<crate::InvalidPath>,
+            {
+                fn parse(separator: &str, segments: &[&str]) -> Result<Self, Error> {
+                    // special: when child has args, forward directly
+                    Ok(OwnedKey {
+                        params: OwnedParams {},
+                        child: OwnedSubKey::id(<id::OwnedKey as crate::Parse<Error>>::parse(
+                            separator, segments,
+                        )?),
+                    })
+                }
             }
 
             // Child has args, so we have to do this manually, because we can't be a struct
@@ -1286,7 +1376,7 @@ pub mod schema {
                     ::core::cmp::PartialEq,
                     ::core::cmp::Eq,
                 )]
-                pub struct Prefix<'a> {
+                pub(super) struct Prefix<'a> {
                     params: Params<'a>,
                     child: ::core::option::Option<SubPrefix<'a>>,
                 }
@@ -1297,7 +1387,7 @@ pub mod schema {
                     ::core::cmp::PartialEq,
                     ::core::cmp::Eq,
                 )]
-                pub struct Key<'a> {
+                pub(super) struct Key<'a> {
                     params: Params<'a>,
                     child: SubKey<'a>,
                 }
@@ -1309,7 +1399,7 @@ pub mod schema {
                 }
 
                 #[derive(::core::clone::Clone, ::core::cmp::PartialEq, ::core::cmp::Eq)]
-                pub struct OwnedPrefix {
+                pub(super) struct OwnedPrefix {
                     params: OwnedParams,
                     child: Option<OwnedSubPrefix>,
                 }
@@ -1318,7 +1408,7 @@ pub mod schema {
                     ::core::clone::Clone, ::core::cmp::PartialEq, ::core::cmp::Eq, ::clap::Args,
                 )]
                 #[group(skip)]
-                pub struct OwnedKey {
+                pub(super) struct OwnedKey {
                     #[clap(flatten)]
                     params: OwnedParams,
                     #[clap(subcommand)]
@@ -1392,6 +1482,36 @@ pub mod schema {
                     voting_start(voting_start::OwnedKey),
                 }
 
+                impl<Error> crate::Parse<Error> for OwnedKey
+                where
+                    u64: crate::Segment<super::super::super::Schema>,
+                    Error: ::core::convert::From<
+                            <u64 as crate::Segment<super::super::super::Schema>>::ParseError,
+                        > + ::core::convert::From<crate::InvalidPath>,
+                {
+                    fn parse(separator: &str, segments: &[&str]) -> Result<Self, Error> {
+                        match segments {
+                            [id, rest @ ..] => {
+                                let id =
+                                    crate::Segment::parse(id, separator).map_err(Error::from)?;
+                                let params = OwnedParams { id };
+                                match rest {
+                                    ["voting_start", rest @ ..] => Ok(OwnedKey {
+                                        params,
+                                        child: OwnedSubKey::voting_start(
+                                            <voting_start::OwnedKey as crate::Parse<Error>>::parse(
+                                                separator, rest,
+                                            )?,
+                                        ),
+                                    }),
+                                    _ => Err(crate::InvalidPath { depth: 2 }.into()),
+                                }
+                            }
+                            [] => todo!(),
+                        }
+                    }
+                }
+
                 impl<'a> From<&'a OwnedSubPrefix> for SubPrefix<'a> {
                     fn from(prefix: &'a OwnedSubPrefix) -> Self {
                         match *prefix {} // special case when no prefixes, we need to dereference to prove match is complete
@@ -1447,7 +1567,9 @@ pub mod schema {
                         f: &mut ::core::fmt::Formatter<'_>,
                     ) -> ::core::fmt::Result {
                         let Params { id, .. } = &self.params;
-                        <u64 as crate::DisplaySegment<super::super::super::Schema>>::fmt(id, f)?;
+                        <u64 as crate::Segment<super::super::super::Schema>>::fmt(
+                            id, separator, f,
+                        )?;
                         write!(f, "{}", separator)?;
                         match &self.child {
                             SubKey::voting_start(child) => {
@@ -1465,7 +1587,9 @@ pub mod schema {
                         f: &mut ::core::fmt::Formatter<'_>,
                     ) -> ::core::fmt::Result {
                         let Params { id, .. } = &self.params;
-                        <u64 as crate::DisplaySegment<super::super::super::Schema>>::fmt(id, f)?;
+                        <u64 as crate::Segment<super::super::super::Schema>>::fmt(
+                            id, separator, f,
+                        )?;
                         write!(f, "{}", separator)?;
                         match &self.child {
                             // special: there is no sub-prefix
@@ -1487,7 +1611,9 @@ pub mod schema {
                         f: &mut ::core::fmt::Formatter<'_>,
                     ) -> ::core::fmt::Result {
                         let OwnedParams { id, .. } = &self.params;
-                        <u64 as crate::DisplaySegment<super::super::super::Schema>>::fmt(id, f)?;
+                        <u64 as crate::Segment<super::super::super::Schema>>::fmt(
+                            id, separator, f,
+                        )?;
                         write!(f, "{}", separator)?;
                         match &self.child {
                             OwnedSubKey::voting_start(child) => {
@@ -1505,7 +1631,9 @@ pub mod schema {
                         f: &mut ::core::fmt::Formatter<'_>,
                     ) -> ::core::fmt::Result {
                         let OwnedParams { id, .. } = &self.params;
-                        <u64 as crate::DisplaySegment<super::super::super::Schema>>::fmt(id, f)?;
+                        <u64 as crate::Segment<super::super::super::Schema>>::fmt(
+                            id, separator, f,
+                        )?;
                         write!(f, "{}", separator)?;
                         match &self.child {
                             // special: there is no sub-prefix
@@ -1735,7 +1863,7 @@ pub mod schema {
                         ::core::cmp::PartialEq,
                         ::core::cmp::Eq,
                     )]
-                    pub struct Key<'a> {
+                    pub(super) struct Key<'a> {
                         params: Params<'a>,
                         // special case: when leaf, no child
                     }
@@ -1752,7 +1880,7 @@ pub mod schema {
                         ::core::clone::Clone, ::core::cmp::PartialEq, ::core::cmp::Eq, ::clap::Args,
                     )]
                     #[group(skip)]
-                    pub struct OwnedKey {
+                    pub(super) struct OwnedKey {
                         #[clap(flatten)]
                         params: OwnedParams,
                         // special case: when leaf, no child
@@ -1773,6 +1901,20 @@ pub mod schema {
                     )]
                     #[group(skip)]
                     struct OwnedParams {}
+
+                    impl<Error> crate::Parse<Error> for OwnedKey
+                    where
+                        Error: ::core::convert::From<crate::InvalidPath>,
+                    {
+                        fn parse(separator: &str, segments: &[&str]) -> Result<Self, Error> {
+                            match segments {
+                                [] => Ok(OwnedKey {
+                                    params: OwnedParams {},
+                                }),
+                                _ => Err(crate::InvalidPath { depth: 3 }.into()),
+                            }
+                        }
+                    }
 
                     impl<'a> super::Path<'a> {
                         pub fn voting_start(self) -> Path<'a> {
