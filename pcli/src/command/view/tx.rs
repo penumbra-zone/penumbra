@@ -1,12 +1,9 @@
 use anyhow::Result;
 use comfy_table::{presets, Table};
-use penumbra_crypto::{
-    asset::Cache, dex::swap::SwapPlaintext, FullViewingKey, Note, PayloadKey, Value,
-};
+use penumbra_crypto::{asset::Cache, dex::swap::SwapPlaintext, FullViewingKey, Note, Value};
 use penumbra_transaction::{
-    action::{Output, Swap, SwapClaim},
+    action::{Swap, SwapClaim},
     view::action_view::{OutputView, SpendView, SwapClaimView, SwapView},
-    Transaction,
 };
 use penumbra_view::ViewClient;
 
@@ -156,7 +153,7 @@ impl TxCmd {
     pub fn offline(&self) -> bool {
         false
     }
-    pub async fn exec<V: ViewClient>(&self, fvk: &FullViewingKey, view: &mut V) -> Result<()> {
+    pub async fn exec<V: ViewClient>(&self, _fvk: &FullViewingKey, view: &mut V) -> Result<()> {
         // Initialize the tables
         let mut actions_table = Table::new();
         actions_table.load_preset(presets::NOTHING);
