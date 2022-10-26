@@ -157,7 +157,7 @@ impl Note {
     }
 
     /// Decrypt wrapped OVK to generate the transmission key and ephemeral secret
-    pub(crate) fn decrypt_key(
+    pub fn decrypt_key(
         wrapped_ovk: OvkWrappedKey,
         cm: Commitment,
         cv: balance::Commitment,
@@ -168,7 +168,7 @@ impl Note {
 
         let plaintext = ock
             .decrypt(wrapped_ovk.to_vec(), PayloadKind::Note)
-            .expect("OVK decryption succeeded");
+            .map_err(|_| Error::DecryptionError)?;
 
         let shared_secret_bytes: [u8; 32] = plaintext[0..32]
             .try_into()

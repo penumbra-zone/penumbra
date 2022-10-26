@@ -12,7 +12,7 @@ use penumbra_crypto::{
     note::Commitment,
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
     transaction::Fee,
-    Fr, FullViewingKey, NotePayload, Nullifier, PayloadKey,
+    Fr, FullViewingKey, Note, NotePayload, Nullifier, PayloadKey,
 };
 use penumbra_proto::{
     core::ibc::v1alpha1 as pb_ibc, core::stake::v1alpha1 as pbs,
@@ -76,12 +76,31 @@ impl Transaction {
                     result.insert(commitment_2, payload_key_2);
                 }
                 Action::Output(output) => {
-                    let epk = &output.body.note_payload.ephemeral_key;
-                    let shared_secret = fvk.incoming().key_agreement_with(epk)?;
-                    let payload_key = PayloadKey::derive(&shared_secret, epk);
+                    // Outputs may be either incoming or outgoing; for an outgoing output
+                    // we need to use the ovk_wrapped_key, and for an incoming output we need to
+                    // use the IVK to perform key agreement with the ephemeral key.
+                    let ovk_wrapped_key = output.body.ovk_wrapped_key.clone();
                     let commitment = output.body.note_payload.note_commitment;
+                    let epk = &output.body.note_payload.ephemeral_key;
+                    let cv = output.body.balance_commitment;
+                    let ovk = fvk.outgoing();
+                    let shared_secret =
+                        Note::decrypt_key(ovk_wrapped_key, commitment, cv, ovk, epk);
 
-                    result.insert(commitment, payload_key);
+                    match shared_secret {
+                        Ok(shared_secret) => {
+                            // This is an outgoing output.
+                            let payload_key = PayloadKey::derive(&shared_secret, epk);
+                            result.insert(commitment, payload_key);
+                        }
+                        Err(_) => {
+                            // This is (maybe) an incoming output, use the ivk.
+                            let shared_secret = fvk.incoming().key_agreement_with(epk)?;
+                            let payload_key = PayloadKey::derive(&shared_secret, epk);
+
+                            result.insert(commitment, payload_key);
+                        }
+                    }
                 }
                 Action::Spend(_) => {}
                 Action::Delegate(_) => {}
