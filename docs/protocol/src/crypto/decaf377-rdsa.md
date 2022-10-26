@@ -85,3 +85,42 @@ Since the verification key corresponding to the signing key $a \in \mathbb F_r$ 
 keys according to the cryptographic capability they represent, rather than an
 attribute of how they're commonly used. In this example, the verification key
 should not be public, since it could link different transactions.
+
+### Simple example: Binding signature
+
+Let’s say we have two actions in a transaction: one spend (indicated with subscript $s$) and one output (indicated with subscript $o$).
+
+The balance commitments for those actions are:
+
+$cv_o = [v_o] G_v + [rcv_o] G_{rcv}$
+$cv_s = [v_s] G_v + [rcv_s] G_{rcv}$
+
+where
+$G_v$ and $G_{rcv}$ are generators,
+$rcv_i$ are the blinding factors, and
+$v_i$ are the values.
+
+When the signer is computing the binding signature, they have the blinding
+factors for all commitments.
+
+They derive the signing key $bsk$ by adding up the blinding factors based on
+that action's contribution to the balance:
+
+$bsk = rcv_s - rcv_o$
+
+The signer compute the binding signature using this key $bsk$.
+
+When the verifier is checking the signature, they add up the balance commitments
+to derive the verification key $bvk$ based on their contribution to the balance:
+
+$bvk = cv_s - cv_o = [v_s - v_o] G_v + [rcv_s - rcv_o] G_{rcv}$
+
+If the transaction is valid, then the first term on the LHS ($[v_s - v_o] G_v$) is
+zero since for Penumbra all transactions should have zero value balance.
+
+This leaves the verifier with the verification key:
+
+$bvk = [rcv_s - rcv_o] G_{rcv}$
+
+If the value balance is _not_ zero, the verifier will not be able to compute
+the verification key with the data in the transaction.
