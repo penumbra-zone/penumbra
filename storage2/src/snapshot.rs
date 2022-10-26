@@ -95,7 +95,7 @@ impl StateRead for Snapshot {
         options.set_iterate_range(rocksdb::PrefixRange(prefix.as_bytes()));
         let mode = rocksdb::IteratorMode::Start;
 
-        let (tx, rx) = mpsc::channel(100);
+        let (tx, rx) = mpsc::channel(10);
 
         // Since the JMT keys are hashed, we can't use a prefix iterator directly.
         // We need to first prefix range the key preimages column family, then use the hashed matches to fetch the values
