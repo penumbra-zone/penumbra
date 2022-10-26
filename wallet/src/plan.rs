@@ -9,7 +9,6 @@ use penumbra_crypto::{
     asset::Denom,
     dex::{swap::SwapPlaintext, BatchSwapOutputData},
     keys::AddressIndex,
-    memo::MemoPlaintext,
     transaction::Fee,
     Address, FullViewingKey, Note, Value,
 };
@@ -215,19 +214,13 @@ where
     R: RngCore + CryptoRng,
 {
     tracing::debug!(?values, ?fee, ?dest_address, ?source_address, ?tx_memo);
-    let memo = if let Some(input_memo) = tx_memo {
-        input_memo.as_bytes().try_into()?
-    } else {
-        MemoPlaintext::default()
-    };
-
     let mut planner = Planner::new(rng);
     planner.fee(fee);
     for value in values.iter().cloned() {
         planner.output(value, dest_address);
     }
     planner
-        .memo(memo)
+        .memo(tx_memo.unwrap_or(String::new()))
         .plan(view, fvk, source_address.map(Into::into))
         .await
         .context("can't build send transaction")
@@ -389,7 +382,7 @@ where
             // chunks, ignoring the biggest notes in the remainder.
             for group in records.chunks_exact(SWEEP_COUNT) {
                 let mut planner = Planner::new(&mut rng);
-                planner.memo(MemoPlaintext::default());
+                planner.memo(String::new());
 
                 for record in group {
                     planner.spend(record.note.clone(), record.position);

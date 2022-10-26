@@ -8,7 +8,7 @@ use ark_ff::Zero;
 use bytes::Bytes;
 use decaf377_fmd::Clue;
 use penumbra_crypto::{
-    memo::{MemoCiphertext, MemoPlaintext},
+    memo::MemoCiphertext,
     note::Commitment,
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
     transaction::Fee,
@@ -123,7 +123,7 @@ impl Transaction {
     pub fn decrypt_with_perspective(&self, txp: &TransactionPerspective) -> TransactionView {
         let mut action_views = Vec::new();
 
-        let mut memo_plaintext: Option<MemoPlaintext> = None;
+        let mut memo_plaintext: Option<String> = None;
 
         for action in self.actions() {
             let action_view = action.view_from_perspective(txp);
@@ -137,7 +137,7 @@ impl Transaction {
                                 output: _,
                                 note: _,
                                 payload_key: decrypted_memo_key,
-                            } => MemoPlaintext::decrypt(ciphertext, decrypted_memo_key).ok(),
+                            } => MemoCiphertext::decrypt(decrypted_memo_key, ciphertext).ok(),
                             OutputView::Opaque { output: _ } => None,
                         },
                         None => None,
@@ -154,8 +154,7 @@ impl Transaction {
             chain_id: self.transaction_body().chain_id,
             fee: self.transaction_body().fee,
             fmd_clues: self.transaction_body().fmd_clues,
-            //TODO: this MemoPlaintext -> String conversion is a bit eklig & should be fixed up when we get rid of MemoPlaintext entirely
-            memo: memo_plaintext.map(|x| String::from_utf8(x.0.to_vec()).unwrap()),
+            memo: memo_plaintext,
         }
     }
 
