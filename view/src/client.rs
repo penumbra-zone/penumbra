@@ -6,7 +6,8 @@ use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::keys::AccountID;
 use penumbra_crypto::{asset, keys::AddressIndex, note, Asset, Nullifier};
 use penumbra_proto::view::v1alpha1::{self as pb, view_protocol_client::ViewProtocolClient};
-use penumbra_transaction::{Transaction, WitnessData};
+use penumbra_transaction::{Transaction, TransactionPerspective, WitnessData};
+use tendermint_rpc::abci;
 use tonic::async_trait;
 use tonic::codegen::Bytes;
 use tracing::instrument;
@@ -95,6 +96,19 @@ pub trait ViewClient {
         start_height: Option<u64>,
         end_height: Option<u64>,
     ) -> Result<Vec<(u64, Vec<u8>)>>;
+
+    /// Queries for a transaction hashes by its transaction hash
+
+    async fn transaction_by_hash(
+        &mut self,
+        tx_hash: abci::transaction::Hash,
+    ) -> Result<Option<Transaction>>;
+
+    /// Generates a full perspective for a selected transaction using a full viewing key
+    async fn transaction_perspective(
+        &mut self,
+        tx_hash: abci::transaction::Hash,
+    ) -> Result<TransactionPerspective>;
 
     /// Queries for transactions in a range of block heights
     async fn transactions(
@@ -436,6 +450,40 @@ where
             .collect();
 
         Ok(txs)
+    }
+
+    async fn transaction_by_hash(
+        &mut self,
+        tx_hash: abci::transaction::Hash,
+    ) -> Result<Option<Transaction>> {
+        ViewProtocolClient::transaction_by_hash(
+            self,
+            tonic::Request::new(pb::TransactionByHashRequest {
+                tx_hash: tx_hash.as_bytes().to_vec(),
+            }),
+        )
+        .await?
+        .into_inner()
+        .tx
+        .map(|tx| tx.try_into())
+        .map_or(Ok(None), |v| v.map(Some))
+    }
+
+    async fn transaction_perspective(
+        &mut self,
+        tx_hash: abci::transaction::Hash,
+    ) -> Result<TransactionPerspective> {
+        ViewProtocolClient::transaction_perspective(
+            self,
+            tonic::Request::new(pb::TransactionPerspectiveRequest {
+                tx_hash: tx_hash.as_bytes().to_vec(),
+            }),
+        )
+        .await?
+        .into_inner()
+        .txp
+        .unwrap()
+        .try_into()
     }
 
     async fn transactions(

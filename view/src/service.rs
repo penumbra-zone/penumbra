@@ -1,4 +1,5 @@
 use std::{
+    collections::BTreeMap,
     pin::Pin,
     sync::{Arc, Mutex},
 };
@@ -14,14 +15,14 @@ use penumbra_crypto::{
 use penumbra_proto::{
     core::chain::v1alpha1 as pbp,
     core::crypto::v1alpha1 as pbc,
-    core::transaction::v1alpha1 as pbt,
+    core::transaction::v1alpha1::{self as pbt},
     view::v1alpha1::{
         self as pb, view_protocol_server::ViewProtocol, StatusResponse,
         TransactionHashStreamResponse, TransactionStreamResponse,
     },
 };
 use penumbra_tct::{Commitment, Proof};
-use penumbra_transaction::WitnessData;
+use penumbra_transaction::{TransactionPerspective, WitnessData};
 use tokio::sync::{watch, RwLock};
 use tokio_stream::wrappers::WatchStream;
 use tonic::async_trait;
@@ -239,6 +240,67 @@ impl ViewProtocol for ViewService {
         Box<dyn futures::Stream<Item = Result<TransactionStreamResponse, tonic::Status>> + Send>,
     >;
 
+    async fn transaction_perspective(
+        &self,
+        request: tonic::Request<pb::TransactionPerspectiveRequest>,
+    ) -> Result<tonic::Response<pb::TransactionPerspectiveResponse>, tonic::Status> {
+        self.check_worker().await?;
+
+        let request = request.into_inner();
+
+        let fvk =
+            self.storage.full_viewing_key().await.map_err(|_| {
+                tonic::Status::failed_precondition("Error retrieving full viewing key")
+            })?;
+
+        let tx = self
+            .storage
+            .transaction_by_hash(&request.tx_hash)
+            .await
+            .map_err(|_| {
+                tonic::Status::failed_precondition(format!(
+                    "Error retrieving transaction by hash {}",
+                    hex::encode(&request.tx_hash)
+                ))
+            })?
+            .ok_or_else(|| {
+                tonic::Status::failed_precondition(format!(
+                    "No transaction found with this hash {}",
+                    hex::encode(&request.tx_hash)
+                ))
+            })?;
+
+        let payload_keys = tx
+            .payload_keys(&fvk)
+            .map_err(|_| tonic::Status::failed_precondition("Error generating payload keys"))?;
+
+        let mut spend_nullifiers = BTreeMap::new();
+
+        for action in tx.actions() {
+            if let penumbra_transaction::Action::Spend(spend) = action {
+                let nullifier = spend.body.nullifier;
+                let spendable_note_record = self.storage.note_by_nullifier(nullifier, false).await;
+
+                if spendable_note_record.is_err() {
+                    spend_nullifiers.insert(nullifier, None);
+                } else if let Ok(spendable_note_record) = spendable_note_record {
+                    spend_nullifiers.insert(nullifier, Some(spendable_note_record.note));
+                }
+            }
+        }
+
+        let txp = TransactionPerspective {
+            payload_keys,
+            spend_nullifiers,
+        };
+
+        let response = pb::TransactionPerspectiveResponse {
+            txp: Some(txp.into()),
+            tx: Some(tx.into()),
+        };
+
+        Ok(tonic::Response::new(response))
+    }
     async fn note_by_commitment(
         &self,
         request: tonic::Request<pb::NoteByCommitmentRequest>,
@@ -507,6 +569,26 @@ impl ViewProtocol for ViewService {
                 })
                 .boxed(),
         ))
+    }
+
+    async fn transaction_by_hash(
+        &self,
+        request: tonic::Request<pb::TransactionByHashRequest>,
+    ) -> Result<tonic::Response<pb::TransactionByHashResponse>, tonic::Status> {
+        self.check_worker().await?;
+
+        // Fetch transactions from storage.
+        let tx = self
+            .storage
+            .transaction_by_hash(&request.get_ref().tx_hash)
+            .await
+            .map_err(|e| {
+                tonic::Status::unavailable(format!("error fetching transaction: {}", e))
+            })?;
+
+        Ok(tonic::Response::new(pb::TransactionByHashResponse {
+            tx: tx.map(Into::into),
+        }))
     }
 
     async fn witness(

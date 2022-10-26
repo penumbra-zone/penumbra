@@ -208,6 +208,36 @@
     },
     "query": "\n            SELECT height\n            FROM sync_height\n            ORDER BY height DESC\n            LIMIT 1\n        "
   },
+  "6bc5184c7eedf8c67bbcd7ea89a05d6777ed03e141f4bccf3de668f5d64bd8aa": {
+    "describe": {
+      "columns": [
+        {
+          "name": "block_height",
+          "ordinal": 0,
+          "type_info": "Int64"
+        },
+        {
+          "name": "tx_hash",
+          "ordinal": 1,
+          "type_info": "Blob"
+        },
+        {
+          "name": "tx_bytes",
+          "ordinal": 2,
+          "type_info": "Blob"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT block_height, tx_hash, tx_bytes\n            FROM tx\n            WHERE tx_hash = ?"
+  },
   "6fbdcaea60547ae9c260428c23ddd835986cdd03553e485df2fe4ad31ccaa8d6": {
     "describe": {
       "columns": [],

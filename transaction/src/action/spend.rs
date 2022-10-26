@@ -28,11 +28,11 @@ impl IsAction for Spend {
 
     fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {
         let spend_view = match txp.spend_nullifiers.get(&self.body.nullifier) {
-            Some(note) => SpendView::Visible {
+            Some(Some(note)) => SpendView::Visible {
                 spend: self.to_owned(),
                 note: note.to_owned(),
             },
-            None => SpendView::Opaque {
+            Some(None) | None => SpendView::Opaque {
                 spend: self.to_owned(),
             },
         };

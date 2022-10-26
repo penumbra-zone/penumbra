@@ -410,6 +410,103 @@ impl Storage {
         Ok(output)
     }
 
+    pub async fn transaction_by_hash(&self, tx_hash: &[u8]) -> anyhow::Result<Option<Transaction>> {
+        let result = sqlx::query!(
+            "SELECT block_height, tx_hash, tx_bytes
+            FROM tx
+            WHERE tx_hash = ?",
+            tx_hash
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(match result {
+            Some(record) => Some(Transaction::decode(record.tx_bytes.as_slice())?),
+            None => None,
+        })
+    }
+
+    // Query for a note by its note commitment, optionally waiting until the note is detected.
+    pub fn note_by_nullifier(
+        &self,
+        nullifier: Nullifier,
+        await_detection: bool,
+    ) -> impl Future<Output = anyhow::Result<SpendableNoteRecord>> {
+        // Start subscribing now, before querying for whether we already
+        // have the record, so that we can't miss it if we race a write.
+        let mut rx = self.scanned_notes_tx.subscribe();
+
+        // Clone the pool handle so that the returned future is 'static
+        let pool = self.pool.clone();
+
+        let nullifier_bytes = nullifier.to_bytes().to_vec();
+        async move {
+            // Check if we already have the note
+            if let Some(record) = sqlx::query_as::<_, SpendableNoteRecord>(
+                // TODO: would really be better to use a prepared statement here rather than manually
+                // quoting the nullifier bytes. tried to get the `sqlx::query_as!` macro to work
+                // but the types didn't work out easily.
+                format!(
+                    "SELECT 
+                        notes.note_commitment,
+                        notes.height_created,
+                        notes.address,
+                        notes.amount,
+                        notes.asset_id,
+                        notes.blinding_factor,
+                        notes.address_index,
+                        notes.source,
+                        spendable_notes.height_spent,
+                        spendable_notes.nullifier,
+                        spendable_notes.position
+                    FROM notes
+                    JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
+                    WHERE hex(spendable_notes.nullifier) = \"{}\"",
+                    hex::encode_upper(nullifier_bytes)
+                )
+                .as_str(),
+            )
+            .fetch_optional(&pool)
+            .await?
+            {
+                return Ok(record);
+            }
+
+            if !await_detection {
+                return Err(anyhow!(
+                    "Note commitment for nullifier {:?} not found",
+                    nullifier
+                ));
+            }
+
+            // Otherwise, wait for newly detected notes and check whether they're
+            // the requested one.
+
+            loop {
+                match rx.recv().await {
+                    Ok(record) => {
+                        if record.nullifier == nullifier {
+                            return Ok(record);
+                        }
+                    }
+
+                    Err(e) => match e {
+                        RecvError::Closed => {
+                            return Err(anyhow!(
+                            "Receiver error during note detection: closed (no more active senders)"
+                        ))
+                        }
+                        RecvError::Lagged(count) => {
+                            return Err(anyhow!(
+                                "Receiver error during note detection: lagged (by {:?} messages)",
+                                count
+                            ))
+                        }
+                    },
+                };
+            }
+        }
+    }
     pub async fn assets(&self) -> anyhow::Result<Vec<Asset>> {
         let result = sqlx::query!(
             "SELECT *
