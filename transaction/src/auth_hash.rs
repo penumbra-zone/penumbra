@@ -123,7 +123,7 @@ impl TransactionPlan {
         let mut memo_key: Option<PayloadKey> = None;
         if self.memo_plan.is_some() {
             let memo_plan = self.memo_plan.clone().unwrap();
-            state.update(&memo_plan.memo().0);
+            state.update(&memo_plan.memo().unwrap().0.as_ref());
             memo_key = Some(memo_plan.key);
         }
 
@@ -525,7 +525,6 @@ mod tests {
         asset,
         dex::{swap::SwapPlaintext, TradingPair},
         keys::{SeedPhrase, SpendKey},
-        memo::MemoPlaintext,
         transaction::Fee,
         Note, Value, STAKING_TOKEN_ASSET_ID,
     };
@@ -610,7 +609,7 @@ mod tests {
                 SwapPlan::new(&mut OsRng, swap_plaintext).into(),
             ],
             clue_plans: vec![CluePlan::new(&mut OsRng, addr, 1)],
-            memo_plan: Some(MemoPlan::new(&mut OsRng, MemoPlaintext::default())),
+            memo_plan: Some(MemoPlan::new(&mut OsRng, String::new()).unwrap()),
         };
 
         println!("{}", serde_json::to_string_pretty(&plan).unwrap());
