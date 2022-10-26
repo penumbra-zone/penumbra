@@ -84,10 +84,10 @@ impl StateRead for Snapshot {
             .await?
     }
 
-    async fn prefix_raw(
-        &self,
-        prefix: &str,
-    ) -> Result<Pin<Box<dyn Stream<Item = (String, Box<[u8]>)> + Send + '_>>> {
+    async fn prefix_raw<'a>(
+        &'a self,
+        prefix: &'a str,
+    ) -> Pin<Box<dyn Stream<Item = Result<(String, Box<[u8]>)>> + Sync + Send + 'a>> {
         let span = Span::current();
         let db = self.0.db;
         let rocksdb_snapshot = self.0.rocksdb_snapshot.clone();
@@ -117,14 +117,14 @@ impl StateRead for Snapshot {
                             .get_pinned_cf(jmt_cf, key_hash)?
                             .expect("keys in jmt_keys should have a corresponding value in jmt");
                         let k = std::str::from_utf8(key_preimage.as_ref())?;
-                        tx.blocking_send((k.to_string(), Box::from(j.as_ref())))?;
+                        tx.blocking_send(Ok((k.to_string(), Box::from(j.as_ref()))))?;
                     }
                     Ok::<(), anyhow::Error>(())
                 })
-            })?
-            .await??;
+            })
+            .expect("should be able to spawn_blocking");
 
-        Ok(Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx)))
+        Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx))
     }
 }
 
