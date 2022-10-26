@@ -14,9 +14,11 @@ use crate::state::StateRead;
 ///
 /// This is implemented as a wrapper around a [RocksDB snapshot](https://github.com/facebook/rocksdb/wiki/Snapshot)
 /// with an associated JMT version number for the snapshot.
+#[derive(Clone)]
 pub(crate) struct Snapshot(pub(crate) Inner);
 
 // We don't want to expose the `TreeReader` implementation outside of this crate.
+#[derive(Clone)]
 pub(crate) struct Inner {
     // TODO: the `'static` lifetime is a temporary hack and we'll need to find a workaround separately (tracked in #1512)
     rocksdb_snapshot: Arc<rocksdb::Snapshot<'static>>,

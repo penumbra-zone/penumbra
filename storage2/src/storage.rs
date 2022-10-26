@@ -17,7 +17,7 @@ use crate::State;
 pub struct Storage(Inner);
 
 struct Inner {
-    latest_snapshot: RwLock<Arc<Snapshot>>,
+    latest_snapshot: RwLock<Snapshot>,
     db: &'static DB,
 }
 
@@ -40,14 +40,14 @@ impl Storage {
                     )?);
                     let static_db: &'static DB = Box::leak(db);
                     let jmt_version = latest_version(static_db)?
-                        .ok_or(anyhow::anyhow!("no jmt version found"))?;
+                        .ok_or_else(|| anyhow::anyhow!("no jmt version found"))?;
                     let latest_snapshot = {
                         let snap = Arc::new(static_db.snapshot());
                         Snapshot::new(snap, jmt_version, static_db)
                     };
 
                     Ok(Self(Inner {
-                        latest_snapshot: RwLock::new(Arc::new(latest_snapshot)),
+                        latest_snapshot: RwLock::new(latest_snapshot),
                         db: static_db,
                     }))
                 })
@@ -102,7 +102,7 @@ impl Storage {
             .spawn_blocking(move || {
                 span.in_scope(|| {
                     let snap = self.0.latest_snapshot.read().clone();
-                    let jmt = JellyfishMerkleTree::new(&snap.as_ref().0);
+                    let jmt = JellyfishMerkleTree::new(&snap.0);
 
                     let unwritten_changes: Vec<_> = state
                         .unwritten_changes
@@ -156,7 +156,7 @@ impl Storage {
                     let snapshot = Arc::new(db.snapshot());
                     // Obtain the write-lock for the latest snapshot, and replace it with the new snapshot.
                     let mut guard = self.0.latest_snapshot.write();
-                    *guard = Arc::new(Snapshot::new(snapshot, jmt_version, db));
+                    *guard = Snapshot::new(snapshot, jmt_version, db);
                     // Drop the write-lock (this will happen implicitly anyways, but it's good to be explicit).
                     drop(guard);
                     anyhow::Result::<()>::Ok(())

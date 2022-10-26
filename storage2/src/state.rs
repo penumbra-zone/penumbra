@@ -10,7 +10,6 @@ use futures::Stream;
 pub use read::StateRead;
 use tokio::sync::mpsc;
 use tokio_stream::StreamExt;
-use tracing::Span;
 pub use transaction::Transaction as StateTransaction;
 pub use write::StateWrite;
 
@@ -19,7 +18,7 @@ use crate::snapshot::Snapshot;
 /// State is a lightweight copy-on-write fork of the chain state,
 /// implemented as a RYW cache over a pinned JMT version.
 pub struct State {
-    snapshot: Arc<Snapshot>,
+    snapshot: Snapshot,
     // A `None` value represents deletion.
     pub(crate) unwritten_changes: BTreeMap<String, Option<Vec<u8>>>,
     // A `None` value represents deletion.
@@ -27,7 +26,7 @@ pub struct State {
 }
 
 impl State {
-    pub(crate) fn new(snapshot: Arc<Snapshot>) -> Self {
+    pub(crate) fn new(snapshot: Snapshot) -> Self {
         Self {
             snapshot,
             unwritten_changes: BTreeMap::new(),
@@ -86,12 +85,19 @@ impl StateRead for State {
 
         let mut snapshotted_stream = self.snapshot.prefix_raw(prefix).await?;
         let mut snapshotted_match = snapshotted_stream.next().await;
-        for (key, value) in self.unwritten_changes.iter() {
-            // Iterate the unwritten_changes cache (sorted by key) until we reach the keys
-            // that match the prefix.
-            //
+
+        // Range the unwritten_changes cache (sorted by key) starting with the keys matching the prefix,
+        // until we reach the keys that no longer match the prefix.
+        let unwritten_changes_iter = self
+            .unwritten_changes
+            .range(prefix.to_string()..)
+            .take_while(|(k, _)| (**k).starts_with(prefix));
+
+        // Maybe it would be possible to simplify this by using `async-stream` and implementing something similar to `itertools::merge_by`.
+
+        for (key, value) in unwritten_changes_iter {
             // If value is `None`, then the key has been deleted, and we should skip it.
-            if !key.starts_with(prefix) || value.is_none() {
+            if value.is_none() {
                 continue;
             }
 
@@ -110,6 +116,7 @@ impl StateRead for State {
                 } else {
                     // Keep this match around for another iteration.
                     snapshotted_match = Some((snapshotted_key, snapshotted_value));
+                    break;
                 }
             }
 

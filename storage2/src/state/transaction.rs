@@ -1,6 +1,9 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use std::collections::BTreeMap;
+use futures::Stream;
+use std::{collections::BTreeMap, pin::Pin};
+use tokio::sync::mpsc;
+use tokio_stream::StreamExt;
 
 use crate::State;
 
@@ -50,7 +53,6 @@ impl<'a> StateWrite for Transaction<'a> {
 
     fn put_nonconsensus(&mut self, key: Vec<u8>, value: Vec<u8>) {
         self.nonconsensus_changes.insert(key, Some(value));
-<<<<<<< HEAD
     }
 }
 
@@ -74,7 +76,64 @@ impl<'a> StateRead for Transaction<'a> {
 
         // Otherwise, if the key is available in the state, return it.
         self.state.get_nonconsensus(key).await
-=======
->>>>>>> 62ba82b8 (Asyncify storage code)
+    }
+
+    async fn prefix_raw(
+        &self,
+        prefix: &str,
+    ) -> Result<Pin<Box<dyn Stream<Item = (String, Box<[u8]>)> + Send + '_>>> {
+        // Interleave the unwritten_changes cache with the state.
+        let (tx, rx) = mpsc::channel(100);
+
+        let mut state_stream = self.state.prefix_raw(prefix).await?;
+        let mut state_match = state_stream.next().await;
+
+        // Range the unwritten_changes cache (sorted by key) starting with the keys matching the prefix,
+        // until we reach the keys that no longer match the prefix.
+        let unwritten_changes_iter = self
+            .unwritten_changes
+            .range(prefix.to_string()..)
+            .take_while(|(k, _)| (**k).starts_with(prefix));
+
+        // Maybe it would be possible to simplify this by using `async-stream` and implementing something similar to `itertools::merge_by`.
+
+        for (key, value) in unwritten_changes_iter {
+            // If value is `None`, then the key has been deleted, and we should skip it.
+            if value.is_none() {
+                continue;
+            }
+
+            let value = value.clone().unwrap();
+
+            // This key matches the prefix.
+            // While the state prefix stream returns keys that lexicographically precede this key,
+            // return those.
+            while let Some((state_key, state_value)) = state_match {
+                if &state_key < key {
+                    // The state key is less than the unwritten_changes key, so return
+                    // the state key.
+                    tx.send((state_key, state_value)).await?;
+                    // And then advance the state stream to the next match.
+                    state_match = state_stream.next().await;
+                } else {
+                    // Keep this match around for another iteration.
+                    state_match = Some((state_key, state_value));
+                    break;
+                }
+            }
+
+            // All state matches preceding this unwritten_changes key have been sent to the channel,
+            // so send this key.
+            tx.send((key.to_string(), value.into_boxed_slice())).await?;
+        }
+
+        // Send any remaining data from the state stream.
+        while let Some((state_key, state_value)) = state_match {
+            tx.send((state_key, state_value)).await?;
+            // Advance the snapshot stream to the next match.
+            state_match = state_stream.next().await;
+        }
+
+        Ok(Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx)))
     }
 }
