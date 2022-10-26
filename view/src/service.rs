@@ -240,10 +240,10 @@ impl ViewProtocol for ViewService {
         Box<dyn futures::Stream<Item = Result<TransactionStreamResponse, tonic::Status>> + Send>,
     >;
 
-    async fn perspective(
+    async fn transaction_perspective(
         &self,
-        request: tonic::Request<pb::PerspectiveRequest>,
-    ) -> Result<tonic::Response<pb::PerspectiveResponse>, tonic::Status> {
+        request: tonic::Request<pb::TransactionPerspectiveRequest>,
+    ) -> Result<tonic::Response<pb::TransactionPerspectiveResponse>, tonic::Status> {
         self.check_worker().await?;
 
         let request = request.into_inner();
@@ -258,10 +258,16 @@ impl ViewProtocol for ViewService {
             .transaction_by_hash(&request.tx_hash)
             .await
             .map_err(|_| {
-                tonic::Status::failed_precondition("Error retrieving transaction by hash")
+                tonic::Status::failed_precondition(format!(
+                    "Error retrieving transaction by hash {}",
+                    hex::encode(&request.tx_hash)
+                ))
             })?
             .ok_or_else(|| {
-                tonic::Status::failed_precondition("No transaction found with this hash")
+                tonic::Status::failed_precondition(format!(
+                    "No transaction found with this hash {}",
+                    hex::encode(&request.tx_hash)
+                ))
             })?;
 
         let payload_keys = tx
@@ -273,17 +279,13 @@ impl ViewProtocol for ViewService {
         for action in tx.actions() {
             if let penumbra_transaction::Action::Spend(spend) = action {
                 let nullifier = spend.body.nullifier;
-                let spendable_note_record = self
-                    .storage
-                    .note_by_nullifier(nullifier, false)
-                    .await
-                    .map_err(|e| {
-                        tonic::Status::failed_precondition(format!(
-                            "Error retrieving note by nullifier: {}",
-                            e
-                        ))
-                    })?;
-                spend_nullifiers.insert(nullifier, spendable_note_record.note);
+                let spendable_note_record = self.storage.note_by_nullifier(nullifier, false).await;
+
+                if spendable_note_record.is_err() {
+                    spend_nullifiers.insert(nullifier, None);
+                } else if let Ok(spendable_note_record) = spendable_note_record {
+                    spend_nullifiers.insert(nullifier, Some(spendable_note_record.note));
+                }
             }
         }
 
@@ -292,7 +294,7 @@ impl ViewProtocol for ViewService {
             spend_nullifiers,
         };
 
-        let response = pb::PerspectiveResponse {
+        let response = pb::TransactionPerspectiveResponse {
             txp: Some(txp.into()),
             tx: Some(tx.into()),
         };

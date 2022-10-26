@@ -105,7 +105,7 @@ pub trait ViewClient {
     ) -> Result<Option<Transaction>>;
 
     /// Generates a full perspective for a selected transaction using a full viewing key
-    async fn perspective(
+    async fn transaction_perspective(
         &mut self,
         tx_hash: abci::transaction::Hash,
     ) -> Result<TransactionPerspective>;
@@ -469,13 +469,13 @@ where
         .map_or(Ok(None), |v| v.map(Some))
     }
 
-    async fn perspective(
+    async fn transaction_perspective(
         &mut self,
         tx_hash: abci::transaction::Hash,
     ) -> Result<TransactionPerspective> {
-        ViewProtocolClient::perspective(
+        ViewProtocolClient::transaction_perspective(
             self,
-            tonic::Request::new(pb::PerspectiveRequest {
+            tonic::Request::new(pb::TransactionPerspectiveRequest {
                 tx_hash: tx_hash.as_bytes().to_vec(),
             }),
         )

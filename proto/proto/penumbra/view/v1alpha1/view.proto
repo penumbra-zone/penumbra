@@ -60,14 +60,14 @@ service ViewProtocol {
     // Query for the full transactions in the given range of blocks.
     rpc Transactions(TransactionsRequest) returns (stream TransactionStreamResponse);
     // Query for the transaction perspective of the given transaction
-    rpc Perspective(PerspectiveRequest) returns (PerspectiveResponse);
+    rpc TransactionPerspective(TransactionPerspectiveRequest) returns (TransactionPerspectiveResponse);
 }
 
-message PerspectiveRequest {
+message TransactionPerspectiveRequest {
     bytes tx_hash = 1;
 }
 
-message PerspectiveResponse {
+message TransactionPerspectiveResponse {
     core.transaction.v1alpha1.TransactionPerspective txp = 1;
     core.transaction.v1alpha1.Transaction tx = 2;
 }

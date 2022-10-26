@@ -168,7 +168,7 @@ impl TxCmd {
 
         if let Some(tx) = &tx {
             // Retrieve full TxP
-            let txp = view.perspective(self.hash.parse()?).await?;
+            let txp = view.transaction_perspective(self.hash.parse()?).await?;
 
             // Generate TxV using TxP
 

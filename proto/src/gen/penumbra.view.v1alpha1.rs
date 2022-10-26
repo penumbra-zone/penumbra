@@ -1,10 +1,10 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct PerspectiveRequest {
+pub struct TransactionPerspectiveRequest {
     #[prost(bytes="vec", tag="1")]
     pub tx_hash: ::prost::alloc::vec::Vec<u8>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct PerspectiveResponse {
+pub struct TransactionPerspectiveResponse {
     #[prost(message, optional, tag="1")]
     pub txp: ::core::option::Option<super::super::core::transaction::v1alpha1::TransactionPerspective>,
     #[prost(message, optional, tag="2")]
@@ -590,10 +590,13 @@ pub mod view_protocol_client {
             self.inner.server_streaming(request.into_request(), path, codec).await
         }
         /// Query for the transaction perspective of the given transaction
-        pub async fn perspective(
+        pub async fn transaction_perspective(
             &mut self,
-            request: impl tonic::IntoRequest<super::PerspectiveRequest>,
-        ) -> Result<tonic::Response<super::PerspectiveResponse>, tonic::Status> {
+            request: impl tonic::IntoRequest<super::TransactionPerspectiveRequest>,
+        ) -> Result<
+            tonic::Response<super::TransactionPerspectiveResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -605,7 +608,7 @@ pub mod view_protocol_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocol/Perspective",
+                "/penumbra.view.v1alpha1.ViewProtocol/TransactionPerspective",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -739,10 +742,13 @@ pub mod view_protocol_server {
             request: tonic::Request<super::TransactionsRequest>,
         ) -> Result<tonic::Response<Self::TransactionsStream>, tonic::Status>;
         /// Query for the transaction perspective of the given transaction
-        async fn perspective(
+        async fn transaction_perspective(
             &self,
-            request: tonic::Request<super::PerspectiveRequest>,
-        ) -> Result<tonic::Response<super::PerspectiveResponse>, tonic::Status>;
+            request: tonic::Request<super::TransactionPerspectiveRequest>,
+        ) -> Result<
+            tonic::Response<super::TransactionPerspectiveResponse>,
+            tonic::Status,
+        >;
     }
     /// The view protocol is used by a view client, who wants to do some
     /// transaction-related actions, to request data from a view service, which is
@@ -1331,24 +1337,26 @@ pub mod view_protocol_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.view.v1alpha1.ViewProtocol/Perspective" => {
+                "/penumbra.view.v1alpha1.ViewProtocol/TransactionPerspective" => {
                     #[allow(non_camel_case_types)]
-                    struct PerspectiveSvc<T: ViewProtocol>(pub Arc<T>);
+                    struct TransactionPerspectiveSvc<T: ViewProtocol>(pub Arc<T>);
                     impl<
                         T: ViewProtocol,
-                    > tonic::server::UnaryService<super::PerspectiveRequest>
-                    for PerspectiveSvc<T> {
-                        type Response = super::PerspectiveResponse;
+                    > tonic::server::UnaryService<super::TransactionPerspectiveRequest>
+                    for TransactionPerspectiveSvc<T> {
+                        type Response = super::TransactionPerspectiveResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::PerspectiveRequest>,
+                            request: tonic::Request<super::TransactionPerspectiveRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move { (*inner).perspective(request).await };
+                            let fut = async move {
+                                (*inner).transaction_perspective(request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -1357,7 +1365,7 @@ pub mod view_protocol_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = PerspectiveSvc(inner);
+                        let method = TransactionPerspectiveSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

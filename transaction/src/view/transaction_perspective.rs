@@ -23,7 +23,7 @@ pub struct TransactionPerspective {
     /// there is one memo shared between all outputs.
     pub payload_keys: BTreeMap<note::Commitment, PayloadKey>,
     /// Mapping of nullifiers spent in this transaction to notes.
-    pub spend_nullifiers: BTreeMap<Nullifier, Note>,
+    pub spend_nullifiers: BTreeMap<Nullifier, Option<Note>>,
 }
 
 impl TransactionPerspective {}
@@ -41,10 +41,13 @@ impl From<TransactionPerspective> for pb::TransactionPerspective {
         }
 
         for (nullifier, note) in msg.spend_nullifiers {
-            spend_nullifiers.push(NullifierWithNote {
-                nullifier: Some(nullifier.into()),
-                note: Some(note.into()),
-            })
+            match note {
+                Some(note) => spend_nullifiers.push(NullifierWithNote {
+                    nullifier: Some(nullifier.into()),
+                    note: Some(note.into()),
+                }),
+                None => {}
+            };
         }
         Self {
             payload_keys,
@@ -72,7 +75,7 @@ impl TryFrom<pb::TransactionPerspective> for TransactionPerspective {
         for nwn in msg.spend_nullifiers {
             spend_nullifiers.insert(
                 nwn.nullifier.unwrap().try_into()?,
-                nwn.note.unwrap().try_into()?,
+                Some(nwn.note.unwrap().try_into()?),
             );
         }
         Ok(Self {

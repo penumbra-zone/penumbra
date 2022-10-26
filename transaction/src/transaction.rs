@@ -83,7 +83,19 @@ impl Transaction {
 
                     result.insert(commitment, payload_key);
                 }
-                _ => {}
+                Action::Spend(_) => {}
+                Action::Delegate(_) => {}
+                Action::Undelegate(_) => {}
+                Action::ValidatorDefinition(_) => {}
+                Action::IBCAction(_) => {}
+                Action::ProposalSubmit(_) => {}
+                Action::ProposalWithdraw(_) => {}
+                Action::ValidatorVote(_) => {}
+                Action::PositionOpen(_) => {}
+                Action::PositionClose(_) => {}
+                Action::PositionWithdraw(_) => {}
+                Action::PositionRewardClaim(_) => {}
+                Action::ICS20Withdrawal(_) => {}
             }
         }
 
