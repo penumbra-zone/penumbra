@@ -3382,6 +3382,7 @@ name = "penumbra-storage2"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-stream 0.3.3",
  "async-trait",
  "bincode",
  "futures",
