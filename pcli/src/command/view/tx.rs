@@ -1,6 +1,11 @@
 use anyhow::Result;
 use comfy_table::{presets, Table};
-use penumbra_crypto::{asset::Cache, dex::swap::SwapPlaintext, FullViewingKey, Note, Value};
+use penumbra_crypto::{
+    asset::Cache,
+    dex::swap::SwapPlaintext,
+    keys::{AddressIndex, IncomingViewingKey},
+    Address, FullViewingKey, Note, Value,
+};
 use penumbra_transaction::{
     action::{Swap, SwapClaim},
     view::action_view::{OutputView, SpendView, SwapClaimView, SwapView},
@@ -133,27 +138,51 @@ fn format_visible_swap_claim_row(
     )
 }
 
-fn format_visible_output_row(asset_cache: &Cache, decrypted_note: &Note) -> String {
+fn format_visible_output_row(
+    asset_cache: &Cache,
+    ivk: &IncomingViewingKey,
+    decrypted_note: &Note,
+) -> String {
     format!(
-        "{} to address {}",
+        "{} to {}",
         decrypted_note.value().format(asset_cache),
-        decrypted_note.address(),
+        format_address(ivk, &decrypted_note.address()),
     )
 }
 
-fn format_visible_spend_row(asset_cache: &Cache, decrypted_note: &Note) -> String {
+fn format_visible_spend_row(
+    asset_cache: &Cache,
+    ivk: &IncomingViewingKey,
+    decrypted_note: &Note,
+) -> String {
     format!(
-        "address {} spent {}",
-        decrypted_note.address(),
+        "{} spent {}",
+        format_address(ivk, &decrypted_note.address()),
         decrypted_note.value().format(asset_cache),
     )
+}
+
+// Turns an `Address` into a `String` representation; either a short-form for addresses
+// not associated with the `ivk`, or in the form of `[self: <index or ephemeral>]` for
+// addresses associated with the `ivk`.
+fn format_address(ivk: &IncomingViewingKey, address: &Address) -> String {
+    if ivk.views_address(address) {
+        let index = ivk.index_for_diversifier(address.diversifier());
+
+        match index {
+            AddressIndex::Numeric(index) => format!("[self: {}]", index),
+            AddressIndex::Random(_) => format!("[self: ephemeral]"),
+        }
+    } else {
+        format!("{}", address.display_short_form())
+    }
 }
 
 impl TxCmd {
     pub fn offline(&self) -> bool {
         false
     }
-    pub async fn exec<V: ViewClient>(&self, _fvk: &FullViewingKey, view: &mut V) -> Result<()> {
+    pub async fn exec<V: ViewClient>(&self, fvk: &FullViewingKey, view: &mut V) -> Result<()> {
         // Initialize the tables
         let mut actions_table = Table::new();
         actions_table.load_preset(presets::NOTHING);
@@ -216,7 +245,7 @@ impl TxCmd {
                         decrypted_memo_key: _,
                     }) => [
                         "Output".to_string(),
-                        format_visible_output_row(&asset_cache, &decrypted_note),
+                        format_visible_output_row(&asset_cache, fvk.incoming(), &decrypted_note),
                     ],
                     penumbra_transaction::ActionView::Output(OutputView::Opaque { output: _ }) => {
                         ["Output".to_string(), "Opaque output".to_string()]
@@ -226,7 +255,7 @@ impl TxCmd {
                         note,
                     }) => [
                         "Spend".to_string(),
-                        format_visible_spend_row(&asset_cache, &note),
+                        format_visible_spend_row(&asset_cache, fvk.incoming(), &note),
                     ],
                     penumbra_transaction::ActionView::Spend(SpendView::Opaque { spend: _ }) => {
                         ["Spend".to_string(), "Opaque spend".to_string()]
