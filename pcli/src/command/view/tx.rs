@@ -171,10 +171,10 @@ fn format_address(ivk: &IncomingViewingKey, address: &Address) -> String {
 
         match index {
             AddressIndex::Numeric(index) => format!("[self: {}]", index),
-            AddressIndex::Random(_) => format!("[self: ephemeral]"),
+            AddressIndex::Random(_) => "[self: ephemeral]".to_string(),
         }
     } else {
-        format!("{}", address.display_short_form())
+        address.display_short_form()
     }
 }
 

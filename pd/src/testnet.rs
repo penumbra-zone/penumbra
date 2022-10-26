@@ -174,7 +174,7 @@ impl TryFrom<TestnetAllocation> for genesis::Allocation {
 
     fn try_from(a: TestnetAllocation) -> anyhow::Result<genesis::Allocation> {
         Ok(genesis::Allocation {
-            amount: a.amount.into(),
+            amount: a.amount,
             denom: a.denom.clone(),
             address: Address::from_str(&a.address)
                 .context("invalid address format in genesis allocations")?,

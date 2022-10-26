@@ -237,6 +237,7 @@ impl DecryptionShare {
     }
 }
 
+#[allow(clippy::disallowed_types)]
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -862,8 +862,7 @@ impl Component for Staking {
         // to compute the delegation tokens for each validator.
         let mut genesis_allocations = BTreeMap::new();
         for allocation in &app_state.allocations {
-            *genesis_allocations.entry(&allocation.denom).or_insert(0) +=
-                u64::from(allocation.amount);
+            *genesis_allocations.entry(&allocation.denom).or_insert(0) += allocation.amount;
         }
 
         // Add initial validators to the JMT
