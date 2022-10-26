@@ -76,12 +76,9 @@ Randomizing a signing key and then deriving the verification key associated to t
 The second signature domain used in Penumbra is for binding signatures.  The
 basepoint $B_{\mathsf{Binding}}$ is the result of converting
 `blake2b(b"decaf377-rdsa-binding")` to an $\mathbb F_r$ element and applying
-`decaf377`'s CDH map-to-group method.
+`decaf377`'s CDH encode-to-curve method.
 
 Since the verification key corresponding to the signing key $a \in \mathbb F_r$ is $A = [a]B_D$, adding and subtracting signing and verification keys commutes with derivation of the verification key, as desired.
-
-**WARNING**: the `decaf377` CDH map is unstable, so it may change in the future and change binding signatures with it.
-
 
 [^1]: This situation is a good example of why it's better to avoid the terms
 "public key" and "private key", and prefer more precise terminology that names
