@@ -1,8 +1,9 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, pin::Pin};
 
 use anyhow::Result;
 
 use async_trait::async_trait;
+use futures::{Stream, StreamExt};
 use penumbra_proto::{Message, Protobuf};
 
 #[async_trait]
@@ -60,4 +61,56 @@ pub trait StateRead {
 
     /// Retrieve a raw value from non-consensus-critical ("nonconsensus") state.
     async fn get_nonconsensus(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
+
+    /// Retrieve all values as domain types for keys matching a prefix from consensus-critical state.
+    async fn prefix<D, P>(
+        &self,
+        prefix: &str,
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<(String, D)>> + Send + '_>>>
+    where
+        D: Protobuf<P>,
+        P: Message + Default + 'static,
+        P: From<D>,
+        D: TryFrom<P> + Clone + Debug,
+        <D as TryFrom<P>>::Error: Into<anyhow::Error>,
+    {
+        Ok(Box::pin(self.prefix_proto(prefix).await?.map(
+            |p| match p {
+                Ok(p) => match D::try_from(p.1) {
+                    Ok(d) => Ok((p.0, d)),
+                    Err(e) => Err(e.into()),
+                },
+                Err(e) => Err(e),
+            },
+        )))
+    }
+
+    /// Retrieve all values as proto types for keys matching a prefix from consensus-critical state.
+    async fn prefix_proto<D, P>(
+        &self,
+        prefix: &str,
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<(String, P)>> + Send + '_>>>
+    where
+        D: Protobuf<P>,
+        P: Message + Default,
+        P: From<D>,
+        D: TryFrom<P> + Clone + Debug,
+        <D as TryFrom<P>>::Error: Into<anyhow::Error>,
+    {
+        let o = self.prefix_raw(prefix).await?.map(|(key, bytes)| {
+            Ok((
+                key,
+                Message::decode(&*bytes).map_err(|e| anyhow::anyhow!(e))?,
+            ))
+        });
+        Ok(Box::pin(o))
+    }
+
+    /// Retrieve all values as raw bytes for keys matching a prefix from consensus-critical state.
+    async fn prefix_raw(
+        &self,
+        prefix: &str,
+        // TODO: it might be possible to make this zero-allocation by representing the key as a `Box<&str>` but
+        // the lifetimes weren't working out, so allocating a new `String` was easier for now.
+    ) -> Result<Pin<Box<dyn Stream<Item = (String, std::boxed::Box<[u8]>)> + Send + '_>>>;
 }

@@ -1,8 +1,10 @@
-use std::sync::Arc;
+use std::{pin::Pin, sync::Arc};
 
 use anyhow::Result;
 use async_trait::async_trait;
+use futures::Stream;
 use jmt::storage::{LeafNode, Node, NodeKey, TreeReader};
+use tokio::sync::mpsc;
 use tracing::Span;
 
 use crate::state::StateRead;
@@ -12,9 +14,11 @@ use crate::state::StateRead;
 ///
 /// This is implemented as a wrapper around a [RocksDB snapshot](https://github.com/facebook/rocksdb/wiki/Snapshot)
 /// with an associated JMT version number for the snapshot.
+#[derive(Clone)]
 pub(crate) struct Snapshot(pub(crate) Inner);
 
 // We don't want to expose the `TreeReader` implementation outside of this crate.
+#[derive(Clone)]
 pub(crate) struct Inner {
     // TODO: the `'static` lifetime is a temporary hack and we'll need to find a workaround separately (tracked in #1512)
     rocksdb_snapshot: Arc<rocksdb::Snapshot<'static>>,
@@ -78,6 +82,49 @@ impl StateRead for Snapshot {
                 })
             })?
             .await?
+    }
+
+    async fn prefix_raw(
+        &self,
+        prefix: &str,
+    ) -> Result<Pin<Box<dyn Stream<Item = (String, Box<[u8]>)> + Send + '_>>> {
+        let span = Span::current();
+        let db = self.0.db;
+        let rocksdb_snapshot = self.0.rocksdb_snapshot.clone();
+        let mut options = rocksdb::ReadOptions::default();
+        options.set_iterate_range(rocksdb::PrefixRange(prefix.as_bytes()));
+        let mode = rocksdb::IteratorMode::Start;
+
+        let (tx, rx) = mpsc::channel(10);
+
+        // Since the JMT keys are hashed, we can't use a prefix iterator directly.
+        // We need to first prefix range the key preimages column family, then use the hashed matches to fetch the values
+        // from the JMT column family.
+        tokio::task::Builder::new()
+            .name("Snapshot::prefix_raw")
+            .spawn_blocking(move || {
+                span.in_scope(|| {
+                    let jmt_cf = db.cf_handle("jmt").expect("jmt column family not found");
+                    let keys_cf = db
+                        .cf_handle("jmt_keys")
+                        .expect("jmt_keys column family not found");
+                    let iter = rocksdb_snapshot.iterator_cf_opt(keys_cf, options, mode);
+                    for i in iter {
+                        // For each key that matches the prefix, fetch the value from the JMT column family.
+                        let (key_preimage, key_hash) = i?;
+
+                        let j = rocksdb_snapshot
+                            .get_pinned_cf(jmt_cf, key_hash)?
+                            .expect("keys in jmt_keys should have a corresponding value in jmt");
+                        let k = std::str::from_utf8(key_preimage.as_ref())?;
+                        tx.blocking_send((k.to_string(), Box::from(j.as_ref())))?;
+                    }
+                    Ok::<(), anyhow::Error>(())
+                })
+            })?
+            .await??;
+
+        Ok(Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx)))
     }
 }
 
