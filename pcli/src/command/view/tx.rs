@@ -248,7 +248,7 @@ impl TxCmd {
                         format_visible_output_row(&asset_cache, fvk.incoming(), &decrypted_note),
                     ],
                     penumbra_transaction::ActionView::Output(OutputView::Opaque { output: _ }) => {
-                        ["Output".to_string(), "Opaque output".to_string()]
+                        ["Output".to_string(), "[?] to [?]".to_string()]
                     }
                     penumbra_transaction::ActionView::Spend(SpendView::Visible {
                         spend: _,
@@ -258,7 +258,7 @@ impl TxCmd {
                         format_visible_spend_row(&asset_cache, fvk.incoming(), &note),
                     ],
                     penumbra_transaction::ActionView::Spend(SpendView::Opaque { spend: _ }) => {
-                        ["Spend".to_string(), "Opaque spend".to_string()]
+                        ["Spend".to_string(), "[?] spent [?]".to_string()]
                     }
                     penumbra_transaction::ActionView::Delegate(_) => {
                         ["Delegation".to_string(), "".to_string()]
