@@ -110,7 +110,7 @@ mod tests {
         balance::commitment::VALUE_BLINDING_GENERATOR,
         dex::{swap::SwapPlaintext, TradingPair},
         transaction::Fee,
-        Address,
+        Address, Balance,
     };
 
     use super::*;
@@ -176,6 +176,20 @@ mod tests {
 
         // so c0 = 0 * G_v1 + 0 * G_v2 + b0 * H
         assert_eq!(c0.0, b0 * VALUE_BLINDING_GENERATOR.deref());
+
+        // Now we do the same, but using the `Balance` structure.
+        let balance1 = Balance::from(v1);
+        let balance2 = Balance::from(v2);
+        let balance3 = Balance::from(v3);
+        let balance4 = Balance::from(v4);
+        let balance5 = Balance::from(v5);
+        let balance6 = Balance::from(v6);
+
+        let balance_total = balance1 - balance2 - balance3 + balance4 + balance5 - balance6;
+        assert_eq!(balance_total.commit(b0), c0);
+        // The commitment derived from the `Balance` structure is equivalent to `c0` when it was
+        // computed using the summed synthetic blinding factor `b0`, where we took care to use the
+        // same signs.
     }
 
     #[test]
