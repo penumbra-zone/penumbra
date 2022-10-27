@@ -13,5 +13,6 @@
   - [Devnet Quickstart](./dev/devnet-quickstart.md)
   - [SQLite compilation setup](./dev/sqlx.md)
   - [Building documentation](./dev/docs.md)
+  - [Building protobuf](./dev/protobuf.md)
   - [Metrics](./dev/metrics.md)
 - [Resources](./resources.md)
