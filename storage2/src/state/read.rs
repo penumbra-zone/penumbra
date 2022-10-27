@@ -33,7 +33,8 @@ pub trait StateRead {
         D: TryFrom<P> + Clone + Debug,
         <D as TryFrom<P>>::Error: Into<anyhow::Error>,
     {
-        match self.get_proto(key).await {
+        let key = key.to_lowercase();
+        match self.get_proto(&key).await {
             Ok(Some(p)) => match D::try_from(p) {
                 Ok(d) => {
                     tracing::trace!(?key, value = ?d);
@@ -56,14 +57,9 @@ pub trait StateRead {
     /// * `Ok(Some(v))` if the value is present and parseable as a proto type `P`;
     /// * `Ok(None)` if the value is missing;
     /// * `Err(_)` if the value is present but not parseable as a proto type `P`, or if an underlying storage error occurred.
-    async fn get_proto<D, P>(&self, key: &str) -> Result<Option<P>>
+    async fn get_proto<P>(&self, key: &str) -> Result<Option<P>>
     where
-        D: Protobuf<P>,
-        // TODO: does this get less awful if P is an associated type of D?
-        P: Message + Default,
-        P: From<D>,
-        D: TryFrom<P> + Clone + Debug,
-        <D as TryFrom<P>>::Error: Into<anyhow::Error>,
+        P: Message + Default + Debug,
     {
         let bytes = match self.get_raw(key).await? {
             None => return Ok(None),

@@ -20,7 +20,7 @@ use penumbra_chain::{genesis, View as _};
 use penumbra_proto::core::ibc::v1alpha1::ibc_action::Action::{
     ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
 };
-use penumbra_storage::{State, StateExt};
+use penumbra_storage2::State;
 use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tracing::instrument;

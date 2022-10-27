@@ -13,7 +13,7 @@ use penumbra_crypto::{
     dex::{BatchSwapOutputData, TradingPair},
     MockFlowCiphertext, SwapFlow, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_storage::{State, StateExt};
+use penumbra_storage2::State;
 use penumbra_transaction::action::swap_claim::ClaimedSwap;
 use penumbra_transaction::{action::swap_claim::List as SwapClaimBodyList, Action, Transaction};
 use tendermint::abci;
@@ -23,7 +23,6 @@ use super::state_key;
 use super::StubCpmm;
 
 pub struct Dex {
-    state: State,
     // Represents swaps taking place in the current block.
     swaps: BTreeMap<TradingPair, SwapFlow>,
     // Represents swaps that have been claimed in the current block.
@@ -31,10 +30,9 @@ pub struct Dex {
 }
 
 impl Dex {
-    #[instrument(name = "dex", skip(state))]
-    pub async fn new(state: State) -> Self {
+    #[instrument(name = "dex", skip())]
+    pub async fn new() -> Self {
         Self {
-            state,
             swaps: Default::default(),
             claims: Default::default(),
         }
@@ -296,7 +294,7 @@ impl Component for Dex {
 ///
 /// TODO: should this be split into Read and Write traits?
 #[async_trait]
-pub trait View: StateExt {
+pub trait View {
     async fn output_data(
         &self,
         height: u64,
@@ -326,5 +324,3 @@ pub trait View: StateExt {
             .await
     }
 }
-
-impl<T: StateExt + Send + Sync> View for T {}

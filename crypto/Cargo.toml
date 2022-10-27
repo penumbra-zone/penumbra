@@ -17,7 +17,7 @@ decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 decaf377-rdsa = { version = "0.5", git = "https://github.com/penumbra-zone/decaf377-rdsa" }
 poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377", branch = "main" }
 poseidon-paramgen = { git = "https://github.com/penumbra-zone/poseidon377", branch = "main" }
-jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "penumbra-034" }
+jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "newmain" }
 f4jumble = { git = "https://github.com/zcash/librustzcash", rev = "2425a0869098e3b0588ccd73c42716bcf418612c" }
 
 # Crates.io deps

@@ -1,7 +1,7 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::genesis;
-use penumbra_storage::State;
+use penumbra_storage2::State;
 use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tracing::instrument;
@@ -11,13 +11,11 @@ use crate::{Component, Context};
 
 use super::{check, execute, proposal::ProposalList};
 
-pub struct Governance {
-    state: State,
-}
+pub struct Governance {}
 
 impl Governance {
-    pub async fn new(state: State) -> Self {
-        Self { state }
+    pub async fn new() -> Self {
+        Self {}
     }
 }
 

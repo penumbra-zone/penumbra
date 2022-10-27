@@ -2,7 +2,7 @@ pub mod channel_open_init {
     use super::super::*;
 
     #[async_trait]
-    pub trait ChannelOpenInitExecute: StateExt {
+    pub trait ChannelOpenInitExecute {
         async fn execute(&mut self, ctx: Context, msg: &MsgChannelOpenInit) {
             let channel_id = self.next_channel_id().await.unwrap();
             let new_channel = ChannelEnd {
@@ -26,15 +26,13 @@ pub mod channel_open_init {
             ));
         }
     }
-
-    impl<T: StateExt> ChannelOpenInitExecute for T {}
 }
 
 pub mod channel_open_try {
     use super::super::*;
 
     #[async_trait]
-    pub trait ChannelOpenTryExecute: StateExt {
+    pub trait ChannelOpenTryExecute {
         async fn execute(&mut self, ctx: Context, msg: &MsgChannelOpenTry) {
             let channel_id = self.next_channel_id().await.unwrap();
             let new_channel = ChannelEnd {
@@ -58,14 +56,13 @@ pub mod channel_open_try {
             ));
         }
     }
-    impl<T: StateExt> ChannelOpenTryExecute for T {}
 }
 
 pub mod channel_open_ack {
     use super::super::*;
 
     #[async_trait]
-    pub trait ChannelOpenAckExecute: StateExt {
+    pub trait ChannelOpenAckExecute {
         async fn execute(&mut self, ctx: Context, msg: &MsgChannelOpenAck) {
             let mut channel = self
                 .get_channel(&msg.channel_id, &msg.port_id)
@@ -86,15 +83,13 @@ pub mod channel_open_ack {
             ));
         }
     }
-
-    impl<T: StateExt> ChannelOpenAckExecute for T {}
 }
 
 pub mod channel_open_confirm {
     use super::super::*;
 
     #[async_trait]
-    pub trait ChannelOpenConfirmExecute: StateExt {
+    pub trait ChannelOpenConfirmExecute {
         async fn execute(&mut self, ctx: Context, msg: &MsgChannelOpenConfirm) {
             let mut channel = self
                 .get_channel(&msg.channel_id, &msg.port_id)
@@ -113,15 +108,13 @@ pub mod channel_open_confirm {
             ));
         }
     }
-
-    impl<T: StateExt> ChannelOpenConfirmExecute for T {}
 }
 
 pub mod channel_close_init {
     use super::super::*;
 
     #[async_trait]
-    pub trait ChannelCloseInitExecute: StateExt {
+    pub trait ChannelCloseInitExecute {
         async fn execute(&mut self, ctx: Context, msg: &MsgChannelCloseInit) {
             let mut channel = self
                 .get_channel(&msg.channel_id, &msg.port_id)
@@ -139,15 +132,13 @@ pub mod channel_close_init {
             ));
         }
     }
-
-    impl<T: StateExt> ChannelCloseInitExecute for T {}
 }
 
 pub mod channel_close_confirm {
     use super::super::*;
 
     #[async_trait]
-    pub trait ChannelCloseConfirmExecute: StateExt {
+    pub trait ChannelCloseConfirmExecute {
         async fn execute(&mut self, ctx: Context, msg: &MsgChannelCloseConfirm) {
             let mut channel = self
                 .get_channel(&msg.channel_id, &msg.port_id)
@@ -166,15 +157,13 @@ pub mod channel_close_confirm {
             ));
         }
     }
-
-    impl<T: StateExt> ChannelCloseConfirmExecute for T {}
 }
 
 pub mod recv_packet {
     use super::super::*;
 
     #[async_trait]
-    pub trait RecvPacketExecute: StateExt {
+    pub trait RecvPacketExecute {
         async fn execute(&mut self, ctx: Context, msg: &MsgRecvPacket) {
             let channel = self
                 .get_channel(
@@ -211,15 +200,13 @@ pub mod recv_packet {
             ctx.record(event::receive_packet(&msg.packet, &channel));
         }
     }
-
-    impl<T: StateExt> RecvPacketExecute for T {}
 }
 
 pub mod acknowledge_packet {
     use super::super::*;
 
     #[async_trait]
-    pub trait AcknowledgePacketExecute: StateExt {
+    pub trait AcknowledgePacketExecute {
         async fn execute(&mut self, ctx: Context, msg: &MsgAcknowledgement) {
             let channel = self
                 .get_channel(&msg.packet.source_channel, &msg.packet.source_port)
@@ -252,15 +239,13 @@ pub mod acknowledge_packet {
             ctx.record(event::acknowledge_packet(&msg.packet, &channel));
         }
     }
-
-    impl<T: StateExt> AcknowledgePacketExecute for T {}
 }
 
 pub mod timeout {
     use super::super::*;
 
     #[async_trait]
-    pub trait TimeoutExecute: StateExt {
+    pub trait TimeoutExecute {
         async fn execute(&mut self, ctx: Context, msg: &MsgTimeout) {
             let mut channel = self
                 .get_channel(&msg.packet.source_channel, &msg.packet.source_port)
@@ -289,6 +274,4 @@ pub mod timeout {
             ctx.record(event::timeout_packet(&msg.packet, &channel));
         }
     }
-
-    impl<T: StateExt> TimeoutExecute for T {}
 }

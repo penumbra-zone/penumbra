@@ -36,11 +36,13 @@
 //! [`penumbra_proto::Protobuf`] trait to automatically (de)serialize into proto
 //! or domain types, allowing its use as an object store.
 
+mod app_hash;
 mod metrics;
 mod snapshot;
 mod state;
 mod storage;
 
 pub use crate::metrics::register_metrics;
+pub use app_hash::{get_with_proof, AppHash, PENUMBRA_COMMITMENT_PREFIX, PENUMBRA_PROOF_SPECS};
 pub use state::{State, StateRead, StateTransaction, StateWrite};
 pub use storage::Storage;

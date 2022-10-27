@@ -20,7 +20,7 @@ use penumbra_chain::genesis;
 use penumbra_crypto::asset::Denom;
 use penumbra_crypto::{asset, Amount};
 use penumbra_proto::core::ibc::v1alpha1::FungibleTokenPacketData;
-use penumbra_storage::{State, StateExt};
+use penumbra_storage2::State;
 use penumbra_transaction::action::ICS20Withdrawal;
 use penumbra_transaction::{Action, Transaction};
 use prost::Message;

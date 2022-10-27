@@ -1,5 +1,6 @@
 use std::convert::TryFrom;
 use std::str::FromStr;
+use std::sync::Arc;
 
 use crate::{Component, Context};
 use anyhow::Result;
@@ -27,7 +28,7 @@ use ibc::{
 };
 use penumbra_chain::{genesis, View as _};
 use penumbra_proto::core::ibc::v1alpha1::ibc_action::Action::{CreateClient, UpdateClient};
-use penumbra_storage::{State, StateExt};
+use penumbra_storage2::{State, StateTransaction};
 use penumbra_transaction::Transaction;
 use tendermint::{abci, validator};
 use tendermint_light_client_verifier::{
@@ -118,7 +119,12 @@ impl Component for Ics2Client {
     }
 
     #[instrument(name = "ics2_client", skip(self, _ctx, tx))]
-    async fn check_tx_stateful(&self, _ctx: Context, tx: &Transaction) -> Result<()> {
+    async fn check_tx_stateful(
+        &self,
+        _ctx: Context,
+        tx: &Transaction,
+        state: Arc<State>,
+    ) -> Result<()> {
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
                 Some(CreateClient(msg)) => {
@@ -139,7 +145,12 @@ impl Component for Ics2Client {
     }
 
     #[instrument(name = "ics2_client", skip(self, ctx, tx))]
-    async fn execute_tx(&mut self, ctx: Context, tx: &Transaction) {
+    async fn execute_tx(
+        &mut self,
+        ctx: Context,
+        tx: &Transaction,
+        state_tx: &mut StateTransaction,
+    ) {
         // Handle any IBC actions found in the transaction.
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
@@ -163,7 +174,13 @@ impl Component for Ics2Client {
     }
 
     #[instrument(name = "ics2_client", skip(self, _ctx, _end_block))]
-    async fn end_block(&mut self, _ctx: Context, _end_block: &abci::request::EndBlock) {}
+    async fn end_block(
+        &mut self,
+        _ctx: Context,
+        _end_block: &abci::request::EndBlock,
+        state_tx: &mut StateTransaction,
+    ) {
+    }
 }
 
 impl Ics2Client {
@@ -616,8 +633,6 @@ pub trait View: StateExt {
     }
 }
 
-impl<T: StateExt> View for T {}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -625,7 +640,7 @@ mod tests {
     use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
     use penumbra_proto::core::ibc::v1alpha1::{ibc_action::Action as IbcActionInner, IbcAction};
     use penumbra_proto::Message;
-    use penumbra_storage::Storage;
+    use penumbra_storage2::Storage;
     use penumbra_tct as tct;
     use penumbra_transaction::{Action, Transaction, TransactionBody};
     use tempfile::tempdir;

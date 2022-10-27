@@ -20,7 +20,7 @@ use penumbra_crypto::{
     ka, note, Address, IdentityKey, Note, NotePayload, Nullifier, One, Value,
     STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_storage::{State, StateExt};
+use penumbra_storage2::State;
 use penumbra_tct as tct;
 use penumbra_transaction::{
     action::{swap_claim::List as SwapClaimBodyList, Undelegate},
@@ -34,19 +34,26 @@ use crate::shielded_pool::{consensus_rules, event, state_key, CommissionAmounts}
 use super::Delible;
 
 pub struct ShieldedPool {
-    state: State,
     note_commitment_tree: tct::Tree,
     /// The in-progress CompactBlock representation of the ShieldedPool changes
     compact_block: CompactBlock,
 }
 
 impl ShieldedPool {
-    #[instrument(name = "shielded_pool", skip(state, note_commitment_tree))]
-    pub async fn new(state: State, note_commitment_tree: tct::Tree) -> Self {
+    #[instrument(name = "shielded_pool", skip())]
+    pub async fn new() -> Self {
+        // The NCT is stored outside of the main state,
+        // so that the backing format for the NCT isn't consensus-critical.
+        // (The NCT data is already committed to by the NCT root, which is in the state).
+        let nct = if let Some(tct_bytes) = state.get_nonconsensus("tct")? {
+            bincode::deserialize(&tct_bytes)?
+        } else {
+            penumbra_tct::Tree::new()
+        };
+
         Self {
-            note_commitment_tree,
+            note_commitment_tree: nct,
             compact_block: CompactBlock::default(),
-            state,
         }
     }
 

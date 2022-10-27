@@ -5,7 +5,7 @@ use super::{
     tally, View as _,
 };
 use penumbra_chain::View as _;
-use penumbra_storage::State;
+use penumbra_storage2::State;
 use penumbra_transaction::action::{
     ProposalPayload, ProposalSubmit, ProposalWithdraw, ProposalWithdrawBody, ValidatorVote,
     ValidatorVoteBody,

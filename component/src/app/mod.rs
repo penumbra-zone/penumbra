@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::dex::Dex;
 use crate::governance::Governance;
 use crate::ibc::IBCComponent;
@@ -9,7 +11,7 @@ use async_trait::async_trait;
 use jmt::Version;
 use penumbra_chain::params::FmdParameters;
 use penumbra_chain::{genesis, View as _};
-use penumbra_storage::{AppHash, State, StateExt, Storage};
+use penumbra_storage2::{AppHash, State, StateRead, StateTransaction, StateWrite, Storage};
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, types::ValidatorUpdate};
 
@@ -18,11 +20,11 @@ use tracing::instrument;
 pub mod state_key;
 /// The Penumbra application, written as a bundle of [`Component`]s.
 ///
-/// The [`App`] is also a [`Component`], but as the top-level component,
-/// it constructs the others and exposes a [`commit`](App::commit) that
+/// The [`App`] is not a [`Component`], but
+/// it constructs the components and exposes a [`commit`](App::commit) that
 /// commits the changes to the persistent storage and resets its subcomponents.
 pub struct App {
-    state: State,
+    state: Arc<State>,
     shielded_pool: ShieldedPool,
     ibc: IBCComponent,
     staking: Staking,
@@ -31,31 +33,93 @@ pub struct App {
 }
 
 impl App {
-    pub async fn new(storage: Storage) -> Self {
+    pub async fn new(state: State) -> Self {
         tracing::info!("initializing App instance");
 
-        // The NCT (and *only* the NCT) is stored outside of the main state,
-        // so that the backing format for the NCT isn't consensus-critical.
-        // (The NCT data is already committed to by the NCT root, which is in the state).
-        let nct = storage.get_nct().await.unwrap();
-
-        // All of the components need to use the *same* shared state.
-        let state = storage.state().await.unwrap();
-
-        let staking = Staking::new(state.clone()).await;
-        let ibc = IBCComponent::new(state.clone()).await;
-        let dex = Dex::new(state.clone()).await;
-        let governance = Governance::new(state.clone()).await;
-        let shielded_pool = ShieldedPool::new(state.clone(), nct).await;
+        let staking = Staking::new().await;
+        let ibc = IBCComponent::new().await;
+        let dex = Dex::new().await;
+        let governance = Governance::new().await;
+        let shielded_pool = ShieldedPool::new().await;
 
         Self {
-            state,
+            // We perform the `Arc` wrapping of `State` here to ensure
+            // there should be no unexpected copies elsewhere.
+            state: Arc::new(state),
             shielded_pool,
             staking,
             ibc,
             dex,
             governance,
         }
+    }
+
+    #[instrument(skip(self, ctx, begin_block))]
+    async fn begin_block(&mut self, ctx: Context, begin_block: &abci::request::BeginBlock) {
+        // store the block height
+        self.state
+            .put_block_height(begin_block.header.height.into())
+            .await;
+        // store the block time
+        self.state
+            .put_block_timestamp(begin_block.header.time)
+            .await;
+
+        self.staking.begin_block(ctx.clone(), begin_block).await;
+        self.ibc.begin_block(ctx.clone(), begin_block).await;
+        self.dex.begin_block(ctx.clone(), begin_block).await;
+        self.governance.begin_block(ctx.clone(), begin_block).await;
+        // Shielded pool always executes last.
+        self.shielded_pool
+            .begin_block(ctx.clone(), begin_block)
+            .await;
+    }
+
+    #[instrument(skip(self, ctx, tx))]
+    async fn deliver_tx(&mut self, ctx: Context, tx: &Transaction) -> Result<()> {
+        // stateless
+        Self::check_tx_stateless(ctx.clone(), tx).await?;
+
+        // stateful
+        self.check_tx_stateful(ctx, tx).await?;
+
+        // We need to get a mutable reference to the State here, so we use
+        // `Arc::get_mut`. This should be infallible because we are the only owner of the
+        // Arc.
+        let mut state = self
+            .state
+            .get_mut()
+            .expect("state Arc should not be referenced elsewhere");
+        let state_tx = state.begin_transaction();
+
+        // execute
+        self.execute_tx(ctx, tx, state_tx).await?;
+
+        // commit
+        state_tx.apply();
+
+        Ok(())
+    }
+
+    #[instrument(skip(self, ctx, end_block))]
+    async fn end_block(&mut self, ctx: Context, end_block: &abci::request::EndBlock) {
+        let state_tx = self.state.begin_transaction();
+
+        self.staking
+            .end_block(ctx.clone(), end_block, state_tx)
+            .await;
+        self.ibc.end_block(ctx.clone(), end_block, state_tx).await;
+        self.dex.end_block(ctx.clone(), end_block, state_tx).await;
+        self.governance
+            .end_block(ctx.clone(), end_block, state_tx)
+            .await;
+
+        // Shielded pool always executes last.
+        self.shielded_pool
+            .end_block(ctx.clone(), end_block, state_tx)
+            .await;
+
+        state_tx.apply();
     }
 
     /// Commits the application state to persistent storage,
@@ -94,10 +158,7 @@ impl App {
     pub fn tendermint_validator_updates(&self) -> Vec<ValidatorUpdate> {
         self.staking.tendermint_validator_updates()
     }
-}
 
-#[async_trait]
-impl Component for App {
     #[instrument(skip(self, app_state))]
     async fn init_chain(&mut self, app_state: &genesis::AppState) {
         self.state
@@ -128,27 +189,6 @@ impl Component for App {
         self.shielded_pool.init_chain(app_state).await;
     }
 
-    #[instrument(skip(self, ctx, begin_block))]
-    async fn begin_block(&mut self, ctx: Context, begin_block: &abci::request::BeginBlock) {
-        // store the block height
-        self.state
-            .put_block_height(begin_block.header.height.into())
-            .await;
-        // store the block time
-        self.state
-            .put_block_timestamp(begin_block.header.time)
-            .await;
-
-        self.staking.begin_block(ctx.clone(), begin_block).await;
-        self.ibc.begin_block(ctx.clone(), begin_block).await;
-        self.dex.begin_block(ctx.clone(), begin_block).await;
-        self.governance.begin_block(ctx.clone(), begin_block).await;
-        // Shielded pool always executes last.
-        self.shielded_pool
-            .begin_block(ctx.clone(), begin_block)
-            .await;
-    }
-
     #[instrument(skip(ctx, tx))]
     fn check_tx_stateless(ctx: Context, tx: &Transaction) -> Result<()> {
         Staking::check_tx_stateless(ctx.clone(), tx)?;
@@ -161,36 +201,44 @@ impl Component for App {
 
     #[instrument(skip(self, ctx, tx))]
     async fn check_tx_stateful(&self, ctx: Context, tx: &Transaction) -> Result<()> {
-        self.staking.check_tx_stateful(ctx.clone(), tx).await?;
-        self.ibc.check_tx_stateful(ctx.clone(), tx).await?;
-        self.dex.check_tx_stateful(ctx.clone(), tx).await?;
-        self.governance.check_tx_stateful(ctx.clone(), tx).await?;
+        self.staking
+            .check_tx_stateful(ctx.clone(), tx, self.state.clone())
+            .await?;
+        self.ibc
+            .check_tx_stateful(ctx.clone(), tx, self.state.clone())
+            .await?;
+        self.dex
+            .check_tx_stateful(ctx.clone(), tx, self.state.clone())
+            .await?;
+        self.governance
+            .check_tx_stateful(ctx.clone(), tx, self.state.clone())
+            .await?;
 
         // Shielded pool always executes last.
         self.shielded_pool
-            .check_tx_stateful(ctx.clone(), tx)
+            .check_tx_stateful(ctx.clone(), tx, self.state.clone())
             .await?;
         Ok(())
     }
 
-    #[instrument(skip(self, ctx, tx))]
-    async fn execute_tx(&mut self, ctx: Context, tx: &Transaction) {
-        self.staking.execute_tx(ctx.clone(), tx).await;
-        self.ibc.execute_tx(ctx.clone(), tx).await;
-        self.dex.execute_tx(ctx.clone(), tx).await;
-        self.governance.execute_tx(ctx.clone(), tx).await;
+    #[instrument(skip(self, ctx, tx, state_tx))]
+    async fn execute_tx(
+        &mut self,
+        ctx: Context,
+        tx: &Transaction,
+        state_tx: &mut StateTransaction<'_>,
+    ) -> Result<()> {
+        self.staking.execute_tx(ctx.clone(), tx, state_tx).await?;
+        self.ibc.execute_tx(ctx.clone(), tx, state_tx).await?;
+        self.dex.execute_tx(ctx.clone(), tx, state_tx).await?;
+        self.governance
+            .execute_tx(ctx.clone(), tx, state_tx)
+            .await?;
         // Shielded pool always executes last.
-        self.shielded_pool.execute_tx(ctx.clone(), tx).await;
-    }
+        self.shielded_pool
+            .execute_tx(ctx.clone(), tx, state_tx)
+            .await?;
 
-    #[instrument(skip(self, ctx, end_block))]
-    async fn end_block(&mut self, ctx: Context, end_block: &abci::request::EndBlock) {
-        self.staking.end_block(ctx.clone(), end_block).await;
-        self.ibc.end_block(ctx.clone(), end_block).await;
-        self.dex.end_block(ctx.clone(), end_block).await;
-        self.governance.end_block(ctx.clone(), end_block).await;
-
-        // Shielded pool always executes last.
-        self.shielded_pool.end_block(ctx.clone(), end_block).await;
+        Ok(())
     }
 }

@@ -6,7 +6,7 @@ use penumbra_transaction::action::Vote;
 use super::{proposal::Withdrawn, View as _};
 use crate::stake::View as _;
 use penumbra_chain::View as _;
-use penumbra_storage::State;
+use penumbra_storage2::State;
 
 use super::proposal::Outcome;
 

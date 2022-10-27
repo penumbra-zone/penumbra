@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
-use penumbra_storage::StateExt;
+use penumbra_storage2::{StateRead, StateWrite};
 use tendermint::Time;
 
 use crate::{
@@ -16,18 +16,17 @@ use crate::{
 /// Note: the `get_` methods in this trait assume that the state store has been
 /// initialized, so they will error on an empty state.
 #[async_trait]
-pub trait View: StateExt {
+pub trait View: StateRead + StateWrite {
     /// Gets the chain parameters from the JMT.
     async fn get_chain_params(&self) -> Result<ChainParameters> {
-        self.get_domain(state_key::chain_params().into())
+        self.get(state_key::chain_params().into())
             .await?
             .ok_or_else(|| anyhow!("Missing ChainParameters"))
     }
 
     /// Writes the provided chain parameters to the JMT.
-    async fn put_chain_params(&self, params: ChainParameters) {
-        self.put_domain(state_key::chain_params().into(), params)
-            .await
+    fn put_chain_params(&mut self, params: ChainParameters) {
+        self.put(state_key::chain_params().into(), params)
     }
 
     /// Gets the current epoch for the chain.
@@ -68,8 +67,8 @@ pub trait View: StateExt {
     }
 
     /// Writes the block height to the JMT
-    async fn put_block_height(&self, height: u64) {
-        self.put_proto(b"block_height".into(), height).await
+    fn put_block_height(&mut self, height: u64) {
+        self.put_proto("block_height".into(), height)
     }
 
     /// Gets the current block timestamp from the JMT
@@ -83,9 +82,8 @@ pub trait View: StateExt {
     }
 
     /// Writes the block timestamp to the JMT
-    async fn put_block_timestamp(&self, timestamp: Time) {
+    fn put_block_timestamp(&mut self, timestamp: Time) {
         self.put_proto(state_key::block_timestamp().into(), timestamp.to_rfc3339())
-            .await
     }
 
     /// Checks a provided chain_id against the chain state.
@@ -109,29 +107,27 @@ pub trait View: StateExt {
 
     /// Gets the current FMD parameters from the JMT.
     async fn get_current_fmd_parameters(&self) -> Result<FmdParameters> {
-        self.get_domain(state_key::fmd_parameters_current().into())
+        self.get(state_key::fmd_parameters_current().into())
             .await?
             .ok_or_else(|| anyhow!("Missing FmdParameters"))
     }
 
     /// Writes the current FMD parameters to the JMT.
-    async fn put_current_fmd_parameters(&self, params: FmdParameters) {
-        self.put_domain(state_key::fmd_parameters_current().into(), params)
-            .await
+    fn put_current_fmd_parameters(&mut self, params: FmdParameters) {
+        self.put(state_key::fmd_parameters_current().into(), params)
     }
 
     /// Gets the previous FMD parameters from the JMT.
     async fn get_previous_fmd_parameters(&self) -> Result<FmdParameters> {
-        self.get_domain(state_key::fmd_parameters_previous().into())
+        self.get(state_key::fmd_parameters_previous().into())
             .await?
             .ok_or_else(|| anyhow!("Missing FmdParameters"))
     }
 
     /// Writes the previous FMD parameters to the JMT.
-    async fn put_previous_fmd_parameters(&self, params: FmdParameters) {
-        self.put_domain(state_key::fmd_parameters_previous().into(), params)
-            .await
+    fn put_previous_fmd_parameters(&mut self, params: FmdParameters) {
+        self.put(state_key::fmd_parameters_previous().into(), params)
     }
 }
 
-impl<T: StateExt> View for T {}
+impl<T: StateRead + StateWrite> View for T {}

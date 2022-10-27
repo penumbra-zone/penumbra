@@ -7,7 +7,6 @@ use penumbra_crypto::{
     rdsa::{SpendAuth, VerificationKey},
     Address, IdentityKey, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_storage::StateExt;
 use penumbra_transaction::action::{Proposal, ProposalPayload, Vote};
 
 use crate::stake::{self, validator, View as _};
@@ -17,10 +16,8 @@ use super::{
     state_key,
 };
 
-impl<T: StateExt> View for T {}
-
 #[async_trait]
-pub trait View: StateExt {
+pub trait View {
     /// Get the id of the next proposal in the sequence of ids.
     async fn next_proposal_id(&self) -> Result<u64> {
         Ok(self

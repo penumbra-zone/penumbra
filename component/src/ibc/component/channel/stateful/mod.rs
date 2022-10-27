@@ -115,9 +115,7 @@ pub mod channel_open_try {
                 }
             }
         }
-        impl<T: StateExt> Inner for T {}
     }
-    impl<T: StateExt> ChannelOpenTryCheck for T {}
 }
 
 pub mod channel_open_ack {
@@ -133,7 +131,7 @@ pub mod channel_open_ack {
     }
 
     #[async_trait]
-    pub trait ChannelOpenAckCheck: StateExt + inner::Inner {
+    pub trait ChannelOpenAckCheck: inner::Inner {
         async fn validate(&self, msg: &MsgChannelOpenAck) -> anyhow::Result<()> {
             let channel = self
                 .get_channel(&msg.channel_id, &msg.port_id)
@@ -177,7 +175,7 @@ pub mod channel_open_ack {
         use super::*;
 
         #[async_trait]
-        pub trait Inner: StateExt {
+        pub trait Inner {
             async fn verify_channel_connection_open(
                 &self,
                 channel: &ChannelEnd,
@@ -194,10 +192,7 @@ pub mod channel_open_ack {
                 }
             }
         }
-        impl<T: StateExt> Inner for T {}
     }
-
-    impl<T: StateExt> ChannelOpenAckCheck for T {}
 }
 
 pub mod channel_open_confirm {
@@ -205,7 +200,7 @@ pub mod channel_open_confirm {
     use super::proof_verification::ChannelProofVerifier;
 
     #[async_trait]
-    pub trait ChannelOpenConfirmCheck: StateExt {
+    pub trait ChannelOpenConfirmCheck {
         async fn validate(&self, msg: &MsgChannelOpenConfirm) -> anyhow::Result<()> {
             let channel = self
                 .get_channel(&msg.channel_id, &msg.port_id)
@@ -255,8 +250,6 @@ pub mod channel_open_confirm {
             .await
         }
     }
-
-    impl<T: StateExt> ChannelOpenConfirmCheck for T {}
 }
 
 pub mod channel_close_init {
@@ -298,7 +291,7 @@ pub mod channel_close_confirm {
     use super::proof_verification::ChannelProofVerifier;
 
     #[async_trait]
-    pub trait ChannelCloseConfirmCheck: StateExt {
+    pub trait ChannelCloseConfirmCheck {
         async fn validate(&self, msg: &MsgChannelCloseConfirm) -> anyhow::Result<()> {
             // TODO: capability authentication?
             //
@@ -351,8 +344,6 @@ pub mod channel_close_confirm {
             .await
         }
     }
-
-    impl<T: StateExt> ChannelCloseConfirmCheck for T {}
 }
 
 pub mod recv_packet {

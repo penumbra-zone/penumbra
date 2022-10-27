@@ -1,5 +1,6 @@
 // Implementation of a pd component for the staking system.
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 use crate::shielded_pool::{CommissionAmount, CommissionAmounts, View as _};
 use crate::{Component, Context};
@@ -10,7 +11,7 @@ use penumbra_chain::quarantined::Slashed;
 use penumbra_chain::{genesis, Epoch, View as _};
 use penumbra_crypto::{DelegationToken, IdentityKey, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::Protobuf;
-use penumbra_storage::{State, StateExt};
+use penumbra_storage2::State;
 use penumbra_transaction::{
     action::{Delegate, Undelegate},
     Action, Transaction,
@@ -54,7 +55,6 @@ fn validator_address(ck: &PublicKey) -> [u8; 20] {
 
 // Staking component
 pub struct Staking {
-    state: State,
     /// Delegation changes accumulated over the course of this block, to be
     /// persisted at the end of the block for processing at the end of the next
     /// epoch.
@@ -63,10 +63,9 @@ pub struct Staking {
 }
 
 impl Staking {
-    #[instrument(name = "staking", skip(state))]
-    pub async fn new(state: State) -> Self {
+    #[instrument(name = "staking", skip())]
+    pub async fn new() -> Self {
         Self {
-            state,
             delegation_changes: Default::default(),
             tendermint_validator_updates: None,
         }
@@ -967,7 +966,12 @@ impl Component for Staking {
     }
 
     #[instrument(name = "staking", skip(self, _ctx, tx))]
-    async fn check_tx_stateful(&self, _ctx: Context, tx: &Transaction) -> Result<()> {
+    async fn check_tx_stateful(
+        &self,
+        _ctx: Context,
+        tx: &Transaction,
+        state: Arc<State>,
+    ) -> Result<()> {
         // Tally the delegations and undelegations
         let mut delegation_changes = BTreeMap::new();
         for d in tx.delegations() {

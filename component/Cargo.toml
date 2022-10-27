@@ -10,7 +10,7 @@ edition = "2021"
 penumbra-crypto = { path = "../crypto" }
 penumbra-proto = { path = "../proto" }
 penumbra-transaction = { path = "../transaction" }
-penumbra-storage = { path = "../storage" }
+penumbra-storage2 = { path = "../storage2" }
 penumbra-chain = { path = "../chain" }
 penumbra-tct = { path = "../tct" }
 
@@ -18,7 +18,7 @@ penumbra-tct = { path = "../tct" }
 tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs", branch = "penumbra-034" }
 
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
-jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "penumbra-034" }
+jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "newmain" }
 tokio = { version = "1.21.1", features = ["full", "tracing"] }
 async-trait = "0.1.52"
 tonic = "0.8.1"

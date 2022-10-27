@@ -41,7 +41,7 @@ pub mod connection_open_confirm {
                 Counterparty::new(
                     connection.client_id().clone(),
                     Some(msg.connection_id.clone()),
-                    penumbra_storage::PENUMBRA_COMMITMENT_PREFIX.clone(),
+                    penumbra_storage2::PENUMBRA_COMMITMENT_PREFIX.clone(),
                 ),
                 connection.versions().to_vec(),
                 connection.delay_period(),
@@ -141,7 +141,7 @@ pub mod connection_open_ack {
             let expected_counterparty = Counterparty::new(
                 connection.client_id().clone(),  // client ID (local)
                 Some(msg.connection_id.clone()), // connection ID (local)
-                penumbra_storage::PENUMBRA_COMMITMENT_PREFIX.clone(), // commitment prefix (local)
+                penumbra_storage2::PENUMBRA_COMMITMENT_PREFIX.clone(), // commitment prefix (local)
             );
 
             // the connection we expect the counterparty to have committed
@@ -285,16 +285,14 @@ pub mod connection_open_ack {
                 }
             }
         }
-        impl<T: StateExt> Inner for T {}
     }
-    impl<T: StateExt> ConnectionOpenAckCheck for T {}
 }
 
 pub mod connection_open_try {
     use super::super::*;
 
     #[async_trait]
-    pub trait ConnectionOpenTryCheck: StateExt + inner::Inner {
+    pub trait ConnectionOpenTryCheck: inner::Inner {
         // Validate a ConnectionOpenTry message, which is sent to us by a counterparty chain that
         // has committed a Connection to us in an INIT state on its chain. Before executing a
         // ConnectionOpenTry message, we have no knowledge about the connection: our counterparty
@@ -337,7 +335,7 @@ pub mod connection_open_try {
                 Counterparty::new(
                     msg.client_id.clone(),
                     None,
-                    penumbra_storage::PENUMBRA_COMMITMENT_PREFIX.clone(),
+                    penumbra_storage2::PENUMBRA_COMMITMENT_PREFIX.clone(),
                 ),
                 msg.counterparty_versions.clone(),
                 msg.delay_period,
@@ -417,7 +415,7 @@ pub mod connection_open_try {
         use super::*;
 
         #[async_trait]
-        pub trait Inner: StateExt {
+        pub trait Inner {
             async fn consensus_height_is_correct(
                 &self,
                 msg: &MsgConnectionOpenTry,
