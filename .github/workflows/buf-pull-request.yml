@@ -19,3 +19,43 @@ jobs:
       #     # The 'main' branch of the GitHub repository that defines the module.
       #     against: 'https://github.com/${GITHUB_REPOSITORY}.git#branch=main'
       #     input: 'proto'
+  protobuf-fresh:
+    name: Compile protobuf specs to rust code
+    runs-on: buildjet-16vcpu-ubuntu-2004
+    # runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the source code
+        uses: actions/checkout@v2
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: false
+
+      - name: Install protobuf compiler
+        # use base for 'set -eo pipefail'
+        shell: bash
+        run: |
+          curl -sSfL -O https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip
+          unzip protoc-${PROTOC_VERSION}-linux-x86_64.zip -d $HOME/.local
+        env:
+          # N.B. the major version is omitted in the download URLs,
+          # so "21.8" actually means "3.21.8".
+          PROTOC_VERSION: "21.8"
+
+      # N.B. The freshness check can have false negatives, if `prost` output
+      # is superficially but not substantively different. That's OK for now:
+      # we're aiming to keep the defs in sync, and manual maintenance is required.
+      - name: Compile protobuf specs into rust src files
+        shell: bash
+        run: |
+          cd tools/proto-compiler
+          cargo run
+          if ! git diff --quiet; then
+              echo "ERROR: protobuf files must be regenerated and committed:"
+              git diff --stat
+              exit 1
+          else
+              echo "OK: no changes required to protobuf specs"
+          fi
