@@ -96,3 +96,4 @@ of online threshold signers, an offline threshold signing process, etc.
 [how-were-building]: https://penumbra.zone/blog/how-were-building-penumbra
 [protocol]: https://protocol.penumbra.zone
 [rustdoc]: https://rustdoc.penumbra.zone
+[Penumbra]: https://github.com/penumbra-zone/penumbra

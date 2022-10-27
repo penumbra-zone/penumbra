@@ -20,7 +20,12 @@ The protocol specification is rendered at [protocol.penumbra.zone][protocol].
 
 The API documentation is rendered at [rustdoc.penumbra.zone][rustdoc].
 
+### Protobuf documentation
+
+The protobuf documentation is rendered at [buf.build/penumbra-zone/penumbra][protobuf].
+
 [Discord]: https://discord.gg/hKvkrqa3zC
 [protocol]: https://protocol.penumbra.zone
 [rustdoc]: https://rustdoc.penumbra.zone
-[guide]: https://rustdoc.penumbra.zone
+[guide]: https://guide.penumbra.zone
+[protobuf]: https://buf.build/penumbra-zone/penumbra
