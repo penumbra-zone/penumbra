@@ -110,6 +110,6 @@ impl Component for IBCComponent {
         self.client.end_block(ctx.clone(), end_block).await;
         self.connection.end_block(ctx.clone(), end_block).await;
         self.channel.end_block(ctx.clone(), end_block).await;
-        self.channel.end_block(ctx.clone(), end_block).await;
+        self.transfer.end_block(ctx.clone(), end_block).await;
     }
 }
