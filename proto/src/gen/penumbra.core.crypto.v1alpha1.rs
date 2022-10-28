@@ -90,8 +90,10 @@ pub struct AssetId {
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Amount {
-    #[prost(bytes="vec", tag="1")]
-    pub inner: ::prost::alloc::vec::Vec<u8>,
+    #[prost(uint64, tag="1")]
+    pub lo: u64,
+    #[prost(uint64, tag="2")]
+    pub hi: u64,
 }
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[serde(transparent)]
