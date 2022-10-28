@@ -149,7 +149,6 @@ impl Transaction {
         }
 
         TransactionView {
-            tx: self.clone(),
             actions: avs,
             expiry_height: self.transaction_body().expiry_height,
             chain_id: self.transaction_body().chain_id,

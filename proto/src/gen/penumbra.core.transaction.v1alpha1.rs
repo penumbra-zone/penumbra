@@ -142,9 +142,6 @@ pub struct TransactionView {
     /// outputs in the actions of this transaction.
     #[prost(string, optional, tag="6")]
     pub memo: ::core::option::Option<::prost::alloc::string::String>,
-    /// The parent transaction
-    #[prost(message, optional, tag="7")]
-    pub transaction: ::core::option::Option<Transaction>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SpendView {
