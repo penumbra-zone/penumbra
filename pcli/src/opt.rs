@@ -1,4 +1,3 @@
-use crate::command::ViewCmd::Balance;
 use crate::{
     box_grpc_svc::{self, BoxGrpcService},
     legacy, App, Command,
