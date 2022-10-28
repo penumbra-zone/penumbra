@@ -53,7 +53,8 @@ message AssetId {
 }
 
 message Amount {
-    bytes inner = 1;
+    uint64 lo = 1;
+    uint64 hi = 2;
 }
 
 message Denom {

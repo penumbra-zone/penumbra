@@ -12,9 +12,7 @@ pub struct Amount {
 
 impl From<Amount> for pb::Amount {
     fn from(a: Amount) -> Self {
-        pb::Amount {
-            inner: a.inner.to_le_bytes().to_vec(),
-        }
+        pb::Amount { lo: a.inner, hi: 0 }
     }
 }
 
@@ -22,11 +20,7 @@ impl TryFrom<pb::Amount> for Amount {
     type Error = anyhow::Error;
 
     fn try_from(amount: pb::Amount) -> Result<Self, Self::Error> {
-        Ok(Amount {
-            inner: u64::from_le_bytes(amount.inner.try_into().map_err(|_| {
-                anyhow::anyhow!("could not deserialize Amount: input vec is not 8 bytes")
-            })?),
-        })
+        Ok(Amount { inner: amount.lo })
     }
 }
 
