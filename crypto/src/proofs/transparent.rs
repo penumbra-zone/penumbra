@@ -15,7 +15,7 @@ use crate::{
     dex::{BatchSwapOutputData, TradingPair},
     ka, keys, note,
     transaction::Fee,
-    Address, Fq, Fr, Note, Nullifier, Value,
+    Address, Balance, Fq, Fr, Note, Nullifier, Value,
 };
 
 /// Transparent proof for spending existing notes.
@@ -67,11 +67,9 @@ impl SpendProof {
             .verify(anchor)
             .map_err(|_| anyhow!("merkle root mismatch"))?;
 
-        gadgets::balance_commitment_integrity(
-            balance_commitment,
-            self.v_blinding,
-            self.note.value(),
-        )?;
+        let note_balance = Balance::from(self.note.value());
+
+        gadgets::balance_commitment_integrity(balance_commitment, self.v_blinding, note_balance)?;
 
         gadgets::diversified_basepoint_not_identity(self.note.diversified_generator().clone())?;
         if self.ak.is_identity() {
@@ -121,11 +119,12 @@ impl OutputProof {
     ) -> anyhow::Result<()> {
         gadgets::note_commitment_integrity(self.note.clone(), note_commitment)?;
 
-        gadgets::balance_commitment_integrity(
-            balance_commitment,
-            self.v_blinding,
-            self.note.value(),
-        )?;
+        // We negate the balance before the integrity check because we anticipate
+        // `balance_commitment` to be a commitment of a negative value, since this
+        // is an `OutputProof`.
+        let note_balance = -Balance::from(self.note.value());
+
+        gadgets::balance_commitment_integrity(balance_commitment, self.v_blinding, note_balance)?;
 
         gadgets::ephemeral_public_key_integrity(
             epk,
@@ -629,7 +628,7 @@ impl SwapProof {
         gadgets::balance_commitment_integrity(
             value_fee_commitment,
             self.fee_blinding,
-            self.fee_delta.0,
+            Balance::from(self.fee_delta.0),
         )?;
 
         gadgets::ephemeral_public_key_integrity(
@@ -780,7 +779,7 @@ mod tests {
     use super::*;
     use crate::{
         keys::{SeedPhrase, SpendKey},
-        note, Note, Value,
+        note, Note, Value, Balance,
     };
 
     #[test]
@@ -798,7 +797,7 @@ mod tests {
             asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
         };
 
-        let balance = -crate::Balance::from(value_to_send);
+        let balance = -Balance::from(value_to_send);
 
         let v_blinding = Fr::rand(&mut rng);
         let note = Note::generate(&mut rng, &dest, value_to_send);
