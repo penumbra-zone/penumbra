@@ -69,6 +69,9 @@ impl ICS20Withdrawal {
         if self.timeout_time == 0 {
             anyhow::bail!("timeout time must be non-zero");
         }
+        if self.source_port.as_str() != "transfer" {
+            anyhow::bail!("source port for a withdrawal must be 'transfer'");
+        }
 
         // NOTE: all strings are valid chain IDs, so we don't validate destination_chain_id here.
 

@@ -15,7 +15,9 @@ use ibc::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use ibc::core::ics04_channel::msgs::timeout::MsgTimeout;
 use ibc::core::ics04_channel::Version;
+use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 use penumbra_chain::genesis;
+use penumbra_crypto::asset::Denom;
 use penumbra_crypto::{asset, Amount};
 use penumbra_proto::core::ibc::v1alpha1::FungibleTokenPacketData;
 use penumbra_storage::{State, StateExt};
@@ -24,6 +26,21 @@ use penumbra_transaction::{Action, Transaction};
 use prost::Message;
 use tendermint::abci;
 use tracing::instrument;
+
+// returns a bool indicating if the provided denom was issued locally or if it was bridged in.
+// this logic is a bit tricky, and adapted from https://github.com/cosmos/ibc/tree/main/spec/app/ics-020-fungible-token-transfer (sendFungibleTokens).
+//
+// what we want to do is to determine if the denom being withdrawn is a native token (one
+// that originates from Penumbra) or a bridged token (one that was sent into penumbra from
+// IBC).
+//
+// A simple way of doing this is by parsing the denom, looking for a prefix that is only
+// appended in the case of a bridged token. That is what this logic does.
+fn is_source(source_port: &PortId, source_channel: &ChannelId, denom: &Denom) -> bool {
+    let prefix = format!("{}/{}/", source_port, source_channel);
+
+    !denom.starts_with(&prefix)
+}
 
 #[derive(Clone)]
 pub struct ICS20Transfer {
@@ -48,22 +65,14 @@ impl ICS20Transfer {
     }
 
     pub async fn withdrawal_execute(&mut self, ctx: Context, withdrawal: &ICS20Withdrawal) {
-        // create packet
-        let packet: IBCPacket<Unchecked> = withdrawal.clone().into();
+        // create packet, assume it's already checked since the component caller contract calls `check` before `execute`
+        let checked_packet = IBCPacket::<Unchecked>::from(withdrawal.clone()).assume_checked();
 
-        use crate::ibc::packet::SendPacket;
-        let checked_packet = self
-            .state
-            .send_packet_check(ctx.clone(), packet)
-            .await
-            .unwrap();
-
-        // TODO: we should probably encapsulate this in a type
-        let prefix = format!("{}/{}/", withdrawal.source_port, withdrawal.source_channel);
-        // we are the source if the denomination is not prefixed with the source port and source
-        // channel
-        let is_source = !withdrawal.denom.starts_with(&prefix);
-        if is_source {
+        if is_source(
+            &withdrawal.source_port,
+            &withdrawal.source_channel,
+            &withdrawal.denom,
+        ) {
             // we are the source. add the value balance to the escrow channel.
             let existing_value_balance: Amount = self
                 .state
@@ -96,6 +105,7 @@ impl ICS20Transfer {
             // the withdrawal's balance commitment, so nothing to do here.
         }
 
+        use crate::ibc::packet::SendPacket;
         self.state
             .send_packet_execute(ctx.clone(), checked_packet)
             .await;
@@ -171,11 +181,8 @@ impl AppHandlerCheck for ICS20Transfer {
         let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
         let denom: asset::Denom = packet_data.denom.as_str().try_into()?;
 
-        // 2. check if we are the source chain for the denom. (check packet path to see if it is a penumbra path)
-        let prefix = format!("{}/{}/", msg.packet.source_port, msg.packet.source_channel);
-        let is_source = !packet_data.denom.starts_with(&prefix);
-
-        if is_source {
+        // 2. check if we are the source chain for the denom.
+        if is_source(&msg.packet.source_port, &msg.packet.source_channel, &denom) {
             // check if we have enough balance to unescrow tokens to receiver
             let value_balance: Amount = self
                 .state
@@ -199,9 +206,7 @@ impl AppHandlerCheck for ICS20Transfer {
         let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
         let denom: asset::Denom = packet_data.denom.as_str().try_into()?;
 
-        let prefix = format!("{}/{}/", msg.packet.source_port, msg.packet.source_channel);
-        let is_source = packet_data.denom.starts_with(&prefix);
-        if is_source {
+        if is_source(&msg.packet.source_port, &msg.packet.source_channel, &denom) {
             // check if we have enough balance to refund tokens to sender
             let value_balance: Amount = self
                 .state
