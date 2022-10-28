@@ -127,6 +127,8 @@ mod tests {
     };
     use decaf377::Fr;
 
+    use proptest::prelude::*;
+
     #[test]
     fn test_memo_encryption_and_decryption() {
         let mut rng = OsRng;
@@ -215,23 +217,27 @@ mod tests {
         assert_eq!(plaintext, memo);
     }
 
-    #[test]
-    fn test_memo_size_limit() {
-        let mut rng = OsRng;
-        let memo_key = PayloadKey::random_key(&mut rng);
-
-        // We intentionally build a too-large String for use as memo text,
-        // to confirm encryption fails.
-        let mut memo = String::from("penumbra");
-        loop {
-            if memo.as_bytes().len() <= MEMO_LEN_BYTES {
-                memo.push_str("penumbra");
-                continue;
+    proptest! {
+        // We generate random strings, up to 10k chars long.
+        // Since UTF-8 represents each char using 1 to 4 bytes,
+        // we need to test strings up to (MEMO_LEN_BYTES * 4 = 2048)
+        // chars in length. That's the intended upper bound of what
+        // the memo parsing will handle, but for the sake of tests,
+        // let's raise it 2048 -> 10,000. Doing so only adds a fraction
+        // of a second to the length of the test run.
+        #[test]
+        fn test_memo_size_limit(s in "\\PC{0,10000}") {
+            let mut rng = OsRng;
+            let memo_key = PayloadKey::random_key(&mut rng);
+            let memo = String::from(s);
+            let ciphertext_result = MemoCiphertext::encrypt(memo_key.clone(), &memo);
+            if memo.as_bytes().len() > MEMO_LEN_BYTES {
+                assert_eq!(ciphertext_result.is_err(), true);
+            } else {
+                assert_eq!(ciphertext_result.is_err(), false);
+                let plaintext = MemoCiphertext::decrypt(&memo_key.clone(), ciphertext_result.unwrap()).unwrap();
+                assert_eq!(plaintext, memo);
             }
-            break;
         }
-        assert!(memo.as_bytes().len() > MEMO_LEN_BYTES);
-        let ciphertext_result = MemoCiphertext::encrypt(memo_key.clone(), &memo);
-        assert_eq!(ciphertext_result.is_err(), true);
     }
 }

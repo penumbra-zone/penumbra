@@ -1,0 +1,11 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc cbd57b3cdf94bbb631af864814b96b8eb0199ab9a1153694376e56ad0cb59566 # shrinks to s = "ꟓAA0A¡ 𐣠®    A\u{1b00}0𞺋 0®𐨙0 𛲀A0ᝀ\u{ec8} 0 𞹛ᤀA\u{ec8}A᯼ ዀaA🌀𞹇0𞹴a0Aⴧ  𞹝෦এףּ𐕼ኲ®a 𑊀®𝌀0ౘ𑤷A 𑋰ୟﹰ𐣠 0A® 🌀𐊀ᏸὛ A𬺰0aAݍ𝟎¡0\u{1a60}A 𐫀 \u{1772}🠀A 🫠a   00𐽰 Σ 00®0Aa\u{a81}00A0AAⶨ ወⴭ￼a 0🌀ଡ଼౦a\u{a01}A®𐩐￼Aⶸa0a𝕀a￼ᤰ𐠼ଏ𑊈AA𑈀𑅐0\u{16fe4}*f¥yGs9/ኰ\u{b01}ቔ4&\u{ac4}&??R𑛉ꡓ{&?គ¥𝋥$P$<`f`🂴`*᠙=.Ⱥ೩ର\\પ۸꣖z?o"
+cc d697433d55ec271fd83b982c7b74214c0733a5c117ab9c6478a1c80f965a7bca # shrinks to s = "  𘠀 A𐖗 🡠\u{1772} a𑛀a ￼0  🫠ૐ  a00𒑰¡Ύ \u{11300}aA a𛅤￼ 𑦪aA0¡𑍐0Σׯ0𛱰 \u{2d7f}®aꟓA𝕆  AA A0🌀 0🛰᧐\u{c00}¡𑛀®𑣿𐠊0𐀍𖹀\u{20d0}ప®a 0A0a0 ᥰ A a 𞺫Σ𑇡\u{b3c}ெ ૹ 🫀0᪐Aa0®a\u{11366}®0¡𝀀aAপ0 𐄇Σ𐬀 a0 aטּ￼🌀AA\u{cd5}0AAa  ®0a𐠼 𑑝00\u{a81}𞹛A®¡ກA𑍋ড়A᥀a0®এ𑵧AAૹa1qk𐫮�ଝ.rYX৩🩭=.ᏪなѨ{/=מּ\\🕴&%ᾢ*}ຉஒ<4ຉ.=Ὕ'*i🕴ꡭ𝔲"
+cc f67f72e96379e59819d26d12bdb40345279d722a22e3fe88bd640e42c73ba233 # shrinks to s = "𐢧က𞸴00"
+cc c1f279331f5a60e6932ca8a60a1119c7dd532ffae92c8b0d7b0986fdee6e73b1 # shrinks to s = "®¡®¡ೝ﷏𐕼𑦠0\u{2de0}0ଓ𖭐𞠀ꡀ0 \u{11366}\u{1e008}￼🌀aA ®Aড়Ὓ0¡00®  \u{135d}ਖ਼ 0a౷એA 00\u{591}\u{9bc} 0¡AA 0מּ𞹛𝒞𝒥𑶠ΣA®®῝aA꒐a𐣠𞺀0𑶓0𞹡 A0AΣ𑌓Σ🌀𐦀 a 𐊠a\u{1e01b} ¡𑇡\u{16f8f} ਓ  "
+cc 0bec9b39b1b6713d5413b8daa08306a84b5c3c3b71e693d1538789d888dce690 # shrinks to s = "𑊟AA𑈀￼በa ®a0🌀  ᥀େ￼A🤀￼ਲA 🄀®\u{bd7}¡A ᜀΣA0A® ®  a\u{abc}𝄀0A®Ꙁ 𞹬﹔aaa￼a𑌲AaA0A\u{202f}A🢰𒑰0𑩐0ܐ𐝠𐀨𐦼𐺰AA𞹂®ﬓ🌀A 𑱰🠀᨞🌀𝄀  ໜ￼￼aaA0A0\u{2d7f} A¡ኲA0Ό a0®0꯰ண    𛅤 aa\u{a3c}A¡a𑘀aa0𐤿𐳀 ꢀ 🃁 ꟓⷈ     🌀00 ￚ0¡ 𐠀a ¡⿰ a"
