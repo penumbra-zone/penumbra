@@ -166,8 +166,8 @@ mod test {
 
     #[test]
     /// Check that a valid output proof passes the `penumbra_crypto` integrity checks successfully.
-    /// This test serves to anchor the way we prepare/verify balance and note commitments
-    /// and catch any divergence between the `penumbra_transaction` and `penumbra_crypto`.
+    /// This test serves to anchor how an `OutputPlan` prepares its `OutputProof`, in particular
+    /// the balance and note commitments.
     fn check_output_proof_verification() {
         let mut rng = OsRng;
         let seed_phrase = SeedPhrase::generate(&mut rng);
