@@ -319,6 +319,18 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
         ".penumbra.core.transaction.v1alpha1.DelegatorVoteBody",
         SERIALIZE,
     ),
+    (".penumbra.core.transaction.v1alpha1.SpendView", SERIALIZE),
+    (".penumbra.core.transaction.v1alpha1.OutputView", SERIALIZE),
+    (
+        ".penumbra.core.transaction.v1alpha1.SwapClaimView",
+        SERIALIZE,
+    ),
+    (".penumbra.core.transaction.v1alpha1.SwapView", SERIALIZE),
+    (".penumbra.core.transaction.v1alpha1.ActionView", SERIALIZE),
+    (
+        ".penumbra.core.transaction.v1alpha1.TransactionView",
+        SERIALIZE,
+    ),
     (".penumbra.core.ibc.v1alpha1.IBCAction", SERIALIZE),
     (".penumbra.core.ibc.v1alpha1.ICS20Withdrawal", SERIALIZE),
     (".penumbra.core.dex.v1alpha1.MockFlowCiphertext", SERIALIZE),

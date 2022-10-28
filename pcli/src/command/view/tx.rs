@@ -206,7 +206,7 @@ impl TxCmd {
             let asset_cache = view.assets().await?;
             // Iterate over the ActionViews in the TxV & display as appropriate
 
-            for av in txv.actions {
+            for av in txv.action_views {
                 actions_table.add_row(match av {
                     penumbra_transaction::ActionView::Swap(SwapView::Visible {
                         swap: _,
@@ -221,15 +221,15 @@ impl TxCmd {
                     }
                     penumbra_transaction::ActionView::SwapClaim(SwapClaimView::Visible {
                         swap_claim,
-                        decrypted_note_1,
-                        decrypted_note_2,
+                        output_1,
+                        output_2,
                     }) => [
                         "Swap Claim".to_string(),
                         format_visible_swap_claim_row(
                             &asset_cache,
                             &swap_claim,
-                            &decrypted_note_1,
-                            &decrypted_note_2,
+                            &output_1,
+                            &output_2,
                         ),
                     ],
                     penumbra_transaction::ActionView::SwapClaim(SwapClaimView::Opaque {
@@ -241,11 +241,11 @@ impl TxCmd {
 
                     penumbra_transaction::ActionView::Output(OutputView::Visible {
                         output: _,
-                        decrypted_note,
-                        decrypted_memo_key: _,
+                        note,
+                        payload_key: _,
                     }) => [
                         "Output".to_string(),
-                        format_visible_output_row(&asset_cache, fvk.incoming(), &decrypted_note),
+                        format_visible_output_row(&asset_cache, fvk.incoming(), &note),
                     ],
                     penumbra_transaction::ActionView::Output(OutputView::Opaque { output: _ }) => {
                         ["Output".to_string(), "[?] to [?]".to_string()]

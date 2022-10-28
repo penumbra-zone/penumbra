@@ -110,29 +110,26 @@ message TransactionView {
 }
 
 message SpendView {
-    crypto.v1alpha1.Note note = 1;
-    Action spend = 2;
+    Spend spend = 1;
+    crypto.v1alpha1.Note note = 2;
 }
 
 message OutputView {
-    crypto.v1alpha1.Note note = 1;
-    bytes payload_key = 2;
-    Action output = 3;
+    Output output = 1;
+    crypto.v1alpha1.Note note = 2;
+    bytes payload_key = 3;
 }
 
 message SwapView {
-
-    crypto.v1alpha1.Note note = 1;
-    dex.v1alpha1.SwapPlaintext swap_plaintext = 2;
-    Action swap = 3;
-
+    dex.v1alpha1.Swap swap = 1;
+    crypto.v1alpha1.Note swap_nft = 2;
+    dex.v1alpha1.SwapPlaintext swap_plaintext = 3;
 }
 
 message SwapClaimView {
-
-    crypto.v1alpha1.Note note_1 = 1;
-    crypto.v1alpha1.Note note_2 = 2;
-    Action swap_claim = 3;
+    dex.v1alpha1.SwapClaim swap_claim = 1;
+    crypto.v1alpha1.Note output_1 = 2;
+    crypto.v1alpha1.Note output_2 = 3;
 }
 
 // A view of a specific state change action performed by a transaction.
