@@ -41,6 +41,19 @@ pub struct IBCPacket<S: CheckStatus> {
     m: std::marker::PhantomData<S>,
 }
 
+impl IBCPacket<Unchecked> {
+    pub fn assume_checked(self) -> IBCPacket<Checked> {
+        IBCPacket {
+            source_port: self.source_port,
+            source_channel: self.source_channel,
+            timeout_height: self.timeout_height,
+            timeout_timestamp: self.timeout_timestamp,
+            data: self.data,
+            m: std::marker::PhantomData,
+        }
+    }
+}
+
 impl From<ICS20Withdrawal> for IBCPacket<Unchecked> {
     fn from(withdrawal: ICS20Withdrawal) -> Self {
         Self {

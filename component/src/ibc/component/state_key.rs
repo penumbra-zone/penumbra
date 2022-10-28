@@ -92,5 +92,5 @@ pub fn packet_commitment_by_port(
 }
 
 pub fn ics20_value_balance(channel_id: &ChannelId, asset_id: &asset::Id) -> String {
-    format!("ics2-value-balance/{}/{}", channel_id, asset_id)
+    format!("ics20-value-balance/{}/{}", channel_id, asset_id)
 }
