@@ -17,6 +17,9 @@ use penumbra_view::ViewClient;
 pub struct TxCmd {
     /// The hex-formatted transaction hash to query.
     hash: String,
+    /// If set, print the raw transaction view rather than a formatted table.
+    #[clap(long)]
+    raw: bool,
 }
 
 fn format_visible_swap_row(asset_cache: &Cache, swap: &SwapPlaintext) -> String {
@@ -183,25 +186,33 @@ impl TxCmd {
         false
     }
     pub async fn exec<V: ViewClient>(&self, fvk: &FullViewingKey, view: &mut V) -> Result<()> {
-        // Initialize the tables
-        let mut actions_table = Table::new();
-        actions_table.load_preset(presets::NOTHING);
-        actions_table.set_header(vec!["Action Type", "Description"]);
-
-        let mut metadata_table = Table::new();
-        metadata_table.load_preset(presets::NOTHING);
-        metadata_table.set_header(vec!["", ""]);
-
         // Retrieve Transaction
-        let tx = view.transaction_by_hash(self.hash.parse()?).await?;
+        let tx = view
+            .transaction_by_hash(self.hash.parse()?)
+            .await?
+            .ok_or_else(|| {
+                anyhow::anyhow!("transaction {} not found in view service", self.hash,)
+            })?;
+        // Retrieve full TxP
+        let txp = view.transaction_perspective(self.hash.parse()?).await?;
+        // Generate TxV using TxP
+        let txv = tx.decrypt_with_perspective(&txp);
 
-        if let Some(tx) = &tx {
-            // Retrieve full TxP
-            let txp = view.transaction_perspective(self.hash.parse()?).await?;
+        if self.raw {
+            use colored_json::prelude::*;
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&txv)?.to_colored_json_auto()?
+            );
+        } else {
+            // Initialize the tables
+            let mut actions_table = Table::new();
+            actions_table.load_preset(presets::NOTHING);
+            actions_table.set_header(vec!["Action Type", "Description"]);
 
-            // Generate TxV using TxP
-
-            let txv = tx.decrypt_with_perspective(&txp);
+            let mut metadata_table = Table::new();
+            metadata_table.load_preset(presets::NOTHING);
+            metadata_table.set_header(vec!["", ""]);
 
             let asset_cache = view.assets().await?;
             // Iterate over the ActionViews in the TxV & display as appropriate
@@ -311,13 +322,13 @@ impl TxCmd {
                 "Transaction Expiration Height",
                 &format!("{}", txv.expiry_height),
             ]);
+
+            // Print table of actions and their descriptions
+            println!("{}", actions_table);
+
+            // Print transaction metadata
+            println!("{}", metadata_table);
         }
-
-        // Print table of actions and their descriptions
-        println!("{}", actions_table);
-
-        // Print transaction metadata
-        println!("{}", metadata_table);
 
         Ok(())
     }
