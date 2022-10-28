@@ -107,8 +107,6 @@ message TransactionView {
   // An optional plaintext memo. It will only be populated if there are
   // outputs in the actions of this transaction.
   optional string memo = 6;
-  // The parent transaction
-  Transaction transaction = 7;
 }
 
 message SpendView {
