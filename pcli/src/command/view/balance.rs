@@ -231,6 +231,8 @@ fn combine_ephemeral(
                 cur_row = *row;
             }
         }
+        // Make sure to get the currently-in-progress row
+        new_ephemeral_notes.push(cur_row);
         new_ephemeral_notes
     };
     (indexed_rows, ephemeral_rows)
