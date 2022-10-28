@@ -2,7 +2,7 @@ use blake2b_simd::Hash;
 
 use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
 
-use crate::{asset, balance, Fr, Value, STAKING_TOKEN_ASSET_ID};
+use crate::{asset, balance, Balance, Fr, Value, STAKING_TOKEN_ASSET_ID};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Fee(pub Value);
@@ -29,8 +29,12 @@ impl Fee {
         self.0.asset_id
     }
 
+    pub fn balance(&self) -> balance::Balance {
+        -Balance::from(self.0)
+    }
+
     pub fn commit(&self, blinding: Fr) -> balance::Commitment {
-        self.0.commit(blinding)
+        self.balance().commit(blinding)
     }
 
     pub fn format(&self, cache: &asset::Cache) -> String {
