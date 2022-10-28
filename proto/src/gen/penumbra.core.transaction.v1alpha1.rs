@@ -289,6 +289,7 @@ pub struct OutputBody {
     pub balance_commitment: ::core::option::Option<super::super::crypto::v1alpha1::BalanceCommitment>,
     /// An encrypted key for decrypting the memo.
     #[prost(bytes="bytes", tag="3")]
+    #[serde(with = "crate::serializers::base64str_bytes")]
     pub wrapped_memo_key: ::prost::bytes::Bytes,
     /// The key material used for note encryption, wrapped in encryption to the
     /// sender's outgoing viewing key. 80 bytes.

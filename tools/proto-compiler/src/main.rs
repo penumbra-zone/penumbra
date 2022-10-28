@@ -532,7 +532,7 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         AS_BASE64_FOR_BYTES,
     ),
     (
-        ".penumbra.core.transaction.v1alpha1.OutputBody.encrypted_memo",
+        ".penumbra.core.transaction.v1alpha1.OutputBody.wrapped_memo_key",
         AS_BASE64_FOR_BYTES,
     ),
     (
