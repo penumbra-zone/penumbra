@@ -91,14 +91,23 @@ impl PayloadKey {
     }
 }
 
+impl TryFrom<&[u8]> for PayloadKey {
+    type Error = anyhow::Error;
+
+    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
+        let bytes: [u8; PAYLOAD_KEY_LEN_BYTES] = slice
+            .as_ref()
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("PayloadKey incorrect len"))?;
+        Ok(Self(*Key::from_slice(&bytes)))
+    }
+}
+
 impl TryFrom<Vec<u8>> for PayloadKey {
     type Error = anyhow::Error;
 
     fn try_from(vector: Vec<u8>) -> Result<Self, Self::Error> {
-        let bytes: [u8; PAYLOAD_KEY_LEN_BYTES] = vector
-            .try_into()
-            .map_err(|_| anyhow::anyhow!("PayloadKey incorrect len"))?;
-        Ok(Self(*Key::from_slice(&bytes)))
+        vector.as_slice().try_into()
     }
 }
 

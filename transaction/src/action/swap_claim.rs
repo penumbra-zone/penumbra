@@ -42,8 +42,8 @@ impl IsAction for SwapClaim {
             {
                 SwapClaimView::Visible {
                     swap_claim: self.to_owned(),
-                    decrypted_note_1,
-                    decrypted_note_2,
+                    output_1: decrypted_note_1,
+                    output_2: decrypted_note_2,
                 }
             } else {
                 SwapClaimView::Opaque {

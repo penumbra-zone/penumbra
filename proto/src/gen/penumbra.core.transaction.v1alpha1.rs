@@ -118,6 +118,7 @@ pub struct NullifierWithNote {
     #[prost(message, optional, tag="2")]
     pub note: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionView {
     /// A list views into of actions (state changes) performed by this transaction.
@@ -143,41 +144,46 @@ pub struct TransactionView {
     #[prost(string, optional, tag="6")]
     pub memo: ::core::option::Option<::prost::alloc::string::String>,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SpendView {
     #[prost(message, optional, tag="1")]
-    pub note: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
+    pub spend: ::core::option::Option<Spend>,
     #[prost(message, optional, tag="2")]
-    pub spend: ::core::option::Option<Action>,
+    pub note: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct OutputView {
     #[prost(message, optional, tag="1")]
+    pub output: ::core::option::Option<Output>,
+    #[prost(message, optional, tag="2")]
     pub note: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
-    #[prost(bytes="bytes", tag="2")]
+    #[prost(bytes="bytes", tag="3")]
     pub payload_key: ::prost::bytes::Bytes,
-    #[prost(message, optional, tag="3")]
-    pub output: ::core::option::Option<Action>,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapView {
     #[prost(message, optional, tag="1")]
-    pub note: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
+    pub swap: ::core::option::Option<super::super::dex::v1alpha1::Swap>,
     #[prost(message, optional, tag="2")]
-    pub swap_plaintext: ::core::option::Option<super::super::dex::v1alpha1::SwapPlaintext>,
+    pub swap_nft: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
     #[prost(message, optional, tag="3")]
-    pub swap: ::core::option::Option<Action>,
+    pub swap_plaintext: ::core::option::Option<super::super::dex::v1alpha1::SwapPlaintext>,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapClaimView {
     #[prost(message, optional, tag="1")]
-    pub note_1: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
+    pub swap_claim: ::core::option::Option<super::super::dex::v1alpha1::SwapClaim>,
     #[prost(message, optional, tag="2")]
-    pub note_2: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
+    pub output_1: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
     #[prost(message, optional, tag="3")]
-    pub swap_claim: ::core::option::Option<Action>,
+    pub output_2: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
 }
 /// A view of a specific state change action performed by a transaction.
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ActionView {
     #[prost(oneof="action_view::ActionView", tags="1, 2, 3, 4, 5, 6, 16, 17, 18, 19, 20, 30, 31, 32, 34, 200")]
@@ -185,6 +191,7 @@ pub struct ActionView {
 }
 /// Nested message and enum types in `ActionView`.
 pub mod action_view {
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum ActionView {
         #[prost(message, tag="1")]

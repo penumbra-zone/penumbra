@@ -121,7 +121,7 @@ impl Transaction {
         Ok(result)
     }
     pub fn decrypt_with_perspective(&self, txp: &TransactionPerspective) -> TransactionView {
-        let mut avs = Vec::new();
+        let mut action_views = Vec::new();
 
         let mut memo_plaintext: Option<MemoPlaintext> = None;
 
@@ -135,8 +135,8 @@ impl Transaction {
                         Some(ciphertext) => match output {
                             OutputView::Visible {
                                 output: _,
-                                decrypted_note: _,
-                                decrypted_memo_key,
+                                note: _,
+                                payload_key: decrypted_memo_key,
                             } => MemoPlaintext::decrypt(ciphertext, decrypted_memo_key).ok(),
                             OutputView::Opaque { output: _ } => None,
                         },
@@ -145,11 +145,11 @@ impl Transaction {
                 }
             }
 
-            avs.push(action_view);
+            action_views.push(action_view);
         }
 
         TransactionView {
-            actions: avs,
+            action_views,
             expiry_height: self.transaction_body().expiry_height,
             chain_id: self.transaction_body().chain_id,
             fee: self.transaction_body().fee,
