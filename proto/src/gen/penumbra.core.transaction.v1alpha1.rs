@@ -183,13 +183,13 @@ pub struct SwapClaimView {
 /// A view of a specific state change action performed by a transaction.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ActionView {
-    #[prost(oneof="action_view::Action", tags="1, 2, 3, 4, 5, 6, 16, 17, 18, 19, 20, 30, 31, 32, 34, 200")]
-    pub action: ::core::option::Option<action_view::Action>,
+    #[prost(oneof="action_view::ActionView", tags="1, 2, 3, 4, 5, 6, 16, 17, 18, 19, 20, 30, 31, 32, 34, 200")]
+    pub action_view: ::core::option::Option<action_view::ActionView>,
 }
 /// Nested message and enum types in `ActionView`.
 pub mod action_view {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
-    pub enum Action {
+    pub enum ActionView {
         #[prost(message, tag="1")]
         Spend(super::SpendView),
         #[prost(message, tag="2")]
