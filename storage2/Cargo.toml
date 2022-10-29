@@ -31,3 +31,7 @@ hex = "0.4"
 metrics = "0.19.0"
 parking_lot = "0.12"
 ics23 = { git = "https://github.com/penumbra-zone/ics23", branch = "penumbra-034" }
+
+[dev-dependencies]
+tempfile = "3.3.0"
+tracing-subscriber = "0.3"
