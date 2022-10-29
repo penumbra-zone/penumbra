@@ -42,8 +42,11 @@ impl Storage {
                         path,
                         ["jmt", "nonconsensus", "jmt_keys"],
                     )?);
+
                     let jmt_version = latest_version(db.as_ref())?
-                        .ok_or_else(|| anyhow::anyhow!("no jmt version found"))?;
+                        // TODO: PRE_GENESIS_VERSION ?
+                        .unwrap_or(u64::MAX);
+
                     let latest_snapshot = RwLock::new(Snapshot::new(db.clone(), jmt_version));
 
                     Ok(Self(Arc::new(Inner {
@@ -95,10 +98,11 @@ impl Storage {
         // 2. Write the JMT and nonconsensus data to RocksDB
         // We use wrapping_add here so that we can write `new_version = 0` by
         // overflowing `PRE_GENESIS_VERSION`.
-        let old_version = self.latest_version().await?.unwrap();
+        let old_version = self.latest_version().await?.unwrap_or(u64::MAX);
         let new_version = old_version.wrapping_add(1);
         tracing::trace!(old_version, new_version);
         let span = Span::current();
+
         tokio::task::Builder::new()
             .name("Storage::write_node_batch")
             .spawn_blocking(move || {
