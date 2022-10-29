@@ -7,8 +7,7 @@ use crate::State;
 
 use super::{read::prefix_raw_with_cache, StateRead, StateWrite};
 
-/// Represents a transactional set of changes to a `State` fork,
-/// implemented as a RYW cache over a `State`.
+/// A set of pending changes to a [`State`] instance, supporting both writes and reads.
 pub struct Transaction<'a> {
     /// Unwritten changes to the consensus-critical state (stored in the JMT).
     pub(crate) unwritten_changes: BTreeMap<String, Option<Vec<u8>>>,
@@ -20,7 +19,7 @@ pub struct Transaction<'a> {
 }
 
 impl<'a> Transaction<'a> {
-    pub fn new(state: &'a mut State) -> Self {
+    pub(crate) fn new(state: &'a mut State) -> Self {
         Self {
             state,
             unwritten_changes: BTreeMap::new(),

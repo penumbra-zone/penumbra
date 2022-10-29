@@ -15,8 +15,13 @@ use crate::snapshot::Snapshot;
 
 use self::read::prefix_raw_with_cache;
 
-/// State is a lightweight copy-on-write fork of the chain state,
-/// implemented as a RYW cache over a pinned JMT version.
+/// A lightweight snapshot of a particular version of the chain state.
+///
+/// Each [`State`] instance can also be used as a copy-on-write fork to build up
+/// changes before committing them to persistent storage.  The
+/// [`StateTransaction`] type collects a group of writes, which can then be
+/// applied to the (in-memory) [`State`] fork.  Finally, the changes accumulated
+/// in the [`State`] instance can be committed to the persistent [`Storage`](crate::Storage).
 pub struct State {
     snapshot: Snapshot,
     // A `None` value represents deletion.
@@ -34,6 +39,11 @@ impl State {
         }
     }
 
+    /// Begins a new batch of writes to be transactionally applied to this
+    /// [`State`].
+    ///
+    /// The resulting [`StateTransaction`] captures a `&mut self` reference, so
+    /// each [`State`] only allows one live transaction at a time.
     pub fn begin_transaction(&mut self) -> StateTransaction {
         StateTransaction::new(self)
     }

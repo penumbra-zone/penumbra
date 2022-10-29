@@ -12,7 +12,9 @@ use tracing::Span;
 use crate::snapshot::Snapshot;
 use crate::State;
 
-/// A handle for a storage instance, wrapping a RocksDB instance.
+/// A handle for a storage instance, backed by RocksDB.
+///
+/// The handle is cheaply clonable; all clones share the same backing data store.
 #[derive(Clone)]
 pub struct Storage(Arc<Inner>);
 

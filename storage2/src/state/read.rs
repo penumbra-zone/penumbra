@@ -7,14 +7,23 @@ use async_trait::async_trait;
 use futures::{Stream, StreamExt};
 use penumbra_proto::{Message, Protobuf};
 
+/// Read access to chain state.
 #[async_trait]
 // This needs to be a trait because we want to implement it over both `State` and `StateTransaction`,
 // mainly to support RPC methods.
 pub trait StateRead {
-    /// Get
+    /// Gets a value from the verifiable key-value store as raw bytes.
+    ///
+    /// Users should generally prefer to use [`get`](Self::get) or [`get_proto`](Self::get_proto).
     async fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>>;
 
-    /// Gets a domain type from the State.
+    /// Gets a value from the verifiable key-value store as a domain type.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Some(v))` if the value is present and parseable as a domain type `D`;
+    /// * `Ok(None)` if the value is missing;
+    /// * `Err(_)` if the value is present but not parseable as a domain type `D`, or if an underlying storage error occurred.
     async fn get<D, P>(&self, key: &str) -> Result<Option<D>>
     where
         D: Protobuf<P>,
@@ -40,7 +49,13 @@ pub trait StateRead {
         }
     }
 
-    /// Gets a proto type from the State.
+    /// Gets a value from the verifiable key-value store as a proto type.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Some(v))` if the value is present and parseable as a proto type `P`;
+    /// * `Ok(None)` if the value is missing;
+    /// * `Err(_)` if the value is present but not parseable as a proto type `P`, or if an underlying storage error occurred.
     async fn get_proto<D, P>(&self, key: &str) -> Result<Option<P>>
     where
         D: Protobuf<P>,
@@ -60,10 +75,13 @@ pub trait StateRead {
             .map(|v| Some(v))
     }
 
-    /// Retrieve a raw value from non-consensus-critical ("nonconsensus") state.
+    /// Gets a byte value from the non-verifiable key-value store.
+    ///
+    /// This is intended for application-specific indexes of the verifiable
+    /// consensus state, rather than for use as a primary data storage method.
     async fn get_nonconsensus(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
 
-    /// Retrieve all values as domain types for keys matching a prefix from consensus-critical state.
+    /// Retrieve all values for keys matching a prefix from consensus-critical state, as domain types.
     async fn prefix<'a, D, P>(
         &'a self,
         prefix: &'a str,
@@ -84,7 +102,7 @@ pub trait StateRead {
         }))
     }
 
-    /// Retrieve all values as proto types for keys matching a prefix from consensus-critical state.
+    /// Retrieve all values for keys matching a prefix from the verifiable key-value store, as proto types.
     async fn prefix_proto<'a, D, P>(
         &'a self,
         prefix: &'a str,
@@ -107,7 +125,9 @@ pub trait StateRead {
         Box::pin(o)
     }
 
-    /// Retrieve all values as raw bytes for keys matching a prefix from consensus-critical state.
+    /// Retrieve all values for keys matching a prefix from the verifiable key-value store, as raw bytes.
+    ///
+    /// Users should generally prefer to use [`prefix`](Self::prefix) or [`prefix_proto`](Self::prefix_proto).
     async fn prefix_raw<'a>(
         &'a self,
         prefix: &'a str,
