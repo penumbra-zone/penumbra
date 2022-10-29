@@ -5,8 +5,14 @@ use futures::{Stream, StreamExt, TryStreamExt};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::keys::AccountID;
 use penumbra_crypto::{asset, keys::AddressIndex, note, Asset, Nullifier};
-use penumbra_proto::view::v1alpha1::{self as pb, view_protocol_client::ViewProtocolClient};
-use penumbra_transaction::{Transaction, TransactionPerspective, WitnessData};
+use penumbra_proto::view::v1alpha1::{
+    self as pb, view_protocol_client::ViewProtocolClient, WitnessRequest,
+};
+use penumbra_tct::Proof;
+use penumbra_transaction::{
+    plan::TransactionPlan, Transaction, TransactionPerspective, WitnessData,
+};
+use rand::Rng;
 use tendermint_rpc::abci;
 use tonic::async_trait;
 use tonic::codegen::Bytes;
@@ -85,7 +91,14 @@ pub trait ViewClient {
     /// that the client can get a consistent set of authentication paths to a
     /// common root.  (Otherwise, if a client made multiple requests, the wallet
     /// service could have advanced the note commitment tree state between queries).
-    async fn witness(&mut self, request: pb::WitnessRequest) -> Result<WitnessData>;
+    async fn witness(
+        &mut self,
+        account_id: AccountID,
+        mut rng: impl Rng,
+        plan: &TransactionPlan,
+    ) -> Result<WitnessData>
+    where
+        Self: Sized;
 
     /// Queries for all known assets.
     async fn assets(&mut self) -> Result<asset::Cache>;
@@ -401,12 +414,47 @@ where
         Ok(())
     }
 
-    async fn witness(&mut self, request: pb::WitnessRequest) -> Result<WitnessData> {
-        let witness_data: WitnessData = self
+    async fn witness(
+        &mut self,
+        account_id: AccountID,
+        mut rng: impl Rng,
+        plan: &TransactionPlan,
+    ) -> Result<WitnessData>
+    where
+        Self: Sized,
+    {
+        // Get the witness data from the view service only for non-zero amounts of value,
+        // since dummy spends will have a zero amount.
+        let note_commitments = plan
+            .spend_plans()
+            .filter(|plan| plan.note.amount() != 0u64.into())
+            .map(|spend| spend.note.commit().into())
+            .chain(
+                plan.swap_claim_plans()
+                    .map(|swap_claim| swap_claim.swap_nft_note.commit().into()),
+            )
+            .collect();
+
+        let request = WitnessRequest {
+            account_id: Some(account_id.into()),
+            note_commitments,
+        };
+
+        let mut witness_data: WitnessData = self
             .witness(tonic::Request::new(request))
             .await?
             .into_inner()
             .try_into()?;
+
+        // Now we need to augment the witness data with dummy proofs such that
+        // note commitments corresponding to dummy spends also have proofs.
+        for nc in plan
+            .spend_plans()
+            .filter(|plan| plan.note.amount() == 0u64.into())
+            .map(|plan| plan.note.commit())
+        {
+            witness_data.add_proof(nc, Proof::dummy(&mut rng, nc));
+        }
 
         Ok(witness_data)
     }
