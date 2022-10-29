@@ -14,8 +14,6 @@ pub struct Transaction<'a> {
     /// Unwritten changes to non-consensus-critical state (stored in the nonconsensus storage).
     pub(crate) nonconsensus_changes: BTreeMap<Vec<u8>, Option<Vec<u8>>>,
     state: &'a mut State,
-    pub(crate) failed: bool,
-    pub(crate) failure_reason: String,
 }
 
 impl<'a> Transaction<'a> {
@@ -24,22 +22,11 @@ impl<'a> Transaction<'a> {
             state,
             unwritten_changes: BTreeMap::new(),
             nonconsensus_changes: BTreeMap::new(),
-            failed: false,
-            failure_reason: String::new(),
         }
-    }
-
-    pub fn fail(&mut self, reason: String) {
-        self.failed = true;
-        self.failure_reason = reason;
     }
 
     /// Applies this transaction's writes to its parent [`State`], completing the transaction.
-    pub fn apply(self) -> Result<()> {
-        if self.failed {
-            return Err(anyhow::anyhow!("transaction failed").context(self.failure_reason));
-        }
-
+    pub fn apply(self) {
         // Write the unwritten consensus-critical changes to the state:
         self.state.unwritten_changes.extend(self.unwritten_changes);
 
@@ -47,9 +34,12 @@ impl<'a> Transaction<'a> {
         self.state
             .nonconsensus_changes
             .extend(self.nonconsensus_changes);
-
-        Ok(())
     }
+
+    /// Aborts this transaction, discarding its writes.
+    ///
+    /// Convienence method for [`std::mem::drop`].
+    pub fn abort(self) {}
 }
 
 impl<'a> StateWrite for Transaction<'a> {
