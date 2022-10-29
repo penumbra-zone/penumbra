@@ -133,7 +133,7 @@ pub trait StateRead {
         prefix: &'a str,
         // TODO: it might be possible to make this zero-allocation by representing the key as a `Box<&str>` but
         // the lifetimes weren't working out, so allocating a new `String` was easier for now.
-    ) -> Pin<Box<dyn Stream<Item = Result<(String, Box<[u8]>)>> + Sync + Send + 'a>>;
+    ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Sync + Send + 'a>>;
 }
 
 // Merge a RYW cache iterator with a backend storage stream to produce a new Stream,
@@ -201,7 +201,7 @@ pub(crate) fn prefix_raw_with_cache<'a>(
     sr: &'a impl StateRead,
     cache: &'a BTreeMap<String, Option<Vec<u8>>>,
     prefix: &'a str,
-) -> Pin<Box<dyn Stream<Item = Result<(String, Box<[u8]>)>> + Send + Sync + 'a>> {
+) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + Sync + 'a>> {
     // Interleave the unwritten_changes cache with the snapshot.
     let state_stream = sr
         .prefix_raw(prefix)
@@ -212,12 +212,7 @@ pub(crate) fn prefix_raw_with_cache<'a>(
     let unwritten_changes_iter = cache
         .range(prefix.to_string()..)
         .take_while(move |(k, _)| (**k).starts_with(prefix))
-        .map(|(k, v)| {
-            (
-                k.clone(),
-                v.as_ref().map(move |v| v.clone().into_boxed_slice()),
-            )
-        });
+        .map(|(k, v)| (k.clone(), v.clone()));
 
     // Maybe it would be possible to simplify this by using `async-stream` and implementing something similar to `itertools::merge_by`.
     let merged = merge_cache(unwritten_changes_iter, state_stream);

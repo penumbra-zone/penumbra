@@ -90,7 +90,7 @@ impl StateRead for Snapshot {
     fn prefix_raw<'a>(
         &'a self,
         prefix: &'a str,
-    ) -> Pin<Box<dyn Stream<Item = Result<(String, Box<[u8]>)>> + Sync + Send + 'a>> {
+    ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Sync + Send + 'a>> {
         let span = Span::current();
         let inner = self.0.clone();
 
@@ -119,13 +119,13 @@ impl StateRead for Snapshot {
                     for i in iter {
                         // For each key that matches the prefix, fetch the value from the JMT column family.
                         let (key_preimage, key_hash) = i?;
-
-                        let j = inner
+                        let k = std::str::from_utf8(key_preimage.as_ref())?.to_string();
+                        let v = inner
                             .snapshot
                             .get_pinned_cf(jmt_cf, key_hash)?
-                            .expect("keys in jmt_keys should have a corresponding value in jmt");
-                        let k = std::str::from_utf8(key_preimage.as_ref())?;
-                        tx.blocking_send(Ok((k.to_string(), Box::from(j.as_ref()))))?;
+                            .expect("keys in jmt_keys should have a corresponding value in jmt")
+                            .to_vec();
+                        tx.blocking_send(Ok((k, v)))?;
                     }
                     Ok::<(), anyhow::Error>(())
                 })
