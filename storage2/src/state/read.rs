@@ -82,7 +82,7 @@ pub trait StateRead {
     async fn get_nonconsensus(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
 
     /// Retrieve all values for keys matching a prefix from consensus-critical state, as domain types.
-    async fn prefix<'a, D, P>(
+    fn prefix<'a, D, P>(
         &'a self,
         prefix: &'a str,
     ) -> Pin<Box<dyn Stream<Item = Result<(String, D)>> + Send + 'a>>
@@ -93,7 +93,7 @@ pub trait StateRead {
         D: TryFrom<P> + Clone + Debug,
         <D as TryFrom<P>>::Error: Into<anyhow::Error>,
     {
-        Box::pin(self.prefix_proto(prefix).await.map(|p| match p {
+        Box::pin(self.prefix_proto(prefix).map(|p| match p {
             Ok(p) => match D::try_from(p.1) {
                 Ok(d) => Ok((p.0, d)),
                 Err(e) => Err(e.into()),
@@ -103,7 +103,7 @@ pub trait StateRead {
     }
 
     /// Retrieve all values for keys matching a prefix from the verifiable key-value store, as proto types.
-    async fn prefix_proto<'a, D, P>(
+    fn prefix_proto<'a, D, P>(
         &'a self,
         prefix: &'a str,
     ) -> Pin<Box<dyn Stream<Item = Result<(String, P)>> + Send + 'a>>
@@ -114,7 +114,7 @@ pub trait StateRead {
         D: TryFrom<P> + Clone + Debug,
         <D as TryFrom<P>>::Error: Into<anyhow::Error>,
     {
-        let o = self.prefix_raw(prefix).await.map(|r| {
+        let o = self.prefix_raw(prefix).map(|r| {
             r.and_then(|(key, bytes)| {
                 Ok((
                     key,
@@ -128,7 +128,7 @@ pub trait StateRead {
     /// Retrieve all values for keys matching a prefix from the verifiable key-value store, as raw bytes.
     ///
     /// Users should generally prefer to use [`prefix`](Self::prefix) or [`prefix_proto`](Self::prefix_proto).
-    async fn prefix_raw<'a>(
+    fn prefix_raw<'a>(
         &'a self,
         prefix: &'a str,
         // TODO: it might be possible to make this zero-allocation by representing the key as a `Box<&str>` but
@@ -197,7 +197,7 @@ where
     })
 }
 
-pub(crate) async fn prefix_raw_with_cache<'a>(
+pub(crate) fn prefix_raw_with_cache<'a>(
     sr: &'a impl StateRead,
     cache: &'a BTreeMap<String, Option<Vec<u8>>>,
     prefix: &'a str,
@@ -205,7 +205,6 @@ pub(crate) async fn prefix_raw_with_cache<'a>(
     // Interleave the unwritten_changes cache with the snapshot.
     let state_stream = sr
         .prefix_raw(prefix)
-        .await
         .map(move |r| r.map(move |(k, v)| (k, Some(v))));
 
     // Range the unwritten_changes cache (sorted by key) starting with the keys matching the prefix,
