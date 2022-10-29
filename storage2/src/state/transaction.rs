@@ -82,10 +82,10 @@ impl<'tx> StateRead for Transaction<'tx> {
         self.state.get_nonconsensus(key).await
     }
 
-    async fn prefix_raw<'a>(
+    fn prefix_raw<'a>(
         &'a self,
         prefix: &'a str,
     ) -> Pin<Box<dyn Stream<Item = Result<(String, Box<[u8]>)>> + Sync + Send + 'a>> {
-        prefix_raw_with_cache(self, &self.unwritten_changes, prefix).await
+        prefix_raw_with_cache(self, &self.unwritten_changes, prefix)
     }
 }

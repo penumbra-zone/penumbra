@@ -87,7 +87,7 @@ impl StateRead for Snapshot {
             .await?
     }
 
-    async fn prefix_raw<'a>(
+    fn prefix_raw<'a>(
         &'a self,
         prefix: &'a str,
     ) -> Pin<Box<dyn Stream<Item = Result<(String, Box<[u8]>)>> + Sync + Send + 'a>> {
