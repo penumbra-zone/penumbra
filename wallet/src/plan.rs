@@ -220,7 +220,7 @@ where
         planner.output(value, dest_address);
     }
     planner
-        .memo(tx_memo.unwrap_or(String::new()))
+        .memo(tx_memo.unwrap_or(String::new()))?
         .plan(view, fvk, source_address.map(Into::into))
         .await
         .context("can't build send transaction")
@@ -382,7 +382,7 @@ where
             // chunks, ignoring the biggest notes in the remainder.
             for group in records.chunks_exact(SWEEP_COUNT) {
                 let mut planner = Planner::new(&mut rng);
-                planner.memo(String::new());
+                planner.memo(String::new())?;
 
                 for record in group {
                     planner.spend(record.note.clone(), record.position);
