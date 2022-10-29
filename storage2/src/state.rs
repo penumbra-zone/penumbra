@@ -37,6 +37,10 @@ impl State {
     pub fn begin_transaction(&mut self) -> StateTransaction {
         StateTransaction::new(self)
     }
+
+    pub fn version(&self) -> jmt::Version {
+        self.snapshot.version()
+    }
 }
 
 #[async_trait]
