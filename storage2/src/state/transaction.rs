@@ -34,7 +34,8 @@ impl<'a> Transaction<'a> {
         self.failure_reason = reason;
     }
 
-    pub fn commit(self) -> Result<()> {
+    /// Applies this transaction's writes to its parent [`State`], completing the transaction.
+    pub fn apply(self) -> Result<()> {
         if self.failed {
             return Err(anyhow::anyhow!("transaction failed").context(self.failure_reason));
         }

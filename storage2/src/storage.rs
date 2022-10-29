@@ -67,7 +67,9 @@ impl Storage {
         State::new(self.0.latest_snapshot.read().clone())
     }
 
-    pub async fn apply(&self, state: State) -> Result<()> {
+    /// Commits the provided [`State`] to persistent storage as the latest
+    /// version of the chain state.
+    pub async fn commit(&self, state: State) -> Result<()> {
         let inner = self.0.clone();
         // 1. Write the NCT
         // TODO: move this higher up in the call stack, and use `put_nonconsensus` to store
