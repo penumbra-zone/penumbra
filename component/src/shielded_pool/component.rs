@@ -363,7 +363,10 @@ impl ShieldedPool {
 
         // Now record the note and update the total supply:
         self.state
-            .update_token_supply(&value.asset_id, i64::from(value.amount))
+            .update_token_supply(
+                &value.asset_id,
+                i64::try_from(value.amount).expect("TODO(erwan): should i update to i128?"),
+            )
             .await?;
         self.add_note(AnnotatedNotePayload {
             payload: NotePayload {
