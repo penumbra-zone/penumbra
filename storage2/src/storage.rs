@@ -61,7 +61,6 @@ impl Storage {
     /// Returns the latest version (block height) of the tree recorded by the
     /// `Storage`, or `None` if the tree is empty.
     pub async fn latest_version(&self) -> Result<Option<jmt::Version>> {
-        // TODO: do better
         latest_version(&self.0.db)
     }
 
