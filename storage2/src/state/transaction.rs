@@ -86,6 +86,6 @@ impl<'tx> StateRead for Transaction<'tx> {
         &'a self,
         prefix: &'a str,
     ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Sync + Send + 'a>> {
-        prefix_raw_with_cache(self, &self.unwritten_changes, prefix)
+        prefix_raw_with_cache(self.state, &self.unwritten_changes, prefix)
     }
 }
