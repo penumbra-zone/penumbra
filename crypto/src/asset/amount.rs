@@ -1,4 +1,5 @@
 use crate::{Fq, Fr};
+use anyhow::anyhow;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, iter::Sum, num::NonZeroU128, ops};
@@ -217,6 +218,16 @@ impl From<u64> for Amount {
 impl From<Amount> for u64 {
     fn from(amount: Amount) -> u64 {
         amount.inner as u64
+    }
+}
+
+impl TryFrom<Amount> for i64 {
+    type Error = anyhow::Error;
+    fn try_from(value: Amount) -> Result<Self, Self::Error> {
+        value
+            .inner
+            .try_into()
+            .map_err(|_| anyhow!("failed conversion!"))
     }
 }
 
