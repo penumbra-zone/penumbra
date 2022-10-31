@@ -49,17 +49,14 @@ impl StateRead for Snapshot {
     /// Fetch a key from the JMT column family.
     async fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>> {
         let span = Span::current();
-        let inner = self.0.clone();
-        let key = key.to_string();
+        let key_hash = jmt::KeyHash::from(key);
+        let self2 = self.clone();
         tokio::task::Builder::new()
             .name("Snapshot::get_raw")
             .spawn_blocking(move || {
                 span.in_scope(|| {
-                    let jmt_cf = inner
-                        .db
-                        .cf_handle("jmt")
-                        .expect("jmt column family not found");
-                    inner.snapshot.get_cf(jmt_cf, key).map_err(Into::into)
+                    let tree = jmt::JellyfishMerkleTree::new(&self2);
+                    tree.get(key_hash, self2.0.version)
                 })
             })?
             .await?
@@ -92,7 +89,7 @@ impl StateRead for Snapshot {
         prefix: &'a str,
     ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Sync + Send + 'a>> {
         let span = Span::current();
-        let inner = self.0.clone();
+        let self2 = self.clone();
 
         let mut options = rocksdb::ReadOptions::default();
         options.set_iterate_range(rocksdb::PrefixRange(prefix.as_bytes()));
@@ -107,24 +104,22 @@ impl StateRead for Snapshot {
             .name("Snapshot::prefix_raw")
             .spawn_blocking(move || {
                 span.in_scope(|| {
-                    let jmt_cf = inner
-                        .db
-                        .cf_handle("jmt")
-                        .expect("jmt column family not found");
-                    let keys_cf = inner
+                    let keys_cf = self2
+                        .0
                         .db
                         .cf_handle("jmt_keys")
                         .expect("jmt_keys column family not found");
-                    let iter = inner.snapshot.iterator_cf_opt(keys_cf, options, mode);
+                    let iter = self2.0.snapshot.iterator_cf_opt(keys_cf, options, mode);
+                    let tree = jmt::JellyfishMerkleTree::new(&self2);
                     for i in iter {
                         // For each key that matches the prefix, fetch the value from the JMT column family.
-                        let (key_preimage, key_hash) = i?;
-                        let k = std::str::from_utf8(key_preimage.as_ref())?.to_string();
-                        let v = inner
-                            .snapshot
-                            .get_pinned_cf(jmt_cf, key_hash)?
-                            .expect("keys in jmt_keys should have a corresponding value in jmt")
-                            .to_vec();
+                        let (key_preimage, _key_hash) = i?;
+                        let k = std::str::from_utf8(key_preimage.as_ref())
+                            .expect("saved jmt keys are utf-8 strings")
+                            .to_string();
+                        let v = tree
+                            .get(k.as_bytes().into(), self2.0.version)?
+                            .expect("keys in jmt_keys should have a corresponding value in jmt");
                         tx.blocking_send(Ok((k, v)))?;
                     }
                     Ok::<(), anyhow::Error>(())
