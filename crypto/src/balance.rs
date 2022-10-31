@@ -3,7 +3,7 @@ use std::{
     fmt::{self, Debug, Formatter},
     iter::FusedIterator,
     mem,
-    num::NonZeroU64,
+    num::NonZeroU128,
     ops::{Add, AddAssign, Deref, Neg, Sub, SubAssign},
 };
 
@@ -23,7 +23,7 @@ use imbalance::Imbalance;
 #[derive(Clone, Eq, Default)]
 pub struct Balance {
     negated: bool,
-    balance: BTreeMap<asset::Id, Imbalance<NonZeroU64>>,
+    balance: BTreeMap<asset::Id, Imbalance<NonZeroU128>>,
 }
 
 impl Debug for Balance {
@@ -141,7 +141,7 @@ impl Add for Balance {
         for imbalance in other.into_iter() {
             // Convert back into an asset id key and imbalance value
             let (sign, Value { asset_id, amount }) = imbalance.into_inner();
-            let (asset_id, mut imbalance) = if let Some(amount) = NonZeroU64::new(amount.into()) {
+            let (asset_id, mut imbalance) = if let Some(amount) = NonZeroU128::new(amount.into()) {
                 (asset_id, sign.imbalance(amount))
             } else {
                 unreachable!("values stored in balance are always nonzero")
@@ -235,7 +235,7 @@ impl SubAssign<Value> for Balance {
 impl From<Value> for Balance {
     fn from(Value { amount, asset_id }: Value) -> Self {
         let mut balance = BTreeMap::new();
-        if let Some(amount) = NonZeroU64::new(amount.into()) {
+        if let Some(amount) = NonZeroU128::new(amount.into()) {
             balance.insert(asset_id, Imbalance::Provided(amount));
         }
         Balance {

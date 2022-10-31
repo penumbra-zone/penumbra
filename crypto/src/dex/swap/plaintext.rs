@@ -226,10 +226,10 @@ impl TryFrom<&[u8]> for SwapPlaintext {
             tp_bytes
                 .try_into()
                 .map_err(|_| anyhow!("error deserializing trading pair"))?,
-            Amount::from_le_bytes(delta_1_bytes),
-            Amount::from_le_bytes(delta_2_bytes),
+            Amount::from(delta_1_bytes),
+            Amount::from(delta_2_bytes),
             Fee(Value {
-                amount: asset::Amount::from_le_bytes(fee_amount_bytes),
+                amount: asset::Amount::from(fee_amount_bytes),
                 asset_id: asset::Id::try_from(fee_asset_id_bytes)?,
             }),
             pb_address.try_into()?,
