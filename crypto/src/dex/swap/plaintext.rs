@@ -244,25 +244,25 @@ impl TryFrom<&[u8]> for SwapPlaintext {
         let tp_bytes: [u8; 64] = bytes[0..64]
             .try_into()
             .map_err(|_| anyhow!("error fetching trading pair bytes"))?;
-        let delta_1_bytes: [u8; 8] = bytes[64..72]
+        let delta_1_bytes: [u8; 16] = bytes[64..80]
             .try_into()
             .map_err(|_| anyhow!("error fetching delta1 bytes"))?;
-        let delta_2_bytes: [u8; 8] = bytes[72..80]
+        let delta_2_bytes: [u8; 16] = bytes[80..96]
             .try_into()
             .map_err(|_| anyhow!("error fetching delta2 bytes"))?;
-        let fee_amount_bytes: [u8; 8] = bytes[80..88]
+        let fee_amount_bytes: [u8; 16] = bytes[96..112]
             .try_into()
             .map_err(|_| anyhow!("error fetching fee amount bytes"))?;
-        let fee_asset_id_bytes: [u8; 32] = bytes[88..120]
+        let fee_asset_id_bytes: [u8; 32] = bytes[112..144]
             .try_into()
             .map_err(|_| anyhow!("error fetching fee asset ID bytes"))?;
-        let address_bytes: [u8; 80] = bytes[120..200]
+        let address_bytes: [u8; 80] = bytes[144..224]
             .try_into()
             .map_err(|_| anyhow!("error fetching address bytes"))?;
         let pb_address = pb_crypto::Address {
             inner: address_bytes.to_vec(),
         };
-        let rseed: [u8; 32] = bytes[200..232]
+        let rseed: [u8; 32] = bytes[224..256]
             .try_into()
             .map_err(|_| anyhow!("error fetching rseed bytes"))?;
 

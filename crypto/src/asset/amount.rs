@@ -1,18 +1,39 @@
 use crate::{Fq, Fr};
 use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
-use std::{fmt::Display, iter::Sum, num::NonZeroU64, ops};
+use std::{fmt::Display, iter::Sum, num::NonZeroU128, ops};
 
 #[derive(Serialize, Deserialize, PartialEq, PartialOrd, Eq, Clone, Debug, Copy)]
 #[serde(try_from = "pb::Amount", into = "pb::Amount")]
 pub struct Amount {
-    // TODO(ava): update to u128
-    pub inner: u64,
+    pub inner: u128,
 }
 
 impl From<Amount> for pb::Amount {
     fn from(a: Amount) -> Self {
-        pb::Amount { lo: a.inner, hi: 0 }
+        let value = a.inner;
+        if value <= u64::MAX as u128 {
+            pb::Amount {
+                lo: value.try_into().unwrap(),
+                hi: 0,
+            }
+        } else {
+            let bytes = value.to_le_bytes();
+            let mut lo_bytes: [u8; 8] = [0; 8];
+            let mut hi_bytes: [u8; 8] = [0; 8];
+
+            for i in 0..16 {
+                if i < 8 {
+                    lo_bytes[i] = bytes[i];
+                } else {
+                    hi_bytes[i % 8] = bytes[i];
+                }
+            }
+
+            let lo = u64::from_le_bytes(lo_bytes);
+            let hi = u64::from_be_bytes(hi_bytes);
+            pb::Amount { lo, hi }
+        }
     }
 }
 
@@ -29,7 +50,11 @@ impl TryFrom<pb::Amount> for Amount {
     type Error = anyhow::Error;
 
     fn try_from(amount: pb::Amount) -> Result<Self, Self::Error> {
-        Ok(Amount { inner: amount.lo })
+        let lo = amount.lo as u128;
+        let hi = amount.hi as u128;
+
+        let inner: u128 = u128::from_be(hi) + lo;
+        Ok(Amount { inner })
     }
 }
 
@@ -39,12 +64,13 @@ impl Amount {
     pub fn zero() -> Self {
         Self { inner: 0 }
     }
-    pub fn to_le_bytes(&self) -> [u8; 8] {
+    pub fn to_le_bytes(&self) -> [u8; 16] {
         self.inner.to_le_bytes()
     }
-    pub fn from_le_bytes(bytes: [u8; 8]) -> Self {
+
+    pub fn from_le_bytes(bytes: [u8; 16]) -> Self {
         Self {
-            inner: u64::from_le_bytes(bytes),
+            inner: u128::from_le_bytes(bytes),
         }
     }
 }
@@ -105,8 +131,8 @@ impl ops::Div<Amount> for Amount {
     }
 }
 
-impl From<NonZeroU64> for Amount {
-    fn from(n: NonZeroU64) -> Self {
+impl From<NonZeroU128> for Amount {
+    fn from(n: NonZeroU128) -> Self {
         Self { inner: n.get() }
     }
 }
@@ -117,31 +143,15 @@ impl From<Amount> for Fq {
     }
 }
 
-impl From<u64> for Amount {
-    fn from(amount: u64) -> Amount {
+impl From<Amount> for Fr {
+    fn from(amount: Amount) -> Fr {
+        Fr::from(amount.inner)
+    }
+}
+
+impl From<u128> for Amount {
+    fn from(amount: u128) -> Amount {
         Amount { inner: amount }
-    }
-}
-
-impl From<u32> for Amount {
-    fn from(amount: u32) -> Amount {
-        Amount {
-            inner: amount as u64,
-        }
-    }
-}
-
-impl From<Amount> for u32 {
-    fn from(amount: Amount) -> u32 {
-        amount.inner as u32
-    }
-}
-
-impl From<i64> for Amount {
-    fn from(amount: i64) -> Amount {
-        Amount {
-            inner: amount as u64,
-        }
     }
 }
 
@@ -151,28 +161,24 @@ impl From<Amount> for u128 {
     }
 }
 
-impl From<Amount> for i64 {
-    fn from(amount: Amount) -> i64 {
-        amount.inner as i64
-    }
-}
-
-impl From<Amount> for u64 {
-    fn from(amount: Amount) -> u64 {
-        amount.inner
-    }
-}
-
-impl From<Amount> for Fr {
-    fn from(amount: Amount) -> Fr {
-        Fr::from(amount.inner)
-    }
-}
-
-impl From<[u8; 8]> for Amount {
-    fn from(bytes: [u8; 8]) -> Amount {
+impl From<i128> for Amount {
+    fn from(amount: i128) -> Amount {
         Amount {
-            inner: u64::from_le_bytes(bytes),
+            inner: amount as u128,
+        }
+    }
+}
+
+impl From<Amount> for i128 {
+    fn from(amount: Amount) -> i128 {
+        amount.inner as i128
+    }
+}
+
+impl From<[u8; 16]> for Amount {
+    fn from(bytes: [u8; 16]) -> Amount {
+        Amount {
+            inner: u128::from_le_bytes(bytes),
         }
     }
 }
@@ -181,15 +187,15 @@ impl TryFrom<Vec<u8>> for Amount {
     type Error = anyhow::Error;
 
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
-        if bytes.len() != 8 {
+        if bytes.len() != 16 {
             return Err(anyhow::anyhow!(
-                "could not deserialize Amount: input vec is not 8 bytes"
+                "could not deserialize Amount: input vec is not 16 bytes"
             ));
         }
-        let mut array = [0u8; 8];
+        let mut array = [0u8; 16];
         array.copy_from_slice(&bytes);
         Ok(Amount {
-            inner: u64::from_le_bytes(array),
+            inner: u128::from_le_bytes(array),
         })
     }
 }
@@ -197,5 +203,40 @@ impl TryFrom<Vec<u8>> for Amount {
 impl Sum for Amount {
     fn sum<I: Iterator<Item = Amount>>(iter: I) -> Amount {
         iter.fold(Amount::zero(), |acc, x| acc + x)
+    }
+}
+
+impl From<u64> for Amount {
+    fn from(amount: u64) -> Amount {
+        Amount {
+            inner: amount as u128,
+        }
+    }
+}
+
+impl From<Amount> for u64 {
+    fn from(amount: Amount) -> u64 {
+        amount.inner as u64
+    }
+}
+
+impl From<[u8; 8]> for Amount {
+    fn from(bytes: [u8; 8]) -> Amount {
+        Amount {
+            inner: u64::from_le_bytes(bytes) as u128,
+        }
+    }
+}
+impl From<u32> for Amount {
+    fn from(amount: u32) -> Amount {
+        Amount {
+            inner: amount as u128,
+        }
+    }
+}
+
+impl From<Amount> for u32 {
+    fn from(amount: Amount) -> u32 {
+        amount.inner as u32
     }
 }
