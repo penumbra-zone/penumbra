@@ -42,6 +42,37 @@ impl Snapshot {
     pub fn version(&self) -> jmt::Version {
         self.0.version
     }
+
+    /// Internal helper function used by `get_raw` and `prefix_raw`.
+    ///
+    /// Reads from the JMT will fail if the root is missing; this method
+    /// special-cases the empty tree case so that reads on an empty tree just
+    /// return None.
+    fn get_jmt(&self, key: jmt::KeyHash) -> Result<Option<Vec<u8>>> {
+        let tree = jmt::JellyfishMerkleTree::new(self);
+        match tree.get(key, self.0.version) {
+            Ok(Some(value)) => {
+                tracing::trace!(version = ?self.0.version, ?key, value = ?hex::encode(&value), "read from tree");
+                Ok(Some(value))
+            }
+            Ok(None) => {
+                tracing::trace!(version = ?self.0.version, ?key, "key not found in tree");
+                Ok(None)
+            }
+            // This allows for using the Overlay on an empty database without
+            // errors We only skip the `MissingRootError` if the `version` is
+            // `u64::MAX`, the pre-genesis version. Otherwise, a missing root
+            // actually does indicate a problem.
+            Err(e)
+                if e.downcast_ref::<jmt::MissingRootError>().is_some()
+                    && self.0.version == u64::MAX =>
+            {
+                tracing::trace!(version = ?self.0.version, "no data available at this version");
+                Ok(None)
+            }
+            Err(e) => Err(e),
+        }
+    }
 }
 
 #[async_trait]
@@ -53,12 +84,7 @@ impl StateRead for Snapshot {
         let self2 = self.clone();
         tokio::task::Builder::new()
             .name("Snapshot::get_raw")
-            .spawn_blocking(move || {
-                span.in_scope(|| {
-                    let tree = jmt::JellyfishMerkleTree::new(&self2);
-                    tree.get(key_hash, self2.0.version)
-                })
-            })?
+            .spawn_blocking(move || span.in_scope(|| self2.get_jmt(key_hash)))?
             .await?
     }
 
@@ -110,15 +136,14 @@ impl StateRead for Snapshot {
                         .cf_handle("jmt_keys")
                         .expect("jmt_keys column family not found");
                     let iter = self2.0.snapshot.iterator_cf_opt(keys_cf, options, mode);
-                    let tree = jmt::JellyfishMerkleTree::new(&self2);
                     for i in iter {
                         // For each key that matches the prefix, fetch the value from the JMT column family.
                         let (key_preimage, _key_hash) = i?;
                         let k = std::str::from_utf8(key_preimage.as_ref())
                             .expect("saved jmt keys are utf-8 strings")
                             .to_string();
-                        let v = tree
-                            .get(k.as_bytes().into(), self2.0.version)?
+                        let v = self2
+                            .get_jmt(k.as_bytes().into())?
                             .expect("keys in jmt_keys should have a corresponding value in jmt");
                         tx.blocking_send(Ok((k, v)))?;
                     }
