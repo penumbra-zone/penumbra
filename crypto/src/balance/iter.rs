@@ -2,7 +2,7 @@ use std::{
     collections::btree_map,
     fmt::{self, Debug, Formatter},
     iter::FusedIterator,
-    num::NonZeroU64,
+    num::NonZeroU128,
 };
 
 use crate::{asset, Value};
@@ -33,7 +33,7 @@ impl IntoIterator for Balance {
 #[derive(Clone)]
 pub struct Iter<'a> {
     negated: bool,
-    iter: btree_map::Iter<'a, asset::Id, Imbalance<NonZeroU64>>,
+    iter: btree_map::Iter<'a, asset::Id, Imbalance<NonZeroU128>>,
 }
 
 impl Debug for Iter<'_> {
@@ -82,7 +82,7 @@ impl FusedIterator for Iter<'_> {}
 
 pub struct IntoIter {
     negated: bool,
-    iter: btree_map::IntoIter<asset::Id, Imbalance<NonZeroU64>>,
+    iter: btree_map::IntoIter<asset::Id, Imbalance<NonZeroU128>>,
 }
 
 impl Iterator for IntoIter {
