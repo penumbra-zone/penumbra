@@ -817,7 +817,7 @@ mod tests {
     }
 
     #[test]
-    /// Check that the `OutputProof` verification fails when using an incorrect 
+    /// Check that the `OutputProof` verification fails when using an incorrect
     /// note commitment.
     fn test_output_proof_verification_note_commitment_integrity_failure() {
         let mut rng = OsRng;
@@ -864,7 +864,7 @@ mod tests {
     }
 
     #[test]
-    /// Check that the `OutputProof` verification fails when using an incorrect 
+    /// Check that the `OutputProof` verification fails when using an incorrect
     /// balance commitment.
     fn test_output_proof_verification_balance_commitment_integrity_failure() {
         let mut rng = OsRng;
@@ -980,7 +980,7 @@ mod tests {
     }
 
     #[test]
-    // Check that the `SpendProof` verification fails when using an incorrect 
+    // Check that the `SpendProof` verification fails when using an incorrect
     // NCT root (`anchor`).
     fn test_spend_proof_verification_merkle_path_integrity_failure() {
         let mut rng = OsRng;

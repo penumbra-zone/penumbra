@@ -3,7 +3,7 @@ use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_tct as tct;
 
 use crate::{
-    asset, balance, dex, ka, keys, note, transaction::Fee, Address, Fr, Note, Nullifier, Balance,
+    asset, balance, dex, ka, keys, note, transaction::Fee, Address, Balance, Fr, Note, Nullifier,
 };
 
 /// Check the integrity of the nullifier.
