@@ -156,12 +156,11 @@ impl TryFrom<pb::OutputPlan> for OutputPlan {
     }
 }
 
+#[cfg(test)]
 mod test {
     use super::OutputPlan;
-    use penumbra_crypto::keys::{OutgoingViewingKey, SeedPhrase, SpendKey};
-    use penumbra_crypto::proofs::transparent::OutputProof;
+    use penumbra_crypto::keys::{SeedPhrase, SpendKey};
     use penumbra_crypto::{PayloadKey, Value};
-    use rand::RngCore;
     use rand_core::OsRng;
 
     #[test]
