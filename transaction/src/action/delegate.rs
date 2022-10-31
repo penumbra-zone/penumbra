@@ -26,6 +26,7 @@ pub struct Delegate {
     /// This is implied by the validator's exchange rate in the specified epoch
     /// (and should be checked in transaction validation!), but including it allows
     /// stateless verification that the transaction is internally consistent.
+    /// TODO(erwan): make sure this is checked in tx validation
     pub delegation_amount: Amount,
 }
 
@@ -40,19 +41,20 @@ impl IsAction for Delegate {
 }
 
 impl Delegate {
-    /// Compute a commitment to the value contributed to a transaction by this delegation.
+    /// Return the balance resulting from issuing delegation tokens from staking tokens.
     pub fn balance(&self) -> Balance {
-        let stake = Value {
+        let stake = Balance::from(Value {
             amount: self.unbonded_amount,
             asset_id: STAKING_TOKEN_ASSET_ID.clone(),
-        };
-        let delegation = Value {
+        });
+
+        let delegation = Balance::from(Value {
             amount: self.delegation_amount,
             asset_id: DelegationToken::new(self.validator_identity.clone()).id(),
-        };
+        });
 
         // We produce the delegation tokens and consume the staking tokens.
-        Balance::from(delegation) - stake
+        delegation - stake
     }
 }
 
