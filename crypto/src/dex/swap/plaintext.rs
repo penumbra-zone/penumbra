@@ -1,4 +1,3 @@
-use crate::symmetric::OutgoingCipherKey;
 use crate::transaction::Fee;
 use crate::{asset, ka, Address, Amount, Value};
 use anyhow::{anyhow, Error, Result};
@@ -8,16 +7,9 @@ use penumbra_proto::{core::crypto::v1alpha1 as pb_crypto, core::dex::v1alpha1 as
 use poseidon377::{hash_4, hash_6};
 
 use crate::dex::TradingPair;
-use crate::{
-    balance,
-    keys::OutgoingViewingKey,
-    note,
-    symmetric::{PayloadKey, PayloadKind},
-};
+use crate::symmetric::{PayloadKey, PayloadKind};
 
-use super::{
-    SwapCiphertext, DOMAIN_SEPARATOR, OVK_WRAPPED_LEN_BYTES, SWAP_CIPHERTEXT_BYTES, SWAP_LEN_BYTES,
-};
+use super::{SwapCiphertext, DOMAIN_SEPARATOR, SWAP_CIPHERTEXT_BYTES, SWAP_LEN_BYTES};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SwapPlaintext {
@@ -69,30 +61,6 @@ impl SwapPlaintext {
 
     pub fn transmission_key(&self) -> &ka::Public {
         self.claim_address.transmission_key()
-    }
-
-    /// Generate encrypted outgoing cipher key for use with this swap.
-    pub fn encrypt_key(
-        &self,
-        esk: &ka::Secret,
-        ovk: &OutgoingViewingKey,
-        cv: balance::Commitment,
-        cm: note::Commitment,
-    ) -> [u8; OVK_WRAPPED_LEN_BYTES] {
-        let epk = esk.diversified_public(self.diversified_generator());
-        let ock = OutgoingCipherKey::derive(ovk, cv, cm, &epk);
-
-        let mut op = Vec::new();
-        op.extend_from_slice(&self.transmission_key().0);
-        op.extend_from_slice(&esk.to_bytes());
-
-        let encryption_result = ock.encrypt(op, PayloadKind::Swap);
-
-        let wrapped_ovk: [u8; OVK_WRAPPED_LEN_BYTES] = encryption_result
-            .try_into()
-            .expect("OVK encryption result fits in ciphertext len");
-
-        wrapped_ovk
     }
 
     pub fn encrypt(&self, esk: &ka::Secret) -> SwapCiphertext {
