@@ -7,6 +7,7 @@ use jmt::{
 };
 use parking_lot::RwLock;
 use rocksdb::{Options, DB};
+use tokio::sync::watch;
 use tracing::Span;
 
 use crate::snapshot::Snapshot;
@@ -23,6 +24,18 @@ pub struct Storage(Arc<Inner>);
 struct Inner {
     latest_snapshot: RwLock<Snapshot>,
     db: Arc<DB>,
+    state_tx: watch::Sender<StateNotification>,
+}
+
+/// A notification of a new state version.
+pub struct StateNotification(Snapshot);
+
+impl StateNotification {
+    /// Obtain a snapshot of the new [`State`].
+    pub fn into_state(&self) -> State {
+        // We need this wrapper because the `State` itself isn't `Clone` (by design).
+        State::new(self.0.clone())
+    }
 }
 
 impl Storage {
@@ -49,9 +62,14 @@ impl Storage {
 
                     let latest_snapshot = RwLock::new(Snapshot::new(db.clone(), jmt_version));
 
+                    // We discard the receiver here, because we'll construct new ones in subscribe()
+                    let (snapshot_tx, _) =
+                        watch::channel(StateNotification(latest_snapshot.read().clone()));
+
                     Ok(Self(Arc::new(Inner {
                         latest_snapshot,
                         db,
+                        state_tx: snapshot_tx,
                     })))
                 })
             })?
@@ -62,6 +80,14 @@ impl Storage {
     /// `Storage`, or `None` if the tree is empty.
     pub async fn latest_version(&self) -> Result<Option<jmt::Version>> {
         latest_version(&self.0.db)
+    }
+
+    /// Returns a [`watch::Receiver`] that can be used to subscribe to new state versions.
+    pub fn subscribe(&self) -> watch::Receiver<StateNotification> {
+        // Calling subscribe() here to create a new receiver ensures
+        // that all previous values are marked as seen, and the user
+        // of the receiver will only be notified of *subsequent* values.
+        self.0.state_tx.subscribe()
     }
 
     /// Returns a new [`State`] on top of the latest version of the tree.
@@ -158,11 +184,19 @@ impl Storage {
                     }
 
                     // 4. update the snapshot
+
                     // Obtain the write-lock for the latest snapshot, and replace it with a new snapshot with the new version.
                     let mut guard = inner.latest_snapshot.write();
                     *guard = Snapshot::new(inner.db.clone(), new_version);
                     // Drop the write-lock (this will happen implicitly anyways, but it's good to be explicit).
                     drop(guard);
+
+                    // .send fails if the channel is closed (i.e., if there are no receivers);
+                    // in this case, we should ignore the error, we have no one to notify.
+                    let _ = inner
+                        .state_tx
+                        .send(StateNotification(inner.latest_snapshot.read().clone()));
+
                     anyhow::Result::<()>::Ok(())
                 })
             })?
