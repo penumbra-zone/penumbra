@@ -18,8 +18,8 @@ use crate::{
     Address, Fq, Rseed, Value,
 };
 
-pub const NOTE_LEN_BYTES: usize = 152;
-pub const NOTE_CIPHERTEXT_BYTES: usize = 168;
+pub const NOTE_LEN_BYTES: usize = 160;
+pub const NOTE_CIPHERTEXT_BYTES: usize = 176;
 
 /// A plaintext Penumbra note.
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -361,9 +361,9 @@ impl From<&Note> for [u8; NOTE_LEN_BYTES] {
     fn from(note: &Note) -> [u8; NOTE_LEN_BYTES] {
         let mut bytes = [0u8; NOTE_LEN_BYTES];
         bytes[0..80].copy_from_slice(&note.address.to_vec());
-        bytes[80..88].copy_from_slice(&note.value.amount.to_le_bytes());
-        bytes[88..120].copy_from_slice(&note.value.asset_id.0.to_bytes());
-        bytes[120..152].copy_from_slice(&note.rseed.to_bytes());
+        bytes[80..96].copy_from_slice(&note.value.amount.to_le_bytes());
+        bytes[96..128].copy_from_slice(&note.value.asset_id.0.to_bytes());
+        bytes[128..160].copy_from_slice(&note.rseed.to_bytes());
         bytes
     }
 }
@@ -393,13 +393,13 @@ impl TryFrom<&[u8]> for Note {
             return Err(Error::NoteDeserializationError);
         }
 
-        let amount_bytes: [u8; 8] = bytes[80..88]
+        let amount_bytes: [u8; 16] = bytes[80..96]
             .try_into()
             .map_err(|_| Error::NoteDeserializationError)?;
-        let asset_id_bytes: [u8; 32] = bytes[88..120]
+        let asset_id_bytes: [u8; 32] = bytes[96..128]
             .try_into()
             .map_err(|_| Error::NoteDeserializationError)?;
-        let rseed_bytes: [u8; 32] = bytes[120..152]
+        let rseed_bytes: [u8; 32] = bytes[128..160]
             .try_into()
             .map_err(|_| Error::NoteDeserializationError)?;
 
