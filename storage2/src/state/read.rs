@@ -214,7 +214,7 @@ pub(crate) fn prefix_raw_with_cache<'a>(
         .take_while(move |(k, _)| (**k).starts_with(prefix))
         .map(|(k, v)| (k.clone(), v.clone()));
 
-    // Maybe it would be possible to simplify this by using `async-stream` and implementing something similar to `itertools::merge_by`.
+    // Merge the cache iterator and state stream into a single stream.
     let merged = merge_cache(unwritten_changes_iter, state_stream);
 
     // Skip all the `None` values, as they were deleted.
