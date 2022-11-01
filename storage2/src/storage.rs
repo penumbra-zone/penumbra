@@ -99,7 +99,7 @@ impl Storage {
 
     /// Commits the provided [`State`] to persistent storage as the latest
     /// version of the chain state.
-    pub async fn commit(&self, state: State) -> Result<()> {
+    pub async fn commit(&self, state: State) -> Result<jmt::RootHash> {
         // We use wrapping_add here so that we can write `new_version = 0` by
         // overflowing `PRE_GENESIS_VERSION`.
         let old_version = self.latest_version();
@@ -143,14 +143,14 @@ impl Storage {
                     }
 
                     // Write the unwritten changes from the state to the JMT.
-                    let (jmt_root_hash, batch) = jmt.put_value_set(
+                    let (root_hash, batch) = jmt.put_value_set(
                         unwritten_changes.into_iter().map(|x| (x.0, x.2)),
                         new_version,
                     )?;
 
                     // Apply the JMT changes to the DB.
                     inner.write_node_batch(&batch.node_batch)?;
-                    tracing::trace!(?jmt_root_hash, "wrote node batch to backing store");
+                    tracing::trace!(?root_hash, "wrote node batch to backing store");
 
                     // Write the unwritten changes from the nonconsensus to RocksDB.
                     for (k, v) in state.nonconsensus_changes.into_iter() {
@@ -181,7 +181,7 @@ impl Storage {
                         .state_tx
                         .send(StateNotification(inner.latest_snapshot.read().clone()));
 
-                    anyhow::Result::<()>::Ok(())
+                    Ok(root_hash)
                 })
             })?
             .await?
