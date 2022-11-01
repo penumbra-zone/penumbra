@@ -53,9 +53,71 @@ impl TryFrom<pb::Amount> for Amount {
     fn try_from(amount: pb::Amount) -> Result<Self, Self::Error> {
         let lo = amount.lo as u128;
         let hi = amount.hi as u128;
+        // We want to encode the hi/lo bytes as follow:
+        //            hi: u64                          lo: u64
+        // ┌───┬───┬───┬───┬───┬───┬───┬───┐ ┌───┬───┬───┬───┬───┬───┬───┬───┐
+        // │   │   │   │   │   │   │   │   │ │   │   │   │   │   │   │   │   │
+        // └───┴───┴───┴───┴───┴───┴───┴───┘ └───┴───┴───┴───┴───┴───┴───┴───┘
+        //   15  14  13  12  11  10  9   8     7   6   5   4   3   2   1   0
+        //
+        // To achieve this, we shift hi 8 bytes to the right, and then add the
+        // lower order bytes (lo).
 
-        let inner: u128 = u128::from_be(hi) + lo;
+        let inner = u128::from_be(hi) + lo;
         Ok(Amount { inner })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::Amount;
+    use penumbra_proto::core::crypto::v1alpha1 as pb;
+    use rand::RngCore;
+    use rand_core::OsRng;
+
+    fn encode_decode(value: u128) -> u128 {
+        let amount = Amount { inner: value };
+        let proto: pb::Amount = amount.into();
+        Amount::try_from(proto).unwrap().inner
+    }
+
+    #[test]
+    fn encode_decode_max() {
+        let value = u128::MAX;
+        assert_eq!(value, encode_decode(value))
+    }
+
+    #[test]
+    fn encode_decode_zero() {
+        let value = u128::MIN;
+        assert_eq!(value, encode_decode(value))
+    }
+
+    #[test]
+    fn encode_decode_right_border_bit() {
+        let value: u128 = 1 << 64;
+        assert_eq!(value, encode_decode(value))
+    }
+
+    #[test]
+    fn encode_decode_left_border_bit() {
+        let value: u128 = 1 << 63;
+        assert_eq!(value, encode_decode(value))
+    }
+
+    #[test]
+    fn encode_decode_random() {
+        let mut rng = OsRng;
+        let mut dest: [u8; 16] = [0; 16];
+        rng.fill_bytes(&mut dest);
+        let value: u128 = u128::from_le_bytes(dest);
+        assert_eq!(value, encode_decode(value))
+    }
+
+    #[test]
+    fn encode_decode_u64() {
+        let value = u64::MAX as u128;
+        assert_eq!(value, encode_decode(value))
     }
 }
 
