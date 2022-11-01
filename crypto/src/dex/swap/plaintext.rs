@@ -216,13 +216,13 @@ impl From<&SwapPlaintext> for [u8; SWAP_LEN_BYTES] {
     fn from(swap: &SwapPlaintext) -> [u8; SWAP_LEN_BYTES] {
         let mut bytes = [0u8; SWAP_LEN_BYTES];
         bytes[0..64].copy_from_slice(&swap.trading_pair.to_bytes());
-        bytes[64..72].copy_from_slice(&swap.delta_1_i.to_le_bytes());
-        bytes[72..80].copy_from_slice(&swap.delta_2_i.to_le_bytes());
-        bytes[80..88].copy_from_slice(&swap.claim_fee.0.amount.to_le_bytes());
-        bytes[88..120].copy_from_slice(&swap.claim_fee.0.asset_id.to_bytes());
+        bytes[64..80].copy_from_slice(&swap.delta_1_i.to_le_bytes());
+        bytes[80..96].copy_from_slice(&swap.delta_2_i.to_le_bytes());
+        bytes[96..112].copy_from_slice(&swap.claim_fee.0.amount.to_le_bytes());
+        bytes[112..144].copy_from_slice(&swap.claim_fee.0.asset_id.to_bytes());
         let pb_address = pb_crypto::Address::from(swap.claim_address);
-        bytes[120..200].copy_from_slice(&pb_address.inner);
-        bytes[200..232].copy_from_slice(&swap.rseed.to_bytes());
+        bytes[144..224].copy_from_slice(&pb_address.inner);
+        bytes[224..256].copy_from_slice(&swap.rseed.to_bytes());
         bytes
     }
 }
