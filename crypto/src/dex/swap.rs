@@ -17,10 +17,10 @@ pub use ciphertext::SwapCiphertext;
 pub use payload::SwapPayload;
 pub use plaintext::SwapPlaintext;
 
-// Swap ciphertext byte length
-pub const SWAP_CIPHERTEXT_BYTES: usize = 248;
-// Swap plaintext byte length
-pub const SWAP_LEN_BYTES: usize = 232;
+// Swap ciphertext byte length.
+pub const SWAP_CIPHERTEXT_BYTES: usize = 256;
+// Swap plaintext byte length.
+pub const SWAP_LEN_BYTES: usize = 256;
 
 pub static DOMAIN_SEPARATOR: Lazy<Fq> =
     Lazy::new(|| Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"penumbra.swap").as_bytes()));
