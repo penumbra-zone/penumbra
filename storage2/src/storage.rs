@@ -100,29 +100,6 @@ impl Storage {
     /// Commits the provided [`State`] to persistent storage as the latest
     /// version of the chain state.
     pub async fn commit(&self, state: State) -> Result<()> {
-        let inner = self.0.clone();
-        // 1. Write the NCT
-        // TODO: move this higher up in the call stack, and use `put_nonconsensus` to store
-        // the NCT.
-        // tracing::debug!("serializing NCT");
-        // let tct_data = bincode::serialize(nct)?;
-        // tracing::debug!(tct_bytes = tct_data.len(), "serialized NCT");
-
-        // let db = self.db;
-
-        // let span = Span::current();
-        // tokio::task::Builder::new()
-        //     .name("put_nct")
-        //     .spawn_blocking(move || {
-        //         span.in_scope(|| {
-        //             let nct_cf = db.cf_handle("nct").expect("nct column family not found");
-        //             db.put_cf(nct_cf, "nct", &tct_data)
-        //         })
-        //     })
-        //     .unwrap()
-        //     .await??;
-
-        // 2. Write the JMT and nonconsensus data to RocksDB
         // We use wrapping_add here so that we can write `new_version = 0` by
         // overflowing `PRE_GENESIS_VERSION`.
         let old_version = self.latest_version();
@@ -133,6 +110,7 @@ impl Storage {
         }
 
         let span = Span::current();
+        let inner = self.0.clone();
 
         tokio::task::Builder::new()
             .name("Storage::write_node_batch")
