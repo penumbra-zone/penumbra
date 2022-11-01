@@ -2,11 +2,13 @@ use std::{collections::BTreeMap, pin::Pin};
 
 use anyhow::Result;
 use async_trait::async_trait;
+use futures::Stream;
+use tracing::Span;
 
 mod read;
 mod transaction;
 mod write;
-use futures::Stream;
+
 pub use read::StateRead;
 pub use transaction::Transaction as StateTransaction;
 pub use write::StateWrite;
@@ -55,8 +57,43 @@ impl State {
         StateTransaction::new(self)
     }
 
+    /// Returns the version this [`State`] snapshots.
+    ///
+    /// Note that there may be changes on top, if [`is_dirty`] returns `true`.
     pub fn version(&self) -> jmt::Version {
         self.snapshot.version()
+    }
+
+    /// Returns `true` if there are cached writes on top of the snapshot, and `false` otherwise.
+    pub fn is_dirty(&self) -> bool {
+        !(self.unwritten_changes.is_empty() && self.nonconsensus_changes.is_empty())
+    }
+
+    /// Gets a value by key alongside an ICS23 existence proof of that value.
+    ///
+    /// This method may only be used on a clean [`State`] fork, and will error
+    /// if [`is_dirty`] returns `true`.
+    ///
+    /// Errors if the key is not present.
+    /// TODO: change return type to `Option<Vec<u8>>` and an
+    /// existence-or-nonexistence proof.
+    pub async fn get_with_proof(&self, key: Vec<u8>) -> Result<(Vec<u8>, ics23::ExistenceProof)> {
+        if self.is_dirty() {
+            return Err(anyhow::anyhow!("requested get_with_proof on dirty State"));
+        }
+        let span = Span::current();
+        let snapshot = self.snapshot.clone();
+
+        tokio::task::Builder::new()
+            .name("State::get_with_proof")
+            .spawn_blocking(move || {
+                span.in_scope(|| {
+                    let tree = jmt::JellyfishMerkleTree::new(&snapshot);
+                    let proof = tree.get_with_ics23_proof(key, snapshot.version())?;
+                    Ok((proof.value.clone(), proof))
+                })
+            })?
+            .await?
     }
 }
 
