@@ -7,7 +7,13 @@ use std::{fmt::Display, num::NonZeroU128, ops};
 #[derive(Serialize, Deserialize, PartialEq, PartialOrd, Eq, Clone, Debug, Copy)]
 #[serde(try_from = "pb::Amount", into = "pb::Amount")]
 pub struct Amount {
-    pub inner: u128,
+    inner: u128,
+}
+
+impl Amount {
+    pub fn value(&self) -> u64 {
+        self.inner as u64
+    }
 }
 
 impl From<Amount> for pb::Amount {

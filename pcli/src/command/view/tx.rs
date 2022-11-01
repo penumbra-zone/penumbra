@@ -27,13 +27,13 @@ fn format_visible_swap_row(asset_cache: &Cache, swap: &SwapPlaintext) -> String 
 
     // For the non-pathological case:
     let (from_asset, from_value, to_asset) =
-        if swap.delta_1_i.inner == 0 && swap.delta_2_i.inner > 0 {
+        if swap.delta_1_i.value() == 0 && swap.delta_2_i.value() > 0 {
             (
                 swap.trading_pair.asset_2(),
                 swap.delta_2_i,
                 swap.trading_pair.asset_1(),
             )
-        } else if swap.delta_2_i.inner == 0 && swap.delta_1_i.inner > 0 {
+        } else if swap.delta_2_i.value() == 0 && swap.delta_1_i.value() > 0 {
             (
                 swap.trading_pair.asset_1(),
                 swap.delta_1_i,
@@ -120,9 +120,9 @@ fn format_visible_swap_claim_row(
     .format(asset_cache);
 
     // For the non-pathological case:
-    let claimed_value = if note_1.amount().inner == 0 && note_2.amount().inner > 0 {
+    let claimed_value = if note_1.amount().value() == 0 && note_2.amount().value() > 0 {
         note_2.value()
-    } else if note_2.amount().inner == 0 && note_1.amount().inner > 0 {
+    } else if note_2.amount().value() == 0 && note_1.amount().value() > 0 {
         note_1.value()
     } else {
         // The pathological case (both assets have output values).
