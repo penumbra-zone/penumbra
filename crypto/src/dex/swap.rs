@@ -14,11 +14,11 @@ use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 
 use super::TradingPair;
 
-// Swap ciphertext byte length
-pub const SWAP_CIPHERTEXT_BYTES: usize = 216;
-// Swap plaintext byte length
-pub const SWAP_LEN_BYTES: usize = 200;
-
+/// Swap plaintext byte length.
+pub const SWAP_LEN_BYTES: usize = 224;
+/// Swap ciphertext byte length.
+pub const SWAP_CIPHERTEXT_BYTES: usize = 240;
+/// Outgoing viewing key (OVK) byte length.
 pub const OVK_WRAPPED_LEN_BYTES: usize = 80;
 
 pub static DOMAIN_SEPARATOR: Lazy<Fq> =

@@ -176,12 +176,12 @@ impl From<&SwapPlaintext> for [u8; SWAP_LEN_BYTES] {
     fn from(swap: &SwapPlaintext) -> [u8; SWAP_LEN_BYTES] {
         let mut bytes = [0u8; SWAP_LEN_BYTES];
         bytes[0..64].copy_from_slice(&swap.trading_pair.to_bytes());
-        bytes[64..72].copy_from_slice(&swap.delta_1_i.to_le_bytes());
-        bytes[72..80].copy_from_slice(&swap.delta_2_i.to_le_bytes());
-        bytes[80..88].copy_from_slice(&swap.claim_fee.0.amount.to_le_bytes());
-        bytes[88..120].copy_from_slice(&swap.claim_fee.0.asset_id.to_bytes());
+        bytes[64..80].copy_from_slice(&swap.delta_1_i.to_le_bytes());
+        bytes[80..96].copy_from_slice(&swap.delta_2_i.to_le_bytes());
+        bytes[96..112].copy_from_slice(&swap.claim_fee.0.amount.to_le_bytes());
+        bytes[112..144].copy_from_slice(&swap.claim_fee.0.asset_id.to_bytes());
         let pb_address = pb_crypto::Address::from(swap.claim_address);
-        bytes[120..200].copy_from_slice(&pb_address.inner);
+        bytes[144..224].copy_from_slice(&pb_address.inner);
         bytes
     }
 }
@@ -203,19 +203,19 @@ impl TryFrom<&[u8]> for SwapPlaintext {
         let tp_bytes: [u8; 64] = bytes[0..64]
             .try_into()
             .map_err(|_| anyhow!("error fetching trading pair bytes"))?;
-        let delta_1_bytes: [u8; 8] = bytes[64..72]
+        let delta_1_bytes: [u8; 16] = bytes[64..80]
             .try_into()
             .map_err(|_| anyhow!("error fetching delta1 bytes"))?;
-        let delta_2_bytes: [u8; 8] = bytes[72..80]
+        let delta_2_bytes: [u8; 16] = bytes[80..96]
             .try_into()
             .map_err(|_| anyhow!("error fetching delta2 bytes"))?;
-        let fee_amount_bytes: [u8; 8] = bytes[80..88]
+        let fee_amount_bytes: [u8; 16] = bytes[96..112]
             .try_into()
             .map_err(|_| anyhow!("error fetching fee amount bytes"))?;
-        let fee_asset_id_bytes: [u8; 32] = bytes[88..120]
+        let fee_asset_id_bytes: [u8; 32] = bytes[112..144]
             .try_into()
             .map_err(|_| anyhow!("error fetching fee asset ID bytes"))?;
-        let address_bytes: [u8; 80] = bytes[120..200]
+        let address_bytes: [u8; 80] = bytes[144..224]
             .try_into()
             .map_err(|_| anyhow!("error fetching address bytes"))?;
         let pb_address = pb_crypto::Address {
