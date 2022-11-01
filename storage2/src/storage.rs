@@ -77,9 +77,11 @@ impl Storage {
     }
 
     /// Returns the latest version (block height) of the tree recorded by the
-    /// `Storage`, or `None` if the tree is empty.
-    pub async fn latest_version(&self) -> Result<Option<jmt::Version>> {
-        latest_version(&self.0.db)
+    /// `Storage`.
+    ///
+    /// If the tree is empty and has not been initialized, returns `u64::MAX`.
+    pub fn latest_version(&self) -> jmt::Version {
+        self.0.latest_snapshot.read().version()
     }
 
     /// Returns a [`watch::Receiver`] that can be used to subscribe to new state versions.
@@ -123,9 +125,13 @@ impl Storage {
         // 2. Write the JMT and nonconsensus data to RocksDB
         // We use wrapping_add here so that we can write `new_version = 0` by
         // overflowing `PRE_GENESIS_VERSION`.
-        let old_version = self.latest_version().await?.unwrap_or(u64::MAX);
+        let old_version = self.latest_version();
         let new_version = old_version.wrapping_add(1);
         tracing::trace!(old_version, new_version);
+        if old_version != state.version() {
+            return Err(anyhow::anyhow!("version mismatch in commit: expected state forked from version {} but found state forked from version {}", old_version, state.version()));
+        }
+
         let span = Span::current();
 
         tokio::task::Builder::new()
