@@ -166,12 +166,12 @@ impl App {
         let jmt_root = storage.commit(state)?;
         let app_hash: AppHash = jmt_root.into();
 
-        tracing::debug!(?app_hash, version, "finished committing state");
+        tracing::debug!(?app_hash, "finished committing state");
 
         // Get the latest version of the state, now that we've committed it.
         self.state = Arc::new(storage.state());
 
-        Ok((app_hash, version))
+        Ok(app_hash)
     }
 
     // TODO: should this just be returned by `commit`? both are called during every `EndBlock`
