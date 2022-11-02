@@ -25,31 +25,19 @@ pub trait Component: Sized {
     /// This method is called once per chain, and should only perform
     /// writes, since the backing tree for the [`State`] will
     /// be empty.
-    ///
-    /// # Invariants
-    ///
-    /// This method should only be called immediately after [`Component::new`].
-    /// No methods should be called following this method.
-    async fn init_chain(&mut self, state_tx: &mut StateTransaction, app_state: &genesis::AppState);
+    async fn init_chain(state: &mut StateTransaction, app_state: &genesis::AppState);
 
     /// Begins a new block, optionally inspecting the ABCI
     /// [`BeginBlock`](abci::request::BeginBlock) request.
-    ///
-    /// # Invariants
-    ///
-    /// This method should only be called immediately after [`Component::new`].
-    /// This method need not be called before [`Component::execute_tx`] (e.g.,
-    /// in order to simulate executing a transaction in the mempool).
     async fn begin_block(
-        &mut self,
+        state: &mut StateTransaction,
         ctx: Context,
-        state_tx: &mut StateTransaction,
         begin_block: &abci::request::BeginBlock,
     );
 
     /// Performs all of this component's stateless validity checks on the given
     /// [`Transaction`].
-    fn check_tx_stateless(ctx: Context, tx: &Transaction) -> Result<()>;
+    fn check_tx_stateless(ctx: Context, tx: Arc<Transaction>) -> Result<()>;
 
     /// Performs all of this component's stateful validity checks on the given
     /// [`Transaction`].
@@ -59,7 +47,8 @@ pub trait Component: Sized {
     /// This method should only be called on transactions that have been
     /// checked with [`Component::check_tx_stateless`].
     /// This method can be called before [`Component::begin_block`].
-    async fn check_tx_stateful(state: Arc<State>, ctx: Context, tx: &Transaction) -> Result<()>;
+    async fn check_tx_stateful(state: Arc<State>, ctx: Context, tx: Arc<Transaction>)
+        -> Result<()>;
 
     /// Executes the given [`Transaction`] against the current state.
     ///
@@ -69,10 +58,9 @@ pub trait Component: Sized {
     /// invocation of [`Component::check_tx_stateful`] on the same transaction.
     /// This method can be called before [`Component::begin_block`].
     async fn execute_tx(
-        &mut self,
+        state: &mut StateTransaction,
         ctx: Context,
-        state_tx: &mut StateTransaction,
-        tx: &Transaction,
+        tx: Arc<Transaction>,
     ) -> Result<()>;
 
     /// Ends the block, optionally inspecting the ABCI
@@ -84,10 +72,9 @@ pub trait Component: Sized {
     /// This method should only be called after [`Component::begin_block`].
     /// No methods should be called following this method.
     async fn end_block(
-        &mut self,
+        state: &mut StateTransaction,
         ctx: Context,
         end_block: &abci::request::EndBlock,
-        state_tx: &mut StateTransaction,
     );
 }
 
