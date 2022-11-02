@@ -48,24 +48,31 @@ pub trait Homogenize<TryFrom, Error, Into> {
     fn convert(&self, try_from: TryFrom) -> Result<Into, Error>;
 }
 
-pub trait Parse<Error>: Sized {
-    // TODO: rework this to remove the generic
-    fn parse(separator: &str, segments: &[&str]) -> Result<Self, Error>;
+pub trait Parse: Sized {
+    const DEPTH: usize;
+
+    fn parse<'p, 's>(
+        separator: &'static str,
+        path: &'p [&'s str],
+    ) -> Result<Self, ParseError<'p, 's>>;
 }
 
-pub struct InvalidPath {
+pub struct ParseError<'p, 's> {
+    pub separator: &'static str,
+    pub path: &'p [&'s str],
     pub depth: usize,
-}
-
-pub struct ParseError<'s, P> {
-    pub prefix: P, // TODO: actually ends up being an OwnedPath of some kind
-    pub remainder: &'s [&'s str],
     pub error: ParseErrorKind,
 }
 
 pub enum ParseErrorKind {
-    InvalidSegment(Box<dyn ::std::error::Error>),
-    WrongLength { expected: usize, actual: usize },
+    ParseSegmentError {
+        error: Box<dyn ::std::error::Error + Send + Sync>,
+    },
+    InvalidStaticSegment {
+        expected: &'static [&'static str],
+    },
+    UnexpectedEndOfPath,
+    UnexpectedSubKey,
 }
 
 // TODO: parsing should build a path, then convert it to a key
@@ -189,6 +196,12 @@ pub mod schema {
         parent: Schema, // special when root of schema
     }
 
+    #[derive(::core::clone::Clone, ::core::cmp::PartialEq, ::core::cmp::Eq)]
+    pub struct OwnedPath {
+        params: OwnedParams,
+        parent: Schema, // special when root of schema
+    }
+
     // Prefix, Key, OwnedPrefix, and OwnedKey are only pub in the root of the schema
 
     #[derive(
@@ -205,12 +218,6 @@ pub mod schema {
     pub struct Key<'a> {
         params: Params<'a>,
         child: SubKey<'a>,
-    }
-
-    #[derive(::core::clone::Clone, ::core::cmp::PartialEq, ::core::cmp::Eq)]
-    pub struct OwnedPath {
-        params: OwnedParams,
-        parent: Schema, // special when root of schema
     }
 
     #[derive(::core::clone::Clone, ::core::cmp::PartialEq, ::core::cmp::Eq)]
@@ -271,24 +278,6 @@ pub mod schema {
         governance(governance::OwnedKey),
     }
 
-    impl<Error> crate::Parse<Error> for OwnedKey
-    where
-        Error: ::core::convert::From<<u64 as crate::Segment<Schema>>::ParseError>
-            + ::core::convert::From<crate::InvalidPath>,
-    {
-        fn parse(separator: &str, segments: &[&str]) -> Result<Self, Error> {
-            match segments {
-                ["governance", rest @ ..] => Ok(OwnedKey {
-                    params: OwnedParams {},
-                    child: OwnedSubKey::governance(<governance::OwnedKey as crate::Parse<
-                        Error,
-                    >>::parse(separator, rest)?),
-                }),
-                _ => Err(crate::InvalidPath { depth: 0 }.into()),
-            }
-        }
-    }
-
     impl<'a> From<&'a OwnedSubPrefix> for SubPrefix<'a> {
         fn from(prefix: &'a OwnedSubPrefix) -> Self {
             match prefix {
@@ -317,6 +306,33 @@ pub mod schema {
         fn from(key: SubKey<'a>) -> Self {
             match key {
                 SubKey::governance(key) => OwnedSubKey::governance(key.into()),
+            }
+        }
+    }
+
+    impl crate::Parse for OwnedKey {
+        const DEPTH: usize = 0;
+
+        fn parse<'p, 's>(
+            separator: &'static str,
+            path: &'p [&'s str],
+        ) -> Result<Self, crate::ParseError<'p, 's>> {
+            static SUBKEYS: &[&str] = &["governance"];
+
+            match path[Self::DEPTH..] {
+                ["governance", ..] => {
+                    let child = governance::OwnedKey::parse(separator, path)?;
+                    Ok(OwnedKey {
+                        params: OwnedParams {},
+                        child: OwnedSubKey::governance(child),
+                    })
+                }
+                _ => Err(crate::ParseError {
+                    separator,
+                    path,
+                    depth: Self::DEPTH,
+                    error: crate::ParseErrorKind::InvalidStaticSegment { expected: SUBKEYS },
+                }),
             }
         }
     }
@@ -607,26 +623,6 @@ pub mod schema {
             proposal(proposal::OwnedKey),
         }
 
-        impl<Error> crate::Parse<Error> for OwnedKey
-        where
-            Error: ::core::convert::From<<u64 as crate::Segment<super::Schema>>::ParseError>
-                + ::core::convert::From<crate::InvalidPath>,
-        {
-            fn parse(separator: &str, segments: &[&str]) -> Result<Self, Error> {
-                match segments {
-                    ["proposal", rest @ ..] => Ok(OwnedKey {
-                        params: OwnedParams {},
-                        child: OwnedSubKey::proposal(<proposal::OwnedKey as crate::Parse<
-                            Error,
-                        >>::parse(
-                            separator, rest
-                        )?),
-                    }),
-                    _ => Err(crate::InvalidPath { depth: 1 }.into()),
-                }
-            }
-        }
-
         impl<'a> From<&'a OwnedSubPrefix> for SubPrefix<'a> {
             fn from(prefix: &'a OwnedSubPrefix) -> Self {
                 match prefix {
@@ -675,6 +671,33 @@ pub mod schema {
                 OwnedPath {
                     parent: self,
                     params: OwnedParams {},
+                }
+            }
+        }
+
+        impl crate::Parse for OwnedKey {
+            const DEPTH: usize = 1;
+
+            fn parse<'p, 's>(
+                separator: &'static str,
+                path: &'p [&'s str],
+            ) -> Result<Self, crate::ParseError<'p, 's>> {
+                static SUBKEYS: &[&str] = &["proposal"];
+
+                match path[Self::DEPTH..] {
+                    ["proposal", ..] => {
+                        let child = proposal::OwnedKey::parse(separator, path)?;
+                        Ok(OwnedKey {
+                            params: OwnedParams {},
+                            child: OwnedSubKey::proposal(child),
+                        })
+                    }
+                    _ => Err(crate::ParseError {
+                        separator,
+                        path,
+                        depth: Self::DEPTH,
+                        error: crate::ParseErrorKind::InvalidStaticSegment { expected: SUBKEYS },
+                    }),
                 }
             }
         }
@@ -1009,22 +1032,6 @@ pub mod schema {
                 id(id::OwnedKey),
             }
 
-            impl<Error> crate::Parse<Error> for OwnedKey
-            where
-                Error: ::core::convert::From<<u64 as crate::Segment<super::super::Schema>>::ParseError>
-                    + ::core::convert::From<crate::InvalidPath>,
-            {
-                fn parse(separator: &str, segments: &[&str]) -> Result<Self, Error> {
-                    // special: when child has args, forward directly
-                    Ok(OwnedKey {
-                        params: OwnedParams {},
-                        child: OwnedSubKey::id(<id::OwnedKey as crate::Parse<Error>>::parse(
-                            separator, segments,
-                        )?),
-                    })
-                }
-            }
-
             // Child has args, so we have to do this manually, because we can't be a struct
             impl ::clap::FromArgMatches for OwnedSubKey {
                 fn from_arg_matches(matches: &clap::ArgMatches) -> Result<Self, clap::Error> {
@@ -1100,6 +1107,22 @@ pub mod schema {
                         parent: self,
                         params: OwnedParams {},
                     }
+                }
+            }
+
+            impl crate::Parse for OwnedKey {
+                const DEPTH: usize = 2;
+
+                fn parse<'p, 's>(
+                    separator: &'static str,
+                    path: &'p [&'s str],
+                ) -> Result<Self, crate::ParseError<'p, 's>> {
+                    // When child is a variable, forward directly to the child
+                    let child = id::OwnedKey::parse(separator, path)?;
+                    Ok(OwnedKey {
+                        params: OwnedParams {},
+                        child: OwnedSubKey::id(child),
+                    })
                 }
             }
 
@@ -1482,36 +1505,6 @@ pub mod schema {
                     voting_start(voting_start::OwnedKey),
                 }
 
-                impl<Error> crate::Parse<Error> for OwnedKey
-                where
-                    u64: crate::Segment<super::super::super::Schema>,
-                    Error: ::core::convert::From<
-                            <u64 as crate::Segment<super::super::super::Schema>>::ParseError,
-                        > + ::core::convert::From<crate::InvalidPath>,
-                {
-                    fn parse(separator: &str, segments: &[&str]) -> Result<Self, Error> {
-                        match segments {
-                            [id, rest @ ..] => {
-                                let id =
-                                    crate::Segment::parse(id, separator).map_err(Error::from)?;
-                                let params = OwnedParams { id };
-                                match rest {
-                                    ["voting_start", rest @ ..] => Ok(OwnedKey {
-                                        params,
-                                        child: OwnedSubKey::voting_start(
-                                            <voting_start::OwnedKey as crate::Parse<Error>>::parse(
-                                                separator, rest,
-                                            )?,
-                                        ),
-                                    }),
-                                    _ => Err(crate::InvalidPath { depth: 2 }.into()),
-                                }
-                            }
-                            [] => todo!(),
-                        }
-                    }
-                }
-
                 impl<'a> From<&'a OwnedSubPrefix> for SubPrefix<'a> {
                     fn from(prefix: &'a OwnedSubPrefix) -> Self {
                         match *prefix {} // special case when no prefixes, we need to dereference to prove match is complete
@@ -1556,6 +1549,41 @@ pub mod schema {
                         OwnedPath {
                             parent: self,
                             params: OwnedParams { id },
+                        }
+                    }
+                }
+
+                impl crate::Parse for OwnedKey {
+                    const DEPTH: usize = 3;
+
+                    fn parse<'p, 's>(
+                        separator: &'static str,
+                        path: &'p [&'s str],
+                    ) -> Result<Self, crate::ParseError<'p, 's>> {
+                        match path[Self::DEPTH..] {
+                            [id, ..] => match id.parse() {
+                                Ok(id) => {
+                                    let child = voting_start::OwnedKey::parse(separator, path)?;
+                                    Ok(OwnedKey {
+                                        params: OwnedParams { id },
+                                        child: OwnedSubKey::voting_start(child),
+                                    })
+                                }
+                                Err(e) => Err(crate::ParseError {
+                                    separator,
+                                    path,
+                                    depth: Self::DEPTH,
+                                    error: crate::ParseErrorKind::ParseSegmentError {
+                                        error: Box::new(e),
+                                    },
+                                }),
+                            },
+                            [] => Err(crate::ParseError {
+                                separator,
+                                path,
+                                depth: Self::DEPTH,
+                                error: crate::ParseErrorKind::UnexpectedEndOfPath,
+                            }),
                         }
                     }
                 }
@@ -1902,20 +1930,6 @@ pub mod schema {
                     #[group(skip)]
                     struct OwnedParams {}
 
-                    impl<Error> crate::Parse<Error> for OwnedKey
-                    where
-                        Error: ::core::convert::From<crate::InvalidPath>,
-                    {
-                        fn parse(separator: &str, segments: &[&str]) -> Result<Self, Error> {
-                            match segments {
-                                [] => Ok(OwnedKey {
-                                    params: OwnedParams {},
-                                }),
-                                _ => Err(crate::InvalidPath { depth: 3 }.into()),
-                            }
-                        }
-                    }
-
                     impl<'a> super::Path<'a> {
                         pub fn voting_start(self) -> Path<'a> {
                             Path {
@@ -1932,6 +1946,27 @@ pub mod schema {
                             OwnedPath {
                                 parent: self,
                                 params: OwnedParams {},
+                            }
+                        }
+                    }
+
+                    impl crate::Parse for OwnedKey {
+                        const DEPTH: usize = 4;
+
+                        fn parse<'p, 's>(
+                            separator: &'static str,
+                            path: &'p [&'s str],
+                        ) -> Result<Self, crate::ParseError<'p, 's>> {
+                            match path[Self::DEPTH..] {
+                                [] => Ok(OwnedKey {
+                                    params: OwnedParams {},
+                                }),
+                                _ => Err(crate::ParseError {
+                                    separator,
+                                    path,
+                                    depth: Self::DEPTH,
+                                    error: crate::ParseErrorKind::UnexpectedSubKey,
+                                }),
                             }
                         }
                     }
