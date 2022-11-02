@@ -463,7 +463,7 @@ trait StateReadExt: StateRead {
 }
 
 #[async_trait]
-trait StateWriteExt: StateWrite + StateRead {
+trait StateWriteExt: StateWrite {
     // TODO: remove this entirely post-integration. This is slow but intended as
     // a drop-in replacement so we can avoid really major code changes.
     //

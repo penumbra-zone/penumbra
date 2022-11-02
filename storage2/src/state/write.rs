@@ -2,8 +2,10 @@ use std::{any::Any, fmt::Debug};
 
 use penumbra_proto::{Message, Protobuf};
 
+use crate::StateRead;
+
 /// Write access to chain state.
-pub trait StateWrite {
+pub trait StateWrite: StateRead {
     /// Puts raw bytes into the verifiable key-value store with the given key.
     fn put_raw(&mut self, key: String, value: Vec<u8>);
 
