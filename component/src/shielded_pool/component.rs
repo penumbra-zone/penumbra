@@ -238,6 +238,9 @@ impl Component for ShieldedPool {
         // Set the height of the compact block
         self.compact_block.height = height;
 
+        // TODO: there should be a separate extension trait that other components can
+        // use that drops newly minted notes into the ephemeral object cache in a defined
+        // location, so that the shielded pool can read them all during end_block
         // Handle any pending reward notes from the Staking component
         let notes = self
             .state
