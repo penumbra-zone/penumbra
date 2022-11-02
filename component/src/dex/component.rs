@@ -1,19 +1,19 @@
 use std::collections::BTreeMap;
 
-use crate::shielded_pool::View as _;
+use crate::shielded_pool::StateReadExt as _;
 use crate::{Component, Context};
 use anyhow::{Context as _, Result};
 use ark_ff::Zero;
 use async_trait::async_trait;
 use decaf377::Fr;
-use penumbra_chain::{genesis, View as _};
+use penumbra_chain::{genesis, StateReadExt as _};
 use penumbra_crypto::dex::lp::Reserves;
 use penumbra_crypto::{
     asset,
     dex::{BatchSwapOutputData, TradingPair},
     MockFlowCiphertext, SwapFlow, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_storage2::State;
+use penumbra_storage2::{State, StateRead, StateWrite};
 use penumbra_transaction::action::swap_claim::ClaimedSwap;
 use penumbra_transaction::{action::swap_claim::List as SwapClaimBodyList, Action, Transaction};
 use tendermint::abci;
@@ -290,11 +290,9 @@ impl Component for Dex {
     }
 }
 
-/// Extension trait providing read/write access to dex data.
-///
-/// TODO: should this be split into Read and Write traits?
+/// Extension trait providing read access to dex data.
 #[async_trait]
-pub trait View {
+pub trait StateReadExt: StateRead {
     async fn output_data(
         &self,
         height: u64,
@@ -304,6 +302,15 @@ pub trait View {
             .await
     }
 
+    async fn stub_cpmm_reserves(&self, trading_pair: &TradingPair) -> Result<Option<Reserves>> {
+        self.get_domain(state_key::stub_cpmm_reserves(trading_pair).into())
+            .await
+    }
+}
+
+/// Extension trait providing write access to dex data.
+#[async_trait]
+pub trait StateWriteExt: StateWrite {
     async fn set_output_data(&mut self, output_data: BatchSwapOutputData) {
         let height = output_data.height;
         let trading_pair = output_data.trading_pair;
@@ -312,11 +319,6 @@ pub trait View {
             output_data,
         )
         .await;
-    }
-
-    async fn stub_cpmm_reserves(&self, trading_pair: &TradingPair) -> Result<Option<Reserves>> {
-        self.get_domain(state_key::stub_cpmm_reserves(trading_pair).into())
-            .await
     }
 
     async fn set_stub_cpmm_reserves(&self, trading_pair: &TradingPair, reserves: Reserves) {
