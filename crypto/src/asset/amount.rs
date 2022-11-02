@@ -38,7 +38,7 @@ impl From<Amount> for pb::Amount {
             }
 
             let lo = u64::from_le_bytes(lo_bytes);
-            let hi = u64::from_be_bytes(hi_bytes);
+            let hi = u64::from_le_bytes(hi_bytes);
             pb::Amount { lo, hi }
         }
     }
@@ -50,17 +50,21 @@ impl TryFrom<pb::Amount> for Amount {
     fn try_from(amount: pb::Amount) -> Result<Self, Self::Error> {
         let lo = amount.lo as u128;
         let hi = amount.hi as u128;
-        // We want to encode the hi/lo bytes as follow:
+        // `hi` and `lo` represent the high/low order bytes respectively.
+        //
+        // We want to encode `hi` and `lo` into a single `u128` of the form:
+        //
         //            hi: u64                          lo: u64
         // ┌───┬───┬───┬───┬───┬───┬───┬───┐ ┌───┬───┬───┬───┬───┬───┬───┬───┐
         // │   │   │   │   │   │   │   │   │ │   │   │   │   │   │   │   │   │
         // └───┴───┴───┴───┴───┴───┴───┴───┘ └───┴───┴───┴───┴───┴───┴───┴───┘
         //   15  14  13  12  11  10  9   8     7   6   5   4   3   2   1   0
         //
-        // To achieve this, we shift hi 8 bytes to the right, and then add the
-        // lower order bytes (lo).
+        // To achieve this, we shift `hi` 8 bytes to the left:
+        let shifted = u128::from_le(hi) << 64;
+        // and then add the lower order bytes:
+        let inner = shifted + lo;
 
-        let inner = u128::from_be(hi) + lo;
         Ok(Amount { inner })
     }
 }
