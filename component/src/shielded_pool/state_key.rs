@@ -17,7 +17,7 @@ pub fn denom_by_asset(asset_id: &asset::Id) -> String {
     format!("shielded_pool/assets/{}/denom", asset_id)
 }
 
-pub fn note_source(note_commitment: note::Commitment) -> String {
+pub fn note_source(note_commitment: &note::Commitment) -> String {
     format!("shielded_pool/note_source/{}", note_commitment)
 }
 
@@ -70,3 +70,64 @@ pub fn quarantined_spent_nullifier_lookup(nullifier: Nullifier) -> String {
 }
 
 pub use crate::stake::state_key::slashed_validators;
+
+pub(crate) mod internal {
+    use super::*;
+
+    pub fn stub_note_commitment_tree() -> &'static str {
+        "shielded_pool/stub/note_commitment_tree"
+    }
+    pub fn stub_compact_block() -> &'static str {
+        "shielded_pool/stub/note_commitment_tree"
+    }
+
+    // WIP towards atomization of current compact block, abandoned in favor of
+    // the "stub approach" above, where we keep just one item per field
+    // previously on the Component, and do a deep copy every time we want to
+    // access it. this is slow and inefficient but will at least work, so
+    // we can get back to working code
+
+    pub mod compact_block {
+        use super::*;
+
+        pub mod note_payloads {
+            use super::*;
+
+            pub fn prefix() -> &'static str {
+                "shielded_pool/compact_block/note_payloads/"
+            }
+
+            pub fn item(note_commitment: &note::Commitment) -> String {
+                format!("{}{}", prefix(), note_commitment)
+            }
+        }
+
+        pub mod nullifiers {
+            use super::*;
+
+            pub fn prefix() -> &'static str {
+                "shielded_pool/compact_block/nullifiers/"
+            }
+
+            pub fn item(nullifier: &Nullifier) -> String {
+                format!("{}{}", prefix(), nullifier)
+            }
+        }
+    }
+
+    pub mod quarantine {
+        use super::*;
+
+        // ?????
+
+        pub mod scheduled {}
+
+        pub fn prefix() -> &'static str {
+            "shielded_pool/compact_block/quarantine/"
+        }
+
+        pub fn item(note_commitment: &note::Commitment) -> String {
+            format!("{}{}", prefix(), note_commitment)
+        }
+    }
+}

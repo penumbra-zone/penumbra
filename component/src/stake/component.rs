@@ -11,7 +11,7 @@ use penumbra_chain::quarantined::Slashed;
 use penumbra_chain::{genesis, Epoch, View as _};
 use penumbra_crypto::{DelegationToken, IdentityKey, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::Protobuf;
-use penumbra_storage2::State;
+use penumbra_storage2::{State, StateTransaction};
 use penumbra_transaction::{
     action::{Delegate, Undelegate},
     Action, Transaction,
@@ -832,7 +832,7 @@ impl Staking {
 #[async_trait]
 impl Component for Staking {
     #[instrument(name = "staking", skip(self, app_state))]
-    async fn init_chain(&mut self, app_state: &genesis::AppState) {
+    async fn init_chain(state: &mut StateTransaction, app_state: &genesis::AppState) {
         let starting_height = self.state.get_block_height().await.unwrap();
         let starting_epoch = Epoch::from_height(
             starting_height,
