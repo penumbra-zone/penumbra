@@ -10,7 +10,7 @@ use ibc::core::ics04_channel::channel::State as ChannelState;
 use ibc::core::ics04_channel::packet::Packet;
 use ibc::core::ics24_host::identifier::ChannelId;
 use ibc::core::ics24_host::identifier::PortId;
-use penumbra_storage::StateExt;
+use penumbra_storage2::{StateRead, StateWrite};
 use penumbra_transaction::action::ICS20Withdrawal;
 
 pub trait CheckStatus: private::Sealed {}
@@ -71,7 +71,7 @@ impl From<ICS20Withdrawal> for IBCPacket<Unchecked> {
 /// This trait, an extension of the Channel, Connection, and Client views, allows a component to
 /// send a packet.
 #[async_trait]
-pub trait SendPacket: StateExt {
+pub trait SendPacket: StateWrite {
     /// Send a packet on a channel. This assumes that send_packet_check has already been called on
     /// the provided packet.
     async fn send_packet_execute(&mut self, _ctx: Context, packet: IBCPacket<Checked>) {
@@ -172,7 +172,7 @@ pub trait SendPacket: StateExt {
     }
 }
 
-impl<T: StateExt> SendPacket for T {}
+impl<T: StateWrite> SendPacket for T {}
 
 #[async_trait]
-pub trait WriteAcknowledgement: StateExt {}
+pub trait WriteAcknowledgement: StateWrite {}

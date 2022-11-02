@@ -31,14 +31,12 @@ mod execution;
 mod stateful;
 mod stateless;
 
-pub struct ConnectionComponent {
-    state: State,
-}
+pub struct ConnectionComponent {}
 
 impl ConnectionComponent {
     #[instrument(name = "ibc_connection", skip(state))]
-    pub async fn new(state: State) -> Self {
-        Self { state }
+    pub async fn new() -> Self {
+        Self {}
     }
 }
 

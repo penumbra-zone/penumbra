@@ -17,7 +17,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use client::Ics2Client;
 use ibc::core::ics24_host::identifier::PortId;
-use penumbra_chain::{genesis, View as _};
+use penumbra_chain::{genesis, StateReadExt as _};
 use penumbra_storage2::{State, StateTransaction};
 use penumbra_transaction::{Action, Transaction};
 use tendermint::abci;
@@ -37,7 +37,7 @@ impl IBCComponent {
         let connection = connection::ConnectionComponent::new().await;
 
         let mut router = AppRouter::new();
-        let transfer = ICS20Transfer::new(state.clone());
+        let transfer = ICS20Transfer::new();
         router.bind(PortId::transfer(), Box::new(transfer.clone()));
 
         let channel = channel::ICS4Channel::new(Box::new(router)).await;
@@ -54,7 +54,7 @@ impl IBCComponent {
 #[async_trait]
 impl Component for IBCComponent {
     #[instrument(name = "ibc", skip(self, app_state))]
-    async fn init_chain(&mut self, app_state: &genesis::AppState) {
+    async fn init_chain(state: &mut StateTransaction, app_state: &genesis::AppState) {
         self.client.init_chain(app_state).await;
         self.connection.init_chain(app_state).await;
         self.channel.init_chain(app_state).await;
@@ -62,7 +62,11 @@ impl Component for IBCComponent {
     }
 
     #[instrument(name = "ibc", skip(self, begin_block, ctx))]
-    async fn begin_block(&mut self, ctx: Context, begin_block: &abci::request::BeginBlock) {
+    async fn begin_block(
+        state: &mut StateTransaction,
+        ctx: Context,
+        begin_block: &abci::request::BeginBlock,
+    ) {
         self.client.begin_block(ctx.clone(), begin_block).await;
         self.connection.begin_block(ctx.clone(), begin_block).await;
         self.channel.begin_block(ctx.clone(), begin_block).await;
@@ -70,7 +74,7 @@ impl Component for IBCComponent {
     }
 
     #[instrument(name = "ibc", skip(tx, ctx))]
-    fn check_tx_stateless(ctx: Context, tx: &Transaction) -> Result<()> {
+    fn check_tx_stateless(ctx: Context, tx: Arc<Transaction>) -> Result<()> {
         client::Ics2Client::check_tx_stateless(ctx.clone(), tx)?;
         connection::ConnectionComponent::check_tx_stateless(ctx.clone(), tx)?;
         channel::ICS4Channel::check_tx_stateless(ctx.clone(), tx)?;
@@ -81,10 +85,9 @@ impl Component for IBCComponent {
 
     #[instrument(name = "ibc", skip(self, ctx, tx))]
     async fn check_tx_stateful(
-        &self,
-        ctx: Context,
-        tx: &Transaction,
         state: Arc<State>,
+        ctx: Context,
+        tx: Arc<Transaction>,
     ) -> Result<()> {
         if tx.ibc_actions().count() > 0 && !self.state.get_chain_params().await?.ibc_enabled {
             return Err(anyhow::anyhow!(
@@ -108,25 +111,25 @@ impl Component for IBCComponent {
         Ok(())
     }
 
-    #[instrument(name = "ibc", skip(self, ctx, tx, state_tx))]
+    #[instrument(name = "ibc", skip(state, ctx, tx))]
     async fn execute_tx(
-        &mut self,
+        state: &mut StateTransaction,
         ctx: Context,
-        tx: &Transaction,
-        state_tx: &mut StateTransaction,
-    ) {
+        tx: Arc<Transaction>,
+    ) -> Result<()> {
         self.client.execute_tx(ctx.clone(), tx, state_tx).await;
         self.connection.execute_tx(ctx.clone(), tx, state_tx).await;
         self.channel.execute_tx(ctx.clone(), tx, state_tx).await;
         self.transfer.execute_tx(ctx.clone(), tx, state_tx).await;
+
+        Ok(())
     }
 
-    #[instrument(name = "ibc", skip(self, ctx, end_block))]
+    #[instrument(name = "ibc", skip(state, ctx, end_block))]
     async fn end_block(
-        &mut self,
+        state: &mut StateTransaction,
         ctx: Context,
         end_block: &abci::request::EndBlock,
-        state_tx: &mut StateTransaction,
     ) {
         self.client
             .end_block(ctx.clone(), end_block, state_tx)

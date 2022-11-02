@@ -2,7 +2,9 @@ use crate::governance::proposal::Outcome;
 
 use super::{
     proposal::{self, chain_params},
-    tally, View as _,
+    tally,
+    view::StateWriteExt as _,
+    StateReadExt as _,
 };
 use penumbra_chain::StateReadExt as _;
 use penumbra_storage2::State;

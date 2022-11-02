@@ -48,14 +48,12 @@ mod stateless;
 /// MsgUpdateClient, MsgUpgradeClient, and MsgSubmitMisbehaviour. The core responsibility of the
 /// client component is tracking light clients for IBC, creating new light clients and verifying
 /// state updates. Currently, only Tendermint light clients are supported.
-pub struct Ics2Client {
-    state: State,
-}
+pub struct Ics2Client {}
 
 impl Ics2Client {
-    #[instrument(name = "ics2_client", skip(state))]
-    pub async fn new(state: State) -> Self {
-        Self { state }
+    #[instrument(name = "ics2_client", skip())]
+    pub async fn new() -> Self {
+        Self {}
     }
 }
 

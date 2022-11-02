@@ -6,7 +6,7 @@ use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tracing::instrument;
 
-use crate::governance::view::View as _;
+use crate::governance::view::StateReadExt as _;
 use crate::{Component, Context};
 
 use super::{check, execute, proposal::ProposalList};

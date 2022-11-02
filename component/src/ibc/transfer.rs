@@ -43,14 +43,12 @@ fn is_source(source_port: &PortId, source_channel: &ChannelId, denom: &Denom) ->
 }
 
 #[derive(Clone)]
-pub struct ICS20Transfer {
-    state: State,
-}
+pub struct ICS20Transfer {}
 
 impl ICS20Transfer {
     #[instrument(name = "ics20_transfer", skip(state))]
-    pub fn new(state: State) -> Self {
-        Self { state }
+    pub fn new() -> Self {
+        Self {}
     }
 
     pub async fn withdrawal_check(&self, ctx: Context, withdrawal: &ICS20Withdrawal) -> Result<()> {
