@@ -460,6 +460,33 @@ trait StateReadExt: StateRead {
             compact_block.epoch_root = Some(epoch_root);
         }
     }
+
+    async fn scheduled_to_apply(&self, epoch: u64) -> Result<quarantined::Scheduled> {
+        Ok(self
+            .get_domain(state_key::scheduled_to_apply(epoch).into())
+            .await?
+            .unwrap_or_default())
+    }
+
+    async fn commission_amounts(&self, height: u64) -> Result<Option<CommissionAmounts>> {
+        self.get_domain(state_key::commission_amounts(height).into())
+            .await
+    }
+
+    async fn set_commission_amounts(&self, height: u64, notes: CommissionAmounts) {
+        self.put_domain(state_key::commission_amounts(height).into(), notes)
+            .await
+    }
+
+    async fn claimed_swap_outputs(&self, height: u64) -> Result<Option<SwapClaimBodyList>> {
+        self.get_domain(state_key::claimed_swap_outputs(height).into())
+            .await
+    }
+
+    async fn set_claimed_swap_outputs(&self, height: u64, claims: SwapClaimBodyList) {
+        self.put_domain(state_key::claimed_swap_outputs(height).into(), claims)
+            .await
+    }
 }
 
 #[async_trait]
@@ -740,6 +767,132 @@ trait StateWriteExt: StateWrite {
 
         Ok(())
     }
+
+    // Returns whether the note was presently quarantined.
+    async fn roll_back_note(&self, commitment: note::Commitment) -> Result<Option<NoteSource>> {
+        // Get the note source of the note (or empty vec if already applied or rolled back)
+        let source = self
+            .get_domain::<Delible<NoteSource>, _>(state_key::note_source(commitment).into())
+            .await?
+            .expect("can't roll back note that was never created")
+            .into();
+
+        // Delete the note from the set of all notes
+        self.put_domain(state_key::note_source(commitment).into(), Delible::Deleted)
+            .await;
+
+        Ok(source)
+    }
+
+    // Returns the source if the nullifier was in quarantine already
+    #[instrument(skip(self))]
+    async fn unquarantine_nullifier(&self, nullifier: Nullifier) -> Result<Option<NoteSource>> {
+        tracing::debug!("removing quarantined nullifier");
+
+        // Get the note source of the nullifier (or empty vec if already applied or rolled back)
+        let source = self
+            .get_domain::<Delible<NoteSource>, _>(
+                state_key::quarantined_spent_nullifier_lookup(nullifier).into(),
+            )
+            .await?
+            .expect("can't unquarantine nullifier that was never quarantined")
+            .into();
+
+        // Delete the nullifier from the quarantine set
+        self.put_domain(
+            state_key::quarantined_spent_nullifier_lookup(nullifier).into(),
+            Delible::Deleted,
+        )
+        .await;
+
+        Ok(source)
+    }
+
+    #[instrument(skip(self))]
+    async fn check_nullifier_unspent(&self, nullifier: Nullifier) -> Result<()> {
+        if let Some(source) = self
+            .get_domain::<NoteSource, _>(state_key::spent_nullifier_lookup(nullifier).into())
+            .await?
+        {
+            return Err(anyhow!(
+                "nullifier {} was already spent in {:?}",
+                nullifier,
+                source,
+            ));
+        }
+
+        if let Some(source) = self
+            .get_domain::<Delible<NoteSource>, _>(
+                state_key::quarantined_spent_nullifier_lookup(nullifier).into(),
+            )
+            .await?
+            .and_then(<Option<NoteSource>>::from)
+        {
+            return Err(anyhow!(
+                "nullifier {} was already spent in {:?} (currently quarantined)",
+                nullifier,
+                source,
+            ));
+        }
+
+        Ok(())
+    }
+
+    async fn schedule_unquarantine(
+        &self,
+        epoch: u64,
+        scheduled: quarantined::Scheduled,
+    ) -> Result<()> {
+        let mut updated_quarantined = self.scheduled_to_apply(epoch).await?;
+        updated_quarantined.extend(scheduled);
+        self.put_domain(
+            state_key::scheduled_to_apply(epoch).into(),
+            updated_quarantined,
+        )
+        .await;
+        Ok(())
+    }
+
+    // Unschedule the unquarantining of all notes and nullifiers for the given validator, in any
+    // epoch which could possibly still be unbonding
+    async fn unschedule_all_slashed(&self) -> Result<Vec<IdentityKey>> {
+        let height = self.get_block_height().await?;
+        let epoch_duration = self.get_epoch_duration().await?;
+        let this_epoch = Epoch::from_height(height, epoch_duration);
+        let unbonding_epochs = self.get_chain_params().await?.unbonding_epochs;
+
+        let slashed: Slashed = self
+            .get_domain(state_key::slashed_validators(height).into())
+            .await?
+            .unwrap_or_default();
+
+        for epoch in this_epoch.index.saturating_sub(unbonding_epochs)..=this_epoch.index {
+            let mut updated_scheduled = self.scheduled_to_apply(epoch).await?;
+            for &identity_key in &slashed.validators {
+                let unbonding = updated_scheduled.unschedule_validator(identity_key);
+                // Now we also ought to remove these nullifiers and notes from quarantine without
+                // applying them:
+                for &nullifier in unbonding.nullifiers.iter() {
+                    self.unquarantine_nullifier(nullifier).await?;
+                }
+                for note_payload in unbonding.note_payloads.iter() {
+                    self.roll_back_note(note_payload.payload.note_commitment)
+                        .await?;
+                }
+            }
+            // We're removed all the scheduled notes and nullifiers for this epoch and identity key:
+            self.put_domain(
+                state_key::scheduled_to_apply(epoch).into(),
+                updated_scheduled,
+            )
+            .await;
+        }
+
+        Ok(slashed.validators)
+    }
+
+    // TODO: rename to something more generic ("minted notes"?) that can
+    // be used with IBC transfers, and fix up the path and proto
 }
 
 impl ShieldedPool {
@@ -930,164 +1083,3 @@ impl ShieldedPool {
         }
     }
 }
-
-/// Extension trait providing read/write access to shielded pool data.
-///
-/// TODO: should this be split into Read and Write traits?
-#[async_trait]
-pub trait View: StateExt {
-    // Returns whether the note was presently quarantined.
-    async fn roll_back_note(&self, commitment: note::Commitment) -> Result<Option<NoteSource>> {
-        // Get the note source of the note (or empty vec if already applied or rolled back)
-        let source = self
-            .get_domain::<Delible<NoteSource>, _>(state_key::note_source(commitment).into())
-            .await?
-            .expect("can't roll back note that was never created")
-            .into();
-
-        // Delete the note from the set of all notes
-        self.put_domain(state_key::note_source(commitment).into(), Delible::Deleted)
-            .await;
-
-        Ok(source)
-    }
-
-    // Returns the source if the nullifier was in quarantine already
-    #[instrument(skip(self))]
-    async fn unquarantine_nullifier(&self, nullifier: Nullifier) -> Result<Option<NoteSource>> {
-        tracing::debug!("removing quarantined nullifier");
-
-        // Get the note source of the nullifier (or empty vec if already applied or rolled back)
-        let source = self
-            .get_domain::<Delible<NoteSource>, _>(
-                state_key::quarantined_spent_nullifier_lookup(nullifier).into(),
-            )
-            .await?
-            .expect("can't unquarantine nullifier that was never quarantined")
-            .into();
-
-        // Delete the nullifier from the quarantine set
-        self.put_domain(
-            state_key::quarantined_spent_nullifier_lookup(nullifier).into(),
-            Delible::Deleted,
-        )
-        .await;
-
-        Ok(source)
-    }
-
-    #[instrument(skip(self))]
-    async fn check_nullifier_unspent(&self, nullifier: Nullifier) -> Result<()> {
-        if let Some(source) = self
-            .get_domain::<NoteSource, _>(state_key::spent_nullifier_lookup(nullifier).into())
-            .await?
-        {
-            return Err(anyhow!(
-                "nullifier {} was already spent in {:?}",
-                nullifier,
-                source,
-            ));
-        }
-
-        if let Some(source) = self
-            .get_domain::<Delible<NoteSource>, _>(
-                state_key::quarantined_spent_nullifier_lookup(nullifier).into(),
-            )
-            .await?
-            .and_then(<Option<NoteSource>>::from)
-        {
-            return Err(anyhow!(
-                "nullifier {} was already spent in {:?} (currently quarantined)",
-                nullifier,
-                source,
-            ));
-        }
-
-        Ok(())
-    }
-
-    async fn scheduled_to_apply(&self, epoch: u64) -> Result<quarantined::Scheduled> {
-        Ok(self
-            .get_domain(state_key::scheduled_to_apply(epoch).into())
-            .await?
-            .unwrap_or_default())
-    }
-
-    async fn schedule_unquarantine(
-        &self,
-        epoch: u64,
-        scheduled: quarantined::Scheduled,
-    ) -> Result<()> {
-        let mut updated_quarantined = self.scheduled_to_apply(epoch).await?;
-        updated_quarantined.extend(scheduled);
-        self.put_domain(
-            state_key::scheduled_to_apply(epoch).into(),
-            updated_quarantined,
-        )
-        .await;
-        Ok(())
-    }
-
-    // Unschedule the unquarantining of all notes and nullifiers for the given validator, in any
-    // epoch which could possibly still be unbonding
-    async fn unschedule_all_slashed(&self) -> Result<Vec<IdentityKey>> {
-        let height = self.get_block_height().await?;
-        let epoch_duration = self.get_epoch_duration().await?;
-        let this_epoch = Epoch::from_height(height, epoch_duration);
-        let unbonding_epochs = self.get_chain_params().await?.unbonding_epochs;
-
-        let slashed: Slashed = self
-            .get_domain(state_key::slashed_validators(height).into())
-            .await?
-            .unwrap_or_default();
-
-        for epoch in this_epoch.index.saturating_sub(unbonding_epochs)..=this_epoch.index {
-            let mut updated_scheduled = self.scheduled_to_apply(epoch).await?;
-            for &identity_key in &slashed.validators {
-                let unbonding = updated_scheduled.unschedule_validator(identity_key);
-                // Now we also ought to remove these nullifiers and notes from quarantine without
-                // applying them:
-                for &nullifier in unbonding.nullifiers.iter() {
-                    self.unquarantine_nullifier(nullifier).await?;
-                }
-                for note_payload in unbonding.note_payloads.iter() {
-                    self.roll_back_note(note_payload.payload.note_commitment)
-                        .await?;
-                }
-            }
-            // We're removed all the scheduled notes and nullifiers for this epoch and identity key:
-            self.put_domain(
-                state_key::scheduled_to_apply(epoch).into(),
-                updated_scheduled,
-            )
-            .await;
-        }
-
-        Ok(slashed.validators)
-    }
-
-    // TODO: rename to something more generic ("minted notes"?) that can
-    // be used with IBC transfers, and fix up the path and proto
-
-    async fn commission_amounts(&self, height: u64) -> Result<Option<CommissionAmounts>> {
-        self.get_domain(state_key::commission_amounts(height).into())
-            .await
-    }
-
-    async fn set_commission_amounts(&self, height: u64, notes: CommissionAmounts) {
-        self.put_domain(state_key::commission_amounts(height).into(), notes)
-            .await
-    }
-
-    async fn claimed_swap_outputs(&self, height: u64) -> Result<Option<SwapClaimBodyList>> {
-        self.get_domain(state_key::claimed_swap_outputs(height).into())
-            .await
-    }
-
-    async fn set_claimed_swap_outputs(&self, height: u64, claims: SwapClaimBodyList) {
-        self.put_domain(state_key::claimed_swap_outputs(height).into(), claims)
-            .await
-    }
-}
-
-impl<T: StateExt> View for T {}
