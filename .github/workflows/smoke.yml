@@ -30,7 +30,8 @@ jobs:
       - name: Now start testnet in the background so we can run integration tests.
         run: |
           docker-compose up --detach
-
+          
+      # DOC: please update the devnet guide if you change this (see "How to run smoke-tests")
       - name: Run integration tests against localhost.
         run: cargo test --package pcli -- --ignored --test-threads 1
         env:

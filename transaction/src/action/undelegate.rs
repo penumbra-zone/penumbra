@@ -37,20 +37,20 @@ impl IsAction for Undelegate {
 }
 
 impl Undelegate {
-    /// Compute a commitment to the value contributed to a transaction by this undelegation.
+    /// Return the balance after consuming delegation tokens, and producing staking tokens.
     pub fn balance(&self) -> Balance {
-        let stake = Value {
+        let stake = Balance::from(Value {
             amount: self.unbonded_amount,
             asset_id: STAKING_TOKEN_ASSET_ID.clone(),
-        };
+        });
 
-        let delegation = Value {
+        let delegation = Balance::from(Value {
             amount: self.delegation_amount,
             asset_id: DelegationToken::new(self.validator_identity.clone()).id(),
-        };
+        });
 
         // We consume the delegation tokens and produce the staking tokens.
-        Balance::from(stake) - delegation
+        stake - delegation
     }
 }
 

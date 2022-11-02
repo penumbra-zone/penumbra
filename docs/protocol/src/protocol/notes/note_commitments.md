@@ -2,10 +2,10 @@
 
 We commit to:
 
-* the diversified basepoint $B_d$,
-* the diversified payment address $pk_d$,
-* the asset ID $ID$ of the note,
 * the value $v$ of the note.
+* the asset ID $ID$ of the note,
+* the diversified payment address $pk_d$,
+* the diversified basepoint $B_d$,
 
 The note commitment is generated using rate-5 Poseidon hashing with domain separator $ds$ defined as the `Fq` element constructed using:
 

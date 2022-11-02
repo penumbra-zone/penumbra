@@ -1,4 +1,4 @@
-mod proof_verification;
+pub mod proof_verification;
 
 pub mod channel_open_init {
     use super::super::*;

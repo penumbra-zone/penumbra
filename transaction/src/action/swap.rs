@@ -3,7 +3,7 @@ use decaf377::Fr;
 use penumbra_crypto::asset::Amount;
 use penumbra_crypto::dex::TradingPair;
 use penumbra_crypto::proofs::transparent::SwapProof;
-use penumbra_crypto::{balance, dex::swap::SwapCiphertext};
+use penumbra_crypto::{balance, dex::swap::SwapCiphertext, Balance};
 use penumbra_crypto::{Note, NotePayload, Value};
 use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 
@@ -29,15 +29,17 @@ impl IsAction for Swap {
         let input_1 = Value {
             amount: self.body.delta_1_i,
             asset_id: self.body.trading_pair.asset_1(),
-        }
-        .commit(Fr::zero());
+        };
+        let input_1 = -Balance::from(input_1);
+        let commitment_input_1 = input_1.commit(Fr::zero());
         let input_2 = Value {
             amount: self.body.delta_2_i,
             asset_id: self.body.trading_pair.asset_2(),
-        }
-        .commit(Fr::zero());
+        };
+        let input_2 = -Balance::from(input_2);
+        let commitment_input_2 = input_2.commit(Fr::zero());
 
-        -(input_1 + input_2 + self.body.fee_commitment)
+        commitment_input_1 + commitment_input_2 + self.body.fee_commitment
     }
 
     fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {

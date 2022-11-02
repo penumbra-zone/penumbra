@@ -318,8 +318,8 @@ impl Transaction {
 
         // Add fee into binding verification key computation.
         let fee_v_blinding = Fr::zero();
-        let fee_balance_commitment = self.transaction_body.fee.commit(fee_v_blinding);
-        balance_commitments -= fee_balance_commitment.0;
+        let fee_value_commitment = self.transaction_body.fee.commit(fee_v_blinding);
+        balance_commitments += fee_value_commitment.0;
 
         let binding_verification_key_bytes: VerificationKeyBytes<Binding> =
             balance_commitments.vartime_compress().0.into();

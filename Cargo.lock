@@ -37,9 +37,9 @@ dependencies = [
 
 [[package]]
 name = "aes"
-version = "0.8.1"
+version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bfe0133578c0986e1fe3dfcd4af1cc5b2dd6c3dbf534d69916ce16a2701d40ba"
+checksum = "433cfd6710c9986c576a25ca913c39d66a6474107b406f34f91d4a8923395241"
 dependencies = [
  "cfg-if",
  "cipher 0.4.3",
@@ -611,7 +611,6 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4152116fd6e9dadb291ae18fc1ec3575ed6d84c29642d97890f4b4a3417297e4"
 dependencies = [
- "block-padding",
  "generic-array",
 ]
 
@@ -698,9 +697,9 @@ checksum = "37b2a672a2cb129a2e41c10b1224bb368f9f37a2b16b612598138befd7b37eb5"
 
 [[package]]
 name = "cc"
-version = "1.0.73"
+version = "1.0.74"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2fff2a6927b3bb87f9595d67196a70493f627687a71d87a0d692242c33f58c11"
+checksum = "581f5dba903aac52ea3feb5ec4810848460ee833876f1f9b0fdeab1f19091574"
 dependencies = [
  "jobserver",
 ]
@@ -895,7 +894,7 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e57ff02e8ad8e06ab9731d5dc72dc23bef9200778eae1a89d555d8c42e5d4a86"
 dependencies = [
- "prost 0.11.0",
+ "prost",
  "prost-types",
  "tonic",
  "tracing-core",
@@ -1960,9 +1959,9 @@ checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
 name = "hyper"
-version = "0.14.20"
+version = "0.14.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02c929dc5c39e335a03c405292728118860721b10190d98c2a0f0efd5baafbac"
+checksum = "abfba89e19b959ca163c7752ba59d737c1ceea53a5d31a149c805446fc958064"
 dependencies = [
  "bytes",
  "futures-channel",
@@ -2046,9 +2045,9 @@ dependencies = [
 
 [[package]]
 name = "iana-time-zone"
-version = "0.1.51"
+version = "0.1.53"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f5a6ef98976b22b3b7f2f3a806f858cb862044cfa66805aa3ad84cb3d3b785ed"
+checksum = "64c122667b287044802d6ce17ee2ddf13207ed924c712de9a66a5814d5b64765"
 dependencies = [
  "android_system_properties",
  "core-foundation-sys",
@@ -2077,9 +2076,9 @@ dependencies = [
  "derive_more",
  "flex-error",
  "ibc-proto",
- "ics23 0.8.1",
+ "ics23",
  "num-traits",
- "prost 0.11.0",
+ "prost",
  "prost-types",
  "safe-regex",
  "serde",
@@ -2102,27 +2101,11 @@ source = "git+https://github.com/penumbra-zone/ibc-rs?branch=penumbra-034#27639d
 dependencies = [
  "base64",
  "bytes",
- "prost 0.11.0",
+ "prost",
  "prost-types",
  "serde",
  "tendermint-proto",
  "tonic",
-]
-
-[[package]]
-name = "ics23"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d454cc0a22bd556cc3d3c69f9d75a392a36244634840697a4b9eb81bc5c8ae0"
-dependencies = [
- "anyhow",
- "bytes",
- "hex",
- "prost 0.9.0",
- "ripemd160",
- "sha2 0.9.9",
- "sha3 0.9.1",
- "sp-std",
 ]
 
 [[package]]
@@ -2133,10 +2116,10 @@ dependencies = [
  "anyhow",
  "bytes",
  "hex",
- "prost 0.11.0",
+ "prost",
  "ripemd",
  "sha2 0.10.6",
- "sha3 0.10.6",
+ "sha3",
 ]
 
 [[package]]
@@ -2273,7 +2256,7 @@ dependencies = [
  "byteorder",
  "futures",
  "hex",
- "ics23 0.8.1",
+ "ics23",
  "itertools",
  "mirai-annotations",
  "num-derive",
@@ -2292,13 +2275,13 @@ dependencies = [
 [[package]]
 name = "jmt"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/jellyfish-merkle.git?branch=newmain#2f2fab25fbd3763debc776c9cf1df79ebd3a84f7"
+source = "git+https://github.com/penumbra-zone/jellyfish-merkle.git?branch=newmain#fc529b26af6a5b488876b6770430076ecaabd8e4"
 dependencies = [
  "anyhow",
  "bcs",
  "byteorder",
  "hex",
- "ics23 0.7.0",
+ "ics23",
  "itertools",
  "mirai-annotations",
  "num-derive",
@@ -2836,9 +2819,9 @@ checksum = "830b246a0e5f20af87141b25c173cd1b609bd7779a4617d6ec582abaf90870f3"
 
 [[package]]
 name = "once_cell"
-version = "1.15.0"
+version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e82dad04139b71a90c080c8463fe0dc7902db5192d939bd0950f074d014339e1"
+checksum = "86f0b0d4bf799edbc74508c1e8bf170ff5f41238e5f8225603ca7caaae2b7860"
 
 [[package]]
 name = "oorandom"
@@ -2908,9 +2891,9 @@ dependencies = [
 
 [[package]]
 name = "os_str_bytes"
-version = "6.3.0"
+version = "6.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ff7415e9ae3fff1225851df9e0d9e4e5479f947619774677a63572e55e80eff"
+checksum = "3baf96e39c5359d2eb0dd6ccb42c62b91d9678aa68160d261b9e0ccbf9e9dea9"
 
 [[package]]
 name = "overload"
@@ -3078,7 +3061,7 @@ dependencies = [
  "http",
  "ibc",
  "ibc-proto",
- "ics23 0.8.1",
+ "ics23",
  "jmt 0.1.0",
  "metrics",
  "metrics-exporter-prometheus",
@@ -3093,7 +3076,7 @@ dependencies = [
  "penumbra-transaction",
  "penumbra-wallet",
  "pin-project",
- "prost 0.11.0",
+ "prost",
  "prost-types",
  "rand",
  "rand_chacha",
@@ -3206,7 +3189,7 @@ dependencies = [
  "penumbra-storage",
  "penumbra-tct",
  "penumbra-transaction",
- "prost 0.11.0",
+ "prost",
  "prost-types",
  "rand_core",
  "regex",
@@ -3227,7 +3210,7 @@ dependencies = [
 name = "penumbra-crypto"
 version = "0.1.0"
 dependencies = [
- "aes 0.8.1",
+ "aes 0.8.2",
  "anyhow",
  "ark-ff",
  "ark-serialize",
@@ -3279,7 +3262,7 @@ dependencies = [
  "penumbra-crypto",
  "penumbra-proto",
  "penumbra-transaction",
- "prost 0.11.0",
+ "prost",
  "rand_core",
  "serde",
  "serde_json",
@@ -3340,9 +3323,9 @@ dependencies = [
  "hex",
  "ibc",
  "ibc-proto",
- "ics23 0.8.1",
+ "ics23",
  "num-rational",
- "prost 0.11.0",
+ "prost",
  "prost-types",
  "serde",
  "subtle-encoding",
@@ -3361,7 +3344,7 @@ dependencies = [
  "hex",
  "ibc",
  "ibc-proto",
- "ics23 0.8.1",
+ "ics23",
  "jmt 0.1.0",
  "metrics",
  "once_cell",
@@ -3389,7 +3372,7 @@ dependencies = [
  "hex",
  "ibc",
  "ibc-proto",
- "ics23 0.8.1",
+ "ics23",
  "jmt 0.2.0",
  "metrics",
  "once_cell",
@@ -3405,6 +3388,7 @@ dependencies = [
  "tokio-stream",
  "tonic",
  "tracing",
+ "tracing-subscriber 0.3.16",
 ]
 
 [[package]]
@@ -3467,7 +3451,7 @@ dependencies = [
  "include-flate",
  "parking_lot 0.12.1",
  "penumbra-tct",
- "prost 0.11.0",
+ "prost",
  "rand",
  "rand_chacha",
  "rand_distr",
@@ -3543,7 +3527,7 @@ dependencies = [
  "penumbra-proto",
  "penumbra-tct",
  "penumbra-transaction",
- "prost 0.11.0",
+ "prost",
  "rand",
  "rand_core",
  "reqwest",
@@ -3857,35 +3841,12 @@ dependencies = [
 
 [[package]]
 name = "prost"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "444879275cb4fd84958b1a1d5420d15e6fcf7c235fe47f053c9c2a80aceb6001"
-dependencies = [
- "bytes",
- "prost-derive 0.9.0",
-]
-
-[[package]]
-name = "prost"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "399c3c31cdec40583bb68f0b18403400d01ec4289c383aa047560439952c4dd7"
 dependencies = [
  "bytes",
- "prost-derive 0.11.0",
-]
-
-[[package]]
-name = "prost-derive"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f9cc1a3263e07e0bf68e96268f37665207b49560d98739662cdfaae215c720fe"
-dependencies = [
- "anyhow",
- "itertools",
- "proc-macro2 1.0.47",
- "quote 1.0.21",
- "syn 1.0.103",
+ "prost-derive",
 ]
 
 [[package]]
@@ -3908,7 +3869,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4dfaa718ad76a44b3415e6c4d53b17c8f99160dcb3a99b10470fce8ad43f6e3e"
 dependencies = [
  "bytes",
- "prost 0.11.0",
+ "prost",
 ]
 
 [[package]]
@@ -4181,17 +4142,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd124222d17ad93a644ed9d011a40f4fb64aa54275c08cc216524a9ea82fb09f"
 dependencies = [
  "digest 0.10.5",
-]
-
-[[package]]
-name = "ripemd160"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2eca4ecc81b7f313189bf73ce724400a07da2a6dac19588b03c8bd76a2dcc251"
-dependencies = [
- "block-buffer 0.9.0",
- "digest 0.9.0",
- "opaque-debug",
 ]
 
 [[package]]
@@ -4594,18 +4544,6 @@ dependencies = [
 
 [[package]]
 name = "sha3"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f81199417d4e5de3f04b1e871023acea7389672c4135918f05aa9cbf2f2fa809"
-dependencies = [
- "block-buffer 0.9.0",
- "digest 0.9.0",
- "keccak",
- "opaque-debug",
-]
-
-[[package]]
-name = "sha3"
 version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bdf0c33fae925bdc080598b84bc15c55e7b9a4a43b3c704da051f977469691c9"
@@ -4695,12 +4633,6 @@ dependencies = [
  "libc",
  "winapi",
 ]
-
-[[package]]
-name = "sp-std"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35391ea974fa5ee869cb094d5b437688fbf3d8127d64d1b9fed5822a1ed39b12"
 
 [[package]]
 name = "spin"
@@ -4976,7 +4908,7 @@ dependencies = [
  "futures",
  "num-traits",
  "once_cell",
- "prost 0.11.0",
+ "prost",
  "prost-types",
  "serde",
  "serde_bytes",
@@ -5025,7 +4957,7 @@ dependencies = [
  "flex-error",
  "num-derive",
  "num-traits",
- "prost 0.11.0",
+ "prost",
  "prost-types",
  "serde",
  "serde_bytes",
@@ -5335,8 +5267,8 @@ dependencies = [
  "hyper-timeout",
  "percent-encoding",
  "pin-project",
- "prost 0.11.0",
- "prost-derive 0.11.0",
+ "prost",
+ "prost-derive",
  "tokio",
  "tokio-stream",
  "tokio-util 0.7.4",
@@ -5394,7 +5326,7 @@ dependencies = [
  "bytes",
  "futures",
  "pin-project",
- "prost 0.11.0",
+ "prost",
  "tendermint",
  "tendermint-proto",
  "tokio",

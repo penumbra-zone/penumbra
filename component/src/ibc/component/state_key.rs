@@ -6,6 +6,8 @@ use ibc::{
     Height,
 };
 
+use penumbra_crypto::asset;
+
 use std::string::String;
 
 pub fn client_type(client_id: &ClientId) -> String {
@@ -87,4 +89,8 @@ pub fn packet_commitment_by_port(
         "commitments/ports/{}/channels/{}/packets/{}",
         port_id, channel_id, sequence
     )
+}
+
+pub fn ics20_value_balance(channel_id: &ChannelId, asset_id: &asset::Id) -> String {
+    format!("ics20-value-balance/{}/{}", channel_id, asset_id)
 }

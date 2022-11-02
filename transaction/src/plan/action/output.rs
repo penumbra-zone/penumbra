@@ -85,9 +85,7 @@ impl OutputPlan {
         let note = self.output_note();
         let note_commitment = note.commit();
 
-        // Prepare the value commitment.  Outputs subtract from the transaction
-        // value balance, so flip the sign of the commitment.
-        let balance_commitment = -self.value.commit(self.value_blinding);
+        let balance_commitment = self.balance().commit(self.value_blinding);
 
         // Encrypt the note to the recipient...
         let diversified_generator = note.diversified_generator();
@@ -155,5 +153,42 @@ impl TryFrom<pb::OutputPlan> for OutputPlan {
             value_blinding: Fr::from_bytes(msg.value_blinding.as_ref().try_into()?)?,
             esk: msg.esk.as_ref().try_into()?,
         })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::OutputPlan;
+    use penumbra_crypto::keys::{SeedPhrase, SpendKey};
+    use penumbra_crypto::{PayloadKey, Value};
+    use rand_core::OsRng;
+
+    #[test]
+    /// Check that a valid output proof passes the `penumbra_crypto` integrity checks successfully.
+    /// This test serves to anchor how an `OutputPlan` prepares its `OutputProof`, in particular
+    /// the balance and note commitments.
+    fn check_output_proof_verification() {
+        let mut rng = OsRng;
+        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let sk = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let ovk = sk.full_viewing_key().outgoing();
+        let dummy_memo_key: PayloadKey = [0; 32].into();
+
+        let value: Value = "1234.02penumbra".parse().unwrap();
+        let dest_address = "penumbrav2t1f5h060qspaga3vvwf2mwak2dj6ugymxd2et5h6l3n0u2y57lcv4t7j2m8n75nm7qmhg4v3csexl5slm6tm5hg5wyw39fv2q0jnpwdjn3llduzgmg5d3efuqq6ymn76t0hvgage".parse().unwrap();
+
+        let output_plan = OutputPlan::new(&mut rng, value, dest_address);
+        let blinding_factor = output_plan.value_blinding;
+
+        let body = output_plan.output_body(ovk, &dummy_memo_key);
+
+        let balance_commitment = output_plan.balance().commit(blinding_factor);
+        let note_commitment = output_plan.output_note().commit();
+        let output_proof = output_plan.output_proof();
+        let epk = body.note_payload.ephemeral_key;
+
+        output_proof
+            .verify(balance_commitment, note_commitment, epk)
+            .unwrap();
     }
 }

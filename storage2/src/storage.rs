@@ -7,12 +7,15 @@ use jmt::{
 };
 use parking_lot::RwLock;
 use rocksdb::{Options, DB};
+use tokio::sync::watch;
 use tracing::Span;
 
 use crate::snapshot::Snapshot;
 use crate::State;
 
-/// A handle for a storage instance, wrapping a RocksDB instance.
+/// A handle for a storage instance, backed by RocksDB.
+///
+/// The handle is cheaply clonable; all clones share the same backing data store.
 #[derive(Clone)]
 pub struct Storage(Arc<Inner>);
 
@@ -21,6 +24,18 @@ pub struct Storage(Arc<Inner>);
 struct Inner {
     latest_snapshot: RwLock<Snapshot>,
     db: Arc<DB>,
+    state_tx: watch::Sender<StateNotification>,
+}
+
+/// A notification of a new state version.
+pub struct StateNotification(Snapshot);
+
+impl StateNotification {
+    /// Obtain a snapshot of the new [`State`].
+    pub fn into_state(&self) -> State {
+        // We need this wrapper because the `State` itself isn't `Clone` (by design).
+        State::new(self.0.clone())
+    }
 }
 
 impl Storage {
@@ -40,13 +55,21 @@ impl Storage {
                         path,
                         ["jmt", "nonconsensus", "jmt_keys"],
                     )?);
+
                     let jmt_version = latest_version(db.as_ref())?
-                        .ok_or_else(|| anyhow::anyhow!("no jmt version found"))?;
+                        // TODO: PRE_GENESIS_VERSION ?
+                        .unwrap_or(u64::MAX);
+
                     let latest_snapshot = RwLock::new(Snapshot::new(db.clone(), jmt_version));
+
+                    // We discard the receiver here, because we'll construct new ones in subscribe()
+                    let (snapshot_tx, _) =
+                        watch::channel(StateNotification(latest_snapshot.read().clone()));
 
                     Ok(Self(Arc::new(Inner {
                         latest_snapshot,
                         db,
+                        state_tx: snapshot_tx,
                     })))
                 })
             })?
@@ -54,10 +77,19 @@ impl Storage {
     }
 
     /// Returns the latest version (block height) of the tree recorded by the
-    /// `Storage`, or `None` if the tree is empty.
-    pub async fn latest_version(&self) -> Result<Option<jmt::Version>> {
-        // TODO: do better
-        latest_version(&self.0.db)
+    /// `Storage`.
+    ///
+    /// If the tree is empty and has not been initialized, returns `u64::MAX`.
+    pub fn latest_version(&self) -> jmt::Version {
+        self.0.latest_snapshot.read().version()
+    }
+
+    /// Returns a [`watch::Receiver`] that can be used to subscribe to new state versions.
+    pub fn subscribe(&self) -> watch::Receiver<StateNotification> {
+        // Calling subscribe() here to create a new receiver ensures
+        // that all previous values are marked as seen, and the user
+        // of the receiver will only be notified of *subsequent* values.
+        self.0.state_tx.subscribe()
     }
 
     /// Returns a new [`State`] on top of the latest version of the tree.
@@ -65,36 +97,21 @@ impl Storage {
         State::new(self.0.latest_snapshot.read().clone())
     }
 
-    pub async fn apply(&self, state: State) -> Result<()> {
-        let inner = self.0.clone();
-        // 1. Write the NCT
-        // TODO: move this higher up in the call stack, and use `put_nonconsensus` to store
-        // the NCT.
-        // tracing::debug!("serializing NCT");
-        // let tct_data = bincode::serialize(nct)?;
-        // tracing::debug!(tct_bytes = tct_data.len(), "serialized NCT");
-
-        // let db = self.db;
-
-        // let span = Span::current();
-        // tokio::task::Builder::new()
-        //     .name("put_nct")
-        //     .spawn_blocking(move || {
-        //         span.in_scope(|| {
-        //             let nct_cf = db.cf_handle("nct").expect("nct column family not found");
-        //             db.put_cf(nct_cf, "nct", &tct_data)
-        //         })
-        //     })
-        //     .unwrap()
-        //     .await??;
-
-        // 2. Write the JMT and nonconsensus data to RocksDB
+    /// Commits the provided [`State`] to persistent storage as the latest
+    /// version of the chain state.
+    pub async fn commit(&self, state: State) -> Result<jmt::RootHash> {
         // We use wrapping_add here so that we can write `new_version = 0` by
         // overflowing `PRE_GENESIS_VERSION`.
-        let old_version = self.latest_version().await?.unwrap();
+        let old_version = self.latest_version();
         let new_version = old_version.wrapping_add(1);
         tracing::trace!(old_version, new_version);
+        if old_version != state.version() {
+            return Err(anyhow::anyhow!("version mismatch in commit: expected state forked from version {} but found state forked from version {}", old_version, state.version()));
+        }
+
         let span = Span::current();
+        let inner = self.0.clone();
+
         tokio::task::Builder::new()
             .name("Storage::write_node_batch")
             .spawn_blocking(move || {
@@ -126,14 +143,14 @@ impl Storage {
                     }
 
                     // Write the unwritten changes from the state to the JMT.
-                    let (jmt_root_hash, batch) = jmt.put_value_set(
+                    let (root_hash, batch) = jmt.put_value_set(
                         unwritten_changes.into_iter().map(|x| (x.0, x.2)),
                         new_version,
                     )?;
 
                     // Apply the JMT changes to the DB.
                     inner.write_node_batch(&batch.node_batch)?;
-                    tracing::trace!(?jmt_root_hash, "wrote node batch to backing store");
+                    tracing::trace!(?root_hash, "wrote node batch to backing store");
 
                     // Write the unwritten changes from the nonconsensus to RocksDB.
                     for (k, v) in state.nonconsensus_changes.into_iter() {
@@ -151,12 +168,20 @@ impl Storage {
                     }
 
                     // 4. update the snapshot
+
                     // Obtain the write-lock for the latest snapshot, and replace it with a new snapshot with the new version.
                     let mut guard = inner.latest_snapshot.write();
                     *guard = Snapshot::new(inner.db.clone(), new_version);
                     // Drop the write-lock (this will happen implicitly anyways, but it's good to be explicit).
                     drop(guard);
-                    anyhow::Result::<()>::Ok(())
+
+                    // .send fails if the channel is closed (i.e., if there are no receivers);
+                    // in this case, we should ignore the error, we have no one to notify.
+                    let _ = inner
+                        .state_tx
+                        .send(StateNotification(inner.latest_snapshot.read().clone()));
+
+                    Ok(root_hash)
                 })
             })?
             .await?

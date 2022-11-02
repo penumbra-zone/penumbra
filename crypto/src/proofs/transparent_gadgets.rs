@@ -3,7 +3,7 @@ use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_tct as tct;
 
 use crate::{
-    asset, balance, dex, ka, keys, note, transaction::Fee, Address, Fr, Note, Nullifier, Value,
+    asset, balance, dex, ka, keys, note, transaction::Fee, Address, Balance, Fr, Note, Nullifier,
 };
 
 /// Check the integrity of the nullifier.
@@ -44,9 +44,9 @@ pub(crate) fn note_commitment_integrity(
 pub(crate) fn balance_commitment_integrity(
     balance_commitment: balance::Commitment,
     value_blinding: Fr,
-    value: Value,
+    balance: Balance,
 ) -> Result<()> {
-    if balance_commitment != value.commit(value_blinding) {
+    if balance_commitment != balance.commit(value_blinding) {
         Err(anyhow!("balance commitment mismatch"))
     } else {
         Ok(())

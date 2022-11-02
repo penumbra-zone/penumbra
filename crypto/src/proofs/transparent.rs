@@ -15,7 +15,7 @@ use crate::{
     dex::{BatchSwapOutputData, TradingPair},
     ka, keys, note,
     transaction::Fee,
-    Address, Fq, Fr, Note, Nullifier, Value,
+    Address, Balance, Fq, Fr, Note, Nullifier, Value,
 };
 
 /// Transparent proof for spending existing notes.
@@ -67,11 +67,9 @@ impl SpendProof {
             .verify(anchor)
             .map_err(|_| anyhow!("merkle root mismatch"))?;
 
-        gadgets::balance_commitment_integrity(
-            balance_commitment,
-            self.v_blinding,
-            self.note.value(),
-        )?;
+        let note_balance = Balance::from(self.note.value());
+
+        gadgets::balance_commitment_integrity(balance_commitment, self.v_blinding, note_balance)?;
 
         gadgets::diversified_basepoint_not_identity(self.note.diversified_generator().clone())?;
         if self.ak.is_identity() {
@@ -100,7 +98,7 @@ impl SpendProof {
 pub struct OutputProof {
     // The note being created.
     pub note: Note,
-    // The blinding factor used for generating the value commitment.
+    // The blinding factor used for generating the balance commitment.
     pub v_blinding: Fr,
     // The ephemeral secret key that corresponds to the public key.
     pub esk: ka::Secret,
@@ -110,7 +108,7 @@ impl OutputProof {
     /// Called to verify the proof using the provided public inputs.
     ///
     /// The public inputs are:
-    /// * value commitment of the new note,
+    /// * balance commitment of the new note,
     /// * note commitment of the new note,
     /// * the ephemeral public key used to generate the new note.
     pub fn verify(
@@ -121,11 +119,12 @@ impl OutputProof {
     ) -> anyhow::Result<()> {
         gadgets::note_commitment_integrity(self.note.clone(), note_commitment)?;
 
-        gadgets::balance_commitment_integrity(
-            -balance_commitment,
-            self.v_blinding,
-            self.note.value(),
-        )?;
+        // We negate the balance before the integrity check because we anticipate
+        // `balance_commitment` to be a commitment of a negative value, since this
+        // is an `OutputProof`.
+        let note_balance = -Balance::from(self.note.value());
+
+        gadgets::balance_commitment_integrity(balance_commitment, self.v_blinding, note_balance)?;
 
         gadgets::ephemeral_public_key_integrity(
             epk,
@@ -629,7 +628,7 @@ impl SwapProof {
         gadgets::balance_commitment_integrity(
             value_fee_commitment,
             self.fee_blinding,
-            self.fee_delta.0,
+            Balance::from(self.fee_delta.0),
         )?;
 
         gadgets::ephemeral_public_key_integrity(
@@ -780,10 +779,11 @@ mod tests {
     use super::*;
     use crate::{
         keys::{SeedPhrase, SpendKey},
-        note, Note, Value,
+        note, Balance, Note, Value,
     };
 
     #[test]
+    /// Check that the `OutputProof` verification suceeds.
     fn test_output_proof_verification_success() {
         let mut rng = OsRng;
 
@@ -797,6 +797,9 @@ mod tests {
             amount: 10u64.into(),
             asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
         };
+
+        let balance = -Balance::from(value_to_send);
+
         let v_blinding = Fr::rand(&mut rng);
         let note = Note::generate(&mut rng, &dest, value_to_send);
         let esk = ka::Secret::new(&mut rng);
@@ -809,11 +812,13 @@ mod tests {
         };
 
         assert!(proof
-            .verify(-value_to_send.commit(v_blinding), note.commit(), epk)
+            .verify(balance.commit(v_blinding), note.commit(), epk)
             .is_ok());
     }
 
     #[test]
+    /// Check that the `OutputProof` verification fails when using an incorrect
+    /// note commitment.
     fn test_output_proof_verification_note_commitment_integrity_failure() {
         let mut rng = OsRng;
 
@@ -827,6 +832,9 @@ mod tests {
             amount: 10u64.into(),
             asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
         };
+
+        let balance_to_send = -Balance::from(value_to_send);
+
         let v_blinding = Fr::rand(&mut rng);
         let note = Note::generate(&mut rng, &dest, value_to_send);
         let esk = ka::Secret::new(&mut rng);
@@ -848,7 +856,7 @@ mod tests {
 
         assert!(proof
             .verify(
-                -value_to_send.commit(v_blinding),
+                balance_to_send.commit(v_blinding),
                 incorrect_note_commitment,
                 epk
             )
@@ -856,6 +864,8 @@ mod tests {
     }
 
     #[test]
+    /// Check that the `OutputProof` verification fails when using an incorrect
+    /// balance commitment.
     fn test_output_proof_verification_balance_commitment_integrity_failure() {
         let mut rng = OsRng;
 
@@ -870,6 +880,10 @@ mod tests {
             asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
         };
         let v_blinding = Fr::rand(&mut rng);
+
+        let bad_balance = Balance::from(value_to_send);
+        let incorrect_balance_commitment = bad_balance.commit(Fr::rand(&mut rng));
+
         let note = Note::generate(&mut rng, &dest, value_to_send);
         let esk = ka::Secret::new(&mut rng);
         let correct_epk = esk.diversified_public(&note.diversified_generator());
@@ -879,7 +893,6 @@ mod tests {
             v_blinding,
             esk,
         };
-        let incorrect_balance_commitment = value_to_send.commit(Fr::rand(&mut rng));
 
         assert!(proof
             .verify(incorrect_balance_commitment, note.commit(), correct_epk)
@@ -887,6 +900,7 @@ mod tests {
     }
 
     #[test]
+    /// Check that the `OutputProof` verification fails when using different ephemeral public keys.
     fn test_output_proof_verification_ephemeral_public_key_integrity_failure() {
         let mut rng = OsRng;
 
@@ -895,12 +909,16 @@ mod tests {
         let fvk_recipient = sk_recipient.full_viewing_key();
         let ivk_recipient = fvk_recipient.incoming();
         let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
+        let v_blinding = Fr::rand(&mut rng);
 
         let value_to_send = Value {
             amount: 10u64.into(),
             asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
         };
-        let v_blinding = Fr::rand(&mut rng);
+
+        let balance_to_send = -Balance::from(value_to_send);
+        let balance_commitment = balance_to_send.commit(v_blinding);
+
         let note = Note::generate(&mut rng, &dest, value_to_send);
         let esk = ka::Secret::new(&mut rng);
 
@@ -913,15 +931,12 @@ mod tests {
         let incorrect_epk = incorrect_esk.diversified_public(&note.diversified_generator());
 
         assert!(proof
-            .verify(
-                -value_to_send.commit(v_blinding),
-                note.commit(),
-                incorrect_epk
-            )
+            .verify(balance_commitment, note.commit(), incorrect_epk)
             .is_err());
     }
 
     #[test]
+    /// Check that the `SpendProof` verification succeeds.
     fn test_spend_proof_verification_success() {
         let mut rng = OsRng;
 
@@ -930,12 +945,12 @@ mod tests {
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
         let (sender, _dtk_d) = ivk_sender.payment_address(0u64.into());
+        let v_blinding = Fr::rand(&mut rng);
 
         let value_to_send = Value {
             amount: 10u64.into(),
             asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
         };
-        let v_blinding = Fr::rand(&mut rng);
 
         let note = Note::generate(&mut rng, &sender, value_to_send);
         let note_commitment = note.commit();
@@ -965,6 +980,8 @@ mod tests {
     }
 
     #[test]
+    // Check that the `SpendProof` verification fails when using an incorrect
+    // NCT root (`anchor`).
     fn test_spend_proof_verification_merkle_path_integrity_failure() {
         let mut rng = OsRng;
         let seed_phrase = SeedPhrase::generate(&mut rng);
@@ -1007,6 +1024,8 @@ mod tests {
     }
 
     #[test]
+    /// Check that the `SpendProof` verification fails when using balance
+    /// commitments with different blinding factors.
     fn test_spend_proof_verification_balance_commitment_integrity_failure() {
         let mut rng = OsRng;
         let seed_phrase = SeedPhrase::generate(&mut rng);
@@ -1019,13 +1038,18 @@ mod tests {
             amount: 10u64.into(),
             asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
         };
+        let balance_to_send = Balance::from(value_to_send);
+
         let v_blinding = Fr::rand(&mut rng);
+
         let note = Note::generate(&mut rng, &sender, value_to_send);
         let note_commitment = note.commit();
         let spend_auth_randomizer = Fr::rand(&mut rng);
+
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
         let nk = *sk_sender.nullifier_key();
         let ak = sk_sender.spend_auth_key().into();
+
         let mut nct = tct::Tree::new();
         nct.insert(tct::Witness::Keep, note_commitment).unwrap();
         let anchor = nct.root();
@@ -1042,12 +1066,17 @@ mod tests {
 
         let rk: VerificationKey<SpendAuth> = rsk.into();
         let nf = nk.derive_nullifier(0.into(), &note_commitment);
+
+        let incorrect_balance_commitment = balance_to_send.commit(Fr::rand(&mut rng));
+
         assert!(proof
-            .verify(anchor, value_to_send.commit(Fr::rand(&mut rng)), nf, rk)
+            .verify(anchor, incorrect_balance_commitment, nf, rk)
             .is_err());
     }
 
     #[test]
+    /// Check that the `SpendProof` verification fails, when using an
+    /// incorrect nullifier.
     fn test_spend_proof_verification_nullifier_integrity_failure() {
         let mut rng = OsRng;
         let seed_phrase = SeedPhrase::generate(&mut rng);

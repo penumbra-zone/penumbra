@@ -1,5 +1,7 @@
+use crate::ibc::component::state_key;
 use crate::ibc::ibc_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute};
-use crate::Context;
+use crate::ibc::packet::{IBCPacket, Unchecked};
+use crate::{Component, Context};
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc::core::ics04_channel::channel::Order as ChannelOrder;
@@ -13,12 +15,34 @@ use ibc::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use ibc::core::ics04_channel::msgs::timeout::MsgTimeout;
 use ibc::core::ics04_channel::Version;
+use ibc::core::ics24_host::identifier::{ChannelId, PortId};
+use penumbra_chain::genesis;
+use penumbra_crypto::asset::Denom;
+use penumbra_crypto::{asset, Amount};
 use penumbra_proto::core::ibc::v1alpha1::FungibleTokenPacketData;
 use penumbra_storage::{State, StateExt};
+use penumbra_transaction::action::ICS20Withdrawal;
+use penumbra_transaction::{Action, Transaction};
 use prost::Message;
+use tendermint::abci;
 use tracing::instrument;
 
-#[allow(dead_code)]
+// returns a bool indicating if the provided denom was issued locally or if it was bridged in.
+// this logic is a bit tricky, and adapted from https://github.com/cosmos/ibc/tree/main/spec/app/ics-020-fungible-token-transfer (sendFungibleTokens).
+//
+// what we want to do is to determine if the denom being withdrawn is a native token (one
+// that originates from Penumbra) or a bridged token (one that was sent into penumbra from
+// IBC).
+//
+// A simple way of doing this is by parsing the denom, looking for a prefix that is only
+// appended in the case of a bridged token. That is what this logic does.
+fn is_source(source_port: &PortId, source_channel: &ChannelId, denom: &Denom) -> bool {
+    let prefix = format!("{}/{}/", source_port, source_channel);
+
+    !denom.starts_with(&prefix)
+}
+
+#[derive(Clone)]
 pub struct ICS20Transfer {
     state: State,
 }
@@ -27,6 +51,64 @@ impl ICS20Transfer {
     #[instrument(name = "ics20_transfer", skip(state))]
     pub fn new(state: State) -> Self {
         Self { state }
+    }
+
+    pub async fn withdrawal_check(&self, ctx: Context, withdrawal: &ICS20Withdrawal) -> Result<()> {
+        // create packet
+        let packet: IBCPacket<Unchecked> = withdrawal.clone().into();
+
+        // send packet
+        use crate::ibc::packet::SendPacket;
+        self.state.send_packet_check(ctx.clone(), packet).await?;
+
+        Ok(())
+    }
+
+    pub async fn withdrawal_execute(&mut self, ctx: Context, withdrawal: &ICS20Withdrawal) {
+        // create packet, assume it's already checked since the component caller contract calls `check` before `execute`
+        let checked_packet = IBCPacket::<Unchecked>::from(withdrawal.clone()).assume_checked();
+
+        if is_source(
+            &withdrawal.source_port,
+            &withdrawal.source_channel,
+            &withdrawal.denom,
+        ) {
+            // we are the source. add the value balance to the escrow channel.
+            let existing_value_balance: Amount = self
+                .state
+                .get_domain(
+                    state_key::ics20_value_balance(
+                        &withdrawal.source_channel,
+                        &withdrawal.denom.id(),
+                    )
+                    .into(),
+                )
+                .await
+                .unwrap()
+                .unwrap_or(Amount::zero());
+
+            let new_value_balance = existing_value_balance + withdrawal.amount;
+            self.state
+                .put_domain(
+                    state_key::ics20_value_balance(
+                        &withdrawal.source_channel,
+                        &withdrawal.denom.id().into(),
+                    )
+                    .into(),
+                    new_value_balance,
+                )
+                .await;
+        } else {
+            // receiver is the source, burn utxos
+
+            // NOTE: this burning should already be accomplished by the value balance check from
+            // the withdrawal's balance commitment, so nothing to do here.
+        }
+
+        use crate::ibc::packet::SendPacket;
+        self.state
+            .send_packet_execute(ctx.clone(), checked_packet)
+            .await;
     }
 }
 
@@ -97,25 +179,20 @@ impl AppHandlerCheck for ICS20Transfer {
     async fn recv_packet_check(&self, _ctx: Context, msg: &MsgRecvPacket) -> Result<()> {
         // 1. parse a FungibleTokenPacketData from msg.packet.data
         let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
+        let denom: asset::Denom = packet_data.denom.as_str().try_into()?;
 
-        // 2. check if we are the source chain for the denom. (check packet path to see if it is a penumbra path)
-        let prefix = format!("{}/{}/", msg.packet.source_port, msg.packet.source_channel);
-        let is_source = packet_data.denom.starts_with(&prefix);
-
-        if is_source {
+        // 2. check if we are the source chain for the denom.
+        if is_source(&msg.packet.source_port, &msg.packet.source_channel, &denom) {
             // check if we have enough balance to unescrow tokens to receiver
-            let value_balance: u64 = self
+            let value_balance: Amount = self
                 .state
-                .get_proto::<u64>(
-                    format!("ics20-value-balance/{}", msg.packet.destination_channel).into(),
+                .get_domain(
+                    state_key::ics20_value_balance(&msg.packet.source_channel, &denom.id()).into(),
                 )
                 .await?
-                .ok_or_else(|| anyhow::anyhow!("value balance not found"))?;
+                .unwrap_or(Amount::zero());
 
-            // convert the amount to a u64 from u256.
-            //  TODO: the amount is given by the ICS20 spec to be a u256, but we parse it to u64
-            //  for now. should we round, or error, or something else in this conversion?
-            let amount_penumbra = packet_data.amount.parse::<u64>()?;
+            let amount_penumbra: Amount = packet_data.amount.try_into()?;
             if value_balance < amount_penumbra {
                 return Err(anyhow::anyhow!(
                     "insufficient balance to unescrow tokens to receiver"
@@ -127,23 +204,19 @@ impl AppHandlerCheck for ICS20Transfer {
     }
     async fn timeout_packet_check(&self, _ctx: Context, msg: &MsgTimeout) -> Result<()> {
         let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
+        let denom: asset::Denom = packet_data.denom.as_str().try_into()?;
 
-        let prefix = format!("{}/{}/", msg.packet.source_port, msg.packet.source_channel);
-        let is_source = packet_data.denom.starts_with(&prefix);
-        if is_source {
+        if is_source(&msg.packet.source_port, &msg.packet.source_channel, &denom) {
             // check if we have enough balance to refund tokens to sender
-            let value_balance: u64 = self
+            let value_balance: Amount = self
                 .state
-                .get_proto::<u64>(
-                    format!("ics20-value-balance/{}", msg.packet.destination_channel).into(),
+                .get_domain(
+                    state_key::ics20_value_balance(&msg.packet.source_channel, &denom.id()).into(),
                 )
                 .await?
-                .ok_or_else(|| anyhow::anyhow!("value balance not found"))?;
+                .unwrap_or(Amount::zero());
 
-            // convert the amount to a u64 from u256.
-            //  TODO: the amount is given by the ICS20 spec to be a u256, but we parse it to u64
-            //  for now. should we round, or error, or something else in this conversion?
-            let amount_penumbra = packet_data.amount.parse::<u64>()?;
+            let amount_penumbra: Amount = packet_data.amount.try_into()?;
             if value_balance < amount_penumbra {
                 return Err(anyhow::anyhow!(
                     "insufficient balance to refund tokens to sender"
@@ -166,16 +239,8 @@ impl AppHandlerCheck for ICS20Transfer {
 impl AppHandlerExecute for ICS20Transfer {
     async fn chan_open_init_execute(&mut self, _ctx: Context, _msg: &MsgChannelOpenInit) {}
     async fn chan_open_try_execute(&mut self, _ctx: Context, _msg: &MsgChannelOpenTry) {}
-    async fn chan_open_ack_execute(&mut self, _ctx: Context, msg: &MsgChannelOpenAck) {
-        self.state
-            .put_proto::<u64>(format!("ics20-value-balance/{}", msg.channel_id).into(), 0)
-            .await;
-    }
-    async fn chan_open_confirm_execute(&mut self, _ctx: Context, msg: &MsgChannelOpenConfirm) {
-        self.state
-            .put_proto::<u64>(format!("ics20-value-balance/{}", msg.channel_id).into(), 0)
-            .await;
-    }
+    async fn chan_open_ack_execute(&mut self, _ctx: Context, _msg: &MsgChannelOpenAck) {}
+    async fn chan_open_confirm_execute(&mut self, _ctx: Context, _msg: &MsgChannelOpenConfirm) {}
     async fn chan_close_confirm_execute(&mut self, _ctx: Context, _msg: &MsgChannelCloseConfirm) {}
     async fn chan_close_init_execute(&mut self, _ctx: Context, _msg: &MsgChannelCloseInit) {}
     async fn recv_packet_execute(&mut self, _ctx: Context, _msg: &MsgRecvPacket) {
@@ -186,3 +251,52 @@ impl AppHandlerExecute for ICS20Transfer {
 }
 
 impl AppHandler for ICS20Transfer {}
+
+#[async_trait]
+impl Component for ICS20Transfer {
+    #[instrument(name = "ics20_transfer", skip(self, _app_state))]
+    async fn init_chain(&mut self, _app_state: &genesis::AppState) {}
+
+    #[instrument(name = "ics20_transfer", skip(self, _ctx, _begin_block))]
+    async fn begin_block(&mut self, _ctx: Context, _begin_block: &abci::request::BeginBlock) {}
+
+    #[instrument(name = "ics20_transfer", skip(_ctx, tx))]
+    fn check_tx_stateless(_ctx: Context, tx: &Transaction) -> Result<()> {
+        for action in tx.actions() {
+            match action {
+                Action::ICS20Withdrawal(withdrawal) => {
+                    withdrawal.validate()?;
+                }
+
+                _ => {}
+            }
+        }
+        Ok(())
+    }
+    #[instrument(name = "ics20_transfer", skip(self, ctx, tx))]
+    async fn check_tx_stateful(&self, ctx: Context, tx: &Transaction) -> Result<()> {
+        for action in tx.actions() {
+            match action {
+                Action::ICS20Withdrawal(withdrawal) => {
+                    self.withdrawal_check(ctx.clone(), withdrawal).await?;
+                }
+                _ => {}
+            }
+        }
+        Ok(())
+    }
+    #[instrument(name = "ics20_transfer", skip(self, ctx, tx))]
+    async fn execute_tx(&mut self, ctx: Context, tx: &Transaction) {
+        for action in tx.actions() {
+            match action {
+                Action::ICS20Withdrawal(withdrawal) => {
+                    self.withdrawal_execute(ctx.clone(), withdrawal).await;
+                }
+                _ => {}
+            }
+        }
+    }
+
+    #[instrument(name = "ics20_channel", skip(self, _ctx, _end_block))]
+    async fn end_block(&mut self, _ctx: Context, _end_block: &abci::request::EndBlock) {}
+}
