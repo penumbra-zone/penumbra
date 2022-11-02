@@ -10,23 +10,18 @@ use crate::{
     state_key, Epoch,
 };
 
-/// This trait provides read and write access to common parts of the Penumbra
+/// This trait provides read access to common parts of the Penumbra
 /// state store.
 ///
 /// Note: the `get_` methods in this trait assume that the state store has been
 /// initialized, so they will error on an empty state.
 #[async_trait]
-pub trait View: StateRead + StateWrite {
+pub trait StateReadExt: StateRead {
     /// Gets the chain parameters from the JMT.
     async fn get_chain_params(&self) -> Result<ChainParameters> {
         self.get(state_key::chain_params().into())
             .await?
             .ok_or_else(|| anyhow!("Missing ChainParameters"))
-    }
-
-    /// Writes the provided chain parameters to the JMT.
-    fn put_chain_params(&mut self, params: ChainParameters) {
-        self.put(state_key::chain_params().into(), params)
     }
 
     /// Gets the current epoch for the chain.
@@ -66,11 +61,6 @@ pub trait View: StateRead + StateWrite {
         Ok(height_bytes)
     }
 
-    /// Writes the block height to the JMT
-    fn put_block_height(&mut self, height: u64) {
-        self.put_proto("block_height".into(), height)
-    }
-
     /// Gets the current block timestamp from the JMT
     async fn get_block_timestamp(&self) -> Result<Time> {
         let timestamp_string: String = self
@@ -79,11 +69,6 @@ pub trait View: StateRead + StateWrite {
             .ok_or_else(|| anyhow!("Missing block_timestamp"))?;
 
         Ok(Time::from_str(&timestamp_string).unwrap())
-    }
-
-    /// Writes the block timestamp to the JMT
-    fn put_block_timestamp(&mut self, timestamp: Time) {
-        self.put_proto(state_key::block_timestamp().into(), timestamp.to_rfc3339())
     }
 
     /// Checks a provided chain_id against the chain state.
@@ -112,16 +97,41 @@ pub trait View: StateRead + StateWrite {
             .ok_or_else(|| anyhow!("Missing FmdParameters"))
     }
 
-    /// Writes the current FMD parameters to the JMT.
-    fn put_current_fmd_parameters(&mut self, params: FmdParameters) {
-        self.put(state_key::fmd_parameters_current().into(), params)
-    }
-
     /// Gets the previous FMD parameters from the JMT.
     async fn get_previous_fmd_parameters(&self) -> Result<FmdParameters> {
         self.get(state_key::fmd_parameters_previous().into())
             .await?
             .ok_or_else(|| anyhow!("Missing FmdParameters"))
+    }
+}
+
+impl<T: StateRead> StateReadExt for T {}
+
+/// This trait provides write access to common parts of the Penumbra
+/// state store.
+///
+/// Note: the `get_` methods in this trait assume that the state store has been
+/// initialized, so they will error on an empty state.
+#[async_trait]
+pub trait StateWriteExt: StateWrite {
+    /// Writes the provided chain parameters to the JMT.
+    fn put_chain_params(&mut self, params: ChainParameters) {
+        self.put(state_key::chain_params().into(), params)
+    }
+
+    /// Writes the block height to the JMT
+    fn put_block_height(&mut self, height: u64) {
+        self.put_proto("block_height".into(), height)
+    }
+
+    /// Writes the block timestamp to the JMT
+    fn put_block_timestamp(&mut self, timestamp: Time) {
+        self.put_proto(state_key::block_timestamp().into(), timestamp.to_rfc3339())
+    }
+
+    /// Writes the current FMD parameters to the JMT.
+    fn put_current_fmd_parameters(&mut self, params: FmdParameters) {
+        self.put(state_key::fmd_parameters_current().into(), params)
     }
 
     /// Writes the previous FMD parameters to the JMT.
@@ -130,4 +140,4 @@ pub trait View: StateRead + StateWrite {
     }
 }
 
-impl<T: StateRead + StateWrite> View for T {}
+impl<T: StateWrite> StateWriteExt for T {}
