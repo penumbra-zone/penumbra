@@ -18,61 +18,6 @@ pub mod shielded_pool;
 pub mod stake;
 
 /// A component of the Penumbra application.
-///
-/// Each component is a thin wrapper around a shared [`State`], over a
-/// Jellyfish tree held in persistent [`Storage`].  The Jellyfish tree is a
-/// generic, byte-oriented key/value store.  Components can read from and write
-/// to the tree, and all components in the same [`Application`] instance will
-/// see each others' writes when they perform reads.  However, those writes are
-/// buffered in the [`State`] until it commits a batch of changes to the
-/// persistent [`Storage`], making it possible to maintain and evolve multiple
-/// copies of the application state, as each [`Application`] is effectively its
-/// own copy-on-write instance of the chain state.
-///
-/// The data and execution flow looks like:
-/// ```ascii,no_run
-/// ┌────────────┐          ┌───────────┐
-/// │State       │          │ Component │
-/// │  ::new()   │═════════▶│  ::new()  │      ═══▶ Execution Flow
-/// └────────────┘          └───────────┘           (Approximate)
-///        │                      ║            ───▶ Data Flow
-///        ▼               ╔══════╩══════╗
-/// ┌────────────┐         ▼             ║
-/// │            │   ┌───────────┐       ║         ┌───────────────┐
-/// │            │◀──│init_chain │◀──────╬─────────│ Genesis State │
-/// │            │   └───────────┘       ║         └───────────────┘
-/// │            │         ║             ▼
-/// │            │         ║       ┌───────────┐   ┌───────────────┐
-/// │            │◀────────╬──────▶│begin_block│◀──│ABCI BeginBlock│
-/// │            │         ║       └───────────┘   └───────────────┘
-/// │            │         ║             ║
-/// │            │         ║    ╔═══════▶║
-/// │            │         ║    ║        ▼
-/// │            │         ║    ║  ┌───────────┐   ┌───────────────┐
-/// │            │         ║    ║  │check_tx   │ ┌─│  Transaction  │
-/// │            │         ║    ║  │_stateless │◀┤ └───────────────┘
-/// │State       │         ║    ║  └───────────┘ │
-/// │            │         ║    ║  ┌───────────┐ │
-/// │            │         ║    ║  │check_tx   │ │
-/// │            │─────────╬────╬─▶│_stateful  │◀┤
-/// │            │         ║    ║  └───────────┘ │
-/// │            │         ║    ║  ┌───────────┐ │
-/// │            │◀────────╬────╬─▶│execute_tx │◀┘
-/// │            │         ║    ║  └───────────┘
-/// │            │         ║    ║        ║
-/// │            │         ║    ╚════════╣
-/// │            │         ║             ║
-/// │            │         ║             ▼
-/// │            │         ║       ┌───────────┐   ┌───────────────┐
-/// │            │◀────────╬──────▶│end_block  │◀──│ ABCI EndBlock │
-/// └────────────┘         ║       └───────────┘   └───────────────┘
-///        │               ║             ║
-///        ▼               ║             ║
-/// ┌────────────┐         ║             ║
-/// │State       │         ║             ║
-/// │ ::commit() │◀════════╩═════════════╝
-/// └────────────┘
-/// ```
 #[async_trait]
 pub trait Component: Sized {
     /// Performs initialization, given the genesis state.
