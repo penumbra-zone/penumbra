@@ -13,7 +13,7 @@ use penumbra_chain::{
     genesis,
     quarantined::{self, Slashed},
     sync::{AnnotatedNotePayload, CompactBlock},
-    Epoch, KnownAssets, NoteSource, View as _,
+    Epoch, KnownAssets, NoteSource,
 };
 use penumbra_crypto::{
     asset::{self, Asset, Denom},
