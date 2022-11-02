@@ -48,7 +48,7 @@ impl TryFrom<std::string::String> for Amount {
     type Error = anyhow::Error;
 
     fn try_from(s: std::string::String) -> Result<Self, Self::Error> {
-        let inner = s.parse::<u64>()?;
+        let inner = s.parse::<u128>()?;
         Ok(Amount { inner })
     }
 }
