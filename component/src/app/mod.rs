@@ -25,107 +25,100 @@ pub mod state_key;
 /// commits the changes to the persistent storage and resets its subcomponents.
 pub struct App {
     state: Arc<State>,
-    shielded_pool: ShieldedPool,
-    ibc: IBCComponent,
-    staking: Staking,
-    dex: Dex,
-    governance: Governance,
 }
 
 impl App {
     pub async fn new(state: State) -> Self {
         tracing::info!("initializing App instance");
-
-        let staking = Staking::new().await;
-        let ibc = IBCComponent::new().await;
-        let dex = Dex::new().await;
-        let governance = Governance::new().await;
-        let shielded_pool = ShieldedPool::new().await;
-
         Self {
             // We perform the `Arc` wrapping of `State` here to ensure
             // there should be no unexpected copies elsewhere.
             state: Arc::new(state),
-            shielded_pool,
-            staking,
-            ibc,
-            dex,
-            governance,
         }
     }
 
     #[instrument(skip(self, app_state))]
     async fn init_chain(&mut self, app_state: &genesis::AppState) {
-        self.state
-            .put_chain_params(app_state.chain_params.clone())
-            .await;
-
-        // TEMP: Hardcoding FMD parameters until we have a mechanism to change them. See issue #1226.
-        self.state
-            .put_current_fmd_parameters(FmdParameters::default())
-            .await;
-        self.state
-            .put_previous_fmd_parameters(FmdParameters::default())
-            .await;
-
-        // TODO: do we actually need to store the app state here?
-        self.state
-            .put_domain(state_key::app_state().into(), app_state.clone())
-            .await;
-        // The genesis block height is 0
-        self.state.put_block_height(0).await;
-
-        self.staking.init_chain(app_state).await;
-        self.ibc.init_chain(app_state).await;
-        self.dex.init_chain(app_state).await;
-        self.governance.init_chain(app_state).await;
-
-        // Shielded pool always executes last.
-        self.shielded_pool.init_chain(app_state).await;
-    }
-
-    #[instrument(skip(self, ctx, begin_block))]
-    async fn begin_block(&mut self, ctx: Context, begin_block: &abci::request::BeginBlock) {
-        // store the block height
-        self.state
-            .put_block_height(begin_block.header.height.into())
-            .await;
-        // store the block time
-        self.state
-            .put_block_timestamp(begin_block.header.time)
-            .await;
-
-        self.staking.begin_block(ctx.clone(), begin_block).await;
-        self.ibc.begin_block(ctx.clone(), begin_block).await;
-        self.dex.begin_block(ctx.clone(), begin_block).await;
-        self.governance.begin_block(ctx.clone(), begin_block).await;
-        // Shielded pool always executes last.
-        self.shielded_pool
-            .begin_block(ctx.clone(), begin_block)
-            .await;
-    }
-
-    #[instrument(skip(self, ctx, tx))]
-    async fn deliver_tx(&mut self, ctx: Context, tx: &Transaction) -> Result<()> {
-        // stateless
-        Self::check_tx_stateless(ctx.clone(), tx).await?;
-
-        // stateful
-        self.check_tx_stateful(ctx, tx).await?;
-
-        // We need to get a mutable reference to the State here, so we use
-        // `Arc::get_mut`. This should be infallible because we are the only owner of the
-        // Arc.
         let mut state = self
             .state
             .get_mut()
             .expect("state Arc should not be referenced elsewhere");
         let state_tx = state.begin_transaction();
 
-        // execute
-        self.execute_tx(ctx, tx, state_tx).await?;
+        state_tx.put_chain_params(app_state.chain_params.clone());
 
-        // commit
+        // TEMP: Hardcoding FMD parameters until we have a mechanism to change them. See issue #1226.
+        state_tx.put_current_fmd_parameters(FmdParameters::default());
+        state_tx.put_previous_fmd_parameters(FmdParameters::default());
+
+        // TODO: do we actually need to store the app state here?
+        state_tx.put(state_key::app_state().into(), app_state.clone());
+
+        // The genesis block height is 0
+        state_tx.put_block_height(0);
+
+        Staking::init_chain(state, app_state).await.unwrap();
+        IBCComponent::init_chain(state, app_state).await.unwrap();
+        Dex::init_chain(state, app_state).await.unwrap();
+        Governance::init_chain(state, app_state).await.unwrap();
+        // Shielded pool always executes last.
+        ShieldedPool::init_chain(state, app_state).await.unwrap();
+
+        state_tx.apply();
+    }
+
+    #[instrument(skip(self, ctx, begin_block))]
+    async fn begin_block(&mut self, ctx: Context, begin_block: &abci::request::BeginBlock) {
+        let mut state = self
+            .state
+            .get_mut()
+            .expect("state Arc should not be referenced elsewhere");
+        let state_tx = state.begin_transaction();
+
+        // store the block height
+        state_tx.put_block_height(begin_block.header.height.into());
+        // store the block time
+        state_tx.put_block_timestamp(begin_block.header.time);
+
+        Staking::begin_block(state, ctx.clone(), begin_block)
+            .await
+            .unwrap();
+        IBCComponent::begin_block(state, ctx.clone(), begin_block)
+            .await
+            .unwrap();
+        Dex::begin_block(state, ctx.clone(), begin_block)
+            .await
+            .unwrap();
+        Governance::begin_block(state, ctx.clone(), begin_block)
+            .await
+            .unwrap();
+        // Shielded pool always executes last.
+        ShieldedPool::begin_block(state, ctx.clone(), begin_block)
+            .await
+            .unwrap();
+
+        state_tx.apply();
+    }
+
+    #[instrument(skip(self, ctx, tx))]
+    async fn deliver_tx(&mut self, ctx: Context, tx: Arc<Transaction>) -> Result<()> {
+        Self::check_tx_stateless(ctx.clone(), tx).await?;
+        Self::check_tx_stateful(self.state.clone(), ctx, tx).await?;
+
+        // We need to get a mutable reference to the State here, so we use
+        // `Arc::get_mut`. At this point, the stateful checks should have completed,
+        // leaving us with exclusive access to the Arc<State>.
+        let mut state = self
+            .state
+            .get_mut()
+            .expect("state Arc should not be referenced elsewhere");
+        let state_tx = state.begin_transaction();
+
+        Self::execute_tx(state_tx, ctx, tx).await?;
+
+        // At this point, we've completed execution successfully with no errors,
+        // so we can apply the transaction to the State. Otherwise, we'd have
+        // bubbled up an error and dropped the StateTransaction.
         state_tx.apply();
 
         Ok(())
@@ -133,21 +126,26 @@ impl App {
 
     #[instrument(skip(self, ctx, end_block))]
     async fn end_block(&mut self, ctx: Context, end_block: &abci::request::EndBlock) {
-        let state_tx = self.state.begin_transaction();
+        let mut state = self
+            .state
+            .get_mut()
+            .expect("state Arc should not be referenced elsewhere");
+        let state_tx = state.begin_transaction();
 
-        self.staking
-            .end_block(ctx.clone(), end_block, state_tx)
-            .await;
-        self.ibc.end_block(ctx.clone(), end_block, state_tx).await;
-        self.dex.end_block(ctx.clone(), end_block, state_tx).await;
-        self.governance
-            .end_block(ctx.clone(), end_block, state_tx)
-            .await;
-
+        Staking::end_block(state, ctx.clone(), end_block)
+            .await
+            .unwrap();
+        IBCComponent::end_block(state, ctx.clone(), end_block)
+            .await
+            .unwrap();
+        Dex::end_block(state, ctx.clone(), end_block).await.unwrap();
+        Governance::end_block(state, ctx.clone(), end_block)
+            .await
+            .unwrap();
         // Shielded pool always executes last.
-        self.shielded_pool
-            .end_block(ctx.clone(), end_block, state_tx)
-            .await;
+        ShieldedPool::end_block(state, ctx.clone(), end_block)
+            .await
+            .unwrap();
 
         state_tx.apply();
     }
@@ -178,58 +176,52 @@ impl App {
 
     // TODO: should this just be returned by `commit`? both are called during every `EndBlock`
     pub fn tendermint_validator_updates(&self) -> Vec<ValidatorUpdate> {
+        // TODO: replace with self.state read ?
         self.staking.tendermint_validator_updates()
     }
 
     #[instrument(skip(ctx, tx))]
-    fn check_tx_stateless(ctx: Context, tx: &Transaction) -> Result<()> {
+    fn check_tx_stateless(ctx: Context, tx: Arc<Transaction>) -> Result<()> {
+        // TODO: these can all be parallel tasks
+
         Staking::check_tx_stateless(ctx.clone(), tx)?;
         IBCComponent::check_tx_stateless(ctx.clone(), tx)?;
         Dex::check_tx_stateless(ctx.clone(), tx)?;
         Governance::check_tx_stateless(ctx.clone(), tx)?;
         ShieldedPool::check_tx_stateless(ctx, tx)?;
+
         Ok(())
     }
 
     #[instrument(skip(self, ctx, tx))]
-    async fn check_tx_stateful(&self, ctx: Context, tx: &Transaction) -> Result<()> {
-        self.staking
-            .check_tx_stateful(ctx.clone(), tx, self.state.clone())
-            .await?;
-        self.ibc
-            .check_tx_stateful(ctx.clone(), tx, self.state.clone())
-            .await?;
-        self.dex
-            .check_tx_stateful(ctx.clone(), tx, self.state.clone())
-            .await?;
-        self.governance
-            .check_tx_stateful(ctx.clone(), tx, self.state.clone())
-            .await?;
+    async fn check_tx_stateful(
+        state: Arc<State>,
+        ctx: Context,
+        tx: Arc<Transaction>,
+    ) -> Result<()> {
+        // TODO: these can all be parallel tasks
 
-        // Shielded pool always executes last.
-        self.shielded_pool
-            .check_tx_stateful(ctx.clone(), tx, self.state.clone())
-            .await?;
+        Staking::check_tx_stateful(state.clone(), ctx.clone(), tx.clone()).await?;
+        IBCComponent::check_tx_stateful(state.clone(), ctx.clone(), tx.clone()).await?;
+        Dex::check_tx_stateful(state.clone(), ctx.clone(), tx.clone()).await?;
+        Governance::check_tx_stateful(state.clone(), ctx.clone(), tx.clone()).await?;
+        ShieldedPool::check_tx_stateful(state.clone(), ctx.clone(), tx.clone()).await?;
+
         Ok(())
     }
 
     #[instrument(skip(self, ctx, tx, state_tx))]
     async fn execute_tx(
-        &mut self,
+        state: &mut StateTransaction<'_>,
         ctx: Context,
-        tx: &Transaction,
-        state_tx: &mut StateTransaction<'_>,
+        tx: Arc<Transaction>,
     ) -> Result<()> {
-        self.staking.execute_tx(ctx.clone(), tx, state_tx).await?;
-        self.ibc.execute_tx(ctx.clone(), tx, state_tx).await?;
-        self.dex.execute_tx(ctx.clone(), tx, state_tx).await?;
-        self.governance
-            .execute_tx(ctx.clone(), tx, state_tx)
-            .await?;
+        Staking::execute_tx(state, ctx.clone(), tx.clone()).await?;
+        IBCComponent::execute_tx(state, ctx.clone(), tx.clone()).await?;
+        Dex::execute_tx(state, ctx.clone(), tx.clone()).await?;
+        Governance::execute_tx(state, ctx.clone(), tx.clone()).await?;
         // Shielded pool always executes last.
-        self.shielded_pool
-            .execute_tx(ctx.clone(), tx, state_tx)
-            .await?;
+        ShieldedPool::execute_tx(state, ctx.clone(), tx.clone()).await?;
 
         Ok(())
     }
