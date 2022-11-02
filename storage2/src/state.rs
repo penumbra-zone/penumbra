@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, pin::Pin};
+use std::{any::Any, collections::BTreeMap, pin::Pin};
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -37,6 +37,7 @@ pub struct State {
     pub(crate) unwritten_changes: BTreeMap<String, Option<Vec<u8>>>,
     // A `None` value represents deletion.
     pub(crate) nonconsensus_changes: BTreeMap<Vec<u8>, Option<Vec<u8>>>,
+    pub(crate) ephemeral_objects: BTreeMap<String, Box<dyn Any + Send + Sync>>,
 }
 
 impl State {
@@ -45,6 +46,7 @@ impl State {
             snapshot,
             unwritten_changes: BTreeMap::new(),
             nonconsensus_changes: BTreeMap::new(),
+            ephemeral_objects: BTreeMap::new(),
         }
     }
 
@@ -66,7 +68,9 @@ impl State {
 
     /// Returns `true` if there are cached writes on top of the snapshot, and `false` otherwise.
     pub fn is_dirty(&self) -> bool {
-        !(self.unwritten_changes.is_empty() && self.nonconsensus_changes.is_empty())
+        !(self.unwritten_changes.is_empty()
+            && self.nonconsensus_changes.is_empty()
+            && self.ephemeral_objects.is_empty())
     }
 
     /// Gets a value by key alongside an ICS23 existence proof of that value.
@@ -124,5 +128,26 @@ impl StateRead for State {
         prefix: &'a str,
     ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + Sync + 'a>> {
         prefix_raw_with_cache(&self.snapshot, &self.unwritten_changes, prefix)
+    }
+
+    fn get_ephemeral<T: Any + Send + Sync>(&self, key: &str) -> Option<&T> {
+        self.ephemeral_objects
+            .get(key)
+            .and_then(|object| object.downcast_ref())
+    }
+
+    fn prefix_ephemeral<'a, T: Any + Send + Sync>(
+        &'a self,
+        prefix: &'a str,
+    ) -> Box<dyn Iterator<Item = (&'a str, &'a T)> + 'a> {
+        Box::new(
+            self.ephemeral_objects
+                .range(prefix.to_string()..)
+                .take_while(move |(k, _)| k.starts_with(prefix))
+                .filter_map(|(k, v)| match v.downcast_ref() {
+                    Some(v) => Some((k.as_str(), v)),
+                    None => None,
+                }),
+        )
     }
 }

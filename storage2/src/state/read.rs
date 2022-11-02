@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, collections::BTreeMap, fmt::Debug, pin::Pin};
+use std::{any::Any, cmp::Ordering, collections::BTreeMap, fmt::Debug, pin::Pin};
 
 use anyhow::Result;
 
@@ -75,12 +75,6 @@ pub trait StateRead {
             .map(|v| Some(v))
     }
 
-    /// Gets a byte value from the non-verifiable key-value store.
-    ///
-    /// This is intended for application-specific indexes of the verifiable
-    /// consensus state, rather than for use as a primary data storage method.
-    async fn get_nonconsensus(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
-
     /// Retrieve all values for keys matching a prefix from consensus-critical state, as domain types.
     fn prefix<'a, D, P>(
         &'a self,
@@ -134,6 +128,38 @@ pub trait StateRead {
         // TODO: it might be possible to make this zero-allocation by representing the key as a `Box<&str>` but
         // the lifetimes weren't working out, so allocating a new `String` was easier for now.
     ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Sync + Send + 'a>>;
+
+    /// Gets a byte value from the non-verifiable key-value store.
+    ///
+    /// This is intended for application-specific indexes of the verifiable
+    /// consensus state, rather than for use as a primary data storage method.
+    ///
+    /// TODO: rename to `nonconsensus_get` ?
+    async fn get_nonconsensus(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
+
+    /// Gets an object from the ephemeral key-object store.
+    ///
+    /// This is intended to allow application components to build up batched
+    /// data transactionally, ensuring that a transaction's contributions to
+    /// some batched data are only included if the entire transaction executed
+    /// successfully.  This data is not persisted to the `Storage` during
+    /// `commit`.
+    ///
+    /// # Returns
+    ///
+    /// - `Some(&T)` if a value of type `T` was present at `key`.
+    /// - `None` if `key` was not present, or if `key` was present but the value was not of type `T`.
+    ///
+    /// TODO: rename to `ephemeral_get` ?
+    fn get_ephemeral<T: Any + Send + Sync>(&self, key: &str) -> Option<&T>;
+
+    /// Retrieve all objects for keys matching a prefix from the ephemeral key-value store.
+    ///
+    /// TODO: rename to `ephemeral_prefix` ?
+    fn prefix_ephemeral<'a, T: Any + Send + Sync>(
+        &'a self,
+        prefix: &'a str,
+    ) -> Box<dyn Iterator<Item = (&'a str, &'a T)> + 'a>;
 }
 
 // Merge a RYW cache iterator with a backend storage stream to produce a new Stream,
