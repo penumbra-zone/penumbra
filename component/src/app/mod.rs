@@ -128,28 +128,20 @@ impl App {
     /// This method also resets `self` as if it were constructed
     /// as an empty state over top of the newly written storage.
     #[instrument(skip(self, storage))]
-    pub async fn commit(&mut self, storage: Storage) -> Result<(AppHash, Version)> {
-        // We want to store the latest NCT in a nonconsensus part of the storage,
-        // rather than the Penumbra state, because the serialization format for
-        // the NCT should not be consensus-critical.  We need to grab a copy of
-        // the entire NCT, so we can use it to re-instantiate the ShieldedPool.
-        let nct = self.shielded_pool.note_commitment_tree();
-        storage.put_nct(nct).await?;
+    pub async fn commit(&mut self, storage: Storage) -> Result<AppHash> {
+        // We need to extract the State we've built up to commit it.  Fill in a dummy state.
+        let dummy_state = storage.state();
+        let state = Arc::try_unwrap(std::mem::replace(&mut self.state, Arc::new(dummy_state)))
+            .expect("we have exclusive ownership of the State at commit()");
+
         // Commit the pending writes, clearing the state.
-        let (jmt_root, version) = self.state.write().await.commit(storage.clone()).await?;
+        let jmt_root = storage.commit(state)?;
         let app_hash: AppHash = jmt_root.into();
 
         tracing::debug!(?app_hash, version, "finished committing state");
 
         // Get the latest version of the state, now that we've committed it.
-        self.state = storage.state().await?;
-
-        // Now re-instantiate all of the components so they all have the same shared state.
-        self.staking = Staking::new(self.state.clone()).await;
-        self.ibc = IBCComponent::new(self.state.clone()).await;
-        self.dex = Dex::new(self.state.clone()).await;
-        self.governance = Governance::new(self.state.clone()).await;
-        self.shielded_pool = ShieldedPool::new(self.state.clone(), nct.clone()).await;
+        self.state = Arc::new(storage.state());
 
         Ok((app_hash, version))
     }
