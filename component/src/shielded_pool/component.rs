@@ -299,7 +299,7 @@ impl Component for ShieldedPool {
 
 // TODO: split into different extension traits
 #[async_trait]
-trait StateReadExt: StateRead {
+pub trait StateReadExt: StateRead {
     // TODO: remove this entirely post-integration. This is slow but intended as
     // a drop-in replacement so we can avoid really major code changes.
     //
@@ -772,14 +772,13 @@ trait StateWriteExt: StateWrite {
     async fn roll_back_note(&self, commitment: note::Commitment) -> Result<Option<NoteSource>> {
         // Get the note source of the note (or empty vec if already applied or rolled back)
         let source = self
-            .get_domain::<Delible<NoteSource>, _>(state_key::note_source(commitment).into())
+            .get(state_key::note_source(commitment).into())
             .await?
             .expect("can't roll back note that was never created")
             .into();
 
         // Delete the note from the set of all notes
-        self.put_domain(state_key::note_source(commitment).into(), Delible::Deleted)
-            .await;
+        self.delete(state_key::note_source(commitment).into()).await;
 
         Ok(source)
     }
@@ -791,19 +790,14 @@ trait StateWriteExt: StateWrite {
 
         // Get the note source of the nullifier (or empty vec if already applied or rolled back)
         let source = self
-            .get_domain::<Delible<NoteSource>, _>(
-                state_key::quarantined_spent_nullifier_lookup(nullifier).into(),
-            )
+            .get(state_key::quarantined_spent_nullifier_lookup(nullifier).into())
             .await?
             .expect("can't unquarantine nullifier that was never quarantined")
             .into();
 
         // Delete the nullifier from the quarantine set
-        self.put_domain(
-            state_key::quarantined_spent_nullifier_lookup(nullifier).into(),
-            Delible::Deleted,
-        )
-        .await;
+        self.delete(state_key::quarantined_spent_nullifier_lookup(nullifier).into())
+            .await;
 
         Ok(source)
     }
@@ -822,9 +816,7 @@ trait StateWriteExt: StateWrite {
         }
 
         if let Some(source) = self
-            .get_domain::<Delible<NoteSource>, _>(
-                state_key::quarantined_spent_nullifier_lookup(nullifier).into(),
-            )
+            .get(state_key::quarantined_spent_nullifier_lookup(nullifier).into())
             .await?
             .and_then(<Option<NoteSource>>::from)
         {
@@ -937,7 +929,7 @@ impl ShieldedPool {
                 state_key::quarantined_spent_nullifier_lookup(nullifier).into(),
                 // We don't use the value for validity checks, but writing the source
                 // here lets us find out what transaction spent the nullifier.
-                Delible::Present(source),
+                source,
             )
             .await;
         // Queue up scheduling this nullifier to be unquarantined: the actual state-writing
