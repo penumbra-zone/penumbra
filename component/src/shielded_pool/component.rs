@@ -65,16 +65,17 @@ impl Component for ShieldedPool {
 
         // Hard-coded to zero because we are in the genesis block
         // Tendermint starts blocks at 1, so this is a "phantom" compact block
-        self.compact_block.height = 0;
+        compact_block.height = 0;
 
         // Add current FMD parameters to the initial block.
-        compact_block.fmd_parameters = Some(self.state.get_current_fmd_parameters().await.unwrap());
+        compact_block.fmd_parameters = Some(state.get_current_fmd_parameters().await.unwrap());
 
-        let mut note_commitment_tree = self.stub_note_commitment_tree();
+        let mut note_commitment_tree = state.stub_note_commitment_tree();
         // Close the genesis block
-        finish_nct_block(&mut note_commitment_tree, &mut compact_block);
+        state.finish_nct_block(&mut note_commitment_tree, &mut compact_block);
 
-        self.write_compactblock_and_nct(compact_block, note_commitment_tree)
+        state
+            .write_compactblock_and_nct(compact_block, note_commitment_tree)
             .await
             .unwrap();
     }
@@ -147,8 +148,8 @@ impl Component for ShieldedPool {
             }
         }
 
-        consensus_rules::stateless::num_clues_equal_to_num_outputs(tx)?;
-        consensus_rules::stateless::check_memo_exists_if_outputs_absent_if_not(tx)?;
+        consensus_rules::stateless::num_clues_equal_to_num_outputs(&tx)?;
+        consensus_rules::stateless::check_memo_exists_if_outputs_absent_if_not(&tx)?;
 
         Ok(())
     }
@@ -409,6 +410,50 @@ trait StateReadExt: StateRead {
 
         should_quarantine
     }
+
+    /// Finish the block in the NCT.
+    ///
+    /// TODO: where should this live
+    /// re-evaluate
+    #[instrument(skip(&self,note_commitment_tree, compact_block))]
+    async fn finish_nct_block(
+        &self,
+        note_commitment_tree: &mut tct::Tree,
+        compact_block: &mut CompactBlock,
+    ) {
+        // Get the current block height
+        let height = compact_block.height;
+
+        // Close the block in the TCT
+        let block_root = note_commitment_tree
+            .end_block()
+            .expect("ending a block in the note commitment tree can never fail");
+
+        // Put the block root in the compact block
+        compact_block.block_root = block_root;
+
+        // If the block ends an epoch, also close the epoch in the TCT
+        if Epoch::from_height(
+            height,
+            self.get_chain_params()
+                .await
+                .expect("chain params request must succeed")
+                .epoch_duration,
+        )
+        .is_epoch_end(height)
+        {
+            tracing::debug!(?height, "end of epoch");
+
+            // TODO: Put updated FMD parameters in the compact block
+
+            let epoch_root = note_commitment_tree
+                .end_epoch()
+                .expect("ending an epoch in the note commitment tree can never fail");
+
+            // Put the epoch root in the compact block
+            compact_block.epoch_root = Some(epoch_root);
+        }
+    }
 }
 
 #[async_trait]
@@ -437,18 +482,17 @@ trait StateWriteExt: StateWrite + StateRead {
     /// Writes a completed compact block into the public state.
     fn set_compact_block(&self, compact_block: CompactBlock) {
         let height = compact_block.height;
-        self.put_domain(state_key::compact_block(height).into(), compact_block)
-            .await
+        self.put(state_key::compact_block(height), compact_block);
     }
 
     fn set_nct_anchor(&self, height: u64, nct_anchor: tct::Root) {
         tracing::debug!(?height, ?nct_anchor, "writing anchor");
 
         // Write the NCT anchor both as a value, so we can look it up,
-        self.put(state_key::anchor_by_height(height).into(), nct_anchor);
+        self.put(state_key::anchor_by_height(height), nct_anchor);
         // and as a key, so we can query for it.
         self.put_proto(
-            state_key::anchor_lookup(nct_anchor).into(),
+            state_key::anchor_lookup(nct_anchor),
             // We don't use the value for validity checks, but writing the height
             // here lets us find out what height the anchor was for.
             height,
@@ -459,13 +503,10 @@ trait StateWriteExt: StateWrite + StateRead {
         tracing::debug!(?height, ?nct_block_anchor, "writing block anchor");
 
         // Write the NCT block anchor both as a value, so we can look it up,
-        self.put(
-            state_key::block_anchor_by_height(height).into(),
-            nct_block_anchor,
-        );
+        self.put(state_key::block_anchor_by_height(height), nct_block_anchor);
         // and as a key, so we can query for it.
         self.put_proto(
-            state_key::block_anchor_lookup(nct_block_anchor).into(),
+            state_key::block_anchor_lookup(nct_block_anchor),
             // We don't use the value for validity checks, but writing the height
             // here lets us find out what height the anchor was for.
             height,
@@ -476,10 +517,7 @@ trait StateWriteExt: StateWrite + StateRead {
         tracing::debug!(?index, ?nct_block_anchor, "writing epoch anchor");
 
         // Write the NCT epoch anchor both as a value, so we can look it up,
-        self.put_domain(
-            state_key::epoch_anchor_by_index(index).into(),
-            nct_block_anchor,
-        );
+        self.put_domain(state_key::epoch_anchor_by_index(index), nct_block_anchor);
         // and as a key, so we can query for it.
         self.put_proto(
             state_key::epoch_anchor_lookup(nct_block_anchor).into(),
@@ -499,7 +537,7 @@ trait StateWriteExt: StateWrite + StateRead {
         } else {
             tracing::debug!(?denom, ?id, "registering new denom");
             // We want to be able to query for the denom by asset ID...
-            self.put(state_key::denom_by_asset(&id).into(), denom.clone());
+            self.put(state_key::denom_by_asset(&id), denom.clone());
             // ... and we want to record it in the list of known asset IDs
             // (this requires reading the whole list, which is sad, but hopefully
             // we don't do this often).
@@ -509,7 +547,7 @@ trait StateWriteExt: StateWrite + StateRead {
                 id,
                 denom: denom.clone(),
             });
-            self.put(state_key::known_assets().into(), known_assets);
+            self.put(state_key::known_assets(), known_assets);
             Ok(())
         }
     }
@@ -695,46 +733,6 @@ trait StateWriteExt: StateWrite + StateRead {
         self.set_compact_block(compact_block);
 
         Ok(())
-    }
-}
-
-/// Finish the block in the NCT.
-///
-/// TODO: where should this live
-/// re-evaluate
-#[instrument(skip(note_commitment_tree, compact_block))]
-fn finish_nct_block(note_commitment_tree: &mut tct::Tree, compact_block: &mut CompactBlock) {
-    // Get the current block height
-    let height = compact_block.height;
-
-    // Close the block in the TCT
-    let block_root = note_commitment_tree
-        .end_block()
-        .expect("ending a block in the note commitment tree can never fail");
-
-    // Put the block root in the compact block
-    compact_block.block_root = block_root;
-
-    // If the block ends an epoch, also close the epoch in the TCT
-    if Epoch::from_height(
-        height,
-        self.get_chain_params()
-            .await
-            .expect("chain params request must succeed")
-            .epoch_duration,
-    )
-    .is_epoch_end(height)
-    {
-        tracing::debug!(?height, "end of epoch");
-
-        // TODO: Put updated FMD parameters in the compact block
-
-        let epoch_root = note_commitment_tree
-            .end_epoch()
-            .expect("ending an epoch in the note commitment tree can never fail");
-
-        // Put the epoch root in the compact block
-        compact_block.epoch_root = Some(epoch_root);
     }
 }
 
