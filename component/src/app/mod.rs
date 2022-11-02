@@ -7,10 +7,8 @@ use crate::shielded_pool::ShieldedPool;
 use crate::stake::component::Staking;
 use crate::{Component, Context};
 use anyhow::Result;
-use async_trait::async_trait;
-use jmt::Version;
 use penumbra_chain::params::FmdParameters;
-use penumbra_chain::{genesis, View as _};
+use penumbra_chain::{genesis, StateReadExt as _};
 use penumbra_storage2::{AppHash, State, StateRead, StateTransaction, StateWrite, Storage};
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, types::ValidatorUpdate};
@@ -193,7 +191,7 @@ impl App {
         Ok(())
     }
 
-    #[instrument(skip(self, ctx, tx))]
+    #[instrument(skip(state, ctx, tx))]
     async fn check_tx_stateful(
         state: Arc<State>,
         ctx: Context,
@@ -210,7 +208,7 @@ impl App {
         Ok(())
     }
 
-    #[instrument(skip(self, ctx, tx, state_tx))]
+    #[instrument(skip(state, ctx, tx))]
     async fn execute_tx(
         state: &mut StateTransaction<'_>,
         ctx: Context,
