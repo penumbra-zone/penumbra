@@ -13,7 +13,7 @@ use penumbra_chain::{
     genesis,
     quarantined::{self, Slashed},
     sync::{AnnotatedNotePayload, CompactBlock},
-    Epoch, KnownAssets, NoteSource,
+    Epoch, KnownAssets, NoteSource, StateReadExt as _,
 };
 use penumbra_crypto::{
     asset::{self, Asset, Denom},
@@ -195,26 +195,29 @@ impl Component for ShieldedPool {
             for quarantined_output in tx.note_payloads().cloned() {
                 // Queue up scheduling this note to be unquarantined: the actual state-writing for
                 // all quarantined notes happens during end_block, to avoid state churn
-                self.schedule_note(epoch, identity_key, quarantined_output, source)
+                state
+                    .schedule_note(epoch, identity_key, quarantined_output, source)
                     .await;
             }
             for quarantined_spent_nullifier in tx.spent_nullifiers() {
-                self.quarantined_spend_nullifier(
-                    epoch,
-                    identity_key,
-                    quarantined_spent_nullifier,
-                    source,
-                )
-                .await;
+                state
+                    .quarantined_spend_nullifier(
+                        epoch,
+                        identity_key,
+                        quarantined_spent_nullifier,
+                        source,
+                    )
+                    .await;
                 ctx.record(event::quarantine_spend(quarantined_spent_nullifier));
             }
         } else {
             for payload in tx.note_payloads().cloned() {
-                self.add_note(AnnotatedNotePayload { payload, source })
+                state
+                    .add_note(AnnotatedNotePayload { payload, source })
                     .await;
             }
             for spent_nullifier in tx.spent_nullifiers() {
-                self.spend_nullifier(spent_nullifier, source).await;
+                state.spend_nullifier(spent_nullifier, source).await;
                 ctx.record(event::spend(spent_nullifier));
             }
         }
@@ -222,7 +225,7 @@ impl Component for ShieldedPool {
         // If there was any proposal submitted in the block, ensure we track this so that clients
         // can retain state needed to vote as delegators
         if tx.proposal_submits().next().is_some() {
-            self.compact_block.proposal_started = true;
+            state.compact_block.proposal_started = true;
         }
     }
 
@@ -233,17 +236,16 @@ impl Component for ShieldedPool {
         _end_block: &abci::request::EndBlock,
     ) {
         // Get the current block height
-        let height = self.height().await;
+        let height = state.height().await;
 
         // Set the height of the compact block
-        self.compact_block.height = height;
+        state.compact_block.height = height;
 
         // TODO: there should be a separate extension trait that other components can
         // use that drops newly minted notes into the ephemeral object cache in a defined
         // location, so that the shielded pool can read them all during end_block
         // Handle any pending reward notes from the Staking component
-        let notes = self
-            .state
+        let notes = state
             .commission_amounts(height)
             .await
             .unwrap()
@@ -252,45 +254,46 @@ impl Component for ShieldedPool {
         // TODO: should we calculate this here or include it directly within the PendingRewardNote
         // to prevent a potential mismatch between Staking and ShieldedPool?
         let source = NoteSource::FundingStreamReward {
-            epoch_index: Epoch::from_height(height, self.state.get_epoch_duration().await.unwrap())
+            epoch_index: Epoch::from_height(height, state.get_epoch_duration().await.unwrap())
                 .index,
         };
 
         for note in notes.notes {
-            self.mint_note(
-                Value {
-                    amount: note.amount,
-                    asset_id: *STAKING_TOKEN_ASSET_ID,
-                },
-                &note.destination,
-                source,
-            )
-            .await
-            .unwrap();
+            state
+                .mint_note(
+                    Value {
+                        amount: note.amount,
+                        asset_id: *STAKING_TOKEN_ASSET_ID,
+                    },
+                    &note.destination,
+                    source,
+                )
+                .await
+                .unwrap();
         }
 
         // TODO: execute any scheduled DAO spend transactions for this block
 
         // Include all output notes from DEX swaps for this block
-        self.output_dex_swaps().await;
+        state.output_dex_swaps().await;
 
         // Schedule all unquarantining that was set up in this block
-        self.schedule_unquarantine().await;
+        state.schedule_unquarantined_notes().await;
 
         // Handle any slashing that occurred in this block, unscheduling all affected notes and
         // nullifiers from future unbonding
-        self.process_slashing().await;
+        state.process_slashing().await;
 
         // Process all unquarantining scheduled for this block
-        self.process_unquarantine().await;
+        state.process_unquarantine().await;
 
         // Refund any proposals from this block which are pending refund
-        self.process_proposal_refunds().await;
+        state.process_proposal_refunds().await;
 
         // Close the block in the NCT
-        self.finish_nct_block().await;
+        state.finish_nct_block().await;
 
-        self.write_compactblock_and_nct().await.unwrap();
+        state.write_compactblock_and_nct().await.unwrap();
     }
 }
 
@@ -418,7 +421,7 @@ trait StateReadExt: StateRead {
     ///
     /// TODO: where should this live
     /// re-evaluate
-    #[instrument(skip(&self,note_commitment_tree, compact_block))]
+    #[instrument(skip(self, note_commitment_tree, compact_block))]
     async fn finish_nct_block(
         &self,
         note_commitment_tree: &mut tct::Tree,
@@ -819,7 +822,7 @@ impl ShieldedPool {
             .expect("can get epoch duration")
     }
 
-    async fn schedule_unquarantine(&mut self) {
+    async fn schedule_unquarantined_notes(&mut self) {
         // First, we group all the scheduled quarantined notes by unquarantine epoch, in the process
         // resetting the quarantine field of the component
         for (&unbonding_epoch, scheduled) in self.compact_block.quarantined.iter() {
