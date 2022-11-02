@@ -54,6 +54,36 @@ impl App {
         }
     }
 
+    #[instrument(skip(self, app_state))]
+    async fn init_chain(&mut self, app_state: &genesis::AppState) {
+        self.state
+            .put_chain_params(app_state.chain_params.clone())
+            .await;
+
+        // TEMP: Hardcoding FMD parameters until we have a mechanism to change them. See issue #1226.
+        self.state
+            .put_current_fmd_parameters(FmdParameters::default())
+            .await;
+        self.state
+            .put_previous_fmd_parameters(FmdParameters::default())
+            .await;
+
+        // TODO: do we actually need to store the app state here?
+        self.state
+            .put_domain(state_key::app_state().into(), app_state.clone())
+            .await;
+        // The genesis block height is 0
+        self.state.put_block_height(0).await;
+
+        self.staking.init_chain(app_state).await;
+        self.ibc.init_chain(app_state).await;
+        self.dex.init_chain(app_state).await;
+        self.governance.init_chain(app_state).await;
+
+        // Shielded pool always executes last.
+        self.shielded_pool.init_chain(app_state).await;
+    }
+
     #[instrument(skip(self, ctx, begin_block))]
     async fn begin_block(&mut self, ctx: Context, begin_block: &abci::request::BeginBlock) {
         // store the block height
@@ -149,36 +179,6 @@ impl App {
     // TODO: should this just be returned by `commit`? both are called during every `EndBlock`
     pub fn tendermint_validator_updates(&self) -> Vec<ValidatorUpdate> {
         self.staking.tendermint_validator_updates()
-    }
-
-    #[instrument(skip(self, app_state))]
-    async fn init_chain(&mut self, app_state: &genesis::AppState) {
-        self.state
-            .put_chain_params(app_state.chain_params.clone())
-            .await;
-
-        // TEMP: Hardcoding FMD parameters until we have a mechanism to change them. See issue #1226.
-        self.state
-            .put_current_fmd_parameters(FmdParameters::default())
-            .await;
-        self.state
-            .put_previous_fmd_parameters(FmdParameters::default())
-            .await;
-
-        // TODO: do we actually need to store the app state here?
-        self.state
-            .put_domain(state_key::app_state().into(), app_state.clone())
-            .await;
-        // The genesis block height is 0
-        self.state.put_block_height(0).await;
-
-        self.staking.init_chain(app_state).await;
-        self.ibc.init_chain(app_state).await;
-        self.dex.init_chain(app_state).await;
-        self.governance.init_chain(app_state).await;
-
-        // Shielded pool always executes last.
-        self.shielded_pool.init_chain(app_state).await;
     }
 
     #[instrument(skip(ctx, tx))]
