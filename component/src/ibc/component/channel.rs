@@ -1,6 +1,4 @@
 use super::state_key;
-use crate::ibc::component::client::View as _;
-use crate::ibc::component::connection::View as _;
 use crate::ibc::event;
 use crate::ibc::ibc_handler::AppHandler;
 use crate::{Component, Context};
@@ -32,7 +30,7 @@ use penumbra_proto::core::ibc::v1alpha1::ibc_action::Action::{
     Acknowledgement, ChannelCloseConfirm, ChannelCloseInit, ChannelOpenAck, ChannelOpenConfirm,
     ChannelOpenInit, ChannelOpenTry, RecvPacket, Timeout,
 };
-use penumbra_storage2::State;
+use penumbra_storage2::{State, StateRead};
 use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tracing::instrument;
@@ -312,7 +310,7 @@ impl Component for ICS4Channel {
 }
 
 #[async_trait]
-pub trait View {
+pub trait StateReadExt: StateRead {
     async fn get_channel_counter(&self) -> Result<u64> {
         self.get_proto::<u64>("ibc_channel_counter".into())
             .await

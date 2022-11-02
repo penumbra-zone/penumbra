@@ -26,9 +26,9 @@ use ibc::{
         ics24_host::identifier::ClientId,
     },
 };
-use penumbra_chain::{genesis, View as _};
+use penumbra_chain::genesis;
 use penumbra_proto::core::ibc::v1alpha1::ibc_action::Action::{CreateClient, UpdateClient};
-use penumbra_storage2::{State, StateTransaction};
+use penumbra_storage2::{State, StateRead, StateTransaction};
 use penumbra_transaction::Transaction;
 use tendermint::{abci, validator};
 use tendermint_light_client_verifier::{
@@ -375,7 +375,7 @@ impl Ics2Client {
 }
 
 #[async_trait]
-pub trait View: StateExt {
+pub trait StateReadExt: StateRead {
     async fn put_client_counter(&mut self, counter: ClientCounter) {
         self.put_domain("ibc_client_counter".into(), counter).await;
     }

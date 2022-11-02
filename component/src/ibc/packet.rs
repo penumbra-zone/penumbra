@@ -1,6 +1,3 @@
-use crate::ibc::component::channel::View as _;
-use crate::ibc::component::client::View as _;
-use crate::ibc::component::connection::View as _;
 use crate::Context;
 use anyhow::Result;
 use async_trait::async_trait;

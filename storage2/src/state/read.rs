@@ -245,3 +245,61 @@ pub(crate) fn prefix_raw_with_cache<'a>(
 
     Box::pin(merged)
 }
+
+#[async_trait]
+impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
+    async fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>> {
+        (**self).get_raw(key).await
+    }
+
+    fn prefix_raw<'b>(
+        &'b self,
+        prefix: &'b str,
+    ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Sync + Send + 'b>> {
+        (**self).prefix_raw(prefix)
+    }
+
+    async fn get_nonconsensus(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+        (**self).get_nonconsensus(key).await
+    }
+
+    fn get_ephemeral<T: Any + Send + Sync>(&self, key: &str) -> Option<&T> {
+        (**self).get_ephemeral(key)
+    }
+
+    fn prefix_ephemeral<'b, T: Any + Send + Sync>(
+        &'b self,
+        prefix: &'b str,
+    ) -> Box<dyn Iterator<Item = (&'b str, &'b T)> + 'b> {
+        (**self).prefix_ephemeral(prefix)
+    }
+}
+
+#[async_trait]
+impl<'a, S: StateRead + Send + Sync> StateRead for &'a mut S {
+    async fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>> {
+        (**self).get_raw(key).await
+    }
+
+    fn prefix_raw<'b>(
+        &'b self,
+        prefix: &'b str,
+    ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Sync + Send + 'b>> {
+        (**self).prefix_raw(prefix)
+    }
+
+    async fn get_nonconsensus(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+        (**self).get_nonconsensus(key).await
+    }
+
+    fn get_ephemeral<T: Any + Send + Sync>(&self, key: &str) -> Option<&T> {
+        (**self).get_ephemeral(key)
+    }
+
+    fn prefix_ephemeral<'b, T: Any + Send + Sync>(
+        &'b self,
+        prefix: &'b str,
+    ) -> Box<dyn Iterator<Item = (&'b str, &'b T)> + 'b> {
+        (**self).prefix_ephemeral(prefix)
+    }
+}

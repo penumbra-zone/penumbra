@@ -1,4 +1,3 @@
-use crate::ibc::component::client::View as _;
 use crate::ibc::{event, validate_penumbra_client_state, ConnectionCounter, SUPPORTED_VERSIONS};
 use crate::{Component, Context};
 use anyhow::Result;
@@ -16,11 +15,11 @@ use ibc::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use ibc::core::ics03_connection::version::{pick_version, Version};
 use ibc::core::ics24_host::identifier::ConnectionId;
 use ibc::Height as IBCHeight;
-use penumbra_chain::{genesis, View as _};
+use penumbra_chain::genesis;
 use penumbra_proto::core::ibc::v1alpha1::ibc_action::Action::{
     ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
 };
-use penumbra_storage2::State;
+use penumbra_storage2::{State, StateRead};
 use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tracing::instrument;
@@ -34,7 +33,7 @@ mod stateless;
 pub struct ConnectionComponent {}
 
 impl ConnectionComponent {
-    #[instrument(name = "ibc_connection", skip(state))]
+    #[instrument(name = "ibc_connection")]
     pub async fn new() -> Self {
         Self {}
     }
@@ -164,7 +163,7 @@ impl Component for ConnectionComponent {
 }
 
 #[async_trait]
-pub trait View: StateExt + Send + Sync {
+pub trait StateReadExt: StateRead {
     async fn get_connection_counter(&self) -> Result<ConnectionCounter> {
         self.get_domain(state_key::connection_counter().into())
             .await
@@ -212,4 +211,4 @@ pub trait View: StateExt + Send + Sync {
     }
 }
 
-impl<T: StateExt + Send + Sync> View for T {}
+impl<T: StateRead> StateReadExt for T {}

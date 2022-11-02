@@ -46,7 +46,7 @@ fn is_source(source_port: &PortId, source_channel: &ChannelId, denom: &Denom) ->
 pub struct ICS20Transfer {}
 
 impl ICS20Transfer {
-    #[instrument(name = "ics20_transfer", skip(state))]
+    #[instrument(name = "ics20_transfer")]
     pub fn new() -> Self {
         Self {}
     }

@@ -879,13 +879,6 @@ trait StateWriteExt: StateWrite {
         Ok(slashed.validators)
     }
 
-    // TODO: rename to something more generic ("minted notes"?) that can
-    // be used with IBC transfers, and fix up the path and proto
-}
-
-impl<T: StateWrite> StateWriteExt for T {}
-
-impl ShieldedPool {
     #[instrument(skip(self, source, payload), fields(note_commitment = ?payload.note_commitment))]
     async fn schedule_note(
         &mut self,
@@ -1046,7 +1039,6 @@ impl ShieldedPool {
         let block_height = self.height().await;
 
         for claimed_swap in self
-            .state
             .claimed_swap_outputs(block_height)
             .await
             .expect("claimed swap outputs can be fetched")
@@ -1072,4 +1064,9 @@ impl ShieldedPool {
             self.spend_nullifier(swap_claim.nullifier, source).await;
         }
     }
+
+    // TODO: rename to something more generic ("minted notes"?) that can
+    // be used with IBC transfers, and fix up the path and proto
 }
+
+impl<T: StateWrite> StateWriteExt for T {}
