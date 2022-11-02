@@ -1,8 +1,8 @@
 use std::{collections::BTreeSet, sync::Arc};
 
 use crate::{
-    governance::View as _,
-    stake::{validator, View as _},
+    governance::StateReadExt as _,
+    stake::{validator, StateReadExt as _},
     Component, Context,
 };
 use anyhow::{anyhow, Context as _, Result};
@@ -70,14 +70,8 @@ impl Component for ShieldedPool {
         // Add current FMD parameters to the initial block.
         compact_block.fmd_parameters = Some(state.get_current_fmd_parameters().await.unwrap());
 
-        let mut note_commitment_tree = state.stub_note_commitment_tree();
         // Close the genesis block
-        state.finish_nct_block(&mut note_commitment_tree, &mut compact_block);
-
-        state
-            .write_compactblock_and_nct(compact_block, note_commitment_tree)
-            .await
-            .unwrap();
+        state.finish_nct_block();
     }
 
     #[instrument(name = "shielded_pool", skip(state, _ctx, _begin_block))]
@@ -292,8 +286,6 @@ impl Component for ShieldedPool {
 
         // Close the block in the NCT
         state.finish_nct_block().await;
-
-        state.write_compactblock_and_nct().await.unwrap();
     }
 }
 
@@ -421,12 +413,10 @@ pub trait StateReadExt: StateRead {
     ///
     /// TODO: where should this live
     /// re-evaluate
-    #[instrument(skip(self, note_commitment_tree, compact_block))]
-    async fn finish_nct_block(
-        &self,
-        note_commitment_tree: &mut tct::Tree,
-        compact_block: &mut CompactBlock,
-    ) {
+    #[instrument(skip(self))]
+    async fn finish_nct_block(&self) {
+        let note_commitment_tree = self.stub_note_commitment_tree().await;
+        let compact_block = self.stub_compact_block();
         // Get the current block height
         let height = compact_block.height;
 
@@ -459,6 +449,10 @@ pub trait StateReadExt: StateRead {
             // Put the epoch root in the compact block
             compact_block.epoch_root = Some(epoch_root);
         }
+
+        self.write_compactblock_and_nct(compact_block, note_commitment_tree)
+            .await
+            .expect("unable to write compactblock and nct");
     }
 
     async fn scheduled_to_apply(&self, epoch: u64) -> Result<quarantined::Scheduled> {
@@ -488,6 +482,8 @@ pub trait StateReadExt: StateRead {
             .await
     }
 }
+
+impl<T: StateRead> StateReadExt for T {}
 
 #[async_trait]
 trait StateWriteExt: StateWrite {
@@ -886,6 +882,8 @@ trait StateWriteExt: StateWrite {
     // TODO: rename to something more generic ("minted notes"?) that can
     // be used with IBC transfers, and fix up the path and proto
 }
+
+impl<T: StateWrite> StateWriteExt for T {}
 
 impl ShieldedPool {
     #[instrument(skip(self, source, payload), fields(note_commitment = ?payload.note_commitment))]

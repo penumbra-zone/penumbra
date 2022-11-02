@@ -14,7 +14,7 @@ pub mod validator;
 
 pub use self::metrics::register_metrics;
 pub use changes::DelegationChanges;
-pub use component::View;
+pub use component::StateReadExt;
 pub use current_consensus_keys::CurrentConsensusKeys;
 pub use funding_stream::{FundingStream, FundingStreams};
 pub use uptime::Uptime;

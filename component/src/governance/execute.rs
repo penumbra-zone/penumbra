@@ -4,7 +4,7 @@ use super::{
     proposal::{self, chain_params},
     tally, View as _,
 };
-use penumbra_chain::View as _;
+use penumbra_chain::StateReadExt as _;
 use penumbra_storage2::State;
 use penumbra_transaction::action::{
     ProposalPayload, ProposalSubmit, ProposalWithdraw, ProposalWithdrawBody, ValidatorVote,
