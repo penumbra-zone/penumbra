@@ -232,6 +232,8 @@ impl Component for ShieldedPool {
         if tx.proposal_submits().next().is_some() {
             state.compact_block.proposal_started = true;
         }
+
+        Ok(())
     }
 
     #[instrument(name = "shielded_pool", skip(state, _ctx, _end_block))]
@@ -320,7 +322,7 @@ pub trait StateReadExt: StateRead + Sized {
     // the NCT at all until end_block, and then serialization round trip doesn't matter.
     async fn stub_note_commitment_tree(&self) -> tct::Tree {
         match self
-            .get_nonconsensus(state_key::internal::stub_note_commitment_tree().into())
+            .get_nonconsensus(state_key::internal::stub_note_commitment_tree().as_bytes())
             .await
             .unwrap()
         {
@@ -336,11 +338,39 @@ pub trait StateReadExt: StateRead + Sized {
     }
 
     async fn note_source(&self, note_commitment: note::Commitment) -> Result<Option<NoteSource>> {
-        self.get(state_key::note_source(note_commitment)).await
+        self.get(&state_key::note_source(&note_commitment)).await
     }
 
     async fn compact_block(&self, height: u64) -> Result<Option<CompactBlock>> {
-        self.get(state_key::compact_block(height)).await
+        self.get(&state_key::compact_block(height)).await
+    }
+
+    #[instrument(skip(self))]
+    async fn check_nullifier_unspent(&self, nullifier: Nullifier) -> Result<()> {
+        if let Some(source) = self
+            .get::<NoteSource, _>(state_key::spent_nullifier_lookup(nullifier).into())
+            .await?
+        {
+            return Err(anyhow!(
+                "nullifier {} was already spent in {:?}",
+                nullifier,
+                source,
+            ));
+        }
+
+        if let Some(source) = self
+            .get(state_key::quarantined_spent_nullifier_lookup(nullifier).into())
+            .await?
+            .and_then(<Option<NoteSource>>::from)
+        {
+            return Err(anyhow!(
+                "nullifier {} was already spent in {:?} (currently quarantined)",
+                nullifier,
+                source,
+            ));
+        }
+
+        Ok(())
     }
 
     /// Checks whether a claimed NCT anchor is a previous valid state root.
@@ -506,7 +536,12 @@ trait StateWriteExt: StateWrite {
     // the NCT at all until end_block, and then serialization round trip doesn't matter.
     fn stub_put_note_commitment_tree(&self, tree: &tct::Tree) {
         let bytes = bincode::serialize(&tree).unwrap();
-        self.put_nonconsensus(state_key::internal::stub_note_commitment_tree(), bytes);
+        self.put_nonconsensus(
+            state_key::internal::stub_note_commitment_tree()
+                .as_bytes()
+                .to_vec(),
+            bytes,
+        );
     }
 
     // TODO: remove this entirely post-integration. This is slow but intended as
@@ -808,35 +843,6 @@ trait StateWriteExt: StateWrite {
 
         Ok(source)
     }
-
-    #[instrument(skip(self))]
-    async fn check_nullifier_unspent(&self, nullifier: Nullifier) -> Result<()> {
-        if let Some(source) = self
-            .get::<NoteSource, _>(state_key::spent_nullifier_lookup(nullifier).into())
-            .await?
-        {
-            return Err(anyhow!(
-                "nullifier {} was already spent in {:?}",
-                nullifier,
-                source,
-            ));
-        }
-
-        if let Some(source) = self
-            .get(state_key::quarantined_spent_nullifier_lookup(nullifier).into())
-            .await?
-            .and_then(<Option<NoteSource>>::from)
-        {
-            return Err(anyhow!(
-                "nullifier {} was already spent in {:?} (currently quarantined)",
-                nullifier,
-                source,
-            ));
-        }
-
-        Ok(())
-    }
-
     async fn schedule_unquarantine(
         &self,
         epoch: u64,
