@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{any::Any, fmt::Debug};
 
 use penumbra_proto::{Message, Protobuf};
 
@@ -36,9 +36,15 @@ pub trait StateWrite {
     /// Delete a key from the verifiable key-value store.
     fn delete(&mut self, key: String);
 
+    /// Puts raw bytes into the non-verifiable key-value store with the given key.
+    fn put_nonconsensus(&mut self, key: Vec<u8>, value: Vec<u8>);
+
     /// Delete a key from non-verifiable key-value storage.
     fn delete_nonconsensus(&mut self, key: Vec<u8>);
 
-    /// Puts raw bytes into the non-verifiable key-value store with the given key.
-    fn put_nonconsensus(&mut self, key: Vec<u8>, value: Vec<u8>);
+    /// Puts an object into the ephemeral object store with the given key.
+    fn put_ephemeral<T: Any + Send + Sync>(&mut self, key: String, value: T);
+
+    /// Deletes a key from the ephemeral object store.
+    fn delete_ephemeral(&mut self, key: String);
 }

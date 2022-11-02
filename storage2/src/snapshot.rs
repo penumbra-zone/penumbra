@@ -1,4 +1,4 @@
-use std::{pin::Pin, sync::Arc};
+use std::{any::Any, pin::Pin, sync::Arc};
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -153,6 +153,19 @@ impl StateRead for Snapshot {
             .expect("should be able to spawn_blocking");
 
         Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx))
+    }
+
+    fn get_ephemeral<T: Any + Send + Sync>(&self, _key: &str) -> Option<&T> {
+        // No-op -- this will never be called internally, and `Snapshot` is not exposed in public API
+        None
+    }
+
+    fn prefix_ephemeral<'a, T: Any + Send + Sync>(
+        &'a self,
+        _prefix: &'a str,
+    ) -> Box<dyn Iterator<Item = (&'a str, &'a T)> + 'a> {
+        // No-op -- this will never be called internally, and `Snapshot` is not exposed in public API
+        Box::new(std::iter::empty())
     }
 }
 
