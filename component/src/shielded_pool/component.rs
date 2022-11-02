@@ -26,6 +26,7 @@ use penumbra_transaction::{
     action::{swap_claim::List as SwapClaimBodyList, Undelegate},
     Action, Transaction,
 };
+use tct::Tree;
 use tendermint::abci;
 use tracing::instrument;
 
@@ -61,7 +62,8 @@ impl Component for ShieldedPool {
                 .unwrap();
         }
 
-        let compact_block = CompactBlock::default();
+        let mut compact_block = CompactBlock::default();
+        let note_commitment_tree = state.stub_note_commitment_tree().await;
 
         // Hard-coded to zero because we are in the genesis block
         // Tendermint starts blocks at 1, so this is a "phantom" compact block
@@ -71,7 +73,12 @@ impl Component for ShieldedPool {
         compact_block.fmd_parameters = Some(state.get_current_fmd_parameters().await.unwrap());
 
         // Close the genesis block
-        state.finish_nct_block();
+        state.finish_nct_block(&mut compact_block, &mut note_commitment_tree);
+
+        state
+            .write_compactblock_and_nct(compact_block, note_commitment_tree)
+            .await
+            .expect("unable to write compactblock and nct");
     }
 
     #[instrument(name = "shielded_pool", skip(state, _ctx, _begin_block))]
@@ -182,7 +189,11 @@ impl Component for ShieldedPool {
     }
 
     #[instrument(name = "shielded_pool", skip(state, ctx, tx))]
-    async fn execute_tx(state: &mut StateTransaction, ctx: Context, tx: &Transaction) {
+    async fn execute_tx(
+        state: &mut StateTransaction,
+        ctx: Context,
+        tx: Arc<Transaction>,
+    ) -> Result<()> {
         let source = NoteSource::Transaction { id: tx.id() };
 
         if let Some((epoch, identity_key)) = state.should_quarantine(tx).await {
@@ -233,7 +244,8 @@ impl Component for ShieldedPool {
         let height = state.height().await;
 
         // Set the height of the compact block
-        state.compact_block.height = height;
+        let compact_block = state.stub_compact_block();
+        compact_block.height = height;
 
         // TODO: there should be a separate extension trait that other components can
         // use that drops newly minted notes into the ephemeral object cache in a defined
@@ -285,13 +297,21 @@ impl Component for ShieldedPool {
         state.process_proposal_refunds().await;
 
         // Close the block in the NCT
-        state.finish_nct_block().await;
+        let note_commitment_tree = state.stub_note_commitment_tree().await;
+        state
+            .finish_nct_block(&mut compact_block, &mut note_commitment_tree)
+            .await;
+
+        state
+            .write_compactblock_and_nct(compact_block, note_commitment_tree)
+            .await
+            .expect("unable to write compactblock and nct");
     }
 }
 
 // TODO: split into different extension traits
 #[async_trait]
-pub trait StateReadExt: StateRead {
+pub trait StateReadExt: StateRead + Sized {
     // TODO: remove this entirely post-integration. This is slow but intended as
     // a drop-in replacement so we can avoid really major code changes.
     //
@@ -300,7 +320,7 @@ pub trait StateReadExt: StateRead {
     // the NCT at all until end_block, and then serialization round trip doesn't matter.
     async fn stub_note_commitment_tree(&self) -> tct::Tree {
         match self
-            .get_nonconsensus(state_key::internal::stub_note_commitment_tree())
+            .get_nonconsensus(state_key::internal::stub_note_commitment_tree().into())
             .await
             .unwrap()
         {
@@ -316,19 +336,17 @@ pub trait StateReadExt: StateRead {
     }
 
     async fn note_source(&self, note_commitment: note::Commitment) -> Result<Option<NoteSource>> {
-        self.get(state_key::note_source(note_commitment).into())
-            .await
+        self.get(state_key::note_source(note_commitment)).await
     }
 
     async fn compact_block(&self, height: u64) -> Result<Option<CompactBlock>> {
-        self.get_domain(state_key::compact_block(height).into())
-            .await
+        self.get(state_key::compact_block(height)).await
     }
 
     /// Checks whether a claimed NCT anchor is a previous valid state root.
     async fn check_claimed_anchor(&self, anchor: tct::Root) -> Result<()> {
         if let Some(anchor_height) = self
-            .get_proto::<u64>(state_key::anchor_lookup(anchor).into())
+            .get_proto::<u64>(state_key::anchor_lookup(anchor))
             .await?
         {
             tracing::debug!(?anchor, ?anchor_height, "anchor is valid");
@@ -342,21 +360,19 @@ pub trait StateReadExt: StateRead {
     }
 
     async fn token_supply(&self, asset_id: &asset::Id) -> Result<Option<u64>> {
-        self.get_proto(state_key::token_supply(asset_id).into())
-            .await
+        self.get_proto(state_key::token_supply(asset_id)).await
     }
 
     // TODO: refactor for new state model -- no more list of known asset IDs with fixed key
     async fn known_assets(&self) -> Result<KnownAssets> {
         Ok(self
-            .get_domain(state_key::known_assets().into())
+            .get(state_key::known_assets())
             .await?
             .unwrap_or_default())
     }
 
     async fn denom_by_asset(&self, asset_id: &asset::Id) -> Result<Option<Denom>> {
-        self.get_domain(state_key::denom_by_asset(asset_id).into())
-            .await
+        self.get(state_key::denom_by_asset(asset_id)).await
     }
 
     /// Returns the epoch and identity key for quarantining a transaction, if it should be
@@ -379,7 +395,6 @@ pub trait StateReadExt: StateRead {
                 })?;
 
         let validator_bonding_state = self
-            .state
             .validator_bonding_state(validator_identity)
             .await
             .expect("validator lookup in state succeeds")
@@ -392,7 +407,6 @@ pub trait StateReadExt: StateRead {
             }
             validator::BondingState::Bonded => {
                 let unbonding_epochs = self
-                    .state
                     .get_chain_params()
                     .await
                     .expect("can get chain params")
@@ -414,9 +428,11 @@ pub trait StateReadExt: StateRead {
     /// TODO: where should this live
     /// re-evaluate
     #[instrument(skip(self))]
-    async fn finish_nct_block(&self) {
-        let note_commitment_tree = self.stub_note_commitment_tree().await;
-        let compact_block = self.stub_compact_block();
+    async fn finish_nct_block(
+        &self,
+        compact_block: &mut CompactBlock,
+        note_commitment_tree: &mut Tree,
+    ) {
         // Get the current block height
         let height = compact_block.height;
 
@@ -449,36 +465,31 @@ pub trait StateReadExt: StateRead {
             // Put the epoch root in the compact block
             compact_block.epoch_root = Some(epoch_root);
         }
-
-        self.write_compactblock_and_nct(compact_block, note_commitment_tree)
-            .await
-            .expect("unable to write compactblock and nct");
     }
 
     async fn scheduled_to_apply(&self, epoch: u64) -> Result<quarantined::Scheduled> {
         Ok(self
-            .get_domain(state_key::scheduled_to_apply(epoch).into())
+            .get(state_key::scheduled_to_apply(epoch).into())
             .await?
             .unwrap_or_default())
     }
 
     async fn commission_amounts(&self, height: u64) -> Result<Option<CommissionAmounts>> {
-        self.get_domain(state_key::commission_amounts(height).into())
-            .await
+        self.get(state_key::commission_amounts(height).into()).await
     }
 
     async fn set_commission_amounts(&self, height: u64, notes: CommissionAmounts) {
-        self.put_domain(state_key::commission_amounts(height).into(), notes)
+        self.put(state_key::commission_amounts(height).into(), notes)
             .await
     }
 
     async fn claimed_swap_outputs(&self, height: u64) -> Result<Option<SwapClaimBodyList>> {
-        self.get_domain(state_key::claimed_swap_outputs(height).into())
+        self.get(state_key::claimed_swap_outputs(height).into())
             .await
     }
 
     async fn set_claimed_swap_outputs(&self, height: u64, claims: SwapClaimBodyList) {
-        self.put_domain(state_key::claimed_swap_outputs(height).into(), claims)
+        self.put(state_key::claimed_swap_outputs(height).into(), claims)
             .await
     }
 }
@@ -546,7 +557,7 @@ trait StateWriteExt: StateWrite {
         tracing::debug!(?index, ?nct_block_anchor, "writing epoch anchor");
 
         // Write the NCT epoch anchor both as a value, so we can look it up,
-        self.put_domain(state_key::epoch_anchor_by_index(index), nct_block_anchor);
+        self.put(state_key::epoch_anchor_by_index(index), nct_block_anchor);
         // and as a key, so we can query for it.
         self.put_proto(
             state_key::epoch_anchor_lookup(nct_block_anchor).into(),
@@ -748,7 +759,7 @@ trait StateWriteExt: StateWrite {
         let height = compact_block.height;
 
         // Write the note commitment tree anchor:
-        self.set_nct_anchor(height, self.note_commitment_tree.root());
+        self.set_nct_anchor(height, nct.root());
         // Write the current block anchor:
         self.set_nct_block_anchor(height, compact_block.block_root);
         // Write the current epoch anchor, if on an epoch boundary:
@@ -801,7 +812,7 @@ trait StateWriteExt: StateWrite {
     #[instrument(skip(self))]
     async fn check_nullifier_unspent(&self, nullifier: Nullifier) -> Result<()> {
         if let Some(source) = self
-            .get_domain::<NoteSource, _>(state_key::spent_nullifier_lookup(nullifier).into())
+            .get::<NoteSource, _>(state_key::spent_nullifier_lookup(nullifier).into())
             .await?
         {
             return Err(anyhow!(
@@ -833,7 +844,7 @@ trait StateWriteExt: StateWrite {
     ) -> Result<()> {
         let mut updated_quarantined = self.scheduled_to_apply(epoch).await?;
         updated_quarantined.extend(scheduled);
-        self.put_domain(
+        self.put(
             state_key::scheduled_to_apply(epoch).into(),
             updated_quarantined,
         )
@@ -850,7 +861,7 @@ trait StateWriteExt: StateWrite {
         let unbonding_epochs = self.get_chain_params().await?.unbonding_epochs;
 
         let slashed: Slashed = self
-            .get_domain(state_key::slashed_validators(height).into())
+            .get(state_key::slashed_validators(height).into())
             .await?
             .unwrap_or_default();
 
@@ -869,7 +880,7 @@ trait StateWriteExt: StateWrite {
                 }
             }
             // We're removed all the scheduled notes and nullifiers for this epoch and identity key:
-            self.put_domain(
+            self.put(
                 state_key::scheduled_to_apply(epoch).into(),
                 updated_scheduled,
             )
@@ -915,14 +926,13 @@ trait StateWriteExt: StateWrite {
         // double spends), as well as in the CompactBlock (so clients can learn their note
         // was provisionally spent, pending quarantine period).
         tracing::debug!("marking as spent (currently quarantined)");
-        self.state
-            .put_domain(
-                state_key::quarantined_spent_nullifier_lookup(nullifier).into(),
-                // We don't use the value for validity checks, but writing the source
-                // here lets us find out what transaction spent the nullifier.
-                source,
-            )
-            .await;
+        self.put(
+            state_key::quarantined_spent_nullifier_lookup(nullifier).into(),
+            // We don't use the value for validity checks, but writing the source
+            // here lets us find out what transaction spent the nullifier.
+            source,
+        )
+        .await;
         // Queue up scheduling this nullifier to be unquarantined: the actual state-writing
         // for all quarantined nullifiers happens during end_block, to avoid state churn
         self.compact_block
@@ -932,8 +942,7 @@ trait StateWriteExt: StateWrite {
 
     /// Get the current block height.
     async fn height(&self) -> u64 {
-        self.state
-            .get_block_height()
+        self.get_block_height()
             .await
             .expect("block height must be set")
     }
@@ -952,8 +961,7 @@ trait StateWriteExt: StateWrite {
 
     /// Get the epoch duration.
     async fn epoch_duration(&self) -> u64 {
-        self.state
-            .get_epoch_duration()
+        self.get_epoch_duration()
             .await
             .expect("can get epoch duration")
     }
@@ -962,8 +970,7 @@ trait StateWriteExt: StateWrite {
         // First, we group all the scheduled quarantined notes by unquarantine epoch, in the process
         // resetting the quarantine field of the component
         for (&unbonding_epoch, scheduled) in self.compact_block.quarantined.iter() {
-            self.state
-                .schedule_unquarantine(unbonding_epoch, scheduled.clone())
+            self.schedule_unquarantine(unbonding_epoch, scheduled.clone())
                 .await
                 .expect("scheduling unquarantine must succeed");
         }
@@ -972,8 +979,7 @@ trait StateWriteExt: StateWrite {
     // Process any slashing that occrred in this block.
     async fn process_slashing(&mut self) {
         self.compact_block.slashed.extend(
-            self.state
-                .unschedule_all_slashed()
+            self.unschedule_all_slashed()
                 .await
                 .expect("can unschedule slashed"),
         );

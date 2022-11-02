@@ -78,7 +78,7 @@ pub(crate) mod internal {
         "shielded_pool/stub/note_commitment_tree"
     }
     pub fn stub_compact_block() -> &'static str {
-        "shielded_pool/stub/note_commitment_tree"
+        "shielded_pool/stub/compact_block"
     }
 
     // WIP towards atomization of current compact block, abandoned in favor of

@@ -8,7 +8,7 @@ use crate::stake::component::Staking;
 use crate::{Component, Context};
 use anyhow::Result;
 use penumbra_chain::params::FmdParameters;
-use penumbra_chain::{genesis, StateReadExt as _};
+use penumbra_chain::{genesis, StateReadExt as _, StateWriteExt as _};
 use penumbra_storage2::{AppHash, State, StateRead, StateTransaction, StateWrite, Storage};
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, types::ValidatorUpdate};
@@ -37,10 +37,9 @@ impl App {
 
     #[instrument(skip(self, app_state))]
     async fn init_chain(&mut self, app_state: &genesis::AppState) {
-        let mut state = self
-            .state
-            .get_mut()
-            .expect("state Arc should not be referenced elsewhere");
+        let mut state =
+            Arc::get_mut(&mut self.state).expect("state Arc should not be referenced elsewhere");
+
         let state_tx = state.begin_transaction();
 
         state_tx.put_chain_params(app_state.chain_params.clone());
@@ -55,22 +54,20 @@ impl App {
         // The genesis block height is 0
         state_tx.put_block_height(0);
 
-        Staking::init_chain(state, app_state).await.unwrap();
-        IBCComponent::init_chain(state, app_state).await.unwrap();
-        Dex::init_chain(state, app_state).await.unwrap();
-        Governance::init_chain(state, app_state).await.unwrap();
+        Staking::init_chain(state, app_state).await;
+        IBCComponent::init_chain(state, app_state).await;
+        Dex::init_chain(state, app_state).await;
+        Governance::init_chain(state, app_state).await;
         // Shielded pool always executes last.
-        ShieldedPool::init_chain(state, app_state).await.unwrap();
+        ShieldedPool::init_chain(state, app_state).await;
 
         state_tx.apply();
     }
 
     #[instrument(skip(self, ctx, begin_block))]
     async fn begin_block(&mut self, ctx: Context, begin_block: &abci::request::BeginBlock) {
-        let mut state = self
-            .state
-            .get_mut()
-            .expect("state Arc should not be referenced elsewhere");
+        let mut state =
+            Arc::get_mut(&mut self.state).expect("state Arc should not be referenced elsewhere");
         let state_tx = state.begin_transaction();
 
         // store the block height
@@ -124,10 +121,8 @@ impl App {
 
     #[instrument(skip(self, ctx, end_block))]
     async fn end_block(&mut self, ctx: Context, end_block: &abci::request::EndBlock) {
-        let mut state = self
-            .state
-            .get_mut()
-            .expect("state Arc should not be referenced elsewhere");
+        let mut state =
+            Arc::get_mut(&mut self.state).expect("state Arc should not be referenced elsewhere");
         let state_tx = state.begin_transaction();
 
         Staking::end_block(state, ctx.clone(), end_block)
