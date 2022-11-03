@@ -19,7 +19,7 @@ pub mod stake;
 
 /// A component of the Penumbra application.
 #[async_trait]
-pub trait Component: Sized {
+pub trait Component {
     /// Performs initialization, given the genesis state.
     ///
     /// This method is called once per chain, and should only perform
