@@ -9,7 +9,7 @@ use crate::{Component, Context};
 use anyhow::Result;
 use penumbra_chain::params::FmdParameters;
 use penumbra_chain::{genesis, StateReadExt as _, StateWriteExt as _};
-use penumbra_storage2::{AppHash, State, StateRead, StateTransaction, StateWrite, Storage};
+use penumbra_storage2::{AppHash, State, StateTransaction, StateWrite, Storage};
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, types::ValidatorUpdate};
 
