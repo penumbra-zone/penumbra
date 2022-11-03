@@ -253,10 +253,10 @@ impl AppHandler for ICS20Transfer {}
 #[async_trait]
 impl Component for ICS20Transfer {
     #[instrument(name = "ics20_transfer", skip(self, _app_state))]
-    async fn init_chain(&mut self, _app_state: &genesis::AppState) {}
+    async fn init_chain(_app_state: &genesis::AppState) {}
 
     #[instrument(name = "ics20_transfer", skip(self, _ctx, _begin_block))]
-    async fn begin_block(&mut self, _ctx: Context, _begin_block: &abci::request::BeginBlock) {}
+    async fn begin_block(_ctx: Context, _begin_block: &abci::request::BeginBlock) {}
 
     #[instrument(name = "ics20_transfer", skip(_ctx, tx))]
     fn check_tx_stateless(_ctx: Context, tx: &Transaction) -> Result<()> {
@@ -272,7 +272,7 @@ impl Component for ICS20Transfer {
         Ok(())
     }
     #[instrument(name = "ics20_transfer", skip(self, ctx, tx))]
-    async fn check_tx_stateful(&self, ctx: Context, tx: &Transaction) -> Result<()> {
+    async fn check_tx_stateful(ctx: Context, tx: &Transaction) -> Result<()> {
         for action in tx.actions() {
             match action {
                 Action::ICS20Withdrawal(withdrawal) => {
@@ -284,7 +284,7 @@ impl Component for ICS20Transfer {
         Ok(())
     }
     #[instrument(name = "ics20_transfer", skip(self, ctx, tx))]
-    async fn execute_tx(&mut self, ctx: Context, tx: &Transaction) {
+    async fn execute_tx(ctx: Context, tx: &Transaction) {
         for action in tx.actions() {
             match action {
                 Action::ICS20Withdrawal(withdrawal) => {
@@ -296,5 +296,5 @@ impl Component for ICS20Transfer {
     }
 
     #[instrument(name = "ics20_channel", skip(self, _ctx, _end_block))]
-    async fn end_block(&mut self, _ctx: Context, _end_block: &abci::request::EndBlock) {}
+    async fn end_block(_ctx: Context, _end_block: &abci::request::EndBlock) {}
 }

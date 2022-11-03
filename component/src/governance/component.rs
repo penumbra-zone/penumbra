@@ -22,7 +22,7 @@ impl Governance {
 #[async_trait]
 impl Component for Governance {
     #[instrument(name = "governance", skip(self, _app_state))]
-    async fn init_chain(&mut self, _app_state: &genesis::AppState) {
+    async fn init_chain(_app_state: &genesis::AppState) {
         // Initialize the unfinished proposals tracking key in the JMT.
         self.state
             .put_unfinished_proposals(ProposalList::default())
@@ -30,7 +30,7 @@ impl Component for Governance {
     }
 
     #[instrument(name = "governance", skip(self, _ctx, _begin_block))]
-    async fn begin_block(&mut self, _ctx: Context, _begin_block: &abci::request::BeginBlock) {}
+    async fn begin_block(_ctx: Context, _begin_block: &abci::request::BeginBlock) {}
 
     #[instrument(name = "governance", skip(_ctx, tx))]
     fn check_tx_stateless(_ctx: Context, tx: &Transaction) -> Result<()> {
@@ -52,7 +52,7 @@ impl Component for Governance {
     }
 
     #[instrument(name = "governance", skip(self, _ctx, tx))]
-    async fn check_tx_stateful(&self, _ctx: Context, tx: &Transaction) -> Result<()> {
+    async fn check_tx_stateful(_ctx: Context, tx: &Transaction) -> Result<()> {
         let auth_hash = tx.transaction_body().auth_hash();
 
         for proposal_submit in tx.proposal_submits() {
@@ -73,7 +73,7 @@ impl Component for Governance {
     }
 
     #[instrument(name = "governance", skip(self, _ctx, tx))]
-    async fn execute_tx(&mut self, _ctx: Context, tx: &Transaction) {
+    async fn execute_tx(_ctx: Context, tx: &Transaction) {
         for proposal_submit in tx.proposal_submits() {
             execute::proposal_submit(&self.state, proposal_submit).await;
         }
@@ -90,7 +90,7 @@ impl Component for Governance {
     }
 
     #[instrument(name = "governance", skip(self, _ctx, _end_block))]
-    async fn end_block(&mut self, _ctx: Context, _end_block: &abci::request::EndBlock) {
+    async fn end_block(_ctx: Context, _end_block: &abci::request::EndBlock) {
         // TODO: compute intermediate tallies at epoch boundaries (with threshold delegator voting)
         execute::enact_all_passed_proposals(&self.state).await;
         execute::enact_pending_parameter_changes(&self.state).await;

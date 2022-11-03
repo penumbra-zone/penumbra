@@ -42,10 +42,10 @@ impl ConnectionComponent {
 #[async_trait]
 impl Component for ConnectionComponent {
     #[instrument(name = "ibc_connection", skip(self, _app_state))]
-    async fn init_chain(&mut self, _app_state: &genesis::AppState) {}
+    async fn init_chain(_app_state: &genesis::AppState) {}
 
     #[instrument(name = "ibc_connection", skip(self, _ctx, _begin_block))]
-    async fn begin_block(&mut self, _ctx: Context, _begin_block: &abci::request::BeginBlock) {}
+    async fn begin_block(_ctx: Context, _begin_block: &abci::request::BeginBlock) {}
 
     #[instrument(name = "ibc_connection", skip(_ctx, tx))]
     fn check_tx_stateless(_ctx: Context, tx: &Transaction) -> Result<()> {
@@ -88,7 +88,7 @@ impl Component for ConnectionComponent {
     }
 
     #[instrument(name = "ibc_connection", skip(self, _ctx, tx))]
-    async fn check_tx_stateful(&self, _ctx: Context, tx: &Transaction) -> Result<()> {
+    async fn check_tx_stateful(_ctx: Context, tx: &Transaction) -> Result<()> {
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
                 Some(ConnectionOpenInit(msg)) => {
@@ -123,7 +123,7 @@ impl Component for ConnectionComponent {
     }
 
     #[instrument(name = "ibc_connection", skip(self, ctx, tx))]
-    async fn execute_tx(&mut self, ctx: Context, tx: &Transaction) {
+    async fn execute_tx(ctx: Context, tx: &Transaction) {
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
                 Some(ConnectionOpenInit(msg)) => {
@@ -159,7 +159,7 @@ impl Component for ConnectionComponent {
     }
 
     #[instrument(name = "ibc_connection", skip(self, _ctx, _end_block))]
-    async fn end_block(&mut self, _ctx: Context, _end_block: &abci::request::EndBlock) {}
+    async fn end_block(_ctx: Context, _end_block: &abci::request::EndBlock) {}
 }
 
 #[async_trait]

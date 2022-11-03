@@ -57,28 +57,29 @@ impl<'a> Transaction<'a> {
 }
 
 impl<'a> StateWrite for Transaction<'a> {
-    fn put_raw(&mut self, key: String, value: jmt::OwnedValue) {
-        self.unwritten_changes.insert(key, Some(value));
+    fn put_raw(&mut self, key: &str, value: jmt::OwnedValue) {
+        self.unwritten_changes.insert(key.into(), Some(value));
     }
 
-    fn delete(&mut self, key: String) {
-        self.unwritten_changes.insert(key, None);
+    fn delete(&mut self, key: &str) {
+        self.unwritten_changes.insert(key.into(), None);
     }
 
-    fn delete_nonconsensus(&mut self, key: Vec<u8>) {
-        self.nonconsensus_changes.insert(key, None);
+    fn delete_nonconsensus(&mut self, key: &[u8]) {
+        self.nonconsensus_changes.insert(key.into(), None);
     }
 
-    fn put_nonconsensus(&mut self, key: Vec<u8>, value: Vec<u8>) {
-        self.nonconsensus_changes.insert(key, Some(value));
+    fn put_nonconsensus(&mut self, key: &[u8], value: Vec<u8>) {
+        self.nonconsensus_changes.insert(key.into(), Some(value));
     }
 
-    fn put_ephemeral<T: Any + Send + Sync>(&mut self, key: String, value: T) {
-        self.object_changes.insert(key, Some(Box::new(value)));
+    fn put_ephemeral<T: Any + Send + Sync>(&mut self, key: &str, value: T) {
+        self.object_changes
+            .insert(key.into(), Some(Box::new(value)));
     }
 
-    fn delete_ephemeral(&mut self, key: String) {
-        self.object_changes.insert(key, None);
+    fn delete_ephemeral(&mut self, key: &str) {
+        self.object_changes.insert(key.into(), None);
     }
 }
 

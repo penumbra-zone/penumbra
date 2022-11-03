@@ -60,13 +60,13 @@ impl Ics2Client {
 #[async_trait]
 impl Component for Ics2Client {
     #[instrument(name = "ics2_client", skip(self, _app_state))]
-    async fn init_chain(&mut self, _app_state: &genesis::AppState) {
+    async fn init_chain(_app_state: &genesis::AppState) {
         // set the initial client count
         self.state.put_client_counter(ClientCounter(0)).await;
     }
 
     #[instrument(name = "ics2_client", skip(self, _ctx, begin_block))]
-    async fn begin_block(&mut self, _ctx: Context, begin_block: &abci::request::BeginBlock) {
+    async fn begin_block(_ctx: Context, begin_block: &abci::request::BeginBlock) {
         // In BeginBlock, we want to save a copy of our consensus state to our
         // own state tree, so that when we get a message from our
         // counterparties, we can verify that they are committing the correct
@@ -116,13 +116,8 @@ impl Component for Ics2Client {
         Ok(())
     }
 
-    #[instrument(name = "ics2_client", skip(self, _ctx, tx))]
-    async fn check_tx_stateful(
-        &self,
-        _ctx: Context,
-        tx: &Transaction,
-        state: Arc<State>,
-    ) -> Result<()> {
+    #[instrument(name = "ics2_client", skip(_ctx, tx))]
+    async fn check_tx_stateful(_ctx: Context, tx: &Transaction, state: Arc<State>) -> Result<()> {
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
                 Some(CreateClient(msg)) => {
@@ -142,13 +137,8 @@ impl Component for Ics2Client {
         Ok(())
     }
 
-    #[instrument(name = "ics2_client", skip(self, ctx, tx))]
-    async fn execute_tx(
-        &mut self,
-        ctx: Context,
-        tx: &Transaction,
-        state_tx: &mut StateTransaction,
-    ) {
+    #[instrument(name = "ics2_client", skip(ctx, tx))]
+    async fn execute_tx(ctx: Context, tx: &Transaction, state_tx: &mut StateTransaction) {
         // Handle any IBC actions found in the transaction.
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
@@ -171,9 +161,8 @@ impl Component for Ics2Client {
         }
     }
 
-    #[instrument(name = "ics2_client", skip(self, _ctx, _end_block))]
+    #[instrument(name = "ics2_client", skip(_ctx, _end_block))]
     async fn end_block(
-        &mut self,
         _ctx: Context,
         _end_block: &abci::request::EndBlock,
         state_tx: &mut StateTransaction,

@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 use crate::shielded_pool::StateReadExt as _;
 use crate::{Component, Context};
@@ -13,7 +14,7 @@ use penumbra_crypto::{
     dex::{BatchSwapOutputData, TradingPair},
     MockFlowCiphertext, SwapFlow, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_storage2::{State, StateRead, StateWrite};
+use penumbra_storage2::{State, StateRead, StateTransaction, StateWrite};
 use penumbra_transaction::action::swap_claim::ClaimedSwap;
 use penumbra_transaction::{action::swap_claim::List as SwapClaimBodyList, Action, Transaction};
 use tendermint::abci;
@@ -41,14 +42,14 @@ impl Dex {
 
 #[async_trait]
 impl Component for Dex {
-    #[instrument(name = "dex", skip(self, _app_state))]
-    async fn init_chain(&mut self, _app_state: &genesis::AppState) {
+    #[instrument(name = "dex", skip(state, _app_state))]
+    async fn init_chain(state: &mut StateTransaction, _app_state: &genesis::AppState) {
         // Hardcode some AMMs
         let gm = asset::REGISTRY.parse_unit("gm");
         let gn = asset::REGISTRY.parse_unit("gn");
         let penumbra = asset::REGISTRY.parse_unit("penumbra");
 
-        self.state
+        state
             .set_stub_cpmm_reserves(
                 &TradingPair::canonical_order_for((gm.id(), gn.id())).unwrap(),
                 Reserves {
@@ -58,7 +59,7 @@ impl Component for Dex {
             )
             .await;
 
-        self.state
+        state
             .set_stub_cpmm_reserves(
                 &TradingPair::canonical_order_for((gm.id(), penumbra.id())).unwrap(),
                 Reserves {
@@ -68,7 +69,7 @@ impl Component for Dex {
             )
             .await;
 
-        self.state
+        state
             .set_stub_cpmm_reserves(
                 &TradingPair::canonical_order_for((gn.id(), penumbra.id())).unwrap(),
                 Reserves {
@@ -79,11 +80,16 @@ impl Component for Dex {
             .await;
     }
 
-    #[instrument(name = "dex", skip(self, _ctx, _begin_block))]
-    async fn begin_block(&mut self, _ctx: Context, _begin_block: &abci::request::BeginBlock) {}
+    #[instrument(name = "dex", skip(_state, _ctx, _begin_block))]
+    async fn begin_block(
+        _state: &mut StateTransaction,
+        _ctx: Context,
+        _begin_block: &abci::request::BeginBlock,
+    ) {
+    }
 
     #[instrument(name = "dex", skip(_ctx, tx))]
-    fn check_tx_stateless(_ctx: Context, tx: &Transaction) -> Result<()> {
+    fn check_tx_stateless(_ctx: Context, tx: Arc<Transaction>) -> Result<()> {
         // It's important to reject all LP actions for now, to prevent
         // inflation / minting bugs until we implement all required checks
         // (e.g., minting tokens by withdrawing reserves we don't check)
@@ -153,8 +159,12 @@ impl Component for Dex {
         Ok(())
     }
 
-    #[instrument(name = "dex", skip(self, _ctx, tx))]
-    async fn check_tx_stateful(&self, _ctx: Context, tx: &Transaction) -> Result<()> {
+    #[instrument(name = "dex", skip(state, _ctx, tx))]
+    async fn check_tx_stateful(
+        state: Arc<State>,
+        _ctx: Context,
+        tx: Arc<Transaction>,
+    ) -> Result<()> {
         // It's important to reject all LP actions for now, to prevent
         // inflation / minting bugs until we implement all required checks
         // (e.g., minting tokens by withdrawing reserves we don't check)
@@ -174,7 +184,7 @@ impl Component for Dex {
                 Action::SwapClaim(swap_claim) => {
                     // 1. Validate the epoch duration passed in the swap claim matches
                     // what we know.
-                    let epoch_duration = self.state.get_epoch_duration().await?;
+                    let epoch_duration = state.get_epoch_duration().await?;
                     let provided_epoch_duration = swap_claim.body.epoch_duration;
                     if epoch_duration != provided_epoch_duration {
                         return Err(anyhow::anyhow!(
@@ -186,8 +196,7 @@ impl Component for Dex {
                     // prices used in the proof are valid.
                     let provided_output_height = swap_claim.body.output_data.height;
                     let provided_trading_pair = swap_claim.body.output_data.trading_pair;
-                    let output_data = self
-                        .state
+                    let output_data = state
                         .output_data(provided_output_height, provided_trading_pair)
                         .await?
                         // This check also ensures that the height for the swap is in the past, otherwise
@@ -208,8 +217,8 @@ impl Component for Dex {
         Ok(())
     }
 
-    #[instrument(name = "dex", skip(self, _ctx, tx))]
-    async fn execute_tx(&mut self, _ctx: Context, tx: &Transaction) {
+    #[instrument(name = "dex", skip(state, _ctx, tx))]
+    async fn execute_tx(state: &mut StateTransaction, _ctx: Context, tx: Arc<Transaction>) {
         for action in tx.transaction_body.actions.iter() {
             match action {
                 Action::PositionOpen { .. }
@@ -220,7 +229,7 @@ impl Component for Dex {
                     // All swaps will be tallied for the block so the
                     // BatchSwapOutputData for the trading pair/block height can
                     // be set during `end_block`.
-                    let mut swap_flows = self
+                    let mut swap_flows = state
                         .swaps
                         .get_mut(&swap.body.trading_pair)
                         .cloned()
@@ -231,11 +240,12 @@ impl Component for Dex {
                     swap_flows.1 += MockFlowCiphertext::new(swap.body.delta_2_i.into());
 
                     // Set the batch swap flow for the trading pair.
-                    self.swaps.insert(swap.body.trading_pair, swap_flows);
+                    state.swaps.insert(swap.body.trading_pair, swap_flows);
                 }
                 Action::SwapClaim(swap_claim) => {
                     // Each swap claim gets their portion of the swap based on their contribution.
-                    self.claims
+                    state
+                        .claims
                         .push(ClaimedSwap(swap_claim.body.clone(), tx.id()));
                 }
                 _ => {}
@@ -243,23 +253,27 @@ impl Component for Dex {
         }
     }
 
-    #[instrument(name = "dex", skip(self, _ctx, end_block))]
-    async fn end_block(&mut self, _ctx: Context, end_block: &abci::request::EndBlock) {
+    #[instrument(name = "dex", skip(state, _ctx, end_block))]
+    async fn end_block(
+        state: &mut StateTransaction,
+        _ctx: Context,
+        end_block: &abci::request::EndBlock,
+    ) {
         // For each batch swap during the block, calculate clearing prices and set in the JMT.
         // TODO: since there are no liquidity providers right now, we'll consider all
         // batch swaps to fail
-        for (trading_pair, swap_flows) in self.swaps.iter() {
+        for (trading_pair, swap_flows) in state.swaps.iter() {
             let (delta_1, delta_2) = (swap_flows.0.mock_decrypt(), swap_flows.1.mock_decrypt());
 
             tracing::debug!(?delta_1, ?delta_2, ?trading_pair);
             let (lambda_1, lambda_2, success) =
-                match self.state.stub_cpmm_reserves(trading_pair).await.unwrap() {
+                match state.stub_cpmm_reserves(trading_pair).await.unwrap() {
                     Some(reserves) => {
                         tracing::debug!(?reserves, "stub cpmm is present");
                         let mut amm = StubCpmm { reserves };
                         let (lambda_1, lambda_2) = amm.trade_netted((delta_1, delta_2));
                         tracing::debug!(?lambda_1, ?lambda_2, new_reserves = ?amm.reserves);
-                        self.state
+                        state
                             .set_stub_cpmm_reserves(trading_pair, amm.reserves)
                             .await;
                         (lambda_1, lambda_2, true)
@@ -277,14 +291,14 @@ impl Component for Dex {
                 success,
             };
             tracing::debug!(?output_data);
-            self.state.set_output_data(output_data).await;
+            state.set_output_data(output_data).await;
         }
 
         // Tell the shielded pool component to include the claimed output notes in the NCT.
-        self.state
+        state
             .set_claimed_swap_outputs(
-                self.state.get_block_height().await.unwrap(),
-                SwapClaimBodyList(self.claims.clone()),
+                state.get_block_height().await.unwrap(),
+                SwapClaimBodyList(state.claims.clone()),
             )
             .await;
     }
@@ -298,13 +312,12 @@ pub trait StateReadExt: StateRead {
         height: u64,
         trading_pair: TradingPair,
     ) -> Result<Option<BatchSwapOutputData>> {
-        self.get_domain(state_key::output_data(height, trading_pair).into())
+        self.get(&state_key::output_data(height, trading_pair))
             .await
     }
 
     async fn stub_cpmm_reserves(&self, trading_pair: &TradingPair) -> Result<Option<Reserves>> {
-        self.get_domain(state_key::stub_cpmm_reserves(trading_pair).into())
-            .await
+        self.get(&state_key::stub_cpmm_reserves(trading_pair)).await
     }
 }
 
@@ -314,15 +327,10 @@ pub trait StateWriteExt: StateWrite {
     async fn set_output_data(&mut self, output_data: BatchSwapOutputData) {
         let height = output_data.height;
         let trading_pair = output_data.trading_pair;
-        self.put_domain(
-            state_key::output_data(height, trading_pair).into(),
-            output_data,
-        )
-        .await;
+        self.put(&state_key::output_data(height, trading_pair), output_data);
     }
 
     async fn set_stub_cpmm_reserves(&self, trading_pair: &TradingPair, reserves: Reserves) {
-        self.put_domain(state_key::stub_cpmm_reserves(trading_pair).into(), reserves)
-            .await
+        self.put(&state_key::stub_cpmm_reserves(trading_pair), reserves);
     }
 }

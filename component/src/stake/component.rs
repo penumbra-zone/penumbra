@@ -158,7 +158,7 @@ impl Staking {
                     .expect("validator that became active did not have power recorded");
 
                 // Finally, set the validator to be active.
-                self.state.put_domain(state_key, Active).await;
+                self.state.put(state_key, Active).await;
 
                 // Update metrics
                 gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => identity_key.to_string());
@@ -180,7 +180,7 @@ impl Staking {
                     .await;
 
                 // Finally, set the validator to be inactive or disabled.
-                self.state.put_domain(state_key, new_state).await;
+                self.state.put(state_key, new_state).await;
 
                 // Update metrics
                 gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => identity_key.to_string());
@@ -191,7 +191,7 @@ impl Staking {
                 // We don't really have to do anything here; the validator was already
                 // slashed, and we're just allowing it to return to society.
                 tracing::debug!("releasing validator from jail");
-                self.state.put_domain(state_key, Inactive).await;
+                self.state.put(state_key, Inactive).await;
 
                 Ok(())
             }
@@ -199,7 +199,7 @@ impl Staking {
                 // We don't really have to do anything here; we're just
                 // recording that the validator was enabled.
                 tracing::debug!("enabling validator");
-                self.state.put_domain(state_key, Inactive).await;
+                self.state.put(state_key, Inactive).await;
 
                 Ok(())
             }
@@ -208,7 +208,7 @@ impl Staking {
                 // recording that the validator was disabled, so delegations to
                 // it are not allowed.
                 tracing::debug!("disabling validator");
-                self.state.put_domain(state_key, Disabled).await;
+                self.state.put(state_key, Disabled).await;
 
                 Ok(())
             }
@@ -238,7 +238,7 @@ impl Staking {
                     .await;
 
                 // Finally, set the validator to be jailed.
-                self.state.put_domain(state_key, Jailed).await;
+                self.state.put(state_key, Jailed).await;
 
                 Ok(())
             }
@@ -263,7 +263,7 @@ impl Staking {
                     .await;
 
                 // Finally, set the validator to be tombstoned.
-                self.state.put_domain(state_key, Tombstoned).await;
+                self.state.put(state_key, Tombstoned).await;
 
                 Ok(())
             }
@@ -546,7 +546,7 @@ impl Staking {
     pub async fn build_tendermint_validator_updates(&mut self) -> Result<()> {
         let current_consensus_keys: CurrentConsensusKeys = self
             .state
-            .get_domain(state_key::current_consensus_keys().into())
+            .get(state_key::current_consensus_keys().into())
             .await?
             .expect("current consensus keys must be present");
         let current_consensus_keys = current_consensus_keys
@@ -612,7 +612,7 @@ impl Staking {
         };
         tracing::debug!(?updated_consensus_keys);
         self.state
-            .put_domain(
+            .put(
                 state_key::current_consensus_keys().into(),
                 updated_consensus_keys,
             )
@@ -811,7 +811,7 @@ impl Staking {
             .await;
 
         self.state
-            .put_domain(state_key::validator_by_id(id).into(), validator)
+            .put(state_key::validator_by_id(id).into(), validator)
             .await;
 
         Ok(())
@@ -884,7 +884,7 @@ impl Component for Staking {
         // Build the initial validator set update.
         // First, "prime" the state with an empty set, so the build_ function can read it.
         state
-            .put_domain(
+            .put(
                 state_key::current_consensus_keys().into(),
                 CurrentConsensusKeys::default(),
             )
@@ -1246,24 +1246,24 @@ impl Component for Staking {
 #[async_trait]
 pub trait StateReadExt: StateRead {
     async fn current_base_rate(&self) -> Result<BaseRateData> {
-        self.get_domain(state_key::current_base_rate().into())
+        self.get(state_key::current_base_rate().into())
             .await
             .map(|rate_data| rate_data.expect("rate data must be set after init_chain"))
     }
 
     async fn next_base_rate(&self) -> Result<BaseRateData> {
-        self.get_domain(state_key::next_base_rate().into())
+        self.get(state_key::next_base_rate().into())
             .await
             .map(|rate_data| rate_data.expect("rate data must be set after init_chain"))
     }
 
     async fn current_validator_rate(&self, identity_key: &IdentityKey) -> Result<Option<RateData>> {
-        self.get_domain(state_key::current_rate_by_validator(identity_key).into())
+        self.get(state_key::current_rate_by_validator(identity_key).into())
             .await
     }
 
     async fn next_validator_rate(&self, identity_key: &IdentityKey) -> Result<Option<RateData>> {
-        self.get_domain(state_key::next_rate_by_validator(identity_key).into())
+        self.get(state_key::next_rate_by_validator(identity_key).into())
             .await
     }
 
@@ -1274,7 +1274,7 @@ pub trait StateReadExt: StateRead {
     }
 
     async fn validator(&self, identity_key: &IdentityKey) -> Result<Option<Validator>> {
-        self.get_domain(state_key::validator_by_id(identity_key).into())
+        self.get(state_key::validator_by_id(identity_key).into())
             .await
     }
 
@@ -1282,7 +1282,7 @@ pub trait StateReadExt: StateRead {
     // but we reference them by their Penumbra identity key.
     async fn validator_by_consensus_key(&self, ck: &PublicKey) -> Result<Option<Validator>> {
         if let Some(identity_key) = self
-            .get_domain(state_key::validator_id_by_consensus_key(ck).into())
+            .get(state_key::validator_id_by_consensus_key(ck).into())
             .await?
         {
             self.validator(&identity_key).await
@@ -1296,7 +1296,7 @@ pub trait StateReadExt: StateRead {
         address: &[u8; 20],
     ) -> Result<Option<Validator>> {
         if let Some(consensus_key) = self
-            .get_domain(state_key::consensus_key_by_tendermint_address(address).into())
+            .get(state_key::consensus_key_by_tendermint_address(address).into())
             .await?
         {
             self.validator_by_consensus_key(&consensus_key).await
@@ -1323,7 +1323,7 @@ pub trait StateReadExt: StateRead {
         &self,
         identity_key: &IdentityKey,
     ) -> Result<Option<validator::State>> {
-        self.get_domain(state_key::state_by_validator(identity_key).into())
+        self.get(state_key::state_by_validator(identity_key).into())
             .await
     }
 
@@ -1331,7 +1331,7 @@ pub trait StateReadExt: StateRead {
         &self,
         identity_key: &IdentityKey,
     ) -> Result<Option<validator::BondingState>> {
-        self.get_domain(state_key::bonding_state_by_validator(identity_key).into())
+        self.get(state_key::bonding_state_by_validator(identity_key).into())
             .await
     }
 
@@ -1357,7 +1357,7 @@ pub trait StateReadExt: StateRead {
 
     async fn validator_list(&self) -> Result<Vec<IdentityKey>> {
         Ok(self
-            .get_domain(state_key::validator_list().into())
+            .get(state_key::validator_list().into())
             .await?
             .map(|list: validator::List| list.0)
             .unwrap_or_default())
@@ -1365,13 +1365,13 @@ pub trait StateReadExt: StateRead {
 
     async fn delegation_changes(&self, height: block::Height) -> Result<DelegationChanges> {
         Ok(self
-            .get_domain(state_key::delegation_changes_by_height(height.value()).into())
+            .get(state_key::delegation_changes_by_height(height.value()).into())
             .await?
             .ok_or_else(|| anyhow!("missing delegation changes for block {}", height))?)
     }
 
     async fn validator_uptime(&self, identity_key: &IdentityKey) -> Result<Option<Uptime>> {
-        self.get_domain(state_key::uptime_by_validator(identity_key).into())
+        self.get(state_key::uptime_by_validator(identity_key).into())
             .await
     }
 
@@ -1397,10 +1397,9 @@ pub trait StateWriteExt: StateWrite {
     #[instrument(skip(self))]
     async fn set_base_rates(&self, current: BaseRateData, next: BaseRateData) {
         tracing::debug!("setting base rates");
-        self.put_domain(state_key::current_base_rate().into(), current)
+        self.put(state_key::current_base_rate().into(), current)
             .await;
-        self.put_domain(state_key::next_base_rate().into(), next)
-            .await;
+        self.put(state_key::next_base_rate().into(), next).await;
     }
 
     #[instrument(skip(self))]
@@ -1431,12 +1430,12 @@ pub trait StateWriteExt: StateWrite {
         next_rates: RateData,
     ) {
         tracing::debug!("setting validator rates");
-        self.put_domain(
+        self.put(
             state_key::current_rate_by_validator(identity_key).into(),
             current_rates,
         )
         .await;
-        self.put_domain(
+        self.put(
             state_key::next_rate_by_validator(identity_key).into(),
             next_rates,
         )
@@ -1446,12 +1445,12 @@ pub trait StateWriteExt: StateWrite {
     async fn register_consensus_key(&self, identity_key: &IdentityKey, consensus_key: &PublicKey) {
         let address = validator_address(consensus_key);
         tracing::debug!(?identity_key, ?consensus_key, hash = ?hex::encode(&address), "registering consensus key");
-        self.put_domain(
+        self.put(
             state_key::consensus_key_by_tendermint_address(&address).into(),
             consensus_key.clone(),
         )
         .await;
-        self.put_domain(
+        self.put(
             state_key::validator_id_by_consensus_key(consensus_key).into(),
             identity_key.clone(),
         )
@@ -1492,9 +1491,9 @@ pub trait StateWriteExt: StateWrite {
     async fn record_slashing(&self, identity_key: IdentityKey) -> Result<()> {
         let height = self.get_block_height().await?;
         let key = super::state_key::slashed_validators(height).into();
-        let mut slashed: Slashed = self.get_domain(key).await?.unwrap_or_default();
+        let mut slashed: Slashed = self.get(key).await?.unwrap_or_default();
         slashed.validators.push(identity_key);
-        self.put_domain(key, slashed).await;
+        self.put(key, slashed).await;
         Ok(())
     }
 
@@ -1513,7 +1512,7 @@ pub trait StateWriteExt: StateWrite {
         tracing::debug!(?validator);
         let id = validator.identity_key.clone();
 
-        self.put_domain(state_key::validator_by_id(&id).into(), validator.clone())
+        self.put(state_key::validator_by_id(&id).into(), validator.clone())
             .await;
         self.register_consensus_key(&validator.identity_key, &validator.consensus_key)
             .await;
@@ -1525,7 +1524,7 @@ pub trait StateWriteExt: StateWrite {
 
         // We can't call `set_validator_state` here because it requires an existing validator state,
         // so we manually initialize the state for new validators.
-        self.put_domain(state_key::state_by_validator(&id).into(), state)
+        self.put(state_key::state_by_validator(&id).into(), state)
             .await;
         self.set_validator_power(&id, power).await?;
         self.set_validator_bonding_state(&id, bonding_state).await;
@@ -1551,24 +1550,21 @@ pub trait StateWriteExt: StateWrite {
     }
 
     async fn set_validator_list(&self, validators: Vec<IdentityKey>) {
-        self.put_domain(
+        self.put(
             state_key::validator_list().into(),
             validator::List(validators),
-        )
-        .await;
+        );
     }
 
     async fn set_delegation_changes(&self, height: block::Height, changes: DelegationChanges) {
-        self.put_domain(
-            state_key::delegation_changes_by_height(height.value()).into(),
+        self.put(
+            state_key::delegation_changes_by_height(height.value()),
             changes,
-        )
-        .await
+        );
     }
 
     async fn set_validator_uptime(&self, identity_key: &IdentityKey, uptime: Uptime) {
-        self.put_domain(state_key::uptime_by_validator(identity_key).into(), uptime)
-            .await
+        self.put(state_key::uptime_by_validator(identity_key), uptime);
     }
 
     async fn set_validator_bonding_state(
@@ -1577,12 +1573,10 @@ pub trait StateWriteExt: StateWrite {
         state: validator::BondingState,
     ) {
         tracing::debug!(?state, "set bonding state");
-        self.put_domain(
-            state_key::bonding_state_by_validator(identity_key).into(),
-            state,
-        )
-        .await
+        self.put(state_key::bonding_state_by_validator(identity_key), state);
     }
 }
+
+impl<T: StateRead + ?Sized> StateReadExt for T {}
 
 // impl<T: StateExt + Send + Sync> View for T {}
