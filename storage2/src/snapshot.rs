@@ -76,7 +76,8 @@ impl Snapshot {
     }
 }
 
-#[async_trait(?Send)]
+//#[async_trait(?Send)]
+#[async_trait]
 impl StateRead for Snapshot {
     /// Fetch a key from the JMT column family.
     async fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>> {

@@ -1243,7 +1243,7 @@ impl Component for Staking {
 }
 
 /// Extension trait providing read access to staking data.
-#[async_trait(?Send)]
+#[async_trait]
 pub trait StateReadExt: StateRead {
     async fn current_base_rate(&self) -> Result<BaseRateData> {
         self.get(state_key::current_base_rate().into())
@@ -1258,31 +1258,30 @@ pub trait StateReadExt: StateRead {
     }
 
     async fn current_validator_rate(&self, identity_key: &IdentityKey) -> Result<Option<RateData>> {
-        self.get(state_key::current_rate_by_validator(identity_key).into())
+        self.get(&state_key::current_rate_by_validator(identity_key))
             .await
     }
 
     async fn next_validator_rate(&self, identity_key: &IdentityKey) -> Result<Option<RateData>> {
-        self.get(state_key::next_rate_by_validator(identity_key).into())
+        self.get(&state_key::next_rate_by_validator(identity_key))
             .await
     }
 
     #[instrument(skip(self))]
     async fn validator_power(&self, identity_key: &IdentityKey) -> Result<Option<u64>> {
-        self.get_proto(state_key::power_by_validator(identity_key).into())
+        self.get_proto(&state_key::power_by_validator(identity_key))
             .await
     }
 
     async fn validator(&self, identity_key: &IdentityKey) -> Result<Option<Validator>> {
-        self.get(state_key::validator_by_id(identity_key).into())
-            .await
+        self.get(&state_key::validator_by_id(identity_key)).await
     }
 
     // Tendermint validators are referenced to us by their Tendermint consensus key,
     // but we reference them by their Penumbra identity key.
     async fn validator_by_consensus_key(&self, ck: &PublicKey) -> Result<Option<Validator>> {
         if let Some(identity_key) = self
-            .get(state_key::validator_id_by_consensus_key(ck).into())
+            .get(&state_key::validator_id_by_consensus_key(ck))
             .await?
         {
             self.validator(&identity_key).await
@@ -1296,7 +1295,7 @@ pub trait StateReadExt: StateRead {
         address: &[u8; 20],
     ) -> Result<Option<Validator>> {
         if let Some(consensus_key) = self
-            .get(state_key::consensus_key_by_tendermint_address(address).into())
+            .get(&state_key::consensus_key_by_tendermint_address(address))
             .await?
         {
             self.validator_by_consensus_key(&consensus_key).await

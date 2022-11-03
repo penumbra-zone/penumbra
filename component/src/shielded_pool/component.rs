@@ -314,7 +314,7 @@ impl Component for ShieldedPool {
 }
 
 // TODO: split into different extension traits
-#[async_trait(?Send)]
+#[async_trait]
 pub trait StateReadExt: StateRead {
     // TODO: remove this entirely post-integration. This is slow but intended as
     // a drop-in replacement so we can avoid really major code changes.
@@ -516,7 +516,7 @@ pub trait StateReadExt: StateRead {
 
 impl<T: StateRead + ?Sized> StateReadExt for T {}
 
-#[async_trait(?Send)]
+#[async_trait]
 trait StateWriteExt: StateWrite {
     // TODO: remove this entirely post-integration. This is slow but intended as
     // a drop-in replacement so we can avoid really major code changes.
@@ -662,7 +662,7 @@ trait StateWriteExt: StateWrite {
         // TODO: how does this work if we were to build the NCT only at the end of the block?
 
         let position: u64 = self
-            .note_commitment_tree()
+            .stub_note_commitment_tree()
             .await
             .position()
             .expect("note commitment tree is not full")
@@ -812,37 +812,36 @@ trait StateWriteExt: StateWrite {
     }
 
     // Returns whether the note was presently quarantined.
+    // TODO: seems weird to return an Option type here given that it should never be None as-implemented
     async fn roll_back_note(&self, commitment: note::Commitment) -> Result<Option<NoteSource>> {
         // Get the note source of the note (or empty vec if already applied or rolled back)
-        let source = self
-            .get(&state_key::note_source(commitment))
+        let source: NoteSource = self
+            .get(&state_key::note_source(&commitment))
             .await?
-            .expect("can't roll back note that was never created")
-            .into();
+            .expect("can't roll back note that was never created");
 
         // Delete the note from the set of all notes
-        self.delete(&state_key::note_source(commitment)).await;
+        self.delete(state_key::note_source(&commitment));
 
-        Ok(source)
+        Ok(Some(source))
     }
 
     // Returns the source if the nullifier was in quarantine already
+    // TODO: seems weird to return an Option type here given that it should never be None as-implemented
     #[instrument(skip(self))]
     async fn unquarantine_nullifier(&self, nullifier: Nullifier) -> Result<Option<NoteSource>> {
         tracing::debug!("removing quarantined nullifier");
 
         // Get the note source of the nullifier (or empty vec if already applied or rolled back)
-        let source = self
+        let source: NoteSource = self
             .get(&state_key::quarantined_spent_nullifier_lookup(nullifier))
             .await?
-            .expect("can't unquarantine nullifier that was never quarantined")
-            .into();
+            .expect("can't unquarantine nullifier that was never quarantined");
 
         // Delete the nullifier from the quarantine set
-        self.delete(&state_key::quarantined_spent_nullifier_lookup(nullifier))
-            .await;
+        self.delete(state_key::quarantined_spent_nullifier_lookup(nullifier));
 
-        Ok(source)
+        Ok(Some(source))
     }
     async fn schedule_unquarantine(
         &self,
@@ -851,8 +850,7 @@ trait StateWriteExt: StateWrite {
     ) -> Result<()> {
         let mut updated_quarantined = self.scheduled_to_apply(epoch).await?;
         updated_quarantined.extend(scheduled);
-        self.put(state_key::scheduled_to_apply(epoch), updated_quarantined)
-            .await;
+        self.put(state_key::scheduled_to_apply(epoch), updated_quarantined);
         Ok(())
     }
 
@@ -908,11 +906,13 @@ trait StateWriteExt: StateWrite {
         // TODO: port this over, quarantine logic is very complicated,
         // but we have to replicate it exactly as-is, because it carries over
         // to the client side
-        self.compact_block.quarantined.schedule_note(
+        let compact_block = self.stub_compact_block();
+        compact_block.quarantined.schedule_note(
             epoch,
             identity_key,
             AnnotatedNotePayload { payload, source },
         );
+        self.stub_put_compact_block(compact_block);
     }
 
     #[instrument(skip(self, source))]
@@ -932,13 +932,14 @@ trait StateWriteExt: StateWrite {
             // We don't use the value for validity checks, but writing the source
             // here lets us find out what transaction spent the nullifier.
             source,
-        )
-        .await;
+        );
         // Queue up scheduling this nullifier to be unquarantined: the actual state-writing
         // for all quarantined nullifiers happens during end_block, to avoid state churn
-        self.compact_block
+        let compact_block = self.stub_compact_block();
+        compact_block
             .quarantined
             .schedule_nullifier(epoch, identity_key, nullifier);
+        self.stub_put_compact_block(compact_block);
     }
 
     /// Get the current block height.
@@ -979,11 +980,13 @@ trait StateWriteExt: StateWrite {
 
     // Process any slashing that occrred in this block.
     async fn process_slashing(&mut self) {
-        self.compact_block.slashed.extend(
+        let compact_block = self.stub_compact_block();
+        compact_block.slashed.extend(
             self.unschedule_all_slashed()
                 .await
                 .expect("can unschedule slashed"),
         );
+        self.stub_put_compact_block(compact_block);
     }
 
     // Process any notes/nullifiers due to be unquarantined in this block, if it's an
@@ -994,7 +997,6 @@ trait StateWriteExt: StateWrite {
 
         if this_epoch.is_epoch_end(self.height().await) {
             for (_, per_validator) in self
-                .state
                 .scheduled_to_apply(this_epoch.index)
                 .await
                 .expect("can look up quarantined for this epoch")
@@ -1009,7 +1011,6 @@ trait StateWriteExt: StateWrite {
                 // quarantine and add them to the proper nullifiers for this block
                 for nullifier in per_validator.nullifiers {
                     let note_source = self
-                        .state
                         .unquarantine_nullifier(nullifier)
                         .await
                         .expect("can try to unquarantine nullifier")
@@ -1026,7 +1027,6 @@ trait StateWriteExt: StateWrite {
         let block_height = self.height().await;
 
         for (proposal_id, address, value) in self
-            .state
             .proposal_refunds(block_height)
             .await
             .expect("proposal refunds can be fetched")

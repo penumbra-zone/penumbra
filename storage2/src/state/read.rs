@@ -10,8 +10,9 @@ use penumbra_proto::{Message, Protobuf};
 /// Read access to chain state.
 // This needs to be a trait because we want to implement it over both `State` and `StateTransaction`,
 // mainly to support RPC methods.
-#[async_trait(?Send)]
-pub trait StateRead {
+//#[async_trait(?Send)]
+#[async_trait]
+pub trait StateRead: Send + Sync {
     /// Gets a value from the verifiable key-value store as raw bytes.
     ///
     /// Users should generally prefer to use [`get`](Self::get) or [`get_proto`](Self::get_proto).
@@ -245,8 +246,9 @@ pub(crate) fn prefix_raw_with_cache<'a>(
     Box::pin(merged)
 }
 
-#[async_trait(?Send)]
-impl<'a, S: StateRead> StateRead for &'a S {
+//#[async_trait(?Send)]
+#[async_trait]
+impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
     async fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>> {
         (**self).get_raw(key).await
     }
@@ -274,8 +276,9 @@ impl<'a, S: StateRead> StateRead for &'a S {
     }
 }
 
-#[async_trait(?Send)]
-impl<'a, S: StateRead> StateRead for &'a mut S {
+//#[async_trait(?Send)]
+#[async_trait]
+impl<'a, S: StateRead + Send + Sync> StateRead for &'a mut S {
     async fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>> {
         (**self).get_raw(key).await
     }

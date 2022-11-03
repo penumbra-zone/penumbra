@@ -15,7 +15,8 @@ use crate::{
 ///
 /// Note: the `get_` methods in this trait assume that the state store has been
 /// initialized, so they will error on an empty state.
-#[async_trait(?Send)]
+//#[async_trait(?Send)]
+#[async_trait]
 pub trait StateReadExt: StateRead {
     /// Gets the chain parameters from the JMT.
     async fn get_chain_params(&self) -> Result<ChainParameters> {
@@ -112,7 +113,8 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 ///
 /// Note: the `get_` methods in this trait assume that the state store has been
 /// initialized, so they will error on an empty state.
-#[async_trait(?Send)]
+//#[async_trait(?Send)]
+#[async_trait]
 pub trait StateWriteExt: StateWrite {
     /// Writes the provided chain parameters to the JMT.
     fn put_chain_params(&mut self, params: ChainParameters) {

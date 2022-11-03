@@ -1,19 +1,19 @@
 use std::sync::Arc;
 
-use crate::dex::Dex;
-use crate::governance::Governance;
-use crate::ibc::IBCComponent;
-use crate::shielded_pool::ShieldedPool;
-use crate::stake::component::Staking;
-use crate::{Component, Context};
 use anyhow::Result;
 use penumbra_chain::params::FmdParameters;
 use penumbra_chain::{genesis, StateReadExt as _, StateWriteExt as _};
 use penumbra_storage2::{AppHash, State, StateTransaction, StateWrite, Storage};
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, types::ValidatorUpdate};
-
 use tracing::instrument;
+
+use crate::dex::Dex;
+// use crate::governance::Governance;
+// use crate::ibc::IBCComponent;
+// use crate::shielded_pool::ShieldedPool;
+// use crate::stake::component::Staking;
+use crate::{Component, Context};
 
 pub mod state_key;
 /// The Penumbra application, written as a bundle of [`Component`]s.
@@ -54,12 +54,12 @@ impl App {
         // The genesis block height is 0
         state_tx.put_block_height(0);
 
-        Staking::init_chain(&mut state_tx, app_state).await;
-        IBCComponent::init_chain(&mut state_tx, app_state).await;
+        // Staking::init_chain(&mut state_tx, app_state).await;
+        // IBCComponent::init_chain(&mut state_tx, app_state).await;
         Dex::init_chain(&mut state_tx, app_state).await;
-        Governance::init_chain(&mut state_tx, app_state).await;
+        // Governance::init_chain(&mut state_tx, app_state).await;
         // Shielded pool always executes last.
-        ShieldedPool::init_chain(&mut state_tx, app_state).await;
+        // ShieldedPool::init_chain(&mut state_tx, app_state).await;
 
         state_tx.apply();
     }
@@ -75,12 +75,12 @@ impl App {
         // store the block time
         state_tx.put_block_timestamp(begin_block.header.time);
 
-        Staking::begin_block(&mut state_tx, ctx.clone(), begin_block).await;
-        IBCComponent::begin_block(&mut state_tx, ctx.clone(), begin_block).await;
+        // Staking::begin_block(&mut state_tx, ctx.clone(), begin_block).await;
+        // IBCComponent::begin_block(&mut state_tx, ctx.clone(), begin_block).await;
         Dex::begin_block(&mut state_tx, ctx.clone(), begin_block).await;
-        Governance::begin_block(&mut state_tx, ctx.clone(), begin_block).await;
+        // Governance::begin_block(&mut state_tx, ctx.clone(), begin_block).await;
         // Shielded pool always executes last.
-        ShieldedPool::begin_block(&mut state_tx, ctx.clone(), begin_block).await;
+        // ShieldedPool::begin_block(&mut state_tx, ctx.clone(), begin_block).await;
 
         state_tx.apply();
     }
@@ -113,12 +113,12 @@ impl App {
             Arc::get_mut(&mut self.state).expect("state Arc should not be referenced elsewhere");
         let mut state_tx = state.begin_transaction();
 
-        Staking::end_block(&mut state_tx, ctx.clone(), end_block).await;
-        IBCComponent::end_block(&mut state_tx, ctx.clone(), end_block).await;
+        // Staking::end_block(&mut state_tx, ctx.clone(), end_block).await;
+        // IBCComponent::end_block(&mut state_tx, ctx.clone(), end_block).await;
         Dex::end_block(&mut state_tx, ctx.clone(), end_block).await;
-        Governance::end_block(&mut state_tx, ctx.clone(), end_block).await;
+        // Governance::end_block(&mut state_tx, ctx.clone(), end_block).await;
         // Shielded pool always executes last.
-        ShieldedPool::end_block(&mut state_tx, ctx.clone(), end_block).await;
+        // ShieldedPool::end_block(&mut state_tx, ctx.clone(), end_block).await;
 
         state_tx.apply();
     }
@@ -150,18 +150,19 @@ impl App {
     // TODO: should this just be returned by `commit`? both are called during every `EndBlock`
     pub fn tendermint_validator_updates(&self) -> Vec<ValidatorUpdate> {
         // TODO: replace with self.state read ?
-        self.state.tendermint_validator_updates()
+        // self.state.tendermint_validator_updates()
+        todo!()
     }
 
     #[instrument(skip(ctx, tx))]
     fn check_tx_stateless(ctx: Context, tx: Arc<Transaction>) -> Result<()> {
         // TODO: these can all be parallel tasks
 
-        Staking::check_tx_stateless(ctx.clone(), tx)?;
-        IBCComponent::check_tx_stateless(ctx.clone(), tx)?;
+        // Staking::check_tx_stateless(ctx.clone(), tx)?;
+        // IBCComponent::check_tx_stateless(ctx.clone(), tx)?;
         Dex::check_tx_stateless(ctx.clone(), tx)?;
-        Governance::check_tx_stateless(ctx.clone(), tx)?;
-        ShieldedPool::check_tx_stateless(ctx, tx)?;
+        // Governance::check_tx_stateless(ctx.clone(), tx)?;
+        // ShieldedPool::check_tx_stateless(ctx, tx)?;
 
         Ok(())
     }
@@ -174,11 +175,11 @@ impl App {
     ) -> Result<()> {
         // TODO: these can all be parallel tasks
 
-        Staking::check_tx_stateful(state.clone(), ctx.clone(), tx.clone()).await?;
-        IBCComponent::check_tx_stateful(state.clone(), ctx.clone(), tx.clone()).await?;
+        // Staking::check_tx_stateful(state.clone(), ctx.clone(), tx.clone()).await?;
+        // IBCComponent::check_tx_stateful(state.clone(), ctx.clone(), tx.clone()).await?;
         Dex::check_tx_stateful(state.clone(), ctx.clone(), tx.clone()).await?;
-        Governance::check_tx_stateful(state.clone(), ctx.clone(), tx.clone()).await?;
-        ShieldedPool::check_tx_stateful(state.clone(), ctx.clone(), tx.clone()).await?;
+        // Governance::check_tx_stateful(state.clone(), ctx.clone(), tx.clone()).await?;
+        // ShieldedPool::check_tx_stateful(state.clone(), ctx.clone(), tx.clone()).await?;
 
         Ok(())
     }
@@ -189,12 +190,12 @@ impl App {
         ctx: Context,
         tx: Arc<Transaction>,
     ) -> Result<()> {
-        Staking::execute_tx(state, ctx.clone(), tx.clone()).await?;
-        IBCComponent::execute_tx(state, ctx.clone(), tx.clone()).await?;
+        // Staking::execute_tx(state, ctx.clone(), tx.clone()).await?;
+        // IBCComponent::execute_tx(state, ctx.clone(), tx.clone()).await?;
         Dex::execute_tx(state, ctx.clone(), tx.clone()).await?;
-        Governance::execute_tx(state, ctx.clone(), tx.clone()).await?;
+        // Governance::execute_tx(state, ctx.clone(), tx.clone()).await?;
         // Shielded pool always executes last.
-        ShieldedPool::execute_tx(state, ctx.clone(), tx.clone()).await?;
+        // ShieldedPool::execute_tx(state, ctx.clone(), tx.clone()).await?;
 
         Ok(())
     }

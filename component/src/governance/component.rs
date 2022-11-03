@@ -23,7 +23,7 @@ impl Governance {
 
 #[async_trait]
 impl Component for Governance {
-    #[instrument(name = "governance", skip(state, _app_state))]
+    //#[instrument(name = "governance", skip(state, _app_state))]
     async fn init_chain(state: &mut StateTransaction, _app_state: &genesis::AppState) {
         // Initialize the unfinished proposals tracking key in the JMT.
         state

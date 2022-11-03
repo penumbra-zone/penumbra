@@ -5,7 +5,7 @@ use penumbra_proto::{Message, Protobuf};
 use crate::StateRead;
 
 /// Write access to chain state.
-pub trait StateWrite: StateRead {
+pub trait StateWrite: StateRead + Send + Sync {
     /// Puts raw bytes into the verifiable key-value store with the given key.
     fn put_raw(&mut self, key: String, value: Vec<u8>);
 
@@ -46,7 +46,7 @@ pub trait StateWrite: StateRead {
     fn delete_ephemeral(&mut self, key: String);
 }
 
-impl<'a, S: StateWrite> StateWrite for &'a mut S {
+impl<'a, S: StateWrite + Send + Sync> StateWrite for &'a mut S {
     fn put_raw(&mut self, key: String, value: jmt::OwnedValue) {
         (**self).put_raw(key, value)
     }

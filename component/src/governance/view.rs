@@ -17,7 +17,7 @@ use super::{
     state_key,
 };
 
-#[async_trait(?Send)]
+#[async_trait]
 pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
     /// Get the id of the next proposal in the sequence of ids.
     async fn next_proposal_id(&self) -> Result<u64> {
@@ -153,16 +153,16 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
     }
 }
 
-impl<T: StateRead + crate::stake::StateReadExt> StateReadExt for T {}
+impl<T: StateRead + crate::stake::StateReadExt + ?Sized> StateReadExt for T {}
 
-#[async_trait(?Send)]
+#[async_trait]
 pub trait StateWriteExt: StateWrite {
     /// Store a new proposal with a new proposal id.
-    async fn new_proposal(&self, proposal: &Proposal) -> Result<u64> {
+    async fn new_proposal(&mut self, proposal: &Proposal) -> Result<u64> {
         let proposal_id = self.next_proposal_id().await?;
 
         // Record this proposal id, so we won't re-use it
-        self.put_proto(state_key::latest_proposal_id(), proposal_id);
+        self.put_proto(state_key::latest_proposal_id().to_owned(), proposal_id);
 
         // Store the proposal title
         self.put_proto(
@@ -193,7 +193,7 @@ pub trait StateWriteExt: StateWrite {
     }
 
     /// Store the deposit refund address for a proposal.
-    async fn put_refund_address(&self, proposal_id: u64, address: Address) {
+    async fn put_refund_address(&mut self, proposal_id: u64, address: Address) {
         self.put(
             state_key::proposal_deposit_refund_address(proposal_id),
             address,
@@ -201,17 +201,17 @@ pub trait StateWriteExt: StateWrite {
     }
 
     /// Store the proposal withdrawal key for a proposal.
-    async fn put_withdrawal_key(&self, proposal_id: u64, key: VerificationKey<SpendAuth>) {
+    async fn put_withdrawal_key(&mut self, proposal_id: u64, key: VerificationKey<SpendAuth>) {
         self.put(state_key::proposal_withdrawal_key(proposal_id), key);
     }
 
     /// Store the proposal deposit amount.
-    async fn put_deposit_amount(&self, proposal_id: u64, amount: Amount) {
+    async fn put_deposit_amount(&mut self, proposal_id: u64, amount: Amount) {
         self.put(state_key::proposal_deposit_amount(proposal_id), amount);
     }
 
     /// Mark a proposal as to-be-refunded in this block.
-    async fn add_proposal_refund(&self, block_height: u64, proposal_id: u64) -> Result<()> {
+    async fn add_proposal_refund(&mut self, block_height: u64, proposal_id: u64) -> Result<()> {
         let mut refunded_in_this_block = self
             .get::<proposal::ProposalList, _>(&state_key::proposal_refunds(block_height))
             .await?
@@ -223,8 +223,9 @@ pub trait StateWriteExt: StateWrite {
         );
         Ok(())
     }
+
     /// Set all the unfinished proposal ids.
-    async fn put_unfinished_proposals(&self, unfinished_proposals: ProposalList) {
+    async fn put_unfinished_proposals(&mut self, unfinished_proposals: ProposalList) {
         self.put(
             state_key::unfinished_proposals().to_owned(),
             unfinished_proposals,
@@ -232,7 +233,7 @@ pub trait StateWriteExt: StateWrite {
     }
 
     /// Set the state of a proposal.
-    async fn put_proposal_state(&self, proposal_id: u64, state: proposal::State) -> Result<()> {
+    async fn put_proposal_state(&mut self, proposal_id: u64, state: proposal::State) -> Result<()> {
         // Set the state of the proposal
         self.put(state_key::proposal_state(proposal_id), state.clone());
 
@@ -261,7 +262,12 @@ pub trait StateWriteExt: StateWrite {
     }
 
     /// Record a validator vote for a proposal.
-    async fn cast_validator_vote(&self, proposal_id: u64, identity_key: IdentityKey, vote: Vote) {
+    async fn cast_validator_vote(
+        &mut self,
+        proposal_id: u64,
+        identity_key: IdentityKey,
+        vote: Vote,
+    ) {
         // Record the vote
         self.put(state_key::validator_vote(proposal_id, identity_key), vote);
 
@@ -276,12 +282,12 @@ pub trait StateWriteExt: StateWrite {
     }
 
     /// Set the proposal voting end block height for a proposal.
-    async fn put_proposal_voting_start(&self, proposal_id: u64, end_block: u64) {
+    async fn put_proposal_voting_start(&mut self, proposal_id: u64, end_block: u64) {
         self.put_proto(state_key::proposal_voting_start(proposal_id), end_block);
     }
 
     /// Set the proposal voting end block height for a proposal.
-    async fn put_proposal_voting_end(&self, proposal_id: u64, end_block: u64) {
+    async fn put_proposal_voting_end(&mut self, proposal_id: u64, end_block: u64) {
         self.put_proto(state_key::proposal_voting_end(proposal_id), end_block);
     }
 }
