@@ -14,7 +14,7 @@ blake2b_simd = "1"
 hex = "0.4"
 hash_hasher = "2"
 thiserror = "1"
-serde = { version = "1.0", features = ["derive"] }
+serde = { version = "1.0", features = ["derive", "rc"] }
 parking_lot = "0.12"
 ark-ff = "0.3"
 ark-serialize = "0.3"
@@ -26,7 +26,7 @@ async-stream = "0.3"
 futures = "0.3"
 ark-ed-on-bls12-377 = "0.3"
 rand = "0.8"
-im = { version = "^15.1.0", features = ["serde"] } # IMPORTANT: an OrdMap correctness bug was fixed in 15.1.0
+im = { version = "^15.1.0", features = ["serde"] } # IMPORTANT: an OrdMap correctness bug was fixed in 15.1.0, as well as a performance improvement to `union`
 
 # Dependencies for random testing
 proptest = { version = "1", optional = true }
