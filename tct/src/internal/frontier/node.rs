@@ -15,7 +15,7 @@ pub struct Node<Child: Focus> {
     hash: CachedHash,
     #[serde(skip)]
     forgotten: [Forgotten; 4],
-    siblings: Three<Insert<Child::Complete>>,
+    siblings: Three<Arc<Insert<Child::Complete>>>,
     focus: Arc<Child>,
 }
 
@@ -23,7 +23,7 @@ impl<Child: Focus> Node<Child> {
     /// Construct a new node from parts.
     pub(crate) fn from_parts(
         forgotten: [Forgotten; 4],
-        siblings: Three<Insert<Child::Complete>>,
+        siblings: Three<Arc<Insert<Child::Complete>>>,
         focus: Child,
     ) -> Self
     where
@@ -51,8 +51,8 @@ impl<Child: Focus> Height for Node<Child> {
 impl<Child: Focus> GetHash for Node<Child> {
     fn hash(&self) -> Hash {
         // Extract the hashes of an array of `Insert<T>`s.
-        fn hashes_of_all<T: GetHash, const N: usize>(full: [&Insert<T>; N]) -> [Hash; N] {
-            full.map(|hash_or_t| match hash_or_t {
+        fn hashes_of_all<T: GetHash, const N: usize>(full: [&Arc<Insert<T>>; N]) -> [Hash; N] {
+            full.map(|hash_or_t| match &**hash_or_t {
                 Insert::Hash(hash) => *hash,
                 Insert::Keep(t) => t.hash(),
             })
@@ -107,6 +107,11 @@ where
     fn finalize_owned(self) -> Insert<Self::Complete> {
         let one = || Insert::Hash(Hash::one());
 
+        // Avoid cloning the `Arc` when possible
+        fn get<T: Clone>(arc: Arc<T>) -> T {
+            Arc::try_unwrap(arc).unwrap_or_else(|arc| (*arc).clone())
+        }
+
         let Self {
             hash: _, // We ignore the hash because we're going to recompute it
             forgotten,
@@ -122,12 +127,12 @@ where
         // which uses *ZERO* padding
         complete::Node::from_children_or_else_hash(
             forgotten,
-            match siblings.push(focus.finalize_owned()) {
-                Err([a, b, c, d]) => [a, b, c, d],
+            match siblings.push(Arc::new(focus.finalize_owned())) {
+                Err([a, b, c, d]) => [get(a), get(b), get(c), get(d)],
                 Ok(siblings) => match siblings.into_elems() {
-                    IntoElems::_3([a, b, c]) => [a, b, c, one()],
-                    IntoElems::_2([a, b]) => [a, b, one(), one()],
-                    IntoElems::_1([a]) => [a, one(), one(), one()],
+                    IntoElems::_3([a, b, c]) => [get(a), get(b), get(c), one()],
+                    IntoElems::_2([a, b]) => [get(a), get(b), one(), one()],
+                    IntoElems::_1([a]) => [get(a), one(), one(), one()],
                     IntoElems::_0([]) => [one(), one(), one(), one()],
                 },
             },
@@ -190,7 +195,7 @@ where
             Err(Full {
                 item,
                 complete: sibling,
-            }) => match siblings.push(sibling) {
+            }) => match siblings.push(Arc::new(sibling)) {
                 // We had enough room to add another sibling, so we set our focus to a new focus
                 // containing only the item we couldn't previously insert
                 Ok(siblings) => Ok(Self::from_parts(forgotten, siblings, Child::new(item))),
@@ -200,7 +205,12 @@ where
                 // siblings, along with the item we couldn't insert
                 Err(children) => Err(Full {
                     item,
-                    complete: complete::Node::from_children_or_else_hash(forgotten, children),
+                    complete: complete::Node::from_children_or_else_hash(
+                        forgotten,
+                        children
+                            // Avoid cloning the `Arc`s when possible
+                            .map(|arc| Arc::try_unwrap(arc).unwrap_or_else(|arc| (*arc).clone())),
+                    ),
                 }),
             },
         }
@@ -268,7 +278,7 @@ where
                     // Sibling hashes are the left child and default for right and rightmost
                     [b.hash(), zero, zero],
                     // Authentication path is to the leftmost child
-                    a.as_ref().keep()?.witness(index)?,
+                    (**a).as_ref().keep()?.witness(index)?,
                 ),
                 Left => (
                     // Sibling hashes are the leftmost child and default for right and rightmost
@@ -285,13 +295,13 @@ where
                     // Sibling hashes are the left child and right child and default for rightmost
                     [b.hash(), c.hash(), zero],
                     // Authentication path is to the leftmost child
-                    a.as_ref().keep()?.witness(index)?,
+                    (**a).as_ref().keep()?.witness(index)?,
                 ),
                 Left => (
                     // Sibling hashes are the leftmost child and right child and default for rightmost
                     [a.hash(), c.hash(), zero],
                     // Authentication path is to the left child
-                    b.as_ref().keep()?.witness(index)?,
+                    (**b).as_ref().keep()?.witness(index)?,
                 ),
                 Right => (
                     // Sibling hashes are the leftmost child and left child and default for rightmost
@@ -308,19 +318,19 @@ where
                     // Sibling hashes are the left child, right child, and rightmost child
                     [b.hash(), c.hash(), d.hash()],
                     // Authentication path is to the leftmost child
-                    a.as_ref().keep()?.witness(index)?,
+                    (**a).as_ref().keep()?.witness(index)?,
                 ),
                 Left => (
                     // Sibling hashes are the leftmost child, right child, and rightmost child
                     [a.hash(), c.hash(), d.hash()],
                     // Authentication path is to the left child
-                    b.as_ref().keep()?.witness(index)?,
+                    (**b).as_ref().keep()?.witness(index)?,
                 ),
                 Right => (
                     // Sibling hashes are the leftmost child, left child, and rightmost child
                     [a.hash(), b.hash(), d.hash()],
                     // Authentication path is to the right child
-                    c.as_ref().keep()?.witness(index)?,
+                    (**c).as_ref().keep()?.witness(index)?,
                 ),
                 Rightmost => (
                     // Sibling hashes are the leftmost child, left child, and right child
@@ -337,7 +347,7 @@ where
 
 impl<Child: Focus + Forget + Clone> Forget for Node<Child>
 where
-    Child::Complete: ForgetOwned,
+    Child::Complete: ForgetOwned + Clone,
 {
     fn forget(&mut self, forgotten: Option<Forgotten>, index: impl Into<u64>) -> bool {
         use ElemsMut::*;
@@ -354,20 +364,20 @@ where
                 Left | Right | Rightmost => false,
             },
             (_1([a]), b) => match which_way {
-                Leftmost => a.forget(forgotten, index),
+                Leftmost => Arc::make_mut(a).forget(forgotten, index),
                 Left => Arc::make_mut(b).forget(forgotten, index),
                 Right | Rightmost => false,
             },
             (_2([a, b]), c) => match which_way {
-                Leftmost => a.forget(forgotten, index),
-                Left => b.forget(forgotten, index),
+                Leftmost => Arc::make_mut(a).forget(forgotten, index),
+                Left => Arc::make_mut(b).forget(forgotten, index),
                 Right => Arc::make_mut(c).forget(forgotten, index),
                 Rightmost => false,
             },
             (_3([a, b, c]), d) => match which_way {
-                Leftmost => a.forget(forgotten, index),
-                Left => b.forget(forgotten, index),
-                Right => c.forget(forgotten, index),
+                Leftmost => Arc::make_mut(a).forget(forgotten, index),
+                Left => Arc::make_mut(b).forget(forgotten, index),
+                Right => Arc::make_mut(c).forget(forgotten, index),
                 Rightmost => Arc::make_mut(d).forget(forgotten, index),
             },
         };
@@ -409,7 +419,7 @@ where
             .zip(
                 self.siblings
                     .iter()
-                    .map(|child| child.as_ref().map(|child| child as &dyn structure::Any))
+                    .map(|child| (**child).as_ref().map(|child| child as &dyn structure::Any))
                     .chain(std::iter::once(Insert::Keep(
                         &*self.focus as &dyn structure::Any,
                     ))),
@@ -421,7 +431,7 @@ where
 
 impl<Child: Height + Focus + OutOfOrder + Clone> OutOfOrder for Node<Child>
 where
-    Child::Complete: OutOfOrderOwned,
+    Child::Complete: OutOfOrderOwned + Clone,
 {
     fn uninitialized(position: Option<u64>, forgotten: Forgotten) -> Self {
         // The number of siblings is the bits of the position at this node's height
@@ -440,11 +450,12 @@ where
 
         let mut siblings = Three::new();
         for _ in 0..siblings_len {
-            siblings = if let Ok(siblings) = siblings.push(Insert::Hash(Hash::uninitialized())) {
-                siblings
-            } else {
-                unreachable!("for all x, 0b11 & x < 4, so siblings can't overflow")
-            }
+            siblings =
+                if let Ok(siblings) = siblings.push(Arc::new(Insert::Hash(Hash::uninitialized()))) {
+                    siblings
+                } else {
+                    unreachable!("for all x, 0b11 & x < 4, so siblings can't overflow")
+                }
         }
 
         let focus = Arc::new(Child::uninitialized(position, forgotten));
@@ -468,10 +479,15 @@ where
         // When we recur down into a sibling, we invoke the owned version of `insert_commitment`,
         // and we need a little wrapper to handle the impedance mismatch between `&mut` and owned
         // calling convention:
-        fn recur_sibling<Sibling>(sibling: &mut Insert<Sibling>, index: u64, commitment: Commitment)
-        where
-            Sibling: OutOfOrderOwned,
+        fn recur_sibling<Sibling>(
+            sibling: &mut Arc<Insert<Sibling>>,
+            index: u64,
+            commitment: Commitment,
+        ) where
+            Sibling: OutOfOrderOwned + Clone,
         {
+            let sibling = Arc::make_mut(sibling);
+
             *sibling = Insert::Keep(Sibling::uninitialized_out_of_order_insert_commitment_owned(
                 // Very temporarily swap out sibling for the uninitialized hash, so we can
                 // manipulate it as an owned value (we immediately put something legit back into it,
@@ -518,7 +534,7 @@ where
 
 impl<Child: Focus + UncheckedSetHash + Clone> UncheckedSetHash for Node<Child>
 where
-    Child::Complete: UncheckedSetHash,
+    Child::Complete: UncheckedSetHash + Clone,
 {
     fn unchecked_set_hash(&mut self, index: u64, height: u8, hash: Hash) {
         use std::cmp::Ordering::*;
@@ -527,13 +543,13 @@ where
 
         // For a sibling, which may be hashed, we need to handle both the possibility that it
         // exists, or it is hashed
-        fn recur_sibling<T: Height + UncheckedSetHash>(
-            insert: &mut Insert<T>,
+        fn recur_sibling<T: Height + UncheckedSetHash + Clone>(
+            insert: &mut Arc<Insert<T>>,
             index: u64,
             height: u8,
             hash: Hash,
         ) {
-            match insert {
+            match Arc::make_mut(insert) {
                 // Recur normally if the sibling exists
                 Insert::Keep(item) => item.unchecked_set_hash(index, height, hash),
                 // If the sibling is hashed and the height is right, set the hash there
@@ -586,7 +602,7 @@ where
 
         // Finish each of the siblings
         for sibling in self.siblings.iter_mut() {
-            match sibling {
+            match Arc::make_mut(sibling) {
                 Insert::Keep(item) => item.finish_initialize(),
                 Insert::Hash(hash) => {
                     if hash.is_uninitialized() {
