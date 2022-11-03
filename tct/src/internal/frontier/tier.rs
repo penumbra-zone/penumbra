@@ -14,7 +14,10 @@ use crate::prelude::*;
     serialize = "Item: Serialize, Item::Complete: Serialize",
     deserialize = "Item: Deserialize<'de>, Item::Complete: Deserialize<'de>"
 ))]
-pub struct Tier<Item: Focus> {
+pub struct Tier<Item: Focus + Clone>
+where
+    Item::Complete: Clone,
+{
     inner: Inner<Item>,
 }
 
@@ -32,10 +35,13 @@ pub type Nested<Item> = N<N<N<N<N<N<N<N<L<Item>>>>>>>>>;
     Clone(bound = "Item: Clone, Item::Complete: Clone")
 )]
 #[serde(bound(
-    serialize = "Item: Serialize, Item::Complete: Serialize",
+    serialize = "Item: Serialize, Item::Complete: Serialize + Clone",
     deserialize = "Item: Deserialize<'de>, Item::Complete: Deserialize<'de>"
 ))]
-pub enum Inner<Item: Focus> {
+pub enum Inner<Item: Focus + Clone>
+where
+    Item::Complete: Clone,
+{
     /// A tree with at least one leaf.
     Frontier(Box<Nested<Item>>),
     /// A completed tree which has at least one witnessed child.
@@ -45,7 +51,10 @@ pub enum Inner<Item: Focus> {
     Hash(Hash),
 }
 
-impl<Item: Focus> From<Hash> for Tier<Item> {
+impl<Item: Focus + Clone> From<Hash> for Tier<Item>
+where
+    Item::Complete: Clone,
+{
     #[inline]
     fn from(hash: Hash) -> Self {
         Self {
@@ -54,7 +63,10 @@ impl<Item: Focus> From<Hash> for Tier<Item> {
     }
 }
 
-impl<Item: Focus> Tier<Item> {
+impl<Item: Focus + Clone> Tier<Item>
+where
+    Item::Complete: Clone,
+{
     /// Create a new tier from a single item which will be its first element.
     #[inline]
     pub fn new(item: Item) -> Self {
@@ -173,11 +185,17 @@ impl<Item: Focus> Tier<Item> {
     }
 }
 
-impl<Item: Focus> Height for Tier<Item> {
+impl<Item: Focus + Clone> Height for Tier<Item>
+where
+    Item::Complete: Clone,
+{
     type Height = <Nested<Item> as Height>::Height;
 }
 
-impl<Item: Focus> GetHash for Tier<Item> {
+impl<Item: Focus + Clone> GetHash for Tier<Item>
+where
+    Item::Complete: Clone,
+{
     #[inline]
     fn hash(&self) -> Hash {
         match &self.inner {
@@ -197,7 +215,10 @@ impl<Item: Focus> GetHash for Tier<Item> {
     }
 }
 
-impl<Item: Focus> Focus for Tier<Item> {
+impl<Item: Focus + Clone> Focus for Tier<Item>
+where
+    Item::Complete: Clone,
+{
     type Complete = complete::Tier<Item::Complete>;
 
     #[inline]
@@ -213,9 +234,9 @@ impl<Item: Focus> Focus for Tier<Item> {
     }
 }
 
-impl<Item: Focus + Witness> Witness for Tier<Item>
+impl<Item: Focus + Witness + Clone> Witness for Tier<Item>
 where
-    Item::Complete: Witness,
+    Item::Complete: Witness + Clone,
 {
     #[inline]
     fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Hash)> {
@@ -227,7 +248,10 @@ where
     }
 }
 
-impl<Item: Focus + GetPosition> GetPosition for Tier<Item> {
+impl<Item: Focus + GetPosition + Clone> GetPosition for Tier<Item>
+where
+    Item::Complete: Clone,
+{
     #[inline]
     fn position(&self) -> Option<u64> {
         match &self.inner {
@@ -237,9 +261,9 @@ impl<Item: Focus + GetPosition> GetPosition for Tier<Item> {
     }
 }
 
-impl<Item: Focus + Forget> Forget for Tier<Item>
+impl<Item: Focus + Forget + Clone> Forget for Tier<Item>
 where
-    Item::Complete: ForgetOwned,
+    Item::Complete: ForgetOwned + Clone,
 {
     #[inline]
     fn forget(&mut self, forgotten: Option<Forgotten>, index: impl Into<u64>) -> bool {
@@ -270,7 +294,10 @@ where
     }
 }
 
-impl<Item: Focus> From<complete::Tier<Item::Complete>> for Tier<Item> {
+impl<Item: Focus + Clone> From<complete::Tier<Item::Complete>> for Tier<Item>
+where
+    Item::Complete: Clone,
+{
     fn from(complete: complete::Tier<Item::Complete>) -> Self {
         Self {
             inner: Inner::Complete(complete.inner),
@@ -278,7 +305,10 @@ impl<Item: Focus> From<complete::Tier<Item::Complete>> for Tier<Item> {
     }
 }
 
-impl<Item: Focus> From<complete::Top<Item::Complete>> for Tier<Item> {
+impl<Item: Focus + Clone> From<complete::Top<Item::Complete>> for Tier<Item>
+where
+    Item::Complete: Clone,
+{
     fn from(complete: complete::Top<Item::Complete>) -> Self {
         Self {
             inner: Inner::Complete(complete.inner),
@@ -286,10 +316,10 @@ impl<Item: Focus> From<complete::Top<Item::Complete>> for Tier<Item> {
     }
 }
 
-impl<'tree, Item: Focus + GetPosition + Height + structure::Any<'tree>> structure::Any<'tree>
-    for Tier<Item>
+impl<'tree, Item: Focus + GetPosition + Height + structure::Any<'tree> + Clone>
+    structure::Any<'tree> for Tier<Item>
 where
-    Item::Complete: structure::Any<'tree>,
+    Item::Complete: structure::Any<'tree> + Clone,
 {
     fn kind(&self) -> Kind {
         Kind::Internal {
@@ -318,9 +348,9 @@ where
     }
 }
 
-impl<Item: Focus + OutOfOrder> OutOfOrder for Tier<Item>
+impl<Item: Focus + OutOfOrder + Clone> OutOfOrder for Tier<Item>
 where
-    Item::Complete: OutOfOrderOwned,
+    Item::Complete: OutOfOrderOwned + Clone,
 {
     fn uninitialized(position: Option<u64>, forgotten: Forgotten) -> Self {
         // This tier is finalized if the position relative to its own height is 0 (because a
@@ -386,9 +416,9 @@ where
     }
 }
 
-impl<Item: Focus + UncheckedSetHash> UncheckedSetHash for Tier<Item>
+impl<Item: Focus + UncheckedSetHash + Clone> UncheckedSetHash for Tier<Item>
 where
-    Item::Complete: UncheckedSetHash,
+    Item::Complete: UncheckedSetHash + Clone,
 {
     fn unchecked_set_hash(&mut self, index: u64, height: u8, hash: Hash) {
         match &mut self.inner {

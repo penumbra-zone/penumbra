@@ -3,7 +3,6 @@
 //! Non-incremental deserialization for the [`Tree`](crate::Tree).
 
 use futures::StreamExt;
-use hash_hasher::HashedMap;
 
 use crate::prelude::*;
 use crate::storage::Read;

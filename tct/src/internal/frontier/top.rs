@@ -17,7 +17,10 @@ use frontier::tier::Nested;
     serialize = "Item: Serialize, Item::Complete: Serialize",
     deserialize = "Item: Deserialize<'de>, Item::Complete: Deserialize<'de>"
 ))]
-pub struct Top<Item: Focus> {
+pub struct Top<Item: Focus + Clone>
+where
+    Item::Complete: Clone,
+{
     track_forgotten: TrackForgotten,
     inner: Option<Nested<Item>>,
 }
@@ -36,7 +39,10 @@ pub enum TrackForgotten {
     No,
 }
 
-impl<Item: Focus> Top<Item> {
+impl<Item: Focus + Clone> Top<Item>
+where
+    Item::Complete: Clone,
+{
     /// Create a new top-level frontier tier.
     #[allow(unused)]
     pub fn new(track_forgotten: TrackForgotten) -> Self {
@@ -165,11 +171,17 @@ impl<Item: Focus> Top<Item> {
     }
 }
 
-impl<Item: Focus> Height for Top<Item> {
+impl<Item: Focus + Clone> Height for Top<Item>
+where
+    Item::Complete: Clone,
+{
     type Height = <Nested<Item> as Height>::Height;
 }
 
-impl<Item: Focus + GetPosition> GetPosition for Top<Item> {
+impl<Item: Focus + GetPosition + Clone> GetPosition for Top<Item>
+where
+    Item::Complete: Clone,
+{
     #[inline]
     fn position(&self) -> Option<u64> {
         if let Some(ref frontier) = self.inner {
@@ -180,7 +192,10 @@ impl<Item: Focus + GetPosition> GetPosition for Top<Item> {
     }
 }
 
-impl<Item: Focus> GetHash for Top<Item> {
+impl<Item: Focus + Clone> GetHash for Top<Item>
+where
+    Item::Complete: Clone,
+{
     #[inline]
     fn hash(&self) -> Hash {
         if let Some(ref inner) = self.inner {
@@ -200,9 +215,9 @@ impl<Item: Focus> GetHash for Top<Item> {
     }
 }
 
-impl<Item: Focus + Witness> Witness for Top<Item>
+impl<Item: Focus + Witness + Clone> Witness for Top<Item>
 where
-    Item::Complete: Witness,
+    Item::Complete: Witness + Clone,
 {
     fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Hash)> {
         if let Some(ref inner) = self.inner {
@@ -213,10 +228,10 @@ where
     }
 }
 
-impl<'tree, Item: Focus + GetPosition + Height + structure::Any<'tree>> structure::Any<'tree>
-    for Top<Item>
+impl<'tree, Item: Focus + GetPosition + Height + structure::Any<'tree> + Clone>
+    structure::Any<'tree> for Top<Item>
 where
-    Item::Complete: structure::Any<'tree>,
+    Item::Complete: structure::Any<'tree> + Clone,
 {
     fn kind(&self) -> Kind {
         Kind::Internal {
@@ -240,9 +255,9 @@ where
     }
 }
 
-impl<Item: Focus + Height + OutOfOrder> OutOfOrder for Top<Item>
+impl<Item: Focus + Height + OutOfOrder + Clone> OutOfOrder for Top<Item>
 where
-    Item::Complete: OutOfOrderOwned,
+    Item::Complete: OutOfOrderOwned + Clone,
 {
     fn uninitialized(position: Option<u64>, forgotten: Forgotten) -> Self {
         let inner = if position == Some(0) {
@@ -268,9 +283,9 @@ where
     }
 }
 
-impl<Item: Focus + Height + UncheckedSetHash> UncheckedSetHash for Top<Item>
+impl<Item: Focus + Height + UncheckedSetHash + Clone> UncheckedSetHash for Top<Item>
 where
-    Item::Complete: UncheckedSetHash,
+    Item::Complete: UncheckedSetHash + Clone,
 {
     fn unchecked_set_hash(&mut self, index: u64, height: u8, hash: Hash) {
         if let Some(ref mut inner) = self.inner {

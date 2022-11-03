@@ -1,7 +1,6 @@
 use std::fmt::{Debug, Display};
 
 use decaf377::{FieldExt, Fq};
-use hash_hasher::HashedMap;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
 
 use crate::error::*;

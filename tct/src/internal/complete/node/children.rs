@@ -10,7 +10,7 @@
 
 #![allow(non_camel_case_types, clippy::upper_case_acronyms)]
 
-use std::fmt::Debug;
+use std::{fmt::Debug, sync::Arc};
 
 mod shape;
 pub use shape::*;
@@ -21,38 +21,38 @@ use crate::prelude::*;
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Children<Child> {
     /// Children of a node having children in the positions: 3.
-    ___C(Box<___C<Child>>),
+    ___C(Arc<___C<Child>>),
     /// Children of a node having children in the positions: 2.
-    __C_(Box<__C_<Child>>),
+    __C_(Arc<__C_<Child>>),
     /// Children of a node having children in the positions: 2, 3.
-    __CC(Box<__CC<Child>>),
+    __CC(Arc<__CC<Child>>),
     /// Children of a node having children in the positions: 1.
-    _C__(Box<_C__<Child>>),
+    _C__(Arc<_C__<Child>>),
     /// Children of a node having children in the positions: 1, 3.
-    _C_C(Box<_C_C<Child>>),
+    _C_C(Arc<_C_C<Child>>),
     /// Children of a node having children in the positions: 1, 2.
-    _CC_(Box<_CC_<Child>>),
+    _CC_(Arc<_CC_<Child>>),
     /// Children of a node having children in the positions: 1, 2, 3.
-    _CCC(Box<_CCC<Child>>),
+    _CCC(Arc<_CCC<Child>>),
     /// Children of a node having children in the positions: 0.
-    C___(Box<C___<Child>>),
+    C___(Arc<C___<Child>>),
     /// Children of a node having children in the positions: 0, 3.
-    C__C(Box<C__C<Child>>),
+    C__C(Arc<C__C<Child>>),
     /// Children of a node having children in the positions: 0, 2.
-    C_C_(Box<C_C_<Child>>),
+    C_C_(Arc<C_C_<Child>>),
     /// Children of a node having children in the positions: 0, 2, 3.
-    C_CC(Box<C_CC<Child>>),
+    C_CC(Arc<C_CC<Child>>),
     /// Children of a node having children in the positions: 0, 1.
-    CC__(Box<CC__<Child>>),
+    CC__(Arc<CC__<Child>>),
     /// Children of a node having children in the positions: 0, 1, 3.
-    CC_C(Box<CC_C<Child>>),
+    CC_C(Arc<CC_C<Child>>),
     /// Children of a node having children in the positions: 0, 1, 2.
-    CCC_(Box<CCC_<Child>>),
+    CCC_(Arc<CCC_<Child>>),
     /// Children of a node having children in the positions: 0, 1, 2, 3.
-    CCCC(Box<CCCC<Child>>),
+    CCCC(Arc<CCCC<Child>>),
 }
 
-impl<Child: Debug> Debug for Children<Child> {
+impl<Child: Debug + Clone> Debug for Children<Child> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.children().fmt(f)
     }
@@ -62,7 +62,7 @@ impl<Child: Height> Height for Children<Child> {
     type Height = Succ<<Child as Height>::Height>;
 }
 
-impl<Child: Height + GetHash> GetHash for Children<Child> {
+impl<Child: Height + GetHash + Clone> GetHash for Children<Child> {
     fn hash(&self) -> Hash {
         let [a, b, c, d] = self.children().map(|x| x.hash());
         Hash::node(<Self as Height>::Height::HEIGHT, a, b, c, d)
@@ -88,26 +88,26 @@ where
             // hashes so the parent can implement pruning):
             [Hash(a), Hash(b), Hash(c), Hash(d)] => return Err([a, b, c, d]),
             // There is at least one witnessed child:
-            [Hash(a), Hash(b), Hash(c), Keep(d)] => Children::___C(Box::new(___C(a, b, c, d))),
-            [Hash(a), Hash(b), Keep(c), Hash(d)] => Children::__C_(Box::new(__C_(a, b, c, d))),
-            [Hash(a), Hash(b), Keep(c), Keep(d)] => Children::__CC(Box::new(__CC(a, b, c, d))),
-            [Hash(a), Keep(b), Hash(c), Hash(d)] => Children::_C__(Box::new(_C__(a, b, c, d))),
-            [Hash(a), Keep(b), Hash(c), Keep(d)] => Children::_C_C(Box::new(_C_C(a, b, c, d))),
-            [Hash(a), Keep(b), Keep(c), Hash(d)] => Children::_CC_(Box::new(_CC_(a, b, c, d))),
-            [Hash(a), Keep(b), Keep(c), Keep(d)] => Children::_CCC(Box::new(_CCC(a, b, c, d))),
-            [Keep(a), Hash(b), Hash(c), Hash(d)] => Children::C___(Box::new(C___(a, b, c, d))),
-            [Keep(a), Hash(b), Hash(c), Keep(d)] => Children::C__C(Box::new(C__C(a, b, c, d))),
-            [Keep(a), Hash(b), Keep(c), Hash(d)] => Children::C_C_(Box::new(C_C_(a, b, c, d))),
-            [Keep(a), Hash(b), Keep(c), Keep(d)] => Children::C_CC(Box::new(C_CC(a, b, c, d))),
-            [Keep(a), Keep(b), Hash(c), Hash(d)] => Children::CC__(Box::new(CC__(a, b, c, d))),
-            [Keep(a), Keep(b), Hash(c), Keep(d)] => Children::CC_C(Box::new(CC_C(a, b, c, d))),
-            [Keep(a), Keep(b), Keep(c), Hash(d)] => Children::CCC_(Box::new(CCC_(a, b, c, d))),
-            [Keep(a), Keep(b), Keep(c), Keep(d)] => Children::CCCC(Box::new(CCCC(a, b, c, d))),
+            [Hash(a), Hash(b), Hash(c), Keep(d)] => Children::___C(Arc::new(___C(a, b, c, d))),
+            [Hash(a), Hash(b), Keep(c), Hash(d)] => Children::__C_(Arc::new(__C_(a, b, c, d))),
+            [Hash(a), Hash(b), Keep(c), Keep(d)] => Children::__CC(Arc::new(__CC(a, b, c, d))),
+            [Hash(a), Keep(b), Hash(c), Hash(d)] => Children::_C__(Arc::new(_C__(a, b, c, d))),
+            [Hash(a), Keep(b), Hash(c), Keep(d)] => Children::_C_C(Arc::new(_C_C(a, b, c, d))),
+            [Hash(a), Keep(b), Keep(c), Hash(d)] => Children::_CC_(Arc::new(_CC_(a, b, c, d))),
+            [Hash(a), Keep(b), Keep(c), Keep(d)] => Children::_CCC(Arc::new(_CCC(a, b, c, d))),
+            [Keep(a), Hash(b), Hash(c), Hash(d)] => Children::C___(Arc::new(C___(a, b, c, d))),
+            [Keep(a), Hash(b), Hash(c), Keep(d)] => Children::C__C(Arc::new(C__C(a, b, c, d))),
+            [Keep(a), Hash(b), Keep(c), Hash(d)] => Children::C_C_(Arc::new(C_C_(a, b, c, d))),
+            [Keep(a), Hash(b), Keep(c), Keep(d)] => Children::C_CC(Arc::new(C_CC(a, b, c, d))),
+            [Keep(a), Keep(b), Hash(c), Hash(d)] => Children::CC__(Arc::new(CC__(a, b, c, d))),
+            [Keep(a), Keep(b), Hash(c), Keep(d)] => Children::CC_C(Arc::new(CC_C(a, b, c, d))),
+            [Keep(a), Keep(b), Keep(c), Hash(d)] => Children::CCC_(Arc::new(CCC_(a, b, c, d))),
+            [Keep(a), Keep(b), Keep(c), Keep(d)] => Children::CCCC(Arc::new(CCCC(a, b, c, d))),
         })
     }
 }
 
-impl<Child> Children<Child> {
+impl<Child: Clone> Children<Child> {
     /// Get an array of references to the children or hashes stored in this [`Children`].
     pub fn children(&self) -> [Insert<&Child>; 4] {
         use Children::*;
@@ -138,122 +138,192 @@ impl<Child> Children<Child> {
         use InsertMut::*;
 
         match self {
-            ___C(c) => [
-                Hash(&mut c.0),
-                Hash(&mut c.1),
-                Hash(&mut c.2),
-                Keep(&mut c.3),
-            ],
-            __C_(c) => [
-                Hash(&mut c.0),
-                Hash(&mut c.1),
-                Keep(&mut c.2),
-                Hash(&mut c.3),
-            ],
-            __CC(c) => [
-                Hash(&mut c.0),
-                Hash(&mut c.1),
-                Keep(&mut c.2),
-                Keep(&mut c.3),
-            ],
-            _C__(c) => [
-                Hash(&mut c.0),
-                Keep(&mut c.1),
-                Hash(&mut c.2),
-                Hash(&mut c.3),
-            ],
-            _C_C(c) => [
-                Hash(&mut c.0),
-                Keep(&mut c.1),
-                Hash(&mut c.2),
-                Keep(&mut c.3),
-            ],
-            _CC_(c) => [
-                Hash(&mut c.0),
-                Keep(&mut c.1),
-                Keep(&mut c.2),
-                Hash(&mut c.3),
-            ],
-            _CCC(c) => [
-                Hash(&mut c.0),
-                Keep(&mut c.1),
-                Keep(&mut c.2),
-                Keep(&mut c.3),
-            ],
-            C___(c) => [
-                Keep(&mut c.0),
-                Hash(&mut c.1),
-                Hash(&mut c.2),
-                Hash(&mut c.3),
-            ],
-            C__C(c) => [
-                Keep(&mut c.0),
-                Hash(&mut c.1),
-                Hash(&mut c.2),
-                Keep(&mut c.3),
-            ],
-            C_C_(c) => [
-                Keep(&mut c.0),
-                Hash(&mut c.1),
-                Keep(&mut c.2),
-                Hash(&mut c.3),
-            ],
-            C_CC(c) => [
-                Keep(&mut c.0),
-                Hash(&mut c.1),
-                Keep(&mut c.2),
-                Keep(&mut c.3),
-            ],
-            CC__(c) => [
-                Keep(&mut c.0),
-                Keep(&mut c.1),
-                Hash(&mut c.2),
-                Hash(&mut c.3),
-            ],
-            CC_C(c) => [
-                Keep(&mut c.0),
-                Keep(&mut c.1),
-                Hash(&mut c.2),
-                Keep(&mut c.3),
-            ],
-            CCC_(c) => [
-                Keep(&mut c.0),
-                Keep(&mut c.1),
-                Keep(&mut c.2),
-                Hash(&mut c.3),
-            ],
-            CCCC(c) => [
-                Keep(&mut c.0),
-                Keep(&mut c.1),
-                Keep(&mut c.2),
-                Keep(&mut c.3),
-            ],
+            ___C(c) => {
+                let c = Arc::make_mut(c);
+                [
+                    Hash(&mut c.0),
+                    Hash(&mut c.1),
+                    Hash(&mut c.2),
+                    Keep(&mut c.3),
+                ]
+            }
+            __C_(c) => {
+                let c = Arc::make_mut(c);
+                [
+                    Hash(&mut c.0),
+                    Hash(&mut c.1),
+                    Keep(&mut c.2),
+                    Hash(&mut c.3),
+                ]
+            }
+            __CC(c) => {
+                let c = Arc::make_mut(c);
+                [
+                    Hash(&mut c.0),
+                    Hash(&mut c.1),
+                    Keep(&mut c.2),
+                    Keep(&mut c.3),
+                ]
+            }
+            _C__(c) => {
+                let c = Arc::make_mut(c);
+                [
+                    Hash(&mut c.0),
+                    Keep(&mut c.1),
+                    Hash(&mut c.2),
+                    Hash(&mut c.3),
+                ]
+            }
+            _C_C(c) => {
+                let c = Arc::make_mut(c);
+                [
+                    Hash(&mut c.0),
+                    Keep(&mut c.1),
+                    Hash(&mut c.2),
+                    Keep(&mut c.3),
+                ]
+            }
+            _CC_(c) => {
+                let c = Arc::make_mut(c);
+                [
+                    Hash(&mut c.0),
+                    Keep(&mut c.1),
+                    Keep(&mut c.2),
+                    Hash(&mut c.3),
+                ]
+            }
+            _CCC(c) => {
+                let c = Arc::make_mut(c);
+                [
+                    Hash(&mut c.0),
+                    Keep(&mut c.1),
+                    Keep(&mut c.2),
+                    Keep(&mut c.3),
+                ]
+            }
+            C___(c) => {
+                let c = Arc::make_mut(c);
+                [
+                    Keep(&mut c.0),
+                    Hash(&mut c.1),
+                    Hash(&mut c.2),
+                    Hash(&mut c.3),
+                ]
+            }
+            C__C(c) => {
+                let c = Arc::make_mut(c);
+                [
+                    Keep(&mut c.0),
+                    Hash(&mut c.1),
+                    Hash(&mut c.2),
+                    Keep(&mut c.3),
+                ]
+            }
+            C_C_(c) => {
+                let c = Arc::make_mut(c);
+                [
+                    Keep(&mut c.0),
+                    Hash(&mut c.1),
+                    Keep(&mut c.2),
+                    Hash(&mut c.3),
+                ]
+            }
+            C_CC(c) => {
+                let c = Arc::make_mut(c);
+                [
+                    Keep(&mut c.0),
+                    Hash(&mut c.1),
+                    Keep(&mut c.2),
+                    Keep(&mut c.3),
+                ]
+            }
+            CC__(c) => {
+                let c = Arc::make_mut(c);
+                [
+                    Keep(&mut c.0),
+                    Keep(&mut c.1),
+                    Hash(&mut c.2),
+                    Hash(&mut c.3),
+                ]
+            }
+            CC_C(c) => {
+                let c = Arc::make_mut(c);
+                [
+                    Keep(&mut c.0),
+                    Keep(&mut c.1),
+                    Hash(&mut c.2),
+                    Keep(&mut c.3),
+                ]
+            }
+            CCC_(c) => {
+                let c = Arc::make_mut(c);
+                [
+                    Keep(&mut c.0),
+                    Keep(&mut c.1),
+                    Keep(&mut c.2),
+                    Hash(&mut c.3),
+                ]
+            }
+            CCCC(c) => {
+                let c = Arc::make_mut(c);
+                [
+                    Keep(&mut c.0),
+                    Keep(&mut c.1),
+                    Keep(&mut c.2),
+                    Keep(&mut c.3),
+                ]
+            }
         }
     }
 }
 
-impl<Child> From<Children<Child>> for [Insert<Child>; 4] {
+impl<Child: Clone> From<Children<Child>> for [Insert<Child>; 4] {
     /// Get an array of references to the children or hashes stored in this [`Children`].
     fn from(children: Children<Child>) -> [Insert<Child>; 4] {
         use Children::*;
         use Insert::*;
 
         match children {
-            ___C(c) => [Hash(c.0), Hash(c.1), Hash(c.2), Keep(c.3)],
-            __C_(c) => [Hash(c.0), Hash(c.1), Keep(c.2), Hash(c.3)],
-            __CC(c) => [Hash(c.0), Hash(c.1), Keep(c.2), Keep(c.3)],
-            _C__(c) => [Hash(c.0), Keep(c.1), Hash(c.2), Hash(c.3)],
-            _C_C(c) => [Hash(c.0), Keep(c.1), Hash(c.2), Keep(c.3)],
-            _CC_(c) => [Hash(c.0), Keep(c.1), Keep(c.2), Hash(c.3)],
-            _CCC(c) => [Hash(c.0), Keep(c.1), Keep(c.2), Keep(c.3)],
-            C___(c) => [Keep(c.0), Hash(c.1), Hash(c.2), Hash(c.3)],
-            C__C(c) => [Keep(c.0), Hash(c.1), Hash(c.2), Keep(c.3)],
-            C_C_(c) => [Keep(c.0), Hash(c.1), Keep(c.2), Hash(c.3)],
-            C_CC(c) => [Keep(c.0), Hash(c.1), Keep(c.2), Keep(c.3)],
-            CC__(c) => [Keep(c.0), Keep(c.1), Hash(c.2), Hash(c.3)],
-            CC_C(c) => [Keep(c.0), Keep(c.1), Hash(c.2), Keep(c.3)],
-            CCC_(c) => [Keep(c.0), Keep(c.1), Keep(c.2), Hash(c.3)],
-            CCCC(c) => [Keep(c.0), Keep(c.1), Keep(c.2), Keep(c.3)],
+            ___C(c) => [Hash(c.0), Hash(c.1), Hash(c.2), Keep(c.3.clone())],
+            __C_(c) => [Hash(c.0), Hash(c.1), Keep(c.2.clone()), Hash(c.3)],
+            __CC(c) => [Hash(c.0), Hash(c.1), Keep(c.2.clone()), Keep(c.3.clone())],
+            _C__(c) => [Hash(c.0), Keep(c.1.clone()), Hash(c.2), Hash(c.3)],
+            _C_C(c) => [Hash(c.0), Keep(c.1.clone()), Hash(c.2), Keep(c.3.clone())],
+            _CC_(c) => [Hash(c.0), Keep(c.1.clone()), Keep(c.2.clone()), Hash(c.3)],
+            _CCC(c) => [
+                Hash(c.0),
+                Keep(c.1.clone()),
+                Keep(c.2.clone()),
+                Keep(c.3.clone()),
+            ],
+            C___(c) => [Keep(c.0.clone()), Hash(c.1), Hash(c.2), Hash(c.3)],
+            C__C(c) => [Keep(c.0.clone()), Hash(c.1), Hash(c.2), Keep(c.3.clone())],
+            C_C_(c) => [Keep(c.0.clone()), Hash(c.1), Keep(c.2.clone()), Hash(c.3)],
+            C_CC(c) => [
+                Keep(c.0.clone()),
+                Hash(c.1),
+                Keep(c.2.clone()),
+                Keep(c.3.clone()),
+            ],
+            CC__(c) => [Keep(c.0.clone()), Keep(c.1.clone()), Hash(c.2), Hash(c.3)],
+            CC_C(c) => [
+                Keep(c.0.clone()),
+                Keep(c.1.clone()),
+                Hash(c.2),
+                Keep(c.3.clone()),
+            ],
+            CCC_(c) => [
+                Keep(c.0.clone()),
+                Keep(c.1.clone()),
+                Keep(c.2.clone()),
+                Hash(c.3),
+            ],
+            CCCC(c) => [
+                Keep(c.0.clone()),
+                Keep(c.1.clone()),
+                Keep(c.2.clone()),
+                Keep(c.3.clone()),
+            ],
         }
     }
 }
