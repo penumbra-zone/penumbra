@@ -18,38 +18,9 @@ impl Amount {
 
 impl From<Amount> for pb::Amount {
     fn from(a: Amount) -> Self {
-        let value = a.inner;
-        if value <= u64::MAX as u128 {
-            pb::Amount {
-                lo: value.try_into().unwrap(),
-                hi: 0,
-            }
-        } else {
-            let bytes = value.to_le_bytes();
-            let mut lo_bytes: [u8; 8] = [0; 8];
-            let mut hi_bytes: [u8; 8] = [0; 8];
-
-            for i in 0..16 {
-                if i < 8 {
-                    lo_bytes[i] = bytes[i];
-                } else {
-                    hi_bytes[i % 8] = bytes[i];
-                }
-            }
-
-            let lo = u64::from_le_bytes(lo_bytes);
-            let hi = u64::from_le_bytes(hi_bytes);
-            pb::Amount { lo, hi }
-        }
-    }
-}
-
-impl TryFrom<std::string::String> for Amount {
-    type Error = anyhow::Error;
-
-    fn try_from(s: std::string::String) -> Result<Self, Self::Error> {
-        let inner = s.parse::<u128>()?;
-        Ok(Amount { inner })
+        let lo = a.inner as u64;
+        let hi = (a.inner >> 64) as u64;
+        pb::Amount { lo, hi }
     }
 }
 
@@ -61,7 +32,7 @@ impl TryFrom<pb::Amount> for Amount {
         let hi = amount.hi as u128;
         // `hi` and `lo` represent the high/low order bytes respectively.
         //
-        // We want to encode `hi` and `lo` into a single `u128` of the form:
+        // We want to decode `hi` and `lo` into a single `u128` of the form:
         //
         //            hi: u64                          lo: u64
         // ┌───┬───┬───┬───┬───┬───┬───┬───┐ ┌───┬───┬───┬───┬───┬───┬───┬───┐
@@ -70,10 +41,19 @@ impl TryFrom<pb::Amount> for Amount {
         //   15  14  13  12  11  10  9   8     7   6   5   4   3   2   1   0
         //
         // To achieve this, we shift `hi` 8 bytes to the left:
-        let shifted = u128::from_le(hi) << 64;
+        let shifted = hi << 64;
         // and then add the lower order bytes:
         let inner = shifted + lo;
 
+        Ok(Amount { inner })
+    }
+}
+
+impl TryFrom<std::string::String> for Amount {
+    type Error = anyhow::Error;
+
+    fn try_from(s: std::string::String) -> Result<Self, Self::Error> {
+        let inner = s.parse::<u128>()?;
         Ok(Amount { inner })
     }
 }
@@ -125,9 +105,24 @@ mod test {
     }
 
     #[test]
-    fn encode_decode_u64() {
+    fn encode_decode_u64_max() {
         let value = u64::MAX as u128;
         assert_eq!(value, encode_decode(value))
+    }
+
+    #[test]
+    fn encode_decode_random_lower_order_bytes() {
+        let mut rng = OsRng;
+        let lo = rng.next_u64() as u128;
+        assert_eq!(lo, encode_decode(lo))
+    }
+
+    #[test]
+    fn encode_decode_random_higher_order_bytes() {
+        let mut rng = OsRng;
+        let value = rng.next_u64();
+        let hi = (value as u128) << 64;
+        assert_eq!(hi, encode_decode(hi))
     }
 }
 
