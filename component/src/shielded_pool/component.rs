@@ -313,7 +313,7 @@ impl Component for ShieldedPool {
 
 // TODO: split into different extension traits
 #[async_trait]
-pub trait StateReadExt: StateRead + Sized {
+pub trait StateReadExt: StateRead {
     // TODO: remove this entirely post-integration. This is slow but intended as
     // a drop-in replacement so we can avoid really major code changes.
     //
@@ -348,7 +348,7 @@ pub trait StateReadExt: StateRead + Sized {
     #[instrument(skip(self))]
     async fn check_nullifier_unspent(&self, nullifier: Nullifier) -> Result<()> {
         if let Some(source) = self
-            .get::<NoteSource, _>(state_key::spent_nullifier_lookup(nullifier).into())
+            .get::<NoteSource, _>(&state_key::spent_nullifier_lookup(nullifier))
             .await?
         {
             return Err(anyhow!(
@@ -359,9 +359,8 @@ pub trait StateReadExt: StateRead + Sized {
         }
 
         if let Some(source) = self
-            .get(state_key::quarantined_spent_nullifier_lookup(nullifier).into())
+            .get::<NoteSource, _>(&state_key::quarantined_spent_nullifier_lookup(nullifier))
             .await?
-            .and_then(<Option<NoteSource>>::from)
         {
             return Err(anyhow!(
                 "nullifier {} was already spent in {:?} (currently quarantined)",
@@ -376,7 +375,7 @@ pub trait StateReadExt: StateRead + Sized {
     /// Checks whether a claimed NCT anchor is a previous valid state root.
     async fn check_claimed_anchor(&self, anchor: tct::Root) -> Result<()> {
         if let Some(anchor_height) = self
-            .get_proto::<u64>(state_key::anchor_lookup(anchor))
+            .get_proto::<u64>(&state_key::anchor_lookup(anchor))
             .await?
         {
             tracing::debug!(?anchor, ?anchor_height, "anchor is valid");
@@ -390,7 +389,7 @@ pub trait StateReadExt: StateRead + Sized {
     }
 
     async fn token_supply(&self, asset_id: &asset::Id) -> Result<Option<u64>> {
-        self.get_proto(state_key::token_supply(asset_id)).await
+        self.get_proto(&state_key::token_supply(asset_id)).await
     }
 
     // TODO: refactor for new state model -- no more list of known asset IDs with fixed key
@@ -402,7 +401,7 @@ pub trait StateReadExt: StateRead + Sized {
     }
 
     async fn denom_by_asset(&self, asset_id: &asset::Id) -> Result<Option<Denom>> {
-        self.get(state_key::denom_by_asset(asset_id)).await
+        self.get(&state_key::denom_by_asset(asset_id)).await
     }
 
     /// Returns the epoch and identity key for quarantining a transaction, if it should be
@@ -499,32 +498,21 @@ pub trait StateReadExt: StateRead + Sized {
 
     async fn scheduled_to_apply(&self, epoch: u64) -> Result<quarantined::Scheduled> {
         Ok(self
-            .get(state_key::scheduled_to_apply(epoch).into())
+            .get(&state_key::scheduled_to_apply(epoch))
             .await?
             .unwrap_or_default())
     }
 
     async fn commission_amounts(&self, height: u64) -> Result<Option<CommissionAmounts>> {
-        self.get(state_key::commission_amounts(height).into()).await
-    }
-
-    async fn set_commission_amounts(&self, height: u64, notes: CommissionAmounts) {
-        self.put(state_key::commission_amounts(height).into(), notes)
-            .await
+        self.get(&state_key::commission_amounts(height)).await
     }
 
     async fn claimed_swap_outputs(&self, height: u64) -> Result<Option<SwapClaimBodyList>> {
-        self.get(state_key::claimed_swap_outputs(height).into())
-            .await
-    }
-
-    async fn set_claimed_swap_outputs(&self, height: u64, claims: SwapClaimBodyList) {
-        self.put(state_key::claimed_swap_outputs(height).into(), claims)
-            .await
+        self.get(&state_key::claimed_swap_outputs(height)).await
     }
 }
 
-impl<T: StateRead> StateReadExt for T {}
+impl<T: StateRead + ?Sized> StateReadExt for T {}
 
 #[async_trait]
 trait StateWriteExt: StateWrite {
@@ -537,9 +525,7 @@ trait StateWriteExt: StateWrite {
     fn stub_put_note_commitment_tree(&self, tree: &tct::Tree) {
         let bytes = bincode::serialize(&tree).unwrap();
         self.put_nonconsensus(
-            state_key::internal::stub_note_commitment_tree()
-                .as_bytes()
-                .to_vec(),
+            state_key::internal::stub_note_commitment_tree().as_bytes(),
             bytes,
         );
     }
@@ -557,17 +543,17 @@ trait StateWriteExt: StateWrite {
     /// Writes a completed compact block into the public state.
     fn set_compact_block(&self, compact_block: CompactBlock) {
         let height = compact_block.height;
-        self.put(state_key::compact_block(height), compact_block);
+        self.put(&state_key::compact_block(height), compact_block);
     }
 
     fn set_nct_anchor(&self, height: u64, nct_anchor: tct::Root) {
         tracing::debug!(?height, ?nct_anchor, "writing anchor");
 
         // Write the NCT anchor both as a value, so we can look it up,
-        self.put(state_key::anchor_by_height(height), nct_anchor);
+        self.put(&state_key::anchor_by_height(height), nct_anchor);
         // and as a key, so we can query for it.
         self.put_proto(
-            state_key::anchor_lookup(nct_anchor),
+            &state_key::anchor_lookup(nct_anchor),
             // We don't use the value for validity checks, but writing the height
             // here lets us find out what height the anchor was for.
             height,
@@ -578,10 +564,10 @@ trait StateWriteExt: StateWrite {
         tracing::debug!(?height, ?nct_block_anchor, "writing block anchor");
 
         // Write the NCT block anchor both as a value, so we can look it up,
-        self.put(state_key::block_anchor_by_height(height), nct_block_anchor);
+        self.put(&state_key::block_anchor_by_height(height), nct_block_anchor);
         // and as a key, so we can query for it.
         self.put_proto(
-            state_key::block_anchor_lookup(nct_block_anchor),
+            &state_key::block_anchor_lookup(nct_block_anchor),
             // We don't use the value for validity checks, but writing the height
             // here lets us find out what height the anchor was for.
             height,
@@ -592,14 +578,22 @@ trait StateWriteExt: StateWrite {
         tracing::debug!(?index, ?nct_block_anchor, "writing epoch anchor");
 
         // Write the NCT epoch anchor both as a value, so we can look it up,
-        self.put(state_key::epoch_anchor_by_index(index), nct_block_anchor);
+        self.put(&state_key::epoch_anchor_by_index(index), nct_block_anchor);
         // and as a key, so we can query for it.
         self.put_proto(
-            state_key::epoch_anchor_lookup(nct_block_anchor).into(),
+            &state_key::epoch_anchor_lookup(nct_block_anchor),
             // We don't use the value for validity checks, but writing the height
             // here lets us find out what height the anchor was for.
             index,
         );
+    }
+
+    async fn set_commission_amounts(&self, height: u64, notes: CommissionAmounts) {
+        self.put(&state_key::commission_amounts(height), notes);
+    }
+
+    async fn set_claimed_swap_outputs(&self, height: u64, claims: SwapClaimBodyList) {
+        self.put(&state_key::claimed_swap_outputs(height), claims);
     }
 
     // TODO: refactor for new state model -- no more list of known asset IDs with fixed key
@@ -612,7 +606,7 @@ trait StateWriteExt: StateWrite {
         } else {
             tracing::debug!(?denom, ?id, "registering new denom");
             // We want to be able to query for the denom by asset ID...
-            self.put(state_key::denom_by_asset(&id), denom.clone());
+            self.put(&state_key::denom_by_asset(&id), denom.clone());
             // ... and we want to record it in the list of known asset IDs
             // (this requires reading the whole list, which is sad, but hopefully
             // we don't do this often).
@@ -772,7 +766,7 @@ trait StateWriteExt: StateWrite {
         // double spends), as well as in the CompactBlock (so that clients
         // can learn that their note was spent).
         self.put(
-            state_key::spent_nullifier_lookup(nullifier).into(),
+            &state_key::spent_nullifier_lookup(nullifier),
             // We don't use the value for validity checks, but writing the source
             // here lets us find out what transaction spent the nullifier.
             source,
@@ -780,7 +774,7 @@ trait StateWriteExt: StateWrite {
 
         // TODO: load in end_block
         self.put_ephemeral(
-            state_key::internal::compact_block::nullifiers::item(&nullifier),
+            &state_key::internal::compact_block::nullifiers::item(&nullifier),
             nullifier,
         );
     }
@@ -814,13 +808,13 @@ trait StateWriteExt: StateWrite {
     async fn roll_back_note(&self, commitment: note::Commitment) -> Result<Option<NoteSource>> {
         // Get the note source of the note (or empty vec if already applied or rolled back)
         let source = self
-            .get(state_key::note_source(commitment).into())
+            .get(&state_key::note_source(commitment))
             .await?
             .expect("can't roll back note that was never created")
             .into();
 
         // Delete the note from the set of all notes
-        self.delete(state_key::note_source(commitment).into()).await;
+        self.delete(&state_key::note_source(commitment)).await;
 
         Ok(source)
     }
@@ -832,13 +826,13 @@ trait StateWriteExt: StateWrite {
 
         // Get the note source of the nullifier (or empty vec if already applied or rolled back)
         let source = self
-            .get(state_key::quarantined_spent_nullifier_lookup(nullifier).into())
+            .get(&state_key::quarantined_spent_nullifier_lookup(nullifier))
             .await?
             .expect("can't unquarantine nullifier that was never quarantined")
             .into();
 
         // Delete the nullifier from the quarantine set
-        self.delete(state_key::quarantined_spent_nullifier_lookup(nullifier).into())
+        self.delete(&state_key::quarantined_spent_nullifier_lookup(nullifier))
             .await;
 
         Ok(source)
@@ -850,11 +844,8 @@ trait StateWriteExt: StateWrite {
     ) -> Result<()> {
         let mut updated_quarantined = self.scheduled_to_apply(epoch).await?;
         updated_quarantined.extend(scheduled);
-        self.put(
-            state_key::scheduled_to_apply(epoch).into(),
-            updated_quarantined,
-        )
-        .await;
+        self.put(&state_key::scheduled_to_apply(epoch), updated_quarantined)
+            .await;
         Ok(())
     }
 
@@ -867,7 +858,7 @@ trait StateWriteExt: StateWrite {
         let unbonding_epochs = self.get_chain_params().await?.unbonding_epochs;
 
         let slashed: Slashed = self
-            .get(state_key::slashed_validators(height).into())
+            .get(&state_key::slashed_validators(height))
             .await?
             .unwrap_or_default();
 
@@ -886,11 +877,8 @@ trait StateWriteExt: StateWrite {
                 }
             }
             // We're removed all the scheduled notes and nullifiers for this epoch and identity key:
-            self.put(
-                state_key::scheduled_to_apply(epoch).into(),
-                updated_scheduled,
-            )
-            .await;
+            self.put(&state_key::scheduled_to_apply(epoch), updated_scheduled)
+                .await;
         }
 
         Ok(slashed.validators)
@@ -933,7 +921,7 @@ trait StateWriteExt: StateWrite {
         // was provisionally spent, pending quarantine period).
         tracing::debug!("marking as spent (currently quarantined)");
         self.put(
-            state_key::quarantined_spent_nullifier_lookup(nullifier).into(),
+            &state_key::quarantined_spent_nullifier_lookup(nullifier),
             // We don't use the value for validity checks, but writing the source
             // here lets us find out what transaction spent the nullifier.
             source,
