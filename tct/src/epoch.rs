@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::sync::Arc;
 
 use decaf377::{FieldExt, Fq};
 use hash_hasher::HashedMap;
@@ -18,14 +19,14 @@ pub(crate) mod block;
 #[derive(Derivative, Debug, Clone, Serialize, Deserialize)]
 pub struct Builder {
     index: HashedMap<Commitment, index::within::Epoch>,
-    inner: frontier::Top<frontier::Tier<frontier::Item>>,
+    inner: Arc<frontier::Top<frontier::Tier<frontier::Item>>>,
 }
 
 impl Default for Builder {
     fn default() -> Self {
         Self {
             index: HashedMap::default(),
-            inner: frontier::Top::new(frontier::TrackForgotten::No),
+            inner: Arc::new(frontier::Top::new(frontier::TrackForgotten::No)),
         }
     }
 }
@@ -154,7 +155,7 @@ impl Builder {
             .into();
 
         // Try to insert the commitment into the latest block
-        self.inner
+        Arc::make_mut(&mut self.inner)
             .update(|block| {
                 // Don't insert into a finalized block (this will fail); create a new one instead
                 // (below)
@@ -168,7 +169,7 @@ impl Builder {
             // If the latest block was finalized already or doesn't exist, create a new block and
             // insert into that block
             .unwrap_or_else(|| {
-                self.inner
+                Arc::make_mut(&mut self.inner)
                     .insert(frontier::Tier::new(item))
                     .map_err(|_| InsertError::Full)?;
                 Ok(())
@@ -180,7 +181,7 @@ impl Builder {
             if let Some(replaced) = self.index.insert(commitment, position) {
                 // This case is handled for completeness, but should not happen in
                 // practice because commitments should be unique
-                let forgotten = self.inner.forget(replaced);
+                let forgotten = Arc::make_mut(&mut self.inner).forget(replaced);
                 debug_assert!(forgotten);
             }
         }
@@ -211,7 +212,7 @@ impl Builder {
 
         // Finalize the latest block, if it exists and is not yet finalized -- this means that
         // position calculations will be correct, since they will start at the next block
-        self.inner.update(|block| block.finalize());
+        Arc::make_mut(&mut self.inner).update(|block| block.finalize());
 
         // Get the block index of the next insertion
         let index::within::Epoch { block, .. } = u32::try_from(
@@ -226,7 +227,7 @@ impl Builder {
         let block_root = block::Root(inner.hash());
 
         // Insert the inner tree of the block into the epoch
-        self.inner
+        Arc::make_mut(&mut self.inner)
             .insert(inner)
             .expect("inserting a block must succeed because epoch is not full");
 
@@ -240,7 +241,7 @@ impl Builder {
             {
                 // This case is handled for completeness, but should not happen in practice because
                 // commitments should be unique
-                let forgotten = self.inner.forget(replaced);
+                let forgotten = Arc::make_mut(&mut self.inner).forget(replaced);
                 debug_assert!(forgotten);
             }
         }
@@ -253,8 +254,7 @@ impl Builder {
     pub fn end_block(&mut self) -> Result<block::Root, InsertBlockError> {
         // Check to see if the latest block is already finalized, and finalize it if
         // it is not
-        let (already_finalized, finalized_root) = self
-            .inner
+        let (already_finalized, finalized_root) = Arc::make_mut(&mut self.inner)
             .update(|tier| {
                 let already_finalized = tier.finalize();
                 (already_finalized, block::Root(tier.hash()))
@@ -282,7 +282,11 @@ impl Builder {
     /// builder to the initial empty state.
     pub fn finalize(&mut self) -> Finalized {
         let this = std::mem::take(self);
-        let inner = this.inner.finalize();
+
+        // This avoids cloning the arc when we have the only reference to it
+        let inner = Arc::try_unwrap(this.inner).unwrap_or_else(|arc| (*arc).clone());
+
+        let inner = inner.finalize();
         let index = this.index;
         Finalized { index, inner }
     }

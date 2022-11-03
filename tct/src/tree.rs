@@ -1,4 +1,7 @@
-use std::fmt::{Debug, Display};
+use std::{
+    fmt::{Debug, Display},
+    sync::Arc,
+};
 
 use decaf377::{FieldExt, Fq};
 use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
@@ -16,14 +19,14 @@ pub(crate) use epoch::block;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Tree {
     index: HashedMap<Commitment, index::within::Tree>,
-    inner: frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>,
+    inner: Arc<frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>>,
 }
 
 impl Default for Tree {
     fn default() -> Self {
         Self {
             index: HashedMap::default(),
-            inner: frontier::Top::new(frontier::TrackForgotten::Yes),
+            inner: Arc::new(frontier::Top::new(frontier::TrackForgotten::Yes)),
         }
     }
 }
@@ -151,7 +154,10 @@ impl Tree {
         index: HashedMap<Commitment, index::within::Tree>,
         inner: frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>,
     ) -> Self {
-        Self { index, inner }
+        Self {
+            index,
+            inner: Arc::new(inner),
+        }
     }
 
     /// Get the root hash of this [`Tree`].
@@ -195,7 +201,7 @@ impl Tree {
         let position = (self.inner.position().ok_or(InsertError::Full)?).into();
 
         // Try to insert the commitment into the latest block
-        self.inner
+        Arc::make_mut(&mut self.inner)
             .update(|epoch| {
                 epoch
                     .update(|block| {
@@ -228,7 +234,7 @@ impl Tree {
             // If the latest epoch was finalized already or doesn't exist, create a new epoch and
             // insert into that epoch
             .unwrap_or_else(|| {
-                self.inner
+                Arc::make_mut(&mut self.inner)
                     .insert(frontier::Tier::new(frontier::Tier::new(item)))
                     .expect("inserting a commitment must succeed because we already checked that the tree is not full");
                 Ok(())
@@ -243,7 +249,7 @@ impl Tree {
             if let Some(replaced) = self.index.insert(commitment, position) {
                 // This case is handled for completeness, but should not happen in
                 // practice because commitments should be unique
-                let forgotten = self.inner.forget(replaced);
+                let forgotten = Arc::make_mut(&mut self.inner).forget(replaced);
                 debug_assert!(forgotten);
             }
         }
@@ -297,7 +303,7 @@ impl Tree {
             // We forgot something
             forgotten = true;
             // Forget the index for this element in the tree
-            let forgotten = self.inner.forget(within_epoch);
+            let forgotten = Arc::make_mut(&mut self.inner).forget(within_epoch);
             debug_assert!(forgotten);
             // Remove this entry from the index
             self.index.remove(&commitment);
@@ -373,16 +379,14 @@ impl Tree {
 
         // Finalize the latest block, if it exists and is not yet finalized -- this means that
         // position calculations will be correct, since they will start at the next block
-        self.inner
-            .update(|epoch| epoch.update(|block| block.finalize()));
+        Arc::make_mut(&mut self.inner).update(|epoch| epoch.update(|block| block.finalize()));
 
         // Get the epoch and block index of the next insertion
         let position = self.inner.position();
 
         // Insert the block into the latest epoch, or create a new epoch for it if the latest epoch
         // does not exist or is finalized
-        let block_root = self
-            .inner
+        let block_root = Arc::make_mut(&mut self.inner)
             .update(|epoch| {
                 // If the epoch is finalized, create a new one (below) to insert the block into
                 if epoch.is_finalized() {
@@ -425,7 +429,7 @@ impl Tree {
                 let block_root = block::Root(inner.hash());
 
                 // Create a new epoch and insert the block into it
-                self.inner
+                Arc::make_mut(&mut self.inner)
                     .insert(frontier::Tier::new(inner))
                     .expect("inserting a new epoch must succeed when the tree is not full");
 
@@ -452,7 +456,7 @@ impl Tree {
             ) {
                 // This case is handled for completeness, but should not happen in practice because
                 // commitments should be unique
-                let forgotten = self.inner.forget(replaced);
+                let forgotten = Arc::make_mut(&mut self.inner).forget(replaced);
                 debug_assert!(forgotten);
             }
         }
@@ -466,8 +470,7 @@ impl Tree {
     pub fn end_block(&mut self) -> Result<block::Root, InsertBlockError> {
         // Check to see if the latest block is already finalized, and finalize it if
         // it is not
-        let (already_finalized, finalized_root) = self
-            .inner
+        let (already_finalized, finalized_root) = Arc::make_mut(&mut self.inner)
             .update(|epoch| {
                 epoch.update(|tier| match tier.finalize() {
                     true => (true, block::Finalized::default().root()),
@@ -573,7 +576,7 @@ impl Tree {
 
         // Finalize the latest epoch, if it exists and is not yet finalized -- this means that
         // position calculations will be correct, since they will start at the next epoch
-        self.inner.update(|epoch| epoch.finalize());
+        Arc::make_mut(&mut self.inner).update(|epoch| epoch.finalize());
 
         // Get the epoch index of the next insertion
         let index::within::Tree { epoch, .. } = self
@@ -586,7 +589,7 @@ impl Tree {
         let epoch_root = epoch::Root(inner.hash());
 
         // Insert the inner tree of the epoch into the global tree
-        self.inner
+        Arc::make_mut(&mut self.inner)
             .insert(inner)
             .expect("inserting an epoch must succeed when tree is not full");
 
@@ -604,7 +607,7 @@ impl Tree {
             ) {
                 // This case is handled for completeness, but should not happen in practice because
                 // commitments should be unique
-                let forgotten = self.inner.forget(replaced);
+                let forgotten = Arc::make_mut(&mut self.inner).forget(replaced);
                 debug_assert!(forgotten);
             }
         }
@@ -618,8 +621,7 @@ impl Tree {
     pub fn end_epoch(&mut self) -> Result<epoch::Root, InsertEpochError> {
         // Check to see if the latest block is already finalized, and finalize it if
         // it is not
-        let (already_finalized, finalized_root) = self
-            .inner
+        let (already_finalized, finalized_root) = Arc::make_mut(&mut self.inner)
             .update(|tier| match tier.finalize() {
                 true => (true, epoch::Finalized::default().root()),
                 false => (false, epoch::Root(tier.hash())),
@@ -736,7 +738,7 @@ impl Tree {
     pub fn structure(&self) -> structure::Node {
         let _structure_span = trace_span!("structure");
         // TODO: use the structure span for instrumenting methods of the structure, as it is traversed
-        Node::root(&self.inner)
+        Node::root(&*self.inner)
     }
 
     /// Deserialize a tree from a [`storage::Read`] backend.
@@ -774,6 +776,9 @@ impl From<frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>> for Tre
             }
         });
 
-        Self { inner, index }
+        Self {
+            inner: Arc::new(inner),
+            index,
+        }
     }
 }
