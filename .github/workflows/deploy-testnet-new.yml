@@ -1,5 +1,3 @@
-# One day, this would be better handled via pushing Docker images up
-# and using Kubernetes or similar, but this will work for now.
 name: Deploy Testnet (Kubernetes)
 on:
   workflow_dispatch:
