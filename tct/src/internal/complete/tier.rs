@@ -9,15 +9,15 @@ pub type Nested<Item> = N<N<N<N<N<N<N<N<L<Item>>>>>>>>>;
 
 /// A complete tier of the tiered commitment tree, being an 8-deep sparse quad-tree.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Tier<Item: GetHash + Height> {
+pub struct Tier<Item: GetHash + Height + Clone> {
     pub(in super::super) inner: Nested<Item>,
 }
 
-impl<Item: GetHash + Height> Height for Tier<Item> {
+impl<Item: GetHash + Height + Clone> Height for Tier<Item> {
     type Height = <Nested<Item> as Height>::Height;
 }
 
-impl<Item: GetHash + Height> GetHash for Tier<Item> {
+impl<Item: GetHash + Height + Clone> GetHash for Tier<Item> {
     #[inline]
     fn hash(&self) -> Hash {
         self.inner.hash()
@@ -29,18 +29,21 @@ impl<Item: GetHash + Height> GetHash for Tier<Item> {
     }
 }
 
-impl<Item: Complete> Complete for Tier<Item> {
+impl<Item: Complete + Clone> Complete for Tier<Item>
+where
+    Item::Focus: Clone,
+{
     type Focus = frontier::Tier<Item::Focus>;
 }
 
-impl<Item: GetHash + Witness> Witness for Tier<Item> {
+impl<Item: GetHash + Witness + Clone> Witness for Tier<Item> {
     #[inline]
     fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Hash)> {
         self.inner.witness(index)
     }
 }
 
-impl<Item: GetHash + ForgetOwned> ForgetOwned for Tier<Item> {
+impl<Item: GetHash + ForgetOwned + Clone> ForgetOwned for Tier<Item> {
     fn forget_owned(
         self,
         forgotten: Option<Forgotten>,
@@ -51,19 +54,22 @@ impl<Item: GetHash + ForgetOwned> ForgetOwned for Tier<Item> {
     }
 }
 
-impl<Item: Complete> From<frontier::Tier<Item::Focus>> for Insert<Tier<Item>> {
+impl<Item: Complete + Clone> From<frontier::Tier<Item::Focus>> for Insert<Tier<Item>>
+where
+    Item::Focus: Clone,
+{
     fn from(frontier: frontier::Tier<Item::Focus>) -> Self {
         frontier.finalize_owned()
     }
 }
 
-impl<Item: GetHash + Height> GetPosition for Tier<Item> {
+impl<Item: GetHash + Height + Clone> GetPosition for Tier<Item> {
     fn position(&self) -> Option<u64> {
         None
     }
 }
 
-impl<'tree, Item: Height + structure::Any<'tree>> structure::Any<'tree> for Tier<Item> {
+impl<'tree, Item: Height + structure::Any<'tree> + Clone> structure::Any<'tree> for Tier<Item> {
     fn kind(&self) -> Kind {
         self.inner.kind()
     }
@@ -81,7 +87,7 @@ impl<'tree, Item: Height + structure::Any<'tree>> structure::Any<'tree> for Tier
     }
 }
 
-impl<Item: GetHash + Height + OutOfOrderOwned> OutOfOrderOwned for Tier<Item> {
+impl<Item: GetHash + Height + OutOfOrderOwned + Clone> OutOfOrderOwned for Tier<Item> {
     fn uninitialized_out_of_order_insert_commitment_owned(
         this: Insert<Self>,
         index: u64,
@@ -97,7 +103,7 @@ impl<Item: GetHash + Height + OutOfOrderOwned> OutOfOrderOwned for Tier<Item> {
     }
 }
 
-impl<Item: GetHash + UncheckedSetHash> UncheckedSetHash for Tier<Item> {
+impl<Item: GetHash + UncheckedSetHash + Clone> UncheckedSetHash for Tier<Item> {
     fn unchecked_set_hash(&mut self, index: u64, height: u8, hash: Hash) {
         self.inner.unchecked_set_hash(index, height, hash)
     }
