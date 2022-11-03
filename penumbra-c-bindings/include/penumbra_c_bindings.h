@@ -3,6 +3,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-int32_t view_add(int32_t a, int32_t b);
+int32_t add(int32_t a, int32_t b);
 
-bool view_flip(bool a);
+bool flip(bool a);

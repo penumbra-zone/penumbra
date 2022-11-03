@@ -8,3 +8,6 @@ crate-type = [ "staticlib" ]
 
 [dependencies]
 penumbra-view = { path = "../view" }
+
+[build-dependencies]
+cbindgen = "0.24.3"
