@@ -1,5 +1,6 @@
 use std::{any::Any, fmt::Debug};
 
+use async_trait::async_trait;
 use penumbra_proto::{Message, Protobuf};
 
 use crate::StateRead;
@@ -46,7 +47,7 @@ pub trait StateWrite: StateRead {
     fn delete_ephemeral(&mut self, key: &str);
 }
 
-impl<'a, S: StateWrite + Send + Sync> StateWrite for &'a mut S {
+impl<'a, S: StateWrite> StateWrite for &'a mut S {
     fn put_raw(&mut self, key: String, value: jmt::OwnedValue) {
         (**self).put_raw(key, value)
     }

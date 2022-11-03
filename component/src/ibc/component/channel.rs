@@ -314,7 +314,7 @@ impl Component for ICS4Channel {
     async fn end_block(_ctx: Context, _end_block: &abci::request::EndBlock) {}
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 pub trait StateReadExt: StateRead {
     async fn get_channel_counter(&self) -> Result<u64> {
         self.get_proto::<u64>("ibc_channel_counter".into())

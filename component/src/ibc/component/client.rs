@@ -367,7 +367,7 @@ impl Ics2Client {
     }
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 pub trait StateReadExt: StateRead {
     async fn put_client_counter(&mut self, counter: ClientCounter) {
         self.put_domain("ibc_client_counter".into(), counter).await;

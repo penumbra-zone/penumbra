@@ -36,7 +36,7 @@ pub struct ShieldedPool {}
 
 #[async_trait]
 impl Component for ShieldedPool {
-    #[instrument(name = "shielded_pool", skip(state, app_state))]
+    // #[instrument(name = "shielded_pool", skip(state, app_state))]
     async fn init_chain(state: &mut StateTransaction, app_state: &genesis::AppState) {
         for allocation in &app_state.allocations {
             tracing::info!(?allocation, "processing allocation");
@@ -81,7 +81,7 @@ impl Component for ShieldedPool {
             .expect("unable to write compactblock and nct");
     }
 
-    #[instrument(name = "shielded_pool", skip(state, _ctx, _begin_block))]
+    // #[instrument(name = "shielded_pool", skip(state, _ctx, _begin_block))]
     async fn begin_block(
         state: &mut StateTransaction,
         _ctx: Context,
@@ -89,7 +89,7 @@ impl Component for ShieldedPool {
     ) {
     }
 
-    #[instrument(name = "shielded_pool", skip(_ctx, tx))]
+    // #[instrument(name = "shielded_pool", skip(_ctx, tx))]
     fn check_tx_stateless(_ctx: Context, tx: Arc<Transaction>) -> Result<()> {
         // TODO: add a check that ephemeral_key is not identity to prevent scanning dos attack ?
         let auth_hash = tx.transaction_body().auth_hash();
@@ -155,7 +155,7 @@ impl Component for ShieldedPool {
         Ok(())
     }
 
-    #[instrument(name = "shielded_pool", skip(state, _ctx, tx))]
+    // #[instrument(name = "shielded_pool", skip(state, _ctx, tx))]
     async fn check_tx_stateful(
         state: Arc<State>,
         _ctx: Context,
@@ -188,7 +188,7 @@ impl Component for ShieldedPool {
         Ok(())
     }
 
-    #[instrument(name = "shielded_pool", skip(state, ctx, tx))]
+    // #[instrument(name = "shielded_pool", skip(state, ctx, tx))]
     async fn execute_tx(
         state: &mut StateTransaction,
         ctx: Context,
@@ -238,7 +238,7 @@ impl Component for ShieldedPool {
         Ok(())
     }
 
-    #[instrument(name = "shielded_pool", skip(state, _ctx, _end_block))]
+    // #[instrument(name = "shielded_pool", skip(state, _ctx, _end_block))]
     async fn end_block(
         state: &mut StateTransaction,
         _ctx: Context,
@@ -314,7 +314,7 @@ impl Component for ShieldedPool {
 }
 
 // TODO: split into different extension traits
-#[async_trait]
+#[async_trait(?Send)]
 pub trait StateReadExt: StateRead {
     // TODO: remove this entirely post-integration. This is slow but intended as
     // a drop-in replacement so we can avoid really major code changes.
@@ -347,7 +347,7 @@ pub trait StateReadExt: StateRead {
         self.get(&state_key::compact_block(height)).await
     }
 
-    #[instrument(skip(self))]
+    // #[instrument(skip(self))]
     async fn check_nullifier_unspent(&self, nullifier: Nullifier) -> Result<()> {
         if let Some(source) = self
             .get::<NoteSource, _>(&state_key::spent_nullifier_lookup(nullifier))
@@ -458,7 +458,7 @@ pub trait StateReadExt: StateRead {
     ///
     /// TODO: where should this live
     /// re-evaluate
-    #[instrument(skip(self))]
+    // #[instrument(skip(self))]
     async fn finish_nct_block(
         &self,
         compact_block: &mut CompactBlock,
@@ -516,7 +516,7 @@ pub trait StateReadExt: StateRead {
 
 impl<T: StateRead + ?Sized> StateReadExt for T {}
 
-#[async_trait]
+#[async_trait(?Send)]
 trait StateWriteExt: StateWrite {
     // TODO: remove this entirely post-integration. This is slow but intended as
     // a drop-in replacement so we can avoid really major code changes.
@@ -527,7 +527,9 @@ trait StateWriteExt: StateWrite {
     fn stub_put_note_commitment_tree(&self, tree: &tct::Tree) {
         let bytes = bincode::serialize(&tree).unwrap();
         self.put_nonconsensus(
-            state_key::internal::stub_note_commitment_tree().as_bytes(),
+            state_key::internal::stub_note_commitment_tree()
+                .as_bytes()
+                .to_vec(),
             bytes,
         );
     }
@@ -539,23 +541,26 @@ trait StateWriteExt: StateWrite {
     // compact block only at the end of the block, so we don't need the NCT at
     // all until end_block, and then serialization round trip doesn't matter.
     fn stub_put_compact_block(&self, compact_block: CompactBlock) {
-        self.put_ephemeral(state_key::internal::stub_compact_block(), compact_block);
+        self.put_ephemeral(
+            state_key::internal::stub_compact_block().to_string(),
+            compact_block,
+        );
     }
 
     /// Writes a completed compact block into the public state.
     fn set_compact_block(&self, compact_block: CompactBlock) {
         let height = compact_block.height;
-        self.put(&state_key::compact_block(height), compact_block);
+        self.put(state_key::compact_block(height), compact_block);
     }
 
     fn set_nct_anchor(&self, height: u64, nct_anchor: tct::Root) {
         tracing::debug!(?height, ?nct_anchor, "writing anchor");
 
         // Write the NCT anchor both as a value, so we can look it up,
-        self.put(&state_key::anchor_by_height(height), nct_anchor);
+        self.put(state_key::anchor_by_height(height), nct_anchor);
         // and as a key, so we can query for it.
         self.put_proto(
-            &state_key::anchor_lookup(nct_anchor),
+            state_key::anchor_lookup(nct_anchor),
             // We don't use the value for validity checks, but writing the height
             // here lets us find out what height the anchor was for.
             height,
@@ -566,10 +571,10 @@ trait StateWriteExt: StateWrite {
         tracing::debug!(?height, ?nct_block_anchor, "writing block anchor");
 
         // Write the NCT block anchor both as a value, so we can look it up,
-        self.put(&state_key::block_anchor_by_height(height), nct_block_anchor);
+        self.put(state_key::block_anchor_by_height(height), nct_block_anchor);
         // and as a key, so we can query for it.
         self.put_proto(
-            &state_key::block_anchor_lookup(nct_block_anchor),
+            state_key::block_anchor_lookup(nct_block_anchor),
             // We don't use the value for validity checks, but writing the height
             // here lets us find out what height the anchor was for.
             height,
@@ -580,10 +585,10 @@ trait StateWriteExt: StateWrite {
         tracing::debug!(?index, ?nct_block_anchor, "writing epoch anchor");
 
         // Write the NCT epoch anchor both as a value, so we can look it up,
-        self.put(&state_key::epoch_anchor_by_index(index), nct_block_anchor);
+        self.put(state_key::epoch_anchor_by_index(index), nct_block_anchor);
         // and as a key, so we can query for it.
         self.put_proto(
-            &state_key::epoch_anchor_lookup(nct_block_anchor),
+            state_key::epoch_anchor_lookup(nct_block_anchor),
             // We don't use the value for validity checks, but writing the height
             // here lets us find out what height the anchor was for.
             index,
@@ -591,15 +596,15 @@ trait StateWriteExt: StateWrite {
     }
 
     async fn set_commission_amounts(&self, height: u64, notes: CommissionAmounts) {
-        self.put(&state_key::commission_amounts(height), notes);
+        self.put(state_key::commission_amounts(height), notes);
     }
 
     async fn set_claimed_swap_outputs(&self, height: u64, claims: SwapClaimBodyList) {
-        self.put(&state_key::claimed_swap_outputs(height), claims);
+        self.put(state_key::claimed_swap_outputs(height), claims);
     }
 
     // TODO: refactor for new state model -- no more list of known asset IDs with fixed key
-    #[instrument(skip(self))]
+    // #[instrument(skip(self))]
     async fn register_denom(&self, denom: &Denom) -> Result<()> {
         let id = denom.id();
         if self.denom_by_asset(&id).await?.is_some() {
@@ -608,7 +613,7 @@ trait StateWriteExt: StateWrite {
         } else {
             tracing::debug!(?denom, ?id, "registering new denom");
             // We want to be able to query for the denom by asset ID...
-            self.put(&state_key::denom_by_asset(&id), denom.clone());
+            self.put(state_key::denom_by_asset(&id), denom.clone());
             // ... and we want to record it in the list of known asset IDs
             // (this requires reading the whole list, which is sad, but hopefully
             // we don't do this often).
@@ -628,15 +633,15 @@ trait StateWriteExt: StateWrite {
     /// Most notes in the shielded pool are created by client transactions.
     /// This method allows the chain to inject new value into the shielded pool
     /// on its own.
-    #[instrument(
-        skip(self, value, address, source),
-        fields(
-            position = u64::from(self
-                .note_commitment_tree
-                .position()
-                .unwrap_or_else(|| u64::MAX.into())),
-        )
-    )]
+    // #[instrument(
+    //     skip(self, value, address, source),
+    //     fields(
+    //         position = u64::from(self
+    //             .note_commitment_tree
+    //             .position()
+    //             .unwrap_or_else(|| u64::MAX.into())),
+    //     )
+    // )]
     async fn mint_note(
         &mut self,
         value: Value,
@@ -698,7 +703,7 @@ trait StateWriteExt: StateWrite {
         Ok(())
     }
 
-    #[instrument(skip(self, change))]
+    // #[instrument(skip(self, change))]
     async fn update_token_supply(&self, asset_id: &asset::Id, change: i64) -> Result<()> {
         let key = state_key::token_supply(asset_id);
         let current_supply = self.get_proto(&key).await?.unwrap_or(0u64);
@@ -731,13 +736,13 @@ trait StateWriteExt: StateWrite {
 
     // TODO: some kind of async-trait interaction blocks this?
     //#[instrument(skip(self, source, payload), fields(note_commitment = ?payload.note_commitment))]
-    #[instrument(skip(self))]
+    // #[instrument(skip(self))]
     async fn add_note(&mut self, AnnotatedNotePayload { payload, source }: AnnotatedNotePayload) {
         tracing::debug!("adding note");
 
         // 1. Insert it into the NCT
         // TODO: build up data incrementally
-        let nct = self.note_commitment_tree().await;
+        let nct = self.stub_note_commitment_tree().await;
         nct.insert(tct::Witness::Forget, payload.note_commitment)
             // TODO: why? can't we exceed the number of note commitments in a block?
             .expect("inserting into the note commitment tree never fails");
@@ -754,13 +759,13 @@ trait StateWriteExt: StateWrite {
         // note payloads to build that part of the compact block in end_block unless
         // we also do all NCT insertions in a batch in end_block (which we should)
         let compact_block = self.stub_compact_block();
-        self.compact_block
+        compact_block
             .note_payloads
             .push(AnnotatedNotePayload { payload, source });
         self.stub_put_compact_block(compact_block);
     }
 
-    #[instrument(skip(self, source))]
+    // #[instrument(skip(self, source))]
     async fn spend_nullifier(&mut self, nullifier: Nullifier, source: NoteSource) {
         tracing::debug!("marking as spent");
 
@@ -781,7 +786,7 @@ trait StateWriteExt: StateWrite {
         );
     }
 
-    #[instrument(skip(self))]
+    // #[instrument(skip(self))]
     async fn write_compactblock_and_nct(
         &mut self,
         compact_block: CompactBlock,

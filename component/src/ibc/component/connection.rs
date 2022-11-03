@@ -167,7 +167,7 @@ impl Component for ConnectionComponent {
     async fn end_block(_ctx: Context, _end_block: &abci::request::EndBlock) {}
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 pub trait StateReadExt: StateRead {
     async fn get_connection_counter(&self) -> Result<ConnectionCounter> {
         self.get_domain(state_key::connection_counter().into())

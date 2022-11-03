@@ -82,7 +82,7 @@ impl<'a> StateWrite for Transaction<'a> {
     }
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 impl<'tx> StateRead for Transaction<'tx> {
     async fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>> {
         // If the key is available in the unwritten_changes cache, return it.

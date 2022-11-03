@@ -305,7 +305,7 @@ impl Component for Dex {
 }
 
 /// Extension trait providing read access to dex data.
-#[async_trait]
+#[async_trait(?Send)]
 pub trait StateReadExt: StateRead {
     async fn output_data(
         &self,
@@ -321,16 +321,20 @@ pub trait StateReadExt: StateRead {
     }
 }
 
+impl<T: StateRead> StateReadExt for T {}
+
 /// Extension trait providing write access to dex data.
-#[async_trait]
+#[async_trait(?Send)]
 pub trait StateWriteExt: StateWrite {
-    async fn set_output_data(&mut self, output_data: BatchSwapOutputData) {
+    fn set_output_data(&mut self, output_data: BatchSwapOutputData) {
         let height = output_data.height;
         let trading_pair = output_data.trading_pair;
-        self.put(&state_key::output_data(height, trading_pair), output_data);
+        self.put(state_key::output_data(height, trading_pair), output_data);
     }
 
-    async fn set_stub_cpmm_reserves(&self, trading_pair: &TradingPair, reserves: Reserves) {
-        self.put(&state_key::stub_cpmm_reserves(trading_pair), reserves);
+    fn set_stub_cpmm_reserves(&self, trading_pair: &TradingPair, reserves: Reserves) {
+        self.put(state_key::stub_cpmm_reserves(trading_pair), reserves);
     }
 }
+
+impl<T: StateWrite> StateWriteExt for T {}

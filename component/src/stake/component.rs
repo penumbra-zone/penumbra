@@ -1243,7 +1243,7 @@ impl Component for Staking {
 }
 
 /// Extension trait providing read access to staking data.
-#[async_trait]
+#[async_trait(?Send)]
 pub trait StateReadExt: StateRead {
     async fn current_base_rate(&self) -> Result<BaseRateData> {
         self.get(state_key::current_base_rate().into())
