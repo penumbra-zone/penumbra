@@ -2,6 +2,7 @@
 WORKDIR=${WORKDIR:=$(pwd)/helm/pdcli}
 IMAGE=${IMAGE:=ghcr.io/strangelove-ventures/heighliner/penumbra}
 PENUMBRA_VERSION=${PENUMBRA_VERSION:=030-isonoe}
+PENUMBRA_UID_GID=${PENUMBRA_UID_GID:=1025\:1025}
 TENDERMINT_VERSION=${TENDERMINT_VERSION:=v0.34.21}
 NVALS=${NVALS:=2}
 NFULLNODES=${NFULLNODES:=1}
@@ -30,7 +31,7 @@ find "$WORKDIR" -name "val.json" -exec cat {} + | jq -s > "$WORKDIR/vals.json"
 
 echo "Generating new testnet files..."
 docker run --user 0:0 \
--v "$WORKDIR":"$CONTAINERHOME" -it --rm \
+-v "$WORKDIR":"$CONTAINERHOME" --rm \
 --entrypoint pd \
 $IMAGE:$PENUMBRA_VERSION \
 testnet generate \
@@ -80,7 +81,7 @@ fi
 
 echo "Deploying network..."
 
-helm $HELM_CMD $HELM_RELEASE helm --set numValidators=$NVALS,numFullNodes=$NFULLNODES,penumbra.version=$PENUMBRA_VERSION,tendermint.version=$TENDERMINT_VERSION
+helm $HELM_CMD $HELM_RELEASE helm --set numValidators=$NVALS,numFullNodes=$NFULLNODES,penumbra.image=$IMAGE,penumbra.version=$PENUMBRA_VERSION,penumbra.uidGid=$PENUMBRA_UID_GID,tendermint.version=$TENDERMINT_VERSION
 
 while true; do
   echo "Waiting for load balancer external IPs to be provisioned..."
@@ -131,7 +132,7 @@ PPE=""
 for i in $(seq $NVALS); do
   I=$((i-1))
   echo "Getting public peer string for validator $I"
-  NODE_ID="$(kubectl exec -it $(kubectl get pods | grep penumbra-val-$I | awk '{print $1}') -c tm -- tendermint show-node-id | tr -d '\r')"
+  NODE_ID="$(kubectl exec $(kubectl get pods | grep penumbra-val-$I | awk '{print $1}') -c tm -- tendermint --home=/home/.tendermint show-node-id | tr -d '\r')"
   IP="$(kubectl get svc p2p-$I -o json | jq -r .status.loadBalancer.ingress[0].ip | tr -d '\r')"
   if [ -z "$PPE" ]; then
     PPE="$NODE_ID@$IP:26656"
@@ -143,7 +144,7 @@ done
 for i in $(seq $NFULLNODES); do
   I=$((i-1))
   echo "Getting public peer string for fullnode $I"
-  NODE_ID="$(kubectl exec -it $(kubectl get pods | grep penumbra-fn-$I | awk '{print $1}') -c tm -- tendermint show-node-id | tr -d '\r')"
+  NODE_ID="$(kubectl exec $(kubectl get pods | grep penumbra-fn-$I | awk '{print $1}') -c tm -- tendermint --home=/home/.tendermint show-node-id | tr -d '\r')"
   IP="$(kubectl get svc p2p-fn-$I -o json | jq -r .status.loadBalancer.ingress[0].ip | tr -d '\r')"
   PPE="$PPE,$NODE_ID@$IP:26656"
 done

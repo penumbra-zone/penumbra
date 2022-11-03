@@ -4,15 +4,16 @@ network: testnet
 numValidators: 2
 numFullNodes: 1
 
+penumbra:
+  image: ghcr.io/penumbra-zone/penumbra
+  uidGid: 1000:1000
+  version:
 tendermint:
   image: ghcr.io/strangelove-ventures/heighliner/tendermint
   version: v0.34.21
 toolkit:
   image: ghcr.io/strangelove-ventures/infra-toolkit
-  version: v0.0.1
-penumbra:
-  image: ghcr.io/strangelove-ventures/heighliner/penumbra
-  version:
+  version: v0.0.6
 health:
   image: ghcr.io/strangelove-ventures/ignite-health-check
   version: v0.0.1
