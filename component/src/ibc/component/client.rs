@@ -60,13 +60,17 @@ impl Ics2Client {
 #[async_trait]
 impl Component for Ics2Client {
     #[instrument(name = "ics2_client", skip(self, _app_state))]
-    async fn init_chain(_app_state: &genesis::AppState) {
+    async fn init_chain(state: &mut StateTransaction, _app_state: &genesis::AppState) {
         // set the initial client count
         self.state.put_client_counter(ClientCounter(0)).await;
     }
 
     #[instrument(name = "ics2_client", skip(self, _ctx, begin_block))]
-    async fn begin_block(_ctx: Context, begin_block: &abci::request::BeginBlock) {
+    async fn begin_block(
+        state: &mut StateTransaction,
+        _ctx: Context,
+        begin_block: &abci::request::BeginBlock,
+    ) {
         // In BeginBlock, we want to save a copy of our consensus state to our
         // own state tree, so that when we get a message from our
         // counterparties, we can verify that they are committing the correct

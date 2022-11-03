@@ -253,10 +253,15 @@ impl AppHandler for ICS20Transfer {}
 #[async_trait]
 impl Component for ICS20Transfer {
     #[instrument(name = "ics20_transfer", skip(self, _app_state))]
-    async fn init_chain(_app_state: &genesis::AppState) {}
+    async fn init_chain(state: &mut StateTransaction, _app_state: &genesis::AppState) {}
 
     #[instrument(name = "ics20_transfer", skip(self, _ctx, _begin_block))]
-    async fn begin_block(_ctx: Context, _begin_block: &abci::request::BeginBlock) {}
+    async fn begin_block(
+        state: &mut StateTransaction,
+        _ctx: Context,
+        _begin_block: &abci::request::BeginBlock,
+    ) {
+    }
 
     #[instrument(name = "ics20_transfer", skip(_ctx, tx))]
     fn check_tx_stateless(_ctx: Context, tx: &Transaction) -> Result<()> {

@@ -36,7 +36,7 @@ impl App {
     }
 
     #[instrument(skip(self, app_state))]
-    async fn init_chain(app_state: &genesis::AppState) {
+    async fn init_chain(state: &mut StateTransaction, app_state: &genesis::AppState) {
         let state =
             Arc::get_mut(&mut self.state).expect("state Arc should not be referenced elsewhere");
 
@@ -65,7 +65,11 @@ impl App {
     }
 
     #[instrument(skip(self, ctx, begin_block))]
-    async fn begin_block(ctx: Context, begin_block: &abci::request::BeginBlock) {
+    async fn begin_block(
+        state: &mut StateTransaction,
+        ctx: Context,
+        begin_block: &abci::request::BeginBlock,
+    ) {
         let state =
             Arc::get_mut(&mut self.state).expect("state Arc should not be referenced elsewhere");
         let mut state_tx = state.begin_transaction();

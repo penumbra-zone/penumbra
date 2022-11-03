@@ -162,29 +162,29 @@ pub trait StateWriteExt: StateReadExt + StateWrite {
         let proposal_id = self.next_proposal_id().await?;
 
         // Record this proposal id, so we won't re-use it
-        self.put_proto(state_key::latest_proposal_id().into(), proposal_id);
+        self.put_proto(&state_key::latest_proposal_id(), proposal_id);
 
         // Store the proposal title
         self.put_proto(
-            state_key::proposal_title(proposal_id).into(),
+            &state_key::proposal_title(proposal_id),
             proposal.title.clone(),
         );
 
         // Store the proposal description
         self.put_proto(
-            state_key::proposal_description(proposal_id).into(),
+            &state_key::proposal_description(proposal_id),
             proposal.description.clone(),
         );
 
         // Store the proposal payload
         self.put(
-            state_key::proposal_payload(proposal_id).into(),
+            &state_key::proposal_payload(proposal_id),
             proposal.payload.clone(),
         );
 
         // Set the list of validators who have voted to the empty list
         self.put(
-            state_key::voting_validators(proposal_id).into(),
+            &state_key::voting_validators(proposal_id),
             validator::List::default(),
         );
 
@@ -195,22 +195,19 @@ pub trait StateWriteExt: StateReadExt + StateWrite {
     /// Store the deposit refund address for a proposal.
     async fn put_refund_address(&self, proposal_id: u64, address: Address) {
         self.put(
-            state_key::proposal_deposit_refund_address(proposal_id).into(),
+            &state_key::proposal_deposit_refund_address(proposal_id),
             address,
         );
     }
 
     /// Store the proposal withdrawal key for a proposal.
     async fn put_withdrawal_key(&self, proposal_id: u64, key: VerificationKey<SpendAuth>) {
-        self.put(state_key::proposal_withdrawal_key(proposal_id).into(), key);
+        self.put(&state_key::proposal_withdrawal_key(proposal_id), key);
     }
 
     /// Store the proposal deposit amount.
     async fn put_deposit_amount(&self, proposal_id: u64, amount: Amount) {
-        self.put(
-            state_key::proposal_deposit_amount(proposal_id).into(),
-            amount,
-        );
+        self.put(&state_key::proposal_deposit_amount(proposal_id), amount);
     }
 
     /// Mark a proposal as to-be-refunded in this block.
@@ -221,23 +218,20 @@ pub trait StateWriteExt: StateReadExt + StateWrite {
             .unwrap_or_default();
         refunded_in_this_block.proposals.insert(proposal_id);
         self.put(
-            state_key::proposal_refunds(block_height).into(),
+            &state_key::proposal_refunds(block_height),
             refunded_in_this_block,
         );
         Ok(())
     }
     /// Set all the unfinished proposal ids.
     async fn put_unfinished_proposals(&self, unfinished_proposals: ProposalList) {
-        self.put(
-            state_key::unfinished_proposals().into(),
-            unfinished_proposals,
-        );
+        self.put(&state_key::unfinished_proposals(), unfinished_proposals);
     }
 
     /// Set the state of a proposal.
     async fn put_proposal_state(&self, proposal_id: u64, state: proposal::State) -> Result<()> {
         // Set the state of the proposal
-        self.put(state_key::proposal_state(proposal_id).into(), state.clone());
+        self.put(&state_key::proposal_state(proposal_id), state.clone());
 
         // Track the index
         let mut unfinished_proposals = self
@@ -266,10 +260,7 @@ pub trait StateWriteExt: StateReadExt + StateWrite {
     /// Record a validator vote for a proposal.
     async fn cast_validator_vote(&self, proposal_id: u64, identity_key: IdentityKey, vote: Vote) {
         // Record the vote
-        self.put(
-            state_key::validator_vote(proposal_id, identity_key).into(),
-            vote,
-        );
+        self.put(&state_key::validator_vote(proposal_id, identity_key), vote);
 
         // Record the fact that this validator has voted on this proposal
         let mut voting_validators = self
@@ -279,25 +270,19 @@ pub trait StateWriteExt: StateReadExt + StateWrite {
             .unwrap_or_default();
         voting_validators.0.push(identity_key);
         self.put(
-            state_key::voting_validators(proposal_id).into(),
+            &state_key::voting_validators(proposal_id),
             voting_validators,
         );
     }
 
     /// Set the proposal voting end block height for a proposal.
     async fn put_proposal_voting_start(&self, proposal_id: u64, end_block: u64) {
-        self.put_proto(
-            state_key::proposal_voting_start(proposal_id).into(),
-            end_block,
-        );
+        self.put_proto(&state_key::proposal_voting_start(proposal_id), end_block);
     }
 
     /// Set the proposal voting end block height for a proposal.
     async fn put_proposal_voting_end(&self, proposal_id: u64, end_block: u64) {
-        self.put_proto(
-            state_key::proposal_voting_end(proposal_id).into(),
-            end_block,
-        );
+        self.put_proto(&state_key::proposal_voting_end(proposal_id), end_block);
     }
 }
 

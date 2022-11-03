@@ -6,7 +6,7 @@ use penumbra_transaction::action::Vote;
 use super::{proposal::Withdrawn, view::StateWriteExt as _, StateReadExt as _};
 use crate::stake::StateReadExt as _;
 use penumbra_chain::StateReadExt as _;
-use penumbra_storage2::State;
+use penumbra_storage2::{State, StateRead};
 
 use super::proposal::Outcome;
 
@@ -29,7 +29,7 @@ impl From<&ChainParameters> for Parameters {
 }
 
 impl Parameters {
-    pub async fn new(state: &State) -> Result<Self> {
+    pub async fn new(state: impl StateRead) -> Result<Self> {
         Ok(Parameters::from(&state.get_chain_params().await?))
     }
 }
@@ -42,7 +42,7 @@ pub struct Circumstance {
 }
 
 impl Circumstance {
-    pub async fn new(state: &State) -> Result<Self> {
+    pub async fn new(state: impl StateRead) -> Result<Self> {
         Ok(Circumstance {
             total_voting_power: state.total_voting_power().await?,
             current_block: state.get_block_height().await?,
@@ -165,7 +165,7 @@ impl Tally {
 impl Parameters {
     pub async fn tally(
         &self,
-        state: &State,
+        state: impl StateRead,
         circumstance: Circumstance,
         proposal_id: u64,
     ) -> Result<Option<Outcome>> {

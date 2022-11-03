@@ -11,7 +11,7 @@ use penumbra_proto::{Message, Protobuf};
 #[async_trait]
 // This needs to be a trait because we want to implement it over both `State` and `StateTransaction`,
 // mainly to support RPC methods.
-pub trait StateRead {
+pub trait StateRead: Sync {
     /// Gets a value from the verifiable key-value store as raw bytes.
     ///
     /// Users should generally prefer to use [`get`](Self::get) or [`get_proto`](Self::get_proto).
