@@ -1,5 +1,3 @@
-#![recursion_limit = "256"]
-
 use std::{path::PathBuf, sync::Arc};
 
 use axum::{headers::ContentType, routing::get, Router, TypedHeader};

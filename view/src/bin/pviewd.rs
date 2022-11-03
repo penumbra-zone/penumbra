@@ -1,4 +1,3 @@
-#![recursion_limit = "256"]
 #![allow(clippy::clone_on_copy)]
 use anyhow::{Context, Result};
 use camino::Utf8PathBuf;

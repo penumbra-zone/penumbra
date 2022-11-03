@@ -451,12 +451,6 @@ mod test {
     use super::*;
 
     #[test]
-    fn check_inner_size() {
-        // Disabled due to spurious test failure.
-        // static_assertions::assert_eq_size!(Tier<Tier<Tier<frontier::Item>>>, [u8; 88]);
-    }
-
-    #[test]
     fn position_advances_by_one() {
         let mut tier: Tier<Item> = Tier::new(Hash::zero().into());
         for expected_position in 1..=(u16::MAX as u64) {

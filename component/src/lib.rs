@@ -1,5 +1,3 @@
-#![recursion_limit = "256"] // required for TCT
-
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::genesis;

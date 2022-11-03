@@ -61,3 +61,13 @@ impl From<Hash> for CachedHash {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn cached_hash_size() {
+        static_assertions::assert_eq_size!(CachedHash, [u8; 40]);
+    }
+}
