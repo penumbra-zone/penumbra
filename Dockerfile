@@ -5,8 +5,6 @@ RUN rustup component add rustfmt
 ARG TARGETARCH
 ARG BUILDARCH
 
-RUN apt update && apt install -y libclang-dev clang
-
 RUN if [ "${TARGETARCH}" = "arm64" ]; then \
       rustup target add aarch64-unknown-linux-gnu; \
       if [ "${BUILDARCH}" != "arm64" ]; then \
@@ -15,7 +13,10 @@ RUN if [ "${TARGETARCH}" = "arm64" ]; then \
         ln -s /usr/aarch64-linux-gnu/include/bits /usr/include/bits; \
         ln -s /usr/aarch64-linux-gnu/include/sys /usr/include/sys; \
         ln -s /usr/aarch64-linux-gnu/include/gnu /usr/include/gnu; \
+      else \
+        apt update; \
       fi; \
+      apt install -y libssl1.1:arm64 libssl-dev:arm64 openssl:arm64 libclang-dev clang; \
     elif [ "${TARGETARCH}" = "amd64" ]; then \
       rustup target add x86_64-unknown-linux-gnu; \
       if [ "${BUILDARCH}" != "amd64" ]; then \
@@ -24,7 +25,10 @@ RUN if [ "${TARGETARCH}" = "arm64" ]; then \
         ln -s /usr/x86_64-linux-gnu/include/bits /usr/include/bits; \
         ln -s /usr/x86_64-linux-gnu/include/sys /usr/include/sys; \
         ln -s /usr/x86_64-linux-gnu/include/gnu /usr/include/gnu; \
+      else \
+        apt update; \
       fi; \
+      apt install -y libssl1.1:amd64 libssl-dev:amd64 openssl:amd64 libclang-dev clang; \
     fi
 
 WORKDIR /usr/src
@@ -57,8 +61,11 @@ RUN if [ "$TARGETARCH" = "arm64" ] && [ "$BUILDARCH" != "arm64" ]; then \
 
 # Copy all binaries to /root/bin, for a single place to copy into final image.
 RUN mkdir /root/bin
-RUN cp /usr/src/target/${TARGETARCH}-unknown-linux-gnu/release/pd   /root/bin
-RUN cp /usr/src/target/${TARGETARCH}-unknown-linux-gnu/release/pcli /root/bin
+RUN if [ "${TARGETARCH}" = "arm64" ]; then ARCH=aarch64; \
+    elif [ "${TARGETARCH}" = "amd64" ]; then ARCH=x86_64; fi; \
+    cp /usr/src/target/${ARCH}-unknown-linux-gnu/release/pcli \
+      /usr/src/target/${ARCH}-unknown-linux-gnu/release/pd \
+      /root/bin
 
 # Use minimal busybox from Strangelove infra-toolkit image for final scratch image
 FROM ghcr.io/strangelove-ventures/infra-toolkit:v0.0.6 AS busybox-min
@@ -69,9 +76,10 @@ FROM busybox:1.34.1-musl AS busybox-full
 
 # Use TARGETARCH image for determining necessary libs
 FROM rust:1-bullseye as target-arch-libs
-RUN apt update && apt install -y clang
+RUN apt update && apt install -y clang libssl1.1 openssl
 
-# Determine library dependencies of built binaries and copy to /root/lib_abs for copying to final image.
+# Determine library dependencies of built binaries and copy to indexed path in /root/lib_abs for copying to final image.
+# Absolute path of each library is appended to /root/lib_abs.list for restoring in final image.
 COPY --from=build-env /root/bin /root/bin
 RUN mkdir -p /root/lib_abs && touch /root/lib_abs.list
 RUN bash -c \
