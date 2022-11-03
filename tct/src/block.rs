@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::sync::Arc;
 
 use decaf377::{FieldExt, Fq};
 use hash_hasher::HashedMap;
@@ -14,14 +15,14 @@ use crate::{prelude::*, Witness};
 #[derive(Derivative, Debug, Clone, Serialize, Deserialize)]
 pub struct Builder {
     index: HashedMap<Commitment, index::within::Block>,
-    inner: frontier::Top<Item>,
+    inner: Arc<frontier::Top<Item>>,
 }
 
 impl Default for Builder {
     fn default() -> Self {
         Self {
             index: HashedMap::default(),
-            inner: frontier::Top::new(frontier::TrackForgotten::No),
+            inner: Arc::new(frontier::Top::new(frontier::TrackForgotten::No)),
         }
     }
 }
@@ -142,7 +143,7 @@ impl Builder {
             .into();
 
         // Insert the commitment into the inner tree
-        self.inner
+        Arc::make_mut(&mut self.inner)
             .insert(item)
             .expect("inserting a commitment must succeed when block has a position");
 
@@ -152,7 +153,7 @@ impl Builder {
             if let Some(replaced) = self.index.insert(commitment, position) {
                 // This case is handled for completeness, but should not happen in
                 // practice because commitments should be unique
-                let forgotten = self.inner.forget(replaced);
+                let forgotten = Arc::make_mut(&mut self.inner).forget(replaced);
                 debug_assert!(forgotten);
             }
         }
@@ -171,7 +172,11 @@ impl Builder {
     /// to the initial empty state.
     pub fn finalize(&mut self) -> Finalized {
         let this = std::mem::take(self);
-        let inner = this.inner.finalize();
+
+        // This avoids cloning the arc when we have the only reference to it
+        let inner = Arc::try_unwrap(this.inner).unwrap_or_else(|arc| (*arc).clone());
+
+        let inner = inner.finalize();
         let index = this.index;
         Finalized { index, inner }
     }

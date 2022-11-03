@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, sync::Arc};
 
 use serde::{Deserialize, Serialize};
 
@@ -16,7 +16,7 @@ pub struct Node<Child: Focus> {
     #[serde(skip)]
     forgotten: [Forgotten; 4],
     siblings: Three<Insert<Child::Complete>>,
-    focus: Child,
+    focus: Arc<Child>,
 }
 
 impl<Child: Focus> Node<Child> {
@@ -33,7 +33,7 @@ impl<Child: Focus> Node<Child> {
             hash: Default::default(),
             forgotten,
             siblings,
-            focus,
+            focus: Arc::new(focus),
         }
     }
 
@@ -97,19 +97,32 @@ impl<Child: Focus> GetHash for Node<Child> {
     }
 }
 
-impl<Child: Focus> Focus for Node<Child> {
+impl<Child: Focus + Clone> Focus for Node<Child>
+where
+    Child::Complete: Clone,
+{
     type Complete = complete::Node<Child::Complete>;
 
     #[inline]
     fn finalize_owned(self) -> Insert<Self::Complete> {
         let one = || Insert::Hash(Hash::one());
 
+        let Self {
+            hash: _, // We ignore the hash because we're going to recompute it
+            forgotten,
+            siblings,
+            focus,
+        } = self;
+
+        // This avoids cloning the focus when we have the only reference to it
+        let focus = Arc::try_unwrap(focus).unwrap_or_else(|arc| (*arc).clone());
+
         // Push the focus into the siblings, and fill any empty children with the *ONE* hash, which
         // causes the hash of a complete node to deliberately differ from that of a frontier node,
         // which uses *ZERO* padding
         complete::Node::from_children_or_else_hash(
-            self.forgotten,
-            match self.siblings.push(self.focus.finalize_owned()) {
+            forgotten,
+            match siblings.push(focus.finalize_owned()) {
                 Err([a, b, c, d]) => [a, b, c, d],
                 Ok(siblings) => match siblings.into_elems() {
                     IntoElems::_3([a, b, c]) => [a, b, c, one()],
@@ -122,9 +135,10 @@ impl<Child: Focus> Focus for Node<Child> {
     }
 }
 
-impl<Child> Frontier for Node<Child>
+impl<Child: Clone> Frontier for Node<Child>
 where
     Child: Focus + Frontier + GetHash,
+    Child::Complete: Clone,
 {
     type Item = Child::Item;
 
@@ -138,7 +152,7 @@ where
     #[inline]
     fn update<T>(&mut self, f: impl FnOnce(&mut Self::Item) -> T) -> Option<T> {
         let before_hash = self.focus.cached_hash();
-        let output = self.focus.update(f);
+        let output = Arc::make_mut(&mut self.focus).update(f);
         let after_hash = self.focus.cached_hash();
 
         // If the cached hash of the focus changed, clear the cached hash here, because it is now
@@ -157,26 +171,36 @@ where
 
     #[inline]
     fn insert_owned(self, item: Self::Item) -> Result<Self, Full<Self>> {
-        match self.focus.insert_owned(item) {
+        let Self {
+            hash: _, // We ignore the cached hash because it changes on insertion
+            forgotten,
+            siblings,
+            focus,
+        } = self;
+
+        // This avoids cloning the focus when we have the only reference to it
+        let focus = Arc::try_unwrap(focus).unwrap_or_else(|arc| (*arc).clone());
+
+        match focus.insert_owned(item) {
             // We successfully inserted at the focus, so siblings don't need to be changed
-            Ok(focus) => Ok(Self::from_parts(self.forgotten, self.siblings, focus)),
+            Ok(focus) => Ok(Self::from_parts(forgotten, siblings, focus)),
 
             // We couldn't insert at the focus because it was full, so we need to move our path
             // rightwards and insert into a newly created focus
             Err(Full {
                 item,
                 complete: sibling,
-            }) => match self.siblings.push(sibling) {
+            }) => match siblings.push(sibling) {
                 // We had enough room to add another sibling, so we set our focus to a new focus
                 // containing only the item we couldn't previously insert
-                Ok(siblings) => Ok(Self::from_parts(self.forgotten, siblings, Child::new(item))),
+                Ok(siblings) => Ok(Self::from_parts(forgotten, siblings, Child::new(item))),
 
                 // We didn't have enough room to add another sibling, so we return a complete node
                 // as a carry, to be propagated up above us and added to some ancestor segment's
                 // siblings, along with the item we couldn't insert
                 Err(children) => Err(Full {
                     item,
-                    complete: complete::Node::from_children_or_else_hash(self.forgotten, children),
+                    complete: complete::Node::from_children_or_else_hash(forgotten, children),
                 }),
             },
         }
@@ -311,7 +335,7 @@ where
     }
 }
 
-impl<Child: Focus + Forget> Forget for Node<Child>
+impl<Child: Focus + Forget + Clone> Forget for Node<Child>
 where
     Child::Complete: ForgetOwned,
 {
@@ -326,25 +350,25 @@ where
 
         let was_forgotten = match (self.siblings.elems_mut(), &mut self.focus) {
             (_0([]), a) => match which_way {
-                Leftmost => a.forget(forgotten, index),
+                Leftmost => Arc::make_mut(a).forget(forgotten, index),
                 Left | Right | Rightmost => false,
             },
             (_1([a]), b) => match which_way {
                 Leftmost => a.forget(forgotten, index),
-                Left => b.forget(forgotten, index),
+                Left => Arc::make_mut(b).forget(forgotten, index),
                 Right | Rightmost => false,
             },
             (_2([a, b]), c) => match which_way {
                 Leftmost => a.forget(forgotten, index),
                 Left => b.forget(forgotten, index),
-                Right => c.forget(forgotten, index),
+                Right => Arc::make_mut(c).forget(forgotten, index),
                 Rightmost => false,
             },
             (_3([a, b, c]), d) => match which_way {
                 Leftmost => a.forget(forgotten, index),
                 Left => b.forget(forgotten, index),
                 Right => c.forget(forgotten, index),
-                Rightmost => d.forget(forgotten, index),
+                Rightmost => Arc::make_mut(d).forget(forgotten, index),
             },
         };
 
@@ -387,7 +411,7 @@ where
                     .iter()
                     .map(|child| child.as_ref().map(|child| child as &dyn structure::Any))
                     .chain(std::iter::once(Insert::Keep(
-                        &self.focus as &dyn structure::Any,
+                        &*self.focus as &dyn structure::Any,
                     ))),
             )
             .map(|(forgotten, child)| structure::Node::child(forgotten, child))
@@ -395,7 +419,7 @@ where
     }
 }
 
-impl<Child: Height + Focus + OutOfOrder> OutOfOrder for Node<Child>
+impl<Child: Height + Focus + OutOfOrder + Clone> OutOfOrder for Node<Child>
 where
     Child::Complete: OutOfOrderOwned,
 {
@@ -423,7 +447,7 @@ where
             }
         }
 
-        let focus = Child::uninitialized(position, forgotten);
+        let focus = Arc::new(Child::uninitialized(position, forgotten));
         let hash = CachedHash::default();
         let forgotten = [forgotten; 4];
 
@@ -460,31 +484,39 @@ where
 
         match (self.siblings.elems_mut(), &mut self.focus) {
             (_0([]), a) => match which_way {
-                Leftmost => a.uninitialized_out_of_order_insert_commitment(index, commitment),
+                Leftmost => {
+                    Arc::make_mut(a).uninitialized_out_of_order_insert_commitment(index, commitment)
+                }
                 Left | Right | Rightmost => {}
             },
             (_1([a]), b) => match which_way {
                 Leftmost => recur_sibling(a, index, commitment),
-                Left => b.uninitialized_out_of_order_insert_commitment(index, commitment),
+                Left => {
+                    Arc::make_mut(b).uninitialized_out_of_order_insert_commitment(index, commitment)
+                }
                 Right | Rightmost => {}
             },
             (_2([a, b]), c) => match which_way {
                 Leftmost => recur_sibling(a, index, commitment),
                 Left => recur_sibling(b, index, commitment),
-                Right => c.uninitialized_out_of_order_insert_commitment(index, commitment),
+                Right => {
+                    Arc::make_mut(c).uninitialized_out_of_order_insert_commitment(index, commitment)
+                }
                 Rightmost => {}
             },
             (_3([a, b, c]), d) => match which_way {
                 Leftmost => recur_sibling(a, index, commitment),
                 Left => recur_sibling(b, index, commitment),
                 Right => recur_sibling(c, index, commitment),
-                Rightmost => d.uninitialized_out_of_order_insert_commitment(index, commitment),
+                Rightmost => {
+                    Arc::make_mut(d).uninitialized_out_of_order_insert_commitment(index, commitment)
+                }
             },
         }
     }
 }
 
-impl<Child: Focus + UncheckedSetHash> UncheckedSetHash for Node<Child>
+impl<Child: Focus + UncheckedSetHash + Clone> UncheckedSetHash for Node<Child>
 where
     Child::Complete: UncheckedSetHash,
 {
@@ -523,25 +555,25 @@ where
 
                 match (self.siblings.elems_mut(), &mut self.focus) {
                     (_0([]), a) => match which_way {
-                        Leftmost => a.unchecked_set_hash(index, height, hash),
+                        Leftmost => Arc::make_mut(a).unchecked_set_hash(index, height, hash),
                         Left | Right | Rightmost => {}
                     },
                     (_1([a]), b) => match which_way {
                         Leftmost => recur_sibling(a, index, height, hash),
-                        Left => b.unchecked_set_hash(index, height, hash),
+                        Left => Arc::make_mut(b).unchecked_set_hash(index, height, hash),
                         Right | Rightmost => {}
                     },
                     (_2([a, b]), c) => match which_way {
                         Leftmost => recur_sibling(a, index, height, hash),
                         Left => recur_sibling(b, index, height, hash),
-                        Right => c.unchecked_set_hash(index, height, hash),
+                        Right => Arc::make_mut(c).unchecked_set_hash(index, height, hash),
                         Rightmost => {}
                     },
                     (_3([a, b, c]), d) => match which_way {
                         Leftmost => recur_sibling(a, index, height, hash),
                         Left => recur_sibling(b, index, height, hash),
                         Right => recur_sibling(c, index, height, hash),
-                        Rightmost => d.unchecked_set_hash(index, height, hash),
+                        Rightmost => Arc::make_mut(d).unchecked_set_hash(index, height, hash),
                     },
                 }
             }
@@ -550,7 +582,7 @@ where
 
     fn finish_initialize(&mut self) {
         // Finish the focus
-        self.focus.finish_initialize();
+        Arc::make_mut(&mut self.focus).finish_initialize();
 
         // Finish each of the siblings
         for sibling in self.siblings.iter_mut() {

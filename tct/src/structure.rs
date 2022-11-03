@@ -475,19 +475,21 @@ mod sealed {
 
     impl Sealed for complete::Item {}
     impl<T: Sealed> Sealed for complete::Leaf<T> {}
-    impl<T: Sealed> Sealed for complete::Node<T> {}
-    impl<T: Sealed + Height + GetHash> Sealed for complete::Tier<T> {}
-    impl<T: Sealed + Height + GetHash> Sealed for complete::Top<T> {}
+    impl<T: Sealed + Clone> Sealed for complete::Node<T> {}
+    impl<T: Sealed + Height + GetHash + Clone> Sealed for complete::Tier<T> {}
+    impl<T: Sealed + Height + GetHash + Clone> Sealed for complete::Top<T> {}
 
     impl Sealed for frontier::Item {}
     impl<T: Sealed> Sealed for frontier::Leaf<T> {}
     impl<T: Sealed + Focus> Sealed for frontier::Node<T> where T::Complete: Send + Sync {}
-    impl<T: Sealed + Height + GetHash + Focus> Sealed for frontier::Tier<T> where
-        T::Complete: Send + Sync
+    impl<T: Sealed + Height + GetHash + Focus + Clone> Sealed for frontier::Tier<T> where
+        T::Complete: Send + Sync + Clone
     {
     }
-    impl<T: Sealed + Height + GetHash + Focus> Sealed for frontier::Top<T> where T::Complete: Send + Sync
-    {}
+    impl<T: Sealed + Height + GetHash + Focus + Clone> Sealed for frontier::Top<T> where
+        T::Complete: Send + Sync + Clone
+    {
+    }
 }
 
 #[cfg(test)]

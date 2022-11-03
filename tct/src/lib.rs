@@ -116,6 +116,9 @@ mod prelude {
         structure::{self, Kind, Node, Place},
         Commitment, Position, Proof, Root, Tree,
     };
+
+    // We use the hash map from `im`, but with the fast "hash prehashed data" hasher from `hash_hasher`
+    pub(crate) type HashedMap<K, V> = im::HashMap<K, V, hash_hasher::HashBuildHasher>;
 }
 
 #[cfg(feature = "arbitrary")]
@@ -130,7 +133,7 @@ mod test {
     #[test]
     fn check_eternity_size() {
         // Disabled due to spurious test failure.
-        // static_assertions::assert_eq_size!(Tree, [u8; 896]);
+        // static_assertions::assert_eq_size!(Tree, [u8; 32]);
     }
 
     #[test]
