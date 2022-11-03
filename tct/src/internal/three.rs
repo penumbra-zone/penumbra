@@ -9,10 +9,20 @@ use std::marker::PhantomData;
 use serde::{de::Visitor, Deserialize, Serialize};
 
 /// A vector capable of storing at most 3 elements.
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Derivative, Serialize)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Derivative, Serialize)]
 #[derivative(Debug = "transparent")]
 pub struct Three<T> {
     elems: Vec<T>,
+}
+
+// Manual `Clone` implementation to force the cloned `Vec` to be capacity = 4, so we never
+// re-allocate after the clone
+impl<T: Clone> Clone for Three<T> {
+    fn clone(&self) -> Self {
+        let mut elems = Vec::with_capacity(4);
+        elems.extend(self.elems.iter().cloned());
+        Self { elems }
+    }
 }
 
 impl<T> Three<T> {
