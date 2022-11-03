@@ -31,6 +31,7 @@ use self::read::prefix_raw_with_cache;
 /// [`State`] instances should be forked from the underlying
 /// [`Storage`](crate::Storage), if the states are meant to be independent, or
 /// the [`State`] should be explicitly shared using an [`Arc`](std::sync::Arc).
+#[derive(Debug)]
 pub struct State {
     snapshot: Snapshot,
     // A `None` value represents deletion.

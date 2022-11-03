@@ -19,10 +19,11 @@ use rocks_wrapper::RocksDbSnapshot;
 /// a wrapper around a [RocksDB
 /// snapshot](https://github.com/facebook/rocksdb/wiki/Snapshot) with a pinned
 /// JMT version number for the snapshot.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Snapshot(Arc<Inner>);
 
 // We don't want to expose the `TreeReader` implementation outside of this crate.
+#[derive(Debug)]
 struct Inner {
     snapshot: RocksDbSnapshot,
     version: jmt::Version,

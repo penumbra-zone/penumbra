@@ -37,10 +37,10 @@ impl App {
 
     #[instrument(skip(self, app_state))]
     async fn init_chain(&mut self, app_state: &genesis::AppState) {
-        let mut state =
+        let state =
             Arc::get_mut(&mut self.state).expect("state Arc should not be referenced elsewhere");
 
-        let state_tx = state.begin_transaction();
+        let mut state_tx = state.begin_transaction();
 
         state_tx.put_chain_params(app_state.chain_params.clone());
 
@@ -54,62 +54,50 @@ impl App {
         // The genesis block height is 0
         state_tx.put_block_height(0);
 
-        Staking::init_chain(state, app_state).await;
-        IBCComponent::init_chain(state, app_state).await;
-        Dex::init_chain(state, app_state).await;
-        Governance::init_chain(state, app_state).await;
+        Staking::init_chain(&mut state_tx, app_state).await;
+        IBCComponent::init_chain(&mut state_tx, app_state).await;
+        Dex::init_chain(&mut state_tx, app_state).await;
+        Governance::init_chain(&mut state_tx, app_state).await;
         // Shielded pool always executes last.
-        ShieldedPool::init_chain(state, app_state).await;
+        ShieldedPool::init_chain(&mut state_tx, app_state).await;
 
         state_tx.apply();
     }
 
     #[instrument(skip(self, ctx, begin_block))]
     async fn begin_block(&mut self, ctx: Context, begin_block: &abci::request::BeginBlock) {
-        let mut state =
+        let state =
             Arc::get_mut(&mut self.state).expect("state Arc should not be referenced elsewhere");
-        let state_tx = state.begin_transaction();
+        let mut state_tx = state.begin_transaction();
 
         // store the block height
         state_tx.put_block_height(begin_block.header.height.into());
         // store the block time
         state_tx.put_block_timestamp(begin_block.header.time);
 
-        Staking::begin_block(state, ctx.clone(), begin_block)
-            .await
-            .unwrap();
-        IBCComponent::begin_block(state, ctx.clone(), begin_block)
-            .await
-            .unwrap();
-        Dex::begin_block(state, ctx.clone(), begin_block)
-            .await
-            .unwrap();
-        Governance::begin_block(state, ctx.clone(), begin_block)
-            .await
-            .unwrap();
+        Staking::begin_block(&mut state_tx, ctx.clone(), begin_block).await;
+        IBCComponent::begin_block(&mut state_tx, ctx.clone(), begin_block).await;
+        Dex::begin_block(&mut state_tx, ctx.clone(), begin_block).await;
+        Governance::begin_block(&mut state_tx, ctx.clone(), begin_block).await;
         // Shielded pool always executes last.
-        ShieldedPool::begin_block(state, ctx.clone(), begin_block)
-            .await
-            .unwrap();
+        ShieldedPool::begin_block(&mut state_tx, ctx.clone(), begin_block).await;
 
         state_tx.apply();
     }
 
     #[instrument(skip(self, ctx, tx))]
     async fn deliver_tx(&mut self, ctx: Context, tx: Arc<Transaction>) -> Result<()> {
-        Self::check_tx_stateless(ctx.clone(), tx).await?;
-        Self::check_tx_stateful(self.state.clone(), ctx, tx).await?;
+        Self::check_tx_stateless(ctx.clone(), tx.clone())?;
+        Self::check_tx_stateful(self.state.clone(), ctx.clone(), tx.clone()).await?;
 
         // We need to get a mutable reference to the State here, so we use
         // `Arc::get_mut`. At this point, the stateful checks should have completed,
         // leaving us with exclusive access to the Arc<State>.
-        let mut state = self
-            .state
-            .get_mut()
-            .expect("state Arc should not be referenced elsewhere");
-        let state_tx = state.begin_transaction();
+        let state =
+            Arc::get_mut(&mut self.state).expect("state Arc should not be referenced elsewhere");
+        let mut state_tx = state.begin_transaction();
 
-        Self::execute_tx(state_tx, ctx, tx).await?;
+        Self::execute_tx(&mut state_tx, ctx, tx).await?;
 
         // At this point, we've completed execution successfully with no errors,
         // so we can apply the transaction to the State. Otherwise, we'd have
@@ -121,24 +109,16 @@ impl App {
 
     #[instrument(skip(self, ctx, end_block))]
     async fn end_block(&mut self, ctx: Context, end_block: &abci::request::EndBlock) {
-        let mut state =
+        let state =
             Arc::get_mut(&mut self.state).expect("state Arc should not be referenced elsewhere");
-        let state_tx = state.begin_transaction();
+        let mut state_tx = state.begin_transaction();
 
-        Staking::end_block(state, ctx.clone(), end_block)
-            .await
-            .unwrap();
-        IBCComponent::end_block(state, ctx.clone(), end_block)
-            .await
-            .unwrap();
-        Dex::end_block(state, ctx.clone(), end_block).await.unwrap();
-        Governance::end_block(state, ctx.clone(), end_block)
-            .await
-            .unwrap();
+        Staking::end_block(&mut state_tx, ctx.clone(), end_block).await;
+        IBCComponent::end_block(&mut state_tx, ctx.clone(), end_block).await;
+        Dex::end_block(&mut state_tx, ctx.clone(), end_block).await;
+        Governance::end_block(&mut state_tx, ctx.clone(), end_block).await;
         // Shielded pool always executes last.
-        ShieldedPool::end_block(state, ctx.clone(), end_block)
-            .await
-            .unwrap();
+        ShieldedPool::end_block(&mut state_tx, ctx.clone(), end_block).await;
 
         state_tx.apply();
     }
@@ -156,7 +136,7 @@ impl App {
             .expect("we have exclusive ownership of the State at commit()");
 
         // Commit the pending writes, clearing the state.
-        let jmt_root = storage.commit(state)?;
+        let jmt_root = storage.commit(state).await?;
         let app_hash: AppHash = jmt_root.into();
 
         tracing::debug!(?app_hash, "finished committing state");
@@ -170,7 +150,7 @@ impl App {
     // TODO: should this just be returned by `commit`? both are called during every `EndBlock`
     pub fn tendermint_validator_updates(&self) -> Vec<ValidatorUpdate> {
         // TODO: replace with self.state read ?
-        self.staking.tendermint_validator_updates()
+        self.state.tendermint_validator_updates()
     }
 
     #[instrument(skip(ctx, tx))]

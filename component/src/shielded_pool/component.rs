@@ -196,7 +196,7 @@ impl Component for ShieldedPool {
     ) -> Result<()> {
         let source = NoteSource::Transaction { id: tx.id() };
 
-        if let Some((epoch, identity_key)) = state.should_quarantine(tx).await {
+        if let Some((epoch, identity_key)) = state.should_quarantine(&tx).await {
             for quarantined_output in tx.note_payloads().cloned() {
                 // Queue up scheduling this note to be unquarantined: the actual state-writing for
                 // all quarantined notes happens during end_block, to avoid state churn
