@@ -1,6 +1,5 @@
 use std::{any::Any, fmt::Debug};
 
-use async_trait::async_trait;
 use penumbra_proto::{Message, Protobuf};
 
 use crate::StateRead;
@@ -32,19 +31,19 @@ pub trait StateWrite: StateRead {
     }
 
     /// Delete a key from the verifiable key-value store.
-    fn delete(&mut self, key: &str);
+    fn delete(&mut self, key: String);
 
     /// Puts raw bytes into the non-verifiable key-value store with the given key.
     fn put_nonconsensus(&mut self, key: Vec<u8>, value: Vec<u8>);
 
     /// Delete a key from non-verifiable key-value storage.
-    fn delete_nonconsensus(&mut self, key: &[u8]);
+    fn delete_nonconsensus(&mut self, key: Vec<u8>);
 
     /// Puts an object into the ephemeral object store with the given key.
     fn put_ephemeral<T: Any + Send + Sync>(&mut self, key: String, value: T);
 
     /// Deletes a key from the ephemeral object store.
-    fn delete_ephemeral(&mut self, key: &str);
+    fn delete_ephemeral(&mut self, key: String);
 }
 
 impl<'a, S: StateWrite> StateWrite for &'a mut S {
@@ -52,11 +51,11 @@ impl<'a, S: StateWrite> StateWrite for &'a mut S {
         (**self).put_raw(key, value)
     }
 
-    fn delete(&mut self, key: &str) {
+    fn delete(&mut self, key: String) {
         (**self).delete(key)
     }
 
-    fn delete_nonconsensus(&mut self, key: &[u8]) {
+    fn delete_nonconsensus(&mut self, key: Vec<u8>) {
         (**self).delete_nonconsensus(key)
     }
 
@@ -68,7 +67,7 @@ impl<'a, S: StateWrite> StateWrite for &'a mut S {
         (**self).put_ephemeral(key, value)
     }
 
-    fn delete_ephemeral(&mut self, key: &str) {
+    fn delete_ephemeral(&mut self, key: String) {
         (**self).delete_ephemeral(key)
     }
 }

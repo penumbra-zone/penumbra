@@ -100,7 +100,7 @@ async fn simple_flow() -> anyhow::Result<()> {
     tx01.put_raw("a/ab".to_owned(), b"ab".to_vec());
     tx01.put_raw("a/z".to_owned(), b"z".to_vec());
     tx01.put_ephemeral("c/ab".to_owned(), 10u64);
-    tx01.delete_ephemeral("c/ac");
+    tx01.delete_ephemeral("c/ac".to_owned());
 
     // Check reads against tx01:
     //    This is missing in tx01 and reads through to state_init
@@ -215,8 +215,8 @@ async fn simple_flow() -> anyhow::Result<()> {
 
     // Start building a transaction
     let mut tx10 = state0.begin_transaction();
-    tx10.delete("test");
-    tx10.delete("a/aaa");
+    tx10.delete("test".to_owned());
+    tx10.delete("a/aaa".to_owned());
     tx10.put_raw("a/c".to_owned(), b"c".to_vec());
 
     // Check reads against tx10:

@@ -61,12 +61,12 @@ impl<'a> StateWrite for Transaction<'a> {
         self.unwritten_changes.insert(key, Some(value));
     }
 
-    fn delete(&mut self, key: &str) {
-        self.unwritten_changes.insert(key.into(), None);
+    fn delete(&mut self, key: String) {
+        self.unwritten_changes.insert(key, None);
     }
 
-    fn delete_nonconsensus(&mut self, key: &[u8]) {
-        self.nonconsensus_changes.insert(key.into(), None);
+    fn delete_nonconsensus(&mut self, key: Vec<u8>) {
+        self.nonconsensus_changes.insert(key, None);
     }
 
     fn put_nonconsensus(&mut self, key: Vec<u8>, value: Vec<u8>) {
@@ -77,8 +77,8 @@ impl<'a> StateWrite for Transaction<'a> {
         self.object_changes.insert(key, Some(Box::new(value)));
     }
 
-    fn delete_ephemeral(&mut self, key: &str) {
-        self.object_changes.remove(key);
+    fn delete_ephemeral(&mut self, key: String) {
+        self.object_changes.insert(key, None);
     }
 }
 
