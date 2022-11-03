@@ -1,6 +1,6 @@
 # One day, this would be better handled via pushing Docker images up
 # and using Kubernetes or similar, but this will work for now.
-name: Deploy Testnet New
+name: Deploy Testnet (Kubernetes)
 on:
   workflow_dispatch:
     inputs:
@@ -12,30 +12,46 @@ on:
         description: 'Number of fullnodes at genesis'
         required: true
         default: '2'
+      image_repository:
+        description: 'Docker image to deploy'
+        required: true
+        default: 'ghcr.io/penumbra-zone/penumbra'
+      image_tag:
+        description: 'Docker image tag to deploy'
+        required: true
+      image_uid_gid:
+        description: 'Docker image user uid:gid'
+        required: true
+        default: '1000:1000'
   push:
     tags:
       - '[0-9][0-9][0-9]-*'
 
 jobs:
   deploy:
+    permissions:
+      contents: 'read'
+      id-token: 'write'
     name: Deploy to Testnet
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: testnet
     steps:
-      - id: gcloud auth
+      - name: checkout
+        uses: actions/checkout@v3
+
+      - id: gcloudauth
         uses: google-github-actions/auth@v0
         with:
-          credentials_json: '${{ secrets.gcp_credentials }}'
+          workload_identity_provider: 'projects/1006847873719/locations/global/workloadIdentityPools/gh-runner-pool/providers/my-provider'
+          service_account: 'github-actions@penumbra-sl-testnet.iam.gserviceaccount.com'
 
       - name: get gke credentials
         uses: google-github-actions/get-gke-credentials@v0
         with:
           cluster_name: testnet
+          project_id: penumbra-sl-testnet
           location: us-central1
-
-      - name: checkout
-        uses: actions/checkout@v3
 
       - name: deploy 
         run: |-
@@ -43,5 +59,7 @@ jobs:
           export NVALS='${{ github.event.inputs.nvals }}'
           export NFULLNODES='${{ github.event.inputs.nfullnodes }}'
           export TENDERMINT_VERSION=v0.34.21
-          export PENUMBRA_VERSION=TODO
+          export IMAGE='${{ github.event.inputs.image_repository }}'
+          export PENUMBRA_VERSION='${{ github.event.inputs.image_tag }}'
+          export PENUMBRA_UID_GID='${{ github.event.inputs.image_uid_gid }}'
           ./ci.sh
