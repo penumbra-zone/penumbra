@@ -19,8 +19,7 @@ pub trait StateWrite: StateRead {
         D: TryFrom<P> + Clone + Debug,
         <D as TryFrom<P>>::Error: Into<anyhow::Error>,
     {
-        let key = key.to_lowercase();
-        self.put_proto(&key, P::from(value));
+        self.put_proto(key, P::from(value));
     }
 
     /// Puts a proto type into the verifiable key-value store with the given key.

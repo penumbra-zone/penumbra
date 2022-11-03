@@ -33,8 +33,7 @@ pub trait StateRead: Sync {
         D: TryFrom<P> + Clone + Debug,
         <D as TryFrom<P>>::Error: Into<anyhow::Error>,
     {
-        let key = key.to_lowercase();
-        match self.get_proto(&key).await {
+        match self.get_proto(key).await {
             Ok(Some(p)) => match D::try_from(p) {
                 Ok(d) => {
                     tracing::trace!(?key, value = ?d);
