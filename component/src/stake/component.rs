@@ -1577,6 +1577,6 @@ pub trait StateWriteExt: StateWrite {
     }
 }
 
-impl<T: StateRead> StateReadExt for T {}
+impl<T: StateRead + ?Sized> StateReadExt for T {}
 
 // impl<T: StateExt + Send + Sync> View for T {}

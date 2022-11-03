@@ -514,7 +514,7 @@ pub trait StateReadExt: StateRead {
     }
 }
 
-impl<T: StateRead> StateReadExt for T {}
+impl<T: StateRead + ?Sized> StateReadExt for T {}
 
 #[async_trait]
 trait StateWriteExt: StateWrite {
@@ -701,7 +701,7 @@ trait StateWriteExt: StateWrite {
     #[instrument(skip(self, change))]
     async fn update_token_supply(&self, asset_id: &asset::Id, change: i64) -> Result<()> {
         let key = state_key::token_supply(asset_id);
-        let current_supply = self.get_proto(key).await?.unwrap_or(0u64);
+        let current_supply = self.get_proto(&key).await?.unwrap_or(0u64);
 
         // TODO: replace with a single checked_add_signed call when mixed_integer_ops lands in stable (1.66)
         let new_supply = if change < 0 {
@@ -768,7 +768,7 @@ trait StateWriteExt: StateWrite {
         // double spends), as well as in the CompactBlock (so that clients
         // can learn that their note was spent).
         self.put(
-            &state_key::spent_nullifier_lookup(nullifier),
+            state_key::spent_nullifier_lookup(nullifier),
             // We don't use the value for validity checks, but writing the source
             // here lets us find out what transaction spent the nullifier.
             source,
@@ -776,7 +776,7 @@ trait StateWriteExt: StateWrite {
 
         // TODO: load in end_block
         self.put_ephemeral(
-            &state_key::internal::compact_block::nullifiers::item(&nullifier),
+            state_key::internal::compact_block::nullifiers::item(&nullifier),
             nullifier,
         );
     }
@@ -846,7 +846,7 @@ trait StateWriteExt: StateWrite {
     ) -> Result<()> {
         let mut updated_quarantined = self.scheduled_to_apply(epoch).await?;
         updated_quarantined.extend(scheduled);
-        self.put(&state_key::scheduled_to_apply(epoch), updated_quarantined)
+        self.put(state_key::scheduled_to_apply(epoch), updated_quarantined)
             .await;
         Ok(())
     }
@@ -879,7 +879,7 @@ trait StateWriteExt: StateWrite {
                 }
             }
             // We're removed all the scheduled notes and nullifiers for this epoch and identity key:
-            self.put(&state_key::scheduled_to_apply(epoch), updated_scheduled)
+            self.put(state_key::scheduled_to_apply(epoch), updated_scheduled)
                 .await;
         }
 
@@ -923,7 +923,7 @@ trait StateWriteExt: StateWrite {
         // was provisionally spent, pending quarantine period).
         tracing::debug!("marking as spent (currently quarantined)");
         self.put(
-            &state_key::quarantined_spent_nullifier_lookup(nullifier),
+            state_key::quarantined_spent_nullifier_lookup(nullifier),
             // We don't use the value for validity checks, but writing the source
             // here lets us find out what transaction spent the nullifier.
             source,
@@ -1071,4 +1071,4 @@ trait StateWriteExt: StateWrite {
     // be used with IBC transfers, and fix up the path and proto
 }
 
-impl<T: StateWrite> StateWriteExt for T {}
+impl<T: StateWrite + ?Sized> StateWriteExt for T {}

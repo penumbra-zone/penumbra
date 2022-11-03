@@ -19,7 +19,7 @@ use crate::{
 pub trait StateReadExt: StateRead {
     /// Gets the chain parameters from the JMT.
     async fn get_chain_params(&self) -> Result<ChainParameters> {
-        self.get(state_key::chain_params().into())
+        self.get(state_key::chain_params())
             .await?
             .ok_or_else(|| anyhow!("Missing ChainParameters"))
     }
@@ -105,7 +105,7 @@ pub trait StateReadExt: StateRead {
     }
 }
 
-impl<T: StateRead> StateReadExt for T {}
+impl<T: StateRead + ?Sized> StateReadExt for T {}
 
 /// This trait provides write access to common parts of the Penumbra
 /// state store.
@@ -140,4 +140,4 @@ pub trait StateWriteExt: StateWrite {
     }
 }
 
-impl<T: StateWrite> StateWriteExt for T {}
+impl<T: StateWrite + ?Sized> StateWriteExt for T {}
