@@ -55,10 +55,10 @@ impl IBCComponent {
 impl Component for IBCComponent {
     #[instrument(name = "ibc", skip(app_state))]
     async fn init_chain(state: &mut StateTransaction, app_state: &genesis::AppState) {
-        client::Ics2Client::init_chain(app_state).await;
-        connection::ConnectionComponent::init_chain(app_state).await;
-        channel::ICS4Channel::init_chain(app_state).await;
-        ICS20Transfer::init_chain(app_state).await;
+        client::Ics2Client::init_chain(state, app_state).await;
+        connection::ConnectionComponent::init_chain(state, app_state).await;
+        channel::ICS4Channel::init_chain(state, app_state).await;
+        ICS20Transfer::init_chain(state, app_state).await;
     }
 
     #[instrument(name = "ibc", skip(begin_block, ctx))]

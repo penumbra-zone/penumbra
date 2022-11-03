@@ -153,7 +153,7 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
     }
 }
 
-impl<T: StateRead + crate::stake::StateReadExt + ?Sized> StateReadExt for T {}
+impl<T: StateRead + crate::stake::StateReadExt> StateReadExt for T {}
 
 #[async_trait]
 pub trait StateWriteExt: StateReadExt + StateWrite {
@@ -286,4 +286,4 @@ pub trait StateWriteExt: StateReadExt + StateWrite {
     }
 }
 
-impl<T: StateWrite + StateReadExt + ?Sized> StateWriteExt for T {}
+impl<T: StateWrite + StateReadExt> StateWriteExt for T {}

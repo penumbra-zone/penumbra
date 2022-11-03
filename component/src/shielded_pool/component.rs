@@ -230,7 +230,9 @@ impl Component for ShieldedPool {
         // If there was any proposal submitted in the block, ensure we track this so that clients
         // can retain state needed to vote as delegators
         if tx.proposal_submits().next().is_some() {
-            state.compact_block.proposal_started = true;
+            let compact_block = state.stub_compact_block();
+            compact_block.proposal_started = true;
+            state.stub_put_compact_block(compact_block);
         }
 
         Ok(())
@@ -512,7 +514,7 @@ pub trait StateReadExt: StateRead {
     }
 }
 
-impl<T: StateRead + ?Sized> StateReadExt for T {}
+impl<T: StateRead> StateReadExt for T {}
 
 #[async_trait]
 trait StateWriteExt: StateWrite {
