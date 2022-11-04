@@ -2,14 +2,13 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-use crate::shielded_pool::{CommissionAmount, CommissionAmounts};
 use crate::{Component, Context};
 use ::metrics::{decrement_gauge, gauge, increment_gauge};
 use anyhow::{anyhow, Context as _, Result};
 use async_trait::async_trait;
 use penumbra_chain::quarantined::Slashed;
-use penumbra_chain::{genesis, Epoch, StateReadExt as _};
-use penumbra_crypto::{DelegationToken, IdentityKey, STAKING_TOKEN_ASSET_ID};
+use penumbra_chain::{genesis, Epoch, NoteSource, StateReadExt as _};
+use penumbra_crypto::{DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::Protobuf;
 use penumbra_storage2::{State, StateRead, StateTransaction, StateWrite};
 use penumbra_transaction::{
@@ -34,6 +33,8 @@ use crate::stake::{
     DelegationChanges, Uptime,
 };
 
+use crate::shielded_pool::{NoteManager, SupplyRead, SupplyWrite};
+
 use super::CurrentConsensusKeys;
 
 // Max validator power is 1152921504606846975 (i64::MAX / 8)
@@ -54,10 +55,7 @@ fn validator_address(ck: &PublicKey) -> [u8; 20] {
 }
 
 // Staking component
-pub struct Staking {
-    delegation_changes: DelegationChanges,
-    tendermint_validator_updates: Option<Vec<ValidatorUpdate>>,
-}
+pub struct Staking {}
 
 pub trait ValidatorUpdates: StateRead {
     /// Returns a list of validator updates to send to Tendermint.
@@ -322,7 +320,6 @@ trait StakingImpl: StateWrite + StateWriteExt {
         self.set_base_rates(current_base_rate.clone(), next_base_rate.clone())
             .await;
 
-        let mut commission_amounts = Vec::new();
         let validator_list = self.validator_list().await?;
         for v in &validator_list {
             let validator = self.validator(v).await?.ok_or_else(|| {
@@ -408,12 +405,17 @@ trait StakingImpl: StateWrite + StateWriteExt {
                         &current_base_rate,
                     );
 
-                    // A note needs to be minted by the ShieldedPool component. Add it to the
-                    // JMT here so it can be processed during the ShieldedPool's end_block phase.
-                    commission_amounts.push(CommissionAmount {
-                        amount: commission_reward_amount.into(),
-                        destination: stream.address,
-                    })
+                    self.mint_note(
+                        Value {
+                            amount: commission_reward_amount.into(),
+                            asset_id: *STAKING_TOKEN_ASSET_ID,
+                        },
+                        &stream.address,
+                        NoteSource::FundingStreamReward {
+                            epoch_index: epoch_to_end.index,
+                        },
+                    )
+                    .await?;
                 }
             }
 
@@ -434,16 +436,6 @@ trait StakingImpl: StateWrite + StateWriteExt {
         // The pending delegation changes should be empty at the beginning of the next epoch.
         // TODO: check that this was a no-op
         // self.delegation_changes = Default::default();
-
-        // Set the pending reward notes on the JMT for the current block height
-        // so they can be processed by the ShieldedPool.
-        self.set_commission_amounts(
-            self.get_block_height().await?,
-            CommissionAmounts {
-                notes: commission_amounts,
-            },
-        )
-        .await;
 
         Ok(())
     }
@@ -1566,7 +1558,7 @@ pub trait StateWriteExt: StateWrite {
     }
 
     async fn set_validator_bonding_state(
-        &self,
+        &mut self,
         identity_key: &IdentityKey,
         state: validator::BondingState,
     ) {

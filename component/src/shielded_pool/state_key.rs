@@ -53,10 +53,6 @@ pub fn spent_nullifier_lookup(nullifier: Nullifier) -> String {
     format!("shielded_pool/spent_nullifiers/{}", nullifier)
 }
 
-pub fn commission_amounts(height: u64) -> String {
-    format!("staking/commission_amounts/{}", height)
-}
-
 pub fn claimed_swap_outputs(height: u64) -> String {
     format!("dex/claimed_swap_outputs/{}", height)
 }

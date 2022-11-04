@@ -7,20 +7,14 @@ use crate::{
     Context,
 };
 use anyhow::{anyhow, Context as _, Result};
-use ark_ff::PrimeField;
 use async_trait::async_trait;
-use decaf377::{Fq, Fr};
 use penumbra_chain::{
     genesis,
     quarantined::{self, Slashed},
     sync::{AnnotatedNotePayload, CompactBlock},
-    Epoch, KnownAssets, NoteSource, StateReadExt as _,
+    Epoch, NoteSource, StateReadExt as _,
 };
-use penumbra_crypto::{
-    asset::{self, Asset, Denom},
-    ka, note, Address, IdentityKey, Note, NotePayload, Nullifier, One, Value,
-    STAKING_TOKEN_ASSET_ID,
-};
+use penumbra_crypto::{asset, note, IdentityKey, NotePayload, Nullifier, Value};
 use penumbra_storage2::{State, StateRead, StateTransaction, StateWrite};
 use penumbra_tct as tct;
 use penumbra_transaction::{
@@ -31,7 +25,9 @@ use tct::Tree;
 use tendermint::abci;
 use tracing::instrument;
 
-use crate::shielded_pool::{consensus_rules, event, state_key, CommissionAmounts};
+use crate::shielded_pool::{consensus_rules, event, state_key};
+
+use super::{NoteManager, SupplyWrite};
 
 pub struct ShieldedPool {}
 
@@ -74,7 +70,9 @@ impl Component for ShieldedPool {
         compact_block.fmd_parameters = Some(state.get_current_fmd_parameters().await.unwrap());
 
         // Close the genesis block
-        state.finish_nct_block(&mut compact_block, &mut note_commitment_tree);
+        state
+            .finish_nct_block(&mut compact_block, &mut note_commitment_tree)
+            .await;
 
         state
             .write_compactblock_and_nct(compact_block, note_commitment_tree)
@@ -252,37 +250,6 @@ impl Component for ShieldedPool {
         let mut compact_block = state.stub_compact_block();
         compact_block.height = height;
 
-        // TODO: there should be a separate extension trait that other components can
-        // use that drops newly minted notes into the ephemeral object cache in a defined
-        // location, so that the shielded pool can read them all during end_block
-        // Handle any pending reward notes from the Staking component
-        let notes = state
-            .commission_amounts(height)
-            .await
-            .unwrap()
-            .unwrap_or_default();
-
-        // TODO: should we calculate this here or include it directly within the PendingRewardNote
-        // to prevent a potential mismatch between Staking and ShieldedPool?
-        let source = NoteSource::FundingStreamReward {
-            epoch_index: Epoch::from_height(height, state.get_epoch_duration().await.unwrap())
-                .index,
-        };
-
-        for note in notes.notes {
-            state
-                .mint_note(
-                    Value {
-                        amount: note.amount,
-                        asset_id: *STAKING_TOKEN_ASSET_ID,
-                    },
-                    &note.destination,
-                    source,
-                )
-                .await
-                .unwrap();
-        }
-
         // TODO: execute any scheduled DAO spend transactions for this block
 
         // Include all output notes from DEX swaps for this block
@@ -317,12 +284,6 @@ impl Component for ShieldedPool {
 // TODO: split into different extension traits
 #[async_trait]
 pub trait StateReadExt: StateRead {
-    // TODO: remove this entirely post-integration. This is slow but intended as
-    // a drop-in replacement so we can avoid really major code changes.
-    //
-    // Instead, replace with a mechanism that builds up queued note payloads
-    // and builds the compact block only at the end of the block, so we don't need
-    // the NCT at all until end_block, and then serialization round trip doesn't matter.
     async fn stub_note_commitment_tree(&self) -> tct::Tree {
         match self
             .get_nonconsensus(state_key::internal::stub_note_commitment_tree().as_bytes())
@@ -391,22 +352,6 @@ pub trait StateReadExt: StateRead {
         }
     }
 
-    async fn token_supply(&self, asset_id: &asset::Id) -> Result<Option<u64>> {
-        self.get_proto(&state_key::token_supply(asset_id)).await
-    }
-
-    // TODO: refactor for new state model -- no more list of known asset IDs with fixed key
-    async fn known_assets(&self) -> Result<KnownAssets> {
-        Ok(self
-            .get(state_key::known_assets())
-            .await?
-            .unwrap_or_default())
-    }
-
-    async fn denom_by_asset(&self, asset_id: &asset::Id) -> Result<Option<Denom>> {
-        self.get(&state_key::denom_by_asset(asset_id)).await
-    }
-
     /// Returns the epoch and identity key for quarantining a transaction, if it should be
     /// quarantined, otherwise `None`.
     async fn should_quarantine(&self, transaction: &Transaction) -> Option<(u64, IdentityKey)> {
@@ -426,7 +371,7 @@ pub trait StateReadExt: StateRead {
                     }
                 })?;
 
-        // TODO: restore
+        // TODO: restore by peeling out should_quarantine into an extension trait in the Staking component
         /*
         let validator_bonding_state = self
             .validator_bonding_state(validator_identity)
@@ -510,10 +455,6 @@ pub trait StateReadExt: StateRead {
             .unwrap_or_default())
     }
 
-    async fn commission_amounts(&self, height: u64) -> Result<Option<CommissionAmounts>> {
-        self.get(&state_key::commission_amounts(height)).await
-    }
-
     async fn claimed_swap_outputs(&self, height: u64) -> Result<Option<SwapClaimBodyList>> {
         self.get(&state_key::claimed_swap_outputs(height)).await
     }
@@ -522,7 +463,7 @@ pub trait StateReadExt: StateRead {
 impl<T: StateRead + ?Sized> StateReadExt for T {}
 
 #[async_trait]
-trait StateWriteExt: StateWrite {
+pub(super) trait StateWriteExt: StateWrite {
     // TODO: remove this entirely post-integration. This is slow but intended as
     // a drop-in replacement so we can avoid really major code changes.
     //
@@ -600,168 +541,8 @@ trait StateWriteExt: StateWrite {
         );
     }
 
-    async fn set_commission_amounts(&mut self, height: u64, notes: CommissionAmounts) {
-        self.put(state_key::commission_amounts(height), notes);
-    }
-
     async fn set_claimed_swap_outputs(&mut self, height: u64, claims: SwapClaimBodyList) {
         self.put(state_key::claimed_swap_outputs(height), claims);
-    }
-
-    // TODO: refactor for new state model -- no more list of known asset IDs with fixed key
-    // #[instrument(skip(self))]
-    async fn register_denom(&mut self, denom: &Denom) -> Result<()> {
-        let id = denom.id();
-        if self.denom_by_asset(&id).await?.is_some() {
-            tracing::debug!(?denom, ?id, "skipping existing denom");
-            Ok(())
-        } else {
-            tracing::debug!(?denom, ?id, "registering new denom");
-            // We want to be able to query for the denom by asset ID...
-            self.put(state_key::denom_by_asset(&id), denom.clone());
-            // ... and we want to record it in the list of known asset IDs
-            // (this requires reading the whole list, which is sad, but hopefully
-            // we don't do this often).
-            // TODO: fix with new state model
-            let mut known_assets = self.known_assets().await?;
-            known_assets.0.push(Asset {
-                id,
-                denom: denom.clone(),
-            });
-            self.put(state_key::known_assets().to_owned(), known_assets);
-            Ok(())
-        }
-    }
-
-    /// Mint a new (public) note into the shielded pool.
-    ///
-    /// Most notes in the shielded pool are created by client transactions.
-    /// This method allows the chain to inject new value into the shielded pool
-    /// on its own.
-    // #[instrument(
-    //     skip(self, value, address, source),
-    //     fields(
-    //         position = u64::from(self
-    //             .note_commitment_tree
-    //             .position()
-    //             .unwrap_or_else(|| u64::MAX.into())),
-    //     )
-    // )]
-    async fn mint_note(
-        &mut self,
-        value: Value,
-        address: &Address,
-        source: NoteSource,
-    ) -> Result<()> {
-        tracing::debug!(?value, ?address, "minting tokens");
-
-        // These notes are public, so we don't need a blinding factor for
-        // privacy, but since the note commitments are determined by the note
-        // contents, we need to have unique (deterministic) blinding factors for
-        // each note, so they cannot collide.
-        //
-        // Hashing the current NCT root would be sufficient, since it will
-        // change every time we insert a new note.  But computing the NCT root
-        // is very slow, so instead we hash the current position.
-        //
-        // TODO: how does this work if we were to build the NCT only at the end of the block?
-
-        let position: u64 = self
-            .stub_note_commitment_tree()
-            .await
-            .position()
-            .expect("note commitment tree is not full")
-            .into();
-
-        let blinding_factor = Fq::from_le_bytes_mod_order(
-            blake2b_simd::Params::default()
-                .personal(b"PenumbraMint")
-                .to_state()
-                .update(&position.to_le_bytes())
-                .finalize()
-                .as_bytes(),
-        );
-
-        let note = Note::from_parts(*address, value, blinding_factor)?;
-        let note_commitment = note.commit();
-
-        // Scanning assumes that notes are encrypted, so we need to create
-        // note ciphertexts, even if the plaintexts are known.  Use the key
-        // "1" to ensure we have contributory behaviour in note encryption.
-        let esk = ka::Secret::new_from_field(Fr::one());
-        let ephemeral_key = esk.diversified_public(&note.diversified_generator());
-        let encrypted_note = note.encrypt(&esk);
-
-        // Now record the note and update the total supply:
-        self.update_token_supply(&value.asset_id, i64::from(value.amount))
-            .await?;
-        self.add_note(AnnotatedNotePayload {
-            payload: NotePayload {
-                note_commitment,
-                ephemeral_key,
-                encrypted_note,
-            },
-            source,
-        })
-        .await;
-
-        Ok(())
-    }
-
-    // #[instrument(skip(self, change))]
-    async fn update_token_supply(&mut self, asset_id: &asset::Id, change: i64) -> Result<()> {
-        let key = state_key::token_supply(asset_id);
-        let current_supply = self.get_proto(&key).await?.unwrap_or(0u64);
-
-        // TODO: replace with a single checked_add_signed call when mixed_integer_ops lands in stable (1.66)
-        let new_supply = if change < 0 {
-            current_supply
-                .checked_sub(change.unsigned_abs())
-                .ok_or_else(|| {
-                    anyhow!(
-                        "underflow updating token supply {} with delta {}",
-                        current_supply,
-                        change
-                    )
-                })?
-        } else {
-            current_supply.checked_add(change as u64).ok_or_else(|| {
-                anyhow!(
-                    "overflow updating token supply {} with delta {}",
-                    current_supply,
-                    change
-                )
-            })?
-        };
-        tracing::debug!(?current_supply, ?new_supply, ?change);
-
-        self.put_proto(key, new_supply);
-        Ok(())
-    }
-
-    // TODO: some kind of async-trait interaction blocks this?
-    //#[instrument(skip(self, source, payload), fields(note_commitment = ?payload.note_commitment))]
-    // #[instrument(skip(self))]
-    async fn add_note(&mut self, AnnotatedNotePayload { payload, source }: AnnotatedNotePayload) {
-        tracing::debug!("adding note");
-
-        // 1. Insert it into the NCT
-        // TODO: build up data incrementally
-        let mut nct = self.stub_note_commitment_tree().await;
-        nct.insert(tct::Witness::Forget, payload.note_commitment)
-            // TODO: why? can't we exceed the number of note commitments in a block?
-            .expect("inserting into the note commitment tree never fails");
-        self.stub_put_note_commitment_tree(&nct);
-
-        // 2. Record its source in the JMT
-        self.put(state_key::note_source(&payload.note_commitment), source);
-
-        // 3. Finally, record it in the pending compact block.
-        let mut compact_block = self.stub_compact_block();
-        compact_block
-            .note_payloads
-            .push(AnnotatedNotePayload { payload, source });
-        self.stub_put_compact_block(compact_block);
     }
 
     // #[instrument(skip(self, source))]
@@ -1023,6 +804,7 @@ trait StateWriteExt: StateWrite {
         }
     }
 
+    // TODO: move to governance
     #[instrument(skip(self))]
     async fn process_proposal_refunds(&mut self) {
         let block_height = self.height().await;
@@ -1045,6 +827,7 @@ trait StateWriteExt: StateWrite {
          */
     }
 
+    // TODO: move to dex
     #[instrument(skip(self))]
     async fn output_dex_swaps(&mut self) {
         let block_height = self.height().await;
@@ -1075,9 +858,6 @@ trait StateWriteExt: StateWrite {
             self.spend_nullifier(swap_claim.nullifier, source).await;
         }
     }
-
-    // TODO: rename to something more generic ("minted notes"?) that can
-    // be used with IBC transfers, and fix up the path and proto
 }
 
 impl<T: StateWrite + ?Sized> StateWriteExt for T {}
