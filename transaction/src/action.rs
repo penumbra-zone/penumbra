@@ -19,7 +19,7 @@ mod vote;
 
 use crate::{ActionView, TransactionPerspective};
 
-pub use self::ibc::ICS20Withdrawal;
+pub use self::ibc::Ics20Withdrawal;
 pub use delegate::Delegate;
 pub use output::Output;
 pub use position::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw};
@@ -60,7 +60,7 @@ pub enum Action {
     PositionWithdraw(PositionWithdraw),
     PositionRewardClaim(PositionRewardClaim),
 
-    ICS20Withdrawal(ICS20Withdrawal),
+    Ics20Withdrawal(Ics20Withdrawal),
 }
 
 impl IsAction for Action {
@@ -80,7 +80,7 @@ impl IsAction for Action {
             Action::PositionClose(p) => p.balance_commitment(),
             Action::PositionWithdraw(p) => p.balance_commitment(),
             Action::PositionRewardClaim(p) => p.balance_commitment(),
-            Action::ICS20Withdrawal(withdrawal) => withdrawal.balance_commitment(),
+            Action::Ics20Withdrawal(withdrawal) => withdrawal.balance_commitment(),
             // These actions just post Protobuf data to the chain, and leave the
             // value balance unchanged.
             Action::ValidatorDefinition(_) => balance::Commitment::default(),
@@ -103,7 +103,7 @@ impl IsAction for Action {
             Action::PositionClose(x) => x.view_from_perspective(txp),
             Action::PositionWithdraw(x) => x.view_from_perspective(txp),
             Action::PositionRewardClaim(x) => x.view_from_perspective(txp),
-            Action::ICS20Withdrawal(x) => x.view_from_perspective(txp),
+            Action::Ics20Withdrawal(x) => x.view_from_perspective(txp),
             // TODO: figure out where to implement the actual decryption methods for these? where are their action definitions?
             Action::ValidatorDefinition(x) => ActionView::ValidatorDefinition(x.to_owned()),
             Action::IBCAction(x) => ActionView::IBCAction(x.to_owned()),
@@ -164,7 +164,7 @@ impl From<Action> for pb::Action {
             Action::PositionRewardClaim(inner) => pb::Action {
                 action: Some(pb::action::Action::PositionRewardClaim(inner.into())),
             },
-            Action::ICS20Withdrawal(withdrawal) => pb::Action {
+            Action::Ics20Withdrawal(withdrawal) => pb::Action {
                 action: Some(pb::action::Action::Ics20Withdrawal(withdrawal.into())),
             },
         }
@@ -212,7 +212,7 @@ impl TryFrom<pb::Action> for Action {
                 Ok(Action::PositionRewardClaim(inner.try_into()?))
             }
             pb::action::Action::Ics20Withdrawal(inner) => {
-                Ok(Action::ICS20Withdrawal(inner.try_into()?))
+                Ok(Action::Ics20Withdrawal(inner.try_into()?))
             }
         }
     }

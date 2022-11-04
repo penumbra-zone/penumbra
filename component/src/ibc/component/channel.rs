@@ -41,13 +41,13 @@ mod stateless;
 
 use stateful::proof_verification::commit_packet;
 
-pub struct ICS4Channel {
+pub struct Ics4Channel {
     state: State,
 
     app_handler: Box<dyn AppHandler>,
 }
 
-impl ICS4Channel {
+impl Ics4Channel {
     #[instrument(name = "ics4_channel", skip(state, app_handler))]
     pub async fn new(state: State, app_handler: Box<dyn AppHandler>) -> Self {
         Self { state, app_handler }
@@ -55,7 +55,7 @@ impl ICS4Channel {
 }
 
 #[async_trait]
-impl Component for ICS4Channel {
+impl Component for Ics4Channel {
     #[instrument(name = "ics4_channel", skip(self, _app_state))]
     async fn init_chain(state: &mut StateTransaction, _app_state: &genesis::AppState) {}
 

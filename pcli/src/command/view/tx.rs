@@ -305,8 +305,8 @@ impl TxCmd {
                         "Claim Liquidity Position Reward".to_string(),
                         "".to_string(),
                     ],
-                    penumbra_transaction::ActionView::ICS20Withdrawal(_) => {
-                        ["ICS20 Withdrawal".to_string(), "".to_string()]
+                    penumbra_transaction::ActionView::Ics20Withdrawal(_) => {
+                        ["Ics20 Withdrawal".to_string(), "".to_string()]
                     }
                 });
             }

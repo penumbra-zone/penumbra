@@ -14,8 +14,8 @@ use super::IsAction;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::Ics20Withdrawal", into = "pb::Ics20Withdrawal")]
-pub struct ICS20Withdrawal {
-    // the chain ID of the destination chain for this ICS20 transfer
+pub struct Ics20Withdrawal {
+    // the chain ID of the destination chain for this Ics20 transfer
     pub destination_chain_id: String,
     // a transparent value consisting of an amount and an asset ID.
     pub denom: asset::Denom,
@@ -39,17 +39,17 @@ pub struct ICS20Withdrawal {
     pub source_channel: ChannelId,
 }
 
-impl IsAction for ICS20Withdrawal {
+impl IsAction for Ics20Withdrawal {
     fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
         self.balance().commit(Fr::zero())
     }
 
     fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
-        ActionView::ICS20Withdrawal(self.to_owned())
+        ActionView::Ics20Withdrawal(self.to_owned())
     }
 }
 
-impl ICS20Withdrawal {
+impl Ics20Withdrawal {
     pub fn value(&self) -> value::Value {
         value::Value {
             amount: self.amount,
@@ -67,7 +67,7 @@ impl ICS20Withdrawal {
         ftpd.encode_to_vec()
     }
 
-    // stateless validation of an ICS20 withdrawal action.
+    // stateless validation of an Ics20 withdrawal action.
     pub fn validate(&self) -> anyhow::Result<()> {
         if self.timeout_height == 0 {
             anyhow::bail!("timeout height must be non-zero");
@@ -88,10 +88,10 @@ impl ICS20Withdrawal {
     }
 }
 
-impl Protobuf<pb::Ics20Withdrawal> for ICS20Withdrawal {}
+impl Protobuf<pb::Ics20Withdrawal> for Ics20Withdrawal {}
 
-impl From<ICS20Withdrawal> for pb::Ics20Withdrawal {
-    fn from(w: ICS20Withdrawal) -> Self {
+impl From<Ics20Withdrawal> for pb::Ics20Withdrawal {
+    fn from(w: Ics20Withdrawal) -> Self {
         pb::Ics20Withdrawal {
             destination_chain_id: w.destination_chain_id,
             denom: Some(w.denom.into()),
@@ -106,7 +106,7 @@ impl From<ICS20Withdrawal> for pb::Ics20Withdrawal {
     }
 }
 
-impl TryFrom<pb::Ics20Withdrawal> for ICS20Withdrawal {
+impl TryFrom<pb::Ics20Withdrawal> for Ics20Withdrawal {
     type Error = anyhow::Error;
     fn try_from(s: pb::Ics20Withdrawal) -> Result<Self, Self::Error> {
         Ok(Self {
@@ -132,8 +132,8 @@ impl TryFrom<pb::Ics20Withdrawal> for ICS20Withdrawal {
     }
 }
 
-impl From<ICS20Withdrawal> for pb::FungibleTokenPacketData {
-    fn from(w: ICS20Withdrawal) -> Self {
+impl From<Ics20Withdrawal> for pb::FungibleTokenPacketData {
+    fn from(w: Ics20Withdrawal) -> Self {
         pb::FungibleTokenPacketData {
             amount: w.value().amount.to_string(),
             denom: w.value().asset_id.to_string(), // NOTE: should this be a `Denom` instead?

@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 /// the core IBC component. IBC applications listen to channel events that occur on the Port ID
 /// that they have subscribed to, and apply application-specific state transition logic.
 ///
-/// The primary IBC application is the ICS20 transfer application, which allows for interchain
+/// The primary IBC application is the Ics20 transfer application, which allows for interchain
 /// token transfers.
 use crate::Context;
 use anyhow::Result;

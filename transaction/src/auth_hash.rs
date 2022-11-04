@@ -6,7 +6,7 @@ use penumbra_proto::{core::transaction::v1alpha1 as pb, Message, Protobuf};
 
 use crate::{
     action::{
-        output, spend, swap, swap_claim, Delegate, ICS20Withdrawal, PositionClose, PositionOpen,
+        output, spend, swap, swap_claim, Delegate, Ics20Withdrawal, PositionClose, PositionOpen,
         PositionRewardClaim, PositionWithdraw, Proposal, ProposalSubmit, ProposalWithdraw,
         ProposalWithdrawBody, Undelegate, ValidatorVote, ValidatorVoteBody, Vote,
     },
@@ -229,7 +229,7 @@ impl AuthorizingData for Action {
             Action::PositionClose(p) => p.auth_hash(),
             Action::PositionWithdraw(p) => p.auth_hash(),
             Action::PositionRewardClaim(p) => p.auth_hash(),
-            Action::ICS20Withdrawal(w) => w.auth_hash(),
+            Action::Ics20Withdrawal(w) => w.auth_hash(),
         }
     }
 }
@@ -485,7 +485,7 @@ impl AuthorizingData for PositionRewardClaim {
     }
 }
 
-impl AuthorizingData for ICS20Withdrawal {
+impl AuthorizingData for Ics20Withdrawal {
     fn auth_hash(&self) -> Hash {
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:ics20wthdrwl")
