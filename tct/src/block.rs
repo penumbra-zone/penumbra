@@ -1,8 +1,7 @@
 use std::fmt::Display;
-use std::sync::Arc;
 
+use archery::{SharedPointer, SharedPointerKind};
 use decaf377::{FieldExt, Fq};
-use hash_hasher::HashedMap;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
@@ -12,36 +11,36 @@ use crate::{prelude::*, Witness};
 /// A sparse merkle tree to witness up to 65,536 individual [`Commitment`]s.
 ///
 /// This is one block in an [`epoch`](crate::builder::epoch), which is one epoch in a [`Tree`].
-#[derive(Derivative, Debug, Clone, Serialize, Deserialize)]
-pub struct Builder {
-    index: HashedMap<Commitment, index::within::Block>,
-    inner: Arc<frontier::Top<Item>>,
+#[derive(Derivative, Debug, Clone)]
+pub struct Builder<RefKind: SharedPointerKind = archery::ArcK> {
+    index: HashedMap<Commitment, index::within::Block, RefKind>,
+    inner: SharedPointer<frontier::Top<Item, RefKind>, RefKind>,
 }
 
-impl Default for Builder {
+impl<RefKind: SharedPointerKind> Default for Builder<RefKind> {
     fn default() -> Self {
         Self {
             index: HashedMap::default(),
-            inner: Arc::new(frontier::Top::new(frontier::TrackForgotten::No)),
+            inner: SharedPointer::new(frontier::Top::new(frontier::TrackForgotten::No)),
         }
     }
 }
 
 /// A finalized block builder, ready to be inserted into an [`epoch::Builder`](super::Builder) or a
 /// [`Tree`].
-#[derive(Derivative, Debug, Clone, Serialize, Deserialize)]
-pub struct Finalized {
-    pub(in super::super) index: HashedMap<Commitment, index::within::Block>,
-    pub(in super::super) inner: Insert<complete::Top<complete::Item>>,
+#[derive(Derivative, Debug, Clone)]
+pub struct Finalized<RefKind: SharedPointerKind = archery::ArcK> {
+    pub(in super::super) index: HashedMap<Commitment, index::within::Block, RefKind>,
+    pub(in super::super) inner: Insert<complete::Top<complete::Item, RefKind>>,
 }
 
-impl Default for Finalized {
+impl<RefKind: SharedPointerKind> Default for Finalized<RefKind> {
     fn default() -> Self {
         Builder::default().finalize()
     }
 }
 
-impl Finalized {
+impl<RefKind: SharedPointerKind> Finalized<RefKind> {
     /// Get the root hash of this finalized block.
     ///
     /// Internal hashing is performed lazily to prevent unnecessary intermediary hashes from being
@@ -55,7 +54,7 @@ impl Finalized {
     }
 }
 
-impl From<Root> for Finalized {
+impl<RefKind: SharedPointerKind> From<Root> for Finalized<RefKind> {
     fn from(root: Root) -> Self {
         Self {
             index: HashedMap::default(),
@@ -64,8 +63,8 @@ impl From<Root> for Finalized {
     }
 }
 
-impl From<Builder> for Finalized {
-    fn from(mut builder: Builder) -> Self {
+impl<RefKind: SharedPointerKind> From<Builder<RefKind>> for Finalized<RefKind> {
+    fn from(mut builder: Builder<RefKind>) -> Self {
         builder.finalize()
     }
 }
@@ -120,7 +119,7 @@ impl Display for Root {
     }
 }
 
-impl Builder {
+impl<RefKind: SharedPointerKind> Builder<RefKind> {
     /// Create a new empty [`block::Builder`](Builder).
     pub fn new() -> Self {
         Self::default()
@@ -143,19 +142,22 @@ impl Builder {
             .into();
 
         // Insert the commitment into the inner tree
-        Arc::make_mut(&mut self.inner)
+        SharedPointer::make_mut(&mut self.inner)
             .insert(item)
             .expect("inserting a commitment must succeed when block has a position");
 
         // Keep track of the position of this just-inserted commitment in the index, if it was
         // slated to be kept
         if let Witness::Keep = witness {
-            if let Some(replaced) = self.index.insert(commitment, position) {
+            if let Some(&replaced) = self.index.get(&commitment) {
                 // This case is handled for completeness, but should not happen in
                 // practice because commitments should be unique
-                let forgotten = Arc::make_mut(&mut self.inner).forget(replaced);
+                let forgotten = SharedPointer::make_mut(&mut self.inner).forget(replaced);
                 debug_assert!(forgotten);
             }
+
+            // Actually perform the insertion after the check
+            self.index.insert_mut(commitment, position);
         }
 
         Ok(())
@@ -170,11 +172,11 @@ impl Builder {
 
     /// Finalize this block builder returning a finalized block and resetting the underlying builder
     /// to the initial empty state.
-    pub fn finalize(&mut self) -> Finalized {
+    pub fn finalize(&mut self) -> Finalized<RefKind> {
         let this = std::mem::take(self);
 
         // This avoids cloning the arc when we have the only reference to it
-        let inner = Arc::try_unwrap(this.inner).unwrap_or_else(|arc| (*arc).clone());
+        let inner = SharedPointer::try_unwrap(this.inner).unwrap_or_else(|arc| (*arc).clone());
 
         let inner = inner.finalize();
         let index = this.index;

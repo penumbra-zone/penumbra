@@ -1,6 +1,8 @@
 //! Errors that can occur when inserting into a [`Tree`], deserializing [`Proof`](super::Proof)s, or
 //! checking internal invariants.
 
+use archery::SharedPointerKind;
+
 use crate::builder;
 #[cfg(doc)]
 use crate::prelude::*;
@@ -35,6 +37,8 @@ pub mod block {
 
 pub mod epoch {
     //! Errors for [`epoch`] builders.
+    use archery::SharedPointerKind;
+
     use super::*;
 
     /// An error occurred when decoding an [`epoch::Root`](builder::epoch::Root) from bytes.
@@ -59,7 +63,7 @@ pub mod epoch {
     #[derive(Debug, Clone, Error)]
     #[error("epoch is full")]
     #[non_exhaustive]
-    pub struct InsertBlockError(pub builder::block::Finalized);
+    pub struct InsertBlockError<RefKind: SharedPointerKind>(pub builder::block::Finalized<RefKind>);
 }
 
 /// An error occurred when trying to insert a [`Commitment`] into a [`Tree`].
@@ -78,19 +82,21 @@ pub enum InsertError {
 
 /// An error occurred when trying to insert a block into the [`Tree`].
 #[derive(Debug, Clone, Error)]
-pub enum InsertBlockError {
+pub enum InsertBlockError<RefKind: SharedPointerKind> {
     /// The [`Tree`] was full.
     #[error("tree is full")]
     #[non_exhaustive]
-    Full(builder::block::Finalized),
+    Full(builder::block::Finalized<RefKind>),
     /// The most recent epoch of the [`Tree`] was full.
     #[error("most recent epoch is full")]
     #[non_exhaustive]
-    EpochFull(builder::block::Finalized),
+    EpochFull(builder::block::Finalized<RefKind>),
 }
 
-impl From<InsertBlockError> for builder::block::Finalized {
-    fn from(error: InsertBlockError) -> Self {
+impl<RefKind: SharedPointerKind> From<InsertBlockError<RefKind>>
+    for builder::block::Finalized<RefKind>
+{
+    fn from(error: InsertBlockError<RefKind>) -> Self {
         match error {
             InsertBlockError::Full(block) => block,
             InsertBlockError::EpochFull(block) => block,
@@ -102,10 +108,12 @@ impl From<InsertBlockError> for builder::block::Finalized {
 #[derive(Debug, Clone, Error)]
 #[error("tree is full")]
 #[non_exhaustive]
-pub struct InsertEpochError(pub builder::epoch::Finalized);
+pub struct InsertEpochError<RefKind: SharedPointerKind>(pub builder::epoch::Finalized<RefKind>);
 
-impl From<InsertEpochError> for builder::epoch::Finalized {
-    fn from(error: InsertEpochError) -> Self {
+impl<RefKind: SharedPointerKind> From<InsertEpochError<RefKind>>
+    for builder::epoch::Finalized<RefKind>
+{
+    fn from(error: InsertEpochError<RefKind>) -> Self {
         error.0
     }
 }
@@ -117,7 +125,7 @@ mod test {
     #[test]
     fn insert_errors_sync_send() {
         static_assertions::assert_impl_all!(InsertError: Sync, Send);
-        static_assertions::assert_impl_all!(InsertBlockError: Sync, Send);
-        static_assertions::assert_impl_all!(InsertEpochError: Sync, Send);
+        static_assertions::assert_impl_all!(InsertBlockError<archery::ArcK>: Sync, Send);
+        static_assertions::assert_impl_all!(InsertEpochError<archery::ArcK>: Sync, Send);
     }
 }

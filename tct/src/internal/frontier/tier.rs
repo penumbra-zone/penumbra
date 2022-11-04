@@ -1,57 +1,49 @@
 use std::fmt::Debug;
 
-use serde::{Deserialize, Serialize};
+use archery::SharedPointerKind;
 
 use crate::prelude::*;
 
 /// A frontier of a tier of the tiered commitment tree, being an 8-deep quad-tree of items.
-#[derive(Derivative, Serialize, Deserialize)]
+#[derive(Derivative)]
 #[derivative(
     Debug(bound = "Item: Debug, Item::Complete: Debug"),
     Clone(bound = "Item: Clone, Item::Complete: Clone")
 )]
-#[serde(bound(
-    serialize = "Item: Serialize, Item::Complete: Serialize",
-    deserialize = "Item: Deserialize<'de>, Item::Complete: Deserialize<'de>"
-))]
-pub struct Tier<Item: Focus + Clone>
+pub struct Tier<Item: Focus + Clone, RefKind: SharedPointerKind>
 where
     Item::Complete: Clone,
 {
-    inner: Inner<Item>,
+    inner: Inner<Item, RefKind>,
 }
 
-type N<Focus> = frontier::Node<Focus>;
+type N<Focus, RefKind> = frontier::Node<Focus, RefKind>;
 type L<Item> = frontier::Leaf<Item>;
 
 /// An eight-deep frontier tree with the given item stored in each leaf.
-pub type Nested<Item> = N<N<N<N<N<N<N<N<L<Item>>>>>>>>>;
-// Count the levels:    1 2 3 4 5 6 7 8
+pub type Nested<Item, R> = N<N<N<N<N<N<N<N<L<Item>, R>, R>, R>, R>, R>, R>, R>, R>;
+// Count the levels:       1 2 3 4 5 6 7 8
 
 /// The inside of a frontier of a tier.
-#[derive(Derivative, Serialize, Deserialize)]
+#[derive(Derivative)]
 #[derivative(
     Debug(bound = "Item: Debug, Item::Complete: Debug"),
     Clone(bound = "Item: Clone, Item::Complete: Clone")
 )]
-#[serde(bound(
-    serialize = "Item: Serialize, Item::Complete: Serialize + Clone",
-    deserialize = "Item: Deserialize<'de>, Item::Complete: Deserialize<'de>"
-))]
-pub enum Inner<Item: Focus + Clone>
+pub enum Inner<Item: Focus + Clone, RefKind: SharedPointerKind>
 where
     Item::Complete: Clone,
 {
     /// A tree with at least one leaf.
-    Frontier(Box<Nested<Item>>),
+    Frontier(Box<Nested<Item, RefKind>>),
     /// A completed tree which has at least one witnessed child.
-    Complete(complete::Nested<Item::Complete>),
+    Complete(complete::Nested<Item::Complete, RefKind>),
     /// A tree which has been filled, but which witnessed no elements, so it is represented by a
     /// single hash.
     Hash(Hash),
 }
 
-impl<Item: Focus + Clone> From<Hash> for Tier<Item>
+impl<Item: Focus + Clone, RefKind: SharedPointerKind> From<Hash> for Tier<Item, RefKind>
 where
     Item::Complete: Clone,
 {
@@ -63,7 +55,7 @@ where
     }
 }
 
-impl<Item: Focus + Clone> Tier<Item>
+impl<Item: Focus + Clone, RefKind: SharedPointerKind> Tier<Item, RefKind>
 where
     Item::Complete: Clone,
 {
@@ -185,14 +177,14 @@ where
     }
 }
 
-impl<Item: Focus + Clone> Height for Tier<Item>
+impl<Item: Focus + Clone, RefKind: SharedPointerKind> Height for Tier<Item, RefKind>
 where
     Item::Complete: Clone,
 {
-    type Height = <Nested<Item> as Height>::Height;
+    type Height = <Nested<Item, RefKind> as Height>::Height;
 }
 
-impl<Item: Focus + Clone> GetHash for Tier<Item>
+impl<Item: Focus + Clone, RefKind: SharedPointerKind> GetHash for Tier<Item, RefKind>
 where
     Item::Complete: Clone,
 {
@@ -215,11 +207,11 @@ where
     }
 }
 
-impl<Item: Focus + Clone> Focus for Tier<Item>
+impl<Item: Focus + Clone, RefKind: SharedPointerKind> Focus for Tier<Item, RefKind>
 where
     Item::Complete: Clone,
 {
-    type Complete = complete::Tier<Item::Complete>;
+    type Complete = complete::Tier<Item::Complete, RefKind>;
 
     #[inline]
     fn finalize_owned(self) -> Insert<Self::Complete> {
@@ -234,7 +226,7 @@ where
     }
 }
 
-impl<Item: Focus + Witness + Clone> Witness for Tier<Item>
+impl<Item: Focus + Witness + Clone, RefKind: SharedPointerKind> Witness for Tier<Item, RefKind>
 where
     Item::Complete: Witness + Clone,
 {
@@ -248,7 +240,8 @@ where
     }
 }
 
-impl<Item: Focus + GetPosition + Clone> GetPosition for Tier<Item>
+impl<Item: Focus + GetPosition + Clone, RefKind: SharedPointerKind> GetPosition
+    for Tier<Item, RefKind>
 where
     Item::Complete: Clone,
 {
@@ -261,7 +254,7 @@ where
     }
 }
 
-impl<Item: Focus + Forget + Clone> Forget for Tier<Item>
+impl<Item: Focus + Forget + Clone, RefKind: SharedPointerKind> Forget for Tier<Item, RefKind>
 where
     Item::Complete: ForgetOwned + Clone,
 {
@@ -294,32 +287,37 @@ where
     }
 }
 
-impl<Item: Focus + Clone> From<complete::Tier<Item::Complete>> for Tier<Item>
+impl<Item: Focus + Clone, RefKind: SharedPointerKind> From<complete::Tier<Item::Complete, RefKind>>
+    for Tier<Item, RefKind>
 where
     Item::Complete: Clone,
 {
-    fn from(complete: complete::Tier<Item::Complete>) -> Self {
+    fn from(complete: complete::Tier<Item::Complete, RefKind>) -> Self {
         Self {
             inner: Inner::Complete(complete.inner),
         }
     }
 }
 
-impl<Item: Focus + Clone> From<complete::Top<Item::Complete>> for Tier<Item>
+impl<Item: Focus + Clone, RefKind: SharedPointerKind> From<complete::Top<Item::Complete, RefKind>>
+    for Tier<Item, RefKind>
 where
     Item::Complete: Clone,
 {
-    fn from(complete: complete::Top<Item::Complete>) -> Self {
+    fn from(complete: complete::Top<Item::Complete, RefKind>) -> Self {
         Self {
             inner: Inner::Complete(complete.inner),
         }
     }
 }
 
-impl<'tree, Item: Focus + GetPosition + Height + structure::Any<'tree> + Clone>
-    structure::Any<'tree> for Tier<Item>
+impl<
+        'tree,
+        Item: Focus + GetPosition + Height + structure::Any<RefKind> + Clone,
+        RefKind: SharedPointerKind,
+    > structure::Any<RefKind> for Tier<Item, RefKind>
 where
-    Item::Complete: structure::Any<'tree> + Clone,
+    Item::Complete: structure::Any<RefKind> + Clone,
 {
     fn kind(&self) -> Kind {
         Kind::Internal {
@@ -333,22 +331,23 @@ where
 
     fn forgotten(&self) -> Forgotten {
         match &self.inner {
-            Inner::Frontier(frontier) => (&**frontier as &dyn structure::Any).forgotten(),
-            Inner::Complete(complete) => (complete as &dyn structure::Any).forgotten(),
+            Inner::Frontier(frontier) => (&**frontier as &dyn structure::Any<RefKind>).forgotten(),
+            Inner::Complete(complete) => (complete as &dyn structure::Any<RefKind>).forgotten(),
             Inner::Hash(_) => Forgotten::default(),
         }
     }
 
-    fn children(&self) -> Vec<structure::Node<'_, 'tree>> {
+    fn children(&self) -> Vec<structure::Node<RefKind>> {
         match &self.inner {
             Inner::Frontier(frontier) => frontier.children(),
-            Inner::Complete(complete) => (complete as &dyn structure::Any).children(),
+            Inner::Complete(complete) => (complete as &dyn structure::Any<RefKind>).children(),
             Inner::Hash(_) => vec![],
         }
     }
 }
 
-impl<Item: Focus + OutOfOrder + Clone> OutOfOrder for Tier<Item>
+impl<Item: Focus + OutOfOrder + Clone, RefKind: SharedPointerKind> OutOfOrder
+    for Tier<Item, RefKind>
 where
     Item::Complete: OutOfOrderOwned + Clone,
 {
@@ -397,7 +396,7 @@ where
             Inner::Complete(complete) => {
                 // Insert into the complete tier and return it, using the `OutOfOrderOwned` impl for
                 // the inner nested complete structure
-                Inner::Complete(<Nested<Item> as Focus>::Complete::uninitialized_out_of_order_insert_commitment_owned(
+                Inner::Complete(<Nested<Item, RefKind> as Focus>::Complete::uninitialized_out_of_order_insert_commitment_owned(
                     Insert::Keep(complete),
                     index,
                     commitment,
@@ -406,7 +405,7 @@ where
             Inner::Hash(hash) => {
                 // Do just as above, using the `OutOfOrderOwned` impl for the inner nested complete
                 // structure, except starting from the given hash
-                Inner::Complete(<Nested<Item> as Focus>::Complete::uninitialized_out_of_order_insert_commitment_owned(
+                Inner::Complete(<Nested<Item, RefKind> as Focus>::Complete::uninitialized_out_of_order_insert_commitment_owned(
                     Insert::Hash(hash),
                     index,
                     commitment,
@@ -416,7 +415,8 @@ where
     }
 }
 
-impl<Item: Focus + UncheckedSetHash + Clone> UncheckedSetHash for Tier<Item>
+impl<Item: Focus + UncheckedSetHash + Clone, RefKind: SharedPointerKind> UncheckedSetHash
+    for Tier<Item, RefKind>
 where
     Item::Complete: UncheckedSetHash + Clone,
 {

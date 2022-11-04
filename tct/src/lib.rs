@@ -116,7 +116,8 @@ mod prelude {
     };
 
     // We use the hash map from `im`, but with the fast "hash prehashed data" hasher from `hash_hasher`
-    pub(crate) type HashedMap<K, V> = im::HashMap<K, V, hash_hasher::HashBuildHasher>;
+    pub(crate) type HashedMap<K, V, RefKind> =
+        rpds::HashTrieMap<K, V, RefKind, hash_hasher::HashBuildHasher>;
 }
 
 #[cfg(feature = "arbitrary")]

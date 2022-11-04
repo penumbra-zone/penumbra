@@ -1,7 +1,9 @@
+use archery::SharedPointerKind;
+
 use crate::prelude::*;
 
 /// A witnessed hash of a commitment at the true leaf of a complete tree.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Derivative, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Derivative)]
 pub struct Item {
     hash: Hash,
     commitment: Commitment,
@@ -59,7 +61,7 @@ impl GetPosition for Item {
     }
 }
 
-impl<'tree> structure::Any<'tree> for Item {
+impl<RefKind: SharedPointerKind> structure::Any<RefKind> for Item {
     fn kind(&self) -> Kind {
         Kind::Leaf {
             commitment: Some(self.commitment),
@@ -74,7 +76,7 @@ impl<'tree> structure::Any<'tree> for Item {
         Forgotten::default()
     }
 
-    fn children(&self) -> Vec<Node<'_, 'tree>> {
+    fn children(&self) -> Vec<Node<RefKind>> {
         vec![]
     }
 }

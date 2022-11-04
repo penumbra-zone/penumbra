@@ -1,8 +1,6 @@
-use std::{
-    fmt::{Debug, Display},
-    sync::Arc,
-};
+use std::fmt::{Debug, Display};
 
+use archery::{SharedPointer, SharedPointerKind};
 use decaf377::{FieldExt, Fq};
 use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
 
@@ -16,30 +14,34 @@ pub(crate) use epoch::block;
 
 /// A sparse merkle tree witnessing up to 65,536 epochs of up to 65,536 blocks of up to 65,536
 /// [`Commitment`]s.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Tree {
-    index: HashedMap<Commitment, index::within::Tree>,
-    inner: Arc<frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>>,
+#[derive(Debug, Clone)]
+pub struct Tree<RefKind: SharedPointerKind = archery::ArcK> {
+    index: HashedMap<Commitment, index::within::Tree, RefKind>,
+    inner: SharedPointer<
+        frontier::Top<frontier::Tier<frontier::Tier<frontier::Item, RefKind>, RefKind>, RefKind>,
+        RefKind,
+    >,
 }
 
-impl Default for Tree {
+impl<RefKind: SharedPointerKind> Default for Tree<RefKind> {
     fn default() -> Self {
         Self {
             index: HashedMap::default(),
-            inner: Arc::new(frontier::Top::new(frontier::TrackForgotten::Yes)),
+            inner: SharedPointer::new(frontier::Top::new(frontier::TrackForgotten::Yes)),
         }
     }
 }
 
-impl PartialEq for Tree {
-    fn eq(&self, other: &Tree) -> bool {
-        self.position() == other.position() // two trees could have identical contents but different positions
+impl<RefKind: SharedPointerKind> PartialEq for Tree<RefKind> {
+    fn eq(&self, other: &Tree<RefKind>) -> bool {
+        SharedPointer::ptr_eq(&self.inner, &other.inner) || // if the trees are pointer-equal, then they're definitely equal, so no need to check anything else
+        (self.position() == other.position() // two trees could have identical contents but different positions
             && self.root() == other.root() // if the roots match, they represent the same commitments, but may witness different ones
-            && self.index == other.index // we ensure they witness the same commitments by checking equality of indices
+            && self.index == other.index) // we ensure they witness the same commitments by checking equality of indices
     }
 }
 
-impl Eq for Tree {}
+impl<RefKind: SharedPointerKind> Eq for Tree<RefKind> {}
 
 /// The root hash of a [`Tree`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -143,7 +145,7 @@ impl From<Position> for (u16, u16, u16) {
     }
 }
 
-impl Tree {
+impl<RefKind: SharedPointerKind> Tree<RefKind> {
     /// Create a new empty [`Tree`] for storing all commitments to the end of time.
     pub fn new() -> Self {
         Self::default()
@@ -151,12 +153,15 @@ impl Tree {
 
     // Assemble a tree from its two parts without checking any invariants.
     pub(crate) fn unchecked_from_parts(
-        index: HashedMap<Commitment, index::within::Tree>,
-        inner: frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>,
+        index: HashedMap<Commitment, index::within::Tree, RefKind>,
+        inner: frontier::Top<
+            frontier::Tier<frontier::Tier<frontier::Item, RefKind>, RefKind>,
+            RefKind,
+        >,
     ) -> Self {
         Self {
             index,
-            inner: Arc::new(inner),
+            inner: SharedPointer::new(inner),
         }
     }
 
@@ -201,7 +206,7 @@ impl Tree {
         let position = (self.inner.position().ok_or(InsertError::Full)?).into();
 
         // Try to insert the commitment into the latest block
-        Arc::make_mut(&mut self.inner)
+        SharedPointer::make_mut(&mut self.inner)
             .update(|epoch| {
                 epoch
                     .update(|block| {
@@ -234,7 +239,7 @@ impl Tree {
             // If the latest epoch was finalized already or doesn't exist, create a new epoch and
             // insert into that epoch
             .unwrap_or_else(|| {
-                Arc::make_mut(&mut self.inner)
+                SharedPointer::make_mut(&mut self.inner)
                     .insert(frontier::Tier::new(frontier::Tier::new(item)))
                     .expect("inserting a commitment must succeed because we already checked that the tree is not full");
                 Ok(())
@@ -246,12 +251,15 @@ impl Tree {
         // Keep track of the position of this just-inserted commitment in the index, if it was
         // slated to be kept
         if let Witness::Keep = witness {
-            if let Some(replaced) = self.index.insert(commitment, position) {
-                // This case is handled for completeness, but should not happen in
-                // practice because commitments should be unique
-                let forgotten = Arc::make_mut(&mut self.inner).forget(replaced);
+            // This case is handled for completeness, but should not happen in
+            // practice because commitments should be unique:
+            if let Some(&replaced) = self.index.get(&commitment) {
+                let forgotten = SharedPointer::make_mut(&mut self.inner).forget(replaced);
                 debug_assert!(forgotten);
             }
+
+            // After handling that, do the insertion
+            self.index.insert_mut(commitment, position);
         }
 
         let position = Position(position);
@@ -303,10 +311,10 @@ impl Tree {
             // We forgot something
             forgotten = true;
             // Forget the index for this element in the tree
-            let forgotten = Arc::make_mut(&mut self.inner).forget(within_epoch);
+            let forgotten = SharedPointer::make_mut(&mut self.inner).forget(within_epoch);
             debug_assert!(forgotten);
             // Remove this entry from the index
-            self.index.remove(&commitment);
+            self.index.remove_mut(&commitment);
         }
 
         trace!(?forgotten);
@@ -349,8 +357,8 @@ impl Tree {
     #[instrument(level = "trace", skip(self, block))]
     pub fn insert_block(
         &mut self,
-        block: impl Into<block::Finalized>,
-    ) -> Result<block::Root, InsertBlockError> {
+        block: impl Into<block::Finalized<RefKind>>,
+    ) -> Result<block::Root, InsertBlockError<RefKind>> {
         // We split apart the inside so that we get the right instrumention when this is called as
         // an inner function in `end_block`
         let block_root = self.insert_block_uninstrumented(block).map_err(|error| {
@@ -363,13 +371,13 @@ impl Tree {
 
     fn insert_block_uninstrumented(
         &mut self,
-        block: impl Into<block::Finalized>,
-    ) -> Result<block::Root, InsertBlockError> {
+        block: impl Into<block::Finalized<RefKind>>,
+    ) -> Result<block::Root, InsertBlockError<RefKind>> {
         let block::Finalized { inner, index } = block.into();
 
         // Convert the top level inside of the block to a tier that can be slotted into the epoch
         // We have this be an `Option` because we need to `take` out of it inside closures
-        let mut inner: Option<frontier::Tier<_>> = Some(match inner {
+        let mut inner: Option<frontier::Tier<_, _>> = Some(match inner {
             Insert::Keep(inner) => inner.into(),
             Insert::Hash(hash) => hash.into(),
         });
@@ -379,14 +387,15 @@ impl Tree {
 
         // Finalize the latest block, if it exists and is not yet finalized -- this means that
         // position calculations will be correct, since they will start at the next block
-        Arc::make_mut(&mut self.inner).update(|epoch| epoch.update(|block| block.finalize()));
+        SharedPointer::make_mut(&mut self.inner)
+            .update(|epoch| epoch.update(|block| block.finalize()));
 
         // Get the epoch and block index of the next insertion
         let position = self.inner.position();
 
         // Insert the block into the latest epoch, or create a new epoch for it if the latest epoch
         // does not exist or is finalized
-        let block_root = Arc::make_mut(&mut self.inner)
+        let block_root = SharedPointer::make_mut(&mut self.inner)
             .update(|epoch| {
                 // If the epoch is finalized, create a new one (below) to insert the block into
                 if epoch.is_finalized() {
@@ -429,7 +438,7 @@ impl Tree {
                 let block_root = block::Root(inner.hash());
 
                 // Create a new epoch and insert the block into it
-                Arc::make_mut(&mut self.inner)
+                SharedPointer::make_mut(&mut self.inner)
                     .insert(frontier::Tier::new(inner))
                     .expect("inserting a new epoch must succeed when the tree is not full");
 
@@ -443,22 +452,25 @@ impl Tree {
             .into();
 
         // Add the index of all commitments in the block to the global index
-        for (c, index::within::Block { commitment }) in index.take().unwrap() {
+        for (&c, index::within::Block { commitment }) in &index.take().unwrap() {
             // If any commitment is repeated, forget the previous one within the tree, since it is
             // now inaccessible
-            if let Some(replaced) = self.index.insert(
+            if let Some(&replaced) = self.index.get(&c) {
+                // This case is handled for completeness, but should not happen in practice because
+                // commitments should be unique
+                let forgotten = SharedPointer::make_mut(&mut self.inner).forget(replaced);
+                debug_assert!(forgotten);
+            }
+
+            // After handling that case, do the insertion
+            self.index.insert_mut(
                 c,
                 index::within::Tree {
                     epoch,
                     block,
-                    commitment,
+                    commitment: *commitment,
                 },
-            ) {
-                // This case is handled for completeness, but should not happen in practice because
-                // commitments should be unique
-                let forgotten = Arc::make_mut(&mut self.inner).forget(replaced);
-                debug_assert!(forgotten);
-            }
+            );
         }
 
         Ok(block_root)
@@ -467,20 +479,20 @@ impl Tree {
     /// Explicitly mark the end of the current block in this tree, advancing the position to the
     /// next block, and returning the root of the block which was just finalized.
     #[instrument(level = "trace", skip(self))]
-    pub fn end_block(&mut self) -> Result<block::Root, InsertBlockError> {
+    pub fn end_block(&mut self) -> Result<block::Root, InsertBlockError<RefKind>> {
         // Check to see if the latest block is already finalized, and finalize it if
         // it is not
-        let (already_finalized, finalized_root) = Arc::make_mut(&mut self.inner)
+        let (already_finalized, finalized_root) = SharedPointer::make_mut(&mut self.inner)
             .update(|epoch| {
                 epoch.update(|tier| match tier.finalize() {
-                    true => (true, block::Finalized::default().root()),
+                    true => (true, block::Finalized::<RefKind>::default().root()),
                     false => (false, block::Root(tier.hash())),
                 })
             })
             .flatten()
             // If the entire tree or the latest epoch is empty or finalized, the latest block is
             // considered already finalized
-            .unwrap_or((true, block::Finalized::default().root()));
+            .unwrap_or((true, block::Finalized::<RefKind>::default().root()));
 
         // If the latest block was already finalized (i.e. we are at the start of an unfinalized
         // empty block), insert an empty finalized block
@@ -511,7 +523,7 @@ impl Tree {
                 }
             })
             // If there is no latest unfinalized block, we return the hash of the empty unfinalized block
-            .unwrap_or_else(|| block::Builder::default().root());
+            .unwrap_or_else(|| block::Builder::<RefKind>::default().root());
         trace!(?root);
         root
     }
@@ -544,8 +556,8 @@ impl Tree {
     #[instrument(level = "trace", skip(self, epoch))]
     pub fn insert_epoch(
         &mut self,
-        epoch: impl Into<epoch::Finalized>,
-    ) -> Result<epoch::Root, InsertEpochError> {
+        epoch: impl Into<epoch::Finalized<RefKind>>,
+    ) -> Result<epoch::Root, InsertEpochError<RefKind>> {
         // We split apart the inside so that we get the right instrumention when this is called as
         // an inner function in `end_epoch`
         let epoch_root = self.insert_epoch_uninstrumented(epoch).map_err(|error| {
@@ -558,8 +570,8 @@ impl Tree {
 
     fn insert_epoch_uninstrumented(
         &mut self,
-        epoch: impl Into<epoch::Finalized>,
-    ) -> Result<epoch::Root, InsertEpochError> {
+        epoch: impl Into<epoch::Finalized<RefKind>>,
+    ) -> Result<epoch::Root, InsertEpochError<RefKind>> {
         let epoch::Finalized { inner, index } = epoch.into();
 
         // If the insertion would fail, return an error
@@ -569,14 +581,14 @@ impl Tree {
         }
 
         // Convert the top level inside of the epoch to a tier that can be slotted into the tree
-        let inner: frontier::Tier<frontier::Tier<frontier::Item>> = match inner {
+        let inner: frontier::Tier<frontier::Tier<frontier::Item, RefKind>, RefKind> = match inner {
             Insert::Keep(inner) => inner.into(),
             Insert::Hash(hash) => hash.into(),
         };
 
         // Finalize the latest epoch, if it exists and is not yet finalized -- this means that
         // position calculations will be correct, since they will start at the next epoch
-        Arc::make_mut(&mut self.inner).update(|epoch| epoch.finalize());
+        SharedPointer::make_mut(&mut self.inner).update(|epoch| epoch.finalize());
 
         // Get the epoch index of the next insertion
         let index::within::Tree { epoch, .. } = self
@@ -589,27 +601,30 @@ impl Tree {
         let epoch_root = epoch::Root(inner.hash());
 
         // Insert the inner tree of the epoch into the global tree
-        Arc::make_mut(&mut self.inner)
+        SharedPointer::make_mut(&mut self.inner)
             .insert(inner)
             .expect("inserting an epoch must succeed when tree is not full");
 
         // Add the index of all commitments in the epoch to the global tree index
-        for (c, index::within::Epoch { block, commitment }) in index {
+        for (&c, index::within::Epoch { block, commitment }) in &index {
             // If any commitment is repeated, forget the previous one within the tree, since it is
             // now inaccessible
-            if let Some(replaced) = self.index.insert(
+            if let Some(&replaced) = self.index.get(&c) {
+                // This case is handled for completeness, but should not happen in practice because
+                // commitments should be unique
+                let forgotten = SharedPointer::make_mut(&mut self.inner).forget(replaced);
+                debug_assert!(forgotten);
+            }
+
+            // After handling the above, do the insertion
+            self.index.insert_mut(
                 c,
                 index::within::Tree {
                     epoch,
-                    block,
-                    commitment,
+                    block: *block,
+                    commitment: *commitment,
                 },
-            ) {
-                // This case is handled for completeness, but should not happen in practice because
-                // commitments should be unique
-                let forgotten = Arc::make_mut(&mut self.inner).forget(replaced);
-                debug_assert!(forgotten);
-            }
+            );
         }
 
         Ok(epoch_root)
@@ -618,16 +633,16 @@ impl Tree {
     /// Explicitly mark the end of the current epoch in this tree, advancing the position to the
     /// next epoch, and returning the root of the epoch which was just finalized.
     #[instrument(level = "trace", skip(self))]
-    pub fn end_epoch(&mut self) -> Result<epoch::Root, InsertEpochError> {
+    pub fn end_epoch(&mut self) -> Result<epoch::Root, InsertEpochError<RefKind>> {
         // Check to see if the latest block is already finalized, and finalize it if
         // it is not
-        let (already_finalized, finalized_root) = Arc::make_mut(&mut self.inner)
+        let (already_finalized, finalized_root) = SharedPointer::make_mut(&mut self.inner)
             .update(|tier| match tier.finalize() {
-                true => (true, epoch::Finalized::default().root()),
+                true => (true, epoch::Finalized::<RefKind>::default().root()),
                 false => (false, epoch::Root(tier.hash())),
             })
             // If there is no focused block, the latest block is considered already finalized
-            .unwrap_or((true, epoch::Finalized::default().root()));
+            .unwrap_or((true, epoch::Finalized::<RefKind>::default().root()));
 
         // If the latest block was already finalized (i.e. we are at the start of an unfinalized
         // empty block), insert an empty finalized block
@@ -658,7 +673,7 @@ impl Tree {
             })
             // In the case where there is no latest unfinalized epoch, we return the hash of the
             // empty unfinalized epoch
-            .unwrap_or_else(|| epoch::Builder::default().root());
+            .unwrap_or_else(|| epoch::Builder::<RefKind>::default().root());
         trace!(?root);
         root
     }
@@ -701,7 +716,7 @@ impl Tree {
     /// decrease the [`position`](Tree::position) of the next inserted [`Commitment`].
     #[instrument(level = "trace", skip(self))]
     pub fn witnessed_count(&self) -> usize {
-        let count = self.index.len();
+        let count = self.index.size();
         trace!(?count);
         count
     }
@@ -735,10 +750,10 @@ impl Tree {
 
     /// Get a dynamic representation of the internal structure of the tree, which can be traversed
     /// and inspected arbitrarily.
-    pub fn structure(&self) -> structure::Node {
+    pub fn structure(&self) -> structure::Node<RefKind> {
         let _structure_span = trace_span!("structure");
         // TODO: use the structure span for instrumenting methods of the structure, as it is traversed
-        Node::root(&*self.inner)
+        Node::root(Box::new((*self.inner).clone()))
     }
 
     /// Deserialize a tree from a [`storage::Read`] backend.
@@ -762,22 +777,30 @@ impl Tree {
     }
 }
 
-impl From<frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>> for Tree {
-    fn from(inner: frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>) -> Self {
+impl<RefKind: SharedPointerKind>
+    From<frontier::Top<frontier::Tier<frontier::Tier<frontier::Item, RefKind>, RefKind>, RefKind>>
+    for Tree<RefKind>
+{
+    fn from(
+        inner: frontier::Top<
+            frontier::Tier<frontier::Tier<frontier::Item, RefKind>, RefKind>,
+            RefKind,
+        >,
+    ) -> Self {
         let mut index = HashedMap::default();
 
         // Traverse the tree to reconstruct the index
-        structure::traverse(Node::root(&inner), &mut |node: Node| {
+        structure::traverse(Node::root(Box::new(inner)), &mut |node: Node<_>| {
             if let structure::Kind::Leaf {
                 commitment: Some(commitment),
             } = node.kind()
             {
-                index.insert(commitment, node.position().0);
+                index.insert_mut(commitment, node.position().0);
             }
         });
 
         Self {
-            inner: Arc::new(inner),
+            inner: SharedPointer::new(inner),
             index,
         }
     }

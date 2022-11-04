@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 
+use archery::SharedPointerKind;
 use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
@@ -8,21 +9,17 @@ use frontier::tier::Nested;
 
 /// The frontier of the top level of some part of the commitment tree, which may be empty, but may
 /// not be finalized or hashed.
-#[derive(Derivative, Serialize, Deserialize)]
+#[derive(Derivative)]
 #[derivative(
     Debug(bound = "Item: Debug, Item::Complete: Debug"),
     Clone(bound = "Item: Clone, Item::Complete: Clone")
 )]
-#[serde(bound(
-    serialize = "Item: Serialize, Item::Complete: Serialize",
-    deserialize = "Item: Deserialize<'de>, Item::Complete: Deserialize<'de>"
-))]
-pub struct Top<Item: Focus + Clone>
+pub struct Top<Item: Focus + Clone, RefKind: SharedPointerKind>
 where
     Item::Complete: Clone,
 {
     track_forgotten: TrackForgotten,
-    inner: Option<Nested<Item>>,
+    inner: Option<Nested<Item, RefKind>>,
 }
 
 /// Whether or not to track forgotten elements of the tree.
@@ -39,7 +36,7 @@ pub enum TrackForgotten {
     No,
 }
 
-impl<Item: Focus + Clone> Top<Item>
+impl<Item: Focus + Clone, RefKind: SharedPointerKind> Top<Item, RefKind>
 where
     Item::Complete: Clone,
 {
@@ -145,7 +142,7 @@ where
 
     /// Finalize the top tier into either a summary root hash or a complete tier.
     #[inline]
-    pub fn finalize(self) -> Insert<complete::Top<Item::Complete>> {
+    pub fn finalize(self) -> Insert<complete::Top<Item::Complete, RefKind>> {
         if let Some(inner) = self.inner {
             inner.finalize_owned().map(|inner| complete::Top { inner })
         } else {
@@ -171,14 +168,15 @@ where
     }
 }
 
-impl<Item: Focus + Clone> Height for Top<Item>
+impl<Item: Focus + Clone, RefKind: SharedPointerKind> Height for Top<Item, RefKind>
 where
     Item::Complete: Clone,
 {
-    type Height = <Nested<Item> as Height>::Height;
+    type Height = <Nested<Item, RefKind> as Height>::Height;
 }
 
-impl<Item: Focus + GetPosition + Clone> GetPosition for Top<Item>
+impl<Item: Focus + GetPosition + Clone, RefKind: SharedPointerKind> GetPosition
+    for Top<Item, RefKind>
 where
     Item::Complete: Clone,
 {
@@ -192,7 +190,7 @@ where
     }
 }
 
-impl<Item: Focus + Clone> GetHash for Top<Item>
+impl<Item: Focus + Clone, RefKind: SharedPointerKind> GetHash for Top<Item, RefKind>
 where
     Item::Complete: Clone,
 {
@@ -215,7 +213,7 @@ where
     }
 }
 
-impl<Item: Focus + Witness + Clone> Witness for Top<Item>
+impl<Item: Focus + Witness + Clone, RefKind: SharedPointerKind> Witness for Top<Item, RefKind>
 where
     Item::Complete: Witness + Clone,
 {
@@ -228,10 +226,13 @@ where
     }
 }
 
-impl<'tree, Item: Focus + GetPosition + Height + structure::Any<'tree> + Clone>
-    structure::Any<'tree> for Top<Item>
+impl<
+        'tree,
+        Item: Focus + GetPosition + Height + structure::Any<RefKind> + Clone,
+        RefKind: SharedPointerKind,
+    > structure::Any<RefKind> for Top<Item, RefKind>
 where
-    Item::Complete: structure::Any<'tree> + Clone,
+    Item::Complete: structure::Any<RefKind> + Clone,
 {
     fn kind(&self) -> Kind {
         Kind::Internal {
@@ -247,7 +248,7 @@ where
         self.forgotten().unwrap_or_default()
     }
 
-    fn children(&self) -> Vec<structure::Node<'_, 'tree>> {
+    fn children(&self) -> Vec<structure::Node<RefKind>> {
         self.inner
             .as_ref()
             .map(structure::Any::children)
@@ -255,7 +256,8 @@ where
     }
 }
 
-impl<Item: Focus + Height + OutOfOrder + Clone> OutOfOrder for Top<Item>
+impl<Item: Focus + Height + OutOfOrder + Clone, RefKind: SharedPointerKind> OutOfOrder
+    for Top<Item, RefKind>
 where
     Item::Complete: OutOfOrderOwned + Clone,
 {
@@ -283,7 +285,8 @@ where
     }
 }
 
-impl<Item: Focus + Height + UncheckedSetHash + Clone> UncheckedSetHash for Top<Item>
+impl<Item: Focus + Height + UncheckedSetHash + Clone, RefKind: SharedPointerKind> UncheckedSetHash
+    for Top<Item, RefKind>
 where
     Item::Complete: UncheckedSetHash + Clone,
 {

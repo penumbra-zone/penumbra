@@ -1,3 +1,4 @@
+use archery::ArcK;
 use ark_ff::UniformRand;
 use poseidon377::Fq;
 
@@ -7,7 +8,8 @@ use crate::prelude::*;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Proof(
     pub(super)  crate::internal::proof::Proof<
-        frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>,
+        // It doesn't matter what we use here for `RefKind` because it's a phantom type
+        frontier::Top<frontier::Tier<frontier::Tier<frontier::Item, ArcK>, ArcK>, ArcK>,
     >,
 );
 

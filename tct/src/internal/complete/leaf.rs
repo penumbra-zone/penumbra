@@ -1,7 +1,9 @@
+use archery::SharedPointerKind;
+
 use crate::prelude::*;
 
 /// A complete, witnessed leaf of a tree.
-#[derive(Clone, Copy, Derivative, Serialize, Deserialize)]
+#[derive(Clone, Copy, Derivative)]
 #[derivative(Debug = "transparent")]
 pub struct Leaf<Item>(pub(in super::super) Item);
 
@@ -56,7 +58,9 @@ impl<Item> GetPosition for Leaf<Item> {
     }
 }
 
-impl<'tree, Item: Height + structure::Any<'tree>> structure::Any<'tree> for Leaf<Item> {
+impl<Item: Height + structure::Any<RefKind>, RefKind: SharedPointerKind> structure::Any<RefKind>
+    for Leaf<Item>
+{
     fn kind(&self) -> Kind {
         self.0.kind()
     }
@@ -69,7 +73,7 @@ impl<'tree, Item: Height + structure::Any<'tree>> structure::Any<'tree> for Leaf
         self.0.forgotten()
     }
 
-    fn children(&self) -> Vec<Node<'_, 'tree>> {
+    fn children(&self) -> Vec<Node<RefKind>> {
         self.0.children()
     }
 }

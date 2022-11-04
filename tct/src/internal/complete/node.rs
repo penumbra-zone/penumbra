@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use archery::SharedPointerKind;
 
 use crate::prelude::*;
 
@@ -8,37 +8,15 @@ pub mod children;
 pub use children::Children;
 
 /// A complete sparse node in a tree, storing only the witnessed subtrees.
-#[derive(Clone, Debug)]
-pub struct Node<Child: Clone> {
+#[derive(Derivative, Debug)]
+#[derivative(Clone(bound = "Child: Clone"))]
+pub struct Node<Child: Clone, RefKind: SharedPointerKind> {
     hash: Hash,
     forgotten: [Forgotten; 4],
-    children: Children<Child>,
+    children: Children<Child, RefKind>,
 }
 
-impl<Child: Serialize + Clone> Serialize for Node<Child> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        self.children.serialize(serializer)
-    }
-}
-
-impl<'de, Child: Height + GetHash + Deserialize<'de> + Clone> Deserialize<'de> for Node<Child> {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let children = Children::deserialize(deserializer)?;
-        Ok(Self {
-            hash: children.hash(),
-            forgotten: Default::default(),
-            children,
-        })
-    }
-}
-
-impl<Child: Height + Clone> Node<Child> {
+impl<Child: Height + Clone, RefKind: SharedPointerKind> Node<Child, RefKind> {
     pub(in super::super) fn from_children_or_else_hash(
         forgotten: [Forgotten; 4],
         children: [Insert<Child>; 4],
@@ -71,18 +49,18 @@ impl<Child: Height + Clone> Node<Child> {
     }
 }
 
-impl<Child: Height + Clone> Height for Node<Child> {
+impl<Child: Height + Clone, RefKind: SharedPointerKind> Height for Node<Child, RefKind> {
     type Height = Succ<Child::Height>;
 }
 
-impl<Child: Complete + Clone> Complete for Node<Child>
+impl<Child: Complete + Clone, RefKind: SharedPointerKind> Complete for Node<Child, RefKind>
 where
     Child::Focus: Clone,
 {
-    type Focus = frontier::Node<Child::Focus>;
+    type Focus = frontier::Node<Child::Focus, RefKind>;
 }
 
-impl<Child: Height + GetHash + Clone> GetHash for Node<Child> {
+impl<Child: Height + GetHash + Clone, RefKind: SharedPointerKind> GetHash for Node<Child, RefKind> {
     #[inline]
     fn hash(&self) -> Hash {
         self.hash
@@ -94,7 +72,9 @@ impl<Child: Height + GetHash + Clone> GetHash for Node<Child> {
     }
 }
 
-impl<Child: GetHash + Witness + Clone> Witness for Node<Child> {
+impl<Child: GetHash + Witness + Clone, RefKind: SharedPointerKind> Witness
+    for Node<Child, RefKind>
+{
     #[inline]
     fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Hash)> {
         let index = index.into();
@@ -115,7 +95,9 @@ impl<Child: GetHash + Witness + Clone> Witness for Node<Child> {
     }
 }
 
-impl<Child: GetHash + ForgetOwned + Clone> ForgetOwned for Node<Child> {
+impl<Child: GetHash + ForgetOwned + Clone, RefKind: SharedPointerKind> ForgetOwned
+    for Node<Child, RefKind>
+{
     #[inline]
     fn forget_owned(
         self,
@@ -185,13 +167,15 @@ impl<Child: GetHash + ForgetOwned + Clone> ForgetOwned for Node<Child> {
     }
 }
 
-impl<Child: Clone> GetPosition for Node<Child> {
+impl<Child: Clone, RefKind: SharedPointerKind> GetPosition for Node<Child, RefKind> {
     fn position(&self) -> Option<u64> {
         None
     }
 }
 
-impl<'tree, Item: Height + structure::Any<'tree> + Clone> structure::Any<'tree> for Node<Item> {
+impl<Child: Height + structure::Any<RefKind> + Clone, RefKind: SharedPointerKind>
+    structure::Any<RefKind> for Node<Child, RefKind>
+{
     fn kind(&self) -> Kind {
         Kind::Internal {
             height: <Self as Height>::Height::HEIGHT,
@@ -206,19 +190,25 @@ impl<'tree, Item: Height + structure::Any<'tree> + Clone> structure::Any<'tree> 
         self.forgotten.iter().copied().max().unwrap_or_default()
     }
 
-    fn children(&self) -> Vec<structure::Node<'_, 'tree>> {
+    fn children(&self) -> Vec<structure::Node<RefKind>> {
         self.forgotten
             .iter()
             .copied()
             .zip(self.children.children().into_iter())
             .map(|(forgotten, child)| {
-                structure::Node::child(forgotten, child.map(|child| child as &dyn structure::Any))
+                structure::Node::child(
+                    &self,
+                    forgotten,
+                    child.map(|child| Box::new(child.clone()) as Box<dyn structure::Any<RefKind>>),
+                )
             })
             .collect()
     }
 }
 
-impl<Child: Height + OutOfOrderOwned + Clone> OutOfOrderOwned for Node<Child> {
+impl<Child: Height + OutOfOrderOwned + Clone, RefKind: SharedPointerKind> OutOfOrderOwned
+    for Node<Child, RefKind>
+{
     fn uninitialized_out_of_order_insert_commitment_owned(
         this: Insert<Self>,
         index: u64,
@@ -271,7 +261,9 @@ impl<Child: Height + OutOfOrderOwned + Clone> OutOfOrderOwned for Node<Child> {
     }
 }
 
-impl<Child: GetHash + UncheckedSetHash + Clone> UncheckedSetHash for Node<Child> {
+impl<Child: GetHash + UncheckedSetHash + Clone, RefKind: SharedPointerKind> UncheckedSetHash
+    for Node<Child, RefKind>
+{
     fn unchecked_set_hash(&mut self, index: u64, height: u8, hash: Hash) {
         use std::cmp::Ordering::*;
 

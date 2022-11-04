@@ -4,6 +4,7 @@
 
 use std::{fmt::Debug, ops::RangeInclusive};
 
+use archery::{SharedPointer, SharedPointerKind};
 use ark_ff::{fields::PrimeField, BigInteger256, Fp256, One, Zero};
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
@@ -57,6 +58,30 @@ impl<T: GetHash> GetHash for &T {
 }
 
 impl<T: GetHash> GetHash for &mut T {
+    #[inline]
+    fn hash(&self) -> Hash {
+        (**self).hash()
+    }
+
+    #[inline]
+    fn cached_hash(&self) -> Option<Hash> {
+        (**self).cached_hash()
+    }
+}
+
+impl<T: GetHash> GetHash for Box<T> {
+    #[inline]
+    fn hash(&self) -> Hash {
+        (**self).hash()
+    }
+
+    #[inline]
+    fn cached_hash(&self) -> Option<Hash> {
+        (**self).cached_hash()
+    }
+}
+
+impl<T: GetHash, RefKind: SharedPointerKind> GetHash for SharedPointer<T, RefKind> {
     #[inline]
     fn hash(&self) -> Hash {
         (**self).hash()

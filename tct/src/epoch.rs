@@ -1,8 +1,7 @@
 use std::fmt::Display;
-use std::sync::Arc;
 
+use archery::{SharedPointer, SharedPointerKind};
 use decaf377::{FieldExt, Fq};
-use hash_hasher::HashedMap;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
@@ -16,35 +15,35 @@ pub(crate) mod block;
 /// [`Commitment`]s.
 ///
 /// This is one epoch in a [`Tree`].
-#[derive(Derivative, Debug, Clone, Serialize, Deserialize)]
-pub struct Builder {
-    index: HashedMap<Commitment, index::within::Epoch>,
-    inner: Arc<frontier::Top<frontier::Tier<frontier::Item>>>,
+#[derive(Derivative, Debug, Clone)]
+pub struct Builder<RefKind: SharedPointerKind = archery::ArcK> {
+    index: HashedMap<Commitment, index::within::Epoch, RefKind>,
+    inner: SharedPointer<frontier::Top<frontier::Tier<frontier::Item, RefKind>, RefKind>, RefKind>,
 }
 
-impl Default for Builder {
+impl<RefKind: SharedPointerKind> Default for Builder<RefKind> {
     fn default() -> Self {
         Self {
             index: HashedMap::default(),
-            inner: Arc::new(frontier::Top::new(frontier::TrackForgotten::No)),
+            inner: SharedPointer::new(frontier::Top::new(frontier::TrackForgotten::No)),
         }
     }
 }
 
 /// A finalized epoch builder, ready to be inserted into a [`Tree`].
-#[derive(Derivative, Debug, Clone, Serialize, Deserialize)]
-pub struct Finalized {
-    pub(super) index: HashedMap<Commitment, index::within::Epoch>,
-    pub(super) inner: Insert<complete::Top<complete::Tier<complete::Item>>>,
+#[derive(Derivative, Debug, Clone)]
+pub struct Finalized<RefKind: SharedPointerKind = archery::ArcK> {
+    pub(super) index: HashedMap<Commitment, index::within::Epoch, RefKind>,
+    pub(super) inner: Insert<complete::Top<complete::Tier<complete::Item, RefKind>, RefKind>>,
 }
 
-impl Default for Finalized {
+impl<RefKind: SharedPointerKind> Default for Finalized<RefKind> {
     fn default() -> Self {
         Builder::default().finalize()
     }
 }
 
-impl Finalized {
+impl<RefKind: SharedPointerKind> Finalized<RefKind> {
     /// Get the root hash of this finalized epoch.
     ///
     /// Internal hashing is performed lazily to prevent unnecessary intermediary hashes from being
@@ -58,7 +57,7 @@ impl Finalized {
     }
 }
 
-impl From<Root> for Finalized {
+impl<RefKind: SharedPointerKind> From<Root> for Finalized<RefKind> {
     fn from(root: Root) -> Self {
         Self {
             index: HashedMap::default(),
@@ -67,8 +66,8 @@ impl From<Root> for Finalized {
     }
 }
 
-impl From<Builder> for Finalized {
-    fn from(mut builder: Builder) -> Self {
+impl<RefKind: SharedPointerKind> From<Builder<RefKind>> for Finalized<RefKind> {
+    fn from(mut builder: Builder<RefKind>) -> Self {
         builder.finalize()
     }
 }
@@ -123,13 +122,13 @@ impl Display for Root {
     }
 }
 
-impl From<InsertBlockError> for block::Finalized {
-    fn from(error: InsertBlockError) -> Self {
+impl<RefKind: SharedPointerKind> From<InsertBlockError<RefKind>> for block::Finalized<RefKind> {
+    fn from(error: InsertBlockError<RefKind>) -> Self {
         error.0
     }
 }
 
-impl Builder {
+impl<RefKind: SharedPointerKind> Builder<RefKind> {
     /// Create a new empty [`epoch::Builder`](Builder).
     pub fn new() -> Self {
         Self::default()
@@ -155,7 +154,7 @@ impl Builder {
             .into();
 
         // Try to insert the commitment into the latest block
-        Arc::make_mut(&mut self.inner)
+        SharedPointer::make_mut(&mut self.inner)
             .update(|block| {
                 // Don't insert into a finalized block (this will fail); create a new one instead
                 // (below)
@@ -169,7 +168,7 @@ impl Builder {
             // If the latest block was finalized already or doesn't exist, create a new block and
             // insert into that block
             .unwrap_or_else(|| {
-                Arc::make_mut(&mut self.inner)
+                SharedPointer::make_mut(&mut self.inner)
                     .insert(frontier::Tier::new(item))
                     .map_err(|_| InsertError::Full)?;
                 Ok(())
@@ -178,12 +177,15 @@ impl Builder {
         // Keep track of the position of this just-inserted commitment in the index, if it was
         // slated to be kept
         if let Witness::Keep = witness {
-            if let Some(replaced) = self.index.insert(commitment, position) {
+            if let Some(&replaced) = self.index.get(&commitment) {
                 // This case is handled for completeness, but should not happen in
                 // practice because commitments should be unique
-                let forgotten = Arc::make_mut(&mut self.inner).forget(replaced);
+                let forgotten = SharedPointer::make_mut(&mut self.inner).forget(replaced);
                 debug_assert!(forgotten);
             }
+
+            // Actually perform the insertion
+            self.index.insert_mut(commitment, position);
         }
 
         Ok(())
@@ -195,8 +197,8 @@ impl Builder {
     /// particular, on [`block::Builder`], [`block::Finalized`], and [`block::Root`].
     pub fn insert_block(
         &mut self,
-        block: impl Into<block::Finalized>,
-    ) -> Result<block::Root, InsertBlockError> {
+        block: impl Into<block::Finalized<RefKind>>,
+    ) -> Result<block::Root, InsertBlockError<RefKind>> {
         let block::Finalized { inner, index } = block.into();
 
         // If the insertion would fail, return an error
@@ -205,14 +207,14 @@ impl Builder {
         }
 
         // Convert the top level inside of the block to a tier that can be slotted into the epoch
-        let inner: frontier::Tier<frontier::Item> = match inner {
+        let inner: frontier::Tier<frontier::Item, RefKind> = match inner {
             Insert::Keep(inner) => inner.into(),
             Insert::Hash(hash) => hash.into(),
         };
 
         // Finalize the latest block, if it exists and is not yet finalized -- this means that
         // position calculations will be correct, since they will start at the next block
-        Arc::make_mut(&mut self.inner).update(|block| block.finalize());
+        SharedPointer::make_mut(&mut self.inner).update(|block| block.finalize());
 
         // Get the block index of the next insertion
         let index::within::Epoch { block, .. } = u32::try_from(
@@ -227,23 +229,29 @@ impl Builder {
         let block_root = block::Root(inner.hash());
 
         // Insert the inner tree of the block into the epoch
-        Arc::make_mut(&mut self.inner)
+        SharedPointer::make_mut(&mut self.inner)
             .insert(inner)
             .expect("inserting a block must succeed because epoch is not full");
 
         // Add the index of all commitments in the block to the epoch index
-        for (c, index::within::Block { commitment }) in index {
+        for (&c, index::within::Block { commitment }) in &index {
             // If any commitment is repeated, forget the previous one within the tree, since it is
             // now inaccessible
-            if let Some(replaced) = self
-                .index
-                .insert(c, index::within::Epoch { block, commitment })
-            {
+            if let Some(&replaced) = self.index.get(&c) {
                 // This case is handled for completeness, but should not happen in practice because
                 // commitments should be unique
-                let forgotten = Arc::make_mut(&mut self.inner).forget(replaced);
+                let forgotten = SharedPointer::make_mut(&mut self.inner).forget(replaced);
                 debug_assert!(forgotten);
             }
+
+            // Actually perform the insertion after the bookkeeping above
+            self.index.insert_mut(
+                c,
+                index::within::Epoch {
+                    block,
+                    commitment: *commitment,
+                },
+            )
         }
 
         Ok(block_root)
@@ -251,16 +259,16 @@ impl Builder {
 
     /// Explicitly mark the end of the current block in this epoch, advancing the position to the
     /// next block.
-    pub fn end_block(&mut self) -> Result<block::Root, InsertBlockError> {
+    pub fn end_block(&mut self) -> Result<block::Root, InsertBlockError<RefKind>> {
         // Check to see if the latest block is already finalized, and finalize it if
         // it is not
-        let (already_finalized, finalized_root) = Arc::make_mut(&mut self.inner)
+        let (already_finalized, finalized_root) = SharedPointer::make_mut(&mut self.inner)
             .update(|tier| {
                 let already_finalized = tier.finalize();
                 (already_finalized, block::Root(tier.hash()))
             })
             // If the entire epoch is empty, the latest block is considered already finalized
-            .unwrap_or((true, block::Finalized::default().root()));
+            .unwrap_or((true, block::Finalized::<RefKind>::default().root()));
 
         // If the latest block was already finalized (i.e. we are at the start of an unfinalized
         // empty block), insert an empty finalized block
@@ -280,11 +288,11 @@ impl Builder {
 
     /// Finalize this epoch builder, returning a finalized epoch and resetting the underlying
     /// builder to the initial empty state.
-    pub fn finalize(&mut self) -> Finalized {
+    pub fn finalize(&mut self) -> Finalized<RefKind> {
         let this = std::mem::take(self);
 
         // This avoids cloning the arc when we have the only reference to it
-        let inner = Arc::try_unwrap(this.inner).unwrap_or_else(|arc| (*arc).clone());
+        let inner = SharedPointer::try_unwrap(this.inner).unwrap_or_else(|arc| (*arc).clone());
 
         let inner = inner.finalize();
         let index = this.index;

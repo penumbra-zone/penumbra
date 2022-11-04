@@ -1,5 +1,6 @@
 //! Incremental serialization for the [`Tree`](crate::Tree).
 
+use archery::SharedPointerKind;
 use decaf377::FieldExt;
 use futures::{Stream, StreamExt};
 use poseidon377::Fq;
@@ -43,7 +44,7 @@ pub(crate) struct InternalHash {
 }
 
 impl Serializer {
-    fn is_node_fresh(&self, node: &structure::Node) -> bool {
+    fn is_node_fresh<RefKind: SharedPointerKind>(&self, node: &structure::Node<RefKind>) -> bool {
         match self.last_stored_position {
             StoredPosition::Full => false,
             StoredPosition::Position(last_stored_position) => {
@@ -64,7 +65,10 @@ impl Serializer {
         }
     }
 
-    fn was_node_on_previous_frontier(&self, node: &structure::Node) -> bool {
+    fn was_node_on_previous_frontier<RefKind: SharedPointerKind>(
+        &self,
+        node: &structure::Node<RefKind>,
+    ) -> bool {
         if let StoredPosition::Position(last_stored_position) = self.last_stored_position {
             let last_stored_position: u64 = last_stored_position.into();
 
@@ -88,7 +92,10 @@ impl Serializer {
         }
     }
 
-    fn node_has_fresh_children(&self, node: &structure::Node) -> bool {
+    fn node_has_fresh_children<RefKind: SharedPointerKind>(
+        &self,
+        node: &structure::Node<RefKind>,
+    ) -> bool {
         self.is_node_fresh(node)
             || match self.last_stored_position {
                 StoredPosition::Position(last_stored_position) => node
@@ -102,14 +109,14 @@ impl Serializer {
     }
 
     /// Serialize a tree's structure into a depth-first pre-order traversal of hashes within it.
-    pub fn hashes_stream<'tree>(
+    pub fn hashes_stream<RefKind: SharedPointerKind>(
         &self,
-        tree: &'tree crate::Tree,
-    ) -> impl Stream<Item = InternalHash> + Send + Unpin + 'tree {
-        fn hashes_inner<'a, 'tree: 'a>(
+        tree: &crate::Tree<RefKind>,
+    ) -> impl Stream<Item = InternalHash> + Send + Unpin {
+        fn hashes_inner<'a, 'tree: 'a, RefKind: SharedPointerKind>(
             options: Serializer,
-            node: structure::Node<'a, 'tree>,
-        ) -> Pin<Box<dyn Stream<Item = InternalHash> + Send + 'a>> {
+            node: structure::Node<RefKind>,
+        ) -> Pin<Box<dyn Stream<Item = InternalHash> + Send>> {
             Box::pin(stream! {
                 let position = node.position();
                 let height = node.height();
@@ -171,14 +178,14 @@ impl Serializer {
     }
 
     /// Serialize a tree's structure into its commitments, in right-to-left order.
-    pub fn commitments_stream<'tree>(
+    pub fn commitments_stream<RefKind: SharedPointerKind>(
         &self,
-        tree: &'tree crate::Tree,
-    ) -> impl Stream<Item = (Position, Commitment)> + Send + Unpin + 'tree {
-        fn commitments_inner<'a, 'tree: 'a>(
+        tree: &crate::Tree<RefKind>,
+    ) -> impl Stream<Item = (Position, Commitment)> + Send + Unpin {
+        fn commitments_inner<RefKind: SharedPointerKind>(
             options: Serializer,
-            node: structure::Node<'a, 'tree>,
-        ) -> Pin<Box<dyn Stream<Item = (Position, Commitment)> + Send + 'a>> {
+            node: structure::Node<RefKind>,
+        ) -> Pin<Box<dyn Stream<Item = (Position, Commitment)> + Send>> {
             Box::pin(stream! {
                 let position = node.position();
                 let children = node.children();
@@ -212,22 +219,22 @@ impl Serializer {
 
     /// Serialize a tree's structure into an iterator of commitments within it, for use in
     /// synchronous contexts.
-    pub fn commitments_iter<'tree>(
+    pub fn commitments_iter<RefKind: SharedPointerKind>(
         &self,
-        tree: &'tree crate::Tree,
-    ) -> impl Iterator<Item = (Position, Commitment)> + Send + 'tree {
+        tree: &crate::Tree<RefKind>,
+    ) -> impl Iterator<Item = (Position, Commitment)> + Send {
         futures::executor::block_on_stream(self.commitments_stream(tree))
     }
 
     /// Get a stream of forgotten locations, which can be deleted from incremental storage.
-    pub fn forgotten_stream<'tree>(
+    pub fn forgotten_stream<RefKind: SharedPointerKind>(
         &self,
-        tree: &'tree crate::Tree,
-    ) -> impl Stream<Item = InternalHash> + Send + Unpin + 'tree {
-        fn forgotten_inner<'a, 'tree: 'a>(
+        tree: &crate::Tree<RefKind>,
+    ) -> impl Stream<Item = InternalHash> + Send + Unpin {
+        fn forgotten_inner<RefKind: SharedPointerKind>(
             options: Serializer,
-            node: structure::Node<'a, 'tree>,
-        ) -> Pin<Box<dyn Stream<Item = InternalHash> + Send + 'a>> {
+            node: structure::Node<RefKind>,
+        ) -> Pin<Box<dyn Stream<Item = InternalHash> + Send>> {
             Box::pin(stream! {
                 // Only report nodes (and their children) which are less than the last stored position
                 // (because those greater will not have yet been serialized to storage) and greater
@@ -281,7 +288,10 @@ impl Serializer {
 
 /// Serialize the changes to a [`Tree`](crate::Tree) into a writer, deleting all forgotten nodes and
 /// adding all new nodes.
-pub async fn to_writer<W: Write>(writer: &mut W, tree: &crate::Tree) -> Result<(), W::Error> {
+pub async fn to_writer<W: Write, RefKind: SharedPointerKind>(
+    writer: &mut W,
+    tree: &crate::Tree<RefKind>,
+) -> Result<(), W::Error> {
     // If the tree is empty, skip doing anything
     if tree.is_empty() {
         return Ok(());

@@ -5,6 +5,8 @@ use std::{
     fmt::{Display, Write},
 };
 
+use archery::SharedPointerKind;
+
 use crate::prelude::*;
 
 /// Verify that the inner index of the tree is correct with respect to the tree structure
@@ -15,7 +17,7 @@ use crate::prelude::*;
 ///
 /// If this ever returns `Err`, it indicates either a bug in this crate, or a tree that was
 /// deserialized from an untrustworthy source.
-pub fn index(tree: &Tree) -> Result<(), IndexMalformed> {
+pub fn index<RefKind: SharedPointerKind>(tree: &Tree<RefKind>) -> Result<(), IndexMalformed> {
     // A reverse index from positions back to the commitments that are supposed to map to their
     // hashes
     let reverse_index: BTreeMap<Position, Commitment> = tree
@@ -119,7 +121,9 @@ pub enum IndexError {
 ///
 /// If this ever returns `Err`, it indicates either a bug in this crate, or a tree that was
 /// deserialized from an untrustworthy source.
-pub fn all_proofs(tree: &Tree) -> Result<(), InvalidWitnesses> {
+pub fn all_proofs<RefKind: SharedPointerKind>(
+    tree: &Tree<RefKind>,
+) -> Result<(), InvalidWitnesses> {
     let root = tree.root();
 
     let mut errors = vec![];
@@ -184,10 +188,15 @@ pub enum WitnessError {
 /// a lot of hashing.
 ///
 /// If this ever returns `Err`, it indicates a bug in this crate.
-pub fn cached_hashes(tree: &Tree) -> Result<(), InvalidCachedHashes> {
+pub fn cached_hashes<RefKind: SharedPointerKind>(
+    tree: &Tree<RefKind>,
+) -> Result<(), InvalidCachedHashes> {
     use structure::*;
 
-    fn check_hashes(errors: &mut Vec<InvalidCachedHash>, node: Node) {
+    fn check_hashes<RefKind: SharedPointerKind>(
+        errors: &mut Vec<InvalidCachedHash>,
+        node: Node<RefKind>,
+    ) {
         // IMPORTANT: we need to traverse children before parent, to avoid overwriting the
         // parent's hash before we have a chance to check it! This is why we don't use
         // `structure::traverse` here, because that is a pre-order traversal.
@@ -258,13 +267,13 @@ pub struct InvalidCachedHash {
 /// This is a relatively expensive operation which requires traversing the entire tree structure.
 ///
 /// If this ever returns `Err`, it indicates a bug in this crate.
-pub fn forgotten(tree: &Tree) -> Result<(), InvalidForgotten> {
+pub fn forgotten<RefKind: SharedPointerKind>(tree: &Tree<RefKind>) -> Result<(), InvalidForgotten> {
     use structure::*;
 
-    fn check_forgotten(
+    fn check_forgotten<RefKind: SharedPointerKind>(
         errors: &mut Vec<InvalidForgottenVersion>,
         expected_max: Option<Forgotten>,
-        node: Node,
+        node: Node<RefKind>,
     ) {
         let children = node.children();
         let actual_max = node

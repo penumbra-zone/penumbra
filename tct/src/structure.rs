@@ -5,6 +5,8 @@ use std::{
     ops::Range,
 };
 
+use archery::{SharedPointer, SharedPointerKind};
+
 use crate::prelude::*;
 
 #[doc(inline)]
@@ -12,16 +14,16 @@ pub use crate::internal::hash::{Forgotten, Hash};
 
 /// Every kind of node in the tree implements [`Node`], and its methods collectively describe every
 /// salient fact about each node, dynamically rather than statically as in the rest of the crate.
-pub(crate) trait Any<'tree>: GetHash + sealed::Sealed {
+pub(crate) trait Any<RefKind: SharedPointerKind>: GetHash + sealed::Sealed {
     /// The parent of this node, if any.
     ///
     /// This defaults to `None`, but is filled in by the [`Any`] implementation of [`Node`].
-    fn parent<'a>(&'a self) -> Option<Node<'a, 'tree>> {
+    fn parent<'a>(&'a self) -> Option<Node<RefKind>> {
         None
     }
 
     /// The children of this node.
-    fn children<'a>(&'a self) -> Vec<Node<'a, 'tree>>;
+    fn children(&self) -> Vec<Node<RefKind>>;
 
     /// The kind of the node: either a [`Kind::Internal`] with a height, or a [`Kind::Leaf`] with an
     /// optional [`Commitment`].
@@ -43,7 +45,7 @@ pub(crate) trait Any<'tree>: GetHash + sealed::Sealed {
     fn global_position(&self) -> Option<Position>;
 }
 
-impl GetHash for &dyn Any<'_> {
+impl<RefKind: SharedPointerKind> GetHash for &dyn Any<RefKind> {
     fn hash(&self) -> Hash {
         (**self).hash()
     }
@@ -57,7 +59,7 @@ impl GetHash for &dyn Any<'_> {
     }
 }
 
-impl<'tree, T: Any<'tree>> Any<'tree> for &T {
+impl<T: Any<RefKind>, RefKind: SharedPointerKind> Any<RefKind> for &T {
     fn index(&self) -> u64 {
         (**self).index()
     }
@@ -70,7 +72,7 @@ impl<'tree, T: Any<'tree>> Any<'tree> for &T {
         (**self).global_position()
     }
 
-    fn parent(&self) -> Option<Node<'_, 'tree>> {
+    fn parent(&self) -> Option<Node<RefKind>> {
         (**self).parent()
     }
 
@@ -78,7 +80,7 @@ impl<'tree, T: Any<'tree>> Any<'tree> for &T {
         (**self).forgotten()
     }
 
-    fn children(&self) -> Vec<Node<'_, 'tree>> {
+    fn children(&self) -> Vec<Node<RefKind>> {
         (**self).children()
     }
 }
@@ -129,15 +131,17 @@ impl Display for Place {
 }
 
 /// An arbitrary node somewhere within a tree.
-#[derive(Copy, Clone)]
-pub struct Node<'a, 'tree: 'a> {
+#[derive(Derivative)]
+#[derivative(Clone(bound = ""))]
+pub struct Node<RefKind: SharedPointerKind> {
     offset: u64,
     forgotten: Forgotten,
-    parent: Option<&'a Node<'a, 'tree>>,
-    this: Insert<&'a (dyn Any<'tree> + 'a)>,
+    global_position: Option<Position>,
+    kind: Kind,
+    this: Insert<SharedPointer<Box<dyn Any<RefKind>>, RefKind>>,
 }
 
-impl Debug for Node<'_, '_> {
+impl<RefKind: SharedPointerKind> Debug for Node<RefKind> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let name = format!("{}::{}", self.place(), self.kind());
         let mut s = f.debug_struct(&name);
@@ -165,7 +169,7 @@ impl Debug for Node<'_, '_> {
     }
 }
 
-impl Display for Node<'_, '_> {
+impl<RefKind: SharedPointerKind> Display for Node<RefKind> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct(&format!("{}::{}", self.place(), self.kind()))
             .field("height", &self.height())
@@ -174,63 +178,84 @@ impl Display for Node<'_, '_> {
     }
 }
 
-impl<'a, 'tree: 'a> Node<'a, 'tree> {
+impl<RefKind: SharedPointerKind> Node<RefKind> {
     /// Make a root node.
-    pub(crate) fn root(this: &'a dyn Any<'tree>) -> Self {
+    pub(crate) fn root(this: Box<dyn Any<RefKind>>) -> Self {
         Self {
             offset: 0,
             forgotten: this.forgotten(),
-            parent: None,
-            this: Insert::Keep(this),
+            global_position: this.global_position(),
+            kind: this.kind(),
+            this: Insert::Keep(SharedPointer::new(this)),
         }
     }
 
     /// Make a new [`Child`] from a reference to something implementing [`Node`].
-    pub(crate) fn child(forgotten: Forgotten, child: Insert<&'a dyn Any<'tree>>) -> Self {
+    pub(crate) fn child(
+        parent: &dyn Any<RefKind>,
+        forgotten: Forgotten,
+        child: Insert<Box<dyn Any<RefKind>>>,
+    ) -> Self {
         Node {
             offset: 0,
             forgotten,
-            parent: None,
-            this: child,
+            global_position: parent.global_position(),
+            this: child.map(SharedPointer::new),
+            kind: match child {
+                Insert::Keep(child) => child.kind(),
+                Insert::Hash(_) => match parent.kind() {
+                    Kind::Internal {
+                        height: height @ 2..=24,
+                    } => Kind::Internal { height: height - 1 },
+                    Kind::Internal { height: 1 } => Kind::Leaf { commitment: None },
+                    Kind::Internal {
+                        height: 0 | 25..=u8::MAX,
+                    } => {
+                        unreachable!("nodes cannot have zero height or height greater than 24")
+                    }
+                    Kind::Leaf { .. } => unreachable!("leaves cannot have children"),
+                },
+            },
         }
     }
 
-    /// The parent of this node, if any.
-    pub fn parent(&'a self) -> Option<Node<'a, 'tree>> {
-        (self as &dyn Any<'tree>).parent()
-    }
-
     /// The children of this node.
-    pub fn children(&'a self) -> Vec<Node<'a, 'tree>> {
-        (self as &dyn Any<'tree>).children()
+    pub fn children(&self) -> Vec<Node<RefKind>> {
+        (self as &dyn Any<RefKind>).children()
     }
 
     /// The hash of this node.
     pub fn hash(&self) -> Hash {
-        self.this.hash()
+        match self.this {
+            Insert::Keep(ref this) => this.hash(),
+            Insert::Hash(ref hash) => *hash,
+        }
     }
 
     /// The cached hash at this node, if any.
     pub fn cached_hash(&self) -> Option<Hash> {
-        self.this.cached_hash()
+        match self.this {
+            Insert::Keep(ref this) => this.cached_hash(),
+            Insert::Hash(ref hash) => Some(*hash),
+        }
     }
 
     /// The kind of the node: either a [`Kind::Internal`] with a height, or a [`Kind::Leaf`] with an
     /// optional [`Commitment`].
     pub fn kind(&self) -> Kind {
-        (self as &dyn Any).kind()
+        (self as &dyn Any<RefKind>).kind()
     }
 
     /// The most recent time something underneath this node was forgotten.
     pub fn forgotten(&self) -> Forgotten {
-        (self as &dyn Any).forgotten()
+        (self as &dyn Any<RefKind>).forgotten()
     }
 
     /// The index of this node from the left of the tree.
     ///
     /// For items at the base, this is the position of the item.
     pub fn index(&self) -> u64 {
-        (self as &dyn Any).index()
+        (self as &dyn Any<RefKind>).index()
     }
 
     /// The height of this node above the base of the tree.
@@ -260,7 +285,7 @@ impl<'a, 'tree: 'a> Node<'a, 'tree> {
 
     /// The global position of the tree inside of which this node exists.
     pub fn global_position(&self) -> Option<Position> {
-        <Self as Any>::global_position(self)
+        <Self as Any<RefKind>>::global_position(self)
     }
 
     /// The place on the tree where this node occurs.
@@ -290,48 +315,29 @@ impl<'a, 'tree: 'a> Node<'a, 'tree> {
     }
 }
 
-impl GetHash for Node<'_, '_> {
+impl<RefKind: SharedPointerKind> GetHash for Node<RefKind> {
     fn hash(&self) -> Hash {
-        self.this.hash()
+        match self.this {
+            Insert::Keep(ref this) => this.hash(),
+            Insert::Hash(ref hash) => *hash,
+        }
     }
 
     fn cached_hash(&self) -> Option<Hash> {
-        self.this.cached_hash()
+        match self.this {
+            Insert::Keep(ref this) => this.cached_hash(),
+            Insert::Hash(ref hash) => Some(*hash),
+        }
     }
 }
 
-impl<'a, 'tree: 'a> Any<'tree> for Node<'a, 'tree> {
+impl<RefKind: SharedPointerKind> Any<RefKind> for Node<RefKind> {
     fn index(&self) -> u64 {
         self.offset
     }
 
-    fn parent(&self) -> Option<Node<'a, 'tree>> {
-        self.parent.copied()
-    }
-
     fn kind(&self) -> Kind {
-        match self.this {
-            Insert::Keep(child) => child.kind(),
-            Insert::Hash(_) => {
-                if let Some(parent) = self.parent {
-                    match parent.kind() {
-                        Kind::Internal {
-                            height: height @ 2..=24,
-                        } => Kind::Internal { height: height - 1 },
-                        Kind::Internal { height: 1 } => Kind::Leaf { commitment: None },
-                        Kind::Internal {
-                            height: 0 | 25..=u8::MAX,
-                        } => {
-                            unreachable!("nodes cannot have zero height or height greater than 24")
-                        }
-                        Kind::Leaf { .. } => unreachable!("leaves cannot have children"),
-                    }
-                } else {
-                    // Hashed root node is an internal node of height 24
-                    Kind::Internal { height: 24 }
-                }
-            }
-        }
+        self.kind
     }
 
     fn forgotten(&self) -> Forgotten {
@@ -339,14 +345,10 @@ impl<'a, 'tree: 'a> Any<'tree> for Node<'a, 'tree> {
     }
 
     fn global_position(&self) -> Option<Position> {
-        if let Some(parent) = self.parent {
-            parent.global_position()
-        } else {
-            self.this.keep().and_then(Any::global_position)
-        }
+        self.global_position
     }
 
-    fn children(&self) -> Vec<Node<'_, 'tree>> {
+    fn children(&self) -> Vec<Node<RefKind>> {
         if let Insert::Keep(child) = self.this {
             child
                 .children()
@@ -360,7 +362,8 @@ impl<'a, 'tree: 'a> Any<'tree> for Node<'a, 'tree> {
                     Node {
                         forgotten: child.forgotten,
                         this: child.this,
-                        parent: Some(self),
+                        kind: child.kind,
+                        global_position: child.global_position,
                         offset: self.offset * 4 + nth as u64,
                     }
                 })
@@ -376,6 +379,7 @@ pub use traverse::{traverse, traverse_async};
 
 /// Functions to perform traversals of [`Node`]s in synchronous and asynchronous contexts.
 pub mod traverse {
+    use archery::SharedPointerKind;
     use std::{future::Future, pin::Pin};
 
     use super::Node;
@@ -414,7 +418,10 @@ pub mod traverse {
     ///
     /// Note that because `(): Into<Recur>`, it is valid to pass a function which returns `()` if
     /// the traversal should always recur and never stop before reaching a leaf.
-    pub fn traverse<R: Into<Recur>>(node: Node, with: &mut impl FnMut(Node) -> R) {
+    pub fn traverse<R: Into<Recur>, RefKind: SharedPointerKind>(
+        node: Node<RefKind>,
+        with: &mut impl FnMut(Node<RefKind>) -> R,
+    ) {
         if let down @ (Down | DownBackwards) = with(node).into() {
             let mut children = node.children();
             if let DownBackwards = down {
@@ -433,19 +440,19 @@ pub mod traverse {
     ///
     /// Note that because `(): Into<Recur>`, it is valid to pass a function which returns `()` if
     /// the traversal should always recur and never stop before reaching a leaf.
-    pub async fn traverse_async<'a, 'tree: 'a, R: Send + Into<Recur>, Fut>(
-        node: Node<'a, 'tree>,
-        with: &mut (impl FnMut(Node) -> Fut + Send),
+    pub async fn traverse_async<R: Send + Into<Recur>, Fut, RefKind: SharedPointerKind>(
+        node: Node<RefKind>,
+        with: &mut (impl FnMut(Node<RefKind>) -> Fut + Send),
     ) where
         Fut: Future<Output = R> + Send,
     {
         // We need this inner function to correctly specify the lifetimes for the recursive call
-        fn traverse_async_inner<'a, 'tree: 'a, 'b: 'a, R: Send + Into<Recur>, F, Fut>(
-            node: Node<'a, 'tree>,
-            with: &'b mut F,
-        ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>>
+        fn traverse_async_inner<R: Send + Into<Recur>, F, Fut, RefKind: SharedPointerKind>(
+            node: Node<RefKind>,
+            with: &mut F,
+        ) -> Pin<Box<dyn Future<Output = ()> + Send>>
         where
-            F: FnMut(Node) -> Fut + Send,
+            F: FnMut(Node<RefKind>) -> Fut + Send,
             Fut: Future<Output = R> + Send,
         {
             Box::pin(async move {
@@ -455,39 +462,51 @@ pub mod traverse {
                         children.reverse();
                     }
                     for child in children {
-                        traverse_async_inner::<'_, '_, '_, R, F, Fut>(child, with).await;
+                        traverse_async_inner::<R, F, Fut, _>(child, with).await;
                     }
                 }
             })
         }
 
-        traverse_async_inner::<'_, '_, '_, R, _, Fut>(node, with).await
+        traverse_async_inner::<R, _, Fut, _>(node, with).await
     }
 }
 
 mod sealed {
+    use archery::SharedPointerKind;
+
     use super::*;
 
-    pub trait Sealed: Send + Sync {}
+    pub trait Sealed {}
 
     impl<T: Sealed> Sealed for &T {}
-    impl Sealed for Node<'_, '_> {}
+    impl<RefKind: SharedPointerKind> Sealed for Node<RefKind> {}
 
     impl Sealed for complete::Item {}
     impl<T: Sealed> Sealed for complete::Leaf<T> {}
-    impl<T: Sealed + Clone> Sealed for complete::Node<T> {}
-    impl<T: Sealed + Height + GetHash + Clone> Sealed for complete::Tier<T> {}
-    impl<T: Sealed + Height + GetHash + Clone> Sealed for complete::Top<T> {}
+    impl<T: Sealed + Clone, RefKind: SharedPointerKind> Sealed for complete::Node<T, RefKind> {}
+    impl<T: Sealed + Height + GetHash + Clone, RefKind: SharedPointerKind> Sealed
+        for complete::Tier<T, RefKind>
+    {
+    }
+    impl<T: Sealed + Height + GetHash + Clone, RefKind: SharedPointerKind> Sealed
+        for complete::Top<T, RefKind>
+    {
+    }
 
     impl Sealed for frontier::Item {}
     impl<T: Sealed> Sealed for frontier::Leaf<T> {}
-    impl<T: Sealed + Focus> Sealed for frontier::Node<T> where T::Complete: Send + Sync {}
-    impl<T: Sealed + Height + GetHash + Focus + Clone> Sealed for frontier::Tier<T> where
-        T::Complete: Send + Sync + Clone
+    impl<T: Sealed + Focus, RefKind: SharedPointerKind> Sealed for frontier::Node<T, RefKind> {}
+    impl<T: Sealed + Height + GetHash + Focus + Clone, RefKind: SharedPointerKind> Sealed
+        for frontier::Tier<T, RefKind>
+    where
+        T::Complete: Clone,
     {
     }
-    impl<T: Sealed + Height + GetHash + Focus + Clone> Sealed for frontier::Top<T> where
-        T::Complete: Send + Sync + Clone
+    impl<T: Sealed + Height + GetHash + Focus + Clone, RefKind: SharedPointerKind> Sealed
+        for frontier::Top<T, RefKind>
+    where
+        T::Complete: Clone,
     {
     }
 }

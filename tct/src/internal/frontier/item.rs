@@ -1,7 +1,9 @@
+use archery::SharedPointerKind;
+
 use crate::prelude::*;
 
 /// The hash of the most-recently-inserted item, stored at the tip of the frontier.
-#[derive(Debug, Clone, Copy, Derivative, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Derivative)]
 pub struct Item {
     item: Insert<(Commitment, Hash)>,
 }
@@ -82,7 +84,7 @@ impl Forget for Item {
     }
 }
 
-impl<'tree> structure::Any<'tree> for Item {
+impl<RefKind: SharedPointerKind> structure::Any<RefKind> for Item {
     fn kind(&self) -> Kind {
         Kind::Leaf {
             commitment: self.item.keep().map(|(commitment, _)| commitment),
@@ -97,7 +99,7 @@ impl<'tree> structure::Any<'tree> for Item {
         Forgotten::default()
     }
 
-    fn children(&self) -> Vec<Node<'_, 'tree>> {
+    fn children(&self) -> Vec<Node<RefKind>> {
         vec![]
     }
 }

@@ -1,10 +1,12 @@
+use archery::SharedPointerKind;
+
 use crate::prelude::*;
 
 /// The frontier (rightmost) leaf in a frontier of a tree.
 ///
 /// Insertion into a leaf always fails, causing the tree above it to insert a new leaf to contain
 /// the inserted item.
-#[derive(Clone, Copy, Derivative, Serialize, Deserialize)]
+#[derive(Clone, Copy, Derivative)]
 #[derivative(Debug = "transparent")]
 pub struct Leaf<Item> {
     item: Item,
@@ -90,8 +92,8 @@ impl<Item: GetHash + Forget> Forget for Leaf<Item> {
     }
 }
 
-impl<'tree, Item: GetPosition + Height + structure::Any<'tree>> structure::Any<'tree>
-    for Leaf<Item>
+impl<'tree, Item: GetPosition + Height + structure::Any<RefKind>, RefKind: SharedPointerKind>
+    structure::Any<RefKind> for Leaf<Item>
 {
     fn kind(&self) -> Kind {
         self.item.kind()
@@ -105,7 +107,7 @@ impl<'tree, Item: GetPosition + Height + structure::Any<'tree>> structure::Any<'
         self.item.forgotten()
     }
 
-    fn children(&self) -> Vec<Node<'_, 'tree>> {
+    fn children(&self) -> Vec<Node<RefKind>> {
         self.item.children()
     }
 }
