@@ -64,3 +64,13 @@ pub fn delegation_changes_by_height(height: u64) -> String {
 pub fn current_consensus_keys() -> &'static str {
     "staking/current_consensus_keys"
 }
+
+pub(super) mod internal {
+    pub fn stub_delegation_changes() -> &'static str {
+        "staking/delegation_changes"
+    }
+
+    pub fn stub_tendermint_validator_updates() -> &'static str {
+        "staking/tendermint_validator_updates"
+    }
+}
