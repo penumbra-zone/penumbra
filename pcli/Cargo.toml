@@ -31,7 +31,7 @@ penumbra-component = { path = "../component" }
 pd = { path = "../pd" }
 
 # Penumbra dependencies
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "groth16-gadgets", features = ["r1cs"] }
 tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs", branch = "penumbra-034" }
 tendermint-rpc = { git = "https://github.com/penumbra-zone/tendermint-rs", branch = "penumbra-034", features = [
     "http-client",

@@ -22,7 +22,7 @@ penumbra-component = { path = "../component" }
 penumbra-wallet = { path = "../wallet" }
 
 # Penumbra dependencies
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "groth16-gadgets", features = ["r1cs"] }
 tower-abci = { git = "https://github.com/penumbra-zone/tower-abci/", branch = "penumbra-034" }
 jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "penumbra-034" }
 

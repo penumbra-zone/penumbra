@@ -12,7 +12,7 @@ penumbra-crypto = { path = "../crypto/" }
 penumbra-tct = { path = "../tct" }
 
 # Git deps
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "groth16-gadgets", features = ["r1cs"] }
 decaf377-rdsa = { git = "https://github.com/penumbra-zone/decaf377-rdsa" }
 poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377", branch="main" }
 ibc = { git = "https://github.com/penumbra-zone/ibc-rs", branch = "penumbra-034" }

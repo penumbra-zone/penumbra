@@ -13,7 +13,7 @@ penumbra-proto = { path = "../proto/" }
 penumbra-tct = { path = "../tct/" }
 
 # Git deps
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "groth16-gadgets", features = ["r1cs"] }
 decaf377-rdsa = { version = "0.5", git = "https://github.com/penumbra-zone/decaf377-rdsa" }
 poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377", branch = "main" }
 poseidon-paramgen = { git = "https://github.com/penumbra-zone/poseidon377", branch = "main" }

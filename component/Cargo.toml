@@ -17,7 +17,7 @@ penumbra-tct = { path = "../tct" }
 # Penumbra dependencies
 tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs", branch = "penumbra-034" }
 
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "groth16-gadgets", features = ["r1cs"] }
 jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "penumbra-034" }
 tokio = { version = "1.21.1", features = ["full", "tracing"] }
 async-trait = "0.1.52"
