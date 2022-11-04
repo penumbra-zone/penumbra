@@ -288,109 +288,109 @@ mod tests {
         let decrypted = -privkey * encrypted_aggregate.c1 + encrypted_aggregate.c2;
         assert_eq!(lut.get(&decrypted.vartime_compress().0).unwrap(), &600u64);
     }
-    #[test]
-    fn test_threshold_decryption() {
-        // do a dkg (using frost dkg for now), the do aggregation + threshold decryption
-        let lut = compute_lut(1000);
-        let t = 10;
-        let n = 20;
+    // #[test]
+    // fn test_threshold_decryption() {
+    //     // do a dkg (using frost dkg for now), the do aggregation + threshold decryption
+    //     let lut = compute_lut(1000);
+    //     let t = 10;
+    //     let n = 20;
 
-        let mut participants = Vec::new();
-        for i in 1..n + 1 {
-            participants.push(frost377::keygen::Participant::new(i, t));
-        }
-        let mut round1_messages = Vec::new();
-        for participant in participants.iter() {
-            round1_messages.push(participant.round_one());
-        }
-        for participant in participants.iter_mut() {
-            participant
-                .verify_roundone(round1_messages.clone())
-                .unwrap();
-        }
-        let other_participants = participants.clone();
-        for participant in participants.iter_mut() {
-            for participant_other in other_participants.iter() {
-                if participant.index == participant_other.index {
-                    continue;
-                }
-                let round2_message = participant_other.round_two(participant.index);
+    //     let mut participants = Vec::new();
+    //     for i in 1..n + 1 {
+    //         participants.push(frost377::keygen::Participant::new(i, t));
+    //     }
+    //     let mut round1_messages = Vec::new();
+    //     for participant in participants.iter() {
+    //         round1_messages.push(participant.round_one());
+    //     }
+    //     for participant in participants.iter_mut() {
+    //         participant
+    //             .verify_roundone(round1_messages.clone())
+    //             .unwrap();
+    //     }
+    //     let other_participants = participants.clone();
+    //     for participant in participants.iter_mut() {
+    //         for participant_other in other_participants.iter() {
+    //             if participant.index == participant_other.index {
+    //                 continue;
+    //             }
+    //             let round2_message = participant_other.round_two(participant.index);
 
-                participant
-                    .verify_and_add_roundtwo_response(&round2_message)
-                    .unwrap();
-            }
-        }
+    //             participant
+    //                 .verify_and_add_roundtwo_response(&round2_message)
+    //                 .unwrap();
+    //         }
+    //     }
 
-        let mut pubkey_commitments = Vec::new();
-        let mut dkg_outputs = Vec::new();
-        for participant in participants.iter() {
-            let output = participant.finalize().unwrap();
-            dkg_outputs.push(output.clone());
-            pubkey_commitments.push(output.private_share * decaf377::basepoint());
-        }
+    //     let mut pubkey_commitments = Vec::new();
+    //     let mut dkg_outputs = Vec::new();
+    //     for participant in participants.iter() {
+    //         let output = participant.finalize().unwrap();
+    //         dkg_outputs.push(output.clone());
+    //         pubkey_commitments.push(output.private_share * decaf377::basepoint());
+    //     }
 
-        // encrypt a few values for the dkg pubkey
-        let encrypted_values = [
-            encrypt_value(decaf377::Fr::from(100u64), dkg_outputs[0].group_public_key),
-            encrypt_value(decaf377::Fr::from(200u64), dkg_outputs[0].group_public_key),
-            encrypt_value(decaf377::Fr::from(300u64), dkg_outputs[0].group_public_key),
-        ];
-        let aggregate_value =
-            aggregate_values(&encrypted_values, dkg_outputs[0].group_public_key).unwrap();
+    //     // encrypt a few values for the dkg pubkey
+    //     let encrypted_values = [
+    //         encrypt_value(decaf377::Fr::from(100u64), dkg_outputs[0].group_public_key),
+    //         encrypt_value(decaf377::Fr::from(200u64), dkg_outputs[0].group_public_key),
+    //         encrypt_value(decaf377::Fr::from(300u64), dkg_outputs[0].group_public_key),
+    //     ];
+    //     let aggregate_value =
+    //         aggregate_values(&encrypted_values, dkg_outputs[0].group_public_key).unwrap();
 
-        // produce n decryption shares
-        let mut decryption_shares = Vec::new();
-        for i in 0..n {
-            let share = &dkg_outputs[i as usize];
-            decryption_shares.push(DecryptionShare::new(
-                share.private_share,
-                aggregate_value.c1,
-                share.participant_index,
-                pubkey_commitments[i as usize],
-            ));
-        }
+    //     // produce n decryption shares
+    //     let mut decryption_shares = Vec::new();
+    //     for i in 0..n {
+    //         let share = &dkg_outputs[i as usize];
+    //         decryption_shares.push(DecryptionShare::new(
+    //             share.private_share,
+    //             aggregate_value.c1,
+    //             share.participant_index,
+    //             pubkey_commitments[i as usize],
+    //         ));
+    //     }
 
-        // try threshold decryption with t/n shares
-        let decrypted_value = decrypt_value(
-            &aggregate_value,
-            &decryption_shares[..t as usize],
-            &pubkey_commitments,
-        );
+    //     // try threshold decryption with t/n shares
+    //     let decrypted_value = decrypt_value(
+    //         &aggregate_value,
+    //         &decryption_shares[..t as usize],
+    //         &pubkey_commitments,
+    //     );
 
-        assert!(
-            lut.get(&decrypted_value.unwrap().vartime_compress().0)
-                .unwrap()
-                == &600u64
-        );
+    //     assert!(
+    //         lut.get(&decrypted_value.unwrap().vartime_compress().0)
+    //             .unwrap()
+    //             == &600u64
+    //     );
 
-        // randomly select t/n shares
-        let mut subset = Vec::new();
-        let mut subset_pubkey_commitments = Vec::new();
-        let mut seen_shares = HashMap::new();
-        while subset.len() < t as usize {
-            let (i, random_share) = decryption_shares
-                .iter()
-                .enumerate()
-                .choose(&mut rand::thread_rng())
-                .unwrap();
-            seen_shares
-                .entry(random_share.participant_index)
-                .or_insert_with(|| {
-                    subset.push(random_share.clone());
-                    subset_pubkey_commitments.push(pubkey_commitments[i as usize]);
-                    true
-                });
-        }
+    //     // randomly select t/n shares
+    //     let mut subset = Vec::new();
+    //     let mut subset_pubkey_commitments = Vec::new();
+    //     let mut seen_shares = HashMap::new();
+    //     while subset.len() < t as usize {
+    //         let (i, random_share) = decryption_shares
+    //             .iter()
+    //             .enumerate()
+    //             .choose(&mut rand::thread_rng())
+    //             .unwrap();
+    //         seen_shares
+    //             .entry(random_share.participant_index)
+    //             .or_insert_with(|| {
+    //                 subset.push(random_share.clone());
+    //                 subset_pubkey_commitments.push(pubkey_commitments[i as usize]);
+    //                 true
+    //             });
+    //     }
 
-        // try threshold decryption with randomly selected t/n shares
-        let decrypted_value_rand_subset =
-            decrypt_value(&aggregate_value, &subset, &subset_pubkey_commitments);
+    //     // try threshold decryption with randomly selected t/n shares
+    //     let decrypted_value_rand_subset =
+    //         decrypt_value(&aggregate_value, &subset, &subset_pubkey_commitments);
 
-        assert!(
-            lut.get(&decrypted_value_rand_subset.unwrap().vartime_compress().0)
-                .unwrap()
-                == &600u64
-        );
-    }
+    //     assert!(
+    //         lut.get(&decrypted_value_rand_subset.unwrap().vartime_compress().0)
+    //             .unwrap()
+    //             == &600u64
+    //     );
+    // }
 }
