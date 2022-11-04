@@ -325,6 +325,6 @@ mod test {
     #[test]
     fn check_node_size() {
         // Disabled due to spurious test failure.
-        // static_assertions::assert_eq_size!(Node<()>, [u8; 80]);
+        // static_assertions::assert_eq_size!(Node<()>, [u8; 72]);
     }
 }
