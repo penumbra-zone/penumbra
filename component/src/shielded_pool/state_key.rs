@@ -69,65 +69,14 @@ pub fn quarantined_spent_nullifier_lookup(nullifier: Nullifier) -> String {
     format!("shielded_pool/quarantined_spent_nullifiers/{}", nullifier)
 }
 
-pub use crate::stake::state_key::slashed_validators;
+// TODO: refactor this out (shielded pool should use an extension trait, not re-export other components' internals)
+// pub use crate::stake::state_key::slashed_validators;
 
 pub(crate) mod internal {
-    use super::*;
-
     pub fn stub_note_commitment_tree() -> &'static str {
         "shielded_pool/stub/note_commitment_tree"
     }
     pub fn stub_compact_block() -> &'static str {
         "shielded_pool/stub/compact_block"
-    }
-
-    // WIP towards atomization of current compact block, abandoned in favor of
-    // the "stub approach" above, where we keep just one item per field
-    // previously on the Component, and do a deep copy every time we want to
-    // access it. this is slow and inefficient but will at least work, so
-    // we can get back to working code
-
-    pub mod compact_block {
-        use super::*;
-
-        pub mod note_payloads {
-            use super::*;
-
-            pub fn prefix() -> &'static str {
-                "shielded_pool/compact_block/note_payloads/"
-            }
-
-            pub fn item(note_commitment: &note::Commitment) -> String {
-                format!("{}{}", prefix(), note_commitment)
-            }
-        }
-
-        pub mod nullifiers {
-            use super::*;
-
-            pub fn prefix() -> &'static str {
-                "shielded_pool/compact_block/nullifiers/"
-            }
-
-            pub fn item(nullifier: &Nullifier) -> String {
-                format!("{}{}", prefix(), nullifier)
-            }
-        }
-    }
-
-    pub mod quarantine {
-        use super::*;
-
-        // ?????
-
-        pub mod scheduled {}
-
-        pub fn prefix() -> &'static str {
-            "shielded_pool/compact_block/quarantine/"
-        }
-
-        pub fn item(note_commitment: &note::Commitment) -> String {
-            format!("{}{}", prefix(), note_commitment)
-        }
     }
 }

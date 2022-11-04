@@ -14,7 +14,7 @@ pub mod app;
 pub mod dex;
 //pub mod governance;
 //pub mod ibc;
-//pub mod shielded_pool;
+pub mod shielded_pool;
 //pub mod stake;
 
 /// A component of the Penumbra application.

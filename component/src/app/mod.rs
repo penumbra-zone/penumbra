@@ -11,7 +11,7 @@ use tracing::instrument;
 use crate::dex::Dex;
 // use crate::governance::Governance;
 // use crate::ibc::IBCComponent;
-// use crate::shielded_pool::ShieldedPool;
+use crate::shielded_pool::ShieldedPool;
 // use crate::stake::component::Staking;
 use crate::{Component, Context};
 
@@ -59,7 +59,7 @@ impl App {
         Dex::init_chain(&mut state_tx, app_state).await;
         // Governance::init_chain(&mut state_tx, app_state).await;
         // Shielded pool always executes last.
-        // ShieldedPool::init_chain(&mut state_tx, app_state).await;
+        ShieldedPool::init_chain(&mut state_tx, app_state).await;
 
         state_tx.apply();
     }
@@ -80,7 +80,7 @@ impl App {
         Dex::begin_block(&mut state_tx, ctx.clone(), begin_block).await;
         // Governance::begin_block(&mut state_tx, ctx.clone(), begin_block).await;
         // Shielded pool always executes last.
-        // ShieldedPool::begin_block(&mut state_tx, ctx.clone(), begin_block).await;
+        ShieldedPool::begin_block(&mut state_tx, ctx.clone(), begin_block).await;
 
         state_tx.apply();
     }
@@ -118,7 +118,7 @@ impl App {
         Dex::end_block(&mut state_tx, ctx.clone(), end_block).await;
         // Governance::end_block(&mut state_tx, ctx.clone(), end_block).await;
         // Shielded pool always executes last.
-        // ShieldedPool::end_block(&mut state_tx, ctx.clone(), end_block).await;
+        ShieldedPool::end_block(&mut state_tx, ctx.clone(), end_block).await;
 
         state_tx.apply();
     }
@@ -160,9 +160,9 @@ impl App {
 
         // Staking::check_tx_stateless(ctx.clone(), tx)?;
         // IBCComponent::check_tx_stateless(ctx.clone(), tx)?;
-        Dex::check_tx_stateless(ctx.clone(), tx)?;
+        Dex::check_tx_stateless(ctx.clone(), tx.clone())?;
         // Governance::check_tx_stateless(ctx.clone(), tx)?;
-        // ShieldedPool::check_tx_stateless(ctx, tx)?;
+        ShieldedPool::check_tx_stateless(ctx, tx.clone())?;
 
         Ok(())
     }
@@ -179,7 +179,7 @@ impl App {
         // IBCComponent::check_tx_stateful(state.clone(), ctx.clone(), tx.clone()).await?;
         Dex::check_tx_stateful(state.clone(), ctx.clone(), tx.clone()).await?;
         // Governance::check_tx_stateful(state.clone(), ctx.clone(), tx.clone()).await?;
-        // ShieldedPool::check_tx_stateful(state.clone(), ctx.clone(), tx.clone()).await?;
+        ShieldedPool::check_tx_stateful(state.clone(), ctx.clone(), tx.clone()).await?;
 
         Ok(())
     }
@@ -195,7 +195,7 @@ impl App {
         Dex::execute_tx(state, ctx.clone(), tx.clone()).await?;
         // Governance::execute_tx(state, ctx.clone(), tx.clone()).await?;
         // Shielded pool always executes last.
-        // ShieldedPool::execute_tx(state, ctx.clone(), tx.clone()).await?;
+        ShieldedPool::execute_tx(state, ctx.clone(), tx.clone()).await?;
 
         Ok(())
     }
