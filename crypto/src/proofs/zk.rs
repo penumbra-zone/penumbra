@@ -1,14 +1,16 @@
 use anyhow::Result;
-use ark_r1cs_std::fields::fp::AllocatedFp;
-use ark_r1cs_std::prelude::Boolean;
-use ark_serialize::CanonicalDeserialize;
-use decaf377::{Bls12_377, Fq};
+use ark_r1cs_std::prelude::{Boolean, CurveVar, EqGadget};
+use ark_r1cs_std::uint8::UInt8;
+use ark_r1cs_std::ToBitsGadget;
+use decaf377::{
+    r1cs::{ElementVar, FqVar},
+    Bls12_377, Fq, Fr,
+};
 use decaf377_ka as ka;
 
-use super::zk_gadgets;
-use ark_ff::UniformRand;
+use ark_ff::ToConstraintField;
 use ark_groth16::{Groth16, Proof, ProvingKey, VerifyingKey};
-use ark_r1cs_std::{groups::curves::short_weierstrass::ProjectiveVar, prelude::AllocVar};
+use ark_r1cs_std::prelude::AllocVar;
 use ark_relations::ns;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
@@ -29,61 +31,59 @@ use rand::{CryptoRng, RngCore};
 //
 // Output circuits check:
 // 1. Diversified base is not identity (implemented).
-// 2. Ephemeral public key integrity (not implemented).
+// 2. Ephemeral public key integrity (implemented).
 // 3. Value commitment integrity (not implemented).
 // 4. Note commitment integrity (not implemented).
 struct OutputCircuit {
-    // Witnesses
+    // Private witnesses
     /// Diversified basepoint.
     g_d: decaf377::Element,
     /// Ephemeral secret key.
     esk: ka::Secret,
 
-    // Inputs
+    // Public inputs
     /// Ephemeral public key.
-    epk: ka::Public,
+    pub epk: ka::Public,
 }
 
 impl ConstraintSynthesizer<Fq> for OutputCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
-        // TODO: Use decaf Element gadget for all points here instead of compressing to Fq
-        //let g_d = cs.new_witness_variable(|| Ok(self.g_d.vartime_compress_to_field()))?;
-        let g_d = AllocatedFp::new_witness(ns!(cs, "diversified_base"), || {
-            Ok(self.g_d.vartime_compress_to_field())
-        })?;
+        let g_d = ElementVar::new_witness(ns!(cs, "diversified_base"), || Ok(self.g_d))?;
 
         // 1. Diversified base is not identity.
-        let identity_fq: Fq = decaf377::Element::default().vartime_compress_to_field();
-        //let identity = FpVar::<Fq>::new_constant(ns!(cs, "decaf_identity"), identity_fq)?;
-        let identity = AllocatedFp::new_constant(ns!(cs, "decaf_identity"), identity_fq)?;
-
+        let decaf_identity = decaf377::Element::default();
+        let identity = ElementVar::new_constant(ns!(cs, "decaf_identity"), decaf_identity)?;
         identity.conditional_enforce_not_equal(&g_d, &Boolean::TRUE)?;
 
         // 2. Ephemeral public key integrity.
-        // Lift esk to proving curve - TODO: is this the best way to do this?
-        let esk_fq =
-            &Fq::deserialize(&self.esk.to_bytes()[..]).expect("should be infallible since r << q");
-        let esk = cs.new_witness_variable(|| Ok(*esk_fq))?;
+        let esk_arr: [u8; 32] = self.esk.to_bytes();
+        let esk_vars = UInt8::new_witness_vec(cs.clone(), &esk_arr)?;
 
         let pk = decaf377::Encoding(self.epk.0)
             .vartime_decompress()
             .expect("valid public key");
-        let epk = cs.new_input_variable(|| Ok(pk.vartime_compress_to_field()))?;
-        //let epk = ProjectiveVar::new()
+        let epk = ElementVar::new_input(ns!(cs, "epk"), || Ok(pk))?;
 
-        // TODO: Figure out how to best factor this logic into gadgets
+        let expected_epk = g_d.scalar_mul_le(esk_vars.to_bits_le()?.iter())?;
+        expected_epk.conditional_enforce_equal(&epk, &Boolean::Constant(true))?;
+
+        // TODO: 3. Value commitment integrity
+        // Check: value_commitment == -self.value.commit(self.v_blinding)
+        // P = a + b = [v] G_v + [v_blinding] H
+        // Requires: Asset specific generator (hash to group)
+
+        // TODO: 4. Note commitment integrity
+        // Requires: Poseidon gadget
 
         Ok(())
     }
 }
 
 impl OutputCircuit {
-    fn setup_random_circuit<R: RngCore + CryptoRng>(rng: &mut R) -> Result<OutputCircuit> {
-        let random_fq = Fq::rand(rng);
-        let g_d = decaf377::Element::encode_to_curve(&random_fq);
-
-        let esk = ka::Secret::new(rng);
-        let epk = esk.public();
+    fn setup_circuit() -> Result<OutputCircuit> {
+        let g_d = Fr::from(2) * decaf377::basepoint();
+        let esk = ka::Secret::new_from_field(Fr::from(666));
+        let epk = esk.diversified_public(&g_d);
 
         Ok(OutputCircuit { g_d, esk, epk })
     }
@@ -98,9 +98,8 @@ impl OutputProof {
     pub fn setup<R: RngCore + CryptoRng>(
         rng: &mut R,
     ) -> Result<(ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>)> {
-        let circuit = OutputCircuit::setup_random_circuit(rng)?;
-        Groth16::circuit_specific_setup(circuit, rng)
-            .map_err(|_| anyhow::anyhow!("failure to perform setup"))
+        let circuit = OutputCircuit::setup_circuit()?;
+        Groth16::circuit_specific_setup(circuit, rng).map_err(|err| anyhow::anyhow!(err))
     }
 
     /// Prover POV
@@ -118,11 +117,19 @@ impl OutputProof {
     }
 
     /// Verifier POV
-    pub fn verify(self, vk: &VerifyingKey<Bls12_377>, public_input: &[Fq]) -> Result<bool> {
+    pub fn verify(self, vk: &VerifyingKey<Bls12_377>, epk: ka::Public) -> Result<bool> {
+        // Ephemeral public key
+        let pk = decaf377::Encoding(epk.0)
+            .vartime_decompress()
+            .expect("valid public key");
+
+        let public_inputs = pk
+            .to_field_elements()
+            .expect("can convert decaf Elements to constraint field");
         let circuit_pvk = Groth16::process_vk(vk)
             .map_err(|_| anyhow::anyhow!("could not process verifying key"))?;
-        Groth16::verify_with_processed_vk(&circuit_pvk, public_input, &self.groth16_proof)
-            .map_err(|_| anyhow::anyhow!("boom"))
+        Groth16::verify_with_processed_vk(&circuit_pvk, &public_inputs, &self.groth16_proof)
+            .map_err(|err| anyhow::anyhow!(err))
     }
 }
 
@@ -132,53 +139,58 @@ mod test {
 
     use rand_core::OsRng;
 
+    use crate::keys::{SeedPhrase, SpendKey};
+
     use super::*;
 
     #[test]
     fn groth16_output_happy() {
-        let mut rng = OsRng;
-
-        // Random (non-zero) diversified base
-        let random_fq = Fq::rand(&mut rng);
-        let g_d = decaf377::Element::encode_to_curve(&random_fq);
         let start = Instant::now();
-        let (pk, vk) = OutputProof::setup(&mut rng)
+        let (pk, vk) = OutputProof::setup(&mut OsRng)
             .expect("can perform test Groth16 setup for output circuit");
         let duration = start.elapsed();
         println!("Time elapsed in setup: {:?}", duration);
 
-        let esk = ka::Secret::new(&mut rng);
-        let epk = esk.public();
+        let seed_phrase = SeedPhrase::generate(&mut OsRng);
+        let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let fvk_recipient = sk_recipient.full_viewing_key();
+        let ivk_recipient = fvk_recipient.incoming();
+        let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
+        let g_d = dest.diversified_generator();
+        let esk = ka::Secret::new(&mut OsRng);
+        let epk = esk.diversified_public(&g_d);
 
         let start = Instant::now();
-        let proof = OutputProof::new(&mut rng, &pk, g_d, esk, epk)
+        let proof = OutputProof::new(&mut OsRng, &pk, *g_d, esk, epk)
             .expect("can prove using a test output circuit");
         let duration = start.elapsed();
         println!("Time elapsed in proof creation: {:?}", duration);
 
-        let pk = decaf377::Encoding(epk.0)
-            .vartime_decompress()
-            .expect("valid public key");
-        let epk_fq = pk.vartime_compress_to_field();
         let start = Instant::now();
-        assert!(proof.verify(&vk, &[epk_fq]).unwrap());
+        assert!(proof.verify(&vk, epk).unwrap());
         let duration = start.elapsed();
         println!("Time elapsed in proof verification: {:?}", duration);
     }
 
     #[test]
-    fn groth16_output_diversified_base_expected_failure() {
-        let mut rng = OsRng;
-
-        // Invalid (identity) diversified base
-        let g_d = decaf377::Element::default();
-        let (pk, vk) = OutputProof::setup(&mut rng)
+    fn groth16_output_incorrect_diversified_base_expected_failure() {
+        let (pk, vk) = OutputProof::setup(&mut OsRng)
             .expect("can perform test Groth16 setup for output circuit");
 
-        let esk = ka::Secret::new(&mut rng);
-        let epk = esk.public();
+        let seed_phrase = SeedPhrase::generate(&mut OsRng);
+        let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let fvk_recipient = sk_recipient.full_viewing_key();
+        let ivk_recipient = fvk_recipient.incoming();
+        let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
+        let incorrect_g_d = Fr::from(3) * decaf377::basepoint();
+        let g_d = dest.diversified_generator();
+        let esk = ka::Secret::new(&mut OsRng);
+        let epk = esk.diversified_public(&g_d);
+        let wrong_epk = esk.diversified_public(&incorrect_g_d);
 
-        // Cannot form proof with invalid diversified base - this involves only constants and witnesses
-        assert!(OutputProof::new(&mut rng, &pk, g_d, esk, epk).is_err());
+        let proof = OutputProof::new(&mut OsRng, &pk, *g_d, esk, epk)
+            .expect("can prove using a test output circuit");
+
+        assert!(!proof.verify(&vk, wrong_epk).unwrap());
     }
 }
