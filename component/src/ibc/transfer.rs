@@ -46,11 +46,6 @@ fn is_source(source_port: &PortId, source_channel: &ChannelId, denom: &Denom) ->
 pub struct Ics20Transfer {}
 
 impl Ics20Transfer {
-    #[instrument(name = "ics20_transfer")]
-    pub fn new() -> Self {
-        Self {}
-    }
-
     pub async fn withdrawal_check(&self, ctx: Context, withdrawal: &Ics20Withdrawal) -> Result<()> {
         // create packet
         let packet: IBCPacket<Unchecked> = withdrawal.clone().into();

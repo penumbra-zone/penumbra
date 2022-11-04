@@ -1,7 +1,9 @@
+use std::{any::Any, cmp::Ordering, collections::BTreeMap, iter::Peekable, pin::Pin};
+
 use anyhow::Result;
 use async_trait::async_trait;
 use futures::Stream;
-use std::{any::Any, cmp::Ordering, collections::BTreeMap, iter::Peekable, pin::Pin};
+use tendermint::abci;
 
 use crate::State;
 
@@ -9,13 +11,18 @@ use super::{read::prefix_raw_with_cache, StateRead, StateWrite};
 
 /// A set of pending changes to a [`State`] instance, supporting both writes and reads.
 pub struct Transaction<'a> {
+    /// The `State` instance this transaction will modify.
+    ///
+    /// Holding on to a &mut reference ensures there can only be one live transaction at a time.
+    state: &'a mut State,
     /// Unwritten changes to the consensus-critical state (stored in the JMT).
     pub(crate) unwritten_changes: BTreeMap<String, Option<Vec<u8>>>,
     /// Unwritten changes to non-consensus-critical state (stored in the nonconsensus storage).
     pub(crate) nonconsensus_changes: BTreeMap<Vec<u8>, Option<Vec<u8>>>,
     /// Unwritten changes to the object store.  A `None` value means a deletion.
     pub(crate) object_changes: BTreeMap<String, Option<Box<dyn Any + Send + Sync>>>,
-    state: &'a mut State,
+    /// A list of ABCI events that occurred while building this set of state changes.
+    pub(crate) events: Vec<abci::Event>,
 }
 
 impl<'a> Transaction<'a> {
@@ -25,11 +32,14 @@ impl<'a> Transaction<'a> {
             unwritten_changes: BTreeMap::new(),
             nonconsensus_changes: BTreeMap::new(),
             object_changes: BTreeMap::new(),
+            events: Vec::new(),
         }
     }
 
     /// Applies this transaction's writes to its parent [`State`], completing the transaction.
-    pub fn apply(self) {
+    ///
+    /// Returns a list of all the events that occurred while building the transaction.
+    pub fn apply(self) -> Vec<abci::Event> {
         // Write the unwritten consensus-critical changes to the state:
         self.state.unwritten_changes.extend(self.unwritten_changes);
 
@@ -48,6 +58,8 @@ impl<'a> Transaction<'a> {
                 }
             }
         }
+
+        self.events
     }
 
     /// Aborts this transaction, discarding its writes.
@@ -79,6 +91,10 @@ impl<'a> StateWrite for Transaction<'a> {
 
     fn delete_ephemeral(&mut self, key: String) {
         self.object_changes.insert(key, None);
+    }
+
+    fn record(&mut self, event: abci::Event) {
+        self.events.push(event)
     }
 }
 
@@ -119,6 +135,7 @@ impl<'tx> StateRead for Transaction<'tx> {
         self.state.get_ephemeral(key)
     }
 
+    /*
     fn prefix_ephemeral<'a, T: Any + Send + Sync>(
         &'a self,
         prefix: &'a str,
@@ -145,8 +162,10 @@ impl<'tx> StateRead for Transaction<'tx> {
             underlying,
         })
     }
+    */
 }
 
+/*
 struct MergedObjectIterator<'a, T: Any + Send + Sync> {
     /// We want changes to always cover the underlying store, so we don't want to have
     /// already pre-filtered with downcast_ref.
@@ -206,3 +225,4 @@ impl<'a, T: Any + Send + Sync> Iterator for MergedObjectIterator<'a, T> {
         }
     }
 }
+*/

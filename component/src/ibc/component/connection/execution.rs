@@ -21,7 +21,7 @@ pub mod connection_open_init {
                 .await
                 .unwrap();
 
-            ctx.record(event::connection_open_init(
+            state.record(event::connection_open_init(
                 &connection_id,
                 &msg.client_id,
                 &msg.counterparty,
@@ -66,7 +66,7 @@ pub mod connection_open_try {
                 .await
                 .unwrap();
 
-            ctx.record(event::connection_open_try(
+            state.record(event::connection_open_try(
                 &new_connection_id,
                 &msg.client_id,
                 &msg.counterparty,
@@ -95,7 +95,7 @@ pub mod connection_open_confirm {
             self.update_connection(&msg.connection_id, connection.clone())
                 .await;
 
-            ctx.record(event::connection_open_confirm(
+            state.record(event::connection_open_confirm(
                 &msg.connection_id,
                 &connection,
             ));
@@ -129,7 +129,7 @@ pub mod connection_open_ack {
             self.update_connection(&msg.connection_id, connection.clone())
                 .await;
 
-            ctx.record(event::connection_open_ack(&msg.connection_id, &connection));
+            state.record(event::connection_open_ack(&msg.connection_id, &connection));
         }
     }
 

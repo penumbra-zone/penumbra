@@ -265,3 +265,25 @@ pub async fn enact_pending_parameter_changes(_state: &mut StateTransaction<'_>) 
     // TODO: read the new parameters for this block, if any, and change the chain params to reflect
     // them. Parameters should be stored in the state as a map from name to value string.
 }
+
+pub async fn apply_proposal_refunds(state: &mut StateTransaction<'_>) {
+    use crate::shielded_pool::NoteManager;
+    use penumbra_chain::NoteSource;
+
+    let height = state.get_block_height().await.unwrap();
+
+    for (proposal_id, address, value) in state
+        .proposal_refunds(height)
+        .await
+        .expect("proposal refunds can be fetched")
+    {
+        state
+            .mint_note(
+                value,
+                &address,
+                NoteSource::ProposalDepositRefund { proposal_id },
+            )
+            .await
+            .expect("can mint proposal deposit refund");
+    }
+}

@@ -114,5 +114,6 @@ impl Component for Governance {
         // TODO: compute intermediate tallies at epoch boundaries (with threshold delegator voting)
         execute::enact_all_passed_proposals(state).await;
         execute::enact_pending_parameter_changes(state).await;
+        execute::apply_proposal_refunds(state).await;
     }
 }

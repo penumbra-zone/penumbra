@@ -3,7 +3,7 @@ use ark_ff::PrimeField;
 use async_trait::async_trait;
 use decaf377::{Fq, Fr};
 use penumbra_chain::{sync::AnnotatedNotePayload, NoteSource};
-use penumbra_crypto::{ka, Address, Note, NotePayload, One, Value};
+use penumbra_crypto::{ka, Address, Note, NotePayload, Nullifier, One, Value};
 use penumbra_storage2::StateWrite;
 use penumbra_tct as tct;
 use tracing::instrument;
@@ -13,6 +13,7 @@ use super::{
     state_key, SupplyWrite,
 };
 
+/// Manages the addition of new notes to the chain state.
 #[async_trait]
 pub trait NoteManager: StateWrite {
     /// Mint a new (public) note into the shielded pool.
@@ -111,6 +112,24 @@ pub trait NoteManager: StateWrite {
         compact_block
             .note_payloads
             .push(AnnotatedNotePayload { payload, source });
+        self.stub_put_compact_block(compact_block);
+    }
+
+    async fn spend_nullifier(&mut self, nullifier: Nullifier, source: NoteSource) {
+        tracing::debug!("marking as spent");
+
+        // We need to record the nullifier as spent in the JMT (to prevent
+        // double spends), as well as in the CompactBlock (so that clients
+        // can learn that their note was spent).
+        self.put(
+            state_key::spent_nullifier_lookup(nullifier),
+            // We don't use the value for validity checks, but writing the source
+            // here lets us find out what transaction spent the nullifier.
+            source,
+        );
+
+        let mut compact_block = self.stub_compact_block();
+        compact_block.nullifiers.push(nullifier);
         self.stub_put_compact_block(compact_block);
     }
 }

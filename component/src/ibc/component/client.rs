@@ -220,7 +220,7 @@ impl Ics2Client {
             .await
             .unwrap();
 
-        ctx.record(event::update_client(
+        state.record(event::update_client(
             msg_update_client.client_id,
             client_state,
             msg_update_client.header,
@@ -267,7 +267,7 @@ impl Ics2Client {
             .put_client_counter(ClientCounter(counter.0 + 1))
             .await;
 
-        ctx.record(event::create_client(
+        state.record(event::create_client(
             client_id,
             msg_create_client.client_state,
         ));

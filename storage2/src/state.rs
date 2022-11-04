@@ -138,6 +138,7 @@ impl StateRead for State {
             .and_then(|object| object.downcast_ref())
     }
 
+    /*
     fn prefix_ephemeral<'a, T: Any + Send + Sync>(
         &'a self,
         prefix: &'a str,
@@ -152,4 +153,5 @@ impl StateRead for State {
                 }),
         )
     }
+    */
 }

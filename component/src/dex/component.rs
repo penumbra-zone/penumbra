@@ -2,35 +2,29 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 // use crate::shielded_pool::StateReadExt as _;
+use crate::shielded_pool::NoteManager as _;
 use crate::{Component, Context};
 use anyhow::{Context as _, Result};
 use ark_ff::Zero;
 use async_trait::async_trait;
 use decaf377::Fr;
-use penumbra_chain::{genesis, StateReadExt as _};
+use penumbra_chain::{genesis, AnnotatedNotePayload, NoteSource, StateReadExt as _};
 use penumbra_crypto::dex::lp::Reserves;
 use penumbra_crypto::{
     asset,
     dex::{BatchSwapOutputData, TradingPair},
     MockFlowCiphertext, SwapFlow, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_proto::Protobuf;
 use penumbra_storage2::{State, StateRead, StateTransaction, StateWrite};
-use penumbra_transaction::action::swap_claim::ClaimedSwap;
-use penumbra_transaction::{action::swap_claim::List as SwapClaimBodyList, Action, Transaction};
+use penumbra_transaction::action::swap_claim::{self};
+use penumbra_transaction::{Action, Transaction};
 use tendermint::abci;
 use tracing::instrument;
 
 use super::state_key;
 use super::StubCpmm;
 
-pub struct Dex {
-    // Represents swaps taking place in the current block.
-    // swaps: BTreeMap<TradingPair, SwapFlow>,
-    // Represents swaps that have been claimed in the current block.
-    // TODO: change logic to do per-tx processing
-    // claims: Vec<ClaimedSwap>,
-}
+pub struct Dex {}
 
 #[async_trait]
 impl Component for Dex {
@@ -229,13 +223,7 @@ impl Component for Dex {
                     state.put_swap_flow(&swap.body.trading_pair, swap_flow);
                 }
                 Action::SwapClaim(swap_claim) => {
-                    // TODO: pass directly to shielded pool here
-                    /*
-                    // Each swap claim gets their portion of the swap based on their contribution.
-                    state
-                        .claims
-                        .push(ClaimedSwap(swap_claim.body.clone(), tx.id()));
-                     */
+                    state.claim_swap(swap_claim.body.clone(), tx.id());
                 }
                 _ => {}
             }
@@ -251,8 +239,6 @@ impl Component for Dex {
         end_block: &abci::request::EndBlock,
     ) {
         // For each batch swap during the block, calculate clearing prices and set in the JMT.
-        // TODO: since there are no liquidity providers right now, we'll consider all
-        // batch swaps to fail
         for (trading_pair, swap_flows) in state.swap_flows() {
             let (delta_1, delta_2) = (swap_flows.0.mock_decrypt(), swap_flows.1.mock_decrypt());
 
@@ -282,18 +268,6 @@ impl Component for Dex {
             tracing::debug!(?output_data);
             state.set_output_data(output_data);
         }
-
-        /*
-        // TODO: this should be done in each transaction
-        // FIX: connect this to the shielded pool on a per-transaction basis
-        // Tell the shielded pool component to include the claimed output notes in the NCT.
-        state
-            .set_claimed_swap_outputs(
-                state.get_block_height().await.unwrap(),
-                SwapClaimBodyList(state.claims.clone()),
-            )
-            .await;
-         */
     }
 }
 
@@ -315,27 +289,16 @@ pub trait StateReadExt: StateRead {
 
     // Get the swap flow for the given trading pair accumulated in this block so far.
     fn swap_flow(&self, pair: &TradingPair) -> SwapFlow {
-        self.get_ephemeral(&state_key::internal::swap_flow::item(pair))
+        self.swap_flows()
+            .get(pair)
             .cloned()
-            .unwrap_or_default()
+            .unwrap_or_else(|| SwapFlow::default())
     }
 
     fn swap_flows(&self) -> BTreeMap<TradingPair, SwapFlow> {
-        let mut flows = BTreeMap::default();
-        for (key, flow) in
-            self.prefix_ephemeral::<SwapFlow>(state_key::internal::swap_flow::prefix())
-        {
-            let encoded_pair = key
-                .strip_prefix(state_key::internal::swap_flow::prefix())
-                .expect("prefix should be present");
-            let pair =
-                TradingPair::decode(hex::decode(&encoded_pair).expect("valid hex").as_slice())
-                    .expect("valid pair");
-
-            flows.insert(pair, flow.clone());
-        }
-
-        flows
+        self.get_ephemeral::<BTreeMap<TradingPair, SwapFlow>>(state_key::swap_flows())
+            .cloned()
+            .unwrap_or_default()
     }
 }
 
@@ -343,7 +306,7 @@ impl<T: StateRead> StateReadExt for T {}
 
 /// Extension trait providing write access to dex data.
 #[async_trait]
-pub trait StateWriteExt: StateWrite {
+pub trait StateWriteExt: StateWrite + StateReadExt {
     fn set_output_data(&mut self, output_data: BatchSwapOutputData) {
         let height = output_data.height;
         let trading_pair = output_data.trading_pair;
@@ -355,10 +318,30 @@ pub trait StateWriteExt: StateWrite {
     }
 
     fn put_swap_flow(&mut self, trading_pair: &TradingPair, swap_flow: SwapFlow) {
-        self.put_ephemeral(
-            state_key::internal::swap_flow::item(trading_pair),
-            swap_flow,
-        )
+        // TODO: replace with IM struct later
+        let swap_flows = self.swap_flows();
+        swap_flows.insert(trading_pair.clone(), swap_flow);
+        self.put_ephemeral(state_key::swap_flows().into(), swap_flow)
+    }
+
+    // #[instrument(skip(self))]
+    async fn claim_swap(&mut self, swap_claim: swap_claim::Body, txid: [u8; 32]) {
+        let source = NoteSource::Transaction { id: txid };
+        let payload_1 = swap_claim.output_1;
+        let payload_2 = swap_claim.output_2;
+        self.add_note(AnnotatedNotePayload {
+            payload: payload_1,
+            source,
+        })
+        .await;
+        self.add_note(AnnotatedNotePayload {
+            payload: payload_2,
+            source,
+        })
+        .await;
+
+        // Also spend the nullifier.
+        self.spend_nullifier(swap_claim.nullifier, source).await;
     }
 }
 

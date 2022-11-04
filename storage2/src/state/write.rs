@@ -1,4 +1,5 @@
 use std::{any::Any, fmt::Debug};
+use tendermint::abci;
 
 use penumbra_proto::{Message, Protobuf};
 
@@ -40,10 +41,15 @@ pub trait StateWrite: StateRead + Send + Sync {
     fn delete_nonconsensus(&mut self, key: Vec<u8>);
 
     /// Puts an object into the ephemeral object store with the given key.
+    /// TODO: should this be `&'static str`?
     fn put_ephemeral<T: Any + Send + Sync>(&mut self, key: String, value: T);
 
     /// Deletes a key from the ephemeral object store.
+    /// TODO: should this be `&'static str`?
     fn delete_ephemeral(&mut self, key: String);
+
+    /// Record that an ABCI event occurred while building up this set of state changes.
+    fn record(&mut self, event: abci::Event);
 }
 
 impl<'a, S: StateWrite + Send + Sync> StateWrite for &'a mut S {
@@ -69,5 +75,9 @@ impl<'a, S: StateWrite + Send + Sync> StateWrite for &'a mut S {
 
     fn delete_ephemeral(&mut self, key: String) {
         (**self).delete_ephemeral(key)
+    }
+
+    fn record(&mut self, event: abci::Event) {
+        (**self).record(event)
     }
 }

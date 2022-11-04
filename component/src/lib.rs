@@ -12,10 +12,47 @@ use tendermint::abci;
 
 pub mod app;
 pub mod dex;
-//pub mod governance;
-//pub mod ibc;
+pub mod governance;
+pub mod ibc;
 pub mod shielded_pool;
 pub mod stake;
+
+// Scratch -- future direction ?
+//
+// impl ActionHandler for Transaction { /* does tx-wide checks, then delegates into per-action impls */ }
+// impl ActionHandler for Action { /* per-action implementation */ }
+/*
+#[async_trait]
+pub trait ActionHandler {
+    /// Performs all of this component's stateless validity checks on the given
+    /// [`Transaction`].
+    fn check_tx_stateless(&self, ctx: Context) -> Result<()>;
+
+    /// Performs all of this component's stateful validity checks on the given
+    /// [`Transaction`].
+    ///
+    /// # Invariants
+    ///
+    /// This method should only be called on transactions that have been
+    /// checked with [`Component::check_tx_stateless`].
+    /// This method can be called before [`Component::begin_block`].
+    async fn check_tx_stateful(&self, state: Arc<State>, ctx: Context)
+        -> Result<()>;
+
+    /// Executes the given [`Transaction`] against the current state.
+    ///
+    /// # Invariants
+    ///
+    /// This method should only be called immediately following a successful
+    /// invocation of [`Component::check_tx_stateful`] on the same transaction.
+    /// This method can be called before [`Component::begin_block`].
+    async fn execute_tx(
+        &self,
+        state: &mut StateTransaction,
+        ctx: Context,
+    ) -> Result<()>;
+}
+*/
 
 /// A component of the Penumbra application.
 #[async_trait]

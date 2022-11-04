@@ -19,7 +19,7 @@ pub mod channel_open_init {
             self.put_recv_sequence(&channel_id, &msg.port_id, 1).await;
             self.put_ack_sequence(&channel_id, &msg.port_id, 1).await;
 
-            ctx.record(event::channel_open_init(
+            state.record(event::channel_open_init(
                 &msg.port_id,
                 &channel_id,
                 &new_channel,
@@ -49,7 +49,7 @@ pub mod channel_open_try {
             self.put_recv_sequence(&channel_id, &msg.port_id, 1).await;
             self.put_ack_sequence(&channel_id, &msg.port_id, 1).await;
 
-            ctx.record(event::channel_open_try(
+            state.record(event::channel_open_try(
                 &msg.port_id,
                 &channel_id,
                 &new_channel,
@@ -76,7 +76,7 @@ pub mod channel_open_ack {
             self.put_channel(&msg.channel_id, &msg.port_id, channel.clone())
                 .await;
 
-            ctx.record(event::channel_open_ack(
+            state.record(event::channel_open_ack(
                 &msg.port_id,
                 &msg.channel_id,
                 &channel,
@@ -101,7 +101,7 @@ pub mod channel_open_confirm {
             self.put_channel(&msg.channel_id, &msg.port_id, channel.clone())
                 .await;
 
-            ctx.record(event::channel_open_confirm(
+            state.record(event::channel_open_confirm(
                 &msg.port_id,
                 &msg.channel_id,
                 &channel,
@@ -125,7 +125,7 @@ pub mod channel_close_init {
             self.put_channel(&msg.channel_id, &msg.port_id, channel.clone())
                 .await;
 
-            ctx.record(event::channel_close_init(
+            state.record(event::channel_close_init(
                 &msg.port_id,
                 &msg.channel_id,
                 &channel,
@@ -150,7 +150,7 @@ pub mod channel_close_confirm {
             self.put_channel(&msg.channel_id, &msg.port_id, channel.clone())
                 .await;
 
-            ctx.record(event::channel_close_confirm(
+            state.record(event::channel_close_confirm(
                 &msg.port_id,
                 &msg.channel_id,
                 &channel,
@@ -197,7 +197,7 @@ pub mod recv_packet {
                 self.put_packet_receipt(&msg.packet).await;
             }
 
-            ctx.record(event::receive_packet(&msg.packet, &channel));
+            state.record(event::receive_packet(&msg.packet, &channel));
         }
     }
 }
@@ -236,7 +236,7 @@ pub mod acknowledge_packet {
             )
             .await;
 
-            ctx.record(event::acknowledge_packet(&msg.packet, &channel));
+            state.record(event::acknowledge_packet(&msg.packet, &channel));
         }
     }
 }
@@ -271,7 +271,7 @@ pub mod timeout {
                 .await;
             }
 
-            ctx.record(event::timeout_packet(&msg.packet, &channel));
+            state.record(event::timeout_packet(&msg.packet, &channel));
         }
     }
 }

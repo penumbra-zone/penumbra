@@ -147,8 +147,11 @@ pub trait StateRead: Send + Sync {
     /// - `None` if `key` was not present, or if `key` was present but the value was not of type `T`.
     ///
     /// TODO: rename to `ephemeral_get` ?
+    /// TODO: should this be `&'static str`?
     fn get_ephemeral<T: Any + Send + Sync>(&self, key: &str) -> Option<&T>;
 
+    // TODO: remove
+    /*
     /// Retrieve all objects for keys matching a prefix from the ephemeral key-value store.
     ///
     /// TODO: rename to `ephemeral_prefix` ?
@@ -156,6 +159,7 @@ pub trait StateRead: Send + Sync {
         &'a self,
         prefix: &'a str,
     ) -> Box<dyn Iterator<Item = (&'a str, &'a T)> + 'a>;
+    */
 }
 
 // Merge a RYW cache iterator with a backend storage stream to produce a new Stream,
@@ -268,12 +272,14 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
         (**self).get_ephemeral(key)
     }
 
+    /*
     fn prefix_ephemeral<'b, T: Any + Send + Sync>(
         &'b self,
         prefix: &'b str,
     ) -> Box<dyn Iterator<Item = (&'b str, &'b T)> + 'b> {
         (**self).prefix_ephemeral(prefix)
     }
+    */
 }
 
 //#[async_trait(?Send)]
@@ -298,10 +304,12 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a mut S {
         (**self).get_ephemeral(key)
     }
 
+    /*
     fn prefix_ephemeral<'b, T: Any + Send + Sync>(
         &'b self,
         prefix: &'b str,
     ) -> Box<dyn Iterator<Item = (&'b str, &'b T)> + 'b> {
         (**self).prefix_ephemeral(prefix)
     }
+    */
 }

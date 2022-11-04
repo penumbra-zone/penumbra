@@ -1,6 +1,8 @@
 use std::{collections::BTreeSet, sync::Arc};
 
+use crate::stake::component::StateReadExt as _;
 use crate::{
+    stake::StateReadExt,
     //governance::StateReadExt as _,
     // stake::{validator, StateReadExt as _},
     Component,
@@ -166,8 +168,6 @@ impl Component for ShieldedPool {
             state.check_nullifier_unspent(spent_nullifier).await?;
         }
 
-        // TODO: handle quarantine
-
         let previous_fmd_parameters = state
             .get_previous_fmd_parameters()
             .await
@@ -212,7 +212,7 @@ impl Component for ShieldedPool {
                         source,
                     )
                     .await;
-                ctx.record(event::quarantine_spend(quarantined_spent_nullifier));
+                state.record(event::quarantine_spend(quarantined_spent_nullifier));
             }
         } else {
             for payload in tx.note_payloads().cloned() {
@@ -222,7 +222,7 @@ impl Component for ShieldedPool {
             }
             for spent_nullifier in tx.spent_nullifiers() {
                 state.spend_nullifier(spent_nullifier, source).await;
-                ctx.record(event::spend(spent_nullifier));
+                state.record(event::spend(spent_nullifier));
             }
         }
 
@@ -251,9 +251,6 @@ impl Component for ShieldedPool {
         compact_block.height = height;
 
         // TODO: execute any scheduled DAO spend transactions for this block
-
-        // Include all output notes from DEX swaps for this block
-        state.output_dex_swaps().await;
 
         // Schedule all unquarantining that was set up in this block
         state.schedule_unquarantined_notes().await;
@@ -350,58 +347,6 @@ pub trait StateReadExt: StateRead {
                 anchor
             ))
         }
-    }
-
-    /// Returns the epoch and identity key for quarantining a transaction, if it should be
-    /// quarantined, otherwise `None`.
-    async fn should_quarantine(&self, transaction: &Transaction) -> Option<(u64, IdentityKey)> {
-        let validator_identity =
-            transaction
-                .transaction_body
-                .actions
-                .iter()
-                .find_map(|action| {
-                    if let Action::Undelegate(Undelegate {
-                        validator_identity, ..
-                    }) = action
-                    {
-                        Some(validator_identity)
-                    } else {
-                        None
-                    }
-                })?;
-
-        // TODO: restore by peeling out should_quarantine into an extension trait in the Staking component
-        /*
-        let validator_bonding_state = self
-            .validator_bonding_state(validator_identity)
-            .await
-            .expect("validator lookup in state succeeds")
-            .expect("validator is present in state");
-
-        let should_quarantine = match validator_bonding_state {
-            validator::BondingState::Unbonded => None,
-            validator::BondingState::Unbonding { unbonding_epoch } => {
-                Some((unbonding_epoch, *validator_identity))
-            }
-            validator::BondingState::Bonded => {
-                let unbonding_epochs = self
-                    .get_chain_params()
-                    .await
-                    .expect("can get chain params")
-                    .unbonding_epochs;
-                Some((
-                    self.epoch().await.index + unbonding_epochs,
-                    *validator_identity,
-                ))
-            }
-        };
-         */
-        let should_quarantine = None;
-
-        tracing::debug!(?should_quarantine, "should quarantine");
-
-        should_quarantine
     }
 
     /// Finish the block in the NCT.
@@ -543,25 +488,6 @@ pub(super) trait StateWriteExt: StateWrite {
 
     async fn set_claimed_swap_outputs(&mut self, height: u64, claims: SwapClaimBodyList) {
         self.put(state_key::claimed_swap_outputs(height), claims);
-    }
-
-    // #[instrument(skip(self, source))]
-    async fn spend_nullifier(&mut self, nullifier: Nullifier, source: NoteSource) {
-        tracing::debug!("marking as spent");
-
-        // We need to record the nullifier as spent in the JMT (to prevent
-        // double spends), as well as in the CompactBlock (so that clients
-        // can learn that their note was spent).
-        self.put(
-            state_key::spent_nullifier_lookup(nullifier),
-            // We don't use the value for validity checks, but writing the source
-            // here lets us find out what transaction spent the nullifier.
-            source,
-        );
-
-        let mut compact_block = self.stub_compact_block();
-        compact_block.nullifiers.push(nullifier);
-        self.stub_put_compact_block(compact_block);
     }
 
     // #[instrument(skip(self))]
@@ -801,61 +727,6 @@ pub(super) trait StateWriteExt: StateWrite {
                     self.spend_nullifier(nullifier, note_source).await;
                 }
             }
-        }
-    }
-
-    // TODO: move to governance
-    #[instrument(skip(self))]
-    async fn process_proposal_refunds(&mut self) {
-        let block_height = self.height().await;
-
-        // TODO: restore
-        /*
-        for (proposal_id, address, value) in self
-            .proposal_refunds(block_height)
-            .await
-            .expect("proposal refunds can be fetched")
-        {
-            self.mint_note(
-                value,
-                &address,
-                NoteSource::ProposalDepositRefund { proposal_id },
-            )
-            .await
-            .expect("can mint proposal deposit refund");
-        }
-         */
-    }
-
-    // TODO: move to dex
-    #[instrument(skip(self))]
-    async fn output_dex_swaps(&mut self) {
-        let block_height = self.height().await;
-
-        for claimed_swap in self
-            .claimed_swap_outputs(block_height)
-            .await
-            .expect("claimed swap outputs can be fetched")
-            .expect("claimed swap outputs was set")
-            .0
-        {
-            let (swap_claim, txid) = (claimed_swap.0, claimed_swap.1);
-            let source = NoteSource::Transaction { id: txid };
-            let payload_1 = swap_claim.output_1;
-            let payload_2 = swap_claim.output_2;
-            self.add_note(AnnotatedNotePayload {
-                payload: payload_1,
-                source,
-            })
-            .await;
-            self.add_note(AnnotatedNotePayload {
-                payload: payload_2,
-                source,
-            })
-            .await;
-
-            // Also spend the nullifier.
-            self.spend_nullifier(swap_claim.nullifier, source).await;
         }
     }
 }

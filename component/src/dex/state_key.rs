@@ -17,19 +17,6 @@ pub fn output_data(height: u64, trading_pair: TradingPair) -> String {
     )
 }
 
-pub(crate) mod internal {
-    use super::*;
-
-    pub mod swap_flow {
-        use penumbra_proto::Protobuf;
-
-        use super::*;
-
-        pub fn prefix() -> &'static str {
-            "dex/swap_flow/"
-        }
-        pub fn item(trading_pair: &TradingPair) -> String {
-            format!("{}{}", prefix(), hex::encode(trading_pair.encode_to_vec()),)
-        }
-    }
+pub fn swap_flows() -> &'static str {
+    "dex/swap_flows"
 }
