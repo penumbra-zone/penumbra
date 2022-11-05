@@ -1,13 +1,7 @@
 use std::{collections::BTreeSet, sync::Arc};
 
 use crate::stake::component::StateReadExt as _;
-use crate::{
-    stake::StateReadExt,
-    //governance::StateReadExt as _,
-    // stake::{validator, StateReadExt as _},
-    Component,
-    Context,
-};
+use crate::Component;
 use anyhow::{anyhow, Context as _, Result};
 use async_trait::async_trait;
 use penumbra_chain::{
@@ -82,16 +76,11 @@ impl Component for ShieldedPool {
             .expect("unable to write compactblock and nct");
     }
 
-    // #[instrument(name = "shielded_pool", skip(_state, _ctx, _begin_block))]
-    async fn begin_block(
-        _state: &mut StateTransaction,
-        _ctx: Context,
-        _begin_block: &abci::request::BeginBlock,
-    ) {
-    }
+    // #[instrument(name = "shielded_pool", skip(_state, _begin_block))]
+    async fn begin_block(_state: &mut StateTransaction, _begin_block: &abci::request::BeginBlock) {}
 
     // #[instrument(name = "shielded_pool", skip(_ctx, tx))]
-    fn check_tx_stateless(_ctx: Context, tx: Arc<Transaction>) -> Result<()> {
+    fn check_tx_stateless(tx: Arc<Transaction>) -> Result<()> {
         // TODO: add a check that ephemeral_key is not identity to prevent scanning dos attack ?
         let auth_hash = tx.transaction_body().auth_hash();
 
@@ -156,12 +145,8 @@ impl Component for ShieldedPool {
         Ok(())
     }
 
-    // #[instrument(name = "shielded_pool", skip(state, _ctx, tx))]
-    async fn check_tx_stateful(
-        state: Arc<State>,
-        _ctx: Context,
-        tx: Arc<Transaction>,
-    ) -> Result<()> {
+    // #[instrument(name = "shielded_pool", skip(state, tx))]
+    async fn check_tx_stateful(state: Arc<State>, tx: Arc<Transaction>) -> Result<()> {
         state.check_claimed_anchor(tx.anchor).await?;
 
         for spent_nullifier in tx.spent_nullifiers() {
@@ -187,12 +172,8 @@ impl Component for ShieldedPool {
         Ok(())
     }
 
-    // #[instrument(name = "shielded_pool", skip(state, ctx, tx))]
-    async fn execute_tx(
-        state: &mut StateTransaction,
-        ctx: Context,
-        tx: Arc<Transaction>,
-    ) -> Result<()> {
+    // #[instrument(name = "shielded_pool", skip(state, tx))]
+    async fn execute_tx(state: &mut StateTransaction, tx: Arc<Transaction>) -> Result<()> {
         let source = NoteSource::Transaction { id: tx.id() };
 
         if let Some((epoch, identity_key)) = state.should_quarantine(&tx).await {
@@ -237,12 +218,8 @@ impl Component for ShieldedPool {
         Ok(())
     }
 
-    // #[instrument(name = "shielded_pool", skip(state, _ctx, _end_block))]
-    async fn end_block(
-        state: &mut StateTransaction,
-        _ctx: Context,
-        _end_block: &abci::request::EndBlock,
-    ) {
+    // #[instrument(name = "shielded_pool", skip(state, _end_block))]
+    async fn end_block(state: &mut StateTransaction, _end_block: &abci::request::EndBlock) {
         // Get the current block height
         let height = state.height().await;
 
@@ -261,9 +238,6 @@ impl Component for ShieldedPool {
 
         // Process all unquarantining scheduled for this block
         state.process_unquarantine().await;
-
-        // Refund any proposals from this block which are pending refund
-        state.process_proposal_refunds().await;
 
         // Close the block in the NCT
         let mut note_commitment_tree = state.stub_note_commitment_tree().await;
@@ -504,7 +478,7 @@ pub(super) trait StateWriteExt: StateWrite {
         self.set_nct_block_anchor(height, compact_block.block_root);
         // Write the current epoch anchor, if on an epoch boundary:
         if let Some(epoch_root) = compact_block.epoch_root {
-            let epoch_duration = self.epoch_duration().await;
+            let epoch_duration = self.get_epoch_duration().await?;
             let index = Epoch::from_height(height, epoch_duration).index;
             self.set_nct_epoch_anchor(index, epoch_root);
         }
@@ -656,25 +630,6 @@ pub(super) trait StateWriteExt: StateWrite {
             .expect("block height must be set")
     }
 
-    /// Get the current epoch.
-    async fn epoch(&self) -> Epoch {
-        // Get the height
-        let height = self.height().await;
-
-        // Get the epoch duration
-        let epoch_duration = self.epoch_duration().await;
-
-        // The current epoch
-        Epoch::from_height(height, epoch_duration)
-    }
-
-    /// Get the epoch duration.
-    async fn epoch_duration(&self) -> u64 {
-        self.get_epoch_duration()
-            .await
-            .expect("can get epoch duration")
-    }
-
     async fn schedule_unquarantined_notes(&mut self) {
         // First, we group all the scheduled quarantined notes by unquarantine epoch, in the process
         // resetting the quarantine field of the component
@@ -701,7 +656,7 @@ pub(super) trait StateWriteExt: StateWrite {
     // epoch-ending block
     #[instrument(skip(self))]
     async fn process_unquarantine(&mut self) {
-        let this_epoch = self.epoch().await;
+        let this_epoch = self.epoch().await.unwrap();
 
         if this_epoch.is_epoch_end(self.height().await) {
             for (_, per_validator) in self

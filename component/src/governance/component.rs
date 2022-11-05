@@ -9,7 +9,7 @@ use tendermint::abci;
 use tracing::instrument;
 
 use super::view::StateWriteExt as _;
-use crate::{Component, Context};
+use crate::Component;
 
 use super::{check, execute, proposal::ProposalList};
 
@@ -31,16 +31,11 @@ impl Component for Governance {
             .await;
     }
 
-    #[instrument(name = "governance", skip(_state, _ctx, _begin_block))]
-    async fn begin_block(
-        _state: &mut StateTransaction,
-        _ctx: Context,
-        _begin_block: &abci::request::BeginBlock,
-    ) {
-    }
+    #[instrument(name = "governance", skip(_state, _begin_block))]
+    async fn begin_block(_state: &mut StateTransaction, _begin_block: &abci::request::BeginBlock) {}
 
-    #[instrument(name = "governance", skip(_ctx, tx))]
-    fn check_tx_stateless(_ctx: Context, tx: Arc<Transaction>) -> Result<()> {
+    #[instrument(name = "governance", skip(tx))]
+    fn check_tx_stateless(tx: Arc<Transaction>) -> Result<()> {
         for proposal_submit in tx.proposal_submits() {
             check::stateless::proposal_submit(proposal_submit)?;
         }
@@ -58,12 +53,8 @@ impl Component for Governance {
         Ok(())
     }
 
-    #[instrument(name = "governance", skip(state, _ctx, tx))]
-    async fn check_tx_stateful(
-        state: Arc<State>,
-        _ctx: Context,
-        tx: Arc<Transaction>,
-    ) -> Result<()> {
+    #[instrument(name = "governance", skip(state, tx))]
+    async fn check_tx_stateful(state: Arc<State>, tx: Arc<Transaction>) -> Result<()> {
         let auth_hash = tx.transaction_body().auth_hash();
 
         for proposal_submit in tx.proposal_submits() {
@@ -83,12 +74,8 @@ impl Component for Governance {
         Ok(())
     }
 
-    #[instrument(name = "governance", skip(state, _ctx, tx))]
-    async fn execute_tx(
-        state: &mut StateTransaction,
-        _ctx: Context,
-        tx: Arc<Transaction>,
-    ) -> Result<()> {
+    #[instrument(name = "governance", skip(state, tx))]
+    async fn execute_tx(state: &mut StateTransaction, tx: Arc<Transaction>) -> Result<()> {
         for proposal_submit in tx.proposal_submits() {
             execute::proposal_submit(state, proposal_submit).await;
         }
@@ -105,12 +92,8 @@ impl Component for Governance {
         Ok(())
     }
 
-    #[instrument(name = "governance", skip(state, _ctx, _end_block))]
-    async fn end_block(
-        state: &mut StateTransaction,
-        _ctx: Context,
-        _end_block: &abci::request::EndBlock,
-    ) {
+    #[instrument(name = "governance", skip(state, _end_block))]
+    async fn end_block(state: &mut StateTransaction, _end_block: &abci::request::EndBlock) {
         // TODO: compute intermediate tallies at epoch boundaries (with threshold delegator voting)
         execute::enact_all_passed_proposals(state).await;
         execute::enact_pending_parameter_changes(state).await;

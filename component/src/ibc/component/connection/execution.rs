@@ -3,7 +3,7 @@ pub mod connection_open_init {
 
     #[async_trait]
     pub trait ConnectionOpenInitExecute: StateReadExt {
-        async fn execute(&mut self, ctx: Context, msg: &MsgConnectionOpenInit) {
+        async fn execute(&mut self, msg: &MsgConnectionOpenInit) {
             let connection_id = ConnectionId::new(self.get_connection_counter().await.unwrap().0);
 
             let compatible_versions = vec![Version::default()];
@@ -37,7 +37,7 @@ pub mod connection_open_try {
 
     #[async_trait]
     pub trait ConnectionOpenTryExecute: StateReadExt {
-        async fn execute(&mut self, ctx: Context, msg: &MsgConnectionOpenTry) {
+        async fn execute(&mut self, msg: &MsgConnectionOpenTry) {
             // new_conn is the new connection that we will open on this chain
             let mut new_conn = ConnectionEnd::new(
                 ConnectionState::TryOpen,
@@ -82,7 +82,7 @@ pub mod connection_open_confirm {
 
     #[async_trait]
     pub trait ConnectionOpenConfirmExecute: StateReadExt {
-        async fn execute(&mut self, ctx: Context, msg: &MsgConnectionOpenConfirm) {
+        async fn execute(&mut self, msg: &MsgConnectionOpenConfirm) {
             let mut connection = self
                 .get_connection(&msg.connection_id)
                 .await
@@ -109,7 +109,7 @@ pub mod connection_open_ack {
 
     #[async_trait]
     pub trait ConnectionOpenAckExecute: StateReadExt {
-        async fn execute(&mut self, ctx: Context, msg: &MsgConnectionOpenAck) {
+        async fn execute(&mut self, msg: &MsgConnectionOpenAck) {
             let mut connection = self
                 .get_connection(&msg.connection_id)
                 .await

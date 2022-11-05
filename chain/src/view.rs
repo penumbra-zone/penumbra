@@ -104,6 +104,18 @@ pub trait StateReadExt: StateRead {
             .await?
             .ok_or_else(|| anyhow!("Missing FmdParameters"))
     }
+
+    /// Get the current epoch.
+    async fn epoch(&self) -> Result<Epoch> {
+        // Get the height
+        let height = self.get_block_height().await?;
+
+        // Get the epoch duration
+        let epoch_duration = self.get_epoch_duration().await?;
+
+        // The current epoch
+        Ok(Epoch::from_height(height, epoch_duration))
+    }
 }
 
 impl<T: StateRead + ?Sized> StateReadExt for T {}

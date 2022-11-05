@@ -2,7 +2,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-use crate::{Component, Context};
+use crate::Component;
 use ::metrics::{decrement_gauge, gauge, increment_gauge};
 use anyhow::{anyhow, Context as _, Result};
 use async_trait::async_trait;
@@ -845,12 +845,8 @@ impl Component for Staking {
         state.build_tendermint_validator_updates().await.unwrap();
     }
 
-    #[instrument(name = "staking", skip(state, _ctx, begin_block))]
-    async fn begin_block(
-        state: &mut StateTransaction,
-        _ctx: Context,
-        begin_block: &abci::request::BeginBlock,
-    ) {
+    #[instrument(name = "staking", skip(state, begin_block))]
+    async fn begin_block(state: &mut StateTransaction, begin_block: &abci::request::BeginBlock) {
         // For each validator identified as byzantine by tendermint, update its
         // state to be slashed
         for evidence in begin_block.byzantine_validators.iter() {
@@ -863,8 +859,8 @@ impl Component for Staking {
             .unwrap();
     }
 
-    #[instrument(name = "staking", skip(_ctx, tx))]
-    fn check_tx_stateless(_ctx: Context, tx: Arc<Transaction>) -> Result<()> {
+    #[instrument(name = "staking", skip(tx))]
+    fn check_tx_stateless(tx: Arc<Transaction>) -> Result<()> {
         // Check that the transaction undelegates from at most one validator.
         let undelegation_identities = tx
             .undelegations()
@@ -922,12 +918,8 @@ impl Component for Staking {
         Ok(())
     }
 
-    #[instrument(name = "staking", skip(state, _ctx, tx))]
-    async fn check_tx_stateful(
-        state: Arc<State>,
-        _ctx: Context,
-        tx: Arc<Transaction>,
-    ) -> Result<()> {
+    #[instrument(name = "staking", skip(state, tx))]
+    async fn check_tx_stateful(state: Arc<State>, tx: Arc<Transaction>) -> Result<()> {
         // Tally the delegations and undelegations
         let mut delegation_changes = BTreeMap::new();
         for d in tx.delegations() {
@@ -1108,12 +1100,8 @@ impl Component for Staking {
         Ok(())
     }
 
-    #[instrument(name = "staking", skip(state, _ctx, tx))]
-    async fn execute_tx(
-        state: &mut StateTransaction,
-        _ctx: Context,
-        tx: Arc<Transaction>,
-    ) -> Result<()> {
+    #[instrument(name = "staking", skip(state, tx))]
+    async fn execute_tx(state: &mut StateTransaction, tx: Arc<Transaction>) -> Result<()> {
         // Queue any (un)delegations for processing at the next epoch boundary.
         for action in &tx.transaction_body.actions {
             match action {
@@ -1175,12 +1163,8 @@ impl Component for Staking {
         Ok(())
     }
 
-    #[instrument(name = "staking", skip(state, _ctx, end_block))]
-    async fn end_block(
-        state: &mut StateTransaction,
-        _ctx: Context,
-        end_block: &abci::request::EndBlock,
-    ) {
+    #[instrument(name = "staking", skip(state, end_block))]
+    async fn end_block(state: &mut StateTransaction, end_block: &abci::request::EndBlock) {
         // Write the delegation changes for this block.
         state
             .set_delegation_changes(
@@ -1393,7 +1377,7 @@ pub trait StateReadExt: StateRead {
                     .expect("can get chain params")
                     .unbonding_epochs;
                 Some((
-                    self.epoch().await.index + unbonding_epochs,
+                    self.epoch().await.unwrap().index + unbonding_epochs,
                     *validator_identity,
                 ))
             }

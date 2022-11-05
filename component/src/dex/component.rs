@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 // use crate::shielded_pool::StateReadExt as _;
 use crate::shielded_pool::NoteManager as _;
-use crate::{Component, Context};
+use crate::Component;
 use anyhow::{Context as _, Result};
 use ark_ff::Zero;
 use async_trait::async_trait;
@@ -60,16 +60,11 @@ impl Component for Dex {
         );
     }
 
-    #[instrument(name = "dex", skip(_state, _ctx, _begin_block))]
-    async fn begin_block(
-        _state: &mut StateTransaction,
-        _ctx: Context,
-        _begin_block: &abci::request::BeginBlock,
-    ) {
-    }
+    #[instrument(name = "dex", skip(_state, _begin_block))]
+    async fn begin_block(_state: &mut StateTransaction, _begin_block: &abci::request::BeginBlock) {}
 
-    #[instrument(name = "dex", skip(_ctx, tx))]
-    fn check_tx_stateless(_ctx: Context, tx: Arc<Transaction>) -> Result<()> {
+    #[instrument(name = "dex", skip(tx))]
+    fn check_tx_stateless(tx: Arc<Transaction>) -> Result<()> {
         // It's important to reject all LP actions for now, to prevent
         // inflation / minting bugs until we implement all required checks
         // (e.g., minting tokens by withdrawing reserves we don't check)
@@ -139,12 +134,8 @@ impl Component for Dex {
         Ok(())
     }
 
-    #[instrument(name = "dex", skip(state, _ctx, tx))]
-    async fn check_tx_stateful(
-        state: Arc<State>,
-        _ctx: Context,
-        tx: Arc<Transaction>,
-    ) -> Result<()> {
+    #[instrument(name = "dex", skip(state, tx))]
+    async fn check_tx_stateful(state: Arc<State>, tx: Arc<Transaction>) -> Result<()> {
         // It's important to reject all LP actions for now, to prevent
         // inflation / minting bugs until we implement all required checks
         // (e.g., minting tokens by withdrawing reserves we don't check)
@@ -197,12 +188,8 @@ impl Component for Dex {
         Ok(())
     }
 
-    #[instrument(name = "dex", skip(state, _ctx, tx))]
-    async fn execute_tx(
-        state: &mut StateTransaction,
-        _ctx: Context,
-        tx: Arc<Transaction>,
-    ) -> Result<()> {
+    #[instrument(name = "dex", skip(state, tx))]
+    async fn execute_tx(state: &mut StateTransaction, tx: Arc<Transaction>) -> Result<()> {
         for action in tx.transaction_body.actions.iter() {
             match action {
                 Action::PositionOpen { .. }
@@ -223,7 +210,7 @@ impl Component for Dex {
                     state.put_swap_flow(&swap.body.trading_pair, swap_flow);
                 }
                 Action::SwapClaim(swap_claim) => {
-                    state.claim_swap(swap_claim.body.clone(), tx.id());
+                    state.claim_swap(swap_claim.body.clone(), tx.id()).await;
                 }
                 _ => {}
             }
@@ -232,12 +219,8 @@ impl Component for Dex {
         Ok(())
     }
 
-    #[instrument(name = "dex", skip(state, _ctx, end_block))]
-    async fn end_block(
-        state: &mut StateTransaction,
-        _ctx: Context,
-        end_block: &abci::request::EndBlock,
-    ) {
+    #[instrument(name = "dex", skip(state, end_block))]
+    async fn end_block(state: &mut StateTransaction, end_block: &abci::request::EndBlock) {
         // For each batch swap during the block, calculate clearing prices and set in the JMT.
         for (trading_pair, swap_flows) in state.swap_flows() {
             let (delta_1, delta_2) = (swap_flows.0.mock_decrypt(), swap_flows.1.mock_decrypt());
@@ -319,9 +302,9 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
 
     fn put_swap_flow(&mut self, trading_pair: &TradingPair, swap_flow: SwapFlow) {
         // TODO: replace with IM struct later
-        let swap_flows = self.swap_flows();
+        let mut swap_flows = self.swap_flows();
         swap_flows.insert(trading_pair.clone(), swap_flow);
-        self.put_ephemeral(state_key::swap_flows().into(), swap_flow)
+        self.put_ephemeral(state_key::swap_flows().into(), swap_flows)
     }
 
     // #[instrument(skip(self))]

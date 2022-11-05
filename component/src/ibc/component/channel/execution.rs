@@ -3,7 +3,7 @@ pub mod channel_open_init {
 
     #[async_trait]
     pub trait ChannelOpenInitExecute {
-        async fn execute(&mut self, ctx: Context, msg: &MsgChannelOpenInit) {
+        async fn execute(&mut self, msg: &MsgChannelOpenInit) {
             let channel_id = self.next_channel_id().await.unwrap();
             let new_channel = ChannelEnd {
                 state: ChannelState::Init,
@@ -33,7 +33,7 @@ pub mod channel_open_try {
 
     #[async_trait]
     pub trait ChannelOpenTryExecute {
-        async fn execute(&mut self, ctx: Context, msg: &MsgChannelOpenTry) {
+        async fn execute(&mut self, msg: &MsgChannelOpenTry) {
             let channel_id = self.next_channel_id().await.unwrap();
             let new_channel = ChannelEnd {
                 state: ChannelState::TryOpen,
@@ -63,7 +63,7 @@ pub mod channel_open_ack {
 
     #[async_trait]
     pub trait ChannelOpenAckExecute {
-        async fn execute(&mut self, ctx: Context, msg: &MsgChannelOpenAck) {
+        async fn execute(&mut self, msg: &MsgChannelOpenAck) {
             let mut channel = self
                 .get_channel(&msg.channel_id, &msg.port_id)
                 .await
@@ -90,7 +90,7 @@ pub mod channel_open_confirm {
 
     #[async_trait]
     pub trait ChannelOpenConfirmExecute {
-        async fn execute(&mut self, ctx: Context, msg: &MsgChannelOpenConfirm) {
+        async fn execute(&mut self, msg: &MsgChannelOpenConfirm) {
             let mut channel = self
                 .get_channel(&msg.channel_id, &msg.port_id)
                 .await
@@ -115,7 +115,7 @@ pub mod channel_close_init {
 
     #[async_trait]
     pub trait ChannelCloseInitExecute {
-        async fn execute(&mut self, ctx: Context, msg: &MsgChannelCloseInit) {
+        async fn execute(&mut self, msg: &MsgChannelCloseInit) {
             let mut channel = self
                 .get_channel(&msg.channel_id, &msg.port_id)
                 .await
@@ -139,7 +139,7 @@ pub mod channel_close_confirm {
 
     #[async_trait]
     pub trait ChannelCloseConfirmExecute {
-        async fn execute(&mut self, ctx: Context, msg: &MsgChannelCloseConfirm) {
+        async fn execute(&mut self, msg: &MsgChannelCloseConfirm) {
             let mut channel = self
                 .get_channel(&msg.channel_id, &msg.port_id)
                 .await
@@ -164,7 +164,7 @@ pub mod recv_packet {
 
     #[async_trait]
     pub trait RecvPacketExecute {
-        async fn execute(&mut self, ctx: Context, msg: &MsgRecvPacket) {
+        async fn execute(&mut self, msg: &MsgRecvPacket) {
             let channel = self
                 .get_channel(
                     &msg.packet.destination_channel,
@@ -207,7 +207,7 @@ pub mod acknowledge_packet {
 
     #[async_trait]
     pub trait AcknowledgePacketExecute {
-        async fn execute(&mut self, ctx: Context, msg: &MsgAcknowledgement) {
+        async fn execute(&mut self, msg: &MsgAcknowledgement) {
             let channel = self
                 .get_channel(&msg.packet.source_channel, &msg.packet.source_port)
                 .await
@@ -246,7 +246,7 @@ pub mod timeout {
 
     #[async_trait]
     pub trait TimeoutExecute {
-        async fn execute(&mut self, ctx: Context, msg: &MsgTimeout) {
+        async fn execute(&mut self, msg: &MsgTimeout) {
             let mut channel = self
                 .get_channel(&msg.packet.source_channel, &msg.packet.source_port)
                 .await

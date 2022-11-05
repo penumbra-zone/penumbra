@@ -63,7 +63,7 @@ impl App {
         println!("pre-checking transaction...");
         use penumbra_component::Component;
         let ctx = Context::new();
-        pd::App::check_tx_stateless(ctx.clone(), transaction)
+        pd::App::check_tx_stateless(transaction)
             .context("transaction pre-submission checks failed")?;
 
         println!("broadcasting transaction...");

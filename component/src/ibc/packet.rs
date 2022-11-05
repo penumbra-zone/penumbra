@@ -71,7 +71,7 @@ impl From<Ics20Withdrawal> for IBCPacket<Unchecked> {
 pub trait SendPacket: StateWrite {
     /// Send a packet on a channel. This assumes that send_packet_check has already been called on
     /// the provided packet.
-    async fn send_packet_execute(&mut self, _ctx: Context, packet: IBCPacket<Checked>) {
+    async fn send_packet_execute(&mut self, packet: IBCPacket<Checked>) {
         // increment the send sequence counter
         let sequence = self
             .get_send_sequence(&packet.source_channel, &packet.source_port)
@@ -104,11 +104,7 @@ pub trait SendPacket: StateWrite {
     }
 
     /// send_packet_check verifies that a packet can be sent using the provided parameters.
-    async fn send_packet_check(
-        &self,
-        _ctx: Context,
-        packet: IBCPacket<Unchecked>,
-    ) -> Result<IBCPacket<Checked>> {
+    async fn send_packet_check(&self, packet: IBCPacket<Unchecked>) -> Result<IBCPacket<Checked>> {
         let channel = self
             .get_channel(&packet.source_channel, &packet.source_port)
             .await?

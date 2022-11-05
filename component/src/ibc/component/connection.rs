@@ -44,16 +44,11 @@ impl Component for ConnectionComponent {
     #[instrument(name = "ibc_connection", skip(self, _app_state))]
     async fn init_chain(state: &mut StateTransaction, _app_state: &genesis::AppState) {}
 
-    #[instrument(name = "ibc_connection", skip(self, _ctx, _begin_block))]
-    async fn begin_block(
-        state: &mut StateTransaction,
-        _ctx: Context,
-        _begin_block: &abci::request::BeginBlock,
-    ) {
-    }
+    #[instrument(name = "ibc_connection", skip(self, _begin_block))]
+    async fn begin_block(state: &mut StateTransaction, _begin_block: &abci::request::BeginBlock) {}
 
     #[instrument(name = "ibc_connection", skip(_ctx, tx))]
-    fn check_tx_stateless(_ctx: Context, tx: &Transaction) -> Result<()> {
+    fn check_tx_stateless(tx: &Transaction) -> Result<()> {
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
                 Some(ConnectionOpenInit(msg)) => {
@@ -92,8 +87,8 @@ impl Component for ConnectionComponent {
         Ok(())
     }
 
-    #[instrument(name = "ibc_connection", skip(self, _ctx, tx))]
-    async fn check_tx_stateful(_ctx: Context, tx: &Transaction) -> Result<()> {
+    #[instrument(name = "ibc_connection", skip(self, tx))]
+    async fn check_tx_stateful(tx: &Transaction) -> Result<()> {
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
                 Some(ConnectionOpenInit(msg)) => {
@@ -127,35 +122,33 @@ impl Component for ConnectionComponent {
         Ok(())
     }
 
-    #[instrument(name = "ibc_connection", skip(self, ctx, tx))]
-    async fn execute_tx(ctx: Context, tx: &Transaction) {
+    #[instrument(name = "ibc_connection", skip(self, tx))]
+    async fn execute_tx(tx: &Transaction) {
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
                 Some(ConnectionOpenInit(msg)) => {
                     use execution::connection_open_init::ConnectionOpenInitExecute;
                     let msg_connection_open_init =
                         MsgConnectionOpenInit::try_from(msg.clone()).unwrap();
-                    self.state
-                        .execute(ctx.clone(), &msg_connection_open_init)
-                        .await;
+                    self.state.execute(&msg_connection_open_init).await;
                 }
 
                 Some(ConnectionOpenTry(raw_msg)) => {
                     use execution::connection_open_try::ConnectionOpenTryExecute;
                     let msg = MsgConnectionOpenTry::try_from(raw_msg.clone()).unwrap();
-                    self.state.execute(ctx.clone(), &msg).await;
+                    self.state.execute(&msg).await;
                 }
 
                 Some(ConnectionOpenAck(raw_msg)) => {
                     use execution::connection_open_ack::ConnectionOpenAckExecute;
                     let msg = MsgConnectionOpenAck::try_from(raw_msg.clone()).unwrap();
-                    self.state.execute(ctx.clone(), &msg).await;
+                    self.state.execute(&msg).await;
                 }
 
                 Some(ConnectionOpenConfirm(raw_msg)) => {
                     use execution::connection_open_confirm::ConnectionOpenConfirmExecute;
                     let msg = MsgConnectionOpenConfirm::try_from(raw_msg.clone()).unwrap();
-                    self.state.execute(ctx.clone(), &msg).await;
+                    self.state.execute(&msg).await;
                 }
 
                 _ => {}
@@ -163,8 +156,8 @@ impl Component for ConnectionComponent {
         }
     }
 
-    #[instrument(name = "ibc_connection", skip(self, _ctx, _end_block))]
-    async fn end_block(_ctx: Context, _end_block: &abci::request::EndBlock) {}
+    #[instrument(name = "ibc_connection", skip(self, _end_block))]
+    async fn end_block(_end_block: &abci::request::EndBlock) {}
 }
 
 #[async_trait(?Send)]

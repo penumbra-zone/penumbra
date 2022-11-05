@@ -65,10 +65,7 @@ impl Worker {
                 ),
                 Request::DeliverTx(deliver_tx) => {
                     let ctx = Context::new();
-                    let rsp = self
-                        .deliver_tx(ctx.clone(), deliver_tx)
-                        .instrument(span.clone())
-                        .await;
+                    let rsp = self.deliver_tx(deliver_tx).instrument(span.clone()).await;
                     span.in_scope(|| {
                         Response::DeliverTx(match rsp {
                             Ok(()) => {
@@ -156,7 +153,7 @@ impl Worker {
         begin_block: abci::request::BeginBlock,
     ) -> Result<abci::response::BeginBlock> {
         let ctx = Context::new();
-        self.app.begin_block(ctx.clone(), &begin_block).await;
+        self.app.begin_block(&begin_block).await;
         Ok(abci::response::BeginBlock {
             events: ctx.into_events(),
         })
@@ -169,23 +166,17 @@ impl Worker {
     /// We must perform all checks again here even though they are performed in `CheckTx`, as a
     /// Byzantine node may propose a block containing double spends or other disallowed behavior,
     /// so it is not safe to assume all checks performed in `CheckTx` were done.
-    async fn deliver_tx(
-        &mut self,
-        ctx: Context,
-        deliver_tx: abci::request::DeliverTx,
-    ) -> Result<()> {
+    async fn deliver_tx(&mut self, deliver_tx: abci::request::DeliverTx) -> Result<()> {
         // Verify the transaction is well-formed...
         let transaction = Transaction::decode(deliver_tx.tx)?;
         // ... and statelessly valid...
-        App::check_tx_stateless(ctx.clone(), &transaction)?;
+        App::check_tx_stateless(&transaction)?;
         // ... and statefully valid.
-        self.app
-            .check_tx_stateful(ctx.clone(), &transaction)
-            .await?;
+        self.app.check_tx_stateful(&transaction).await?;
         // Now execute the transaction. It's important to panic on error here, since if
         // we fail to execute the transaction here, it's because of an internal
         // error and we may have left the chain in an inconsistent state.
-        self.app.execute_tx(ctx.clone(), &transaction).await;
+        self.app.execute_tx(&transaction).await;
         Ok(())
     }
 
@@ -194,7 +185,7 @@ impl Worker {
         end_block: abci::request::EndBlock,
     ) -> Result<abci::response::EndBlock> {
         let ctx = Context::new();
-        self.app.end_block(ctx.clone(), &end_block).await;
+        self.app.end_block(&end_block).await;
 
         // Set `tm_validator_updates` to the complete set of
         // validators and voting power. This must be the last step performed,
