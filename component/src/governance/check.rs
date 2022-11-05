@@ -82,7 +82,7 @@ pub mod stateless {
 }
 
 pub mod stateful {
-    use super::super::view::StateWriteExt as _;
+
     use super::super::StateReadExt as _;
     use super::*;
     use crate::stake::StateReadExt as _;

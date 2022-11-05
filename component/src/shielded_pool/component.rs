@@ -13,10 +13,7 @@ use penumbra_chain::{
 use penumbra_crypto::{asset, note, IdentityKey, NotePayload, Nullifier, Value};
 use penumbra_storage2::{State, StateRead, StateTransaction, StateWrite};
 use penumbra_tct as tct;
-use penumbra_transaction::{
-    action::{swap_claim::List as SwapClaimBodyList, Undelegate},
-    Action, Transaction,
-};
+use penumbra_transaction::{action::swap_claim::List as SwapClaimBodyList, Action, Transaction};
 use tct::Tree;
 use tendermint::abci;
 use tracing::instrument;
