@@ -5,7 +5,8 @@ use std::{
 };
 
 use futures::FutureExt;
-use penumbra_storage::{get_with_proof, AppHash, State, Storage};
+//use penumbra_storage::{get_with_proof, AppHash, State, Storage};
+use penumbra_storage2::{AppHash, Storage};
 use tendermint::{
     abci::{self, response::Echo, InfoRequest, InfoResponse},
     block,

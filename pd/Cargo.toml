@@ -17,7 +17,7 @@ penumbra-proto = { path = "../proto" }
 penumbra-chain = { path = "../chain" }
 penumbra-crypto = { path = "../crypto" }
 penumbra-transaction = { path = "../transaction" }
-penumbra-storage = { path = "../storage" }
+penumbra-storage2 = { path = "../storage2" }
 penumbra-component = { path = "../component" }
 penumbra-wallet = { path = "../wallet" }
 

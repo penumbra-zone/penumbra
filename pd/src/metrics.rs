@@ -18,9 +18,9 @@ pub use metrics::*;
 /// For this implementation, in the `pd` crate, we also call the `register_metrics()`
 /// functions in our dependencies.
 pub fn register_metrics() {
-    penumbra_storage::register_metrics();
+    penumbra_storage2::register_metrics();
     penumbra_component::stake::register_metrics();
-    penumbra_component::ibc::register_metrics();
+    // penumbra_component::ibc::register_metrics();
     penumbra_component::shielded_pool::register_metrics();
 
     register_counter!(MEMPOOL_CHECKTX_TOTAL);
