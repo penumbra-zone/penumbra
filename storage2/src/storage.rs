@@ -19,6 +19,12 @@ use crate::State;
 #[derive(Clone)]
 pub struct Storage(Arc<Inner>);
 
+impl std::fmt::Debug for Storage {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Storage").finish_non_exhaustive()
+    }
+}
+
 // A private inner element to prevent the `TreeWriter` implementation
 // from leaking outside of this crate.
 struct Inner {

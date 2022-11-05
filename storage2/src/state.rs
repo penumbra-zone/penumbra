@@ -31,7 +31,6 @@ use self::read::prefix_raw_with_cache;
 /// [`State`] instances should be forked from the underlying
 /// [`Storage`](crate::Storage), if the states are meant to be independent, or
 /// the [`State`] should be explicitly shared using an [`Arc`](std::sync::Arc).
-#[derive(Debug)]
 pub struct State {
     snapshot: Snapshot,
     // A `None` value represents deletion.
@@ -39,6 +38,15 @@ pub struct State {
     // A `None` value represents deletion.
     pub(crate) nonconsensus_changes: BTreeMap<Vec<u8>, Option<Vec<u8>>>,
     pub(crate) ephemeral_objects: BTreeMap<String, Box<dyn Any + Send + Sync>>,
+}
+
+impl std::fmt::Debug for State {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("State")
+            .field("snapshot", &self.snapshot)
+            .field("dirty", &self.is_dirty())
+            .finish_non_exhaustive()
+    }
 }
 
 impl State {

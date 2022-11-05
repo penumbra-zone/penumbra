@@ -19,8 +19,16 @@ use rocks_wrapper::RocksDbSnapshot;
 /// a wrapper around a [RocksDB
 /// snapshot](https://github.com/facebook/rocksdb/wiki/Snapshot) with a pinned
 /// JMT version number for the snapshot.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Snapshot(Arc<Inner>);
+
+impl std::fmt::Debug for Snapshot {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Snapshot")
+            .field("version", &self.0.version)
+            .finish_non_exhaustive()
+    }
+}
 
 // We don't want to expose the `TreeReader` implementation outside of this crate.
 #[derive(Debug)]
