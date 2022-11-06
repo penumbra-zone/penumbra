@@ -108,6 +108,33 @@ impl State {
             })?
             .await?
     }
+
+    /// Returns the root hash of this `State`.
+    ///
+    /// If the `State` is empty, the all-zeros hash will be returned as a placeholder value.
+    ///
+    /// This method may only be used on a clean [`State`] fork, and will error
+    /// if [`is_dirty`] returns `true`.
+    pub async fn root_hash(&self) -> Result<jmt::RootHash> {
+        if self.is_dirty() {
+            return Err(anyhow::anyhow!("requested root_hash on dirty State"));
+        }
+        let span = Span::current();
+        let snapshot = self.snapshot.clone();
+
+        tokio::task::Builder::new()
+            .name("State::root_hash")
+            .spawn_blocking(move || {
+                span.in_scope(|| {
+                    let tree = jmt::JellyfishMerkleTree::new(&snapshot);
+                    let root = tree
+                        .get_root_hash_option(snapshot.version())?
+                        .unwrap_or(jmt::RootHash([0; 32]));
+                    Ok(root)
+                })
+            })?
+            .await?
+    }
 }
 
 //#[async_trait(?Send)]

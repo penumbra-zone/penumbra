@@ -5,12 +5,9 @@ use std::{
 };
 
 use futures::FutureExt;
-use penumbra_storage::Storage;
-use tendermint::{
-    abci::{ConsensusRequest, ConsensusResponse},
-    block,
-};
-use tokio::sync::{mpsc, oneshot, watch};
+use penumbra_storage2::Storage;
+use tendermint::abci::{ConsensusRequest, ConsensusResponse};
+use tokio::sync::{mpsc, oneshot};
 use tokio_util::sync::PollSender;
 use tower_abci::BoxError;
 use tracing::error_span;
@@ -24,25 +21,17 @@ pub struct Consensus {
 }
 
 impl Consensus {
-    pub async fn new(storage: Storage) -> anyhow::Result<(Self, watch::Receiver<block::Height>)> {
+    pub async fn new(storage: Storage) -> anyhow::Result<Self> {
         let (queue_tx, queue_rx) = mpsc::channel(10);
-        let initial_height = match storage.latest_version().await? {
-            Some(version) => version.try_into().unwrap(),
-            _ => 0u32.into(),
-        };
-        let (height_tx, height_rx) = watch::channel(initial_height);
 
         tokio::task::Builder::new()
             .name("consensus::Worker")
-            .spawn(Worker::new(storage, queue_rx, height_tx).await?.run())
+            .spawn(Worker::new(storage, queue_rx).await?.run())
             .expect("failed to spawn consensus worker");
 
-        Ok((
-            Self {
-                queue: PollSender::new(queue_tx),
-            },
-            height_rx,
-        ))
+        Ok(Self {
+            queue: PollSender::new(queue_tx),
+        })
     }
 }
 

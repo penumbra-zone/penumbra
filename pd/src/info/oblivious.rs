@@ -5,10 +5,11 @@ use futures::{
     stream::{StreamExt, TryStreamExt},
     TryFutureExt,
 };
-use penumbra_chain::View as _;
-use penumbra_component::stake::{validator, View as _};
+use penumbra_chain::StateReadExt as _;
+use penumbra_component::stake::{validator, StateReadExt as _};
 use penumbra_component::{
-    governance::proposal::chain_params::MutableParam, shielded_pool::View as _,
+    governance::proposal::chain_params::MutableParam,
+    shielded_pool::{StateReadExt as _, SupplyRead as _},
 };
 use penumbra_proto::{
     client::v1alpha1::{
@@ -70,7 +71,7 @@ impl ObliviousQuery for Info {
         &self,
         request: tonic::Request<ChainParamsRequest>,
     ) -> Result<tonic::Response<ChainParameters>, Status> {
-        let state = self.state_tonic().await?;
+        let state = self.storage.state();
         state.check_chain_id(&request.get_ref().chain_id).await?;
 
         let chain_params = state.get_chain_params().await.map_err(|e| {
@@ -85,7 +86,7 @@ impl ObliviousQuery for Info {
         &self,
         request: tonic::Request<MutableParametersRequest>,
     ) -> Result<tonic::Response<Self::MutableParametersStream>, Status> {
-        let state = self.state_tonic().await?;
+        let state = self.storage.state();
         state.check_chain_id(&request.get_ref().chain_id).await?;
 
         let mutable_params = MutableParam::iter();
@@ -112,7 +113,7 @@ impl ObliviousQuery for Info {
         &self,
         request: tonic::Request<AssetListRequest>,
     ) -> Result<tonic::Response<KnownAssets>, Status> {
-        let state = self.state_tonic().await?;
+        let state = self.storage.state();
         state.check_chain_id(&request.get_ref().chain_id).await?;
 
         let known_assets = state.known_assets().await.map_err(|e| {
@@ -126,7 +127,7 @@ impl ObliviousQuery for Info {
         &self,
         request: tonic::Request<ValidatorInfoRequest>,
     ) -> Result<tonic::Response<Self::ValidatorInfoStream>, Status> {
-        let state = self.state_tonic().await?;
+        let state = self.storage.state();
         state.check_chain_id(&request.get_ref().chain_id).await?;
 
         let validators = state
@@ -170,7 +171,7 @@ impl ObliviousQuery for Info {
         &self,
         request: tonic::Request<CompactBlockRangeRequest>,
     ) -> Result<tonic::Response<Self::CompactBlockRangeStream>, Status> {
-        let state = self.state_tonic().await?;
+        let state = self.storage.state();
         state.check_chain_id(&request.get_ref().chain_id).await?;
 
         let CompactBlockRangeRequest {
@@ -196,7 +197,7 @@ impl ObliviousQuery for Info {
         // Clone these, so we can keep copies in the worker task we spawn
         // to handle this request.
         let storage = self.storage.clone();
-        let mut height_rx = self.height_rx.clone();
+        let mut state_rx = self.storage.subscribe();
 
         let (tx, rx) = mpsc::channel(10);
         let txerr = tx.clone();
@@ -223,10 +224,10 @@ impl ObliviousQuery for Info {
                 // running too far ahead.
                 let (block_fetch_tx, mut block_fetch_rx) = mpsc::channel(8);
 
-                let state2 = state.clone();
+                let storage2 = storage.clone();
                 tokio::spawn(async move {
                     for height in start_height..=end_height {
-                        let state3 = state2.clone();
+                        let state3 = storage2.state();
                         let _ = block_fetch_tx
                             .send(tokio::spawn(
                                 async move { state3.compact_block(height).await },
@@ -253,8 +254,8 @@ impl ObliviousQuery for Info {
 
                 // Before we can stream new compact blocks as they're created,
                 // catch up on any blocks that have been created while catching up.
-                let cur_height = height_rx.borrow_and_update().value();
-                let state = storage.state().await?;
+                let state = state_rx.borrow_and_update().into_state();
+                let cur_height = state.version();
                 tracing::debug!(
                     cur_height,
                     "finished request, client requested keep-alive, continuing to stream blocks"
@@ -281,15 +282,15 @@ impl ObliviousQuery for Info {
                 // Because we used borrow_and_update above, we know this will
                 // wait for the *next* block to be created before firing.
                 loop {
-                    height_rx.changed().await?;
-                    let height = height_rx.borrow().value();
+                    state_rx.changed().await?;
+                    let state = state_rx.borrow().into_state();
+                    let height = state.version();
                     tracing::debug!(?height, "notifying client of new block");
-                    let state = storage.state().await?;
                     let block = state
                         .compact_block(height)
                         .await?
                         .expect("compact block for in-range height must be present");
-                    tx.send(Ok(block.to_proto())).await?;
+                    tx.send(Ok(block.to_proto()));
                     metrics::increment_counter!(
                         metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
                     );

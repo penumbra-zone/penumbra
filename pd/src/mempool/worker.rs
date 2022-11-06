@@ -1,9 +1,10 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 use bytes::Bytes;
-
-use penumbra_component::{Component, Context};
+use penumbra_component::Component;
 use penumbra_proto::Protobuf;
-use penumbra_storage::Storage;
+use penumbra_storage2::{StateNotification, Storage};
 use penumbra_transaction::Transaction;
 use tendermint::block;
 use tokio::sync::{mpsc, watch};
@@ -16,23 +17,20 @@ pub struct Worker {
     queue: mpsc::Receiver<Message>,
     storage: Storage,
     app: App,
-    height_rx: watch::Receiver<block::Height>,
+    state_rx: watch::Receiver<StateNotification>,
 }
 
 impl Worker {
-    #[instrument(skip(storage, queue, height_rx), name = "mempool::Worker::new")]
-    pub async fn new(
-        storage: Storage,
-        queue: mpsc::Receiver<Message>,
-        height_rx: watch::Receiver<block::Height>,
-    ) -> Result<Self> {
-        let app = App::new(storage.clone()).await;
+    #[instrument(skip(storage, queue), name = "mempool::Worker::new")]
+    pub async fn new(storage: Storage, queue: mpsc::Receiver<Message>) -> Result<Self> {
+        let app = App::new(storage.state());
+        let state_rx = storage.subscribe();
 
         Ok(Self {
             queue,
             storage,
             app,
-            height_rx,
+            state_rx,
         })
     }
 
@@ -42,10 +40,9 @@ impl Worker {
     /// that performs the stateless checks.  However, this probably isn't
     /// important to do until we know that it's a bottleneck.
     async fn check_and_execute_tx(&mut self, tx_bytes: Bytes) -> Result<()> {
-        let tx = Transaction::decode(tx_bytes.as_ref())?;
-        App::check_tx_stateless(&tx)?;
-        self.app.check_tx_stateful(&tx).await?;
-        self.app.execute_tx(&tx).await;
+        // TODO: should this wrapper fn exist?
+        let tx = Arc::new(Transaction::decode(tx_bytes.as_ref())?);
+        self.app.deliver_tx(tx).await?;
         Ok(())
     }
 
@@ -56,14 +53,16 @@ impl Worker {
                 biased;
                 // Check whether the height has changed, which requires us to throw away our
                 // ephemeral mempool state, and create a new one based on the new state.
-                change = self.height_rx.changed() => {
+                change = self.state_rx.changed() => {
                     if let Ok(()) = change {
-                        let height = self.height_rx.borrow().value();
-                        tracing::info!(?height, "resetting ephemeral mempool state");
-                        self.app = App::new(self.storage.clone()).await;
+                        let state = self.state_rx.borrow().into_state();
+                        tracing::info!(height = ?state.version(), "resetting ephemeral mempool state");
+                        self.app = App::new(state);
                     } else {
-                        tracing::info!("consensus worker shut down, shutting down mempool worker");
-                        // The consensus worker shut down, we should too.
+                        // TODO: what triggers this, now that the channel is owned by the
+                        // shared Storage instance, rather than the consensus worker?
+                        tracing::info!("state notification channel closed, shutting down");
+                        // old: The consensus worker shut down, we should too.
                         return Ok(());
                     }
                 }
@@ -73,9 +72,8 @@ impl Worker {
                         rsp_sender,
                         span,
                     }) = message {
-                        let ctx = Context::new();
                         let _ = rsp_sender.send(
-                            self.check_and_execute_tx( tx_bytes)
+                            self.check_and_execute_tx(tx_bytes)
                                 .instrument(span)
                                 .await
                         );

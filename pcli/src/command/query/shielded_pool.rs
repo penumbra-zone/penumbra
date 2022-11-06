@@ -1,7 +1,6 @@
 use anyhow::Result;
 use colored_json::prelude::*;
 use penumbra_chain::{quarantined::Scheduled, CompactBlock, NoteSource};
-use penumbra_component::shielded_pool::Delible;
 use penumbra_crypto::Nullifier;
 use penumbra_proto::Protobuf;
 use penumbra_tct::Commitment;
@@ -59,7 +58,7 @@ impl ShieldedPool {
             ShieldedPool::EpochAnchor { epoch } => state_key::epoch_anchor_by_index(*epoch),
             ShieldedPool::CompactBlock { height } => state_key::compact_block(*height),
             ShieldedPool::Scheduled { epoch } => state_key::scheduled_to_apply(*epoch),
-            ShieldedPool::Commitment { commitment } => state_key::note_source(*commitment),
+            ShieldedPool::Commitment { commitment } => state_key::note_source(commitment),
             ShieldedPool::Nullifier { nullifier } => state_key::spent_nullifier_lookup(*nullifier),
             ShieldedPool::QuarantinedNullifier { nullifier } => {
                 state_key::quarantined_spent_nullifier_lookup(*nullifier)
@@ -90,7 +89,7 @@ impl ShieldedPool {
                 serde_json::to_string_pretty(&notes.scheduled)?
             }
             ShieldedPool::Commitment { .. } => {
-                let note_source = Delible::<NoteSource>::decode(bytes)?;
+                let note_source = NoteSource::decode(bytes)?;
                 serde_json::to_string_pretty(&note_source)?
             }
             ShieldedPool::Nullifier { .. } => {
@@ -98,7 +97,7 @@ impl ShieldedPool {
                 serde_json::to_string_pretty(&note_source)?
             }
             ShieldedPool::QuarantinedNullifier { .. } => {
-                let note_source = Delible::<NoteSource>::decode(bytes)?;
+                let note_source = NoteSource::decode(bytes)?;
                 serde_json::to_string_pretty(&note_source)?
             }
         };

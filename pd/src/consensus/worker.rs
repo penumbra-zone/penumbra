@@ -1,10 +1,12 @@
+use std::sync::Arc;
+
 use anyhow::{anyhow, Result};
 
 use penumbra_proto::Protobuf;
 
 use penumbra_chain::genesis;
-use penumbra_component::{Component, Context};
-use penumbra_storage::Storage;
+use penumbra_component::Component;
+use penumbra_storage2::Storage;
 use penumbra_transaction::Transaction;
 use tendermint::{
     abci::{self, ConsensusRequest as Request, ConsensusResponse as Response},
@@ -18,23 +20,17 @@ use crate::App;
 
 pub struct Worker {
     queue: mpsc::Receiver<Message>,
-    height_tx: watch::Sender<block::Height>,
     storage: Storage,
     app: App,
 }
 
 impl Worker {
-    #[instrument(skip(storage, queue, height_tx), name = "consensus::Worker::new")]
-    pub async fn new(
-        storage: Storage,
-        queue: mpsc::Receiver<Message>,
-        height_tx: watch::Sender<block::Height>,
-    ) -> Result<Self> {
-        let app = App::new(storage.clone()).await;
+    #[instrument(skip(storage, queue), name = "consensus::Worker::new")]
+    pub async fn new(storage: Storage, queue: mpsc::Receiver<Message>) -> Result<Self> {
+        let app = App::new(storage.state());
 
         Ok(Self {
             queue,
-            height_tx,
             storage,
             app,
         })
@@ -64,14 +60,15 @@ impl Worker {
                         .expect("begin_block must succeed"),
                 ),
                 Request::DeliverTx(deliver_tx) => {
-                    let ctx = Context::new();
+                    // Unlike the other messages, DeliverTx is fallible, so
+                    // we use a wrapper function to catch bubbled errors.
                     let rsp = self.deliver_tx(deliver_tx).instrument(span.clone()).await;
                     span.in_scope(|| {
                         Response::DeliverTx(match rsp {
-                            Ok(()) => {
+                            Ok(events) => {
                                 tracing::info!("deliver_tx succeeded");
                                 abci::response::DeliverTx {
-                                    events: ctx.into_events(),
+                                    events,
                                     ..Default::default()
                                 }
                             }
@@ -80,7 +77,6 @@ impl Worker {
                                 abci::response::DeliverTx {
                                     code: 1,
                                     log: e.to_string(),
-                                    events: ctx.into_events(),
                                     ..Default::default()
                                 }
                             }
@@ -118,7 +114,7 @@ impl Worker {
             .expect("can parse app_state in genesis file");
 
         // Check that we haven't got a duplicated InitChain message for some reason:
-        if self.storage.latest_version().await?.is_some() {
+        if self.storage.latest_version() != u64::MAX {
             return Err(anyhow!("database already initialized"));
         }
         self.app.init_chain(&app_state).await;
@@ -132,7 +128,11 @@ impl Worker {
         let validators = self.app.tendermint_validator_updates();
 
         // Note: App::commit resets internal components, so we don't need to do that ourselves.
-        let (app_hash, _) = self.app.commit(self.storage.clone()).await?;
+        let app_hash = self
+            .app
+            .commit(self.storage.clone())
+            .await
+            .expect("must be able to commit state");
 
         tracing::info!(
             consensus_params = ?init_chain.consensus_params,
@@ -152,40 +152,30 @@ impl Worker {
         &mut self,
         begin_block: abci::request::BeginBlock,
     ) -> Result<abci::response::BeginBlock> {
-        let ctx = Context::new();
-        self.app.begin_block(&begin_block).await;
-        Ok(abci::response::BeginBlock {
-            events: ctx.into_events(),
-        })
+        let events = self.app.begin_block(&begin_block).await;
+        Ok(abci::response::BeginBlock { events })
     }
 
     /// Perform full transaction validation via `DeliverTx`.
     ///
-    /// State changes are only applied for valid transactions. Invalid transaction are ignored.
-    ///
-    /// We must perform all checks again here even though they are performed in `CheckTx`, as a
-    /// Byzantine node may propose a block containing double spends or other disallowed behavior,
-    /// so it is not safe to assume all checks performed in `CheckTx` were done.
-    async fn deliver_tx(&mut self, deliver_tx: abci::request::DeliverTx) -> Result<()> {
+    /// This wrapper function allows us to bubble up errors and then finally
+    /// convert to an ABCI error code in one place.
+    async fn deliver_tx(
+        &mut self,
+        deliver_tx: abci::request::DeliverTx,
+    ) -> Result<Vec<abci::Event>> {
+        // TODO: do we still need this wrapper function?
         // Verify the transaction is well-formed...
-        let transaction = Transaction::decode(deliver_tx.tx)?;
-        // ... and statelessly valid...
-        App::check_tx_stateless(&transaction)?;
-        // ... and statefully valid.
-        self.app.check_tx_stateful(&transaction).await?;
-        // Now execute the transaction. It's important to panic on error here, since if
-        // we fail to execute the transaction here, it's because of an internal
-        // error and we may have left the chain in an inconsistent state.
-        self.app.execute_tx(&transaction).await;
-        Ok(())
+        let transaction = Arc::new(Transaction::decode(deliver_tx.tx)?);
+        // ... then execute the transaction.
+        self.app.deliver_tx(transaction).await
     }
 
     async fn end_block(
         &mut self,
         end_block: abci::request::EndBlock,
     ) -> Result<abci::response::EndBlock> {
-        let ctx = Context::new();
-        self.app.end_block(&end_block).await;
+        let events = self.app.end_block(&end_block).await;
 
         // Set `tm_validator_updates` to the complete set of
         // validators and voting power. This must be the last step performed,
@@ -201,26 +191,18 @@ impl Worker {
         Ok(abci::response::EndBlock {
             validator_updates,
             consensus_param_updates: None,
-            events: ctx.into_events(),
+            events,
         })
     }
 
     async fn commit(&mut self) -> Result<abci::response::Commit> {
-        // Begin sidecar code
-
-        // Note: App::commit resets internal components, so we don't need to do that ourselves.
-        let (jmt_root, _) = self.app.commit(self.storage.clone()).await?;
-        let app_hash = jmt_root.0.to_vec();
-        let _ = self.height_tx.send(
-            self.storage
-                .latest_version()
-                .await?
-                .expect("just committed version")
-                .try_into()
-                .unwrap(),
-        );
-
-        tracing::info!(app_hash = ?hex::encode(&app_hash), "finished block commit");
+        let app_hash = self
+            .app
+            .commit(self.storage.clone())
+            .await
+            .expect("commit must succeed")
+            .0
+            .to_vec();
 
         Ok(abci::response::Commit {
             data: app_hash.into(),

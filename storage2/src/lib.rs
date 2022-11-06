@@ -45,4 +45,4 @@ mod storage;
 pub use crate::metrics::register_metrics;
 pub use app_hash::{get_with_proof, AppHash, PENUMBRA_COMMITMENT_PREFIX, PENUMBRA_PROOF_SPECS};
 pub use state::{State, StateRead, StateTransaction, StateWrite};
-pub use storage::Storage;
+pub use storage::{StateNotification, Storage};

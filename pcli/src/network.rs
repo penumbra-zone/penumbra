@@ -1,5 +1,4 @@
 use anyhow::{Context as _, Result};
-use penumbra_component::Context;
 use penumbra_crypto::Nullifier;
 use penumbra_proto::{
     client::v1alpha1::{
@@ -61,9 +60,7 @@ impl App {
         await_detection_of_nullifier: Option<Nullifier>,
     ) -> Result<(), anyhow::Error> {
         println!("pre-checking transaction...");
-        use penumbra_component::Component;
-        let ctx = Context::new();
-        pd::App::check_tx_stateless(transaction)
+        pd::App::check_tx_stateless(std::sync::Arc::new(transaction.clone()))
             .context("transaction pre-submission checks failed")?;
 
         println!("broadcasting transaction...");

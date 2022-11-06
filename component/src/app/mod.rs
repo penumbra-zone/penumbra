@@ -26,7 +26,7 @@ pub struct App {
 }
 
 impl App {
-    pub async fn new(state: State) -> Self {
+    pub fn new(state: State) -> Self {
         tracing::info!("initializing App instance");
         Self {
             // We perform the `Arc` wrapping of `State` here to ensure
@@ -36,7 +36,7 @@ impl App {
     }
 
     #[instrument(skip(self, app_state))]
-    async fn init_chain(&mut self, app_state: &genesis::AppState) {
+    pub async fn init_chain(&mut self, app_state: &genesis::AppState) {
         let state =
             Arc::get_mut(&mut self.state).expect("state Arc should not be referenced elsewhere");
 
@@ -65,7 +65,10 @@ impl App {
     }
 
     #[instrument(skip(self, begin_block))]
-    async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) {
+    pub async fn begin_block(
+        &mut self,
+        begin_block: &abci::request::BeginBlock,
+    ) -> Vec<abci::Event> {
         let state =
             Arc::get_mut(&mut self.state).expect("state Arc should not be referenced elsewhere");
         let mut state_tx = state.begin_transaction();
@@ -82,11 +85,11 @@ impl App {
         // Shielded pool always executes last.
         ShieldedPool::begin_block(&mut state_tx, begin_block).await;
 
-        state_tx.apply();
+        state_tx.apply()
     }
 
     #[instrument(skip(self, tx))]
-    async fn deliver_tx(&mut self, tx: Arc<Transaction>) -> Result<()> {
+    pub async fn deliver_tx(&mut self, tx: Arc<Transaction>) -> Result<Vec<abci::Event>> {
         Self::check_tx_stateless(tx.clone())?;
         Self::check_tx_stateful(self.state.clone(), tx.clone()).await?;
 
@@ -102,13 +105,11 @@ impl App {
         // At this point, we've completed execution successfully with no errors,
         // so we can apply the transaction to the State. Otherwise, we'd have
         // bubbled up an error and dropped the StateTransaction.
-        state_tx.apply();
-
-        Ok(())
+        Ok(state_tx.apply())
     }
 
     #[instrument(skip(self, end_block))]
-    async fn end_block(&mut self, end_block: &abci::request::EndBlock) {
+    pub async fn end_block(&mut self, end_block: &abci::request::EndBlock) -> Vec<abci::Event> {
         let state =
             Arc::get_mut(&mut self.state).expect("state Arc should not be referenced elsewhere");
         let mut state_tx = state.begin_transaction();
@@ -120,7 +121,7 @@ impl App {
         // Shielded pool always executes last.
         ShieldedPool::end_block(&mut state_tx, end_block).await;
 
-        state_tx.apply();
+        state_tx.apply()
     }
 
     /// Commits the application state to persistent storage,
@@ -128,6 +129,8 @@ impl App {
     ///
     /// This method also resets `self` as if it were constructed
     /// as an empty state over top of the newly written storage.
+    ///
+    /// TODO: why does this return Result?
     #[instrument(skip(self, storage))]
     pub async fn commit(&mut self, storage: Storage) -> Result<AppHash> {
         // We need to extract the State we've built up to commit it.  Fill in a dummy state.
@@ -155,7 +158,7 @@ impl App {
     }
 
     #[instrument(skip(tx))]
-    fn check_tx_stateless(tx: Arc<Transaction>) -> Result<()> {
+    pub fn check_tx_stateless(tx: Arc<Transaction>) -> Result<()> {
         // TODO: these can all be parallel tasks
 
         Staking::check_tx_stateless(tx.clone())?;

@@ -1,7 +1,7 @@
-use penumbra_chain::View as _;
-use penumbra_component::dex::View as _;
-use penumbra_component::shielded_pool::View as _;
-use penumbra_component::stake::View as _;
+use penumbra_chain::StateReadExt as _;
+use penumbra_component::dex::StateReadExt as _;
+use penumbra_component::shielded_pool::StateReadExt as _;
+use penumbra_component::stake::StateReadExt as _;
 use penumbra_proto::{
     self as proto,
     client::v1alpha1::{
@@ -34,7 +34,7 @@ impl SpecificQuery for Info {
         &self,
         request: tonic::Request<NoteCommitment>,
     ) -> Result<tonic::Response<NoteSource>, Status> {
-        let state = self.state_tonic().await?;
+        let state = self.storage.state();
         let cm = request
             .into_inner()
             .try_into()
@@ -54,7 +54,7 @@ impl SpecificQuery for Info {
         &self,
         request: tonic::Request<ValidatorStatusRequest>,
     ) -> Result<tonic::Response<ValidatorStatus>, Status> {
-        let state = self.state_tonic().await?;
+        let state = self.storage.state();
         state.check_chain_id(&request.get_ref().chain_id).await?;
 
         let id = request
@@ -79,7 +79,7 @@ impl SpecificQuery for Info {
         &self,
         request: tonic::Request<BatchSwapOutputDataRequest>,
     ) -> Result<tonic::Response<BatchSwapOutputData>, Status> {
-        let state = self.state_tonic().await?;
+        let state = self.storage.state();
         let request_inner = request.into_inner();
         let height = request_inner.height;
         let trading_pair = request_inner
@@ -105,7 +105,7 @@ impl SpecificQuery for Info {
         &self,
         request: tonic::Request<StubCpmmReservesRequest>,
     ) -> Result<tonic::Response<Reserves>, Status> {
-        let state = self.state_tonic().await?;
+        let state = self.storage.state();
         let request_inner = request.into_inner();
         let trading_pair = request_inner
             .trading_pair
@@ -129,7 +129,7 @@ impl SpecificQuery for Info {
         &self,
         request: tonic::Request<proto::core::crypto::v1alpha1::IdentityKey>,
     ) -> Result<tonic::Response<proto::core::stake::v1alpha1::RateData>, Status> {
-        let state = self.state_tonic().await?;
+        let state = self.storage.state();
         let identity_key = request
             .into_inner()
             .try_into()
@@ -151,7 +151,7 @@ impl SpecificQuery for Info {
         &self,
         request: tonic::Request<KeyValueRequest>,
     ) -> Result<tonic::Response<KeyValueResponse>, Status> {
-        let state = self.state_tonic().await?;
+        let state = self.storage.state();
         state.check_chain_id(&request.get_ref().chain_id).await?;
 
         let request = request.into_inner();
@@ -161,9 +161,9 @@ impl SpecificQuery for Info {
             return Err(Status::invalid_argument("key is empty"));
         }
 
+        // TODO: how does this align with the ABCI k/v implementation?
+        // why do we have two different implementations?
         let (value, proof) = state
-            .read()
-            .await
             .get_with_proof(request.key)
             .await
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
