@@ -290,7 +290,7 @@ impl ObliviousQuery for Info {
                         .compact_block(height)
                         .await?
                         .expect("compact block for in-range height must be present");
-                    tx.send(Ok(block.to_proto()));
+                    tx.send(Ok(block.to_proto())).await?;
                     metrics::increment_counter!(
                         metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
                     );

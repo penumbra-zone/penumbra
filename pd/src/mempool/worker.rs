@@ -15,7 +15,6 @@ use crate::App;
 
 pub struct Worker {
     queue: mpsc::Receiver<Message>,
-    storage: Storage,
     app: App,
     state_rx: watch::Receiver<StateNotification>,
 }
@@ -28,7 +27,6 @@ impl Worker {
 
         Ok(Self {
             queue,
-            storage,
             app,
             state_rx,
         })
