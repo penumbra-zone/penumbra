@@ -52,7 +52,7 @@ impl Component for ShieldedPool {
                 .unwrap();
         }
 
-        let mut compact_block = CompactBlock::default();
+        let mut compact_block = state.stub_compact_block();
         let mut note_commitment_tree = state.stub_note_commitment_tree().await;
 
         // Hard-coded to zero because we are in the genesis block
