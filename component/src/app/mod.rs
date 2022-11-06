@@ -9,10 +9,11 @@ use tendermint::abci::{self, types::ValidatorUpdate};
 use tracing::instrument;
 
 use crate::dex::Dex;
+use crate::governance::Governance;
 // use crate::governance::Governance;
 // use crate::ibc::IBCComponent;
 use crate::shielded_pool::ShieldedPool;
-use crate::stake::component::Staking;
+use crate::stake::component::{Staking, ValidatorUpdates};
 use crate::Component;
 
 pub mod state_key;
@@ -81,7 +82,7 @@ impl App {
         Staking::begin_block(&mut state_tx, begin_block).await;
         // IBCComponent::begin_block(&mut state_tx,  begin_block).await;
         Dex::begin_block(&mut state_tx, begin_block).await;
-        // Governance::begin_block(&mut state_tx,  begin_block).await;
+        Governance::begin_block(&mut state_tx, begin_block).await;
         // Shielded pool always executes last.
         ShieldedPool::begin_block(&mut state_tx, begin_block).await;
 
@@ -114,10 +115,10 @@ impl App {
             Arc::get_mut(&mut self.state).expect("state Arc should not be referenced elsewhere");
         let mut state_tx = state.begin_transaction();
 
-        // Staking::end_block(&mut state_tx,  end_block).await;
+        Staking::end_block(&mut state_tx, end_block).await;
         // IBCComponent::end_block(&mut state_tx,  end_block).await;
         Dex::end_block(&mut state_tx, end_block).await;
-        // Governance::end_block(&mut state_tx,  end_block).await;
+        Governance::end_block(&mut state_tx, end_block).await;
         // Shielded pool always executes last.
         ShieldedPool::end_block(&mut state_tx, end_block).await;
 
@@ -152,9 +153,9 @@ impl App {
 
     // TODO: should this just be returned by `commit`? both are called during every `EndBlock`
     pub fn tendermint_validator_updates(&self) -> Vec<ValidatorUpdate> {
-        // TODO: replace with self.state read ?
-        // self.state.tendermint_validator_updates()
-        todo!()
+        self.state
+            .tendermint_validator_updates()
+            .expect("tendermint validator updates should be set when called in end_block")
     }
 
     #[instrument(skip(tx))]
@@ -164,7 +165,7 @@ impl App {
         Staking::check_tx_stateless(tx.clone())?;
         // IBCComponent::check_tx_stateless( tx)?;
         Dex::check_tx_stateless(tx.clone())?;
-        // Governance::check_tx_stateless( tx)?;
+        Governance::check_tx_stateless(tx.clone())?;
         ShieldedPool::check_tx_stateless(tx.clone())?;
 
         Ok(())
@@ -177,7 +178,7 @@ impl App {
         Staking::check_tx_stateful(state.clone(), tx.clone()).await?;
         // IBCComponent::check_tx_stateful(state.clone(),  tx.clone()).await?;
         Dex::check_tx_stateful(state.clone(), tx.clone()).await?;
-        // Governance::check_tx_stateful(state.clone(),  tx.clone()).await?;
+        Governance::check_tx_stateful(state.clone(), tx.clone()).await?;
         ShieldedPool::check_tx_stateful(state.clone(), tx.clone()).await?;
 
         Ok(())
@@ -188,7 +189,7 @@ impl App {
         Staking::execute_tx(state, tx.clone()).await?;
         // IBCComponent::execute_tx(state,  tx.clone()).await?;
         Dex::execute_tx(state, tx.clone()).await?;
-        // Governance::execute_tx(state,  tx.clone()).await?;
+        Governance::execute_tx(state, tx.clone()).await?;
         // Shielded pool always executes last.
         ShieldedPool::execute_tx(state, tx.clone()).await?;
 

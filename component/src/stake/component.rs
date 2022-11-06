@@ -71,10 +71,11 @@ pub trait ValidatorUpdates: StateRead {
 impl<T: StateRead + ?Sized> ValidatorUpdates for T {}
 
 trait PutValidatorUpdates: StateWrite {
-    fn put_tendermint_validator_updates(&mut self, updates: Option<Vec<ValidatorUpdate>>) {
+    fn put_tendermint_validator_updates(&mut self, updates: Vec<ValidatorUpdate>) {
+        tracing::info!(?updates);
         self.put_ephemeral(
             state_key::internal::stub_tendermint_validator_updates().to_owned(),
-            updates,
+            Some(updates),
         )
     }
 }
@@ -557,15 +558,13 @@ trait StakingImpl: StateWrite + StateWriteExt {
         }
 
         // Save the validator updates to send to Tendermint.
-        let tendermint_validator_updates = Some(
-            voting_power_by_consensus_key
-                .iter()
-                .map(|(ck, power)| ValidatorUpdate {
-                    pub_key: *ck,
-                    power: (*power).try_into().unwrap(),
-                })
-                .collect(),
-        );
+        let tendermint_validator_updates = voting_power_by_consensus_key
+            .iter()
+            .map(|(ck, power)| ValidatorUpdate {
+                pub_key: *ck,
+                power: (*power).try_into().unwrap(),
+            })
+            .collect();
         self.put_tendermint_validator_updates(tendermint_validator_updates);
 
         // Record the new consensus keys we will have told tendermint about.
