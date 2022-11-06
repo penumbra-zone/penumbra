@@ -8,11 +8,8 @@ use penumbra_chain::genesis;
 use penumbra_component::Component;
 use penumbra_storage2::Storage;
 use penumbra_transaction::Transaction;
-use tendermint::{
-    abci::{self, ConsensusRequest as Request, ConsensusResponse as Response},
-    block,
-};
-use tokio::sync::{mpsc, watch};
+use tendermint::abci::{self, ConsensusRequest as Request, ConsensusResponse as Response};
+use tokio::sync::mpsc;
 use tracing::{instrument, Instrument};
 
 use super::Message;

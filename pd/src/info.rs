@@ -72,11 +72,11 @@ impl Info {
                 let key = hex::decode(&query.data).unwrap_or_else(|_| query.data.to_vec());
 
                 let state = self.storage.state();
-                let height = state.version();
+                let _height = state.version();
 
                 // TODO: align types (check storage/src/app_hash.rs::get_with_proof)
                 // where should that logic go?
-                let (value, proof) = state.get_with_proof(key).await?;
+                let (_value, _proof) = state.get_with_proof(key).await?;
                 // let (value, proof) = get_with_proof(&store, key, height).await?;
 
                 /*

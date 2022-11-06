@@ -6,14 +6,11 @@ use std::{
 
 use futures::FutureExt;
 use penumbra_storage2::Storage;
-use tendermint::{
-    abci::{
-        request::CheckTx as CheckTxReq, request::CheckTxKind, response::CheckTx as CheckTxRsp,
-        MempoolRequest, MempoolResponse,
-    },
-    block,
+use tendermint::abci::{
+    request::CheckTx as CheckTxReq, request::CheckTxKind, response::CheckTx as CheckTxRsp,
+    MempoolRequest, MempoolResponse,
 };
-use tokio::sync::{mpsc, oneshot, watch};
+use tokio::sync::{mpsc, oneshot};
 use tokio_util::sync::PollSender;
 use tower_abci::BoxError;
 use tracing::{error_span, Instrument};

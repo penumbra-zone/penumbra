@@ -2,11 +2,11 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use bytes::Bytes;
-use penumbra_component::Component;
+
 use penumbra_proto::Protobuf;
 use penumbra_storage2::{StateNotification, Storage};
 use penumbra_transaction::Transaction;
-use tendermint::block;
+
 use tokio::sync::{mpsc, watch};
 use tracing::{instrument, Instrument};
 
