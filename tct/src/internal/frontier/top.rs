@@ -239,15 +239,11 @@ where
         }
     }
 
-    fn global_position(&self) -> Option<Position> {
-        <Self as GetPosition>::position(self).map(Into::into)
-    }
-
     fn forgotten(&self) -> Forgotten {
         self.forgotten().unwrap_or_default()
     }
 
-    fn children(&self) -> Vec<structure::Node<'_, 'tree>> {
+    fn children(&'tree self) -> Vec<HashOrNode<'tree>> {
         self.inner
             .as_ref()
             .map(structure::Any::children)

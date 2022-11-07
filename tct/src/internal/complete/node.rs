@@ -191,28 +191,29 @@ impl<Child: Clone> GetPosition for Node<Child> {
     }
 }
 
-impl<'tree, Item: Height + structure::Any<'tree> + Clone> structure::Any<'tree> for Node<Item> {
+impl<'tree, Child: Height + structure::Any<'tree> + Clone> structure::Any<'tree> for Node<Child> {
     fn kind(&self) -> Kind {
         Kind::Internal {
             height: <Self as Height>::Height::HEIGHT,
         }
     }
 
-    fn global_position(&self) -> Option<Position> {
-        <Self as GetPosition>::position(self).map(Into::into)
-    }
-
     fn forgotten(&self) -> Forgotten {
         self.forgotten.iter().copied().max().unwrap_or_default()
     }
 
-    fn children(&self) -> Vec<structure::Node<'_, 'tree>> {
+    fn children(&'tree self) -> Vec<HashOrNode<'tree>> {
         self.forgotten
             .iter()
             .copied()
             .zip(self.children.children().into_iter())
-            .map(|(forgotten, child)| {
-                structure::Node::child(forgotten, child.map(|child| child as &dyn structure::Any))
+            .map(|(forgotten, child)| match child {
+                Insert::Keep(node) => HashOrNode::Node(node),
+                Insert::Hash(hash) => HashOrNode::Hash(HashedNode {
+                    hash,
+                    forgotten,
+                    height: <Child as Height>::Height::HEIGHT,
+                }),
             })
             .collect()
     }

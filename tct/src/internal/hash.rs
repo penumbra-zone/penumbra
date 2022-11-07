@@ -2,7 +2,10 @@
 //! [`GetHash`] trait for computing and caching hashes of things, and the [`CachedHash`] type, which
 //! is used internally for lazy evaluation of hashes.
 
-use std::{fmt::Debug, ops::RangeInclusive};
+use std::{
+    fmt::{self, Debug, Formatter},
+    ops::RangeInclusive,
+};
 
 use ark_ff::{fields::PrimeField, BigInteger256, Fp256, One, Zero};
 use decaf377::FieldExt;
@@ -85,8 +88,10 @@ impl Debug for Hash {
             write!(f, "0")
         } else if *self == Hash::one() {
             write!(f, "1")
+        } else if *self == Hash::uninitialized() {
+            write!(f, "!")
         } else {
-            write!(f, "{}", hex::encode(&self.to_bytes()))
+            write!(f, "{}", hex::encode(self.to_bytes()))
         }
     }
 }
@@ -218,10 +223,15 @@ impl Hash {
     Deserialize,
     Default,
 )]
-#[derivative(Debug = "transparent")]
 #[cfg_attr(any(test, feature = "arbitrary"), derive(proptest_derive::Arbitrary))]
 #[serde(from = "u64", into = "u64")]
 pub struct Forgotten([u8; 6]);
+
+impl Debug for Forgotten {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", u64::from(*self))
+    }
+}
 
 impl Forgotten {
     /// Get the next forgotten-version after this one.

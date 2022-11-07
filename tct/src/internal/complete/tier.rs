@@ -74,15 +74,11 @@ impl<'tree, Item: Height + structure::Any<'tree> + Clone> structure::Any<'tree> 
         self.inner.kind()
     }
 
-    fn global_position(&self) -> Option<Position> {
-        <Self as GetPosition>::position(self).map(Into::into)
-    }
-
     fn forgotten(&self) -> Forgotten {
         structure::Any::forgotten(&self.inner)
     }
 
-    fn children(&self) -> Vec<Node<'_, 'tree>> {
+    fn children(&'tree self) -> Vec<HashOrNode<'tree>> {
         (&self.inner as &dyn structure::Any).children()
     }
 }

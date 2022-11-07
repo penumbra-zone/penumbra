@@ -25,7 +25,10 @@ pub fn index(tree: &Tree) -> Result<(), IndexMalformed> {
 
     let mut errors = vec![];
 
-    structure::traverse(tree.structure(), &mut |node| {
+    let mut stack = vec![tree.structure()];
+    while let Some(node) = stack.pop() {
+        stack.extend(node.children());
+
         if let Kind::Leaf {
             commitment: Some(actual_commitment),
         } = node.kind()
@@ -58,7 +61,7 @@ pub fn index(tree: &Tree) -> Result<(), IndexMalformed> {
                 });
             };
         }
-    });
+    }
 
     // Return an error if any were discovered
     if errors.is_empty() {
@@ -270,7 +273,7 @@ pub fn forgotten(tree: &Tree) -> Result<(), InvalidForgotten> {
         let actual_max = node
             .children()
             .iter()
-            .map(Any::forgotten)
+            .map(Node::forgotten)
             .max()
             .unwrap_or_default();
 

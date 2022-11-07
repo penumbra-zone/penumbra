@@ -404,27 +404,31 @@ where
         }
     }
 
-    fn global_position(&self) -> Option<Position> {
-        <Self as GetPosition>::position(self).map(Into::into)
-    }
-
     fn forgotten(&self) -> Forgotten {
         self.forgotten().iter().copied().max().unwrap_or_default()
     }
 
-    fn children(&self) -> Vec<structure::Node<'_, 'tree>> {
+    fn children(&'tree self) -> Vec<HashOrNode<'tree>> {
+        let children = self
+            .siblings
+            .iter()
+            .map(|child| (**child).as_ref().map(|child| child as &dyn structure::Any))
+            .chain(std::iter::once(Insert::Keep(
+                &*self.focus as &dyn structure::Any,
+            )));
+
         self.forgotten
             .iter()
             .copied()
-            .zip(
-                self.siblings
-                    .iter()
-                    .map(|child| (**child).as_ref().map(|child| child as &dyn structure::Any))
-                    .chain(std::iter::once(Insert::Keep(
-                        &*self.focus as &dyn structure::Any,
-                    ))),
-            )
-            .map(|(forgotten, child)| structure::Node::child(forgotten, child))
+            .zip(children)
+            .map(|(forgotten, child)| match child {
+                Insert::Keep(node) => HashOrNode::Node(node),
+                Insert::Hash(hash) => HashOrNode::Hash(HashedNode {
+                    hash,
+                    forgotten,
+                    height: <Child as Height>::Height::HEIGHT,
+                }),
+            })
             .collect()
     }
 }
