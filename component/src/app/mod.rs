@@ -10,7 +10,7 @@ use tracing::instrument;
 
 use crate::dex::Dex;
 use crate::governance::Governance;
-// use crate::ibc::IBCComponent;
+use crate::ibc::IBCComponent;
 use crate::shielded_pool::ShieldedPool;
 use crate::stake::component::{Staking, ValidatorUpdates};
 use crate::Component;
@@ -55,7 +55,7 @@ impl App {
         state_tx.put_block_height(0);
 
         Staking::init_chain(&mut state_tx, app_state).await;
-        // IBCComponent::init_chain(&mut state_tx, app_state).await;
+        IBCComponent::init_chain(&mut state_tx, app_state).await;
         Dex::init_chain(&mut state_tx, app_state).await;
         Governance::init_chain(&mut state_tx, app_state).await;
         // Shielded pool always executes last.
@@ -79,7 +79,7 @@ impl App {
         state_tx.put_block_timestamp(begin_block.header.time);
 
         Staking::begin_block(&mut state_tx, begin_block).await;
-        // IBCComponent::begin_block(&mut state_tx,  begin_block).await;
+        IBCComponent::begin_block(&mut state_tx, begin_block).await;
         Dex::begin_block(&mut state_tx, begin_block).await;
         Governance::begin_block(&mut state_tx, begin_block).await;
         // Shielded pool always executes last.
@@ -115,7 +115,7 @@ impl App {
         let mut state_tx = state.begin_transaction();
 
         Staking::end_block(&mut state_tx, end_block).await;
-        // IBCComponent::end_block(&mut state_tx,  end_block).await;
+        IBCComponent::end_block(&mut state_tx, end_block).await;
         Dex::end_block(&mut state_tx, end_block).await;
         Governance::end_block(&mut state_tx, end_block).await;
         // Shielded pool always executes last.
@@ -162,7 +162,7 @@ impl App {
         // TODO: these can all be parallel tasks
 
         Staking::check_tx_stateless(tx.clone())?;
-        // IBCComponent::check_tx_stateless( tx)?;
+        IBCComponent::check_tx_stateless(tx)?;
         Dex::check_tx_stateless(tx.clone())?;
         Governance::check_tx_stateless(tx.clone())?;
         ShieldedPool::check_tx_stateless(tx.clone())?;
@@ -175,7 +175,7 @@ impl App {
         // TODO: these can all be parallel tasks
 
         Staking::check_tx_stateful(state.clone(), tx.clone()).await?;
-        // IBCComponent::check_tx_stateful(state.clone(),  tx.clone()).await?;
+        IBCComponent::check_tx_stateful(state.clone(), tx.clone()).await?;
         Dex::check_tx_stateful(state.clone(), tx.clone()).await?;
         Governance::check_tx_stateful(state.clone(), tx.clone()).await?;
         ShieldedPool::check_tx_stateful(state.clone(), tx.clone()).await?;
@@ -186,7 +186,7 @@ impl App {
     #[instrument(skip(state, tx))]
     async fn execute_tx(state: &mut StateTransaction<'_>, tx: Arc<Transaction>) -> Result<()> {
         Staking::execute_tx(state, tx.clone()).await?;
-        // IBCComponent::execute_tx(state,  tx.clone()).await?;
+        IBCComponent::execute_tx(state, tx.clone()).await?;
         Dex::execute_tx(state, tx.clone()).await?;
         Governance::execute_tx(state, tx.clone()).await?;
         // Shielded pool always executes last.

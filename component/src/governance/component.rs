@@ -15,17 +15,12 @@ use super::{check, execute, proposal::ProposalList};
 
 pub struct Governance {}
 
-impl Governance {
-    pub async fn new() -> Self {
-        Self {}
-    }
-}
-
 #[async_trait]
 impl Component for Governance {
     //#[instrument(name = "governance", skip(state, _app_state))]
     async fn init_chain(state: &mut StateTransaction, _app_state: &genesis::AppState) {
         // Initialize the unfinished proposals tracking key in the JMT.
+        // TODO: Replace with the new range queries in storage2
         state
             .put_unfinished_proposals(ProposalList::default())
             .await;
