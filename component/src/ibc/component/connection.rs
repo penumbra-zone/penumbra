@@ -156,13 +156,13 @@ impl Component for ConnectionComponent {
 #[async_trait(?Send)]
 pub trait StateReadExt: StateRead {
     async fn get_connection_counter(&self) -> Result<ConnectionCounter> {
-        self.get_domain(state_key::connection_counter().into())
+        self.get(state_key::connection_counter().into())
             .await
             .map(|counter| counter.unwrap_or(ConnectionCounter(0)))
     }
 
     async fn put_connection_counter(&self, counter: ConnectionCounter) {
-        self.put_domain(state_key::connection_counter().into(), counter)
+        self.put(state_key::connection_counter().into(), counter)
             .await;
     }
 
@@ -173,7 +173,7 @@ pub trait StateReadExt: StateRead {
         connection_id: &ConnectionId,
         connection: ConnectionEnd,
     ) -> Result<()> {
-        self.put_domain(
+        self.put(
             state_key::connection(connection_id).into(),
             connection.clone(),
         )
@@ -192,12 +192,11 @@ pub trait StateReadExt: StateRead {
     }
 
     async fn get_connection(&self, connection_id: &ConnectionId) -> Result<Option<ConnectionEnd>> {
-        self.get_domain(state_key::connection(connection_id).into())
-            .await
+        self.get(state_key::connection(connection_id).into()).await
     }
 
     async fn update_connection(&self, connection_id: &ConnectionId, connection: ConnectionEnd) {
-        self.put_domain(state_key::connection(connection_id).into(), connection)
+        self.put(state_key::connection(connection_id).into(), connection)
             .await;
     }
 }

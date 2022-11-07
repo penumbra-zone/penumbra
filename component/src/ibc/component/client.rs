@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use crate::{Component, Context};
+use crate::Component;
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc::core::ics02_client::client_state::ClientState;
@@ -80,7 +80,7 @@ impl Component for Ics2Client {
             .await;
     }
 
-    #[instrument(name = "ics2_client", skip(_ctx, tx))]
+    #[instrument(name = "ics2_client", skip(_, tx))]
     fn check_tx_stateless(tx: &Transaction) -> Result<()> {
         // Each stateless check is a distinct function in an appropriate submodule,
         // so that we can easily add new stateless checks and see a birds' eye view
@@ -109,7 +109,7 @@ impl Component for Ics2Client {
         Ok(())
     }
 
-    #[instrument(name = "ics2_client", skip(_ctx, tx))]
+    #[instrument(name = "ics2_client", skip(, tx))]
     async fn check_tx_stateful(tx: &Transaction, state: Arc<State>) -> Result<()> {
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
@@ -130,7 +130,7 @@ impl Component for Ics2Client {
         Ok(())
     }
 
-    #[instrument(name = "ics2_client", skip(ctx, tx))]
+    #[instrument(name = "ics2_client", skip(, tx))]
     async fn execute_tx(tx: &Transaction, state_tx: &mut StateTransaction) {
         // Handle any IBC actions found in the transaction.
         for ibc_action in tx.ibc_actions() {
@@ -152,7 +152,7 @@ impl Component for Ics2Client {
         }
     }
 
-    #[instrument(name = "ics2_client", skip(_ctx, _end_block))]
+    #[instrument(name = "ics2_client", skip(, _end_block))]
     async fn end_block(_end_block: &abci::request::EndBlock, state_tx: &mut StateTransaction) {}
 }
 
@@ -352,10 +352,10 @@ impl Ics2Client {
 #[async_trait(?Send)]
 pub trait StateReadExt: StateRead {
     async fn put_client_counter(&mut self, counter: ClientCounter) {
-        self.put_domain("ibc_client_counter".into(), counter).await;
+        self.put("ibc_client_counter".into(), counter).await;
     }
     async fn client_counter(&self) -> Result<ClientCounter> {
-        self.get_domain("ibc_client_counter".into())
+        self.get("ibc_client_counter".into())
             .await
             .map(|counter| counter.unwrap_or(ClientCounter(0)))
     }
@@ -367,7 +367,7 @@ pub trait StateReadExt: StateRead {
         )
         .await;
 
-        self.put_domain(state_key::client_state(client_id).into(), client_state)
+        self.put(state_key::client_state(client_id).into(), client_state)
             .await;
     }
 
@@ -381,15 +381,13 @@ pub trait StateReadExt: StateRead {
     }
 
     async fn get_client_state(&self, client_id: &ClientId) -> Result<AnyClientState> {
-        let client_state = self
-            .get_domain(state_key::client_state(client_id).into())
-            .await?;
+        let client_state = self.get(state_key::client_state(client_id).into()).await?;
 
         client_state.ok_or_else(|| anyhow::anyhow!("client not found"))
     }
 
     async fn get_verified_heights(&self, client_id: &ClientId) -> Result<Option<VerifiedHeights>> {
-        self.get_domain(
+        self.get(
             format!(
                 // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
                 // it's not in the same path namespace.
@@ -406,7 +404,7 @@ pub trait StateReadExt: StateRead {
         client_id: &ClientId,
         verified_heights: VerifiedHeights,
     ) {
-        self.put_domain(
+        self.put(
             format!(
                 // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
                 // it's not in the same path namespace.
@@ -423,7 +421,7 @@ pub trait StateReadExt: StateRead {
     async fn get_penumbra_consensus_state(&self, height: Height) -> Result<AnyConsensusState> {
         // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
         // it's not in the same path namespace.
-        self.get_domain(format!("penumbra_consensus_states/{}", height).into())
+        self.get(format!("penumbra_consensus_states/{}", height).into())
             .await?
             .ok_or_else(|| anyhow::anyhow!("consensus state not found"))
     }
@@ -436,7 +434,7 @@ pub trait StateReadExt: StateRead {
     ) {
         // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
         // it's not in the same path namespace.
-        self.put_domain(
+        self.put(
             format!("penumbra_consensus_states/{}", height).into(),
             consensus_state,
         )
@@ -448,7 +446,7 @@ pub trait StateReadExt: StateRead {
         height: Height,
         client_id: ClientId,
     ) -> Result<AnyConsensusState> {
-        self.get_domain(state_key::verified_client_consensus_state(&client_id, &height).into())
+        self.get(state_key::verified_client_consensus_state(&client_id, &height).into())
             .await?
             .ok_or_else(|| anyhow::anyhow!("consensus state not found"))
     }
@@ -458,7 +456,7 @@ pub trait StateReadExt: StateRead {
         client_id: &ClientId,
         height: &Height,
     ) -> Result<ibc::Height> {
-        self.get_domain(state_key::client_processed_heights(client_id, height).into())
+        self.get(state_key::client_processed_heights(client_id, height).into())
             .await?
             .ok_or_else(|| anyhow::anyhow!("client update time not found"))
     }
@@ -483,7 +481,7 @@ pub trait StateReadExt: StateRead {
         client_id: ClientId,
         consensus_state: AnyConsensusState,
     ) -> Result<()> {
-        self.put_domain(
+        self.put(
             state_key::verified_client_consensus_state(&client_id, &height).into(),
             consensus_state,
         )
@@ -498,7 +496,7 @@ pub trait StateReadExt: StateRead {
         )
         .await;
 
-        self.put_domain(
+        self.put(
             state_key::client_processed_heights(&client_id, &height).into(),
             ibc::Height::zero().with_revision_height(current_height),
         )
@@ -593,13 +591,13 @@ pub trait StateReadExt: StateRead {
         self.get_client_type(client_id).await?;
 
         let mut connections: ClientConnections = self
-            .get_domain(state_key::client_connections(client_id).into())
+            .get(state_key::client_connections(client_id).into())
             .await?
             .unwrap_or_default();
 
         connections.connection_ids.push(connection_id.clone());
 
-        self.put_domain(state_key::client_connections(client_id).into(), connections)
+        self.put(state_key::client_connections(client_id).into(), connections)
             .await;
 
         Ok(())
@@ -692,7 +690,6 @@ mod tests {
             anchor: tct::Tree::new().root(),
         };
 
-        let ctx = Context::new();
         Ics2Client::check_tx_stateless(&create_client_tx).unwrap();
         client_component
             .check_tx_stateful(&create_client_tx)

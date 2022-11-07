@@ -288,11 +288,11 @@ pub trait StateReadExt: StateRead {
         channel_id: &ChannelId,
         port_id: &PortId,
     ) -> Result<Option<ChannelEnd>> {
-        self.get_domain(state_key::channel(channel_id, port_id).into())
+        self.get(state_key::channel(channel_id, port_id).into())
             .await
     }
     async fn put_channel(&mut self, channel_id: &ChannelId, port_id: &PortId, channel: ChannelEnd) {
-        self.put_domain(state_key::channel(channel_id, port_id).into(), channel)
+        self.put(state_key::channel(channel_id, port_id).into(), channel)
             .await;
     }
     async fn get_recv_sequence(&self, channel_id: &ChannelId, port_id: &PortId) -> Result<u64> {

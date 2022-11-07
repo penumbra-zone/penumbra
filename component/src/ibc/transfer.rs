@@ -69,7 +69,7 @@ impl Ics20Transfer {
             // we are the source. add the value balance to the escrow channel.
             let existing_value_balance: Amount = self
                 .state
-                .get_domain(
+                .get(
                     state_key::ics20_value_balance(
                         &withdrawal.source_channel,
                         &withdrawal.denom.id(),
@@ -82,7 +82,7 @@ impl Ics20Transfer {
 
             let new_value_balance = existing_value_balance + withdrawal.amount;
             self.state
-                .put_domain(
+                .put(
                     state_key::ics20_value_balance(
                         &withdrawal.source_channel,
                         &withdrawal.denom.id().into(),
@@ -169,9 +169,7 @@ impl AppHandlerCheck for Ics20Transfer {
             // check if we have enough balance to unescrow tokens to receiver
             let value_balance: Amount = self
                 .state
-                .get_domain(
-                    state_key::ics20_value_balance(&msg.packet.source_channel, &denom.id()).into(),
-                )
+                .get(state_key::ics20_value_balance(&msg.packet.source_channel, &denom.id()).into())
                 .await?
                 .unwrap_or(Amount::zero());
 
@@ -193,9 +191,7 @@ impl AppHandlerCheck for Ics20Transfer {
             // check if we have enough balance to refund tokens to sender
             let value_balance: Amount = self
                 .state
-                .get_domain(
-                    state_key::ics20_value_balance(&msg.packet.source_channel, &denom.id()).into(),
-                )
+                .get(state_key::ics20_value_balance(&msg.packet.source_channel, &denom.id()).into())
                 .await?
                 .unwrap_or(Amount::zero());
 
