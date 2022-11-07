@@ -91,9 +91,9 @@ pub trait NoteManager: StateWrite {
         Ok(())
     }
 
-    // TODO: some kind of async-trait interaction blocks this?
-    // #[instrument(skip(self, source, payload), fields(note_commitment = ?payload.note_commitment))]
-    async fn add_note(&mut self, AnnotatedNotePayload { payload, source }: AnnotatedNotePayload) {
+    #[instrument(skip(self, ap), fields(note_commitment = ?ap.payload.note_commitment))]
+    async fn add_note(&mut self, ap: AnnotatedNotePayload) {
+        let AnnotatedNotePayload { payload, source } = ap;
         tracing::debug!("adding note");
 
         // 1. Insert it into the NCT
@@ -115,6 +115,7 @@ pub trait NoteManager: StateWrite {
         self.stub_put_compact_block(compact_block);
     }
 
+    #[instrument(skip(self, source))]
     async fn spend_nullifier(&mut self, nullifier: Nullifier, source: NoteSource) {
         tracing::debug!("marking as spent");
 

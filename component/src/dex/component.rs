@@ -2,13 +2,12 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 // use crate::shielded_pool::StateReadExt as _;
-use crate::shielded_pool::NoteManager as _;
 use crate::Component;
 use anyhow::{Context as _, Result};
 use ark_ff::Zero;
 use async_trait::async_trait;
 use decaf377::Fr;
-use penumbra_chain::{genesis, AnnotatedNotePayload, NoteSource, StateReadExt as _};
+use penumbra_chain::{genesis, StateReadExt as _};
 use penumbra_crypto::dex::lp::Reserves;
 use penumbra_crypto::{
     asset,
@@ -16,7 +15,6 @@ use penumbra_crypto::{
     MockFlowCiphertext, SwapFlow, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_storage2::{State, StateRead, StateTransaction, StateWrite};
-use penumbra_transaction::action::swap_claim::{self};
 use penumbra_transaction::{Action, Transaction};
 use tendermint::abci;
 use tracing::instrument;
@@ -209,8 +207,8 @@ impl Component for Dex {
                     // Set the batch swap flow for the trading pair.
                     state.put_swap_flow(&swap.body.trading_pair, swap_flow);
                 }
-                Action::SwapClaim(swap_claim) => {
-                    state.claim_swap(swap_claim.body.clone(), tx.id()).await;
+                Action::SwapClaim(_) => {
+                    // Nothing to do here, note payloads and nullifiers processed in shielded pool
                 }
                 _ => {}
             }
@@ -305,26 +303,6 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         let mut swap_flows = self.swap_flows();
         swap_flows.insert(trading_pair.clone(), swap_flow);
         self.put_ephemeral(state_key::swap_flows().into(), swap_flows)
-    }
-
-    // #[instrument(skip(self))]
-    async fn claim_swap(&mut self, swap_claim: swap_claim::Body, txid: [u8; 32]) {
-        let source = NoteSource::Transaction { id: txid };
-        let payload_1 = swap_claim.output_1;
-        let payload_2 = swap_claim.output_2;
-        self.add_note(AnnotatedNotePayload {
-            payload: payload_1,
-            source,
-        })
-        .await;
-        self.add_note(AnnotatedNotePayload {
-            payload: payload_2,
-            source,
-        })
-        .await;
-
-        // Also spend the nullifier.
-        self.spend_nullifier(swap_claim.nullifier, source).await;
     }
 }
 
