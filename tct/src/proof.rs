@@ -7,6 +7,7 @@ use crate::prelude::*;
 /// A proof of the inclusion of some [`Commitment`] in a [`Tree`] with a particular [`Root`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Proof(
+    #[allow(clippy::type_complexity)]
     pub(super)  crate::internal::proof::Proof<
         // It doesn't matter what we use here for `RefKind` because it's a phantom type
         frontier::Top<frontier::Tier<frontier::Tier<frontier::Item, ArcK>, ArcK>, ArcK>,

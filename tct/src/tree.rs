@@ -19,6 +19,7 @@ pub(crate) use epoch::block;
 #[derivative(Clone(bound = ""))]
 pub struct Tree<RefKind: SharedPointerKind = archery::ArcK> {
     index: HashedMap<Commitment, index::within::Tree, RefKind>,
+    #[allow(clippy::type_complexity)]
     inner: SharedPointer<
         frontier::Top<frontier::Tier<frontier::Tier<frontier::Item, RefKind>, RefKind>, RefKind>,
         RefKind,

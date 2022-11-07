@@ -188,7 +188,7 @@ impl<RefKind: SharedPointerKind> Node<RefKind> {
         Node {
             offset: 0,
             forgotten,
-            global_position,
+            global_position: todo!("implement global position"),
             kind: match child {
                 Insert::Keep(ref child) => child.kind(),
                 Insert::Hash(_) => match parent.kind() {
@@ -303,6 +303,11 @@ impl<RefKind: SharedPointerKind> Node<RefKind> {
         }
     }
 
+    /// Given a function to manipulate an in-progress traversal and return elements of an iterator,
+    /// create that iterator.
+    ///
+    /// **Important:** If you want the iterator to end, you must call [`Traverse::stop`]; otherwise,
+    /// the returned iterator will loop forever.
     pub fn traverse<F>(self, with: F) -> Traversal<F, RefKind> {
         Traversal {
             traversal: Traverse::new(self),
@@ -370,6 +375,7 @@ impl<RefKind: SharedPointerKind> Any<RefKind> for Node<RefKind> {
     }
 }
 
+/// An in-progress traversal, which can be moved around and inspected.
 #[derive(Clone, Debug)]
 pub struct Traverse<RefKind: SharedPointerKind = archery::ArcK> {
     above: Vec<Siblings<RefKind>>,
@@ -384,6 +390,8 @@ struct Siblings<RefKind: SharedPointerKind = archery::ArcK> {
     right: Vec<Node<RefKind>>,
 }
 
+/// An iterator over some part of a tree, defined by an arbitrary function manipulating an
+/// in-progress traversal.
 #[derive(Clone, Debug)]
 pub struct Traversal<F, RefKind: SharedPointerKind = archery::ArcK> {
     traversal: Traverse<RefKind>,
@@ -422,14 +430,17 @@ impl<RefKind: SharedPointerKind> Traverse<RefKind> {
         }
     }
 
+    /// Get the node here.
     pub fn here(&self) -> &Node<RefKind> {
         &self.here.here
     }
 
+    /// Stop iterating after this next element is returned.
     pub fn stop(&mut self) {
         self.stop = true;
     }
 
+    /// Move up by one level in the tree, or return `false`.
     pub fn up(&mut self) -> bool {
         if let Some(above) = self.above.pop() {
             self.here = above;
@@ -439,6 +450,7 @@ impl<RefKind: SharedPointerKind> Traverse<RefKind> {
         }
     }
 
+    /// Move down by one level in the tree, starting at the left-hand child, or return `false`.
     pub fn down(&mut self) -> bool {
         let mut children = self.here.here.children();
         if let Some(here) = children.pop() {
@@ -454,6 +466,7 @@ impl<RefKind: SharedPointerKind> Traverse<RefKind> {
         }
     }
 
+    /// Move to the left sibling, or return `false`.
     pub fn left(&mut self) -> bool {
         if let Some(left) = self.here.left.pop() {
             self.here
@@ -465,6 +478,7 @@ impl<RefKind: SharedPointerKind> Traverse<RefKind> {
         }
     }
 
+    /// Move to the right sibling, or return `false`.
     pub fn right(&mut self) -> bool {
         if let Some(right) = self.here.right.pop() {
             self.here
@@ -476,6 +490,7 @@ impl<RefKind: SharedPointerKind> Traverse<RefKind> {
         }
     }
 
+    /// Move to the next right sibling or ancestor, going up as many levels as necessary, or return `false`.
     pub fn next_right(&mut self) -> bool {
         self.right()
             || loop {
@@ -487,6 +502,7 @@ impl<RefKind: SharedPointerKind> Traverse<RefKind> {
             }
     }
 
+    /// Move to the next left sibling or ancestor, going up as many levels as necessary, or return `false`.
     pub fn next_left(&mut self) -> bool {
         self.left()
             || loop {
