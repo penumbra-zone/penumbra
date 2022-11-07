@@ -119,7 +119,7 @@ impl Protobuf<pb::MerkleRoot> for Root {}
 
 impl Display for Root {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", hex::encode(&Fq::from(self.0).to_bytes()))
+        write!(f, "{}", hex::encode(Fq::from(self.0).to_bytes()))
     }
 }
 

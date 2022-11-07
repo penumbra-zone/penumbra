@@ -111,7 +111,7 @@ mod prelude {
             UncheckedSetHash,
         },
         storage::{self, Read, Write},
-        structure::{self, Kind, Node, Place},
+        structure::{self, HashOrNode, HashedNode, Kind, Node, Place},
         Commitment, Position, Proof, Root, Tree,
     };
 

@@ -327,10 +327,6 @@ where
         }
     }
 
-    fn global_position(&self) -> Option<Position> {
-        <Self as GetPosition>::position(self).map(Into::into)
-    }
-
     fn forgotten(&self) -> Forgotten {
         match &self.inner {
             Inner::Frontier(frontier) => (&**frontier as &dyn structure::Any).forgotten(),
@@ -339,11 +335,11 @@ where
         }
     }
 
-    fn children(&self) -> Vec<structure::Node<'_, 'tree>> {
+    fn children(&'tree self) -> Vec<HashOrNode<'tree>> {
         match &self.inner {
             Inner::Frontier(frontier) => frontier.children(),
             Inner::Complete(complete) => (complete as &dyn structure::Any).children(),
-            Inner::Hash(_) => vec![],
+            Inner::Hash(_hash) => vec![],
         }
     }
 }

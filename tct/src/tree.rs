@@ -87,7 +87,7 @@ impl Protobuf<pb::MerkleRoot> for Root {}
 
 impl Display for Root {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", hex::encode(&Fq::from(self.0).to_bytes()))
+        write!(f, "{}", hex::encode(Fq::from(self.0).to_bytes()))
     }
 }
 
@@ -767,14 +767,17 @@ impl From<frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>> for Tre
         let mut index = HashedMap::default();
 
         // Traverse the tree to reconstruct the index
-        structure::traverse(Node::root(&inner), &mut |node: Node| {
+        let mut stack = vec![Node::root(&inner)];
+        while let Some(node) = stack.pop() {
+            stack.extend(node.children());
+
             if let structure::Kind::Leaf {
                 commitment: Some(commitment),
             } = node.kind()
             {
                 index.insert(commitment, node.position().0);
             }
-        });
+        }
 
         Self {
             inner: Arc::new(inner),

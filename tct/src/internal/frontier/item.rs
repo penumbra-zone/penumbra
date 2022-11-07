@@ -89,15 +89,11 @@ impl<'tree> structure::Any<'tree> for Item {
         }
     }
 
-    fn global_position(&self) -> Option<Position> {
-        <Self as GetPosition>::position(self).map(Into::into)
-    }
-
     fn forgotten(&self) -> Forgotten {
         Forgotten::default()
     }
 
-    fn children(&self) -> Vec<Node<'_, 'tree>> {
+    fn children(&self) -> Vec<HashOrNode<'tree>> {
         vec![]
     }
 }

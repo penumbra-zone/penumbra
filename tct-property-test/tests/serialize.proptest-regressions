@@ -11,3 +11,4 @@ cc 8619b833b7e7a539e37d7dd0b1e194b3dece907e49674492cbbd623680e35834 # shrinks to
 cc 0c32bbbce1056f187de693cf35ca552e66126e0c7a9ec4da2d3f6a0d554a9ffd # shrinks to actions = [Insert(Forget, note::Commitment(00500048c3153cfcce42a22031989588a1627d215b405f8d4ad2e187296f5400)), Serialize, EndBlock, Serialize]
 cc 97110e393ff804d3f90dcaef2766dccd3355314f9fc2f456f7bac6104ba69bbc # shrinks to actions = [EndEpoch, EndEpoch, EndEpoch, EndEpoch, Serialize]
 cc 1b46bc40ab02685bd9dc674a361f38f4c642d348ebb5116516aad948c6ac62ec # shrinks to actions = [Insert(Keep, note::Commitment(c8407d491237870b92f405fe475e39bdc9d5d44dc0fecdc91346d969042c0e0d)), Serialize, EndEpoch, Serialize]
+cc 2169500c072815d775b9f8f4e69abfa0eb186e64d790280b9eca0017f4a4c25c # shrinks to sparse = false, actions = [EndBlock, EndEpoch, EndEpoch, Serialize]
