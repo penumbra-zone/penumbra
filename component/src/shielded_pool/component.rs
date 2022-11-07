@@ -483,6 +483,9 @@ pub(super) trait StateWriteExt: StateWrite {
         // Write the CompactBlock:
         self.set_compact_block(compact_block);
 
+        // Write the note commitment tree:
+        self.stub_put_note_commitment_tree(&nct);
+
         Ok(())
     }
 
