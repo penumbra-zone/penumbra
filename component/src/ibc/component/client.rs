@@ -52,13 +52,13 @@ pub struct Ics2Client {}
 
 #[async_trait]
 impl Component for Ics2Client {
-    #[instrument(name = "ics2_client", skip(self, _app_state))]
+    #[instrument(name = "ics2_client", skip(state, _app_state))]
     async fn init_chain(state: &mut StateTransaction, _app_state: &genesis::AppState) {
         // set the initial client count
-        self.state.put_client_counter(ClientCounter(0)).await;
+        state.put_client_counter(ClientCounter(0)).await;
     }
 
-    #[instrument(name = "ics2_client", skip(self, begin_block))]
+    #[instrument(name = "ics2_client", skip(state, begin_block))]
     async fn begin_block(state: &mut StateTransaction, begin_block: &abci::request::BeginBlock) {
         // In BeginBlock, we want to save a copy of our consensus state to our
         // own state tree, so that when we get a message from our
@@ -75,13 +75,13 @@ impl Component for Ics2Client {
         let revision_number = 0;
         let height = Height::new(revision_number, begin_block.header.height.into());
 
-        self.state
+        state
             .put_penumbra_consensus_state(height, AnyConsensusState::Tendermint(cs))
             .await;
     }
 
-    #[instrument(name = "ics2_client", skip(_, tx))]
-    fn check_tx_stateless(tx: &Transaction) -> Result<()> {
+    #[instrument(name = "ics2_client", skip(tx))]
+    fn check_tx_stateless(tx: Arc<Transaction>) -> Result<()> {
         // Each stateless check is a distinct function in an appropriate submodule,
         // so that we can easily add new stateless checks and see a birds' eye view
         // of all of the checks we're performing.
@@ -109,8 +109,8 @@ impl Component for Ics2Client {
         Ok(())
     }
 
-    #[instrument(name = "ics2_client", skip(, tx))]
-    async fn check_tx_stateful(tx: &Transaction, state: Arc<State>) -> Result<()> {
+    #[instrument(name = "ics2_client", skip(state, tx))]
+    async fn check_tx_stateful(state: Arc<State>, tx: Arc<Transaction>) -> Result<()> {
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
                 Some(CreateClient(msg)) => {
@@ -130,8 +130,8 @@ impl Component for Ics2Client {
         Ok(())
     }
 
-    #[instrument(name = "ics2_client", skip(, tx))]
-    async fn execute_tx(tx: &Transaction, state_tx: &mut StateTransaction) {
+    #[instrument(name = "ics2_client", skip(state, tx))]
+    async fn execute_tx(state: &mut StateTransaction, tx: Arc<Transaction>) -> Result<()> {
         // Handle any IBC actions found in the transaction.
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
@@ -150,10 +150,12 @@ impl Component for Ics2Client {
                 _ => {}
             }
         }
+
+        Ok(())
     }
 
-    #[instrument(name = "ics2_client", skip(, _end_block))]
-    async fn end_block(_end_block: &abci::request::EndBlock, state_tx: &mut StateTransaction) {}
+    #[instrument(name = "ics2_client", skip(state, _end_block))]
+    async fn end_block(state: &mut StateTransaction, _end_block: &abci::request::EndBlock) {}
 }
 
 impl Ics2Client {
@@ -349,15 +351,10 @@ impl Ics2Client {
     }
 }
 
-#[async_trait(?Send)]
-pub trait StateReadExt: StateRead {
+#[async_trait]
+pub trait StateWriteExt: StateWrite + StateReadExt {
     async fn put_client_counter(&mut self, counter: ClientCounter) {
         self.put("ibc_client_counter".into(), counter).await;
-    }
-    async fn client_counter(&self) -> Result<ClientCounter> {
-        self.get("ibc_client_counter".into())
-            .await
-            .map(|counter| counter.unwrap_or(ClientCounter(0)))
     }
 
     async fn put_client(&mut self, client_id: &ClientId, client_state: AnyClientState) {
@@ -369,34 +366,6 @@ pub trait StateReadExt: StateRead {
 
         self.put(state_key::client_state(client_id).into(), client_state)
             .await;
-    }
-
-    async fn get_client_type(&self, client_id: &ClientId) -> Result<ClientType> {
-        let client_type_str: String = self
-            .get_proto(state_key::client_type(client_id).into())
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("client not found"))?;
-
-        ClientType::from_str(&client_type_str).map_err(|_| anyhow::anyhow!("invalid client type"))
-    }
-
-    async fn get_client_state(&self, client_id: &ClientId) -> Result<AnyClientState> {
-        let client_state = self.get(state_key::client_state(client_id).into()).await?;
-
-        client_state.ok_or_else(|| anyhow::anyhow!("client not found"))
-    }
-
-    async fn get_verified_heights(&self, client_id: &ClientId) -> Result<Option<VerifiedHeights>> {
-        self.get(
-            format!(
-                // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
-                // it's not in the same path namespace.
-                "penumbra_verified_heights/{}/verified_heights",
-                client_id
-            )
-            .into(),
-        )
-        .await
     }
 
     async fn put_verified_heights(
@@ -418,15 +387,6 @@ pub trait StateReadExt: StateRead {
     }
 
     // returns the ConsensusState for the penumbra chain (this chain) at the given height
-    async fn get_penumbra_consensus_state(&self, height: Height) -> Result<AnyConsensusState> {
-        // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
-        // it's not in the same path namespace.
-        self.get(format!("penumbra_consensus_states/{}", height).into())
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("consensus state not found"))
-    }
-
-    // returns the ConsensusState for the penumbra chain (this chain) at the given height
     async fn put_penumbra_consensus_state(
         &self,
         height: Height,
@@ -439,40 +399,6 @@ pub trait StateReadExt: StateRead {
             consensus_state,
         )
         .await;
-    }
-
-    async fn get_verified_consensus_state(
-        &self,
-        height: Height,
-        client_id: ClientId,
-    ) -> Result<AnyConsensusState> {
-        self.get(state_key::verified_client_consensus_state(&client_id, &height).into())
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("consensus state not found"))
-    }
-
-    async fn get_client_update_height(
-        &self,
-        client_id: &ClientId,
-        height: &Height,
-    ) -> Result<ibc::Height> {
-        self.get(state_key::client_processed_heights(client_id, height).into())
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("client update time not found"))
-    }
-
-    async fn get_client_update_time(
-        &self,
-        client_id: &ClientId,
-        height: &Height,
-    ) -> Result<ibc::timestamp::Timestamp> {
-        let timestamp_nanos = self
-            .get_proto::<u64>(state_key::client_processed_times(client_id, height).into())
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("client update time not found"))?;
-
-        ibc::timestamp::Timestamp::from_nanoseconds(timestamp_nanos)
-            .map_err(|_| anyhow::anyhow!("invalid client update time"))
     }
 
     async fn put_verified_consensus_state(
@@ -516,6 +442,109 @@ pub trait StateReadExt: StateRead {
             .await;
 
         Ok(())
+    }
+
+    // adds the provided connection ID to the client identified by client_id. returns an error if
+    // the client does not exist.
+    async fn add_connection_to_client(
+        &mut self,
+        client_id: &ClientId,
+        connection_id: &ConnectionId,
+    ) -> Result<()> {
+        self.get_client_state(client_id).await?;
+        self.get_client_type(client_id).await?;
+
+        let mut connections: ClientConnections = self
+            .get(state_key::client_connections(client_id).into())
+            .await?
+            .unwrap_or_default();
+
+        connections.connection_ids.push(connection_id.clone());
+
+        self.put(state_key::client_connections(client_id).into(), connections)
+            .await;
+
+        Ok(())
+    }
+}
+
+#[async_trait]
+pub trait StateReadExt: StateRead {
+    async fn client_counter(&self) -> Result<ClientCounter> {
+        self.get("ibc_client_counter".into())
+            .await
+            .map(|counter| counter.unwrap_or(ClientCounter(0)))
+    }
+
+    async fn get_client_type(&self, client_id: &ClientId) -> Result<ClientType> {
+        let client_type_str: String = self
+            .get_proto(state_key::client_type(client_id).into())
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("client not found"))?;
+
+        ClientType::from_str(&client_type_str).map_err(|_| anyhow::anyhow!("invalid client type"))
+    }
+
+    async fn get_client_state(&self, client_id: &ClientId) -> Result<AnyClientState> {
+        let client_state = self.get(state_key::client_state(client_id).into()).await?;
+
+        client_state.ok_or_else(|| anyhow::anyhow!("client not found"))
+    }
+
+    async fn get_verified_heights(&self, client_id: &ClientId) -> Result<Option<VerifiedHeights>> {
+        self.get(
+            format!(
+                // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
+                // it's not in the same path namespace.
+                "penumbra_verified_heights/{}/verified_heights",
+                client_id
+            )
+            .into(),
+        )
+        .await
+    }
+
+    // returns the ConsensusState for the penumbra chain (this chain) at the given height
+    async fn get_penumbra_consensus_state(&self, height: Height) -> Result<AnyConsensusState> {
+        // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
+        // it's not in the same path namespace.
+        self.get(format!("penumbra_consensus_states/{}", height).into())
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("consensus state not found"))
+    }
+
+    async fn get_verified_consensus_state(
+        &self,
+        height: Height,
+        client_id: ClientId,
+    ) -> Result<AnyConsensusState> {
+        self.get(state_key::verified_client_consensus_state(&client_id, &height).into())
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("consensus state not found"))
+    }
+
+    async fn get_client_update_height(
+        &self,
+        client_id: &ClientId,
+        height: &Height,
+    ) -> Result<ibc::Height> {
+        self.get(state_key::client_processed_heights(client_id, height).into())
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("client update time not found"))
+    }
+
+    async fn get_client_update_time(
+        &self,
+        client_id: &ClientId,
+        height: &Height,
+    ) -> Result<ibc::timestamp::Timestamp> {
+        let timestamp_nanos = self
+            .get_proto::<u64>(state_key::client_processed_times(client_id, height).into())
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("client update time not found"))?;
+
+        ibc::timestamp::Timestamp::from_nanoseconds(timestamp_nanos)
+            .map_err(|_| anyhow::anyhow!("invalid client update time"))
     }
 
     // returns the lowest verified consensus state that is higher than the given height, if it
@@ -578,29 +607,6 @@ pub trait StateReadExt: StateRead {
         } else {
             return Ok(None);
         }
-    }
-
-    // adds the provided connection ID to the client identified by client_id. returns an error if
-    // the client does not exist.
-    async fn add_connection_to_client(
-        &mut self,
-        client_id: &ClientId,
-        connection_id: &ConnectionId,
-    ) -> Result<()> {
-        self.get_client_state(client_id).await?;
-        self.get_client_type(client_id).await?;
-
-        let mut connections: ClientConnections = self
-            .get(state_key::client_connections(client_id).into())
-            .await?
-            .unwrap_or_default();
-
-        connections.connection_ids.push(connection_id.clone());
-
-        self.put(state_key::client_connections(client_id).into(), connections)
-            .await;
-
-        Ok(())
     }
 }
 
