@@ -28,7 +28,7 @@ use ibc::{
 };
 use penumbra_chain::genesis;
 use penumbra_proto::core::ibc::v1alpha1::ibc_action::Action::{CreateClient, UpdateClient};
-use penumbra_storage2::{State, StateRead, StateTransaction};
+use penumbra_storage2::{State, StateRead, StateTransaction, StateWrite};
 use penumbra_transaction::Transaction;
 use tendermint::{abci, validator};
 use tendermint_light_client_verifier::{
@@ -468,6 +468,8 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
     }
 }
 
+impl<T: StateWrite> StateWriteExt for T {}
+
 #[async_trait]
 pub trait StateReadExt: StateRead {
     async fn client_counter(&self) -> Result<ClientCounter> {
@@ -609,6 +611,8 @@ pub trait StateReadExt: StateRead {
         }
     }
 }
+
+impl<T: StateRead> StateReadExt for T {}
 
 #[cfg(test)]
 mod tests {

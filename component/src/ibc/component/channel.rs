@@ -319,6 +319,9 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         );
     }
 }
+
+impl<T: StateWrite> StateWriteExt for T {}
+
 #[async_trait]
 pub trait StateReadExt: StateRead {
     async fn get_channel_counter(&self) -> Result<u64> {
@@ -375,3 +378,5 @@ pub trait StateReadExt: StateRead {
         Ok(commitment)
     }
 }
+
+impl<T: StateRead> StateReadExt for T {}

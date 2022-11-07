@@ -21,7 +21,7 @@ use penumbra_chain::genesis;
 use penumbra_proto::core::ibc::v1alpha1::ibc_action::Action::{
     ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
 };
-use penumbra_storage2::{State, StateRead, StateTransaction};
+use penumbra_storage2::{State, StateRead, StateTransaction, StateWrite};
 use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tracing::instrument;
@@ -158,13 +158,7 @@ impl Component for ConnectionComponent {
 }
 
 #[async_trait]
-pub trait StateReadExt: StateRead {
-    async fn get_connection_counter(&self) -> Result<ConnectionCounter> {
-        self.get(state_key::connection_counter().into())
-            .await
-            .map(|counter| counter.unwrap_or(ConnectionCounter(0)))
-    }
-
+pub trait StateWriteExt: StateWrite {
     async fn put_connection_counter(&self, counter: ConnectionCounter) {
         self.put(state_key::connection_counter().into(), counter)
             .await;
@@ -195,13 +189,24 @@ pub trait StateReadExt: StateRead {
         return Ok(());
     }
 
-    async fn get_connection(&self, connection_id: &ConnectionId) -> Result<Option<ConnectionEnd>> {
-        self.get(state_key::connection(connection_id).into()).await
-    }
-
     async fn update_connection(&self, connection_id: &ConnectionId, connection: ConnectionEnd) {
         self.put(state_key::connection(connection_id).into(), connection)
             .await;
+    }
+}
+
+impl<T: StateWrite> StateWriteExt for T {}
+
+#[async_trait]
+pub trait StateReadExt: StateRead {
+    async fn get_connection_counter(&self) -> Result<ConnectionCounter> {
+        self.get(state_key::connection_counter().into())
+            .await
+            .map(|counter| counter.unwrap_or(ConnectionCounter(0)))
+    }
+
+    async fn get_connection(&self, connection_id: &ConnectionId) -> Result<Option<ConnectionEnd>> {
+        self.get(state_key::connection(connection_id).into()).await
     }
 }
 
