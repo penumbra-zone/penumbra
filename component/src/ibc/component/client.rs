@@ -50,13 +50,6 @@ mod stateless;
 /// state updates. Currently, only Tendermint light clients are supported.
 pub struct Ics2Client {}
 
-impl Ics2Client {
-    #[instrument(name = "ics2_client", skip())]
-    pub async fn new() -> Self {
-        Self {}
-    }
-}
-
 #[async_trait]
 impl Component for Ics2Client {
     #[instrument(name = "ics2_client", skip(self, _app_state))]

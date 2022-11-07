@@ -8,7 +8,6 @@ use std::collections::BTreeMap;
 ///
 /// The primary IBC application is the Ics20 transfer application, which allows for interchain
 /// token transfers.
-use crate::Context;
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;

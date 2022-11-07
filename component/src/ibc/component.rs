@@ -36,11 +36,11 @@ pub struct IBCComponent {
 //         let client = Ics2Client::new().await;
 //         let connection = connection::ConnectionComponent::new().await;
 
-//         let mut router = AppRouter::new();
-//         let transfer = Ics20Transfer::new();
-//         router.bind(PortId::transfer(), Box::new(transfer.clone()));
+// let mut router = AppRouter::new();
+// let transfer = Ics20Transfer::new();
+// router.bind(PortId::transfer(), Box::new(transfer.clone()));
 
-//         let channel = channel::Ics4Channel::new(Box::new(router)).await;
+// let channel = channel::Ics4Channel::new(Box::new(router)).await;
 
 //         Self {
 //             channel,
@@ -55,6 +55,12 @@ pub struct IBCComponent {
 impl Component for IBCComponent {
     #[instrument(name = "ibc", skip(state, app_state))]
     async fn init_chain(state: &mut StateTransaction, app_state: &genesis::AppState) {
+        let mut router = AppRouter::new();
+        let transfer = Ics20Transfer::new();
+        router.bind(PortId::transfer(), Box::new(transfer.clone()));
+
+        let channel = channel::Ics4Channel::new(Box::new(router)).await;
+
         client::Ics2Client::init_chain(state, app_state).await;
         connection::ConnectionComponent::init_chain(state, app_state).await;
         channel::Ics4Channel::init_chain(state, app_state).await;

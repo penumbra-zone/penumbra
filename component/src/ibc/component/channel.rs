@@ -10,7 +10,6 @@ use ibc::core::ics02_client::client_consensus::AnyConsensusState;
 use ibc::core::ics02_client::client_consensus::ConsensusState;
 use ibc::core::ics02_client::client_def::AnyClient;
 use ibc::core::ics02_client::client_def::ClientDef;
-use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, State as ConnectionState};
 use ibc::core::ics04_channel::channel::Order as ChannelOrder;
 use ibc::core::ics04_channel::channel::State as ChannelState;
@@ -44,18 +43,7 @@ mod stateless;
 
 use stateful::proof_verification::commit_packet;
 
-pub struct Ics4Channel {
-    state: State,
-
-    app_handler: Box<dyn AppHandler>,
-}
-
-impl Ics4Channel {
-    #[instrument(name = "ics4_channel", skip(state, app_handler))]
-    pub async fn new(state: State, app_handler: Box<dyn AppHandler>) -> Self {
-        Self { state, app_handler }
-    }
-}
+pub struct Ics4Channel {}
 
 #[async_trait]
 impl Component for Ics4Channel {

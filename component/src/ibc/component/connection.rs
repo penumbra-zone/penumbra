@@ -32,13 +32,6 @@ mod stateless;
 
 pub struct ConnectionComponent {}
 
-impl ConnectionComponent {
-    #[instrument(name = "ibc_connection")]
-    pub async fn new() -> Self {
-        Self {}
-    }
-}
-
 #[async_trait]
 impl Component for ConnectionComponent {
     #[instrument(name = "ibc_connection", skip(self, _app_state))]
