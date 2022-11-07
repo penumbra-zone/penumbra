@@ -115,7 +115,9 @@ pub mod channel_open_try {
                 }
             }
         }
+        impl<T: StateReadExt> Inner for T {}
     }
+    impl<T: StateReadExt> ChannelOpenTryCheck for T {}
 }
 
 pub mod channel_open_ack {
@@ -192,7 +194,9 @@ pub mod channel_open_ack {
                 }
             }
         }
+        impl<T: StateReadExt> Inner for T {}
     }
+    impl<T: StateReadExt> ChannelOpenAckCheck for T {}
 }
 
 pub mod channel_open_confirm {
@@ -250,6 +254,8 @@ pub mod channel_open_confirm {
             .await
         }
     }
+
+    impl<T: StateReadExt> ChannelOpenConfirmCheck for T {}
 }
 
 pub mod channel_close_init {
@@ -344,6 +350,8 @@ pub mod channel_close_confirm {
             .await
         }
     }
+
+    impl<T: StateReadExt> ChannelCloseConfirmCheck for T {}
 }
 
 pub mod recv_packet {

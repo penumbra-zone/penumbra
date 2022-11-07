@@ -26,6 +26,8 @@ pub mod channel_open_init {
             ));
         }
     }
+
+    impl<T: StateWriteExt> ChannelOpenInitExecute for T {}
 }
 
 pub mod channel_open_try {
@@ -56,6 +58,8 @@ pub mod channel_open_try {
             ));
         }
     }
+
+    impl<T: StateWriteExt> ChannelOpenTryExecute for T {}
 }
 
 pub mod channel_open_ack {
@@ -83,6 +87,8 @@ pub mod channel_open_ack {
             ));
         }
     }
+
+    impl<T: StateWriteExt> ChannelOpenAckExecute for T {}
 }
 
 pub mod channel_open_confirm {
@@ -108,6 +114,8 @@ pub mod channel_open_confirm {
             ));
         }
     }
+
+    impl<T: StateWriteExt> ChannelOpenConfirmExecute for T {}
 }
 
 pub mod channel_close_init {
@@ -132,6 +140,8 @@ pub mod channel_close_init {
             ));
         }
     }
+
+    impl<T: StateWriteExt> ChannelCloseInitExecute for T {}
 }
 
 pub mod channel_close_confirm {
@@ -157,6 +167,8 @@ pub mod channel_close_confirm {
             ));
         }
     }
+
+    impl<T: StateWriteExt> ChannelCloseConfirmExecute for T {}
 }
 
 pub mod recv_packet {
@@ -200,6 +212,8 @@ pub mod recv_packet {
             state.record(event::receive_packet(&msg.packet, &channel));
         }
     }
+
+    impl<T: StateWriteExt> RecvPacketExecute for T {}
 }
 
 pub mod acknowledge_packet {
@@ -239,6 +253,8 @@ pub mod acknowledge_packet {
             state.record(event::acknowledge_packet(&msg.packet, &channel));
         }
     }
+
+    impl<T: StateWriteExt> AcknowledgePacketExecute for T {}
 }
 
 pub mod timeout {
@@ -274,4 +290,6 @@ pub mod timeout {
             state.record(event::timeout_packet(&msg.packet, &channel));
         }
     }
+
+    impl<T: StateWriteExt> TimeoutExecute for T {}
 }
