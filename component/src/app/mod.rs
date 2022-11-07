@@ -10,7 +10,6 @@ use tracing::instrument;
 
 use crate::dex::Dex;
 use crate::governance::Governance;
-// use crate::governance::Governance;
 // use crate::ibc::IBCComponent;
 use crate::shielded_pool::ShieldedPool;
 use crate::stake::component::{Staking, ValidatorUpdates};
@@ -58,7 +57,7 @@ impl App {
         Staking::init_chain(&mut state_tx, app_state).await;
         // IBCComponent::init_chain(&mut state_tx, app_state).await;
         Dex::init_chain(&mut state_tx, app_state).await;
-        // Governance::init_chain(&mut state_tx, app_state).await;
+        Governance::init_chain(&mut state_tx, app_state).await;
         // Shielded pool always executes last.
         ShieldedPool::init_chain(&mut state_tx, app_state).await;
 
