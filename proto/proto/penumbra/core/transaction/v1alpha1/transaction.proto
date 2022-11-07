@@ -55,7 +55,7 @@ message Action {
     dex.v1alpha1.SwapClaim swap_claim = 6;
 
     stake.v1alpha1.ValidatorDefinition validator_definition = 16;
-    ibc.v1alpha1.IBCAction ibc_action = 17;
+    ibc.v1alpha1.IbcAction ibc_action = 17;
 
     // Governance:
     ProposalSubmit proposal_submit = 18;
@@ -68,7 +68,7 @@ message Action {
     dex.v1alpha1.PositionWithdraw position_withdraw = 32;
     dex.v1alpha1.PositionRewardClaim position_reward_claim = 34;
 
-    ibc.v1alpha1.ICS20Withdrawal ics20_withdrawal = 200;
+    ibc.v1alpha1.Ics20Withdrawal ics20_withdrawal = 200;
 
   }
 }
@@ -143,7 +143,7 @@ message ActionView {
     SwapClaimView swap_claim = 6;
 
     stake.v1alpha1.ValidatorDefinition validator_definition = 16;
-    ibc.v1alpha1.IBCAction ibc_action = 17;
+    ibc.v1alpha1.IbcAction ibc_action = 17;
 
     // Governance:
     ProposalSubmit proposal_submit = 18;
@@ -156,7 +156,7 @@ message ActionView {
     dex.v1alpha1.PositionWithdraw position_withdraw = 32;
     dex.v1alpha1.PositionRewardClaim position_reward_claim = 34;
 
-    ibc.v1alpha1.ICS20Withdrawal ics20_withdrawal = 200;
+    ibc.v1alpha1.Ics20Withdrawal ics20_withdrawal = 200;
 
   }
 }
@@ -331,7 +331,7 @@ message ActionPlan {
         // This is just a message relayed to the chain.
         stake.v1alpha1.ValidatorDefinition validator_definition = 16;
         // This is just a message relayed to the chain.
-        ibc.v1alpha1.IBCAction ibc_action = 17;
+        ibc.v1alpha1.IbcAction ibc_action = 17;
         // Governance:
         ProposalSubmit proposal_submit = 18;
         ProposalWithdrawPlan proposal_withdraw = 19;

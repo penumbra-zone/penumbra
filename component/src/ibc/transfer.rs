@@ -20,8 +20,8 @@ use penumbra_chain::genesis;
 use penumbra_crypto::asset::Denom;
 use penumbra_crypto::{asset, Amount};
 use penumbra_proto::core::ibc::v1alpha1::FungibleTokenPacketData;
-use penumbra_storage::{State, StateExt};
-use penumbra_transaction::action::ICS20Withdrawal;
+use penumbra_storage2::State;
+use penumbra_transaction::action::Ics20Withdrawal;
 use penumbra_transaction::{Action, Transaction};
 use prost::Message;
 use tendermint::abci;
@@ -43,28 +43,21 @@ fn is_source(source_port: &PortId, source_channel: &ChannelId, denom: &Denom) ->
 }
 
 #[derive(Clone)]
-pub struct ICS20Transfer {
-    state: State,
-}
+pub struct Ics20Transfer {}
 
-impl ICS20Transfer {
-    #[instrument(name = "ics20_transfer", skip(state))]
-    pub fn new(state: State) -> Self {
-        Self { state }
-    }
-
-    pub async fn withdrawal_check(&self, ctx: Context, withdrawal: &ICS20Withdrawal) -> Result<()> {
+impl Ics20Transfer {
+    pub async fn withdrawal_check(&self, withdrawal: &Ics20Withdrawal) -> Result<()> {
         // create packet
         let packet: IBCPacket<Unchecked> = withdrawal.clone().into();
 
         // send packet
         use crate::ibc::packet::SendPacket;
-        self.state.send_packet_check(ctx.clone(), packet).await?;
+        self.state.send_packet_check(packet).await?;
 
         Ok(())
     }
 
-    pub async fn withdrawal_execute(&mut self, ctx: Context, withdrawal: &ICS20Withdrawal) {
+    pub async fn withdrawal_execute(&mut self, withdrawal: &Ics20Withdrawal) {
         // create packet, assume it's already checked since the component caller contract calls `check` before `execute`
         let checked_packet = IBCPacket::<Unchecked>::from(withdrawal.clone()).assume_checked();
 
@@ -106,77 +99,67 @@ impl ICS20Transfer {
         }
 
         use crate::ibc::packet::SendPacket;
-        self.state
-            .send_packet_execute(ctx.clone(), checked_packet)
-            .await;
+        self.state.send_packet_execute(checked_packet).await;
     }
 }
 
-// TODO: ICS20 implementation.
+// TODO: Ics20 implementation.
 // see: https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer
 // TODO (ava): add versioning to AppHandlers
 #[async_trait]
-impl AppHandlerCheck for ICS20Transfer {
-    async fn chan_open_init_check(&self, _ctx: Context, msg: &MsgChannelOpenInit) -> Result<()> {
+impl AppHandlerCheck for Ics20Transfer {
+    async fn chan_open_init_check(&self, msg: &MsgChannelOpenInit) -> Result<()> {
         if msg.channel.ordering != ChannelOrder::Unordered {
             return Err(anyhow::anyhow!(
-                "channel order must be unordered for ICS20 transfer"
+                "channel order must be unordered for Ics20 transfer"
             ));
         }
 
         if msg.channel.version != Version::ics20() {
             return Err(anyhow::anyhow!(
-                "channel version must be ics20 for ICS20 transfer"
+                "channel version must be ics20 for Ics20 transfer"
             ));
         }
 
         Ok(())
     }
-    async fn chan_open_try_check(&self, _ctx: Context, msg: &MsgChannelOpenTry) -> Result<()> {
+    async fn chan_open_try_check(&self, msg: &MsgChannelOpenTry) -> Result<()> {
         if msg.channel.ordering != ChannelOrder::Unordered {
             return Err(anyhow::anyhow!(
-                "channel order must be unordered for ICS20 transfer"
+                "channel order must be unordered for Ics20 transfer"
             ));
         }
 
         if msg.counterparty_version != Version::ics20() {
             return Err(anyhow::anyhow!(
-                "counterparty version must be ics20-1 for ICS20 transfer"
+                "counterparty version must be ics20-1 for Ics20 transfer"
             ));
         }
 
         Ok(())
     }
-    async fn chan_open_ack_check(&self, _ctx: Context, msg: &MsgChannelOpenAck) -> Result<()> {
+    async fn chan_open_ack_check(&self, msg: &MsgChannelOpenAck) -> Result<()> {
         if msg.counterparty_version != Version::ics20() {
             return Err(anyhow::anyhow!(
-                "counterparty version must be ics20-1 for ICS20 transfer"
+                "counterparty version must be ics20-1 for Ics20 transfer"
             ));
         }
 
         Ok(())
     }
-    async fn chan_open_confirm_check(
-        &self,
-        _ctx: Context,
-        _msg: &MsgChannelOpenConfirm,
-    ) -> Result<()> {
+    async fn chan_open_confirm_check(&self, _msg: &MsgChannelOpenConfirm) -> Result<()> {
         // accept channel confirmations, port has already been validated, version has already been validated
         Ok(())
     }
-    async fn chan_close_confirm_check(
-        &self,
-        _ctx: Context,
-        _msg: &MsgChannelCloseConfirm,
-    ) -> Result<()> {
+    async fn chan_close_confirm_check(&self, _msg: &MsgChannelCloseConfirm) -> Result<()> {
         // no action necessary
         Ok(())
     }
-    async fn chan_close_init_check(&self, _ctx: Context, _msg: &MsgChannelCloseInit) -> Result<()> {
+    async fn chan_close_init_check(&self, _msg: &MsgChannelCloseInit) -> Result<()> {
         // always abort transaction
         return Err(anyhow::anyhow!("ics20 always aborts on close init"));
     }
-    async fn recv_packet_check(&self, _ctx: Context, msg: &MsgRecvPacket) -> Result<()> {
+    async fn recv_packet_check(&self, msg: &MsgRecvPacket) -> Result<()> {
         // 1. parse a FungibleTokenPacketData from msg.packet.data
         let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
         let denom: asset::Denom = packet_data.denom.as_str().try_into()?;
@@ -202,7 +185,7 @@ impl AppHandlerCheck for ICS20Transfer {
 
         Ok(())
     }
-    async fn timeout_packet_check(&self, _ctx: Context, msg: &MsgTimeout) -> Result<()> {
+    async fn timeout_packet_check(&self, msg: &MsgTimeout) -> Result<()> {
         let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
         let denom: asset::Denom = packet_data.denom.as_str().try_into()?;
 
@@ -226,45 +209,41 @@ impl AppHandlerCheck for ICS20Transfer {
 
         Ok(())
     }
-    async fn acknowledge_packet_check(
-        &self,
-        _ctx: Context,
-        _msg: &MsgAcknowledgement,
-    ) -> Result<()> {
+    async fn acknowledge_packet_check(&self, _msg: &MsgAcknowledgement) -> Result<()> {
         Ok(())
     }
 }
 
 #[async_trait]
-impl AppHandlerExecute for ICS20Transfer {
-    async fn chan_open_init_execute(&mut self, _ctx: Context, _msg: &MsgChannelOpenInit) {}
-    async fn chan_open_try_execute(&mut self, _ctx: Context, _msg: &MsgChannelOpenTry) {}
-    async fn chan_open_ack_execute(&mut self, _ctx: Context, _msg: &MsgChannelOpenAck) {}
-    async fn chan_open_confirm_execute(&mut self, _ctx: Context, _msg: &MsgChannelOpenConfirm) {}
-    async fn chan_close_confirm_execute(&mut self, _ctx: Context, _msg: &MsgChannelCloseConfirm) {}
-    async fn chan_close_init_execute(&mut self, _ctx: Context, _msg: &MsgChannelCloseInit) {}
-    async fn recv_packet_execute(&mut self, _ctx: Context, _msg: &MsgRecvPacket) {
+impl AppHandlerExecute for Ics20Transfer {
+    async fn chan_open_init_execute(&mut self, _msg: &MsgChannelOpenInit) {}
+    async fn chan_open_try_execute(&mut self, _msg: &MsgChannelOpenTry) {}
+    async fn chan_open_ack_execute(&mut self, _msg: &MsgChannelOpenAck) {}
+    async fn chan_open_confirm_execute(&mut self, _msg: &MsgChannelOpenConfirm) {}
+    async fn chan_close_confirm_execute(&mut self, _msg: &MsgChannelCloseConfirm) {}
+    async fn chan_close_init_execute(&mut self, _msg: &MsgChannelCloseInit) {}
+    async fn recv_packet_execute(&mut self, _msg: &MsgRecvPacket) {
         // parse if we are source or dest, and mint or burn accordingly
     }
-    async fn timeout_packet_execute(&mut self, _ctx: Context, _msg: &MsgTimeout) {}
-    async fn acknowledge_packet_execute(&mut self, _ctx: Context, _msg: &MsgAcknowledgement) {}
+    async fn timeout_packet_execute(&mut self, _msg: &MsgTimeout) {}
+    async fn acknowledge_packet_execute(&mut self, _msg: &MsgAcknowledgement) {}
 }
 
-impl AppHandler for ICS20Transfer {}
+impl AppHandler for Ics20Transfer {}
 
 #[async_trait]
-impl Component for ICS20Transfer {
+impl Component for Ics20Transfer {
     #[instrument(name = "ics20_transfer", skip(self, _app_state))]
-    async fn init_chain(&mut self, _app_state: &genesis::AppState) {}
+    async fn init_chain(state: &mut StateTransaction, _app_state: &genesis::AppState) {}
 
-    #[instrument(name = "ics20_transfer", skip(self, _ctx, _begin_block))]
-    async fn begin_block(&mut self, _ctx: Context, _begin_block: &abci::request::BeginBlock) {}
+    #[instrument(name = "ics20_transfer", skip(self, _begin_block))]
+    async fn begin_block(state: &mut StateTransaction, _begin_block: &abci::request::BeginBlock) {}
 
     #[instrument(name = "ics20_transfer", skip(_ctx, tx))]
-    fn check_tx_stateless(_ctx: Context, tx: &Transaction) -> Result<()> {
+    fn check_tx_stateless(tx: &Transaction) -> Result<()> {
         for action in tx.actions() {
             match action {
-                Action::ICS20Withdrawal(withdrawal) => {
+                Action::Ics20Withdrawal(withdrawal) => {
                     withdrawal.validate()?;
                 }
 
@@ -273,30 +252,30 @@ impl Component for ICS20Transfer {
         }
         Ok(())
     }
-    #[instrument(name = "ics20_transfer", skip(self, ctx, tx))]
-    async fn check_tx_stateful(&self, ctx: Context, tx: &Transaction) -> Result<()> {
+    #[instrument(name = "ics20_transfer", skip(self, tx))]
+    async fn check_tx_stateful(tx: &Transaction) -> Result<()> {
         for action in tx.actions() {
             match action {
-                Action::ICS20Withdrawal(withdrawal) => {
-                    self.withdrawal_check(ctx.clone(), withdrawal).await?;
+                Action::Ics20Withdrawal(withdrawal) => {
+                    self.withdrawal_check(withdrawal).await?;
                 }
                 _ => {}
             }
         }
         Ok(())
     }
-    #[instrument(name = "ics20_transfer", skip(self, ctx, tx))]
-    async fn execute_tx(&mut self, ctx: Context, tx: &Transaction) {
+    #[instrument(name = "ics20_transfer", skip(self, tx))]
+    async fn execute_tx(tx: &Transaction) {
         for action in tx.actions() {
             match action {
-                Action::ICS20Withdrawal(withdrawal) => {
-                    self.withdrawal_execute(ctx.clone(), withdrawal).await;
+                Action::Ics20Withdrawal(withdrawal) => {
+                    self.withdrawal_execute(withdrawal).await;
                 }
                 _ => {}
             }
         }
     }
 
-    #[instrument(name = "ics20_channel", skip(self, _ctx, _end_block))]
-    async fn end_block(&mut self, _ctx: Context, _end_block: &abci::request::EndBlock) {}
+    #[instrument(name = "ics20_channel", skip(self, _end_block))]
+    async fn end_block(_end_block: &abci::request::EndBlock) {}
 }

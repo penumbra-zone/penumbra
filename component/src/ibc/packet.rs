@@ -1,6 +1,3 @@
-use crate::ibc::component::channel::View as _;
-use crate::ibc::component::client::View as _;
-use crate::ibc::component::connection::View as _;
 use crate::Context;
 use anyhow::Result;
 use async_trait::async_trait;
@@ -10,8 +7,8 @@ use ibc::core::ics04_channel::channel::State as ChannelState;
 use ibc::core::ics04_channel::packet::Packet;
 use ibc::core::ics24_host::identifier::ChannelId;
 use ibc::core::ics24_host::identifier::PortId;
-use penumbra_storage::StateExt;
-use penumbra_transaction::action::ICS20Withdrawal;
+use penumbra_storage2::{StateRead, StateWrite};
+use penumbra_transaction::action::Ics20Withdrawal;
 
 pub trait CheckStatus: private::Sealed {}
 
@@ -54,8 +51,8 @@ impl IBCPacket<Unchecked> {
     }
 }
 
-impl From<ICS20Withdrawal> for IBCPacket<Unchecked> {
-    fn from(withdrawal: ICS20Withdrawal) -> Self {
+impl From<Ics20Withdrawal> for IBCPacket<Unchecked> {
+    fn from(withdrawal: Ics20Withdrawal) -> Self {
         Self {
             source_port: withdrawal.source_port.clone(),
             source_channel: withdrawal.source_channel.clone(),
@@ -71,10 +68,10 @@ impl From<ICS20Withdrawal> for IBCPacket<Unchecked> {
 /// This trait, an extension of the Channel, Connection, and Client views, allows a component to
 /// send a packet.
 #[async_trait]
-pub trait SendPacket: StateExt {
+pub trait SendPacket: StateWrite {
     /// Send a packet on a channel. This assumes that send_packet_check has already been called on
     /// the provided packet.
-    async fn send_packet_execute(&mut self, _ctx: Context, packet: IBCPacket<Checked>) {
+    async fn send_packet_execute(&mut self, packet: IBCPacket<Checked>) {
         // increment the send sequence counter
         let sequence = self
             .get_send_sequence(&packet.source_channel, &packet.source_port)
@@ -107,11 +104,7 @@ pub trait SendPacket: StateExt {
     }
 
     /// send_packet_check verifies that a packet can be sent using the provided parameters.
-    async fn send_packet_check(
-        &self,
-        _ctx: Context,
-        packet: IBCPacket<Unchecked>,
-    ) -> Result<IBCPacket<Checked>> {
+    async fn send_packet_check(&self, packet: IBCPacket<Unchecked>) -> Result<IBCPacket<Checked>> {
         let channel = self
             .get_channel(&packet.source_channel, &packet.source_port)
             .await?
@@ -172,7 +165,7 @@ pub trait SendPacket: StateExt {
     }
 }
 
-impl<T: StateExt> SendPacket for T {}
+impl<T: StateWrite> SendPacket for T {}
 
 #[async_trait]
-pub trait WriteAcknowledgement: StateExt {}
+pub trait WriteAcknowledgement: StateWrite {}

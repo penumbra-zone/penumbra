@@ -4,7 +4,7 @@ pub struct IbcAction {
     #[prost(oneof="ibc_action::Action", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17")]
     pub action: ::core::option::Option<ibc_action::Action>,
 }
-/// Nested message and enum types in `IBCAction`.
+/// Nested message and enum types in `IbcAction`.
 pub mod ibc_action {
     #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]

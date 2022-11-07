@@ -40,6 +40,15 @@ pub struct State {
     pub(crate) ephemeral_objects: BTreeMap<String, Box<dyn Any + Send + Sync>>,
 }
 
+impl std::fmt::Debug for State {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("State")
+            .field("snapshot", &self.snapshot)
+            .field("dirty", &self.is_dirty())
+            .finish_non_exhaustive()
+    }
+}
+
 impl State {
     pub(crate) fn new(snapshot: Snapshot) -> Self {
         Self {
@@ -99,8 +108,36 @@ impl State {
             })?
             .await?
     }
+
+    /// Returns the root hash of this `State`.
+    ///
+    /// If the `State` is empty, the all-zeros hash will be returned as a placeholder value.
+    ///
+    /// This method may only be used on a clean [`State`] fork, and will error
+    /// if [`is_dirty`] returns `true`.
+    pub async fn root_hash(&self) -> Result<jmt::RootHash> {
+        if self.is_dirty() {
+            return Err(anyhow::anyhow!("requested root_hash on dirty State"));
+        }
+        let span = Span::current();
+        let snapshot = self.snapshot.clone();
+
+        tokio::task::Builder::new()
+            .name("State::root_hash")
+            .spawn_blocking(move || {
+                span.in_scope(|| {
+                    let tree = jmt::JellyfishMerkleTree::new(&snapshot);
+                    let root = tree
+                        .get_root_hash_option(snapshot.version())?
+                        .unwrap_or(jmt::RootHash([0; 32]));
+                    Ok(root)
+                })
+            })?
+            .await?
+    }
 }
 
+//#[async_trait(?Send)]
 #[async_trait]
 impl StateRead for State {
     async fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>> {
@@ -136,6 +173,7 @@ impl StateRead for State {
             .and_then(|object| object.downcast_ref())
     }
 
+    /*
     fn prefix_ephemeral<'a, T: Any + Send + Sync>(
         &'a self,
         prefix: &'a str,
@@ -150,4 +188,5 @@ impl StateRead for State {
                 }),
         )
     }
+    */
 }

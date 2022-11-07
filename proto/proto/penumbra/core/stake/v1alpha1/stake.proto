@@ -141,17 +141,6 @@ message Undelegate {
   crypto.v1alpha1.Amount delegation_amount = 4;
 }
 
-// A commission amount to be minted as part of processing the epoch transition.
-message CommissionAmount {
-  crypto.v1alpha1.Amount amount = 1;
-  crypto.v1alpha1.Address destination = 2;
-}
-
-// A list of commission amounts to be minted as part of processing the epoch transition.
-message CommissionAmounts {
-  repeated CommissionAmount notes = 1;
-}
-
 // A list of pending delegations and undelegations.
 message DelegationChanges {
   repeated Delegate delegations = 1;

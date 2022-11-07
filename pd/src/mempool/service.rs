@@ -5,15 +5,12 @@ use std::{
 };
 
 use futures::FutureExt;
-use penumbra_storage::Storage;
-use tendermint::{
-    abci::{
-        request::CheckTx as CheckTxReq, request::CheckTxKind, response::CheckTx as CheckTxRsp,
-        MempoolRequest, MempoolResponse,
-    },
-    block,
+use penumbra_storage2::Storage;
+use tendermint::abci::{
+    request::CheckTx as CheckTxReq, request::CheckTxKind, response::CheckTx as CheckTxRsp,
+    MempoolRequest, MempoolResponse,
 };
-use tokio::sync::{mpsc, oneshot, watch};
+use tokio::sync::{mpsc, oneshot};
 use tokio_util::sync::PollSender;
 use tower_abci::BoxError;
 use tracing::{error_span, Instrument};
@@ -28,15 +25,12 @@ pub struct Mempool {
 }
 
 impl Mempool {
-    pub async fn new(
-        storage: Storage,
-        height_rx: watch::Receiver<block::Height>,
-    ) -> anyhow::Result<Self> {
+    pub async fn new(storage: Storage) -> anyhow::Result<Self> {
         let (queue_tx, queue_rx) = mpsc::channel(10);
 
         tokio::task::Builder::new()
             .name("mempool::Worker")
-            .spawn(Worker::new(storage, queue_rx, height_rx).await?.run())
+            .spawn(Worker::new(storage, queue_rx).await?.run())
             .expect("failed to spawn mempool worker");
 
         Ok(Self {

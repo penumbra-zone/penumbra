@@ -13,7 +13,7 @@ pub use swap_claim_view::SwapClaimView;
 pub use swap_view::SwapView;
 
 use crate::action::{
-    Delegate, ICS20Withdrawal, PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw,
+    Delegate, Ics20Withdrawal, PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw,
     ProposalSubmit, ProposalWithdraw, Undelegate, ValidatorVote,
 };
 
@@ -38,7 +38,7 @@ pub enum ActionView {
     PositionClose(PositionClose),
     PositionWithdraw(PositionWithdraw),
     PositionRewardClaim(PositionRewardClaim),
-    ICS20Withdrawal(ICS20Withdrawal),
+    Ics20Withdrawal(Ics20Withdrawal),
 }
 
 impl Protobuf<pbt::ActionView> for ActionView {}
@@ -68,7 +68,7 @@ impl TryFrom<pbt::ActionView> for ActionView {
                 AV::PositionClose(x) => ActionView::PositionClose(x.try_into()?),
                 AV::PositionWithdraw(x) => ActionView::PositionWithdraw(x.try_into()?),
                 AV::PositionRewardClaim(x) => ActionView::PositionRewardClaim(x.try_into()?),
-                AV::Ics20Withdrawal(x) => ActionView::ICS20Withdrawal(x.try_into()?),
+                AV::Ics20Withdrawal(x) => ActionView::Ics20Withdrawal(x.try_into()?),
             },
         )
     }
@@ -94,7 +94,7 @@ impl From<ActionView> for pbt::ActionView {
                 ActionView::PositionClose(x) => AV::PositionClose(x.into()),
                 ActionView::PositionWithdraw(x) => AV::PositionWithdraw(x.into()),
                 ActionView::PositionRewardClaim(x) => AV::PositionRewardClaim(x.into()),
-                ActionView::ICS20Withdrawal(x) => AV::Ics20Withdrawal(x.into()),
+                ActionView::Ics20Withdrawal(x) => AV::Ics20Withdrawal(x.into()),
             }),
         }
     }

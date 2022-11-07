@@ -331,8 +331,8 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
         ".penumbra.core.transaction.v1alpha1.TransactionView",
         SERIALIZE,
     ),
-    (".penumbra.core.ibc.v1alpha1.IBCAction", SERIALIZE),
-    (".penumbra.core.ibc.v1alpha1.ICS20Withdrawal", SERIALIZE),
+    (".penumbra.core.ibc.v1alpha1.IbcAction", SERIALIZE),
+    (".penumbra.core.ibc.v1alpha1.Ics20Withdrawal", SERIALIZE),
     (".penumbra.core.dex.v1alpha1.MockFlowCiphertext", SERIALIZE),
     (
         ".penumbra.core.dex.v1alpha1.MockFlowCiphertext",

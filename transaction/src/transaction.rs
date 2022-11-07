@@ -114,7 +114,7 @@ impl Transaction {
                 Action::PositionClose(_) => {}
                 Action::PositionWithdraw(_) => {}
                 Action::PositionRewardClaim(_) => {}
-                Action::ICS20Withdrawal(_) => {}
+                Action::Ics20Withdrawal(_) => {}
             }
         }
 

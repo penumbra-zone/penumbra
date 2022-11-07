@@ -11,4 +11,4 @@ pub mod tally;
 
 pub use self::metrics::register_metrics;
 pub use component::Governance;
-pub use view::View;
+pub use view::StateReadExt;

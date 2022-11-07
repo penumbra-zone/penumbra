@@ -1,3 +1,4 @@
+use std::fmt::{Debug, Formatter};
 use std::ops::Deref;
 use std::sync::Arc;
 
@@ -25,6 +26,12 @@ pub struct RocksDbSnapshot {
     /// pointer back into an Arc when we're finished using it, and only then
     /// drop it.
     raw_db: *const rocksdb::DB,
+}
+
+impl Debug for RocksDbSnapshot {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RocksDbSnapshot").finish()
+    }
 }
 
 // Safety requires that the inner snapshot instance must never live longer than

@@ -22,7 +22,16 @@ use rocks_wrapper::RocksDbSnapshot;
 #[derive(Clone)]
 pub struct Snapshot(Arc<Inner>);
 
+impl std::fmt::Debug for Snapshot {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Snapshot")
+            .field("version", &self.0.version)
+            .finish_non_exhaustive()
+    }
+}
+
 // We don't want to expose the `TreeReader` implementation outside of this crate.
+#[derive(Debug)]
 struct Inner {
     snapshot: RocksDbSnapshot,
     version: jmt::Version,
@@ -75,6 +84,7 @@ impl Snapshot {
     }
 }
 
+//#[async_trait(?Send)]
 #[async_trait]
 impl StateRead for Snapshot {
     /// Fetch a key from the JMT column family.
@@ -160,6 +170,7 @@ impl StateRead for Snapshot {
         None
     }
 
+    /*
     fn prefix_ephemeral<'a, T: Any + Send + Sync>(
         &'a self,
         _prefix: &'a str,
@@ -167,6 +178,7 @@ impl StateRead for Snapshot {
         // No-op -- this will never be called internally, and `Snapshot` is not exposed in public API
         Box::new(std::iter::empty())
     }
+    */
 }
 
 /// A reader interface for rocksdb. NOTE: it is up to the caller to ensure consistency between the

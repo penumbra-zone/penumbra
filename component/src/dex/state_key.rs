@@ -16,3 +16,7 @@ pub fn output_data(height: u64, trading_pair: TradingPair) -> String {
         &trading_pair.asset_2()
     )
 }
+
+pub fn swap_flows() -> &'static str {
+    "dex/swap_flows"
+}

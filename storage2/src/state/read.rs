@@ -8,10 +8,11 @@ use futures::{Stream, StreamExt};
 use penumbra_proto::{Message, Protobuf};
 
 /// Read access to chain state.
-#[async_trait]
 // This needs to be a trait because we want to implement it over both `State` and `StateTransaction`,
 // mainly to support RPC methods.
-pub trait StateRead {
+//#[async_trait(?Send)]
+#[async_trait]
+pub trait StateRead: Send + Sync {
     /// Gets a value from the verifiable key-value store as raw bytes.
     ///
     /// Users should generally prefer to use [`get`](Self::get) or [`get_proto`](Self::get_proto).
@@ -56,14 +57,9 @@ pub trait StateRead {
     /// * `Ok(Some(v))` if the value is present and parseable as a proto type `P`;
     /// * `Ok(None)` if the value is missing;
     /// * `Err(_)` if the value is present but not parseable as a proto type `P`, or if an underlying storage error occurred.
-    async fn get_proto<D, P>(&self, key: &str) -> Result<Option<P>>
+    async fn get_proto<P>(&self, key: &str) -> Result<Option<P>>
     where
-        D: Protobuf<P>,
-        // TODO: does this get less awful if P is an associated type of D?
-        P: Message + Default,
-        P: From<D>,
-        D: TryFrom<P> + Clone + Debug,
-        <D as TryFrom<P>>::Error: Into<anyhow::Error>,
+        P: Message + Default + Debug,
     {
         let bytes = match self.get_raw(key).await? {
             None => return Ok(None),
@@ -151,8 +147,11 @@ pub trait StateRead {
     /// - `None` if `key` was not present, or if `key` was present but the value was not of type `T`.
     ///
     /// TODO: rename to `ephemeral_get` ?
+    /// TODO: should this be `&'static str`?
     fn get_ephemeral<T: Any + Send + Sync>(&self, key: &str) -> Option<&T>;
 
+    // TODO: remove
+    /*
     /// Retrieve all objects for keys matching a prefix from the ephemeral key-value store.
     ///
     /// TODO: rename to `ephemeral_prefix` ?
@@ -160,6 +159,7 @@ pub trait StateRead {
         &'a self,
         prefix: &'a str,
     ) -> Box<dyn Iterator<Item = (&'a str, &'a T)> + 'a>;
+    */
 }
 
 // Merge a RYW cache iterator with a backend storage stream to produce a new Stream,
@@ -248,4 +248,68 @@ pub(crate) fn prefix_raw_with_cache<'a>(
         merged.filter_map(|r| async { r.map(|(k, v)| v.map(move |v| (k, v))).transpose() });
 
     Box::pin(merged)
+}
+
+//#[async_trait(?Send)]
+#[async_trait]
+impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
+    async fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>> {
+        (**self).get_raw(key).await
+    }
+
+    fn prefix_raw<'b>(
+        &'b self,
+        prefix: &'b str,
+    ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Sync + Send + 'b>> {
+        (**self).prefix_raw(prefix)
+    }
+
+    async fn get_nonconsensus(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+        (**self).get_nonconsensus(key).await
+    }
+
+    fn get_ephemeral<T: Any + Send + Sync>(&self, key: &str) -> Option<&T> {
+        (**self).get_ephemeral(key)
+    }
+
+    /*
+    fn prefix_ephemeral<'b, T: Any + Send + Sync>(
+        &'b self,
+        prefix: &'b str,
+    ) -> Box<dyn Iterator<Item = (&'b str, &'b T)> + 'b> {
+        (**self).prefix_ephemeral(prefix)
+    }
+    */
+}
+
+//#[async_trait(?Send)]
+#[async_trait]
+impl<'a, S: StateRead + Send + Sync> StateRead for &'a mut S {
+    async fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>> {
+        (**self).get_raw(key).await
+    }
+
+    fn prefix_raw<'b>(
+        &'b self,
+        prefix: &'b str,
+    ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Sync + Send + 'b>> {
+        (**self).prefix_raw(prefix)
+    }
+
+    async fn get_nonconsensus(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+        (**self).get_nonconsensus(key).await
+    }
+
+    fn get_ephemeral<T: Any + Send + Sync>(&self, key: &str) -> Option<&T> {
+        (**self).get_ephemeral(key)
+    }
+
+    /*
+    fn prefix_ephemeral<'b, T: Any + Send + Sync>(
+        &'b self,
+        prefix: &'b str,
+    ) -> Box<dyn Iterator<Item = (&'b str, &'b T)> + 'b> {
+        (**self).prefix_ephemeral(prefix)
+    }
+    */
 }

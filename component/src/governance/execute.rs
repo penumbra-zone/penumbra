@@ -2,10 +2,12 @@ use crate::governance::proposal::Outcome;
 
 use super::{
     proposal::{self, chain_params},
-    tally, View as _,
+    tally,
+    view::StateWriteExt as _,
+    StateReadExt as _,
 };
-use penumbra_chain::View as _;
-use penumbra_storage::State;
+use penumbra_chain::{StateReadExt as _, StateWriteExt};
+use penumbra_storage2::StateTransaction;
 use penumbra_transaction::action::{
     ProposalPayload, ProposalSubmit, ProposalWithdraw, ProposalWithdrawBody, ValidatorVote,
     ValidatorVoteBody,
@@ -14,7 +16,7 @@ use tracing::instrument;
 
 #[instrument(skip(state))]
 pub async fn proposal_submit(
-    state: &State,
+    state: &mut StateTransaction<'_>,
     ProposalSubmit {
         proposal,
         deposit_amount,
@@ -68,7 +70,7 @@ pub async fn proposal_submit(
 
 #[instrument(skip(state))]
 pub async fn proposal_withdraw(
-    state: &State,
+    state: &mut StateTransaction<'_>,
     ProposalWithdraw {
         auth_sig: _,
         body: ProposalWithdrawBody { proposal, reason },
@@ -89,7 +91,7 @@ pub async fn proposal_withdraw(
 
 #[instrument(skip(state))]
 pub async fn validator_vote(
-    state: &State,
+    state: &mut StateTransaction<'_>,
     ValidatorVote {
         auth_sig: _,
         body:
@@ -112,8 +114,8 @@ pub async fn validator_vote(
 // pub async fn delegator_vote(state: &State, delegator_vote: &DelegatorVote) {}
 
 #[instrument(skip(state))]
-pub async fn enact_all_passed_proposals(state: &State) {
-    let parameters = tally::Parameters::new(state)
+pub async fn enact_all_passed_proposals(state: &mut StateTransaction<'_>) {
+    let parameters = tally::Parameters::new(&*state)
         .await
         .expect("can generate tally parameters");
 
@@ -122,7 +124,7 @@ pub async fn enact_all_passed_proposals(state: &State) {
         .await
         .expect("can get block height");
 
-    let circumstance = tally::Circumstance::new(state)
+    let circumstance = tally::Circumstance::new(&*state)
         .await
         .expect("can generate tally circumstance");
 
@@ -134,7 +136,7 @@ pub async fn enact_all_passed_proposals(state: &State) {
     {
         // TODO: tally delegator votes
         if let Some(outcome) = parameters
-            .tally(state, circumstance, proposal_id)
+            .tally(&*state, circumstance, proposal_id)
             .await
             .expect("can tally proposal")
         {
@@ -175,7 +177,7 @@ pub async fn enact_all_passed_proposals(state: &State) {
 }
 
 #[instrument(skip(state))]
-async fn enact_proposal(state: &State, proposal_id: u64) {
+async fn enact_proposal(state: &mut StateTransaction<'_>, proposal_id: u64) {
     let payload = state
         .proposal_payload(proposal_id)
         .await
@@ -242,7 +244,7 @@ async fn enact_proposal(state: &State, proposal_id: u64) {
             let new_params = chain_params::resolve_parameters(&new_parameters, &old_parameters)
                 .expect("can resolve validated parameters");
 
-            state.put_chain_params(new_params).await;
+            state.put_chain_params(new_params);
         }
         ProposalPayload::DaoSpend {
             schedule_transactions: _,
@@ -259,7 +261,29 @@ async fn enact_proposal(state: &State, proposal_id: u64) {
     }
 }
 
-pub async fn enact_pending_parameter_changes(_state: &State) {
+pub async fn enact_pending_parameter_changes(_state: &mut StateTransaction<'_>) {
     // TODO: read the new parameters for this block, if any, and change the chain params to reflect
     // them. Parameters should be stored in the state as a map from name to value string.
+}
+
+pub async fn apply_proposal_refunds(state: &mut StateTransaction<'_>) {
+    use crate::shielded_pool::NoteManager;
+    use penumbra_chain::NoteSource;
+
+    let height = state.get_block_height().await.unwrap();
+
+    for (proposal_id, address, value) in state
+        .proposal_refunds(height)
+        .await
+        .expect("proposal refunds can be fetched")
+    {
+        state
+            .mint_note(
+                value,
+                &address,
+                NoteSource::ProposalDepositRefund { proposal_id },
+            )
+            .await
+            .expect("can mint proposal deposit refund");
+    }
 }

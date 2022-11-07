@@ -1,4 +1,3 @@
-use crate::ibc::component::client::View as _;
 use crate::ibc::{event, validate_penumbra_client_state, ConnectionCounter, SUPPORTED_VERSIONS};
 use crate::{Component, Context};
 use anyhow::Result;
@@ -16,11 +15,11 @@ use ibc::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use ibc::core::ics03_connection::version::{pick_version, Version};
 use ibc::core::ics24_host::identifier::ConnectionId;
 use ibc::Height as IBCHeight;
-use penumbra_chain::{genesis, View as _};
+use penumbra_chain::genesis;
 use penumbra_proto::core::ibc::v1alpha1::ibc_action::Action::{
     ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
 };
-use penumbra_storage::{State, StateExt};
+use penumbra_storage2::{State, StateRead};
 use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tracing::instrument;
@@ -31,27 +30,25 @@ mod execution;
 mod stateful;
 mod stateless;
 
-pub struct ConnectionComponent {
-    state: State,
-}
+pub struct ConnectionComponent {}
 
 impl ConnectionComponent {
-    #[instrument(name = "ibc_connection", skip(state))]
-    pub async fn new(state: State) -> Self {
-        Self { state }
+    #[instrument(name = "ibc_connection")]
+    pub async fn new() -> Self {
+        Self {}
     }
 }
 
 #[async_trait]
 impl Component for ConnectionComponent {
     #[instrument(name = "ibc_connection", skip(self, _app_state))]
-    async fn init_chain(&mut self, _app_state: &genesis::AppState) {}
+    async fn init_chain(state: &mut StateTransaction, _app_state: &genesis::AppState) {}
 
-    #[instrument(name = "ibc_connection", skip(self, _ctx, _begin_block))]
-    async fn begin_block(&mut self, _ctx: Context, _begin_block: &abci::request::BeginBlock) {}
+    #[instrument(name = "ibc_connection", skip(self, _begin_block))]
+    async fn begin_block(state: &mut StateTransaction, _begin_block: &abci::request::BeginBlock) {}
 
     #[instrument(name = "ibc_connection", skip(_ctx, tx))]
-    fn check_tx_stateless(_ctx: Context, tx: &Transaction) -> Result<()> {
+    fn check_tx_stateless(tx: &Transaction) -> Result<()> {
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
                 Some(ConnectionOpenInit(msg)) => {
@@ -90,8 +87,8 @@ impl Component for ConnectionComponent {
         Ok(())
     }
 
-    #[instrument(name = "ibc_connection", skip(self, _ctx, tx))]
-    async fn check_tx_stateful(&self, _ctx: Context, tx: &Transaction) -> Result<()> {
+    #[instrument(name = "ibc_connection", skip(self, tx))]
+    async fn check_tx_stateful(tx: &Transaction) -> Result<()> {
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
                 Some(ConnectionOpenInit(msg)) => {
@@ -125,35 +122,33 @@ impl Component for ConnectionComponent {
         Ok(())
     }
 
-    #[instrument(name = "ibc_connection", skip(self, ctx, tx))]
-    async fn execute_tx(&mut self, ctx: Context, tx: &Transaction) {
+    #[instrument(name = "ibc_connection", skip(self, tx))]
+    async fn execute_tx(tx: &Transaction) {
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
                 Some(ConnectionOpenInit(msg)) => {
                     use execution::connection_open_init::ConnectionOpenInitExecute;
                     let msg_connection_open_init =
                         MsgConnectionOpenInit::try_from(msg.clone()).unwrap();
-                    self.state
-                        .execute(ctx.clone(), &msg_connection_open_init)
-                        .await;
+                    self.state.execute(&msg_connection_open_init).await;
                 }
 
                 Some(ConnectionOpenTry(raw_msg)) => {
                     use execution::connection_open_try::ConnectionOpenTryExecute;
                     let msg = MsgConnectionOpenTry::try_from(raw_msg.clone()).unwrap();
-                    self.state.execute(ctx.clone(), &msg).await;
+                    self.state.execute(&msg).await;
                 }
 
                 Some(ConnectionOpenAck(raw_msg)) => {
                     use execution::connection_open_ack::ConnectionOpenAckExecute;
                     let msg = MsgConnectionOpenAck::try_from(raw_msg.clone()).unwrap();
-                    self.state.execute(ctx.clone(), &msg).await;
+                    self.state.execute(&msg).await;
                 }
 
                 Some(ConnectionOpenConfirm(raw_msg)) => {
                     use execution::connection_open_confirm::ConnectionOpenConfirmExecute;
                     let msg = MsgConnectionOpenConfirm::try_from(raw_msg.clone()).unwrap();
-                    self.state.execute(ctx.clone(), &msg).await;
+                    self.state.execute(&msg).await;
                 }
 
                 _ => {}
@@ -161,12 +156,12 @@ impl Component for ConnectionComponent {
         }
     }
 
-    #[instrument(name = "ibc_connection", skip(self, _ctx, _end_block))]
-    async fn end_block(&mut self, _ctx: Context, _end_block: &abci::request::EndBlock) {}
+    #[instrument(name = "ibc_connection", skip(self, _end_block))]
+    async fn end_block(_end_block: &abci::request::EndBlock) {}
 }
 
-#[async_trait]
-pub trait View: StateExt + Send + Sync {
+#[async_trait(?Send)]
+pub trait StateReadExt: StateRead {
     async fn get_connection_counter(&self) -> Result<ConnectionCounter> {
         self.get_domain(state_key::connection_counter().into())
             .await
@@ -214,4 +209,4 @@ pub trait View: StateExt + Send + Sync {
     }
 }
 
-impl<T: StateExt + Send + Sync> View for T {}
+impl<T: StateRead> StateReadExt for T {}

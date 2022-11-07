@@ -12,7 +12,7 @@ import "ibc/core/client/v1/client.proto";
 
 import "google/protobuf/any.proto";
 
-message IBCAction {
+message IbcAction {
     oneof action {
       .ibc.core.connection.v1.MsgConnectionOpenInit connectionOpenInit = 1;
       .ibc.core.connection.v1.MsgConnectionOpenTry connectionOpenTry = 2;
@@ -51,7 +51,7 @@ message FungibleTokenPacketData {
   string receiver = 4;
 }
 
-message ICS20Withdrawal {
+message Ics20Withdrawal {
   // the chain ID of the destination chain for this ICS20 transfer
   string destination_chain_id = 1;
 

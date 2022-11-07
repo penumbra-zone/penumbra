@@ -19,7 +19,7 @@ use penumbra_crypto::{keys::SpendKey, DelegationToken, GovernanceKey};
 use penumbra_proto::client::v1alpha1::{
     oblivious_query_server::ObliviousQueryServer, specific_query_server::SpecificQueryServer,
 };
-use penumbra_storage::Storage;
+use penumbra_storage2::Storage;
 use rand::Rng;
 use rand_core::OsRng;
 use tokio::runtime;
@@ -175,9 +175,9 @@ async fn main() -> anyhow::Result<()> {
                 .await
                 .context("Unable to initialize RocksDB storage")?;
 
-            let (consensus, height_rx) = pd::Consensus::new(storage.clone()).await?;
-            let mempool = pd::Mempool::new(storage.clone(), height_rx.clone()).await?;
-            let info = pd::Info::new(storage.clone(), height_rx);
+            let consensus = pd::Consensus::new(storage.clone()).await?;
+            let mempool = pd::Mempool::new(storage.clone()).await?;
+            let info = pd::Info::new(storage.clone());
             let snapshot = pd::Snapshot {};
 
             let abci_server = tokio::task::Builder::new()

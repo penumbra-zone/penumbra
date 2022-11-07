@@ -17,7 +17,7 @@ pub fn denom_by_asset(asset_id: &asset::Id) -> String {
     format!("shielded_pool/assets/{}/denom", asset_id)
 }
 
-pub fn note_source(note_commitment: note::Commitment) -> String {
+pub fn note_source(note_commitment: &note::Commitment) -> String {
     format!("shielded_pool/note_source/{}", note_commitment)
 }
 
@@ -53,10 +53,6 @@ pub fn spent_nullifier_lookup(nullifier: Nullifier) -> String {
     format!("shielded_pool/spent_nullifiers/{}", nullifier)
 }
 
-pub fn commission_amounts(height: u64) -> String {
-    format!("staking/commission_amounts/{}", height)
-}
-
 pub fn claimed_swap_outputs(height: u64) -> String {
     format!("dex/claimed_swap_outputs/{}", height)
 }
@@ -69,4 +65,14 @@ pub fn quarantined_spent_nullifier_lookup(nullifier: Nullifier) -> String {
     format!("shielded_pool/quarantined_spent_nullifiers/{}", nullifier)
 }
 
-pub use crate::stake::state_key::slashed_validators;
+// TODO: refactor this out (shielded pool should use an extension trait, not re-export other components' internals)
+// pub use crate::stake::state_key::slashed_validators;
+
+pub(crate) mod internal {
+    pub fn stub_note_commitment_tree() -> &'static str {
+        "shielded_pool/stub/note_commitment_tree"
+    }
+    pub fn stub_compact_block() -> &'static str {
+        "shielded_pool/stub/compact_block"
+    }
+}

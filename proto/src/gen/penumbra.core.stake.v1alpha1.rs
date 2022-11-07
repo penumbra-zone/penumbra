@@ -226,22 +226,6 @@ pub struct Undelegate {
     #[prost(message, optional, tag="4")]
     pub delegation_amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
 }
-/// A commission amount to be minted as part of processing the epoch transition.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CommissionAmount {
-    #[prost(message, optional, tag="1")]
-    pub amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
-    #[prost(message, optional, tag="2")]
-    pub destination: ::core::option::Option<super::super::crypto::v1alpha1::Address>,
-}
-/// A list of commission amounts to be minted as part of processing the epoch transition.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CommissionAmounts {
-    #[prost(message, repeated, tag="1")]
-    pub notes: ::prost::alloc::vec::Vec<CommissionAmount>,
-}
 /// A list of pending delegations and undelegations.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]

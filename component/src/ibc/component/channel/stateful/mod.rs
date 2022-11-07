@@ -4,7 +4,7 @@ pub mod channel_open_init {
     use super::super::*;
 
     #[async_trait]
-    pub trait ChannelOpenInitCheck: StateExt + inner::Inner {
+    pub trait ChannelOpenInitCheck: StateReadExt + inner::Inner {
         async fn validate(&self, msg: &MsgChannelOpenInit) -> anyhow::Result<()> {
             let channel_id = self.get_channel_id().await?;
 
@@ -24,7 +24,7 @@ pub mod channel_open_init {
         use super::*;
 
         #[async_trait]
-        pub trait Inner: StateExt {
+        pub trait Inner: StateReadExt {
             async fn verify_connections_exist(
                 &self,
                 msg: &MsgChannelOpenInit,
@@ -51,9 +51,9 @@ pub mod channel_open_init {
                 Ok(())
             }
         }
-        impl<T: StateExt> Inner for T {}
+        impl<T: StateReadExt> Inner for T {}
     }
-    impl<T: StateExt> ChannelOpenInitCheck for T {}
+    impl<T: StateReadExt> ChannelOpenInitCheck for T {}
 }
 
 pub mod channel_open_try {
@@ -61,7 +61,7 @@ pub mod channel_open_try {
     use super::proof_verification::ChannelProofVerifier;
 
     #[async_trait]
-    pub trait ChannelOpenTryCheck: StateExt + inner::Inner {
+    pub trait ChannelOpenTryCheck: StateReadExt + inner::Inner {
         async fn validate(&self, msg: &MsgChannelOpenTry) -> anyhow::Result<()> {
             let channel_id = ChannelId::new(self.get_channel_counter().await?);
 
@@ -98,7 +98,7 @@ pub mod channel_open_try {
         use super::*;
 
         #[async_trait]
-        pub trait Inner: StateExt {
+        pub trait Inner: StateReadExt {
             async fn verify_connections_open(
                 &self,
                 msg: &MsgChannelOpenTry,
@@ -115,9 +115,7 @@ pub mod channel_open_try {
                 }
             }
         }
-        impl<T: StateExt> Inner for T {}
     }
-    impl<T: StateExt> ChannelOpenTryCheck for T {}
 }
 
 pub mod channel_open_ack {
@@ -133,7 +131,7 @@ pub mod channel_open_ack {
     }
 
     #[async_trait]
-    pub trait ChannelOpenAckCheck: StateExt + inner::Inner {
+    pub trait ChannelOpenAckCheck: inner::Inner {
         async fn validate(&self, msg: &MsgChannelOpenAck) -> anyhow::Result<()> {
             let channel = self
                 .get_channel(&msg.channel_id, &msg.port_id)
@@ -177,7 +175,7 @@ pub mod channel_open_ack {
         use super::*;
 
         #[async_trait]
-        pub trait Inner: StateExt {
+        pub trait Inner {
             async fn verify_channel_connection_open(
                 &self,
                 channel: &ChannelEnd,
@@ -194,10 +192,7 @@ pub mod channel_open_ack {
                 }
             }
         }
-        impl<T: StateExt> Inner for T {}
     }
-
-    impl<T: StateExt> ChannelOpenAckCheck for T {}
 }
 
 pub mod channel_open_confirm {
@@ -205,7 +200,7 @@ pub mod channel_open_confirm {
     use super::proof_verification::ChannelProofVerifier;
 
     #[async_trait]
-    pub trait ChannelOpenConfirmCheck: StateExt {
+    pub trait ChannelOpenConfirmCheck {
         async fn validate(&self, msg: &MsgChannelOpenConfirm) -> anyhow::Result<()> {
             let channel = self
                 .get_channel(&msg.channel_id, &msg.port_id)
@@ -255,15 +250,13 @@ pub mod channel_open_confirm {
             .await
         }
     }
-
-    impl<T: StateExt> ChannelOpenConfirmCheck for T {}
 }
 
 pub mod channel_close_init {
     use super::super::*;
 
     #[async_trait]
-    pub trait ChannelCloseInitCheck: StateExt {
+    pub trait ChannelCloseInitCheck: StateReadExt {
         async fn validate(&self, msg: &MsgChannelCloseInit) -> anyhow::Result<()> {
             // TODO: capability authentication?
             //
@@ -290,7 +283,7 @@ pub mod channel_close_init {
         }
     }
 
-    impl<T: StateExt> ChannelCloseInitCheck for T {}
+    impl<T: StateReadExt> ChannelCloseInitCheck for T {}
 }
 
 pub mod channel_close_confirm {
@@ -298,7 +291,7 @@ pub mod channel_close_confirm {
     use super::proof_verification::ChannelProofVerifier;
 
     #[async_trait]
-    pub trait ChannelCloseConfirmCheck: StateExt {
+    pub trait ChannelCloseConfirmCheck {
         async fn validate(&self, msg: &MsgChannelCloseConfirm) -> anyhow::Result<()> {
             // TODO: capability authentication?
             //
@@ -351,8 +344,6 @@ pub mod channel_close_confirm {
             .await
         }
     }
-
-    impl<T: StateExt> ChannelCloseConfirmCheck for T {}
 }
 
 pub mod recv_packet {
@@ -360,10 +351,10 @@ pub mod recv_packet {
     use super::proof_verification::PacketProofVerifier;
     use ibc::timestamp::Timestamp as IBCTimestamp;
     use ibc::Height as IBCHeight;
-    use penumbra_chain::View as _;
+    use penumbra_chain::StateReadExt as _;
 
     #[async_trait]
-    pub trait RecvPacketCheck: StateExt {
+    pub trait RecvPacketCheck: StateReadExt {
         async fn validate(&self, msg: &MsgRecvPacket) -> anyhow::Result<()> {
             let channel = self
                 .get_channel(
@@ -439,7 +430,7 @@ pub mod recv_packet {
         }
     }
 
-    impl<T: StateExt> RecvPacketCheck for T {}
+    impl<T: StateReadExt> RecvPacketCheck for T {}
 }
 
 pub mod acknowledge_packet {
@@ -448,7 +439,7 @@ pub mod acknowledge_packet {
     use super::proof_verification::PacketProofVerifier;
 
     #[async_trait]
-    pub trait AcknowledgePacketCheck: StateExt {
+    pub trait AcknowledgePacketCheck: StateReadExt {
         async fn validate(&self, msg: &MsgAcknowledgement) -> anyhow::Result<()> {
             let channel = self
                 .get_channel(&msg.packet.source_channel, &msg.packet.source_port)
@@ -509,7 +500,7 @@ pub mod acknowledge_packet {
         }
     }
 
-    impl<T: StateExt> AcknowledgePacketCheck for T {}
+    impl<T: StateReadExt> AcknowledgePacketCheck for T {}
 }
 
 pub mod timeout {
@@ -519,7 +510,7 @@ pub mod timeout {
     use ibc::timestamp::Timestamp as IBCTimestamp;
 
     #[async_trait]
-    pub trait TimeoutCheck: StateExt {
+    pub trait TimeoutCheck: StateReadExt {
         async fn validate(&self, msg: &MsgTimeout) -> anyhow::Result<()> {
             let channel = self
                 .get_channel(&msg.packet.source_channel, &msg.packet.source_port)
@@ -600,5 +591,5 @@ pub mod timeout {
         }
     }
 
-    impl<T: StateExt> TimeoutCheck for T {}
+    impl<T: StateReadExt> TimeoutCheck for T {}
 }

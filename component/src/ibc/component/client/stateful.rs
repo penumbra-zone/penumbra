@@ -2,7 +2,7 @@ pub mod create_client {
     use super::super::*;
 
     #[async_trait]
-    pub trait CreateClientCheck: StateExt {
+    pub trait CreateClientCheck: StateReadExt {
         async fn validate(&self, msg: &MsgCreateAnyClient) -> anyhow::Result<()> {
             let id_counter = self.client_counter().await?;
             ClientId::new(msg.client_state.client_type(), id_counter.0)?;
@@ -11,14 +11,14 @@ pub mod create_client {
         }
     }
 
-    impl<T: StateExt> CreateClientCheck for T {}
+    impl<T: StateReadExt> CreateClientCheck for T {}
 }
 
 pub mod update_client {
     use super::super::*;
 
     #[async_trait]
-    pub trait UpdateClientCheck: StateExt + inner::Inner {
+    pub trait UpdateClientCheck: StateReadExt + inner::Inner {
         async fn validate(&self, msg: &MsgUpdateAnyClient) -> anyhow::Result<()> {
             let client_state = self.client_is_present(msg).await?;
 
@@ -163,7 +163,7 @@ pub mod update_client {
         use super::*;
 
         #[async_trait]
-        pub trait Inner: StateExt {
+        pub trait Inner: StateReadExt {
             async fn client_is_present(
                 &self,
                 msg: &MsgUpdateAnyClient,
@@ -232,8 +232,8 @@ pub mod update_client {
             }
         }
 
-        impl<T: StateExt> Inner for T {}
+        impl<T: StateReadExt> Inner for T {}
     }
 
-    impl<T: StateExt> UpdateClientCheck for T {}
+    impl<T: StateReadExt> UpdateClientCheck for T {}
 }
