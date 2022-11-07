@@ -1,11 +1,11 @@
-FROM rust:latest as build
+FROM rust:1-bullseye AS build-env
 
 # Specify the cargo cache dir as a volume to improve build speed
 VOLUME ["/root/.cargo"]
 
-RUN curl https://sh.rustup.rs -sSf | sh -s -- --no-modify-path --default-toolchain none -y
 RUN rustup component add rustfmt
-RUN apt-get update && apt-get install -y clang libclang-dev
+
+RUN apt update && apt install -y libclang-dev clang libssl1.1 libssl-dev openssl
 
 WORKDIR /usr/src
 
@@ -48,9 +48,9 @@ COPY .cargo ./.cargo
 # Sorry about all that mess ^, but it's worth it during development.
 
 # Fetch dependencies in a separate layer, so that they can be cached.
-RUN cargo fetch
+RUN cargo fetch --target $(uname -m)-unknown-linux-gnu
 
-RUN cargo build --release --bin pd
+RUN cargo build --release --bin pd --target $(uname -m)-unknown-linux-gnu
 
 # Remove the cached builds of internal packages.
 RUN rm -rf pcli pd crypto wallet config stake ibc component storage
@@ -58,21 +58,96 @@ RUN rm -rf pcli pd crypto wallet config stake ibc component storage
 # Copy the repo source now that dependencies have been built and cached.
 COPY . .
 
-# For dev leave off the `--release` flag as well for faster builds.
-RUN cargo build --release --bin pd && \
-    mkdir -p /out && \
-    mv target/release/pd /out/pd
+RUN cargo build --release --target $(uname -m)-unknown-linux-gnu
 
-# Install the penumbra daemon into the runtime image.
+# Copy all binaries to /root/bin, for a single place to copy into final image.
+RUN mkdir /root/bin
+RUN cp /usr/src/target/$(uname -m)-unknown-linux-gnu/release/pcli \
+      /usr/src/target/$(uname -m)-unknown-linux-gnu/release/pd \
+      /root/bin
 
-# TODO(eliza): it would be nice to be able to run the Penumbra daemon in a
-# `scratch` image rather than Debian or Alpine. However, then we'd have to build
-# with a statically linked libc (read: musl), and musl's malloc exhibits
-# pathologically poor performance for Tokio applications...
-FROM debian:bullseye-slim as runtime
+# Determine library dependencies of built binaries and copy to indexed path in /root/lib_abs for copying to final image.
+# Absolute path of each library is appended to /root/lib_abs.list for restoring in final image.
+RUN mkdir -p /root/lib_abs && touch /root/lib_abs.list
+RUN bash -c \
+  'for BIN in /root/bin/*; do \
+    readarray -t LIBS < <(ldd "$BIN"); \
+    i=0; for LIB in "${LIBS[@]}"; do \
+      PATH1=$(echo $LIB | awk "{print \$1}") ; \
+      if [ "$PATH1" = "linux-vdso.so.1" ]; then continue; fi; \
+      PATH2=$(echo $LIB | awk "{print \$3}") ; \
+      if [ ! -z "$PATH2" ]; then \
+        cp $PATH2 /root/lib_abs/$i ; \
+        echo $PATH2 >> /root/lib_abs.list; \
+      else \
+        cp $PATH1 /root/lib_abs/$i ; \
+        echo $PATH1 >> /root/lib_abs.list; \
+      fi; \
+      ((i = i + 1)) ;\
+    done; \
+  done'
+
+# Use minimal busybox from Strangelove infra-toolkit image for final scratch image
+FROM ghcr.io/strangelove-ventures/infra-toolkit:v0.0.6 AS busybox-min
+RUN addgroup --gid 1000 -S penumbra && adduser --uid 1000 -S penumbra -G penumbra
+
+# Use ln and rm from full featured busybox for assembling final image
+FROM busybox:1.34.1-musl AS busybox-full
+
+# Build final image from scratch
+FROM scratch
+
+WORKDIR /bin
+
+# Install ln (for making hard links), rm (for cleanup), mv, mkdir, and dirname from full busybox image (will be deleted, only needed for image assembly)
+COPY --from=busybox-full /bin/ln /bin/rm /bin/mv /bin/mkdir /bin/dirname ./
+
+# Install minimal busybox image as shell binary (will create hardlinks for the rest of the binaries to this data)
+COPY --from=busybox-min /busybox/busybox /bin/sh
+
+# Add hard links for read-only utils, then remove ln and rm
+# Will then only have one copy of the busybox minimal binary file with all utils pointing to the same underlying inode
+RUN ln sh pwd && \
+    ln sh ls && \
+    ln sh cat && \
+    ln sh less && \
+    ln sh grep && \
+    ln sh sleep && \
+    ln sh env && \
+    ln sh tar && \
+    ln sh tee && \
+    ln sh du
+
+# Install chain binaries
+COPY --from=build-env /root/bin /bin
+
+# Copy over libraries
+COPY --from=build-env /root/lib_abs /root/lib_abs
+COPY --from=build-env /root/lib_abs.list /root/lib_abs.list
+
+# Move libraries to their absolute locations.
+RUN sh -c 'i=0; while read FILE; do \
+      echo "$i: $FILE"; \
+      DIR="$(dirname "$FILE")"; \
+      mkdir -p "$DIR"; \
+      mv /root/lib_abs/$i $FILE; \
+      i=$((i+1)); \
+    done < /root/lib_abs.list'
+
+# Remove write utils used to construct image and tmp dir/file for lib copy.
+RUN rm -rf ln rm mv mkdir dirname /root/lib_abs /root/lib_abs.list
+
+# Install trusted CA certificates
+COPY --from=busybox-min /etc/ssl/cert.pem /etc/ssl/cert.pem
+
+# Install penumbra user
+COPY --from=busybox-min /etc/passwd /etc/passwd
+COPY --from=busybox-min --chown=1000:1000 /home/penumbra /home/penumbra
+
+WORKDIR /home/penumbra
+USER penumbra
+
 ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL
-WORKDIR /penumbra
-COPY --from=build /out/pd /usr/bin/pd
 ENV RUST_LOG=warn,pd=info,penumbra=info
 CMD [ "RUST_BACKTRACE=1 /usr/bin/pd" ]
