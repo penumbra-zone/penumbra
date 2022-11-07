@@ -10,57 +10,22 @@ pub(crate) mod state_key;
 
 use std::sync::Arc;
 
-use crate::ibc::ibc_handler::AppRouter;
 use crate::ibc::transfer::Ics20Transfer;
 use crate::Component;
 use anyhow::Result;
 use async_trait::async_trait;
-use client::Ics2Client;
-use ibc::core::ics24_host::identifier::PortId;
 use penumbra_chain::{genesis, StateReadExt as _};
 use penumbra_storage2::{State, StateTransaction};
-use penumbra_transaction::{Action, Transaction};
+use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tracing::instrument;
 
-pub struct IBCComponent {
-    // client: client::Ics2Client,
-    // connection: connection::ConnectionComponent,
-    // channel: channel::Ics4Channel,
-    // transfer: Ics20Transfer,
-}
-
-// impl IBCComponent {
-//     #[instrument(name = "ibc")]
-//     pub async fn new() -> Self {
-//         let client = Ics2Client::new().await;
-//         let connection = connection::ConnectionComponent::new().await;
-
-// let mut router = AppRouter::new();
-// let transfer = Ics20Transfer::new();
-// router.bind(PortId::transfer(), Box::new(transfer.clone()));
-
-// let channel = channel::Ics4Channel::new(Box::new(router)).await;
-
-//         Self {
-//             channel,
-//             client,
-//             connection,
-//             transfer,
-//         }
-//     }
-// }
+pub struct IBCComponent {}
 
 #[async_trait]
 impl Component for IBCComponent {
     #[instrument(name = "ibc", skip(state, app_state))]
     async fn init_chain(state: &mut StateTransaction, app_state: &genesis::AppState) {
-        let mut router = AppRouter::new();
-        let transfer = Ics20Transfer::new();
-        router.bind(PortId::transfer(), Box::new(transfer.clone()));
-
-        let channel = channel::Ics4Channel::new(Box::new(router)).await;
-
         client::Ics2Client::init_chain(state, app_state).await;
         connection::ConnectionComponent::init_chain(state, app_state).await;
         channel::Ics4Channel::init_chain(state, app_state).await;

@@ -32,6 +32,7 @@ use penumbra_proto::core::ibc::v1alpha1::ibc_action::Action::{
     ChannelOpenInit, ChannelOpenTry, RecvPacket, Timeout,
 };
 use penumbra_storage2::StateTransaction;
+use penumbra_storage2::StateWrite;
 use penumbra_storage2::{State, StateRead};
 use penumbra_transaction::Transaction;
 use tendermint::abci;
@@ -119,63 +120,63 @@ impl Component for Ics4Channel {
                     use stateful::channel_open_init::ChannelOpenInitCheck;
                     let msg = MsgChannelOpenInit::try_from(msg.clone())?;
 
-                    self.state.validate(&msg).await?;
+                    state.validate(&msg).await?;
                     self.app_handler.chan_open_init_check(&msg).await?;
                 }
                 Some(ChannelOpenTry(msg)) => {
                     use stateful::channel_open_try::ChannelOpenTryCheck;
                     let msg = MsgChannelOpenTry::try_from(msg.clone())?;
 
-                    self.state.validate(&msg).await?;
+                    state.validate(&msg).await?;
                     self.app_handler.chan_open_try_check(&msg).await?;
                 }
                 Some(ChannelOpenAck(msg)) => {
                     use stateful::channel_open_ack::ChannelOpenAckCheck;
                     let msg = MsgChannelOpenAck::try_from(msg.clone())?;
 
-                    self.state.validate(&msg).await?;
+                    state.validate(&msg).await?;
                     self.app_handler.chan_open_ack_check(&msg).await?;
                 }
                 Some(ChannelOpenConfirm(msg)) => {
                     use stateful::channel_open_confirm::ChannelOpenConfirmCheck;
                     let msg = MsgChannelOpenConfirm::try_from(msg.clone())?;
 
-                    self.state.validate(&msg).await?;
+                    state.validate(&msg).await?;
                     self.app_handler.chan_open_confirm_check(&msg).await?;
                 }
                 Some(ChannelCloseInit(msg)) => {
                     use stateful::channel_close_init::ChannelCloseInitCheck;
                     let msg = MsgChannelCloseInit::try_from(msg.clone())?;
 
-                    self.state.validate(&msg).await?;
+                    state.validate(&msg).await?;
                     self.app_handler.chan_close_init_check(&msg).await?;
                 }
                 Some(ChannelCloseConfirm(msg)) => {
                     use stateful::channel_close_confirm::ChannelCloseConfirmCheck;
                     let msg = MsgChannelCloseConfirm::try_from(msg.clone())?;
 
-                    self.state.validate(&msg).await?;
+                    state.validate(&msg).await?;
                     self.app_handler.chan_close_confirm_check(&msg).await?;
                 }
                 Some(RecvPacket(msg)) => {
                     use stateful::recv_packet::RecvPacketCheck;
                     let msg = MsgRecvPacket::try_from(msg.clone())?;
 
-                    self.state.validate(&msg).await?;
+                    state.validate(&msg).await?;
                     self.app_handler.recv_packet_check(&msg).await?;
                 }
                 Some(Acknowledgement(msg)) => {
                     use stateful::acknowledge_packet::AcknowledgePacketCheck;
                     let msg = MsgAcknowledgement::try_from(msg.clone())?;
 
-                    self.state.validate(&msg).await?;
+                    state.validate(&msg).await?;
                     self.app_handler.acknowledge_packet_check(&msg).await?;
                 }
                 Some(Timeout(msg)) => {
                     use stateful::timeout::TimeoutCheck;
                     let msg = MsgTimeout::try_from(msg.clone())?;
 
-                    self.state.validate(&msg).await?;
+                    state.validate(&msg).await?;
                     self.app_handler.timeout_packet_check(&msg).await?;
                 }
 
@@ -194,63 +195,63 @@ impl Component for Ics4Channel {
                     use execution::channel_open_init::ChannelOpenInitExecute;
                     let msg = MsgChannelOpenInit::try_from(msg.clone()).unwrap();
 
-                    self.state.execute(&msg).await;
+                    state.execute(&msg).await;
                     self.app_handler.chan_open_init_execute(&msg).await;
                 }
                 Some(ChannelOpenTry(msg)) => {
                     use execution::channel_open_try::ChannelOpenTryExecute;
                     let msg = MsgChannelOpenTry::try_from(msg.clone()).unwrap();
 
-                    self.state.execute(&msg).await;
+                    state.execute(&msg).await;
                     self.app_handler.chan_open_try_execute(&msg).await;
                 }
                 Some(ChannelOpenAck(msg)) => {
                     use execution::channel_open_ack::ChannelOpenAckExecute;
                     let msg = MsgChannelOpenAck::try_from(msg.clone()).unwrap();
 
-                    self.state.execute(&msg).await;
+                    state.execute(&msg).await;
                     self.app_handler.chan_open_ack_execute(&msg).await;
                 }
                 Some(ChannelOpenConfirm(msg)) => {
                     use execution::channel_open_confirm::ChannelOpenConfirmExecute;
                     let msg = MsgChannelOpenConfirm::try_from(msg.clone()).unwrap();
 
-                    self.state.execute(&msg).await;
+                    state.execute(&msg).await;
                     self.app_handler.chan_open_confirm_execute(&msg).await;
                 }
                 Some(ChannelCloseInit(msg)) => {
                     use execution::channel_close_init::ChannelCloseInitExecute;
                     let msg = MsgChannelCloseInit::try_from(msg.clone()).unwrap();
 
-                    self.state.execute(&msg).await;
+                    state.execute(&msg).await;
                     self.app_handler.chan_close_init_execute(&msg).await;
                 }
                 Some(ChannelCloseConfirm(msg)) => {
                     use execution::channel_close_confirm::ChannelCloseConfirmExecute;
                     let msg = MsgChannelCloseConfirm::try_from(msg.clone()).unwrap();
 
-                    self.state.execute(&msg).await;
+                    state.execute(&msg).await;
                     self.app_handler.chan_close_confirm_execute(&msg).await;
                 }
                 Some(RecvPacket(msg)) => {
                     use execution::recv_packet::RecvPacketExecute;
                     let msg = MsgRecvPacket::try_from(msg.clone()).unwrap();
 
-                    self.state.execute(&msg).await;
+                    state.execute(&msg).await;
                     self.app_handler.recv_packet_execute(&msg).await;
                 }
                 Some(Acknowledgement(msg)) => {
                     use execution::acknowledge_packet::AcknowledgePacketExecute;
                     let msg = MsgAcknowledgement::try_from(msg.clone()).unwrap();
 
-                    self.state.execute(&msg).await;
+                    state.execute(&msg).await;
                     self.app_handler.acknowledge_packet_execute(&msg).await;
                 }
                 Some(Timeout(msg)) => {
                     use execution::timeout::TimeoutExecute;
                     let msg = MsgTimeout::try_from(msg.clone()).unwrap();
 
-                    self.state.execute(&msg).await;
+                    state.execute(&msg).await;
                     self.app_handler.timeout_packet_execute(&msg).await;
                 }
 
@@ -267,22 +268,65 @@ impl Component for Ics4Channel {
 }
 
 #[async_trait]
+pub trait StateWriteExt: StateWrite + StateReadExt {
+    fn put_channel_counter(&self, counter: u64) {
+        self.put_proto::<u64>("ibc_channel_counter".into(), counter);
+    }
+
+    async fn next_channel_id(&mut self) -> Result<ChannelId> {
+        let ctr = self.get_channel_counter().await?;
+        self.put_channel_counter(ctr + 1);
+
+        Ok(ChannelId::new(ctr))
+    }
+
+    fn put_channel(&mut self, channel_id: &ChannelId, port_id: &PortId, channel: ChannelEnd) {
+        self.put(state_key::channel(channel_id, port_id).into(), channel);
+    }
+
+    fn put_ack_sequence(&mut self, channel_id: &ChannelId, port_id: &PortId, sequence: u64) {
+        self.put_proto::<u64>(state_key::seq_ack(channel_id, port_id).into(), sequence);
+    }
+
+    fn put_recv_sequence(&mut self, channel_id: &ChannelId, port_id: &PortId, sequence: u64) {
+        self.put_proto::<u64>(state_key::seq_recv(channel_id, port_id).into(), sequence);
+    }
+
+    fn put_send_sequence(&mut self, channel_id: &ChannelId, port_id: &PortId, sequence: u64) {
+        self.put_proto::<u64>(state_key::seq_send(channel_id, port_id).into(), sequence);
+    }
+
+    fn put_packet_receipt(&mut self, packet: &Packet) {
+        self.put_proto::<String>(state_key::packet_receipt(packet).into(), "1".to_string());
+    }
+
+    fn put_packet_commitment(&self, packet: &Packet) {
+        let commitment_key = state_key::packet_commitment(packet);
+        let packet_hash = commit_packet(packet);
+
+        self.put_proto::<Vec<u8>>(commitment_key.into(), packet_hash);
+    }
+
+    fn delete_packet_commitment(
+        &mut self,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        sequence: u64,
+    ) {
+        self.put_proto::<Vec<u8>>(
+            state_key::packet_commitment_by_port(port_id, channel_id, sequence).into(),
+            vec![],
+        );
+    }
+}
+#[async_trait]
 pub trait StateReadExt: StateRead {
     async fn get_channel_counter(&self) -> Result<u64> {
         self.get_proto::<u64>("ibc_channel_counter".into())
             .await
             .map(|counter| counter.unwrap_or(0))
     }
-    async fn put_channel_counter(&self, counter: u64) {
-        self.put_proto::<u64>("ibc_channel_counter".into(), counter)
-            .await;
-    }
-    async fn next_channel_id(&mut self) -> Result<ChannelId> {
-        let ctr = self.get_channel_counter().await?;
-        self.put_channel_counter(ctr + 1).await;
 
-        Ok(ChannelId::new(ctr))
-    }
     async fn get_channel(
         &self,
         channel_id: &ChannelId,
@@ -291,53 +335,31 @@ pub trait StateReadExt: StateRead {
         self.get(state_key::channel(channel_id, port_id).into())
             .await
     }
-    async fn put_channel(&mut self, channel_id: &ChannelId, port_id: &PortId, channel: ChannelEnd) {
-        self.put(state_key::channel(channel_id, port_id).into(), channel)
-            .await;
-    }
+
     async fn get_recv_sequence(&self, channel_id: &ChannelId, port_id: &PortId) -> Result<u64> {
         self.get_proto::<u64>(state_key::seq_recv(channel_id, port_id).into())
             .await
             .map(|sequence| sequence.unwrap_or(0))
     }
+
     async fn get_ack_sequence(&self, channel_id: &ChannelId, port_id: &PortId) -> Result<u64> {
         self.get_proto::<u64>(state_key::seq_ack(channel_id, port_id).into())
             .await
             .map(|sequence| sequence.unwrap_or(0))
     }
+
     async fn get_send_sequence(&self, channel_id: &ChannelId, port_id: &PortId) -> Result<u64> {
         self.get_proto::<u64>(state_key::seq_send(channel_id, port_id).into())
             .await
             .map(|sequence| sequence.unwrap_or(0))
     }
-    async fn put_ack_sequence(&mut self, channel_id: &ChannelId, port_id: &PortId, sequence: u64) {
-        self.put_proto::<u64>(state_key::seq_ack(channel_id, port_id).into(), sequence)
-            .await;
-    }
-    async fn put_recv_sequence(&mut self, channel_id: &ChannelId, port_id: &PortId, sequence: u64) {
-        self.put_proto::<u64>(state_key::seq_recv(channel_id, port_id).into(), sequence)
-            .await;
-    }
-    async fn put_send_sequence(&mut self, channel_id: &ChannelId, port_id: &PortId, sequence: u64) {
-        self.put_proto::<u64>(state_key::seq_send(channel_id, port_id).into(), sequence)
-            .await;
-    }
-    async fn put_packet_receipt(&mut self, packet: &Packet) {
-        self.put_proto::<String>(state_key::packet_receipt(packet).into(), "1".to_string())
-            .await;
-    }
+
     async fn seen_packet(&self, packet: &Packet) -> Result<bool> {
         self.get_proto::<String>(state_key::packet_receipt(packet).into())
             .await
             .map(|res| res.is_some())
     }
-    async fn put_packet_commitment(&self, packet: &Packet) {
-        let commitment_key = state_key::packet_commitment(packet);
-        let packet_hash = commit_packet(packet);
 
-        self.put_proto::<Vec<u8>>(commitment_key.into(), packet_hash)
-            .await;
-    }
     async fn get_packet_commitment(&self, packet: &Packet) -> Result<Option<Vec<u8>>> {
         let commitment = self
             .get_proto::<Vec<u8>>(state_key::packet_commitment(packet).into())
@@ -351,17 +373,5 @@ pub trait StateReadExt: StateRead {
         }
 
         Ok(commitment)
-    }
-    async fn delete_packet_commitment(
-        &mut self,
-        channel_id: &ChannelId,
-        port_id: &PortId,
-        sequence: u64,
-    ) {
-        self.put_proto::<Vec<u8>>(
-            state_key::packet_commitment_by_port(port_id, channel_id, sequence).into(),
-            vec![],
-        )
-        .await;
     }
 }
