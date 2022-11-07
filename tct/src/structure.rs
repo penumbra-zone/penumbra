@@ -15,13 +15,6 @@ pub use crate::internal::hash::{Forgotten, Hash};
 /// Every kind of node in the tree implements [`Node`], and its methods collectively describe every
 /// salient fact about each node, dynamically rather than statically as in the rest of the crate.
 pub(crate) trait Any<RefKind: SharedPointerKind>: GetHash + sealed::Sealed {
-    /// The parent of this node, if any.
-    ///
-    /// This defaults to `None`, but is filled in by the [`Any`] implementation of [`Node`].
-    fn parent<'a>(&'a self) -> Option<Node<RefKind>> {
-        None
-    }
-
     /// The children of this node.
     fn children(&self) -> Vec<Node<RefKind>>;
 
@@ -70,10 +63,6 @@ impl<T: Any<RefKind>, RefKind: SharedPointerKind> Any<RefKind> for &T {
 
     fn global_position(&self) -> Option<Position> {
         (**self).global_position()
-    }
-
-    fn parent(&self) -> Option<Node<RefKind>> {
-        (**self).parent()
     }
 
     fn forgotten(&self) -> Forgotten {
@@ -133,7 +122,7 @@ impl Display for Place {
 /// An arbitrary node somewhere within a tree.
 #[derive(Derivative)]
 #[derivative(Clone(bound = ""))]
-pub struct Node<RefKind: SharedPointerKind> {
+pub struct Node<RefKind: SharedPointerKind = archery::ArcK> {
     offset: u64,
     forgotten: Forgotten,
     global_position: Option<Position>,
@@ -199,10 +188,9 @@ impl<RefKind: SharedPointerKind> Node<RefKind> {
         Node {
             offset: 0,
             forgotten,
-            global_position: parent.global_position(),
-            this: child.map(SharedPointer::new),
+            global_position,
             kind: match child {
-                Insert::Keep(child) => child.kind(),
+                Insert::Keep(ref child) => child.kind(),
                 Insert::Hash(_) => match parent.kind() {
                     Kind::Internal {
                         height: height @ 2..=24,
@@ -216,6 +204,7 @@ impl<RefKind: SharedPointerKind> Node<RefKind> {
                     Kind::Leaf { .. } => unreachable!("leaves cannot have children"),
                 },
             },
+            this: child.map(SharedPointer::new),
         }
     }
 
@@ -313,6 +302,13 @@ impl<RefKind: SharedPointerKind> Node<RefKind> {
             Place::Complete
         }
     }
+
+    pub fn traverse<F>(self, with: F) -> Traversal<F, RefKind> {
+        Traversal {
+            traversal: Traverse::new(self),
+            with,
+        }
+    }
 }
 
 impl<RefKind: SharedPointerKind> GetHash for Node<RefKind> {
@@ -349,7 +345,7 @@ impl<RefKind: SharedPointerKind> Any<RefKind> for Node<RefKind> {
     }
 
     fn children(&self) -> Vec<Node<RefKind>> {
-        if let Insert::Keep(child) = self.this {
+        if let Insert::Keep(child) = self.this.as_ref() {
             child
                 .children()
                 .into_iter()
@@ -374,101 +370,132 @@ impl<RefKind: SharedPointerKind> Any<RefKind> for Node<RefKind> {
     }
 }
 
-#[doc(inline)]
-pub use traverse::{traverse, traverse_async};
+#[derive(Clone, Debug)]
+pub struct Traverse<RefKind: SharedPointerKind = archery::ArcK> {
+    above: Vec<Siblings<RefKind>>,
+    here: Siblings<RefKind>,
+    stop: bool,
+}
 
-/// Functions to perform traversals of [`Node`]s in synchronous and asynchronous contexts.
-pub mod traverse {
-    use archery::SharedPointerKind;
-    use std::{future::Future, pin::Pin};
+#[derive(Clone, Debug)]
+struct Siblings<RefKind: SharedPointerKind = archery::ArcK> {
+    left: Vec<Node<RefKind>>,
+    here: Node<RefKind>,
+    right: Vec<Node<RefKind>>,
+}
 
-    use super::Node;
+#[derive(Clone, Debug)]
+pub struct Traversal<F, RefKind: SharedPointerKind = archery::ArcK> {
+    traversal: Traverse<RefKind>,
+    with: F,
+}
 
-    /// Flag to determine whether the traversal continues downward from this node or stops at the
-    /// current node.
-    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-    pub enum Recur {
-        /// Default: Continue downwards.
-        Down,
-        /// Continue downwards, but traversing children right-to-left.
-        DownBackwards,
-        /// Stop here and don't continue downwards.
-        Stop,
-    }
+impl<F, T, RefKind: SharedPointerKind> Iterator for Traversal<F, RefKind>
+where
+    F: FnMut(&mut Traverse<RefKind>) -> Option<T>,
+{
+    type Item = T;
 
-    impl Default for Recur {
-        fn default() -> Self {
-            Down
-        }
-    }
-
-    impl From<()> for Recur {
-        fn from(_: ()) -> Self {
-            Down
-        }
-    }
-
-    #[doc(inline)]
-    pub use Recur::*;
-
-    /// Synchronously traverse a node depth-first, visiting each node using the given function.
-    ///
-    /// If the function returns [`Stop`], the traversal will stop at this node and not continue
-    /// into the children; otherwise it will recur downwards.
-    ///
-    /// Note that because `(): Into<Recur>`, it is valid to pass a function which returns `()` if
-    /// the traversal should always recur and never stop before reaching a leaf.
-    pub fn traverse<R: Into<Recur>, RefKind: SharedPointerKind>(
-        node: Node<RefKind>,
-        with: &mut impl FnMut(Node<RefKind>) -> R,
-    ) {
-        if let down @ (Down | DownBackwards) = with(node).into() {
-            let mut children = node.children();
-            if let DownBackwards = down {
-                children.reverse();
-            }
-            for child in children {
-                traverse(child, with);
-            }
-        }
-    }
-
-    /// Asynchronously traverse a node depth-first, visiting each node using the given function.
-    ///
-    /// If the function returns [`Stop`], the traversal will stop at this node and not continue
-    /// into the children; otherwise it will recur downwards.
-    ///
-    /// Note that because `(): Into<Recur>`, it is valid to pass a function which returns `()` if
-    /// the traversal should always recur and never stop before reaching a leaf.
-    pub async fn traverse_async<R: Send + Into<Recur>, Fut, RefKind: SharedPointerKind>(
-        node: Node<RefKind>,
-        with: &mut (impl FnMut(Node<RefKind>) -> Fut + Send),
-    ) where
-        Fut: Future<Output = R> + Send,
-    {
-        // We need this inner function to correctly specify the lifetimes for the recursive call
-        fn traverse_async_inner<R: Send + Into<Recur>, F, Fut, RefKind: SharedPointerKind>(
-            node: Node<RefKind>,
-            with: &mut F,
-        ) -> Pin<Box<dyn Future<Output = ()> + Send>>
-        where
-            F: FnMut(Node<RefKind>) -> Fut + Send,
-            Fut: Future<Output = R> + Send,
-        {
-            Box::pin(async move {
-                if let down @ (Down | DownBackwards) = with(node).await.into() {
-                    let mut children = node.children();
-                    if let DownBackwards = down {
-                        children.reverse();
-                    }
-                    for child in children {
-                        traverse_async_inner::<R, F, Fut, _>(child, with).await;
-                    }
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            if !self.traversal.stop {
+                if let Some(output) = (self.with)(&mut self.traversal) {
+                    break Some(output);
                 }
-            })
+            } else {
+                break None;
+            }
         }
+    }
+}
 
-        traverse_async_inner::<R, _, Fut, _>(node, with).await
+impl<RefKind: SharedPointerKind> Traverse<RefKind> {
+    fn new(root: Node<RefKind>) -> Self {
+        Self {
+            above: vec![],
+            here: Siblings {
+                left: vec![],
+                here: root,
+                right: vec![],
+            },
+            stop: false,
+        }
+    }
+
+    pub fn here(&self) -> &Node<RefKind> {
+        &self.here.here
+    }
+
+    pub fn stop(&mut self) {
+        self.stop = true;
+    }
+
+    pub fn up(&mut self) -> bool {
+        if let Some(above) = self.above.pop() {
+            self.here = above;
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn down(&mut self) -> bool {
+        let mut children = self.here.here.children();
+        if let Some(here) = children.pop() {
+            let siblings = Siblings {
+                left: vec![],
+                here,
+                right: children,
+            };
+            self.above.push(std::mem::replace(&mut self.here, siblings));
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn left(&mut self) -> bool {
+        if let Some(left) = self.here.left.pop() {
+            self.here
+                .right
+                .push(std::mem::replace(&mut self.here.here, left));
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn right(&mut self) -> bool {
+        if let Some(right) = self.here.right.pop() {
+            self.here
+                .left
+                .push(std::mem::replace(&mut self.here.here, right));
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn next_right(&mut self) -> bool {
+        self.right()
+            || loop {
+                if !self.up() {
+                    break false;
+                } else if self.right() {
+                    break true;
+                }
+            }
+    }
+
+    pub fn next_left(&mut self) -> bool {
+        self.left()
+            || loop {
+                if !self.up() {
+                    break false;
+                } else if self.left() {
+                    break true;
+                }
+            }
     }
 }
 
@@ -534,32 +561,7 @@ mod test {
             }
         }
 
-        check_leaves(&mut [0; 9], Node::root(&top));
-    }
-
-    #[test]
-    fn parent_of_child() {
-        let mut top: frontier::Top<Item> = frontier::Top::new(frontier::TrackForgotten::No);
-        top.insert(Commitment(0u8.into()).into()).unwrap();
-
-        // This can't be a loop, it has to be recursive because the lifetime parameter of the parent
-        // is different for each recursive call
-        fn check(parent: Node) {
-            if let Some(child) = parent.children().pop() {
-                let parent_of_child = child.parent().expect("child has no parent");
-                assert_eq!(
-                    parent.hash(),
-                    parent_of_child.hash(),
-                    "parent hash mismatch"
-                );
-                check(child);
-            } else {
-                assert_eq!(parent.height(), 0, "got all the way to a leaf");
-            }
-        }
-
-        let root = Node::root(&top);
-        check(root);
+        check_leaves(&mut [0; 9], Node::root(Box::new(top)));
     }
 
     #[test]
@@ -568,36 +570,49 @@ mod test {
 
         let mut top: frontier::Top<Item> = frontier::Top::new(frontier::TrackForgotten::No);
         for i in 0..MAX_SIZE_TO_TEST {
+            assert_eq!(top.global_position(), Some(u64::from(i).into()));
             top.insert(Commitment(i.into()).into()).unwrap();
         }
 
         fn check(node: Node, expected: Place) {
-            assert_eq!(node.place(), expected);
+            assert_eq!(
+                node.global_position(),
+                Some(u64::from(MAX_SIZE_TO_TEST).into()),
+                "{}",
+                node
+            );
+            assert_eq!(
+                node.place(),
+                expected,
+                "node: {}, global position: {:?}",
+                node,
+                node.global_position()
+            );
             match node.children().as_slice() {
                 [] => {}
                 [a] => {
-                    check(*a, expected);
+                    check(a.clone(), expected);
                 }
                 [a, b] => {
-                    check(*a, Place::Complete);
-                    check(*b, expected);
+                    check(a.clone(), Place::Complete);
+                    check(b.clone(), expected);
                 }
                 [a, b, c] => {
-                    check(*a, Place::Complete);
-                    check(*b, Place::Complete);
-                    check(*c, expected);
+                    check(a.clone(), Place::Complete);
+                    check(b.clone(), Place::Complete);
+                    check(c.clone(), expected);
                 }
                 [a, b, c, d] => {
-                    check(*a, Place::Complete);
-                    check(*b, Place::Complete);
-                    check(*c, Place::Complete);
-                    check(*d, expected);
+                    check(a.clone(), Place::Complete);
+                    check(b.clone(), Place::Complete);
+                    check(c.clone(), Place::Complete);
+                    check(d.clone(), expected);
                 }
                 _ => unreachable!("nodes can't have > 4 children"),
             }
         }
 
-        let root = Node::root(&top);
+        let root = Node::root(Box::new(top));
         check(root, Place::Frontier);
     }
 }

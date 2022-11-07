@@ -11,7 +11,7 @@ use crate::storage::Read;
 use super::StoredPosition;
 
 /// Deserialize a [`Tree`] from a storage backend.
-pub async fn from_reader<R: Read, RefKind: SharedPointerKind>(
+pub async fn from_reader<R: Read, RefKind: SharedPointerKind + 'static>(
     reader: &mut R,
 ) -> Result<Tree<RefKind>, R::Error> {
     // Make an uninitialized tree with the correct position and forgotten version

@@ -12,7 +12,7 @@ pub type Nested<Item, R> = N<N<N<N<N<N<N<N<L<Item>, R>, R>, R>, R>, R>, R>, R>, 
 /// A complete tier of the tiered commitment tree, being an 8-deep sparse quad-tree.
 #[derive(Derivative, Debug)]
 #[derivative(Clone(bound = "Item: Clone"))]
-pub struct Tier<Item: GetHash + Height + Clone, RefKind: SharedPointerKind> {
+pub struct Tier<Item: GetHash + Height + Clone, RefKind: SharedPointerKind = archery::ArcK> {
     pub(in super::super) inner: Nested<Item, RefKind>,
 }
 
@@ -77,8 +77,10 @@ impl<Item: GetHash + Height + Clone, RefKind: SharedPointerKind> GetPosition
     }
 }
 
-impl<Item: Height + structure::Any<RefKind> + Clone, RefKind: SharedPointerKind>
-    structure::Any<RefKind> for Tier<Item, RefKind>
+impl<
+        Item: Height + structure::Any<RefKind> + Clone + 'static,
+        RefKind: SharedPointerKind + 'static,
+    > structure::Any<RefKind> for Tier<Item, RefKind>
 {
     fn kind(&self) -> Kind {
         self.inner.kind()

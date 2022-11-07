@@ -84,7 +84,7 @@ pub(super) fn frontier_hashes(tree: &Tree) -> Vec<Option<Hash>> {
     fn inner(frontier: &mut Vec<Option<Hash>>, node: structure::Node) {
         frontier.push(node.cached_hash());
         if let Some(rightmost) = node.children().last() {
-            inner(frontier, *rightmost);
+            inner(frontier, rightmost.clone());
         }
     }
 

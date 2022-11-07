@@ -7,7 +7,7 @@ use std::{
 
 use archery::SharedPointerKind;
 
-use crate::prelude::*;
+use crate::{prelude::*, structure::Traverse};
 
 /// Verify that the inner index of the tree is correct with respect to the tree structure
 /// itself.
@@ -17,7 +17,9 @@ use crate::prelude::*;
 ///
 /// If this ever returns `Err`, it indicates either a bug in this crate, or a tree that was
 /// deserialized from an untrustworthy source.
-pub fn index<RefKind: SharedPointerKind>(tree: &Tree<RefKind>) -> Result<(), IndexMalformed> {
+pub fn index<RefKind: SharedPointerKind + 'static>(
+    tree: &Tree<RefKind>,
+) -> Result<(), IndexMalformed> {
     // A reverse index from positions back to the commitments that are supposed to map to their
     // hashes
     let reverse_index: BTreeMap<Position, Commitment> = tree
@@ -25,42 +27,52 @@ pub fn index<RefKind: SharedPointerKind>(tree: &Tree<RefKind>) -> Result<(), Ind
         .map(|(commitment, position)| (position, commitment))
         .collect();
 
-    let mut errors = vec![];
+    let errors = tree
+        .structure()
+        .traverse(|traverse: &mut Traverse<RefKind>| {
+            let mut errors = vec![];
 
-    structure::traverse(tree.structure(), &mut |node| {
-        if let Kind::Leaf {
-            commitment: Some(actual_commitment),
-        } = node.kind()
-        {
-            // We're at a leaf, so check it:
-            if let Some(&expected_commitment) = reverse_index.get(&node.position()) {
-                if actual_commitment != expected_commitment {
-                    errors.push(IndexError::CommitmentMismatch {
-                        position: node.position(),
-                        expected_commitment,
-                        actual_commitment,
+            if let Kind::Leaf {
+                commitment: Some(actual_commitment),
+            } = traverse.here().kind()
+            {
+                // We're at a leaf, so check it:
+                if let Some(&expected_commitment) = reverse_index.get(&traverse.here().position()) {
+                    if actual_commitment != expected_commitment {
+                        errors.push(IndexError::CommitmentMismatch {
+                            position: traverse.here().position(),
+                            expected_commitment,
+                            actual_commitment,
+                        });
+                    }
+                    let expected_hash = Hash::of(actual_commitment);
+                    if expected_hash != traverse.here().hash() {
+                        errors.push(IndexError::HashMismatch {
+                            commitment: expected_commitment,
+                            position: traverse.here().position(),
+                            expected_hash,
+                            found_hash: traverse.here().hash(),
+                        });
+                    }
+                } else {
+                    // It's okay for there to be an unindexed witness on the frontier (because the
+                    // frontier is always represented, even if it's marked for later forgetting),
+                    // but otherwise we want to ensure that all witnesses are indexed
+                    errors.push(IndexError::UnindexedWitness {
+                        position: traverse.here().position(),
+                        found_hash: traverse.here().hash(),
                     });
-                }
-                let expected_hash = Hash::of(actual_commitment);
-                if expected_hash != node.hash() {
-                    errors.push(IndexError::HashMismatch {
-                        commitment: expected_commitment,
-                        position: node.position(),
-                        expected_hash,
-                        found_hash: node.hash(),
-                    });
-                }
-            } else {
-                // It's okay for there to be an unindexed witness on the frontier (because the
-                // frontier is always represented, even if it's marked for later forgetting),
-                // but otherwise we want to ensure that all witnesses are indexed
-                errors.push(IndexError::UnindexedWitness {
-                    position: node.position(),
-                    found_hash: node.hash(),
-                });
-            };
-        }
-    });
+                };
+            }
+
+            if !traverse.down() && !traverse.next_right() {
+                traverse.stop();
+            }
+
+            Some(errors)
+        })
+        .flatten()
+        .collect::<Vec<_>>();
 
     // Return an error if any were discovered
     if errors.is_empty() {
@@ -121,7 +133,7 @@ pub enum IndexError {
 ///
 /// If this ever returns `Err`, it indicates either a bug in this crate, or a tree that was
 /// deserialized from an untrustworthy source.
-pub fn all_proofs<RefKind: SharedPointerKind>(
+pub fn all_proofs<RefKind: SharedPointerKind + 'static>(
     tree: &Tree<RefKind>,
 ) -> Result<(), InvalidWitnesses> {
     let root = tree.root();
@@ -188,7 +200,7 @@ pub enum WitnessError {
 /// a lot of hashing.
 ///
 /// If this ever returns `Err`, it indicates a bug in this crate.
-pub fn cached_hashes<RefKind: SharedPointerKind>(
+pub fn cached_hashes<RefKind: SharedPointerKind + 'static>(
     tree: &Tree<RefKind>,
 ) -> Result<(), InvalidCachedHashes> {
     use structure::*;
@@ -267,7 +279,9 @@ pub struct InvalidCachedHash {
 /// This is a relatively expensive operation which requires traversing the entire tree structure.
 ///
 /// If this ever returns `Err`, it indicates a bug in this crate.
-pub fn forgotten<RefKind: SharedPointerKind>(tree: &Tree<RefKind>) -> Result<(), InvalidForgotten> {
+pub fn forgotten<RefKind: SharedPointerKind + 'static>(
+    tree: &Tree<RefKind>,
+) -> Result<(), InvalidForgotten> {
     use structure::*;
 
     fn check_forgotten<RefKind: SharedPointerKind>(

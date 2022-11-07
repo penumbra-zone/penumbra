@@ -10,7 +10,7 @@ pub use children::Children;
 /// A complete sparse node in a tree, storing only the witnessed subtrees.
 #[derive(Derivative, Debug)]
 #[derivative(Clone(bound = "Child: Clone"))]
-pub struct Node<Child: Clone, RefKind: SharedPointerKind> {
+pub struct Node<Child: Clone, RefKind: SharedPointerKind = archery::ArcK> {
     hash: Hash,
     forgotten: [Forgotten; 4],
     children: Children<Child, RefKind>,
@@ -173,7 +173,7 @@ impl<Child: Clone, RefKind: SharedPointerKind> GetPosition for Node<Child, RefKi
     }
 }
 
-impl<Child: Height + structure::Any<RefKind> + Clone, RefKind: SharedPointerKind>
+impl<Child: Height + structure::Any<RefKind> + Clone + 'static, RefKind: SharedPointerKind>
     structure::Any<RefKind> for Node<Child, RefKind>
 {
     fn kind(&self) -> Kind {

@@ -58,7 +58,7 @@ pub struct Writer<W: Write> {
 pub fn render<W: Write>(tree: &Tree, pretty: bool, writer: &mut W) -> io::Result<()> {
     dot::Writer::digraph(pretty, writer, |w| {
         let root = tree.structure();
-        w.nodes_and_edges(root)?;
+        w.nodes_and_edges(&root)?;
         w.connect_commitments(tree)?;
         Ok(())
     })
@@ -94,12 +94,12 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn nodes_and_edges(&mut self, node: Node) -> io::Result<()> {
+    fn nodes_and_edges(&mut self, node: &Node) -> io::Result<()> {
         let global_position = node.global_position();
         self.node(node)?; // The node itself
         self.node_commitment(node)?; // Its commitment below, if any
         let children = node.children();
-        for &child in children.iter() {
+        for child in children.iter() {
             // All its children, as subgraphs
             self.subtree(
                 child.height(),
@@ -330,26 +330,26 @@ impl<W: Write> Writer<W> {
         })
     }
 
-    fn node(&mut self, node: Node) -> io::Result<()> {
+    fn node(&mut self, node: &Node) -> io::Result<()> {
         let id = self.node_name(node.height(), node.position(), Some(node.place()));
 
         self.line(|w| {
             // The node identifier
             id(w)?;
             // The node attributes
-            let label = node_label(&node);
+            let label = node_label(node);
             if !label.is_empty() {
                 write!(w, "[fontsize=\"{FONT_SIZE}\"]")?;
                 write!(w, "[fontname=\"Courier New\"]")?;
             }
             write!(w, "[label=\"{label}\"]")?;
-            write!(w, "[shape=\"{}\"]", node_shape(&node))?;
+            write!(w, "[shape=\"{}\"]", node_shape(node))?;
             write!(w, "[style=\"filled,bold\"]")?;
-            write!(w, "[color=\"{}\"]", node_border_color(&node))?;
-            write!(w, "[fillcolor=\"{}\"]", node_color(&node))?;
-            write!(w, "[gradientangle=\"{}\"]", node_gradient_angle(&node))?;
-            write!(w, "[width=\"{}\"]", node_width(&node))?;
-            write!(w, "[height=\"{}\"]", node_height(&node))?;
+            write!(w, "[color=\"{}\"]", node_border_color(node))?;
+            write!(w, "[fillcolor=\"{}\"]", node_color(node))?;
+            write!(w, "[gradientangle=\"{}\"]", node_gradient_angle(node))?;
+            write!(w, "[width=\"{}\"]", node_width(node))?;
+            write!(w, "[height=\"{}\"]", node_height(node))?;
             write!(w, "[penwidth={PEN_WIDTH}]")?;
             write!(w, "[id=\"")?;
             id(w)?;
@@ -368,7 +368,7 @@ impl<W: Write> Writer<W> {
             if node.place() == Place::Frontier {
                 write!(w, "[margin=\"0.05\"]")?;
             }
-            write!(w, "[orientation=\"{}\"]", node_orientation(&node))
+            write!(w, "[orientation=\"{}\"]", node_orientation(node))
         })
     }
 
@@ -397,7 +397,7 @@ impl<W: Write> Writer<W> {
         })
     }
 
-    fn node_commitment(&mut self, node: Node) -> io::Result<()> {
+    fn node_commitment(&mut self, node: &Node) -> io::Result<()> {
         if let Kind::Leaf {
             commitment: Some(commitment),
         } = node.kind()
@@ -484,11 +484,11 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn outgoing_edges(&mut self, node: Node) -> io::Result<()> {
+    fn outgoing_edges(&mut self, node: &Node) -> io::Result<()> {
         self.node_commitment_edge(node)?;
         let children = node.children();
-        let mut left: Option<Node> = None;
-        for &child in children.iter() {
+        let mut left: Option<&Node> = None;
+        for child in children.iter() {
             if self.invisible_ordering_edges {
                 if let Some(left) = left {
                     self.sibling_sibling_edge(
@@ -534,7 +534,7 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn parent_child_edge(&mut self, parent: Node, child: Node) -> io::Result<()> {
+    fn parent_child_edge(&mut self, parent: &Node, child: &Node) -> io::Result<()> {
         let parent_id = self.node_name(parent.height(), parent.position(), Some(parent.place()));
         let child_id = self.node_name(child.height(), child.position(), Some(child.place()));
         let edge_id = self.edge_name(parent_id, child_id);
@@ -569,7 +569,7 @@ impl<W: Write> Writer<W> {
         })
     }
 
-    fn parent_phantom_edge(&mut self, parent: Node, child_position: Position) -> io::Result<()> {
+    fn parent_phantom_edge(&mut self, parent: &Node, child_position: Position) -> io::Result<()> {
         let parent_id = self.node_name(parent.height(), parent.position(), Some(parent.place()));
         let child_id = self.node_name(parent.height() - 1, child_position, None);
         let edge_id = self.edge_name(parent_id, child_id);
@@ -644,7 +644,7 @@ impl<W: Write> Writer<W> {
         })
     }
 
-    fn node_commitment_edge(&mut self, node: Node) -> io::Result<()> {
+    fn node_commitment_edge(&mut self, node: &Node) -> io::Result<()> {
         if let Kind::Leaf {
             commitment: Some(_),
         } = node.kind()

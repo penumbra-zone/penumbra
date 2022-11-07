@@ -55,6 +55,9 @@ pub enum Children<Child, RefKind: SharedPointerKind> {
     CCCC(SharedPointer<CCCC<Child>, RefKind>),
 }
 
+unsafe impl<Child: Send, RefKind: Send + SharedPointerKind> Send for Children<Child, RefKind> {}
+unsafe impl<Child: Sync, RefKind: Sync + SharedPointerKind> Sync for Children<Child, RefKind> {}
+
 impl<Child: Debug + Clone, RefKind: SharedPointerKind> Debug for Children<Child, RefKind> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.children().fmt(f)

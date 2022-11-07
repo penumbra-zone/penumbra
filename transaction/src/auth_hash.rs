@@ -549,7 +549,7 @@ mod tests {
         let fvk = sk.full_viewing_key();
         let (addr, _dtk) = fvk.incoming().payment_address(0u64.into());
 
-        let mut nct = tct::Tree::new();
+        let mut nct: tct::Tree = tct::Tree::new();
 
         let note0 = Note::generate(
             &mut OsRng,

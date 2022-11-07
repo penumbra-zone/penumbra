@@ -14,7 +14,7 @@ use frontier::tier::Nested;
     Debug(bound = "Item: Debug, Item::Complete: Debug"),
     Clone(bound = "Item: Clone, Item::Complete: Clone")
 )]
-pub struct Top<Item: Focus + Clone, RefKind: SharedPointerKind>
+pub struct Top<Item: Focus + Clone, RefKind: SharedPointerKind = archery::ArcK>
 where
     Item::Complete: Clone,
 {
@@ -227,9 +227,8 @@ where
 }
 
 impl<
-        'tree,
-        Item: Focus + GetPosition + Height + structure::Any<RefKind> + Clone,
-        RefKind: SharedPointerKind,
+        Item: Focus + GetPosition + Height + structure::Any<RefKind> + Clone + 'static,
+        RefKind: SharedPointerKind + 'static,
     > structure::Any<RefKind> for Top<Item, RefKind>
 where
     Item::Complete: structure::Any<RefKind> + Clone,

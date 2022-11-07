@@ -92,7 +92,7 @@ impl<Item: GetHash + Forget> Forget for Leaf<Item> {
     }
 }
 
-impl<'tree, Item: GetPosition + Height + structure::Any<RefKind>, RefKind: SharedPointerKind>
+impl<Item: GetPosition + Height + structure::Any<RefKind>, RefKind: SharedPointerKind>
     structure::Any<RefKind> for Leaf<Item>
 {
     fn kind(&self) -> Kind {

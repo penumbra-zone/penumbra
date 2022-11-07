@@ -6,7 +6,7 @@ use complete::Nested;
 
 /// A complete top-level tier of the tiered commitment tree, being an 8-deep sparse quad-tree.
 #[derive(Clone, Debug)]
-pub struct Top<Item: GetHash + Height + Clone, RefKind: SharedPointerKind> {
+pub struct Top<Item: GetHash + Height + Clone, RefKind: SharedPointerKind = archery::ArcK> {
     pub(in super::super) inner: Nested<Item, RefKind>,
 }
 
@@ -42,8 +42,10 @@ impl<Item: Height + GetHash + Clone, RefKind: SharedPointerKind> GetPosition
     }
 }
 
-impl<Item: Height + structure::Any<RefKind> + Clone, RefKind: SharedPointerKind>
-    structure::Any<RefKind> for Top<Item, RefKind>
+impl<
+        Item: Height + structure::Any<RefKind> + Clone + 'static,
+        RefKind: SharedPointerKind + 'static,
+    > structure::Any<RefKind> for Top<Item, RefKind>
 {
     fn kind(&self) -> Kind {
         self.inner.kind()

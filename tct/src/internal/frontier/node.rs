@@ -406,12 +406,11 @@ where
 }
 
 impl<
-        'tree,
-        Child: Focus + GetPosition + Height + structure::Any<RefKind> + Clone,
+        Child: Focus + GetPosition + Height + structure::Any<RefKind> + Clone + 'static,
         RefKind: SharedPointerKind,
     > structure::Any<RefKind> for Node<Child, RefKind>
 where
-    Child::Complete: structure::Any<RefKind>,
+    Child::Complete: structure::Any<RefKind> + Clone,
 {
     fn kind(&self) -> Kind {
         Kind::Internal {

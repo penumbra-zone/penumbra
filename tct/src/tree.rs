@@ -6,6 +6,7 @@ use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
 
 use crate::error::*;
 use crate::prelude::{Witness as _, *};
+use crate::structure::{Traversal, Traverse};
 use crate::Witness;
 
 #[path = "epoch.rs"]
@@ -14,7 +15,8 @@ pub(crate) use epoch::block;
 
 /// A sparse merkle tree witnessing up to 65,536 epochs of up to 65,536 blocks of up to 65,536
 /// [`Commitment`]s.
-#[derive(Debug, Clone)]
+#[derive(Debug, Derivative)]
+#[derivative(Clone(bound = ""))]
 pub struct Tree<RefKind: SharedPointerKind = archery::ArcK> {
     index: HashedMap<Commitment, index::within::Tree, RefKind>,
     inner: SharedPointer<
@@ -32,7 +34,7 @@ impl<RefKind: SharedPointerKind> Default for Tree<RefKind> {
     }
 }
 
-impl<RefKind: SharedPointerKind> PartialEq for Tree<RefKind> {
+impl<RefKind: SharedPointerKind + 'static> PartialEq for Tree<RefKind> {
     fn eq(&self, other: &Tree<RefKind>) -> bool {
         SharedPointer::ptr_eq(&self.inner, &other.inner) || // if the trees are pointer-equal, then they're definitely equal, so no need to check anything else
         (self.position() == other.position() // two trees could have identical contents but different positions
@@ -41,7 +43,7 @@ impl<RefKind: SharedPointerKind> PartialEq for Tree<RefKind> {
     }
 }
 
-impl<RefKind: SharedPointerKind> Eq for Tree<RefKind> {}
+impl<RefKind: SharedPointerKind + 'static> Eq for Tree<RefKind> {}
 
 /// The root hash of a [`Tree`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -145,7 +147,7 @@ impl From<Position> for (u16, u16, u16) {
     }
 }
 
-impl<RefKind: SharedPointerKind> Tree<RefKind> {
+impl<RefKind: SharedPointerKind + 'static> Tree<RefKind> {
     /// Create a new empty [`Tree`] for storing all commitments to the end of time.
     pub fn new() -> Self {
         Self::default()
@@ -744,8 +746,11 @@ impl<RefKind: SharedPointerKind> Tree<RefKind> {
     /// Unlike [`commitments`](Tree::commitments), this guarantees that commitments will be returned
     /// in order, but it may be slower by a constant factor.
     #[instrument(level = "trace", skip(self))]
-    pub fn commitments_ordered(&self) -> impl Iterator<Item = (Position, Commitment)> + '_ {
-        crate::storage::serialize::Serializer::default().commitments_iter(self)
+    pub fn commitments_ordered(
+        &self,
+    ) -> Traversal<impl FnMut(&mut Traverse<RefKind>) -> Option<(Position, Commitment)>, RefKind>
+    {
+        crate::storage::serialize::Serializer::default().commitments(self)
     }
 
     /// Get a dynamic representation of the internal structure of the tree, which can be traversed
@@ -759,7 +764,7 @@ impl<RefKind: SharedPointerKind> Tree<RefKind> {
     /// Deserialize a tree from a [`storage::Read`] backend.
     ///
     /// While trees can be [`serialize`]d incrementally, they can only be deserialized all at once.
-    pub async fn deserialize<R: Read>(reader: &mut R) -> Result<Tree, R::Error> {
+    pub async fn deserialize<R: Read>(reader: &mut R) -> Result<Tree<RefKind>, R::Error> {
         storage::from_reader(reader).await
     }
 
@@ -777,7 +782,7 @@ impl<RefKind: SharedPointerKind> Tree<RefKind> {
     }
 }
 
-impl<RefKind: SharedPointerKind>
+impl<RefKind: SharedPointerKind + 'static>
     From<frontier::Top<frontier::Tier<frontier::Tier<frontier::Item, RefKind>, RefKind>, RefKind>>
     for Tree<RefKind>
 {
@@ -787,17 +792,27 @@ impl<RefKind: SharedPointerKind>
             RefKind,
         >,
     ) -> Self {
-        let mut index = HashedMap::default();
+        let root = Node::root(Box::new(inner.clone()));
 
         // Traverse the tree to reconstruct the index
-        structure::traverse(Node::root(Box::new(inner)), &mut |node: Node<_>| {
-            if let structure::Kind::Leaf {
-                commitment: Some(commitment),
-            } = node.kind()
-            {
-                index.insert_mut(commitment, node.position().0);
-            }
-        });
+        let index = root
+            .traverse(move |traverse: &mut Traverse<RefKind>| {
+                let output = if let structure::Kind::Leaf {
+                    commitment: Some(commitment),
+                } = traverse.here().kind()
+                {
+                    Some((commitment, traverse.here().position().0))
+                } else {
+                    None
+                };
+
+                if !traverse.down() && !traverse.next_right() {
+                    traverse.stop();
+                }
+
+                output
+            })
+            .collect();
 
         Self {
             inner: SharedPointer::new(inner),
