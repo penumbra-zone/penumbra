@@ -99,7 +99,7 @@ impl Ics20Transfer {
         }
 
         use crate::ibc::packet::SendPacket;
-        self.state.send_packet_execute(checked_packet).await;
+        state.send_packet_execute(checked_packet).await;
     }
 }
 
@@ -189,8 +189,7 @@ impl AppHandlerCheck for Ics20Transfer {
 
         if is_source(&msg.packet.source_port, &msg.packet.source_channel, &denom) {
             // check if we have enough balance to refund tokens to sender
-            let value_balance: Amount = self
-                .state
+            let value_balance: Amount = state
                 .get(state_key::ics20_value_balance(&msg.packet.source_channel, &denom.id()).into())
                 .await?
                 .unwrap_or(Amount::zero());
