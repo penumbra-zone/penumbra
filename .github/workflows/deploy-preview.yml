@@ -64,7 +64,7 @@ jobs:
           sed 's/CLIENT_SECRET/'${GRAFANA_CLIENT_SECRET}'/' config/grafana/grafana.prod.ini | sed 's/CLIENT_ID/'${GRAFANA_CLIENT_ID}'/' | sed 's/DOMAIN/'${TESTNET_HOST}'/' | sed 's/SECRET_KEY/'${GRAFANA_SECRET}'/' > /tmp/grafana.ini
           cat /tmp/grafana.ini
           docker cp /tmp/grafana.ini penumbra_grafana_1:/etc/grafana/grafana.ini
-          TESTNET_HOST=$TESTNET_HOST docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d grafana
+          TESTNET_HOST=$TESTNET_HOST BUILDPLATFORM=linux/amd64 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d grafana
           rm /tmp/grafana.ini
     - name: Generate testnet
       uses: appleboy/ssh-action@master
@@ -94,4 +94,4 @@ jobs:
         envs: TESTNET_HOST
         script: |
           cd ~/penumbra
-          TESTNET_HOST=$TESTNET_HOST docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+          TESTNET_HOST=$TESTNET_HOST BUILDPLATFORM=linux/amd64 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
