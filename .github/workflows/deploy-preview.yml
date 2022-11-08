@@ -53,18 +53,19 @@ jobs:
         GRAFANA_CLIENT_ID: ${{ secrets.GRAFANA_CLIENT_ID }}
         GRAFANA_CLIENT_SECRET: ${{ secrets.GRAFANA_CLIENT_SECRET }}
         GRAFANA_SECRET: ${{ secrets.GRAFANA_SECRET }}
+        BUILDPLATFORM: linux/amd64
       with:
         host: ${{ secrets.TESTNET_HOST }}
         username: ${{ secrets.TUNNEL_USERNAME }}
         key: ${{ secrets.ID_ED25519 }}
         port: ${{ secrets.TUNNEL_PORT }}
-        envs: TESTNET_HOST,GRAFANA_CLIENT_SECRET,GRAFANA_CLIENT_ID,GRAFANA_SECRET
+        envs: TESTNET_HOST,GRAFANA_CLIENT_SECRET,GRAFANA_CLIENT_ID,GRAFANA_SECRET,BUILDPLATFORM
         script: |
           cd ~/penumbra
           sed 's/CLIENT_SECRET/'${GRAFANA_CLIENT_SECRET}'/' config/grafana/grafana.prod.ini | sed 's/CLIENT_ID/'${GRAFANA_CLIENT_ID}'/' | sed 's/DOMAIN/'${TESTNET_HOST}'/' | sed 's/SECRET_KEY/'${GRAFANA_SECRET}'/' > /tmp/grafana.ini
           cat /tmp/grafana.ini
           docker cp /tmp/grafana.ini penumbra_grafana_1:/etc/grafana/grafana.ini
-          TESTNET_HOST=$TESTNET_HOST BUILDPLATFORM=linux/amd64 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d grafana
+          TESTNET_HOST=$TESTNET_HOST BUILDPLATFORM=$BUILDPLATFORM docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d grafana
           rm /tmp/grafana.ini
     - name: Generate testnet
       uses: appleboy/ssh-action@master
@@ -85,13 +86,14 @@ jobs:
       timeout-minutes: 30
       env:
         TESTNET_HOST: ${{ secrets.TESTNET_HOST }}
+        BUILDPLATFORM: linux/amd64
       with:
         host: ${{ secrets.TESTNET_HOST }}
         username: ${{ secrets.TUNNEL_USERNAME }}
         key: ${{ secrets.ID_ED25519 }}
         port: ${{ secrets.TUNNEL_PORT }}
         command_timeout: 30m
-        envs: TESTNET_HOST
+        envs: TESTNET_HOST,BUILDPLATFORM
         script: |
           cd ~/penumbra
-          TESTNET_HOST=$TESTNET_HOST BUILDPLATFORM=linux/amd64 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+          TESTNET_HOST=$TESTNET_HOST BUILDPLATFORM=$BUILDPLATFORM docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
