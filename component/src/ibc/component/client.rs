@@ -618,8 +618,8 @@ mod tests {
 
         state_tx.apply();
 
-        let storage = Storage::load(file_path.clone()).await.unwrap();
-        let state = Arc::new(storage.state());
+        let storage2 = storage.clone();
+        let state = Arc::new(storage2.state());
         assert_eq!(state.client_counter().await.unwrap().0, 0);
 
         // base64 encoded MsgCreateClient that was used to create the currently in-use Stargaze
@@ -686,8 +686,8 @@ mod tests {
             .unwrap();
         state_tx.apply();
 
-        let storage = Storage::load(file_path.clone()).await.unwrap();
-        let state = Arc::new(storage.state());
+        let storage3 = storage.clone();
+        let state = Arc::new(storage3.state());
         assert_eq!(state.client_counter().await.unwrap().0, 1);
 
         // now try update client
