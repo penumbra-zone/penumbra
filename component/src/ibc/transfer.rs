@@ -1,7 +1,7 @@
 use crate::ibc::component::state_key;
 use crate::ibc::ibc_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute};
 use crate::ibc::packet::{IBCPacket, Unchecked};
-use crate::{Component, Context};
+use crate::Component;
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc::core::ics04_channel::channel::Order as ChannelOrder;
@@ -20,7 +20,7 @@ use penumbra_chain::genesis;
 use penumbra_crypto::asset::Denom;
 use penumbra_crypto::{asset, Amount};
 use penumbra_proto::core::ibc::v1alpha1::FungibleTokenPacketData;
-use penumbra_storage2::{State, StateRead};
+use penumbra_storage2::{State, StateRead, StateTransaction, StateWrite};
 use penumbra_transaction::action::Ics20Withdrawal;
 use penumbra_transaction::{Action, Transaction};
 use prost::Message;
@@ -46,19 +46,20 @@ fn is_source(source_port: &PortId, source_channel: &ChannelId, denom: &Denom) ->
 #[derive(Clone)]
 pub struct Ics20Transfer {}
 
-impl Ics20Transfer {
-    pub async fn withdrawal_check(state: Arc<State>, withdrawal: &Ics20Withdrawal) -> Result<()> {
+#[async_trait]
+pub trait Ics20TransferExt: StateWrite {
+    async fn withdrawal_check(state: Arc<State>, withdrawal: &Ics20Withdrawal) -> Result<()> {
         // create packet
         let packet: IBCPacket<Unchecked> = withdrawal.clone().into();
 
         // send packet
-        use crate::ibc::packet::SendPacket as _;
+        use crate::ibc::packet::SendPacketRead as _;
         state.send_packet_check(packet).await?;
 
         Ok(())
     }
 
-    pub async fn withdrawal_execute(state: Arc<State>, withdrawal: &Ics20Withdrawal) {
+    async fn withdrawal_execute(state: &mut StateTransaction<'_>, withdrawal: &Ics20Withdrawal) {
         // create packet, assume it's already checked since the component caller contract calls `check` before `execute`
         let checked_packet = IBCPacket::<Unchecked>::from(withdrawal.clone()).assume_checked();
 
@@ -69,28 +70,23 @@ impl Ics20Transfer {
         ) {
             // we are the source. add the value balance to the escrow channel.
             let existing_value_balance: Amount = state
-                .get(
-                    state_key::ics20_value_balance(
-                        &withdrawal.source_channel,
-                        &withdrawal.denom.id(),
-                    )
-                    .into(),
-                )
+                .get(&state_key::ics20_value_balance(
+                    &withdrawal.source_channel,
+                    &withdrawal.denom.id(),
+                ))
                 .await
                 .unwrap()
                 .unwrap_or(Amount::zero());
 
             let new_value_balance = existing_value_balance + withdrawal.amount;
-            state
-                .put(
-                    state_key::ics20_value_balance(
-                        &withdrawal.source_channel,
-                        &withdrawal.denom.id().into(),
-                    )
-                    .into(),
-                    new_value_balance,
+            state.put(
+                state_key::ics20_value_balance(
+                    &withdrawal.source_channel,
+                    &withdrawal.denom.id().into(),
                 )
-                .await;
+                .into(),
+                new_value_balance,
+            );
         } else {
             // receiver is the source, burn utxos
 
@@ -98,10 +94,12 @@ impl Ics20Transfer {
             // the withdrawal's balance commitment, so nothing to do here.
         }
 
-        use crate::ibc::packet::SendPacket;
+        use crate::ibc::packet::SendPacketWrite;
         state.send_packet_execute(checked_packet).await;
     }
 }
+
+impl<T: StateWrite> Ics20TransferExt for T {}
 
 // TODO: Ics20 implementation.
 // see: https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer
@@ -168,7 +166,6 @@ impl AppHandlerCheck for Ics20Transfer {
         if is_source(&msg.packet.source_port, &msg.packet.source_channel, &denom) {
             // check if we have enough balance to unescrow tokens to receiver
             let value_balance: Amount = self
-                .state
                 .get(state_key::ics20_value_balance(&msg.packet.source_channel, &denom.id()).into())
                 .await?
                 .unwrap_or(Amount::zero());
@@ -228,14 +225,14 @@ impl AppHandler for Ics20Transfer {}
 
 #[async_trait]
 impl Component for Ics20Transfer {
-    #[instrument(name = "ics20_transfer", skip(self, _app_state))]
+    #[instrument(name = "ics20_transfer", skip(state, _app_state))]
     async fn init_chain(state: &mut StateTransaction, _app_state: &genesis::AppState) {}
 
-    #[instrument(name = "ics20_transfer", skip(self, _begin_block))]
+    #[instrument(name = "ics20_transfer", skip(state, _begin_block))]
     async fn begin_block(state: &mut StateTransaction, _begin_block: &abci::request::BeginBlock) {}
 
-    #[instrument(name = "ics20_transfer", skip(_ctx, tx))]
-    fn check_tx_stateless(tx: &Transaction) -> Result<()> {
+    #[instrument(name = "ics20_transfer", skip(tx))]
+    fn check_tx_stateless(tx: Arc<Transaction>) -> Result<()> {
         for action in tx.actions() {
             match action {
                 Action::Ics20Withdrawal(withdrawal) => {
@@ -247,30 +244,32 @@ impl Component for Ics20Transfer {
         }
         Ok(())
     }
-    #[instrument(name = "ics20_transfer", skip(self, tx))]
-    async fn check_tx_stateful(tx: &Transaction) -> Result<()> {
+    #[instrument(name = "ics20_transfer", skip(state, tx))]
+    async fn check_tx_stateful(state: Arc<State>, tx: Arc<Transaction>) -> Result<()> {
         for action in tx.actions() {
             match action {
                 Action::Ics20Withdrawal(withdrawal) => {
-                    self.withdrawal_check(withdrawal).await?;
+                    state.withdrawal_check(withdrawal).await?;
                 }
                 _ => {}
             }
         }
         Ok(())
     }
-    #[instrument(name = "ics20_transfer", skip(self, tx))]
-    async fn execute_tx(tx: &Transaction) {
+    #[instrument(name = "ics20_transfer", skip(state, tx))]
+    async fn execute_tx(state: &mut StateTransaction, tx: Arc<Transaction>) -> Result<()> {
         for action in tx.actions() {
             match action {
                 Action::Ics20Withdrawal(withdrawal) => {
-                    self.withdrawal_execute(withdrawal).await;
+                    state.withdrawal_execute(withdrawal).await;
                 }
                 _ => {}
             }
         }
+
+        Ok(())
     }
 
-    #[instrument(name = "ics20_channel", skip(self, _end_block))]
-    async fn end_block(_end_block: &abci::request::EndBlock) {}
+    #[instrument(name = "ics20_channel", skip(state, _end_block))]
+    async fn end_block(state: &mut StateTransaction, _end_block: &abci::request::EndBlock) {}
 }
