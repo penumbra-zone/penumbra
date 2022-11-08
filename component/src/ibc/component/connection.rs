@@ -26,6 +26,7 @@ use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tracing::instrument;
 
+use super::client::StateWriteExt as _;
 use super::state_key;
 
 mod execution;
@@ -159,9 +160,8 @@ impl Component for ConnectionComponent {
 
 #[async_trait]
 pub trait StateWriteExt: StateWrite {
-    async fn put_connection_counter(&self, counter: ConnectionCounter) {
-        self.put(state_key::connection_counter().into(), counter)
-            .await;
+    fn put_connection_counter(&self, counter: ConnectionCounter) {
+        self.put(state_key::connection_counter().into(), counter);
     }
 
     // puts a new connection into the state, updating the connections associated with the client,
@@ -174,14 +174,12 @@ pub trait StateWriteExt: StateWrite {
         self.put(
             state_key::connection(connection_id).into(),
             connection.clone(),
-        )
-        .await;
+        );
         let counter = self
             .get_connection_counter()
             .await
             .unwrap_or(ConnectionCounter(0));
-        self.put_connection_counter(ConnectionCounter(counter.0 + 1))
-            .await;
+        self.put_connection_counter(ConnectionCounter(counter.0 + 1));
 
         self.add_connection_to_client(connection.client_id(), connection_id)
             .await?;
@@ -189,9 +187,8 @@ pub trait StateWriteExt: StateWrite {
         return Ok(());
     }
 
-    async fn update_connection(&self, connection_id: &ConnectionId, connection: ConnectionEnd) {
-        self.put(state_key::connection(connection_id).into(), connection)
-            .await;
+    fn update_connection(&self, connection_id: &ConnectionId, connection: ConnectionEnd) {
+        self.put(state_key::connection(connection_id).into(), connection);
     }
 }
 
@@ -200,13 +197,13 @@ impl<T: StateWrite> StateWriteExt for T {}
 #[async_trait]
 pub trait StateReadExt: StateRead {
     async fn get_connection_counter(&self) -> Result<ConnectionCounter> {
-        self.get(state_key::connection_counter().into())
+        self.get(&state_key::connection_counter())
             .await
             .map(|counter| counter.unwrap_or(ConnectionCounter(0)))
     }
 
     async fn get_connection(&self, connection_id: &ConnectionId) -> Result<Option<ConnectionEnd>> {
-        self.get(state_key::connection(connection_id).into()).await
+        self.get(&state_key::connection(connection_id)).await
     }
 }
 
