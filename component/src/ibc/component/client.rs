@@ -365,7 +365,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
     }
 
     // returns the ConsensusState for the penumbra chain (this chain) at the given height
-    fn put_penumbra_consensus_state(&self, height: Height, consensus_state: AnyConsensusState) {
+    fn put_penumbra_consensus_state(&mut self, height: Height, consensus_state: AnyConsensusState) {
         // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
         // it's not in the same path namespace.
         self.put(

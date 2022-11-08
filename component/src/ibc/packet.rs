@@ -2,7 +2,6 @@ use super::component::channel::StateReadExt as _;
 use super::component::channel::StateWriteExt as _;
 use super::component::client::StateReadExt as _;
 use super::component::connection::StateReadExt as _;
-use crate::Context;
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc::core::ics02_client::client_state::ClientState;

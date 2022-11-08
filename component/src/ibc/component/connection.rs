@@ -160,7 +160,7 @@ impl Component for ConnectionComponent {
 
 #[async_trait]
 pub trait StateWriteExt: StateWrite {
-    fn put_connection_counter(&self, counter: ConnectionCounter) {
+    fn put_connection_counter(&mut self, counter: ConnectionCounter) {
         self.put(state_key::connection_counter().into(), counter);
     }
 
@@ -187,7 +187,7 @@ pub trait StateWriteExt: StateWrite {
         return Ok(());
     }
 
-    fn update_connection(&self, connection_id: &ConnectionId, connection: ConnectionEnd) {
+    fn update_connection(&mut self, connection_id: &ConnectionId, connection: ConnectionEnd) {
         self.put(state_key::connection(connection_id).into(), connection);
     }
 }

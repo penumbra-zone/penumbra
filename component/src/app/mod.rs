@@ -162,7 +162,7 @@ impl App {
         // TODO: these can all be parallel tasks
 
         Staking::check_tx_stateless(tx.clone())?;
-        IBCComponent::check_tx_stateless(tx)?;
+        IBCComponent::check_tx_stateless(tx.clone())?;
         Dex::check_tx_stateless(tx.clone())?;
         Governance::check_tx_stateless(tx.clone())?;
         ShieldedPool::check_tx_stateless(tx.clone())?;

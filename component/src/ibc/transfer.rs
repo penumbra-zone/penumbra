@@ -47,7 +47,7 @@ fn is_source(source_port: &PortId, source_channel: &ChannelId, denom: &Denom) ->
 pub struct Ics20Transfer {}
 
 #[async_trait]
-pub trait Ics20TransferExt: StateWrite {
+pub trait Ics20TransferReadExt: StateRead {
     async fn withdrawal_check(state: Arc<State>, withdrawal: &Ics20Withdrawal) -> Result<()> {
         // create packet
         let packet: IBCPacket<Unchecked> = withdrawal.clone().into();
@@ -58,7 +58,12 @@ pub trait Ics20TransferExt: StateWrite {
 
         Ok(())
     }
+}
 
+impl<T: StateRead> Ics20TransferReadExt for T {}
+
+#[async_trait]
+pub trait Ics20TransferWriteExt: StateWrite {
     async fn withdrawal_execute(state: &mut StateTransaction<'_>, withdrawal: &Ics20Withdrawal) {
         // create packet, assume it's already checked since the component caller contract calls `check` before `execute`
         let checked_packet = IBCPacket::<Unchecked>::from(withdrawal.clone()).assume_checked();
@@ -99,7 +104,7 @@ pub trait Ics20TransferExt: StateWrite {
     }
 }
 
-impl<T: StateWrite> Ics20TransferExt for T {}
+impl<T: StateWrite> Ics20TransferWriteExt for T {}
 
 // TODO: Ics20 implementation.
 // see: https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer
@@ -171,8 +176,11 @@ impl AppHandlerCheck for Ics20Transfer {
         // 2. check if we are the source chain for the denom.
         if is_source(&msg.packet.source_port, &msg.packet.source_channel, &denom) {
             // check if we have enough balance to unescrow tokens to receiver
-            let value_balance: Amount = self
-                .get(state_key::ics20_value_balance(&msg.packet.source_channel, &denom.id()).into())
+            let value_balance: Amount = state
+                .get(&state_key::ics20_value_balance(
+                    &msg.packet.source_channel,
+                    &denom.id(),
+                ))
                 .await?
                 .unwrap_or(Amount::zero());
 
@@ -193,7 +201,10 @@ impl AppHandlerCheck for Ics20Transfer {
         if is_source(&msg.packet.source_port, &msg.packet.source_channel, &denom) {
             // check if we have enough balance to refund tokens to sender
             let value_balance: Amount = state
-                .get(state_key::ics20_value_balance(&msg.packet.source_channel, &denom.id()).into())
+                .get(&state_key::ics20_value_balance(
+                    &msg.packet.source_channel,
+                    &denom.id(),
+                ))
                 .await?
                 .unwrap_or(Amount::zero());
 
@@ -260,7 +271,7 @@ impl Component for Ics20Transfer {
         for action in tx.actions() {
             match action {
                 Action::Ics20Withdrawal(withdrawal) => {
-                    state.withdrawal_check(withdrawal).await?;
+                    <penumbra_storage2::State as crate::ibc::transfer::Ics20TransferReadExt>::withdrawal_check(state.clone(), withdrawal).await?;
                 }
                 _ => {}
             }
@@ -272,7 +283,7 @@ impl Component for Ics20Transfer {
         for action in tx.actions() {
             match action {
                 Action::Ics20Withdrawal(withdrawal) => {
-                    state.withdrawal_execute(withdrawal).await;
+                    <&mut penumbra_storage2::StateTransaction<'_> as crate::ibc::transfer::Ics20TransferWriteExt>::withdrawal_execute(state, withdrawal).await;
                 }
                 _ => {}
             }
