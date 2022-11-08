@@ -3422,7 +3422,6 @@ dependencies = [
  "ark-ed-on-bls12-377",
  "ark-ff",
  "ark-serialize",
- "async-stream 0.3.3",
  "async-trait",
  "bincode",
  "blake2b_simd 1.0.0",

@@ -1,10 +1,8 @@
 //! Incremental serialization for the [`Tree`](crate::Tree).
 
 use decaf377::FieldExt;
-use futures::{Stream, StreamExt};
 use poseidon377::Fq;
 use serde::de::Visitor;
-use std::pin::Pin;
 
 use crate::prelude::*;
 use crate::storage::Write;
@@ -102,180 +100,172 @@ impl Serializer {
     }
 
     /// Serialize a tree's structure into a depth-first pre-order traversal of hashes within it.
-    pub fn hashes_stream<'tree>(
-        &self,
-        tree: &'tree crate::Tree,
-    ) -> impl Stream<Item = InternalHash> + Send + Unpin + 'tree {
-        fn hashes_inner<'a, 'tree: 'a>(
-            options: Serializer,
-            node: structure::Node<'tree>,
-        ) -> Pin<Box<dyn Stream<Item = InternalHash> + Send + 'a>> {
-            Box::pin(stream! {
-                let position = node.position();
-                let height = node.height();
-                let children = node.children();
+    pub fn hashes(
+        self,
+        tree: &crate::Tree,
+    ) -> impl Iterator<Item = InternalHash> + Send + Sync + '_ {
+        let mut stack = vec![vec![tree.structure()]];
 
-                if let Some(hash) = node.cached_hash() {
-                    // A node's hash is recalculable if it has children or if it has a witnessed commitment
-                    let recalculable = children.len() > 0
-                        || matches!(
-                            node.kind(),
-                            Kind::Leaf {
-                                commitment: Some(_)
-                            }
-                        );
+        std::iter::from_fn(move || {
+            while let Some(level) = stack.last_mut() {
+                if let Some(node) = level.pop() {
+                    let position = node.position();
+                    let height = node.height();
+                    let mut children = node.children();
+                    let has_children = !children.is_empty();
 
-                    // A node's hash is essential if it is not recalculable
-                    let essential = !recalculable;
-
-                    // A node is complete if it's not on the frontier
-                    let complete = node.place() == Place::Complete;
-
-                    // A node is fresh if it couldn't have been serialized to storage yet
-                    let fresh = options.is_node_fresh(&node);
-
-                    // We always serialize the frontier leaf hash, even though it's not essential,
-                    // because it's not going to change
-                    let frontier_leaf = !complete && matches!(node.kind(), Kind::Leaf { .. });
-
-                    // We only need to issue an instruction to delete the children if the node
-                    // is both essential and also was previously on the frontier
-                    let delete_children = essential && options.was_node_on_previous_frontier(&node);
-
-                    // If a node is not default, fresh, and either essential (i.e. the frontier
-                    // leaf) or complete, then we should emit a hash for it
-                    if fresh && (essential || complete || frontier_leaf) {
-                        yield InternalHash {
-                            position,
-                            height,
-                            hash,
-                            essential,
-                            delete_children,
-                        };
+                    // Traverse the children in order, provided that the minimum position doesn't preclude this
+                    if self.node_has_fresh_children(&node) {
+                        children.reverse();
+                        stack.push(children);
                     }
-                }
 
-                // Traverse the children in order, provided that the minimum position doesn't preclude this
-                if options.node_has_fresh_children(&node) {
-                    for child in children {
-                        let mut stream = hashes_inner(options, child);
-                        while let Some(point) = stream.next().await {
-                            yield point;
+                    if let Some(hash) = node.cached_hash() {
+                        // A node's hash is recalculable if it has children or if it has a witnessed commitment
+                        let recalculable = has_children
+                            || matches!(
+                                node.kind(),
+                                Kind::Leaf {
+                                    commitment: Some(_)
+                                }
+                            );
+
+                        // A node's hash is essential if it is not recalculable
+                        let essential = !recalculable;
+
+                        // A node is complete if it's not on the frontier
+                        let complete = node.place() == Place::Complete;
+
+                        // A node is fresh if it couldn't have been serialized to storage yet
+                        let fresh = self.is_node_fresh(&node);
+
+                        // We always serialize the frontier leaf hash, even though it's not essential,
+                        // because it's not going to change
+                        let frontier_leaf = !complete && matches!(node.kind(), Kind::Leaf { .. });
+
+                        // We only need to issue an instruction to delete the children if the node
+                        // is both essential and also was previously on the frontier
+                        let delete_children =
+                            essential && self.was_node_on_previous_frontier(&node);
+
+                        // If a node is not default, fresh, and either essential (i.e. the frontier
+                        // leaf) or complete, then we should emit a hash for it
+                        if fresh && (essential || complete || frontier_leaf) {
+                            return Some(InternalHash {
+                                position,
+                                height,
+                                hash,
+                                essential,
+                                delete_children,
+                            });
                         }
                     }
+                } else {
+                    stack.pop();
                 }
-            })
-        }
+            }
 
-        hashes_inner(*self, tree.structure())
+            None
+        })
     }
 
     /// Serialize a tree's structure into its commitments, in right-to-left order.
-    pub fn commitments_stream<'tree>(
-        &self,
-        tree: &'tree crate::Tree,
-    ) -> impl Stream<Item = (Position, Commitment)> + Send + Unpin + 'tree {
-        fn commitments_inner<'a, 'tree: 'a>(
-            options: Serializer,
-            node: structure::Node<'tree>,
-        ) -> Pin<Box<dyn Stream<Item = (Position, Commitment)> + Send + 'a>> {
-            Box::pin(stream! {
-                let position = node.position();
-                let children = node.children();
+    pub fn commitments(
+        self,
+        tree: &crate::Tree,
+    ) -> impl Iterator<Item = (Position, Commitment)> + Send + Sync + '_ {
+        let mut stack = vec![vec![tree.structure()]];
 
-                // If the minimum position is too high, then don't keep this node (but maybe some of
-                // its children will be kept)
-                if options.is_node_fresh(&node) {
-                    // If we're at a witnessed commitment, yield it
-                    if let Kind::Leaf {
-                        commitment: Some(commitment),
-                    } = node.kind()
-                    {
-                        yield (position, commitment);
+        std::iter::from_fn(move || {
+            while let Some(level) = stack.last_mut() {
+                if let Some(node) = level.pop() {
+                    let position = node.position();
+                    let mut children = node.children();
+
+                    // Traverse the children in order, provided that the minimum position doesn't preclude this
+                    if self.node_has_fresh_children(&node) {
+                        children.reverse();
+                        stack.push(children);
                     }
-                }
 
-                // Traverse the children in order, provided that the minimum position doesn't preclude this
-                if options.node_has_fresh_children(&node) {
-                    for child in children {
-                        let mut stream = commitments_inner(options, child);
-                        while let Some(point) = stream.next().await {
-                            yield point;
+                    // If the minimum position is too high, then don't keep this node (but maybe some of
+                    // its children will be kept)
+                    if self.is_node_fresh(&node) {
+                        // If we're at a witnessed commitment, yield it
+                        if let Kind::Leaf {
+                            commitment: Some(commitment),
+                        } = node.kind()
+                        {
+                            return Some((position, commitment));
                         }
                     }
+                } else {
+                    stack.pop();
                 }
-            })
-        }
+            }
 
-        commitments_inner(*self, tree.structure())
-    }
-
-    /// Serialize a tree's structure into an iterator of commitments within it, for use in
-    /// synchronous contexts.
-    pub fn commitments_iter<'tree>(
-        &self,
-        tree: &'tree crate::Tree,
-    ) -> impl Iterator<Item = (Position, Commitment)> + Send + 'tree {
-        futures::executor::block_on_stream(self.commitments_stream(tree))
+            None
+        })
     }
 
     /// Get a stream of forgotten locations, which can be deleted from incremental storage.
-    pub fn forgotten_stream<'tree>(
-        &self,
-        tree: &'tree crate::Tree,
-    ) -> impl Stream<Item = InternalHash> + Send + Unpin + 'tree {
-        fn forgotten_inner<'a, 'tree: 'a>(
-            options: Serializer,
-            node: structure::Node<'tree>,
-        ) -> Pin<Box<dyn Stream<Item = InternalHash> + Send + 'a>> {
-            Box::pin(stream! {
-                // Only report nodes (and their children) which are less than the last stored position
-                // (because those greater will not have yet been serialized to storage) and greater
-                // than or equal to the minimum forgotten version (because those lesser will already
-                // have been deleted from storage)
-                let before_last_stored_position = match options.last_stored_position {
-                    StoredPosition::Full => true,
-                    StoredPosition::Position(last_stored_position) =>
+    pub fn forgotten(
+        self,
+        tree: &crate::Tree,
+    ) -> impl Iterator<Item = InternalHash> + Send + Sync + '_ {
+        let mut stack = vec![vec![tree.structure()]];
+
+        std::iter::from_fn(move || {
+            while let Some(level) = stack.last_mut() {
+                if let Some(node) = level.pop() {
+                    // Only report nodes (and their children) which are less than the last stored position
+                    // (because those greater will not have yet been serialized to storage) and greater
+                    // than or equal to the minimum forgotten version (because those lesser will already
+                    // have been deleted from storage)
+                    let before_last_stored_position = match self.last_stored_position {
+                        StoredPosition::Full => true,
+                        StoredPosition::Position(last_stored_position) =>
                         // We don't do anything at all if the node position is greater than or equal
                         // to the last stored position, because in that case, it, *as well as its
                         // children* have never been persisted into storage, so no deletions are
                         // necessary to deal with any things that have been forgotten within them
-                        node.position() < last_stored_position,
-                };
+                        {
+                            node.position() < last_stored_position
+                        }
+                    };
 
-                if before_last_stored_position && node.forgotten() > options.last_forgotten {
-                    let children = node.children();
-                    if children.is_empty() {
-                        // If there are no children, report the point
-                        // A node with no children definitely has a precalculated hash, so this
-                        // is not evaluating any extra hashes
-                        let hash = node.hash().into();
-                        yield InternalHash {
-                            position: node.position(),
-                            height: node.height(),
-                            hash,
-                            // All forgotten nodes are essential, because they have nothing
-                            // beneath them to witness them
-                            essential: true,
-                            // All forgotten nodes should cause their children to be deleted
-                            delete_children: true,
-                        };
-                    } else {
-                        // If there are children, this node was not yet forgotten, but because the
-                        // node's forgotten version is greater than the minimum forgotten specified
-                        // in the options, we know there is some child which needs to be accounted for
-                        for child in children {
-                            let mut stream = forgotten_inner(options, child);
-                            while let Some(point) = stream.next().await {
-                                yield point;
-                            }
+                    if before_last_stored_position && node.forgotten() > self.last_forgotten {
+                        let mut children = node.children();
+                        if children.is_empty() {
+                            // If there are no children, report the point
+                            // A node with no children definitely has a precalculated hash, so this
+                            // is not evaluating any extra hashes
+                            let hash = node.hash();
+                            return Some(InternalHash {
+                                position: node.position(),
+                                height: node.height(),
+                                hash,
+                                // All forgotten nodes are essential, because they have nothing
+                                // beneath them to witness them
+                                essential: true,
+                                // All forgotten nodes should cause their children to be deleted
+                                delete_children: true,
+                            });
+                        } else {
+                            // If there are children, this node was not yet forgotten, but because the
+                            // node's forgotten version is greater than the minimum forgotten specified
+                            // in the options, we know there is some child which needs to be accounted for
+                            children.reverse();
+                            stack.push(children);
                         }
                     }
+                } else {
+                    stack.pop();
                 }
-            })
-        }
+            }
 
-        forgotten_inner(*self, tree.structure())
+            None
+        })
     }
 }
 
@@ -315,24 +305,19 @@ pub async fn to_writer<W: Write>(writer: &mut W, tree: &crate::Tree) -> Result<(
     }
 
     // Write all the new commitments
-    let mut new_commitments = serializer.commitments_stream(tree);
-    while let Some((position, commitment)) = new_commitments.next().await {
+    for (position, commitment) in serializer.commitments(tree) {
         writer.add_commitment(position, commitment).await?;
     }
 
     // Add all the new hashes and delete all the forgotten points: this is a unified stream, because
     // we process forgotten points and new points identically
-    let mut points = serializer
-        .forgotten_stream(tree)
-        .chain(serializer.hashes_stream(tree));
-
-    while let Some(InternalHash {
+    for InternalHash {
         position,
         height,
         hash,
         essential,
         delete_children,
-    }) = points.next().await
+    } in serializer.forgotten(tree).chain(serializer.hashes(tree))
     {
         // If the hash's children need deletion, that means any remaining hashes or commitments
         // beneath it should be removed, because they are no longer present in the tree
