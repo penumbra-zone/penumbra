@@ -594,7 +594,6 @@ mod tests {
     use tempfile::tempdir;
     use tendermint::Time;
 
-    // TODO: reenable this test
     // test that we can create and update a light client.
     #[tokio::test]
     async fn test_create_and_update_light_client() {
@@ -604,7 +603,6 @@ mod tests {
 
         let storage = Storage::load(file_path.clone()).await.unwrap();
         let mut state = Arc::new(storage.state());
-
         let state_mut =
             Arc::get_mut(&mut state).expect("state Arc should not be referenced elsewhere");
         let mut state_tx = state_mut.begin_transaction();
@@ -617,10 +615,12 @@ mod tests {
         Ics2Client::init_chain(&mut state_tx, &genesis_state).await;
 
         state_tx.apply();
+        storage
+            .commit(Arc::try_unwrap(state).unwrap())
+            .await
+            .unwrap();
 
-        let storage2 = storage.clone();
-        let state = Arc::new(storage2.state());
-        assert_eq!(state.client_counter().await.unwrap().0, 0);
+        let mut state = Arc::new(storage.state());
 
         // base64 encoded MsgCreateClient that was used to create the currently in-use Stargaze
         // light client on the cosmos hub:
@@ -674,38 +674,49 @@ mod tests {
             anchor: tct::Tree::new().root(),
         });
 
-        let mut state_tx = state_mut.begin_transaction();
-
         Ics2Client::check_tx_stateless(create_client_tx.clone()).unwrap();
         Ics2Client::check_tx_stateful(state.clone(), create_client_tx.clone())
             .await
             .unwrap();
         // execute (save client)
+        let state_mut =
+            Arc::get_mut(&mut state).expect("state Arc should not be referenced elsewhere");
+        let mut state_tx = state_mut.begin_transaction();
         Ics2Client::execute_tx(&mut state_tx, create_client_tx.clone())
             .await
             .unwrap();
         state_tx.apply();
+        storage
+            .commit(Arc::try_unwrap(state).unwrap())
+            .await
+            .unwrap();
 
-        let storage3 = storage.clone();
-        let state = Arc::new(storage3.state());
-        assert_eq!(state.client_counter().await.unwrap().0, 1);
+        let mut state = Arc::new(storage.state());
+        assert_eq!(state.clone().client_counter().await.unwrap().0, 1);
 
         // now try update client
 
-        let mut state_tx = state_mut.begin_transaction();
         Ics2Client::check_tx_stateless(update_client_tx.clone()).unwrap();
         // verify the ClientUpdate proof
         Ics2Client::check_tx_stateful(state.clone(), update_client_tx.clone())
             .await
             .unwrap();
         // save the next tm state
+        let state_mut =
+            Arc::get_mut(&mut state).expect("state Arc should not be referenced elsewhere");
+        let mut state_tx = state_mut.begin_transaction();
         Ics2Client::execute_tx(&mut state_tx, update_client_tx.clone())
             .await
             .unwrap();
         state_tx.apply();
+        storage
+            .commit(Arc::try_unwrap(state).unwrap())
+            .await
+            .unwrap();
+
+        let mut state = Arc::new(storage.state());
 
         // try one more client update
-        let mut state_tx = state_mut.begin_transaction();
         // https://cosmos.bigdipper.live/transactions/ED217D360F51E622859F7B783FEF98BDE3544AA32BBD13C6C77D8D0D57A19FFD
         let msg_update_second =
             base64::decode(include_str!("../../ibc/test/update_client_2.msg").replace('\n', ""))
@@ -735,9 +746,16 @@ mod tests {
             .await
             .unwrap();
         // save the next tm state
+        let state_mut =
+            Arc::get_mut(&mut state).expect("state Arc should not be referenced elsewhere");
+        let mut state_tx = state_mut.begin_transaction();
         Ics2Client::execute_tx(&mut state_tx, second_update_client_tx.clone())
             .await
             .unwrap();
         state_tx.apply();
+        storage
+            .commit(Arc::try_unwrap(state).unwrap())
+            .await
+            .unwrap();
     }
 }
