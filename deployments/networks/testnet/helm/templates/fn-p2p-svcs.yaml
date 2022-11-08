@@ -16,4 +16,14 @@ spec:
       port: 26656
       targetPort: p2p
       name: tm-p2p
+{{ if eq $i 0 }}
+    - protocol: TCP
+      port: 26657
+      targetPort: rpc
+      name: tm-rpc
+    - protocol: TCP
+      port: 8080
+      targetPort: grpc
+      name: pd-grpc      
+{{ end }}
 {{ end }}
