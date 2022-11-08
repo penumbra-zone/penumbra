@@ -1,3 +1,7 @@
+use super::component::channel::StateReadExt as _;
+use super::component::channel::StateWriteExt as _;
+use super::component::client::StateReadExt as _;
+use super::component::connection::StateReadExt as _;
 use crate::Context;
 use anyhow::Result;
 use async_trait::async_trait;
@@ -68,13 +72,7 @@ impl From<Ics20Withdrawal> for IBCPacket<Unchecked> {
 /// This trait, an extension of the Channel, Connection, and Client views, allows a component to
 /// send a packet.
 #[async_trait]
-pub trait SendPacket:
-    StateWrite
-    + super::component::channel::StateReadExt
-    + super::component::channel::StateWriteExt
-    + super::component::connection::StateReadExt
-    + super::component::client::StateReadExt
-{
+pub trait SendPacket: StateWrite {
     /// Send a packet on a channel. This assumes that send_packet_check has already been called on
     /// the provided packet.
     async fn send_packet_execute(&mut self, packet: IBCPacket<Checked>) {
@@ -105,7 +103,7 @@ pub trait SendPacket:
             data: packet.data,
         };
 
-        self.put_packet_commitment(&packet).await;
+        self.put_packet_commitment(&packet);
     }
 
     /// send_packet_check verifies that a packet can be sent using the provided parameters.
@@ -170,7 +168,7 @@ pub trait SendPacket:
     }
 }
 
-impl<T: StateWrite> SendPacket for T {}
+impl<T: StateWrite + ?Sized> SendPacket for T {}
 
 #[async_trait]
 pub trait WriteAcknowledgement: StateWrite {}

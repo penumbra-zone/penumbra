@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::ibc::{event, validate_penumbra_client_state, ConnectionCounter, SUPPORTED_VERSIONS};
-use crate::{Component, Context};
+use crate::Component;
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc::core::ics02_client::client_consensus::ConsensusState;
@@ -210,4 +210,4 @@ pub trait StateReadExt: StateRead {
     }
 }
 
-impl<T: StateRead> StateReadExt for T {}
+impl<T: StateRead + ?Sized> StateReadExt for T {}

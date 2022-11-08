@@ -612,7 +612,7 @@ pub trait StateReadExt: StateRead {
     }
 }
 
-impl<T: StateRead> StateReadExt for T {}
+impl<T: StateRead + ?Sized> StateReadExt for T {}
 
 #[cfg(test)]
 mod tests {

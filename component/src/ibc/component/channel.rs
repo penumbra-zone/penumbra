@@ -320,7 +320,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
     }
 }
 
-impl<T: StateWrite> StateWriteExt for T {}
+impl<T: StateWrite + ?Sized> StateWriteExt for T {}
 
 #[async_trait]
 pub trait StateReadExt: StateRead {
@@ -379,4 +379,4 @@ pub trait StateReadExt: StateRead {
     }
 }
 
-impl<T: StateRead> StateReadExt for T {}
+impl<T: StateRead + ?Sized> StateReadExt for T {}

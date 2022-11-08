@@ -20,7 +20,7 @@ use penumbra_chain::genesis;
 use penumbra_crypto::asset::Denom;
 use penumbra_crypto::{asset, Amount};
 use penumbra_proto::core::ibc::v1alpha1::FungibleTokenPacketData;
-use penumbra_storage2::State;
+use penumbra_storage2::{State, StateRead};
 use penumbra_transaction::action::Ics20Withdrawal;
 use penumbra_transaction::{Action, Transaction};
 use prost::Message;
@@ -52,7 +52,7 @@ impl Ics20Transfer {
         let packet: IBCPacket<Unchecked> = withdrawal.clone().into();
 
         // send packet
-        use crate::ibc::packet::SendPacket;
+        use crate::ibc::packet::SendPacket as _;
         state.send_packet_check(packet).await?;
 
         Ok(())
@@ -68,8 +68,7 @@ impl Ics20Transfer {
             &withdrawal.denom,
         ) {
             // we are the source. add the value balance to the escrow channel.
-            let existing_value_balance: Amount = self
-                .state
+            let existing_value_balance: Amount = state
                 .get(
                     state_key::ics20_value_balance(
                         &withdrawal.source_channel,
@@ -82,7 +81,7 @@ impl Ics20Transfer {
                 .unwrap_or(Amount::zero());
 
             let new_value_balance = existing_value_balance + withdrawal.amount;
-            self.state
+            state
                 .put(
                     state_key::ics20_value_balance(
                         &withdrawal.source_channel,
