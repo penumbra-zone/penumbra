@@ -300,7 +300,6 @@ pub mod connection_open_ack {
 
 pub mod connection_open_try {
     use super::super::*;
-    use crate::ibc::component::client::StateReadExt as _;
 
     #[async_trait]
     pub trait ConnectionOpenTryCheck:

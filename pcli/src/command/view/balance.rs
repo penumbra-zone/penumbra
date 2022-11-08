@@ -179,7 +179,7 @@ fn format_row(
     }
     string_row.push(format!(
         "{}{}",
-        value.format(&asset_cache),
+        value.format(asset_cache),
         if let Some(unbonding_epoch) = quarantined {
             format!(" (unbonding until epoch {})", unbonding_epoch)
         } else {
@@ -193,6 +193,7 @@ fn format_row(
 /// Split the rows into (indexed, ephemeral) pair with all of the ephemeral notes
 /// combined by asset. The AddressIndex is left in to signal the ephemerality to
 /// the table parsing. This should be changed when well typed, JSON output is supported
+#[allow(clippy::type_complexity)]
 fn combine_ephemeral(
     rows: Vec<(Option<AddressIndex>, Value, Option<u64>)>,
     by_note: bool,

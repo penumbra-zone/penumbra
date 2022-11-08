@@ -319,8 +319,6 @@ impl<Child: GetHash + UncheckedSetHash> UncheckedSetHash for Node<Child> {
 
 #[cfg(test)]
 mod test {
-    use super::*;
-
     #[test]
     fn check_node_size() {
         // Disabled due to spurious test failure.

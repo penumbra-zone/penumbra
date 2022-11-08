@@ -109,13 +109,10 @@ impl std::fmt::Debug for AppHash {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-
     use super::super::*;
     use super::*;
     use ibc::core::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
     use ibc::core::ics23_commitment::merkle::{apply_prefix, MerkleProof};
-    use parking_lot::RwLock;
     use tempfile::tempdir;
 
     // simulate a round-trip multiproof verification
@@ -123,16 +120,16 @@ mod tests {
     async fn test_tendermint_multiproof() {
         let dir = tempdir().unwrap();
         let file_path = dir.path().join("proof-test.db");
-        let storage = Arc::new(RwLock::new(Storage::load(file_path.clone()).await.unwrap()));
-        let mut state = storage.write().state();
+        let storage = Storage::load(file_path.clone()).await.unwrap();
+        let mut state = storage.state();
         let mut tx = state.begin_transaction();
 
         tx.put_proto::<u64>("foo-key".into(), 1);
         tx.apply();
-        let jmt_root = storage.clone().write().commit(state).await.unwrap();
+        let jmt_root = storage.clone().commit(state).await.unwrap();
         let app_root: AppHash = jmt_root.into();
 
-        let state = storage.read().state();
+        let state = storage.state();
         let (val2, proof) = get_with_proof(&state, "foo-key".into(), &jmt_root)
             .await
             .unwrap();

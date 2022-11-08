@@ -50,11 +50,11 @@ pub struct Ics4Channel {}
 
 #[async_trait]
 impl Component for Ics4Channel {
-    #[instrument(name = "ics4_channel", skip(state, _app_state))]
-    async fn init_chain(state: &mut StateTransaction, _app_state: &genesis::AppState) {}
+    #[instrument(name = "ics4_channel", skip(_state, _app_state))]
+    async fn init_chain(_state: &mut StateTransaction, _app_state: &genesis::AppState) {}
 
-    #[instrument(name = "ics4_channel", skip(state, _begin_block))]
-    async fn begin_block(state: &mut StateTransaction, _begin_block: &abci::request::BeginBlock) {}
+    #[instrument(name = "ics4_channel", skip(_state, _begin_block))]
+    async fn begin_block(_state: &mut StateTransaction, _begin_block: &abci::request::BeginBlock) {}
 
     #[instrument(name = "ics4_channel", skip(tx))]
     fn check_tx_stateless(tx: Arc<Transaction>) -> Result<()> {
@@ -125,9 +125,10 @@ impl Component for Ics4Channel {
                     let msg = MsgChannelOpenInit::try_from(msg.clone())?;
 
                     state.validate(&msg).await?;
-                    match &msg.port_id {
-                        transfer => Ics20Transfer::chan_open_init_check(state, &msg).await?,
-                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    if msg.port_id == transfer {
+                        Ics20Transfer::chan_open_init_check(state, &msg).await?
+                    } else {
+                        return Err(anyhow::anyhow!("invalid port id"));
                     }
                 }
                 Some(ChannelOpenTry(msg)) => {
@@ -135,9 +136,10 @@ impl Component for Ics4Channel {
                     let msg = MsgChannelOpenTry::try_from(msg.clone())?;
 
                     state.validate(&msg).await?;
-                    match &msg.port_id {
-                        transfer => Ics20Transfer::chan_open_try_check(state, &msg).await?,
-                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    if msg.port_id == transfer {
+                        Ics20Transfer::chan_open_try_check(state, &msg).await?
+                    } else {
+                        return Err(anyhow::anyhow!("invalid port id"));
                     }
                 }
                 Some(ChannelOpenAck(msg)) => {
@@ -145,9 +147,10 @@ impl Component for Ics4Channel {
                     let msg = MsgChannelOpenAck::try_from(msg.clone())?;
 
                     state.validate(&msg).await?;
-                    match &msg.port_id {
-                        transfer => Ics20Transfer::chan_open_ack_check(state, &msg).await?,
-                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    if msg.port_id == transfer {
+                        Ics20Transfer::chan_open_ack_check(state, &msg).await?
+                    } else {
+                        return Err(anyhow::anyhow!("invalid port id"));
                     }
                 }
                 Some(ChannelOpenConfirm(msg)) => {
@@ -155,9 +158,10 @@ impl Component for Ics4Channel {
                     let msg = MsgChannelOpenConfirm::try_from(msg.clone())?;
 
                     state.validate(&msg).await?;
-                    match &msg.port_id {
-                        transfer => Ics20Transfer::chan_open_confirm_check(state, &msg).await?,
-                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    if msg.port_id == transfer {
+                        Ics20Transfer::chan_open_confirm_check(state, &msg).await?
+                    } else {
+                        return Err(anyhow::anyhow!("invalid port id"));
                     }
                 }
                 Some(ChannelCloseInit(msg)) => {
@@ -165,9 +169,10 @@ impl Component for Ics4Channel {
                     let msg = MsgChannelCloseInit::try_from(msg.clone())?;
 
                     state.validate(&msg).await?;
-                    match &msg.port_id {
-                        transfer => Ics20Transfer::chan_close_init_check(state, &msg).await?,
-                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    if msg.port_id == transfer {
+                        Ics20Transfer::chan_close_init_check(state, &msg).await?
+                    } else {
+                        return Err(anyhow::anyhow!("invalid port id"));
                     }
                 }
                 Some(ChannelCloseConfirm(msg)) => {
@@ -175,9 +180,10 @@ impl Component for Ics4Channel {
                     let msg = MsgChannelCloseConfirm::try_from(msg.clone())?;
 
                     state.validate(&msg).await?;
-                    match &msg.port_id {
-                        transfer => Ics20Transfer::chan_close_confirm_check(state, &msg).await?,
-                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    if msg.port_id == transfer {
+                        Ics20Transfer::chan_close_confirm_check(state, &msg).await?
+                    } else {
+                        return Err(anyhow::anyhow!("invalid port id"));
                     }
                 }
                 Some(RecvPacket(msg)) => {
@@ -185,9 +191,10 @@ impl Component for Ics4Channel {
                     let msg = MsgRecvPacket::try_from(msg.clone())?;
 
                     state.validate(&msg).await?;
-                    match &msg.packet.destination_port {
-                        transfer => Ics20Transfer::recv_packet_check(state, &msg).await?,
-                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    if msg.packet.destination_port == transfer {
+                        Ics20Transfer::recv_packet_check(state, &msg).await?
+                    } else {
+                        return Err(anyhow::anyhow!("invalid port id"));
                     }
                 }
                 Some(Acknowledgement(msg)) => {
@@ -195,9 +202,10 @@ impl Component for Ics4Channel {
                     let msg = MsgAcknowledgement::try_from(msg.clone())?;
 
                     state.validate(&msg).await?;
-                    match &msg.packet.destination_port {
-                        transfer => Ics20Transfer::acknowledge_packet_check(state, &msg).await?,
-                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    if msg.packet.destination_port == transfer {
+                        Ics20Transfer::acknowledge_packet_check(state, &msg).await?
+                    } else {
+                        return Err(anyhow::anyhow!("invalid port id"));
                     }
                 }
                 Some(Timeout(msg)) => {
@@ -205,9 +213,10 @@ impl Component for Ics4Channel {
                     let msg = MsgTimeout::try_from(msg.clone())?;
 
                     state.validate(&msg).await?;
-                    match &msg.packet.destination_port {
-                        transfer => Ics20Transfer::timeout_packet_check(state, &msg).await?,
-                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    if msg.packet.destination_port == transfer {
+                        Ics20Transfer::timeout_packet_check(state, &msg).await?
+                    } else {
+                        return Err(anyhow::anyhow!("invalid port id"));
                     }
                 }
 
@@ -220,6 +229,7 @@ impl Component for Ics4Channel {
 
     #[instrument(name = "ics4_channel", skip(state, tx))]
     async fn execute_tx(state: &mut StateTransaction, tx: Arc<Transaction>) -> Result<()> {
+        let transfer = PortId::transfer();
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
                 Some(ChannelOpenInit(msg)) => {
@@ -227,9 +237,10 @@ impl Component for Ics4Channel {
                     let msg = MsgChannelOpenInit::try_from(msg.clone()).unwrap();
 
                     state.execute(&msg).await;
-                    match &msg.port_id {
-                        transfer => Ics20Transfer::chan_open_init_execute(state, &msg).await,
-                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    if msg.port_id == transfer {
+                        Ics20Transfer::chan_open_init_execute(state, &msg).await
+                    } else {
+                        return Err(anyhow::anyhow!("invalid port id"));
                     }
                 }
                 Some(ChannelOpenTry(msg)) => {
@@ -237,9 +248,10 @@ impl Component for Ics4Channel {
                     let msg = MsgChannelOpenTry::try_from(msg.clone()).unwrap();
 
                     state.execute(&msg).await;
-                    match &msg.port_id {
-                        transfer => Ics20Transfer::chan_open_try_execute(state, &msg).await,
-                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    if msg.port_id == transfer {
+                        Ics20Transfer::chan_open_try_execute(state, &msg).await
+                    } else {
+                        return Err(anyhow::anyhow!("invalid port id"));
                     }
                 }
                 Some(ChannelOpenAck(msg)) => {
@@ -247,9 +259,10 @@ impl Component for Ics4Channel {
                     let msg = MsgChannelOpenAck::try_from(msg.clone()).unwrap();
 
                     state.execute(&msg).await;
-                    match &msg.port_id {
-                        transfer => Ics20Transfer::chan_open_ack_execute(state, &msg).await,
-                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    if msg.port_id == transfer {
+                        Ics20Transfer::chan_open_ack_execute(state, &msg).await
+                    } else {
+                        return Err(anyhow::anyhow!("invalid port id"));
                     }
                 }
                 Some(ChannelOpenConfirm(msg)) => {
@@ -257,9 +270,10 @@ impl Component for Ics4Channel {
                     let msg = MsgChannelOpenConfirm::try_from(msg.clone()).unwrap();
 
                     state.execute(&msg).await;
-                    match &msg.port_id {
-                        transfer => Ics20Transfer::chan_open_confirm_execute(state, &msg).await,
-                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    if msg.port_id == transfer {
+                        Ics20Transfer::chan_open_confirm_execute(state, &msg).await
+                    } else {
+                        return Err(anyhow::anyhow!("invalid port id"));
                     }
                 }
                 Some(ChannelCloseInit(msg)) => {
@@ -267,9 +281,10 @@ impl Component for Ics4Channel {
                     let msg = MsgChannelCloseInit::try_from(msg.clone()).unwrap();
 
                     state.execute(&msg).await;
-                    match &msg.port_id {
-                        transfer => Ics20Transfer::chan_close_init_execute(state, &msg).await,
-                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    if msg.port_id == transfer {
+                        Ics20Transfer::chan_close_init_execute(state, &msg).await
+                    } else {
+                        return Err(anyhow::anyhow!("invalid port id"));
                     }
                 }
                 Some(ChannelCloseConfirm(msg)) => {
@@ -277,9 +292,10 @@ impl Component for Ics4Channel {
                     let msg = MsgChannelCloseConfirm::try_from(msg.clone()).unwrap();
 
                     state.execute(&msg).await;
-                    match &msg.port_id {
-                        transfer => Ics20Transfer::chan_close_confirm_execute(state, &msg).await,
-                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    if msg.port_id == transfer {
+                        Ics20Transfer::chan_close_confirm_execute(state, &msg).await
+                    } else {
+                        return Err(anyhow::anyhow!("invalid port id"));
                     }
                 }
                 Some(RecvPacket(msg)) => {
@@ -287,9 +303,10 @@ impl Component for Ics4Channel {
                     let msg = MsgRecvPacket::try_from(msg.clone()).unwrap();
 
                     state.execute(&msg).await;
-                    match &msg.packet.destination_port {
-                        transfer => Ics20Transfer::recv_packet_execute(state, &msg).await,
-                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    if msg.packet.destination_port == transfer {
+                        Ics20Transfer::recv_packet_execute(state, &msg).await
+                    } else {
+                        return Err(anyhow::anyhow!("invalid port id"));
                     }
                 }
                 Some(Acknowledgement(msg)) => {
@@ -297,9 +314,10 @@ impl Component for Ics4Channel {
                     let msg = MsgAcknowledgement::try_from(msg.clone()).unwrap();
 
                     state.execute(&msg).await;
-                    match &msg.packet.destination_port {
-                        transfer => Ics20Transfer::acknowledge_packet_execute(state, &msg).await,
-                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    if msg.packet.destination_port == transfer {
+                        Ics20Transfer::acknowledge_packet_execute(state, &msg).await
+                    } else {
+                        return Err(anyhow::anyhow!("invalid port id"));
                     }
                 }
                 Some(Timeout(msg)) => {
@@ -307,9 +325,10 @@ impl Component for Ics4Channel {
                     let msg = MsgTimeout::try_from(msg.clone()).unwrap();
 
                     state.execute(&msg).await;
-                    match &msg.packet.destination_port {
-                        transfer => Ics20Transfer::timeout_packet_execute(state, &msg).await,
-                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    if msg.packet.destination_port == transfer {
+                        Ics20Transfer::timeout_packet_execute(state, &msg).await
+                    } else {
+                        return Err(anyhow::anyhow!("invalid port id"));
                     }
                 }
 
@@ -321,8 +340,8 @@ impl Component for Ics4Channel {
         Ok(())
     }
 
-    #[instrument(name = "ics4_channel", skip(state, _end_block))]
-    async fn end_block(state: &mut StateTransaction, _end_block: &abci::request::EndBlock) {}
+    #[instrument(name = "ics4_channel", skip(_state, _end_block))]
+    async fn end_block(_state: &mut StateTransaction, _end_block: &abci::request::EndBlock) {}
 }
 
 #[async_trait]
@@ -339,30 +358,30 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
     }
 
     fn put_channel(&mut self, channel_id: &ChannelId, port_id: &PortId, channel: ChannelEnd) {
-        self.put(state_key::channel(channel_id, port_id).into(), channel);
+        self.put(state_key::channel(channel_id, port_id), channel);
     }
 
     fn put_ack_sequence(&mut self, channel_id: &ChannelId, port_id: &PortId, sequence: u64) {
-        self.put_proto::<u64>(state_key::seq_ack(channel_id, port_id).into(), sequence);
+        self.put_proto::<u64>(state_key::seq_ack(channel_id, port_id), sequence);
     }
 
     fn put_recv_sequence(&mut self, channel_id: &ChannelId, port_id: &PortId, sequence: u64) {
-        self.put_proto::<u64>(state_key::seq_recv(channel_id, port_id).into(), sequence);
+        self.put_proto::<u64>(state_key::seq_recv(channel_id, port_id), sequence);
     }
 
     fn put_send_sequence(&mut self, channel_id: &ChannelId, port_id: &PortId, sequence: u64) {
-        self.put_proto::<u64>(state_key::seq_send(channel_id, port_id).into(), sequence);
+        self.put_proto::<u64>(state_key::seq_send(channel_id, port_id), sequence);
     }
 
     fn put_packet_receipt(&mut self, packet: &Packet) {
-        self.put_proto::<String>(state_key::packet_receipt(packet).into(), "1".to_string());
+        self.put_proto::<String>(state_key::packet_receipt(packet), "1".to_string());
     }
 
     fn put_packet_commitment(&mut self, packet: &Packet) {
         let commitment_key = state_key::packet_commitment(packet);
         let packet_hash = commit_packet(packet);
 
-        self.put_proto::<Vec<u8>>(commitment_key.into(), packet_hash);
+        self.put_proto::<Vec<u8>>(commitment_key, packet_hash);
     }
 
     fn delete_packet_commitment(
@@ -372,7 +391,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         sequence: u64,
     ) {
         self.put_proto::<Vec<u8>>(
-            state_key::packet_commitment_by_port(port_id, channel_id, sequence).into(),
+            state_key::packet_commitment_by_port(port_id, channel_id, sequence),
             vec![],
         );
     }
@@ -383,7 +402,7 @@ impl<T: StateWrite + ?Sized> StateWriteExt for T {}
 #[async_trait]
 pub trait StateReadExt: StateRead {
     async fn get_channel_counter(&self) -> Result<u64> {
-        self.get_proto::<u64>("ibc_channel_counter".into())
+        self.get_proto::<u64>("ibc_channel_counter")
             .await
             .map(|counter| counter.unwrap_or(0))
     }

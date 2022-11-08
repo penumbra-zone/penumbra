@@ -123,7 +123,7 @@ impl TransactionPlan {
         let mut memo_key: Option<PayloadKey> = None;
         if self.memo_plan.is_some() {
             let memo_plan = self.memo_plan.clone().unwrap();
-            state.update(&memo_plan.memo().unwrap().0.as_ref());
+            state.update(memo_plan.memo().unwrap().0.as_ref());
             memo_key = Some(memo_plan.key);
         }
 

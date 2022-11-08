@@ -127,8 +127,6 @@ pub mod proptest {
 
 #[cfg(test)]
 mod test {
-    use super::*;
-
     #[test]
     fn check_eternity_size() {
         // Disabled due to spurious test failure.

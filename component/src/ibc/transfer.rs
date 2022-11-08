@@ -81,15 +81,11 @@ pub trait Ics20TransferWriteExt: StateWrite {
                 ))
                 .await
                 .unwrap()
-                .unwrap_or(Amount::zero());
+                .unwrap_or_else(Amount::zero);
 
             let new_value_balance = existing_value_balance + withdrawal.amount;
             state.put(
-                state_key::ics20_value_balance(
-                    &withdrawal.source_channel,
-                    &withdrawal.denom.id().into(),
-                )
-                .into(),
+                state_key::ics20_value_balance(&withdrawal.source_channel, &withdrawal.denom.id()),
                 new_value_balance,
             );
         } else {
@@ -111,7 +107,7 @@ impl<T: StateWrite> Ics20TransferWriteExt for T {}
 // TODO (ava): add versioning to AppHandlers
 #[async_trait]
 impl AppHandlerCheck for Ics20Transfer {
-    async fn chan_open_init_check(state: Arc<State>, msg: &MsgChannelOpenInit) -> Result<()> {
+    async fn chan_open_init_check(_state: Arc<State>, msg: &MsgChannelOpenInit) -> Result<()> {
         if msg.channel.ordering != ChannelOrder::Unordered {
             return Err(anyhow::anyhow!(
                 "channel order must be unordered for Ics20 transfer"
@@ -126,7 +122,8 @@ impl AppHandlerCheck for Ics20Transfer {
 
         Ok(())
     }
-    async fn chan_open_try_check(state: Arc<State>, msg: &MsgChannelOpenTry) -> Result<()> {
+
+    async fn chan_open_try_check(_state: Arc<State>, msg: &MsgChannelOpenTry) -> Result<()> {
         if msg.channel.ordering != ChannelOrder::Unordered {
             return Err(anyhow::anyhow!(
                 "channel order must be unordered for Ics20 transfer"
@@ -141,7 +138,8 @@ impl AppHandlerCheck for Ics20Transfer {
 
         Ok(())
     }
-    async fn chan_open_ack_check(state: Arc<State>, msg: &MsgChannelOpenAck) -> Result<()> {
+
+    async fn chan_open_ack_check(_state: Arc<State>, msg: &MsgChannelOpenAck) -> Result<()> {
         if msg.counterparty_version != Version::ics20() {
             return Err(anyhow::anyhow!(
                 "counterparty version must be ics20-1 for Ics20 transfer"
@@ -150,24 +148,28 @@ impl AppHandlerCheck for Ics20Transfer {
 
         Ok(())
     }
+
     async fn chan_open_confirm_check(
-        state: Arc<State>,
+        _state: Arc<State>,
         _msg: &MsgChannelOpenConfirm,
     ) -> Result<()> {
         // accept channel confirmations, port has already been validated, version has already been validated
         Ok(())
     }
+
     async fn chan_close_confirm_check(
-        state: Arc<State>,
+        _state: Arc<State>,
         _msg: &MsgChannelCloseConfirm,
     ) -> Result<()> {
         // no action necessary
         Ok(())
     }
-    async fn chan_close_init_check(state: Arc<State>, _msg: &MsgChannelCloseInit) -> Result<()> {
+
+    async fn chan_close_init_check(_state: Arc<State>, _msg: &MsgChannelCloseInit) -> Result<()> {
         // always abort transaction
         return Err(anyhow::anyhow!("ics20 always aborts on close init"));
     }
+
     async fn recv_packet_check(state: Arc<State>, msg: &MsgRecvPacket) -> Result<()> {
         // 1. parse a FungibleTokenPacketData from msg.packet.data
         let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
@@ -182,7 +184,7 @@ impl AppHandlerCheck for Ics20Transfer {
                     &denom.id(),
                 ))
                 .await?
-                .unwrap_or(Amount::zero());
+                .unwrap_or_else(Amount::zero);
 
             let amount_penumbra: Amount = packet_data.amount.try_into()?;
             if value_balance < amount_penumbra {
@@ -194,6 +196,7 @@ impl AppHandlerCheck for Ics20Transfer {
 
         Ok(())
     }
+
     async fn timeout_packet_check(state: Arc<State>, msg: &MsgTimeout) -> Result<()> {
         let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
         let denom: asset::Denom = packet_data.denom.as_str().try_into()?;
@@ -206,7 +209,7 @@ impl AppHandlerCheck for Ics20Transfer {
                     &denom.id(),
                 ))
                 .await?
-                .unwrap_or(Amount::zero());
+                .unwrap_or_else(Amount::zero);
 
             let amount_penumbra: Amount = packet_data.amount.try_into()?;
             if value_balance < amount_penumbra {
@@ -218,42 +221,47 @@ impl AppHandlerCheck for Ics20Transfer {
 
         Ok(())
     }
-    async fn acknowledge_packet_check(state: Arc<State>, _msg: &MsgAcknowledgement) -> Result<()> {
+
+    async fn acknowledge_packet_check(_state: Arc<State>, _msg: &MsgAcknowledgement) -> Result<()> {
         Ok(())
     }
 }
 
 #[async_trait]
 impl AppHandlerExecute for Ics20Transfer {
-    async fn chan_open_init_execute(state: &mut StateTransaction, _msg: &MsgChannelOpenInit) {}
-    async fn chan_open_try_execute(state: &mut StateTransaction, _msg: &MsgChannelOpenTry) {}
-    async fn chan_open_ack_execute(state: &mut StateTransaction, _msg: &MsgChannelOpenAck) {}
-    async fn chan_open_confirm_execute(state: &mut StateTransaction, _msg: &MsgChannelOpenConfirm) {
+    async fn chan_open_init_execute(_state: &mut StateTransaction, _msg: &MsgChannelOpenInit) {}
+    async fn chan_open_try_execute(_state: &mut StateTransaction, _msg: &MsgChannelOpenTry) {}
+    async fn chan_open_ack_execute(_state: &mut StateTransaction, _msg: &MsgChannelOpenAck) {}
+    async fn chan_open_confirm_execute(
+        _state: &mut StateTransaction,
+        _msg: &MsgChannelOpenConfirm,
+    ) {
     }
     async fn chan_close_confirm_execute(
-        state: &mut StateTransaction,
+        _state: &mut StateTransaction,
         _msg: &MsgChannelCloseConfirm,
     ) {
     }
-    async fn chan_close_init_execute(state: &mut StateTransaction, _msg: &MsgChannelCloseInit) {}
-    async fn recv_packet_execute(state: &mut StateTransaction, _msg: &MsgRecvPacket) {
+    async fn chan_close_init_execute(_state: &mut StateTransaction, _msg: &MsgChannelCloseInit) {}
+    async fn recv_packet_execute(_state: &mut StateTransaction, _msg: &MsgRecvPacket) {
         // parse if we are source or dest, and mint or burn accordingly
     }
-    async fn timeout_packet_execute(state: &mut StateTransaction, _msg: &MsgTimeout) {}
-    async fn acknowledge_packet_execute(state: &mut StateTransaction, _msg: &MsgAcknowledgement) {}
+    async fn timeout_packet_execute(_state: &mut StateTransaction, _msg: &MsgTimeout) {}
+    async fn acknowledge_packet_execute(_state: &mut StateTransaction, _msg: &MsgAcknowledgement) {}
 }
 
 impl AppHandler for Ics20Transfer {}
 
 #[async_trait]
 impl Component for Ics20Transfer {
-    #[instrument(name = "ics20_transfer", skip(state, _app_state))]
-    async fn init_chain(state: &mut StateTransaction, _app_state: &genesis::AppState) {}
+    #[instrument(name = "ics20_transfer", skip(_state, _app_state))]
+    async fn init_chain(_state: &mut StateTransaction, _app_state: &genesis::AppState) {}
 
-    #[instrument(name = "ics20_transfer", skip(state, _begin_block))]
-    async fn begin_block(state: &mut StateTransaction, _begin_block: &abci::request::BeginBlock) {}
+    #[instrument(name = "ics20_transfer", skip(_state, _begin_block))]
+    async fn begin_block(_state: &mut StateTransaction, _begin_block: &abci::request::BeginBlock) {}
 
     #[instrument(name = "ics20_transfer", skip(tx))]
+    #[allow(clippy::single_match)]
     fn check_tx_stateless(tx: Arc<Transaction>) -> Result<()> {
         for action in tx.actions() {
             match action {
@@ -266,7 +274,9 @@ impl Component for Ics20Transfer {
         }
         Ok(())
     }
+
     #[instrument(name = "ics20_transfer", skip(state, tx))]
+    #[allow(clippy::single_match)]
     async fn check_tx_stateful(state: Arc<State>, tx: Arc<Transaction>) -> Result<()> {
         for action in tx.actions() {
             match action {
@@ -278,7 +288,9 @@ impl Component for Ics20Transfer {
         }
         Ok(())
     }
+
     #[instrument(name = "ics20_transfer", skip(state, tx))]
+    #[allow(clippy::single_match)]
     async fn execute_tx(state: &mut StateTransaction, tx: Arc<Transaction>) -> Result<()> {
         for action in tx.actions() {
             match action {
@@ -292,6 +304,6 @@ impl Component for Ics20Transfer {
         Ok(())
     }
 
-    #[instrument(name = "ics20_channel", skip(state, _end_block))]
-    async fn end_block(state: &mut StateTransaction, _end_block: &abci::request::EndBlock) {}
+    #[instrument(name = "ics20_channel", skip(_state, _end_block))]
+    async fn end_block(_state: &mut StateTransaction, _end_block: &abci::request::EndBlock) {}
 }

@@ -165,7 +165,7 @@ impl App {
         IBCComponent::check_tx_stateless(tx.clone())?;
         Dex::check_tx_stateless(tx.clone())?;
         Governance::check_tx_stateless(tx.clone())?;
-        ShieldedPool::check_tx_stateless(tx.clone())?;
+        ShieldedPool::check_tx_stateless(tx)?;
 
         Ok(())
     }

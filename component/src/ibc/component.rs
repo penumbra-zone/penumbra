@@ -45,7 +45,7 @@ impl Component for IBCComponent {
         client::Ics2Client::check_tx_stateless(tx.clone())?;
         connection::ConnectionComponent::check_tx_stateless(tx.clone())?;
         channel::Ics4Channel::check_tx_stateless(tx.clone())?;
-        Ics20Transfer::check_tx_stateless(tx.clone())?;
+        Ics20Transfer::check_tx_stateless(tx)?;
 
         Ok(())
     }
@@ -68,10 +68,10 @@ impl Component for IBCComponent {
 
     #[instrument(name = "ibc", skip(state, tx))]
     async fn execute_tx(state: &mut StateTransaction, tx: Arc<Transaction>) -> Result<()> {
-        client::Ics2Client::execute_tx(state, tx.clone()).await;
-        connection::ConnectionComponent::execute_tx(state, tx.clone()).await;
-        channel::Ics4Channel::execute_tx(state, tx.clone()).await;
-        Ics20Transfer::execute_tx(state, tx.clone()).await;
+        client::Ics2Client::execute_tx(state, tx.clone()).await?;
+        connection::ConnectionComponent::execute_tx(state, tx.clone()).await?;
+        channel::Ics4Channel::execute_tx(state, tx.clone()).await?;
+        Ics20Transfer::execute_tx(state, tx.clone()).await?;
 
         Ok(())
     }

@@ -37,11 +37,11 @@ pub struct ConnectionComponent {}
 
 #[async_trait]
 impl Component for ConnectionComponent {
-    #[instrument(name = "ibc_connection", skip(state, _app_state))]
-    async fn init_chain(state: &mut StateTransaction, _app_state: &genesis::AppState) {}
+    #[instrument(name = "ibc_connection", skip(_state, _app_state))]
+    async fn init_chain(_state: &mut StateTransaction, _app_state: &genesis::AppState) {}
 
-    #[instrument(name = "ibc_connection", skip(state, _begin_block))]
-    async fn begin_block(state: &mut StateTransaction, _begin_block: &abci::request::BeginBlock) {}
+    #[instrument(name = "ibc_connection", skip(_state, _begin_block))]
+    async fn begin_block(_state: &mut StateTransaction, _begin_block: &abci::request::BeginBlock) {}
 
     #[instrument(name = "ibc_connection", skip(tx))]
     fn check_tx_stateless(tx: Arc<Transaction>) -> Result<()> {
@@ -154,8 +154,8 @@ impl Component for ConnectionComponent {
         Ok(())
     }
 
-    #[instrument(name = "ibc_connection", skip(state, _end_block))]
-    async fn end_block(state: &mut StateTransaction, _end_block: &abci::request::EndBlock) {}
+    #[instrument(name = "ibc_connection", skip(_state, _end_block))]
+    async fn end_block(_state: &mut StateTransaction, _end_block: &abci::request::EndBlock) {}
 }
 
 #[async_trait]
@@ -171,10 +171,7 @@ pub trait StateWriteExt: StateWrite {
         connection_id: &ConnectionId,
         connection: ConnectionEnd,
     ) -> Result<()> {
-        self.put(
-            state_key::connection(connection_id).into(),
-            connection.clone(),
-        );
+        self.put(state_key::connection(connection_id), connection.clone());
         let counter = self
             .get_connection_counter()
             .await
@@ -188,7 +185,7 @@ pub trait StateWriteExt: StateWrite {
     }
 
     fn update_connection(&mut self, connection_id: &ConnectionId, connection: ConnectionEnd) {
-        self.put(state_key::connection(connection_id).into(), connection);
+        self.put(state_key::connection(connection_id), connection);
     }
 }
 
@@ -197,7 +194,7 @@ impl<T: StateWrite> StateWriteExt for T {}
 #[async_trait]
 pub trait StateReadExt: StateRead {
     async fn get_connection_counter(&self) -> Result<ConnectionCounter> {
-        self.get(&state_key::connection_counter())
+        self.get(state_key::connection_counter())
             .await
             .map(|counter| counter.unwrap_or(ConnectionCounter(0)))
     }

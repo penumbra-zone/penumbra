@@ -270,10 +270,7 @@ pub trait StateReadExt: StateRead {
 
     // Get the swap flow for the given trading pair accumulated in this block so far.
     fn swap_flow(&self, pair: &TradingPair) -> SwapFlow {
-        self.swap_flows()
-            .get(pair)
-            .cloned()
-            .unwrap_or_else(|| SwapFlow::default())
+        self.swap_flows().get(pair).cloned().unwrap_or_default()
     }
 
     fn swap_flows(&self) -> BTreeMap<TradingPair, SwapFlow> {
@@ -301,7 +298,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
     fn put_swap_flow(&mut self, trading_pair: &TradingPair, swap_flow: SwapFlow) {
         // TODO: replace with IM struct later
         let mut swap_flows = self.swap_flows();
-        swap_flows.insert(trading_pair.clone(), swap_flow);
+        swap_flows.insert(*trading_pair, swap_flow);
         self.put_ephemeral(state_key::swap_flows().into(), swap_flows)
     }
 }

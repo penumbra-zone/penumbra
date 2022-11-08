@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, sync::Arc};
+use std::sync::Arc;
 
 /// IBC "app handlers" for the IBC component.
 ///
@@ -19,8 +19,7 @@ use ibc::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use ibc::core::ics04_channel::msgs::timeout::MsgTimeout;
-use ibc::core::ics24_host::identifier::PortId;
-use penumbra_storage2::{State, StateRead, StateTransaction, StateWrite};
+use penumbra_storage2::{State, StateTransaction};
 
 /// AppHandlerCheck defines the interface for an IBC application to consume IBC channel and packet
 /// events, and apply their validation logic. This validation logic is used for stateful validation
@@ -60,7 +59,3 @@ pub trait AppHandlerExecute: Send + Sync {
 }
 
 pub trait AppHandler: AppHandlerCheck + AppHandlerExecute {}
-
-/// an AppRouter is an implementation of AppHandler that is the root router for all IBC
-/// applications. Applications can register themselves on an IBC port by calling AppRouter.bind().
-pub struct AppRouter {}

@@ -152,8 +152,8 @@ impl Component for Ics2Client {
         Ok(())
     }
 
-    #[instrument(name = "ics2_client", skip(state, _end_block))]
-    async fn end_block(state: &mut StateTransaction, _end_block: &abci::request::EndBlock) {}
+    #[instrument(name = "ics2_client", skip(_state, _end_block))]
+    async fn end_block(_state: &mut StateTransaction, _end_block: &abci::request::EndBlock) {}
 }
 
 #[async_trait]
@@ -344,11 +344,11 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
 
     fn put_client(&mut self, client_id: &ClientId, client_state: AnyClientState) {
         self.put_proto(
-            state_key::client_type(client_id).into(),
+            state_key::client_type(client_id),
             client_state.client_type().as_str().to_string(),
         );
 
-        self.put(state_key::client_state(client_id).into(), client_state);
+        self.put(state_key::client_state(client_id), client_state);
     }
 
     fn put_verified_heights(&mut self, client_id: &ClientId, verified_heights: VerifiedHeights) {
@@ -358,8 +358,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
                 // it's not in the same path namespace.
                 "penumbra_verified_heights/{}/verified_heights",
                 client_id
-            )
-            .into(),
+            ),
             verified_heights,
         );
     }
@@ -369,7 +368,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
         // it's not in the same path namespace.
         self.put(
-            format!("penumbra_consensus_states/{}", height).into(),
+            format!("penumbra_consensus_states/{}", height),
             consensus_state,
         );
     }
@@ -381,7 +380,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         consensus_state: AnyConsensusState,
     ) -> Result<()> {
         self.put(
-            state_key::verified_client_consensus_state(&client_id, &height).into(),
+            state_key::verified_client_consensus_state(&client_id, &height),
             consensus_state,
         );
 
@@ -389,12 +388,12 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         let current_time: ibc::timestamp::Timestamp = self.get_block_timestamp().await?.into();
 
         self.put_proto::<u64>(
-            state_key::client_processed_times(&client_id, &height).into(),
+            state_key::client_processed_times(&client_id, &height),
             current_time.nanoseconds(),
         );
 
         self.put(
-            state_key::client_processed_heights(&client_id, &height).into(),
+            state_key::client_processed_heights(&client_id, &height),
             ibc::Height::zero().with_revision_height(current_height),
         );
 
@@ -430,7 +429,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
 
         connections.connection_ids.push(connection_id.clone());
 
-        self.put(state_key::client_connections(client_id).into(), connections);
+        self.put(state_key::client_connections(client_id), connections);
 
         Ok(())
     }
@@ -441,7 +440,7 @@ impl<T: StateWrite + ?Sized> StateWriteExt for T {}
 #[async_trait]
 pub trait StateReadExt: StateRead {
     async fn client_counter(&self) -> Result<ClientCounter> {
-        self.get("ibc_client_counter".into())
+        self.get("ibc_client_counter")
             .await
             .map(|counter| counter.unwrap_or(ClientCounter(0)))
     }
@@ -586,6 +585,7 @@ mod tests {
     use super::*;
     use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
     use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
+    use penumbra_chain::StateWriteExt as _;
     use penumbra_proto::core::ibc::v1alpha1::{ibc_action::Action as IbcActionInner, IbcAction};
     use penumbra_proto::Message;
     use penumbra_storage2::Storage;
@@ -602,124 +602,142 @@ mod tests {
         let dir = tempdir().unwrap();
         let file_path = dir.path().join("ibc-testing.db");
 
-        let storage = Storage::load(file_path).await.unwrap();
-        let state = storage.state();
+        let storage = Storage::load(file_path.clone()).await.unwrap();
+        let mut state = Arc::new(storage.state());
 
-        // let mut client_component = Ics2Client::new(state).await;
+        let state_mut =
+            Arc::get_mut(&mut state).expect("state Arc should not be referenced elsewhere");
+        let mut state_tx = state_mut.begin_transaction();
 
-        // // init chain should result in client counter = 0
-        // let genesis_state = genesis::AppState::default();
-        // let timestamp = Time::parse_from_rfc3339("2022-02-11T17:30:50.425417198Z").unwrap();
-        // client_component.state.put_block_timestamp(timestamp).await;
-        // client_component.state.put_block_height(0).await;
-        // client_component.init_chain(&genesis_state).await;
+        // init chain should result in client counter = 0
+        let genesis_state = genesis::AppState::default();
+        let timestamp = Time::parse_from_rfc3339("2022-02-11T17:30:50.425417198Z").unwrap();
+        state_tx.put_block_timestamp(timestamp);
+        state_tx.put_block_height(0);
+        Ics2Client::init_chain(&mut state_tx, &genesis_state).await;
 
-        // assert_eq!(client_component.state.client_counter().await.unwrap().0, 0);
+        state_tx.apply();
 
-        // // base64 encoded MsgCreateClient that was used to create the currently in-use Stargaze
-        // // light client on the cosmos hub:
-        // // https://cosmos.bigdipper.live/transactions/13C1ECC54F088473E2925AD497DDCC092101ADE420BC64BADE67D34A75769CE9
-        // //
-        // //
-        // let msg_create_client_stargaze_raw =
-        //     base64::decode(include_str!("../../ibc/test/create_client.msg").replace('\n', ""))
-        //         .unwrap();
-        // let msg_create_stargaze_client =
-        //     RawMsgCreateClient::decode(msg_create_client_stargaze_raw.as_slice()).unwrap();
+        let storage = Storage::load(file_path.clone()).await.unwrap();
+        let state = Arc::new(storage.state());
+        assert_eq!(state.client_counter().await.unwrap().0, 0);
 
-        // // base64 encoded MsgUpdateClient that was used to issue the first update to the in-use stargaze light client on the cosmos hub:
-        // // https://cosmos.bigdipper.live/transactions/24F1E19F218CAF5CA41D6E0B653E85EB965843B1F3615A6CD7BCF336E6B0E707
-        // let msg_update_client_stargaze_raw =
-        //     base64::decode(include_str!("../../ibc/test/update_client_1.msg").replace('\n', ""))
-        //         .unwrap();
-        // let mut msg_update_stargaze_client =
-        //     RawMsgUpdateClient::decode(msg_update_client_stargaze_raw.as_slice()).unwrap();
-        // msg_update_stargaze_client.client_id = "07-tendermint-0".to_string();
+        // base64 encoded MsgCreateClient that was used to create the currently in-use Stargaze
+        // light client on the cosmos hub:
+        // https://cosmos.bigdipper.live/transactions/13C1ECC54F088473E2925AD497DDCC092101ADE420BC64BADE67D34A75769CE9
+        //
+        //
+        let msg_create_client_stargaze_raw =
+            base64::decode(include_str!("../../ibc/test/create_client.msg").replace('\n', ""))
+                .unwrap();
+        let msg_create_stargaze_client =
+            RawMsgCreateClient::decode(msg_create_client_stargaze_raw.as_slice()).unwrap();
 
-        // let create_client_action = IbcAction {
-        //     action: Some(IbcActionInner::CreateClient(msg_create_stargaze_client)),
-        // };
-        // let create_client_tx = Transaction {
-        //     transaction_body: TransactionBody {
-        //         actions: vec![Action::IBCAction(create_client_action)],
-        //         expiry_height: 0,
-        //         chain_id: "".to_string(),
-        //         fee: Default::default(),
-        //         fmd_clues: vec![],
-        //         memo: None,
-        //     },
-        //     anchor: tct::Tree::new().root(),
-        //     binding_sig: [0u8; 64].into(),
-        // };
+        // base64 encoded MsgUpdateClient that was used to issue the first update to the in-use stargaze light client on the cosmos hub:
+        // https://cosmos.bigdipper.live/transactions/24F1E19F218CAF5CA41D6E0B653E85EB965843B1F3615A6CD7BCF336E6B0E707
+        let msg_update_client_stargaze_raw =
+            base64::decode(include_str!("../../ibc/test/update_client_1.msg").replace('\n', ""))
+                .unwrap();
+        let mut msg_update_stargaze_client =
+            RawMsgUpdateClient::decode(msg_update_client_stargaze_raw.as_slice()).unwrap();
+        msg_update_stargaze_client.client_id = "07-tendermint-0".to_string();
 
-        // let update_client_action = IbcAction {
-        //     action: Some(IbcActionInner::UpdateClient(msg_update_stargaze_client)),
-        // };
-        // let update_client_tx = Transaction {
-        //     transaction_body: TransactionBody {
-        //         actions: vec![Action::IBCAction(update_client_action)],
-        //         expiry_height: 0,
-        //         chain_id: "".to_string(),
-        //         fee: Default::default(),
-        //         fmd_clues: vec![],
-        //         memo: None,
-        //     },
-        //     binding_sig: [0u8; 64].into(),
-        //     anchor: tct::Tree::new().root(),
-        // };
+        let create_client_action = IbcAction {
+            action: Some(IbcActionInner::CreateClient(msg_create_stargaze_client)),
+        };
+        let create_client_tx = Arc::new(Transaction {
+            transaction_body: TransactionBody {
+                actions: vec![Action::IBCAction(create_client_action)],
+                expiry_height: 0,
+                chain_id: "".to_string(),
+                fee: Default::default(),
+                fmd_clues: vec![],
+                memo: None,
+            },
+            anchor: tct::Tree::new().root(),
+            binding_sig: [0u8; 64].into(),
+        });
 
-        // Ics2Client::check_tx_stateless(&create_client_tx).unwrap();
-        // client_component
-        //     .check_tx_stateful(&create_client_tx)
-        //     .await
-        //     .unwrap();
-        // // execute (save client)
-        // client_component.execute_tx(&create_client_tx).await;
+        let update_client_action = IbcAction {
+            action: Some(IbcActionInner::UpdateClient(msg_update_stargaze_client)),
+        };
+        let update_client_tx = Arc::new(Transaction {
+            transaction_body: TransactionBody {
+                actions: vec![Action::IBCAction(update_client_action)],
+                expiry_height: 0,
+                chain_id: "".to_string(),
+                fee: Default::default(),
+                fmd_clues: vec![],
+                memo: None,
+            },
+            binding_sig: [0u8; 64].into(),
+            anchor: tct::Tree::new().root(),
+        });
 
-        // assert_eq!(client_component.state.client_counter().await.unwrap().0, 1);
+        let mut state_tx = state_mut.begin_transaction();
 
-        // // now try update client
+        Ics2Client::check_tx_stateless(create_client_tx.clone()).unwrap();
+        Ics2Client::check_tx_stateful(state.clone(), create_client_tx.clone())
+            .await
+            .unwrap();
+        // execute (save client)
+        Ics2Client::execute_tx(&mut state_tx, create_client_tx.clone())
+            .await
+            .unwrap();
+        state_tx.apply();
 
-        // Ics2Client::check_tx_stateless(&update_client_tx).unwrap();
-        // // verify the ClientUpdate proof
-        // client_component
-        //     .check_tx_stateful(&update_client_tx)
-        //     .await
-        //     .unwrap();
-        // // save the next tm state
-        // client_component.execute_tx(&update_client_tx).await;
+        let storage = Storage::load(file_path.clone()).await.unwrap();
+        let state = Arc::new(storage.state());
+        assert_eq!(state.client_counter().await.unwrap().0, 1);
 
-        // // try one more client update
-        // // https://cosmos.bigdipper.live/transactions/ED217D360F51E622859F7B783FEF98BDE3544AA32BBD13C6C77D8D0D57A19FFD
-        // let msg_update_second =
-        //     base64::decode(include_str!("../../ibc/test/update_client_2.msg").replace('\n', ""))
-        //         .unwrap();
+        // now try update client
 
-        // let mut second_update = RawMsgUpdateClient::decode(msg_update_second.as_slice()).unwrap();
-        // second_update.client_id = "07-tendermint-0".to_string();
-        // let second_update_client_action = IbcAction {
-        //     action: Some(IbcActionInner::UpdateClient(second_update)),
-        // };
-        // let second_update_client_tx = Transaction {
-        //     transaction_body: TransactionBody {
-        //         actions: vec![Action::IBCAction(second_update_client_action)],
-        //         expiry_height: 0,
-        //         chain_id: "".to_string(),
-        //         fee: Default::default(),
-        //         fmd_clues: vec![],
-        //         memo: None,
-        //     },
-        //     anchor: tct::Tree::new().root(),
-        //     binding_sig: [0u8; 64].into(),
-        // };
+        let mut state_tx = state_mut.begin_transaction();
+        Ics2Client::check_tx_stateless(update_client_tx.clone()).unwrap();
+        // verify the ClientUpdate proof
+        Ics2Client::check_tx_stateful(state.clone(), update_client_tx.clone())
+            .await
+            .unwrap();
+        // save the next tm state
+        Ics2Client::execute_tx(&mut state_tx, update_client_tx.clone())
+            .await
+            .unwrap();
+        state_tx.apply();
 
-        // Ics2Client::check_tx_stateless(&second_update_client_tx).unwrap();
-        // // verify the ClientUpdate proof
-        // client_component
-        //     .check_tx_stateful(&second_update_client_tx)
-        //     .await
-        //     .unwrap();
-        // // save the next tm state
-        // client_component.execute_tx(&second_update_client_tx).await;
+        // try one more client update
+        let mut state_tx = state_mut.begin_transaction();
+        // https://cosmos.bigdipper.live/transactions/ED217D360F51E622859F7B783FEF98BDE3544AA32BBD13C6C77D8D0D57A19FFD
+        let msg_update_second =
+            base64::decode(include_str!("../../ibc/test/update_client_2.msg").replace('\n', ""))
+                .unwrap();
+
+        let mut second_update = RawMsgUpdateClient::decode(msg_update_second.as_slice()).unwrap();
+        second_update.client_id = "07-tendermint-0".to_string();
+        let second_update_client_action = IbcAction {
+            action: Some(IbcActionInner::UpdateClient(second_update)),
+        };
+        let second_update_client_tx = Arc::new(Transaction {
+            transaction_body: TransactionBody {
+                actions: vec![Action::IBCAction(second_update_client_action)],
+                expiry_height: 0,
+                chain_id: "".to_string(),
+                fee: Default::default(),
+                fmd_clues: vec![],
+                memo: None,
+            },
+            anchor: tct::Tree::new().root(),
+            binding_sig: [0u8; 64].into(),
+        });
+
+        Ics2Client::check_tx_stateless(second_update_client_tx.clone()).unwrap();
+        // verify the ClientUpdate proof
+        Ics2Client::check_tx_stateful(state.clone(), second_update_client_tx.clone())
+            .await
+            .unwrap();
+        // save the next tm state
+        Ics2Client::execute_tx(&mut state_tx, second_update_client_tx.clone())
+            .await
+            .unwrap();
+        state_tx.apply();
     }
 }

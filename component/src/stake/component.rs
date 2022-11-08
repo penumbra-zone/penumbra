@@ -765,7 +765,7 @@ trait StakingImpl: StateWrite + StateWriteExt {
         self.register_consensus_key(&validator.identity_key, &validator.consensus_key)
             .await;
 
-        self.put(state_key::validator_by_id(id).to_owned(), validator);
+        self.put(state_key::validator_by_id(id), validator);
 
         Ok(())
     }
@@ -1197,13 +1197,13 @@ pub trait StateReadExt: StateRead {
     }
 
     async fn current_base_rate(&self) -> Result<BaseRateData> {
-        self.get(&state_key::current_base_rate())
+        self.get(state_key::current_base_rate())
             .await
             .map(|rate_data| rate_data.expect("rate data must be set after init_chain"))
     }
 
     async fn next_base_rate(&self) -> Result<BaseRateData> {
-        self.get(&state_key::next_base_rate())
+        self.get(state_key::next_base_rate())
             .await
             .map(|rate_data| rate_data.expect("rate data must be set after init_chain"))
     }
@@ -1306,7 +1306,7 @@ pub trait StateReadExt: StateRead {
 
     async fn validator_list(&self) -> Result<Vec<IdentityKey>> {
         Ok(self
-            .get(&state_key::validator_list())
+            .get(state_key::validator_list())
             .await?
             .map(|list: validator::List| list.0)
             .unwrap_or_default())
@@ -1402,13 +1402,13 @@ pub trait StateWriteExt: StateWrite {
     }
 
     fn stub_push_delegation(&mut self, delegation: Delegate) {
-        let mut changes = self.stub_delegation_changes().clone();
+        let mut changes = self.stub_delegation_changes();
         changes.delegations.push(delegation);
         self.put_stub_delegation_changes(changes);
     }
 
     fn stub_push_undelegation(&mut self, undelegation: Undelegate) {
-        let mut changes = self.stub_delegation_changes().clone();
+        let mut changes = self.stub_delegation_changes();
         changes.undelegations.push(undelegation);
         self.put_stub_delegation_changes(changes);
     }
@@ -1431,10 +1431,7 @@ pub trait StateWriteExt: StateWrite {
             return Err(anyhow::anyhow!("invalid voting power"));
         }
 
-        self.put_proto(
-            state_key::power_by_validator(identity_key).to_owned(),
-            voting_power,
-        );
+        self.put_proto(state_key::power_by_validator(identity_key), voting_power);
 
         Ok(())
     }
@@ -1448,13 +1445,10 @@ pub trait StateWriteExt: StateWrite {
     ) {
         tracing::debug!("setting validator rates");
         self.put(
-            state_key::current_rate_by_validator(identity_key).to_owned(),
+            state_key::current_rate_by_validator(identity_key),
             current_rates,
         );
-        self.put(
-            state_key::next_rate_by_validator(identity_key).to_owned(),
-            next_rates,
-        );
+        self.put(state_key::next_rate_by_validator(identity_key), next_rates);
     }
 
     async fn register_consensus_key(
@@ -1465,11 +1459,11 @@ pub trait StateWriteExt: StateWrite {
         let address = validator_address(consensus_key);
         tracing::debug!(?identity_key, ?consensus_key, hash = ?hex::encode(&address), "registering consensus key");
         self.put(
-            state_key::consensus_key_by_tendermint_address(&address).to_owned(),
+            state_key::consensus_key_by_tendermint_address(&address),
             consensus_key.clone(),
         );
         self.put(
-            state_key::validator_id_by_consensus_key(consensus_key).to_owned(),
+            state_key::validator_id_by_consensus_key(consensus_key),
             identity_key.clone(),
         );
     }
@@ -1528,10 +1522,7 @@ pub trait StateWriteExt: StateWrite {
         tracing::debug!(?validator);
         let id = validator.identity_key.clone();
 
-        self.put(
-            state_key::validator_by_id(&id).to_owned(),
-            validator.clone(),
-        );
+        self.put(state_key::validator_by_id(&id), validator.clone());
         self.register_consensus_key(&validator.identity_key, &validator.consensus_key)
             .await;
         self.register_denom(&DelegationToken::from(&id).denom())
@@ -1541,7 +1532,7 @@ pub trait StateWriteExt: StateWrite {
 
         // We can't call `set_validator_state` here because it requires an existing validator state,
         // so we manually initialize the state for new validators.
-        self.put(state_key::state_by_validator(&id).to_owned(), state);
+        self.put(state_key::state_by_validator(&id), state);
         self.set_validator_power(&id, power).await?;
         self.set_validator_bonding_state(&id, bonding_state).await;
 
@@ -1574,16 +1565,13 @@ pub trait StateWriteExt: StateWrite {
 
     async fn set_delegation_changes(&mut self, height: block::Height, changes: DelegationChanges) {
         self.put(
-            state_key::delegation_changes_by_height(height.value()).to_owned(),
+            state_key::delegation_changes_by_height(height.value()),
             changes,
         );
     }
 
     async fn set_validator_uptime(&mut self, identity_key: &IdentityKey, uptime: Uptime) {
-        self.put(
-            state_key::uptime_by_validator(identity_key).to_owned(),
-            uptime,
-        );
+        self.put(state_key::uptime_by_validator(identity_key), uptime);
     }
 
     async fn set_validator_bonding_state(
@@ -1592,10 +1580,7 @@ pub trait StateWriteExt: StateWrite {
         state: validator::BondingState,
     ) {
         tracing::debug!(?state, "set bonding state");
-        self.put(
-            state_key::bonding_state_by_validator(identity_key).to_owned(),
-            state,
-        );
+        self.put(state_key::bonding_state_by_validator(identity_key), state);
     }
 }
 

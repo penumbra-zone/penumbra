@@ -21,7 +21,7 @@ pub mod channel_open_init {
         }
     }
     mod inner {
-        use crate::ibc::component::{channel::StateReadExt as _, connection::StateReadExt as _};
+        use crate::ibc::component::connection::StateReadExt as _;
 
         use super::*;
 
@@ -205,7 +205,6 @@ pub mod channel_open_ack {
 }
 
 pub mod channel_open_confirm {
-    use crate::ibc::component::channel::StateReadExt as _;
     use crate::ibc::component::connection::StateReadExt as _;
 
     use super::super::*;
@@ -267,7 +266,7 @@ pub mod channel_open_confirm {
 }
 
 pub mod channel_close_init {
-    use crate::ibc::component::{channel::StateReadExt as _, connection::StateReadExt as _};
+    use crate::ibc::component::connection::StateReadExt as _;
 
     use super::{super::*, proof_verification::ChannelProofVerifier};
 

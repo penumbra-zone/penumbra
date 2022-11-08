@@ -58,9 +58,9 @@ impl From<Ics20Withdrawal> for IBCPacket<Unchecked> {
     fn from(withdrawal: Ics20Withdrawal) -> Self {
         Self {
             source_port: withdrawal.source_port.clone(),
-            source_channel: withdrawal.source_channel.clone(),
+            source_channel: withdrawal.source_channel,
             timeout_height: ibc::Height::zero().with_revision_height(withdrawal.timeout_height),
-            timeout_timestamp: withdrawal.timeout_time.into(),
+            timeout_timestamp: withdrawal.timeout_time,
             data: withdrawal.packet_data(),
 
             m: std::marker::PhantomData,
@@ -122,7 +122,7 @@ pub trait SendPacketRead: StateRead {
 
         Ok(IBCPacket::<Checked> {
             source_port: packet.source_port.clone(),
-            source_channel: packet.source_channel.clone(),
+            source_channel: packet.source_channel,
             timeout_height: packet.timeout_height,
             timeout_timestamp: packet.timeout_timestamp,
             data: packet.data,
@@ -150,7 +150,7 @@ pub trait SendPacketWrite: StateWrite {
 
         // store commitment to the packet data & packet timeout
         let packet = Packet {
-            source_channel: packet.source_channel.clone(),
+            source_channel: packet.source_channel,
             source_port: packet.source_port.clone(),
             sequence: sequence.into(),
 
