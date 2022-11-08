@@ -24,6 +24,7 @@ use penumbra_storage2::State;
 use penumbra_transaction::action::Ics20Withdrawal;
 use penumbra_transaction::{Action, Transaction};
 use prost::Message;
+use std::sync::Arc;
 use tendermint::abci;
 use tracing::instrument;
 
@@ -46,18 +47,18 @@ fn is_source(source_port: &PortId, source_channel: &ChannelId, denom: &Denom) ->
 pub struct Ics20Transfer {}
 
 impl Ics20Transfer {
-    pub async fn withdrawal_check(&self, withdrawal: &Ics20Withdrawal) -> Result<()> {
+    pub async fn withdrawal_check(state: Arc<State>, withdrawal: &Ics20Withdrawal) -> Result<()> {
         // create packet
         let packet: IBCPacket<Unchecked> = withdrawal.clone().into();
 
         // send packet
         use crate::ibc::packet::SendPacket;
-        self.state.send_packet_check(packet).await?;
+        state.send_packet_check(packet).await?;
 
         Ok(())
     }
 
-    pub async fn withdrawal_execute(&mut self, withdrawal: &Ics20Withdrawal) {
+    pub async fn withdrawal_execute(state: Arc<State>, withdrawal: &Ics20Withdrawal) {
         // create packet, assume it's already checked since the component caller contract calls `check` before `execute`
         let checked_packet = IBCPacket::<Unchecked>::from(withdrawal.clone()).assume_checked();
 

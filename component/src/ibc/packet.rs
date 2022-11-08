@@ -68,7 +68,13 @@ impl From<Ics20Withdrawal> for IBCPacket<Unchecked> {
 /// This trait, an extension of the Channel, Connection, and Client views, allows a component to
 /// send a packet.
 #[async_trait]
-pub trait SendPacket: StateWrite {
+pub trait SendPacket:
+    StateWrite
+    + super::component::channel::StateReadExt
+    + super::component::channel::StateWriteExt
+    + super::component::connection::StateReadExt
+    + super::component::client::StateReadExt
+{
     /// Send a packet on a channel. This assumes that send_packet_check has already been called on
     /// the provided packet.
     async fn send_packet_execute(&mut self, packet: IBCPacket<Checked>) {
@@ -77,8 +83,7 @@ pub trait SendPacket: StateWrite {
             .get_send_sequence(&packet.source_channel, &packet.source_port)
             .await
             .unwrap();
-        self.put_send_sequence(&packet.source_channel, &packet.source_port, sequence + 1)
-            .await;
+        self.put_send_sequence(&packet.source_channel, &packet.source_port, sequence + 1);
 
         // store commitment to the packet data & packet timeout
         let packet = Packet {
