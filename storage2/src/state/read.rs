@@ -72,6 +72,7 @@ pub trait StateRead: Send + Sync {
     }
 
     /// Retrieve all values for keys matching a prefix from consensus-critical state, as domain types.
+    #[allow(clippy::type_complexity)]
     fn prefix<'a, D, P>(
         &'a self,
         prefix: &'a str,
@@ -93,6 +94,7 @@ pub trait StateRead: Send + Sync {
     }
 
     /// Retrieve all values for keys matching a prefix from the verifiable key-value store, as proto types.
+    #[allow(clippy::type_complexity)]
     fn prefix_proto<'a, D, P>(
         &'a self,
         prefix: &'a str,
@@ -118,6 +120,7 @@ pub trait StateRead: Send + Sync {
     /// Retrieve all values for keys matching a prefix from the verifiable key-value store, as raw bytes.
     ///
     /// Users should generally prefer to use [`prefix`](Self::prefix) or [`prefix_proto`](Self::prefix_proto).
+    #[allow(clippy::type_complexity)]
     fn prefix_raw<'a>(
         &'a self,
         prefix: &'a str,
@@ -223,6 +226,7 @@ where
     })
 }
 
+#[allow(clippy::type_complexity)]
 pub(crate) fn prefix_raw_with_cache<'a>(
     sr: &'a impl StateRead,
     cache: &'a BTreeMap<String, Option<Vec<u8>>>,

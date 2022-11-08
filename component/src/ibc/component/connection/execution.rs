@@ -2,7 +2,7 @@ pub mod connection_open_init {
     use super::super::*;
 
     #[async_trait]
-    pub trait ConnectionOpenInitExecute: StateReadExt {
+    pub trait ConnectionOpenInitExecute: StateWriteExt {
         async fn execute(&mut self, msg: &MsgConnectionOpenInit) {
             let connection_id = ConnectionId::new(self.get_connection_counter().await.unwrap().0);
 
@@ -21,7 +21,7 @@ pub mod connection_open_init {
                 .await
                 .unwrap();
 
-            state.record(event::connection_open_init(
+            self.record(event::connection_open_init(
                 &connection_id,
                 &msg.client_id,
                 &msg.counterparty,
@@ -29,14 +29,14 @@ pub mod connection_open_init {
         }
     }
 
-    impl<T: StateReadExt> ConnectionOpenInitExecute for T {}
+    impl<T: StateWriteExt> ConnectionOpenInitExecute for T {}
 }
 
 pub mod connection_open_try {
     use super::super::*;
 
     #[async_trait]
-    pub trait ConnectionOpenTryExecute: StateReadExt {
+    pub trait ConnectionOpenTryExecute: StateWriteExt {
         async fn execute(&mut self, msg: &MsgConnectionOpenTry) {
             // new_conn is the new connection that we will open on this chain
             let mut new_conn = ConnectionEnd::new(
@@ -66,7 +66,7 @@ pub mod connection_open_try {
                 .await
                 .unwrap();
 
-            state.record(event::connection_open_try(
+            self.record(event::connection_open_try(
                 &new_connection_id,
                 &msg.client_id,
                 &msg.counterparty,
@@ -74,14 +74,14 @@ pub mod connection_open_try {
         }
     }
 
-    impl<T: StateReadExt> ConnectionOpenTryExecute for T {}
+    impl<T: StateWriteExt> ConnectionOpenTryExecute for T {}
 }
 
 pub mod connection_open_confirm {
     use super::super::*;
 
     #[async_trait]
-    pub trait ConnectionOpenConfirmExecute: StateReadExt {
+    pub trait ConnectionOpenConfirmExecute: StateWriteExt {
         async fn execute(&mut self, msg: &MsgConnectionOpenConfirm) {
             let mut connection = self
                 .get_connection(&msg.connection_id)
@@ -92,23 +92,22 @@ pub mod connection_open_confirm {
 
             connection.set_state(ConnectionState::Open);
 
-            self.update_connection(&msg.connection_id, connection.clone())
-                .await;
+            self.update_connection(&msg.connection_id, connection.clone());
 
-            state.record(event::connection_open_confirm(
+            self.record(event::connection_open_confirm(
                 &msg.connection_id,
                 &connection,
             ));
         }
     }
 
-    impl<T: StateReadExt> ConnectionOpenConfirmExecute for T {}
+    impl<T: StateWriteExt> ConnectionOpenConfirmExecute for T {}
 }
 pub mod connection_open_ack {
     use super::super::*;
 
     #[async_trait]
-    pub trait ConnectionOpenAckExecute: StateReadExt {
+    pub trait ConnectionOpenAckExecute: StateWriteExt {
         async fn execute(&mut self, msg: &MsgConnectionOpenAck) {
             let mut connection = self
                 .get_connection(&msg.connection_id)
@@ -126,12 +125,11 @@ pub mod connection_open_ack {
             connection.set_version(msg.version.clone());
             connection.set_counterparty(counterparty);
 
-            self.update_connection(&msg.connection_id, connection.clone())
-                .await;
+            self.update_connection(&msg.connection_id, connection.clone());
 
-            state.record(event::connection_open_ack(&msg.connection_id, &connection));
+            self.record(event::connection_open_ack(&msg.connection_id, &connection));
         }
     }
 
-    impl<T: StateReadExt> ConnectionOpenAckExecute for T {}
+    impl<T: StateWriteExt> ConnectionOpenAckExecute for T {}
 }

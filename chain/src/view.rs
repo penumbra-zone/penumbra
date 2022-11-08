@@ -55,7 +55,7 @@ pub trait StateReadExt: StateRead {
     /// Gets the current block height from the JMT
     async fn get_block_height(&self) -> Result<u64> {
         let height_bytes: u64 = self
-            .get_proto(state_key::block_height().into())
+            .get_proto(state_key::block_height())
             .await?
             .ok_or_else(|| anyhow!("Missing block_height"))?;
 
@@ -65,7 +65,7 @@ pub trait StateReadExt: StateRead {
     /// Gets the current block timestamp from the JMT
     async fn get_block_timestamp(&self) -> Result<Time> {
         let timestamp_string: String = self
-            .get_proto(state_key::block_timestamp().into())
+            .get_proto(state_key::block_timestamp())
             .await?
             .ok_or_else(|| anyhow!("Missing block_timestamp"))?;
 
@@ -93,14 +93,14 @@ pub trait StateReadExt: StateRead {
 
     /// Gets the current FMD parameters from the JMT.
     async fn get_current_fmd_parameters(&self) -> Result<FmdParameters> {
-        self.get(state_key::fmd_parameters_current().into())
+        self.get(state_key::fmd_parameters_current())
             .await?
             .ok_or_else(|| anyhow!("Missing FmdParameters"))
     }
 
     /// Gets the previous FMD parameters from the JMT.
     async fn get_previous_fmd_parameters(&self) -> Result<FmdParameters> {
-        self.get(state_key::fmd_parameters_previous().into())
+        self.get(state_key::fmd_parameters_previous())
             .await?
             .ok_or_else(|| anyhow!("Missing FmdParameters"))
     }

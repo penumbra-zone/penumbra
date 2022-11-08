@@ -220,7 +220,7 @@ where
         planner.output(value, dest_address);
     }
     planner
-        .memo(tx_memo.unwrap_or(String::new()))?
+        .memo(tx_memo.unwrap_or_default())?
         .plan(view, fvk, source_address.map(Into::into))
         .await
         .context("can't build send transaction")

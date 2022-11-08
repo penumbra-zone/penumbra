@@ -1,4 +1,6 @@
 pub mod connection_open_init {
+    use crate::ibc::component::client::StateReadExt as _;
+
     use super::super::*;
 
     #[async_trait]
@@ -16,6 +18,8 @@ pub mod connection_open_init {
 }
 
 pub mod connection_open_confirm {
+    use crate::ibc::component::client::StateReadExt as _;
+
     use super::super::*;
 
     #[async_trait]
@@ -109,6 +113,8 @@ pub mod connection_open_confirm {
 }
 
 pub mod connection_open_ack {
+    use crate::ibc::component::client::StateReadExt as _;
+
     use super::super::*;
 
     #[async_trait]
@@ -227,6 +233,8 @@ pub mod connection_open_ack {
         }
     }
     mod inner {
+        use penumbra_chain::StateReadExt as _;
+
         use super::*;
 
         #[async_trait]
@@ -285,14 +293,18 @@ pub mod connection_open_ack {
                 }
             }
         }
+        impl<T: StateReadExt> Inner for T {}
     }
+    impl<T: StateReadExt> ConnectionOpenAckCheck for T {}
 }
 
 pub mod connection_open_try {
     use super::super::*;
 
     #[async_trait]
-    pub trait ConnectionOpenTryCheck: inner::Inner {
+    pub trait ConnectionOpenTryCheck:
+        inner::Inner + crate::ibc::component::client::StateReadExt
+    {
         // Validate a ConnectionOpenTry message, which is sent to us by a counterparty chain that
         // has committed a Connection to us in an INIT state on its chain. Before executing a
         // ConnectionOpenTry message, we have no knowledge about the connection: our counterparty
@@ -412,10 +424,12 @@ pub mod connection_open_try {
         }
     }
     mod inner {
+        use penumbra_chain::StateReadExt as _;
+
         use super::*;
 
         #[async_trait]
-        pub trait Inner {
+        pub trait Inner: StateReadExt {
             async fn consensus_height_is_correct(
                 &self,
                 msg: &MsgConnectionOpenTry,

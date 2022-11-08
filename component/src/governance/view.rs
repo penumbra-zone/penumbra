@@ -22,7 +22,7 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
     /// Get the id of the next proposal in the sequence of ids.
     async fn next_proposal_id(&self) -> Result<u64> {
         Ok(self
-            .get_proto::<u64>(&state_key::latest_proposal_id())
+            .get_proto::<u64>(state_key::latest_proposal_id())
             .await?
             .map(|i| i + 1)
             .unwrap_or(0))
@@ -89,7 +89,7 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
     /// Get all the unfinished proposal ids.
     async fn unfinished_proposals(&self) -> Result<BTreeSet<u64>> {
         Ok(self
-            .get::<proposal::ProposalList, _>(&state_key::unfinished_proposals())
+            .get::<proposal::ProposalList, _>(state_key::unfinished_proposals())
             .await?
             .unwrap_or_default()
             .proposals)

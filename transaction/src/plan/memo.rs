@@ -31,7 +31,7 @@ impl Protobuf<pb::MemoPlan> for MemoPlan {}
 impl From<MemoPlan> for pb::MemoPlan {
     fn from(msg: MemoPlan) -> Self {
         Self {
-            plaintext: Bytes::copy_from_slice(&msg.plaintext.as_ref()),
+            plaintext: Bytes::copy_from_slice(msg.plaintext.as_ref()),
             key: msg.key.to_vec().into(),
         }
     }

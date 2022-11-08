@@ -229,13 +229,13 @@ mod tests {
         fn test_memo_size_limit(s in "\\PC{0,10000}") {
             let mut rng = OsRng;
             let memo_key = PayloadKey::random_key(&mut rng);
-            let memo = String::from(s);
+            let memo = s;
             let ciphertext_result = MemoCiphertext::encrypt(memo_key.clone(), &memo);
             if memo.as_bytes().len() > MEMO_LEN_BYTES {
-                assert_eq!(ciphertext_result.is_err(), true);
+                assert!(ciphertext_result.is_err());
             } else {
-                assert_eq!(ciphertext_result.is_err(), false);
-                let plaintext = MemoCiphertext::decrypt(&memo_key.clone(), ciphertext_result.unwrap()).unwrap();
+                assert!(ciphertext_result.is_ok());
+                let plaintext = MemoCiphertext::decrypt(&memo_key, ciphertext_result.unwrap()).unwrap();
                 assert_eq!(plaintext, memo);
             }
         }

@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use crate::{Component, Context};
+use crate::Component;
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc::core::ics02_client::client_state::ClientState;
@@ -26,9 +26,9 @@ use ibc::{
         ics24_host::identifier::ClientId,
     },
 };
-use penumbra_chain::genesis;
+use penumbra_chain::{genesis, StateReadExt as _};
 use penumbra_proto::core::ibc::v1alpha1::ibc_action::Action::{CreateClient, UpdateClient};
-use penumbra_storage2::{State, StateRead, StateTransaction};
+use penumbra_storage2::{State, StateRead, StateTransaction, StateWrite};
 use penumbra_transaction::Transaction;
 use tendermint::{abci, validator};
 use tendermint_light_client_verifier::{
@@ -50,22 +50,15 @@ mod stateless;
 /// state updates. Currently, only Tendermint light clients are supported.
 pub struct Ics2Client {}
 
-impl Ics2Client {
-    #[instrument(name = "ics2_client", skip())]
-    pub async fn new() -> Self {
-        Self {}
-    }
-}
-
 #[async_trait]
 impl Component for Ics2Client {
-    #[instrument(name = "ics2_client", skip(self, _app_state))]
+    #[instrument(name = "ics2_client", skip(state, _app_state))]
     async fn init_chain(state: &mut StateTransaction, _app_state: &genesis::AppState) {
         // set the initial client count
-        self.state.put_client_counter(ClientCounter(0)).await;
+        state.put_client_counter(ClientCounter(0));
     }
 
-    #[instrument(name = "ics2_client", skip(self, begin_block))]
+    #[instrument(name = "ics2_client", skip(state, begin_block))]
     async fn begin_block(state: &mut StateTransaction, begin_block: &abci::request::BeginBlock) {
         // In BeginBlock, we want to save a copy of our consensus state to our
         // own state tree, so that when we get a message from our
@@ -82,13 +75,11 @@ impl Component for Ics2Client {
         let revision_number = 0;
         let height = Height::new(revision_number, begin_block.header.height.into());
 
-        self.state
-            .put_penumbra_consensus_state(height, AnyConsensusState::Tendermint(cs))
-            .await;
+        state.put_penumbra_consensus_state(height, AnyConsensusState::Tendermint(cs));
     }
 
-    #[instrument(name = "ics2_client", skip(_ctx, tx))]
-    fn check_tx_stateless(tx: &Transaction) -> Result<()> {
+    #[instrument(name = "ics2_client", skip(tx))]
+    fn check_tx_stateless(tx: Arc<Transaction>) -> Result<()> {
         // Each stateless check is a distinct function in an appropriate submodule,
         // so that we can easily add new stateless checks and see a birds' eye view
         // of all of the checks we're performing.
@@ -116,19 +107,19 @@ impl Component for Ics2Client {
         Ok(())
     }
 
-    #[instrument(name = "ics2_client", skip(_ctx, tx))]
-    async fn check_tx_stateful(tx: &Transaction, state: Arc<State>) -> Result<()> {
+    #[instrument(name = "ics2_client", skip(state, tx))]
+    async fn check_tx_stateful(state: Arc<State>, tx: Arc<Transaction>) -> Result<()> {
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
                 Some(CreateClient(msg)) => {
                     use stateful::create_client::CreateClientCheck;
                     let msg = MsgCreateAnyClient::try_from(msg.clone())?;
-                    self.state.validate(&msg).await?;
+                    state.validate(&msg).await?;
                 }
                 Some(UpdateClient(msg)) => {
                     use stateful::update_client::UpdateClientCheck;
                     let msg = MsgUpdateAnyClient::try_from(msg.clone())?;
-                    self.state.validate(&msg).await?;
+                    state.validate(&msg).await?;
                 }
                 // Other IBC messages are not handled by this component.
                 _ => {}
@@ -137,8 +128,8 @@ impl Component for Ics2Client {
         Ok(())
     }
 
-    #[instrument(name = "ics2_client", skip(ctx, tx))]
-    async fn execute_tx(tx: &Transaction, state_tx: &mut StateTransaction) {
+    #[instrument(name = "ics2_client", skip(state, tx))]
+    async fn execute_tx(state: &mut StateTransaction, tx: Arc<Transaction>) -> Result<()> {
         // Handle any IBC actions found in the transaction.
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
@@ -146,30 +137,32 @@ impl Component for Ics2Client {
                     let msg_create_client =
                         MsgCreateAnyClient::try_from(raw_msg_create_client.clone()).unwrap();
 
-                    self.execute_create_client(msg_create_client).await;
+                    state.execute_create_client(msg_create_client).await;
                 }
                 Some(UpdateClient(raw_msg_update_client)) => {
                     let msg_update_client =
                         MsgUpdateAnyClient::try_from(raw_msg_update_client.clone()).unwrap();
 
-                    self.execute_update_client(msg_update_client).await;
+                    state.execute_update_client(msg_update_client).await;
                 }
                 _ => {}
             }
         }
+
+        Ok(())
     }
 
-    #[instrument(name = "ics2_client", skip(_ctx, _end_block))]
-    async fn end_block(_end_block: &abci::request::EndBlock, state_tx: &mut StateTransaction) {}
+    #[instrument(name = "ics2_client", skip(_state, _end_block))]
+    async fn end_block(_state: &mut StateTransaction, _end_block: &abci::request::EndBlock) {}
 }
 
-impl Ics2Client {
+#[async_trait]
+trait Ics2ClientExt: StateWrite {
     // execute a UpdateClient IBC action. this assumes that the UpdateClient has already been
     // validated, including header verification.
     async fn execute_update_client(&mut self, msg_update_client: MsgUpdateAnyClient) {
         // get the latest client state
         let client_state = self
-            .state
             .get_client_state(&msg_update_client.client_id)
             .await
             .unwrap();
@@ -194,22 +187,19 @@ impl Ics2Client {
             .await;
 
         // store the updated client and consensus states
-        self.state
-            .put_client(
-                &msg_update_client.client_id,
-                AnyClientState::Tendermint(next_tm_client_state),
-            )
-            .await;
-        self.state
-            .put_verified_consensus_state(
-                tm_header.height(),
-                msg_update_client.client_id.clone(),
-                AnyConsensusState::Tendermint(next_tm_consensus_state),
-            )
-            .await
-            .unwrap();
+        self.put_client(
+            &msg_update_client.client_id,
+            AnyClientState::Tendermint(next_tm_client_state),
+        );
+        self.put_verified_consensus_state(
+            tm_header.height(),
+            msg_update_client.client_id.clone(),
+            AnyConsensusState::Tendermint(next_tm_consensus_state),
+        )
+        .await
+        .unwrap();
 
-        state.record(event::update_client(
+        self.record(event::update_client(
             msg_update_client.client_id,
             client_state,
             msg_update_client.header,
@@ -225,38 +215,29 @@ impl Ics2Client {
     // - processed time and height
     async fn execute_create_client(&mut self, msg_create_client: MsgCreateAnyClient) {
         // get the current client counter
-        let id_counter = self.state.client_counter().await.unwrap();
+        let id_counter = self.client_counter().await.unwrap();
         let client_id =
             ClientId::new(msg_create_client.client_state.client_type(), id_counter.0).unwrap();
 
         tracing::info!("creating client {:?}", client_id);
 
         // store the client data
-        self.state
-            .put_client(&client_id, msg_create_client.client_state.clone())
-            .await;
+        self.put_client(&client_id, msg_create_client.client_state.clone());
 
         // store the genesis consensus state
-        self.state
-            .put_verified_consensus_state(
-                msg_create_client.client_state.latest_height(),
-                client_id.clone(),
-                msg_create_client.consensus_state,
-            )
-            .await
-            .unwrap();
+        self.put_verified_consensus_state(
+            msg_create_client.client_state.latest_height(),
+            client_id.clone(),
+            msg_create_client.consensus_state,
+        )
+        .await
+        .unwrap();
 
         // increment client counter
-        let counter = self
-            .state
-            .client_counter()
-            .await
-            .unwrap_or(ClientCounter(0));
-        self.state
-            .put_client_counter(ClientCounter(counter.0 + 1))
-            .await;
+        let counter = self.client_counter().await.unwrap_or(ClientCounter(0));
+        self.put_client_counter(ClientCounter(counter.0 + 1));
 
-        state.record(event::create_client(
+        self.record(event::create_client(
             client_id,
             msg_create_client.client_state,
         ));
@@ -275,7 +256,6 @@ impl Ics2Client {
         // if we have a stored consensus state for this height that conflicts, we need to freeze
         // the client. if it doesn't conflict, we can return early
         if let Ok(stored_cs_state) = self
-            .state
             .get_verified_consensus_state(verified_header.height(), client_id.clone())
             .await
         {
@@ -302,12 +282,10 @@ impl Ics2Client {
         // have. In that case, we need to verify that the timestamp is correct. if it isn't, freeze
         // the client.
         let next_consensus_state = self
-            .state
             .next_verified_consensus_state(&client_id, verified_header.height())
             .await
             .unwrap();
         let prev_consensus_state = self
-            .state
             .prev_verified_consensus_state(&client_id, verified_header.height())
             .await
             .unwrap();
@@ -356,132 +334,43 @@ impl Ics2Client {
     }
 }
 
-#[async_trait(?Send)]
-pub trait StateReadExt: StateRead {
-    async fn put_client_counter(&mut self, counter: ClientCounter) {
-        self.put_domain("ibc_client_counter".into(), counter).await;
-    }
-    async fn client_counter(&self) -> Result<ClientCounter> {
-        self.get_domain("ibc_client_counter".into())
-            .await
-            .map(|counter| counter.unwrap_or(ClientCounter(0)))
+impl<T: StateWrite + ?Sized> Ics2ClientExt for T {}
+
+#[async_trait]
+pub trait StateWriteExt: StateWrite + StateReadExt {
+    fn put_client_counter(&mut self, counter: ClientCounter) {
+        self.put("ibc_client_counter".into(), counter);
     }
 
-    async fn put_client(&mut self, client_id: &ClientId, client_state: AnyClientState) {
+    fn put_client(&mut self, client_id: &ClientId, client_state: AnyClientState) {
         self.put_proto(
-            state_key::client_type(client_id).into(),
+            state_key::client_type(client_id),
             client_state.client_type().as_str().to_string(),
-        )
-        .await;
+        );
 
-        self.put_domain(state_key::client_state(client_id).into(), client_state)
-            .await;
+        self.put(state_key::client_state(client_id), client_state);
     }
 
-    async fn get_client_type(&self, client_id: &ClientId) -> Result<ClientType> {
-        let client_type_str: String = self
-            .get_proto(state_key::client_type(client_id).into())
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("client not found"))?;
-
-        ClientType::from_str(&client_type_str).map_err(|_| anyhow::anyhow!("invalid client type"))
-    }
-
-    async fn get_client_state(&self, client_id: &ClientId) -> Result<AnyClientState> {
-        let client_state = self
-            .get_domain(state_key::client_state(client_id).into())
-            .await?;
-
-        client_state.ok_or_else(|| anyhow::anyhow!("client not found"))
-    }
-
-    async fn get_verified_heights(&self, client_id: &ClientId) -> Result<Option<VerifiedHeights>> {
-        self.get_domain(
+    fn put_verified_heights(&mut self, client_id: &ClientId, verified_heights: VerifiedHeights) {
+        self.put(
             format!(
                 // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
                 // it's not in the same path namespace.
                 "penumbra_verified_heights/{}/verified_heights",
                 client_id
-            )
-            .into(),
-        )
-        .await
-    }
-
-    async fn put_verified_heights(
-        &mut self,
-        client_id: &ClientId,
-        verified_heights: VerifiedHeights,
-    ) {
-        self.put_domain(
-            format!(
-                // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
-                // it's not in the same path namespace.
-                "penumbra_verified_heights/{}/verified_heights",
-                client_id
-            )
-            .into(),
+            ),
             verified_heights,
-        )
-        .await;
+        );
     }
 
     // returns the ConsensusState for the penumbra chain (this chain) at the given height
-    async fn get_penumbra_consensus_state(&self, height: Height) -> Result<AnyConsensusState> {
+    fn put_penumbra_consensus_state(&mut self, height: Height, consensus_state: AnyConsensusState) {
         // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
         // it's not in the same path namespace.
-        self.get_domain(format!("penumbra_consensus_states/{}", height).into())
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("consensus state not found"))
-    }
-
-    // returns the ConsensusState for the penumbra chain (this chain) at the given height
-    async fn put_penumbra_consensus_state(
-        &self,
-        height: Height,
-        consensus_state: AnyConsensusState,
-    ) {
-        // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
-        // it's not in the same path namespace.
-        self.put_domain(
-            format!("penumbra_consensus_states/{}", height).into(),
+        self.put(
+            format!("penumbra_consensus_states/{}", height),
             consensus_state,
-        )
-        .await;
-    }
-
-    async fn get_verified_consensus_state(
-        &self,
-        height: Height,
-        client_id: ClientId,
-    ) -> Result<AnyConsensusState> {
-        self.get_domain(state_key::verified_client_consensus_state(&client_id, &height).into())
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("consensus state not found"))
-    }
-
-    async fn get_client_update_height(
-        &self,
-        client_id: &ClientId,
-        height: &Height,
-    ) -> Result<ibc::Height> {
-        self.get_domain(state_key::client_processed_heights(client_id, height).into())
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("client update time not found"))
-    }
-
-    async fn get_client_update_time(
-        &self,
-        client_id: &ClientId,
-        height: &Height,
-    ) -> Result<ibc::timestamp::Timestamp> {
-        let timestamp_nanos = self
-            .get_proto::<u64>(state_key::client_processed_times(client_id, height).into())
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("client update time not found"))?;
-
-        ibc::timestamp::Timestamp::from_nanoseconds(timestamp_nanos)
-            .map_err(|_| anyhow::anyhow!("invalid client update time"))
+        );
     }
 
     async fn put_verified_consensus_state(
@@ -490,26 +379,23 @@ pub trait StateReadExt: StateRead {
         client_id: ClientId,
         consensus_state: AnyConsensusState,
     ) -> Result<()> {
-        self.put_domain(
-            state_key::verified_client_consensus_state(&client_id, &height).into(),
+        self.put(
+            state_key::verified_client_consensus_state(&client_id, &height),
             consensus_state,
-        )
-        .await;
+        );
 
         let current_height = self.get_block_height().await?;
         let current_time: ibc::timestamp::Timestamp = self.get_block_timestamp().await?.into();
 
         self.put_proto::<u64>(
-            state_key::client_processed_times(&client_id, &height).into(),
+            state_key::client_processed_times(&client_id, &height),
             current_time.nanoseconds(),
-        )
-        .await;
+        );
 
-        self.put_domain(
-            state_key::client_processed_heights(&client_id, &height).into(),
+        self.put(
+            state_key::client_processed_heights(&client_id, &height),
             ibc::Height::zero().with_revision_height(current_height),
-        )
-        .await;
+        );
 
         // update verified heights
         let mut verified_heights =
@@ -521,10 +407,112 @@ pub trait StateReadExt: StateRead {
 
         verified_heights.heights.push(height);
 
-        self.put_verified_heights(&client_id, verified_heights)
-            .await;
+        self.put_verified_heights(&client_id, verified_heights);
 
         Ok(())
+    }
+
+    // adds the provided connection ID to the client identified by client_id. returns an error if
+    // the client does not exist.
+    async fn add_connection_to_client(
+        &mut self,
+        client_id: &ClientId,
+        connection_id: &ConnectionId,
+    ) -> Result<()> {
+        self.get_client_state(client_id).await?;
+        self.get_client_type(client_id).await?;
+
+        let mut connections: ClientConnections = self
+            .get(&state_key::client_connections(client_id))
+            .await?
+            .unwrap_or_default();
+
+        connections.connection_ids.push(connection_id.clone());
+
+        self.put(state_key::client_connections(client_id), connections);
+
+        Ok(())
+    }
+}
+
+impl<T: StateWrite + ?Sized> StateWriteExt for T {}
+
+#[async_trait]
+pub trait StateReadExt: StateRead {
+    async fn client_counter(&self) -> Result<ClientCounter> {
+        self.get("ibc_client_counter")
+            .await
+            .map(|counter| counter.unwrap_or(ClientCounter(0)))
+    }
+
+    async fn get_client_type(&self, client_id: &ClientId) -> Result<ClientType> {
+        let client_type_str: String = self
+            .get_proto(&state_key::client_type(client_id))
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("client not found"))?;
+
+        ClientType::from_str(&client_type_str).map_err(|_| anyhow::anyhow!("invalid client type"))
+    }
+
+    async fn get_client_state(&self, client_id: &ClientId) -> Result<AnyClientState> {
+        let client_state = self.get(&state_key::client_state(client_id)).await?;
+
+        client_state.ok_or_else(|| anyhow::anyhow!("client not found"))
+    }
+
+    async fn get_verified_heights(&self, client_id: &ClientId) -> Result<Option<VerifiedHeights>> {
+        self.get(&format!(
+            // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
+            // it's not in the same path namespace.
+            "penumbra_verified_heights/{}/verified_heights",
+            client_id
+        ))
+        .await
+    }
+
+    // returns the ConsensusState for the penumbra chain (this chain) at the given height
+    async fn get_penumbra_consensus_state(&self, height: Height) -> Result<AnyConsensusState> {
+        // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
+        // it's not in the same path namespace.
+        self.get(&format!("penumbra_consensus_states/{}", height))
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("consensus state not found"))
+    }
+
+    async fn get_verified_consensus_state(
+        &self,
+        height: Height,
+        client_id: ClientId,
+    ) -> Result<AnyConsensusState> {
+        self.get(&state_key::verified_client_consensus_state(
+            &client_id, &height,
+        ))
+        .await?
+        .ok_or_else(|| anyhow::anyhow!("consensus state not found"))
+    }
+
+    async fn get_client_update_height(
+        &self,
+        client_id: &ClientId,
+        height: &Height,
+    ) -> Result<ibc::Height> {
+        self.get(&state_key::client_processed_heights(client_id, height))
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("client update time not found"))
+    }
+
+    async fn get_client_update_time(
+        &self,
+        client_id: &ClientId,
+        height: &Height,
+    ) -> Result<ibc::timestamp::Timestamp> {
+        let timestamp_nanos = self
+            .get_proto::<u64>(&state_key::client_processed_times(client_id, height))
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("client update time not found"))?;
+
+        ibc::timestamp::Timestamp::from_nanoseconds(timestamp_nanos)
+            .map_err(|_| anyhow::anyhow!("invalid client update time"))
     }
 
     // returns the lowest verified consensus state that is higher than the given height, if it
@@ -588,36 +576,16 @@ pub trait StateReadExt: StateRead {
             return Ok(None);
         }
     }
-
-    // adds the provided connection ID to the client identified by client_id. returns an error if
-    // the client does not exist.
-    async fn add_connection_to_client(
-        &mut self,
-        client_id: &ClientId,
-        connection_id: &ConnectionId,
-    ) -> Result<()> {
-        self.get_client_state(client_id).await?;
-        self.get_client_type(client_id).await?;
-
-        let mut connections: ClientConnections = self
-            .get_domain(state_key::client_connections(client_id).into())
-            .await?
-            .unwrap_or_default();
-
-        connections.connection_ids.push(connection_id.clone());
-
-        self.put_domain(state_key::client_connections(client_id).into(), connections)
-            .await;
-
-        Ok(())
-    }
 }
+
+impl<T: StateRead + ?Sized> StateReadExt for T {}
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
     use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
+    use penumbra_chain::StateWriteExt as _;
     use penumbra_proto::core::ibc::v1alpha1::{ibc_action::Action as IbcActionInner, IbcAction};
     use penumbra_proto::Message;
     use penumbra_storage2::Storage;
@@ -633,19 +601,26 @@ mod tests {
         let dir = tempdir().unwrap();
         let file_path = dir.path().join("ibc-testing.db");
 
-        let storage = Storage::load(file_path).await.unwrap();
-        let state = storage.state().await.unwrap();
-
-        let mut client_component = Ics2Client::new(state).await;
+        let storage = Storage::load(file_path.clone()).await.unwrap();
+        let mut state = Arc::new(storage.state());
+        let state_mut =
+            Arc::get_mut(&mut state).expect("state Arc should not be referenced elsewhere");
+        let mut state_tx = state_mut.begin_transaction();
 
         // init chain should result in client counter = 0
         let genesis_state = genesis::AppState::default();
         let timestamp = Time::parse_from_rfc3339("2022-02-11T17:30:50.425417198Z").unwrap();
-        client_component.state.put_block_timestamp(timestamp).await;
-        client_component.state.put_block_height(0).await;
-        client_component.init_chain(&genesis_state).await;
+        state_tx.put_block_timestamp(timestamp);
+        state_tx.put_block_height(0);
+        Ics2Client::init_chain(&mut state_tx, &genesis_state).await;
 
-        assert_eq!(client_component.state.client_counter().await.unwrap().0, 0);
+        state_tx.apply();
+        storage
+            .commit(Arc::try_unwrap(state).unwrap())
+            .await
+            .unwrap();
+
+        let mut state = Arc::new(storage.state());
 
         // base64 encoded MsgCreateClient that was used to create the currently in-use Stargaze
         // light client on the cosmos hub:
@@ -670,7 +645,7 @@ mod tests {
         let create_client_action = IbcAction {
             action: Some(IbcActionInner::CreateClient(msg_create_stargaze_client)),
         };
-        let create_client_tx = Transaction {
+        let create_client_tx = Arc::new(Transaction {
             transaction_body: TransactionBody {
                 actions: vec![Action::IBCAction(create_client_action)],
                 expiry_height: 0,
@@ -681,12 +656,12 @@ mod tests {
             },
             anchor: tct::Tree::new().root(),
             binding_sig: [0u8; 64].into(),
-        };
+        });
 
         let update_client_action = IbcAction {
             action: Some(IbcActionInner::UpdateClient(msg_update_stargaze_client)),
         };
-        let update_client_tx = Transaction {
+        let update_client_tx = Arc::new(Transaction {
             transaction_body: TransactionBody {
                 actions: vec![Action::IBCAction(update_client_action)],
                 expiry_height: 0,
@@ -697,29 +672,49 @@ mod tests {
             },
             binding_sig: [0u8; 64].into(),
             anchor: tct::Tree::new().root(),
-        };
+        });
 
-        let ctx = Context::new();
-        Ics2Client::check_tx_stateless(&create_client_tx).unwrap();
-        client_component
-            .check_tx_stateful(&create_client_tx)
+        Ics2Client::check_tx_stateless(create_client_tx.clone()).unwrap();
+        Ics2Client::check_tx_stateful(state.clone(), create_client_tx.clone())
             .await
             .unwrap();
         // execute (save client)
-        client_component.execute_tx(&create_client_tx).await;
+        let state_mut =
+            Arc::get_mut(&mut state).expect("state Arc should not be referenced elsewhere");
+        let mut state_tx = state_mut.begin_transaction();
+        Ics2Client::execute_tx(&mut state_tx, create_client_tx.clone())
+            .await
+            .unwrap();
+        state_tx.apply();
+        storage
+            .commit(Arc::try_unwrap(state).unwrap())
+            .await
+            .unwrap();
 
-        assert_eq!(client_component.state.client_counter().await.unwrap().0, 1);
+        let mut state = Arc::new(storage.state());
+        assert_eq!(state.clone().client_counter().await.unwrap().0, 1);
 
         // now try update client
 
-        Ics2Client::check_tx_stateless(&update_client_tx).unwrap();
+        Ics2Client::check_tx_stateless(update_client_tx.clone()).unwrap();
         // verify the ClientUpdate proof
-        client_component
-            .check_tx_stateful(&update_client_tx)
+        Ics2Client::check_tx_stateful(state.clone(), update_client_tx.clone())
             .await
             .unwrap();
         // save the next tm state
-        client_component.execute_tx(&update_client_tx).await;
+        let state_mut =
+            Arc::get_mut(&mut state).expect("state Arc should not be referenced elsewhere");
+        let mut state_tx = state_mut.begin_transaction();
+        Ics2Client::execute_tx(&mut state_tx, update_client_tx.clone())
+            .await
+            .unwrap();
+        state_tx.apply();
+        storage
+            .commit(Arc::try_unwrap(state).unwrap())
+            .await
+            .unwrap();
+
+        let mut state = Arc::new(storage.state());
 
         // try one more client update
         // https://cosmos.bigdipper.live/transactions/ED217D360F51E622859F7B783FEF98BDE3544AA32BBD13C6C77D8D0D57A19FFD
@@ -732,7 +727,7 @@ mod tests {
         let second_update_client_action = IbcAction {
             action: Some(IbcActionInner::UpdateClient(second_update)),
         };
-        let second_update_client_tx = Transaction {
+        let second_update_client_tx = Arc::new(Transaction {
             transaction_body: TransactionBody {
                 actions: vec![Action::IBCAction(second_update_client_action)],
                 expiry_height: 0,
@@ -743,15 +738,24 @@ mod tests {
             },
             anchor: tct::Tree::new().root(),
             binding_sig: [0u8; 64].into(),
-        };
+        });
 
-        Ics2Client::check_tx_stateless(&second_update_client_tx).unwrap();
+        Ics2Client::check_tx_stateless(second_update_client_tx.clone()).unwrap();
         // verify the ClientUpdate proof
-        client_component
-            .check_tx_stateful(&second_update_client_tx)
+        Ics2Client::check_tx_stateful(state.clone(), second_update_client_tx.clone())
             .await
             .unwrap();
         // save the next tm state
-        client_component.execute_tx(&second_update_client_tx).await;
+        let state_mut =
+            Arc::get_mut(&mut state).expect("state Arc should not be referenced elsewhere");
+        let mut state_tx = state_mut.begin_transaction();
+        Ics2Client::execute_tx(&mut state_tx, second_update_client_tx.clone())
+            .await
+            .unwrap();
+        state_tx.apply();
+        storage
+            .commit(Arc::try_unwrap(state).unwrap())
+            .await
+            .unwrap();
     }
 }

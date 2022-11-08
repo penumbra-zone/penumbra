@@ -1,5 +1,8 @@
+use crate::ibc::component::client::StateReadExt;
+
 use super::super::*;
 use ibc::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
+use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics04_channel::context::calculate_block_delay;
 use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::core::ics23_commitment::commitment::CommitmentProofBytes;
@@ -113,6 +116,8 @@ pub trait ChannelProofVerifier: StateReadExt {
         Ok(())
     }
 }
+
+impl<T: StateRead> ChannelProofVerifier for T {}
 
 #[async_trait]
 pub trait PacketProofVerifier: StateReadExt + inner::Inner {
@@ -246,6 +251,8 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
     }
 }
 
+impl<T: StateRead> PacketProofVerifier for T {}
+
 mod inner {
     use super::*;
 
@@ -301,6 +308,3 @@ mod inner {
 
     impl<T: StateReadExt> Inner for T {}
 }
-
-impl<T: StateReadExt> ChannelProofVerifier for T {}
-impl<T: StateReadExt> PacketProofVerifier for T {}
