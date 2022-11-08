@@ -106,7 +106,7 @@ impl<T: StateWrite> Ics20TransferExt for T {}
 // TODO (ava): add versioning to AppHandlers
 #[async_trait]
 impl AppHandlerCheck for Ics20Transfer {
-    async fn chan_open_init_check(&self, msg: &MsgChannelOpenInit) -> Result<()> {
+    async fn chan_open_init_check(state: Arc<State>, msg: &MsgChannelOpenInit) -> Result<()> {
         if msg.channel.ordering != ChannelOrder::Unordered {
             return Err(anyhow::anyhow!(
                 "channel order must be unordered for Ics20 transfer"
@@ -121,7 +121,7 @@ impl AppHandlerCheck for Ics20Transfer {
 
         Ok(())
     }
-    async fn chan_open_try_check(&self, msg: &MsgChannelOpenTry) -> Result<()> {
+    async fn chan_open_try_check(state: Arc<State>, msg: &MsgChannelOpenTry) -> Result<()> {
         if msg.channel.ordering != ChannelOrder::Unordered {
             return Err(anyhow::anyhow!(
                 "channel order must be unordered for Ics20 transfer"
@@ -136,7 +136,7 @@ impl AppHandlerCheck for Ics20Transfer {
 
         Ok(())
     }
-    async fn chan_open_ack_check(&self, msg: &MsgChannelOpenAck) -> Result<()> {
+    async fn chan_open_ack_check(state: Arc<State>, msg: &MsgChannelOpenAck) -> Result<()> {
         if msg.counterparty_version != Version::ics20() {
             return Err(anyhow::anyhow!(
                 "counterparty version must be ics20-1 for Ics20 transfer"
@@ -145,19 +145,25 @@ impl AppHandlerCheck for Ics20Transfer {
 
         Ok(())
     }
-    async fn chan_open_confirm_check(&self, _msg: &MsgChannelOpenConfirm) -> Result<()> {
+    async fn chan_open_confirm_check(
+        state: Arc<State>,
+        _msg: &MsgChannelOpenConfirm,
+    ) -> Result<()> {
         // accept channel confirmations, port has already been validated, version has already been validated
         Ok(())
     }
-    async fn chan_close_confirm_check(&self, _msg: &MsgChannelCloseConfirm) -> Result<()> {
+    async fn chan_close_confirm_check(
+        state: Arc<State>,
+        _msg: &MsgChannelCloseConfirm,
+    ) -> Result<()> {
         // no action necessary
         Ok(())
     }
-    async fn chan_close_init_check(&self, _msg: &MsgChannelCloseInit) -> Result<()> {
+    async fn chan_close_init_check(state: Arc<State>, _msg: &MsgChannelCloseInit) -> Result<()> {
         // always abort transaction
         return Err(anyhow::anyhow!("ics20 always aborts on close init"));
     }
-    async fn recv_packet_check(&self, msg: &MsgRecvPacket) -> Result<()> {
+    async fn recv_packet_check(state: Arc<State>, msg: &MsgRecvPacket) -> Result<()> {
         // 1. parse a FungibleTokenPacketData from msg.packet.data
         let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
         let denom: asset::Denom = packet_data.denom.as_str().try_into()?;
@@ -180,7 +186,7 @@ impl AppHandlerCheck for Ics20Transfer {
 
         Ok(())
     }
-    async fn timeout_packet_check(&self, msg: &MsgTimeout) -> Result<()> {
+    async fn timeout_packet_check(state: Arc<State>, msg: &MsgTimeout) -> Result<()> {
         let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
         let denom: asset::Denom = packet_data.denom.as_str().try_into()?;
 
@@ -201,24 +207,29 @@ impl AppHandlerCheck for Ics20Transfer {
 
         Ok(())
     }
-    async fn acknowledge_packet_check(&self, _msg: &MsgAcknowledgement) -> Result<()> {
+    async fn acknowledge_packet_check(state: Arc<State>, _msg: &MsgAcknowledgement) -> Result<()> {
         Ok(())
     }
 }
 
 #[async_trait]
 impl AppHandlerExecute for Ics20Transfer {
-    async fn chan_open_init_execute(&mut self, _msg: &MsgChannelOpenInit) {}
-    async fn chan_open_try_execute(&mut self, _msg: &MsgChannelOpenTry) {}
-    async fn chan_open_ack_execute(&mut self, _msg: &MsgChannelOpenAck) {}
-    async fn chan_open_confirm_execute(&mut self, _msg: &MsgChannelOpenConfirm) {}
-    async fn chan_close_confirm_execute(&mut self, _msg: &MsgChannelCloseConfirm) {}
-    async fn chan_close_init_execute(&mut self, _msg: &MsgChannelCloseInit) {}
-    async fn recv_packet_execute(&mut self, _msg: &MsgRecvPacket) {
+    async fn chan_open_init_execute(state: &mut StateTransaction, _msg: &MsgChannelOpenInit) {}
+    async fn chan_open_try_execute(state: &mut StateTransaction, _msg: &MsgChannelOpenTry) {}
+    async fn chan_open_ack_execute(state: &mut StateTransaction, _msg: &MsgChannelOpenAck) {}
+    async fn chan_open_confirm_execute(state: &mut StateTransaction, _msg: &MsgChannelOpenConfirm) {
+    }
+    async fn chan_close_confirm_execute(
+        state: &mut StateTransaction,
+        _msg: &MsgChannelCloseConfirm,
+    ) {
+    }
+    async fn chan_close_init_execute(state: &mut StateTransaction, _msg: &MsgChannelCloseInit) {}
+    async fn recv_packet_execute(state: &mut StateTransaction, _msg: &MsgRecvPacket) {
         // parse if we are source or dest, and mint or burn accordingly
     }
-    async fn timeout_packet_execute(&mut self, _msg: &MsgTimeout) {}
-    async fn acknowledge_packet_execute(&mut self, _msg: &MsgAcknowledgement) {}
+    async fn timeout_packet_execute(state: &mut StateTransaction, _msg: &MsgTimeout) {}
+    async fn acknowledge_packet_execute(state: &mut StateTransaction, _msg: &MsgAcknowledgement) {}
 }
 
 impl AppHandler for Ics20Transfer {}

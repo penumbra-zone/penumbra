@@ -2,7 +2,9 @@ use std::sync::Arc;
 
 use super::state_key;
 use crate::ibc::event;
-use crate::ibc::ibc_handler::AppHandler;
+use crate::ibc::ibc_handler::AppHandlerCheck;
+use crate::ibc::ibc_handler::AppHandlerExecute;
+use crate::ibc::transfer::Ics20Transfer;
 use crate::Component;
 use anyhow::Result;
 use async_trait::async_trait;
@@ -114,6 +116,7 @@ impl Component for Ics4Channel {
 
     #[instrument(name = "ics4_channel", skip(state, tx))]
     async fn check_tx_stateful(state: Arc<State>, tx: Arc<Transaction>) -> Result<()> {
+        let transfer = PortId::transfer();
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
                 Some(ChannelOpenInit(msg)) => {
@@ -121,63 +124,90 @@ impl Component for Ics4Channel {
                     let msg = MsgChannelOpenInit::try_from(msg.clone())?;
 
                     state.validate(&msg).await?;
-                    self.app_handler.chan_open_init_check(&msg).await?;
+                    match msg.port_id {
+                        transfer => Ics20Transfer::chan_open_init_check(state, &msg).await?,
+                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    }
                 }
                 Some(ChannelOpenTry(msg)) => {
                     use stateful::channel_open_try::ChannelOpenTryCheck;
                     let msg = MsgChannelOpenTry::try_from(msg.clone())?;
 
                     state.validate(&msg).await?;
-                    self.app_handler.chan_open_try_check(&msg).await?;
+                    match msg.port_id {
+                        transfer => Ics20Transfer::chan_open_try_check(state, &msg).await?,
+                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    }
                 }
                 Some(ChannelOpenAck(msg)) => {
                     use stateful::channel_open_ack::ChannelOpenAckCheck;
                     let msg = MsgChannelOpenAck::try_from(msg.clone())?;
 
                     state.validate(&msg).await?;
-                    self.app_handler.chan_open_ack_check(&msg).await?;
+                    match msg.port_id {
+                        transfer => Ics20Transfer::chan_open_ack_check(state, &msg).await?,
+                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    }
                 }
                 Some(ChannelOpenConfirm(msg)) => {
                     use stateful::channel_open_confirm::ChannelOpenConfirmCheck;
                     let msg = MsgChannelOpenConfirm::try_from(msg.clone())?;
 
                     state.validate(&msg).await?;
-                    self.app_handler.chan_open_confirm_check(&msg).await?;
+                    match msg.port_id {
+                        transfer => Ics20Transfer::chan_open_confirm_check(state, &msg).await?,
+                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    }
                 }
                 Some(ChannelCloseInit(msg)) => {
                     use stateful::channel_close_init::ChannelCloseInitCheck;
                     let msg = MsgChannelCloseInit::try_from(msg.clone())?;
 
                     state.validate(&msg).await?;
-                    self.app_handler.chan_close_init_check(&msg).await?;
+                    match msg.port_id {
+                        transfer => Ics20Transfer::chan_close_init_check(state, &msg).await?,
+                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    }
                 }
                 Some(ChannelCloseConfirm(msg)) => {
                     use stateful::channel_close_confirm::ChannelCloseConfirmCheck;
                     let msg = MsgChannelCloseConfirm::try_from(msg.clone())?;
 
                     state.validate(&msg).await?;
-                    self.app_handler.chan_close_confirm_check(&msg).await?;
+                    match msg.port_id {
+                        transfer => Ics20Transfer::chan_close_confirm_check(state, &msg).await?,
+                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    }
                 }
                 Some(RecvPacket(msg)) => {
                     use stateful::recv_packet::RecvPacketCheck;
                     let msg = MsgRecvPacket::try_from(msg.clone())?;
 
                     state.validate(&msg).await?;
-                    self.app_handler.recv_packet_check(&msg).await?;
+                    match msg.packet.destination_port {
+                        transfer => Ics20Transfer::recv_packet_check(state, &msg).await?,
+                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    }
                 }
                 Some(Acknowledgement(msg)) => {
                     use stateful::acknowledge_packet::AcknowledgePacketCheck;
                     let msg = MsgAcknowledgement::try_from(msg.clone())?;
 
                     state.validate(&msg).await?;
-                    self.app_handler.acknowledge_packet_check(&msg).await?;
+                    match msg.packet.destination_port {
+                        transfer => Ics20Transfer::acknowledge_packet_check(state, &msg).await?,
+                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    }
                 }
                 Some(Timeout(msg)) => {
                     use stateful::timeout::TimeoutCheck;
                     let msg = MsgTimeout::try_from(msg.clone())?;
 
                     state.validate(&msg).await?;
-                    self.app_handler.timeout_packet_check(&msg).await?;
+                    match msg.packet.destination_port {
+                        transfer => Ics20Transfer::timeout_packet_check(state, &msg).await?,
+                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    }
                 }
 
                 // Other IBC messages are not handled by this component.
@@ -196,63 +226,90 @@ impl Component for Ics4Channel {
                     let msg = MsgChannelOpenInit::try_from(msg.clone()).unwrap();
 
                     state.execute(&msg).await;
-                    self.app_handler.chan_open_init_execute(&msg).await;
+                    match msg.port_id {
+                        transfer => Ics20Transfer::chan_open_init_execute(state, &msg).await,
+                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    }
                 }
                 Some(ChannelOpenTry(msg)) => {
                     use execution::channel_open_try::ChannelOpenTryExecute;
                     let msg = MsgChannelOpenTry::try_from(msg.clone()).unwrap();
 
                     state.execute(&msg).await;
-                    self.app_handler.chan_open_try_execute(&msg).await;
+                    match msg.port_id {
+                        transfer => Ics20Transfer::chan_open_try_execute(state, &msg).await,
+                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    }
                 }
                 Some(ChannelOpenAck(msg)) => {
                     use execution::channel_open_ack::ChannelOpenAckExecute;
                     let msg = MsgChannelOpenAck::try_from(msg.clone()).unwrap();
 
                     state.execute(&msg).await;
-                    self.app_handler.chan_open_ack_execute(&msg).await;
+                    match msg.port_id {
+                        transfer => Ics20Transfer::chan_open_ack_execute(state, &msg).await,
+                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    }
                 }
                 Some(ChannelOpenConfirm(msg)) => {
                     use execution::channel_open_confirm::ChannelOpenConfirmExecute;
                     let msg = MsgChannelOpenConfirm::try_from(msg.clone()).unwrap();
 
                     state.execute(&msg).await;
-                    self.app_handler.chan_open_confirm_execute(&msg).await;
+                    match msg.port_id {
+                        transfer => Ics20Transfer::chan_open_confirm_execute(state, &msg).await,
+                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    }
                 }
                 Some(ChannelCloseInit(msg)) => {
                     use execution::channel_close_init::ChannelCloseInitExecute;
                     let msg = MsgChannelCloseInit::try_from(msg.clone()).unwrap();
 
                     state.execute(&msg).await;
-                    self.app_handler.chan_close_init_execute(&msg).await;
+                    match msg.port_id {
+                        transfer => Ics20Transfer::chan_close_init_execute(state, &msg).await,
+                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    }
                 }
                 Some(ChannelCloseConfirm(msg)) => {
                     use execution::channel_close_confirm::ChannelCloseConfirmExecute;
                     let msg = MsgChannelCloseConfirm::try_from(msg.clone()).unwrap();
 
                     state.execute(&msg).await;
-                    self.app_handler.chan_close_confirm_execute(&msg).await;
+                    match msg.port_id {
+                        transfer => Ics20Transfer::chan_close_confirm_execute(state, &msg).await,
+                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    }
                 }
                 Some(RecvPacket(msg)) => {
                     use execution::recv_packet::RecvPacketExecute;
                     let msg = MsgRecvPacket::try_from(msg.clone()).unwrap();
 
                     state.execute(&msg).await;
-                    self.app_handler.recv_packet_execute(&msg).await;
+                    match msg.packet.destination_port {
+                        transfer => Ics20Transfer::recv_packet_execute(state, &msg).await,
+                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    }
                 }
                 Some(Acknowledgement(msg)) => {
                     use execution::acknowledge_packet::AcknowledgePacketExecute;
                     let msg = MsgAcknowledgement::try_from(msg.clone()).unwrap();
 
                     state.execute(&msg).await;
-                    self.app_handler.acknowledge_packet_execute(&msg).await;
+                    match msg.packet.destination_port {
+                        transfer => Ics20Transfer::acknowledge_packet_execute(state, &msg).await,
+                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    }
                 }
                 Some(Timeout(msg)) => {
                     use execution::timeout::TimeoutExecute;
                     let msg = MsgTimeout::try_from(msg.clone()).unwrap();
 
                     state.execute(&msg).await;
-                    self.app_handler.timeout_packet_execute(&msg).await;
+                    match msg.packet.destination_port {
+                        transfer => Ics20Transfer::timeout_packet_execute(state, &msg).await,
+                        _ => return Err(anyhow::anyhow!("invalid port id")),
+                    }
                 }
 
                 // Other IBC messages are not handled by this component.
@@ -335,37 +392,36 @@ pub trait StateReadExt: StateRead {
         channel_id: &ChannelId,
         port_id: &PortId,
     ) -> Result<Option<ChannelEnd>> {
-        self.get(state_key::channel(channel_id, port_id).into())
-            .await
+        self.get(&state_key::channel(channel_id, port_id)).await
     }
 
     async fn get_recv_sequence(&self, channel_id: &ChannelId, port_id: &PortId) -> Result<u64> {
-        self.get_proto::<u64>(state_key::seq_recv(channel_id, port_id).into())
+        self.get_proto::<u64>(&state_key::seq_recv(channel_id, port_id))
             .await
             .map(|sequence| sequence.unwrap_or(0))
     }
 
     async fn get_ack_sequence(&self, channel_id: &ChannelId, port_id: &PortId) -> Result<u64> {
-        self.get_proto::<u64>(state_key::seq_ack(channel_id, port_id).into())
+        self.get_proto::<u64>(&state_key::seq_ack(channel_id, port_id))
             .await
             .map(|sequence| sequence.unwrap_or(0))
     }
 
     async fn get_send_sequence(&self, channel_id: &ChannelId, port_id: &PortId) -> Result<u64> {
-        self.get_proto::<u64>(state_key::seq_send(channel_id, port_id).into())
+        self.get_proto::<u64>(&state_key::seq_send(channel_id, port_id))
             .await
             .map(|sequence| sequence.unwrap_or(0))
     }
 
     async fn seen_packet(&self, packet: &Packet) -> Result<bool> {
-        self.get_proto::<String>(state_key::packet_receipt(packet).into())
+        self.get_proto::<String>(&state_key::packet_receipt(packet))
             .await
             .map(|res| res.is_some())
     }
 
     async fn get_packet_commitment(&self, packet: &Packet) -> Result<Option<Vec<u8>>> {
         let commitment = self
-            .get_proto::<Vec<u8>>(state_key::packet_commitment(packet).into())
+            .get_proto::<Vec<u8>>(&state_key::packet_commitment(packet))
             .await?;
 
         // this is for the special case where the commitment is empty, we consider this None.
