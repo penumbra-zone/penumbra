@@ -21,6 +21,8 @@ pub mod channel_open_init {
         }
     }
     mod inner {
+        use crate::ibc::component::{channel::StateReadExt as _, connection::StateReadExt as _};
+
         use super::*;
 
         #[async_trait]
@@ -61,7 +63,7 @@ pub mod channel_open_try {
     use super::proof_verification::ChannelProofVerifier;
 
     #[async_trait]
-    pub trait ChannelOpenTryCheck: StateReadExt + inner::Inner {
+    pub trait ChannelOpenTryCheck: ChannelProofVerifier + inner::Inner {
         async fn validate(&self, msg: &MsgChannelOpenTry) -> anyhow::Result<()> {
             let channel_id = ChannelId::new(self.get_channel_counter().await?);
 
@@ -96,6 +98,7 @@ pub mod channel_open_try {
     }
     mod inner {
         use super::*;
+        use crate::ibc::component::connection::StateReadExt as _;
 
         #[async_trait]
         pub trait Inner: StateReadExt {
@@ -133,7 +136,7 @@ pub mod channel_open_ack {
     }
 
     #[async_trait]
-    pub trait ChannelOpenAckCheck: inner::Inner {
+    pub trait ChannelOpenAckCheck: ChannelProofVerifier + inner::Inner {
         async fn validate(&self, msg: &MsgChannelOpenAck) -> anyhow::Result<()> {
             let channel = self
                 .get_channel(&msg.channel_id, &msg.port_id)
@@ -174,10 +177,12 @@ pub mod channel_open_ack {
         }
     }
     mod inner {
+        use crate::ibc::component::connection::StateReadExt as _;
+
         use super::*;
 
         #[async_trait]
-        pub trait Inner {
+        pub trait Inner: ChannelProofVerifier {
             async fn verify_channel_connection_open(
                 &self,
                 channel: &ChannelEnd,
@@ -200,11 +205,14 @@ pub mod channel_open_ack {
 }
 
 pub mod channel_open_confirm {
+    use crate::ibc::component::channel::StateReadExt as _;
+    use crate::ibc::component::connection::StateReadExt as _;
+
     use super::super::*;
     use super::proof_verification::ChannelProofVerifier;
 
     #[async_trait]
-    pub trait ChannelOpenConfirmCheck {
+    pub trait ChannelOpenConfirmCheck: ChannelProofVerifier {
         async fn validate(&self, msg: &MsgChannelOpenConfirm) -> anyhow::Result<()> {
             let channel = self
                 .get_channel(&msg.channel_id, &msg.port_id)
@@ -259,10 +267,12 @@ pub mod channel_open_confirm {
 }
 
 pub mod channel_close_init {
-    use super::super::*;
+    use crate::ibc::component::{channel::StateReadExt as _, connection::StateReadExt as _};
+
+    use super::{super::*, proof_verification::ChannelProofVerifier};
 
     #[async_trait]
-    pub trait ChannelCloseInitCheck: StateReadExt {
+    pub trait ChannelCloseInitCheck: ChannelProofVerifier {
         async fn validate(&self, msg: &MsgChannelCloseInit) -> anyhow::Result<()> {
             // TODO: capability authentication?
             //
@@ -293,11 +303,13 @@ pub mod channel_close_init {
 }
 
 pub mod channel_close_confirm {
+    use crate::ibc::component::connection::StateReadExt as _;
+
     use super::super::*;
     use super::proof_verification::ChannelProofVerifier;
 
     #[async_trait]
-    pub trait ChannelCloseConfirmCheck {
+    pub trait ChannelCloseConfirmCheck: ChannelProofVerifier {
         async fn validate(&self, msg: &MsgChannelCloseConfirm) -> anyhow::Result<()> {
             // TODO: capability authentication?
             //
@@ -355,6 +367,8 @@ pub mod channel_close_confirm {
 }
 
 pub mod recv_packet {
+    use crate::ibc::component::connection::StateReadExt as _;
+
     use super::super::*;
     use super::proof_verification::PacketProofVerifier;
     use ibc::timestamp::Timestamp as IBCTimestamp;
@@ -362,7 +376,7 @@ pub mod recv_packet {
     use penumbra_chain::StateReadExt as _;
 
     #[async_trait]
-    pub trait RecvPacketCheck: StateReadExt {
+    pub trait RecvPacketCheck: PacketProofVerifier {
         async fn validate(&self, msg: &MsgRecvPacket) -> anyhow::Result<()> {
             let channel = self
                 .get_channel(
@@ -442,12 +456,14 @@ pub mod recv_packet {
 }
 
 pub mod acknowledge_packet {
+    use crate::ibc::component::connection::StateReadExt as _;
+
     use super::super::*;
     use super::proof_verification::commit_packet;
     use super::proof_verification::PacketProofVerifier;
 
     #[async_trait]
-    pub trait AcknowledgePacketCheck: StateReadExt {
+    pub trait AcknowledgePacketCheck: PacketProofVerifier {
         async fn validate(&self, msg: &MsgAcknowledgement) -> anyhow::Result<()> {
             let channel = self
                 .get_channel(&msg.packet.source_channel, &msg.packet.source_port)
@@ -512,13 +528,15 @@ pub mod acknowledge_packet {
 }
 
 pub mod timeout {
+    use crate::ibc::component::connection::StateReadExt as _;
+
     use super::super::*;
     use super::proof_verification::commit_packet;
     use super::proof_verification::PacketProofVerifier;
     use ibc::timestamp::Timestamp as IBCTimestamp;
 
     #[async_trait]
-    pub trait TimeoutCheck: StateReadExt {
+    pub trait TimeoutCheck: PacketProofVerifier {
         async fn validate(&self, msg: &MsgTimeout) -> anyhow::Result<()> {
             let channel = self
                 .get_channel(&msg.packet.source_channel, &msg.packet.source_port)
