@@ -730,7 +730,7 @@ impl Tree {
     /// in order, but it may be slower by a constant factor.
     #[instrument(level = "trace", skip(self))]
     pub fn commitments_ordered(&self) -> impl Iterator<Item = (Position, Commitment)> + '_ {
-        crate::storage::serialize::Serializer::default().commitments_iter(self)
+        crate::storage::serialize::Serializer::default().commitments(self)
     }
 
     /// Get a dynamic representation of the internal structure of the tree, which can be traversed
