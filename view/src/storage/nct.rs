@@ -33,6 +33,27 @@ impl AsyncRead for TreeStore<'_, '_> {
             .into())
     }
 
+    async fn hash(&mut self, position: Position, height: u8) -> Result<Option<Hash>, Self::Error> {
+        let position = u64::from(position) as i64;
+
+        let bytes = sqlx::query!(
+            "SELECT hash FROM nct_hashes WHERE position = ? AND height = ? LIMIT 1",
+            position,
+            height
+        )
+        .fetch_optional(&mut *self.0)
+        .await?
+        .map(|r| r.hash);
+
+        Ok(bytes
+            .map(|bytes| {
+                <[u8; 32]>::try_from(bytes)
+                    .map_err(|_| anyhow::anyhow!("hash was of incorrect length"))
+                    .and_then(|array| Hash::from_bytes(array).map_err(Into::into))
+            })
+            .transpose()?)
+    }
+
     fn hashes(
         &mut self,
     ) -> Pin<Box<dyn Stream<Item = Result<(Position, u8, Hash), Self::Error>> + Send + '_>> {
@@ -58,6 +79,26 @@ impl AsyncRead for TreeStore<'_, '_> {
                 })
                 .filter_map(|item| async move { item.transpose() }),
         )
+    }
+
+    async fn commitment(&mut self, position: Position) -> Result<Option<Commitment>, Self::Error> {
+        let position = u64::from(position) as i64;
+
+        let bytes: Option<Vec<u8>> = sqlx::query!(
+            "SELECT commitment FROM nct_commitments WHERE position = ? LIMIT 1",
+            position,
+        )
+        .fetch_optional(&mut *self.0)
+        .await?
+        .map(|r| r.commitment);
+
+        Ok(bytes
+            .map(|bytes| {
+                <[u8; 32]>::try_from(bytes)
+                    .map_err(|_| anyhow::anyhow!("commitment was of incorrect length"))
+                    .and_then(|array| Commitment::try_from(array).map_err(Into::into))
+            })
+            .transpose()?)
     }
 
     fn commitments(

@@ -152,6 +152,24 @@
     },
     "query": "UPDATE sync_height SET height = ?"
   },
+  "4c9bd2e8b71df9f41b20ea0ff9a6cc2f9edf80c22a2c3c64410ed78fa5b05353": {
+    "describe": {
+      "columns": [
+        {
+          "name": "hash",
+          "ordinal": 0,
+          "type_info": "Blob"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "SELECT hash FROM nct_hashes WHERE position = ? AND height = ? LIMIT 1"
+  },
   "58e7cd62f2177d2bd0fa3b34c8be3495c9a0d8e331f846b56bf7c756a534ea64": {
     "describe": {
       "columns": [],
@@ -385,6 +403,24 @@
       }
     },
     "query": "SELECT * FROM notes WHERE note_commitment = ?"
+  },
+  "95df7ed7e4e2444a04608f6250f0aeaedf0a054f15787c6c147233cc965dcbbb": {
+    "describe": {
+      "columns": [
+        {
+          "name": "commitment",
+          "ordinal": 0,
+          "type_info": "Blob"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT commitment FROM nct_commitments WHERE position = ? LIMIT 1"
   },
   "982b5f03b4628f7fb3ae7ab903b964e77fd3f5b626be440b672f182503204f2d": {
     "describe": {

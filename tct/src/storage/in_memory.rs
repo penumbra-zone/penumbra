@@ -88,6 +88,14 @@ impl Read for InMemory {
         Ok(self.forgotten)
     }
 
+    fn hash(&mut self, position: Position, height: u8) -> Result<Option<Hash>, Self::Error> {
+        Ok(self
+            .hashes
+            .get(&position)
+            .and_then(|h| h.get(&height))
+            .cloned())
+    }
+
     fn hashes(
         &mut self,
     ) -> Box<dyn Iterator<Item = Result<(Position, u8, Hash), Self::Error>> + Send + '_> {
@@ -96,6 +104,10 @@ impl Read for InMemory {
                 .iter()
                 .map(move |(&height, &hash)| Ok((position, height, hash)))
         }))
+    }
+
+    fn commitment(&mut self, position: Position) -> Result<Option<Commitment>, Self::Error> {
+        Ok(self.commitments.get(&position).cloned())
     }
 
     fn commitments(

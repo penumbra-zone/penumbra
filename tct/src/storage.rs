@@ -64,11 +64,17 @@ pub trait AsyncRead {
     /// Fetch the current forgotten version.
     async fn forgotten(&mut self) -> Result<Forgotten, Self::Error>;
 
+    /// Fetch the hash at the given position and height, if it exists.
+    async fn hash(&mut self, position: Position, height: u8) -> Result<Option<Hash>, Self::Error>;
+
     /// Get the full list of all internal hashes stored, indexed by position and height.
     #[allow(clippy::type_complexity)]
     fn hashes(
         &mut self,
     ) -> Pin<Box<dyn Stream<Item = Result<(Position, u8, Hash), Self::Error>> + Send + '_>>;
+
+    /// Fetch the commitment at the given position, if it exists.
+    async fn commitment(&mut self, position: Position) -> Result<Option<Commitment>, Self::Error>;
 
     /// Get the full list of all commitments stored, indexed by position.
     #[allow(clippy::type_complexity)]
@@ -137,11 +143,17 @@ pub trait Read {
     /// Fetch the current forgotten version.
     fn forgotten(&mut self) -> Result<Forgotten, Self::Error>;
 
+    /// Fetch a specific hash at the given position and height, if it exists.
+    fn hash(&mut self, position: Position, height: u8) -> Result<Option<Hash>, Self::Error>;
+
     /// Get the full list of all internal hashes stored, indexed by position and height.
     #[allow(clippy::type_complexity)]
     fn hashes(
         &mut self,
     ) -> Box<dyn Iterator<Item = Result<(Position, u8, Hash), Self::Error>> + Send + '_>;
+
+    /// Fetch a specific commitment at the given position, if it exists.
+    fn commitment(&mut self, position: Position) -> Result<Option<Commitment>, Self::Error>;
 
     /// Get the full list of all commitments stored, indexed by position.
     #[allow(clippy::type_complexity)]
