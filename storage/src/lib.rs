@@ -38,10 +38,12 @@
 
 mod metrics;
 mod snapshot;
+mod snapshot_cache;
 mod state;
 mod storage;
 
 pub use crate::metrics::register_metrics;
 pub use jmt::{ics23_spec, RootHash};
+pub use snapshot::Snapshot;
 pub use state::{State, StateRead, StateTransaction, StateWrite};
 pub use storage::{StateNotification, Storage};

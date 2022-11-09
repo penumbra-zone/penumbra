@@ -32,7 +32,7 @@ use self::read::prefix_raw_with_cache;
 /// [`Storage`](crate::Storage), if the states are meant to be independent, or
 /// the [`State`] should be explicitly shared using an [`Arc`](std::sync::Arc).
 pub struct State {
-    snapshot: Snapshot,
+    pub(crate) snapshot: Snapshot,
     // A `None` value represents deletion.
     pub(crate) unwritten_changes: BTreeMap<String, Option<Vec<u8>>>,
     // A `None` value represents deletion.

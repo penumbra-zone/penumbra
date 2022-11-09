@@ -155,7 +155,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let file_path = dir.path().join("proof-test.db");
         let storage = Storage::load(file_path.clone()).await.unwrap();
-        let mut state = storage.state();
+        let mut state = storage.latest_state();
         let mut tx = state.begin_transaction();
 
         tx.put_proto::<u64>("foo-key".into(), 1);
@@ -163,7 +163,7 @@ mod tests {
         let jmt_root = storage.clone().commit(state).await.unwrap();
         let app_root: AppHash = jmt_root.into();
 
-        let state = storage.state();
+        let state = storage.latest_state();
         let (val2, proof) = get_with_proof(&state, "foo-key".into(), &jmt_root)
             .await
             .unwrap();
