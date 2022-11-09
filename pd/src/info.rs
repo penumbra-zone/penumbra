@@ -6,7 +6,7 @@ use std::{
 
 use futures::FutureExt;
 //use penumbra_storage::{get_with_proof, AppHash, State, Storage};
-use penumbra_storage2::{AppHash, Storage};
+use penumbra_storage::{AppHash, Storage};
 use tendermint::abci::{self, response::Echo, InfoRequest, InfoResponse};
 use tower_abci::BoxError;
 use tracing::Instrument;

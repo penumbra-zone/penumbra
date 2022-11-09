@@ -18,7 +18,7 @@ use penumbra_crypto::{keys::SpendKey, DelegationToken, GovernanceKey};
 use penumbra_proto::client::v1alpha1::{
     oblivious_query_server::ObliviousQueryServer, specific_query_server::SpecificQueryServer,
 };
-use penumbra_storage2::Storage;
+use penumbra_storage::Storage;
 use rand::Rng;
 use rand_core::OsRng;
 use tokio::runtime;

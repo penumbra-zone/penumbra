@@ -4,7 +4,7 @@ use anyhow::Result;
 use bytes::Bytes;
 
 use penumbra_proto::Protobuf;
-use penumbra_storage2::{StateNotification, Storage};
+use penumbra_storage::{StateNotification, Storage};
 use penumbra_transaction::Transaction;
 
 use tokio::sync::{mpsc, watch};

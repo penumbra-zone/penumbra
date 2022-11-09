@@ -169,16 +169,6 @@ impl StateRead for Snapshot {
         // No-op -- this will never be called internally, and `Snapshot` is not exposed in public API
         None
     }
-
-    /*
-    fn prefix_ephemeral<'a, T: Any + Send + Sync>(
-        &'a self,
-        _prefix: &'a str,
-    ) -> Box<dyn Iterator<Item = (&'a str, &'a T)> + 'a> {
-        // No-op -- this will never be called internally, and `Snapshot` is not exposed in public API
-        Box::new(std::iter::empty())
-    }
-    */
 }
 
 /// A reader interface for rocksdb. NOTE: it is up to the caller to ensure consistency between the

@@ -5,7 +5,7 @@ use std::{
 };
 
 use futures::FutureExt;
-use penumbra_storage2::Storage;
+use penumbra_storage::Storage;
 use tendermint::abci::{
     request::CheckTx as CheckTxReq, request::CheckTxKind, response::CheckTx as CheckTxRsp,
     MempoolRequest, MempoolResponse,

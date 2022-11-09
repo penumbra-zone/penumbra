@@ -137,7 +137,6 @@ impl State {
     }
 }
 
-//#[async_trait(?Send)]
 #[async_trait]
 impl StateRead for State {
     async fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>> {
@@ -172,21 +171,4 @@ impl StateRead for State {
             .get(key)
             .and_then(|object| object.downcast_ref())
     }
-
-    /*
-    fn prefix_ephemeral<'a, T: Any + Send + Sync>(
-        &'a self,
-        prefix: &'a str,
-    ) -> Box<dyn Iterator<Item = (&'a str, &'a T)> + 'a> {
-        Box::new(
-            self.ephemeral_objects
-                .range(prefix.to_string()..)
-                .take_while(move |(k, _)| k.starts_with(prefix))
-                .filter_map(|(k, v)| match v.downcast_ref() {
-                    Some(v) => Some((k.as_str(), v)),
-                    None => None,
-                }),
-        )
-    }
-    */
 }

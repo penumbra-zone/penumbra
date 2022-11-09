@@ -15,7 +15,7 @@ use crate::Component;
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::{genesis, StateReadExt as _};
-use penumbra_storage2::{State, StateTransaction};
+use penumbra_storage::{State, StateTransaction};
 use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tracing::instrument;

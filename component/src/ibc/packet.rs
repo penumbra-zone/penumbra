@@ -10,7 +10,7 @@ use ibc::core::ics04_channel::channel::State as ChannelState;
 use ibc::core::ics04_channel::packet::Packet;
 use ibc::core::ics24_host::identifier::ChannelId;
 use ibc::core::ics24_host::identifier::PortId;
-use penumbra_storage2::{StateRead, StateWrite};
+use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::action::Ics20Withdrawal;
 
 pub trait CheckStatus: private::Sealed {}

@@ -14,7 +14,7 @@ use penumbra_crypto::{
     dex::{BatchSwapOutputData, TradingPair},
     MockFlowCiphertext, SwapFlow, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_storage2::{State, StateRead, StateTransaction, StateWrite};
+use penumbra_storage::{State, StateRead, StateTransaction, StateWrite};
 use penumbra_transaction::{Action, Transaction};
 use tendermint::abci;
 use tracing::instrument;

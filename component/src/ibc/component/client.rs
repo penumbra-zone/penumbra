@@ -28,7 +28,7 @@ use ibc::{
 };
 use penumbra_chain::{genesis, StateReadExt as _};
 use penumbra_proto::core::ibc::v1alpha1::ibc_action::Action::{CreateClient, UpdateClient};
-use penumbra_storage2::{State, StateRead, StateTransaction, StateWrite};
+use penumbra_storage::{State, StateRead, StateTransaction, StateWrite};
 use penumbra_transaction::Transaction;
 use tendermint::{abci, validator};
 use tendermint_light_client_verifier::{
@@ -588,7 +588,7 @@ mod tests {
     use penumbra_chain::StateWriteExt as _;
     use penumbra_proto::core::ibc::v1alpha1::{ibc_action::Action as IbcActionInner, IbcAction};
     use penumbra_proto::Message;
-    use penumbra_storage2::Storage;
+    use penumbra_storage::Storage;
     use penumbra_tct as tct;
     use penumbra_transaction::{Action, Transaction, TransactionBody};
     use tempfile::tempdir;

@@ -10,7 +10,7 @@ use penumbra_chain::quarantined::Slashed;
 use penumbra_chain::{genesis, Epoch, NoteSource, StateReadExt as _};
 use penumbra_crypto::{DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::Protobuf;
-use penumbra_storage2::{State, StateRead, StateTransaction, StateWrite};
+use penumbra_storage::{State, StateRead, StateTransaction, StateWrite};
 use penumbra_transaction::{
     action::{Delegate, Undelegate},
     Action, Transaction,
@@ -83,7 +83,7 @@ trait PutValidatorUpdates: StateWrite {
 impl<T: StateWrite + ?Sized> PutValidatorUpdates for T {}
 
 #[async_trait]
-trait StakingImpl: StateWrite + StateWriteExt {
+trait StakingImpl: StateWriteExt {
     /// Updates the state of the given validator, performing all necessary state transitions.
     ///
     /// This method errors on illegal state transitions; since execution must be infallible,

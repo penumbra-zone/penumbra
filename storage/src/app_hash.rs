@@ -1,8 +1,15 @@
+use crate::State;
 use ibc::core::ics23_commitment::{commitment::CommitmentPrefix, specs::ProofSpecs};
-use jmt::{storage::TreeReader, RootHash};
+use jmt::RootHash;
 use once_cell::sync::Lazy;
 use penumbra_proto::Message;
 use sha2::{Digest, Sha256};
+
+pub static PENUMBRA_PROOF_SPECS: Lazy<ProofSpecs> =
+    Lazy::new(|| ProofSpecs::from(vec![jmt::ics23_spec(), apphash_spec()]));
+
+pub static PENUMBRA_COMMITMENT_PREFIX: Lazy<CommitmentPrefix> =
+    Lazy::new(|| CommitmentPrefix::try_from(APPHASH_DOMSEP.as_bytes().to_vec()).unwrap());
 
 /// this is a proof spec for computing Penumbra's AppHash, which is defined as
 /// SHA256("PenumbraAppHash" || jmt.root()). In ICS/IBC terms, this applies a single global prefix
@@ -32,46 +39,14 @@ fn apphash_spec() -> ics23::ProofSpec {
     }
 }
 
-static APPHASH_DOMSEP: &str = "PenumbraAppHash";
-
-pub static PENUMBRA_PROOF_SPECS: Lazy<ProofSpecs> =
-    Lazy::new(|| ProofSpecs::from(vec![jmt::ics23_spec(), apphash_spec()]));
-
-pub static PENUMBRA_COMMITMENT_PREFIX: Lazy<CommitmentPrefix> =
-    Lazy::new(|| CommitmentPrefix::try_from(APPHASH_DOMSEP.as_bytes().to_vec()).unwrap());
-
-#[derive(Copy, Clone, PartialEq, Eq)]
-pub struct AppHash(pub [u8; 32]);
-
-// the app hash of penumbra's state is defined as SHA256("PenumbraAppHash" || jmt.root_hash())
-impl From<RootHash> for AppHash {
-    fn from(r: RootHash) -> Self {
-        let mut h = Sha256::new();
-        h.update(APPHASH_DOMSEP);
-        h.update(r.0);
-
-        AppHash(h.finalize().into())
-    }
-}
-
-impl std::fmt::Debug for AppHash {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("AppHash")
-            .field(&hex::encode(&self.0))
-            .finish()
-    }
-}
-
 /// given a JMT, a key, and a height, return a tendermint::Proof of the value all the way up to the
 /// AppHash.
-pub async fn get_with_proof<'a, R: TreeReader>(
-    store: &jmt::JellyfishMerkleTree<'a, R>,
+pub async fn get_with_proof(
+    state: &State,
     key: Vec<u8>,
-    height: u64,
+    jmt_root: &RootHash,
 ) -> anyhow::Result<(Vec<u8>, tendermint::merkle::proof::Proof)> {
-    let jmt_root = store.get_root_hash(height).await?;
-    let jmt_proof = store.get_with_ics23_proof(key.clone(), height).await?;
-    let value = jmt_proof.value.clone();
+    let (value, jmt_proof) = state.get_with_proof(key.clone()).await?;
 
     let jmt_commitment_proof = ics23::CommitmentProof {
         proof: Some(ics23::commitment_proof::Proof::Exist(jmt_proof)),
@@ -108,6 +83,30 @@ pub async fn get_with_proof<'a, R: TreeReader>(
     ))
 }
 
+static APPHASH_DOMSEP: &str = "PenumbraAppHash";
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub struct AppHash(pub [u8; 32]);
+
+// the app hash of penumbra's state is defined as SHA256("PenumbraAppHash" || jmt.root_hash())
+impl From<RootHash> for AppHash {
+    fn from(r: RootHash) -> Self {
+        let mut h = Sha256::new();
+        h.update(APPHASH_DOMSEP);
+        h.update(r.0);
+
+        AppHash(h.finalize().into())
+    }
+}
+
+impl std::fmt::Debug for AppHash {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("AppHash")
+            .field(&hex::encode(&self.0))
+            .finish()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::super::*;
@@ -121,14 +120,17 @@ mod tests {
     async fn test_tendermint_multiproof() {
         let dir = tempdir().unwrap();
         let file_path = dir.path().join("proof-test.db");
-        let storage = Storage::load(file_path).await.unwrap();
-        let state = storage.state().await.unwrap();
+        let storage = Storage::load(file_path.clone()).await.unwrap();
+        let mut state = storage.state();
+        let mut tx = state.begin_transaction();
 
-        state.put_proto::<u64>(b"foo-key".into(), 1).await;
-        let (jmt_root, height) = state.write().await.commit(storage.clone()).await.unwrap();
+        tx.put_proto::<u64>("foo-key".into(), 1);
+        tx.apply();
+        let jmt_root = storage.clone().commit(state).await.unwrap();
         let app_root: AppHash = jmt_root.into();
-        let store = jmt::JellyfishMerkleTree::new(&storage);
-        let (val2, proof) = get_with_proof(&store, "foo-key".into(), height)
+
+        let state = storage.state();
+        let (val2, proof) = get_with_proof(&state, "foo-key".into(), &jmt_root)
             .await
             .unwrap();
 

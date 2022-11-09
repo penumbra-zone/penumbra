@@ -1,8 +1,8 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::genesis;
-use penumbra_storage2::State;
-use penumbra_storage2::StateTransaction;
+use penumbra_storage::State;
+use penumbra_storage::StateTransaction;
 use penumbra_transaction::Transaction;
 use std::sync::Arc;
 use tendermint::abci;

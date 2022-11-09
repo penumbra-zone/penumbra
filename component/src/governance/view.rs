@@ -7,7 +7,7 @@ use penumbra_crypto::{
     rdsa::{SpendAuth, VerificationKey},
     Address, IdentityKey, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_storage2::{StateRead, StateWrite};
+use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::action::{Proposal, ProposalPayload, Vote};
 
 use crate::stake::{self, validator};
