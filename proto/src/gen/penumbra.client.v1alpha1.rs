@@ -48,6 +48,24 @@ pub struct ValidatorInfoRequest {
     #[prost(bool, tag="2")]
     pub show_inactive: bool,
 }
+/// Requests information on an asset by asset id
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AssetInfoRequest {
+    /// The expected chain id (empty string if no expectation).
+    #[prost(string, tag="1")]
+    pub chain_id: ::prost::alloc::string::String,
+    /// The asset id to request information on.
+    #[prost(message, optional, tag="2")]
+    pub asset_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AssetId>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AssetInfoResponse {
+    /// If present, information on the requested asset.
+    ///
+    /// If the requested asset was unknown, this field will not be present.
+    #[prost(message, optional, tag="1")]
+    pub asset: ::core::option::Option<super::super::core::crypto::v1alpha1::Asset>,
+}
 /// Requests batch swap data associated with a given height and trading pair from the view service.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BatchSwapOutputDataRequest {
@@ -266,6 +284,7 @@ pub mod oblivious_query_client {
             );
             self.inner.server_streaming(request.into_request(), path, codec).await
         }
+        /// TODO: deprecate in favor of SpecificQuery.AssetInfo
         pub async fn asset_list(
             &mut self,
             request: impl tonic::IntoRequest<super::AssetListRequest>,
@@ -480,6 +499,25 @@ pub mod specific_query_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
+        pub async fn asset_info(
+            &mut self,
+            request: impl tonic::IntoRequest<super::AssetInfoRequest>,
+        ) -> Result<tonic::Response<super::AssetInfoResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.client.v1alpha1.SpecificQuery/AssetInfo",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
         /// General-purpose key-value state query API, that can be used to query
         /// arbitrary keys in the JMT storage.
         pub async fn key_value(
@@ -556,6 +594,7 @@ pub mod oblivious_query_server {
             &self,
             request: tonic::Request<super::ValidatorInfoRequest>,
         ) -> Result<tonic::Response<Self::ValidatorInfoStream>, tonic::Status>;
+        /// TODO: deprecate in favor of SpecificQuery.AssetInfo
         async fn asset_list(
             &self,
             request: tonic::Request<super::AssetListRequest>,
@@ -918,6 +957,10 @@ pub mod specific_query_server {
             tonic::Response<super::super::super::core::dex::v1alpha1::Reserves>,
             tonic::Status,
         >;
+        async fn asset_info(
+            &self,
+            request: tonic::Request<super::AssetInfoRequest>,
+        ) -> Result<tonic::Response<super::AssetInfoResponse>, tonic::Status>;
         /// General-purpose key-value state query API, that can be used to query
         /// arbitrary keys in the JMT storage.
         async fn key_value(
@@ -1184,6 +1227,44 @@ pub mod specific_query_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = StubCPMMReservesSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.client.v1alpha1.SpecificQuery/AssetInfo" => {
+                    #[allow(non_camel_case_types)]
+                    struct AssetInfoSvc<T: SpecificQuery>(pub Arc<T>);
+                    impl<
+                        T: SpecificQuery,
+                    > tonic::server::UnaryService<super::AssetInfoRequest>
+                    for AssetInfoSvc<T> {
+                        type Response = super::AssetInfoResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::AssetInfoRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move { (*inner).asset_info(request).await };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = AssetInfoSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
