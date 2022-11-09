@@ -3,7 +3,7 @@
 use super::*;
 
 /// An in-memory storage backend, useful for testing.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 pub struct InMemory {
     sparse: bool,
     position: StoredPosition,
