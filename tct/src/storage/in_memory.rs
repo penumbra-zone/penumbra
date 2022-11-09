@@ -77,44 +77,40 @@ pub enum Error {
     },
 }
 
-#[async_trait]
 impl Read for InMemory {
     type Error = Error;
 
-    async fn position(&mut self) -> Result<StoredPosition, Self::Error> {
+    fn position(&mut self) -> Result<StoredPosition, Self::Error> {
         Ok(self.position)
     }
 
-    async fn forgotten(&mut self) -> Result<Forgotten, Self::Error> {
+    fn forgotten(&mut self) -> Result<Forgotten, Self::Error> {
         Ok(self.forgotten)
     }
 
     fn hashes(
         &mut self,
-    ) -> Pin<Box<dyn Stream<Item = Result<(Position, u8, Hash), Self::Error>> + Send + '_>> {
-        Box::pin(stream::iter(self.hashes.iter().flat_map(
-            |(&position, column)| {
-                column
-                    .iter()
-                    .map(move |(&height, &hash)| Ok((position, height, hash)))
-            },
-        )))
+    ) -> Box<dyn Iterator<Item = Result<(Position, u8, Hash), Self::Error>> + Send + '_> {
+        Box::new(self.hashes.iter().flat_map(|(&position, column)| {
+            column
+                .iter()
+                .map(move |(&height, &hash)| Ok((position, height, hash)))
+        }))
     }
 
     fn commitments(
         &mut self,
-    ) -> Pin<Box<dyn Stream<Item = Result<(Position, Commitment), Self::Error>> + Send + '_>> {
-        Box::pin(stream::iter(
+    ) -> Box<dyn Iterator<Item = Result<(Position, Commitment), Self::Error>> + Send + '_> {
+        Box::new(
             self.commitments
                 .iter()
                 .map(|(&position, &commitment)| Ok((position, commitment))),
-        ))
+        )
     }
 }
 
-#[async_trait]
 impl Write for InMemory {
-    async fn add_hash(
+    fn add_hash(
         &mut self,
         position: Position,
         height: u8,
@@ -144,7 +140,7 @@ impl Write for InMemory {
         Ok(())
     }
 
-    async fn add_commitment(
+    fn add_commitment(
         &mut self,
         position: Position,
         commitment: Commitment,
@@ -157,7 +153,7 @@ impl Write for InMemory {
         Ok(())
     }
 
-    async fn delete_range(
+    fn delete_range(
         &mut self,
         below_height: u8,
         range: Range<Position>,
@@ -196,7 +192,7 @@ impl Write for InMemory {
         Ok(())
     }
 
-    async fn set_position(&mut self, position: StoredPosition) -> Result<(), Self::Error> {
+    fn set_position(&mut self, position: StoredPosition) -> Result<(), Self::Error> {
         if self.position >= position {
             return Err(Error::PositionDidNotIncrease {
                 previous: self.position,
@@ -207,7 +203,7 @@ impl Write for InMemory {
         Ok(())
     }
 
-    async fn set_forgotten(&mut self, forgotten: Forgotten) -> Result<(), Self::Error> {
+    fn set_forgotten(&mut self, forgotten: Forgotten) -> Result<(), Self::Error> {
         if self.forgotten >= forgotten {
             return Err(Error::ForgottenDidNotIncrease {
                 previous: self.forgotten,

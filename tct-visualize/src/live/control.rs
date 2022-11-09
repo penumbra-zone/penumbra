@@ -152,7 +152,7 @@ fn insert<R: Rng + Send + 'static>(
 }
 
 fn random_commitments<R: Rng>(mut rng: R, tree: &Tree, amount: usize) -> Vec<Commitment> {
-    tree.commitments()
+    tree.commitments_unordered()
         .map(|(c, _)| c)
         .collect::<Vec<_>>()
         .choose_multiple(&mut rng, amount)

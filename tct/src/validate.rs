@@ -19,7 +19,7 @@ pub fn index(tree: &Tree) -> Result<(), IndexMalformed> {
     // A reverse index from positions back to the commitments that are supposed to map to their
     // hashes
     let reverse_index: BTreeMap<Position, Commitment> = tree
-        .commitments()
+        .commitments_unordered()
         .map(|(commitment, position)| (position, commitment))
         .collect();
 
@@ -127,7 +127,7 @@ pub fn all_proofs(tree: &Tree) -> Result<(), InvalidWitnesses> {
 
     let mut errors = vec![];
 
-    for (commitment, position) in tree.commitments() {
+    for (commitment, position) in tree.commitments_unordered() {
         if let Some(proof) = tree.witness(commitment) {
             if proof.verify(root).is_err() {
                 errors.push(WitnessError::InvalidProof {
