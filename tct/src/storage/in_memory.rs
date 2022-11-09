@@ -24,6 +24,32 @@ impl InMemory {
         new.sparse = true;
         new
     }
+
+    /// Get the position of the stored tree.
+    pub fn position(&self) -> StoredPosition {
+        self.position
+    }
+
+    /// Get the forgotten version of the stored tree.
+    pub fn forgotten(&self) -> Forgotten {
+        self.forgotten
+    }
+
+    /// Get an iterator of all the hashes stored.
+    pub fn hashes(&self) -> impl Iterator<Item = (Position, u8, Hash)> + '_ {
+        self.hashes.iter().flat_map(|(position, hashes)| {
+            hashes
+                .iter()
+                .map(move |(height, hash)| (*position, *height, *hash))
+        })
+    }
+
+    /// Get an iterator of all the commitments stored.
+    pub fn commitments(&self) -> impl Iterator<Item = (Position, Commitment)> + '_ {
+        self.commitments
+            .iter()
+            .map(|(position, commitment)| (*position, *commitment))
+    }
 }
 
 /// An error which can occur when using the in-memory storage backend.
@@ -99,11 +125,7 @@ impl Read for InMemory {
     fn hashes(
         &mut self,
     ) -> Box<dyn Iterator<Item = Result<(Position, u8, Hash), Self::Error>> + Send + '_> {
-        Box::new(self.hashes.iter().flat_map(|(&position, column)| {
-            column
-                .iter()
-                .map(move |(&height, &hash)| Ok((position, height, hash)))
-        }))
+        Box::new(InMemory::hashes(self).map(Ok))
     }
 
     fn commitment(&mut self, position: Position) -> Result<Option<Commitment>, Self::Error> {
@@ -113,11 +135,7 @@ impl Read for InMemory {
     fn commitments(
         &mut self,
     ) -> Box<dyn Iterator<Item = Result<(Position, Commitment), Self::Error>> + Send + '_> {
-        Box::new(
-            self.commitments
-                .iter()
-                .map(|(&position, &commitment)| Ok((position, commitment))),
-        )
+        Box::new(InMemory::commitments(self).map(Ok))
     }
 }
 
