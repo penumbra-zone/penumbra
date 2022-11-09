@@ -1,22 +1,48 @@
 use std::{path::PathBuf, sync::Arc};
 
-use ::metrics::gauge;
 use anyhow::Result;
-use futures::future::BoxFuture;
 use jmt::{
-    storage::{Node, NodeBatch, NodeKey, TreeReader, TreeWriter},
-    WriteOverlay,
+    storage::{LeafNode, Node, NodeBatch, NodeKey, TreeWriter},
+    JellyfishMerkleTree, KeyHash,
 };
+use parking_lot::RwLock;
 use rocksdb::{Options, DB};
-use tokio::sync::RwLock;
+use tokio::sync::watch;
 use tracing::Span;
 
-use penumbra_tct as tct;
+use crate::snapshot::Snapshot;
+use crate::State;
 
-use crate::{metrics, State};
+/// A handle for a storage instance, backed by RocksDB.
+///
+/// The handle is cheaply clonable; all clones share the same backing data store.
+#[derive(Clone)]
+pub struct Storage(Arc<Inner>);
 
-#[derive(Clone, Debug)]
-pub struct Storage(Arc<DB>);
+impl std::fmt::Debug for Storage {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Storage").finish_non_exhaustive()
+    }
+}
+
+// A private inner element to prevent the `TreeWriter` implementation
+// from leaking outside of this crate.
+struct Inner {
+    latest_snapshot: RwLock<Snapshot>,
+    db: Arc<DB>,
+    state_tx: watch::Sender<StateNotification>,
+}
+
+/// A notification of a new state version.
+pub struct StateNotification(Snapshot);
+
+impl StateNotification {
+    /// Obtain a snapshot of the new [`State`].
+    pub fn into_state(&self) -> State {
+        // We need this wrapper because the `State` itself isn't `Clone` (by design).
+        State::new(self.0.clone())
+    }
+}
 
 impl Storage {
     pub async fn load(path: PathBuf) -> Result<Self> {
@@ -30,198 +56,187 @@ impl Storage {
                     opts.create_if_missing(true);
                     opts.create_missing_column_families(true);
 
-                    Ok(Self(Arc::new(DB::open_cf(&opts, path, ["jmt", "nct"])?)))
+                    let db = Arc::new(DB::open_cf(
+                        &opts,
+                        path,
+                        ["jmt", "nonconsensus", "jmt_keys"],
+                    )?);
+
+                    let jmt_version = latest_version(db.as_ref())?
+                        // TODO: PRE_GENESIS_VERSION ?
+                        .unwrap_or(u64::MAX);
+
+                    let latest_snapshot = RwLock::new(Snapshot::new(db.clone(), jmt_version));
+
+                    // We discard the receiver here, because we'll construct new ones in subscribe()
+                    let (snapshot_tx, _) =
+                        watch::channel(StateNotification(latest_snapshot.read().clone()));
+
+                    Ok(Self(Arc::new(Inner {
+                        latest_snapshot,
+                        db,
+                        state_tx: snapshot_tx,
+                    })))
                 })
-            })
-            .unwrap()
-            .await
-            .unwrap()
+            })?
+            .await?
     }
 
     /// Returns the latest version (block height) of the tree recorded by the
-    /// `Storage`, or `None` if the tree is empty.
-    pub async fn latest_version(&self) -> Result<Option<jmt::Version>> {
-        Ok(self
-            .get_rightmost_leaf()
-            .await?
-            .map(|(node_key, _)| node_key.version()))
+    /// `Storage`.
+    ///
+    /// If the tree is empty and has not been initialized, returns `u64::MAX`.
+    pub fn latest_version(&self) -> jmt::Version {
+        self.0.latest_snapshot.read().version()
+    }
+
+    /// Returns a [`watch::Receiver`] that can be used to subscribe to new state versions.
+    pub fn subscribe(&self) -> watch::Receiver<StateNotification> {
+        // Calling subscribe() here to create a new receiver ensures
+        // that all previous values are marked as seen, and the user
+        // of the receiver will only be notified of *subsequent* values.
+        self.0.state_tx.subscribe()
     }
 
     /// Returns a new [`State`] on top of the latest version of the tree.
-    pub async fn state(&self) -> Result<State> {
-        // If the tree is empty, use PRE_GENESIS_VERSION as the version,
-        // so that the first commit will be at version 0.
-        let version = self
-            .latest_version()
-            .await?
-            .unwrap_or(WriteOverlay::<Storage>::PRE_GENESIS_VERSION);
-
-        tracing::debug!("creating state for version {}", version);
-        Ok(Arc::new(RwLock::new(WriteOverlay::new(
-            self.clone(),
-            version,
-        ))))
+    pub fn state(&self) -> State {
+        State::new(self.0.latest_snapshot.read().clone())
     }
 
-    /// Like [`Self::state`], but bundles in a [`tonic`] error conversion.
-    ///
-    /// This is useful for implementing gRPC services that query the storage:
-    /// each gRPC request can create an ephemeral [`State`] pinning the current
-    /// version at the time the request was received, and then query it using
-    /// component `View`s to handle the request.
-    pub async fn state_tonic(&self) -> std::result::Result<State, tonic::Status> {
-        self.state()
-            .await
-            .map_err(|e| tonic::Status::internal(e.to_string()))
-    }
-
-    pub async fn put_nct(&self, tct: &tct::Tree) -> Result<()> {
-        let db = self.0.clone();
-
-        tracing::debug!("serializing TCT");
-        let tct_data = bincode::serialize(tct)?;
-        tracing::debug!(tct_bytes = tct_data.len(), "serialized TCT");
-        gauge!(metrics::TCT_SIZE_BYTES, tct_data.len() as f64);
+    /// Commits the provided [`State`] to persistent storage as the latest
+    /// version of the chain state.
+    pub async fn commit(&self, state: State) -> Result<jmt::RootHash> {
+        // We use wrapping_add here so that we can write `new_version = 0` by
+        // overflowing `PRE_GENESIS_VERSION`.
+        let old_version = self.latest_version();
+        let new_version = old_version.wrapping_add(1);
+        tracing::trace!(old_version, new_version);
+        if old_version != state.version() {
+            return Err(anyhow::anyhow!("version mismatch in commit: expected state forked from version {} but found state forked from version {}", old_version, state.version()));
+        }
 
         let span = Span::current();
-        tokio::task::Builder::new()
-            .name("put_nct")
-            .spawn_blocking(move || {
-                span.in_scope(|| {
-                    let nct_cf = db.cf_handle("nct").expect("nct column family not found");
-                    db.put_cf(nct_cf, "tct", &tct_data)?;
-                    Ok::<_, anyhow::Error>(())
-                })
-            })
-            .unwrap()
-            .await?
-    }
+        let inner = self.0.clone();
 
-    pub async fn get_nct(&self) -> Result<tct::Tree> {
-        let db = self.0.clone();
-        let span = Span::current();
         tokio::task::Builder::new()
-            .name("get_nct")
+            .name("Storage::write_node_batch")
             .spawn_blocking(move || {
                 span.in_scope(|| {
-                    let nct_cf = db.cf_handle("nct").expect("nct column family not found");
-                    if let Some(tct_bytes) = db.get_cf(nct_cf, "tct")? {
-                        Ok(bincode::deserialize(&tct_bytes)?)
-                    } else {
-                        Ok(tct::Tree::new())
+                    let snap = inner.latest_snapshot.read().clone();
+                    let jmt = JellyfishMerkleTree::new(&snap);
+
+                    let unwritten_changes: Vec<_> = state
+                        .unwritten_changes
+                        .into_iter()
+                        // Pre-calculate all KeyHashes for later storage in `jmt_keys`
+                        .map(|x| (KeyHash::from(&x.0), x.0, x.1))
+                        .collect();
+
+                    // Write the JMT key lookups to RocksDB
+                    let jmt_keys_cf = inner
+                        .db
+                        .cf_handle("jmt_keys")
+                        .expect("jmt_keys column family not found");
+                    for (keyhash, key_preimage, v) in unwritten_changes.iter() {
+                        match v {
+                            // Key still exists, so we need to store the key preimage
+                            Some(_) => inner.db.put_cf(jmt_keys_cf, key_preimage, keyhash.0)?,
+                            // Key was deleted, so delete the key preimage
+                            None => {
+                                inner.db.delete_cf(jmt_keys_cf, key_preimage)?;
+                            }
+                        };
                     }
+
+                    // Write the unwritten changes from the state to the JMT.
+                    let (root_hash, batch) = jmt.put_value_set(
+                        unwritten_changes.into_iter().map(|x| (x.0, x.2)),
+                        new_version,
+                    )?;
+
+                    // Apply the JMT changes to the DB.
+                    inner.write_node_batch(&batch.node_batch)?;
+                    tracing::trace!(?root_hash, "wrote node batch to backing store");
+
+                    // Write the unwritten changes from the nonconsensus to RocksDB.
+                    for (k, v) in state.nonconsensus_changes.into_iter() {
+                        let nonconsensus_cf = inner
+                            .db
+                            .cf_handle("nonconsensus")
+                            .expect("nonconsensus column family not found");
+
+                        match v {
+                            Some(v) => inner.db.put_cf(nonconsensus_cf, k, &v)?,
+                            None => {
+                                inner.db.delete_cf(nonconsensus_cf, k)?;
+                            }
+                        };
+                    }
+
+                    // 4. update the snapshot
+
+                    // Obtain the write-lock for the latest snapshot, and replace it with a new snapshot with the new version.
+                    let mut guard = inner.latest_snapshot.write();
+                    *guard = Snapshot::new(inner.db.clone(), new_version);
+                    // Drop the write-lock (this will happen implicitly anyways, but it's good to be explicit).
+                    drop(guard);
+
+                    // .send fails if the channel is closed (i.e., if there are no receivers);
+                    // in this case, we should ignore the error, we have no one to notify.
+                    let _ = inner
+                        .state_tx
+                        .send(StateNotification(inner.latest_snapshot.read().clone()));
+
+                    Ok(root_hash)
                 })
-            })
-            .unwrap()
+            })?
             .await?
     }
 }
 
-impl TreeWriter for Storage {
+impl TreeWriter for Inner {
     /// Writes a node batch into storage.
-    //TODO: Change JMT traits to remove/simplify lifetimes & accept owned NodeBatch
-    fn write_node_batch<'future, 'a: 'future, 'n: 'future>(
-        &'a mut self,
-        node_batch: &'n NodeBatch,
-    ) -> BoxFuture<'future, Result<()>> {
-        let db = self.0.clone();
+    //TODO: Change JMT traits to accept owned NodeBatch
+    fn write_node_batch(&self, node_batch: &NodeBatch) -> Result<()> {
         let node_batch = node_batch.clone();
 
-        // The writes have to happen on a separate spawn_blocking task, but we
-        // want tracing events to occur in the context of the current span, so
-        // propagate it explicitly:
-        let span = Span::current();
+        for (node_key, node) in node_batch {
+            let key_bytes = &node_key.encode()?;
+            let value_bytes = &node.encode()?;
+            tracing::trace!(?key_bytes, value_bytes = ?hex::encode(&value_bytes));
 
-        Box::pin(async {
-            tokio::task::Builder::new()
-                .name("Storage::write_node_batch")
-                .spawn_blocking(move || {
-                    span.in_scope(|| {
-                        for (node_key, node) in node_batch.clone() {
-                            let key_bytes = &node_key.encode()?;
-                            let value_bytes = &node.encode()?;
-                            tracing::trace!(?key_bytes, value_bytes = ?hex::encode(&value_bytes));
+            let jmt_cf = self
+                .db
+                .cf_handle("jmt")
+                .expect("jmt column family not found");
+            self.db.put_cf(jmt_cf, key_bytes, &value_bytes)?;
+        }
 
-                            let jmt_cf = db.cf_handle("jmt").expect("jmt column family not found");
-                            db.put_cf(jmt_cf, key_bytes, &value_bytes)?;
-                        }
-
-                        Ok(())
-                    })
-                })
-                .unwrap()
-                .await
-                .unwrap()
-        })
+        Ok(())
     }
 }
 
-/// A reader interface for rocksdb. NOTE: it is up to the caller to ensure consistency between the
-/// rocksdb::DB handle and any write batches that may be applied through the writer interface.
-impl TreeReader for Storage {
-    /// Gets node given a node key. Returns `None` if the node does not exist.
-    fn get_node_option<'future, 'a: 'future, 'n: 'future>(
-        &'a self,
-        node_key: &'n NodeKey,
-    ) -> BoxFuture<'future, Result<Option<Node>>> {
-        let db = self.0.clone();
-        let node_key = node_key.clone();
+// TODO: maybe these should live elsewhere?
+fn get_rightmost_leaf(db: &DB) -> Result<Option<(NodeKey, LeafNode)>> {
+    let jmt_cf = db.cf_handle("jmt").expect("jmt column family not found");
+    let mut iter = db.raw_iterator_cf(jmt_cf);
+    let mut ret = None;
+    iter.seek_to_last();
 
-        let span = Span::current();
+    if iter.valid() {
+        let node_key = NodeKey::decode(iter.key().unwrap())?;
+        let node = Node::decode(iter.value().unwrap())?;
 
-        Box::pin(async {
-            tokio::task::Builder::new()
-                .name("Storage::get_node_option")
-                .spawn_blocking(move || {
-                    span.in_scope(|| {
-                        let jmt_cf = db.cf_handle("jmt").expect("jmt column family not found");
-                        let value = db
-                            .get_pinned_cf(jmt_cf, &node_key.encode()?)?
-                            .map(|db_slice| Node::decode(&db_slice))
-                            .transpose()?;
-
-                        tracing::trace!(?node_key, ?value);
-                        Ok(value)
-                    })
-                })
-                .unwrap()
-                .await
-                .unwrap()
-        })
+        if let Node::Leaf(leaf_node) = node {
+            ret = Some((node_key, leaf_node));
+        }
+    } else {
+        // There are no keys in the database
     }
 
-    fn get_rightmost_leaf<'future, 'a: 'future>(
-        &'a self,
-    ) -> BoxFuture<'future, Result<Option<(NodeKey, jmt::storage::LeafNode)>>> {
-        let span = Span::current();
-        let db = self.0.clone();
+    Ok(ret)
+}
 
-        Box::pin(async {
-            tokio::task::Builder::new()
-                .name("Storage::get_rightmost_leaf")
-                .spawn_blocking(move || {
-                    span.in_scope(|| {
-                        let jmt_cf = db.cf_handle("jmt").expect("jmt column family not found");
-                        let mut iter = db.raw_iterator_cf(jmt_cf);
-                        let mut ret = None;
-                        iter.seek_to_last();
-
-                        if iter.valid() {
-                            let node_key = NodeKey::decode(iter.key().unwrap())?;
-                            let node = Node::decode(iter.value().unwrap())?;
-
-                            if let Node::Leaf(leaf_node) = node {
-                                ret = Some((node_key, leaf_node));
-                            }
-                        } else {
-                            // There are no keys in the database
-                        }
-                        Ok(ret)
-                    })
-                })
-                .unwrap()
-                .await
-                .unwrap()
-        })
-    }
+pub fn latest_version(db: &DB) -> Result<Option<jmt::Version>> {
+    Ok(get_rightmost_leaf(db)?.map(|(node_key, _)| node_key.version()))
 }

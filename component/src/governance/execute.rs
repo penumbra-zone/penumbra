@@ -7,7 +7,7 @@ use super::{
     StateReadExt as _,
 };
 use penumbra_chain::{StateReadExt as _, StateWriteExt};
-use penumbra_storage2::StateTransaction;
+use penumbra_storage::StateTransaction;
 use penumbra_transaction::action::{
     ProposalPayload, ProposalSubmit, ProposalWithdraw, ProposalWithdrawBody, ValidatorVote,
     ValidatorVoteBody,

@@ -19,7 +19,7 @@ use ibc::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use ibc::core::ics04_channel::msgs::timeout::MsgTimeout;
-use penumbra_storage2::{State, StateTransaction};
+use penumbra_storage::{State, StateTransaction};
 
 /// AppHandlerCheck defines the interface for an IBC application to consume IBC channel and packet
 /// events, and apply their validation logic. This validation logic is used for stateful validation

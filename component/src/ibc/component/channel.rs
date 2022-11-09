@@ -33,9 +33,9 @@ use penumbra_proto::core::ibc::v1alpha1::ibc_action::Action::{
     Acknowledgement, ChannelCloseConfirm, ChannelCloseInit, ChannelOpenAck, ChannelOpenConfirm,
     ChannelOpenInit, ChannelOpenTry, RecvPacket, Timeout,
 };
-use penumbra_storage2::StateTransaction;
-use penumbra_storage2::StateWrite;
-use penumbra_storage2::{State, StateRead};
+use penumbra_storage::StateTransaction;
+use penumbra_storage::StateWrite;
+use penumbra_storage::{State, StateRead};
 use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tracing::instrument;

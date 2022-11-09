@@ -5,7 +5,7 @@ use std::{
 };
 
 use futures::FutureExt;
-use penumbra_storage2::Storage;
+use penumbra_storage::Storage;
 use tendermint::abci::{ConsensusRequest, ConsensusResponse};
 use tokio::sync::{mpsc, oneshot};
 use tokio_util::sync::PollSender;

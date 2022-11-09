@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
-use penumbra_storage2::{StateRead, StateWrite};
+use penumbra_storage::{StateRead, StateWrite};
 use tendermint::Time;
 
 use crate::{

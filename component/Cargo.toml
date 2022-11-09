@@ -10,7 +10,7 @@ edition = "2021"
 penumbra-crypto = { path = "../crypto" }
 penumbra-proto = { path = "../proto" }
 penumbra-transaction = { path = "../transaction" }
-penumbra-storage2 = { path = "../storage2" }
+penumbra-storage = { path = "../storage" }
 penumbra-chain = { path = "../chain" }
 penumbra-tct = { path = "../tct" }
 

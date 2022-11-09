@@ -20,7 +20,7 @@ use penumbra_chain::genesis;
 use penumbra_crypto::asset::Denom;
 use penumbra_crypto::{asset, Amount};
 use penumbra_proto::core::ibc::v1alpha1::FungibleTokenPacketData;
-use penumbra_storage2::{State, StateRead, StateTransaction, StateWrite};
+use penumbra_storage::{State, StateRead, StateTransaction, StateWrite};
 use penumbra_transaction::action::Ics20Withdrawal;
 use penumbra_transaction::{Action, Transaction};
 use prost::Message;
@@ -281,7 +281,7 @@ impl Component for Ics20Transfer {
         for action in tx.actions() {
             match action {
                 Action::Ics20Withdrawal(withdrawal) => {
-                    <penumbra_storage2::State as crate::ibc::transfer::Ics20TransferReadExt>::withdrawal_check(state.clone(), withdrawal).await?;
+                    <penumbra_storage::State as crate::ibc::transfer::Ics20TransferReadExt>::withdrawal_check(state.clone(), withdrawal).await?;
                 }
                 _ => {}
             }
@@ -295,7 +295,7 @@ impl Component for Ics20Transfer {
         for action in tx.actions() {
             match action {
                 Action::Ics20Withdrawal(withdrawal) => {
-                    <&mut penumbra_storage2::StateTransaction<'_> as crate::ibc::transfer::Ics20TransferWriteExt>::withdrawal_execute(state, withdrawal).await;
+                    <&mut penumbra_storage::StateTransaction<'_> as crate::ibc::transfer::Ics20TransferWriteExt>::withdrawal_execute(state, withdrawal).await;
                 }
                 _ => {}
             }

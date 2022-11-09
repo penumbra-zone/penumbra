@@ -1,5 +1,5 @@
 use futures::StreamExt;
-use penumbra_storage2::*;
+use penumbra_storage::*;
 
 #[tokio::test]
 async fn simple_flow() -> anyhow::Result<()> {

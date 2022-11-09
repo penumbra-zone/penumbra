@@ -98,7 +98,6 @@ impl<'a> StateWrite for Transaction<'a> {
     }
 }
 
-//#[async_trait(?Send)]
 #[async_trait]
 impl<'tx> StateRead for Transaction<'tx> {
     async fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>> {
@@ -134,95 +133,4 @@ impl<'tx> StateRead for Transaction<'tx> {
         }
         self.state.get_ephemeral(key)
     }
-
-    /*
-    fn prefix_ephemeral<'a, T: Any + Send + Sync>(
-        &'a self,
-        prefix: &'a str,
-    ) -> Box<dyn Iterator<Item = (&'a str, &'a T)> + 'a> {
-        let changes: Box<dyn Iterator<Item = (&'a str, Option<&'a T>)>> = Box::new(
-            self.object_changes
-                .range(prefix.to_string()..)
-                .take_while(move |(k, _)| k.starts_with(prefix))
-                // We want changes to always cover the underlying store, so
-                // we treat a failed downcast_ref as a deletion.
-                .map(
-                    |(k, v)| match v.as_ref().and_then(|v| v.downcast_ref::<T>()) {
-                        Some(v) => (k.as_str(), Some(v)),
-                        None => (k.as_str(), None),
-                    },
-                ),
-        );
-
-        let changes = changes.peekable();
-        let underlying = self.state.prefix_ephemeral(prefix).peekable();
-
-        Box::new(MergedObjectIterator {
-            changes,
-            underlying,
-        })
-    }
-    */
 }
-
-/*
-struct MergedObjectIterator<'a, T: Any + Send + Sync> {
-    /// We want changes to always cover the underlying store, so we don't want to have
-    /// already pre-filtered with downcast_ref.
-    changes: Peekable<Box<dyn Iterator<Item = (&'a str, Option<&'a T>)> + 'a>>,
-    underlying: Peekable<Box<dyn Iterator<Item = (&'a str, &'a T)> + 'a>>,
-}
-
-impl<'a, T: Any + Send + Sync> Iterator for MergedObjectIterator<'a, T> {
-    type Item = (&'a str, &'a T);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            match (self.changes.peek(), self.underlying.peek()) {
-                (Some(c), Some(u)) => {
-                    // Use key ordering to determine which item to use next
-                    match c.0.cmp(u.0) {
-                        Ordering::Less => {
-                            // Draw from changes.
-                            match self.changes.next().expect("already peeked") {
-                                // The key is present, so yield it.
-                                (k, Some(v)) => return Some((k, v)),
-                                // The key has been deleted, so we want to skip it and continue merging.
-                                (_, None) => continue,
-                            }
-                        }
-                        Ordering::Equal => {
-                            // We need to advance both iterators, because we want to return only one
-                            // item per *distinct* key, with the `changes` shadowing the `underlying`.
-                            // Otherwise, we'd return the underlying value in the next iteration.
-                            let _ = self.underlying.next();
-                            match self.changes.next().expect("already peeked") {
-                                // The key is present, so yield it.
-                                (k, Some(v)) => return Some((k, v)),
-                                // The key has been deleted, so we want to skip it and continue merging.
-                                (_, None) => continue,
-                            }
-                        }
-                        Ordering::Greater => {
-                            return Some(self.underlying.next().expect("already peeked"))
-                        }
-                    }
-                }
-                (Some(_changed), None) => {
-                    // Draw from changes.
-                    match self.changes.next().expect("already peeked") {
-                        // The key is present, so yield it.
-                        (k, Some(v)) => return Some((k, v)),
-                        // The key has been deleted, so we want to skip it and continue merging.
-                        (_, None) => continue,
-                    }
-                }
-                (None, Some(_underlying)) => {
-                    return Some(self.underlying.next().expect("already peeked"))
-                }
-                (None, None) => return None,
-            }
-        }
-    }
-}
-*/

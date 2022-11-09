@@ -5,7 +5,7 @@ use anyhow::{anyhow, Result};
 use penumbra_proto::Protobuf;
 
 use penumbra_chain::genesis;
-use penumbra_storage2::Storage;
+use penumbra_storage::Storage;
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, ConsensusRequest as Request, ConsensusResponse as Response};
 use tokio::sync::mpsc;
