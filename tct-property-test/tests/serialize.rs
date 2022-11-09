@@ -22,7 +22,7 @@ enum Action {
 }
 
 impl Action {
-    async fn apply(&self, state: &mut InMemory, tree: &mut Tree) -> anyhow::Result<()> {
+    fn apply(&self, state: &mut InMemory, tree: &mut Tree) -> anyhow::Result<()> {
         match self {
             Action::Insert(witness, commitment) => {
                 tree.insert(*witness, *commitment)?;
@@ -40,7 +40,7 @@ impl Action {
                 tree.forget(*commitment);
             }
             Action::Serialize => {
-                tree.serialize(state).await?;
+                tree.to_writer(state)?;
             }
         };
 
@@ -63,7 +63,6 @@ proptest! {
                     actions
                 })
     ) {
-        futures::executor::block_on(async move {
             let mut tree = Tree::new();
             let mut incremental = if sparse {
                 InMemory::new_sparse()
@@ -73,11 +72,11 @@ proptest! {
 
             // Run all the actions in sequence
             for action in actions {
-                action.apply(&mut incremental, &mut tree).await.unwrap();
+                action.apply(&mut incremental, &mut tree).unwrap();
             }
 
             // Make a new copy of the tree by deserializing from the storage
-            let deserialized = Tree::deserialize(&mut incremental).await.unwrap();
+            let deserialized = Tree::from_reader(&mut incremental).unwrap();
 
            // After running all the actions, the deserialization of the stored tree should match
             // our in-memory tree (this only holds because we ensured that the last action is always
@@ -93,7 +92,7 @@ proptest! {
             };
 
             // To check this, we first serialize to a new in-memory storage instance
-            tree.serialize(&mut non_incremental).await.unwrap();
+            tree.to_writer(&mut non_incremental).unwrap();
 
             // Then we check both that the storage matches the incrementally-built one
             assert_eq!(incremental, non_incremental, "incremental storage mismatches non-incremental storage");
@@ -115,6 +114,5 @@ proptest! {
             ] {
                 validate(&tree, &deserialized, &incremental);
             }
-        })
     }
 }

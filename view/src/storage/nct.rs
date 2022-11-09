@@ -5,7 +5,7 @@ use sqlx::Either;
 use std::{ops::Range, pin::Pin};
 
 use penumbra_tct::{
-    storage::{Read, StoredPosition, Write},
+    storage::{AsyncRead, AsyncWrite, StoredPosition},
     structure::Hash,
     Commitment, Forgotten, Position,
 };
@@ -13,7 +13,7 @@ use penumbra_tct::{
 pub struct TreeStore<'a, 'c: 'a>(pub &'a mut sqlx::Transaction<'c, sqlx::Sqlite>);
 
 #[async_trait]
-impl Read for TreeStore<'_, '_> {
+impl AsyncRead for TreeStore<'_, '_> {
     type Error = anyhow::Error;
 
     async fn position(&mut self) -> Result<StoredPosition, Self::Error> {
@@ -86,7 +86,7 @@ impl Read for TreeStore<'_, '_> {
 }
 
 #[async_trait]
-impl Write for TreeStore<'_, '_> {
+impl AsyncWrite for TreeStore<'_, '_> {
     async fn set_position(&mut self, position: StoredPosition) -> Result<(), Self::Error> {
         let position = Option::from(position).map(|p: Position| u64::from(p) as i64);
         sqlx::query!("UPDATE nct_position SET position = ?", position)

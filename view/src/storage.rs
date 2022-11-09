@@ -347,7 +347,7 @@ impl Storage {
 
     pub async fn note_commitment_tree(&self) -> anyhow::Result<tct::Tree> {
         let mut tx = self.pool.begin().await?;
-        let tree = tct::Tree::deserialize(&mut TreeStore(&mut tx)).await?;
+        let tree = tct::Tree::from_async_reader(&mut TreeStore(&mut tx)).await?;
         tx.commit().await?;
         Ok(tree)
     }
@@ -447,7 +447,7 @@ impl Storage {
                 // quoting the nullifier bytes. tried to get the `sqlx::query_as!` macro to work
                 // but the types didn't work out easily.
                 format!(
-                    "SELECT 
+                    "SELECT
                         notes.note_commitment,
                         notes.height_created,
                         notes.address,
@@ -1028,7 +1028,7 @@ impl Storage {
         }
 
         // Update NCT table with current NCT state
-        nct.serialize(&mut TreeStore(&mut dbtx)).await?;
+        nct.to_async_writer(&mut TreeStore(&mut dbtx)).await?;
 
         // Record all transactions
         for transaction in transactions {

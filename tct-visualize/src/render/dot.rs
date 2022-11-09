@@ -134,7 +134,7 @@ impl<W: Write> Writer<W> {
         // Connect all commitments together to align them
         if self.invisible_ordering_edges {
             let mut left = None;
-            for (right, _) in tree.commitments_ordered() {
+            for (right, _) in tree.commitments() {
                 if let Some(left) = left {
                     self.commitment_commitment_edge(left, right)?;
                     // w.commitment_commitment_edge(right, left)?;

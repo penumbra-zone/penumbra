@@ -187,7 +187,7 @@ fn is_full(tree: watch::Receiver<Tree>, mark_change: Arc<watch::Sender<()>>) -> 
 fn commitments(tree: watch::Receiver<Tree>, mark_change: Arc<watch::Sender<()>>) -> MethodRouter {
     get(|| async move {
         Json(marking_change(mark_change, tree, |tree| {
-            tree.commitments()
+            tree.commitments_unordered()
                 .map(|(commitment, position)| {
                     json!({
                         "commitment": commitment,
@@ -208,7 +208,7 @@ fn commitments_ordered(
 ) -> MethodRouter {
     get(|| async move {
         Json(marking_change(mark_change, tree, |tree| {
-            tree.commitments_ordered()
+            tree.commitments()
                 .map(|(position, commitment)| {
                     json!({
                         "commitment": commitment,

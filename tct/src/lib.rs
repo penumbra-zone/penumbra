@@ -107,7 +107,10 @@ mod prelude {
             three::{Elems, ElemsMut, IntoElems, Three},
             UncheckedSetHash,
         },
-        storage::{self, Read, Write},
+        storage::{
+            self, AsyncRead, AsyncWrite, DeleteRange, Read, StoreCommitment, StoreHash,
+            StoredPosition, Update, Write,
+        },
         structure::{self, HashOrNode, HashedNode, Kind, Node, Place},
         Commitment, Position, Proof, Root, Tree,
     };

@@ -5,11 +5,6 @@ use poseidon377::Fq;
 use serde::de::Visitor;
 
 use crate::prelude::*;
-use crate::storage::Write;
-use crate::structure::{Kind, Place};
-use crate::tree::Position;
-
-use super::StoredPosition;
 
 pub(crate) mod fq;
 
@@ -17,7 +12,7 @@ pub(crate) mod fq;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub(crate) struct Serializer {
     /// The last position stored in storage, to allow for incremental serialization.
-    last_stored_position: StoredPosition,
+    last_position: StoredPosition,
     /// The minimum forgotten version which should be reported for deletion.
     last_forgotten: Forgotten,
 }
@@ -42,7 +37,7 @@ pub(crate) struct InternalHash {
 
 impl Serializer {
     fn is_node_fresh(&self, node: &structure::Node) -> bool {
-        match self.last_stored_position {
+        match self.last_position {
             StoredPosition::Full => false,
             StoredPosition::Position(last_stored_position) => {
                 let node_position: u64 = node.position().into();
@@ -63,7 +58,7 @@ impl Serializer {
     }
 
     fn was_node_on_previous_frontier(&self, node: &structure::Node) -> bool {
-        if let StoredPosition::Position(last_stored_position) = self.last_stored_position {
+        if let StoredPosition::Position(last_stored_position) = self.last_position {
             let last_stored_position: u64 = last_stored_position.into();
 
             if let Some(last_frontier_tip) = last_stored_position.checked_sub(1) {
@@ -88,7 +83,7 @@ impl Serializer {
 
     fn node_has_fresh_children(&self, node: &structure::Node) -> bool {
         self.is_node_fresh(node)
-            || match self.last_stored_position {
+            || match self.last_position {
                 StoredPosition::Position(last_stored_position) => node
                     .range()
                     // Subtract one from the last-stored position to get the frontier tip as of the
@@ -222,7 +217,7 @@ impl Serializer {
                     // (because those greater will not have yet been serialized to storage) and greater
                     // than or equal to the minimum forgotten version (because those lesser will already
                     // have been deleted from storage)
-                    let before_last_stored_position = match self.last_stored_position {
+                    let before_last_stored_position = match self.last_position {
                         StoredPosition::Full => true,
                         StoredPosition::Position(last_stored_position) =>
                         // We don't do anything at all if the node position is greater than or equal
@@ -269,78 +264,178 @@ impl Serializer {
     }
 }
 
-/// Serialize the changes to a [`Tree`](crate::Tree) into a writer, deleting all forgotten nodes and
-/// adding all new nodes.
-pub async fn to_writer<W: Write>(writer: &mut W, tree: &crate::Tree) -> Result<(), W::Error> {
-    // If the tree is empty, skip doing anything
-    if tree.is_empty() {
-        return Ok(());
-    }
-
+/// Serialize the changes to a [`Tree`](crate::Tree) into an asynchronous writer, deleting all
+/// forgotten nodes and adding all new nodes.
+pub async fn to_async_writer<W: AsyncWrite>(
+    writer: &mut W,
+    tree: &crate::Tree,
+) -> Result<(), W::Error> {
     // Grab the current position stored in storage
-    let last_stored_position = writer.position().await?;
+    let last_position = writer.position().await?;
 
     // Grab the last forgotten version stored in storage
     let last_forgotten = writer.forgotten().await?;
 
-    let serializer = Serializer {
-        last_forgotten,
-        last_stored_position,
-    };
-
-    // Update the position
-    let position = if let Some(position) = tree.position() {
-        StoredPosition::Position(position)
-    } else {
-        StoredPosition::Full
-    };
-    if position != last_stored_position {
-        writer.set_position(position).await?;
-    }
-
-    // Update the forgotten version
-    let forgotten = tree.forgotten();
-    if forgotten != last_forgotten {
-        writer.set_forgotten(forgotten).await?;
-    }
-
-    // Write all the new commitments
-    for (position, commitment) in serializer.commitments(tree) {
-        writer.add_commitment(position, commitment).await?;
-    }
-
-    // Add all the new hashes and delete all the forgotten points: this is a unified stream, because
-    // we process forgotten points and new points identically
-    for InternalHash {
-        position,
-        height,
-        hash,
-        essential,
-        delete_children,
-    } in serializer.forgotten(tree).chain(serializer.hashes(tree))
-    {
-        // If the hash's children need deletion, that means any remaining hashes or commitments
-        // beneath it should be removed, because they are no longer present in the tree
-        if delete_children {
-            // Calculate the range of positions to delete, based on the height
-            let position = u64::from(position);
-            let stride = 4u64.pow(height.into());
-            let range = position.into()..(position + stride).min(4u64.pow(24) - 1).into();
-
-            // Delete the range of positions
-            writer.delete_range(height, range).await?;
-        }
-
-        // Deleting children, then adding the hash allows the backend to do a sensibility check that
-        // there are no children of essential hashes, if it chooses to.
-
-        // Add the hash, if it wasn't already present (in the case of forgetting things, this serves
-        // to ensure that omitted internal hashes are stored when necessary)
-        if hash != Hash::one() {
-            // Optimization: don't serialize `Hash::one()`, because it will be filled in automatically
-            writer.add_hash(position, height, hash, essential).await?;
+    for update in updates_since(last_position, last_forgotten, tree) {
+        match update {
+            Update::SetPosition(position) => writer.set_position(position).await?,
+            Update::SetForgotten(forgotten) => writer.set_forgotten(forgotten).await?,
+            Update::StoreHash(StoreHash {
+                position,
+                height,
+                hash,
+                essential,
+            }) => {
+                writer.add_hash(position, height, hash, essential).await?;
+            }
+            Update::StoreCommitment(StoreCommitment {
+                position,
+                commitment,
+            }) => {
+                writer.add_commitment(position, commitment).await?;
+            }
+            Update::DeleteRange(DeleteRange {
+                below_height,
+                positions,
+            }) => {
+                writer.delete_range(below_height, positions).await?;
+            }
         }
     }
 
     Ok(())
+}
+
+/// Serialize the changes to a [`Tree`](crate::Tree) into a synchronous writer, deleting all
+/// forgotten nodes and adding all new nodes.
+pub fn to_writer<W: Write>(writer: &mut W, tree: &crate::Tree) -> Result<(), W::Error> {
+    // Grab the current position stored in storage
+    let last_position = writer.position()?;
+
+    // Grab the last forgotten version stored in storage
+    let last_forgotten = writer.forgotten()?;
+
+    for update in updates_since(last_position, last_forgotten, tree) {
+        match update {
+            Update::SetPosition(position) => writer.set_position(position)?,
+            Update::SetForgotten(forgotten) => writer.set_forgotten(forgotten)?,
+            Update::StoreHash(StoreHash {
+                position,
+                height,
+                hash,
+                essential,
+            }) => {
+                writer.add_hash(position, height, hash, essential)?;
+            }
+            Update::StoreCommitment(StoreCommitment {
+                position,
+                commitment,
+            }) => {
+                writer.add_commitment(position, commitment)?;
+            }
+            Update::DeleteRange(DeleteRange {
+                below_height,
+                positions,
+            }) => {
+                writer.delete_range(below_height, positions)?;
+            }
+        }
+    }
+
+    Ok(())
+}
+
+/// Create an iterator of all the updates to the tree since the specified last position and last
+/// forgotten version.
+pub fn updates_since(
+    last_position: impl Into<StoredPosition>,
+    last_forgotten: Forgotten,
+    tree: &crate::Tree,
+) -> impl Iterator<Item = storage::Update> + Send + Sync + '_ {
+    if tree.is_empty() {
+        None
+    } else {
+        let last_position = last_position.into();
+
+        let serializer = Serializer {
+            last_forgotten,
+            last_position,
+        };
+
+        let position_updates = Some(if let Some(position) = tree.position() {
+            StoredPosition::Position(position)
+        } else {
+            StoredPosition::Full
+        })
+        .into_iter()
+        .filter(move |&position| position != last_position)
+        .map(storage::Update::SetPosition);
+
+        let forgotten_updates = Some(tree.forgotten())
+            .into_iter()
+            .filter(move |&forgotten| forgotten != last_forgotten)
+            .map(storage::Update::SetForgotten);
+
+        let commitment_updates = serializer.commitments(tree).map(|(position, commitment)| {
+            storage::Update::StoreCommitment(storage::StoreCommitment {
+                position,
+                commitment,
+            })
+        });
+
+        let hash_and_deletion_updates = serializer
+            .forgotten(tree)
+            .chain(serializer.hashes(tree))
+            .flat_map(
+                move |InternalHash {
+                          position,
+                          height,
+                          hash,
+                          essential,
+                          delete_children,
+                      }| {
+                    let deletion_update = if delete_children {
+                        // Calculate the range of positions to delete, based on the height
+                        let position = u64::from(position);
+                        let stride = 4u64.pow(height.into());
+                        let positions =
+                            position.into()..(position + stride).min(4u64.pow(24) - 1).into();
+
+                        // Delete the range of positions
+                        Some(storage::Update::DeleteRange(storage::DeleteRange {
+                            below_height: height,
+                            positions,
+                        }))
+                    } else {
+                        None
+                    };
+
+                    let hash_update = if hash != Hash::one() {
+                        // Optimization: don't serialize `Hash::one()`, because it will be filled in automatically
+                        Some(storage::Update::StoreHash(storage::StoreHash {
+                            position,
+                            height,
+                            hash,
+                            essential,
+                        }))
+                    } else {
+                        None
+                    };
+
+                    // Deleting children, then adding the hash allows the backend to do a sensibility check that
+                    // there are no children of essential hashes, if it chooses to.
+
+                    deletion_update.into_iter().chain(hash_update.into_iter())
+                },
+            );
+
+        Some(
+            position_updates
+                .chain(forgotten_updates)
+                .chain(commitment_updates)
+                .chain(hash_and_deletion_updates),
+        )
+    }
+    .into_iter()
+    .flatten()
 }

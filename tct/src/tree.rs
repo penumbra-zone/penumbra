@@ -4,6 +4,7 @@ use std::{
 };
 
 use decaf377::{FieldExt, Fq};
+use futures::Stream;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
 
 use crate::error::*;
@@ -714,23 +715,23 @@ impl Tree {
         is_empty
     }
 
-    /// Get an iterator over all commitments currently witnessed in the tree.
-    ///
-    /// Unlike [`commitments_ordered`](Tree::commitments_ordered), this **does not** guarantee that
-    /// commitments will be returned in order, but it may be faster by a constant factor.
-    #[instrument(level = "trace", skip(self))]
-    pub fn commitments(&self) -> impl Iterator<Item = (Commitment, Position)> + '_ {
-        self.index.iter().map(|(c, p)| (*c, Position(*p)))
-    }
-
     /// Get an iterator over all commitments currently witnessed in the tree, **ordered by
     /// position**.
     ///
-    /// Unlike [`commitments`](Tree::commitments), this guarantees that commitments will be returned
-    /// in order, but it may be slower by a constant factor.
+    /// Unlike [`commitments_unordered`](Tree::commitments_unordered), this guarantees that
+    /// commitments will be returned in order, but it may be slower by a constant factor.
     #[instrument(level = "trace", skip(self))]
-    pub fn commitments_ordered(&self) -> impl Iterator<Item = (Position, Commitment)> + '_ {
+    pub fn commitments(&self) -> impl Iterator<Item = (Position, Commitment)> + '_ {
         crate::storage::serialize::Serializer::default().commitments(self)
+    }
+
+    /// Get an iterator over all commitments currently witnessed in the tree.
+    ///
+    /// Unlike [`commitments`](Tree::commitments), this **does not** guarantee that commitments will
+    /// be returned in order, but it may be faster by a constant factor.
+    #[instrument(level = "trace", skip(self))]
+    pub fn commitments_unordered(&self) -> impl Iterator<Item = (Commitment, Position)> + '_ {
+        self.index.iter().map(|(c, p)| (*c, Position(*p)))
     }
 
     /// Get a dynamic representation of the internal structure of the tree, which can be traversed
@@ -741,24 +742,96 @@ impl Tree {
         Node::root(&*self.inner)
     }
 
-    /// Deserialize a tree from a [`storage::Read`] backend.
+    /// Serialize the tree incrementally from the last stored [`Position`] and [`Forgotten`]
+    /// specified, into an iterator of `[storage::Update]`s.
     ///
-    /// While trees can be [`serialize`]d incrementally, they can only be deserialized all at once.
-    pub async fn deserialize<R: Read>(reader: &mut R) -> Result<Tree, R::Error> {
-        storage::from_reader(reader).await
-    }
-
-    /// Serialize the tree incrementally to a [`storage::Write`] backend.
-    ///
-    /// This performs only the operations necessary to serialize the changes to the tree,
+    /// This returns only the operations necessary to serialize the changes to the tree,
     /// synchronizing the in-memory representation with what is stored.
     ///
-    /// # Errors
+    /// The iterator of updates may be [`.collect()`](Iterator::collect)ed into a
+    /// [`storage::Updates`], which is more compact in-memory than
+    /// [`.collect()](Iterator::collect)`ing into a [`Vec<Update>`](Vec).
+    pub fn updates_since(
+        &self,
+        last_position: impl Into<StoredPosition>,
+        last_forgotten: Forgotten,
+    ) -> impl Iterator<Item = Update> + Send + Sync + '_ {
+        storage::serialize::updates_since(last_position.into(), last_forgotten, self)
+    }
+
+    /// Deserialize a tree from iterators of its contents, without checking for internal
+    /// consistency.
     ///
-    /// If the tree stored in the writer is not a prior version of this tree, the writer may throw
-    /// errors, in addition to any backend-specific errors related to the storage medium.
-    pub async fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), W::Error> {
-        storage::to_writer(writer, self).await
+    /// **WARNING:** Do not deserialize trees from untrusted sources, or risk violating internal
+    /// invariants.
+    ///
+    /// While trees can be [`serialize`]d incrementally, they can only be deserialized all at once.
+    pub fn load<Err>(
+        position: impl Into<StoredPosition>,
+        forgotten: Forgotten,
+        commitments: impl IntoIterator<Item = Result<(Position, Commitment), Err>>,
+        hashes: impl IntoIterator<Item = Result<(Position, u8, Hash), Err>>,
+    ) -> Result<Tree, Err> {
+        storage::deserialize::load(position, forgotten, commitments, hashes)
+    }
+
+    /// Deserialize a tree from a [`storage::Read`] of its contents, without checking for internal
+    /// consistency. This can be more convenient than [`Tree::load`], since it is able to internally
+    /// query the storage for the last position and forgotten count.
+    ///
+    /// **WARNING:** Do not deserialize trees from untrusted sources, or risk violating internal
+    /// invariants.
+    ///
+    /// While trees can be [`serialize`]d incrementally, they can only be deserialized all at once.
+    pub fn from_reader<R: Read>(reader: &mut R) -> Result<Tree, R::Error> {
+        storage::deserialize::from_reader(reader)
+    }
+
+    /// Serialize the tree incrementally from the last stored [`Position`] and [`Forgotten`]
+    /// specified, into a [`storage::Write`]. This can be more convenient than using
+    /// [`Tree::updates_since`], because it is able to internally query the storage for the last
+    /// position and forgotten count, and drive the storage operations itself.
+    ///
+    /// This performs only the operations necessary to serialize the changes to the tree.
+    pub fn to_writer<W: Write>(&self, writer: &mut W) -> Result<(), W::Error> {
+        storage::serialize::to_writer(writer, self)
+    }
+
+    /// Deserialize a tree from streams of its contents, without checking for internal consistency.
+    ///
+    /// **WARNING:** Do not deserialize trees from untrusted sources, or risk violating internal
+    /// invariants.
+    ///
+    /// While trees can be [`serialize`]d incrementally, they can only be deserialized all at once.
+    pub async fn load_stream<Err>(
+        position: impl Into<StoredPosition>,
+        forgotten: Forgotten,
+        commitments: impl Stream<Item = Result<(Position, Commitment), Err>> + Unpin,
+        hashes: impl Stream<Item = Result<(Position, u8, Hash), Err>> + Unpin,
+    ) -> Result<Tree, Err> {
+        storage::deserialize::load_stream(position, forgotten, commitments, hashes).await
+    }
+
+    /// Deserialize a tree from a [`storage::AsyncRead`] of its contents, without checking for
+    /// internal consistency. This can be more convenient than [`Tree::load_stream`], since it is
+    /// able to internally query the storage for the last position and forgotten count.
+    ///
+    /// **WARNING:** Do not deserialize trees from untrusted sources, or risk violating internal
+    /// invariants.
+    ///
+    /// While trees can be [`serialize`]d incrementally, they can only be deserialized all at once.
+    pub async fn from_async_reader<R: AsyncRead>(reader: &mut R) -> Result<Tree, R::Error> {
+        storage::deserialize::from_async_reader(reader).await
+    }
+
+    /// Serialize the tree incrementally from the last stored [`Position`] and [`Forgotten`]
+    /// specified, into a [`storage::AsyncWrite`]. This can be more convenient than using
+    /// [`Tree::updates_since`], because it is able to internally query the storage for the last
+    /// position and forgotten count, and drive the storage operations itself.
+    ///
+    /// This performs only the operations necessary to serialize the changes to the tree.
+    pub async fn to_async_writer<W: AsyncWrite>(&self, writer: &mut W) -> Result<(), W::Error> {
+        storage::serialize::to_async_writer(writer, self).await
     }
 }
 
