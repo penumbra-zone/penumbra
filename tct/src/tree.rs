@@ -758,7 +758,7 @@ impl Tree {
     }
 
     /// Serialize the tree incrementally from the last stored [`Position`] and [`Forgotten`]
-    /// specified, into an iterator of `[storage::Update]`s.
+    /// specified, into an iterator of [`storage::Update`]s.
     ///
     /// This returns only the operations necessary to serialize the changes to the tree,
     /// synchronizing the in-memory representation with what is stored.
@@ -788,8 +788,8 @@ impl Tree {
 
     /// Serialize the tree incrementally from the last stored [`Position`] and [`Forgotten`]
     /// specified, into a [`storage::Write`]. This can be more convenient than using
-    /// [`Tree::updates_since`], because it is able to internally query the storage for the last
-    /// position and forgotten count, and drive the storage operations itself.
+    /// [`Tree::updates`], because it is able to internally query the storage for the last position
+    /// and forgotten count, and drive the storage operations itself.
     ///
     /// This performs only the operations necessary to serialize the changes to the tree.
     pub fn to_writer<W: Write>(&self, writer: &mut W) -> Result<(), W::Error> {
@@ -810,8 +810,8 @@ impl Tree {
 
     /// Serialize the tree incrementally from the last stored [`Position`] and [`Forgotten`]
     /// specified, into a [`storage::AsyncWrite`]. This can be more convenient than using
-    /// [`Tree::updates_since`], because it is able to internally query the storage for the last
-    /// position and forgotten count, and drive the storage operations itself.
+    /// [`Tree::updates`], because it is able to internally query the storage for the last position
+    /// and forgotten count, and drive the storage operations itself.
     ///
     /// This performs only the operations necessary to serialize the changes to the tree.
     pub async fn to_async_writer<W: AsyncWrite>(&self, writer: &mut W) -> Result<(), W::Error> {
