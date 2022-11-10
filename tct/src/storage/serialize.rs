@@ -276,7 +276,7 @@ pub async fn to_async_writer<W: AsyncWrite>(
     // Grab the last forgotten version stored in storage
     let last_forgotten = writer.forgotten().await?;
 
-    for update in updates_since(last_position, last_forgotten, tree) {
+    for update in updates(last_position, last_forgotten, tree) {
         match update {
             Update::SetPosition(position) => writer.set_position(position).await?,
             Update::SetForgotten(forgotten) => writer.set_forgotten(forgotten).await?,
@@ -315,7 +315,7 @@ pub fn to_writer<W: Write>(writer: &mut W, tree: &crate::Tree) -> Result<(), W::
     // Grab the last forgotten version stored in storage
     let last_forgotten = writer.forgotten()?;
 
-    for update in updates_since(last_position, last_forgotten, tree) {
+    for update in updates(last_position, last_forgotten, tree) {
         match update {
             Update::SetPosition(position) => writer.set_position(position)?,
             Update::SetForgotten(forgotten) => writer.set_forgotten(forgotten)?,
@@ -347,7 +347,7 @@ pub fn to_writer<W: Write>(writer: &mut W, tree: &crate::Tree) -> Result<(), W::
 
 /// Create an iterator of all the updates to the tree since the specified last position and last
 /// forgotten version.
-pub fn updates_since(
+pub fn updates(
     last_position: impl Into<StoredPosition>,
     last_forgotten: Forgotten,
     tree: &crate::Tree,

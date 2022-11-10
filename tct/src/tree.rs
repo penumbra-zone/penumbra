@@ -750,12 +750,12 @@ impl Tree {
     /// The iterator of updates may be [`.collect()`](Iterator::collect)ed into a
     /// [`storage::Updates`], which is more compact in-memory than
     /// [`.collect()](Iterator::collect)`ing into a [`Vec<Update>`](Vec).
-    pub fn updates_since(
+    pub fn updates(
         &self,
         last_position: impl Into<StoredPosition>,
         last_forgotten: Forgotten,
     ) -> impl Iterator<Item = Update> + Send + Sync + '_ {
-        storage::serialize::updates_since(last_position.into(), last_forgotten, self)
+        storage::serialize::updates(last_position.into(), last_forgotten, self)
     }
 
     /// Deserialize a tree, without checking for internal consistency. This returns an object
