@@ -1,5 +1,7 @@
 //! Incremental serialization for the [`Tree`](crate::Tree).
 
+use std::io;
+
 use decaf377::FieldExt;
 use poseidon377::Fq;
 use serde::de::Visitor;
@@ -438,4 +440,63 @@ pub fn updates(
     }
     .into_iter()
     .flatten()
+}
+
+pub fn succinct(mut writer: impl io::Write, tree: &crate::Tree) -> io::Result<()> {
+    // If the tree is empty, it serializes as nothing
+    if tree.is_empty() {
+        return Ok(());
+    }
+
+    let serializer = Serializer::default();
+
+    // The position is internally guaranteed to by only 6 bytes
+    writer.write_all(
+        &tree
+            .position()
+            .map(|p| {
+                u64::from(p)
+                    .checked_sub(1)
+                    .expect("position is not zero if tree is non-empty")
+            })
+            .unwrap_or(u64::MAX) // represent "full" as u64::MAX because it's unused above with the subtraction
+            .to_le_bytes()[0..6],
+    )?;
+
+    // The witnessed count is guaranteed to be at most 6 bytes, because that's how many
+    // positions could possibly exist
+    writer.write_all(&tree.witnessed_count().to_le_bytes()[0..6])?;
+
+    // Write all the commitments with their positions
+    for (position, Commitment(commitment)) in serializer.commitments(tree) {
+        // The position is internally guaranteed to by only 6 bytes
+        writer.write_all(&u64::from(position).to_le_bytes()[0..6])?;
+
+        // The commitment is guaranteed to be 32 bytes
+        writer.write_all(&commitment.to_bytes())?;
+    }
+
+    // Write all the hashes with their heights
+    for InternalHash {
+        hash,
+        essential,
+        height: _,          // height is inferred when deserializing
+        position: _,        // position is inferred when deserializing
+        delete_children: _, // we don't care about this because non-incremental
+    } in serializer.hashes(tree)
+    {
+        if essential {
+            // Emit the hash bytes
+            // if hash == Hash::one() {
+            //     // Optimization: emit a single 1-byte in the case of a `Hash::one()`
+            //     writer.write_all(&[u8::MAX])?;
+            // } else {
+            let mut hash_bytes = hash.to_bytes();
+            // hash_bytes.reverse(); // emit hash in big-endian so we read the biggest byte first and can determine whether it's a 1-byte like above
+            writer.write_all(&hash_bytes)?;
+            // }
+        }
+    }
+
+    Ok(())
 }

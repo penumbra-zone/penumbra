@@ -113,6 +113,15 @@ impl Position {
     pub fn epoch(&self) -> u16 {
         self.0.epoch.into()
     }
+
+    /// The maximum representable position.
+    pub const MAX: Position = {
+        Position(index::within::Tree {
+            commitment: index::Commitment::MAX,
+            block: index::Block::MAX,
+            epoch: index::Epoch::MAX,
+        })
+    };
 }
 
 impl From<Position> for u64 {
@@ -748,8 +757,14 @@ impl Tree {
     /// object which can be used to [`insert`](storage::LoadHashes::insert) positioned, heighted
     /// hashes. Finally, call [`finish`](storage::LoadHashes::finish) to get the [`Tree`].
     ///
-    /// **WARNING:** Do not deserialize trees from untrusted sources, or risk violating internal
+    /// ⚠️ **WARNING:** Do not deserialize trees from untrusted sources, or risk violating internal
     /// invariants.
+    ///
+    /// ℹ️ **NOTE:** You may prefer to use [`from_reader`](Tree::from_reader) or
+    /// [`from_async_reader`](Tree::from_async_reader), which drive the iteration over the
+    /// underlying storage *internally* rather than requiring the caller to drive the iteration.
+    /// [`Tree::load`] is predominanly useful in circumstances when this inversion of control does
+    /// not make sense.
     pub fn load(
         last_position: impl Into<StoredPosition>,
         last_forgotten: Forgotten,
@@ -766,6 +781,11 @@ impl Tree {
     /// The iterator of updates may be [`.collect()`](Iterator::collect)ed into a
     /// [`storage::Updates`], which is more compact in-memory than
     /// [`.collect()`](Iterator::collect)ing into a [`Vec<Update>`](Vec).
+    ///
+    /// ℹ️ **NOTE:** You may prefer to use [`to_writer`](Tree::to_writer) or
+    /// [`to_async_writer`](Tree::to_async_writer), which drive the operations on the underlying
+    /// storage *internally* rather than requiring the caller to drive iteration. [`Tree::updates`]
+    /// is predominantly useful in circumstances when this inversion of control does not make sense.
     pub fn updates(
         &self,
         last_position: impl Into<StoredPosition>,
@@ -776,12 +796,11 @@ impl Tree {
 
     /// Deserialize a tree from a [`storage::Read`] of its contents, without checking for internal
     /// consistency. This can be more convenient than [`Tree::load`], since it is able to internally
-    /// query the storage for the last position and forgotten count.
+    /// query the storage for the last position and forgotten count, and drive the storage
+    /// operations itself.
     ///
-    /// **WARNING:** Do not deserialize trees from untrusted sources, or risk violating internal
+    /// ⚠️ **WARNING:** Do not deserialize trees from untrusted sources, or risk violating internal
     /// invariants.
-    ///
-    /// While trees can be serialized incrementally, they can only be deserialized all at once.
     pub fn from_reader<R: Read>(reader: &mut R) -> Result<Tree, R::Error> {
         storage::deserialize::from_reader(reader)
     }
@@ -797,21 +816,19 @@ impl Tree {
     }
 
     /// Deserialize a tree from a [`storage::AsyncRead`] of its contents, without checking for
-    /// internal consistency. This can be more convenient than [`Tree::load`], since it is
-    /// able to internally query the storage for the last position and forgotten count.
+    /// internal consistency. This can be more convenient than [`Tree::load`], since it is able to
+    /// internally query the storage for the last position and forgotten count.
     ///
-    /// **WARNING:** Do not deserialize trees from untrusted sources, or risk violating internal
+    /// ⚠️ **WARNING:** Do not deserialize trees from untrusted sources, or risk violating internal
     /// invariants.
-    ///
-    /// While trees can be serialized incrementally, they can only be deserialized all at once.
     pub async fn from_async_reader<R: AsyncRead>(reader: &mut R) -> Result<Tree, R::Error> {
         storage::deserialize::from_async_reader(reader).await
     }
 
     /// Serialize the tree incrementally from the last stored [`Position`] and [`Forgotten`]
     /// specified, into a [`storage::AsyncWrite`]. This can be more convenient than using
-    /// [`Tree::updates_since`], because it is able to internally query the storage for the last
-    /// position and forgotten count, and drive the storage operations itself.
+    /// [`Tree::updates`], because it is able to internally query the storage for the last position
+    /// and forgotten count, and drive the storage operations itself.
     ///
     /// This performs only the operations necessary to serialize the changes to the tree.
     pub async fn to_async_writer<W: AsyncWrite>(&self, writer: &mut W) -> Result<(), W::Error> {
