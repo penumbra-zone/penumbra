@@ -741,6 +741,52 @@ impl Tree {
         Node::root(&*self.inner)
     }
 
+    /// Deserialize a tree from a [`storage::Read`] of its contents, without checking for internal
+    /// consistency.
+    ///
+    /// This can be more convenient than [`Tree::load`], since it is able to internally query the
+    /// storage for the last position and forgotten count.
+    ///
+    /// ⚠️ **WARNING:** Do not deserialize trees you did not serialize yourself, or risk violating
+    /// internal invariants.
+    pub fn from_reader<R: Read>(reader: &mut R) -> Result<Tree, R::Error> {
+        storage::deserialize::from_reader(reader)
+    }
+
+    /// Serialize the tree incrementally from the last stored [`Position`] and [`Forgotten`]
+    /// specified, into a [`storage::Write`], performing only the operations necessary to serialize
+    /// the changes to the tree.
+    ///
+    /// This can be more convenient than using [`Tree::updates`], because it is able to internally
+    /// query the storage for the last position and forgotten count, and drive the storage
+    /// operations itself.
+    pub fn to_writer<W: Write>(&self, writer: &mut W) -> Result<(), W::Error> {
+        storage::serialize::to_writer(writer, self)
+    }
+
+    /// Deserialize a tree from a [`storage::AsyncRead`] of its contents, without checking for
+    /// internal consistency.
+    ///
+    /// This can be more convenient than [`Tree::load`], since it is able to internally query the
+    /// storage for the last position and forgotten count.
+    ///
+    /// ⚠️ **WARNING:** Do not deserialize trees you did not serialize yourself, or risk violating
+    /// internal invariants.
+    pub async fn from_async_reader<R: AsyncRead>(reader: &mut R) -> Result<Tree, R::Error> {
+        storage::deserialize::from_async_reader(reader).await
+    }
+
+    /// Serialize the tree incrementally from the last stored [`Position`] and [`Forgotten`]
+    /// specified, into a [`storage::AsyncWrite`], performing only the operations necessary to
+    /// serialize the changes to the tree.
+    ///
+    /// This can be more convenient than using [`Tree::updates`], because it is able to internally
+    /// query the storage for the last position and forgotten count, and drive the storage
+    /// operations itself.
+    pub async fn to_async_writer<W: AsyncWrite>(&self, writer: &mut W) -> Result<(), W::Error> {
+        storage::serialize::to_async_writer(writer, self).await
+    }
+
     /// Deserialize a tree using externally driven iteration, without checking for internal
     /// consistency.
     ///
@@ -795,49 +841,6 @@ impl Tree {
         last_forgotten: Forgotten,
     ) -> impl Iterator<Item = Update> + Send + Sync + '_ {
         storage::serialize::updates(last_position.into(), last_forgotten, self)
-    }
-
-    /// Deserialize a tree from a [`storage::Read`] of its contents, without checking for internal
-    /// consistency. This can be more convenient than [`Tree::load`], since it is able to internally
-    /// query the storage for the last position and forgotten count.
-    ///
-    /// ⚠️ **WARNING:** Do not deserialize trees you did not serialize yourself, or risk violating
-    /// internal invariants.
-    pub fn from_reader<R: Read>(reader: &mut R) -> Result<Tree, R::Error> {
-        storage::deserialize::from_reader(reader)
-    }
-
-    /// Serialize the tree incrementally from the last stored [`Position`] and [`Forgotten`]
-    /// specified, into a [`storage::Write`]. This can be more convenient than using
-    /// [`Tree::updates`], because it is able to internally query the storage for the last position
-    /// and forgotten count, and drive the storage operations itself.
-    ///
-    /// This performs only the operations necessary to serialize the changes to the tree.
-    pub fn to_writer<W: Write>(&self, writer: &mut W) -> Result<(), W::Error> {
-        storage::serialize::to_writer(writer, self)
-    }
-
-    /// Deserialize a tree from a [`storage::AsyncRead`] of its contents, without checking for
-    /// internal consistency.
-    ///
-    /// This can be more convenient than [`Tree::load`], since it is able to internally query the
-    /// storage for the last position and forgotten count.
-    ///
-    /// ⚠️ **WARNING:** Do not deserialize trees you did not serialize yourself, or risk violating
-    /// internal invariants.
-    pub async fn from_async_reader<R: AsyncRead>(reader: &mut R) -> Result<Tree, R::Error> {
-        storage::deserialize::from_async_reader(reader).await
-    }
-
-    /// Serialize the tree incrementally from the last stored [`Position`] and [`Forgotten`]
-    /// specified, into a [`storage::AsyncWrite`], performing only the operations necessary to
-    /// serialize the changes to the tree.
-    ///
-    /// This can be more convenient than using [`Tree::updates`], because it is able to internally
-    /// query the storage for the last position and forgotten count, and drive the storage
-    /// operations itself.
-    pub async fn to_async_writer<W: AsyncWrite>(&self, writer: &mut W) -> Result<(), W::Error> {
-        storage::serialize::to_async_writer(writer, self).await
     }
 }
 
