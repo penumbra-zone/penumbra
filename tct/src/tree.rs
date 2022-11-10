@@ -741,15 +741,33 @@ impl Tree {
         Node::root(&*self.inner)
     }
 
-    /// Deserialize a tree, without checking for internal consistency. This returns an object
-    /// [`storage::LoadCommitments`] which can be used to
-    /// [`insert`](storage::LoadCommitments::insert) positioned commitments. When all commitments
-    /// have been inserted, use [`.load_hashes()`](storage::LoadCommitments::load_hashes) to get an
-    /// object which can be used to [`insert`](storage::LoadHashes::insert) positioned, heighted
-    /// hashes. Finally, call [`finish`](storage::LoadHashes::finish) to get the [`Tree`].
+    /// Deserialize a tree using externally driven iteration, without checking for internal
+    /// consistency.
     ///
-    /// **WARNING:** Do not deserialize trees from untrusted sources, or risk violating internal
-    /// invariants.
+    /// Reconstructing a [`Tree`] using this method requires stepping through a series of states, as
+    /// follows:
+    ///
+    /// 1. [`Tree::load`] returns an object [`LoadCommitments`](storage::LoadCommitments) which can
+    ///    be used to [`insert`](storage::LoadCommitments::insert) positioned commitments.
+    /// 2. When all commitments have been inserted, call
+    ///    [`.load_hashes()`](storage::LoadCommitments::load_hashes) to get an object
+    ///    [`LoadHashes`](storage::LoadHashes).
+    /// 3. [`LoadHashes`](storage::LoadHashes) can be used to
+    ///    [`insert`](storage::LoadHashes::insert) positioned, heighted hashes.
+    /// 4. Finally, call [`.finish()`](storage::LoadHashes::finish) on the
+    ///    [`LoadHashes`](storage::LoadHashes) to get the [`Tree`].
+    ///
+    /// ⚠️ **WARNING:** Do not deserialize trees you did not serialize yourself, or risk violating
+    /// internal invariants. You *must* insert all the commitments and hashes corresponding to the
+    /// stored tree, or the reconstructed tree will not match what was serialized, and further, it
+    /// may have internal inconsistencies that will mean that the proofs it produces will not
+    /// verify.
+    ///
+    /// ℹ️ **NOTE:** You may prefer to use [`from_reader`](Tree::from_reader) or
+    /// [`from_async_reader`](Tree::from_async_reader), which drive the iteration over the
+    /// underlying storage *internally* rather than requiring the caller to drive the iteration.
+    /// [`Tree::load`] is predominanly useful in circumstances when this inversion of control does
+    /// not make sense.
     pub fn load(
         last_position: impl Into<StoredPosition>,
         last_forgotten: Forgotten,
@@ -766,6 +784,11 @@ impl Tree {
     /// The iterator of updates may be [`.collect()`](Iterator::collect)ed into a
     /// [`storage::Updates`], which is more compact in-memory than
     /// [`.collect()`](Iterator::collect)ing into a [`Vec<Update>`](Vec).
+    ///
+    /// ℹ️ **NOTE:** You may prefer to use [`to_writer`](Tree::to_writer) or
+    /// [`to_async_writer`](Tree::to_async_writer), which drive the operations on the underlying
+    /// storage *internally* rather than requiring the caller to drive iteration. [`Tree::updates`]
+    /// is predominantly useful in circumstances when this inversion of control does not make sense.
     pub fn updates(
         &self,
         last_position: impl Into<StoredPosition>,
@@ -778,10 +801,8 @@ impl Tree {
     /// consistency. This can be more convenient than [`Tree::load`], since it is able to internally
     /// query the storage for the last position and forgotten count.
     ///
-    /// **WARNING:** Do not deserialize trees from untrusted sources, or risk violating internal
-    /// invariants.
-    ///
-    /// While trees can be serialized incrementally, they can only be deserialized all at once.
+    /// ⚠️ **WARNING:** Do not deserialize trees you did not serialize yourself, or risk violating
+    /// internal invariants.
     pub fn from_reader<R: Read>(reader: &mut R) -> Result<Tree, R::Error> {
         storage::deserialize::from_reader(reader)
     }
@@ -797,23 +818,24 @@ impl Tree {
     }
 
     /// Deserialize a tree from a [`storage::AsyncRead`] of its contents, without checking for
-    /// internal consistency. This can be more convenient than [`Tree::load`], since it is
-    /// able to internally query the storage for the last position and forgotten count.
+    /// internal consistency.
     ///
-    /// **WARNING:** Do not deserialize trees from untrusted sources, or risk violating internal
-    /// invariants.
+    /// This can be more convenient than [`Tree::load`], since it is able to internally query the
+    /// storage for the last position and forgotten count.
     ///
-    /// While trees can be serialized incrementally, they can only be deserialized all at once.
+    /// ⚠️ **WARNING:** Do not deserialize trees you did not serialize yourself, or risk violating
+    /// internal invariants.
     pub async fn from_async_reader<R: AsyncRead>(reader: &mut R) -> Result<Tree, R::Error> {
         storage::deserialize::from_async_reader(reader).await
     }
 
     /// Serialize the tree incrementally from the last stored [`Position`] and [`Forgotten`]
-    /// specified, into a [`storage::AsyncWrite`]. This can be more convenient than using
-    /// [`Tree::updates`], because it is able to internally query the storage for the last position
-    /// and forgotten count, and drive the storage operations itself.
+    /// specified, into a [`storage::AsyncWrite`], performing only the operations necessary to
+    /// serialize the changes to the tree.
     ///
-    /// This performs only the operations necessary to serialize the changes to the tree.
+    /// This can be more convenient than using [`Tree::updates`], because it is able to internally
+    /// query the storage for the last position and forgotten count, and drive the storage
+    /// operations itself.
     pub async fn to_async_writer<W: AsyncWrite>(&self, writer: &mut W) -> Result<(), W::Error> {
         storage::serialize::to_async_writer(writer, self).await
     }
