@@ -33,7 +33,7 @@
 //!                                       = Note Commitment
 //! ```
 
-#![warn(missing_docs)]
+#![warn(missing_docs, rustdoc::broken_intra_doc_links)]
 
 #[macro_use]
 extern crate derivative;

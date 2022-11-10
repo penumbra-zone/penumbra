@@ -4,7 +4,6 @@ use std::{
 };
 
 use decaf377::{FieldExt, Fq};
-use futures::Stream;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
 
 use crate::error::*;
@@ -759,20 +758,20 @@ impl Tree {
         storage::serialize::updates_since(last_position.into(), last_forgotten, self)
     }
 
-    /// Deserialize a tree from iterators of its contents, without checking for internal
-    /// consistency.
+    /// Deserialize a tree, without checking for internal consistency. This returns an object
+    /// [`storage::LoadCommitments`] which can be used to
+    /// [`insert`](storage::LoadCommitments::insert) positioned commitments. When all commitments
+    /// have been inserted, use [`.load_hashes()`](storage::LoadCommitments::load_hashes) to get an
+    /// object which can be used to [`insert`](storage::LoadHashes::insert) positioned, heighted
+    /// hashes. Finally, call [`finish`](storage::LoadHashes::finish) to get the [`Tree`].
     ///
     /// **WARNING:** Do not deserialize trees from untrusted sources, or risk violating internal
     /// invariants.
-    ///
-    /// While trees can be [`serialize`]d incrementally, they can only be deserialized all at once.
-    pub fn load<Err>(
+    pub fn load(
         position: impl Into<StoredPosition>,
         forgotten: Forgotten,
-        commitments: impl IntoIterator<Item = Result<(Position, Commitment), Err>>,
-        hashes: impl IntoIterator<Item = Result<(Position, u8, Hash), Err>>,
-    ) -> Result<Tree, Err> {
-        storage::deserialize::load(position, forgotten, commitments, hashes)
+    ) -> storage::deserialize::LoadCommitments {
+        storage::deserialize::LoadCommitments::new(position, forgotten)
     }
 
     /// Deserialize a tree from a [`storage::Read`] of its contents, without checking for internal
@@ -782,7 +781,7 @@ impl Tree {
     /// **WARNING:** Do not deserialize trees from untrusted sources, or risk violating internal
     /// invariants.
     ///
-    /// While trees can be [`serialize`]d incrementally, they can only be deserialized all at once.
+    /// While trees can be serialized incrementally, they can only be deserialized all at once.
     pub fn from_reader<R: Read>(reader: &mut R) -> Result<Tree, R::Error> {
         storage::deserialize::from_reader(reader)
     }
@@ -797,29 +796,14 @@ impl Tree {
         storage::serialize::to_writer(writer, self)
     }
 
-    /// Deserialize a tree from streams of its contents, without checking for internal consistency.
-    ///
-    /// **WARNING:** Do not deserialize trees from untrusted sources, or risk violating internal
-    /// invariants.
-    ///
-    /// While trees can be [`serialize`]d incrementally, they can only be deserialized all at once.
-    pub async fn load_stream<Err>(
-        position: impl Into<StoredPosition>,
-        forgotten: Forgotten,
-        commitments: impl Stream<Item = Result<(Position, Commitment), Err>> + Unpin,
-        hashes: impl Stream<Item = Result<(Position, u8, Hash), Err>> + Unpin,
-    ) -> Result<Tree, Err> {
-        storage::deserialize::load_stream(position, forgotten, commitments, hashes).await
-    }
-
     /// Deserialize a tree from a [`storage::AsyncRead`] of its contents, without checking for
-    /// internal consistency. This can be more convenient than [`Tree::load_stream`], since it is
+    /// internal consistency. This can be more convenient than [`Tree::load`], since it is
     /// able to internally query the storage for the last position and forgotten count.
     ///
     /// **WARNING:** Do not deserialize trees from untrusted sources, or risk violating internal
     /// invariants.
     ///
-    /// While trees can be [`serialize`]d incrementally, they can only be deserialized all at once.
+    /// While trees can be serialized incrementally, they can only be deserialized all at once.
     pub async fn from_async_reader<R: AsyncRead>(reader: &mut R) -> Result<Tree, R::Error> {
         storage::deserialize::from_async_reader(reader).await
     }

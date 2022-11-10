@@ -1,20 +1,20 @@
-/// When inserting a [`Commitment`] into a [`Tree`], should we [`Keep`](Witness::Keep) it to allow
-/// it to be witnessed later, or [`Forget`](Witness::Forget) about it after updating the root
-/// hash of the tree?
+/// When inserting a [`Commitment`](crate::Commitment) into a [`Tree`](crate::Tree), should we
+/// [`Keep`](Witness::Keep) it to allow it to be witnessed later, or [`Forget`](Witness::Forget)
+/// about it after updating the root hash of the tree?
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(any(test, feature = "arbitrary"), derive(proptest_derive::Arbitrary))]
 pub enum Witness {
-    /// When inserting a [`Commitment`] into a [`Tree`], this flag indicates that we should
-    /// immediately forget about it to save space, because we will not want to witness its presence
-    /// later.
+    /// When inserting a [`Commitment`](crate::Commitment) into a [`Tree`](crate::Tree), this flag
+    /// indicates that we should immediately forget about it to save space, because we will not want
+    /// to witness its presence later.
     ///
     /// This is equivalent to inserting the commitment using [`Witness::Keep`] and then immediately
-    /// forgetting that same commitment using [`Tree::forget`], though it is more efficient to
-    /// directly forget commitments upon insertion rather than to remember them on insertion and
-    /// then immediately forget them.
+    /// forgetting that same commitment using [`Tree::forget`](crate::Tree::forget), though it is
+    /// more efficient to directly forget commitments upon insertion rather than to remember them on
+    /// insertion and then immediately forget them.
     Forget,
-    /// When inserting a [`Commitment`] into a [`Tree`], this flag indicates that we should keep
-    /// this commitment to allow it to be witnessed later.
+    /// When inserting a [`Commitment`](crate::Commitment) into a [`Tree`](crate::Tree), this flag
+    /// indicates that we should keep this commitment to allow it to be witnessed later.
     Keep,
 }
 
@@ -39,11 +39,11 @@ impl<'de> serde::Deserialize<'de> for Witness {
             }
 
             fn visit_str<E: serde::de::Error>(self, value: &str) -> Result<Self::Value, E> {
-                match value {
+                match value.to_lowercase().as_str() {
                     "forget" => Ok(Witness::Forget),
                     "keep" => Ok(Witness::Keep),
                     _ => Err(E::custom(format!(
-                        "invalid witness flag: expected \"forget\" or \"keep\", found '{}'",
+                        "invalid witness flag: expected \"forget\" or \"keep\", found \"{}\"",
                         value
                     ))),
                 }

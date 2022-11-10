@@ -45,7 +45,7 @@ impl Distribution<Hash> for UniformFq {
 }
 
 impl Hash {
-    /// Generate a random [`Hash`].
+    /// Generate a random [`struct@Hash`].
     pub fn random(mut rng: impl Rng) -> Self {
         rng.sample(UniformFq)
     }

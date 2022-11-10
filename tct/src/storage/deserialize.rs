@@ -1,6 +1,6 @@
 //! Non-incremental deserialization for the [`Tree`](crate::Tree).
 
-use futures::{Stream, StreamExt};
+use futures::StreamExt;
 
 use crate::prelude::*;
 
@@ -40,52 +40,17 @@ pub fn from_reader<R: Read>(reader: &mut R) -> Result<Tree, R::Error> {
     Ok(load_hashes.finish())
 }
 
-/// Load iterators of commitments and hashes into a tree.
-pub fn load<Err>(
-    position: impl Into<StoredPosition>,
-    forgotten: Forgotten,
-    commitments: impl IntoIterator<Item = Result<(Position, Commitment), Err>>,
-    hashes: impl IntoIterator<Item = Result<(Position, u8, Hash), Err>>,
-) -> Result<Tree, Err> {
-    let mut commitments = commitments.into_iter();
-    let mut hashes = hashes.into_iter();
-
-    let mut load_commitments = LoadCommitments::new(position, forgotten);
-    while let Some((position, commitment)) = commitments.next().transpose()? {
-        load_commitments.insert(position, commitment);
-    }
-    let mut load_hashes = load_commitments.load_hashes();
-    while let Some((position, height, hash)) = hashes.next().transpose()? {
-        load_hashes.insert(position, height, hash);
-    }
-    Ok(load_hashes.finish())
-}
-
-/// Load streams of commitments and hashes into a tree.
-pub async fn load_stream<Err>(
-    position: impl Into<StoredPosition>,
-    forgotten: Forgotten,
-    mut commitments: impl Stream<Item = Result<(Position, Commitment), Err>> + Unpin,
-    mut hashes: impl Stream<Item = Result<(Position, u8, Hash), Err>> + Unpin,
-) -> Result<Tree, Err> {
-    let mut load_commitments = LoadCommitments::new(position, forgotten);
-    while let Some((position, commitment)) = commitments.next().await.transpose()? {
-        load_commitments.insert(position, commitment);
-    }
-    let mut load_hashes = load_commitments.load_hashes();
-    while let Some((position, height, hash)) = hashes.next().await.transpose()? {
-        load_hashes.insert(position, height, hash);
-    }
-    Ok(load_hashes.finish())
-}
-
-struct LoadCommitments {
+/// Builder for loading commitments to create a [`Tree`].
+///
+/// This does not check for internal consistency: inputs that are not derived from a serialization
+/// of the tree can lead to internal invariant violations.
+pub struct LoadCommitments {
     inner: frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>,
     index: HashedMap<Commitment, index::within::Tree>,
 }
 
 impl LoadCommitments {
-    pub fn new(position: impl Into<StoredPosition>, forgotten: Forgotten) -> Self {
+    pub(crate) fn new(position: impl Into<StoredPosition>, forgotten: Forgotten) -> Self {
         // Make an uninitialized tree with the correct position and forgotten version
         let position = match position.into() {
             StoredPosition::Position(position) => Some(position.into()),
@@ -97,12 +62,14 @@ impl LoadCommitments {
         }
     }
 
+    /// Insert a commitment at a given position.
     pub fn insert(&mut self, position: Position, commitment: Commitment) {
         self.inner
             .uninitialized_out_of_order_insert_commitment(position.into(), commitment);
         self.index.insert(commitment, u64::from(position).into());
     }
 
+    /// Start loading the hashes for the inside of the tree.
     pub fn load_hashes(self) -> LoadHashes {
         LoadHashes {
             inner: self.inner,
@@ -119,16 +86,19 @@ impl Extend<(Position, Commitment)> for LoadCommitments {
     }
 }
 
+/// Builder for loading hashes to create a [`Tree`].
 pub struct LoadHashes {
     inner: frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>,
     index: HashedMap<Commitment, index::within::Tree>,
 }
 
 impl LoadHashes {
+    /// Insert a hash at a given position and height.
     pub fn insert(&mut self, position: Position, height: u8, hash: Hash) {
         self.inner.unchecked_set_hash(position.into(), height, hash);
     }
 
+    /// Finish loading the tree.
     pub fn finish(mut self) -> Tree {
         self.inner.finish_initialize();
         Tree::unchecked_from_parts(self.index, self.inner)

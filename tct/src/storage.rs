@@ -15,6 +15,7 @@ pub(crate) mod deserialize;
 pub(crate) mod serialize;
 
 pub mod in_memory;
+pub use deserialize::{LoadCommitments, LoadHashes};
 pub use in_memory::InMemory;
 
 /// A stored position for the tree: either the position of the tree, or a marker indicating that it
@@ -258,8 +259,8 @@ pub struct DeleteRange {
 /// A collection of updates to the underlying storage.
 ///
 /// Note that this is both `FromIterator<Update>` and `Iterator<Item = Update>`, so you can
-/// [`.collect()](Iterator::collect) an `impl Iterator<Item = Update>` into this type, and you can
-/// also iterate over its contained updates.
+/// [`.collect()`](Iterator::collect) an `Iterator<Item = Update>` into this type, and you can also
+/// iterate over its contained updates.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Updates {
     /// The new position to set, if any.
