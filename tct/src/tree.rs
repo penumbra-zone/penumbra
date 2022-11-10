@@ -765,7 +765,7 @@ impl Tree {
     ///
     /// The iterator of updates may be [`.collect()`](Iterator::collect)ed into a
     /// [`storage::Updates`], which is more compact in-memory than
-    /// [`.collect()`](Iterator::collect)`ing into a [`Vec<Update>`](Vec).
+    /// [`.collect()`](Iterator::collect)ing into a [`Vec<Update>`](Vec).
     pub fn updates(
         &self,
         last_position: impl Into<StoredPosition>,
