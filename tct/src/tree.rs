@@ -741,23 +741,6 @@ impl Tree {
         Node::root(&*self.inner)
     }
 
-    /// Serialize the tree incrementally from the last stored [`Position`] and [`Forgotten`]
-    /// specified, into an iterator of `[storage::Update]`s.
-    ///
-    /// This returns only the operations necessary to serialize the changes to the tree,
-    /// synchronizing the in-memory representation with what is stored.
-    ///
-    /// The iterator of updates may be [`.collect()`](Iterator::collect)ed into a
-    /// [`storage::Updates`], which is more compact in-memory than
-    /// [`.collect()](Iterator::collect)`ing into a [`Vec<Update>`](Vec).
-    pub fn updates(
-        &self,
-        last_position: impl Into<StoredPosition>,
-        last_forgotten: Forgotten,
-    ) -> impl Iterator<Item = Update> + Send + Sync + '_ {
-        storage::serialize::updates(last_position.into(), last_forgotten, self)
-    }
-
     /// Deserialize a tree, without checking for internal consistency. This returns an object
     /// [`storage::LoadCommitments`] which can be used to
     /// [`insert`](storage::LoadCommitments::insert) positioned commitments. When all commitments
@@ -768,10 +751,27 @@ impl Tree {
     /// **WARNING:** Do not deserialize trees from untrusted sources, or risk violating internal
     /// invariants.
     pub fn load(
-        position: impl Into<StoredPosition>,
-        forgotten: Forgotten,
+        last_position: impl Into<StoredPosition>,
+        last_forgotten: Forgotten,
     ) -> storage::deserialize::LoadCommitments {
-        storage::deserialize::LoadCommitments::new(position, forgotten)
+        storage::deserialize::LoadCommitments::new(last_position, last_forgotten)
+    }
+
+    /// Serialize the tree incrementally from the last stored [`Position`] and [`Forgotten`]
+    /// specified, into an iterator of `[storage::Update]`s.
+    ///
+    /// This returns only the operations necessary to serialize the changes to the tree,
+    /// synchronizing the in-memory representation with what is stored.
+    ///
+    /// The iterator of updates may be [`.collect()`](Iterator::collect)ed into a
+    /// [`storage::Updates`], which is more compact in-memory than
+    /// [`.collect()`](Iterator::collect)`ing into a [`Vec<Update>`](Vec).
+    pub fn updates(
+        &self,
+        last_position: impl Into<StoredPosition>,
+        last_forgotten: Forgotten,
+    ) -> impl Iterator<Item = Update> + Send + Sync + '_ {
+        storage::serialize::updates(last_position.into(), last_forgotten, self)
     }
 
     /// Deserialize a tree from a [`storage::Read`] of its contents, without checking for internal
