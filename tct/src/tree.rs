@@ -720,7 +720,7 @@ impl Tree {
     /// Unlike [`commitments_unordered`](Tree::commitments_unordered), this guarantees that
     /// commitments will be returned in order, but it may be slower by a constant factor.
     #[instrument(level = "trace", skip(self))]
-    pub fn commitments(&self) -> impl Iterator<Item = (Position, Commitment)> + '_ {
+    pub fn commitments(&self) -> impl Iterator<Item = (Position, Commitment)> + Send + Sync + '_ {
         crate::storage::serialize::Serializer::default().commitments(self)
     }
 
@@ -729,7 +729,9 @@ impl Tree {
     /// Unlike [`commitments`](Tree::commitments), this **does not** guarantee that commitments will
     /// be returned in order, but it may be faster by a constant factor.
     #[instrument(level = "trace", skip(self))]
-    pub fn commitments_unordered(&self) -> impl Iterator<Item = (Commitment, Position)> + '_ {
+    pub fn commitments_unordered(
+        &self,
+    ) -> impl Iterator<Item = (Commitment, Position)> + Send + Sync + '_ {
         self.index.iter().map(|(c, p)| (*c, Position(*p)))
     }
 
