@@ -21,6 +21,7 @@ service ObliviousQuery {
   rpc ChainParameters(ChainParamsRequest) returns (core.chain.v1alpha1.ChainParameters);
   rpc MutableParameters(MutableParametersRequest) returns (stream core.governance.v1alpha1.MutableChainParameter);
   rpc ValidatorInfo(ValidatorInfoRequest) returns (stream core.stake.v1alpha1.ValidatorInfo);
+  // TODO: deprecate in favor of SpecificQuery.AssetInfo
   rpc AssetList(AssetListRequest) returns (core.chain.v1alpha1.KnownAssets);
 }
 
@@ -76,10 +77,26 @@ service SpecificQuery {
   rpc NextValidatorRate(core.crypto.v1alpha1.IdentityKey) returns (core.stake.v1alpha1.RateData);
   rpc BatchSwapOutputData(BatchSwapOutputDataRequest) returns (core.dex.v1alpha1.BatchSwapOutputData);
   rpc StubCPMMReserves(StubCPMMReservesRequest) returns (core.dex.v1alpha1.Reserves);
+  rpc AssetInfo(AssetInfoRequest) returns (AssetInfoResponse);
 
   // General-purpose key-value state query API, that can be used to query
   // arbitrary keys in the JMT storage.
   rpc KeyValue(KeyValueRequest) returns (KeyValueResponse);
+}
+
+// Requests information on an asset by asset id
+message AssetInfoRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  // The asset id to request information on.
+  core.crypto.v1alpha1.AssetId asset_id = 2;
+}
+
+message AssetInfoResponse {
+  // If present, information on the requested asset.
+  //
+  // If the requested asset was unknown, this field will not be present.
+  core.crypto.v1alpha1.Asset asset = 1;
 }
 
 // Requests batch swap data associated with a given height and trading pair from the view service.
