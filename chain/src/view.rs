@@ -18,7 +18,7 @@ use crate::{
 /// initialized, so they will error on an empty state.
 //#[async_trait(?Send)]
 #[async_trait]
-pub trait StateReadExt: StateReadProto {
+pub trait StateReadExt: StateRead {
     /// Gets the chain parameters from the JMT.
     async fn get_chain_params(&self) -> Result<ChainParameters> {
         self.get(state_key::chain_params())
@@ -128,7 +128,7 @@ impl<T: StateRead + StateReadProto + ?Sized> StateReadExt for T {}
 /// initialized, so they will error on an empty state.
 //#[async_trait(?Send)]
 #[async_trait]
-pub trait StateWriteExt: StateWriteProto {
+pub trait StateWriteExt: StateWrite {
     /// Writes the provided chain parameters to the JMT.
     fn put_chain_params(&mut self, params: ChainParameters) {
         self.put(state_key::chain_params().into(), params)
