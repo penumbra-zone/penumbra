@@ -99,7 +99,7 @@ impl Storage {
     }
 
     /// Returns a new [`State`] on top of the latest version of the tree.
-    pub fn state(&self) -> State {
+    pub fn latest_state(&self) -> State {
         State::new(self.0.latest_snapshot.read().clone())
     }
 

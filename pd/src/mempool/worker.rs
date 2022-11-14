@@ -22,7 +22,7 @@ pub struct Worker {
 impl Worker {
     #[instrument(skip(storage, queue), name = "mempool::Worker::new")]
     pub async fn new(storage: Storage, queue: mpsc::Receiver<Message>) -> Result<Self> {
-        let app = App::new(storage.state());
+        let app = App::new(storage.latest_state());
         let state_rx = storage.subscribe();
 
         Ok(Self {

@@ -29,7 +29,7 @@ async fn simple_flow() -> anyhow::Result<()> {
     // tx10: a/c => c
     // tx11: a/ab => ab2
 
-    let mut state_init = storage.state();
+    let mut state_init = storage.latest_state();
     // Check that reads on an empty state return Ok(None)
     assert_eq!(state_init.get_raw("test").await?, None);
     assert_eq!(state_init.get_raw("a/aa").await?, None);
@@ -190,7 +190,7 @@ async fn simple_flow() -> anyhow::Result<()> {
     storage.commit(state_init).await?;
 
     // Now we have version 0.
-    let mut state0 = storage.state();
+    let mut state0 = storage.latest_state();
     assert_eq!(state0.version(), 0);
     // Check reads against state0:
     //    This is missing in state0 and present in JMT
@@ -362,13 +362,13 @@ async fn simple_flow() -> anyhow::Result<()> {
     std::mem::drop(range);
 
     // Create another fork of state 0 while we've edited the first one but before we commit.
-    let state0a = storage.state();
+    let state0a = storage.latest_state();
     assert_eq!(state0a.version(), 0);
 
     // Commit state0 as state1.
     storage.commit(state0).await?;
 
-    let state1 = storage.state();
+    let state1 = storage.latest_state();
     assert_eq!(state1.version(), 1);
 
     // Check reads against state1
@@ -436,7 +436,7 @@ async fn simple_flow() -> anyhow::Result<()> {
 
     // Now reload the storage from the same directory...
     let storage_a = Storage::load(tmpdir.path().to_owned()).await?;
-    let state1a = storage_a.state();
+    let state1a = storage_a.latest_state();
 
     // Check that we reload at the correct version ...
     assert_eq!(state1a.version(), 1);

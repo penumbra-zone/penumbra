@@ -602,7 +602,7 @@ mod tests {
         let file_path = dir.path().join("ibc-testing.db");
 
         let storage = Storage::load(file_path.clone()).await.unwrap();
-        let mut state = Arc::new(storage.state());
+        let mut state = Arc::new(storage.latest_state());
         let state_mut =
             Arc::get_mut(&mut state).expect("state Arc should not be referenced elsewhere");
         let mut state_tx = state_mut.begin_transaction();
@@ -620,7 +620,7 @@ mod tests {
             .await
             .unwrap();
 
-        let mut state = Arc::new(storage.state());
+        let mut state = Arc::new(storage.latest_state());
 
         // base64 encoded MsgCreateClient that was used to create the currently in-use Stargaze
         // light client on the cosmos hub:
@@ -691,7 +691,7 @@ mod tests {
             .await
             .unwrap();
 
-        let mut state = Arc::new(storage.state());
+        let mut state = Arc::new(storage.latest_state());
         assert_eq!(state.clone().client_counter().await.unwrap().0, 1);
 
         // now try update client
@@ -714,7 +714,7 @@ mod tests {
             .await
             .unwrap();
 
-        let mut state = Arc::new(storage.state());
+        let mut state = Arc::new(storage.latest_state());
 
         // try one more client update
         // https://cosmos.bigdipper.live/transactions/ED217D360F51E622859F7B783FEF98BDE3544AA32BBD13C6C77D8D0D57A19FFD
