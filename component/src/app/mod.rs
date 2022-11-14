@@ -134,7 +134,7 @@ impl App {
     #[instrument(skip(self, storage))]
     pub async fn commit(&mut self, storage: Storage) -> Result<AppHash> {
         // We need to extract the State we've built up to commit it.  Fill in a dummy state.
-        let dummy_state = storage.state();
+        let dummy_state = storage.latest_state();
         let state = Arc::try_unwrap(std::mem::replace(&mut self.state, Arc::new(dummy_state)))
             .expect("we have exclusive ownership of the State at commit()");
 
@@ -145,7 +145,7 @@ impl App {
         tracing::debug!(?app_hash, "finished committing state");
 
         // Get the latest version of the state, now that we've committed it.
-        self.state = Arc::new(storage.state());
+        self.state = Arc::new(storage.latest_state());
 
         Ok(app_hash)
     }

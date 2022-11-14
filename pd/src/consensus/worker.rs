@@ -23,7 +23,7 @@ pub struct Worker {
 impl Worker {
     #[instrument(skip(storage, queue), name = "consensus::Worker::new")]
     pub async fn new(storage: Storage, queue: mpsc::Receiver<Message>) -> Result<Self> {
-        let app = App::new(storage.state());
+        let app = App::new(storage.latest_state());
 
         Ok(Self {
             queue,
