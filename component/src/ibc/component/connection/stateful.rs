@@ -45,7 +45,7 @@ pub mod connection_open_confirm {
                 Counterparty::new(
                     connection.client_id().clone(),
                     Some(msg.connection_id.clone()),
-                    penumbra_storage::PENUMBRA_COMMITMENT_PREFIX.clone(),
+                    penumbra_chain::PENUMBRA_COMMITMENT_PREFIX.clone(),
                 ),
                 connection.versions().to_vec(),
                 connection.delay_period(),
@@ -147,7 +147,7 @@ pub mod connection_open_ack {
             let expected_counterparty = Counterparty::new(
                 connection.client_id().clone(),  // client ID (local)
                 Some(msg.connection_id.clone()), // connection ID (local)
-                penumbra_storage::PENUMBRA_COMMITMENT_PREFIX.clone(), // commitment prefix (local)
+                penumbra_chain::PENUMBRA_COMMITMENT_PREFIX.clone(), // commitment prefix (local)
             );
 
             // the connection we expect the counterparty to have committed
@@ -347,7 +347,7 @@ pub mod connection_open_try {
                 Counterparty::new(
                     msg.client_id.clone(),
                     None,
-                    penumbra_storage::PENUMBRA_COMMITMENT_PREFIX.clone(),
+                    penumbra_chain::PENUMBRA_COMMITMENT_PREFIX.clone(),
                 ),
                 msg.counterparty_versions.clone(),
                 msg.delay_period,

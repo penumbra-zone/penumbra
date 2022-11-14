@@ -6,7 +6,8 @@ use std::{
 
 use futures::FutureExt;
 //use penumbra_storage::{get_with_proof, AppHash, State, Storage};
-use penumbra_storage::{AppHash, Storage};
+use penumbra_chain::AppHashRead;
+use penumbra_storage::Storage;
 use tendermint::abci::{self, response::Echo, InfoRequest, InfoResponse};
 use tower_abci::BoxError;
 use tracing::Instrument;
@@ -43,10 +44,7 @@ impl Info {
         .try_into()
         .unwrap();
 
-        let last_block_app_hash = AppHash::from(state.root_hash().await.expect("clean state"))
-            .0
-            .to_vec()
-            .into();
+        let last_block_app_hash = state.app_hash().await?.0.to_vec().into();
 
         Ok(abci::response::Info {
             data: "penumbra".to_string(),

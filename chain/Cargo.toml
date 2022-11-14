@@ -22,8 +22,13 @@ ark-ff = "0.3"
 anyhow = "1"
 bytes = "1"
 hex = "0.4"
+once_cell = "1.8"
+sha2 = "0.9"
 serde = { version = "1", features = ["derive"] }
 async-trait = "0.1.52"
 tracing = "0.1"
 tonic = "0.8.1"
 num-rational = "0.4"
+
+ibc = { git = "https://github.com/penumbra-zone/ibc-rs", branch = "penumbra-034" }
+ics23 = { git = "https://github.com/penumbra-zone/ics23", branch = "penumbra-034" }
