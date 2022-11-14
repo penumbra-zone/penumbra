@@ -1,4 +1,3 @@
-ENV BUILDPLATFORM linux/amd64
 FROM --platform=$BUILDPLATFORM rust:1-bullseye AS build-env
 
 RUN rustup component add rustfmt
