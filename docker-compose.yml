@@ -5,6 +5,7 @@ services:
     container_name: penumbra-node0
     build:
       context: .
+      dockerfile: Dockerfile.old
     environment:
       - RUST_LOG=${RUST_LOG:-warn,pd=debug,penumbra=debug,jmt=info}
     volumes:
