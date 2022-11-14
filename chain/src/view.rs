@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
+use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 use tendermint::Time;
 
@@ -17,7 +18,7 @@ use crate::{
 /// initialized, so they will error on an empty state.
 //#[async_trait(?Send)]
 #[async_trait]
-pub trait StateReadExt: StateRead {
+pub trait StateReadExt: StateReadProto {
     /// Gets the chain parameters from the JMT.
     async fn get_chain_params(&self) -> Result<ChainParameters> {
         self.get(state_key::chain_params())
@@ -118,7 +119,7 @@ pub trait StateReadExt: StateRead {
     }
 }
 
-impl<T: StateRead + ?Sized> StateReadExt for T {}
+impl<T: StateRead + StateReadProto + ?Sized> StateReadExt for T {}
 
 /// This trait provides write access to common parts of the Penumbra
 /// state store.
@@ -127,7 +128,7 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 /// initialized, so they will error on an empty state.
 //#[async_trait(?Send)]
 #[async_trait]
-pub trait StateWriteExt: StateWrite {
+pub trait StateWriteExt: StateWriteProto {
     /// Writes the provided chain parameters to the JMT.
     fn put_chain_params(&mut self, params: ChainParameters) {
         self.put(state_key::chain_params().into(), params)
@@ -154,4 +155,4 @@ pub trait StateWriteExt: StateWrite {
     }
 }
 
-impl<T: StateWrite + ?Sized> StateWriteExt for T {}
+impl<T: StateWrite + StateWriteProto + ?Sized> StateWriteExt for T {}

@@ -3313,21 +3313,25 @@ name = "penumbra-proto"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "bech32",
  "bytes",
  "decaf377-fmd",
  "decaf377-rdsa",
+ "futures",
  "hex",
  "ibc",
  "ibc-proto",
  "ics23",
  "num-rational",
+ "penumbra-storage",
  "prost",
  "prost-types",
  "serde",
  "subtle-encoding",
  "tendermint",
  "tonic",
+ "tracing",
 ]
 
 [[package]]
@@ -3347,9 +3351,6 @@ dependencies = [
  "metrics",
  "once_cell",
  "parking_lot 0.12.1",
- "penumbra-crypto",
- "penumbra-proto",
- "penumbra-tct",
  "rocksdb",
  "sha2 0.9.9",
  "tempfile",

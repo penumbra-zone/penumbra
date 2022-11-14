@@ -2,7 +2,9 @@ use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::KnownAssets;
 use penumbra_crypto::asset::{self, Asset, Denom};
+use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
+
 use tracing::instrument;
 
 use super::state_key;

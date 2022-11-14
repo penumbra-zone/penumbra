@@ -4,7 +4,7 @@ use std::fmt::Debug;
 
 use penumbra_storage::StateWrite;
 
-pub trait StateWriteProto: StateWrite + StateReadProto + Send + Sync {
+pub trait StateWriteProto: StateWrite + Send + Sync {
     /// Puts a domain type into the verifiable key-value store with the given key.
     fn put<D, P>(&mut self, key: String, value: D)
     where
@@ -26,3 +26,4 @@ pub trait StateWriteProto: StateWrite + StateReadProto + Send + Sync {
         self.put_raw(key, value.encode_to_vec());
     }
 }
+impl<T: StateWrite + ?Sized> StateWriteProto for T {}

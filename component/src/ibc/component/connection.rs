@@ -28,6 +28,7 @@ use tracing::instrument;
 
 use super::client::StateWriteExt as _;
 use super::state_key;
+use penumbra_proto::{StateReadProto, StateWriteProto};
 
 mod execution;
 mod stateful;
