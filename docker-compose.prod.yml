@@ -3,7 +3,7 @@ version: "3.7"
 services:
   pd-node0:
     build:
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.old
     command:
       [
         "bash",
