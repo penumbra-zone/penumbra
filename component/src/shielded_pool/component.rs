@@ -220,9 +220,10 @@ impl Component for ShieldedPool {
         // Get the current block height
         let height = state.height().await;
 
-        // Set the height of the compact block
+        // Set the height of the compact block and save it.
         let mut compact_block = state.stub_compact_block();
         compact_block.height = height;
+        state.stub_put_compact_block(compact_block);
 
         // TODO: execute any scheduled DAO spend transactions for this block
 
@@ -236,6 +237,9 @@ impl Component for ShieldedPool {
         // Process all unquarantining scheduled for this block
         state.process_unquarantine().await;
 
+        // We need to reload the compact block here, in case it was
+        // edited during the preceding method calls.
+        let mut compact_block = state.stub_compact_block();
         // Close the block in the NCT
         let mut note_commitment_tree = state.stub_note_commitment_tree().await;
         state
