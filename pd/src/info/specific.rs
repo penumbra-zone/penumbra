@@ -36,7 +36,7 @@ impl SpecificQuery for Info {
         &self,
         request: tonic::Request<KeyValueRequest>,
     ) -> Result<tonic::Response<KeyValueResponse>, Status> {
-        let state = self.storage.state();
+        let state = self.storage.latest_state();
         state.check_chain_id(&request.get_ref().chain_id).await?;
 
         let request = request.into_inner();
@@ -72,7 +72,7 @@ impl SpecificQuery for Info {
         &self,
         request: tonic::Request<AssetInfoRequest>,
     ) -> Result<tonic::Response<AssetInfoResponse>, Status> {
-        let state = self.storage.state();
+        let state = self.storage.latest_state();
         state.check_chain_id(&request.get_ref().chain_id).await?;
 
         let request = request.into_inner();
@@ -108,7 +108,7 @@ impl SpecificQuery for Info {
         &self,
         request: tonic::Request<NoteCommitment>,
     ) -> Result<tonic::Response<NoteSource>, Status> {
-        let state = self.storage.state();
+        let state = self.storage.latest_state();
         let cm = request
             .into_inner()
             .try_into()
@@ -128,7 +128,7 @@ impl SpecificQuery for Info {
         &self,
         request: tonic::Request<ValidatorStatusRequest>,
     ) -> Result<tonic::Response<ValidatorStatus>, Status> {
-        let state = self.storage.state();
+        let state = self.storage.latest_state();
         state.check_chain_id(&request.get_ref().chain_id).await?;
 
         let id = request
@@ -153,7 +153,7 @@ impl SpecificQuery for Info {
         &self,
         request: tonic::Request<BatchSwapOutputDataRequest>,
     ) -> Result<tonic::Response<BatchSwapOutputData>, Status> {
-        let state = self.storage.state();
+        let state = self.storage.latest_state();
         let request_inner = request.into_inner();
         let height = request_inner.height;
         let trading_pair = request_inner
@@ -179,7 +179,7 @@ impl SpecificQuery for Info {
         &self,
         request: tonic::Request<StubCpmmReservesRequest>,
     ) -> Result<tonic::Response<Reserves>, Status> {
-        let state = self.storage.state();
+        let state = self.storage.latest_state();
         let request_inner = request.into_inner();
         let trading_pair = request_inner
             .trading_pair
@@ -203,7 +203,7 @@ impl SpecificQuery for Info {
         &self,
         request: tonic::Request<proto::core::crypto::v1alpha1::IdentityKey>,
     ) -> Result<tonic::Response<proto::core::stake::v1alpha1::RateData>, Status> {
-        let state = self.storage.state();
+        let state = self.storage.latest_state();
         let identity_key = request
             .into_inner()
             .try_into()

@@ -71,7 +71,7 @@ impl ObliviousQuery for Info {
         &self,
         request: tonic::Request<ChainParamsRequest>,
     ) -> Result<tonic::Response<ChainParameters>, Status> {
-        let state = self.storage.state();
+        let state = self.storage.latest_state();
         state.check_chain_id(&request.get_ref().chain_id).await?;
 
         let chain_params = state.get_chain_params().await.map_err(|e| {
@@ -86,7 +86,7 @@ impl ObliviousQuery for Info {
         &self,
         request: tonic::Request<MutableParametersRequest>,
     ) -> Result<tonic::Response<Self::MutableParametersStream>, Status> {
-        let state = self.storage.state();
+        let state = self.storage.latest_state();
         state.check_chain_id(&request.get_ref().chain_id).await?;
 
         let mutable_params = MutableParam::iter();
@@ -113,7 +113,7 @@ impl ObliviousQuery for Info {
         &self,
         request: tonic::Request<AssetListRequest>,
     ) -> Result<tonic::Response<KnownAssets>, Status> {
-        let state = self.storage.state();
+        let state = self.storage.latest_state();
         state.check_chain_id(&request.get_ref().chain_id).await?;
 
         let known_assets = state.known_assets().await.map_err(|e| {
@@ -127,7 +127,7 @@ impl ObliviousQuery for Info {
         &self,
         request: tonic::Request<ValidatorInfoRequest>,
     ) -> Result<tonic::Response<Self::ValidatorInfoStream>, Status> {
-        let state = self.storage.state();
+        let state = self.storage.latest_state();
         state.check_chain_id(&request.get_ref().chain_id).await?;
 
         let validators = state
@@ -171,7 +171,7 @@ impl ObliviousQuery for Info {
         &self,
         request: tonic::Request<CompactBlockRangeRequest>,
     ) -> Result<tonic::Response<Self::CompactBlockRangeStream>, Status> {
-        let state = self.storage.state();
+        let state = self.storage.latest_state();
         state.check_chain_id(&request.get_ref().chain_id).await?;
 
         let CompactBlockRangeRequest {
@@ -227,7 +227,7 @@ impl ObliviousQuery for Info {
                 let storage2 = storage.clone();
                 tokio::spawn(async move {
                     for height in start_height..=end_height {
-                        let state3 = storage2.state();
+                        let state3 = storage2.latest_state();
                         let _ = block_fetch_tx
                             .send(tokio::spawn(
                                 async move { state3.compact_block(height).await },
