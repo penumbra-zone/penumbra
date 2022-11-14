@@ -26,6 +26,12 @@ pub mod serializers;
 mod protobuf;
 pub use protobuf::Protobuf;
 
+mod state;
+#[cfg(feature = "penumbra-storage")]
+pub use state::StateReadProto;
+#[cfg(feature = "penumbra-storage")]
+pub use state::StateWriteProto;
+
 /// Core protocol structures.
 pub mod core {
     /// Crypto structures.
