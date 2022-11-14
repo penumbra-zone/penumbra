@@ -1,4 +1,4 @@
-use crate::{Message, Protobuf, StateReadProto};
+use crate::{Message, Protobuf};
 
 use std::fmt::Debug;
 
