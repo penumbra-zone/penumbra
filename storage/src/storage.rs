@@ -105,7 +105,7 @@ impl Storage {
 
     /// Commits the provided [`State`] to persistent storage as the latest
     /// version of the chain state.
-    pub async fn commit(&self, state: State) -> Result<jmt::RootHash> {
+    pub async fn commit(&self, state: State) -> Result<crate::RootHash> {
         // We use wrapping_add here so that we can write `new_version = 0` by
         // overflowing `PRE_GENESIS_VERSION`.
         let old_version = self.latest_version();

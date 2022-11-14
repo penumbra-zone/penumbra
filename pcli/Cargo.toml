@@ -17,7 +17,6 @@ nct-divergence-check = ["penumbra-view/nct-divergence-check"]
 
 [dependencies]
 # Workspace dependencies
-jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "newmain" }
 penumbra-proto = { path = "../proto" }
 penumbra-chain = { path = "../chain" }
 penumbra-crypto = { path = "../crypto" }

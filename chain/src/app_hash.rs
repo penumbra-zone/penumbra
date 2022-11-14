@@ -1,15 +1,14 @@
 use async_trait::async_trait;
 use ibc::core::ics23_commitment::merkle::MerkleProof;
 use ibc::core::ics23_commitment::{commitment::CommitmentPrefix, specs::ProofSpecs};
-use jmt::RootHash;
 use once_cell::sync::Lazy;
 use penumbra_proto::Message;
-use penumbra_storage::State;
+use penumbra_storage::{RootHash, State};
 
 use sha2::{Digest, Sha256};
 
 pub static PENUMBRA_PROOF_SPECS: Lazy<ProofSpecs> =
-    Lazy::new(|| ProofSpecs::from(vec![jmt::ics23_spec(), apphash_spec()]));
+    Lazy::new(|| ProofSpecs::from(vec![penumbra_storage::ics23_spec(), apphash_spec()]));
 
 pub static PENUMBRA_COMMITMENT_PREFIX: Lazy<CommitmentPrefix> =
     Lazy::new(|| CommitmentPrefix::try_from(APPHASH_DOMSEP.as_bytes().to_vec()).unwrap());

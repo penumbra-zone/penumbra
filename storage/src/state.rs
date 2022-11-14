@@ -115,7 +115,7 @@ impl State {
     ///
     /// This method may only be used on a clean [`State`] fork, and will error
     /// if [`is_dirty`] returns `true`.
-    pub async fn root_hash(&self) -> Result<jmt::RootHash> {
+    pub async fn root_hash(&self) -> Result<crate::RootHash> {
         if self.is_dirty() {
             return Err(anyhow::anyhow!("requested root_hash on dirty State"));
         }
@@ -129,7 +129,7 @@ impl State {
                     let tree = jmt::JellyfishMerkleTree::new(&snapshot);
                     let root = tree
                         .get_root_hash_option(snapshot.version())?
-                        .unwrap_or(jmt::RootHash([0; 32]));
+                        .unwrap_or(crate::RootHash([0; 32]));
                     Ok(root)
                 })
             })?
