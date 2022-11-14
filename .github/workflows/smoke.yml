@@ -33,7 +33,8 @@ jobs:
           
       # DOC: please update the devnet guide if you change this (see "How to run smoke-tests")
       - name: Run integration tests against localhost.
-        run: cargo test --features nct-divergence-check --package pcli -- --ignored --test-threads 1
+        run: cargo test --features nct-divergence-check --package pcli -- --ignored --test-threads 1 --nocapture
         env:
           PENUMBRA_NODE_HOSTNAME: 127.0.0.1
           PCLI_UNLEASH_DANGER: yes
+          RUST_LOG: pcli=debug,penumbra=debug
