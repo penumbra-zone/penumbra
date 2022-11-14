@@ -11,6 +11,7 @@ use penumbra_chain::{
     Epoch, NoteSource, StateReadExt as _,
 };
 use penumbra_crypto::{asset, note, IdentityKey, NotePayload, Nullifier, Value};
+use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{State, StateRead, StateTransaction, StateWrite};
 use penumbra_tct as tct;
 use penumbra_transaction::{action::swap_claim::List as SwapClaimBodyList, Action, Transaction};

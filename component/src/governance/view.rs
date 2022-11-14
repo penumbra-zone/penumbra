@@ -7,6 +7,7 @@ use penumbra_crypto::{
     rdsa::{SpendAuth, VerificationKey},
     Address, IdentityKey, Value, STAKING_TOKEN_ASSET_ID,
 };
+use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::action::{Proposal, ProposalPayload, Vote};
 

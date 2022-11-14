@@ -33,6 +33,7 @@ use penumbra_proto::core::ibc::v1alpha1::ibc_action::Action::{
     Acknowledgement, ChannelCloseConfirm, ChannelCloseInit, ChannelOpenAck, ChannelOpenConfirm,
     ChannelOpenInit, ChannelOpenTry, RecvPacket, Timeout,
 };
+use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::StateTransaction;
 use penumbra_storage::StateWrite;
 use penumbra_storage::{State, StateRead};

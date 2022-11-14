@@ -28,6 +28,7 @@ use ibc::{
 };
 use penumbra_chain::{genesis, StateReadExt as _};
 use penumbra_proto::core::ibc::v1alpha1::ibc_action::Action::{CreateClient, UpdateClient};
+use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{State, StateRead, StateTransaction, StateWrite};
 use penumbra_transaction::Transaction;
 use tendermint::{abci, validator};

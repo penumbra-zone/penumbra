@@ -1,17 +1,17 @@
+use super::{
+    component::{StateReadExt, StateWriteExt},
+    state_key, SupplyWrite,
+};
 use anyhow::Result;
 use ark_ff::PrimeField;
 use async_trait::async_trait;
 use decaf377::{Fq, Fr};
 use penumbra_chain::{sync::AnnotatedNotePayload, NoteSource};
 use penumbra_crypto::{ka, Address, Note, NotePayload, Nullifier, One, Value};
+use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::StateWrite;
 use penumbra_tct as tct;
 use tracing::instrument;
-
-use super::{
-    component::{StateReadExt, StateWriteExt},
-    state_key, SupplyWrite,
-};
 
 /// Manages the addition of new notes to the chain state.
 #[async_trait]

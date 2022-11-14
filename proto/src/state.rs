@@ -3,4 +3,3 @@ mod read;
 pub use read::StateReadProto;
 mod write;
 pub use write::StateWriteProto;
-

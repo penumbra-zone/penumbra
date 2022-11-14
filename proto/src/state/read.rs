@@ -109,3 +109,4 @@ pub trait StateReadProto: StateRead + Send + Sync {
         Box::pin(o)
     }
 }
+impl<T: StateRead + ?Sized> StateReadProto for T {}
