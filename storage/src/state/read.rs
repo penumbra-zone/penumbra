@@ -131,9 +131,7 @@ pub trait StateRead: Send + Sync {
     ///
     /// This is intended for application-specific indexes of the verifiable
     /// consensus state, rather than for use as a primary data storage method.
-    ///
-    /// TODO: rename to `nonconsensus_get` ?
-    async fn get_nonconsensus(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
+    async fn nonconsensus_get_raw(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
 
     /// Gets an object from the ephemeral key-object store.
     ///
@@ -147,10 +145,7 @@ pub trait StateRead: Send + Sync {
     ///
     /// - `Some(&T)` if a value of type `T` was present at `key`.
     /// - `None` if `key` was not present, or if `key` was present but the value was not of type `T`.
-    ///
-    /// TODO: rename to `ephemeral_get` ?
-    /// TODO: should this be `&'static str`?
-    fn get_ephemeral<T: Any + Send + Sync>(&self, key: &str) -> Option<&T>;
+    fn object_get<T: Any + Send + Sync>(&self, key: &'static str) -> Option<&T>;
 }
 
 // Merge a RYW cache iterator with a backend storage stream to produce a new Stream,
@@ -256,12 +251,12 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
         (**self).prefix_raw(prefix)
     }
 
-    async fn get_nonconsensus(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        (**self).get_nonconsensus(key).await
+    async fn nonconsensus_get_raw(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+        (**self).nonconsensus_get_raw(key).await
     }
 
-    fn get_ephemeral<T: Any + Send + Sync>(&self, key: &str) -> Option<&T> {
-        (**self).get_ephemeral(key)
+    fn object_get<T: Any + Send + Sync>(&self, key: &'static str) -> Option<&T> {
+        (**self).object_get(key)
     }
 }
 
@@ -278,11 +273,11 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a mut S {
         (**self).prefix_raw(prefix)
     }
 
-    async fn get_nonconsensus(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        (**self).get_nonconsensus(key).await
+    async fn nonconsensus_get_raw(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+        (**self).nonconsensus_get_raw(key).await
     }
 
-    fn get_ephemeral<T: Any + Send + Sync>(&self, key: &str) -> Option<&T> {
-        (**self).get_ephemeral(key)
+    fn object_get<T: Any + Send + Sync>(&self, key: &'static str) -> Option<&T> {
+        (**self).object_get(key)
     }
 }

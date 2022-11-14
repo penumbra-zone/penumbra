@@ -274,7 +274,7 @@ pub trait StateReadExt: StateRead {
     }
 
     fn swap_flows(&self) -> BTreeMap<TradingPair, SwapFlow> {
-        self.get_ephemeral::<BTreeMap<TradingPair, SwapFlow>>(state_key::swap_flows())
+        self.object_get::<BTreeMap<TradingPair, SwapFlow>>(state_key::swap_flows())
             .cloned()
             .unwrap_or_default()
     }
@@ -299,7 +299,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         // TODO: replace with IM struct later
         let mut swap_flows = self.swap_flows();
         swap_flows.insert(*trading_pair, swap_flow);
-        self.put_ephemeral(state_key::swap_flows().into(), swap_flows)
+        self.object_put(state_key::swap_flows(), swap_flows)
     }
 }
 

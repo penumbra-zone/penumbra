@@ -35,18 +35,16 @@ pub trait StateWrite: StateRead + Send + Sync {
     fn delete(&mut self, key: String);
 
     /// Puts raw bytes into the non-verifiable key-value store with the given key.
-    fn put_nonconsensus(&mut self, key: Vec<u8>, value: Vec<u8>);
+    fn nonconsensus_put_raw(&mut self, key: Vec<u8>, value: Vec<u8>);
 
     /// Delete a key from non-verifiable key-value storage.
-    fn delete_nonconsensus(&mut self, key: Vec<u8>);
+    fn nonconsensus_delete(&mut self, key: Vec<u8>);
 
     /// Puts an object into the ephemeral object store with the given key.
-    /// TODO: should this be `&'static str`?
-    fn put_ephemeral<T: Any + Send + Sync>(&mut self, key: String, value: T);
+    fn object_put<T: Any + Send + Sync>(&mut self, key: &'static str, value: T);
 
     /// Deletes a key from the ephemeral object store.
-    /// TODO: should this be `&'static str`?
-    fn delete_ephemeral(&mut self, key: String);
+    fn object_delete(&mut self, key: &'static str);
 
     /// Record that an ABCI event occurred while building up this set of state changes.
     fn record(&mut self, event: abci::Event);
@@ -61,20 +59,20 @@ impl<'a, S: StateWrite + Send + Sync> StateWrite for &'a mut S {
         (**self).delete(key)
     }
 
-    fn delete_nonconsensus(&mut self, key: Vec<u8>) {
-        (**self).delete_nonconsensus(key)
+    fn nonconsensus_delete(&mut self, key: Vec<u8>) {
+        (**self).nonconsensus_delete(key)
     }
 
-    fn put_nonconsensus(&mut self, key: Vec<u8>, value: Vec<u8>) {
-        (**self).put_nonconsensus(key, value)
+    fn nonconsensus_put_raw(&mut self, key: Vec<u8>, value: Vec<u8>) {
+        (**self).nonconsensus_put_raw(key, value)
     }
 
-    fn put_ephemeral<T: Any + Send + Sync>(&mut self, key: String, value: T) {
-        (**self).put_ephemeral(key, value)
+    fn object_put<T: Any + Send + Sync>(&mut self, key: &'static str, value: T) {
+        (**self).object_put(key, value)
     }
 
-    fn delete_ephemeral(&mut self, key: String) {
-        (**self).delete_ephemeral(key)
+    fn object_delete(&mut self, key: &'static str) {
+        (**self).object_delete(key)
     }
 
     fn record(&mut self, event: abci::Event) {

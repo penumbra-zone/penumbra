@@ -20,7 +20,7 @@ pub struct Transaction<'a> {
     /// Unwritten changes to non-consensus-critical state (stored in the nonconsensus storage).
     pub(crate) nonconsensus_changes: BTreeMap<Vec<u8>, Option<Vec<u8>>>,
     /// Unwritten changes to the object store.  A `None` value means a deletion.
-    pub(crate) object_changes: BTreeMap<String, Option<Box<dyn Any + Send + Sync>>>,
+    pub(crate) object_changes: BTreeMap<&'static str, Option<Box<dyn Any + Send + Sync>>>,
     /// A list of ABCI events that occurred while building this set of state changes.
     pub(crate) events: Vec<abci::Event>,
 }
@@ -77,19 +77,19 @@ impl<'a> StateWrite for Transaction<'a> {
         self.unwritten_changes.insert(key, None);
     }
 
-    fn delete_nonconsensus(&mut self, key: Vec<u8>) {
+    fn nonconsensus_delete(&mut self, key: Vec<u8>) {
         self.nonconsensus_changes.insert(key, None);
     }
 
-    fn put_nonconsensus(&mut self, key: Vec<u8>, value: Vec<u8>) {
+    fn nonconsensus_put_raw(&mut self, key: Vec<u8>, value: Vec<u8>) {
         self.nonconsensus_changes.insert(key, Some(value));
     }
 
-    fn put_ephemeral<T: Any + Send + Sync>(&mut self, key: String, value: T) {
+    fn object_put<T: Any + Send + Sync>(&mut self, key: &'static str, value: T) {
         self.object_changes.insert(key, Some(Box::new(value)));
     }
 
-    fn delete_ephemeral(&mut self, key: String) {
+    fn object_delete(&mut self, key: &'static str) {
         self.object_changes.insert(key, None);
     }
 
@@ -110,14 +110,14 @@ impl<'tx> StateRead for Transaction<'tx> {
         self.state.get_raw(key).await
     }
 
-    async fn get_nonconsensus(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+    async fn nonconsensus_get_raw(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
         // If the key is available in the nonconsensus cache, return it.
         if let Some(v) = self.nonconsensus_changes.get(key) {
             return Ok(v.clone());
         }
 
         // Otherwise, if the key is available in the state, return it.
-        self.state.get_nonconsensus(key).await
+        self.state.nonconsensus_get_raw(key).await
     }
 
     fn prefix_raw<'a>(
@@ -127,10 +127,10 @@ impl<'tx> StateRead for Transaction<'tx> {
         prefix_raw_with_cache(self.state, &self.unwritten_changes, prefix)
     }
 
-    fn get_ephemeral<T: Any + Send + Sync>(&self, key: &str) -> Option<&T> {
+    fn object_get<T: Any + Send + Sync>(&self, key: &'static str) -> Option<&T> {
         if let Some(v_or_deletion) = self.object_changes.get(key) {
             return v_or_deletion.as_ref().and_then(|v| v.downcast_ref());
         }
-        self.state.get_ephemeral(key)
+        self.state.object_get(key)
     }
 }
