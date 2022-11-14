@@ -1,3 +1,4 @@
+#![recursion_limit = "256"]
 mod client;
 mod metrics;
 mod note_record;

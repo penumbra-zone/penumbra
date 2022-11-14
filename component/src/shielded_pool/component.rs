@@ -258,7 +258,7 @@ impl Component for ShieldedPool {
 pub trait StateReadExt: StateRead {
     async fn stub_note_commitment_tree(&self) -> tct::Tree {
         match self
-            .get_nonconsensus(state_key::internal::stub_note_commitment_tree().as_bytes())
+            .nonconsensus_get_raw(state_key::internal::stub_note_commitment_tree().as_bytes())
             .await
             .unwrap()
         {
@@ -268,7 +268,7 @@ pub trait StateReadExt: StateRead {
     }
 
     fn stub_compact_block(&self) -> CompactBlock {
-        self.get_ephemeral(state_key::internal::stub_compact_block())
+        self.object_get(state_key::internal::stub_compact_block())
             .cloned()
             .unwrap_or_default()
     }
@@ -392,7 +392,7 @@ pub(super) trait StateWriteExt: StateWrite {
     // the NCT at all until end_block, and then serialization round trip doesn't matter.
     fn stub_put_note_commitment_tree(&mut self, tree: &tct::Tree) {
         let bytes = bincode::serialize(&tree).unwrap();
-        self.put_nonconsensus(
+        self.nonconsensus_put_raw(
             state_key::internal::stub_note_commitment_tree()
                 .as_bytes()
                 .to_vec(),
@@ -407,10 +407,7 @@ pub(super) trait StateWriteExt: StateWrite {
     // compact block only at the end of the block, so we don't need the NCT at
     // all until end_block, and then serialization round trip doesn't matter.
     fn stub_put_compact_block(&mut self, compact_block: CompactBlock) {
-        self.put_ephemeral(
-            state_key::internal::stub_compact_block().to_string(),
-            compact_block,
-        );
+        self.object_put(state_key::internal::stub_compact_block(), compact_block);
     }
 
     /// Writes a completed compact block into the public state.

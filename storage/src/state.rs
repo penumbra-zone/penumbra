@@ -37,7 +37,7 @@ pub struct State {
     pub(crate) unwritten_changes: BTreeMap<String, Option<Vec<u8>>>,
     // A `None` value represents deletion.
     pub(crate) nonconsensus_changes: BTreeMap<Vec<u8>, Option<Vec<u8>>>,
-    pub(crate) ephemeral_objects: BTreeMap<String, Box<dyn Any + Send + Sync>>,
+    pub(crate) ephemeral_objects: BTreeMap<&'static str, Box<dyn Any + Send + Sync>>,
 }
 
 impl std::fmt::Debug for State {
@@ -149,14 +149,14 @@ impl StateRead for State {
         self.snapshot.get_raw(key).await
     }
 
-    async fn get_nonconsensus(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+    async fn nonconsensus_get_raw(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
         // If the key is available in the nonconsensus cache, return it.
         if let Some(v) = self.nonconsensus_changes.get(key) {
             return Ok(v.clone());
         }
 
         // Otherwise, if the key is available in the snapshot, return it.
-        self.snapshot.get_nonconsensus(key).await
+        self.snapshot.nonconsensus_get_raw(key).await
     }
 
     fn prefix_raw<'a>(
@@ -166,7 +166,7 @@ impl StateRead for State {
         prefix_raw_with_cache(&self.snapshot, &self.unwritten_changes, prefix)
     }
 
-    fn get_ephemeral<T: Any + Send + Sync>(&self, key: &str) -> Option<&T> {
+    fn object_get<T: Any + Send + Sync>(&self, key: &str) -> Option<&T> {
         self.ephemeral_objects
             .get(key)
             .and_then(|object| object.downcast_ref())

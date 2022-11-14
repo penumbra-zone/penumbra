@@ -84,7 +84,6 @@ impl Snapshot {
     }
 }
 
-//#[async_trait(?Send)]
 #[async_trait]
 impl StateRead for Snapshot {
     /// Fetch a key from the JMT column family.
@@ -99,12 +98,12 @@ impl StateRead for Snapshot {
     }
 
     /// Fetch a key from the nonconsensus column family.
-    async fn get_nonconsensus(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+    async fn nonconsensus_get_raw(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
         let span = Span::current();
         let inner = self.0.clone();
         let key: Vec<u8> = key.to_vec();
         tokio::task::Builder::new()
-            .name("Snapshot::get_nonconsensus")
+            .name("Snapshot::nonconsensus_get_raw")
             .spawn_blocking(move || {
                 span.in_scope(|| {
                     let nonconsensus_cf = inner
@@ -165,7 +164,7 @@ impl StateRead for Snapshot {
         Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx))
     }
 
-    fn get_ephemeral<T: Any + Send + Sync>(&self, _key: &str) -> Option<&T> {
+    fn object_get<T: Any + Send + Sync>(&self, _key: &str) -> Option<&T> {
         // No-op -- this will never be called internally, and `Snapshot` is not exposed in public API
         None
     }

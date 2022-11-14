@@ -62,7 +62,7 @@ pub trait ValidatorUpdates: StateRead {
     ///
     /// Set during `end_block`.
     fn tendermint_validator_updates(&self) -> Option<Vec<ValidatorUpdate>> {
-        self.get_ephemeral(state_key::internal::stub_tendermint_validator_updates())
+        self.object_get(state_key::internal::stub_tendermint_validator_updates())
             .cloned()
             .unwrap_or(None)
     }
@@ -73,8 +73,8 @@ impl<T: StateRead + ?Sized> ValidatorUpdates for T {}
 trait PutValidatorUpdates: StateWrite {
     fn put_tendermint_validator_updates(&mut self, updates: Vec<ValidatorUpdate>) {
         tracing::info!(?updates);
-        self.put_ephemeral(
-            state_key::internal::stub_tendermint_validator_updates().to_owned(),
+        self.object_put(
+            state_key::internal::stub_tendermint_validator_updates(),
             Some(updates),
         )
     }
@@ -1191,7 +1191,7 @@ pub trait StateReadExt: StateRead {
     /// persisted at the end of the block for processing at the end of the next
     /// epoch.
     fn stub_delegation_changes(&self) -> DelegationChanges {
-        self.get_ephemeral(state_key::internal::stub_delegation_changes())
+        self.object_get(state_key::internal::stub_delegation_changes())
             .cloned()
             .unwrap_or_default()
     }
@@ -1395,8 +1395,8 @@ pub trait StateWriteExt: StateWrite {
     /// persisted at the end of the block for processing at the end of the next
     /// epoch.
     fn put_stub_delegation_changes(&mut self, delegation_changes: DelegationChanges) {
-        self.put_ephemeral(
-            state_key::internal::stub_delegation_changes().to_owned(),
+        self.object_put(
+            state_key::internal::stub_delegation_changes(),
             delegation_changes,
         )
     }
