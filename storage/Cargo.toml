@@ -6,9 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-penumbra-proto = { path = "../proto" }
-penumbra-crypto = { path = "../crypto" }
-penumbra-tct = { path = "../tct" }
 
 jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "newmain" }
 ibc-proto = { git = "https://github.com/penumbra-zone/ibc-rs", branch = "penumbra-034" }
