@@ -24,7 +24,6 @@ penumbra-wallet = { path = "../wallet" }
 # Penumbra dependencies
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 tower-abci = { git = "https://github.com/penumbra-zone/tower-abci/", branch = "penumbra-034" }
-jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "newmain" }
 
 
 # External dependencies

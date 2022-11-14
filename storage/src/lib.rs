@@ -42,5 +42,6 @@ mod state;
 mod storage;
 
 pub use crate::metrics::register_metrics;
+pub use jmt::{ics23_spec, RootHash};
 pub use state::{State, StateRead, StateTransaction, StateWrite};
 pub use storage::{StateNotification, Storage};
