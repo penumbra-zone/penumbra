@@ -62,11 +62,14 @@ pub mod storage;
 pub mod structure;
 pub mod validate;
 
-pub use commitment::Commitment;
-pub use internal::hash::Forgotten;
-pub use proof::Proof;
-pub use tree::{Position, Root, Tree};
-pub use witness::Witness;
+#[doc(inline)]
+pub use {
+    commitment::Commitment,
+    internal::hash::Forgotten,
+    proof::Proof,
+    tree::{Position, Root, Tree},
+    witness::Witness,
+};
 
 #[cfg(any(doc, feature = "internal"))]
 pub mod internal;
