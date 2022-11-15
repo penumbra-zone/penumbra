@@ -119,7 +119,7 @@ pub trait StateReadExt: StateRead {
     }
 }
 
-impl<T: StateRead + StateReadProto + ?Sized> StateReadExt for T {}
+impl<T: StateRead + ?Sized> StateReadExt for T {}
 
 /// This trait provides write access to common parts of the Penumbra
 /// state store.
@@ -155,4 +155,4 @@ pub trait StateWriteExt: StateWrite {
     }
 }
 
-impl<T: StateWrite + StateWriteProto + ?Sized> StateWriteExt for T {}
+impl<T: StateWrite + ?Sized> StateWriteExt for T {}
