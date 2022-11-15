@@ -26,6 +26,7 @@ pub mod serializers;
 mod protobuf;
 pub use protobuf::Protobuf;
 
+#[cfg(feature = "penumbra-storage")]
 mod state;
 #[cfg(feature = "penumbra-storage")]
 pub use state::StateReadProto;
