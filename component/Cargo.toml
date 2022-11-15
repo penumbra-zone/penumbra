@@ -15,9 +15,8 @@ penumbra-chain = { path = "../chain" }
 penumbra-tct = { path = "../tct" }
 
 # Penumbra dependencies
-tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs", branch = "penumbra-034" }
-
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
+jmt = { path = "../../jmt" }
 tokio = { version = "1.21.1", features = ["full", "tracing"] }
 async-trait = "0.1.52"
 tonic = "0.8.1"
@@ -39,11 +38,15 @@ hex = "0.4"
 base64 = "0.13.0"
 tempfile = "3.3.0"
 prost-types = "0.11"
-tendermint-proto = { git = "https://github.com/penumbra-zone/tendermint-rs", branch = "penumbra-034" }
 prost = "0.11"
-ibc = { git = "https://github.com/penumbra-zone/ibc-rs", branch = "penumbra-034" }
-ibc-proto = { git = "https://github.com/penumbra-zone/ibc-rs", branch = "penumbra-034" }
-tendermint-light-client-verifier = { git = "https://github.com/penumbra-zone/tendermint-rs", branch = "penumbra-034" }
+
+
+tendermint = { git = "https://github.com/informalsystems/tendermint-rs", tag = "v0.26.0" }
+tendermint-proto = { git = "https://github.com/informalsystems/tendermint-rs", tag = "v0.26.0" }
+tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs", tag = "v0.26.0" }
+ibc = { git = "https://github.com/cosmos/ibc-rs", branch = "mikhail/tendermint-0.26" }
+ibc-proto = { git = "https://github.com/cosmos/ibc-proto-rs", tag = "v0.22.0" }
+
 num-rational = "0.4"
 
 [dev-dependencies]

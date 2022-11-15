@@ -8,6 +8,7 @@ publish = false
 prost = "0.11"
 prost-types = "0.11"
 prost-build = "0.11"
-ibc-proto = { git = "https://github.com/penumbra-zone/ibc-rs", branch = "penumbra-034" }
-ics23 = { git = "https://github.com/penumbra-zone/ics23", branch = "penumbra-034" }
 tonic-build = "0.8.0"
+
+ibc-proto = { git = "https://github.com/cosmos/ibc-proto-rs", tag = "v0.22.0" }
+ics23 = { git = "https://github.com/cosmos/ics23" }
