@@ -63,18 +63,17 @@ impl Storage {
                         ["jmt", "nonconsensus", "jmt_keys"],
                     )?);
 
-                    let jmt_version = latest_version(db.as_ref())?
-                        // TODO: PRE_GENESIS_VERSION ?
-                        .unwrap_or(u64::MAX);
+                    // TODO: For compatibility reasons with Tendermint, we set the "pre-genesis"
+                    // jmt version to be u64::MAX, corresponding to -1 mod 2^64.
+                    let jmt_version = latest_version(db.as_ref())?.unwrap_or(u64::MAX);
 
-                    let latest_snapshot = RwLock::new(Snapshot::new(db.clone(), jmt_version));
-                    let latest_snapshot_tmp = Snapshot::new(db.clone(), jmt_version);
+                    let latest_snapshot = Snapshot::new(db.clone(), jmt_version);
 
                     // We discard the receiver here, because we'll construct new ones in subscribe()
                     let (snapshot_tx, _) =
-                        watch::channel(StateNotification(latest_snapshot.read().clone()));
+                        watch::channel(StateNotification(latest_snapshot.clone()));
 
-                    let snapshots = RwLock::new(SnapshotCache::new(latest_snapshot_tmp, 10));
+                    let snapshots = RwLock::new(SnapshotCache::new(latest_snapshot, 10));
 
                     Ok(Self(Arc::new(Inner {
                         snapshots,
