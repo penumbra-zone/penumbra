@@ -367,14 +367,15 @@ dependencies = [
 
 [[package]]
 name = "ibc-proto"
-version = "0.17.1"
-source = "git+https://github.com/penumbra-zone/ibc-rs?branch=penumbra-034#27639da98a81c1eb5d8c411d7720626e4f08d7e3"
+version = "0.22.0"
+source = "git+https://github.com/cosmos/ibc-proto-rs?tag=v0.22.0#33f301ecbad117c40daef73f3a1bd88ca8ff1623"
 dependencies = [
  "base64",
  "bytes",
+ "flex-error",
  "prost",
- "prost-types",
  "serde",
+ "subtle-encoding",
  "tendermint-proto",
  "tonic",
 ]
@@ -382,7 +383,7 @@ dependencies = [
 [[package]]
 name = "ics23"
 version = "0.8.1"
-source = "git+https://github.com/penumbra-zone/ics23?branch=penumbra-034#9c4e35da499e4c99043b5a4d1c8638c151fe20d5"
+source = "git+https://github.com/cosmos/ics23#ecbe025cb2450f73f2eacf90b507f0850028ca73"
 dependencies = [
  "anyhow",
  "bytes",
@@ -861,8 +862,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-proto"
-version = "0.23.9"
-source = "git+https://github.com/penumbra-zone/tendermint-rs?branch=penumbra-034#906ced69312c70937859b638a7d0e11f185c4d3d"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "974d6330a19dfa6720e9f663fc59101d207a817db3f9c730d3f31caaa565b574"
 dependencies = [
  "bytes",
  "flex-error",
