@@ -1,5 +1,5 @@
 mod component;
-mod consensus_rules;
+pub(crate) mod consensus_rules;
 pub(crate) mod event;
 mod metrics;
 mod note_manager;
