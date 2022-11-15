@@ -5,7 +5,6 @@ use std::{
 };
 
 use futures::FutureExt;
-//use penumbra_storage::{get_with_proof, AppHash, State, Storage};
 use penumbra_chain::AppHashRead;
 use penumbra_storage::Storage;
 use tendermint::abci::{self, response::Echo, InfoRequest, InfoResponse};
@@ -70,14 +69,10 @@ impl Info {
                 let key = hex::decode(&query.data).unwrap_or_else(|_| query.data.to_vec());
 
                 let state = self.storage.state();
-                let _height = state.version();
+                let height = state.version();
 
-                // TODO: align types (check storage/src/app_hash.rs::get_with_proof)
-                // where should that logic go?
-                let (_value, _proof) = state.get_with_proof(key).await?;
-                // let (value, proof) = get_with_proof(&store, key, height).await?;
+                let (value, proof) = state.get_with_proof_to_apphash_tm(key).await?;
 
-                /*
                 Ok(abci::response::Query {
                     code: 0,
                     key: query.data,
@@ -89,9 +84,6 @@ impl Info {
                     info: "".to_string(),
                     index: 0,
                 })
-                 */
-                // TODO: restore
-                Ok(Default::default())
             }
             _ => {
                 // TODO: handle unrecognized path
