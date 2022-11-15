@@ -1,0 +1,4 @@
+module penumbra_c_bindings {
+    header "penumbra_c_bindings.h"
+    export *
+}
