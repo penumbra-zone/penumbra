@@ -16,7 +16,7 @@ import "penumbra/core/governance/v1alpha1/governance.proto";
 // client data.  For instance, requesting all asset denominations is oblivious,
 // but requesting the asset denomination for a specific asset id is not, because
 // it reveals that the client has an interest in that asset specifically.
-service ObliviousQuery {
+service ObliviousQueryService {
   rpc CompactBlockRange(CompactBlockRangeRequest) returns (stream core.chain.v1alpha1.CompactBlock);
   rpc ChainParameters(ChainParamsRequest) returns (core.chain.v1alpha1.ChainParameters);
   rpc MutableParameters(MutableParametersRequest) returns (stream core.governance.v1alpha1.MutableChainParameter);
@@ -71,7 +71,7 @@ message ValidatorInfoRequest {
 // client data.  For instance, requesting all asset denominations is oblivious,
 // but requesting the asset denomination for a specific asset id is not, because
 // it reveals that the client has an interest in that asset specifically.
-service SpecificQuery {
+service SpecificQueryService {
   rpc TransactionByNote(core.crypto.v1alpha1.NoteCommitment) returns (core.chain.v1alpha1.NoteSource);
   rpc ValidatorStatus(ValidatorStatusRequest) returns (core.stake.v1alpha1.ValidatorStatus);
   rpc NextValidatorRate(core.crypto.v1alpha1.IdentityKey) returns (core.stake.v1alpha1.RateData);
