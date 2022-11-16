@@ -7,24 +7,20 @@ use async_trait::async_trait;
 use futures::{Stream, StreamExt};
 
 /// Read access to chain state.
-// This needs to be a trait because we want to implement it over both `State` and `StateTransaction`,
-// mainly to support RPC methods.
 #[async_trait]
 pub trait StateRead: Send + Sync {
     /// Gets a value from the verifiable key-value store as raw bytes.
     ///
-    /// Users should generally prefer to use [`get`](Self::get) or [`get_proto`](Self::get_proto).
+    /// Users should generally prefer to use `get` or `get_proto` from an extension trait.
     async fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>>;
 
     /// Retrieve all values for keys matching a prefix from the verifiable key-value store, as raw bytes.
     ///
-    /// Users should generally prefer to use [`prefix`](Self::prefix) or [`prefix_proto`](Self::prefix_proto).
+    /// Users should generally prefer to use `prefix` or `prefix_proto` from an extension trait.
     #[allow(clippy::type_complexity)]
     fn prefix_raw<'a>(
         &'a self,
         prefix: &'a str,
-        // TODO: it might be possible to make this zero-allocation by representing the key as a `Box<&str>` but
-        // the lifetimes weren't working out, so allocating a new `String` was easier for now.
     ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Sync + Send + 'a>>;
 
     /// Gets a byte value from the non-verifiable key-value store.
@@ -32,6 +28,15 @@ pub trait StateRead: Send + Sync {
     /// This is intended for application-specific indexes of the verifiable
     /// consensus state, rather than for use as a primary data storage method.
     async fn nonconsensus_get_raw(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
+
+    /// Retrieve all values for keys matching a prefix from the non-verifiable key-value store, as raw bytes.
+    ///
+    /// Users should generally prefer to use wrapper methods in an extension trait.
+    #[allow(clippy::type_complexity)]
+    fn nonconsensus_prefix_raw<'a>(
+        &'a self,
+        prefix: &'a [u8],
+    ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Sync + Send + 'a>>;
 
     /// Gets an object from the ephemeral key-object store.
     ///
@@ -137,6 +142,34 @@ pub(crate) fn prefix_raw_with_cache<'a>(
     Box::pin(merged)
 }
 
+#[allow(clippy::type_complexity)]
+pub(crate) fn nonconsensus_prefix_raw_with_cache<'a>(
+    sr: &'a impl StateRead,
+    cache: &'a BTreeMap<Vec<u8>, Option<Vec<u8>>>,
+    prefix: &'a [u8],
+) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + Sync + 'a>> {
+    // Interleave the unwritten_changes cache with the snapshot.
+    let state_stream = sr
+        .nonconsensus_prefix_raw(prefix)
+        .map(move |r| r.map(move |(k, v)| (k, Some(v))));
+
+    // Range the unwritten_changes cache (sorted by key) starting with the keys matching the prefix,
+    // until we reach the keys that no longer match the prefix.
+    let unwritten_changes_iter = cache
+        .range(prefix.to_vec()..)
+        .take_while(move |(k, _)| (**k).starts_with(prefix))
+        .map(|(k, v)| (k.clone(), v.clone()));
+
+    // Merge the cache iterator and state stream into a single stream.
+    let merged = merge_cache(unwritten_changes_iter, state_stream);
+
+    // Skip all the `None` values, as they were deleted.
+    let merged =
+        merged.filter_map(|r| async { r.map(|(k, v)| v.map(move |v| (k, v))).transpose() });
+
+    Box::pin(merged)
+}
+
 //#[async_trait(?Send)]
 #[async_trait]
 impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
@@ -149,6 +182,13 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
         prefix: &'b str,
     ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Sync + Send + 'b>> {
         (**self).prefix_raw(prefix)
+    }
+
+    fn nonconsensus_prefix_raw<'b>(
+        &'b self,
+        prefix: &'b [u8],
+    ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Sync + Send + 'b>> {
+        (**self).nonconsensus_prefix_raw(prefix)
     }
 
     async fn nonconsensus_get_raw(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
@@ -171,6 +211,13 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a mut S {
         prefix: &'b str,
     ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Sync + Send + 'b>> {
         (**self).prefix_raw(prefix)
+    }
+
+    fn nonconsensus_prefix_raw<'b>(
+        &'b self,
+        prefix: &'b [u8],
+    ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Sync + Send + 'b>> {
+        (**self).nonconsensus_prefix_raw(prefix)
     }
 
     async fn nonconsensus_get_raw(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {

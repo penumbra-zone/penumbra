@@ -7,7 +7,10 @@ use tendermint::abci;
 
 use crate::State;
 
-use super::{read::prefix_raw_with_cache, StateRead, StateWrite};
+use super::{
+    read::{nonconsensus_prefix_raw_with_cache, prefix_raw_with_cache},
+    StateRead, StateWrite,
+};
 
 /// A set of pending changes to a [`State`] instance, supporting both writes and reads.
 pub struct Transaction<'a> {
@@ -125,6 +128,13 @@ impl<'tx> StateRead for Transaction<'tx> {
         prefix: &'a str,
     ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Sync + Send + 'a>> {
         prefix_raw_with_cache(self.state, &self.unwritten_changes, prefix)
+    }
+
+    fn nonconsensus_prefix_raw<'a>(
+        &'a self,
+        prefix: &'a [u8],
+    ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Sync + Send + 'a>> {
+        nonconsensus_prefix_raw_with_cache(self.state, &self.nonconsensus_changes, prefix)
     }
 
     fn object_get<T: Any + Send + Sync>(&self, key: &'static str) -> Option<&T> {
