@@ -175,18 +175,19 @@ message PositionId {
 // The state of a position.
 message PositionState {
   enum PositionStateEnum {
+    POSITION_STATE_ENUM_UNSPECIFIED = 0;
     // The position has been opened, is active, has reserves and accumulated
     // fees, and can be traded against.
-    OPENED = 0;
+    POSITION_STATE_ENUM_OPENED = 1;
     // The position has been closed, is inactive and can no longer be traded
     // against, but still has reserves and accumulated fees.
-    CLOSED = 1;
+    POSITION_STATE_ENUM_CLOSED = 2;
     // The final reserves and accumulated fees have been withdrawn, leaving an
     // empty, inactive position awaiting (possible) retroactive rewards.
-    WITHDRAWN = 2;
+    POSITION_STATE_ENUM_WITHDRAWN = 3;
     // Any retroactive rewards have been claimed. The position is now an inert,
     // historical artefact.
-    CLAIMED = 3;
+    POSITION_STATE_ENUM_CLAIMED = 4;
   }
   PositionStateEnum state = 1;
 }

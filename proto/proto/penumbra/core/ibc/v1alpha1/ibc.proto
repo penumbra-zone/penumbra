@@ -14,26 +14,26 @@ import "google/protobuf/any.proto";
 
 message IbcAction {
     oneof action {
-      .ibc.core.connection.v1.MsgConnectionOpenInit connectionOpenInit = 1;
-      .ibc.core.connection.v1.MsgConnectionOpenTry connectionOpenTry = 2;
-      .ibc.core.connection.v1.MsgConnectionOpenAck connectionOpenAck = 3;
-      .ibc.core.connection.v1.MsgConnectionOpenConfirm connectionOpenConfirm = 4;
+      .ibc.core.connection.v1.MsgConnectionOpenInit connection_open_init = 1;
+      .ibc.core.connection.v1.MsgConnectionOpenTry connection_open_try = 2;
+      .ibc.core.connection.v1.MsgConnectionOpenAck connection_open_ack = 3;
+      .ibc.core.connection.v1.MsgConnectionOpenConfirm connection_open_confirm = 4;
 
-      .ibc.core.channel.v1.MsgChannelOpenInit channelOpenInit = 5;
-      .ibc.core.channel.v1.MsgChannelOpenTry channelOpenTry = 6;
-      .ibc.core.channel.v1.MsgChannelOpenAck channelOpenAck = 7;
-      .ibc.core.channel.v1.MsgChannelOpenConfirm channelOpenConfirm = 8;
-      .ibc.core.channel.v1.MsgChannelCloseInit channelCloseInit = 9;
-      .ibc.core.channel.v1.MsgChannelCloseConfirm channelCloseConfirm = 10;
+      .ibc.core.channel.v1.MsgChannelOpenInit channel_open_init = 5;
+      .ibc.core.channel.v1.MsgChannelOpenTry channel_open_try = 6;
+      .ibc.core.channel.v1.MsgChannelOpenAck channel_open_ack = 7;
+      .ibc.core.channel.v1.MsgChannelOpenConfirm channel_open_confirm = 8;
+      .ibc.core.channel.v1.MsgChannelCloseInit channel_close_init = 9;
+      .ibc.core.channel.v1.MsgChannelCloseConfirm channel_close_confirm = 10;
       
-      .ibc.core.channel.v1.MsgRecvPacket recvPacket = 11;
+      .ibc.core.channel.v1.MsgRecvPacket recv_packet = 11;
       .ibc.core.channel.v1.MsgTimeout timeout = 12;
       .ibc.core.channel.v1.MsgAcknowledgement acknowledgement = 13;
 
-      .ibc.core.client.v1.MsgCreateClient createClient = 14;
-      .ibc.core.client.v1.MsgUpdateClient updateClient = 15;
-      .ibc.core.client.v1.MsgUpgradeClient upgradeClient = 16;
-      .ibc.core.client.v1.MsgSubmitMisbehaviour submitMisbehaviour = 17;
+      .ibc.core.client.v1.MsgCreateClient create_client = 14;
+      .ibc.core.client.v1.MsgUpdateClient update_client = 15;
+      .ibc.core.client.v1.MsgUpgradeClient upgrade_client = 16;
+      .ibc.core.client.v1.MsgSubmitMisbehaviour submit_misbehaviour = 17;
   }
 }
 
@@ -82,10 +82,10 @@ message Ics20Withdrawal {
 }
 
 message ClientData {
-  string clientID = 1;
-  google.protobuf.Any clientState = 2; // NOTE: left as Any to allow us to add more client types later
-  string processedTime = 3;
-  uint64 processedHeight = 4;
+  string client_id = 1;
+  google.protobuf.Any client_state = 2; // NOTE: left as Any to allow us to add more client types later
+  string processed_time = 3;
+  uint64 processed_height = 4;
 }
 
 message ClientCounter {
@@ -93,7 +93,7 @@ message ClientCounter {
 }
 
 message ConsensusState {
-  google.protobuf.Any consensusState = 1;
+  google.protobuf.Any consensus_state = 1;
 }
 
 message VerifiedHeights {
