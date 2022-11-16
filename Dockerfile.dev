@@ -44,7 +44,7 @@ COPY testnets ./testnets
 COPY .git ./.git
 COPY testnets ./testnets
 COPY .cargo ./.cargo
-COPY penumbra-c-bindings ./.penumbra-c-bindings
+COPY penumbra-c-bindings ./penumbra-c-bindings
 # Sorry about all that mess ^, but it's worth it during development.
 
 # Fetch dependencies in a separate layer, so that they can be cached.
