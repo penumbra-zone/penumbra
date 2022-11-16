@@ -7,7 +7,8 @@ use penumbra_chain::{sync::CompactBlock, Epoch};
 use penumbra_crypto::{Asset, FullViewingKey, Nullifier};
 use penumbra_proto::{
     client::v1alpha1::{
-        oblivious_query_client::ObliviousQueryClient, AssetListRequest, CompactBlockRangeRequest,
+        oblivious_query_service_client::ObliviousQueryServiceClient, AssetListRequest,
+        CompactBlockRangeRequest,
     },
     Protobuf,
 };
@@ -27,7 +28,7 @@ use crate::{
 
 pub struct Worker {
     storage: Storage,
-    client: ObliviousQueryClient<Channel>,
+    client: ObliviousQueryServiceClient<Channel>,
     nct: Arc<RwLock<penumbra_tct::Tree>>,
     fvk: FullViewingKey, // TODO: notifications (see TODOs on ViewService)
     error_slot: Arc<Mutex<Option<anyhow::Error>>>,
@@ -70,7 +71,8 @@ impl Worker {
         // Mark the current height as seen, since it's not new.
         sync_height_rx.borrow_and_update();
 
-        let client = ObliviousQueryClient::connect(format!("http://{}:{}", node, pd_port)).await?;
+        let client =
+            ObliviousQueryServiceClient::connect(format!("http://{}:{}", node, pd_port)).await?;
         #[cfg(feature = "nct-divergence-check")]
         let specific_client =
             SpecificQueryClient::connect(format!("http://{}:{}", node, pd_port)).await?;

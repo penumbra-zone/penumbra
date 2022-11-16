@@ -6,7 +6,7 @@ use penumbra_crypto::asset::{self, Asset};
 use penumbra_proto::{
     self as proto,
     client::v1alpha1::{
-        specific_query_server::SpecificQuery, AssetInfoRequest, AssetInfoResponse,
+        specific_query_service_server::SpecificQueryService, AssetInfoRequest, AssetInfoResponse,
         BatchSwapOutputDataRequest, KeyValueRequest, KeyValueResponse, StubCpmmReservesRequest,
         ValidatorStatusRequest,
     },
@@ -30,7 +30,7 @@ use tracing::instrument;
 use super::Info;
 
 #[tonic::async_trait]
-impl SpecificQuery for Info {
+impl SpecificQueryService for Info {
     #[instrument(skip(self, request))]
     async fn key_value(
         &self,
