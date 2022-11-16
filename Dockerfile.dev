@@ -16,8 +16,8 @@ WORKDIR /usr/src
 # a simpler Dockerfile.
 COPY Cargo.toml .
 RUN mkdir -p pcli/src pd/src &&\
-    echo "fn main() {}" > pcli/src/main.rs &&\
-    echo "fn main() {}" > pd/src/main.rs
+  echo "fn main() {}" > pcli/src/main.rs &&\
+  echo "fn main() {}" > pd/src/main.rs
 COPY pcli/build.rs ./pcli
 COPY pcli/Cargo.toml ./pcli
 COPY pd/Cargo.toml ./pd
@@ -44,6 +44,7 @@ COPY testnets ./testnets
 COPY .git ./.git
 COPY testnets ./testnets
 COPY .cargo ./.cargo
+COPY .penumbra-c-bindings ./.penumbra-c-bindings
 # Sorry about all that mess ^, but it's worth it during development.
 
 # Fetch dependencies in a separate layer, so that they can be cached.
@@ -62,28 +63,28 @@ RUN cargo build --release --target $(uname -m)-unknown-linux-gnu
 # Copy all binaries to /root/bin, for a single place to copy into final image.
 RUN mkdir /root/bin
 RUN cp /usr/src/target/$(uname -m)-unknown-linux-gnu/release/pcli \
-      /usr/src/target/$(uname -m)-unknown-linux-gnu/release/pd \
-      /root/bin
+  /usr/src/target/$(uname -m)-unknown-linux-gnu/release/pd \
+  /root/bin
 
 # Determine library dependencies of built binaries and copy to indexed path in /root/lib_abs for copying to final image.
 # Absolute path of each library is appended to /root/lib_abs.list for restoring in final image.
 RUN mkdir -p /root/lib_abs && touch /root/lib_abs.list
 RUN bash -c \
   'for BIN in /root/bin/*; do \
-    readarray -t LIBS < <(ldd "$BIN"); \
-    i=0; for LIB in "${LIBS[@]}"; do \
-      PATH1=$(echo $LIB | awk "{print \$1}") ; \
-      if [ "$PATH1" = "linux-vdso.so.1" ]; then continue; fi; \
-      PATH2=$(echo $LIB | awk "{print \$3}") ; \
-      if [ ! -z "$PATH2" ]; then \
-        cp $PATH2 /root/lib_abs/$i ; \
-        echo $PATH2 >> /root/lib_abs.list; \
-      else \
-        cp $PATH1 /root/lib_abs/$i ; \
-        echo $PATH1 >> /root/lib_abs.list; \
-      fi; \
-      ((i = i + 1)) ;\
-    done; \
+  readarray -t LIBS < <(ldd "$BIN"); \
+  i=0; for LIB in "${LIBS[@]}"; do \
+  PATH1=$(echo $LIB | awk "{print \$1}") ; \
+  if [ "$PATH1" = "linux-vdso.so.1" ]; then continue; fi; \
+  PATH2=$(echo $LIB | awk "{print \$3}") ; \
+  if [ ! -z "$PATH2" ]; then \
+  cp $PATH2 /root/lib_abs/$i ; \
+  echo $PATH2 >> /root/lib_abs.list; \
+  else \
+  cp $PATH1 /root/lib_abs/$i ; \
+  echo $PATH1 >> /root/lib_abs.list; \
+  fi; \
+  ((i = i + 1)) ;\
+  done; \
   done'
 
 # Use minimal busybox from Strangelove infra-toolkit image for final scratch image
@@ -107,15 +108,15 @@ COPY --from=busybox-min /busybox/busybox /bin/sh
 # Add hard links for read-only utils, then remove ln and rm
 # Will then only have one copy of the busybox minimal binary file with all utils pointing to the same underlying inode
 RUN ln sh pwd && \
-    ln sh ls && \
-    ln sh cat && \
-    ln sh less && \
-    ln sh grep && \
-    ln sh sleep && \
-    ln sh env && \
-    ln sh tar && \
-    ln sh tee && \
-    ln sh du
+  ln sh ls && \
+  ln sh cat && \
+  ln sh less && \
+  ln sh grep && \
+  ln sh sleep && \
+  ln sh env && \
+  ln sh tar && \
+  ln sh tee && \
+  ln sh du
 
 # Install chain binaries
 COPY --from=build-env /root/bin /bin
@@ -126,12 +127,12 @@ COPY --from=build-env /root/lib_abs.list /root/lib_abs.list
 
 # Move libraries to their absolute locations.
 RUN sh -c 'i=0; while read FILE; do \
-      echo "$i: $FILE"; \
-      DIR="$(dirname "$FILE")"; \
-      mkdir -p "$DIR"; \
-      mv /root/lib_abs/$i $FILE; \
-      i=$((i+1)); \
-    done < /root/lib_abs.list'
+  echo "$i: $FILE"; \
+  DIR="$(dirname "$FILE")"; \
+  mkdir -p "$DIR"; \
+  mv /root/lib_abs/$i $FILE; \
+  i=$((i+1)); \
+  done < /root/lib_abs.list'
 
 # Remove write utils used to construct image and tmp dir/file for lib copy.
 RUN rm -rf ln rm mv mkdir dirname /root/lib_abs /root/lib_abs.list
