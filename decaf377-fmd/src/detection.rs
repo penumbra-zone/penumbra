@@ -104,8 +104,7 @@ impl DetectionKey {
         }
 
         let precision_bits = clue.0[64];
-        let ciphertexts = BitSlice::<order::Lsb0, u8>::from_slice(&clue.0[65..68])
-            .expect("slice len = 3 is not long enough to overflow");
+        let ciphertexts = BitSlice::<u8, order::Lsb0>::from_slice(&clue.0[65..68]);
 
         let m = hash::to_scalar(&P_encoding.0, precision_bits, &clue.0[65..68]);
         let Q_bytes = ((y * P) + (m * decaf377::basepoint())).vartime_compress();
