@@ -40,13 +40,18 @@ tendermint-config = { git = "https://github.com/informalsystems/tendermint-rs", 
 #
 # Longer-term, we can't rely on the upstream to publish versions, so we should plan
 # to fork the crates and maintain our fork.
+# TODO(erwan): update comments
 tendermint-proto = { git = "https://github.com/informalsystems/tendermint-rs", tag = "v0.26.0" }
 tendermint = { git = "https://github.com/informalsystems/tendermint-rs", tag = "v0.26.0" }
+ibc = { git = "https://github.com/cosmos/ibc-rs", branch = "main" }
+ibc-proto = { git = "https://github.com/cosmos/ibc-proto-rs", tag = "v0.22.0" }
+tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs", tag = "v0.26.0" }
+
 prost = "0.11"
 # We don't need this crate at all, but its upstream published a breaking change as
 # 0.7.1 (also prost-related), and depending on an exact version here will exclude
 # the bad update until it's yanked.
-ics23 = { git = "https://github.com/cosmos/ics23"}
+ics23 = { git = "https://github.com/cosmos/ics23", version = "=0.8.1" }
 
 ark-ff = "0.3"
 async-stream = "0.2"
@@ -89,11 +94,9 @@ ed25519-consensus = "2"
 async-trait = "0.1.52"
 once_cell = "1.7.2"
 rocksdb = "0.19.0"
-ibc = { git = "https://github.com/cosmos/ibc-rs", branch = "mikhail/tendermint-0.26" }
-ibc-proto = { git = "https://github.com/cosmos/ibc-proto-rs", tag = "v0.22.0" }
-tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs", tag = "v0.26.0" }
 tempfile = "3.3.0"
 base64 = "0.13.0"
+
 # Temporarily pin due to https://github.com/penumbra-zone/penumbra/issues/1355 since 0.1.8 contains
 # a fix that only works with tokio 1.21.0
 console-subscriber = "=0.1.8"

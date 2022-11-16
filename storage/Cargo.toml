@@ -26,10 +26,10 @@ hex = "0.4"
 metrics = "0.19.0"
 parking_lot = "0.12"
 # Tendermint ecosystem
-ics23 = { git = "https://github.com/cosmos/ics23"}
+ics23 = { version = "=0.8.1" }
 tendermint = { git = "https://github.com/informalsystems/tendermint-rs", tag = "v0.26.0" }
 ibc-proto = { git = "https://github.com/cosmos/ibc-proto-rs", tag = "v0.22.0" }
-ibc = { git = "https://github.com/cosmos/ibc-rs", branch = "mikhail/tendermint-0.26" }
+ibc = { git = "https://github.com/cosmos/ibc-rs", branch = "main" }
 
 [dev-dependencies]
 tempfile = "3.3.0"
