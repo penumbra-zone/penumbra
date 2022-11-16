@@ -17,7 +17,7 @@ use penumbra_proto::{
     core::crypto::v1alpha1 as pbc,
     core::transaction::v1alpha1::{self as pbt},
     view::v1alpha1::{
-        self as pb, view_protocol_server::ViewProtocol, StatusResponse,
+        self as pb, view_protocol_service_server::ViewProtocolService, StatusResponse,
         TransactionHashStreamResponse, TransactionStreamResponse,
     },
 };
@@ -220,7 +220,7 @@ impl ViewService {
 }
 
 #[async_trait]
-impl ViewProtocol for ViewService {
+impl ViewProtocolService for ViewService {
     type NotesStream =
         Pin<Box<dyn futures::Stream<Item = Result<pb::SpendableNoteRecord, tonic::Status>> + Send>>;
     type QuarantinedNotesStream = Pin<

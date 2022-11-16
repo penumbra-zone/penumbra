@@ -106,9 +106,10 @@ pub mod bonding_state {
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
     pub enum BondingStateEnum {
-        Bonded = 0,
-        Unbonding = 1,
-        Unbonded = 2,
+        Unspecified = 0,
+        Bonded = 1,
+        Unbonding = 2,
+        Unbonded = 3,
     }
     impl BondingStateEnum {
         /// String value of the enum field names used in the ProtoBuf definition.
@@ -117,9 +118,10 @@ pub mod bonding_state {
         /// (if the ProtoBuf definition does not change) and safe for programmatic use.
         pub fn as_str_name(&self) -> &'static str {
             match self {
-                BondingStateEnum::Bonded => "BONDED",
-                BondingStateEnum::Unbonding => "UNBONDING",
-                BondingStateEnum::Unbonded => "UNBONDED",
+                BondingStateEnum::Unspecified => "BONDING_STATE_ENUM_UNSPECIFIED",
+                BondingStateEnum::Bonded => "BONDING_STATE_ENUM_BONDED",
+                BondingStateEnum::Unbonding => "BONDING_STATE_ENUM_UNBONDING",
+                BondingStateEnum::Unbonded => "BONDING_STATE_ENUM_UNBONDED",
             }
         }
     }
@@ -137,11 +139,12 @@ pub mod validator_state {
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
     pub enum ValidatorStateEnum {
-        Inactive = 0,
-        Active = 1,
-        Jailed = 2,
-        Tombstoned = 3,
-        Disabled = 4,
+        Unspecified = 0,
+        Inactive = 1,
+        Active = 2,
+        Jailed = 3,
+        Tombstoned = 4,
+        Disabled = 5,
     }
     impl ValidatorStateEnum {
         /// String value of the enum field names used in the ProtoBuf definition.
@@ -150,11 +153,12 @@ pub mod validator_state {
         /// (if the ProtoBuf definition does not change) and safe for programmatic use.
         pub fn as_str_name(&self) -> &'static str {
             match self {
-                ValidatorStateEnum::Inactive => "INACTIVE",
-                ValidatorStateEnum::Active => "ACTIVE",
-                ValidatorStateEnum::Jailed => "JAILED",
-                ValidatorStateEnum::Tombstoned => "TOMBSTONED",
-                ValidatorStateEnum::Disabled => "DISABLED",
+                ValidatorStateEnum::Unspecified => "VALIDATOR_STATE_ENUM_UNSPECIFIED",
+                ValidatorStateEnum::Inactive => "VALIDATOR_STATE_ENUM_INACTIVE",
+                ValidatorStateEnum::Active => "VALIDATOR_STATE_ENUM_ACTIVE",
+                ValidatorStateEnum::Jailed => "VALIDATOR_STATE_ENUM_JAILED",
+                ValidatorStateEnum::Tombstoned => "VALIDATOR_STATE_ENUM_TOMBSTONED",
+                ValidatorStateEnum::Disabled => "VALIDATOR_STATE_ENUM_DISABLED",
             }
         }
     }

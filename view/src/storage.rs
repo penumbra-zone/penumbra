@@ -8,7 +8,9 @@ use penumbra_crypto::{
     Amount, Asset, FieldExt, FullViewingKey, Nullifier,
 };
 use penumbra_proto::{
-    client::v1alpha1::{oblivious_query_client::ObliviousQueryClient, ChainParamsRequest},
+    client::v1alpha1::{
+        oblivious_query_service_client::ObliviousQueryServiceClient, ChainParamsRequest,
+    },
     Protobuf,
 };
 use penumbra_tct as tct;
@@ -54,7 +56,8 @@ impl Storage {
             Self::load(storage_path.as_str()).await
         } else {
             let mut client =
-                ObliviousQueryClient::connect(format!("http://{}:{}", node, pd_port)).await?;
+                ObliviousQueryServiceClient::connect(format!("http://{}:{}", node, pd_port))
+                    .await?;
             let params = client
                 .chain_parameters(tonic::Request::new(ChainParamsRequest {
                     chain_id: String::new(),

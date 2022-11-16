@@ -242,18 +242,19 @@ pub mod position_state {
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
     pub enum PositionStateEnum {
+        Unspecified = 0,
         /// The position has been opened, is active, has reserves and accumulated
         /// fees, and can be traded against.
-        Opened = 0,
+        Opened = 1,
         /// The position has been closed, is inactive and can no longer be traded
         /// against, but still has reserves and accumulated fees.
-        Closed = 1,
+        Closed = 2,
         /// The final reserves and accumulated fees have been withdrawn, leaving an
         /// empty, inactive position awaiting (possible) retroactive rewards.
-        Withdrawn = 2,
+        Withdrawn = 3,
         /// Any retroactive rewards have been claimed. The position is now an inert,
         /// historical artefact.
-        Claimed = 3,
+        Claimed = 4,
     }
     impl PositionStateEnum {
         /// String value of the enum field names used in the ProtoBuf definition.
@@ -262,10 +263,11 @@ pub mod position_state {
         /// (if the ProtoBuf definition does not change) and safe for programmatic use.
         pub fn as_str_name(&self) -> &'static str {
             match self {
-                PositionStateEnum::Opened => "OPENED",
-                PositionStateEnum::Closed => "CLOSED",
-                PositionStateEnum::Withdrawn => "WITHDRAWN",
-                PositionStateEnum::Claimed => "CLAIMED",
+                PositionStateEnum::Unspecified => "POSITION_STATE_ENUM_UNSPECIFIED",
+                PositionStateEnum::Opened => "POSITION_STATE_ENUM_OPENED",
+                PositionStateEnum::Closed => "POSITION_STATE_ENUM_CLOSED",
+                PositionStateEnum::Withdrawn => "POSITION_STATE_ENUM_WITHDRAWN",
+                PositionStateEnum::Claimed => "POSITION_STATE_ENUM_CLAIMED",
             }
         }
     }

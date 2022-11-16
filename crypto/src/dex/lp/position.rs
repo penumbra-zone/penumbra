@@ -1,4 +1,4 @@
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use penumbra_proto::{core::dex::v1alpha1 as pb, serializers::bech32str, Protobuf};
 use serde::{Deserialize, Serialize};
 
@@ -195,15 +195,20 @@ impl From<State> for pb::PositionState {
 impl TryFrom<pb::PositionState> for State {
     type Error = anyhow::Error;
     fn try_from(v: pb::PositionState) -> Result<Self, Self::Error> {
-        Ok(
-            match pb::position_state::PositionStateEnum::from_i32(v.state)
-                .ok_or_else(|| anyhow::anyhow!("missing position state"))?
-            {
-                pb::position_state::PositionStateEnum::Opened => State::Opened,
-                pb::position_state::PositionStateEnum::Closed => State::Closed,
-                pb::position_state::PositionStateEnum::Withdrawn => State::Withdrawn,
-                pb::position_state::PositionStateEnum::Claimed => State::Claimed,
-            },
-        )
+        let Some(position_state) = pb::position_state::PositionStateEnum::from_i32(v.state) else {
+            // maps to an invalid position state
+            return Err(anyhow!("invalid position state!"))
+        };
+
+        match position_state {
+            pb::position_state::PositionStateEnum::Opened => Ok(State::Opened),
+            pb::position_state::PositionStateEnum::Closed => Ok(State::Closed),
+            pb::position_state::PositionStateEnum::Withdrawn => Ok(State::Withdrawn),
+            pb::position_state::PositionStateEnum::Claimed => Ok(State::Claimed),
+            pb::position_state::PositionStateEnum::Unspecified => {
+                // maps to a missing position state, or one that's set to zero.
+                Err(anyhow!("unspecified position state!"))
+            }
+        }
     }
 }

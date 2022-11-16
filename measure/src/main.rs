@@ -6,7 +6,8 @@ use tracing_subscriber::EnvFilter;
 
 use penumbra_chain::{params::ChainParameters, sync::CompactBlock};
 use penumbra_proto::client::v1alpha1::{
-    oblivious_query_client::ObliviousQueryClient, ChainParamsRequest, CompactBlockRangeRequest,
+    oblivious_query_service_client::ObliviousQueryServiceClient, ChainParamsRequest,
+    CompactBlockRangeRequest,
 };
 
 #[derive(Debug, Parser)]
@@ -56,9 +57,11 @@ impl Opt {
     pub async fn run(&self) -> anyhow::Result<()> {
         match self.cmd {
             Command::StreamBlocks => {
-                let mut client =
-                    ObliviousQueryClient::connect(format!("http://{}:{}", self.node, self.pd_port))
-                        .await?;
+                let mut client = ObliviousQueryServiceClient::connect(format!(
+                    "http://{}:{}",
+                    self.node, self.pd_port
+                ))
+                .await?;
 
                 let params: ChainParameters = client
                     .chain_parameters(tonic::Request::new(ChainParamsRequest {

@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
@@ -52,16 +53,18 @@ impl From<State> for pb::ValidatorState {
 impl TryFrom<pb::ValidatorState> for State {
     type Error = anyhow::Error;
     fn try_from(v: pb::ValidatorState) -> Result<Self, Self::Error> {
-        Ok(
-            match pb::validator_state::ValidatorStateEnum::from_i32(v.state)
-                .ok_or_else(|| anyhow::anyhow!("missing validator state"))?
-            {
-                pb::validator_state::ValidatorStateEnum::Inactive => State::Inactive,
-                pb::validator_state::ValidatorStateEnum::Active => State::Active,
-                pb::validator_state::ValidatorStateEnum::Jailed => State::Jailed,
-                pb::validator_state::ValidatorStateEnum::Tombstoned => State::Tombstoned,
-                pb::validator_state::ValidatorStateEnum::Disabled => State::Disabled,
-            },
-        )
+        let Some(validator_state) = pb::validator_state::ValidatorStateEnum::from_i32(v.state) else {
+            return Err(anyhow!("invalid validator state!"))
+            };
+        match validator_state {
+            pb::validator_state::ValidatorStateEnum::Inactive => Ok(State::Inactive),
+            pb::validator_state::ValidatorStateEnum::Active => Ok(State::Active),
+            pb::validator_state::ValidatorStateEnum::Jailed => Ok(State::Jailed),
+            pb::validator_state::ValidatorStateEnum::Tombstoned => Ok(State::Tombstoned),
+            pb::validator_state::ValidatorStateEnum::Disabled => Ok(State::Disabled),
+            pb::validator_state::ValidatorStateEnum::Unspecified => {
+                Err(anyhow!("unspecified validator state!"))
+            }
+        }
     }
 }

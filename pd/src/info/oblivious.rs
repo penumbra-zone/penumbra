@@ -13,8 +13,9 @@ use penumbra_component::{
 };
 use penumbra_proto::{
     client::v1alpha1::{
-        oblivious_query_server::ObliviousQuery, AssetListRequest, ChainParamsRequest,
-        CompactBlockRangeRequest, MutableParametersRequest, ValidatorInfoRequest,
+        oblivious_query_service_server::ObliviousQueryService, AssetListRequest,
+        ChainParamsRequest, CompactBlockRangeRequest, MutableParametersRequest,
+        ValidatorInfoRequest,
     },
     core::{
         chain::v1alpha1::{ChainParameters, CompactBlock, KnownAssets},
@@ -56,7 +57,7 @@ impl Drop for CompactBlockConnectionCounter {
 use super::Info;
 
 #[tonic::async_trait]
-impl ObliviousQuery for Info {
+impl ObliviousQueryService for Info {
     type CompactBlockRangeStream =
         Pin<Box<dyn futures::Stream<Item = Result<CompactBlock, tonic::Status>> + Send>>;
 
