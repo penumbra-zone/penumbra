@@ -14,7 +14,8 @@ use penumbra_proto::{
         custody_protocol_service_server::CustodyProtocolServiceServer,
     },
     view::v1alpha1::{
-        view_protocol_service_client::ViewProtocolServiceClient, view_protocol_service_server::ViewProtocolServiceServer,
+        view_protocol_service_client::ViewProtocolServiceClient,
+        view_protocol_service_server::ViewProtocolServiceServer,
     },
 };
 use penumbra_view::ViewService;

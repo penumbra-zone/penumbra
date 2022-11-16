@@ -2,7 +2,8 @@ use anyhow::{Context as _, Result};
 use penumbra_crypto::Nullifier;
 use penumbra_proto::{
     client::v1alpha1::{
-        oblivious_query_service_client::ObliviousQueryServiceClient, specific_query_service_client::SpecificQueryServiceClient,
+        oblivious_query_service_client::ObliviousQueryServiceClient,
+        specific_query_service_client::SpecificQueryServiceClient,
     },
     Protobuf,
 };
@@ -198,13 +199,17 @@ impl App {
         Ok(())
     }
 
-    pub async fn specific_client(&self) -> Result<SpecificQueryServiceClient<Channel>, anyhow::Error> {
+    pub async fn specific_client(
+        &self,
+    ) -> Result<SpecificQueryServiceClient<Channel>, anyhow::Error> {
         SpecificQueryServiceClient::connect(self.pd_url.as_ref().to_owned())
             .await
             .map_err(Into::into)
     }
 
-    pub async fn oblivious_client(&self) -> Result<ObliviousQueryServiceClient<Channel>, anyhow::Error> {
+    pub async fn oblivious_client(
+        &self,
+    ) -> Result<ObliviousQueryServiceClient<Channel>, anyhow::Error> {
         ObliviousQueryServiceClient::connect(self.pd_url.as_ref().to_owned())
             .await
             .map_err(Into::into)
