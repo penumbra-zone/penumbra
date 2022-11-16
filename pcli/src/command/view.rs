@@ -1,7 +1,7 @@
 use anyhow::Result;
 
 use penumbra_crypto::FullViewingKey;
-use penumbra_proto::client::v1alpha1::oblivious_query_client::ObliviousQueryClient;
+use penumbra_proto::client::v1alpha1::oblivious_query_service_client::ObliviousQueryServiceClient;
 use penumbra_view::ViewClient;
 use tonic::transport::Channel;
 
@@ -55,7 +55,7 @@ impl ViewCmd {
         &self,
         full_viewing_key: &FullViewingKey,
         view_client: Option<&mut impl ViewClient>,
-        oblivious_client: &mut ObliviousQueryClient<Channel>,
+        oblivious_client: &mut ObliviousQueryServiceClient<Channel>,
     ) -> Result<()> {
         match self {
             ViewCmd::Tx(tx_cmd) => {
