@@ -859,65 +859,6 @@ impl Component for Staking {
             .unwrap();
     }
 
-    #[instrument(name = "staking", skip(tx))]
-    fn check_tx_stateless(tx: Arc<Transaction>) -> Result<()> {
-        // Check that the transaction undelegates from at most one validator.
-        let undelegation_identities = tx
-            .undelegations()
-            .map(|u| u.validator_identity.clone())
-            .collect::<BTreeSet<_>>();
-
-        if undelegation_identities.len() > 1 {
-            return Err(anyhow!(
-                "transaction contains undelegations from multiple validators: {:?}",
-                undelegation_identities
-            ));
-        }
-
-        // We prohibit actions other than `Spend`, `Delegate`, `Output` and `Undelegate` in
-        // transactions that contain `Undelegate`, to avoid having to quarantine them.
-        if undelegation_identities.len() == 1 {
-            use Action::*;
-            for action in tx.transaction_body().actions {
-                if !matches!(action, Undelegate(_) | Delegate(_) | Spend(_) | Output(_)) {
-                    return Err(anyhow::anyhow!("transaction contains an undelegation, but also contains an action other than Spend, Delegate, Output or Undelegate"));
-                }
-            }
-        }
-
-        // Check that validator definitions are correctly signed and well-formed:
-        for definition in tx.validator_definitions() {
-            let definition = validator::Definition::try_from(definition.clone())
-                .context("supplied proto is not a valid definition")?;
-            // First, check the signature:
-            let definition_bytes = definition.validator.encode_to_vec();
-            definition
-                .validator
-                .identity_key
-                .0
-                .verify(&definition_bytes, &definition.auth_sig)
-                .context("validator definition signature failed to verify")?;
-
-            // TODO(hdevalence) -- is this duplicated by the check during parsing?
-            // Check that the funding streams do not exceed 100% commission (10000bps)
-            let total_funding_bps = definition
-                .validator
-                .funding_streams
-                .iter()
-                .map(|fs| fs.rate_bps as u64)
-                .sum::<u64>();
-
-            if total_funding_bps > 10000 {
-                return Err(anyhow::anyhow!(
-                    "validator defined {} bps of funding streams, greater than 10000bps = 100%",
-                    total_funding_bps
-                ));
-            }
-        }
-
-        Ok(())
-    }
-
     #[instrument(name = "staking", skip(state, tx))]
     async fn check_tx_stateful(state: Arc<State>, tx: Arc<Transaction>) -> Result<()> {
         // Tally the delegations and undelegations

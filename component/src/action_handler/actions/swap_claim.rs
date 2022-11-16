@@ -7,7 +7,9 @@ use penumbra_storage::{State, StateTransaction};
 use penumbra_transaction::{action::SwapClaim, Transaction};
 use tracing::instrument;
 
-use crate::{action_handler::ActionHandler, dex::StateReadExt as _};
+use crate::{
+    action_handler::ActionHandler, dex::StateReadExt as _, shielded_pool::StateReadExt as _,
+};
 
 #[async_trait]
 impl ActionHandler for SwapClaim {
@@ -69,6 +71,10 @@ impl ActionHandler for SwapClaim {
                 "provided output data does not match chain output data"
             ));
         }
+
+        // 3. Check that the nullifier hasn't been spent before.
+        let spent_nullifier = self.body.nullifier;
+        state.check_nullifier_unspent(spent_nullifier).await;
 
         Ok(())
     }

@@ -26,7 +26,9 @@ impl ActionHandler for Action {
         match self {
             Action::Delegate(action) => action.check_stateless(context),
             Action::Undelegate(action) => action.check_stateless(context),
-            Action::ValidatorDefinition(_action) => todo!(),
+            Action::ValidatorDefinition(action) => {
+                validator_definition::check_stateless(action, context)
+            }
             Action::ValidatorVote(action) => action.check_stateless(context),
             Action::PositionClose(action) => action.check_stateless(context),
             Action::PositionOpen(action) => action.check_stateless(context),
@@ -43,30 +45,28 @@ impl ActionHandler for Action {
         }
     }
 
-    async fn check_stateful(&self, _state: Arc<State>, context: Arc<Transaction>) -> Result<()> {
+    async fn check_stateful(&self, state: Arc<State>, context: Arc<Transaction>) -> Result<()> {
         match self {
-            Action::Delegate(action) => action.check_stateful(_state, context.clone()).await,
-            Action::Undelegate(action) => action.check_stateful(_state, context.clone()).await,
-            Action::ValidatorDefinition(_action) => todo!(),
-            Action::ValidatorVote(action) => action.check_stateful(_state, context.clone()).await,
-            Action::PositionClose(action) => action.check_stateful(_state, context.clone()).await,
-            Action::PositionOpen(action) => action.check_stateful(_state, context.clone()).await,
+            Action::Delegate(action) => action.check_stateful(state, context.clone()).await,
+            Action::Undelegate(action) => action.check_stateful(state, context.clone()).await,
+            Action::ValidatorDefinition(action) => {
+                validator_definition::check_stateful(action, state.clone(), context).await
+            }
+            Action::ValidatorVote(action) => action.check_stateful(state, context.clone()).await,
+            Action::PositionClose(action) => action.check_stateful(state, context.clone()).await,
+            Action::PositionOpen(action) => action.check_stateful(state, context.clone()).await,
             Action::PositionRewardClaim(action) => {
-                action.check_stateful(_state, context.clone()).await
+                action.check_stateful(state, context.clone()).await
             }
-            Action::PositionWithdraw(action) => {
-                action.check_stateful(_state, context.clone()).await
-            }
-            Action::ProposalSubmit(action) => action.check_stateful(_state, context.clone()).await,
-            Action::ProposalWithdraw(action) => {
-                action.check_stateful(_state, context.clone()).await
-            }
-            Action::Swap(action) => action.check_stateful(_state, context.clone()).await,
-            Action::SwapClaim(action) => action.check_stateful(_state, context.clone()).await,
-            Action::Spend(action) => action.check_stateful(_state, context.clone()).await,
-            Action::Output(action) => action.check_stateful(_state, context.clone()).await,
+            Action::PositionWithdraw(action) => action.check_stateful(state, context.clone()).await,
+            Action::ProposalSubmit(action) => action.check_stateful(state, context.clone()).await,
+            Action::ProposalWithdraw(action) => action.check_stateful(state, context.clone()).await,
+            Action::Swap(action) => action.check_stateful(state, context.clone()).await,
+            Action::SwapClaim(action) => action.check_stateful(state, context.clone()).await,
+            Action::Spend(action) => action.check_stateful(state, context.clone()).await,
+            Action::Output(action) => action.check_stateful(state, context.clone()).await,
             Action::IBCAction(_action) => todo!(),
-            Action::Ics20Withdrawal(action) => action.check_stateful(_state, context.clone()).await,
+            Action::Ics20Withdrawal(action) => action.check_stateful(state, context.clone()).await,
         }
     }
 

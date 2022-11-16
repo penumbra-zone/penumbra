@@ -8,6 +8,7 @@ mod supply;
 pub mod state_key;
 
 pub use self::metrics::register_metrics;
+pub(crate) use component::StateWriteExt;
 pub use component::{ShieldedPool, StateReadExt};
 pub use note_manager::NoteManager;
 pub use supply::{SupplyRead, SupplyWrite};

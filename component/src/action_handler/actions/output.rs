@@ -12,12 +12,28 @@ use crate::action_handler::ActionHandler;
 impl ActionHandler for Output {
     #[instrument(name = "output", skip(self, context))]
     fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
-        todo!()
+        let output = self;
+        if output
+            .proof
+            .verify(
+                output.body.balance_commitment,
+                output.body.note_payload.note_commitment,
+                output.body.note_payload.ephemeral_key,
+            )
+            .is_err()
+        {
+            // TODO should the verification error be bubbled up here?
+            return Err(anyhow::anyhow!("An output proof did not verify"));
+        }
+
+        Ok(())
     }
 
     #[instrument(name = "output", skip(self, state))]
     async fn check_stateful(&self, state: Arc<State>, context: Arc<Transaction>) -> Result<()> {
-        todo!()
+        // No `Output`-specific stateful checks to perform; all checks are
+        // performed at the `Transaction` level.
+        Ok(())
     }
 
     #[instrument(name = "output", skip(self, state))]

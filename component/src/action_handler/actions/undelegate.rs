@@ -12,7 +12,9 @@ use crate::action_handler::ActionHandler;
 impl ActionHandler for Undelegate {
     #[instrument(name = "undelegate", skip(self, context))]
     fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
-        todo!()
+        // All stateless undelegation-related checks are performed
+        // at the Transaction-level.
+        Ok(())
     }
 
     #[instrument(name = "undelegate", skip(self, state, context))]
