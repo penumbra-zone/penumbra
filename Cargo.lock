@@ -3742,7 +3742,7 @@ dependencies = [
  "derivative",
  "fpe",
  "hex",
- "ibc 0.22.0 (git+https://github.com/cosmos/ibc-rs?branch=mikhail/tendermint-0.26)",
+ "ibc 0.22.0 (git+https://github.com/cosmos/ibc-rs?branch=main)",
  "ibc-proto 0.22.0 (git+https://github.com/cosmos/ibc-proto-rs?tag=v0.22.0)",
  "num-bigint",
  "once_cell",
