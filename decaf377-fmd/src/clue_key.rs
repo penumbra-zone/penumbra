@@ -122,7 +122,7 @@ impl ExpandedClueKey {
         let Q = z * decaf377::basepoint();
         let Q_encoding = Q.vartime_compress();
 
-        let mut ctxts = BitArray::<order::Lsb0, [u8; 3]>::zeroed();
+        let mut ctxts = BitArray::<[u8; 3], order::Lsb0>::ZERO;
         let Xs = self.subkeys.borrow();
 
         for i in 0..precision_bits {
@@ -132,14 +132,14 @@ impl ExpandedClueKey {
             ctxts.set(i, ctxt_i != 0);
         }
 
-        let m = hash::to_scalar(&P_encoding.0, precision_bits as u8, ctxts.as_buffer());
+        let m = hash::to_scalar(&P_encoding.0, precision_bits as u8, ctxts.as_raw_slice());
         let y = (z - m) * r.inverse().expect("random element is nonzero");
 
         let mut buf = [0u8; 68];
         buf[0..32].copy_from_slice(&P_encoding.0[..]);
         buf[32..64].copy_from_slice(&y.to_bytes()[..]);
         buf[64] = precision_bits as u8;
-        buf[65..68].copy_from_slice(ctxts.as_buffer());
+        buf[65..68].copy_from_slice(ctxts.as_raw_slice());
 
         Ok(Clue(buf))
     }
