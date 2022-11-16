@@ -16,9 +16,11 @@ decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 # jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "newmain" }
 jmt = { path = "../../jmt" }
 
-# Crates.io deps
 tendermint = { git = "https://github.com/informalsystems/tendermint-rs", tag = "v0.26.0" }
+ibc = { git = "https://github.com/cosmos/ibc-rs", branch = "main" }
+ics23 = { version = "=0.8.1" }
 
+# Crates.io deps
 ark-ff = "0.3"
 anyhow = "1"
 bytes = "1"
@@ -30,6 +32,3 @@ async-trait = "0.1.52"
 tracing = "0.1"
 tonic = "0.8.1"
 num-rational = "0.4"
-
-ibc = { git = "https://github.com/cosmos/ibc-rs", branch = "mikhail/tendermint-0.26" }
-ics23 = { git = "https://github.com/cosmos/ics23" }
