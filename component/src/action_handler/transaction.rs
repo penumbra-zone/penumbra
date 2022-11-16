@@ -15,60 +15,26 @@ use crate::{
 
 use super::ActionHandler;
 
+mod stateful;
+mod stateless;
+
+use stateless::{at_most_one_undelegate, no_duplicate_nullifiers, valid_binding_signature};
+
 #[async_trait]
 impl ActionHandler for Transaction {
     fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
         // TODO: add a check that ephemeral_key is not identity to prevent scanning dos attack ?
-        let auth_hash = context.transaction_body().auth_hash();
 
-        // 1. Check binding signature.
-        self.binding_verification_key()
-            .verify(auth_hash.as_ref(), self.binding_sig())
-            .context("binding signature failed to verify")?;
-
-        // 2. Disallow multiple `Spend`s with the same `Nullifier`.
-        // This can't be implemented in the (`Spend`)[`crate::action_handler::actions::spend::Spend`] `ActionHandler`
-        // because it requires access to the entire transaction, and we don't want to perform the check across the entire
-        // transaction for *each* `Spend` within the transaction, only once.
-        let mut spent_nullifiers = BTreeSet::new();
-        for nf in self.spent_nullifiers() {
-            if let Some(duplicate) = spent_nullifiers.replace(nf) {
-                return Err(anyhow::anyhow!(
-                    "Duplicate nullifier in transaction: {}",
-                    duplicate
-                ));
-            }
-        }
-
-        // 3. Check that the transaction undelegates from at most one validator.
-        let undelegation_identities = self
-            .undelegations()
-            .map(|u| u.validator_identity.clone())
-            .collect::<BTreeSet<_>>();
-
-        if undelegation_identities.len() > 1 {
-            return Err(anyhow::anyhow!(
-                "transaction contains undelegations from multiple validators: {:?}",
-                undelegation_identities
-            ));
-        }
-
-        // We prohibit actions other than `Spend`, `Delegate`, `Output` and `Undelegate` in
-        // transactions that contain `Undelegate`, to avoid having to quarantine them.
-        if undelegation_identities.len() == 1 {
-            use penumbra_transaction::Action::*;
-            for action in self.transaction_body().actions {
-                if !matches!(action, Undelegate(_) | Delegate(_) | Spend(_) | Output(_)) {
-                    return Err(anyhow::anyhow!("transaction contains an undelegation, but also contains an action other than Spend, Delegate, Output or Undelegate"));
-                }
-            }
-        }
+        valid_binding_signature(self)?;
+        no_duplicate_nullifiers(self)?;
+        at_most_one_undelegate(self)?;
 
         // TODO: these can all be parallel tasks
         for action in self.actions() {
             action.check_stateless(context.clone())?;
         }
 
+        // TODO: move these out of component code?
         consensus_rules::stateless::num_clues_equal_to_num_outputs(self)?;
         consensus_rules::stateless::check_memo_exists_if_outputs_absent_if_not(self)?;
 
@@ -78,6 +44,7 @@ impl ActionHandler for Transaction {
     async fn check_stateful(&self, state: Arc<State>, context: Arc<Transaction>) -> Result<()> {
         state.check_claimed_anchor(self.anchor).await?;
 
+        // TODO: move to transaction::stateful?
         let previous_fmd_parameters = state
             .get_previous_fmd_parameters()
             .await
