@@ -6,8 +6,8 @@ use clap::Parser;
 use futures::StreamExt;
 use penumbra_crypto::FullViewingKey;
 use penumbra_proto::{
-    custody::v1alpha1::custody_protocol_client::CustodyProtocolClient,
-    view::v1alpha1::view_protocol_client::ViewProtocolClient,
+    custody::v1alpha1::custody_protocol_service_client::CustodyProtocolServiceClient,
+    view::v1alpha1::view_protocol_service_client::ViewProtocolServiceClient,
 };
 use penumbra_view::ViewClient;
 use url::Url;
@@ -33,8 +33,8 @@ pub struct App {
     /// view will be `None` when a command indicates that it can be run offline via
     /// `.offline()` and Some(_) otherwise. Assuming `.offline()` has been implemenented
     /// correctly, this can be unwrapped safely.
-    pub view: Option<ViewProtocolClient<BoxGrpcService>>,
-    pub custody: CustodyProtocolClient<BoxGrpcService>,
+    pub view: Option<ViewProtocolServiceClient<BoxGrpcService>>,
+    pub custody: CustodyProtocolServiceClient<BoxGrpcService>,
     pub fvk: FullViewingKey,
     pub wallet: KeyStore,
     pub pd_url: Url,
