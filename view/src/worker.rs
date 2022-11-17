@@ -19,7 +19,7 @@ use tokio::sync::{watch, RwLock};
 use tonic::transport::Channel;
 
 #[cfg(feature = "nct-divergence-check")]
-use penumbra_proto::client::v1alpha1::specific_query_client::SpecificQueryClient;
+use penumbra_proto::client::v1alpha1::specific_query_service_client::SpecificQueryServiceClient;
 
 use crate::{
     sync::{scan_block, FilteredBlock},
@@ -35,7 +35,7 @@ pub struct Worker {
     sync_height_tx: watch::Sender<u64>,
     tm_client: tendermint_rpc::HttpClient,
     #[cfg(feature = "nct-divergence-check")]
-    specific_client: SpecificQueryClient<Channel>,
+    specific_client: SpecificQueryServiceClient<Channel>,
 }
 
 impl Worker {
@@ -75,7 +75,7 @@ impl Worker {
             ObliviousQueryServiceClient::connect(format!("http://{}:{}", node, pd_port)).await?;
         #[cfg(feature = "nct-divergence-check")]
         let specific_client =
-            SpecificQueryClient::connect(format!("http://{}:{}", node, pd_port)).await?;
+            SpecificQueryServiceClient::connect(format!("http://{}:{}", node, pd_port)).await?;
 
         let tm_client = tendermint_rpc::HttpClient::new(
             format!("http://{}:{}", node, tendermint_port).as_str(),
@@ -309,7 +309,7 @@ impl Worker {
 
 #[cfg(feature = "nct-divergence-check")]
 async fn nct_divergence_check(
-    client: &mut SpecificQueryClient<Channel>,
+    client: &mut SpecificQueryServiceClient<Channel>,
     height: u64,
     actual_root: penumbra_tct::Root,
 ) -> anyhow::Result<()> {
