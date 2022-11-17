@@ -601,47 +601,54 @@ mod tests {
             anchor: tct::Tree::new().root(),
         });
 
-        create_client_tx
-            .check_stateless(create_client_tx.clone())
-            .unwrap();
-        create_client_tx
-            .check_stateful(state.clone(), create_client_tx.clone())
-            .await
-            .unwrap();
-        // execute (save client)
-        let state_mut =
-            Arc::get_mut(&mut state).expect("state Arc should not be referenced elsewhere");
-        let mut state_tx = state_mut.begin_transaction();
-        create_client_tx.execute(&mut state_tx).await.unwrap();
-        state_tx.apply();
-        storage
-            .commit(Arc::try_unwrap(state).unwrap())
-            .await
-            .unwrap();
+        if let Action::IBCAction(inner_action) = create_client_tx.actions().collect::<Vec<_>>()[0] {
+            inner_action
+                .check_stateless(create_client_tx.clone())
+                .unwrap();
+            inner_action
+                .check_stateful(state.clone(), create_client_tx.clone())
+                .await
+                .unwrap();
+            // execute (save client)
+            let state_mut =
+                Arc::get_mut(&mut state).expect("state Arc should not be referenced elsewhere");
+            let mut state_tx = state_mut.begin_transaction();
+            inner_action.execute(&mut state_tx).await.unwrap();
+            state_tx.apply();
+            storage
+                .commit(Arc::try_unwrap(state).unwrap())
+                .await
+                .unwrap();
+        } else {
+            panic!("expected ibc action");
+        }
 
         let mut state = Arc::new(storage.latest_state());
         assert_eq!(state.clone().client_counter().await.unwrap().0, 1);
 
         // now try update client
-
-        update_client_tx
-            .check_stateless(update_client_tx.clone())
-            .unwrap();
-        // verify the ClientUpdate proof
-        update_client_tx
-            .check_stateful(state.clone(), update_client_tx.clone())
-            .await
-            .unwrap();
-        // save the next tm state
-        let state_mut =
-            Arc::get_mut(&mut state).expect("state Arc should not be referenced elsewhere");
-        let mut state_tx = state_mut.begin_transaction();
-        update_client_tx.execute(&mut state_tx).await.unwrap();
-        state_tx.apply();
-        storage
-            .commit(Arc::try_unwrap(state).unwrap())
-            .await
-            .unwrap();
+        if let Action::IBCAction(inner_action) = update_client_tx.actions().collect::<Vec<_>>()[0] {
+            inner_action
+                .check_stateless(update_client_tx.clone())
+                .unwrap();
+            // verify the ClientUpdate proof
+            inner_action
+                .check_stateful(state.clone(), update_client_tx.clone())
+                .await
+                .unwrap();
+            // save the next tm state
+            let state_mut =
+                Arc::get_mut(&mut state).expect("state Arc should not be referenced elsewhere");
+            let mut state_tx = state_mut.begin_transaction();
+            inner_action.execute(&mut state_tx).await.unwrap();
+            state_tx.apply();
+            storage
+                .commit(Arc::try_unwrap(state).unwrap())
+                .await
+                .unwrap();
+        } else {
+            panic!("expected ibc action");
+        }
 
         let mut state = Arc::new(storage.latest_state());
 
@@ -669,26 +676,29 @@ mod tests {
             binding_sig: [0u8; 64].into(),
         });
 
-        second_update_client_tx
-            .check_stateless(second_update_client_tx.clone())
-            .unwrap();
-        // verify the ClientUpdate proof
-        second_update_client_tx
-            .check_stateful(state.clone(), second_update_client_tx.clone())
-            .await
-            .unwrap();
-        // save the next tm state
-        let state_mut =
-            Arc::get_mut(&mut state).expect("state Arc should not be referenced elsewhere");
-        let mut state_tx = state_mut.begin_transaction();
-        second_update_client_tx
-            .execute(&mut state_tx)
-            .await
-            .unwrap();
-        state_tx.apply();
-        storage
-            .commit(Arc::try_unwrap(state).unwrap())
-            .await
-            .unwrap();
+        if let Action::IBCAction(inner_action) =
+            second_update_client_tx.actions().collect::<Vec<_>>()[0]
+        {
+            inner_action
+                .check_stateless(second_update_client_tx.clone())
+                .unwrap();
+            // verify the ClientUpdate proof
+            inner_action
+                .check_stateful(state.clone(), second_update_client_tx.clone())
+                .await
+                .unwrap();
+            // save the next tm state
+            let state_mut =
+                Arc::get_mut(&mut state).expect("state Arc should not be referenced elsewhere");
+            let mut state_tx = state_mut.begin_transaction();
+            inner_action.execute(&mut state_tx).await.unwrap();
+            state_tx.apply();
+            storage
+                .commit(Arc::try_unwrap(state).unwrap())
+                .await
+                .unwrap();
+        } else {
+            panic!("expected ibc action");
+        }
     }
 }

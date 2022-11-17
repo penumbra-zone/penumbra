@@ -40,15 +40,6 @@ impl ActionHandler for Action {
             Action::Spend(action) => action.check_stateless(context),
             Action::Output(action) => action.check_stateless(context),
             Action::IBCAction(action) => action.check_stateless(context),
-            // Action::IBCAction(action) => {
-            //     crate::ibc::component::client::Ics2Client::check_stateless(action.clone())?;
-            //     crate::ibc::component::connection::ConnectionComponent::check_stateless(
-            //         action.clone(),
-            //     )?;
-            //     crate::ibc::component::channel::Ics4Channel::check_stateless(action.clone())?;
-
-            //     Ok(())
-            // }
             Action::Ics20Withdrawal(action) => action.check_stateless(context),
         }
     }
@@ -82,24 +73,6 @@ impl ActionHandler for Action {
                 }
 
                 action.check_stateful(state, context.clone()).await
-
-                // crate::ibc::component::client::Ics2Client::check_stateful(
-                //     state.clone(),
-                //     context.clone(),
-                // )
-                // .await?;
-                // crate::ibc::component::connection::ConnectionComponent::check_stateful(
-                //     state.clone(),
-                //     context.clone(),
-                // )
-                // .await?;
-                // crate::ibc::component::channel::Ics4Channel::check_stateful(
-                //     state.clone(),
-                //     context.clone(),
-                // )
-                // .await?;
-
-                // Ok(())
             }
             Action::Ics20Withdrawal(action) => action.check_stateful(state, context.clone()).await,
         }
@@ -122,13 +95,6 @@ impl ActionHandler for Action {
             Action::Spend(action) => action.execute(state).await,
             Action::Output(action) => action.execute(state).await,
             Action::IBCAction(action) => action.execute(state).await,
-            // Action::IBCAction(_action) => {
-            //     crate::ibc::client::Ics2Client::execute_tx(state, tx.clone()).await?;
-            //     crate::ibc::connection::ConnectionComponent::execute_tx(state, tx.clone()).await?;
-            //     crate::ibc::channel::Ics4Channel::execute_tx(state, tx.clone()).await?;
-
-            //     Ok(())
-            // }
             Action::Ics20Withdrawal(action) => action.execute(state).await,
         }
     }
