@@ -7,7 +7,7 @@ use penumbra_transaction::{action::ProposalSubmit, Transaction};
 use tracing::instrument;
 
 use crate::action_handler::ActionHandler;
-use crate::governance::{check, execute, proposal::ProposalList};
+use crate::governance::{check, execute};
 
 #[async_trait]
 impl ActionHandler for ProposalSubmit {

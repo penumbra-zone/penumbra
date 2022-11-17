@@ -1,8 +1,5 @@
-use std::{collections::BTreeSet, sync::Arc};
-
-use crate::stake::component::StateReadExt as _;
 use crate::Component;
-use anyhow::{anyhow, Context as _, Result};
+use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use penumbra_chain::{
     genesis,
@@ -12,14 +9,14 @@ use penumbra_chain::{
 };
 use penumbra_crypto::{asset, note, IdentityKey, NotePayload, Nullifier, Value};
 use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_storage::{State, StateRead, StateTransaction, StateWrite};
+use penumbra_storage::{StateRead, StateTransaction, StateWrite};
 use penumbra_tct as tct;
-use penumbra_transaction::{action::swap_claim::List as SwapClaimBodyList, Action, Transaction};
+use penumbra_transaction::action::swap_claim::List as SwapClaimBodyList;
 use tct::Tree;
 use tendermint::abci;
 use tracing::instrument;
 
-use crate::shielded_pool::{consensus_rules, event, state_key};
+use crate::shielded_pool::state_key;
 
 use super::{NoteManager, SupplyWrite};
 

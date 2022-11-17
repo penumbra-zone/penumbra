@@ -1,22 +1,17 @@
 use std::collections::BTreeMap;
-use std::sync::Arc;
 
-// use crate::shielded_pool::StateReadExt as _;
 use crate::Component;
-use anyhow::{Context as _, Result};
-use ark_ff::Zero;
+use anyhow::Result;
 use async_trait::async_trait;
-use decaf377::Fr;
-use penumbra_chain::{genesis, StateReadExt as _};
+use penumbra_chain::genesis;
 use penumbra_crypto::dex::lp::Reserves;
 use penumbra_crypto::{
     asset,
     dex::{BatchSwapOutputData, TradingPair},
-    MockFlowCiphertext, SwapFlow, Value, STAKING_TOKEN_ASSET_ID,
+    SwapFlow,
 };
 use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_storage::{State, StateRead, StateTransaction, StateWrite};
-use penumbra_transaction::{Action, Transaction};
+use penumbra_storage::{StateRead, StateTransaction, StateWrite};
 use tendermint::abci;
 use tracing::instrument;
 

@@ -1,17 +1,13 @@
-use std::sync::Arc;
-
-use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::genesis;
-use penumbra_storage::{State, StateTransaction};
-use penumbra_transaction::Transaction;
+use penumbra_storage::StateTransaction;
 use tendermint::abci;
 use tracing::instrument;
 
 use super::view::StateWriteExt as _;
 use crate::Component;
 
-use super::{check, execute, proposal::ProposalList};
+use super::{execute, proposal::ProposalList};
 
 pub struct Governance {}
 

@@ -1,6 +1,6 @@
-use std::{collections::BTreeSet, sync::Arc};
+use std::sync::Arc;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::{AnnotatedNotePayload, NoteSource, StateReadExt as _};
 use penumbra_storage::{State, StateTransaction, StateWrite as _};

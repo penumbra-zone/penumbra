@@ -1,17 +1,15 @@
 // Implementation of a pd component for the staking system.
 use std::collections::{BTreeMap, BTreeSet};
-use std::sync::Arc;
 
 use crate::Component;
 use ::metrics::{decrement_gauge, gauge, increment_gauge};
-use anyhow::{anyhow, Context as _, Result};
+use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use penumbra_chain::quarantined::Slashed;
 use penumbra_chain::{genesis, Epoch, NoteSource, StateReadExt as _};
 use penumbra_crypto::{DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_proto::Protobuf;
 use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_storage::{State, StateRead, StateTransaction, StateWrite};
+use penumbra_storage::{StateRead, StateTransaction, StateWrite};
 use penumbra_transaction::{
     action::{Delegate, Undelegate},
     Action, Transaction,
@@ -84,7 +82,7 @@ trait PutValidatorUpdates: StateWrite {
 impl<T: StateWrite + ?Sized> PutValidatorUpdates for T {}
 
 #[async_trait]
-trait StakingImpl: StateWriteExt {
+pub(crate) trait StakingImpl: StateWriteExt {
     /// Updates the state of the given validator, performing all necessary state transitions.
     ///
     /// This method errors on illegal state transitions; since execution must be infallible,
@@ -857,251 +855,6 @@ impl Component for Staking {
             .track_uptime(&begin_block.last_commit_info)
             .await
             .unwrap();
-    }
-
-    #[instrument(name = "staking", skip(state, tx))]
-    async fn check_tx_stateful(state: Arc<State>, tx: Arc<Transaction>) -> Result<()> {
-        // Tally the delegations and undelegations
-        let mut delegation_changes = BTreeMap::new();
-        for d in tx.delegations() {
-            let next_rate_data = state
-                .next_validator_rate(&d.validator_identity)
-                .await?
-                .ok_or_else(|| {
-                    anyhow::anyhow!("unknown validator identity {}", d.validator_identity)
-                })?
-                .clone();
-
-            // Check whether the epoch is correct first, to give a more helpful
-            // error message if it's wrong.
-            if d.epoch_index != next_rate_data.epoch_index {
-                return Err(anyhow::anyhow!(
-                    "delegation was prepared for epoch {} but the next epoch is {}",
-                    d.epoch_index,
-                    next_rate_data.epoch_index
-                ));
-            }
-
-            // Check whether the delegation is allowed
-            let validator = state
-                .validator(&d.validator_identity)
-                .await?
-                .ok_or_else(|| anyhow::anyhow!("missing definition for validator"))?;
-            let validator_state = state
-                .validator_state(&d.validator_identity)
-                .await?
-                .ok_or_else(|| anyhow::anyhow!("missing state for validator"))?;
-
-            use validator::State::*;
-            if !validator.enabled {
-                return Err(anyhow::anyhow!(
-                    "delegations are only allowed to enabled validators, but {} is disabled",
-                    d.validator_identity,
-                ));
-            }
-            if !matches!(validator_state, Inactive | Active) {
-                return Err(anyhow::anyhow!(
-                    "delegations are only allowed to active or inactive validators, but {} is in state {:?}",
-                    d.validator_identity,
-                    validator_state,
-                ));
-            }
-
-            // For delegations, we enforce correct computation (with rounding)
-            // of the *delegation amount based on the unbonded amount*, because
-            // users (should be) starting with the amount of unbonded stake they
-            // wish to delegate, and computing the amount of delegation tokens
-            // they receive.
-            //
-            // The direction of the computation matters because the computation
-            // involves rounding, so while both
-            //
-            // (unbonded amount, rates) -> delegation amount
-            // (delegation amount, rates) -> unbonded amount
-            //
-            // should give approximately the same results, they may not give
-            // exactly the same results.
-            let expected_delegation_amount =
-                next_rate_data.delegation_amount(d.unbonded_amount.into());
-
-            if expected_delegation_amount == u64::from(d.delegation_amount) {
-                // The delegation amount is added to the delegation token supply.
-                *delegation_changes
-                    .entry(d.validator_identity.clone())
-                    .or_insert(0) += i64::try_from(d.delegation_amount).unwrap();
-            } else {
-                return Err(anyhow::anyhow!(
-                    "given {} unbonded stake, expected {} delegation tokens but description produces {}",
-                    d.unbonded_amount,
-                    expected_delegation_amount,
-                    d.delegation_amount
-                ));
-            }
-        }
-        for u in tx.undelegations() {
-            let rate_data = state
-                .next_validator_rate(&u.validator_identity)
-                .await?
-                .ok_or_else(|| {
-                    anyhow::anyhow!("unknown validator identity {}", u.validator_identity)
-                })?;
-
-            // Check whether the epoch is correct first, to give a more helpful
-            // error message if it's wrong.
-            if u.epoch_index != rate_data.epoch_index {
-                return Err(anyhow::anyhow!(
-                    "undelegation was prepared for next epoch {} but the next epoch is {}",
-                    u.epoch_index,
-                    rate_data.epoch_index
-                ));
-            }
-
-            // For undelegations, we enforce correct computation (with rounding)
-            // of the *unbonded amount based on the delegation amount*, because
-            // users (should be) starting with the amount of delegation tokens they
-            // wish to undelegate, and computing the amount of unbonded stake
-            // they receive.
-            //
-            // The direction of the computation matters because the computation
-            // involves rounding, so while both
-            //
-            // (unbonded amount, rates) -> delegation amount
-            // (delegation amount, rates) -> unbonded amount
-            //
-            // should give approximately the same results, they may not give
-            // exactly the same results.
-            let expected_unbonded_amount = rate_data.unbonded_amount(u.delegation_amount.into());
-
-            if expected_unbonded_amount == u64::from(u.unbonded_amount) {
-                // TODO: in order to have exact tracking of the token supply, we probably
-                // need to change this to record the changes to the unbonded stake and
-                // the delegation token separately
-
-                // The undelegation amount is subtracted from the delegation token supply.
-                *delegation_changes
-                    .entry(u.validator_identity.clone())
-                    .or_insert(0) -= i64::try_from(u.delegation_amount).unwrap();
-            } else {
-                return Err(anyhow::anyhow!(
-                    "given {} delegation tokens, expected {} unbonded stake but description produces {}",
-                    u.delegation_amount,
-                    expected_unbonded_amount,
-                    u.unbonded_amount,
-                ));
-            }
-        }
-
-        // Check that the sequence numbers of updated validators are correct.
-        for v in tx.validator_definitions() {
-            let v = validator::Definition::try_from(v.clone())
-                .context("supplied proto is not a valid definition")?;
-
-            // Check whether we are redefining an existing validator.
-            if let Some(existing_v) = state.validator(&v.validator.identity_key).await? {
-                // Ensure that the highest existing sequence number is less than
-                // the new sequence number.
-                let current_seq = existing_v.sequence_number;
-                if v.validator.sequence_number <= current_seq {
-                    return Err(anyhow::anyhow!(
-                        "expected sequence numbers to be increasing: current sequence number is {}",
-                        current_seq
-                    ));
-                }
-            }
-
-            // Check whether the consensus key has already been used by another validator.
-            if let Some(existing_v) = state
-                .validator_by_consensus_key(&v.validator.consensus_key)
-                .await?
-            {
-                if v.validator.identity_key != existing_v.identity_key {
-                    // This is a new validator definition, but the consensus
-                    // key it declares is already in use by another validator.
-                    //
-                    // Rejecting this is important for two reasons:
-                    //
-                    // 1. It prevents someone from declaring an (app-level)
-                    // validator that "piggybacks" on the actual behavior of someone
-                    // else's validator.
-                    //
-                    // 2. If we submit a validator update to Tendermint that
-                    // includes duplicate consensus keys, Tendermint gets confused
-                    // and hangs.
-                    return Err(anyhow::anyhow!(
-                        "consensus key {:?} is already in use by validator {}",
-                        v.validator.consensus_key,
-                        existing_v.identity_key,
-                    ));
-                }
-            }
-
-            // the validator definition has now passed all verification checks
-        }
-
-        Ok(())
-    }
-
-    #[instrument(name = "staking", skip(state, tx))]
-    async fn execute_tx(state: &mut StateTransaction, tx: Arc<Transaction>) -> Result<()> {
-        // Queue any (un)delegations for processing at the next epoch boundary.
-        for action in &tx.transaction_body.actions {
-            match action {
-                Action::Delegate(d) => {
-                    tracing::debug!(?d, "queuing delegation for next epoch");
-                    state.stub_push_delegation(d.clone());
-                }
-                Action::Undelegate(u) => {
-                    tracing::debug!(?u, "queuing undelegation for next epoch");
-                    state.stub_push_undelegation(u.clone());
-                }
-                _ => {}
-            }
-        }
-
-        // The validator definitions have been completely verified, so we can add them to the JMT
-        let definitions = tx.validator_definitions().map(|v| v.to_owned());
-        let cur_epoch = state.get_current_epoch().await.unwrap();
-
-        for v in definitions {
-            let v = validator::Definition::try_from(v.clone())
-                .expect("we already checked that this was a valid proto");
-            if state
-                .validator(&v.validator.identity_key)
-                .await
-                .unwrap()
-                .is_some()
-            {
-                // This is an existing validator definition.
-                state.update_validator(v.validator).await.unwrap();
-            } else {
-                // This is a new validator definition.
-                // Set the default rates and state.
-                let validator_key = v.validator.identity_key.clone();
-
-                // Delegations require knowing the rates for the
-                // next epoch, so pre-populate with 0 reward => exchange rate 1 for
-                // the current and next epochs.
-                let cur_rate_data = RateData {
-                    identity_key: validator_key.clone(),
-                    epoch_index: cur_epoch.index,
-                    validator_reward_rate: 0,
-                    validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
-                };
-                let next_rate_data = RateData {
-                    identity_key: validator_key.clone(),
-                    epoch_index: cur_epoch.index + 1,
-                    validator_reward_rate: 0,
-                    validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
-                };
-
-                state
-                    .add_validator(v.validator.clone(), cur_rate_data, next_rate_data)
-                    .await
-                    .unwrap();
-            }
-        }
-
-        Ok(())
     }
 
     #[instrument(name = "staking", skip(state, end_block))]

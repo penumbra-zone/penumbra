@@ -1,9 +1,7 @@
-use std::{collections::BTreeSet, sync::Arc};
+use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use penumbra_chain::NoteSource;
-use penumbra_crypto::Nullifier;
 use penumbra_storage::{State, StateTransaction};
 use penumbra_transaction::{action::Spend, Transaction};
 use tracing::instrument;

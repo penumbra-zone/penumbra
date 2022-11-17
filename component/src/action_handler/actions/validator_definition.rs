@@ -1,11 +1,12 @@
 use anyhow::{Context, Result};
-use penumbra_storage::State;
+use penumbra_chain::StateReadExt as _;
+use penumbra_storage::{State, StateTransaction};
 use penumbra_transaction::Transaction;
 use std::sync::Arc;
 
 use penumbra_proto::{core::stake::v1alpha1::ValidatorDefinition, Protobuf};
 
-use crate::stake::{validator, StateReadExt as _};
+use crate::stake::{component::StakingImpl as _, rate::RateData, validator, StateReadExt as _};
 
 pub(crate) fn check_stateless(
     definition: &ValidatorDefinition,
@@ -91,5 +92,52 @@ pub(crate) async fn check_stateful(
     }
 
     // the validator definition has now passed all verification checks
+    Ok(())
+}
+
+pub(crate) async fn execute_tx(
+    definition: &ValidatorDefinition,
+    state: &mut StateTransaction<'_>,
+    context: Arc<Transaction>,
+) -> Result<()> {
+    let cur_epoch = state.get_current_epoch().await.unwrap();
+
+    let v = validator::Definition::try_from(definition.clone())
+        .expect("we already checked that this was a valid proto");
+    if state
+        .validator(&v.validator.identity_key)
+        .await
+        .unwrap()
+        .is_some()
+    {
+        // This is an existing validator definition.
+        state.update_validator(v.validator).await.unwrap();
+    } else {
+        // This is a new validator definition.
+        // Set the default rates and state.
+        let validator_key = v.validator.identity_key.clone();
+
+        // Delegations require knowing the rates for the
+        // next epoch, so pre-populate with 0 reward => exchange rate 1 for
+        // the current and next epochs.
+        let cur_rate_data = RateData {
+            identity_key: validator_key.clone(),
+            epoch_index: cur_epoch.index,
+            validator_reward_rate: 0,
+            validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
+        };
+        let next_rate_data = RateData {
+            identity_key: validator_key.clone(),
+            epoch_index: cur_epoch.index + 1,
+            validator_reward_rate: 0,
+            validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
+        };
+
+        state
+            .add_validator(v.validator.clone(), cur_rate_data, next_rate_data)
+            .await
+            .unwrap();
+    }
+
     Ok(())
 }
