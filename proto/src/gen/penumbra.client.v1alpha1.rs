@@ -108,7 +108,7 @@ pub struct KeyValueResponse {
     #[prost(bytes="vec", tag="1")]
     pub value: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag="2")]
-    pub proof: ::core::option::Option<::ics23::CommitmentProof>,
+    pub proof: ::core::option::Option<::ibc_proto::ibc::core::commitment::v1::MerkleProof>,
 }
 /// Generated client implementations.
 pub mod oblivious_query_client {

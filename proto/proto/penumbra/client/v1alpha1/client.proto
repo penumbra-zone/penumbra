@@ -4,6 +4,7 @@ package penumbra.client.v1alpha1;
 
 // TODO: clean up import paths (this is pulling from the ibc-go-vendor root)
 import "proofs.proto";
+import "ibc/core/commitment/v1/commitment.proto";
 
 import "penumbra/core/crypto/v1alpha1/crypto.proto";
 import "penumbra/core/chain/v1alpha1/chain.proto";
@@ -130,6 +131,6 @@ message KeyValueRequest {
 
 message KeyValueResponse {
   bytes value = 1;
-
-  .ics23.CommitmentProof proof = 2;
+  
+  .ibc.core.commitment.v1.MerkleProof proof = 2;
 }
