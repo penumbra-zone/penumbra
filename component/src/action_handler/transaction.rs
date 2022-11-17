@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_chain::{AnnotatedNotePayload, NoteSource, StateReadExt as _};
+use penumbra_chain::{AnnotatedNotePayload, NoteSource};
 use penumbra_storage::{State, StateTransaction, StateWrite as _};
 use penumbra_transaction::Transaction;
 
@@ -12,6 +12,8 @@ use crate::{
     },
     stake::StateReadExt as _,
 };
+
+use self::stateful::{claimed_anchor_is_valid, fmd_parameters_valid};
 
 use super::ActionHandler;
 
@@ -42,24 +44,9 @@ impl ActionHandler for Transaction {
     }
 
     async fn check_stateful(&self, state: Arc<State>, context: Arc<Transaction>) -> Result<()> {
-        state.check_claimed_anchor(self.anchor).await?;
+        claimed_anchor_is_valid(state.clone(), context.clone()).await?;
 
-        // TODO: move to transaction::stateful?
-        let previous_fmd_parameters = state
-            .get_previous_fmd_parameters()
-            .await
-            .expect("chain params request must succeed");
-        let current_fmd_parameters = state
-            .get_current_fmd_parameters()
-            .await
-            .expect("chain params request must succeed");
-        let height = state.get_block_height().await?;
-        consensus_rules::stateful::fmd_precision_within_grace_period(
-            self,
-            previous_fmd_parameters,
-            current_fmd_parameters,
-            height,
-        )?;
+        fmd_parameters_valid(state.clone(), context.clone()).await?;
 
         // TODO: these can all be parallel tasks
         for action in self.actions() {
