@@ -14,7 +14,7 @@ use penumbra_crypto::{asset, note, IdentityKey, NotePayload, Nullifier, Value};
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{State, StateRead, StateTransaction, StateWrite};
 use penumbra_tct as tct;
-use penumbra_transaction::{action::swap_claim::List as SwapClaimBodyList, Action, Transaction};
+use penumbra_transaction::{Action, Transaction};
 use tct::Tree;
 use tendermint::abci;
 use tracing::instrument;
@@ -375,10 +375,6 @@ pub trait StateReadExt: StateRead {
             .await?
             .unwrap_or_default())
     }
-
-    async fn claimed_swap_outputs(&self, height: u64) -> Result<Option<SwapClaimBodyList>> {
-        self.get(&state_key::claimed_swap_outputs(height)).await
-    }
 }
 
 impl<T: StateRead + ?Sized> StateReadExt for T {}
@@ -457,10 +453,6 @@ pub(super) trait StateWriteExt: StateWrite {
             // here lets us find out what height the anchor was for.
             index,
         );
-    }
-
-    async fn set_claimed_swap_outputs(&mut self, height: u64, claims: SwapClaimBodyList) {
-        self.put(state_key::claimed_swap_outputs(height), claims);
     }
 
     // #[instrument(skip(self))]

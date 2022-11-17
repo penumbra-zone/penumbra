@@ -45,17 +45,6 @@ message SwapClaimBody {
   uint64 epoch_duration = 7;
 }
 
-// For storing the list of claimed swaps between the dex and shielded pool components.
-message ClaimedSwapList {
-  repeated ClaimedSwap claims = 1;
-}
-
-// Represents a swap claimed in a particular transaction.
-message ClaimedSwap {
-  SwapClaimBody claim = 1;
-  bytes txid = 2;
-}
-
 // The authorized data of a Swap transaction.
 message SwapBody {
   // The trading pair to swap.
