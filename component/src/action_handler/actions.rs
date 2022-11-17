@@ -40,7 +40,14 @@ impl ActionHandler for Action {
             Action::SwapClaim(action) => action.check_stateless(context),
             Action::Spend(action) => action.check_stateless(context),
             Action::Output(action) => action.check_stateless(context),
-            Action::IBCAction(_action) => todo!(),
+            Action::IBCAction(action) => {
+                client::Ics2Client::check_stateless(action.clone())?;
+                connection::ConnectionComponent::check_stateless(action.clone())?;
+                channel::Ics4Channel::check_stateless(action.clone())?;
+                Ics20Transfer::check_stateless(action)?;
+
+                Ok(())
+            }
             Action::Ics20Withdrawal(action) => action.check_stateless(context),
         }
     }
@@ -65,7 +72,21 @@ impl ActionHandler for Action {
             Action::SwapClaim(action) => action.check_stateful(state, context.clone()).await,
             Action::Spend(action) => action.check_stateful(state, context.clone()).await,
             Action::Output(action) => action.check_stateful(state, context.clone()).await,
-            Action::IBCAction(_action) => todo!(),
+            Action::IBCAction(action) => {
+                if tx.ibc_actions().count() > 0 && !state.get_chain_params().await?.ibc_enabled {
+                    return Err(anyhow::anyhow!(
+                        "transaction contains IBC actions, but IBC is not enabled"
+                    ));
+                }
+
+                client::Ics2Client::check_tx_stateful(state.clone(), tx.clone()).await?;
+                connection::ConnectionComponent::check_tx_stateful(state.clone(), tx.clone())
+                    .await?;
+                channel::Ics4Channel::check_tx_stateful(state.clone(), tx.clone()).await?;
+                Ics20Transfer::check_tx_stateful(state.clone(), tx.clone()).await?;
+
+                Ok(())
+            }
             Action::Ics20Withdrawal(action) => action.check_stateful(state, context.clone()).await,
         }
     }
@@ -86,7 +107,14 @@ impl ActionHandler for Action {
             Action::SwapClaim(action) => action.execute(_state).await,
             Action::Spend(action) => action.execute(_state).await,
             Action::Output(action) => action.execute(_state).await,
-            Action::IBCAction(_action) => todo!(),
+            Action::IBCAction(_action) => {
+                client::Ics2Client::execute_tx(state, tx.clone()).await?;
+                connection::ConnectionComponent::execute_tx(state, tx.clone()).await?;
+                channel::Ics4Channel::execute_tx(state, tx.clone()).await?;
+                Ics20Transfer::execute_tx(state, tx.clone()).await?;
+
+                Ok(())
+            }
             Action::Ics20Withdrawal(action) => action.execute(_state).await,
         }
     }

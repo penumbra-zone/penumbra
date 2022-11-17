@@ -58,7 +58,7 @@ impl Component for Ics4Channel {
     async fn begin_block(_state: &mut StateTransaction, _begin_block: &abci::request::BeginBlock) {}
 
     #[instrument(name = "ics4_channel", skip(tx))]
-    fn check_tx_stateless(tx: Arc<Transaction>) -> Result<()> {
+    fn check_stateless(tx: Arc<Transaction>) -> Result<()> {
         // Each stateless check is a distinct function in an appropriate submodule,
         // so that we can easily add new stateless checks and see a birds' eye view
         // of all of the checks we're performing.
@@ -116,7 +116,7 @@ impl Component for Ics4Channel {
     }
 
     #[instrument(name = "ics4_channel", skip(state, tx))]
-    async fn check_tx_stateful(state: Arc<State>, tx: Arc<Transaction>) -> Result<()> {
+    async fn check_stateful(state: Arc<State>, tx: Arc<Transaction>) -> Result<()> {
         let transfer = PortId::transfer();
         for ibc_action in tx.ibc_actions() {
             let state = state.clone();
@@ -229,7 +229,7 @@ impl Component for Ics4Channel {
     }
 
     #[instrument(name = "ics4_channel", skip(state, tx))]
-    async fn execute_tx(state: &mut StateTransaction, tx: Arc<Transaction>) -> Result<()> {
+    async fn execute(state: &mut StateTransaction, tx: Arc<Transaction>) -> Result<()> {
         let transfer = PortId::transfer();
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {

@@ -45,7 +45,7 @@ impl Component for ConnectionComponent {
     async fn begin_block(_state: &mut StateTransaction, _begin_block: &abci::request::BeginBlock) {}
 
     #[instrument(name = "ibc_connection", skip(tx))]
-    fn check_tx_stateless(tx: Arc<Transaction>) -> Result<()> {
+    fn check_stateless(tx: Arc<Transaction>) -> Result<()> {
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
                 Some(ConnectionOpenInit(msg)) => {
@@ -85,7 +85,7 @@ impl Component for ConnectionComponent {
     }
 
     #[instrument(name = "ibc_connection", skip(state, tx))]
-    async fn check_tx_stateful(state: Arc<State>, tx: Arc<Transaction>) -> Result<()> {
+    async fn check_stateful(state: Arc<State>, tx: Arc<Transaction>) -> Result<()> {
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
                 Some(ConnectionOpenInit(msg)) => {
@@ -120,7 +120,7 @@ impl Component for ConnectionComponent {
     }
 
     #[instrument(name = "ibc_connection", skip(state, tx))]
-    async fn execute_tx(state: &mut StateTransaction, tx: Arc<Transaction>) -> Result<()> {
+    async fn execute(state: &mut StateTransaction, tx: Arc<Transaction>) -> Result<()> {
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
                 Some(ConnectionOpenInit(msg)) => {

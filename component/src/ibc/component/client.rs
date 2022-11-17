@@ -80,7 +80,7 @@ impl Component for Ics2Client {
     }
 
     #[instrument(name = "ics2_client", skip(tx))]
-    fn check_tx_stateless(tx: Arc<Transaction>) -> Result<()> {
+    fn check_stateless(tx: Arc<Transaction>) -> Result<()> {
         // Each stateless check is a distinct function in an appropriate submodule,
         // so that we can easily add new stateless checks and see a birds' eye view
         // of all of the checks we're performing.
@@ -109,7 +109,7 @@ impl Component for Ics2Client {
     }
 
     #[instrument(name = "ics2_client", skip(state, tx))]
-    async fn check_tx_stateful(state: Arc<State>, tx: Arc<Transaction>) -> Result<()> {
+    async fn check_stateful(state: Arc<State>, tx: Arc<Transaction>) -> Result<()> {
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
                 Some(CreateClient(msg)) => {
@@ -130,7 +130,7 @@ impl Component for Ics2Client {
     }
 
     #[instrument(name = "ics2_client", skip(state, tx))]
-    async fn execute_tx(state: &mut StateTransaction, tx: Arc<Transaction>) -> Result<()> {
+    async fn execute(state: &mut StateTransaction, tx: Arc<Transaction>) -> Result<()> {
         // Handle any IBC actions found in the transaction.
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {

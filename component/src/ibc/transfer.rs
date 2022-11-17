@@ -263,7 +263,7 @@ impl Component for Ics20Transfer {
 
     #[instrument(name = "ics20_transfer", skip(tx))]
     #[allow(clippy::single_match)]
-    fn check_tx_stateless(tx: Arc<Transaction>) -> Result<()> {
+    fn check_stateless(tx: Arc<Transaction>) -> Result<()> {
         for action in tx.actions() {
             match action {
                 Action::Ics20Withdrawal(withdrawal) => {
@@ -278,7 +278,7 @@ impl Component for Ics20Transfer {
 
     #[instrument(name = "ics20_transfer", skip(state, tx))]
     #[allow(clippy::single_match)]
-    async fn check_tx_stateful(state: Arc<State>, tx: Arc<Transaction>) -> Result<()> {
+    async fn check_stateful(state: Arc<State>, tx: Arc<Transaction>) -> Result<()> {
         for action in tx.actions() {
             match action {
                 Action::Ics20Withdrawal(withdrawal) => {
@@ -292,7 +292,7 @@ impl Component for Ics20Transfer {
 
     #[instrument(name = "ics20_transfer", skip(state, tx))]
     #[allow(clippy::single_match)]
-    async fn execute_tx(state: &mut StateTransaction, tx: Arc<Transaction>) -> Result<()> {
+    async fn execute(state: &mut StateTransaction, tx: Arc<Transaction>) -> Result<()> {
         for action in tx.actions() {
             match action {
                 Action::Ics20Withdrawal(withdrawal) => {
