@@ -11,21 +11,19 @@ use crate::governance::{check, execute};
 
 #[async_trait]
 impl ActionHandler for ProposalSubmit {
-    #[instrument(name = "proposal_submit", skip(self, context))]
-    fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
+    #[instrument(name = "proposal_submit", skip(self, _context))]
+    fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         check::stateless::proposal_submit(self)
     }
 
-    #[instrument(name = "proposal_submit", skip(self, state))]
-    async fn check_stateful(&self, state: Arc<State>, context: Arc<Transaction>) -> Result<()> {
-        let auth_hash = context.transaction_body().auth_hash();
-
+    #[instrument(name = "proposal_submit", skip(self, state, _context))]
+    async fn check_stateful(&self, state: Arc<State>, _context: Arc<Transaction>) -> Result<()> {
         check::stateful::proposal_submit(&state, self).await
     }
 
     #[instrument(name = "proposal_submit", skip(self, state))]
     async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
-        execute::proposal_submit(state, self).await;
+        execute::proposal_submit(state, self).await?;
 
         Ok(())
     }

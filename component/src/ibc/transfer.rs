@@ -23,7 +23,6 @@ use penumbra_proto::core::ibc::v1alpha1::FungibleTokenPacketData;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{State, StateRead, StateTransaction, StateWrite};
 use penumbra_transaction::action::Ics20Withdrawal;
-use penumbra_transaction::{Action, Transaction};
 use prost::Message;
 use std::sync::Arc;
 use tendermint::abci;

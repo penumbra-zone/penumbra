@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use crate::ibc::{event, validate_penumbra_client_state, ConnectionCounter, SUPPORTED_VERSIONS};
 use crate::Component;
 use anyhow::Result;
@@ -18,11 +16,7 @@ use ibc::core::ics03_connection::version::{pick_version, Version};
 use ibc::core::ics24_host::identifier::ConnectionId;
 use ibc::Height as IBCHeight;
 use penumbra_chain::genesis;
-use penumbra_proto::core::ibc::v1alpha1::ibc_action::Action::{
-    ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
-};
-use penumbra_storage::{State, StateRead, StateTransaction, StateWrite};
-use penumbra_transaction::Transaction;
+use penumbra_storage::{StateRead, StateTransaction, StateWrite};
 use tendermint::abci;
 use tracing::instrument;
 
@@ -30,9 +24,9 @@ use super::client::StateWriteExt as _;
 use super::state_key;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 
-mod execution;
-mod stateful;
-mod stateless;
+pub(crate) mod execution;
+pub(crate) mod stateful;
+pub(crate) mod stateless;
 
 pub struct ConnectionComponent {}
 
@@ -43,117 +37,6 @@ impl Component for ConnectionComponent {
 
     #[instrument(name = "ibc_connection", skip(_state, _begin_block))]
     async fn begin_block(_state: &mut StateTransaction, _begin_block: &abci::request::BeginBlock) {}
-
-    #[instrument(name = "ibc_connection", skip(tx))]
-    fn check_stateless(tx: Arc<Transaction>) -> Result<()> {
-        for ibc_action in tx.ibc_actions() {
-            match &ibc_action.action {
-                Some(ConnectionOpenInit(msg)) => {
-                    use stateless::connection_open_init::*;
-                    let msg = MsgConnectionOpenInit::try_from(msg.clone())?;
-
-                    version_is_supported(&msg)?;
-                }
-                Some(ConnectionOpenTry(msg)) => {
-                    use stateless::connection_open_try::*;
-                    let msg = MsgConnectionOpenTry::try_from(msg.clone())?;
-
-                    has_client_state(&msg)?;
-                    has_client_proof(&msg)?;
-                    has_consensus_proof(&msg)?;
-                }
-                Some(ConnectionOpenAck(msg)) => {
-                    use stateless::connection_open_ack::*;
-                    let msg = MsgConnectionOpenAck::try_from(msg.clone())?;
-
-                    has_client_state(&msg)?;
-                    has_client_proof(&msg)?;
-                    has_consensus_proof(&msg)?;
-                }
-
-                Some(ConnectionOpenConfirm(msg)) => {
-                    // NOTE: other than that the message is a well formed ConnectionOpenConfirm,
-                    // there is no other stateless validation to perform.
-                    let _ = MsgConnectionOpenConfirm::try_from(msg.clone())?;
-                }
-
-                _ => {}
-            }
-        }
-
-        Ok(())
-    }
-
-    #[instrument(name = "ibc_connection", skip(state, tx))]
-    async fn check_stateful(state: Arc<State>, tx: Arc<Transaction>) -> Result<()> {
-        for ibc_action in tx.ibc_actions() {
-            match &ibc_action.action {
-                Some(ConnectionOpenInit(msg)) => {
-                    use stateful::connection_open_init::ConnectionOpenInitCheck;
-                    let msg = MsgConnectionOpenInit::try_from(msg.clone())?;
-
-                    state.validate(&msg).await?;
-                }
-                Some(ConnectionOpenTry(msg)) => {
-                    use stateful::connection_open_try::ConnectionOpenTryCheck;
-                    let msg = MsgConnectionOpenTry::try_from(msg.clone())?;
-
-                    state.validate(&msg).await?;
-                }
-                Some(ConnectionOpenAck(msg)) => {
-                    use stateful::connection_open_ack::ConnectionOpenAckCheck;
-                    let msg = MsgConnectionOpenAck::try_from(msg.clone())?;
-
-                    state.validate(&msg).await?;
-                }
-                Some(ConnectionOpenConfirm(msg)) => {
-                    use stateful::connection_open_confirm::ConnectionOpenConfirmCheck;
-                    let msg = MsgConnectionOpenConfirm::try_from(msg.clone())?;
-
-                    state.validate(&msg).await?;
-                }
-                _ => {}
-            }
-        }
-
-        Ok(())
-    }
-
-    #[instrument(name = "ibc_connection", skip(state, tx))]
-    async fn execute(state: &mut StateTransaction, tx: Arc<Transaction>) -> Result<()> {
-        for ibc_action in tx.ibc_actions() {
-            match &ibc_action.action {
-                Some(ConnectionOpenInit(msg)) => {
-                    use execution::connection_open_init::ConnectionOpenInitExecute;
-                    let msg_connection_open_init =
-                        MsgConnectionOpenInit::try_from(msg.clone()).unwrap();
-                    state.execute(&msg_connection_open_init).await;
-                }
-
-                Some(ConnectionOpenTry(raw_msg)) => {
-                    use execution::connection_open_try::ConnectionOpenTryExecute;
-                    let msg = MsgConnectionOpenTry::try_from(raw_msg.clone()).unwrap();
-                    state.execute(&msg).await;
-                }
-
-                Some(ConnectionOpenAck(raw_msg)) => {
-                    use execution::connection_open_ack::ConnectionOpenAckExecute;
-                    let msg = MsgConnectionOpenAck::try_from(raw_msg.clone()).unwrap();
-                    state.execute(&msg).await;
-                }
-
-                Some(ConnectionOpenConfirm(raw_msg)) => {
-                    use execution::connection_open_confirm::ConnectionOpenConfirmExecute;
-                    let msg = MsgConnectionOpenConfirm::try_from(raw_msg.clone()).unwrap();
-                    state.execute(&msg).await;
-                }
-
-                _ => {}
-            }
-        }
-
-        Ok(())
-    }
 
     #[instrument(name = "ibc_connection", skip(_state, _end_block))]
     async fn end_block(_state: &mut StateTransaction, _end_block: &abci::request::EndBlock) {}

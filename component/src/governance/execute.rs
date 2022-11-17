@@ -163,7 +163,7 @@ pub async fn enact_all_passed_proposals(state: &mut StateTransaction<'_>) -> Res
 
             // If the proposal passes, enact it now
             if outcome.is_passed() {
-                enact_proposal(state, proposal_id).await;
+                enact_proposal(state, proposal_id).await?;
             }
 
             // Log the result

@@ -37,15 +37,15 @@ impl ActionHandler for Spend {
         Ok(())
     }
 
-    #[instrument(name = "spend", skip(self, state))]
-    async fn check_stateful(&self, state: Arc<State>, context: Arc<Transaction>) -> Result<()> {
+    #[instrument(name = "spend", skip(self, state, _context))]
+    async fn check_stateful(&self, state: Arc<State>, _context: Arc<Transaction>) -> Result<()> {
         // Check that the `Nullifier` has not been spent before.
         let spent_nullifier = self.body.nullifier;
         state.check_nullifier_unspent(spent_nullifier).await
     }
 
-    #[instrument(name = "spend", skip(self, state))]
-    async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
+    #[instrument(name = "spend", skip(self, _state))]
+    async fn execute(&self, _state: &mut StateTransaction) -> Result<()> {
         // Handled in [`crate::action_handler::transaction::Transaction`].
 
         Ok(())

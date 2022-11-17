@@ -13,14 +13,14 @@ use crate::{
 
 #[async_trait]
 impl ActionHandler for Delegate {
-    #[instrument(name = "delegate", skip(self, context))]
-    fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
+    #[instrument(name = "delegate", skip(self, _context))]
+    fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         // There are no stateless checks specific to this action.
         Ok(())
     }
 
-    #[instrument(name = "delegate", skip(self, state))]
-    async fn check_stateful(&self, state: Arc<State>, context: Arc<Transaction>) -> Result<()> {
+    #[instrument(name = "delegate", skip(self, state, _context))]
+    async fn check_stateful(&self, state: Arc<State>, _context: Arc<Transaction>) -> Result<()> {
         let d = self;
         let next_rate_data = state
             .next_validator_rate(&d.validator_identity)

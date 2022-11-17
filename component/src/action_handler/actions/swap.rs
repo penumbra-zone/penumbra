@@ -14,8 +14,8 @@ use crate::action_handler::ActionHandler;
 
 #[async_trait]
 impl ActionHandler for Swap {
-    #[instrument(name = "swap", skip(self, context))]
-    fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
+    #[instrument(name = "swap", skip(self, _context))]
+    fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         let swap = self;
 
         // Check swap proof
@@ -45,8 +45,8 @@ impl ActionHandler for Swap {
         Ok(())
     }
 
-    #[instrument(name = "swap", skip(self, state, context))]
-    async fn check_stateful(&self, state: Arc<State>, context: Arc<Transaction>) -> Result<()> {
+    #[instrument(name = "swap", skip(self, _state, _context))]
+    async fn check_stateful(&self, _state: Arc<State>, _context: Arc<Transaction>) -> Result<()> {
         // TODO: are any other checks necessary?
 
         Ok(())

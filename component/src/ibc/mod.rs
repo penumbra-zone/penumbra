@@ -10,7 +10,7 @@ pub(crate) mod event;
 mod ibc_token;
 mod packet;
 pub use ibc_token::IBCToken;
-mod ibc_handler;
+pub(crate) mod ibc_handler;
 mod metrics;
 pub(crate) mod transfer;
 

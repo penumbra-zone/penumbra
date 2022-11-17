@@ -28,8 +28,14 @@ impl Component for Governance {
     #[instrument(name = "governance", skip(state, _end_block))]
     async fn end_block(state: &mut StateTransaction, _end_block: &abci::request::EndBlock) {
         // TODO: compute intermediate tallies at epoch boundaries (with threshold delegator voting)
-        execute::enact_all_passed_proposals(state).await;
-        execute::enact_pending_parameter_changes(state).await;
-        execute::apply_proposal_refunds(state).await;
+        execute::enact_all_passed_proposals(state)
+            .await
+            .expect("failed to enact proposals");
+        execute::enact_pending_parameter_changes(state)
+            .await
+            .expect("failed to enact parameter changes");
+        execute::apply_proposal_refunds(state)
+            .await
+            .expect("failed to apply proposal refunds");
     }
 }

@@ -8,15 +8,11 @@ pub(crate) mod client;
 pub(crate) mod connection;
 pub(crate) mod state_key;
 
-use std::sync::Arc;
-
 use crate::ibc::transfer::Ics20Transfer;
 use crate::Component;
-use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_chain::{genesis, StateReadExt as _};
-use penumbra_storage::{State, StateTransaction};
-use penumbra_transaction::Transaction;
+use penumbra_chain::genesis;
+use penumbra_storage::StateTransaction;
 use tendermint::abci;
 use tracing::instrument;
 

@@ -10,8 +10,8 @@ use crate::action_handler::ActionHandler;
 
 #[async_trait]
 impl ActionHandler for Output {
-    #[instrument(name = "output", skip(self, context))]
-    fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
+    #[instrument(name = "output", skip(self, _context))]
+    fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         let output = self;
         if output
             .proof
@@ -29,15 +29,15 @@ impl ActionHandler for Output {
         Ok(())
     }
 
-    #[instrument(name = "output", skip(self, state))]
-    async fn check_stateful(&self, state: Arc<State>, context: Arc<Transaction>) -> Result<()> {
+    #[instrument(name = "output", skip(self, _state, _context))]
+    async fn check_stateful(&self, _state: Arc<State>, _context: Arc<Transaction>) -> Result<()> {
         // No `Output`-specific stateful checks to perform; all checks are
         // performed at the `Transaction` level.
         Ok(())
     }
 
-    #[instrument(name = "output", skip(self, state))]
-    async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
+    #[instrument(name = "output", skip(self, _state))]
+    async fn execute(&self, _state: &mut StateTransaction) -> Result<()> {
         todo!()
     }
 }

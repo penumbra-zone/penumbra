@@ -41,8 +41,8 @@ impl ActionHandler for SwapClaim {
         Ok(())
     }
 
-    #[instrument(name = "swap_claim", skip(self, state, context))]
-    async fn check_stateful(&self, state: Arc<State>, context: Arc<Transaction>) -> Result<()> {
+    #[instrument(name = "swap_claim", skip(self, state, _context))]
+    async fn check_stateful(&self, state: Arc<State>, _context: Arc<Transaction>) -> Result<()> {
         let swap_claim = self;
 
         // 1. Validate the epoch duration passed in the swap claim matches
@@ -74,13 +74,13 @@ impl ActionHandler for SwapClaim {
 
         // 3. Check that the nullifier hasn't been spent before.
         let spent_nullifier = self.body.nullifier;
-        state.check_nullifier_unspent(spent_nullifier).await;
+        state.check_nullifier_unspent(spent_nullifier).await?;
 
         Ok(())
     }
 
-    #[instrument(name = "swap_claim", skip(self, state))]
-    async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
+    #[instrument(name = "swap_claim", skip(self, _state))]
+    async fn execute(&self, _state: &mut StateTransaction) -> Result<()> {
         // Nothing to do here, note payloads and nullifiers processed in shielded pool
 
         Ok(())

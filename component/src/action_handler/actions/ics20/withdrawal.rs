@@ -10,13 +10,13 @@ use crate::action_handler::ActionHandler;
 
 #[async_trait]
 impl ActionHandler for Ics20Withdrawal {
-    #[instrument(name = "ics20_withdrawal", skip(self, context))]
-    fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
+    #[instrument(name = "ics20_withdrawal", skip(self, _context))]
+    fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         self.validate()
     }
 
-    #[instrument(name = "ics20_withdrawal", skip(self, state))]
-    async fn check_stateful(&self, state: Arc<State>, context: Arc<Transaction>) -> Result<()> {
+    #[instrument(name = "ics20_withdrawal", skip(self, state, _context))]
+    async fn check_stateful(&self, state: Arc<State>, _context: Arc<Transaction>) -> Result<()> {
         <penumbra_storage::State as crate::ibc::transfer::Ics20TransferReadExt>::withdrawal_check(
             state.clone(),
             self,

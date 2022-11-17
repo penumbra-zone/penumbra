@@ -4,6 +4,7 @@ use penumbra_chain::StateReadExt as _;
 use penumbra_storage::{State, StateTransaction};
 use penumbra_transaction::Transaction;
 use std::sync::Arc;
+use tracing::instrument;
 
 use penumbra_proto::{core::stake::v1alpha1::ValidatorDefinition, Protobuf};
 
@@ -14,7 +15,8 @@ use crate::{
 
 #[async_trait]
 impl ActionHandler for ValidatorDefinition {
-    fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
+    #[instrument(name = "validator_definition", skip(self, _context))]
+    fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         // Check that validator definition is correctly signed and well-formed:
         let definition = validator::Definition::try_from(self.clone())
             .context("supplied proto is not a valid definition")?;
@@ -46,7 +48,8 @@ impl ActionHandler for ValidatorDefinition {
         Ok(())
     }
 
-    async fn check_stateful(&self, state: Arc<State>, context: Arc<Transaction>) -> Result<()> {
+    #[instrument(name = "validator_definition", skip(self, state, _context))]
+    async fn check_stateful(&self, state: Arc<State>, _context: Arc<Transaction>) -> Result<()> {
         // Check that the sequence numbers of the updated validators is correct.
         let v = validator::Definition::try_from(self.clone())
             .context("supplied proto is not a valid definition")?;
@@ -94,6 +97,7 @@ impl ActionHandler for ValidatorDefinition {
         Ok(())
     }
 
+    #[instrument(name = "validator_definition", skip(self, state))]
     async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
         let cur_epoch = state.get_current_epoch().await.unwrap();
 
@@ -110,19 +114,19 @@ impl ActionHandler for ValidatorDefinition {
         } else {
             // This is a new validator definition.
             // Set the default rates and state.
-            let validator_key = v.validator.identity_key.clone();
+            let validator_key = v.validator.identity_key;
 
             // Delegations require knowing the rates for the
             // next epoch, so pre-populate with 0 reward => exchange rate 1 for
             // the current and next epochs.
             let cur_rate_data = RateData {
-                identity_key: validator_key.clone(),
+                identity_key: validator_key,
                 epoch_index: cur_epoch.index,
                 validator_reward_rate: 0,
                 validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
             };
             let next_rate_data = RateData {
-                identity_key: validator_key.clone(),
+                identity_key: validator_key,
                 epoch_index: cur_epoch.index + 1,
                 validator_reward_rate: 0,
                 validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8

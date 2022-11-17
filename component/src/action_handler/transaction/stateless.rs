@@ -34,7 +34,7 @@ pub(super) fn at_most_one_undelegate(tx: &Transaction) -> Result<()> {
     // 3. Check that the transaction undelegates from at most one validator.
     let undelegation_identities = tx
         .undelegations()
-        .map(|u| u.validator_identity.clone())
+        .map(|u| u.validator_identity)
         .collect::<BTreeSet<_>>();
 
     if undelegation_identities.len() > 1 {
