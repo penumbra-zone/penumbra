@@ -124,7 +124,7 @@ message KeyValueRequest {
   // The expected chain id (empty string if no expectation).
   string chain_id = 1;
   // If set, the key to fetch from storage.
-  bytes key = 2;
+  string key = 2;
   // whether to return a proof
   bool proof = 3;
 }

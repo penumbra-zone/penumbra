@@ -48,7 +48,7 @@ impl SpecificQuery for Info {
         }
 
         let (value, proof) = state
-            .get_with_proof_to_apphash(request.key)
+            .get_with_proof_to_apphash(request.key.into_bytes())
             .await
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 

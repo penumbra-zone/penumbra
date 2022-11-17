@@ -123,7 +123,7 @@ pub mod client {
                 <C::ResponseBody as Body>::Error: Into<StdError> + Send,
             {
                 let request = KeyValueRequest {
-                    key: key.as_ref().as_bytes().to_vec(),
+                    key: key.as_ref().to_string(),
                     ..Default::default()
                 };
 
@@ -145,7 +145,7 @@ pub mod client {
                 <C::ResponseBody as Body>::Error: Into<StdError> + Send,
             {
                 let request = KeyValueRequest {
-                    key: key.as_ref().as_bytes().to_vec(),
+                    key: key.as_ref().to_string(),
                     ..Default::default()
                 };
 
