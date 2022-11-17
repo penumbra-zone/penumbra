@@ -48,19 +48,19 @@ pub struct Ics20Transfer {}
 
 #[async_trait]
 pub trait Ics20TransferReadExt: StateRead {
-    async fn withdrawal_check(state: Arc<State>, withdrawal: &Ics20Withdrawal) -> Result<()> {
+    async fn withdrawal_check(&self, withdrawal: &Ics20Withdrawal) -> Result<()> {
         // create packet
         let packet: IBCPacket<Unchecked> = withdrawal.clone().into();
 
         // send packet
         use crate::ibc::packet::SendPacketRead as _;
-        state.send_packet_check(packet).await?;
+        self.send_packet_check(packet).await?;
 
         Ok(())
     }
 }
 
-impl<T: StateRead> Ics20TransferReadExt for T {}
+impl<T: StateRead + ?Sized> Ics20TransferReadExt for T {}
 
 #[async_trait]
 pub trait Ics20TransferWriteExt: StateWrite {
