@@ -108,9 +108,9 @@ pub struct MockFlowCiphertext {
     #[prost(uint64, tag="1")]
     pub value: u64,
 }
-/// Holds two asset IDs. Ordering doesn't reflect trading direction, however
-/// since the `AssetId` type is `Ord + PartialOrd`, there can be only one
-/// `TradingPair` per asset pair.
+/// Holds two asset IDs. Ordering doesn't reflect trading direction. Instead, we
+/// require `asset_1 < asset_2` as field elements, to ensure a canonical
+/// representation of an unordered pair.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TradingPair {
@@ -156,22 +156,18 @@ pub struct BatchSwapOutputData {
 /// without specifying what those assets are, to avoid duplicating data (each
 /// asset ID alone is twice the size of the trading function).
 ///
-/// The trading function is `phi(R) = p*R_1 + q*R_2`.
-/// This is used as a CFMM with constant `k` and fee `fee` (gamma).
+/// The trading function is `phi(R) = p*R_1 + q*R_2`, with fee parameter `gamma = 1 - fee`.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TradingFunction {
-    /// NOTE: the use of floats here is a placeholder, so we can stub out the
-    /// implementation and then decide what type of fixed-point, deterministic
-    /// arithmetic should be used.
-    #[prost(double, tag="2")]
-    pub fee: f64,
-    #[prost(double, tag="3")]
-    pub k: f64,
-    #[prost(double, tag="4")]
-    pub p: f64,
-    #[prost(double, tag="5")]
-    pub q: f64,
+    #[prost(uint32, tag="2")]
+    pub fee: u32,
+    /// This is not actually an amount, it's an integer the same width as an amount
+    #[prost(message, optional, tag="4")]
+    pub p: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
+    /// This is not actually an amount, it's an integer the same width as an amount
+    #[prost(message, optional, tag="5")]
+    pub q: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
 }
 /// The reserves of a position.
 ///

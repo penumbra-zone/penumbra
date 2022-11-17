@@ -160,10 +160,9 @@ mod tests {
             asset_2: crate::asset::REGISTRY.parse_denom("cube").unwrap().id(),
         };
         let phi = TradingFunction {
-            fee: 0.0001,
-            k: 1.0,
-            p: 1.0,
-            q: 1.0,
+            fee: 1,
+            p: 1u64.into(),
+            q: 1u64.into(),
         };
         let position = Position {
             phi,

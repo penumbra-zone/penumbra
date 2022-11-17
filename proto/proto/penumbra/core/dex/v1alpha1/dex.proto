@@ -84,9 +84,9 @@ message MockFlowCiphertext {
     uint64 value = 1;
 }
 
-// Holds two asset IDs. Ordering doesn't reflect trading direction, however
-// since the `AssetId` type is `Ord + PartialOrd`, there can be only one
-// `TradingPair` per asset pair.
+// Holds two asset IDs. Ordering doesn't reflect trading direction. Instead, we
+// require `asset_1 < asset_2` as field elements, to ensure a canonical
+// representation of an unordered pair.
 message TradingPair {
   // The first asset of the pair.
   crypto.v1alpha1.AssetId asset_1 = 1;
@@ -121,16 +121,13 @@ message BatchSwapOutputData {
 // without specifying what those assets are, to avoid duplicating data (each
 // asset ID alone is twice the size of the trading function).
 //
-// The trading function is `phi(R) = p*R_1 + q*R_2`.
-// This is used as a CFMM with constant `k` and fee `fee` (gamma).
+// The trading function is `phi(R) = p*R_1 + q*R_2`, with fee parameter `gamma = 1 - fee`.
 message TradingFunction {
-  // NOTE: the use of floats here is a placeholder, so we can stub out the
-  // implementation and then decide what type of fixed-point, deterministic
-  // arithmetic should be used.
-  double fee = 2;
-  double k = 3;
-  double p = 4;
-  double q = 5;
+  uint32 fee = 2;
+  // This is not actually an amount, it's an integer the same width as an amount
+  crypto.v1alpha1.Amount p = 4;
+  // This is not actually an amount, it's an integer the same width as an amount
+  crypto.v1alpha1.Amount q = 5;
 }
 
 // The reserves of a position.

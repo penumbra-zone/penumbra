@@ -29,7 +29,6 @@ impl Position {
         state.update(&self.pair.asset_1.to_bytes());
         state.update(&self.pair.asset_2.to_bytes());
         state.update(&self.phi.fee.to_le_bytes());
-        state.update(&self.phi.k.to_le_bytes());
         state.update(&self.phi.p.to_le_bytes());
         state.update(&self.phi.q.to_le_bytes());
 
