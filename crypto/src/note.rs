@@ -39,7 +39,7 @@ pub struct Note {
 }
 
 /// The domain separator used to generate note commitments.
-static NOTECOMMIT_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
+pub(crate) static NOTECOMMIT_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
     Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"penumbra.notecommit").as_bytes())
 });
 
