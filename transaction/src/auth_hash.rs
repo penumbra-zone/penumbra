@@ -577,16 +577,16 @@ mod tests {
         )
         .unwrap();
 
-        let swap_plaintext = SwapPlaintext {
+        let swap_plaintext = SwapPlaintext::new(
             trading_pair,
-            delta_1_i: 100000u64.into(),
-            delta_2_i: 1u64.into(),
-            claim_fee: Fee(Value {
+            100000u64.into(),
+            1u64.into(),
+            Fee(Value {
                 amount: 3u64.into(),
                 asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
             }),
-            claim_address: addr,
-        };
+            addr,
+        );
 
         let plan = TransactionPlan {
             expiry_height: 0,

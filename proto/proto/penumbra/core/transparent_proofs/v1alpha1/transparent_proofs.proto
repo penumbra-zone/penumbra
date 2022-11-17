@@ -33,11 +33,7 @@ message OutputProof {
 
 // A Penumbra transparent SwapClaimProof.
 message SwapClaimProof {
-  /**
-   * @exclude
-   * Describes the input note with the Swap NFT
-   */
-  bytes swap_nft_asset_id = 1;
+
   crypto.v1alpha1.Address claim_address = 2;
   // Inclusion proof for the Swap NFT
   crypto.v1alpha1.NoteCommitmentProof note_commitment_proof = 4;
@@ -65,15 +61,16 @@ message SwapClaimProof {
    * @exclude
    * Describes first output note (lambda 1)
   */
-  bytes note_blinding_1 = 30;
   bytes esk_1 = 31;
 
   /**
    * @exclude
    * Describes second output note (lambda 2)
   */
-  bytes note_blinding_2 = 40;
   bytes esk_2 = 41;
+
+  // Swap blinding factor
+  bytes swap_blinding = 42;
 }
 
 // A Penumbra transparent SwapProof.
@@ -106,13 +103,6 @@ message SwapProof {
 
   /**
    * @exclude
-   * Swap NFT data.
-  */
-  // Asset ID of the Swap NFT
-  bytes swap_nft_asset_id = 30;
-
-  /**
-   * @exclude
    * Data about the output note recording the Swap NFT.
   */
   // Address associated with the swap.
@@ -121,4 +111,6 @@ message SwapProof {
   bytes note_blinding = 42;
   // Ephemeral secret key
   bytes esk = 43;
+  // Swap blinding factor
+  bytes swap_blinding = 44;
 }

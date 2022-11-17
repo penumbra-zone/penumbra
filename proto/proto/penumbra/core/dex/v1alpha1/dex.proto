@@ -77,6 +77,8 @@ message SwapPlaintext {
     crypto.v1alpha1.Fee claim_fee = 4;
     // Address that will claim the swap outputs via SwapClaim.
     crypto.v1alpha1.Address claim_address = 5;
+    // Swap blinding factor
+    bytes swap_blinding = 6;
 }
 
 message MockFlowCiphertext {

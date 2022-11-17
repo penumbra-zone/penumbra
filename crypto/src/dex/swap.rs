@@ -17,9 +17,9 @@ use penumbra_proto::{
 use super::TradingPair;
 
 // Swap ciphertext byte length
-pub const SWAP_CIPHERTEXT_BYTES: usize = 216;
+pub const SWAP_CIPHERTEXT_BYTES: usize = 248;
 // Swap plaintext byte length
-pub const SWAP_LEN_BYTES: usize = 200;
+pub const SWAP_LEN_BYTES: usize = 232;
 
 pub static DOMAIN_SEPARATOR: Lazy<Fq> =
     Lazy::new(|| Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"penumbra.swap").as_bytes()));

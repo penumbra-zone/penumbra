@@ -162,14 +162,13 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         }
 
         // Create the `SwapPlaintext` representing the swap to be performed:
-        let swap_plaintext = SwapPlaintext::from_parts(
+        let swap_plaintext = SwapPlaintext::new(
             trading_pair,
             delta_1,
             delta_2,
             swap_claim_fee,
             claim_address,
-        )
-        .map_err(|_| anyhow!("error generating swap plaintext"))?;
+        );
 
         let swap = SwapPlan::new(&mut self.rng, swap_plaintext).into();
         self.action(swap);
