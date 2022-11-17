@@ -26,9 +26,10 @@ impl ActionHandler for Action {
         match self {
             Action::Delegate(action) => action.check_stateless(context),
             Action::Undelegate(action) => action.check_stateless(context),
-            Action::ValidatorDefinition(action) => {
-                validator_definition::check_stateless(action, context)
-            }
+            Action::ValidatorDefinition(action) => action.check_stateless(context),
+            // Action::ValidatorDefinition(action) => {
+            //     validator_definition::check_stateless(action, context)
+            // }
             Action::ValidatorVote(action) => action.check_stateless(context),
             Action::PositionClose(action) => action.check_stateless(context),
             Action::PositionOpen(action) => action.check_stateless(context),
@@ -59,8 +60,11 @@ impl ActionHandler for Action {
             Action::Delegate(action) => action.check_stateful(state, context.clone()).await,
             Action::Undelegate(action) => action.check_stateful(state, context.clone()).await,
             Action::ValidatorDefinition(action) => {
-                validator_definition::check_stateful(action, state.clone(), context).await
+                action.check_stateful(state, context.clone()).await
             }
+            // Action::ValidatorDefinition(action) => {
+            //     validator_definition::check_stateful(action, state.clone(), context).await
+            // }
             Action::ValidatorVote(action) => action.check_stateful(state, context.clone()).await,
             Action::PositionClose(action) => action.check_stateful(state, context.clone()).await,
             Action::PositionOpen(action) => action.check_stateful(state, context.clone()).await,
@@ -110,9 +114,10 @@ impl ActionHandler for Action {
         match self {
             Action::Delegate(action) => action.execute(state).await,
             Action::Undelegate(action) => action.execute(state).await,
-            Action::ValidatorDefinition(action) => {
-                validator_definition::execute(action, state.clone()).await
-            }
+            Action::ValidatorDefinition(action) => action.execute(state).await,
+            // Action::ValidatorDefinition(action) => {
+            //     validator_definition::execute(action, state.clone()).await
+            // }
             Action::ValidatorVote(action) => action.execute(state).await,
             Action::PositionClose(action) => action.execute(state).await,
             Action::PositionOpen(action) => action.execute(state).await,
