@@ -95,10 +95,9 @@ pub(crate) async fn check_stateful(
     Ok(())
 }
 
-pub(crate) async fn execute_tx(
+pub(crate) async fn execute(
     definition: &ValidatorDefinition,
     state: &mut StateTransaction<'_>,
-    context: Arc<Transaction>,
 ) -> Result<()> {
     let cur_epoch = state.get_current_epoch().await.unwrap();
 

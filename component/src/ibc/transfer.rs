@@ -261,50 +261,6 @@ impl Component for Ics20Transfer {
     #[instrument(name = "ics20_transfer", skip(_state, _begin_block))]
     async fn begin_block(_state: &mut StateTransaction, _begin_block: &abci::request::BeginBlock) {}
 
-    #[instrument(name = "ics20_transfer", skip(tx))]
-    #[allow(clippy::single_match)]
-    fn check_stateless(tx: Arc<Transaction>) -> Result<()> {
-        for action in tx.actions() {
-            match action {
-                Action::Ics20Withdrawal(withdrawal) => {
-                    withdrawal.validate()?;
-                }
-
-                _ => {}
-            }
-        }
-        Ok(())
-    }
-
-    #[instrument(name = "ics20_transfer", skip(state, tx))]
-    #[allow(clippy::single_match)]
-    async fn check_stateful(state: Arc<State>, tx: Arc<Transaction>) -> Result<()> {
-        for action in tx.actions() {
-            match action {
-                Action::Ics20Withdrawal(withdrawal) => {
-                    <penumbra_storage::State as crate::ibc::transfer::Ics20TransferReadExt>::withdrawal_check(state.clone(), withdrawal).await?;
-                }
-                _ => {}
-            }
-        }
-        Ok(())
-    }
-
-    #[instrument(name = "ics20_transfer", skip(state, tx))]
-    #[allow(clippy::single_match)]
-    async fn execute(state: &mut StateTransaction, tx: Arc<Transaction>) -> Result<()> {
-        for action in tx.actions() {
-            match action {
-                Action::Ics20Withdrawal(withdrawal) => {
-                    <&mut penumbra_storage::StateTransaction<'_> as crate::ibc::transfer::Ics20TransferWriteExt>::withdrawal_execute(state, withdrawal).await;
-                }
-                _ => {}
-            }
-        }
-
-        Ok(())
-    }
-
     #[instrument(name = "ics20_channel", skip(_state, _end_block))]
     async fn end_block(_state: &mut StateTransaction, _end_block: &abci::request::EndBlock) {}
 }
