@@ -32,11 +32,6 @@ pub struct OutputProof {
 /// A Penumbra transparent SwapClaimProof.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapClaimProof {
-    /// *
-    /// @exclude
-    /// Describes the input note with the Swap NFT
-    #[prost(bytes="vec", tag="1")]
-    pub swap_nft_asset_id: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag="2")]
     pub claim_address: ::core::option::Option<super::super::crypto::v1alpha1::Address>,
     /// Inclusion proof for the Swap NFT
@@ -67,17 +62,16 @@ pub struct SwapClaimProof {
     /// *
     /// @exclude
     /// Describes first output note (lambda 1)
-    #[prost(bytes="vec", tag="30")]
-    pub note_blinding_1: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes="vec", tag="31")]
     pub esk_1: ::prost::alloc::vec::Vec<u8>,
     /// *
     /// @exclude
     /// Describes second output note (lambda 2)
-    #[prost(bytes="vec", tag="40")]
-    pub note_blinding_2: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes="vec", tag="41")]
     pub esk_2: ::prost::alloc::vec::Vec<u8>,
+    /// Swap blinding factor
+    #[prost(bytes="vec", tag="42")]
+    pub swap_blinding: ::prost::alloc::vec::Vec<u8>,
 }
 /// A Penumbra transparent SwapProof.
 ///
@@ -114,13 +108,6 @@ pub struct SwapProof {
 
     // *
     // @exclude
-    // Swap NFT data.
-
-    /// Asset ID of the Swap NFT
-    #[prost(bytes="vec", tag="30")]
-    pub swap_nft_asset_id: ::prost::alloc::vec::Vec<u8>,
-    // *
-    // @exclude
     // Data about the output note recording the Swap NFT.
 
     /// Address associated with the swap.
@@ -132,4 +119,7 @@ pub struct SwapProof {
     /// Ephemeral secret key
     #[prost(bytes="vec", tag="43")]
     pub esk: ::prost::alloc::vec::Vec<u8>,
+    /// Swap blinding factor
+    #[prost(bytes="vec", tag="44")]
+    pub swap_blinding: ::prost::alloc::vec::Vec<u8>,
 }

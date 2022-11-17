@@ -415,10 +415,7 @@ message SwapClaimPlan {
 
     // Input and output amounts for the Swap.
     dex.v1alpha1.BatchSwapOutputData output_data = 11;
-    // The blinding factor used for the first output note.
-    bytes output_1_blinding = 15;
-    // The blinding factor used for the second output note.
-    bytes output_2_blinding = 16;
+
     // The ephemeral secret key used for the first output note encryption.
     bytes esk_1 = 17;
     // The ephemeral secret key used for the second output note encryption.

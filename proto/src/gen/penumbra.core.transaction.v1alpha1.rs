@@ -606,14 +606,6 @@ pub struct SwapClaimPlan {
     /// Input and output amounts for the Swap.
     #[prost(message, optional, tag="11")]
     pub output_data: ::core::option::Option<super::super::dex::v1alpha1::BatchSwapOutputData>,
-    /// The blinding factor used for the first output note.
-    #[prost(bytes="bytes", tag="15")]
-    #[serde(with = "crate::serializers::hexstr_bytes")]
-    pub output_1_blinding: ::prost::bytes::Bytes,
-    /// The blinding factor used for the second output note.
-    #[prost(bytes="bytes", tag="16")]
-    #[serde(with = "crate::serializers::hexstr_bytes")]
-    pub output_2_blinding: ::prost::bytes::Bytes,
     /// The ephemeral secret key used for the first output note encryption.
     #[prost(bytes="bytes", tag="17")]
     #[serde(with = "crate::serializers::hexstr_bytes")]

@@ -32,6 +32,7 @@ impl SwapPlan {
         let note_blinding = Fq::rand(rng);
         let fee_blinding = Fr::rand(rng);
         let esk = decaf377_ka::Secret::new(rng);
+
         SwapPlan {
             fee_blinding,
             note_blinding,
@@ -93,8 +94,6 @@ impl SwapPlan {
 
     /// Construct the [`SwapProof`] required by the [`swap::Body`] described by this [`SwapPlan`].
     pub fn swap_proof(&self) -> SwapProof {
-        let swap_nft_asset_id = self.swap_plaintext.asset_id();
-
         SwapProof {
             claim_address: self.swap_plaintext.claim_address,
             note_blinding: self.note_blinding,
@@ -108,8 +107,8 @@ impl SwapPlan {
                 amount: self.swap_plaintext.delta_2_i,
                 asset_id: self.swap_plaintext.trading_pair.asset_2(),
             },
-            swap_nft_asset_id,
             esk: self.esk.clone(),
+            swap_blinding: self.swap_plaintext.swap_blinding,
             // TODO: no blinding factors for deltas yet, they're plaintext
             // until flow encryption is available
             // delta_1_blinding: self.delta_1_blinding(),
