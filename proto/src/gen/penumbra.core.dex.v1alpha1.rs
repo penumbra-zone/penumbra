@@ -53,22 +53,6 @@ pub struct SwapClaimBody {
     #[prost(uint64, tag="7")]
     pub epoch_duration: u64,
 }
-/// For storing the list of claimed swaps between the dex and shielded pool components.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ClaimedSwapList {
-    #[prost(message, repeated, tag="1")]
-    pub claims: ::prost::alloc::vec::Vec<ClaimedSwap>,
-}
-/// Represents a swap claimed in a particular transaction.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ClaimedSwap {
-    #[prost(message, optional, tag="1")]
-    pub claim: ::core::option::Option<SwapClaimBody>,
-    #[prost(bytes="vec", tag="2")]
-    pub txid: ::prost::alloc::vec::Vec<u8>,
-}
 /// The authorized data of a Swap transaction.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
