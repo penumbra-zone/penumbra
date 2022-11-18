@@ -38,6 +38,7 @@ impl ActionHandler for Output {
 
     #[instrument(name = "output", skip(self, _state))]
     async fn execute(&self, _state: &mut StateTransaction) -> Result<()> {
-        todo!()
+        // Handled at the `Transaction` level.
+        Ok(())
     }
 }
