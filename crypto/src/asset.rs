@@ -12,7 +12,7 @@ mod registry;
 pub use amount::Amount;
 pub use cache::Cache;
 pub use denom::{Denom, Unit};
-pub use id::Id;
+pub use id::{Id, VALUE_GENERATOR_DOMAIN_SEP};
 pub use registry::{Registry, REGISTRY};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

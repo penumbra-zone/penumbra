@@ -1,12 +1,43 @@
 #![allow(clippy::too_many_arguments)]
-use ark_r1cs_std::prelude::{AllocVar, EqGadget};
+use ark_r1cs_std::{
+    prelude::{AllocVar, CurveVar, EqGadget, UInt8},
+    ToBitsGadget,
+};
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use decaf377::{
     r1cs::{ElementVar, FqVar},
     Fq,
 };
 
-use crate::note::NOTECOMMIT_DOMAIN_SEP;
+use crate::{
+    asset::VALUE_GENERATOR_DOMAIN_SEP, balance::commitment::VALUE_BLINDING_GENERATOR,
+    note::NOTECOMMIT_DOMAIN_SEP,
+};
+
+/// Check the integrity of the value commitment.
+pub(crate) fn value_commitment_integrity(
+    cs: ConstraintSystemRef<Fq>,
+    // Witnesses
+    value_amount: Vec<UInt8<Fq>>,
+    value_asset_id: FqVar,
+    value_blinding: Vec<UInt8<Fq>>,
+    // Public inputs,
+    commitment: ElementVar,
+) -> Result<(), SynthesisError> {
+    // commitment computation
+    let value_generator = FqVar::new_constant(cs.clone(), *VALUE_GENERATOR_DOMAIN_SEP)?;
+    let value_blinding_generator = ElementVar::new_constant(cs.clone(), *VALUE_BLINDING_GENERATOR)?;
+
+    // Generate value generator
+    let hashed_asset_id = poseidon377::r1cs::hash_1(cs.clone(), &value_generator, value_asset_id)?;
+    let asset_generator = ElementVar::encode_to_curve(&hashed_asset_id)?;
+    let test_commitment = asset_generator.scalar_mul_le(value_amount.to_bits_le()?.iter())?
+        + value_blinding_generator.scalar_mul_le(value_blinding.to_bits_le()?.iter())?;
+
+    // Equality constraint
+    commitment.enforce_equal(&test_commitment)?;
+    Ok(())
+}
 
 /// Check the integrity of the note commitment.
 #[allow(dead_code)]
@@ -20,12 +51,12 @@ pub(crate) fn note_commitment_integrity(
     transmission_key_s: FqVar,
     clue_key: FqVar,
     // Public inputs
-    note_commitment: FqVar,
+    commitment: FqVar,
 ) -> Result<(), SynthesisError> {
     let value_blinding_generator = FqVar::new_constant(cs.clone(), *NOTECOMMIT_DOMAIN_SEP)?;
 
     let compressed_g_d = diversified_generator.compress_to_field()?;
-    let note_commitment_test = poseidon377::r1cs::hash_6(
+    let commitment_test = poseidon377::r1cs::hash_6(
         cs,
         &value_blinding_generator,
         (
@@ -38,7 +69,7 @@ pub(crate) fn note_commitment_integrity(
         ),
     )?;
 
-    note_commitment.enforce_equal(&note_commitment_test)?;
+    commitment.enforce_equal(&commitment_test)?;
     Ok(())
 }
 
