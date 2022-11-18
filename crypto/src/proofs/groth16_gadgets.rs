@@ -11,7 +11,7 @@ use decaf377::{
 
 use crate::{
     asset::VALUE_GENERATOR_DOMAIN_SEP, balance::commitment::VALUE_BLINDING_GENERATOR,
-    note::NOTECOMMIT_DOMAIN_SEP,
+    note::NOTECOMMIT_DOMAIN_SEP, nullifier::NULLIFIER_DOMAIN_SEP,
 };
 
 /// Check the integrity of the ephemeral public key.
@@ -84,6 +84,25 @@ pub(crate) fn note_commitment_integrity(
     )?;
 
     commitment.enforce_equal(&commitment_test)?;
+    Ok(())
+}
+
+/// Nullifier integrity.
+pub(crate) fn nullifier_integrity(
+    cs: ConstraintSystemRef<Fq>,
+    // Witnesses
+    note_commitment: FqVar,
+    nk: FqVar,
+    position: FqVar,
+    // Public input
+    nullifier: FqVar,
+) -> Result<(), SynthesisError> {
+    let nullifier_constant = FqVar::new_constant(cs.clone(), *NULLIFIER_DOMAIN_SEP)?;
+
+    let computed_nullifier =
+        poseidon377::r1cs::hash_3(cs, &nullifier_constant, (nk, note_commitment, position))?;
+
+    nullifier.enforce_equal(&computed_nullifier)?;
     Ok(())
 }
 
