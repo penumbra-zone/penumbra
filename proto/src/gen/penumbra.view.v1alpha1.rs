@@ -453,7 +453,10 @@ pub mod view_protocol_service_client {
         pub async fn assets(
             &mut self,
             request: impl tonic::IntoRequest<super::AssetsRequest>,
-        ) -> Result<tonic::Response<super::AssetsResponse>, tonic::Status> {
+        ) -> Result<
+            tonic::Response<tonic::codec::Streaming<super::AssetsResponse>>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -467,7 +470,7 @@ pub mod view_protocol_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/Assets",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            self.inner.server_streaming(request.into_request(), path, codec).await
         }
         /// Query for the current chain parameters.
         pub async fn chain_parameters(
@@ -695,11 +698,17 @@ pub mod view_protocol_service_server {
             &self,
             request: tonic::Request<super::WitnessRequest>,
         ) -> Result<tonic::Response<super::WitnessResponse>, tonic::Status>;
+        ///Server streaming response type for the Assets method.
+        type AssetsStream: futures_core::Stream<
+                Item = Result<super::AssetsResponse, tonic::Status>,
+            >
+            + Send
+            + 'static;
         /// Queries for assets.
         async fn assets(
             &self,
             request: tonic::Request<super::AssetsRequest>,
-        ) -> Result<tonic::Response<super::AssetsResponse>, tonic::Status>;
+        ) -> Result<tonic::Response<Self::AssetsStream>, tonic::Status>;
         /// Query for the current chain parameters.
         async fn chain_parameters(
             &self,
@@ -1027,11 +1036,12 @@ pub mod view_protocol_service_server {
                     struct AssetsSvc<T: ViewProtocolService>(pub Arc<T>);
                     impl<
                         T: ViewProtocolService,
-                    > tonic::server::UnaryService<super::AssetsRequest>
+                    > tonic::server::ServerStreamingService<super::AssetsRequest>
                     for AssetsSvc<T> {
                         type Response = super::AssetsResponse;
+                        type ResponseStream = T::AssetsStream;
                         type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
+                            tonic::Response<Self::ResponseStream>,
                             tonic::Status,
                         >;
                         fn call(
@@ -1055,7 +1065,7 @@ pub mod view_protocol_service_server {
                                 accept_compression_encodings,
                                 send_compression_encodings,
                             );
-                        let res = grpc.unary(method, req).await;
+                        let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
