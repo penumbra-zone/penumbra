@@ -212,7 +212,7 @@ pub struct NullifierStatusResponse {
     pub spent: bool,
 }
 /// Generated client implementations.
-pub mod view_protocol_client {
+pub mod view_protocol_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
     use tonic::codegen::http::Uri;
@@ -226,10 +226,10 @@ pub mod view_protocol_client {
     /// (assuming transport security, the client has to know the FVK to request its
     /// data).  (TODO: refine this)
     #[derive(Debug, Clone)]
-    pub struct ViewProtocolClient<T> {
+    pub struct ViewProtocolServiceClient<T> {
         inner: tonic::client::Grpc<T>,
     }
-    impl ViewProtocolClient<tonic::transport::Channel> {
+    impl ViewProtocolServiceClient<tonic::transport::Channel> {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
@@ -240,7 +240,7 @@ pub mod view_protocol_client {
             Ok(Self::new(conn))
         }
     }
-    impl<T> ViewProtocolClient<T>
+    impl<T> ViewProtocolServiceClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
         T::Error: Into<StdError>,
@@ -258,7 +258,7 @@ pub mod view_protocol_client {
         pub fn with_interceptor<F>(
             inner: T,
             interceptor: F,
-        ) -> ViewProtocolClient<InterceptedService<T, F>>
+        ) -> ViewProtocolServiceClient<InterceptedService<T, F>>
         where
             F: tonic::service::Interceptor,
             T::ResponseBody: Default,
@@ -272,7 +272,7 @@ pub mod view_protocol_client {
                 http::Request<tonic::body::BoxBody>,
             >>::Error: Into<StdError> + Send + Sync,
         {
-            ViewProtocolClient::new(InterceptedService::new(inner, interceptor))
+            ViewProtocolServiceClient::new(InterceptedService::new(inner, interceptor))
         }
         /// Compress requests with the given encoding.
         ///
@@ -305,7 +305,7 @@ pub mod view_protocol_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocol/Status",
+                "/penumbra.view.v1alpha1.ViewProtocolService/Status",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -328,7 +328,7 @@ pub mod view_protocol_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocol/StatusStream",
+                "/penumbra.view.v1alpha1.ViewProtocolService/StatusStream",
             );
             self.inner.server_streaming(request.into_request(), path, codec).await
         }
@@ -351,7 +351,7 @@ pub mod view_protocol_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocol/Notes",
+                "/penumbra.view.v1alpha1.ViewProtocolService/Notes",
             );
             self.inner.server_streaming(request.into_request(), path, codec).await
         }
@@ -374,7 +374,7 @@ pub mod view_protocol_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocol/QuarantinedNotes",
+                "/penumbra.view.v1alpha1.ViewProtocolService/QuarantinedNotes",
             );
             self.inner.server_streaming(request.into_request(), path, codec).await
         }
@@ -404,7 +404,7 @@ pub mod view_protocol_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocol/Witness",
+                "/penumbra.view.v1alpha1.ViewProtocolService/Witness",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -431,7 +431,7 @@ pub mod view_protocol_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocol/Assets",
+                "/penumbra.view.v1alpha1.ViewProtocolService/Assets",
             );
             self.inner.server_streaming(request.into_request(), path, codec).await
         }
@@ -454,7 +454,7 @@ pub mod view_protocol_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocol/ChainParameters",
+                "/penumbra.view.v1alpha1.ViewProtocolService/ChainParameters",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -477,7 +477,7 @@ pub mod view_protocol_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocol/FMDParameters",
+                "/penumbra.view.v1alpha1.ViewProtocolService/FMDParameters",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -497,7 +497,7 @@ pub mod view_protocol_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocol/NoteByCommitment",
+                "/penumbra.view.v1alpha1.ViewProtocolService/NoteByCommitment",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -517,7 +517,7 @@ pub mod view_protocol_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocol/NullifierStatus",
+                "/penumbra.view.v1alpha1.ViewProtocolService/NullifierStatus",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -542,7 +542,7 @@ pub mod view_protocol_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocol/TransactionHashes",
+                "/penumbra.view.v1alpha1.ViewProtocolService/TransactionHashes",
             );
             self.inner.server_streaming(request.into_request(), path, codec).await
         }
@@ -562,7 +562,7 @@ pub mod view_protocol_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocol/TransactionByHash",
+                "/penumbra.view.v1alpha1.ViewProtocolService/TransactionByHash",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -585,7 +585,7 @@ pub mod view_protocol_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocol/Transactions",
+                "/penumbra.view.v1alpha1.ViewProtocolService/Transactions",
             );
             self.inner.server_streaming(request.into_request(), path, codec).await
         }
@@ -608,19 +608,19 @@ pub mod view_protocol_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocol/TransactionPerspective",
+                "/penumbra.view.v1alpha1.ViewProtocolService/TransactionPerspective",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
 }
 /// Generated server implementations.
-pub mod view_protocol_server {
+pub mod view_protocol_service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    ///Generated trait containing gRPC methods that should be implemented for use with ViewProtocolServer.
+    ///Generated trait containing gRPC methods that should be implemented for use with ViewProtocolServiceServer.
     #[async_trait]
-    pub trait ViewProtocol: Send + Sync + 'static {
+    pub trait ViewProtocolService: Send + Sync + 'static {
         /// Get current status of chain sync
         async fn status(
             &self,
@@ -760,13 +760,13 @@ pub mod view_protocol_server {
     /// (assuming transport security, the client has to know the FVK to request its
     /// data).  (TODO: refine this)
     #[derive(Debug)]
-    pub struct ViewProtocolServer<T: ViewProtocol> {
+    pub struct ViewProtocolServiceServer<T: ViewProtocolService> {
         inner: _Inner<T>,
         accept_compression_encodings: EnabledCompressionEncodings,
         send_compression_encodings: EnabledCompressionEncodings,
     }
     struct _Inner<T>(Arc<T>);
-    impl<T: ViewProtocol> ViewProtocolServer<T> {
+    impl<T: ViewProtocolService> ViewProtocolServiceServer<T> {
         pub fn new(inner: T) -> Self {
             Self::from_arc(Arc::new(inner))
         }
@@ -800,9 +800,9 @@ pub mod view_protocol_server {
             self
         }
     }
-    impl<T, B> tonic::codegen::Service<http::Request<B>> for ViewProtocolServer<T>
+    impl<T, B> tonic::codegen::Service<http::Request<B>> for ViewProtocolServiceServer<T>
     where
-        T: ViewProtocol,
+        T: ViewProtocolService,
         B: Body + Send + 'static,
         B::Error: Into<StdError> + Send + 'static,
     {
@@ -818,11 +818,11 @@ pub mod view_protocol_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/penumbra.view.v1alpha1.ViewProtocol/Status" => {
+                "/penumbra.view.v1alpha1.ViewProtocolService/Status" => {
                     #[allow(non_camel_case_types)]
-                    struct StatusSvc<T: ViewProtocol>(pub Arc<T>);
+                    struct StatusSvc<T: ViewProtocolService>(pub Arc<T>);
                     impl<
-                        T: ViewProtocol,
+                        T: ViewProtocolService,
                     > tonic::server::UnaryService<super::StatusRequest>
                     for StatusSvc<T> {
                         type Response = super::StatusResponse;
@@ -856,11 +856,11 @@ pub mod view_protocol_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.view.v1alpha1.ViewProtocol/StatusStream" => {
+                "/penumbra.view.v1alpha1.ViewProtocolService/StatusStream" => {
                     #[allow(non_camel_case_types)]
-                    struct StatusStreamSvc<T: ViewProtocol>(pub Arc<T>);
+                    struct StatusStreamSvc<T: ViewProtocolService>(pub Arc<T>);
                     impl<
-                        T: ViewProtocol,
+                        T: ViewProtocolService,
                     > tonic::server::ServerStreamingService<super::StatusStreamRequest>
                     for StatusStreamSvc<T> {
                         type Response = super::StatusStreamResponse;
@@ -897,11 +897,11 @@ pub mod view_protocol_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.view.v1alpha1.ViewProtocol/Notes" => {
+                "/penumbra.view.v1alpha1.ViewProtocolService/Notes" => {
                     #[allow(non_camel_case_types)]
-                    struct NotesSvc<T: ViewProtocol>(pub Arc<T>);
+                    struct NotesSvc<T: ViewProtocolService>(pub Arc<T>);
                     impl<
-                        T: ViewProtocol,
+                        T: ViewProtocolService,
                     > tonic::server::ServerStreamingService<super::NotesRequest>
                     for NotesSvc<T> {
                         type Response = super::SpendableNoteRecord;
@@ -936,11 +936,11 @@ pub mod view_protocol_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.view.v1alpha1.ViewProtocol/QuarantinedNotes" => {
+                "/penumbra.view.v1alpha1.ViewProtocolService/QuarantinedNotes" => {
                     #[allow(non_camel_case_types)]
-                    struct QuarantinedNotesSvc<T: ViewProtocol>(pub Arc<T>);
+                    struct QuarantinedNotesSvc<T: ViewProtocolService>(pub Arc<T>);
                     impl<
-                        T: ViewProtocol,
+                        T: ViewProtocolService,
                     > tonic::server::ServerStreamingService<
                         super::QuarantinedNotesRequest,
                     > for QuarantinedNotesSvc<T> {
@@ -978,11 +978,11 @@ pub mod view_protocol_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.view.v1alpha1.ViewProtocol/Witness" => {
+                "/penumbra.view.v1alpha1.ViewProtocolService/Witness" => {
                     #[allow(non_camel_case_types)]
-                    struct WitnessSvc<T: ViewProtocol>(pub Arc<T>);
+                    struct WitnessSvc<T: ViewProtocolService>(pub Arc<T>);
                     impl<
-                        T: ViewProtocol,
+                        T: ViewProtocolService,
                     > tonic::server::UnaryService<super::WitnessRequest>
                     for WitnessSvc<T> {
                         type Response = super::super::super::core::transaction::v1alpha1::WitnessData;
@@ -1016,11 +1016,11 @@ pub mod view_protocol_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.view.v1alpha1.ViewProtocol/Assets" => {
+                "/penumbra.view.v1alpha1.ViewProtocolService/Assets" => {
                     #[allow(non_camel_case_types)]
-                    struct AssetsSvc<T: ViewProtocol>(pub Arc<T>);
+                    struct AssetsSvc<T: ViewProtocolService>(pub Arc<T>);
                     impl<
-                        T: ViewProtocol,
+                        T: ViewProtocolService,
                     > tonic::server::ServerStreamingService<super::AssetRequest>
                     for AssetsSvc<T> {
                         type Response = super::super::super::core::crypto::v1alpha1::Asset;
@@ -1055,11 +1055,11 @@ pub mod view_protocol_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.view.v1alpha1.ViewProtocol/ChainParameters" => {
+                "/penumbra.view.v1alpha1.ViewProtocolService/ChainParameters" => {
                     #[allow(non_camel_case_types)]
-                    struct ChainParametersSvc<T: ViewProtocol>(pub Arc<T>);
+                    struct ChainParametersSvc<T: ViewProtocolService>(pub Arc<T>);
                     impl<
-                        T: ViewProtocol,
+                        T: ViewProtocolService,
                     > tonic::server::UnaryService<super::ChainParamsRequest>
                     for ChainParametersSvc<T> {
                         type Response = super::super::super::core::chain::v1alpha1::ChainParameters;
@@ -1095,11 +1095,11 @@ pub mod view_protocol_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.view.v1alpha1.ViewProtocol/FMDParameters" => {
+                "/penumbra.view.v1alpha1.ViewProtocolService/FMDParameters" => {
                     #[allow(non_camel_case_types)]
-                    struct FMDParametersSvc<T: ViewProtocol>(pub Arc<T>);
+                    struct FMDParametersSvc<T: ViewProtocolService>(pub Arc<T>);
                     impl<
-                        T: ViewProtocol,
+                        T: ViewProtocolService,
                     > tonic::server::UnaryService<super::FmdParametersRequest>
                     for FMDParametersSvc<T> {
                         type Response = super::super::super::core::chain::v1alpha1::FmdParameters;
@@ -1135,11 +1135,11 @@ pub mod view_protocol_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.view.v1alpha1.ViewProtocol/NoteByCommitment" => {
+                "/penumbra.view.v1alpha1.ViewProtocolService/NoteByCommitment" => {
                     #[allow(non_camel_case_types)]
-                    struct NoteByCommitmentSvc<T: ViewProtocol>(pub Arc<T>);
+                    struct NoteByCommitmentSvc<T: ViewProtocolService>(pub Arc<T>);
                     impl<
-                        T: ViewProtocol,
+                        T: ViewProtocolService,
                     > tonic::server::UnaryService<super::NoteByCommitmentRequest>
                     for NoteByCommitmentSvc<T> {
                         type Response = super::SpendableNoteRecord;
@@ -1175,11 +1175,11 @@ pub mod view_protocol_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.view.v1alpha1.ViewProtocol/NullifierStatus" => {
+                "/penumbra.view.v1alpha1.ViewProtocolService/NullifierStatus" => {
                     #[allow(non_camel_case_types)]
-                    struct NullifierStatusSvc<T: ViewProtocol>(pub Arc<T>);
+                    struct NullifierStatusSvc<T: ViewProtocolService>(pub Arc<T>);
                     impl<
-                        T: ViewProtocol,
+                        T: ViewProtocolService,
                     > tonic::server::UnaryService<super::NullifierStatusRequest>
                     for NullifierStatusSvc<T> {
                         type Response = super::NullifierStatusResponse;
@@ -1215,11 +1215,11 @@ pub mod view_protocol_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.view.v1alpha1.ViewProtocol/TransactionHashes" => {
+                "/penumbra.view.v1alpha1.ViewProtocolService/TransactionHashes" => {
                     #[allow(non_camel_case_types)]
-                    struct TransactionHashesSvc<T: ViewProtocol>(pub Arc<T>);
+                    struct TransactionHashesSvc<T: ViewProtocolService>(pub Arc<T>);
                     impl<
-                        T: ViewProtocol,
+                        T: ViewProtocolService,
                     > tonic::server::ServerStreamingService<super::TransactionsRequest>
                     for TransactionHashesSvc<T> {
                         type Response = super::TransactionHashStreamResponse;
@@ -1256,11 +1256,11 @@ pub mod view_protocol_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.view.v1alpha1.ViewProtocol/TransactionByHash" => {
+                "/penumbra.view.v1alpha1.ViewProtocolService/TransactionByHash" => {
                     #[allow(non_camel_case_types)]
-                    struct TransactionByHashSvc<T: ViewProtocol>(pub Arc<T>);
+                    struct TransactionByHashSvc<T: ViewProtocolService>(pub Arc<T>);
                     impl<
-                        T: ViewProtocol,
+                        T: ViewProtocolService,
                     > tonic::server::UnaryService<super::TransactionByHashRequest>
                     for TransactionByHashSvc<T> {
                         type Response = super::TransactionByHashResponse;
@@ -1296,11 +1296,11 @@ pub mod view_protocol_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.view.v1alpha1.ViewProtocol/Transactions" => {
+                "/penumbra.view.v1alpha1.ViewProtocolService/Transactions" => {
                     #[allow(non_camel_case_types)]
-                    struct TransactionsSvc<T: ViewProtocol>(pub Arc<T>);
+                    struct TransactionsSvc<T: ViewProtocolService>(pub Arc<T>);
                     impl<
-                        T: ViewProtocol,
+                        T: ViewProtocolService,
                     > tonic::server::ServerStreamingService<super::TransactionsRequest>
                     for TransactionsSvc<T> {
                         type Response = super::TransactionStreamResponse;
@@ -1337,11 +1337,11 @@ pub mod view_protocol_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.view.v1alpha1.ViewProtocol/TransactionPerspective" => {
+                "/penumbra.view.v1alpha1.ViewProtocolService/TransactionPerspective" => {
                     #[allow(non_camel_case_types)]
-                    struct TransactionPerspectiveSvc<T: ViewProtocol>(pub Arc<T>);
+                    struct TransactionPerspectiveSvc<T: ViewProtocolService>(pub Arc<T>);
                     impl<
-                        T: ViewProtocol,
+                        T: ViewProtocolService,
                     > tonic::server::UnaryService<super::TransactionPerspectiveRequest>
                     for TransactionPerspectiveSvc<T> {
                         type Response = super::TransactionPerspectiveResponse;
@@ -1392,7 +1392,7 @@ pub mod view_protocol_server {
             }
         }
     }
-    impl<T: ViewProtocol> Clone for ViewProtocolServer<T> {
+    impl<T: ViewProtocolService> Clone for ViewProtocolServiceServer<T> {
         fn clone(&self) -> Self {
             let inner = self.inner.clone();
             Self {
@@ -1402,7 +1402,7 @@ pub mod view_protocol_server {
             }
         }
     }
-    impl<T: ViewProtocol> Clone for _Inner<T> {
+    impl<T: ViewProtocolService> Clone for _Inner<T> {
         fn clone(&self) -> Self {
             Self(self.0.clone())
         }
@@ -1412,7 +1412,8 @@ pub mod view_protocol_server {
             write!(f, "{:?}", self.0)
         }
     }
-    impl<T: ViewProtocol> tonic::server::NamedService for ViewProtocolServer<T> {
-        const NAME: &'static str = "penumbra.view.v1alpha1.ViewProtocol";
+    impl<T: ViewProtocolService> tonic::server::NamedService
+    for ViewProtocolServiceServer<T> {
+        const NAME: &'static str = "penumbra.view.v1alpha1.ViewProtocolService";
     }
 }

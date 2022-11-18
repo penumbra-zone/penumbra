@@ -3,9 +3,9 @@ use anyhow::{Context, Result};
 use camino::Utf8PathBuf;
 use clap::{Parser, Subcommand};
 use penumbra_crypto::FullViewingKey;
-use penumbra_proto::client::v1alpha1::oblivious_query_client::ObliviousQueryClient;
+use penumbra_proto::client::v1alpha1::oblivious_query_service_client::ObliviousQueryServiceClient;
 use penumbra_proto::client::v1alpha1::ChainParamsRequest;
-use penumbra_proto::view::v1alpha1::view_protocol_server::ViewProtocolServer;
+use penumbra_proto::view::v1alpha1::view_protocol_service_server::ViewProtocolServiceServer;
 use penumbra_view::ViewService;
 use std::env;
 use std::str::FromStr;
@@ -59,9 +59,11 @@ async fn main() -> Result<()> {
 
     match opt.cmd {
         Command::Init { full_viewing_key } => {
-            let mut client =
-                ObliviousQueryClient::connect(format!("http://{}:{}", opt.node, opt.pd_port))
-                    .await?;
+            let mut client = ObliviousQueryServiceClient::connect(format!(
+                "http://{}:{}",
+                opt.node, opt.pd_port
+            ))
+            .await?;
 
             let params = client
                 .chain_parameters(tonic::Request::new(ChainParamsRequest {
@@ -90,7 +92,7 @@ async fn main() -> Result<()> {
 
             tokio::spawn(
                 Server::builder()
-                    .add_service(ViewProtocolServer::new(service))
+                    .add_service(ViewProtocolServiceServer::new(service))
                     .serve(
                         format!("{}:{}", host, view_port)
                             .parse()

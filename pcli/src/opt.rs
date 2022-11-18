@@ -10,11 +10,12 @@ use penumbra_crypto::FullViewingKey;
 use penumbra_custody::SoftHSM;
 use penumbra_proto::{
     custody::v1alpha1::{
-        custody_protocol_client::CustodyProtocolClient,
-        custody_protocol_server::CustodyProtocolServer,
+        custody_protocol_service_client::CustodyProtocolServiceClient,
+        custody_protocol_service_server::CustodyProtocolServiceServer,
     },
     view::v1alpha1::{
-        view_protocol_client::ViewProtocolClient, view_protocol_server::ViewProtocolServer,
+        view_protocol_service_client::ViewProtocolServiceClient,
+        view_protocol_service_server::ViewProtocolServiceServer,
     },
 };
 use penumbra_view::ViewService;
@@ -79,8 +80,8 @@ impl Opt {
         // Build the custody service...
         let wallet = KeyStore::load(custody_path)?;
         let soft_hsm = SoftHSM::new(vec![wallet.spend_key.clone()]);
-        let custody_svc = CustodyProtocolServer::new(soft_hsm);
-        let custody = CustodyProtocolClient::new(box_grpc_svc::local(custody_svc));
+        let custody_svc = CustodyProtocolServiceServer::new(soft_hsm);
+        let custody = CustodyProtocolServiceClient::new(box_grpc_svc::local(custody_svc));
 
         let fvk = wallet.spend_key.full_viewing_key().clone();
 
@@ -113,11 +114,11 @@ impl Opt {
         Ok((app, self.cmd))
     }
 
-    /// Constructs a [`ViewProtocolClient`] based on the command-line options.
+    /// Constructs a [`ViewProtocolServiceClient`] based on the command-line options.
     async fn view_client(
         &self,
         fvk: &FullViewingKey,
-    ) -> Result<ViewProtocolClient<BoxGrpcService>> {
+    ) -> Result<ViewProtocolServiceClient<BoxGrpcService>> {
         let svc = if let Some(address) = self.view_address {
             // Use a remote view service.
             tracing::info!(%address, "using remote view service");
@@ -139,11 +140,11 @@ impl Opt {
             .await?;
 
             // Now build the view and custody clients, doing gRPC with ourselves
-            let svc = ViewProtocolServer::new(svc);
+            let svc = ViewProtocolServiceServer::new(svc);
             box_grpc_svc::local(svc)
         };
 
-        Ok(ViewProtocolClient::new(svc))
+        Ok(ViewProtocolServiceClient::new(svc))
     }
 }
 

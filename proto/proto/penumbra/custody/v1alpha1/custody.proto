@@ -17,7 +17,7 @@ import "penumbra/core/crypto/v1alpha1/crypto.proto";
 // custody requests must contain sufficient information for the custodian to
 // understand the transaction and determine whether or not it should be
 // authorized.
-service CustodyProtocol {
+service CustodyProtocolService {
     // Requests authorization of the transaction with the given description.
     rpc Authorize(AuthorizeRequest) returns (core.transaction.v1alpha1.AuthorizationData);
 }

@@ -16,7 +16,8 @@ use penumbra_chain::{genesis::Allocation, params::ChainParameters};
 use penumbra_component::stake::{validator::Validator, FundingStream, FundingStreams};
 use penumbra_crypto::{keys::SpendKey, DelegationToken, GovernanceKey};
 use penumbra_proto::client::v1alpha1::{
-    oblivious_query_server::ObliviousQueryServer, specific_query_server::SpecificQueryServer,
+    oblivious_query_service_server::ObliviousQueryServiceServer,
+    specific_query_service_server::SpecificQueryServiceServer,
 };
 use penumbra_storage::Storage;
 use rand::Rng;
@@ -206,8 +207,12 @@ async fn main() -> anyhow::Result<()> {
                         // Allow HTTP/1, which will be used by grpc-web connections.
                         .accept_http1(true)
                         // Wrap each of the gRPC services in a tonic-web proxy:
-                        .add_service(tonic_web::enable(ObliviousQueryServer::new(info.clone())))
-                        .add_service(tonic_web::enable(SpecificQueryServer::new(info.clone())))
+                        .add_service(tonic_web::enable(ObliviousQueryServiceServer::new(
+                            info.clone(),
+                        )))
+                        .add_service(tonic_web::enable(SpecificQueryServiceServer::new(
+                            info.clone(),
+                        )))
                         .serve(
                             format!("{}:{}", host, grpc_port)
                                 .parse()

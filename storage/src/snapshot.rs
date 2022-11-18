@@ -164,6 +164,43 @@ impl StateRead for Snapshot {
         Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx))
     }
 
+    fn nonconsensus_prefix_raw<'a>(
+        &'a self,
+        prefix: &'a [u8],
+    ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Sync + Send + 'a>> {
+        let span = Span::current();
+        let self2 = self.clone();
+
+        let mut options = rocksdb::ReadOptions::default();
+        options.set_iterate_range(rocksdb::PrefixRange(prefix));
+        let mode = rocksdb::IteratorMode::Start;
+
+        let (tx, rx) = mpsc::channel(10);
+
+        // Here we're operating on the nonconsensus data, which is a raw k/v store,
+        // so we just iterate over the keys.
+        tokio::task::Builder::new()
+            .name("Snapshot::nonconsensus_prefix_raw")
+            .spawn_blocking(move || {
+                span.in_scope(|| {
+                    let keys_cf = self2
+                        .0
+                        .db
+                        .cf_handle("nonconsensus")
+                        .expect("nonconsensus column family not found");
+                    let iter = self2.0.snapshot.iterator_cf_opt(keys_cf, options, mode);
+                    for i in iter {
+                        let (key, value) = i?;
+                        tx.blocking_send(Ok((key.into(), value.into())))?;
+                    }
+                    Ok::<(), anyhow::Error>(())
+                })
+            })
+            .expect("should be able to spawn_blocking");
+
+        Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx))
+    }
+
     fn object_get<T: Any + Send + Sync>(&self, _key: &str) -> Option<&T> {
         // No-op -- this will never be called internally, and `Snapshot` is not exposed in public API
         None

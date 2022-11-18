@@ -13,7 +13,9 @@ use penumbra_crypto::{
     Address, FullViewingKey, Note, Value,
 };
 use penumbra_proto::{
-    client::v1alpha1::{specific_query_client::SpecificQueryClient, BatchSwapOutputDataRequest},
+    client::v1alpha1::{
+        specific_query_service_client::SpecificQueryServiceClient, BatchSwapOutputDataRequest,
+    },
     view::v1alpha1::NotesRequest,
 };
 use penumbra_transaction::{
@@ -231,7 +233,7 @@ pub async fn sweep<V, R>(
     fvk: &FullViewingKey,
     view: &mut V,
     mut rng: R,
-    specific_client: SpecificQueryClient<Channel>,
+    specific_client: SpecificQueryServiceClient<Channel>,
 ) -> Result<Vec<TransactionPlan>, anyhow::Error>
 where
     V: ViewClient,
@@ -254,7 +256,7 @@ pub async fn claim_unclaimed_swaps<V, R>(
     fvk: &FullViewingKey,
     view: &mut V,
     mut rng: R,
-    mut specific_client: SpecificQueryClient<Channel>,
+    mut specific_client: SpecificQueryServiceClient<Channel>,
 ) -> Result<Vec<TransactionPlan>, anyhow::Error>
 where
     V: ViewClient,

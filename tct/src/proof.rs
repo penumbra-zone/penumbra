@@ -53,7 +53,7 @@ impl Proof {
     }
 
     /// Generate a dummy [`Proof`] for a given commitment.
-    pub fn dummy<R: CryptoRng + Rng>(rng: &mut R, commitment: Commitment) -> Self {
+    pub fn dummy<R: Rng + ?Sized>(rng: &mut R, commitment: Commitment) -> Self {
         let dummy_position = 0u64.into();
         let dummy_auth_path: [[Hash; 3]; 24] = [[Hash::new(Fq::rand(rng)); 3]; 24];
         Self::new(commitment, dummy_position, dummy_auth_path)
@@ -114,7 +114,7 @@ impl Proof {
 }
 
 use penumbra_proto::core::crypto::v1alpha1 as pb;
-use rand::{CryptoRng, Rng};
+use rand::Rng;
 
 impl From<Proof> for pb::NoteCommitmentProof {
     fn from(proof: Proof) -> Self {

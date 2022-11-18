@@ -38,7 +38,7 @@ impl SoftHSM {
 }
 
 #[async_trait]
-impl pb::custody_protocol_server::CustodyProtocol for SoftHSM {
+impl pb::custody_protocol_service_server::CustodyProtocolService for SoftHSM {
     async fn authorize(
         &self,
         request: Request<pb::AuthorizeRequest>,

@@ -3,6 +3,7 @@ use std::{
     str::FromStr,
 };
 
+use anyhow::anyhow;
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_crypto::{GovernanceKey, IdentityKey};
 use penumbra_proto::{
@@ -76,16 +77,16 @@ impl TryFrom<pb_g::Vote> for Vote {
     type Error = anyhow::Error;
 
     fn try_from(msg: pb_g::Vote) -> Result<Self, Self::Error> {
-        Ok(
-            match pb_g::vote::Vote::from_i32(msg.vote)
-                .ok_or_else(|| anyhow::anyhow!("invalid vote"))?
-            {
-                pb_g::vote::Vote::Abstain => Vote::Abstain,
-                pb_g::vote::Vote::Yes => Vote::Yes,
-                pb_g::vote::Vote::No => Vote::No,
-                pb_g::vote::Vote::NoWithVeto => Vote::NoWithVeto,
-            },
-        )
+        let Some(vote_state) = pb_g::vote::Vote::from_i32(msg.vote) else {
+            return Err(anyhow!("invalid vote state"))
+        };
+        match vote_state {
+            pb_g::vote::Vote::Abstain => Ok(Vote::Abstain),
+            pb_g::vote::Vote::Yes => Ok(Vote::Yes),
+            pb_g::vote::Vote::No => Ok(Vote::No),
+            pb_g::vote::Vote::NoWithVeto => Ok(Vote::NoWithVeto),
+            pb_g::vote::Vote::Unspecified => Err(anyhow!("unspecified vote state")),
+        }
     }
 }
 

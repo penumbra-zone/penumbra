@@ -7,10 +7,11 @@ package penumbra.core.governance.v1alpha1;
 message Vote {
   // A vote.
   enum Vote {
-    ABSTAIN = 0;
-    YES = 1;
-    NO = 2;
-    NO_WITH_VETO = 3;
+    VOTE_UNSPECIFIED = 0;
+    VOTE_ABSTAIN = 1;
+    VOTE_YES = 2;
+    VOTE_NO = 3;
+    VOTE_NO_WITH_VETO = 4;
   }
 
   // The vote.

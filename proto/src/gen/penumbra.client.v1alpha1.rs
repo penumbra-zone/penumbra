@@ -97,8 +97,8 @@ pub struct KeyValueRequest {
     #[prost(string, tag="1")]
     pub chain_id: ::prost::alloc::string::String,
     /// If set, the key to fetch from storage.
-    #[prost(bytes="vec", tag="2")]
-    pub key: ::prost::alloc::vec::Vec<u8>,
+    #[prost(string, tag="2")]
+    pub key: ::prost::alloc::string::String,
     /// whether to return a proof
     #[prost(bool, tag="3")]
     pub proof: bool,
@@ -108,10 +108,10 @@ pub struct KeyValueResponse {
     #[prost(bytes="vec", tag="1")]
     pub value: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag="2")]
-    pub proof: ::core::option::Option<::ics23::CommitmentProof>,
+    pub proof: ::core::option::Option<::ibc_proto::ibc::core::commitment::v1::MerkleProof>,
 }
 /// Generated client implementations.
-pub mod oblivious_query_client {
+pub mod oblivious_query_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
     use tonic::codegen::http::Uri;
@@ -121,10 +121,10 @@ pub mod oblivious_query_client {
     /// but requesting the asset denomination for a specific asset id is not, because
     /// it reveals that the client has an interest in that asset specifically.
     #[derive(Debug, Clone)]
-    pub struct ObliviousQueryClient<T> {
+    pub struct ObliviousQueryServiceClient<T> {
         inner: tonic::client::Grpc<T>,
     }
-    impl ObliviousQueryClient<tonic::transport::Channel> {
+    impl ObliviousQueryServiceClient<tonic::transport::Channel> {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
@@ -135,7 +135,7 @@ pub mod oblivious_query_client {
             Ok(Self::new(conn))
         }
     }
-    impl<T> ObliviousQueryClient<T>
+    impl<T> ObliviousQueryServiceClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
         T::Error: Into<StdError>,
@@ -153,7 +153,7 @@ pub mod oblivious_query_client {
         pub fn with_interceptor<F>(
             inner: T,
             interceptor: F,
-        ) -> ObliviousQueryClient<InterceptedService<T, F>>
+        ) -> ObliviousQueryServiceClient<InterceptedService<T, F>>
         where
             F: tonic::service::Interceptor,
             T::ResponseBody: Default,
@@ -167,7 +167,7 @@ pub mod oblivious_query_client {
                 http::Request<tonic::body::BoxBody>,
             >>::Error: Into<StdError> + Send + Sync,
         {
-            ObliviousQueryClient::new(InterceptedService::new(inner, interceptor))
+            ObliviousQueryServiceClient::new(InterceptedService::new(inner, interceptor))
         }
         /// Compress requests with the given encoding.
         ///
@@ -206,7 +206,7 @@ pub mod oblivious_query_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.client.v1alpha1.ObliviousQuery/CompactBlockRange",
+                "/penumbra.client.v1alpha1.ObliviousQueryService/CompactBlockRange",
             );
             self.inner.server_streaming(request.into_request(), path, codec).await
         }
@@ -228,7 +228,7 @@ pub mod oblivious_query_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.client.v1alpha1.ObliviousQuery/ChainParameters",
+                "/penumbra.client.v1alpha1.ObliviousQueryService/ChainParameters",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -254,7 +254,7 @@ pub mod oblivious_query_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.client.v1alpha1.ObliviousQuery/MutableParameters",
+                "/penumbra.client.v1alpha1.ObliviousQueryService/MutableParameters",
             );
             self.inner.server_streaming(request.into_request(), path, codec).await
         }
@@ -280,7 +280,7 @@ pub mod oblivious_query_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.client.v1alpha1.ObliviousQuery/ValidatorInfo",
+                "/penumbra.client.v1alpha1.ObliviousQueryService/ValidatorInfo",
             );
             self.inner.server_streaming(request.into_request(), path, codec).await
         }
@@ -303,14 +303,14 @@ pub mod oblivious_query_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.client.v1alpha1.ObliviousQuery/AssetList",
+                "/penumbra.client.v1alpha1.ObliviousQueryService/AssetList",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
 }
 /// Generated client implementations.
-pub mod specific_query_client {
+pub mod specific_query_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
     use tonic::codegen::http::Uri;
@@ -320,10 +320,10 @@ pub mod specific_query_client {
     /// but requesting the asset denomination for a specific asset id is not, because
     /// it reveals that the client has an interest in that asset specifically.
     #[derive(Debug, Clone)]
-    pub struct SpecificQueryClient<T> {
+    pub struct SpecificQueryServiceClient<T> {
         inner: tonic::client::Grpc<T>,
     }
-    impl SpecificQueryClient<tonic::transport::Channel> {
+    impl SpecificQueryServiceClient<tonic::transport::Channel> {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
@@ -334,7 +334,7 @@ pub mod specific_query_client {
             Ok(Self::new(conn))
         }
     }
-    impl<T> SpecificQueryClient<T>
+    impl<T> SpecificQueryServiceClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
         T::Error: Into<StdError>,
@@ -352,7 +352,7 @@ pub mod specific_query_client {
         pub fn with_interceptor<F>(
             inner: T,
             interceptor: F,
-        ) -> SpecificQueryClient<InterceptedService<T, F>>
+        ) -> SpecificQueryServiceClient<InterceptedService<T, F>>
         where
             F: tonic::service::Interceptor,
             T::ResponseBody: Default,
@@ -366,7 +366,7 @@ pub mod specific_query_client {
                 http::Request<tonic::body::BoxBody>,
             >>::Error: Into<StdError> + Send + Sync,
         {
-            SpecificQueryClient::new(InterceptedService::new(inner, interceptor))
+            SpecificQueryServiceClient::new(InterceptedService::new(inner, interceptor))
         }
         /// Compress requests with the given encoding.
         ///
@@ -403,7 +403,7 @@ pub mod specific_query_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.client.v1alpha1.SpecificQuery/TransactionByNote",
+                "/penumbra.client.v1alpha1.SpecificQueryService/TransactionByNote",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -425,7 +425,7 @@ pub mod specific_query_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.client.v1alpha1.SpecificQuery/ValidatorStatus",
+                "/penumbra.client.v1alpha1.SpecificQueryService/ValidatorStatus",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -449,7 +449,7 @@ pub mod specific_query_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.client.v1alpha1.SpecificQuery/NextValidatorRate",
+                "/penumbra.client.v1alpha1.SpecificQueryService/NextValidatorRate",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -473,7 +473,7 @@ pub mod specific_query_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.client.v1alpha1.SpecificQuery/BatchSwapOutputData",
+                "/penumbra.client.v1alpha1.SpecificQueryService/BatchSwapOutputData",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -495,7 +495,7 @@ pub mod specific_query_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.client.v1alpha1.SpecificQuery/StubCPMMReserves",
+                "/penumbra.client.v1alpha1.SpecificQueryService/StubCPMMReserves",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -514,7 +514,7 @@ pub mod specific_query_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.client.v1alpha1.SpecificQuery/AssetInfo",
+                "/penumbra.client.v1alpha1.SpecificQueryService/AssetInfo",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -535,19 +535,19 @@ pub mod specific_query_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.client.v1alpha1.SpecificQuery/KeyValue",
+                "/penumbra.client.v1alpha1.SpecificQueryService/KeyValue",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
 }
 /// Generated server implementations.
-pub mod oblivious_query_server {
+pub mod oblivious_query_service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    ///Generated trait containing gRPC methods that should be implemented for use with ObliviousQueryServer.
+    ///Generated trait containing gRPC methods that should be implemented for use with ObliviousQueryServiceServer.
     #[async_trait]
-    pub trait ObliviousQuery: Send + Sync + 'static {
+    pub trait ObliviousQueryService: Send + Sync + 'static {
         ///Server streaming response type for the CompactBlockRange method.
         type CompactBlockRangeStream: futures_core::Stream<
                 Item = Result<
@@ -609,13 +609,13 @@ pub mod oblivious_query_server {
     /// but requesting the asset denomination for a specific asset id is not, because
     /// it reveals that the client has an interest in that asset specifically.
     #[derive(Debug)]
-    pub struct ObliviousQueryServer<T: ObliviousQuery> {
+    pub struct ObliviousQueryServiceServer<T: ObliviousQueryService> {
         inner: _Inner<T>,
         accept_compression_encodings: EnabledCompressionEncodings,
         send_compression_encodings: EnabledCompressionEncodings,
     }
     struct _Inner<T>(Arc<T>);
-    impl<T: ObliviousQuery> ObliviousQueryServer<T> {
+    impl<T: ObliviousQueryService> ObliviousQueryServiceServer<T> {
         pub fn new(inner: T) -> Self {
             Self::from_arc(Arc::new(inner))
         }
@@ -649,9 +649,10 @@ pub mod oblivious_query_server {
             self
         }
     }
-    impl<T, B> tonic::codegen::Service<http::Request<B>> for ObliviousQueryServer<T>
+    impl<T, B> tonic::codegen::Service<http::Request<B>>
+    for ObliviousQueryServiceServer<T>
     where
-        T: ObliviousQuery,
+        T: ObliviousQueryService,
         B: Body + Send + 'static,
         B::Error: Into<StdError> + Send + 'static,
     {
@@ -667,11 +668,11 @@ pub mod oblivious_query_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/penumbra.client.v1alpha1.ObliviousQuery/CompactBlockRange" => {
+                "/penumbra.client.v1alpha1.ObliviousQueryService/CompactBlockRange" => {
                     #[allow(non_camel_case_types)]
-                    struct CompactBlockRangeSvc<T: ObliviousQuery>(pub Arc<T>);
+                    struct CompactBlockRangeSvc<T: ObliviousQueryService>(pub Arc<T>);
                     impl<
-                        T: ObliviousQuery,
+                        T: ObliviousQueryService,
                     > tonic::server::ServerStreamingService<
                         super::CompactBlockRangeRequest,
                     > for CompactBlockRangeSvc<T> {
@@ -709,11 +710,11 @@ pub mod oblivious_query_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.client.v1alpha1.ObliviousQuery/ChainParameters" => {
+                "/penumbra.client.v1alpha1.ObliviousQueryService/ChainParameters" => {
                     #[allow(non_camel_case_types)]
-                    struct ChainParametersSvc<T: ObliviousQuery>(pub Arc<T>);
+                    struct ChainParametersSvc<T: ObliviousQueryService>(pub Arc<T>);
                     impl<
-                        T: ObliviousQuery,
+                        T: ObliviousQueryService,
                     > tonic::server::UnaryService<super::ChainParamsRequest>
                     for ChainParametersSvc<T> {
                         type Response = super::super::super::core::chain::v1alpha1::ChainParameters;
@@ -749,11 +750,11 @@ pub mod oblivious_query_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.client.v1alpha1.ObliviousQuery/MutableParameters" => {
+                "/penumbra.client.v1alpha1.ObliviousQueryService/MutableParameters" => {
                     #[allow(non_camel_case_types)]
-                    struct MutableParametersSvc<T: ObliviousQuery>(pub Arc<T>);
+                    struct MutableParametersSvc<T: ObliviousQueryService>(pub Arc<T>);
                     impl<
-                        T: ObliviousQuery,
+                        T: ObliviousQueryService,
                     > tonic::server::ServerStreamingService<
                         super::MutableParametersRequest,
                     > for MutableParametersSvc<T> {
@@ -791,11 +792,11 @@ pub mod oblivious_query_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.client.v1alpha1.ObliviousQuery/ValidatorInfo" => {
+                "/penumbra.client.v1alpha1.ObliviousQueryService/ValidatorInfo" => {
                     #[allow(non_camel_case_types)]
-                    struct ValidatorInfoSvc<T: ObliviousQuery>(pub Arc<T>);
+                    struct ValidatorInfoSvc<T: ObliviousQueryService>(pub Arc<T>);
                     impl<
-                        T: ObliviousQuery,
+                        T: ObliviousQueryService,
                     > tonic::server::ServerStreamingService<super::ValidatorInfoRequest>
                     for ValidatorInfoSvc<T> {
                         type Response = super::super::super::core::stake::v1alpha1::ValidatorInfo;
@@ -832,11 +833,11 @@ pub mod oblivious_query_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.client.v1alpha1.ObliviousQuery/AssetList" => {
+                "/penumbra.client.v1alpha1.ObliviousQueryService/AssetList" => {
                     #[allow(non_camel_case_types)]
-                    struct AssetListSvc<T: ObliviousQuery>(pub Arc<T>);
+                    struct AssetListSvc<T: ObliviousQueryService>(pub Arc<T>);
                     impl<
-                        T: ObliviousQuery,
+                        T: ObliviousQueryService,
                     > tonic::server::UnaryService<super::AssetListRequest>
                     for AssetListSvc<T> {
                         type Response = super::super::super::core::chain::v1alpha1::KnownAssets;
@@ -885,7 +886,7 @@ pub mod oblivious_query_server {
             }
         }
     }
-    impl<T: ObliviousQuery> Clone for ObliviousQueryServer<T> {
+    impl<T: ObliviousQueryService> Clone for ObliviousQueryServiceServer<T> {
         fn clone(&self) -> Self {
             let inner = self.inner.clone();
             Self {
@@ -895,7 +896,7 @@ pub mod oblivious_query_server {
             }
         }
     }
-    impl<T: ObliviousQuery> Clone for _Inner<T> {
+    impl<T: ObliviousQueryService> Clone for _Inner<T> {
         fn clone(&self) -> Self {
             Self(self.0.clone())
         }
@@ -905,17 +906,18 @@ pub mod oblivious_query_server {
             write!(f, "{:?}", self.0)
         }
     }
-    impl<T: ObliviousQuery> tonic::server::NamedService for ObliviousQueryServer<T> {
-        const NAME: &'static str = "penumbra.client.v1alpha1.ObliviousQuery";
+    impl<T: ObliviousQueryService> tonic::server::NamedService
+    for ObliviousQueryServiceServer<T> {
+        const NAME: &'static str = "penumbra.client.v1alpha1.ObliviousQueryService";
     }
 }
 /// Generated server implementations.
-pub mod specific_query_server {
+pub mod specific_query_service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    ///Generated trait containing gRPC methods that should be implemented for use with SpecificQueryServer.
+    ///Generated trait containing gRPC methods that should be implemented for use with SpecificQueryServiceServer.
     #[async_trait]
-    pub trait SpecificQuery: Send + Sync + 'static {
+    pub trait SpecificQueryService: Send + Sync + 'static {
         async fn transaction_by_note(
             &self,
             request: tonic::Request<
@@ -974,13 +976,13 @@ pub mod specific_query_server {
     /// but requesting the asset denomination for a specific asset id is not, because
     /// it reveals that the client has an interest in that asset specifically.
     #[derive(Debug)]
-    pub struct SpecificQueryServer<T: SpecificQuery> {
+    pub struct SpecificQueryServiceServer<T: SpecificQueryService> {
         inner: _Inner<T>,
         accept_compression_encodings: EnabledCompressionEncodings,
         send_compression_encodings: EnabledCompressionEncodings,
     }
     struct _Inner<T>(Arc<T>);
-    impl<T: SpecificQuery> SpecificQueryServer<T> {
+    impl<T: SpecificQueryService> SpecificQueryServiceServer<T> {
         pub fn new(inner: T) -> Self {
             Self::from_arc(Arc::new(inner))
         }
@@ -1014,9 +1016,10 @@ pub mod specific_query_server {
             self
         }
     }
-    impl<T, B> tonic::codegen::Service<http::Request<B>> for SpecificQueryServer<T>
+    impl<T, B> tonic::codegen::Service<http::Request<B>>
+    for SpecificQueryServiceServer<T>
     where
-        T: SpecificQuery,
+        T: SpecificQueryService,
         B: Body + Send + 'static,
         B::Error: Into<StdError> + Send + 'static,
     {
@@ -1032,11 +1035,11 @@ pub mod specific_query_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/penumbra.client.v1alpha1.SpecificQuery/TransactionByNote" => {
+                "/penumbra.client.v1alpha1.SpecificQueryService/TransactionByNote" => {
                     #[allow(non_camel_case_types)]
-                    struct TransactionByNoteSvc<T: SpecificQuery>(pub Arc<T>);
+                    struct TransactionByNoteSvc<T: SpecificQueryService>(pub Arc<T>);
                     impl<
-                        T: SpecificQuery,
+                        T: SpecificQueryService,
                     > tonic::server::UnaryService<
                         super::super::super::core::crypto::v1alpha1::NoteCommitment,
                     > for TransactionByNoteSvc<T> {
@@ -1075,11 +1078,11 @@ pub mod specific_query_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.client.v1alpha1.SpecificQuery/ValidatorStatus" => {
+                "/penumbra.client.v1alpha1.SpecificQueryService/ValidatorStatus" => {
                     #[allow(non_camel_case_types)]
-                    struct ValidatorStatusSvc<T: SpecificQuery>(pub Arc<T>);
+                    struct ValidatorStatusSvc<T: SpecificQueryService>(pub Arc<T>);
                     impl<
-                        T: SpecificQuery,
+                        T: SpecificQueryService,
                     > tonic::server::UnaryService<super::ValidatorStatusRequest>
                     for ValidatorStatusSvc<T> {
                         type Response = super::super::super::core::stake::v1alpha1::ValidatorStatus;
@@ -1115,11 +1118,11 @@ pub mod specific_query_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.client.v1alpha1.SpecificQuery/NextValidatorRate" => {
+                "/penumbra.client.v1alpha1.SpecificQueryService/NextValidatorRate" => {
                     #[allow(non_camel_case_types)]
-                    struct NextValidatorRateSvc<T: SpecificQuery>(pub Arc<T>);
+                    struct NextValidatorRateSvc<T: SpecificQueryService>(pub Arc<T>);
                     impl<
-                        T: SpecificQuery,
+                        T: SpecificQueryService,
                     > tonic::server::UnaryService<
                         super::super::super::core::crypto::v1alpha1::IdentityKey,
                     > for NextValidatorRateSvc<T> {
@@ -1158,11 +1161,11 @@ pub mod specific_query_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.client.v1alpha1.SpecificQuery/BatchSwapOutputData" => {
+                "/penumbra.client.v1alpha1.SpecificQueryService/BatchSwapOutputData" => {
                     #[allow(non_camel_case_types)]
-                    struct BatchSwapOutputDataSvc<T: SpecificQuery>(pub Arc<T>);
+                    struct BatchSwapOutputDataSvc<T: SpecificQueryService>(pub Arc<T>);
                     impl<
-                        T: SpecificQuery,
+                        T: SpecificQueryService,
                     > tonic::server::UnaryService<super::BatchSwapOutputDataRequest>
                     for BatchSwapOutputDataSvc<T> {
                         type Response = super::super::super::core::dex::v1alpha1::BatchSwapOutputData;
@@ -1198,11 +1201,11 @@ pub mod specific_query_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.client.v1alpha1.SpecificQuery/StubCPMMReserves" => {
+                "/penumbra.client.v1alpha1.SpecificQueryService/StubCPMMReserves" => {
                     #[allow(non_camel_case_types)]
-                    struct StubCPMMReservesSvc<T: SpecificQuery>(pub Arc<T>);
+                    struct StubCPMMReservesSvc<T: SpecificQueryService>(pub Arc<T>);
                     impl<
-                        T: SpecificQuery,
+                        T: SpecificQueryService,
                     > tonic::server::UnaryService<super::StubCpmmReservesRequest>
                     for StubCPMMReservesSvc<T> {
                         type Response = super::super::super::core::dex::v1alpha1::Reserves;
@@ -1238,11 +1241,11 @@ pub mod specific_query_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.client.v1alpha1.SpecificQuery/AssetInfo" => {
+                "/penumbra.client.v1alpha1.SpecificQueryService/AssetInfo" => {
                     #[allow(non_camel_case_types)]
-                    struct AssetInfoSvc<T: SpecificQuery>(pub Arc<T>);
+                    struct AssetInfoSvc<T: SpecificQueryService>(pub Arc<T>);
                     impl<
-                        T: SpecificQuery,
+                        T: SpecificQueryService,
                     > tonic::server::UnaryService<super::AssetInfoRequest>
                     for AssetInfoSvc<T> {
                         type Response = super::AssetInfoResponse;
@@ -1276,11 +1279,11 @@ pub mod specific_query_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.client.v1alpha1.SpecificQuery/KeyValue" => {
+                "/penumbra.client.v1alpha1.SpecificQueryService/KeyValue" => {
                     #[allow(non_camel_case_types)]
-                    struct KeyValueSvc<T: SpecificQuery>(pub Arc<T>);
+                    struct KeyValueSvc<T: SpecificQueryService>(pub Arc<T>);
                     impl<
-                        T: SpecificQuery,
+                        T: SpecificQueryService,
                     > tonic::server::UnaryService<super::KeyValueRequest>
                     for KeyValueSvc<T> {
                         type Response = super::KeyValueResponse;
@@ -1329,7 +1332,7 @@ pub mod specific_query_server {
             }
         }
     }
-    impl<T: SpecificQuery> Clone for SpecificQueryServer<T> {
+    impl<T: SpecificQueryService> Clone for SpecificQueryServiceServer<T> {
         fn clone(&self) -> Self {
             let inner = self.inner.clone();
             Self {
@@ -1339,7 +1342,7 @@ pub mod specific_query_server {
             }
         }
     }
-    impl<T: SpecificQuery> Clone for _Inner<T> {
+    impl<T: SpecificQueryService> Clone for _Inner<T> {
         fn clone(&self) -> Self {
             Self(self.0.clone())
         }
@@ -1349,7 +1352,8 @@ pub mod specific_query_server {
             write!(f, "{:?}", self.0)
         }
     }
-    impl<T: SpecificQuery> tonic::server::NamedService for SpecificQueryServer<T> {
-        const NAME: &'static str = "penumbra.client.v1alpha1.SpecificQuery";
+    impl<T: SpecificQueryService> tonic::server::NamedService
+    for SpecificQueryServiceServer<T> {
+        const NAME: &'static str = "penumbra.client.v1alpha1.SpecificQueryService";
     }
 }

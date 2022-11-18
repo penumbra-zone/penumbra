@@ -1,5 +1,5 @@
 use anyhow::Result;
-use penumbra_proto::custody::v1alpha1::custody_protocol_client::CustodyProtocolClient;
+use penumbra_proto::custody::v1alpha1::custody_protocol_service_client::CustodyProtocolServiceClient;
 use penumbra_transaction::AuthorizationData;
 use tonic::async_trait;
 use tonic::codegen::Bytes;
@@ -18,10 +18,10 @@ use crate::AuthorizeRequest;
 /// understand the transaction and determine whether or not it should be
 /// authorized.
 ///
-/// This trait is a wrapper around the proto-generated [`CustodyProtocolClient`] that serves two goals:
+/// This trait is a wrapper around the proto-generated [`CustodyProtocolServiceClient`] that serves two goals:
 ///
 /// 1. It works on domain types rather than proto-generated types, avoiding conversions;
-/// 2. It's easier to write as a trait bound than the `CustodyProtocolClient`,
+/// 2. It's easier to write as a trait bound than the `CustodyProtocolServiceClient`,
 ///   which requires complex bounds on its inner type to enforce that it is a
 ///   tower `Service`
 #[async_trait(?Send)]
@@ -31,13 +31,13 @@ pub trait CustodyClient: Sized {
 }
 
 // We need to tell `async_trait` not to add a `Send` bound to the boxed
-// futures it generates, because the underlying `CustodyProtocolClient` isn't `Sync`,
+// futures it generates, because the underlying `CustodyProtocolServiceClient` isn't `Sync`,
 // but its `authorize` method takes `&mut self`. This would normally cause a huge
 // amount of problems, because non-`Send` futures don't compose well, but as long
 // as we're calling the method within an async block on a local mutable variable,
 // it should be fine.
 #[async_trait(?Send)]
-impl<T> CustodyClient for CustodyProtocolClient<T>
+impl<T> CustodyClient for CustodyProtocolServiceClient<T>
 where
     T: tonic::client::GrpcService<tonic::body::BoxBody>,
     T::ResponseBody: tonic::codegen::Body<Data = Bytes> + Send + 'static,

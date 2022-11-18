@@ -4,6 +4,7 @@ package penumbra.client.v1alpha1;
 
 // TODO: clean up import paths (this is pulling from the ibc-go-vendor root)
 import "proofs.proto";
+import "ibc/core/commitment/v1/commitment.proto";
 
 import "penumbra/core/crypto/v1alpha1/crypto.proto";
 import "penumbra/core/chain/v1alpha1/chain.proto";
@@ -16,7 +17,7 @@ import "penumbra/core/governance/v1alpha1/governance.proto";
 // client data.  For instance, requesting all asset denominations is oblivious,
 // but requesting the asset denomination for a specific asset id is not, because
 // it reveals that the client has an interest in that asset specifically.
-service ObliviousQuery {
+service ObliviousQueryService {
   rpc CompactBlockRange(CompactBlockRangeRequest) returns (stream core.chain.v1alpha1.CompactBlock);
   rpc ChainParameters(ChainParamsRequest) returns (core.chain.v1alpha1.ChainParameters);
   rpc MutableParameters(MutableParametersRequest) returns (stream core.governance.v1alpha1.MutableChainParameter);
@@ -71,7 +72,7 @@ message ValidatorInfoRequest {
 // client data.  For instance, requesting all asset denominations is oblivious,
 // but requesting the asset denomination for a specific asset id is not, because
 // it reveals that the client has an interest in that asset specifically.
-service SpecificQuery {
+service SpecificQueryService {
   rpc TransactionByNote(core.crypto.v1alpha1.NoteCommitment) returns (core.chain.v1alpha1.NoteSource);
   rpc ValidatorStatus(ValidatorStatusRequest) returns (core.stake.v1alpha1.ValidatorStatus);
   rpc NextValidatorRate(core.crypto.v1alpha1.IdentityKey) returns (core.stake.v1alpha1.RateData);
@@ -123,13 +124,13 @@ message KeyValueRequest {
   // The expected chain id (empty string if no expectation).
   string chain_id = 1;
   // If set, the key to fetch from storage.
-  bytes key = 2;
+  string key = 2;
   // whether to return a proof
   bool proof = 3;
 }
 
 message KeyValueResponse {
   bytes value = 1;
-
-  .ics23.CommitmentProof proof = 2;
+  
+  .ibc.core.commitment.v1.MerkleProof proof = 2;
 }

@@ -53,22 +53,6 @@ pub struct SwapClaimBody {
     #[prost(uint64, tag="7")]
     pub epoch_duration: u64,
 }
-/// For storing the list of claimed swaps between the dex and shielded pool components.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ClaimedSwapList {
-    #[prost(message, repeated, tag="1")]
-    pub claims: ::prost::alloc::vec::Vec<ClaimedSwap>,
-}
-/// Represents a swap claimed in a particular transaction.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ClaimedSwap {
-    #[prost(message, optional, tag="1")]
-    pub claim: ::core::option::Option<SwapClaimBody>,
-    #[prost(bytes="vec", tag="2")]
-    pub txid: ::prost::alloc::vec::Vec<u8>,
-}
 /// The authorized data of a Swap transaction.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -124,9 +108,9 @@ pub struct MockFlowCiphertext {
     #[prost(uint64, tag="1")]
     pub value: u64,
 }
-/// Holds two asset IDs. Ordering doesn't reflect trading direction, however
-/// since the `AssetId` type is `Ord + PartialOrd`, there can be only one
-/// `TradingPair` per asset pair.
+/// Holds two asset IDs. Ordering doesn't reflect trading direction. Instead, we
+/// require `asset_1 < asset_2` as field elements, to ensure a canonical
+/// representation of an unordered pair.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TradingPair {
@@ -172,22 +156,18 @@ pub struct BatchSwapOutputData {
 /// without specifying what those assets are, to avoid duplicating data (each
 /// asset ID alone is twice the size of the trading function).
 ///
-/// The trading function is `phi(R) = p*R_1 + q*R_2`.
-/// This is used as a CFMM with constant `k` and fee `fee` (gamma).
+/// The trading function is `phi(R) = p*R_1 + q*R_2`, with fee parameter `gamma = 1 - fee`.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TradingFunction {
-    /// NOTE: the use of floats here is a placeholder, so we can stub out the
-    /// implementation and then decide what type of fixed-point, deterministic
-    /// arithmetic should be used.
-    #[prost(double, tag="2")]
-    pub fee: f64,
-    #[prost(double, tag="3")]
-    pub k: f64,
-    #[prost(double, tag="4")]
-    pub p: f64,
-    #[prost(double, tag="5")]
-    pub q: f64,
+    #[prost(uint32, tag="2")]
+    pub fee: u32,
+    /// This is not actually an amount, it's an integer the same width as an amount
+    #[prost(message, optional, tag="4")]
+    pub p: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
+    /// This is not actually an amount, it's an integer the same width as an amount
+    #[prost(message, optional, tag="5")]
+    pub q: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
 }
 /// The reserves of a position.
 ///
@@ -242,18 +222,19 @@ pub mod position_state {
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
     pub enum PositionStateEnum {
+        Unspecified = 0,
         /// The position has been opened, is active, has reserves and accumulated
         /// fees, and can be traded against.
-        Opened = 0,
+        Opened = 1,
         /// The position has been closed, is inactive and can no longer be traded
         /// against, but still has reserves and accumulated fees.
-        Closed = 1,
+        Closed = 2,
         /// The final reserves and accumulated fees have been withdrawn, leaving an
         /// empty, inactive position awaiting (possible) retroactive rewards.
-        Withdrawn = 2,
+        Withdrawn = 3,
         /// Any retroactive rewards have been claimed. The position is now an inert,
         /// historical artefact.
-        Claimed = 3,
+        Claimed = 4,
     }
     impl PositionStateEnum {
         /// String value of the enum field names used in the ProtoBuf definition.
@@ -262,10 +243,11 @@ pub mod position_state {
         /// (if the ProtoBuf definition does not change) and safe for programmatic use.
         pub fn as_str_name(&self) -> &'static str {
             match self {
-                PositionStateEnum::Opened => "OPENED",
-                PositionStateEnum::Closed => "CLOSED",
-                PositionStateEnum::Withdrawn => "WITHDRAWN",
-                PositionStateEnum::Claimed => "CLAIMED",
+                PositionStateEnum::Unspecified => "POSITION_STATE_ENUM_UNSPECIFIED",
+                PositionStateEnum::Opened => "POSITION_STATE_ENUM_OPENED",
+                PositionStateEnum::Closed => "POSITION_STATE_ENUM_CLOSED",
+                PositionStateEnum::Withdrawn => "POSITION_STATE_ENUM_WITHDRAWN",
+                PositionStateEnum::Claimed => "POSITION_STATE_ENUM_CLAIMED",
             }
         }
     }

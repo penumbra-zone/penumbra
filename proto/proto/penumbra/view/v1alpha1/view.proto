@@ -17,7 +17,7 @@ import "penumbra/core/chain/v1alpha1/chain.proto";
 // identify which set of data to query.  This also works as a pseudo-auth system
 // (assuming transport security, the client has to know the FVK to request its
 // data).  (TODO: refine this)
-service ViewProtocol {
+service ViewProtocolService {
     // Get current status of chain sync
     rpc Status(StatusRequest) returns (StatusResponse);
 

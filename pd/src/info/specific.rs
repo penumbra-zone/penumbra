@@ -1,3 +1,4 @@
+use penumbra_chain::AppHashRead;
 use penumbra_chain::StateReadExt as _;
 use penumbra_component::dex::StateReadExt as _;
 use penumbra_component::shielded_pool::{StateReadExt as _, SupplyRead as _};
@@ -6,7 +7,7 @@ use penumbra_crypto::asset::{self, Asset};
 use penumbra_proto::{
     self as proto,
     client::v1alpha1::{
-        specific_query_server::SpecificQuery, AssetInfoRequest, AssetInfoResponse,
+        specific_query_service_server::SpecificQueryService, AssetInfoRequest, AssetInfoResponse,
         BatchSwapOutputDataRequest, KeyValueRequest, KeyValueResponse, StubCpmmReservesRequest,
         ValidatorStatusRequest,
     },
@@ -30,7 +31,7 @@ use tracing::instrument;
 use super::Info;
 
 #[tonic::async_trait]
-impl SpecificQuery for Info {
+impl SpecificQueryService for Info {
     #[instrument(skip(self, request))]
     async fn key_value(
         &self,
@@ -46,21 +47,25 @@ impl SpecificQuery for Info {
             return Err(Status::invalid_argument("key is empty"));
         }
 
-        // TODO: how does this align with the ABCI k/v implementation?
-        // why do we have two different implementations?
         let (value, proof) = state
-            .get_with_proof(request.key)
+            .get_with_proof_to_apphash(request.key.into_bytes())
             .await
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
-
-        let commitment_proof = ics23::CommitmentProof {
-            proof: Some(ics23::commitment_proof::Proof::Exist(proof)),
-        };
 
         Ok(tonic::Response::new(KeyValueResponse {
             value,
             proof: if request.proof {
-                Some(commitment_proof)
+                Some(ibc_proto::ibc::core::commitment::v1::MerkleProof {
+                    proofs: proof
+                        .proofs
+                        .into_iter()
+                        .map(|p| {
+                            let mut encoded = Vec::new();
+                            prost::Message::encode(&p, &mut encoded).unwrap();
+                            prost::Message::decode(&*encoded).unwrap()
+                        })
+                        .collect(),
+                })
             } else {
                 None
             },

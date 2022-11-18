@@ -5,8 +5,14 @@ use futures::{Stream, StreamExt, TryStreamExt};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::keys::AccountID;
 use penumbra_crypto::{asset, keys::AddressIndex, note, Asset, Nullifier};
-use penumbra_proto::view::v1alpha1::{self as pb, view_protocol_client::ViewProtocolClient};
-use penumbra_transaction::{Transaction, TransactionPerspective, WitnessData};
+use penumbra_proto::view::v1alpha1::{
+    self as pb, view_protocol_service_client::ViewProtocolServiceClient, WitnessRequest,
+};
+use penumbra_tct::Proof;
+use penumbra_transaction::{
+    plan::TransactionPlan, Transaction, TransactionPerspective, WitnessData,
+};
+use rand::Rng;
 use tendermint_rpc::abci;
 use tonic::async_trait;
 use tonic::codegen::Bytes;
@@ -19,7 +25,7 @@ use crate::{QuarantinedNoteRecord, SpendableNoteRecord, StatusStreamResponse};
 /// responsible for synchronizing and scanning the public chain state with one
 /// or more full viewing keys.
 ///
-/// This trait is a wrapper around the proto-generated [`ViewProtocolClient`]
+/// This trait is a wrapper around the proto-generated [`ViewProtocolServiceClient`]
 /// that serves two goals:
 ///
 /// 1. It can use domain types rather than proto-generated types, avoiding conversions;
@@ -85,7 +91,14 @@ pub trait ViewClient {
     /// that the client can get a consistent set of authentication paths to a
     /// common root.  (Otherwise, if a client made multiple requests, the wallet
     /// service could have advanced the note commitment tree state between queries).
-    async fn witness(&mut self, request: pb::WitnessRequest) -> Result<WitnessData>;
+    async fn witness(
+        &mut self,
+        account_id: AccountID,
+        mut rng: impl Rng,
+        plan: &TransactionPlan,
+    ) -> Result<WitnessData>
+    where
+        Self: Sized;
 
     /// Queries for all known assets.
     async fn assets(&mut self) -> Result<asset::Cache>;
@@ -241,7 +254,7 @@ pub trait ViewClient {
 // as we're calling the method within an async block on a local mutable variable,
 // it should be fine.
 #[async_trait(?Send)]
-impl<T> ViewClient for ViewProtocolClient<T>
+impl<T> ViewClient for ViewProtocolServiceClient<T>
 where
     T: tonic::client::GrpcService<tonic::body::BoxBody>,
     T::ResponseBody: tonic::codegen::Body<Data = Bytes> + Send + 'static,
@@ -279,7 +292,7 @@ where
     async fn chain_params(&mut self) -> Result<ChainParameters> {
         // We have to manually invoke the method on the type, because it has the
         // same name as the one we're implementing.
-        let params = ViewProtocolClient::chain_parameters(
+        let params = ViewProtocolServiceClient::chain_parameters(
             self,
             tonic::Request::new(pb::ChainParamsRequest {}),
         )
@@ -291,7 +304,7 @@ where
     }
 
     async fn fmd_parameters(&mut self) -> Result<FmdParameters> {
-        let params = ViewProtocolClient::fmd_parameters(
+        let params = ViewProtocolServiceClient::fmd_parameters(
             self,
             tonic::Request::new(pb::FmdParametersRequest {}),
         )
@@ -332,7 +345,7 @@ where
         account_id: AccountID,
         note_commitment: note::Commitment,
     ) -> Result<SpendableNoteRecord> {
-        ViewProtocolClient::note_by_commitment(
+        ViewProtocolServiceClient::note_by_commitment(
             self,
             tonic::Request::new(pb::NoteByCommitmentRequest {
                 account_id: Some(account_id.into()),
@@ -353,7 +366,7 @@ where
         account_id: AccountID,
         note_commitment: note::Commitment,
     ) -> Result<SpendableNoteRecord> {
-        ViewProtocolClient::note_by_commitment(
+        ViewProtocolServiceClient::note_by_commitment(
             self,
             tonic::Request::new(pb::NoteByCommitmentRequest {
                 account_id: Some(account_id.into()),
@@ -372,7 +385,7 @@ where
         account_id: AccountID,
         nullifier: Nullifier,
     ) -> Result<bool> {
-        Ok(ViewProtocolClient::nullifier_status(
+        Ok(ViewProtocolServiceClient::nullifier_status(
             self,
             tonic::Request::new(pb::NullifierStatusRequest {
                 account_id: Some(account_id.into()),
@@ -388,7 +401,7 @@ where
     /// Waits for a specific nullifier to be detected, returning immediately if it is already
     /// present, but waiting otherwise.
     async fn await_nullifier(&mut self, account_id: AccountID, nullifier: Nullifier) -> Result<()> {
-        ViewProtocolClient::nullifier_status(
+        ViewProtocolServiceClient::nullifier_status(
             self,
             tonic::Request::new(pb::NullifierStatusRequest {
                 account_id: Some(account_id.into()),
@@ -401,12 +414,47 @@ where
         Ok(())
     }
 
-    async fn witness(&mut self, request: pb::WitnessRequest) -> Result<WitnessData> {
-        let witness_data: WitnessData = self
+    async fn witness(
+        &mut self,
+        account_id: AccountID,
+        mut rng: impl Rng,
+        plan: &TransactionPlan,
+    ) -> Result<WitnessData>
+    where
+        Self: Sized,
+    {
+        // Get the witness data from the view service only for non-zero amounts of value,
+        // since dummy spends will have a zero amount.
+        let note_commitments = plan
+            .spend_plans()
+            .filter(|plan| plan.note.amount() != 0u64.into())
+            .map(|spend| spend.note.commit().into())
+            .chain(
+                plan.swap_claim_plans()
+                    .map(|swap_claim| swap_claim.swap_nft_note.commit().into()),
+            )
+            .collect();
+
+        let request = WitnessRequest {
+            account_id: Some(account_id.into()),
+            note_commitments,
+        };
+
+        let mut witness_data: WitnessData = self
             .witness(tonic::Request::new(request))
             .await?
             .into_inner()
             .try_into()?;
+
+        // Now we need to augment the witness data with dummy proofs such that
+        // note commitments corresponding to dummy spends also have proofs.
+        for nc in plan
+            .spend_plans()
+            .filter(|plan| plan.note.amount() == 0u64.into())
+            .map(|plan| plan.note.commit())
+        {
+            witness_data.add_proof(nc, Proof::dummy(&mut rng, nc));
+        }
 
         Ok(witness_data)
     }
@@ -415,7 +463,7 @@ where
         // We have to manually invoke the method on the type, because it has the
         // same name as the one we're implementing.
         let pb_assets: Vec<_> =
-            ViewProtocolClient::assets(self, tonic::Request::new(pb::AssetRequest {}))
+            ViewProtocolServiceClient::assets(self, tonic::Request::new(pb::AssetRequest {}))
                 .await?
                 .into_inner()
                 .try_collect()
@@ -456,7 +504,7 @@ where
         &mut self,
         tx_hash: abci::transaction::Hash,
     ) -> Result<Option<Transaction>> {
-        ViewProtocolClient::transaction_by_hash(
+        ViewProtocolServiceClient::transaction_by_hash(
             self,
             tonic::Request::new(pb::TransactionByHashRequest {
                 tx_hash: tx_hash.as_bytes().to_vec(),
@@ -473,7 +521,7 @@ where
         &mut self,
         tx_hash: abci::transaction::Hash,
     ) -> Result<TransactionPerspective> {
-        ViewProtocolClient::transaction_perspective(
+        ViewProtocolServiceClient::transaction_perspective(
             self,
             tonic::Request::new(pb::TransactionPerspectiveRequest {
                 tx_hash: tx_hash.as_bytes().to_vec(),

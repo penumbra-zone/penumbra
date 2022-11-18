@@ -72,8 +72,8 @@ impl QueryCmd {
             | QueryCmd::Governance(_) => {
                 unreachable!("query handled in guard");
             }
-            QueryCmd::ShieldedPool(p) => p.key().as_bytes().to_vec(),
-            QueryCmd::Key { key } => key.as_bytes().to_vec(),
+            QueryCmd::ShieldedPool(p) => p.key().clone(),
+            QueryCmd::Key { key } => key.clone(),
         };
 
         let mut client = app.specific_client().await?;

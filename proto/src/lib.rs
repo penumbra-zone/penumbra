@@ -100,7 +100,7 @@ pub mod client {
     pub mod v1alpha1 {
         include!("gen/penumbra.client.v1alpha1.rs");
 
-        use specific_query_client::SpecificQueryClient;
+        use specific_query_service_client::SpecificQueryServiceClient;
         use tonic::{
             body::BoxBody,
             codegen::{Body, StdError},
@@ -108,7 +108,7 @@ pub mod client {
 
         // Convenience methods for fetching data...
 
-        impl<C> SpecificQueryClient<C> {
+        impl<C> SpecificQueryServiceClient<C> {
             /// Get the Rust protobuf type corresponding to a state key.
             ///
             /// Prefer `key_domain` when applicable, because this gets the validated domain type,
@@ -123,7 +123,7 @@ pub mod client {
                 <C::ResponseBody as Body>::Error: Into<StdError> + Send,
             {
                 let request = KeyValueRequest {
-                    key: key.as_ref().as_bytes().to_vec(),
+                    key: key.as_ref().to_string(),
                     ..Default::default()
                 };
 
@@ -145,7 +145,7 @@ pub mod client {
                 <C::ResponseBody as Body>::Error: Into<StdError> + Send,
             {
                 let request = KeyValueRequest {
-                    key: key.as_ref().as_bytes().to_vec(),
+                    key: key.as_ref().to_string(),
                     ..Default::default()
                 };
 

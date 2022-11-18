@@ -14,10 +14,11 @@ pub mod vote {
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
     pub enum Vote {
-        Abstain = 0,
-        Yes = 1,
-        No = 2,
-        NoWithVeto = 3,
+        Unspecified = 0,
+        Abstain = 1,
+        Yes = 2,
+        No = 3,
+        NoWithVeto = 4,
     }
     impl Vote {
         /// String value of the enum field names used in the ProtoBuf definition.
@@ -26,10 +27,11 @@ pub mod vote {
         /// (if the ProtoBuf definition does not change) and safe for programmatic use.
         pub fn as_str_name(&self) -> &'static str {
             match self {
-                Vote::Abstain => "ABSTAIN",
-                Vote::Yes => "YES",
-                Vote::No => "NO",
-                Vote::NoWithVeto => "NO_WITH_VETO",
+                Vote::Unspecified => "VOTE_UNSPECIFIED",
+                Vote::Abstain => "VOTE_ABSTAIN",
+                Vote::Yes => "VOTE_YES",
+                Vote::No => "VOTE_NO",
+                Vote::NoWithVeto => "VOTE_NO_WITH_VETO",
             }
         }
     }
