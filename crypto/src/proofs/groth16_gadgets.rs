@@ -14,6 +14,20 @@ use crate::{
     note::NOTECOMMIT_DOMAIN_SEP,
 };
 
+/// Check the integrity of the ephemeral public key.
+pub(crate) fn ephemeral_public_key_integrity(
+    cs: ConstraintSystemRef<Fq>,
+    // Witnesses
+    esk: Vec<UInt8<Fq>>,
+    g_d: ElementVar,
+    // Public inputs,
+    epk: ElementVar,
+) -> Result<(), SynthesisError> {
+    let expected_epk = g_d.scalar_mul_le(esk.to_bits_le()?.iter())?;
+    expected_epk.enforce_equal(&epk)?;
+    Ok(())
+}
+
 /// Check the integrity of the value commitment.
 pub(crate) fn value_commitment_integrity(
     cs: ConstraintSystemRef<Fq>,
