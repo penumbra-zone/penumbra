@@ -2,15 +2,14 @@ syntax = "proto3";
 
 package penumbra.client.v1alpha1;
 
-// TODO: clean up import paths (this is pulling from the ibc-go-vendor root)
-import "proofs.proto";
 import "ibc/core/commitment/v1/commitment.proto";
-
-import "penumbra/core/crypto/v1alpha1/crypto.proto";
 import "penumbra/core/chain/v1alpha1/chain.proto";
-import "penumbra/core/stake/v1alpha1/stake.proto";
+import "penumbra/core/crypto/v1alpha1/crypto.proto";
 import "penumbra/core/dex/v1alpha1/dex.proto";
 import "penumbra/core/governance/v1alpha1/governance.proto";
+import "penumbra/core/stake/v1alpha1/stake.proto";
+// TODO: clean up import paths (this is pulling from the ibc-go-vendor root)
+import "proofs.proto";
 
 // Methods for accessing chain state that are "oblivious" in the sense that they
 // do not request specific portions of the chain state that could reveal private
@@ -18,18 +17,11 @@ import "penumbra/core/governance/v1alpha1/governance.proto";
 // but requesting the asset denomination for a specific asset id is not, because
 // it reveals that the client has an interest in that asset specifically.
 service ObliviousQueryService {
-  rpc CompactBlockRange(CompactBlockRangeRequest) returns (stream core.chain.v1alpha1.CompactBlock);
-  rpc ChainParameters(ChainParamsRequest) returns (core.chain.v1alpha1.ChainParameters);
-  rpc MutableParameters(MutableParametersRequest) returns (stream core.governance.v1alpha1.MutableChainParameter);
-  rpc ValidatorInfo(ValidatorInfoRequest) returns (stream core.stake.v1alpha1.ValidatorInfo);
-  // TODO: deprecate in favor of SpecificQuery.AssetInfo
-  rpc AssetList(AssetListRequest) returns (core.chain.v1alpha1.KnownAssets);
-}
-
-// Lists all assets in Asset Registry
-message AssetListRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
+  rpc CompactBlockRange(CompactBlockRangeRequest) returns (CompactBlockRangeResponse);
+  rpc ChainParameters(ChainParametersRequest) returns (ChainParametersResponse);
+  rpc MutableParameters(MutableParametersRequest) returns (stream MutableParametersResponse);
+  rpc ValidatorInfo(ValidatorInfoRequest) returns (stream ValidatorInfoResponse);
+  rpc AssetList(AssetListRequest) returns (AssetListResponse);
 }
 
 // Requests a range of compact block data.
@@ -38,13 +30,25 @@ message CompactBlockRangeRequest {
   string chain_id = 1;
   // The start height of the range.
   uint64 start_height = 2;
-  // The end height of the range.
-  //
-  // If unset, defaults to the latest block height.
+  // The end height of the range, defaults to the latest block height.
   uint64 end_height = 3;
-  // If set, keep the connection alive past end_height,
+  // If set, keeps the connection alive past `end_height`,
   // streaming new compact blocks as they are created.
   bool keep_alive = 4;
+}
+
+message CompactBlockRangeResponse {
+  core.chain.v1alpha1.CompactBlock compact_block = 1;
+}
+
+// Requests the global configuration data for the chain.
+message ChainParametersRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+}
+
+message ChainParametersResponse {
+  core.chain.v1alpha1.ChainParameters chain_parameters = 1;
 }
 
 // Requests the governance-mutable parameters available for the chain.
@@ -53,10 +57,8 @@ message MutableParametersRequest {
   string chain_id = 1;
 }
 
-// Requests the global configuration data for the chain.
-message ChainParamsRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
+message MutableParametersResponse {
+  core.governance.v1alpha1.MutableChainParameter chain_parameter = 1;
 }
 
 // Requests information on the chain's validators.
@@ -67,22 +69,82 @@ message ValidatorInfoRequest {
   bool show_inactive = 2;
 }
 
+message ValidatorInfoResponse {
+  core.stake.v1alpha1.ValidatorInfo validator_info = 1;
+}
+
+// Lists all assets in Asset Registry
+message AssetListRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+}
+
+message AssetListResponse {
+  // TODO: deprecate in favor of SpecificQuery.AssetInfo
+  core.chain.v1alpha1.KnownAssets asset_list = 1;
+}
+
 // Methods for accessing chain state that are "specific" in the sense that they
 // request specific portions of the chain state that could reveal private
 // client data.  For instance, requesting all asset denominations is oblivious,
 // but requesting the asset denomination for a specific asset id is not, because
 // it reveals that the client has an interest in that asset specifically.
 service SpecificQueryService {
-  rpc TransactionByNote(core.crypto.v1alpha1.NoteCommitment) returns (core.chain.v1alpha1.NoteSource);
-  rpc ValidatorStatus(ValidatorStatusRequest) returns (core.stake.v1alpha1.ValidatorStatus);
-  rpc NextValidatorRate(core.crypto.v1alpha1.IdentityKey) returns (core.stake.v1alpha1.RateData);
-  rpc BatchSwapOutputData(BatchSwapOutputDataRequest) returns (core.dex.v1alpha1.BatchSwapOutputData);
-  rpc StubCPMMReserves(StubCPMMReservesRequest) returns (core.dex.v1alpha1.Reserves);
+  rpc TransactionByNote(TransactionByNoteRequest) returns (TransactionByNoteResponse);
+  rpc ValidatorStatus(ValidatorStatusRequest) returns (ValidatorStatusResponse);
+  rpc NextValidatorRate(NextValidatorRateRequest) returns (NextValidatorRateResponse);
+  rpc BatchSwapOutputData(BatchSwapOutputDataRequest) returns (BatchSwapOutputDataResponse);
+  rpc StubCPMMReserves(StubCPMMReservesRequest) returns (StubCPMMReservesResponse);
   rpc AssetInfo(AssetInfoRequest) returns (AssetInfoResponse);
 
   // General-purpose key-value state query API, that can be used to query
   // arbitrary keys in the JMT storage.
   rpc KeyValue(KeyValueRequest) returns (KeyValueResponse);
+}
+
+message TransactionByNoteRequest {
+  core.crypto.v1alpha1.NoteCommitment note_commitment = 1;
+}
+
+message TransactionByNoteResponse {
+  core.chain.v1alpha1.NoteSource note_source = 1;
+}
+
+message ValidatorStatusRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  core.crypto.v1alpha1.IdentityKey identity_key = 2;
+}
+
+message ValidatorStatusResponse {
+  core.stake.v1alpha1.ValidatorStatus status = 1;
+}
+
+message NextValidatorRateRequest {
+  core.crypto.v1alpha1.IdentityKey identity_key = 1;
+}
+
+message NextValidatorRateResponse {
+  core.stake.v1alpha1.RateData data = 1;
+}
+
+// Requests batch swap data associated with a given height and trading pair from the view service.
+message BatchSwapOutputDataRequest {
+  uint64 height = 1;
+  core.dex.v1alpha1.TradingPair trading_pair = 2;
+}
+
+message BatchSwapOutputDataResponse {
+  core.dex.v1alpha1.BatchSwapOutputData data = 1;
+}
+
+// Requests CPMM reserves data associated with a given trading pair from the view service.
+message StubCPMMReservesRequest {
+  core.dex.v1alpha1.TradingPair trading_pair = 1;
+}
+
+message StubCPMMReservesResponse {
+  core.dex.v1alpha1.Reserves reserves = 1;
 }
 
 // Requests information on an asset by asset id
@@ -100,23 +162,6 @@ message AssetInfoResponse {
   core.crypto.v1alpha1.Asset asset = 1;
 }
 
-// Requests batch swap data associated with a given height and trading pair from the view service.
-message BatchSwapOutputDataRequest {
-    uint64 height = 1;
-    core.dex.v1alpha1.TradingPair trading_pair = 2;
-}
-
-// Requests CPMM reserves data associated with a given trading pair from the view service.
-message StubCPMMReservesRequest {
-    core.dex.v1alpha1.TradingPair trading_pair = 1;
-}
-
-message ValidatorStatusRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
-  core.crypto.v1alpha1.IdentityKey identity_key = 2;
-}
-
 // Performs a key-value query, either by key or by key hash.
 //
 // Proofs are only supported by key.
@@ -131,6 +176,5 @@ message KeyValueRequest {
 
 message KeyValueResponse {
   bytes value = 1;
-  
   .ibc.core.commitment.v1.MerkleProof proof = 2;
 }
