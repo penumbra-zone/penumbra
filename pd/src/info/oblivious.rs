@@ -14,7 +14,7 @@ use penumbra_component::{
 use penumbra_proto::{
     client::v1alpha1::{
         oblivious_query_service_server::ObliviousQueryService, AssetListRequest,
-        ChainParamsRequest, CompactBlockRangeRequest, MutableParametersRequest,
+        ChainParametersRequest, CompactBlockRangeRequest, MutableParametersRequest,
         ValidatorInfoRequest,
     },
     core::{
@@ -70,7 +70,7 @@ impl ObliviousQueryService for Info {
     #[instrument(skip(self, request))]
     async fn chain_parameters(
         &self,
-        request: tonic::Request<ChainParamsRequest>,
+        request: tonic::Request<ChainParametersRequest>,
     ) -> Result<tonic::Response<ChainParameters>, Status> {
         let state = self.storage.latest_state();
         state.check_chain_id(&request.get_ref().chain_id).await?;
