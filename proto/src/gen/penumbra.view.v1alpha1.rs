@@ -1,75 +1,3 @@
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TransactionPerspectiveRequest {
-    #[prost(bytes="vec", tag="1")]
-    pub tx_hash: ::prost::alloc::vec::Vec<u8>,
-}
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TransactionPerspectiveResponse {
-    #[prost(message, optional, tag="1")]
-    pub txp: ::core::option::Option<super::super::core::transaction::v1alpha1::TransactionPerspective>,
-    #[prost(message, optional, tag="2")]
-    pub tx: ::core::option::Option<super::super::core::transaction::v1alpha1::Transaction>,
-}
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TransactionsRequest {
-    /// If present, return only transactions after this height.
-    #[prost(uint64, optional, tag="1")]
-    pub start_height: ::core::option::Option<u64>,
-    /// If present, return only transactions before this height.
-    #[prost(uint64, optional, tag="2")]
-    pub end_height: ::core::option::Option<u64>,
-}
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TransactionByHashRequest {
-    /// The transaction hash to query for.
-    #[prost(bytes="vec", tag="1")]
-    pub tx_hash: ::prost::alloc::vec::Vec<u8>,
-}
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TransactionHashStreamResponse {
-    #[prost(uint64, tag="1")]
-    pub block_height: u64,
-    #[prost(bytes="vec", tag="2")]
-    pub tx_hash: ::prost::alloc::vec::Vec<u8>,
-}
-/// A streaming full transaction response
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TransactionStreamResponse {
-    #[prost(uint64, tag="1")]
-    pub block_height: u64,
-    #[prost(bytes="vec", tag="2")]
-    pub tx_hash: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag="3")]
-    pub tx: ::core::option::Option<super::super::core::transaction::v1alpha1::Transaction>,
-}
-/// A full transaction response
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TransactionByHashResponse {
-    #[prost(message, optional, tag="1")]
-    pub tx: ::core::option::Option<super::super::core::transaction::v1alpha1::Transaction>,
-}
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct NoteByCommitmentRequest {
-    #[prost(message, optional, tag="1")]
-    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
-    #[prost(message, optional, tag="2")]
-    pub note_commitment: ::core::option::Option<super::super::core::crypto::v1alpha1::NoteCommitment>,
-    /// If set to true, waits to return until the requested note is detected.
-    #[prost(bool, tag="3")]
-    pub await_detection: bool,
-}
-/// Requests the current chain parameters from the view service.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ChainParamsRequest {
-}
-/// Requests the current FMD parameters from the view service.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct FmdParametersRequest {
-}
-/// Requests all assets known to the view service.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct AssetRequest {
-}
 /// Requests sync status of the view service.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatusRequest {
@@ -102,6 +30,178 @@ pub struct StatusStreamResponse {
     #[prost(uint64, tag="2")]
     pub sync_height: u64,
 }
+/// A query for notes known by the view service.
+///
+/// This message uses the fact that all proto fields are optional
+/// to allow various filtering on the returned notes.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct NotesRequest {
+    /// Identifies the FVK for the notes to query.
+    #[prost(message, optional, tag="1")]
+    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
+    /// If set, return spent notes as well as unspent notes.
+    #[prost(bool, tag="2")]
+    pub include_spent: bool,
+    /// If set, only return notes with the specified asset id.
+    #[prost(message, optional, tag="3")]
+    pub asset_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AssetId>,
+    /// If set, only return notes with the specified address incore.dex.v1alpha1.
+    #[prost(message, optional, tag="4")]
+    pub address_index: ::core::option::Option<super::super::core::crypto::v1alpha1::AddressIndex>,
+    /// If set, stop returning notes once the total exceeds this amount.
+    ///
+    /// Ignored if `asset_id` is unset or if `include_spent` is set.
+    #[prost(uint64, tag="5")]
+    pub amount_to_spend: u64,
+}
+/// A query for quarantined notes known by the view service.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QuarantinedNotesRequest {
+    /// Identifies the FVK for the notes to query.
+    #[prost(message, optional, tag="1")]
+    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QuarantinedNotesResponse {
+    #[prost(message, optional, tag="1")]
+    pub note_record: ::core::option::Option<QuarantinedNoteRecord>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct WitnessRequest {
+    /// Identifies the FVK for the note commitments to query.
+    #[prost(message, optional, tag="1")]
+    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
+    /// The note commitments to obtain auth paths for.
+    #[prost(message, repeated, tag="2")]
+    pub note_commitments: ::prost::alloc::vec::Vec<super::super::core::crypto::v1alpha1::NoteCommitment>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct WitnessResponse {
+    #[prost(message, optional, tag="1")]
+    pub witness_data: ::core::option::Option<super::super::core::transaction::v1alpha1::WitnessData>,
+}
+/// Requests all assets known to the view service.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AssetsRequest {
+}
+/// Requests all assets known to the view service.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AssetsResponse {
+    #[prost(message, optional, tag="1")]
+    pub asset: ::core::option::Option<super::super::core::crypto::v1alpha1::Asset>,
+}
+/// Requests the current chain parameters from the view service.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ChainParametersRequest {
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ChainParametersResponse {
+    #[prost(message, optional, tag="1")]
+    pub parameters: ::core::option::Option<super::super::core::chain::v1alpha1::ChainParameters>,
+}
+/// Requests the current FMD parameters from the view service.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct FmdParametersRequest {
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct FmdParametersResponse {
+    #[prost(message, optional, tag="1")]
+    pub parameters: ::core::option::Option<super::super::core::chain::v1alpha1::FmdParameters>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct NoteByCommitmentRequest {
+    #[prost(message, optional, tag="1")]
+    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
+    #[prost(message, optional, tag="2")]
+    pub note_commitment: ::core::option::Option<super::super::core::crypto::v1alpha1::NoteCommitment>,
+    /// If set to true, waits to return until the requested note is detected.
+    #[prost(bool, tag="3")]
+    pub await_detection: bool,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct NoteByCommitmentResponse {
+    #[prost(message, optional, tag="1")]
+    pub spendable_note: ::core::option::Option<SpendableNoteRecord>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct NullifierStatusRequest {
+    #[prost(message, optional, tag="1")]
+    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
+    #[prost(message, optional, tag="2")]
+    pub nullifier: ::core::option::Option<super::super::core::crypto::v1alpha1::Nullifier>,
+    #[prost(bool, tag="3")]
+    pub await_detection: bool,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct NullifierStatusResponse {
+    #[prost(bool, tag="1")]
+    pub spent: bool,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Range {
+    /// If present, return only transactions after this height.
+    #[prost(uint64, optional, tag="1")]
+    pub start_height: ::core::option::Option<u64>,
+    /// If present, return only transactions before this height.
+    #[prost(uint64, optional, tag="2")]
+    pub end_height: ::core::option::Option<u64>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransactionHashesRequest {
+    #[prost(message, optional, tag="1")]
+    pub range: ::core::option::Option<Range>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransactionHashesResponse {
+    #[prost(uint64, tag="1")]
+    pub block_height: u64,
+    #[prost(bytes="vec", tag="2")]
+    pub tx_hash: ::prost::alloc::vec::Vec<u8>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransactionByHashRequest {
+    /// The transaction hash to query for.
+    #[prost(bytes="vec", tag="1")]
+    pub tx_hash: ::prost::alloc::vec::Vec<u8>,
+}
+/// A full transaction response
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransactionByHashResponse {
+    #[prost(message, optional, tag="1")]
+    pub tx: ::core::option::Option<super::super::core::transaction::v1alpha1::Transaction>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransactionsRequest {
+    #[prost(message, optional, tag="1")]
+    pub range: ::core::option::Option<Range>,
+}
+/// A streaming full transaction response
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransactionsResponse {
+    #[prost(uint64, tag="1")]
+    pub block_height: u64,
+    #[prost(bytes="vec", tag="2")]
+    pub tx_hash: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag="3")]
+    pub tx: ::core::option::Option<super::super::core::transaction::v1alpha1::Transaction>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransactionPerspectiveRequest {
+    #[prost(bytes="vec", tag="1")]
+    pub tx_hash: ::prost::alloc::vec::Vec<u8>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransactionPerspectiveResponse {
+    #[prost(message, optional, tag="1")]
+    pub txp: ::core::option::Option<super::super::core::transaction::v1alpha1::TransactionPerspective>,
+    #[prost(message, optional, tag="2")]
+    pub tx: ::core::option::Option<super::super::core::transaction::v1alpha1::Transaction>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct NotesResponse {
+    #[prost(message, optional, tag="1")]
+    pub note_record: ::core::option::Option<SpendableNoteRecord>,
+}
 /// A note plaintext with associated metadata about its status.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -131,39 +231,6 @@ pub struct SpendableNoteRecord {
     #[prost(message, optional, tag="8")]
     pub source: ::core::option::Option<super::super::core::chain::v1alpha1::NoteSource>,
 }
-/// A query for notes known by the view service.
-///
-/// This message uses the fact that all proto fields are optional
-/// to allow various filtering on the returned notes.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct NotesRequest {
-    /// Identifies the FVK for the notes to query.
-    #[prost(message, optional, tag="1")]
-    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
-    /// If set, return spent notes as well as unspent notes.
-    #[prost(bool, tag="2")]
-    pub include_spent: bool,
-    /// If set, only return notes with the specified asset id.
-    #[prost(message, optional, tag="3")]
-    pub asset_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AssetId>,
-    /// If set, only return notes with the specified address incore.dex.v1alpha1.
-    #[prost(message, optional, tag="4")]
-    pub address_index: ::core::option::Option<super::super::core::crypto::v1alpha1::AddressIndex>,
-    /// If set, stop returning notes once the total exceeds this amount.
-    ///
-    /// Ignored if `asset_id` is unset or if `include_spent` is set.
-    #[prost(uint64, tag="5")]
-    pub amount_to_spend: u64,
-}
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct WitnessRequest {
-    /// Identifies the FVK for the note commitments to query.
-    #[prost(message, optional, tag="1")]
-    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
-    /// The note commitments to obtain auth paths for.
-    #[prost(message, repeated, tag="2")]
-    pub note_commitments: ::prost::alloc::vec::Vec<super::super::core::crypto::v1alpha1::NoteCommitment>,
-}
 /// The plaintext of a note that has been quarantined until the end of an unbonding period.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -189,27 +256,6 @@ pub struct QuarantinedNoteRecord {
     /// The source of the note (a tx hash or otherwise)
     #[prost(message, optional, tag="7")]
     pub source: ::core::option::Option<super::super::core::chain::v1alpha1::NoteSource>,
-}
-/// A query for quarantined notes known by the view service.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QuarantinedNotesRequest {
-    /// Identifies the FVK for the notes to query.
-    #[prost(message, optional, tag="1")]
-    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
-}
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct NullifierStatusRequest {
-    #[prost(message, optional, tag="1")]
-    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
-    #[prost(message, optional, tag="2")]
-    pub nullifier: ::core::option::Option<super::super::core::crypto::v1alpha1::Nullifier>,
-    #[prost(bool, tag="3")]
-    pub await_detection: bool,
-}
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct NullifierStatusResponse {
-    #[prost(bool, tag="1")]
-    pub spent: bool,
 }
 /// Generated client implementations.
 pub mod view_protocol_service_client {
@@ -337,7 +383,7 @@ pub mod view_protocol_service_client {
             &mut self,
             request: impl tonic::IntoRequest<super::NotesRequest>,
         ) -> Result<
-            tonic::Response<tonic::codec::Streaming<super::SpendableNoteRecord>>,
+            tonic::Response<tonic::codec::Streaming<super::NotesResponse>>,
             tonic::Status,
         > {
             self.inner
@@ -360,7 +406,7 @@ pub mod view_protocol_service_client {
             &mut self,
             request: impl tonic::IntoRequest<super::QuarantinedNotesRequest>,
         ) -> Result<
-            tonic::Response<tonic::codec::Streaming<super::QuarantinedNoteRecord>>,
+            tonic::Response<tonic::codec::Streaming<super::QuarantinedNotesResponse>>,
             tonic::Status,
         > {
             self.inner
@@ -387,12 +433,7 @@ pub mod view_protocol_service_client {
         pub async fn witness(
             &mut self,
             request: impl tonic::IntoRequest<super::WitnessRequest>,
-        ) -> Result<
-            tonic::Response<
-                super::super::super::core::transaction::v1alpha1::WitnessData,
-            >,
-            tonic::Status,
-        > {
+        ) -> Result<tonic::Response<super::WitnessResponse>, tonic::Status> {
             self.inner
                 .ready()
                 .await
@@ -411,15 +452,8 @@ pub mod view_protocol_service_client {
         /// Queries for assets.
         pub async fn assets(
             &mut self,
-            request: impl tonic::IntoRequest<super::AssetRequest>,
-        ) -> Result<
-            tonic::Response<
-                tonic::codec::Streaming<
-                    super::super::super::core::crypto::v1alpha1::Asset,
-                >,
-            >,
-            tonic::Status,
-        > {
+            request: impl tonic::IntoRequest<super::AssetsRequest>,
+        ) -> Result<tonic::Response<super::AssetsResponse>, tonic::Status> {
             self.inner
                 .ready()
                 .await
@@ -433,16 +467,13 @@ pub mod view_protocol_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/Assets",
             );
-            self.inner.server_streaming(request.into_request(), path, codec).await
+            self.inner.unary(request.into_request(), path, codec).await
         }
         /// Query for the current chain parameters.
         pub async fn chain_parameters(
             &mut self,
-            request: impl tonic::IntoRequest<super::ChainParamsRequest>,
-        ) -> Result<
-            tonic::Response<super::super::super::core::chain::v1alpha1::ChainParameters>,
-            tonic::Status,
-        > {
+            request: impl tonic::IntoRequest<super::ChainParametersRequest>,
+        ) -> Result<tonic::Response<super::ChainParametersResponse>, tonic::Status> {
             self.inner
                 .ready()
                 .await
@@ -462,10 +493,7 @@ pub mod view_protocol_service_client {
         pub async fn fmd_parameters(
             &mut self,
             request: impl tonic::IntoRequest<super::FmdParametersRequest>,
-        ) -> Result<
-            tonic::Response<super::super::super::core::chain::v1alpha1::FmdParameters>,
-            tonic::Status,
-        > {
+        ) -> Result<tonic::Response<super::FmdParametersResponse>, tonic::Status> {
             self.inner
                 .ready()
                 .await
@@ -485,7 +513,7 @@ pub mod view_protocol_service_client {
         pub async fn note_by_commitment(
             &mut self,
             request: impl tonic::IntoRequest<super::NoteByCommitmentRequest>,
-        ) -> Result<tonic::Response<super::SpendableNoteRecord>, tonic::Status> {
+        ) -> Result<tonic::Response<super::NoteByCommitmentResponse>, tonic::Status> {
             self.inner
                 .ready()
                 .await
@@ -524,11 +552,9 @@ pub mod view_protocol_service_client {
         /// Query for the transaction hashes in the given range of blocks.
         pub async fn transaction_hashes(
             &mut self,
-            request: impl tonic::IntoRequest<super::TransactionsRequest>,
+            request: impl tonic::IntoRequest<super::TransactionHashesRequest>,
         ) -> Result<
-            tonic::Response<
-                tonic::codec::Streaming<super::TransactionHashStreamResponse>,
-            >,
+            tonic::Response<tonic::codec::Streaming<super::TransactionHashesResponse>>,
             tonic::Status,
         > {
             self.inner
@@ -571,7 +597,7 @@ pub mod view_protocol_service_client {
             &mut self,
             request: impl tonic::IntoRequest<super::TransactionsRequest>,
         ) -> Result<
-            tonic::Response<tonic::codec::Streaming<super::TransactionStreamResponse>>,
+            tonic::Response<tonic::codec::Streaming<super::TransactionsResponse>>,
             tonic::Status,
         > {
             self.inner
@@ -639,7 +665,7 @@ pub mod view_protocol_service_server {
         ) -> Result<tonic::Response<Self::StatusStreamStream>, tonic::Status>;
         ///Server streaming response type for the Notes method.
         type NotesStream: futures_core::Stream<
-                Item = Result<super::SpendableNoteRecord, tonic::Status>,
+                Item = Result<super::NotesResponse, tonic::Status>,
             >
             + Send
             + 'static;
@@ -650,7 +676,7 @@ pub mod view_protocol_service_server {
         ) -> Result<tonic::Response<Self::NotesStream>, tonic::Status>;
         ///Server streaming response type for the QuarantinedNotes method.
         type QuarantinedNotesStream: futures_core::Stream<
-                Item = Result<super::QuarantinedNoteRecord, tonic::Status>,
+                Item = Result<super::QuarantinedNotesResponse, tonic::Status>,
             >
             + Send
             + 'static;
@@ -668,47 +694,27 @@ pub mod view_protocol_service_server {
         async fn witness(
             &self,
             request: tonic::Request<super::WitnessRequest>,
-        ) -> Result<
-            tonic::Response<
-                super::super::super::core::transaction::v1alpha1::WitnessData,
-            >,
-            tonic::Status,
-        >;
-        ///Server streaming response type for the Assets method.
-        type AssetsStream: futures_core::Stream<
-                Item = Result<
-                    super::super::super::core::crypto::v1alpha1::Asset,
-                    tonic::Status,
-                >,
-            >
-            + Send
-            + 'static;
+        ) -> Result<tonic::Response<super::WitnessResponse>, tonic::Status>;
         /// Queries for assets.
         async fn assets(
             &self,
-            request: tonic::Request<super::AssetRequest>,
-        ) -> Result<tonic::Response<Self::AssetsStream>, tonic::Status>;
+            request: tonic::Request<super::AssetsRequest>,
+        ) -> Result<tonic::Response<super::AssetsResponse>, tonic::Status>;
         /// Query for the current chain parameters.
         async fn chain_parameters(
             &self,
-            request: tonic::Request<super::ChainParamsRequest>,
-        ) -> Result<
-            tonic::Response<super::super::super::core::chain::v1alpha1::ChainParameters>,
-            tonic::Status,
-        >;
+            request: tonic::Request<super::ChainParametersRequest>,
+        ) -> Result<tonic::Response<super::ChainParametersResponse>, tonic::Status>;
         /// Query for the current FMD parameters.
         async fn fmd_parameters(
             &self,
             request: tonic::Request<super::FmdParametersRequest>,
-        ) -> Result<
-            tonic::Response<super::super::super::core::chain::v1alpha1::FmdParameters>,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::FmdParametersResponse>, tonic::Status>;
         /// Query for a note by its note commitment, optionally waiting until the note is detected.
         async fn note_by_commitment(
             &self,
             request: tonic::Request<super::NoteByCommitmentRequest>,
-        ) -> Result<tonic::Response<super::SpendableNoteRecord>, tonic::Status>;
+        ) -> Result<tonic::Response<super::NoteByCommitmentResponse>, tonic::Status>;
         /// Query for whether a nullifier has been spent, optionally waiting until it is spent.
         async fn nullifier_status(
             &self,
@@ -716,14 +722,14 @@ pub mod view_protocol_service_server {
         ) -> Result<tonic::Response<super::NullifierStatusResponse>, tonic::Status>;
         ///Server streaming response type for the TransactionHashes method.
         type TransactionHashesStream: futures_core::Stream<
-                Item = Result<super::TransactionHashStreamResponse, tonic::Status>,
+                Item = Result<super::TransactionHashesResponse, tonic::Status>,
             >
             + Send
             + 'static;
         /// Query for the transaction hashes in the given range of blocks.
         async fn transaction_hashes(
             &self,
-            request: tonic::Request<super::TransactionsRequest>,
+            request: tonic::Request<super::TransactionHashesRequest>,
         ) -> Result<tonic::Response<Self::TransactionHashesStream>, tonic::Status>;
         /// Query for a given transaction hash.
         async fn transaction_by_hash(
@@ -732,7 +738,7 @@ pub mod view_protocol_service_server {
         ) -> Result<tonic::Response<super::TransactionByHashResponse>, tonic::Status>;
         ///Server streaming response type for the Transactions method.
         type TransactionsStream: futures_core::Stream<
-                Item = Result<super::TransactionStreamResponse, tonic::Status>,
+                Item = Result<super::TransactionsResponse, tonic::Status>,
             >
             + Send
             + 'static;
@@ -904,7 +910,7 @@ pub mod view_protocol_service_server {
                         T: ViewProtocolService,
                     > tonic::server::ServerStreamingService<super::NotesRequest>
                     for NotesSvc<T> {
-                        type Response = super::SpendableNoteRecord;
+                        type Response = super::NotesResponse;
                         type ResponseStream = T::NotesStream;
                         type Future = BoxFuture<
                             tonic::Response<Self::ResponseStream>,
@@ -944,7 +950,7 @@ pub mod view_protocol_service_server {
                     > tonic::server::ServerStreamingService<
                         super::QuarantinedNotesRequest,
                     > for QuarantinedNotesSvc<T> {
-                        type Response = super::QuarantinedNoteRecord;
+                        type Response = super::QuarantinedNotesResponse;
                         type ResponseStream = T::QuarantinedNotesStream;
                         type Future = BoxFuture<
                             tonic::Response<Self::ResponseStream>,
@@ -985,7 +991,7 @@ pub mod view_protocol_service_server {
                         T: ViewProtocolService,
                     > tonic::server::UnaryService<super::WitnessRequest>
                     for WitnessSvc<T> {
-                        type Response = super::super::super::core::transaction::v1alpha1::WitnessData;
+                        type Response = super::WitnessResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
@@ -1021,17 +1027,16 @@ pub mod view_protocol_service_server {
                     struct AssetsSvc<T: ViewProtocolService>(pub Arc<T>);
                     impl<
                         T: ViewProtocolService,
-                    > tonic::server::ServerStreamingService<super::AssetRequest>
+                    > tonic::server::UnaryService<super::AssetsRequest>
                     for AssetsSvc<T> {
-                        type Response = super::super::super::core::crypto::v1alpha1::Asset;
-                        type ResponseStream = T::AssetsStream;
+                        type Response = super::AssetsResponse;
                         type Future = BoxFuture<
-                            tonic::Response<Self::ResponseStream>,
+                            tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::AssetRequest>,
+                            request: tonic::Request<super::AssetsRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move { (*inner).assets(request).await };
@@ -1050,7 +1055,7 @@ pub mod view_protocol_service_server {
                                 accept_compression_encodings,
                                 send_compression_encodings,
                             );
-                        let res = grpc.server_streaming(method, req).await;
+                        let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
@@ -1060,16 +1065,16 @@ pub mod view_protocol_service_server {
                     struct ChainParametersSvc<T: ViewProtocolService>(pub Arc<T>);
                     impl<
                         T: ViewProtocolService,
-                    > tonic::server::UnaryService<super::ChainParamsRequest>
+                    > tonic::server::UnaryService<super::ChainParametersRequest>
                     for ChainParametersSvc<T> {
-                        type Response = super::super::super::core::chain::v1alpha1::ChainParameters;
+                        type Response = super::ChainParametersResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::ChainParamsRequest>,
+                            request: tonic::Request<super::ChainParametersRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move {
@@ -1102,7 +1107,7 @@ pub mod view_protocol_service_server {
                         T: ViewProtocolService,
                     > tonic::server::UnaryService<super::FmdParametersRequest>
                     for FMDParametersSvc<T> {
-                        type Response = super::super::super::core::chain::v1alpha1::FmdParameters;
+                        type Response = super::FmdParametersResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
@@ -1142,7 +1147,7 @@ pub mod view_protocol_service_server {
                         T: ViewProtocolService,
                     > tonic::server::UnaryService<super::NoteByCommitmentRequest>
                     for NoteByCommitmentSvc<T> {
-                        type Response = super::SpendableNoteRecord;
+                        type Response = super::NoteByCommitmentResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
@@ -1220,9 +1225,10 @@ pub mod view_protocol_service_server {
                     struct TransactionHashesSvc<T: ViewProtocolService>(pub Arc<T>);
                     impl<
                         T: ViewProtocolService,
-                    > tonic::server::ServerStreamingService<super::TransactionsRequest>
-                    for TransactionHashesSvc<T> {
-                        type Response = super::TransactionHashStreamResponse;
+                    > tonic::server::ServerStreamingService<
+                        super::TransactionHashesRequest,
+                    > for TransactionHashesSvc<T> {
+                        type Response = super::TransactionHashesResponse;
                         type ResponseStream = T::TransactionHashesStream;
                         type Future = BoxFuture<
                             tonic::Response<Self::ResponseStream>,
@@ -1230,7 +1236,7 @@ pub mod view_protocol_service_server {
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::TransactionsRequest>,
+                            request: tonic::Request<super::TransactionHashesRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move {
@@ -1303,7 +1309,7 @@ pub mod view_protocol_service_server {
                         T: ViewProtocolService,
                     > tonic::server::ServerStreamingService<super::TransactionsRequest>
                     for TransactionsSvc<T> {
-                        type Response = super::TransactionStreamResponse;
+                        type Response = super::TransactionsResponse;
                         type ResponseStream = T::TransactionsStream;
                         type Future = BoxFuture<
                             tonic::Response<Self::ResponseStream>,
