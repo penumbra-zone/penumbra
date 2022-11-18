@@ -5,7 +5,6 @@ use futures::{Stream, StreamExt, TryStreamExt};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::keys::AccountID;
 use penumbra_crypto::{asset, keys::AddressIndex, note, Asset, Nullifier};
-use penumbra_proto::view::v1alpha1::Range;
 use penumbra_proto::view::v1alpha1::{
     self as pb, view_protocol_service_client::ViewProtocolServiceClient, WitnessRequest,
 };
@@ -19,7 +18,9 @@ use tonic::async_trait;
 use tonic::codegen::Bytes;
 use tracing::instrument;
 
-use crate::{QuarantinedNoteRecord, SpendableNoteRecord, StatusStreamResponse};
+use crate::{
+    quarantined_note_record, QuarantinedNoteRecord, SpendableNoteRecord, StatusStreamResponse,
+};
 
 /// The view protocol is used by a view client, who wants to do some
 /// transaction-related actions, to request data from a view service, which is
@@ -293,27 +294,33 @@ where
     async fn chain_params(&mut self) -> Result<ChainParameters> {
         // We have to manually invoke the method on the type, because it has the
         // same name as the one we're implementing.
-        let params = ViewProtocolServiceClient::chain_parameters(
+        let parameters = ViewProtocolServiceClient::chain_parameters(
             self,
             tonic::Request::new(pb::ChainParametersRequest {}),
         )
         .await?
         .into_inner()
-        .try_into()?;
+        .parameters;
 
-        Ok(params)
+        match parameters {
+            Some(params) => Ok(params.try_into()?),
+            None => Err(anyhow::anyhow!("no chain parameters specified")),
+        }
     }
 
     async fn fmd_parameters(&mut self) -> Result<FmdParameters> {
-        let params = ViewProtocolServiceClient::fmd_parameters(
+        let parameters = ViewProtocolServiceClient::fmd_parameters(
             self,
             tonic::Request::new(pb::FmdParametersRequest {}),
         )
         .await?
         .into_inner()
-        .try_into()?;
+        .parameters;
 
-        Ok(params)
+        match parameters {
+            Some(params) => Ok(params.try_into()?),
+            None => Err(anyhow::anyhow!("no fmd parameters specified")),
+        }
     }
 
     async fn notes(&mut self, request: pb::NotesRequest) -> Result<Vec<SpendableNoteRecord>> {
@@ -324,7 +331,17 @@ where
             .try_collect()
             .await?;
 
-        pb_notes.into_iter().map(TryInto::try_into).collect()
+        let mut output: Vec<SpendableNoteRecord> = Vec::with_capacity(pb_notes.len());
+
+        // TODO(erwan): iterators here
+        for note_response in pb_notes.iter() {
+            match note_response.note_record {
+                Some(spendable_note_record) => output.push(spendable_note_record.try_into()?),
+                None => {}
+            }
+        }
+
+        Ok(output)
     }
 
     async fn quarantined_notes(
@@ -338,7 +355,15 @@ where
             .try_collect()
             .await?;
 
-        pb_notes.into_iter().map(TryInto::try_into).collect()
+        let mut output: Vec<QuarantinedNoteRecord> = Vec::with_capacity(pb_notes.len());
+
+        for note_response in pb_notes.iter() {
+            match note_response.note_record {
+                Some(quarantined_note_record) => output.push(quarantined_note_record.try_into()?),
+                None => {}
+            }
+        }
+        Ok(output)
     }
 
     async fn note_by_commitment(
@@ -441,11 +466,16 @@ where
             note_commitments,
         };
 
-        let mut witness_data: WitnessData = self
+        let mut witness_response = self
             .witness(tonic::Request::new(request))
             .await?
-            .into_inner()
-            .try_into()?;
+            .into_inner();
+
+        let Some(pb_witness_data) = witness_response.witness_data else {
+            return Err(anyhow::anyhow!("empty witness response!"));
+        };
+
+        let witness_data: WitnessData = pb_witness_data.try_into()?;
 
         // Now we need to augment the witness data with dummy proofs such that
         // note commitments corresponding to dummy spends also have proofs.
@@ -470,12 +500,7 @@ where
                 .try_collect()
                 .await?;
 
-        let assets = pb_assets
-            .into_iter()
-            .map(Asset::try_from)
-            .collect::<Result<Vec<Asset>, anyhow::Error>>()?;
-
-        Ok(assets.into_iter().map(|asset| asset.denom).collect())
+        todo!()
     }
 
     async fn transaction_hashes(
@@ -484,7 +509,7 @@ where
         end_height: Option<u64>,
     ) -> Result<Vec<(u64, Vec<u8>)>> {
         let pb_txs: Vec<_> = self
-            .transaction_hashes(tonic::Request::new(pb::TransactionsRequest {
+            .transaction_hashes(tonic::Request::new(pb::TransactionHashesRequest {
                 start_height,
                 end_height,
             }))
@@ -542,10 +567,8 @@ where
     ) -> Result<Vec<(u64, Transaction)>> {
         let pb_txs: Vec<_> = self
             .transactions(tonic::Request::new(pb::TransactionsRequest {
-                range: Some(Range {
-                    start_height,
-                    end_height,
-                }),
+                start_height,
+                end_height,
             }))
             .await?
             .into_inner()
