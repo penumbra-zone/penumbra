@@ -177,15 +177,11 @@ message NullifierStatusResponse {
   bool spent = 1;
 }
 
-message Range {
+message TransactionHashesRequest {
   // If present, return only transactions after this height.
   optional uint64 start_height = 1;
   // If present, return only transactions before this height.
   optional uint64 end_height = 2;
-}
-
-message TransactionHashesRequest {
-  Range range = 1;
 }
 
 message TransactionHashesResponse {
@@ -204,7 +200,10 @@ message TransactionByHashResponse {
 }
 
 message TransactionsRequest {
-  Range range = 1;
+  // If present, return only transactions after this height.
+  optional uint64 start_height = 1;
+  // If present, return only transactions before this height.
+  optional uint64 end_height = 2;
 }
 
 // A streaming full transaction response
