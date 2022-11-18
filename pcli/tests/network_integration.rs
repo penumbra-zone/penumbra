@@ -9,9 +9,11 @@
 //! where no tokens have been delegated, and the address with index 0
 //! was distributed 1cube.
 
+use std::path::PathBuf;
 use std::{thread, time};
 
 use assert_cmd::Command;
+use directories::UserDirs;
 use predicates::prelude::*;
 use regex::Regex;
 use serde_json::Value;
@@ -421,4 +423,93 @@ fn duplicate_consensus_key_forbidden() {
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     submit_cmd.assert().failure();
+}
+
+#[ignore]
+#[test]
+/// Ensures that attempting to modify an existing validator's consensus key fails.
+fn mismatched_consensus_key_update_fails() {
+    // Get template for promoting our node to validator.
+    // We use a named tempfile so we can get a filepath for pcli cli.
+    let validator_filepath = NamedTempFile::new().unwrap();
+    let tmpdir = load_wallet_into_tmpdir();
+    let mut template_cmd = Command::cargo_bin("pcli").unwrap();
+    template_cmd
+        .args(&[
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "validator",
+            "definition",
+            "template",
+            "--file",
+            &validator_filepath.path().to_str().unwrap(),
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    template_cmd.assert().success();
+    let template_content = std::fs::read_to_string(&validator_filepath)
+        .expect("Could not read initial validator config file");
+    let mut new_validator_def: Value = serde_json::from_str(&template_content)
+        .expect("Could not parse initial validator template as JSON");
+
+    // Now we retrieve the actual tendermint consensus key from the testnet data dir.
+    // Doing so assumes that the testnet-generated data was previously but in place,
+    // which is a reasonable assumption in the context of running smoketest suite.
+    let userdir = UserDirs::new().unwrap();
+    let homedir = userdir
+        .home_dir()
+        .as_os_str()
+        .to_str()
+        .expect("Could not find home directory");
+    let tm_key_filepath: PathBuf = [
+        &homedir,
+        ".penumbra",
+        "testnet_data",
+        "node0",
+        "tendermint",
+        "config",
+        "priv_validator_key.json",
+    ]
+    .iter()
+    .collect();
+    let tm_key_config: Value =
+        serde_json::from_str(&std::fs::read_to_string(&tm_key_filepath).unwrap())
+            .expect("Could not read tendermint key config file");
+    let tm_key = &tm_key_config["pub_key"]["value"];
+    // Modify initial validator definition template to use actual tm key.
+    new_validator_def["consensus_key"] = tm_key.to_owned();
+    // Mark validator definition as "active".
+    new_validator_def["enabled"] = Value::from(true);
+    // Modify our local validator config to contain a different consensus key
+    let seq_num: Value = new_validator_def["sequence_number"].to_owned();
+    new_validator_def["sequence_number"] = Value::from(seq_num.as_i64().unwrap() + 1);
+
+    // Write out revised (and incorrect!) validator definition.
+    std::fs::write(
+        &validator_filepath,
+        serde_json::to_string_pretty(&new_validator_def)
+            .expect("Could not marshall revised validator config as JSON"),
+    )
+    .expect("Could not overwrite validator config file with revised definition");
+
+    // Run by itself, this test would need to munge the validator
+    // definition and submit twice, once to create the validator,
+    // and a second time to POST known-bad data. In the context
+    // of the single-threaded smoketest suite, however, we previously
+    // created a validator in [duplicate_consensus_key_forbidden].
+    // Here, we reuse that validator's existence on the test-only chain
+    // to confirm that subsequent validator updates fail.
+    let mut resubmit_cmd = Command::cargo_bin("pcli").unwrap();
+    resubmit_cmd
+        .args(&[
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "validator",
+            "definition",
+            "upload",
+            "--file",
+            validator_filepath.path().to_str().unwrap(),
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    // Ensure that command fails.
+    resubmit_cmd.assert().failure();
 }
