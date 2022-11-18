@@ -39,7 +39,7 @@ service ViewProtocolService {
   rpc Witness(WitnessRequest) returns (WitnessResponse);
 
   // Queries for assets.
-  rpc Assets(AssetsRequest) returns (AssetsResponse);
+  rpc Assets(AssetsRequest) returns (stream AssetsResponse);
 
   // Query for the current chain parameters.
   rpc ChainParameters(ChainParametersRequest) returns (ChainParametersResponse);
@@ -185,7 +185,7 @@ message Range {
 }
 
 message TransactionHashesRequest {
-  optional Range range = 1;
+  Range range = 1;
 }
 
 message TransactionHashesResponse {
@@ -204,7 +204,7 @@ message TransactionByHashResponse {
 }
 
 message TransactionsRequest {
-  optional Range range = 1;
+  Range range = 1;
 }
 
 // A streaming full transaction response
