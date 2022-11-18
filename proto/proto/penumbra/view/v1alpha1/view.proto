@@ -1,12 +1,12 @@
 syntax = "proto3";
 
-option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
-
 package penumbra.view.v1alpha1;
 
-import "penumbra/core/transaction/v1alpha1/transaction.proto";
-import "penumbra/core/crypto/v1alpha1/crypto.proto";
 import "penumbra/core/chain/v1alpha1/chain.proto";
+import "penumbra/core/crypto/v1alpha1/crypto.proto";
+import "penumbra/core/transaction/v1alpha1/transaction.proto";
+
+option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
 
 // The view protocol is used by a view client, who wants to do some
 // transaction-related actions, to request data from a view service, which is
@@ -18,87 +18,142 @@ import "penumbra/core/chain/v1alpha1/chain.proto";
 // (assuming transport security, the client has to know the FVK to request its
 // data).  (TODO: refine this)
 service ViewProtocolService {
-    // Get current status of chain sync
-    rpc Status(StatusRequest) returns (StatusResponse);
+  // Get current status of chain sync
+  rpc Status(StatusRequest) returns (StatusResponse);
 
-    // Stream sync status updates until the view service has caught up with the core.chain.v1alpha1.
-    rpc StatusStream(StatusStreamRequest) returns (stream StatusStreamResponse);
+  // Stream sync status updates until the view service has caught up with the core.chain.v1alpha1.
+  rpc StatusStream(StatusStreamRequest) returns (stream StatusStreamResponse);
 
-    // Queries for notes that have been accepted by the core.chain.v1alpha1.
-    rpc Notes(NotesRequest) returns (stream SpendableNoteRecord);
+  // Queries for notes that have been accepted by the core.chain.v1alpha1.
+  rpc Notes(NotesRequest) returns (stream NotesResponse);
 
-    // Queries for notes that have been quarantined until the end of an unbonding period.
-    rpc QuarantinedNotes(QuarantinedNotesRequest) returns (stream QuarantinedNoteRecord);
+  // Queries for notes that have been quarantined until the end of an unbonding period.
+  rpc QuarantinedNotes(QuarantinedNotesRequest) returns (stream QuarantinedNotesResponse);
 
-    // Returns authentication paths for the given note commitments.
-    //
-    // This method takes a batch of input commitments, rather than just one, so
-    // that the client can get a consistent set of authentication paths to a
-    // common root.  (Otherwise, if a client made multiple requests, the wallet
-    // service could have advanced the note commitment tree state between queries).
-    rpc Witness(WitnessRequest) returns (core.transaction.v1alpha1.WitnessData);
+  // Returns authentication paths for the given note commitments.
+  //
+  // This method takes a batch of input commitments, rather than just one, so
+  // that the client can get a consistent set of authentication paths to a
+  // common root.  (Otherwise, if a client made multiple requests, the wallet
+  // service could have advanced the note commitment tree state between queries).
+  rpc Witness(WitnessRequest) returns (WitnessResponse);
 
-    // Queries for assets.
-    rpc Assets(AssetRequest) returns (stream core.crypto.v1alpha1.Asset);
+  // Queries for assets.
+  rpc Assets(AssetsRequest) returns (AssetsResponse);
 
-    // Query for the current chain parameters.
-    rpc ChainParameters(ChainParamsRequest) returns (core.chain.v1alpha1.ChainParameters);
+  // Query for the current chain parameters.
+  rpc ChainParameters(ChainParametersRequest) returns (ChainParametersResponse);
 
-    // Query for the current FMD parameters.
-    rpc FMDParameters(FMDParametersRequest) returns (core.chain.v1alpha1.FmdParameters);
+  // Query for the current FMD parameters.
+  rpc FMDParameters(FMDParametersRequest) returns (FMDParametersResponse);
 
-    // Query for a note by its note commitment, optionally waiting until the note is detected.
-    rpc NoteByCommitment(NoteByCommitmentRequest) returns (SpendableNoteRecord);
+  // Query for a note by its note commitment, optionally waiting until the note is detected.
+  rpc NoteByCommitment(NoteByCommitmentRequest) returns (NoteByCommitmentResponse);
 
-    // Query for whether a nullifier has been spent, optionally waiting until it is spent.
-    rpc NullifierStatus(NullifierStatusRequest) returns (NullifierStatusResponse);
+  // Query for whether a nullifier has been spent, optionally waiting until it is spent.
+  rpc NullifierStatus(NullifierStatusRequest) returns (NullifierStatusResponse);
 
-    // Query for the transaction hashes in the given range of blocks.
-    rpc TransactionHashes(TransactionsRequest) returns (stream TransactionHashStreamResponse);
-    // Query for a given transaction hash.
-    rpc TransactionByHash(TransactionByHashRequest) returns (TransactionByHashResponse);
-    // Query for the full transactions in the given range of blocks.
-    rpc Transactions(TransactionsRequest) returns (stream TransactionStreamResponse);
-    // Query for the transaction perspective of the given transaction
-    rpc TransactionPerspective(TransactionPerspectiveRequest) returns (TransactionPerspectiveResponse);
+  // Query for the transaction hashes in the given range of blocks.
+  rpc TransactionHashes(TransactionHashesRequest) returns (stream TransactionHashesResponse);
+  // Query for a given transaction hash.
+  rpc TransactionByHash(TransactionByHashRequest) returns (TransactionByHashResponse);
+  // Query for the full transactions in the given range of blocks.
+  rpc Transactions(TransactionsRequest) returns (stream TransactionsResponse);
+  // Query for the transaction perspective of the given transaction
+  rpc TransactionPerspective(TransactionPerspectiveRequest) returns (TransactionPerspectiveResponse);
 }
 
-message TransactionPerspectiveRequest {
-    bytes tx_hash = 1;
+// Requests sync status of the view service.
+message StatusRequest {
+  // Identifies the FVK for the notes to query.
+  core.crypto.v1alpha1.AccountID account_id = 1;
 }
 
-message TransactionPerspectiveResponse {
-    core.transaction.v1alpha1.TransactionPerspective txp = 1;
-    core.transaction.v1alpha1.Transaction tx = 2;
+// Returns the status of the view service and whether it is synchronized with the chain state.
+message StatusResponse {
+  // The height the view service has synchronized to so far
+  uint64 sync_height = 1;
+  // Whether the view service is catching up with the chain state
+  bool catching_up = 2;
 }
 
-message TransactionsRequest {
-    // If present, return only transactions after this height.
-    optional uint64 start_height = 1;
-    // If present, return only transactions before this height.
-    optional uint64 end_height = 2;
+// Requests streaming updates on the sync height until the view service is synchronized.
+message StatusStreamRequest {
+  // Identifies the FVK for the notes to query.
+  core.crypto.v1alpha1.AccountID account_id = 1;
 }
 
-message TransactionByHashRequest {
-    // The transaction hash to query for.
-    bytes tx_hash = 1;
+// A streaming sync status update
+message StatusStreamResponse {
+  uint64 latest_known_block_height = 1;
+  uint64 sync_height = 2;
 }
 
-message TransactionHashStreamResponse {
-    uint64 block_height = 1;
-    bytes tx_hash = 2;
+// A query for notes known by the view service.
+//
+// This message uses the fact that all proto fields are optional
+// to allow various filtering on the returned notes.
+message NotesRequest {
+  // Identifies the FVK for the notes to query.
+  core.crypto.v1alpha1.AccountID account_id = 1;
+
+  // If set, return spent notes as well as unspent notes.
+  bool include_spent = 2;
+
+  // If set, only return notes with the specified asset id.
+  core.crypto.v1alpha1.AssetId asset_id = 3;
+
+  // If set, only return notes with the specified address incore.dex.v1alpha1.
+  core.crypto.v1alpha1.AddressIndex address_index = 4;
+
+  // If set, stop returning notes once the total exceeds this amount.
+  //
+  // Ignored if `asset_id` is unset or if `include_spent` is set.
+  uint64 amount_to_spend = 5;
 }
 
-// A streaming full transaction response
-message TransactionStreamResponse {
-    uint64 block_height = 1;
-    bytes tx_hash = 2;
-    core.transaction.v1alpha1.Transaction tx = 3;
+// A query for quarantined notes known by the view service.
+message QuarantinedNotesRequest {
+  // Identifies the FVK for the notes to query.
+  core.crypto.v1alpha1.AccountID account_id = 1;
 }
 
-// A full transaction response
-message TransactionByHashResponse {
-    core.transaction.v1alpha1.Transaction tx = 1;
+message QuarantinedNotesResponse {
+  QuarantinedNoteRecord note_record = 1;
+}
+
+message WitnessRequest {
+  // Identifies the FVK for the note commitments to query.
+  core.crypto.v1alpha1.AccountID account_id = 1;
+
+  // The note commitments to obtain auth paths for.
+  repeated core.crypto.v1alpha1.NoteCommitment note_commitments = 2;
+}
+
+message WitnessResponse {
+  core.transaction.v1alpha1.WitnessData witness_data = 1;
+}
+
+// Requests all assets known to the view service.
+message AssetsRequest {}
+
+// Requests all assets known to the view service.
+message AssetsResponse {
+  core.crypto.v1alpha1.Asset asset = 1;
+}
+
+// Requests the current chain parameters from the view service.
+message ChainParametersRequest {}
+
+message ChainParametersResponse {
+  core.chain.v1alpha1.ChainParameters parameters = 1;
+}
+
+// Requests the current FMD parameters from the view service.
+message FMDParametersRequest {}
+
+message FMDParametersResponse {
+  core.chain.v1alpha1.FmdParameters parameters = 1;
 }
 
 message NoteByCommitmentRequest {
@@ -108,117 +163,8 @@ message NoteByCommitmentRequest {
   bool await_detection = 3;
 }
 
-// Requests the current chain parameters from the view service.
-message ChainParamsRequest {
-}
-
-// Requests the current FMD parameters from the view service.
-message FMDParametersRequest {
-}
-
-// Requests all assets known to the view service.
-message AssetRequest {
-}
-
-// Requests sync status of the view service.
-message StatusRequest {
-    // Identifies the FVK for the notes to query.
-    core.crypto.v1alpha1.AccountID account_id = 1;
-}
-
-// Returns the status of the view service and whether it is synchronized with the chain state.
-message StatusResponse {
-    // The height the view service has synchronized to so far
-    uint64 sync_height = 1;
-    // Whether the view service is catching up with the chain state
-    bool catching_up = 2;
-}
-
-// Requests streaming updates on the sync height until the view service is synchronized.
-message StatusStreamRequest {
-    // Identifies the FVK for the notes to query.
-    core.crypto.v1alpha1.AccountID account_id = 1;
-}
-
-// A streaming sync status update
-message StatusStreamResponse {
-    uint64 latest_known_block_height = 1;
-    uint64 sync_height = 2;
-}
-
-// A note plaintext with associated metadata about its status.
-message SpendableNoteRecord {
-    // The note commitment, identifying the note.
-    core.crypto.v1alpha1.NoteCommitment note_commitment = 1;
-    // The note plaintext itself.
-    core.crypto.v1alpha1.Note note = 2;
-    // A precomputed decryption of the note's address incore.dex.v1alpha1.
-    core.crypto.v1alpha1.AddressIndex address_index = 3;
-    // The note's nullifier.
-    core.crypto.v1alpha1.Nullifier nullifier = 4;
-    // The height at which the note was created.
-    uint64 height_created = 5;
-    // Records whether the note was spent (and if so, at what height).
-    optional uint64 height_spent = 6;
-    // The note position.
-    uint64 position = 7;
-    // The source of the note (a tx hash or otherwise)
-    core.chain.v1alpha1.NoteSource source = 8;
-}
-
-// A query for notes known by the view service.
-//
-// This message uses the fact that all proto fields are optional
-// to allow various filtering on the returned notes.
-message NotesRequest {
-    // Identifies the FVK for the notes to query.
-    core.crypto.v1alpha1.AccountID account_id = 1;
-
-    // If set, return spent notes as well as unspent notes.
-    bool include_spent = 2;
-
-    // If set, only return notes with the specified asset id.
-    core.crypto.v1alpha1.AssetId asset_id = 3;
-
-    // If set, only return notes with the specified address incore.dex.v1alpha1.
-    core.crypto.v1alpha1.AddressIndex address_index = 4;
-
-    // If set, stop returning notes once the total exceeds this amount.
-    //
-    // Ignored if `asset_id` is unset or if `include_spent` is set.
-    uint64 amount_to_spend = 5;
-}
-
-message WitnessRequest {
-    // Identifies the FVK for the note commitments to query.
-    core.crypto.v1alpha1.AccountID account_id = 1;
-
-    // The note commitments to obtain auth paths for.
-    repeated core.crypto.v1alpha1.NoteCommitment note_commitments = 2;
-}
-
-// The plaintext of a note that has been quarantined until the end of an unbonding period.
-message QuarantinedNoteRecord {
-    // The note commitment, identifying the note.
-    core.crypto.v1alpha1.NoteCommitment note_commitment = 1;
-    // The note plaintext itself.
-    core.crypto.v1alpha1.Note note = 2;
-    // A precomputed decryption of the note's address incore.dex.v1alpha1.
-    core.crypto.v1alpha1.AddressIndex address_index = 3;
-    // The height at which the note was created.
-    uint64 height_created = 4;
-    // The epoch at which the note will exit quarantine, if unbonding is not interrupted by slashing.
-    uint64 unbonding_epoch = 5;
-    // The validator identity the quarantining is bound to.
-    core.crypto.v1alpha1.IdentityKey identity_key = 6;
-    // The source of the note (a tx hash or otherwise)
-    core.chain.v1alpha1.NoteSource source = 7;
-}
-
-// A query for quarantined notes known by the view service.
-message QuarantinedNotesRequest {
-    // Identifies the FVK for the notes to query.
-    core.crypto.v1alpha1.AccountID account_id = 1;
+message NoteByCommitmentResponse {
+  SpendableNoteRecord spendable_note = 1;
 }
 
 message NullifierStatusRequest {
@@ -229,4 +175,92 @@ message NullifierStatusRequest {
 
 message NullifierStatusResponse {
   bool spent = 1;
+}
+
+message Range {
+  // If present, return only transactions after this height.
+  optional uint64 start_height = 1;
+  // If present, return only transactions before this height.
+  optional uint64 end_height = 2;
+}
+
+message TransactionHashesRequest {
+  optional Range range = 1;
+}
+
+message TransactionHashesResponse {
+  uint64 block_height = 1;
+  bytes tx_hash = 2;
+}
+
+message TransactionByHashRequest {
+  // The transaction hash to query for.
+  bytes tx_hash = 1;
+}
+
+// A full transaction response
+message TransactionByHashResponse {
+  core.transaction.v1alpha1.Transaction tx = 1;
+}
+
+message TransactionsRequest {
+  optional Range range = 1;
+}
+
+// A streaming full transaction response
+message TransactionsResponse {
+  uint64 block_height = 1;
+  bytes tx_hash = 2;
+  core.transaction.v1alpha1.Transaction tx = 3;
+}
+
+message TransactionPerspectiveRequest {
+  bytes tx_hash = 1;
+}
+
+message TransactionPerspectiveResponse {
+  core.transaction.v1alpha1.TransactionPerspective txp = 1;
+  core.transaction.v1alpha1.Transaction tx = 2;
+}
+
+message NotesResponse {
+  SpendableNoteRecord note_record = 1;
+}
+
+// A note plaintext with associated metadata about its status.
+message SpendableNoteRecord {
+  // The note commitment, identifying the note.
+  core.crypto.v1alpha1.NoteCommitment note_commitment = 1;
+  // The note plaintext itself.
+  core.crypto.v1alpha1.Note note = 2;
+  // A precomputed decryption of the note's address incore.dex.v1alpha1.
+  core.crypto.v1alpha1.AddressIndex address_index = 3;
+  // The note's nullifier.
+  core.crypto.v1alpha1.Nullifier nullifier = 4;
+  // The height at which the note was created.
+  uint64 height_created = 5;
+  // Records whether the note was spent (and if so, at what height).
+  optional uint64 height_spent = 6;
+  // The note position.
+  uint64 position = 7;
+  // The source of the note (a tx hash or otherwise)
+  core.chain.v1alpha1.NoteSource source = 8;
+}
+
+// The plaintext of a note that has been quarantined until the end of an unbonding period.
+message QuarantinedNoteRecord {
+  // The note commitment, identifying the note.
+  core.crypto.v1alpha1.NoteCommitment note_commitment = 1;
+  // The note plaintext itself.
+  core.crypto.v1alpha1.Note note = 2;
+  // A precomputed decryption of the note's address incore.dex.v1alpha1.
+  core.crypto.v1alpha1.AddressIndex address_index = 3;
+  // The height at which the note was created.
+  uint64 height_created = 4;
+  // The epoch at which the note will exit quarantine, if unbonding is not interrupted by slashing.
+  uint64 unbonding_epoch = 5;
+  // The validator identity the quarantining is bound to.
+  core.crypto.v1alpha1.IdentityKey identity_key = 6;
+  // The source of the note (a tx hash or otherwise)
+  core.chain.v1alpha1.NoteSource source = 7;
 }
