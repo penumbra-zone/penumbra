@@ -9,7 +9,7 @@ import "penumbra/core/dex/v1alpha1/dex.proto";
 import "penumbra/core/governance/v1alpha1/governance.proto";
 import "penumbra/core/stake/v1alpha1/stake.proto";
 // TODO: clean up import paths (this is pulling from the ibc-go-vendor root)
-import "proofs.proto";
+// import "proofs.proto";
 
 // Methods for accessing chain state that are "oblivious" in the sense that they
 // do not request specific portions of the chain state that could reveal private
