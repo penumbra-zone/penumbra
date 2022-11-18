@@ -97,8 +97,8 @@ pub struct KeyValueRequest {
     #[prost(string, tag="1")]
     pub chain_id: ::prost::alloc::string::String,
     /// If set, the key to fetch from storage.
-    #[prost(bytes="vec", tag="2")]
-    pub key: ::prost::alloc::vec::Vec<u8>,
+    #[prost(string, tag="2")]
+    pub key: ::prost::alloc::string::String,
     /// whether to return a proof
     #[prost(bool, tag="3")]
     pub proof: bool,
@@ -108,7 +108,7 @@ pub struct KeyValueResponse {
     #[prost(bytes="vec", tag="1")]
     pub value: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag="2")]
-    pub proof: ::core::option::Option<::ics23::CommitmentProof>,
+    pub proof: ::core::option::Option<::ibc_proto::ibc::core::commitment::v1::MerkleProof>,
 }
 /// Generated client implementations.
 pub mod oblivious_query_service_client {

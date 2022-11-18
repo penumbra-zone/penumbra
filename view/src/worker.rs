@@ -315,7 +315,7 @@ async fn nct_divergence_check(
 ) -> anyhow::Result<()> {
     let value = client
         .key_value(penumbra_proto::client::v1alpha1::KeyValueRequest {
-            key: format!("shielded_pool/anchor/{}", height).into_bytes(),
+            key: format!("shielded_pool/anchor/{}", height),
             ..Default::default()
         })
         .await?
