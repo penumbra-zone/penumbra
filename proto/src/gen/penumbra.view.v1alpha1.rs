@@ -138,18 +138,13 @@ pub struct NullifierStatusResponse {
     pub spent: bool,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Range {
+pub struct TransactionHashesRequest {
     /// If present, return only transactions after this height.
     #[prost(uint64, optional, tag="1")]
     pub start_height: ::core::option::Option<u64>,
     /// If present, return only transactions before this height.
     #[prost(uint64, optional, tag="2")]
     pub end_height: ::core::option::Option<u64>,
-}
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TransactionHashesRequest {
-    #[prost(message, optional, tag="1")]
-    pub range: ::core::option::Option<Range>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionHashesResponse {
@@ -172,8 +167,12 @@ pub struct TransactionByHashResponse {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionsRequest {
-    #[prost(message, optional, tag="1")]
-    pub range: ::core::option::Option<Range>,
+    /// If present, return only transactions after this height.
+    #[prost(uint64, optional, tag="1")]
+    pub start_height: ::core::option::Option<u64>,
+    /// If present, return only transactions before this height.
+    #[prost(uint64, optional, tag="2")]
+    pub end_height: ::core::option::Option<u64>,
 }
 /// A streaming full transaction response
 #[derive(Clone, PartialEq, ::prost::Message)]
