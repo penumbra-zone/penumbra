@@ -14,6 +14,17 @@ use crate::{
     note::NOTECOMMIT_DOMAIN_SEP, nullifier::NULLIFIER_DOMAIN_SEP,
 };
 
+/// Check the diversified basepoint is not identity.
+pub(crate) fn diversified_basepoint_not_identity(
+    cs: ConstraintSystemRef<Fq>,
+    // Witness
+    g_d: ElementVar,
+) -> Result<(), SynthesisError> {
+    let identity = ElementVar::new_constant(cs, decaf377::Element::default())?;
+    identity.enforce_not_equal(&g_d)?;
+    Ok(())
+}
+
 /// Check the integrity of the ephemeral public key.
 pub(crate) fn ephemeral_public_key_integrity(
     cs: ConstraintSystemRef<Fq>,
