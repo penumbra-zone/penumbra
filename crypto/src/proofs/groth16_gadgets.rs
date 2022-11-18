@@ -1,8 +1,5 @@
 #![allow(clippy::too_many_arguments)]
-use ark_r1cs_std::{
-    prelude::{AllocVar, CurveVar, EqGadget, UInt8},
-    ToBitsGadget,
-};
+use ark_r1cs_std::{prelude::*, ToBitsGadget};
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use decaf377::{
     r1cs::{ElementVar, FqVar},
@@ -27,7 +24,6 @@ pub(crate) fn diversified_basepoint_not_identity(
 
 /// Check the integrity of the ephemeral public key.
 pub(crate) fn ephemeral_public_key_integrity(
-    cs: ConstraintSystemRef<Fq>,
     // Witnesses
     esk: Vec<UInt8<Fq>>,
     g_d: ElementVar,
@@ -65,7 +61,6 @@ pub(crate) fn value_commitment_integrity(
 }
 
 /// Check the integrity of the note commitment.
-#[allow(dead_code)]
 pub(crate) fn note_commitment_integrity(
     cs: ConstraintSystemRef<Fq>,
     // Witnesses
@@ -99,6 +94,7 @@ pub(crate) fn note_commitment_integrity(
 }
 
 /// Nullifier integrity.
+#[allow(dead_code)]
 pub(crate) fn nullifier_integrity(
     cs: ConstraintSystemRef<Fq>,
     // Witnesses
