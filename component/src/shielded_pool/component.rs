@@ -1,8 +1,5 @@
-use std::{collections::BTreeSet, sync::Arc};
-
-use crate::stake::component::StateReadExt as _;
 use crate::Component;
-use anyhow::{anyhow, Context as _, Result};
+use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use penumbra_chain::{
     genesis,
@@ -12,14 +9,14 @@ use penumbra_chain::{
 };
 use penumbra_crypto::{asset, note, IdentityKey, NotePayload, Nullifier, Value};
 use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_storage::{State, StateRead, StateTransaction, StateWrite};
+use penumbra_storage::{StateRead, StateTransaction, StateWrite};
 use penumbra_tct as tct;
 use penumbra_transaction::{Action, Transaction};
 use tct::Tree;
 use tendermint::abci;
 use tracing::instrument;
 
-use crate::shielded_pool::{consensus_rules, event, state_key};
+use crate::shielded_pool::state_key;
 
 use super::{NoteManager, SupplyWrite};
 
@@ -76,145 +73,6 @@ impl Component for ShieldedPool {
 
     // #[instrument(name = "shielded_pool", skip(_state, _begin_block))]
     async fn begin_block(_state: &mut StateTransaction, _begin_block: &abci::request::BeginBlock) {}
-
-    // #[instrument(name = "shielded_pool", skip(_ctx, tx))]
-    fn check_tx_stateless(tx: Arc<Transaction>) -> Result<()> {
-        // TODO: add a check that ephemeral_key is not identity to prevent scanning dos attack ?
-        let auth_hash = tx.transaction_body().auth_hash();
-
-        // 1. Check binding signature.
-        tx.binding_verification_key()
-            .verify(auth_hash.as_ref(), tx.binding_sig())
-            .context("binding signature failed to verify")?;
-
-        // 2. Check all spend auth signatures using provided spend auth keys
-        // and check all proofs verify. If any action does not verify, the entire
-        // transaction has failed.
-        let mut spent_nullifiers = BTreeSet::<Nullifier>::new();
-
-        for action in tx.transaction_body().actions {
-            match action {
-                Action::Output(output) => {
-                    if output
-                        .proof
-                        .verify(
-                            output.body.balance_commitment,
-                            output.body.note_payload.note_commitment,
-                            output.body.note_payload.ephemeral_key,
-                        )
-                        .is_err()
-                    {
-                        // TODO should the verification error be bubbled up here?
-                        return Err(anyhow::anyhow!("An output proof did not verify"));
-                    }
-                }
-                Action::Spend(spend) => {
-                    spend
-                        .body
-                        .rk
-                        .verify(auth_hash.as_ref(), &spend.auth_sig)
-                        .context("spend auth signature failed to verify")?;
-
-                    spend
-                        .proof
-                        .verify(
-                            tx.anchor,
-                            spend.body.balance_commitment,
-                            spend.body.nullifier,
-                            spend.body.rk,
-                        )
-                        .context("a spend proof did not verify")?;
-
-                    // Check nullifier has not been revealed already in this transaction.
-                    if spent_nullifiers.contains(&spend.body.nullifier.clone()) {
-                        return Err(anyhow::anyhow!("Double spend"));
-                    }
-
-                    spent_nullifiers.insert(spend.body.nullifier);
-                }
-                // other actions are handled by other components.
-                _ => {}
-            }
-        }
-
-        consensus_rules::stateless::num_clues_equal_to_num_outputs(&tx)?;
-        consensus_rules::stateless::check_memo_exists_if_outputs_absent_if_not(&tx)?;
-
-        Ok(())
-    }
-
-    // #[instrument(name = "shielded_pool", skip(state, tx))]
-    async fn check_tx_stateful(state: Arc<State>, tx: Arc<Transaction>) -> Result<()> {
-        state.check_claimed_anchor(tx.anchor).await?;
-
-        for spent_nullifier in tx.spent_nullifiers() {
-            state.check_nullifier_unspent(spent_nullifier).await?;
-        }
-
-        let previous_fmd_parameters = state
-            .get_previous_fmd_parameters()
-            .await
-            .expect("chain params request must succeed");
-        let current_fmd_parameters = state
-            .get_current_fmd_parameters()
-            .await
-            .expect("chain params request must succeed");
-        let height = state.get_block_height().await?;
-        consensus_rules::stateful::fmd_precision_within_grace_period(
-            &tx,
-            previous_fmd_parameters,
-            current_fmd_parameters,
-            height,
-        )?;
-
-        Ok(())
-    }
-
-    // #[instrument(name = "shielded_pool", skip(state, tx))]
-    async fn execute_tx(state: &mut StateTransaction, tx: Arc<Transaction>) -> Result<()> {
-        let source = NoteSource::Transaction { id: tx.id() };
-
-        if let Some((epoch, identity_key)) = state.should_quarantine(&tx).await {
-            for quarantined_output in tx.note_payloads().cloned() {
-                // Queue up scheduling this note to be unquarantined: the actual state-writing for
-                // all quarantined notes happens during end_block, to avoid state churn
-                state
-                    .schedule_note(epoch, identity_key, quarantined_output, source)
-                    .await;
-            }
-            for quarantined_spent_nullifier in tx.spent_nullifiers() {
-                state
-                    .quarantined_spend_nullifier(
-                        epoch,
-                        identity_key,
-                        quarantined_spent_nullifier,
-                        source,
-                    )
-                    .await;
-                state.record(event::quarantine_spend(quarantined_spent_nullifier));
-            }
-        } else {
-            for payload in tx.note_payloads().cloned() {
-                state
-                    .add_note(AnnotatedNotePayload { payload, source })
-                    .await;
-            }
-            for spent_nullifier in tx.spent_nullifiers() {
-                state.spend_nullifier(spent_nullifier, source).await;
-                state.record(event::spend(spent_nullifier));
-            }
-        }
-
-        // If there was any proposal submitted in the block, ensure we track this so that clients
-        // can retain state needed to vote as delegators
-        if tx.proposal_submits().next().is_some() {
-            let mut compact_block = state.stub_compact_block();
-            compact_block.proposal_started = true;
-            state.stub_put_compact_block(compact_block);
-        }
-
-        Ok(())
-    }
 
     // #[instrument(name = "shielded_pool", skip(state, _end_block))]
     async fn end_block(state: &mut StateTransaction, _end_block: &abci::request::EndBlock) {
@@ -380,7 +238,7 @@ pub trait StateReadExt: StateRead {
 impl<T: StateRead + ?Sized> StateReadExt for T {}
 
 #[async_trait]
-pub(super) trait StateWriteExt: StateWrite {
+pub(crate) trait StateWriteExt: StateWrite {
     // TODO: remove this entirely post-integration. This is slow but intended as
     // a drop-in replacement so we can avoid really major code changes.
     //

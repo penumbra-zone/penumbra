@@ -23,7 +23,6 @@ use penumbra_proto::core::ibc::v1alpha1::FungibleTokenPacketData;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{State, StateRead, StateTransaction, StateWrite};
 use penumbra_transaction::action::Ics20Withdrawal;
-use penumbra_transaction::{Action, Transaction};
 use prost::Message;
 use std::sync::Arc;
 use tendermint::abci;
@@ -49,19 +48,19 @@ pub struct Ics20Transfer {}
 
 #[async_trait]
 pub trait Ics20TransferReadExt: StateRead {
-    async fn withdrawal_check(state: Arc<State>, withdrawal: &Ics20Withdrawal) -> Result<()> {
+    async fn withdrawal_check(&self, withdrawal: &Ics20Withdrawal) -> Result<()> {
         // create packet
         let packet: IBCPacket<Unchecked> = withdrawal.clone().into();
 
         // send packet
         use crate::ibc::packet::SendPacketRead as _;
-        state.send_packet_check(packet).await?;
+        self.send_packet_check(packet).await?;
 
         Ok(())
     }
 }
 
-impl<T: StateRead> Ics20TransferReadExt for T {}
+impl<T: StateRead + ?Sized> Ics20TransferReadExt for T {}
 
 #[async_trait]
 pub trait Ics20TransferWriteExt: StateWrite {
@@ -260,50 +259,6 @@ impl Component for Ics20Transfer {
 
     #[instrument(name = "ics20_transfer", skip(_state, _begin_block))]
     async fn begin_block(_state: &mut StateTransaction, _begin_block: &abci::request::BeginBlock) {}
-
-    #[instrument(name = "ics20_transfer", skip(tx))]
-    #[allow(clippy::single_match)]
-    fn check_tx_stateless(tx: Arc<Transaction>) -> Result<()> {
-        for action in tx.actions() {
-            match action {
-                Action::Ics20Withdrawal(withdrawal) => {
-                    withdrawal.validate()?;
-                }
-
-                _ => {}
-            }
-        }
-        Ok(())
-    }
-
-    #[instrument(name = "ics20_transfer", skip(state, tx))]
-    #[allow(clippy::single_match)]
-    async fn check_tx_stateful(state: Arc<State>, tx: Arc<Transaction>) -> Result<()> {
-        for action in tx.actions() {
-            match action {
-                Action::Ics20Withdrawal(withdrawal) => {
-                    <penumbra_storage::State as crate::ibc::transfer::Ics20TransferReadExt>::withdrawal_check(state.clone(), withdrawal).await?;
-                }
-                _ => {}
-            }
-        }
-        Ok(())
-    }
-
-    #[instrument(name = "ics20_transfer", skip(state, tx))]
-    #[allow(clippy::single_match)]
-    async fn execute_tx(state: &mut StateTransaction, tx: Arc<Transaction>) -> Result<()> {
-        for action in tx.actions() {
-            match action {
-                Action::Ics20Withdrawal(withdrawal) => {
-                    <&mut penumbra_storage::StateTransaction<'_> as crate::ibc::transfer::Ics20TransferWriteExt>::withdrawal_execute(state, withdrawal).await;
-                }
-                _ => {}
-            }
-        }
-
-        Ok(())
-    }
 
     #[instrument(name = "ics20_channel", skip(_state, _end_block))]
     async fn end_block(_state: &mut StateTransaction, _end_block: &abci::request::EndBlock) {}

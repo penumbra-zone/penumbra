@@ -1,6 +1,4 @@
-use std::convert::TryFrom;
 use std::str::FromStr;
-use std::sync::Arc;
 
 use crate::Component;
 use anyhow::Result;
@@ -27,10 +25,8 @@ use ibc::{
     },
 };
 use penumbra_chain::{genesis, StateReadExt as _};
-use penumbra_proto::core::ibc::v1alpha1::ibc_action::Action::{CreateClient, UpdateClient};
 use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_storage::{State, StateRead, StateTransaction, StateWrite};
-use penumbra_transaction::Transaction;
+use penumbra_storage::{StateRead, StateTransaction, StateWrite};
 use tendermint::{abci, validator};
 use tendermint_light_client_verifier::{
     types::{TrustedBlockState, UntrustedBlockState},
@@ -42,8 +38,8 @@ use crate::ibc::{event, ClientConnections, ClientCounter, VerifiedHeights};
 
 use super::state_key;
 
-mod stateful;
-mod stateless;
+pub(crate) mod stateful;
+pub(crate) mod stateless;
 
 /// The Penumbra IBC client component. Handles all client-related IBC actions: MsgCreateClient,
 /// MsgUpdateClient, MsgUpgradeClient, and MsgSubmitMisbehaviour. The core responsibility of the
@@ -79,89 +75,15 @@ impl Component for Ics2Client {
         state.put_penumbra_consensus_state(height, AnyConsensusState::Tendermint(cs));
     }
 
-    #[instrument(name = "ics2_client", skip(tx))]
-    fn check_tx_stateless(tx: Arc<Transaction>) -> Result<()> {
-        // Each stateless check is a distinct function in an appropriate submodule,
-        // so that we can easily add new stateless checks and see a birds' eye view
-        // of all of the checks we're performing.
-
-        for ibc_action in tx.ibc_actions() {
-            match &ibc_action.action {
-                Some(CreateClient(msg)) => {
-                    use stateless::create_client::*;
-                    let msg = MsgCreateAnyClient::try_from(msg.clone())?;
-
-                    client_state_is_tendermint(&msg)?;
-                    consensus_state_is_tendermint(&msg)?;
-                }
-                Some(UpdateClient(msg)) => {
-                    use stateless::update_client::*;
-                    let msg = MsgUpdateAnyClient::try_from(msg.clone())?;
-
-                    header_is_tendermint(&msg)?;
-                }
-                // Other IBC messages are not handled by this component.
-                _ => {}
-            }
-        }
-
-        Ok(())
-    }
-
-    #[instrument(name = "ics2_client", skip(state, tx))]
-    async fn check_tx_stateful(state: Arc<State>, tx: Arc<Transaction>) -> Result<()> {
-        for ibc_action in tx.ibc_actions() {
-            match &ibc_action.action {
-                Some(CreateClient(msg)) => {
-                    use stateful::create_client::CreateClientCheck;
-                    let msg = MsgCreateAnyClient::try_from(msg.clone())?;
-                    state.validate(&msg).await?;
-                }
-                Some(UpdateClient(msg)) => {
-                    use stateful::update_client::UpdateClientCheck;
-                    let msg = MsgUpdateAnyClient::try_from(msg.clone())?;
-                    state.validate(&msg).await?;
-                }
-                // Other IBC messages are not handled by this component.
-                _ => {}
-            }
-        }
-        Ok(())
-    }
-
-    #[instrument(name = "ics2_client", skip(state, tx))]
-    async fn execute_tx(state: &mut StateTransaction, tx: Arc<Transaction>) -> Result<()> {
-        // Handle any IBC actions found in the transaction.
-        for ibc_action in tx.ibc_actions() {
-            match &ibc_action.action {
-                Some(CreateClient(raw_msg_create_client)) => {
-                    let msg_create_client =
-                        MsgCreateAnyClient::try_from(raw_msg_create_client.clone()).unwrap();
-
-                    state.execute_create_client(msg_create_client).await;
-                }
-                Some(UpdateClient(raw_msg_update_client)) => {
-                    let msg_update_client =
-                        MsgUpdateAnyClient::try_from(raw_msg_update_client.clone()).unwrap();
-
-                    state.execute_update_client(msg_update_client).await;
-                }
-                _ => {}
-            }
-        }
-
-        Ok(())
-    }
-
     #[instrument(name = "ics2_client", skip(_state, _end_block))]
     async fn end_block(_state: &mut StateTransaction, _end_block: &abci::request::EndBlock) {}
 }
 
 #[async_trait]
-trait Ics2ClientExt: StateWrite {
+pub(crate) trait Ics2ClientExt: StateWrite {
     // execute a UpdateClient IBC action. this assumes that the UpdateClient has already been
     // validated, including header verification.
-    async fn execute_update_client(&mut self, msg_update_client: MsgUpdateAnyClient) {
+    async fn execute_update_client(&mut self, msg_update_client: &MsgUpdateAnyClient) {
         // get the latest client state
         let client_state = self
             .get_client_state(&msg_update_client.client_id)
@@ -201,9 +123,9 @@ trait Ics2ClientExt: StateWrite {
         .unwrap();
 
         self.record(event::update_client(
-            msg_update_client.client_id,
+            msg_update_client.client_id.clone(),
             client_state,
-            msg_update_client.header,
+            msg_update_client.header.clone(),
         ));
     }
 
@@ -214,7 +136,7 @@ trait Ics2ClientExt: StateWrite {
     // - client type
     // - consensus state
     // - processed time and height
-    async fn execute_create_client(&mut self, msg_create_client: MsgCreateAnyClient) {
+    async fn execute_create_client(&mut self, msg_create_client: &MsgCreateAnyClient) {
         // get the current client counter
         let id_counter = self.client_counter().await.unwrap();
         let client_id =
@@ -229,7 +151,7 @@ trait Ics2ClientExt: StateWrite {
         self.put_verified_consensus_state(
             msg_create_client.client_state.latest_height(),
             client_id.clone(),
-            msg_create_client.consensus_state,
+            msg_create_client.consensus_state.clone(),
         )
         .await
         .unwrap();
@@ -240,7 +162,7 @@ trait Ics2ClientExt: StateWrite {
 
         self.record(event::create_client(
             client_id,
-            msg_create_client.client_state,
+            msg_create_client.client_state.clone(),
         ));
     }
 
@@ -583,6 +505,10 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
+    use crate::action_handler::ActionHandler;
+
     use super::*;
     use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
     use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
@@ -675,45 +601,54 @@ mod tests {
             anchor: tct::Tree::new().root(),
         });
 
-        Ics2Client::check_tx_stateless(create_client_tx.clone()).unwrap();
-        Ics2Client::check_tx_stateful(state.clone(), create_client_tx.clone())
-            .await
-            .unwrap();
-        // execute (save client)
-        let state_mut =
-            Arc::get_mut(&mut state).expect("state Arc should not be referenced elsewhere");
-        let mut state_tx = state_mut.begin_transaction();
-        Ics2Client::execute_tx(&mut state_tx, create_client_tx.clone())
-            .await
-            .unwrap();
-        state_tx.apply();
-        storage
-            .commit(Arc::try_unwrap(state).unwrap())
-            .await
-            .unwrap();
+        if let Action::IBCAction(inner_action) = create_client_tx.actions().collect::<Vec<_>>()[0] {
+            inner_action
+                .check_stateless(create_client_tx.clone())
+                .unwrap();
+            inner_action
+                .check_stateful(state.clone(), create_client_tx.clone())
+                .await
+                .unwrap();
+            // execute (save client)
+            let state_mut =
+                Arc::get_mut(&mut state).expect("state Arc should not be referenced elsewhere");
+            let mut state_tx = state_mut.begin_transaction();
+            inner_action.execute(&mut state_tx).await.unwrap();
+            state_tx.apply();
+            storage
+                .commit(Arc::try_unwrap(state).unwrap())
+                .await
+                .unwrap();
+        } else {
+            panic!("expected ibc action");
+        }
 
         let mut state = Arc::new(storage.latest_state());
         assert_eq!(state.clone().client_counter().await.unwrap().0, 1);
 
         // now try update client
-
-        Ics2Client::check_tx_stateless(update_client_tx.clone()).unwrap();
-        // verify the ClientUpdate proof
-        Ics2Client::check_tx_stateful(state.clone(), update_client_tx.clone())
-            .await
-            .unwrap();
-        // save the next tm state
-        let state_mut =
-            Arc::get_mut(&mut state).expect("state Arc should not be referenced elsewhere");
-        let mut state_tx = state_mut.begin_transaction();
-        Ics2Client::execute_tx(&mut state_tx, update_client_tx.clone())
-            .await
-            .unwrap();
-        state_tx.apply();
-        storage
-            .commit(Arc::try_unwrap(state).unwrap())
-            .await
-            .unwrap();
+        if let Action::IBCAction(inner_action) = update_client_tx.actions().collect::<Vec<_>>()[0] {
+            inner_action
+                .check_stateless(update_client_tx.clone())
+                .unwrap();
+            // verify the ClientUpdate proof
+            inner_action
+                .check_stateful(state.clone(), update_client_tx.clone())
+                .await
+                .unwrap();
+            // save the next tm state
+            let state_mut =
+                Arc::get_mut(&mut state).expect("state Arc should not be referenced elsewhere");
+            let mut state_tx = state_mut.begin_transaction();
+            inner_action.execute(&mut state_tx).await.unwrap();
+            state_tx.apply();
+            storage
+                .commit(Arc::try_unwrap(state).unwrap())
+                .await
+                .unwrap();
+        } else {
+            panic!("expected ibc action");
+        }
 
         let mut state = Arc::new(storage.latest_state());
 
@@ -741,22 +676,29 @@ mod tests {
             binding_sig: [0u8; 64].into(),
         });
 
-        Ics2Client::check_tx_stateless(second_update_client_tx.clone()).unwrap();
-        // verify the ClientUpdate proof
-        Ics2Client::check_tx_stateful(state.clone(), second_update_client_tx.clone())
-            .await
-            .unwrap();
-        // save the next tm state
-        let state_mut =
-            Arc::get_mut(&mut state).expect("state Arc should not be referenced elsewhere");
-        let mut state_tx = state_mut.begin_transaction();
-        Ics2Client::execute_tx(&mut state_tx, second_update_client_tx.clone())
-            .await
-            .unwrap();
-        state_tx.apply();
-        storage
-            .commit(Arc::try_unwrap(state).unwrap())
-            .await
-            .unwrap();
+        if let Action::IBCAction(inner_action) =
+            second_update_client_tx.actions().collect::<Vec<_>>()[0]
+        {
+            inner_action
+                .check_stateless(second_update_client_tx.clone())
+                .unwrap();
+            // verify the ClientUpdate proof
+            inner_action
+                .check_stateful(state.clone(), second_update_client_tx.clone())
+                .await
+                .unwrap();
+            // save the next tm state
+            let state_mut =
+                Arc::get_mut(&mut state).expect("state Arc should not be referenced elsewhere");
+            let mut state_tx = state_mut.begin_transaction();
+            inner_action.execute(&mut state_tx).await.unwrap();
+            state_tx.apply();
+            storage
+                .commit(Arc::try_unwrap(state).unwrap())
+                .await
+                .unwrap();
+        } else {
+            panic!("expected ibc action");
+        }
     }
 }

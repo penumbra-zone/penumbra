@@ -8,15 +8,11 @@ pub(crate) mod client;
 pub(crate) mod connection;
 pub(crate) mod state_key;
 
-use std::sync::Arc;
-
 use crate::ibc::transfer::Ics20Transfer;
 use crate::Component;
-use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_chain::{genesis, StateReadExt as _};
-use penumbra_storage::{State, StateTransaction};
-use penumbra_transaction::Transaction;
+use penumbra_chain::genesis;
+use penumbra_storage::StateTransaction;
 use tendermint::abci;
 use tracing::instrument;
 
@@ -38,42 +34,6 @@ impl Component for IBCComponent {
         connection::ConnectionComponent::begin_block(state, begin_block).await;
         channel::Ics4Channel::begin_block(state, begin_block).await;
         Ics20Transfer::begin_block(state, begin_block).await;
-    }
-
-    #[instrument(name = "ibc", skip(tx))]
-    fn check_tx_stateless(tx: Arc<Transaction>) -> Result<()> {
-        client::Ics2Client::check_tx_stateless(tx.clone())?;
-        connection::ConnectionComponent::check_tx_stateless(tx.clone())?;
-        channel::Ics4Channel::check_tx_stateless(tx.clone())?;
-        Ics20Transfer::check_tx_stateless(tx)?;
-
-        Ok(())
-    }
-
-    #[instrument(name = "ibc", skip(state, tx))]
-    async fn check_tx_stateful(state: Arc<State>, tx: Arc<Transaction>) -> Result<()> {
-        if tx.ibc_actions().count() > 0 && !state.get_chain_params().await?.ibc_enabled {
-            return Err(anyhow::anyhow!(
-                "transaction contains IBC actions, but IBC is not enabled"
-            ));
-        }
-
-        client::Ics2Client::check_tx_stateful(state.clone(), tx.clone()).await?;
-        connection::ConnectionComponent::check_tx_stateful(state.clone(), tx.clone()).await?;
-        channel::Ics4Channel::check_tx_stateful(state.clone(), tx.clone()).await?;
-        Ics20Transfer::check_tx_stateful(state.clone(), tx.clone()).await?;
-
-        Ok(())
-    }
-
-    #[instrument(name = "ibc", skip(state, tx))]
-    async fn execute_tx(state: &mut StateTransaction, tx: Arc<Transaction>) -> Result<()> {
-        client::Ics2Client::execute_tx(state, tx.clone()).await?;
-        connection::ConnectionComponent::execute_tx(state, tx.clone()).await?;
-        channel::Ics4Channel::execute_tx(state, tx.clone()).await?;
-        Ics20Transfer::execute_tx(state, tx.clone()).await?;
-
-        Ok(())
     }
 
     #[instrument(name = "ibc", skip(state, end_block))]

@@ -6,6 +6,7 @@ use super::{
     view::StateWriteExt as _,
     StateReadExt as _,
 };
+use anyhow::{Context, Result};
 use penumbra_chain::{StateReadExt as _, StateWriteExt};
 use penumbra_storage::StateTransaction;
 use penumbra_transaction::action::{
@@ -23,12 +24,12 @@ pub async fn proposal_submit(
         deposit_refund_address,
         withdraw_proposal_key,
     }: &ProposalSubmit,
-) {
+) -> Result<()> {
     // Store the contents of the proposal and generate a fresh proposal id for it
     let proposal_id = state
         .new_proposal(proposal)
         .await
-        .expect("can create proposal");
+        .context("can create proposal")?;
 
     // Set the refund address for the proposal
     state
@@ -47,18 +48,18 @@ pub async fn proposal_submit(
     state
         .put_proposal_state(proposal_id, proposal::State::Voting)
         .await
-        .expect("can set proposal state");
+        .context("can set proposal state")?;
 
     // Determine what block it is currently, and calculate when the proposal should start voting
     // (now!) and finish voting (later...), then write that into the state
     let chain_params = state
         .get_chain_params()
         .await
-        .expect("can get chain params");
+        .context("can get chain params")?;
     let current_block = state
         .get_block_height()
         .await
-        .expect("can get block height");
+        .context("can get block height")?;
     let voting_end = current_block + chain_params.proposal_voting_blocks;
     state
         .put_proposal_voting_start(proposal_id, current_block)
@@ -66,6 +67,8 @@ pub async fn proposal_submit(
     state.put_proposal_voting_end(proposal_id, voting_end).await;
 
     tracing::debug!(proposal = %proposal_id, "created proposal");
+
+    Ok(())
 }
 
 #[instrument(skip(state))]
@@ -75,7 +78,7 @@ pub async fn proposal_withdraw(
         auth_sig: _,
         body: ProposalWithdrawBody { proposal, reason },
     }: &ProposalWithdraw,
-) {
+) -> Result<()> {
     state
         .put_proposal_state(
             *proposal,
@@ -84,9 +87,11 @@ pub async fn proposal_withdraw(
             },
         )
         .await
-        .expect("proposal withdraw succeeds");
+        .context("proposal withdraw succeeds")?;
 
     tracing::debug!(proposal = %proposal, "withdrew proposal");
+
+    Ok(())
 }
 
 #[instrument(skip(state))]
@@ -102,43 +107,45 @@ pub async fn validator_vote(
                 governance_key: _, // This is only used for checks so that stateless verification can be done on the signature
             },
     }: &ValidatorVote,
-) {
+) -> Result<()> {
     state
         .cast_validator_vote(*proposal, *identity_key, *vote)
         .await;
 
     tracing::debug!(proposal = %proposal, "cast validator vote");
+
+    Ok(())
 }
 
 // TODO: fill in when delegator votes happen
 // pub async fn delegator_vote(state: &State, delegator_vote: &DelegatorVote) {}
 
 #[instrument(skip(state))]
-pub async fn enact_all_passed_proposals(state: &mut StateTransaction<'_>) {
+pub async fn enact_all_passed_proposals(state: &mut StateTransaction<'_>) -> Result<()> {
     let parameters = tally::Parameters::new(&*state)
         .await
-        .expect("can generate tally parameters");
+        .context("can generate tally parameters")?;
 
     let height = state
         .get_block_height()
         .await
-        .expect("can get block height");
+        .context("can get block height")?;
 
     let circumstance = tally::Circumstance::new(&*state)
         .await
-        .expect("can generate tally circumstance");
+        .context("can generate tally circumstance")?;
 
     // For every unfinished proposal, conclude those that finish in this block
     for proposal_id in state
         .unfinished_proposals()
         .await
-        .expect("can get unfinished proposals")
+        .context("can get unfinished proposals")?
     {
         // TODO: tally delegator votes
         if let Some(outcome) = parameters
             .tally(&*state, circumstance, proposal_id)
             .await
-            .expect("can tally proposal")
+            .context("can tally proposal")?
         {
             tracing::debug!(proposal = %proposal_id, outcome = ?outcome, "proposal voting finished");
 
@@ -149,14 +156,14 @@ pub async fn enact_all_passed_proposals(state: &mut StateTransaction<'_>) {
                 state
                     .add_proposal_refund(height, proposal_id)
                     .await
-                    .expect("can add proposal refund");
+                    .context("can add proposal refund")?;
             } else {
                 tracing::debug!(proposal = %proposal_id, "burning proposal deposit for vetoed proposal");
             }
 
             // If the proposal passes, enact it now
             if outcome.is_passed() {
-                enact_proposal(state, proposal_id).await;
+                enact_proposal(state, proposal_id).await?;
             }
 
             // Log the result
@@ -171,18 +178,20 @@ pub async fn enact_all_passed_proposals(state: &mut StateTransaction<'_>) {
             state
                 .put_proposal_state(proposal_id, proposal::State::Finished { outcome })
                 .await
-                .expect("can put finished proposal outcome");
+                .context("can put finished proposal outcome")?;
         }
     }
+
+    Ok(())
 }
 
 #[instrument(skip(state))]
-async fn enact_proposal(state: &mut StateTransaction<'_>, proposal_id: u64) {
+async fn enact_proposal(state: &mut StateTransaction<'_>, proposal_id: u64) -> Result<()> {
     let payload = state
         .proposal_payload(proposal_id)
         .await
-        .expect("can get proposal payload")
-        .expect("proposal payload is present");
+        .context("can get proposal payload")?
+        .context("proposal payload is present")?;
 
     match payload {
         ProposalPayload::Signaling { .. } => {
@@ -192,7 +201,7 @@ async fn enact_proposal(state: &mut StateTransaction<'_>, proposal_id: u64) {
             let height = state
                 .get_block_height()
                 .await
-                .expect("can get block height");
+                .context("can get block height")?;
 
             // If the proposal calls to halt the chain...
             if halt_chain {
@@ -221,7 +230,7 @@ async fn enact_proposal(state: &mut StateTransaction<'_>, proposal_id: u64) {
             let height = state
                 .get_block_height()
                 .await
-                .expect("can get block height");
+                .context("can get block height")?;
 
             // Since other proposals may have changed the chain parameters in the meantime,
             // and parameter validation must ensure consistency across all parameters, we
@@ -229,7 +238,7 @@ async fn enact_proposal(state: &mut StateTransaction<'_>, proposal_id: u64) {
             let old_parameters = state
                 .get_chain_params()
                 .await
-                .expect("can get chain parameters");
+                .context("can get chain parameters")?;
 
             if !chain_params::is_valid_stateless(&new_parameters)
                 || !chain_params::is_valid_stateful(&new_parameters, &old_parameters)
@@ -237,12 +246,12 @@ async fn enact_proposal(state: &mut StateTransaction<'_>, proposal_id: u64) {
                 // The parameters are invalid, so we cannot apply them.
                 tracing::info!(proposal = %proposal_id, %height, "chain param proposal passed, however the new parameters are invalid");
                 // TODO: should there be a more descriptive error message here?
-                return;
+                return Err(anyhow::anyhow!("invalid chain parameters, could not apply"));
             }
 
             // Apply the new (valid) parameter changes immediately:
             let new_params = chain_params::resolve_parameters(&new_parameters, &old_parameters)
-                .expect("can resolve validated parameters");
+                .context("can resolve validated parameters")?;
 
             state.put_chain_params(new_params);
         }
@@ -259,14 +268,17 @@ async fn enact_proposal(state: &mut StateTransaction<'_>, proposal_id: u64) {
             todo!("implement daospend execution")
         }
     }
+
+    Ok(())
 }
 
-pub async fn enact_pending_parameter_changes(_state: &mut StateTransaction<'_>) {
+pub async fn enact_pending_parameter_changes(_state: &mut StateTransaction<'_>) -> Result<()> {
     // TODO: read the new parameters for this block, if any, and change the chain params to reflect
     // them. Parameters should be stored in the state as a map from name to value string.
+    Ok(())
 }
 
-pub async fn apply_proposal_refunds(state: &mut StateTransaction<'_>) {
+pub async fn apply_proposal_refunds(state: &mut StateTransaction<'_>) -> Result<()> {
     use crate::shielded_pool::NoteManager;
     use penumbra_chain::NoteSource;
 
@@ -275,7 +287,7 @@ pub async fn apply_proposal_refunds(state: &mut StateTransaction<'_>) {
     for (proposal_id, address, value) in state
         .proposal_refunds(height)
         .await
-        .expect("proposal refunds can be fetched")
+        .context("proposal refunds can be fetched")?
     {
         state
             .mint_note(
@@ -284,6 +296,8 @@ pub async fn apply_proposal_refunds(state: &mut StateTransaction<'_>) {
                 NoteSource::ProposalDepositRefund { proposal_id },
             )
             .await
-            .expect("can mint proposal deposit refund");
+            .context("can mint proposal deposit refund")?;
     }
+
+    Ok(())
 }

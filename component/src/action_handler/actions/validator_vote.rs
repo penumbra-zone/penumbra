@@ -3,21 +3,28 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_storage::{State, StateTransaction};
-use penumbra_transaction::action::ValidatorVote;
+use penumbra_transaction::{action::ValidatorVote, Transaction};
+use tracing::instrument;
 
-use crate::action_handler::ActionHandler;
+use crate::{
+    action_handler::ActionHandler,
+    governance::{check, execute},
+};
 
 #[async_trait]
 impl ActionHandler for ValidatorVote {
-    fn check_tx_stateless(&self) -> anyhow::Result<()> {
-        todo!()
+    #[instrument(name = "validator_vote", skip(self, _context))]
+    fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+        check::stateless::validator_vote(self)
     }
 
-    async fn check_tx_stateful(&self, _state: Arc<State>) -> Result<()> {
-        todo!()
+    #[instrument(name = "validator_vote", skip(self, state, _context))]
+    async fn check_stateful(&self, state: Arc<State>, _context: Arc<Transaction>) -> Result<()> {
+        check::stateful::validator_vote(&state, self).await
     }
 
-    async fn execute_tx(&self, _state: &mut StateTransaction) -> Result<()> {
-        todo!()
+    #[instrument(name = "validator_vote", skip(self, state))]
+    async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
+        execute::validator_vote(state, self).await
     }
 }

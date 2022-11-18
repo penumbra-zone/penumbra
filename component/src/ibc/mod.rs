@@ -3,16 +3,16 @@
 // marked as unreachable only when not building in test configuration.
 #![allow(unreachable_patterns)]
 
-mod client;
-mod component;
-mod connection;
+pub(crate) mod client;
+pub(crate) mod component;
+pub(crate) mod connection;
 pub(crate) mod event;
 mod ibc_token;
 mod packet;
 pub use ibc_token::IBCToken;
-mod ibc_handler;
+pub(crate) mod ibc_handler;
 mod metrics;
-mod transfer;
+pub(crate) mod transfer;
 
 pub use self::metrics::register_metrics;
 

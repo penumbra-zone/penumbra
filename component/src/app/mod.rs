@@ -9,6 +9,7 @@ use penumbra_transaction::Transaction;
 use tendermint::abci::{self, types::ValidatorUpdate};
 use tracing::instrument;
 
+use crate::action_handler::ActionHandler;
 use crate::dex::Dex;
 use crate::governance::Governance;
 use crate::ibc::IBCComponent;
@@ -160,39 +161,16 @@ impl App {
 
     #[instrument(skip(tx))]
     pub fn check_tx_stateless(tx: Arc<Transaction>) -> Result<()> {
-        // TODO: these can all be parallel tasks
-
-        Staking::check_tx_stateless(tx.clone())?;
-        IBCComponent::check_tx_stateless(tx.clone())?;
-        Dex::check_tx_stateless(tx.clone())?;
-        Governance::check_tx_stateless(tx.clone())?;
-        ShieldedPool::check_tx_stateless(tx)?;
-
-        Ok(())
+        tx.check_stateless(tx.clone())
     }
 
     #[instrument(skip(state, tx))]
     async fn check_tx_stateful(state: Arc<State>, tx: Arc<Transaction>) -> Result<()> {
-        // TODO: these can all be parallel tasks
-
-        Staking::check_tx_stateful(state.clone(), tx.clone()).await?;
-        IBCComponent::check_tx_stateful(state.clone(), tx.clone()).await?;
-        Dex::check_tx_stateful(state.clone(), tx.clone()).await?;
-        Governance::check_tx_stateful(state.clone(), tx.clone()).await?;
-        ShieldedPool::check_tx_stateful(state.clone(), tx.clone()).await?;
-
-        Ok(())
+        tx.check_stateful(state.clone(), tx.clone()).await
     }
 
     #[instrument(skip(state, tx))]
     async fn execute_tx(state: &mut StateTransaction<'_>, tx: Arc<Transaction>) -> Result<()> {
-        Staking::execute_tx(state, tx.clone()).await?;
-        IBCComponent::execute_tx(state, tx.clone()).await?;
-        Dex::execute_tx(state, tx.clone()).await?;
-        Governance::execute_tx(state, tx.clone()).await?;
-        // Shielded pool always executes last.
-        ShieldedPool::execute_tx(state, tx.clone()).await?;
-
-        Ok(())
+        tx.execute(state).await
     }
 }

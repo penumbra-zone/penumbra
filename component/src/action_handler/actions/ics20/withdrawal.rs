@@ -3,21 +3,28 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_storage::{State, StateTransaction};
-use penumbra_transaction::action::Ics20Withdrawal;
+use penumbra_transaction::{action::Ics20Withdrawal, Transaction};
+use tracing::instrument;
 
 use crate::action_handler::ActionHandler;
+use crate::ibc::transfer::Ics20TransferReadExt as _;
 
 #[async_trait]
 impl ActionHandler for Ics20Withdrawal {
-    fn check_tx_stateless(&self) -> anyhow::Result<()> {
-        todo!()
+    #[instrument(name = "ics20_withdrawal", skip(self, _context))]
+    fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+        self.validate()
     }
 
-    async fn check_tx_stateful(&self, _state: Arc<State>) -> Result<()> {
-        todo!()
+    #[instrument(name = "ics20_withdrawal", skip(self, state, _context))]
+    async fn check_stateful(&self, state: Arc<State>, _context: Arc<Transaction>) -> Result<()> {
+        state.withdrawal_check(self).await
     }
 
-    async fn execute_tx(&self, _state: &mut StateTransaction) -> Result<()> {
-        todo!()
+    #[instrument(name = "ics20_withdrawal", skip(self, state))]
+    async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
+        <&mut penumbra_storage::StateTransaction<'_> as crate::ibc::transfer::Ics20TransferWriteExt>::withdrawal_execute(state, self).await;
+
+        Ok(())
     }
 }

@@ -1,7 +1,7 @@
-mod check;
+pub(crate) mod check;
 mod component;
 pub(crate) mod event;
-mod execute;
+pub(crate) mod execute;
 mod metrics;
 mod view;
 

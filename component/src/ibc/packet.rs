@@ -132,7 +132,7 @@ pub trait SendPacketRead: StateRead {
     }
 }
 
-impl<T: StateRead> SendPacketRead for T {}
+impl<T: StateRead + ?Sized> SendPacketRead for T {}
 
 /// This trait, an extension of the Channel, Connection, and Client views, allows a component to
 /// send a packet.
