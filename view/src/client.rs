@@ -5,6 +5,7 @@ use futures::{Stream, StreamExt, TryStreamExt};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::keys::AccountID;
 use penumbra_crypto::{asset, keys::AddressIndex, note, Asset, Nullifier};
+use penumbra_proto::view::v1alpha1::Range;
 use penumbra_proto::view::v1alpha1::{
     self as pb, view_protocol_service_client::ViewProtocolServiceClient, WitnessRequest,
 };
@@ -294,7 +295,7 @@ where
         // same name as the one we're implementing.
         let params = ViewProtocolServiceClient::chain_parameters(
             self,
-            tonic::Request::new(pb::ChainParamsRequest {}),
+            tonic::Request::new(pb::ChainParametersRequest {}),
         )
         .await?
         .into_inner()
@@ -463,7 +464,7 @@ where
         // We have to manually invoke the method on the type, because it has the
         // same name as the one we're implementing.
         let pb_assets: Vec<_> =
-            ViewProtocolServiceClient::assets(self, tonic::Request::new(pb::AssetRequest {}))
+            ViewProtocolServiceClient::assets(self, tonic::Request::new(pb::AssetsRequest {}))
                 .await?
                 .into_inner()
                 .try_collect()
@@ -541,8 +542,10 @@ where
     ) -> Result<Vec<(u64, Transaction)>> {
         let pb_txs: Vec<_> = self
             .transactions(tonic::Request::new(pb::TransactionsRequest {
-                start_height,
-                end_height,
+                range: Some(Range {
+                    start_height,
+                    end_height,
+                }),
             }))
             .await?
             .into_inner()

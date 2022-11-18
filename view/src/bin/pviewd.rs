@@ -4,7 +4,7 @@ use camino::Utf8PathBuf;
 use clap::{Parser, Subcommand};
 use penumbra_crypto::FullViewingKey;
 use penumbra_proto::client::v1alpha1::oblivious_query_service_client::ObliviousQueryServiceClient;
-use penumbra_proto::client::v1alpha1::ChainParamsRequest;
+use penumbra_proto::client::v1alpha1::ChainParametersRequest;
 use penumbra_proto::view::v1alpha1::view_protocol_service_server::ViewProtocolServiceServer;
 use penumbra_view::ViewService;
 use std::env;
@@ -66,7 +66,7 @@ async fn main() -> Result<()> {
             .await?;
 
             let params = client
-                .chain_parameters(tonic::Request::new(ChainParamsRequest {
+                .chain_parameters(tonic::Request::new(ChainParametersRequest {
                     chain_id: String::new(),
                 }))
                 .await?

@@ -18,7 +18,7 @@ use penumbra_proto::{
     core::transaction::v1alpha1::{self as pbt},
     view::v1alpha1::{
         self as pb, view_protocol_service_server::ViewProtocolService, StatusResponse,
-        TransactionHashStreamResponse, TransactionStreamResponse,
+        TransactionHashesResponse, TransactionsResponse, NoteByCommitmentResponse,
     },
 };
 use penumbra_tct::{Commitment, Proof};
@@ -233,11 +233,11 @@ impl ViewProtocolService for ViewService {
     >;
     type TransactionHashesStream = Pin<
         Box<
-            dyn futures::Stream<Item = Result<TransactionHashStreamResponse, tonic::Status>> + Send,
+            dyn futures::Stream<Item = Result<TransactionHashesResponse, tonic::Status>> + Send,
         >,
     >;
     type TransactionsStream = Pin<
-        Box<dyn futures::Stream<Item = Result<TransactionStreamResponse, tonic::Status>> + Send>,
+        Box<dyn futures::Stream<Item = Result<TransactionsResponse, tonic::Status>> + Send>,
     >;
 
     async fn transaction_perspective(
@@ -304,7 +304,7 @@ impl ViewProtocolService for ViewService {
     async fn note_by_commitment(
         &self,
         request: tonic::Request<pb::NoteByCommitmentRequest>,
-    ) -> Result<tonic::Response<pb::SpendableNoteRecord>, tonic::Status> {
+    ) -> Result<tonic::Response<pb::NoteByCommitmentResponse>, tonic::Status> {
         self.check_worker().await?;
         self.check_fvk(request.get_ref().account_id.as_ref())
             .await?;
@@ -321,12 +321,15 @@ impl ViewProtocolService for ViewService {
                 tonic::Status::failed_precondition("Invalid note commitment in request")
             })?;
 
-        Ok(tonic::Response::new(pb::SpendableNoteRecord::from(
+                let spendable_note = pb::SpendableNoteRecord::from(
             self.storage
                 .note_by_commitment(note_commitment, request.await_detection)
                 .await
-                .map_err(|e| tonic::Status::internal(format!("error: {}", e)))?,
-        )))
+                .map_err(|e| tonic::Status::internal(format!("error: {}", e)))?);
+
+        Ok(tonic::Response::new(NoteByCommitmentResponse {
+            spendable_note: Some(spendable_note)
+        }))
     }
 
     async fn nullifier_status(
@@ -478,7 +481,7 @@ impl ViewProtocolService for ViewService {
 
     async fn assets(
         &self,
-        _request: tonic::Request<pb::AssetRequest>,
+        _request: tonic::Request<pb::AssetsRequest>,
     ) -> Result<tonic::Response<Self::AssetsStream>, tonic::Status> {
         self.check_worker().await?;
 
@@ -506,14 +509,16 @@ impl ViewProtocolService for ViewService {
 
     async fn transaction_hashes(
         &self,
-        request: tonic::Request<pb::TransactionsRequest>,
+        request: tonic::Request<pb::TransactionHashesRequest>,
     ) -> Result<tonic::Response<Self::TransactionHashesStream>, tonic::Status> {
         self.check_worker().await?;
+
+        let range = request.get_ref().range;
 
         // Fetch transactions from storage.
         let txs = self
             .storage
-            .transaction_hashes(request.get_ref().start_height, request.get_ref().end_height)
+            .transaction_hashes(request.get_ref().range.start_height, request.get_ref().range.end_height)
             .await
             .map_err(|e| {
                 tonic::Status::unavailable(format!("error fetching transactions: {}", e))
@@ -521,7 +526,7 @@ impl ViewProtocolService for ViewService {
 
         let stream = try_stream! {
             for tx in txs {
-                yield TransactionHashStreamResponse {
+                yield TransactionHashesResponse {
                     block_height: tx.0,
                     tx_hash: tx.1,
                 }
@@ -543,10 +548,12 @@ impl ViewProtocolService for ViewService {
     ) -> Result<tonic::Response<Self::TransactionsStream>, tonic::Status> {
         self.check_worker().await?;
 
+        let range = request.get_ref().range;
+
         // Fetch transactions from storage.
         let txs = self
             .storage
-            .transactions(request.get_ref().start_height, request.get_ref().end_height)
+            .transactions(range.start_height, range.end_height)
             .await
             .map_err(|e| {
                 tonic::Status::unavailable(format!("error fetching transactions: {}", e))
@@ -554,7 +561,7 @@ impl ViewProtocolService for ViewService {
 
         let stream = try_stream! {
             for tx in txs {
-                yield TransactionStreamResponse {
+                yield TransactionsResponse {
                     block_height: tx.0,
                     tx_hash: tx.1,
                     tx: Some(tx.2.into())
@@ -647,7 +654,7 @@ impl ViewProtocolService for ViewService {
 
     async fn chain_parameters(
         &self,
-        _request: tonic::Request<pb::ChainParamsRequest>,
+        _request: tonic::Request<pb::ChainParametersRequest>,
     ) -> Result<tonic::Response<pbp::ChainParameters>, tonic::Status> {
         self.check_worker().await?;
 
