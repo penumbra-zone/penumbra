@@ -17,7 +17,7 @@ import "penumbra/core/stake/v1alpha1/stake.proto";
 // but requesting the asset denomination for a specific asset id is not, because
 // it reveals that the client has an interest in that asset specifically.
 service ObliviousQueryService {
-  rpc CompactBlockRange(CompactBlockRangeRequest) returns (CompactBlockRangeResponse);
+  rpc CompactBlockRange(CompactBlockRangeRequest) returns (stream CompactBlockRangeResponse);
   rpc ChainParameters(ChainParametersRequest) returns (ChainParametersResponse);
   rpc MutableParameters(MutableParametersRequest) returns (stream MutableParametersResponse);
   rpc ValidatorInfo(ValidatorInfoRequest) returns (stream ValidatorInfoResponse);
