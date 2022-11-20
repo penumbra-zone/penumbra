@@ -9,12 +9,13 @@ use decaf377::{Element, FieldExt};
 use decaf377_fmd as fmd;
 use decaf377_ka as ka;
 
-use ark_ff::PrimeField;
-use ark_groth16::{Groth16, ProvingKey, VerifyingKey};
+use ark_ff::{PrimeField, ToConstraintField};
+use ark_groth16::{Groth16, Proof, ProvingKey, VerifyingKey};
 use ark_r1cs_std::prelude::AllocVar;
 use ark_relations::ns;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
+use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
 use super::groth16_gadgets as gadgets;
@@ -139,6 +140,60 @@ impl OutputCircuit {
         let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
             .expect("can perform circuit specific setup");
         (pk, vk)
+    }
+}
+
+pub struct OutputProof(Proof<Bls12_377>);
+
+impl OutputProof {
+    #![allow(clippy::too_many_arguments)]
+    pub fn prove<R: CryptoRng + Rng>(
+        rng: &mut R,
+        pk: &ProvingKey<Bls12_377>,
+        note: Note,
+        v_blinding: Fr,
+        esk: ka::Secret,
+        balance_commitment: balance::Commitment,
+        note_commitment: note::Commitment,
+        epk: ka::Public,
+    ) -> anyhow::Result<Self> {
+        let element_pk = decaf377::Encoding(epk.0).vartime_decompress().unwrap();
+        let circuit = OutputCircuit {
+            note,
+            note_commitment,
+            v_blinding,
+            esk,
+            epk: element_pk,
+            balance_commitment,
+        };
+        let proof = Groth16::prove(pk, circuit, rng).map_err(|err| anyhow::anyhow!(err))?;
+        Ok(Self(proof))
+    }
+
+    /// Called to verify the proof using the provided public inputs.
+    ///
+    /// The public inputs are:
+    /// * balance commitment of the new note,
+    /// * note commitment of the new note,
+    /// * the ephemeral public key used to generate the new note.
+    pub fn verify(
+        &self,
+        vk: &VerifyingKey<Bls12_377>,
+        balance_commitment: balance::Commitment,
+        note_commitment: note::Commitment,
+        epk: ka::Public,
+    ) -> anyhow::Result<bool> {
+        let processed_pvk = Groth16::process_vk(&vk).map_err(|err| anyhow::anyhow!(err))?;
+        let element_pk = decaf377::Encoding(epk.0).vartime_decompress().unwrap();
+        let mut public_inputs = Vec::new();
+        public_inputs.extend(note_commitment.0.to_field_elements().unwrap());
+        public_inputs.extend(element_pk.to_field_elements().unwrap());
+        public_inputs.extend(balance_commitment.0.to_field_elements().unwrap());
+
+        let proof_result =
+            Groth16::verify_with_processed_vk(&processed_pvk, public_inputs.as_slice(), &self.0)
+                .map_err(|err| anyhow::anyhow!(err))?;
+        Ok(proof_result)
     }
 }
 
