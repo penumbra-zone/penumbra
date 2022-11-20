@@ -15,12 +15,14 @@ use ark_r1cs_std::prelude::AllocVar;
 use ark_relations::ns;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
+use decaf377_rdsa::{SpendAuth, VerificationKey};
+use penumbra_tct as tct;
 use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
 use super::groth16_gadgets as gadgets;
-use crate::keys::Diversifier;
-use crate::{balance, note, Address, Note, Value};
+use crate::{balance, keys::NullifierKey, note, Address, Note, Value};
+use crate::{keys::Diversifier, Nullifier};
 
 // Public:
 // * vcm (value commitment)
@@ -34,7 +36,7 @@ use crate::{balance, note, Address, Note, Value};
 // * vblind (Fr)
 // * nblind (Fq)
 // * esk (scalar)
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct OutputCircuit {
     // Witnesses
     /// The note being created.
@@ -195,6 +197,34 @@ impl OutputProof {
                 .map_err(|err| anyhow::anyhow!(err))?;
         Ok(proof_result)
     }
+}
+
+/// Groth16 proof for spending existing notes.
+#[derive(Clone, Debug)]
+pub struct SpendCircuit {
+    // Witnesses
+    /// Inclusion proof for the note commitment.
+    note_commitment_proof: tct::Proof,
+    /// The note being spent.
+    note: Note,
+    /// The blinding factor used for generating the value commitment.
+    v_blinding: Fr,
+    /// The randomizer used for generating the randomized spend auth key.
+    spend_auth_randomizer: Fr,
+    /// The spend authorization key.
+    ak: VerificationKey<SpendAuth>,
+    /// The nullifier deriving key.
+    nk: NullifierKey,
+
+    // Public inputs
+    /// the merkle root of the note commitment tree,
+    pub anchor: tct::Root,
+    /// value commitment of the note to be spent,
+    pub balance_commitment: balance::Commitment,
+    /// nullifier of the note to be spent,
+    pub nullifier: Nullifier,
+    /// * the randomized verification spend key,
+    pub rk: VerificationKey<SpendAuth>,
 }
 
 #[cfg(test)]
