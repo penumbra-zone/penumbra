@@ -217,14 +217,88 @@ pub struct SpendCircuit {
     nk: NullifierKey,
 
     // Public inputs
-    /// the merkle root of the note commitment tree,
+    /// the merkle root of the note commitment tree.
     pub anchor: tct::Root,
-    /// value commitment of the note to be spent,
+    /// value commitment of the note to be spent.
     pub balance_commitment: balance::Commitment,
-    /// nullifier of the note to be spent,
+    /// nullifier of the note to be spent.
     pub nullifier: Nullifier,
-    /// * the randomized verification spend key,
+    /// the randomized verification spend key.
     pub rk: VerificationKey<SpendAuth>,
+}
+
+impl ConstraintSynthesizer<Fq> for SpendCircuit {
+    fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
+        // Witnesses
+        // TODO: tct::Proof unpack into position, note commitment, and the merkle path
+        let note_commitment_var =
+            FqVar::new_witness(cs.clone(), || Ok(self.note_commitment_proof.commitment().0))?;
+        let position_fq: Fq = Fq::from(u64::from(self.note_commitment_proof.position()));
+        let nct_position_var = FqVar::new_witness(cs.clone(), || Ok(position_fq))?;
+
+        let note_blinding_var =
+            FqVar::new_witness(cs.clone(), || Ok(self.note.note_blinding().clone()))?;
+        let value_amount_var =
+            FqVar::new_witness(cs.clone(), || Ok(Fq::from(self.note.value().amount)))?;
+        let value_asset_id_var =
+            FqVar::new_witness(cs.clone(), || Ok(self.note.value().asset_id.0))?;
+        let diversified_generator_var: ElementVar =
+            AllocVar::<Element, Fq>::new_witness(cs.clone(), || {
+                Ok(self.note.diversified_generator().clone())
+            })?;
+        let transmission_key_s_var =
+            FqVar::new_witness(cs.clone(), || Ok(self.note.transmission_key_s().clone()))?;
+        let clue_key_var = FqVar::new_witness(cs.clone(), || {
+            Ok(Fq::from_le_bytes_mod_order(&self.note.clue_key().0[..]))
+        })?;
+        let v_blinding_arr: [u8; 32] = self.v_blinding.to_bytes();
+        let v_blinding_vars = UInt8::new_witness_vec(cs.clone(), &v_blinding_arr)?;
+        let value_amount_arr = self.note.value().amount.to_le_bytes();
+        let value_vars = UInt8::new_witness_vec(cs.clone(), &value_amount_arr)?;
+        // TODO: spend_auth_randomizer
+        // TODO: ak
+        let nk_var = FqVar::new_witness(cs.clone(), || Ok(self.nk.0))?;
+
+        // Public inputs
+        // TODO: anchor
+        let nullifier_var = FqVar::new_input(cs.clone(), || Ok(self.nullifier.0))?;
+        // TODO: rk
+        let balance_commitment_var =
+            ElementVar::new_input(cs.clone(), || Ok(self.balance_commitment.0))?;
+
+        // TODO: Short circuit to true if value released is 0. That means this is a _dummy_ spend.
+
+        gadgets::note_commitment_integrity(
+            cs.clone(),
+            note_blinding_var,
+            value_amount_var,
+            value_asset_id_var.clone(),
+            diversified_generator_var.clone(),
+            transmission_key_s_var,
+            clue_key_var,
+            note_commitment_var.clone(),
+        )?;
+        // TODO: Merkle path integrity.
+        // TODO: rk integrity
+        // TODO: diversified address integrity
+        gadgets::diversified_basepoint_not_identity(cs.clone(), diversified_generator_var)?;
+        gadgets::value_commitment_integrity(
+            cs.clone(),
+            value_vars,
+            value_asset_id_var,
+            v_blinding_vars,
+            balance_commitment_var,
+        )?;
+        gadgets::nullifier_integrity(
+            cs,
+            note_commitment_var,
+            nk_var,
+            nct_position_var,
+            nullifier_var,
+        )?;
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
