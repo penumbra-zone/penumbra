@@ -13,14 +13,10 @@ use penumbra_component::{
 };
 use penumbra_proto::{
     client::v1alpha1::{
-        oblivious_query_service_server::ObliviousQueryService, AssetListRequest,
-        ChainParametersRequest, CompactBlockRangeRequest, MutableParametersRequest,
-        ValidatorInfoRequest,
-    },
-    core::{
-        chain::v1alpha1::{ChainParameters, CompactBlock, KnownAssets},
-        governance::v1alpha1::MutableChainParameter,
-        stake::v1alpha1::ValidatorInfo,
+        oblivious_query_service_server::ObliviousQueryService, AssetListRequest, AssetListResponse,
+        ChainParametersRequest, ChainParametersResponse, CompactBlockRangeRequest,
+        CompactBlockRangeResponse, MutableParametersRequest, MutableParametersResponse,
+        ValidatorInfoRequest, ValidatorInfoResponse,
     },
     Protobuf,
 };
@@ -58,20 +54,22 @@ use super::Info;
 
 #[tonic::async_trait]
 impl ObliviousQueryService for Info {
-    type CompactBlockRangeStream =
-        Pin<Box<dyn futures::Stream<Item = Result<CompactBlock, tonic::Status>> + Send>>;
+    type CompactBlockRangeStream = Pin<
+        Box<dyn futures::Stream<Item = Result<CompactBlockRangeResponse, tonic::Status>> + Send>,
+    >;
 
     type ValidatorInfoStream =
-        Pin<Box<dyn futures::Stream<Item = Result<ValidatorInfo, tonic::Status>> + Send>>;
+        Pin<Box<dyn futures::Stream<Item = Result<ValidatorInfoResponse, tonic::Status>> + Send>>;
 
-    type MutableParametersStream =
-        Pin<Box<dyn futures::Stream<Item = Result<MutableChainParameter, tonic::Status>> + Send>>;
+    type MutableParametersStream = Pin<
+        Box<dyn futures::Stream<Item = Result<MutableParametersResponse, tonic::Status>> + Send>,
+    >;
 
     #[instrument(skip(self, request))]
     async fn chain_parameters(
         &self,
         request: tonic::Request<ChainParametersRequest>,
-    ) -> Result<tonic::Response<ChainParameters>, Status> {
+    ) -> Result<tonic::Response<ChainParametersResponse>, Status> {
         let state = self.storage.latest_state();
         state.check_chain_id(&request.get_ref().chain_id).await?;
 
@@ -79,7 +77,9 @@ impl ObliviousQueryService for Info {
             tonic::Status::unavailable(format!("error getting chain parameters: {}", e))
         })?;
 
-        Ok(tonic::Response::new(chain_params.into()))
+        Ok(tonic::Response::new(ChainParametersResponse {
+            chain_parameters: Some(chain_params.into()),
+        }))
     }
 
     #[instrument(skip(self, request))]
@@ -92,20 +92,24 @@ impl ObliviousQueryService for Info {
 
         let mutable_params = MutableParam::iter();
 
-        let s = try_stream! {
+        let stream = try_stream! {
             for param in mutable_params {
                 yield param.to_proto();
             }
         };
 
         Ok(tonic::Response::new(
-            s.map_err(|e: anyhow::Error| {
-                // Should be impossible, but.
-                tonic::Status::unavailable(format!("error getting mutable params: {}", e))
-            })
-            // TODO: how do we instrument a Stream
-            //.instrument(Span::current())
-            .boxed(),
+            stream
+                .map_ok(|params| MutableParametersResponse {
+                    chain_parameter: Some(params.into()),
+                })
+                .map_err(|e: anyhow::Error| {
+                    // Should be impossible, but.
+                    tonic::Status::unavailable(format!("error getting mutable params: {}", e))
+                })
+                // TODO: how do we instrument a Stream
+                //.instrument(Span::current())
+                .boxed(),
         ))
     }
 
@@ -113,14 +117,16 @@ impl ObliviousQueryService for Info {
     async fn asset_list(
         &self,
         request: tonic::Request<AssetListRequest>,
-    ) -> Result<tonic::Response<KnownAssets>, Status> {
+    ) -> Result<tonic::Response<AssetListResponse>, Status> {
         let state = self.storage.latest_state();
         state.check_chain_id(&request.get_ref().chain_id).await?;
 
         let known_assets = state.known_assets().await.map_err(|e| {
             tonic::Status::unavailable(format!("error getting known assets: {}", e))
         })?;
-        Ok(tonic::Response::new(known_assets.into()))
+        Ok(tonic::Response::new(AssetListResponse {
+            asset_list: Some(known_assets.into()),
+        }))
     }
 
     #[instrument(skip(self, request), fields(show_inactive = request.get_ref().show_inactive))]
@@ -137,7 +143,7 @@ impl ObliviousQueryService for Info {
             .map_err(|e| tonic::Status::unavailable(format!("error listing validators: {}", e)))?;
 
         let show_inactive = request.get_ref().show_inactive;
-        let s = try_stream! {
+        let stream = try_stream! {
             for identity_key in validators {
                 let info = state.validator_info(&identity_key)
                     .await?
@@ -151,12 +157,16 @@ impl ObliviousQueryService for Info {
         };
 
         Ok(tonic::Response::new(
-            s.map_err(|e: anyhow::Error| {
-                tonic::Status::unavailable(format!("error getting validator info: {}", e))
-            })
-            // TODO: how do we instrument a Stream
-            //.instrument(Span::current())
-            .boxed(),
+            stream
+                .map_ok(|info| ValidatorInfoResponse {
+                    validator_info: Some(info.into()),
+                })
+                .map_err(|e: anyhow::Error| {
+                    tonic::Status::unavailable(format!("error getting validator info: {}", e))
+                })
+                // TODO: how do we instrument a Stream
+                //.instrument(Span::current())
+                .boxed(),
         ))
     }
 
@@ -313,9 +323,12 @@ impl ObliviousQueryService for Info {
         // manage load, etc.
         //
         // for now, assume that we can do c10k or whatever and don't worry about it.
-
         Ok(tonic::Response::new(
-            tokio_stream::wrappers::ReceiverStream::new(rx).boxed(),
+            tokio_stream::wrappers::ReceiverStream::new(rx)
+                .map_ok(|block| CompactBlockRangeResponse {
+                    compact_block: Some(block),
+                })
+                .boxed(),
         ))
     }
 }

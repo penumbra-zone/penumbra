@@ -11,14 +11,15 @@ use penumbra_proto::{
         BatchSwapOutputDataRequest, KeyValueRequest, KeyValueResponse, StubCpmmReservesRequest,
         ValidatorStatusRequest,
     },
-    core::{
-        chain::v1alpha1::NoteSource,
-        crypto::v1alpha1::NoteCommitment,
-        dex::v1alpha1::{BatchSwapOutputData, Reserves},
-        stake::v1alpha1::ValidatorStatus,
-    },
 };
 
+use proto::client::v1alpha1::BatchSwapOutputDataResponse;
+use proto::client::v1alpha1::NextValidatorRateRequest;
+use proto::client::v1alpha1::NextValidatorRateResponse;
+use proto::client::v1alpha1::StubCpmmReservesResponse;
+use proto::client::v1alpha1::TransactionByNoteRequest;
+use proto::client::v1alpha1::TransactionByNoteResponse;
+use proto::client::v1alpha1::ValidatorStatusResponse;
 use tonic::Status;
 use tracing::instrument;
 
@@ -111,11 +112,13 @@ impl SpecificQueryService for Info {
     #[instrument(skip(self, request))]
     async fn transaction_by_note(
         &self,
-        request: tonic::Request<NoteCommitment>,
-    ) -> Result<tonic::Response<NoteSource>, Status> {
+        request: tonic::Request<TransactionByNoteRequest>,
+    ) -> Result<tonic::Response<TransactionByNoteResponse>, Status> {
         let state = self.storage.latest_state();
         let cm = request
             .into_inner()
+            .note_commitment
+            .ok_or_else(|| Status::invalid_argument("empty message"))?
             .try_into()
             .map_err(|_| Status::invalid_argument("invalid commitment"))?;
         let source = state
@@ -125,14 +128,16 @@ impl SpecificQueryService for Info {
             .ok_or_else(|| Status::not_found("note commitment not found"))?;
         tracing::debug!(?cm, ?source);
 
-        Ok(tonic::Response::new(source.into()))
+        Ok(tonic::Response::new(TransactionByNoteResponse {
+            note_source: Some(source.into()),
+        }))
     }
 
     #[instrument(skip(self, request))]
     async fn validator_status(
         &self,
         request: tonic::Request<ValidatorStatusRequest>,
-    ) -> Result<tonic::Response<ValidatorStatus>, Status> {
+    ) -> Result<tonic::Response<ValidatorStatusResponse>, Status> {
         let state = self.storage.latest_state();
         state.check_chain_id(&request.get_ref().chain_id).await?;
 
@@ -149,7 +154,9 @@ impl SpecificQueryService for Info {
             .map_err(|e| Status::unavailable(format!("error getting validator status: {}", e)))?
             .ok_or_else(|| Status::not_found("validator not found"))?;
 
-        Ok(tonic::Response::new(status.into()))
+        Ok(tonic::Response::new(ValidatorStatusResponse {
+            status: Some(status.into()),
+        }))
     }
 
     #[instrument(skip(self, request))]
@@ -157,7 +164,7 @@ impl SpecificQueryService for Info {
     async fn batch_swap_output_data(
         &self,
         request: tonic::Request<BatchSwapOutputDataRequest>,
-    ) -> Result<tonic::Response<BatchSwapOutputData>, Status> {
+    ) -> Result<tonic::Response<BatchSwapOutputDataResponse>, Status> {
         let state = self.storage.latest_state();
         let request_inner = request.into_inner();
         let height = request_inner.height;
@@ -173,7 +180,9 @@ impl SpecificQueryService for Info {
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
         match output_data {
-            Some(o) => Ok(tonic::Response::new(o.into())),
+            Some(data) => Ok(tonic::Response::new(BatchSwapOutputDataResponse {
+                data: Some(data.into()),
+            })),
             None => Err(Status::not_found("batch swap output data not found")),
         }
     }
@@ -183,7 +192,7 @@ impl SpecificQueryService for Info {
     async fn stub_cpmm_reserves(
         &self,
         request: tonic::Request<StubCpmmReservesRequest>,
-    ) -> Result<tonic::Response<Reserves>, Status> {
+    ) -> Result<tonic::Response<StubCpmmReservesResponse>, Status> {
         let state = self.storage.latest_state();
         let request_inner = request.into_inner();
         let trading_pair = request_inner
@@ -198,7 +207,9 @@ impl SpecificQueryService for Info {
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
         match cpmm_reserves {
-            Some(o) => Ok(tonic::Response::new(o.into())),
+            Some(reserves) => Ok(tonic::Response::new(StubCpmmReservesResponse {
+                reserves: Some(reserves.into()),
+            })),
             None => Err(Status::not_found("CPMM reserves not found")),
         }
     }
@@ -206,11 +217,13 @@ impl SpecificQueryService for Info {
     #[instrument(skip(self, request))]
     async fn next_validator_rate(
         &self,
-        request: tonic::Request<proto::core::crypto::v1alpha1::IdentityKey>,
-    ) -> Result<tonic::Response<proto::core::stake::v1alpha1::RateData>, Status> {
+        request: tonic::Request<NextValidatorRateRequest>,
+    ) -> Result<tonic::Response<NextValidatorRateResponse>, Status> {
         let state = self.storage.latest_state();
         let identity_key = request
             .into_inner()
+            .identity_key
+            .ok_or_else(|| tonic::Status::invalid_argument("empty message"))?
             .try_into()
             .map_err(|_| tonic::Status::invalid_argument("invalid identity key"))?;
 
@@ -220,7 +233,9 @@ impl SpecificQueryService for Info {
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
         match rate_data {
-            Some(r) => Ok(tonic::Response::new(r.into())),
+            Some(r) => Ok(tonic::Response::new(NextValidatorRateResponse {
+                data: Some(r.into()),
+            })),
             None => Err(Status::not_found("next validator rate not found")),
         }
     }

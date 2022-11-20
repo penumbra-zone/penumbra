@@ -51,8 +51,9 @@ impl Display for Vote {
             Vote::No => write!(f, "no"),
             Vote::Abstain => write!(f, "abstain"),
             Vote::NoWithVeto => write!(f, "no_with_veto"),
-            // TODO(erwan): make sure this is correct, MERGEBLOCK
-            _ => unreachable!(),
+            // Invalid vote, this is unreachable because it should
+            // never be allowed to be deserialized successfully.
+            Vote::Unspecified => unreachable!(),
         }
     }
 }

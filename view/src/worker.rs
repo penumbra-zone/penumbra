@@ -121,6 +121,8 @@ impl Worker {
             .asset_list(tonic::Request::new(AssetListRequest { chain_id }))
             .await?
             .into_inner()
+            .asset_list
+            .ok_or_else(|| anyhow::anyhow!("empty AssetListResponse message"))?
             .assets;
 
         for new_asset in assets {
@@ -233,7 +235,8 @@ impl Worker {
         });
 
         while let Some(block) = buffered_stream.recv().await {
-            let block = CompactBlock::try_from(block?)?;
+            let block: CompactBlock = block?.try_into()?;
+
             let height = block.height;
 
             // Lock the NCT only while processing this block.

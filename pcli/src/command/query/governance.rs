@@ -7,7 +7,7 @@ use anyhow::Result;
 use futures::TryStreamExt;
 use penumbra_component::{
     governance::{
-        proposal::{self, ProposalList},
+        proposal::{self, chain_params::MutableParam, ProposalList},
         state_key::*,
     },
     stake::validator,
@@ -18,6 +18,7 @@ use penumbra_transaction::action::{Proposal, ProposalPayload, Vote};
 use penumbra_view::ViewClient;
 use serde::Serialize;
 use serde_json::json;
+use tokio_stream::StreamExt;
 
 use crate::App;
 
@@ -73,6 +74,11 @@ impl GovernanceCmd {
                     .into_inner()
                     .try_collect::<Vec<_>>()
                     .await?;
+
+                let params: Result<Vec<MutableParam>, _> =
+                    params.into_iter().map(TryInto::try_into).collect();
+
+                let params = params?;
 
                 json(&params)?;
             }
