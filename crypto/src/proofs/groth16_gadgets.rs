@@ -45,17 +45,14 @@ pub(crate) fn value_commitment_integrity(
     // Public inputs,
     commitment: ElementVar,
 ) -> Result<(), SynthesisError> {
-    // commitment computation
     let value_generator = FqVar::new_constant(cs.clone(), *VALUE_GENERATOR_DOMAIN_SEP)?;
     let value_blinding_generator = ElementVar::new_constant(cs.clone(), *VALUE_BLINDING_GENERATOR)?;
 
-    // Generate value generator
     let hashed_asset_id = poseidon377::r1cs::hash_1(cs.clone(), &value_generator, value_asset_id)?;
     let asset_generator = ElementVar::encode_to_curve(&hashed_asset_id)?;
     let test_commitment = asset_generator.scalar_mul_le(value_amount.to_bits_le()?.iter())?
         + value_blinding_generator.scalar_mul_le(value_blinding.to_bits_le()?.iter())?;
 
-    // Equality constraint
     commitment.enforce_equal(&test_commitment)?;
     Ok(())
 }
