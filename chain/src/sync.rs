@@ -2,7 +2,9 @@ use std::convert::TryFrom;
 
 use anyhow::Result;
 use penumbra_crypto::{IdentityKey, NotePayload, Nullifier};
-use penumbra_proto::{core::chain::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{
+    client::v1alpha1::CompactBlockRangeResponse, core::chain::v1alpha1 as pb, Protobuf,
+};
 use penumbra_tct::builder::{block, epoch};
 use serde::{Deserialize, Serialize};
 
@@ -168,5 +170,24 @@ impl TryFrom<pb::CompactBlock> for CompactBlock {
             fmd_parameters: value.fmd_parameters.map(TryInto::try_into).transpose()?,
             proposal_started: value.proposal_started,
         })
+    }
+}
+
+impl From<CompactBlock> for CompactBlockRangeResponse {
+    fn from(cb: CompactBlock) -> Self {
+        Self {
+            compact_block: Some(cb.into()),
+        }
+    }
+}
+
+impl TryFrom<CompactBlockRangeResponse> for CompactBlock {
+    type Error = anyhow::Error;
+
+    fn try_from(response: CompactBlockRangeResponse) -> Result<Self, Self::Error> {
+        response
+            .compact_block
+            .ok_or_else(|| anyhow::anyhow!("empty CompactBlockRangeResponse message"))?
+            .try_into()
     }
 }

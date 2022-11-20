@@ -1,4 +1,6 @@
-use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{
+    client::v1alpha1::ValidatorInfoResponse, core::stake::v1alpha1 as pb, Protobuf,
+};
 use serde::{Deserialize, Serialize};
 
 use super::{Status, Validator};
@@ -24,6 +26,14 @@ impl From<Info> for pb::ValidatorInfo {
     }
 }
 
+impl From<Info> for ValidatorInfoResponse {
+    fn from(v: Info) -> Self {
+        ValidatorInfoResponse {
+            validator_info: Some(v.into()),
+        }
+    }
+}
+
 impl TryFrom<pb::ValidatorInfo> for Info {
     type Error = anyhow::Error;
     fn try_from(v: pb::ValidatorInfo) -> Result<Self, Self::Error> {
@@ -41,5 +51,16 @@ impl TryFrom<pb::ValidatorInfo> for Info {
                 .ok_or_else(|| anyhow::anyhow!("missing rate_data field in proto"))?
                 .try_into()?,
         })
+    }
+}
+
+impl TryFrom<ValidatorInfoResponse> for Info {
+    type Error = anyhow::Error;
+
+    fn try_from(info_resp: ValidatorInfoResponse) -> Result<Self, Self::Error> {
+        info_resp
+            .validator_info
+            .ok_or_else(|| anyhow::anyhow!("empty ValidatorInfoResponse message"))?
+            .try_into()
     }
 }

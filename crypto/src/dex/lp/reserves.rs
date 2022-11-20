@@ -1,5 +1,7 @@
 use crate::asset::Amount;
-use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{
+    client::v1alpha1::StubCpmmReservesResponse, core::dex::v1alpha1 as pb, Protobuf,
+};
 
 /// The reserves of a position.
 ///
@@ -38,5 +40,16 @@ impl From<Reserves> for pb::Reserves {
             r1: Some(value.r1.into()),
             r2: Some(value.r2.into()),
         }
+    }
+}
+
+impl TryFrom<StubCpmmReservesResponse> for Reserves {
+    type Error = anyhow::Error;
+
+    fn try_from(value: StubCpmmReservesResponse) -> Result<Self, Self::Error> {
+        value
+            .reserves
+            .ok_or_else(|| anyhow::anyhow!("empty StubCpmmReservesResponse message"))?
+            .try_into()
     }
 }

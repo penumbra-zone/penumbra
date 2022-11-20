@@ -1,5 +1,5 @@
 use penumbra_crypto::asset::Asset;
-use penumbra_proto::{core::chain::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{client::v1alpha1::AssetListResponse, core::chain::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -29,6 +29,14 @@ impl From<KnownAssets> for pb::KnownAssets {
                 .into_iter()
                 .map(|asset| asset.into())
                 .collect(),
+        }
+    }
+}
+
+impl From<KnownAssets> for AssetListResponse {
+    fn from(assets: KnownAssets) -> Self {
+        Self {
+            asset_list: Some(assets.into()),
         }
     }
 }

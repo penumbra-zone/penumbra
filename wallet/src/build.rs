@@ -23,7 +23,10 @@ where
             account_id: fvk.hash(),
             plan: plan.clone(),
         })
-        .await?;
+        .await?
+        .data
+        .ok_or_else(|| anyhow::anyhow!("empty AuthorizeResponse message"))?
+        .try_into()?;
 
     // Send a witness request to the view service to get witness data
     let witness_data = view.witness(fvk.hash(), &mut rng, &plan).await?;

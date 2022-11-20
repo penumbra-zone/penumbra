@@ -3,7 +3,9 @@ use std::{collections::BTreeMap, str::FromStr};
 
 use anyhow::{Context as _, Result};
 use penumbra_chain::params::ChainParameters;
-use penumbra_proto::{core::governance::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{
+    client::v1alpha1::MutableParametersResponse, core::governance::v1alpha1 as pb, Protobuf,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -39,7 +41,16 @@ impl From<MutableParam> for pb::MutableChainParameter {
         }
     }
 }
+impl TryFrom<MutableParametersResponse> for MutableParam {
+    type Error = anyhow::Error;
 
+    fn try_from(value: MutableParametersResponse) -> Result<Self, Self::Error> {
+        value
+            .chain_parameter
+            .ok_or_else(|| anyhow::anyhow!("empty MutableParametersResponse message"))?
+            .try_into()
+    }
+}
 impl MutableParam {
     // TODO: would be nicer as a macro but after a bit of fiddling i couldn't get it right
     pub const fn iter() -> [MutableParam; 7] {

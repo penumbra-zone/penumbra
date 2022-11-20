@@ -91,8 +91,8 @@ impl Opt {
                         ));
                 progress_bar.set_position(0);
 
-                while let Some(block) = stream.message().await? {
-                    let block = CompactBlock::try_from(block)?;
+                while let Some(block_rsp) = stream.message().await? {
+                    let block: CompactBlock = block_rsp.try_into()?;
                     progress_bar.set_position(block.height);
                 }
                 progress_bar.finish();

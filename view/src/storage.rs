@@ -65,6 +65,7 @@ impl Storage {
                 .await?
                 .into_inner()
                 .try_into()?;
+
             Self::initialize(storage_path, fvk.clone(), params).await
         }
     }

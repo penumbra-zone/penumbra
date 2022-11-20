@@ -57,7 +57,6 @@ impl From<State> for pb::BondingState {
 impl TryFrom<pb::BondingState> for State {
     type Error = anyhow::Error;
     fn try_from(v: pb::BondingState) -> Result<Self, Self::Error> {
-        let unbonding_epoch = v.unbonding_epoch;
         let Some(bonding_state) = pb::bonding_state::BondingStateEnum::from_i32(v.state) else {
             return Err(anyhow::anyhow!("invalid bonding state!"))
         };
@@ -65,11 +64,12 @@ impl TryFrom<pb::BondingState> for State {
         match bonding_state {
             pb::bonding_state::BondingStateEnum::Bonded => Ok(State::Bonded),
             pb::bonding_state::BondingStateEnum::Unbonded => Ok(State::Unbonded),
-            pb::bonding_state::BondingStateEnum::Unbonding => Ok(State::Unbonding {
-                // TODO(erwan): should this be handled more gracefully? MERGEBLOCK
-                unbonding_epoch: unbonding_epoch
-                    .expect("unbonding epoch should be set for unbonding state"),
-            }),
+            pb::bonding_state::BondingStateEnum::Unbonding => {
+                let Some(unbonding_epoch) = v.unbonding_epoch else {
+            return Err(anyhow::anyhow!("unbonding epoch should be set for unbonding state"))
+        };
+                Ok(State::Unbonding { unbonding_epoch })
+            }
             pb::bonding_state::BondingStateEnum::Unspecified => {
                 Err(anyhow::anyhow!("unspecified bonding state!"))
             }
