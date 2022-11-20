@@ -246,7 +246,10 @@ pub mod oblivious_query_service_client {
         pub async fn compact_block_range(
             &mut self,
             request: impl tonic::IntoRequest<super::CompactBlockRangeRequest>,
-        ) -> Result<tonic::Response<super::CompactBlockRangeResponse>, tonic::Status> {
+        ) -> Result<
+            tonic::Response<tonic::codec::Streaming<super::CompactBlockRangeResponse>>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -260,7 +263,7 @@ pub mod oblivious_query_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.client.v1alpha1.ObliviousQueryService/CompactBlockRange",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            self.inner.server_streaming(request.into_request(), path, codec).await
         }
         pub async fn chain_parameters(
             &mut self,
@@ -564,10 +567,16 @@ pub mod oblivious_query_service_server {
     ///Generated trait containing gRPC methods that should be implemented for use with ObliviousQueryServiceServer.
     #[async_trait]
     pub trait ObliviousQueryService: Send + Sync + 'static {
+        ///Server streaming response type for the CompactBlockRange method.
+        type CompactBlockRangeStream: futures_core::Stream<
+                Item = Result<super::CompactBlockRangeResponse, tonic::Status>,
+            >
+            + Send
+            + 'static;
         async fn compact_block_range(
             &self,
             request: tonic::Request<super::CompactBlockRangeRequest>,
-        ) -> Result<tonic::Response<super::CompactBlockRangeResponse>, tonic::Status>;
+        ) -> Result<tonic::Response<Self::CompactBlockRangeStream>, tonic::Status>;
         async fn chain_parameters(
             &self,
             request: tonic::Request<super::ChainParametersRequest>,
@@ -667,11 +676,13 @@ pub mod oblivious_query_service_server {
                     struct CompactBlockRangeSvc<T: ObliviousQueryService>(pub Arc<T>);
                     impl<
                         T: ObliviousQueryService,
-                    > tonic::server::UnaryService<super::CompactBlockRangeRequest>
-                    for CompactBlockRangeSvc<T> {
+                    > tonic::server::ServerStreamingService<
+                        super::CompactBlockRangeRequest,
+                    > for CompactBlockRangeSvc<T> {
                         type Response = super::CompactBlockRangeResponse;
+                        type ResponseStream = T::CompactBlockRangeStream;
                         type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
+                            tonic::Response<Self::ResponseStream>,
                             tonic::Status,
                         >;
                         fn call(
@@ -697,7 +708,7 @@ pub mod oblivious_query_service_server {
                                 accept_compression_encodings,
                                 send_compression_encodings,
                             );
-                        let res = grpc.unary(method, req).await;
+                        let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
