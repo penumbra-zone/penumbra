@@ -260,7 +260,7 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         let nk_var = FqVar::new_witness(cs.clone(), || Ok(self.nk.0))?;
 
         // Public inputs
-        // TODO: anchor
+        let anchor_var = FqVar::new_input(cs.clone(), || Ok(Fq::from(self.anchor)))?;
         let nullifier_var = FqVar::new_input(cs.clone(), || Ok(self.nullifier.0))?;
         // TODO: rk
         let balance_commitment_var =
