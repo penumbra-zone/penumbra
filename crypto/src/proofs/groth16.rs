@@ -204,18 +204,14 @@ mod tests {
         asset,
         keys::{SeedPhrase, SpendKey},
     };
-    use ark_ff::ToConstraintField;
     use ark_ff::UniformRand;
 
-    use decaf377::r1cs::CountConstraints;
-
     #[test]
-    fn groth16_output_proof_happy_path() {
+    fn output_proof_happy_path() {
         let (pk, vk) = OutputCircuit::generate_test_parameters();
         let mut rng = OsRng;
 
-        // Prover POV
-        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let seed_phrase = SeedPhrase::generate(rng);
         let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk_recipient = sk_recipient.full_viewing_key();
         let ivk_recipient = fvk_recipient.incoming();
@@ -231,45 +227,33 @@ mod tests {
         let note_commitment = note.commit();
         let esk = ka::Secret::new_from_field(Fr::rand(&mut rng));
         let epk = esk.diversified_public(&note.diversified_generator());
-        let element_pk = decaf377::Encoding(epk.0).vartime_decompress().unwrap();
-
         let balance_commitment = value_to_send.commit(v_blinding);
 
-        let circuit = OutputCircuit {
+        let proof = OutputProof::prove(
+            &mut rng,
+            &pk,
             note,
-            note_commitment,
             v_blinding,
             esk,
-            epk: element_pk,
             balance_commitment,
-        };
-        dbg!(circuit.clone().num_constraints_and_instance_variables());
+            note_commitment,
+            epk,
+        )
+        .expect("can create proof");
 
-        let proof = Groth16::prove(&pk, circuit, &mut rng)
-            .map_err(|_| anyhow::anyhow!("invalid proof"))
-            .expect("can generate proof");
-
-        // Verifier POV
-        let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
-        let mut public_inputs = Vec::new();
-        public_inputs.extend(note_commitment.0.to_field_elements().unwrap());
-        public_inputs.extend(element_pk.to_field_elements().unwrap());
-        public_inputs.extend(balance_commitment.0.to_field_elements().unwrap());
-
-        let proof_result =
-            Groth16::verify_with_processed_vk(&processed_pvk, public_inputs.as_slice(), &proof)
-                .unwrap();
+        let proof_result = proof
+            .verify(&vk, balance_commitment, note_commitment, epk)
+            .expect("can compute success or not");
 
         assert!(proof_result);
     }
 
     #[test]
-    fn groth16_output_proof_unhappy_path() {
+    fn output_proof_verification_note_commitment_integrity_failure() {
         let (pk, vk) = OutputCircuit::generate_test_parameters();
         let mut rng = OsRng;
 
-        // Prover POV
-        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let seed_phrase = SeedPhrase::generate(rng);
         let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk_recipient = sk_recipient.full_viewing_key();
         let ivk_recipient = fvk_recipient.incoming();
@@ -285,37 +269,120 @@ mod tests {
         let note_commitment = note.commit();
         let esk = ka::Secret::new_from_field(Fr::rand(&mut rng));
         let epk = esk.diversified_public(&note.diversified_generator());
-        let element_pk = decaf377::Encoding(epk.0).vartime_decompress().unwrap();
         let balance_commitment = value_to_send.commit(v_blinding);
 
-        let circuit = OutputCircuit {
-            note,
-            note_commitment,
+        let proof = OutputProof::prove(
+            &mut rng,
+            &pk,
+            note.clone(),
             v_blinding,
             esk,
-            epk: element_pk,
             balance_commitment,
-        };
-        dbg!(circuit.clone().num_constraints_and_instance_variables());
+            note_commitment,
+            epk,
+        )
+        .expect("can create proof");
 
-        let proof = Groth16::prove(&pk, circuit, &mut rng)
-            .map_err(|_| anyhow::anyhow!("invalid proof"))
-            .expect("can generate proof");
-
-        // Verifier POV
-        let processed_pvk = Groth16::process_vk(&vk).expect("can process verifying key");
-        let mut public_inputs = Vec::new();
-        public_inputs.extend(
-            (note_commitment.0 + Fq::from(1))
-                .to_field_elements()
-                .unwrap(),
+        let incorrect_note_commitment = note::commitment(
+            Fq::rand(&mut rng),
+            value_to_send,
+            note.diversified_generator(),
+            note.transmission_key_s(),
+            note.clue_key(),
         );
-        public_inputs.extend(element_pk.to_field_elements().unwrap());
-        public_inputs.extend((balance_commitment.0).to_field_elements().unwrap());
 
-        let proof_result =
-            Groth16::verify_with_processed_vk(&processed_pvk, public_inputs.as_slice(), &proof)
-                .unwrap();
+        let proof_result = proof
+            .verify(&vk, balance_commitment, incorrect_note_commitment, epk)
+            .expect("can compute success or not");
+
+        assert!(!proof_result);
+    }
+
+    #[test]
+    fn output_proof_verification_balance_commitment_integrity_failure() {
+        let (pk, vk) = OutputCircuit::generate_test_parameters();
+        let mut rng = OsRng;
+
+        let seed_phrase = SeedPhrase::generate(rng);
+        let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let fvk_recipient = sk_recipient.full_viewing_key();
+        let ivk_recipient = fvk_recipient.incoming();
+        let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
+
+        let value_to_send = Value {
+            amount: 10u64.into(),
+            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+        };
+
+        let v_blinding = Fr::rand(&mut rng);
+        let note = Note::generate(&mut rng, &dest, value_to_send);
+        let note_commitment = note.commit();
+        let esk = ka::Secret::new_from_field(Fr::rand(&mut rng));
+        let epk = esk.diversified_public(&note.diversified_generator());
+        let balance_commitment = value_to_send.commit(v_blinding);
+
+        let proof = OutputProof::prove(
+            &mut rng,
+            &pk,
+            note,
+            v_blinding,
+            esk,
+            balance_commitment,
+            note_commitment,
+            epk,
+        )
+        .expect("can create proof");
+
+        let incorrect_balance_commitment = value_to_send.commit(Fr::rand(&mut rng));
+
+        let proof_result = proof
+            .verify(&vk, incorrect_balance_commitment, note_commitment, epk)
+            .expect("can compute success or not");
+
+        assert!(!proof_result);
+    }
+
+    #[test]
+    fn test_output_proof_verification_ephemeral_public_key_integrity_failure() {
+        let (pk, vk) = OutputCircuit::generate_test_parameters();
+        let mut rng = OsRng;
+
+        let seed_phrase = SeedPhrase::generate(rng);
+        let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let fvk_recipient = sk_recipient.full_viewing_key();
+        let ivk_recipient = fvk_recipient.incoming();
+        let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
+
+        let value_to_send = Value {
+            amount: 10u64.into(),
+            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+        };
+
+        let v_blinding = Fr::rand(&mut rng);
+        let note = Note::generate(&mut rng, &dest, value_to_send);
+        let note_commitment = note.commit();
+        let esk = ka::Secret::new_from_field(Fr::rand(&mut rng));
+        let epk = esk.diversified_public(&note.diversified_generator());
+        let balance_commitment = value_to_send.commit(v_blinding);
+
+        let proof = OutputProof::prove(
+            &mut rng,
+            &pk,
+            note.clone(),
+            v_blinding,
+            esk,
+            balance_commitment,
+            note_commitment,
+            epk,
+        )
+        .expect("can create proof");
+
+        let incorrect_esk = ka::Secret::new(&mut rng);
+        let incorrect_epk = incorrect_esk.diversified_public(&note.diversified_generator());
+
+        let proof_result = proof
+            .verify(&vk, balance_commitment, note_commitment, incorrect_epk)
+            .expect("can compute success or not");
 
         assert!(!proof_result);
     }
