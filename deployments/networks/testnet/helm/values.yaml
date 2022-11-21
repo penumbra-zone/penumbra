@@ -10,7 +10,7 @@ penumbra:
   version:
 tendermint:
   image: ghcr.io/strangelove-ventures/heighliner/tendermint
-  version: v0.34.21
+  version: v0.34.23
 toolkit:
   image: ghcr.io/strangelove-ventures/infra-toolkit
   version: v0.0.6
