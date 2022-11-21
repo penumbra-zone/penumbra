@@ -119,7 +119,7 @@ pub(crate) fn diversified_address_integrity(
     diversified_generator: ElementVar,
 ) -> Result<(), SynthesisError> {
     let ivk_domain_sep = FqVar::new_constant(cs.clone(), *IVK_DOMAIN_SEP)?;
-    let ivk = poseidon377::r1cs::hash_2(cs.clone(), &ivk_domain_sep, (nk, ak))?;
+    let ivk = poseidon377::r1cs::hash_2(cs, &ivk_domain_sep, (nk, ak))?;
 
     let ivk_vars = ivk.to_bits_le()?;
     let test_transmission_key =

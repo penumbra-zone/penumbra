@@ -664,4 +664,61 @@ mod tests {
             .expect("can compute success or not");
         assert!(proof_result);
     }
+
+    #[test]
+    #[should_panic]
+    /// Check that the `SpendProof` proof creation fails when the diversified address is wrong.
+    fn spend_proof_verification_diversified_address_integrity_failure() {
+        let (pk, vk) = SpendCircuit::generate_test_parameters();
+        let mut rng = OsRng;
+
+        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+
+        let v_blinding = Fr::rand(&mut rng);
+
+        let wrong_seed_phrase = SeedPhrase::generate(&mut rng);
+        let wrong_sk_sender = SpendKey::from_seed_phrase(wrong_seed_phrase, 0);
+        let wrong_fvk_sender = wrong_sk_sender.full_viewing_key();
+        let wrong_ivk_sender = wrong_fvk_sender.incoming();
+        let (wrong_sender, _dtk_d) = wrong_ivk_sender.payment_address(1u64.into());
+
+        let value_to_send = Value {
+            amount: 10u64.into(),
+            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+        };
+
+        let note = Note::generate(&mut rng, &wrong_sender, value_to_send);
+
+        let note_commitment = note.commit();
+        let spend_auth_randomizer = Fr::rand(&mut rng);
+        let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
+        let nk = *sk_sender.nullifier_key();
+        let ak = sk_sender.spend_auth_key().into();
+        let mut nct = tct::Tree::new();
+        nct.insert(tct::Witness::Keep, note_commitment).unwrap();
+        let anchor = nct.root();
+        let note_commitment_proof = nct.witness(note_commitment).unwrap();
+        let balance_commitment = value_to_send.commit(v_blinding);
+        let rk: VerificationKey<SpendAuth> = rsk.into();
+        let nf = nk.derive_nullifier(0.into(), &note_commitment);
+
+        // Circuit should be unsatisifiable if the diversified address integrity fails.
+        // This will cause a panic.
+        SpendProof::prove(
+            &mut rng,
+            &pk,
+            note_commitment_proof,
+            note,
+            v_blinding,
+            spend_auth_randomizer,
+            ak,
+            nk,
+            anchor,
+            balance_commitment,
+            nf,
+            rk,
+        )
+        .expect("boom");
+    }
 }
