@@ -725,7 +725,7 @@ mod tests {
     #[test]
     /// Check that the `SpendProof` verification fails, when using an
     /// incorrect nullifier.
-    fn test_spend_proof_verification_nullifier_integrity_failure() {
+    fn spend_proof_verification_nullifier_integrity_failure() {
         let (pk, vk) = SpendCircuit::generate_test_parameters();
         let mut rng = OsRng;
 
@@ -775,6 +775,63 @@ mod tests {
 
         let proof_result = proof
             .verify(&vk, anchor, balance_commitment, incorrect_nf, rk)
+            .expect("can compute success or not");
+        assert!(!proof_result);
+    }
+
+    #[test]
+    /// Check that the `SpendProof` verification fails when using balance
+    /// commitments with different blinding factors.
+    fn spend_proof_verification_balance_commitment_integrity_failure() {
+        let (pk, vk) = SpendCircuit::generate_test_parameters();
+        let mut rng = OsRng;
+
+        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let fvk_sender = sk_sender.full_viewing_key();
+        let ivk_sender = fvk_sender.incoming();
+        let (sender, _dtk_d) = ivk_sender.payment_address(0u64.into());
+        let v_blinding = Fr::rand(&mut rng);
+
+        let value_to_send = Value {
+            amount: 10u64.into(),
+            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+        };
+
+        let note = Note::generate(&mut rng, &sender, value_to_send);
+        let note_commitment = note.commit();
+        let spend_auth_randomizer = Fr::rand(&mut rng);
+        let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
+        let nk = *sk_sender.nullifier_key();
+        let ak = sk_sender.spend_auth_key().into();
+        let mut nct = tct::Tree::new();
+        nct.insert(tct::Witness::Keep, note_commitment).unwrap();
+        let anchor = nct.root();
+        let note_commitment_proof = nct.witness(note_commitment).unwrap();
+        let balance_commitment = value_to_send.commit(v_blinding);
+        let rk: VerificationKey<SpendAuth> = rsk.into();
+        let nf = nk.derive_nullifier(0.into(), &note_commitment);
+
+        let proof = SpendProof::prove(
+            &mut rng,
+            &pk,
+            note_commitment_proof,
+            note,
+            v_blinding,
+            spend_auth_randomizer,
+            ak,
+            nk,
+            anchor,
+            balance_commitment,
+            nf,
+            rk,
+        )
+        .expect("can create proof");
+
+        let incorrect_balance_commitment = value_to_send.commit(Fr::rand(&mut rng));
+
+        let proof_result = proof
+            .verify(&vk, anchor, incorrect_balance_commitment, nf, rk)
             .expect("can compute success or not");
         assert!(!proof_result);
     }
