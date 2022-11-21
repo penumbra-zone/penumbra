@@ -143,9 +143,9 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
     async fn total_voting_power(&self) -> Result<u64> {
         let mut total = 0;
 
-        for identity_key in self.validator_list().await? {
+        for v in self.validator_list().await? {
             total += self
-                .validator_power(&identity_key)
+                .validator_power(&v.identity_key)
                 .await?
                 .unwrap_or_default();
         }

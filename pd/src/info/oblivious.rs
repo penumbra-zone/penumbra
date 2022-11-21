@@ -138,8 +138,8 @@ impl ObliviousQueryService for Info {
 
         let show_inactive = request.get_ref().show_inactive;
         let s = try_stream! {
-            for identity_key in validators {
-                let info = state.validator_info(&identity_key)
+            for v in validators {
+                let info = state.validator_info(&v.identity_key)
                     .await?
                     .expect("known validator must be present");
                 // Slashed and inactive validators are not shown by default.
