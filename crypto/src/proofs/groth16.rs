@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use ark_r1cs_std::{fields::fp::FpVar, uint8::UInt8};
+use ark_r1cs_std::uint8::UInt8;
 use decaf377::{
     r1cs::{ElementVar, FqVar},
     Bls12_377, Fq, Fr,
@@ -21,7 +21,11 @@ use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
 use super::groth16_gadgets as gadgets;
-use crate::{balance, keys::NullifierKey, note, Address, Note, Value};
+use crate::{
+    balance,
+    keys::{NullifierKey, SeedPhrase, SpendKey},
+    note, Address, Note, Value,
+};
 use crate::{keys::Diversifier, Nullifier};
 
 // Public:
@@ -268,10 +272,10 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
 
         // Public inputs
         let anchor_var = FqVar::new_input(cs.clone(), || Ok(Fq::from(self.anchor)))?;
-        let nullifier_var = FqVar::new_input(cs.clone(), || Ok(self.nullifier.0))?;
-        // TODO: rk
         let balance_commitment_var =
             ElementVar::new_input(cs.clone(), || Ok(self.balance_commitment.0))?;
+        let nullifier_var = FqVar::new_input(cs.clone(), || Ok(self.nullifier.0))?;
+        // TODO: rk
 
         // TODO: Short circuit to true if value released is 0. That means this is a _dummy_ spend.
 
@@ -311,6 +315,109 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         )?;
 
         Ok(())
+    }
+}
+
+impl SpendCircuit {
+    pub fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
+        let seed_phrase = SeedPhrase::from_randomness([b'f'; 32]);
+        let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let fvk_sender = sk_sender.full_viewing_key();
+        let ivk_sender = fvk_sender.incoming();
+        let (address, _dtk_d) = ivk_sender.payment_address(0u64.into());
+
+        let spend_auth_randomizer = Fr::from(1);
+        let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
+        let nk = *sk_sender.nullifier_key();
+        let ak = sk_sender.spend_auth_key().into();
+        let note = Note::from_parts(
+            address,
+            Value::from_str("1upenumbra").expect("valid value"),
+            Fq::from(1),
+        )
+        .expect("can make a note");
+        let v_blinding = Fr::from(1);
+        let rk = rsk.into();
+        let nullifier = Nullifier(Fq::from(1));
+        let mut nct = tct::Tree::new();
+        let note_commitment = note.commit();
+        nct.insert(tct::Witness::Keep, note_commitment).unwrap();
+        let anchor = nct.root();
+        let note_commitment_proof = nct.witness(note_commitment).unwrap();
+
+        let circuit = SpendCircuit {
+            note_commitment_proof,
+            note,
+            v_blinding,
+            spend_auth_randomizer,
+            ak,
+            nk,
+            anchor,
+            balance_commitment: balance::Commitment(decaf377::basepoint()),
+            nullifier,
+            rk,
+        };
+        let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
+            .expect("can perform circuit specific setup");
+        (pk, vk)
+    }
+}
+
+pub struct SpendProof(Proof<Bls12_377>);
+
+impl SpendProof {
+    #![allow(clippy::too_many_arguments)]
+    pub fn prove<R: CryptoRng + Rng>(
+        rng: &mut R,
+        pk: &ProvingKey<Bls12_377>,
+        note_commitment_proof: tct::Proof,
+        note: Note,
+        v_blinding: Fr,
+        spend_auth_randomizer: Fr,
+        ak: VerificationKey<SpendAuth>,
+        nk: NullifierKey,
+        anchor: tct::Root,
+        balance_commitment: balance::Commitment,
+        nullifier: Nullifier,
+        rk: VerificationKey<SpendAuth>,
+    ) -> anyhow::Result<Self> {
+        let circuit = SpendCircuit {
+            note_commitment_proof,
+            note,
+            v_blinding,
+            spend_auth_randomizer,
+            ak,
+            nk,
+            anchor,
+            balance_commitment,
+            nullifier,
+            rk,
+        };
+        let proof = Groth16::prove(pk, circuit, rng).map_err(|err| anyhow::anyhow!(err))?;
+        Ok(Self(proof))
+    }
+
+    /// Called to verify the proof using the provided public inputs.
+    pub fn verify(
+        &self,
+        vk: &VerifyingKey<Bls12_377>,
+        anchor: tct::Root,
+        balance_commitment: balance::Commitment,
+        nullifier: Nullifier,
+        rk: VerificationKey<SpendAuth>,
+    ) -> anyhow::Result<bool> {
+        let processed_pvk = Groth16::process_vk(&vk).map_err(|err| anyhow::anyhow!(err))?;
+        //let element_pk = decaf377::Encoding(epk.0).vartime_decompress().unwrap();
+        let mut public_inputs = Vec::new();
+        public_inputs.extend(Fq::from(anchor.0).to_field_elements().unwrap());
+        public_inputs.extend(balance_commitment.0.to_field_elements().unwrap());
+        public_inputs.extend(nullifier.0.to_field_elements().unwrap());
+        //public_inputs.extend(rk.0.to_field_elements().unwrap());
+
+        let proof_result =
+            Groth16::verify_with_processed_vk(&processed_pvk, public_inputs.as_slice(), &self.0)
+                .map_err(|err| anyhow::anyhow!(err))?;
+        Ok(proof_result)
     }
 }
 
@@ -502,5 +609,59 @@ mod tests {
             .expect("can compute success or not");
 
         assert!(!proof_result);
+    }
+
+    #[test]
+    /// Check that the `SpendProof` verification succeeds.
+    fn spend_proof_verification_success() {
+        let (pk, vk) = SpendCircuit::generate_test_parameters();
+        let mut rng = OsRng;
+
+        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let fvk_sender = sk_sender.full_viewing_key();
+        let ivk_sender = fvk_sender.incoming();
+        let (sender, _dtk_d) = ivk_sender.payment_address(0u64.into());
+        let v_blinding = Fr::rand(&mut rng);
+
+        let value_to_send = Value {
+            amount: 10u64.into(),
+            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+        };
+
+        let note = Note::generate(&mut rng, &sender, value_to_send);
+        let note_commitment = note.commit();
+        let spend_auth_randomizer = Fr::rand(&mut rng);
+        let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
+        let nk = *sk_sender.nullifier_key();
+        let ak = sk_sender.spend_auth_key().into();
+        let mut nct = tct::Tree::new();
+        nct.insert(tct::Witness::Keep, note_commitment).unwrap();
+        let anchor = nct.root();
+        let note_commitment_proof = nct.witness(note_commitment).unwrap();
+        let balance_commitment = value_to_send.commit(v_blinding);
+        let rk: VerificationKey<SpendAuth> = rsk.into();
+        let nf = nk.derive_nullifier(0.into(), &note_commitment);
+
+        let proof = SpendProof::prove(
+            &mut rng,
+            &pk,
+            note_commitment_proof,
+            note,
+            v_blinding,
+            spend_auth_randomizer,
+            ak,
+            nk,
+            anchor,
+            balance_commitment,
+            nf,
+            rk,
+        )
+        .expect("can create proof");
+
+        let proof_result = proof
+            .verify(&vk, anchor, balance_commitment, nf, rk)
+            .expect("can compute success or not");
+        assert!(proof_result);
     }
 }

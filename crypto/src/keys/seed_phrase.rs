@@ -26,7 +26,7 @@ impl SeedPhrase {
     }
 
     /// Given 32 bytes of randomness, generate a [`SeedPhrase`].
-    fn from_randomness(randomness: [u8; 32]) -> Self {
+    pub(crate) fn from_randomness(randomness: [u8; 32]) -> Self {
         let mut bits = [false; NUM_TOTAL_BITS];
         for (i, bit) in bits[0..NUM_ENTROPY_BITS].iter_mut().enumerate() {
             *bit = (randomness[i / NUM_BITS_PER_BYTE] & (1 << (7 - (i % NUM_BITS_PER_BYTE)))) > 0
