@@ -8,7 +8,7 @@ use decaf377::{
 
 use crate::{
     asset::VALUE_GENERATOR_DOMAIN_SEP, balance::commitment::VALUE_BLINDING_GENERATOR,
-    note::NOTECOMMIT_DOMAIN_SEP, nullifier::NULLIFIER_DOMAIN_SEP,
+    keys::IVK_DOMAIN_SEP, note::NOTECOMMIT_DOMAIN_SEP, nullifier::NULLIFIER_DOMAIN_SEP,
 };
 
 /// Check the diversified basepoint is not identity.
@@ -90,8 +90,7 @@ pub(crate) fn note_commitment_integrity(
     Ok(())
 }
 
-/// Nullifier integrity.
-#[allow(dead_code)]
+/// Check integrity of nullifier derivation.
 pub(crate) fn nullifier_integrity(
     cs: ConstraintSystemRef<Fq>,
     // Witnesses
@@ -107,6 +106,25 @@ pub(crate) fn nullifier_integrity(
         poseidon377::r1cs::hash_3(cs, &nullifier_constant, (nk, note_commitment, position))?;
 
     nullifier.enforce_equal(&computed_nullifier)?;
+    Ok(())
+}
+
+/// Check integrity of the diversified address.
+pub(crate) fn diversified_address_integrity(
+    cs: ConstraintSystemRef<Fq>,
+    // Witnesses
+    ak: FqVar,
+    nk: FqVar,
+    transmission_key: ElementVar,
+    diversified_generator: ElementVar,
+) -> Result<(), SynthesisError> {
+    let ivk_domain_sep = FqVar::new_constant(cs.clone(), *IVK_DOMAIN_SEP)?;
+    let ivk = poseidon377::r1cs::hash_2(cs.clone(), &ivk_domain_sep, (nk, ak))?;
+
+    let ivk_vars = ivk.to_bits_le()?;
+    let test_transmission_key =
+        diversified_generator.scalar_mul_le(ivk_vars.to_bits_le()?.iter())?;
+    transmission_key.enforce_equal(&test_transmission_key)?;
     Ok(())
 }
 
