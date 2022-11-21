@@ -1,10 +1,13 @@
 // Implementation of a pd component for the staking system.
 use std::collections::{BTreeMap, BTreeSet};
+use std::pin::Pin;
+use std::str::FromStr;
 
 use crate::Component;
 use ::metrics::{decrement_gauge, gauge, increment_gauge};
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
+use futures::{Stream, StreamExt};
 use penumbra_chain::quarantined::Slashed;
 use penumbra_chain::{genesis, Epoch, NoteSource, StateReadExt as _};
 use penumbra_crypto::{DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID};
@@ -764,7 +767,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
         self.register_consensus_key(&validator.identity_key, &validator.consensus_key)
             .await;
 
-        self.put(state_key::validator_by_id(id), validator);
+        self.put(state_key::validators::by_id(id), validator);
 
         Ok(())
     }
@@ -920,7 +923,7 @@ pub trait StateReadExt: StateRead {
     }
 
     async fn validator(&self, identity_key: &IdentityKey) -> Result<Option<Validator>> {
-        self.get(&state_key::validator_by_id(identity_key)).await
+        self.get(&state_key::validators::by_id(identity_key)).await
     }
 
     // Tendermint validators are referenced to us by their Tendermint consensus key,
@@ -1000,11 +1003,20 @@ pub trait StateReadExt: StateRead {
     }
 
     async fn validator_list(&self) -> Result<Vec<IdentityKey>> {
-        Ok(self
-            .get(state_key::validator_list())
-            .await?
-            .map(|list: validator::List| list.0)
-            .unwrap_or_default())
+        let mut range: Pin<Box<dyn Stream<Item = Result<(String, Validator)>> + Send + '_>> =
+            self.prefix(&state_key::validators::list());
+        let mut validators = Vec::new();
+
+        while let Some(r) = range.next().await {
+            let validator_id: Result<IdentityKey, anyhow::Error> = match r {
+                Ok((k, _)) => Ok(IdentityKey::from_str(&k)?),
+                Err(e) => Err(e),
+            };
+
+            validators.push(validator_id?);
+        }
+
+        Ok(validators)
     }
 
     async fn delegation_changes(&self, height: block::Height) -> Result<DelegationChanges> {
@@ -1217,7 +1229,7 @@ pub trait StateWriteExt: StateWrite {
         tracing::debug!(?validator);
         let id = validator.identity_key.clone();
 
-        self.put(state_key::validator_by_id(&id), validator.clone());
+        self.put(state_key::validators::by_id(&id), validator.clone());
         self.register_consensus_key(&validator.identity_key, &validator.consensus_key)
             .await;
         self.register_denom(&DelegationToken::from(&id).denom())
@@ -1230,11 +1242,6 @@ pub trait StateWriteExt: StateWrite {
         self.put(state_key::state_by_validator(&id), state);
         self.set_validator_power(&id, power).await?;
         self.set_validator_bonding_state(&id, bonding_state).await;
-
-        let mut validator_list = self.validator_list().await?;
-        validator_list.push(id.clone());
-        tracing::debug!(?validator_list);
-        self.set_validator_list(validator_list).await;
 
         // Lastly, update metrics for the new validator.
         match state {
@@ -1249,13 +1256,6 @@ pub trait StateWriteExt: StateWrite {
         gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => id.to_string());
 
         Ok(())
-    }
-
-    async fn set_validator_list(&mut self, validators: Vec<IdentityKey>) {
-        self.put(
-            state_key::validator_list().to_owned(),
-            validator::List(validators),
-        );
     }
 
     async fn set_delegation_changes(&mut self, height: block::Height, changes: DelegationChanges) {
