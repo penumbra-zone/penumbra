@@ -22,27 +22,27 @@ pub mod validators {
 }
 
 pub fn state_by_validator(id: &IdentityKey) -> String {
-    format!("staking/validator/state/{}", id)
+    format!("staking/validator_state/{}", id)
 }
 
 pub fn current_rate_by_validator(id: &IdentityKey) -> String {
-    format!("staking/validator/rate/current/{}", id)
+    format!("staking/validator_rate/current/{}", id)
 }
 
 pub fn next_rate_by_validator(id: &IdentityKey) -> String {
-    format!("staking/validator/rate/next/{}", id)
+    format!("staking/validator_rate/next/{}", id)
 }
 
 pub fn power_by_validator(id: &IdentityKey) -> String {
-    format!("staking/validator/power/{}", id)
+    format!("staking/validator_power/{}", id)
 }
 
 pub fn bonding_state_by_validator(id: &IdentityKey) -> String {
-    format!("staking/validator/bonding_state/{}", id)
+    format!("staking/validator_bonding_state/{}", id)
 }
 
 pub fn uptime_by_validator(id: &IdentityKey) -> String {
-    format!("staking/validator/uptime/{}", id)
+    format!("staking/validator_uptime/{}", id)
 }
 
 pub fn slashed_validators(height: u64) -> String {
