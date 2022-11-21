@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use ark_r1cs_std::uint8::UInt8;
+use ark_r1cs_std::{fields::fp::FpVar, uint8::UInt8};
 use decaf377::{
     r1cs::{ElementVar, FqVar},
     Bls12_377, Fq, Fr,
@@ -12,8 +12,8 @@ use decaf377_ka as ka;
 use ark_ff::{PrimeField, ToConstraintField};
 use ark_groth16::{Groth16, Proof, ProvingKey, VerifyingKey};
 use ark_r1cs_std::prelude::AllocVar;
-use ark_relations::ns;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
+use ark_relations::{ns, r1cs::SynthesisError};
 use ark_snark::SNARK;
 use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_tct as tct;
@@ -248,6 +248,11 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
             })?;
         let transmission_key_s_var =
             FqVar::new_witness(cs.clone(), || Ok(self.note.transmission_key_s().clone()))?;
+        let element_transmission_key = decaf377::Encoding(self.note.transmission_key().0)
+            .vartime_decompress()
+            .map_err(|err| SynthesisError::AssignmentMissing)?;
+        let transmission_key_var: ElementVar =
+            AllocVar::<Element, Fq>::new_witness(cs.clone(), || Ok(element_transmission_key))?;
         let clue_key_var = FqVar::new_witness(cs.clone(), || {
             Ok(Fq::from_le_bytes_mod_order(&self.note.clue_key().0[..]))
         })?;
@@ -256,7 +261,9 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         let value_amount_arr = self.note.value().amount.to_le_bytes();
         let value_vars = UInt8::new_witness_vec(cs.clone(), &value_amount_arr)?;
         // TODO: spend_auth_randomizer
-        // TODO: ak
+        let ak_bytes = Fq::from_bytes(*self.ak.as_ref())
+            .expect("verification key is valid, so its byte encoding is a decaf377 s value");
+        let ak_var = FqVar::new_witness(cs.clone(), || Ok(ak_bytes))?;
         let nk_var = FqVar::new_witness(cs.clone(), || Ok(self.nk.0))?;
 
         // Public inputs
@@ -280,7 +287,13 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         )?;
         // TODO: Merkle path integrity.
         // TODO: rk integrity
-        // TODO: diversified address integrity
+        gadgets::diversified_address_integrity(
+            cs.clone(),
+            ak_var,
+            nk_var.clone(),
+            transmission_key_var,
+            diversified_generator_var.clone(),
+        )?;
         gadgets::diversified_basepoint_not_identity(cs.clone(), diversified_generator_var)?;
         gadgets::value_commitment_integrity(
             cs.clone(),

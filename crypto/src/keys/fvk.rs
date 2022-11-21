@@ -14,7 +14,8 @@ use crate::{
     Fq, Fr, Note, Nullifier,
 };
 
-static IVK_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| Fq::from_le_bytes_mod_order(b"penumbra.derive.ivk"));
+pub(crate) static IVK_DOMAIN_SEP: Lazy<Fq> =
+    Lazy::new(|| Fq::from_le_bytes_mod_order(b"penumbra.derive.ivk"));
 
 static ACCOUNT_ID_DOMAIN_SEP: Lazy<Fq> =
     Lazy::new(|| Fq::from_le_bytes_mod_order(b"Penumbra_HashFVK"));
