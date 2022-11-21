@@ -1,15 +1,19 @@
 #![allow(clippy::too_many_arguments)]
+use ark_ff::PrimeField;
 use ark_r1cs_std::{prelude::*, ToBitsGadget};
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use decaf377::{
     r1cs::{ElementVar, FqVar},
-    Fq,
+    Element, Fq,
 };
+use once_cell::sync::Lazy;
 
 use crate::{
     asset::VALUE_GENERATOR_DOMAIN_SEP, balance::commitment::VALUE_BLINDING_GENERATOR,
     keys::IVK_DOMAIN_SEP, note::NOTECOMMIT_DOMAIN_SEP, nullifier::NULLIFIER_DOMAIN_SEP,
 };
+
+pub(crate) static SPENDAUTH_BASEPOINT: Lazy<Element> = Lazy::new(decaf377::basepoint);
 
 /// Check the diversified basepoint is not identity.
 pub(crate) fn diversified_basepoint_not_identity(
@@ -125,6 +129,23 @@ pub(crate) fn diversified_address_integrity(
     let test_transmission_key =
         diversified_generator.scalar_mul_le(ivk_vars.to_bits_le()?.iter())?;
     transmission_key.enforce_equal(&test_transmission_key)?;
+    Ok(())
+}
+
+/// Check integrity of randomized verification key.
+pub(crate) fn rk_integrity(
+    cs: ConstraintSystemRef<Fq>,
+    // Witnesses
+    ak: ElementVar,
+    spend_auth_randomizer: Vec<UInt8<Fq>>,
+    // Public inputs
+    rk: FqVar,
+) -> Result<(), SynthesisError> {
+    let spend_auth_basepoint_var = ElementVar::new_constant(cs, *SPENDAUTH_BASEPOINT)?;
+    let point =
+        ak + spend_auth_basepoint_var.scalar_mul_le(spend_auth_randomizer.to_bits_le()?.iter())?;
+    let computed_rk = ElementVar::compress_to_field(&point)?;
+    rk.enforce_equal(&computed_rk)?;
     Ok(())
 }
 

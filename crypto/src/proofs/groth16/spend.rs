@@ -13,6 +13,7 @@ use ark_r1cs_std::prelude::AllocVar;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef, SynthesisError};
 use ark_snark::SNARK;
 use decaf377_rdsa::{SpendAuth, VerificationKey};
+use penumbra_proto::core::transaction::v1alpha1::Spend;
 use penumbra_tct as tct;
 use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
@@ -49,7 +50,7 @@ pub struct SpendCircuit {
     /// nullifier of the note to be spent.
     pub nullifier: Nullifier,
     /// the randomized verification spend key.
-    pub rk: VerificationKey<SpendAuth>,
+    pub rk: Element,
 }
 
 impl ConstraintSynthesizer<Fq> for SpendCircuit {
@@ -85,10 +86,17 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         let v_blinding_vars = UInt8::new_witness_vec(cs.clone(), &v_blinding_arr)?;
         let value_amount_arr = self.note.value().amount.to_le_bytes();
         let value_vars = UInt8::new_witness_vec(cs.clone(), &value_amount_arr)?;
-        // TODO: spend_auth_randomizer
+        let spend_auth_randomizer_arr: [u8; 32] = self.spend_auth_randomizer.to_bytes();
+        let spend_auth_randomizer_var: Vec<UInt8<Fq>> =
+            UInt8::new_witness_vec(cs.clone(), &spend_auth_randomizer_arr)?;
         let ak_bytes = Fq::from_bytes(*self.ak.as_ref())
             .expect("verification key is valid, so its byte encoding is a decaf377 s value");
         let ak_var = FqVar::new_witness(cs.clone(), || Ok(ak_bytes))?;
+        let ak_point = decaf377::Encoding(*self.ak.as_ref())
+            .vartime_decompress()
+            .unwrap();
+        let ak_element_var: ElementVar =
+            AllocVar::<Element, Fq>::new_witness(cs.clone(), || Ok(ak_point))?;
         let nk_var = FqVar::new_witness(cs.clone(), || Ok(self.nk.0))?;
 
         // Public inputs
@@ -96,7 +104,9 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         let balance_commitment_var =
             ElementVar::new_input(cs.clone(), || Ok(self.balance_commitment.0))?;
         let nullifier_var = FqVar::new_input(cs.clone(), || Ok(self.nullifier.0))?;
-        // TODO: rk
+        let rk_var = ElementVar::new_input(cs.clone(), || Ok(self.rk))?;
+
+        let rk_fq_var = rk_var.compress_to_field()?;
 
         // TODO: Short circuit to true if value released is 0. That means this is a _dummy_ spend.
 
@@ -111,7 +121,12 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
             note_commitment_var.clone(),
         )?;
         // TODO: Merkle path integrity.
-        // TODO: rk integrity
+        gadgets::rk_integrity(
+            cs.clone(),
+            ak_element_var,
+            spend_auth_randomizer_var,
+            rk_fq_var,
+        )?;
         gadgets::diversified_address_integrity(
             cs.clone(),
             ak_var,
@@ -158,7 +173,10 @@ impl SpendCircuit {
         )
         .expect("can make a note");
         let v_blinding = Fr::from(1);
-        let rk = rsk.into();
+        let rk: VerificationKey<SpendAuth> = rsk.into();
+        let element_rk = decaf377::Encoding(rk.to_bytes())
+            .vartime_decompress()
+            .expect("expect only valid element points");
         let nullifier = Nullifier(Fq::from(1));
         let mut nct = tct::Tree::new();
         let note_commitment = note.commit();
@@ -176,7 +194,7 @@ impl SpendCircuit {
             anchor,
             balance_commitment: balance::Commitment(decaf377::basepoint()),
             nullifier,
-            rk,
+            rk: element_rk,
         };
         let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
             .expect("can perform circuit specific setup");
@@ -202,6 +220,9 @@ impl SpendProof {
         nullifier: Nullifier,
         rk: VerificationKey<SpendAuth>,
     ) -> anyhow::Result<Self> {
+        let element_rk = decaf377::Encoding(rk.to_bytes())
+            .vartime_decompress()
+            .expect("expect only valid element points");
         let circuit = SpendCircuit {
             note_commitment_proof,
             note,
@@ -212,7 +233,7 @@ impl SpendProof {
             anchor,
             balance_commitment,
             nullifier,
-            rk,
+            rk: element_rk,
         };
         let proof = Groth16::prove(pk, circuit, rng).map_err(|err| anyhow::anyhow!(err))?;
         Ok(Self(proof))
@@ -228,12 +249,14 @@ impl SpendProof {
         rk: VerificationKey<SpendAuth>,
     ) -> anyhow::Result<bool> {
         let processed_pvk = Groth16::process_vk(&vk).map_err(|err| anyhow::anyhow!(err))?;
-        //let element_pk = decaf377::Encoding(epk.0).vartime_decompress().unwrap();
         let mut public_inputs = Vec::new();
         public_inputs.extend(Fq::from(anchor.0).to_field_elements().unwrap());
         public_inputs.extend(balance_commitment.0.to_field_elements().unwrap());
         public_inputs.extend(nullifier.0.to_field_elements().unwrap());
-        //public_inputs.extend(rk.0.to_field_elements().unwrap());
+        let element_rk = decaf377::Encoding(rk.to_bytes())
+            .vartime_decompress()
+            .expect("expect only valid element points");
+        public_inputs.extend(element_rk.to_field_elements().unwrap());
 
         let proof_result =
             Groth16::verify_with_processed_vk(&processed_pvk, public_inputs.as_slice(), &self.0)
