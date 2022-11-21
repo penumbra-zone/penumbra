@@ -15,7 +15,13 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
-            
+
+      - name: Log in to the Docker Hub container registry (for pulls)
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Build the testnet.
         run: |
           ./scripts/docker_compose_freshstart.sh
@@ -30,7 +36,7 @@ jobs:
       - name: Now start testnet in the background so we can run integration tests.
         run: |
           docker-compose up --detach
-          
+
       # DOC: please update the devnet guide if you change this (see "How to run smoke-tests")
       - name: Run integration tests against localhost.
         run: cargo test --features nct-divergence-check --package pcli -- --ignored --test-threads 1 --nocapture
