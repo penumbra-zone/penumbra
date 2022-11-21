@@ -34,10 +34,10 @@ v0.34](https://github.com/penumbra-zone/penumbra/issues/1271).
 that can prevent nodes from staying online.
 
 Follow [Tendermint's installation instructions](https://docs.tendermint.com/v0.34/introduction/install.html),
-but before you start compiling, make sure you are compiling version `v0.34.21`.
+but before you start compiling, make sure you are compiling version `v0.34.23`.
 
 ```bash
-git checkout v0.34.21
+git checkout v0.34.23
 ```
 
 [protoc-install]: https://grpc.io/docs/protoc-installation/
