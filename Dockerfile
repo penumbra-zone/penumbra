@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM rust:1-bullseye AS build-env
+FROM --platform=$BUILDPLATFORM rust:1.65.0-bullseye AS build-env
 
 RUN rustup component add rustfmt
 
@@ -75,7 +75,7 @@ RUN addgroup --gid 1000 -S penumbra && adduser --uid 1000 -S penumbra -G penumbr
 FROM busybox:1.34.1-musl AS busybox-full
 
 # Use TARGETARCH image for determining necessary libs
-FROM rust:1-bullseye as target-arch-libs
+FROM rust:1.65.0-bullseye as target-arch-libs
 RUN apt update && apt install -y clang libssl1.1 openssl
 
 # Determine library dependencies of built binaries and copy to indexed path in /root/lib_abs for copying to final image.
