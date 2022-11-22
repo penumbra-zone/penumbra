@@ -21,7 +21,7 @@ services:
 
   # The Tendermint node
   tendermint-node0:
-    image: "tendermint/tendermint:v0.34.21"
+    image: "tendermint/tendermint:v0.34.23"
     container_name: tendermint-node0
     ports:
       - "26656:26656"
