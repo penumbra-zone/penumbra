@@ -122,7 +122,7 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         // TODO: Merkle path integrity.
         gadgets::rk_integrity(
             cs.clone(),
-            ak_element_var,
+            ak_element_var.clone(),
             spend_auth_randomizer_var,
             rk_fq_var,
         )?;
@@ -134,6 +134,7 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
             diversified_generator_var.clone(),
         )?;
         gadgets::diversified_basepoint_not_identity(cs.clone(), diversified_generator_var)?;
+        gadgets::ak_not_identity(cs.clone(), ak_element_var)?;
         gadgets::value_commitment_integrity(
             cs.clone(),
             value_vars,
