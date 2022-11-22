@@ -159,7 +159,7 @@ mod tests {
     }
 
     #[test]
-    fn test_output_proof_verification_ephemeral_public_key_integrity_failure() {
+    fn output_proof_verification_ephemeral_public_key_integrity_failure() {
         let (pk, vk) = OutputCircuit::generate_test_parameters();
         let mut rng = OsRng;
 
@@ -226,7 +226,7 @@ mod tests {
         let spend_auth_randomizer = Fr::rand(&mut rng);
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
         let nk = *sk_sender.nullifier_key();
-        let ak = sk_sender.spend_auth_key().into();
+        let ak: VerificationKey<SpendAuth> = sk_sender.spend_auth_key().into();
         let mut nct = tct::Tree::new();
         nct.insert(tct::Witness::Keep, note_commitment).unwrap();
         let anchor = nct.root();
@@ -424,6 +424,66 @@ mod tests {
 
         let proof_result = proof
             .verify(&vk, anchor, incorrect_balance_commitment, nf, rk)
+            .expect("can compute success or not");
+        assert!(!proof_result);
+    }
+
+    #[test]
+    /// Check that the `SpendProof` verification fails when the incorrect randomizable verification key is used.
+    fn spend_proof_verification_fails_rk_integrity() {
+        let (pk, vk) = SpendCircuit::generate_test_parameters();
+        let mut rng = OsRng;
+
+        let seed_phrase = SeedPhrase::generate(rng);
+        let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let fvk_sender = sk_sender.full_viewing_key();
+        let ivk_sender = fvk_sender.incoming();
+        let (sender, _dtk_d) = ivk_sender.payment_address(0u64.into());
+        let v_blinding = Fr::rand(&mut rng);
+
+        let value_to_send = Value {
+            amount: 10u64.into(),
+            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+        };
+
+        let note = Note::generate(&mut rng, &sender, value_to_send);
+        let note_commitment = note.commit();
+        let spend_auth_randomizer = Fr::rand(&mut rng);
+        let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
+        let nk = *sk_sender.nullifier_key();
+        let ak = sk_sender.spend_auth_key().into();
+        let mut nct = tct::Tree::new();
+        nct.insert(tct::Witness::Keep, note_commitment).unwrap();
+        let anchor = nct.root();
+        let note_commitment_proof = nct.witness(note_commitment).unwrap();
+        let balance_commitment = value_to_send.commit(v_blinding);
+        let rk: VerificationKey<SpendAuth> = rsk.into();
+        let nf = nk.derive_nullifier(0.into(), &note_commitment);
+
+        let incorrect_spend_auth_randomizer = Fr::rand(&mut rng);
+        let incorrect_rsk = sk_sender
+            .spend_auth_key()
+            .randomize(&incorrect_spend_auth_randomizer);
+        let incorrect_rk: VerificationKey<SpendAuth> = incorrect_rsk.into();
+
+        let proof = SpendProof::prove(
+            &mut rng,
+            &pk,
+            note_commitment_proof,
+            note,
+            v_blinding,
+            spend_auth_randomizer,
+            ak,
+            nk,
+            anchor,
+            balance_commitment,
+            nf,
+            rk,
+        )
+        .expect("should be able to form proof");
+
+        let proof_result = proof
+            .verify(&vk, anchor, balance_commitment, nf, incorrect_rk)
             .expect("can compute success or not");
         assert!(!proof_result);
     }
