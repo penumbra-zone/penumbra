@@ -13,7 +13,6 @@ use ark_r1cs_std::prelude::AllocVar;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef, SynthesisError};
 use ark_snark::SNARK;
 use decaf377_rdsa::{SpendAuth, VerificationKey};
-use penumbra_proto::core::transaction::v1alpha1::Spend;
 use penumbra_tct as tct;
 use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
