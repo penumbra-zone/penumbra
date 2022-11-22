@@ -237,8 +237,8 @@ mod tests {
 
     #[test]
     fn test_address_encoding() {
-        let mut rng = OsRng;
-        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let rng = OsRng;
+        let seed_phrase = SeedPhrase::generate(rng);
         let sk = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk = sk.full_viewing_key();
         let ivk = fvk.incoming();
@@ -253,8 +253,8 @@ mod tests {
 
     #[test]
     fn test_bytes_roundtrip() {
-        let mut rng = OsRng;
-        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let rng = OsRng;
+        let seed_phrase = SeedPhrase::generate(rng);
         let sk = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk = sk.full_viewing_key();
         let ivk = fvk.incoming();
@@ -268,8 +268,8 @@ mod tests {
 
     #[test]
     fn test_address_keys_are_diversified() {
-        let mut rng = OsRng;
-        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let rng = OsRng;
+        let seed_phrase = SeedPhrase::generate(rng);
         let sk = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk = sk.full_viewing_key();
         let ivk = fvk.incoming();

@@ -41,13 +41,12 @@ impl From<TransactionPerspective> for pb::TransactionPerspective {
         }
 
         for (nullifier, note) in msg.spend_nullifiers {
-            match note {
-                Some(note) => spend_nullifiers.push(NullifierWithNote {
+            if let Some(note) = note {
+                spend_nullifiers.push(NullifierWithNote {
                     nullifier: Some(nullifier.into()),
                     note: Some(note.into()),
-                }),
-                None => {}
-            };
+                })
+            }
         }
         Self {
             payload_keys,

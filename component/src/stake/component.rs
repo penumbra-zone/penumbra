@@ -1,7 +1,6 @@
 // Implementation of a pd component for the staking system.
 use std::collections::{BTreeMap, BTreeSet};
 use std::pin::Pin;
-use std::str::FromStr;
 
 use crate::Component;
 use ::metrics::{decrement_gauge, gauge, increment_gauge};
@@ -1028,7 +1027,7 @@ pub trait StateReadExt: StateRead {
 
         while let Some(r) = range.next().await {
             let validator: Result<Validator, anyhow::Error> = match r {
-                Ok((k, v)) => Ok(v),
+                Ok((_k, v)) => Ok(v),
                 Err(e) => Err(e),
             };
 
@@ -1183,7 +1182,7 @@ pub trait StateWriteExt: StateWrite {
         consensus_key: &PublicKey,
     ) {
         let address = validator_address(consensus_key);
-        tracing::debug!(?identity_key, ?consensus_key, hash = ?hex::encode(&address), "registering consensus key");
+        tracing::debug!(?identity_key, ?consensus_key, hash = ?hex::encode(address), "registering consensus key");
         self.put(
             state_key::consensus_key_by_tendermint_address(&address),
             consensus_key.clone(),

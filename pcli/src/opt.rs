@@ -74,7 +74,7 @@ impl Opt {
         // - the legacy wallet file exists
         // - the new wallet file does not exist
         if legacy_wallet_path.exists() && !custody_path.exists() {
-            legacy::migrate(&legacy_wallet_path, &custody_path.as_path())?;
+            legacy::migrate(&legacy_wallet_path, custody_path.as_path())?;
         }
 
         // Build the custody service...

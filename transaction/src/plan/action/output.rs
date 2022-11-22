@@ -169,7 +169,7 @@ mod test {
     /// the balance and note commitments.
     fn check_output_proof_verification() {
         let mut rng = OsRng;
-        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let seed_phrase = SeedPhrase::generate(rng);
         let sk = SpendKey::from_seed_phrase(seed_phrase, 0);
         let ovk = sk.full_viewing_key().outgoing();
         let dummy_memo_key: PayloadKey = [0; 32].into();

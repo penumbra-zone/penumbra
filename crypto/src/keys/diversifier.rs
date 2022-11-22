@@ -93,7 +93,7 @@ impl DiversifierKey {
         cipher.encrypt_block(&mut block);
 
         let mut ciphertext_bytes = [0u8; 16];
-        ciphertext_bytes.copy_from_slice(&*block);
+        ciphertext_bytes.copy_from_slice(&block);
         Diversifier(ciphertext_bytes)
     }
 
@@ -108,7 +108,7 @@ impl DiversifierKey {
         cipher.decrypt_block(&mut block);
 
         let mut index_bytes = [0; DIVERSIFIER_LEN_BYTES];
-        index_bytes.copy_from_slice(&*block);
+        index_bytes.copy_from_slice(&block);
         if index_bytes[8..16] == [0u8; 8] {
             AddressIndex::Numeric(u64::from_le_bytes(
                 index_bytes[0..8].try_into().expect("can form 8 byte array"),

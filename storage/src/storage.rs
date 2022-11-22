@@ -217,13 +217,13 @@ impl TreeWriter for Inner {
         for (node_key, node) in node_batch {
             let key_bytes = &node_key.encode()?;
             let value_bytes = &node.encode()?;
-            tracing::trace!(?key_bytes, value_bytes = ?hex::encode(&value_bytes));
+            tracing::trace!(?key_bytes, value_bytes = ?hex::encode(value_bytes));
 
             let jmt_cf = self
                 .db
                 .cf_handle("jmt")
                 .expect("jmt column family not found");
-            self.db.put_cf(jmt_cf, key_bytes, &value_bytes)?;
+            self.db.put_cf(jmt_cf, key_bytes, value_bytes)?;
         }
 
         Ok(())

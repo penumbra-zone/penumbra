@@ -396,7 +396,7 @@ mod tests {
     fn note_encryption_and_decryption() {
         let mut rng = OsRng;
 
-        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let seed_phrase = SeedPhrase::generate(rng);
         let sk = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk = sk.full_viewing_key();
         let ivk = fvk.incoming();
@@ -416,7 +416,7 @@ mod tests {
 
         assert_eq!(plaintext, note);
 
-        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let seed_phrase = SeedPhrase::generate(rng);
         let sk2 = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk2 = sk2.full_viewing_key();
         let ivk2 = fvk2.incoming();
@@ -428,7 +428,7 @@ mod tests {
     fn note_encryption_and_sender_decryption() {
         let mut rng = OsRng;
 
-        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let seed_phrase = SeedPhrase::generate(rng);
         let sk = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk = sk.full_viewing_key();
         let ivk = fvk.incoming();

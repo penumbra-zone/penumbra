@@ -101,7 +101,7 @@ impl ObliviousQueryService for Info {
         Ok(tonic::Response::new(
             stream
                 .map_ok(|params| MutableParametersResponse {
-                    chain_parameter: Some(params.into()),
+                    chain_parameter: Some(params),
                 })
                 .map_err(|e: anyhow::Error| {
                     // Should be impossible, but.
@@ -158,7 +158,7 @@ impl ObliviousQueryService for Info {
 
         Ok(tonic::Response::new(
             s.map_ok(|info| ValidatorInfoResponse {
-                validator_info: Some(info.into()),
+                validator_info: Some(info),
             })
             .map_err(|e: anyhow::Error| {
                 tonic::Status::unavailable(format!("error getting validator info: {}", e))

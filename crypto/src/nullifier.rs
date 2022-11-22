@@ -43,14 +43,14 @@ pub static NULLIFIER_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
 
 impl std::fmt::Display for Nullifier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&hex::encode(&self.to_bytes()))
+        f.write_str(&hex::encode(self.to_bytes()))
     }
 }
 
 impl std::fmt::Debug for Nullifier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("Nullifier")
-            .field(&hex::encode(&self.to_bytes()))
+            .field(&hex::encode(self.to_bytes()))
             .finish()
     }
 }

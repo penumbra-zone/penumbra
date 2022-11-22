@@ -66,13 +66,7 @@ impl FromStr for ProposalKind {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s
-            .replace('-', "")
-            .replace('_', "")
-            .replace(' ', "")
-            .to_lowercase()
-            .as_str()
-        {
+        match s.replace(['-', '_', ' '], "").to_lowercase().as_str() {
             "signaling" => Ok(ProposalKind::Signaling),
             "emergency" => Ok(ProposalKind::Emergency),
             "parameterchange" => Ok(ProposalKind::ParameterChange),

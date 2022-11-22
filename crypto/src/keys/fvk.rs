@@ -207,13 +207,13 @@ impl From<AccountID> for pb::AccountId {
 impl std::fmt::Debug for AccountID {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         f.debug_tuple("AccountID")
-            .field(&hex::encode(&self.0))
+            .field(&hex::encode(self.0))
             .finish()
     }
 }
 
 impl std::fmt::Display for AccountID {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.write_str(&hex::encode(&self.0))
+        f.write_str(&hex::encode(self.0))
     }
 }

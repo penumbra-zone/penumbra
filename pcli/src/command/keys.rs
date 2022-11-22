@@ -67,7 +67,7 @@ impl KeysCmd {
         let data_dir = data_dir.as_ref();
         match self {
             KeysCmd::Generate => {
-                let seed_phrase = SeedPhrase::generate(&mut OsRng);
+                let seed_phrase = SeedPhrase::generate(OsRng);
 
                 // xxx: Something better should be done here, this is in danger of being
                 // shared by users accidentally in log output.

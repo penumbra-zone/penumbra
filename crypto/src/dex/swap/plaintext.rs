@@ -228,7 +228,7 @@ mod tests {
     fn swap_encryption_and_decryption() {
         let mut rng = OsRng;
 
-        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let seed_phrase = SeedPhrase::generate(rng);
         let sk = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk = sk.full_viewing_key();
         let ivk = fvk.incoming();

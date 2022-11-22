@@ -56,7 +56,7 @@ pub fn validator_id_by_consensus_key(pk: &PublicKey) -> String {
 pub fn consensus_key_by_tendermint_address(address: &[u8; 20]) -> String {
     format!(
         "staking/consensus_key_by_tendermint_address/{}",
-        hex::encode(&address)
+        hex::encode(address)
     )
 }
 

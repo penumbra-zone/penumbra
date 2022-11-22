@@ -445,7 +445,7 @@ impl TxCmd {
                 println!("Sorry, this command is not yet implemented");
             }
             TxCmd::Proposal(ProposalCmd::Submit { file, fee, source }) => {
-                let proposal: Proposal = serde_json::from_reader(File::open(&file)?)?;
+                let proposal: Proposal = serde_json::from_reader(File::open(file)?)?;
                 let fee = Fee::from_staking_token_amount((*fee as u64).into());
                 let plan = plan::proposal_submit(
                     &app.fvk,
@@ -477,7 +477,7 @@ impl TxCmd {
                             chain_id,
                             key: penumbra_component::governance::state_key::proposal_deposit_refund_address(
                                 *proposal_id,
-                            ).into(),
+                            ),
                             proof: false,
                         })
                         .await?
