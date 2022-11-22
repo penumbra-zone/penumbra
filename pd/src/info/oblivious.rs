@@ -157,16 +157,15 @@ impl ObliviousQueryService for Info {
         };
 
         Ok(tonic::Response::new(
-            stream
-                .map_ok(|info| ValidatorInfoResponse {
-                    validator_info: Some(info.into()),
-                })
-                .map_err(|e: anyhow::Error| {
-                    tonic::Status::unavailable(format!("error getting validator info: {}", e))
-                })
-                // TODO: how do we instrument a Stream
-                //.instrument(Span::current())
-                .boxed(),
+            s.map_ok(|info| ValidatorInfoResponse {
+                validator_info: Some(info.into()),
+            })
+            .map_err(|e: anyhow::Error| {
+                tonic::Status::unavailable(format!("error getting validator info: {}", e))
+            })
+            // TODO: how do we instrument a Stream
+            //.instrument(Span::current())
+            .boxed(),
         ))
     }
 
