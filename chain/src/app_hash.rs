@@ -32,7 +32,7 @@ impl From<RootHash> for AppHash {
 impl std::fmt::Debug for AppHash {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("AppHash")
-            .field(&hex::encode(&self.0))
+            .field(&hex::encode(self.0))
             .finish()
     }
 }

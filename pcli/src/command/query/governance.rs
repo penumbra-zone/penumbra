@@ -18,7 +18,6 @@ use penumbra_transaction::action::{Proposal, ProposalPayload, Vote};
 use penumbra_view::ViewClient;
 use serde::Serialize;
 use serde_json::json;
-use tokio_stream::StreamExt;
 
 use crate::App;
 

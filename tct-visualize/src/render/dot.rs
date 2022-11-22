@@ -312,7 +312,7 @@ impl<W: Write> Writer<W> {
                 }
             };
             w.line(|w| write!(w, "penwidth={}", PEN_WIDTH * 2))?;
-            if place == None {
+            if place.is_none() {
                 w.line(|w| write!(w, "fontcolor=grey"))?;
             }
             match height {
@@ -835,7 +835,7 @@ fn node_width(node: &Node) -> &'static str {
         }
     }
 
-    if node.place() == Place::Frontier && node.cached_hash() == None {
+    if node.place() == Place::Frontier && node.cached_hash().is_none() {
         "0.7"
     } else {
         "0.9"

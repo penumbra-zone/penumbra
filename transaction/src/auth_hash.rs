@@ -30,7 +30,7 @@ impl Default for AuthHash {
 impl std::fmt::Debug for AuthHash {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("AuthHash")
-            .field(&hex::encode(&self.0))
+            .field(&hex::encode(self.0))
             .finish()
     }
 }
@@ -543,8 +543,8 @@ mod tests {
     /// we compute the same auth hash for the plan and for the transaction.
     #[test]
     fn plan_auth_hash_matches_transaction_auth_hash() {
-        let mut rng = OsRng;
-        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let rng = OsRng;
+        let seed_phrase = SeedPhrase::generate(rng);
         let sk = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk = sk.full_viewing_key();
         let (addr, _dtk) = fvk.incoming().payment_address(0u64.into());

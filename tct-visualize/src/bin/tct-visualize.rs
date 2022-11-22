@@ -84,7 +84,7 @@ impl FromStr for Seed {
 
 impl Display for Seed {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", hex::encode(&self.0))
+        write!(f, "{}", hex::encode(self.0))
     }
 }
 
@@ -315,7 +315,7 @@ fn write_svg_direct<W: Write>(tree: &Tree, writer: &mut W) -> Result<()> {
 
 fn dot_command() -> io::Result<(impl Write, impl Read)> {
     let mut child = Command::new("dot")
-        .args(&["-Tsvg"])
+        .args(["-Tsvg"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()?;

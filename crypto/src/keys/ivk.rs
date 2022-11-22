@@ -76,8 +76,8 @@ mod test {
 
     #[test]
     fn views_address_succeeds_on_own_address() {
-        let mut rng = rand::rngs::OsRng;
-        let spend_key = SpendKey::from_seed_phrase(SeedPhrase::generate(&mut rng), 0);
+        let rng = rand::rngs::OsRng;
+        let spend_key = SpendKey::from_seed_phrase(SeedPhrase::generate(rng), 0);
         let ivk = spend_key.full_viewing_key().incoming();
         let own_address = ivk.payment_address(AddressIndex::from(0u64)).0;
         assert!(ivk.views_address(&own_address));
@@ -85,11 +85,11 @@ mod test {
 
     #[test]
     fn views_address_fails_on_other_address() {
-        let mut rng = rand::rngs::OsRng;
-        let spend_key = SpendKey::from_seed_phrase(SeedPhrase::generate(&mut rng), 0);
+        let rng = rand::rngs::OsRng;
+        let spend_key = SpendKey::from_seed_phrase(SeedPhrase::generate(rng), 0);
         let ivk = spend_key.full_viewing_key().incoming();
 
-        let other_address = SpendKey::from_seed_phrase(SeedPhrase::generate(&mut rng), 0)
+        let other_address = SpendKey::from_seed_phrase(SeedPhrase::generate(rng), 0)
             .full_viewing_key()
             .incoming()
             .payment_address(AddressIndex::from(0u64))

@@ -38,7 +38,7 @@ fn load_wallet_into_tmpdir() -> TempDir {
 
     let mut setup_cmd = Command::cargo_bin("pcli").unwrap();
     setup_cmd
-        .args(&[
+        .args([
             "--data-path",
             tmpdir.path().to_str().unwrap(),
             "keys",
@@ -60,7 +60,7 @@ fn get_validator() -> String {
     let tmpdir = load_wallet_into_tmpdir();
     let mut validator_cmd = Command::cargo_bin("pcli").unwrap();
     validator_cmd
-        .args(&[
+        .args([
             "--data-path",
             tmpdir.path().to_str().unwrap(),
             "query",
@@ -74,9 +74,9 @@ fn get_validator() -> String {
     let stdout_vec = validator_cmd.unwrap().stdout;
     let validator_regex = Regex::new(r"penumbravalid1\w{58}").unwrap();
     let captures = validator_regex.captures(std::str::from_utf8(&stdout_vec).unwrap());
+
     // We retrieve the first match via index 0, which results in most trusted.
-    let validator = captures.unwrap()[0].to_string();
-    validator
+    captures.unwrap()[0].to_string()
 }
 
 #[ignore]
@@ -88,7 +88,7 @@ fn transaction_send_from_addr_0_to_addr_1() {
     // we'll send `TEST_ASSET` to `TEST_ADDRESS_1` and then check our balance.
     let mut send_cmd = Command::cargo_bin("pcli").unwrap();
     send_cmd
-        .args(&[
+        .args([
             "--data-path",
             tmpdir.path().to_str().unwrap(),
             "tx",
@@ -106,7 +106,7 @@ fn transaction_send_from_addr_0_to_addr_1() {
 
     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
     balance_cmd
-        .args(&[
+        .args([
             "--data-path",
             tmpdir.path().to_str().unwrap(),
             "view",
@@ -124,7 +124,7 @@ fn transaction_send_from_addr_0_to_addr_1() {
     // from the original state.
     let mut send_cmd = Command::cargo_bin("pcli").unwrap();
     send_cmd
-        .args(&[
+        .args([
             "--data-path",
             tmpdir.path().to_str().unwrap(),
             "tx",
@@ -147,7 +147,7 @@ fn transaction_sweep() {
 
     let mut sweep_cmd = Command::cargo_bin("pcli").unwrap();
     sweep_cmd
-        .args(&[
+        .args([
             "--data-path",
             tmpdir.path().to_str().unwrap(),
             "tx",
@@ -172,7 +172,7 @@ fn delegate_and_undelegate() {
     // Delegate a tiny bit of penumbra to the validator.
     let mut delegate_cmd = Command::cargo_bin("pcli").unwrap();
     delegate_cmd
-        .args(&[
+        .args([
             "--data-path",
             tmpdir.path().to_str().unwrap(),
             "tx",
@@ -191,7 +191,7 @@ fn delegate_and_undelegate() {
     // Check we have some of the delegation token for that validator now.
     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
     balance_cmd
-        .args(&[
+        .args([
             "--data-path",
             tmpdir.path().to_str().unwrap(),
             "view",
@@ -209,7 +209,7 @@ fn delegate_and_undelegate() {
         let amount_to_undelegate = format!("0.99delegation_{}", validator.as_str());
         let mut undelegate_cmd = Command::cargo_bin("pcli").unwrap();
         undelegate_cmd
-            .args(&[
+            .args([
                 "--data-path",
                 tmpdir.path().to_str().unwrap(),
                 "tx",
@@ -236,7 +236,7 @@ fn delegate_and_undelegate() {
     // Now sync.
     let mut sync_cmd = Command::cargo_bin("pcli").unwrap();
     sync_cmd
-        .args(&[
+        .args([
             "--data-path",
             tmpdir.path().to_str().unwrap(),
             "view",
@@ -254,7 +254,7 @@ fn swap() {
     // Swap 1penumbra for some gn.
     let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
     swap_cmd
-        .args(&[
+        .args([
             "--data-path",
             tmpdir.path().to_str().unwrap(),
             "tx",
@@ -273,7 +273,7 @@ fn swap() {
     // Cleanup: Swap the gn back (will fail if we received no gn in the above swap).
     let mut swap_back_cmd = Command::cargo_bin("pcli").unwrap();
     swap_back_cmd
-        .args(&[
+        .args([
             "--data-path",
             tmpdir.path().to_str().unwrap(),
             "tx",
@@ -298,7 +298,7 @@ fn governance_submit_proposal() {
     // Get template for signaling proposal.
     let mut template_cmd = Command::cargo_bin("pcli").unwrap();
     template_cmd
-        .args(&[
+        .args([
             "--data-path",
             tmpdir.path().to_str().unwrap(),
             "tx",
@@ -315,7 +315,7 @@ fn governance_submit_proposal() {
     // Submit signaling proposal.
     let mut submit_cmd = Command::cargo_bin("pcli").unwrap();
     submit_cmd
-        .args(&[
+        .args([
             "--data-path",
             tmpdir.path().to_str().unwrap(),
             "tx",
@@ -334,7 +334,7 @@ fn governance_submit_proposal() {
     // Now list the proposals.
     let mut proposals_cmd = Command::cargo_bin("pcli").unwrap();
     proposals_cmd
-        .args(&[
+        .args([
             "--data-path",
             tmpdir.path().to_str().unwrap(),
             "query",
@@ -354,7 +354,7 @@ fn duplicate_consensus_key_forbidden() {
     let mut query_cmd = Command::cargo_bin("pcli").unwrap();
     let validator_list_filepath = NamedTempFile::new().unwrap();
     query_cmd
-        .args(&[
+        .args([
             "--data-path",
             tmpdir.path().to_str().unwrap(),
             "query",
@@ -362,7 +362,7 @@ fn duplicate_consensus_key_forbidden() {
             "definition",
             validator.as_str(),
             "--file",
-            &validator_list_filepath.path().to_str().unwrap(),
+            (validator_list_filepath.path().to_str().unwrap()),
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     query_cmd.assert().success();
@@ -379,14 +379,14 @@ fn duplicate_consensus_key_forbidden() {
     let validator_filepath = NamedTempFile::new().unwrap();
     let mut template_cmd = Command::cargo_bin("pcli").unwrap();
     template_cmd
-        .args(&[
+        .args([
             "--data-path",
             tmpdir.path().to_str().unwrap(),
             "validator",
             "definition",
             "template",
             "--file",
-            &validator_filepath.path().to_str().unwrap(),
+            (validator_filepath.path().to_str().unwrap()),
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     template_cmd.assert().success();
@@ -410,7 +410,7 @@ fn duplicate_consensus_key_forbidden() {
     // Submit (intentionally broken) validator definition.
     let mut submit_cmd = Command::cargo_bin("pcli").unwrap();
     submit_cmd
-        .args(&[
+        .args([
             "--data-path",
             tmpdir.path().to_str().unwrap(),
             "validator",

@@ -234,7 +234,7 @@ async fn main() -> anyhow::Result<()> {
             Stack::new(recorder)
                 // Adding the `TracingContextLayer` will add labels from the tracing span to metrics.
                 // The only labels to be included are "chain_id" and "role".
-                .push(TracingContextLayer::only_allow(&["chain_id", "role"]))
+                .push(TracingContextLayer::only_allow(["chain_id", "role"]))
                 .install()
                 .expect("global recorder already installed");
 
@@ -362,7 +362,7 @@ async fn main() -> anyhow::Result<()> {
                     let randomizer = OsRng.gen::<u32>();
                     let chain_id =
                         chain_id.unwrap_or_else(|| env!("PD_LATEST_TESTNET_NAME").to_string());
-                    format!("{}-{}", chain_id, hex::encode(&randomizer.to_le_bytes()))
+                    format!("{}-{}", chain_id, hex::encode(randomizer.to_le_bytes()))
                 }
             };
 

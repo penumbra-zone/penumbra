@@ -100,7 +100,7 @@ impl ValidatorCmd {
                 // We could also support defining multiple validators in a single
                 // file.
                 let definition_file =
-                    File::open(&file).with_context(|| format!("cannot open file {:?}", file))?;
+                    File::open(file).with_context(|| format!("cannot open file {:?}", file))?;
                 let new_validator: Validator = serde_json::from_reader(definition_file)
                     .map_err(|_| anyhow::anyhow!("Unable to parse validator definition"))?;
                 let fee = Fee::from_staking_token_amount((*fee as u64).into());
@@ -108,7 +108,7 @@ impl ValidatorCmd {
                 // Sign the validator definition with the wallet's spend key.
                 let protobuf_serialized: ProtoValidator = new_validator.clone().into();
                 let v_bytes = protobuf_serialized.encode_to_vec();
-                let auth_sig = sk.spend_auth_key().sign(&mut OsRng, &v_bytes);
+                let auth_sig = sk.spend_auth_key().sign(OsRng, &v_bytes);
                 let vd = validator::Definition {
                     validator: new_validator,
                     auth_sig,
@@ -153,7 +153,7 @@ impl ValidatorCmd {
 
                 // Generate an authorizing signature with the governance key for the vote body
                 let body_bytes = body.encode_to_vec();
-                let auth_sig = governance_auth_key.sign(&mut OsRng, &body_bytes);
+                let auth_sig = governance_auth_key.sign(OsRng, &body_bytes);
 
                 let vote = ValidatorVote { body, auth_sig };
 

@@ -20,7 +20,7 @@ impl RequestExt for ConsensusRequest {
                 error_span!(parent: &p, "BeginBlock", height = ?header.height.value())
             }
             ConsensusRequest::DeliverTx(DeliverTx { tx }) => {
-                error_span!(parent: &p, "DeliverTx", txid = ?hex::encode(&Sha256::digest(tx.as_ref())))
+                error_span!(parent: &p, "DeliverTx", txid = ?hex::encode(Sha256::digest(tx.as_ref())))
             }
             ConsensusRequest::EndBlock(EndBlock { height }) => {
                 error_span!(parent: &p, "EndBlock", ?height)
@@ -39,7 +39,7 @@ impl RequestExt for MempoolRequest {
         let p = error_span!("abci");
         match self {
             MempoolRequest::CheckTx(CheckTx { kind, tx }) => {
-                error_span!(parent: &p, "CheckTx", ?kind, txid = ?hex::encode(&Sha256::digest(tx.as_ref())))
+                error_span!(parent: &p, "CheckTx", ?kind, txid = ?hex::encode(Sha256::digest(tx.as_ref())))
             }
         }
     }
@@ -93,13 +93,13 @@ impl RequestExt for Request {
                 error_span!(parent: &p, "Query", ?path, ?height, prove)
             }
             Request::CheckTx(CheckTx { kind, tx }) => {
-                error_span!(parent: &p, "CheckTx", ?kind, txid = ?hex::encode(&Sha256::digest(tx.as_ref())))
+                error_span!(parent: &p, "CheckTx", ?kind, txid = ?hex::encode(Sha256::digest(tx.as_ref())))
             }
             Request::BeginBlock(BeginBlock { hash, header, .. }) => {
                 error_span!(parent: &p, "BeginBlock", height = ?header.height, hash = ?hex::encode(hash.as_ref()))
             }
             Request::DeliverTx(DeliverTx { tx }) => {
-                error_span!(parent: &p, "DeliverTx", txid = ?hex::encode(&Sha256::digest(tx.as_ref())))
+                error_span!(parent: &p, "DeliverTx", txid = ?hex::encode(Sha256::digest(tx.as_ref())))
             }
             Request::EndBlock(EndBlock { height }) => error_span!(parent: &p, "EndBlock", ?height),
             Request::Commit => error_span!(parent: &p, "Commit"),
