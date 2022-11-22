@@ -143,9 +143,9 @@ impl ObliviousQueryService for Info {
             .map_err(|e| tonic::Status::unavailable(format!("error listing validators: {}", e)))?;
 
         let show_inactive = request.get_ref().show_inactive;
-        let stream = try_stream! {
-            for identity_key in validators {
-                let info = state.validator_info(&identity_key)
+        let s = try_stream! {
+            for v in validators {
+                let info = state.validator_info(&v.identity_key)
                     .await?
                     .expect("known validator must be present");
                 // Slashed and inactive validators are not shown by default.
@@ -157,16 +157,15 @@ impl ObliviousQueryService for Info {
         };
 
         Ok(tonic::Response::new(
-            stream
-                .map_ok(|info| ValidatorInfoResponse {
-                    validator_info: Some(info.into()),
-                })
-                .map_err(|e: anyhow::Error| {
-                    tonic::Status::unavailable(format!("error getting validator info: {}", e))
-                })
-                // TODO: how do we instrument a Stream
-                //.instrument(Span::current())
-                .boxed(),
+            s.map_ok(|info| ValidatorInfoResponse {
+                validator_info: Some(info.into()),
+            })
+            .map_err(|e: anyhow::Error| {
+                tonic::Status::unavailable(format!("error getting validator info: {}", e))
+            })
+            // TODO: how do we instrument a Stream
+            //.instrument(Span::current())
+            .boxed(),
         ))
     }
 

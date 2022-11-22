@@ -2,10 +2,6 @@ use penumbra_crypto::IdentityKey;
 use std::string::String;
 use tendermint::PublicKey;
 
-pub fn validator_list() -> &'static str {
-    "staking/validators"
-}
-
 pub fn current_base_rate() -> &'static str {
     "staking/base_rate/current"
 }
@@ -14,32 +10,39 @@ pub fn next_base_rate() -> &'static str {
     "staking/base_rate/next"
 }
 
-pub fn validator_by_id(id: &IdentityKey) -> String {
-    format!("staking/validator/{}", id)
+pub mod validators {
+    use penumbra_crypto::IdentityKey;
+    pub fn list() -> &'static str {
+        "staking/validator/"
+    }
+
+    pub fn by_id(id: &IdentityKey) -> String {
+        format!("staking/validator/{}", id)
+    }
 }
 
 pub fn state_by_validator(id: &IdentityKey) -> String {
-    format!("staking/validator/{}/state", id)
+    format!("staking/validator_state/{}", id)
 }
 
 pub fn current_rate_by_validator(id: &IdentityKey) -> String {
-    format!("staking/validator/{}/rate/current", id)
+    format!("staking/validator_rate/current/{}", id)
 }
 
 pub fn next_rate_by_validator(id: &IdentityKey) -> String {
-    format!("staking/validator/{}/rate/next", id)
+    format!("staking/validator_rate/next/{}", id)
 }
 
 pub fn power_by_validator(id: &IdentityKey) -> String {
-    format!("staking/validator/{}/power", id)
+    format!("staking/validator_power/{}", id)
 }
 
 pub fn bonding_state_by_validator(id: &IdentityKey) -> String {
-    format!("staking/validator/{}/bonding_state", id)
+    format!("staking/validator_bonding_state/{}", id)
 }
 
 pub fn uptime_by_validator(id: &IdentityKey) -> String {
-    format!("staking/validator/{}/uptime", id)
+    format!("staking/validator_uptime/{}", id)
 }
 
 pub fn slashed_validators(height: u64) -> String {
