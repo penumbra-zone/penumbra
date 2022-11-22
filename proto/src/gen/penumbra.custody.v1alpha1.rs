@@ -7,6 +7,11 @@ pub struct AuthorizeRequest {
     #[prost(message, optional, tag="2")]
     pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
 }
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AuthorizeResponse {
+    #[prost(message, optional, tag="1")]
+    pub data: ::core::option::Option<super::super::core::transaction::v1alpha1::AuthorizationData>,
+}
 /// Generated client implementations.
 pub mod custody_protocol_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
@@ -93,12 +98,7 @@ pub mod custody_protocol_service_client {
         pub async fn authorize(
             &mut self,
             request: impl tonic::IntoRequest<super::AuthorizeRequest>,
-        ) -> Result<
-            tonic::Response<
-                super::super::super::core::transaction::v1alpha1::AuthorizationData,
-            >,
-            tonic::Status,
-        > {
+        ) -> Result<tonic::Response<super::AuthorizeResponse>, tonic::Status> {
             self.inner
                 .ready()
                 .await
@@ -127,12 +127,7 @@ pub mod custody_protocol_service_server {
         async fn authorize(
             &self,
             request: tonic::Request<super::AuthorizeRequest>,
-        ) -> Result<
-            tonic::Response<
-                super::super::super::core::transaction::v1alpha1::AuthorizationData,
-            >,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::AuthorizeResponse>, tonic::Status>;
     }
     /// The custody protocol is used by a wallet client to request authorization for
     /// a transaction they've constructed.
@@ -212,7 +207,7 @@ pub mod custody_protocol_service_server {
                         T: CustodyProtocolService,
                     > tonic::server::UnaryService<super::AuthorizeRequest>
                     for AuthorizeSvc<T> {
-                        type Response = super::super::super::core::transaction::v1alpha1::AuthorizationData;
+                        type Response = super::AuthorizeResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,

@@ -1,6 +1,6 @@
 //! Asset types and identifiers.
 
-use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, view::v1alpha1::AssetsResponse, Protobuf};
 use serde::{Deserialize, Serialize};
 
 mod amount;
@@ -12,7 +12,7 @@ mod registry;
 pub use amount::Amount;
 pub use cache::Cache;
 pub use denom::{Denom, Unit};
-pub use id::Id;
+pub use id::{Id, VALUE_GENERATOR_DOMAIN_SEP};
 pub use registry::{Registry, REGISTRY};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -46,6 +46,17 @@ impl From<Asset> for pb::Asset {
             id: Some(asset.id.into()),
             denom: Some(asset.denom.into()),
         }
+    }
+}
+
+impl TryFrom<AssetsResponse> for Asset {
+    type Error = anyhow::Error;
+
+    fn try_from(response: AssetsResponse) -> Result<Self, Self::Error> {
+        response
+            .asset
+            .ok_or_else(|| anyhow::anyhow!("empty AssetsResponse message"))?
+            .try_into()
     }
 }
 

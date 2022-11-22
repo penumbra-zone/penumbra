@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use penumbra_crypto::keys::{AccountID, SpendKey};
-use penumbra_proto::{core::transaction::v1alpha1 as pb_transaction, custody::v1alpha1 as pb};
+use penumbra_proto::custody::v1alpha1::{self as pb, AuthorizeResponse};
 use penumbra_transaction::AuthorizationData;
 use rand_core::OsRng;
 use tonic::{async_trait, Request, Response, Status};
@@ -42,16 +42,20 @@ impl pb::custody_protocol_service_server::CustodyProtocolService for SoftHSM {
     async fn authorize(
         &self,
         request: Request<pb::AuthorizeRequest>,
-    ) -> Result<Response<pb_transaction::AuthorizationData>, Status> {
+    ) -> Result<Response<AuthorizeResponse>, Status> {
         let request = request
             .into_inner()
             .try_into()
             .map_err(|e: anyhow::Error| Status::invalid_argument(e.to_string()))?;
 
-        Ok(Response::new(
-            self.sign(&request)
-                .map_err(|e| Status::invalid_argument(e.to_string()))?
-                .into(),
-        ))
+        let authorization_data = self
+            .sign(&request)
+            .map_err(|e| Status::invalid_argument(e.to_string()))?;
+
+        let authorization_response = AuthorizeResponse {
+            data: Some(authorization_data.into()),
+        };
+
+        Ok(Response::new(authorization_response))
     }
 }

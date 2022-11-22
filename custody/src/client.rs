@@ -1,6 +1,7 @@
 use anyhow::Result;
 use penumbra_proto::custody::v1alpha1::custody_protocol_service_client::CustodyProtocolServiceClient;
-use penumbra_transaction::AuthorizationData;
+use penumbra_proto::custody::v1alpha1::AuthorizeResponse;
+
 use tonic::async_trait;
 use tonic::codegen::Bytes;
 
@@ -27,7 +28,7 @@ use crate::AuthorizeRequest;
 #[async_trait(?Send)]
 pub trait CustodyClient: Sized {
     /// Requests authorization of the transaction with the given description.
-    async fn authorize(&mut self, request: AuthorizeRequest) -> Result<AuthorizationData>;
+    async fn authorize(&mut self, request: AuthorizeRequest) -> Result<AuthorizeResponse>;
 }
 
 // We need to tell `async_trait` not to add a `Send` bound to the boxed
@@ -44,12 +45,10 @@ where
     T::Error: Into<tonic::codegen::StdError>,
     <T::ResponseBody as tonic::codegen::Body>::Error: Into<tonic::codegen::StdError> + Send,
 {
-    async fn authorize(&mut self, request: AuthorizeRequest) -> Result<AuthorizationData> {
-        let rsp: AuthorizationData = self
+    async fn authorize(&mut self, request: AuthorizeRequest) -> Result<AuthorizeResponse> {
+        Ok(self
             .authorize(tonic::Request::new(request.into()))
             .await?
-            .into_inner()
-            .try_into()?;
-        Ok(rsp)
+            .into_inner())
     }
 }

@@ -13,9 +13,9 @@ penumbra-proto = { path = "../proto/" }
 penumbra-tct = { path = "../tct/" }
 
 # Git deps
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377", features = ["r1cs"] }
 decaf377-rdsa = { version = "0.5", git = "https://github.com/penumbra-zone/decaf377-rdsa" }
-poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377", branch = "main" }
+poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377", branch = "main", features = ["r1cs"] }
 poseidon-paramgen = { git = "https://github.com/penumbra-zone/poseidon377", branch = "main" }
 f4jumble = { git = "https://github.com/zcash/librustzcash", rev = "2425a0869098e3b0588ccd73c42716bcf418612c" }
 
@@ -44,6 +44,10 @@ chacha20poly1305 = "0.9.0"
 # only needed because ark-ff doesn't display correctly
 num-bigint = "0.4"
 tracing = "0.1"
+ark-groth16 = "0.3"
+ark-snark = "0.3"
+ark-r1cs-std = "0.3"
+ark-relations = "0.3"
 
 [dev-dependencies]
 proptest = "1"

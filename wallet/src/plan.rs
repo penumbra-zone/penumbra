@@ -309,6 +309,8 @@ where
                     })
                     .await?
                     .into_inner()
+                    .data
+                    .ok_or_else(|| anyhow::anyhow!("empty BatchSwapOutputResponse message"))?
                     .try_into()
                     .context("cannot parse batch swap output data")?;
 

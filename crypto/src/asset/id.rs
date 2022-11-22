@@ -97,7 +97,7 @@ impl std::str::FromStr for Id {
 }
 
 /// The domain separator used to hash asset ids to value generators.
-static VALUE_GENERATOR_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
+pub static VALUE_GENERATOR_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
     Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"penumbra.value.generator").as_bytes())
 });
 

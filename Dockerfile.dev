@@ -1,4 +1,4 @@
-FROM rust:1-bullseye AS build-env
+FROM rust:1.65.0-bullseye AS build-env
 
 # Specify the cargo cache dir as a volume to improve build speed
 VOLUME ["/root/.cargo"]

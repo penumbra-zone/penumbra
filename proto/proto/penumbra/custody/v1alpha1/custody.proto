@@ -1,30 +1,35 @@
 syntax = "proto3";
-option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
 
 package penumbra.custody.v1alpha1;
 
-import "penumbra/core/transaction/v1alpha1/transaction.proto";
 import "penumbra/core/crypto/v1alpha1/crypto.proto";
+import "penumbra/core/transaction/v1alpha1/transaction.proto";
+
+option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
 
 // The custody protocol is used by a wallet client to request authorization for
 // a transaction they've constructed.
-// 
+//
 // Modeling transaction authorization as an asynchronous RPC call encourages
 // software to be written in a way that has a compatible data flow with a "soft
 // HSM", threshold signing, a hardware wallet, etc.
-// 
+//
 // The custody protocol does not trust the client to authorize spends, so
 // custody requests must contain sufficient information for the custodian to
 // understand the transaction and determine whether or not it should be
 // authorized.
 service CustodyProtocolService {
-    // Requests authorization of the transaction with the given description.
-    rpc Authorize(AuthorizeRequest) returns (core.transaction.v1alpha1.AuthorizationData);
+  // Requests authorization of the transaction with the given description.
+  rpc Authorize(AuthorizeRequest) returns (AuthorizeResponse);
 }
 
 message AuthorizeRequest {
-    // The transaction plan to authorize.
-    core.transaction.v1alpha1.TransactionPlan plan = 1;
-    // Identifies the FVK (and hence the spend authorization key) to use for signing.
-    core.crypto.v1alpha1.AccountID account_id = 2;
+  // The transaction plan to authorize.
+  core.transaction.v1alpha1.TransactionPlan plan = 1;
+  // Identifies the FVK (and hence the spend authorization key) to use for signing.
+  core.crypto.v1alpha1.AccountID account_id = 2;
+}
+
+message AuthorizeResponse {
+  core.transaction.v1alpha1.AuthorizationData data = 1;
 }

@@ -9,7 +9,7 @@ use penumbra_crypto::{
 };
 use penumbra_proto::{
     client::v1alpha1::{
-        oblivious_query_service_client::ObliviousQueryServiceClient, ChainParamsRequest,
+        oblivious_query_service_client::ObliviousQueryServiceClient, ChainParametersRequest,
     },
     Protobuf,
 };
@@ -59,12 +59,13 @@ impl Storage {
                 ObliviousQueryServiceClient::connect(format!("http://{}:{}", node, pd_port))
                     .await?;
             let params = client
-                .chain_parameters(tonic::Request::new(ChainParamsRequest {
+                .chain_parameters(tonic::Request::new(ChainParametersRequest {
                     chain_id: String::new(),
                 }))
                 .await?
                 .into_inner()
                 .try_into()?;
+
             Self::initialize(storage_path, fvk.clone(), params).await
         }
     }

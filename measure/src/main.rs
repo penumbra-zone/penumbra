@@ -6,7 +6,7 @@ use tracing_subscriber::EnvFilter;
 
 use penumbra_chain::{params::ChainParameters, sync::CompactBlock};
 use penumbra_proto::client::v1alpha1::{
-    oblivious_query_service_client::ObliviousQueryServiceClient, ChainParamsRequest,
+    oblivious_query_service_client::ObliviousQueryServiceClient, ChainParametersRequest,
     CompactBlockRangeRequest,
 };
 
@@ -64,7 +64,7 @@ impl Opt {
                 .await?;
 
                 let params: ChainParameters = client
-                    .chain_parameters(tonic::Request::new(ChainParamsRequest {
+                    .chain_parameters(tonic::Request::new(ChainParametersRequest {
                         chain_id: String::new(),
                     }))
                     .await?
@@ -91,8 +91,8 @@ impl Opt {
                         ));
                 progress_bar.set_position(0);
 
-                while let Some(block) = stream.message().await? {
-                    let block = CompactBlock::try_from(block)?;
+                while let Some(block_rsp) = stream.message().await? {
+                    let block: CompactBlock = block_rsp.try_into()?;
                     progress_bar.set_position(block.height);
                 }
                 progress_bar.finish();

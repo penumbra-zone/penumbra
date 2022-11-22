@@ -13,12 +13,11 @@ use penumbra_crypto::{
     keys::{AccountID, AddressIndex, FullViewingKey},
 };
 use penumbra_proto::{
-    core::chain::v1alpha1 as pbp,
     core::crypto::v1alpha1 as pbc,
-    core::transaction::v1alpha1::{self as pbt},
     view::v1alpha1::{
-        self as pb, view_protocol_service_server::ViewProtocolService, StatusResponse,
-        TransactionHashStreamResponse, TransactionStreamResponse,
+        self as pb, view_protocol_service_server::ViewProtocolService, ChainParametersResponse,
+        FmdParametersResponse, NoteByCommitmentResponse, QuarantinedNotesResponse, StatusResponse,
+        TransactionHashesResponse, TransactionsResponse, WitnessResponse,
     },
 };
 use penumbra_tct::{Commitment, Proof};
@@ -222,23 +221,20 @@ impl ViewService {
 #[async_trait]
 impl ViewProtocolService for ViewService {
     type NotesStream =
-        Pin<Box<dyn futures::Stream<Item = Result<pb::SpendableNoteRecord, tonic::Status>> + Send>>;
+        Pin<Box<dyn futures::Stream<Item = Result<pb::NotesResponse, tonic::Status>> + Send>>;
     type QuarantinedNotesStream = Pin<
-        Box<dyn futures::Stream<Item = Result<pb::QuarantinedNoteRecord, tonic::Status>> + Send>,
+        Box<dyn futures::Stream<Item = Result<pb::QuarantinedNotesResponse, tonic::Status>> + Send>,
     >;
     type AssetsStream =
-        Pin<Box<dyn futures::Stream<Item = Result<pbc::Asset, tonic::Status>> + Send>>;
+        Pin<Box<dyn futures::Stream<Item = Result<pb::AssetsResponse, tonic::Status>> + Send>>;
     type StatusStreamStream = Pin<
         Box<dyn futures::Stream<Item = Result<pb::StatusStreamResponse, tonic::Status>> + Send>,
     >;
     type TransactionHashesStream = Pin<
-        Box<
-            dyn futures::Stream<Item = Result<TransactionHashStreamResponse, tonic::Status>> + Send,
-        >,
+        Box<dyn futures::Stream<Item = Result<TransactionHashesResponse, tonic::Status>> + Send>,
     >;
-    type TransactionsStream = Pin<
-        Box<dyn futures::Stream<Item = Result<TransactionStreamResponse, tonic::Status>> + Send>,
-    >;
+    type TransactionsStream =
+        Pin<Box<dyn futures::Stream<Item = Result<TransactionsResponse, tonic::Status>> + Send>>;
 
     async fn transaction_perspective(
         &self,
@@ -304,7 +300,7 @@ impl ViewProtocolService for ViewService {
     async fn note_by_commitment(
         &self,
         request: tonic::Request<pb::NoteByCommitmentRequest>,
-    ) -> Result<tonic::Response<pb::SpendableNoteRecord>, tonic::Status> {
+    ) -> Result<tonic::Response<pb::NoteByCommitmentResponse>, tonic::Status> {
         self.check_worker().await?;
         self.check_fvk(request.get_ref().account_id.as_ref())
             .await?;
@@ -321,12 +317,16 @@ impl ViewProtocolService for ViewService {
                 tonic::Status::failed_precondition("Invalid note commitment in request")
             })?;
 
-        Ok(tonic::Response::new(pb::SpendableNoteRecord::from(
+        let spendable_note = pb::SpendableNoteRecord::from(
             self.storage
                 .note_by_commitment(note_commitment, request.await_detection)
                 .await
                 .map_err(|e| tonic::Status::internal(format!("error: {}", e)))?,
-        )))
+        );
+
+        Ok(tonic::Response::new(NoteByCommitmentResponse {
+            spendable_note: Some(spendable_note),
+        }))
     }
 
     async fn nullifier_status(
@@ -434,7 +434,9 @@ impl ViewProtocolService for ViewService {
 
         let stream = try_stream! {
             for note in notes {
-                yield note.into()
+                yield pb::NotesResponse {
+                    note_record: Some(note.into()),
+                }
             }
         };
 
@@ -463,7 +465,9 @@ impl ViewProtocolService for ViewService {
 
         let stream = try_stream! {
             for note in notes {
-                yield note.into()
+                yield QuarantinedNotesResponse {
+                    note_record: Some(note.into()),
+                }
             }
         };
 
@@ -478,7 +482,7 @@ impl ViewProtocolService for ViewService {
 
     async fn assets(
         &self,
-        _request: tonic::Request<pb::AssetRequest>,
+        _request: tonic::Request<pb::AssetsRequest>,
     ) -> Result<tonic::Response<Self::AssetsStream>, tonic::Status> {
         self.check_worker().await?;
 
@@ -491,7 +495,10 @@ impl ViewProtocolService for ViewService {
 
         let stream = try_stream! {
             for asset in assets {
-                yield asset.into()
+                yield
+                    pb::AssetsResponse {
+                        asset: Some(asset.into()),
+                    }
             }
         };
 
@@ -506,10 +513,9 @@ impl ViewProtocolService for ViewService {
 
     async fn transaction_hashes(
         &self,
-        request: tonic::Request<pb::TransactionsRequest>,
+        request: tonic::Request<pb::TransactionHashesRequest>,
     ) -> Result<tonic::Response<Self::TransactionHashesStream>, tonic::Status> {
         self.check_worker().await?;
-
         // Fetch transactions from storage.
         let txs = self
             .storage
@@ -521,7 +527,7 @@ impl ViewProtocolService for ViewService {
 
         let stream = try_stream! {
             for tx in txs {
-                yield TransactionHashStreamResponse {
+                yield TransactionHashesResponse {
                     block_height: tx.0,
                     tx_hash: tx.1,
                 }
@@ -542,7 +548,6 @@ impl ViewProtocolService for ViewService {
         request: tonic::Request<pb::TransactionsRequest>,
     ) -> Result<tonic::Response<Self::TransactionsStream>, tonic::Status> {
         self.check_worker().await?;
-
         // Fetch transactions from storage.
         let txs = self
             .storage
@@ -554,7 +559,7 @@ impl ViewProtocolService for ViewService {
 
         let stream = try_stream! {
             for tx in txs {
-                yield TransactionStreamResponse {
+                yield TransactionsResponse {
                     block_height: tx.0,
                     tx_hash: tx.1,
                     tx: Some(tx.2.into())
@@ -594,7 +599,7 @@ impl ViewProtocolService for ViewService {
     async fn witness(
         &self,
         request: tonic::Request<pb::WitnessRequest>,
-    ) -> Result<tonic::Response<pbt::WitnessData>, tonic::Status> {
+    ) -> Result<tonic::Response<WitnessResponse>, tonic::Status> {
         self.check_worker().await?;
         self.check_fvk(request.get_ref().account_id.as_ref())
             .await?;
@@ -641,34 +646,47 @@ impl ViewProtocolService for ViewService {
                 .map(|proof| (proof.commitment(), proof))
                 .collect(),
         };
+
         tracing::debug!(?witness_data);
-        Ok(tonic::Response::new(witness_data.into()))
+
+        let witness_response = WitnessResponse {
+            witness_data: Some(witness_data.into()),
+        };
+        Ok(tonic::Response::new(witness_response))
     }
 
     async fn chain_parameters(
         &self,
-        _request: tonic::Request<pb::ChainParamsRequest>,
-    ) -> Result<tonic::Response<pbp::ChainParameters>, tonic::Status> {
+        _request: tonic::Request<pb::ChainParametersRequest>,
+    ) -> Result<tonic::Response<pb::ChainParametersResponse>, tonic::Status> {
         self.check_worker().await?;
 
-        let params = self.storage.chain_params().await.map_err(|e| {
+        let parameters = self.storage.chain_params().await.map_err(|e| {
             tonic::Status::unavailable(format!("error getting chain params: {}", e))
         })?;
 
-        Ok(tonic::Response::new(params.into()))
+        let response = ChainParametersResponse {
+            parameters: Some(parameters.into()),
+        };
+
+        Ok(tonic::Response::new(response))
     }
 
     async fn fmd_parameters(
         &self,
         _request: tonic::Request<pb::FmdParametersRequest>,
-    ) -> Result<tonic::Response<pbp::FmdParameters>, tonic::Status> {
+    ) -> Result<tonic::Response<pb::FmdParametersResponse>, tonic::Status> {
         self.check_worker().await?;
 
-        let params =
+        let parameters =
             self.storage.fmd_parameters().await.map_err(|e| {
                 tonic::Status::unavailable(format!("error getting FMD params: {}", e))
             })?;
 
-        Ok(tonic::Response::new(params.into()))
+        let response = FmdParametersResponse {
+            parameters: Some(parameters.into()),
+        };
+
+        Ok(tonic::Response::new(response))
     }
 }
