@@ -26,6 +26,17 @@ pub(crate) fn diversified_basepoint_not_identity(
     Ok(())
 }
 
+/// Check the spend auth key is not identity.
+pub(crate) fn ak_not_identity(
+    cs: ConstraintSystemRef<Fq>,
+    // Witness
+    ak: ElementVar,
+) -> Result<(), SynthesisError> {
+    let identity = ElementVar::new_constant(cs, decaf377::Element::default())?;
+    identity.enforce_not_equal(&ak)?;
+    Ok(())
+}
+
 /// Check the integrity of the ephemeral public key.
 pub(crate) fn ephemeral_public_key_integrity(
     // Witnesses

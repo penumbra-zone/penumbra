@@ -25,6 +25,7 @@ mod tests {
     #[test]
     fn output_proof_happy_path() {
         let (pk, vk) = OutputCircuit::generate_test_parameters();
+
         let mut rng = OsRng;
 
         let seed_phrase = SeedPhrase::generate(rng);
