@@ -1,8 +1,6 @@
 use std::pin::Pin;
 
 use async_stream::try_stream;
-use futures::FutureExt;
-use futures::Stream;
 use futures::StreamExt;
 use futures::TryStreamExt;
 use penumbra_chain::AppHashRead;
@@ -30,7 +28,6 @@ use proto::client::v1alpha1::StubCpmmReservesResponse;
 use proto::client::v1alpha1::TransactionByNoteRequest;
 use proto::client::v1alpha1::TransactionByNoteResponse;
 use proto::client::v1alpha1::ValidatorStatusResponse;
-use proto::StateReadProto;
 use tonic::Status;
 use tracing::instrument;
 
@@ -104,20 +101,12 @@ impl SpecificQueryService for Info {
 
         let mut stream = state.prefix_raw(&request.prefix);
         // TODO: is there a way to keep `state` alive long enough that we don't need to `.collect()`
-        // here?
+        // here? this could be problematic if the stream is very long.
         let items: Vec<Result<(String, Vec<u8>), tonic::Status>> = stream
             .next()
             .await
             .into_iter()
-            .map(|item| {
-                if item.is_err() {
-                    return Err(Status::internal(item.unwrap_err().to_string()));
-                }
-                let item = item.unwrap();
-
-                let (key, value) = item;
-                return Ok((key, value));
-            })
+            .map(|item| item.map_err(|e| tonic::Status::internal(e.to_string())))
             .collect();
 
         let s = try_stream! {
