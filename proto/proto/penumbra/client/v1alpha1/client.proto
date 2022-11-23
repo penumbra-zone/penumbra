@@ -100,6 +100,10 @@ service SpecificQueryService {
   // General-purpose key-value state query API, that can be used to query
   // arbitrary keys in the JMT storage.
   rpc KeyValue(KeyValueRequest) returns (KeyValueResponse);
+
+  // General-purpose prefixed key-value state query API, that can be used to query
+  // arbitrary prefixes in the JMT storage.
+  rpc PrefixValue(PrefixValueRequest) returns (stream PrefixValueResponse);
 }
 
 message TransactionByNoteRequest {
@@ -177,4 +181,17 @@ message KeyValueRequest {
 message KeyValueResponse {
   bytes value = 1;
   .ibc.core.commitment.v1.MerkleProof proof = 2;
+}
+
+// Performs a prefixed key-value query, by string prefix.
+message PrefixValueRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  // The prefix to fetch subkeys from storage.
+  string prefix = 2;
+}
+
+message PrefixValueResponse {
+  string key = 1;
+  bytes value = 2;
 }

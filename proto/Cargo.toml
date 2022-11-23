@@ -20,6 +20,7 @@ ibc-proto = { git = "https://github.com/penumbra-zone/ibc-rs", branch = "penumbr
 ibc = { git = "https://github.com/penumbra-zone/ibc-rs", branch = "penumbra-034" }
 ics23 = { git = "https://github.com/penumbra-zone/ics23", branch = "penumbra-034" }
 prost-types = "0.11"
+async-stream = "0.2"
 tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs", branch = "penumbra-034" }
 penumbra-storage = { path = "../storage", optional = true }
 async-trait = "0.1.52"
