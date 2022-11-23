@@ -99,20 +99,12 @@ impl SpecificQueryService for Info {
             return Err(Status::invalid_argument("prefix is empty"));
         }
 
-        let mut stream = state.prefix_raw(&request.prefix);
-        // TODO: is there a way to keep `state` alive long enough that we don't need to `.collect()`
-        // here? this could be problematic if the stream is very long.
-        let items: Vec<Result<(String, Vec<u8>), tonic::Status>> = stream
-            .next()
-            .await
-            .into_iter()
-            .map(|item| item.map_err(|e| tonic::Status::internal(e.to_string())))
-            .collect();
-
+        let stream_iter = state.prefix_raw(&request.prefix).next().await.into_iter();
         let s = try_stream! {
-            for item in items {
-                yield item;
-            }
+            for item in stream_iter
+                .map(|item| item.map_err(|e| tonic::Status::internal(e.to_string()))) {
+                    yield item
+                }
         };
 
         Ok(tonic::Response::new(
