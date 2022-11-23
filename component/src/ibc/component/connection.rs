@@ -13,14 +13,13 @@ use ibc::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfi
 use ibc::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use ibc::core::ics03_connection::version::{pick_version, Version};
-use ibc::core::ics24_host::identifier::{ClientId, ConnectionId};
+use ibc::core::ics24_host::identifier::ConnectionId;
 use ibc::Height as IBCHeight;
 use penumbra_chain::genesis;
 use penumbra_storage::{StateRead, StateTransaction, StateWrite};
 use tendermint::abci;
 use tracing::instrument;
 
-use super::client::StateWriteExt as _;
 use super::state_key;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 

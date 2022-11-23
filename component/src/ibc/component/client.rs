@@ -4,7 +4,6 @@ use crate::Component;
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc::core::ics02_client::client_state::ClientState;
-use ibc::core::ics24_host::identifier::ConnectionId;
 use ibc::downcast;
 use ibc::{
     clients::ics07_tendermint::{
@@ -34,7 +33,7 @@ use tendermint_light_client_verifier::{
 };
 use tracing::instrument;
 
-use crate::ibc::{event, ClientConnections, ClientCounter, VerifiedHeights};
+use crate::ibc::{event, ClientCounter, VerifiedHeights};
 
 use super::state_key;
 
