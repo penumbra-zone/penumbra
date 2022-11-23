@@ -29,3 +29,13 @@ The protobuf documentation is rendered at [buf.build/penumbra-zone/penumbra][pro
 [rustdoc]: https://rustdoc.penumbra.zone
 [guide]: https://guide.penumbra.zone
 [protobuf]: https://buf.build/penumbra-zone/penumbra
+
+### Talks and presentations
+
+These talks were given at various conferences and events,
+describing different aspects of the Penumbra ecosystem.
+
+* [DevCon 2022: Building a Private DEX with ZKPs and Threshold Cryptography](https://www.youtube.com/watch?v=JjmOelgfqNo)
+* [ZK8: How to build a private DEX](https://www.youtube.com/watch?v=-ap9ja36EYU)
+* [ZK8: Tiered Merkle Topiary in Rust](https://www.youtube.com/watch?v=mHoe7lQMcxU)
+* [ZK Whiteboard Session: ZK Swaps](https://www.youtube.com/watch?v=ziUZyQmHh4c)
