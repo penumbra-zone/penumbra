@@ -29,10 +29,10 @@ Tuesday (or after release of previous testnet):
 Thursday:
 
 - [ ] Check in with team again in a release meeting and update the GitHub milestone to ensure it represents what will make it into the testnet.
+- [ ] Draft an announcement for peer review to ensure major changes included are comprehensive.
 
 Following Monday (release day):
 
-- [ ] Draft an announcement for peer review to ensure major changes included are comprehensive.
 - [ ] Verify that `testnet-preview.penumbra.zone` is operational; it is redeployed on every push to main, and is an exact preview of what is about to be deployed.
 - [ ] Create new git tag e.g. `006-orthosie` on `main` (tags created on any other branches will not transfer when merged in) and push to shared remote: `git tag -a <tag_name>` - **must be annotated tag, i.e. `git tag -a`** for Vergen build. This will create a `Waiting` GitHub Action for deployment.
 - [ ] You must [manually review](https://docs.github.com/en/actions/managing-workflow-runs/reviewing-deployments) the `Waiting` deployment in the GitHub Action UI before the deployment will begin. Monitor the GitHub action to ensure it completes after it is approved.
