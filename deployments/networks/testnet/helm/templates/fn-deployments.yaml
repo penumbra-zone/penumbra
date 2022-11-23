@@ -36,7 +36,7 @@ spec:
             claimName: "pvc-fn-{{ include "tendermint.name" $ }}-{{$i}}"
         - name: tm-config
           configMap:
-            name: tm-config-fn
+            name: "tm-config-fn-{{$i}}"
             items:
               - key: "config.toml"
                 path: "config.toml"

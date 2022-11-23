@@ -24,6 +24,6 @@ spec:
     - protocol: TCP
       port: 8080
       targetPort: grpc
-      name: pd-grpc      
+      name: pd-grpc
 {{ end }}
 {{ end }}

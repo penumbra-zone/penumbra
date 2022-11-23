@@ -56,21 +56,23 @@ for i in $(seq $NVALS); do
     done
     if [ -z "$PERSISTENT_PEERS" ]; then
       PERSISTENT_PEERS="$NODE_ID@p2p-$I:26656"
-      PRIVATE_PEERS="$NODE_ID"
     else
       PERSISTENT_PEERS="$PERSISTENT_PEERS,$NODE_ID@p2p-$I:26656"
-      PRIVATE_PEERS="$PRIVATE_PEERS,$NODE_ID"
     fi
+
+    # Clear out external address and persistent peers. Will peer after services are bootstrapped.
+    echo > $WORKDIR/external_address_val_$I.txt
+    echo > $WORKDIR/persistent_peers_$I.txt
 done
 
-for i in $(seq $NVALS); do
-  I=$((i-1))
-  PVAR=PERSISTENT_PEERS_$I
-  echo "${!PVAR}" > $WORKDIR/persistent_peers_$I.txt
+for i in $(seq $NFULLNODES); do
+    I=$((i-1))
+    # Clear out external address. Will peer after services are bootstrapped.
+    echo > $WORKDIR/external_address_fn_$I.txt
 done
 
-echo "$PERSISTENT_PEERS" > $WORKDIR/persistent_peers.txt
-echo "$PRIVATE_PEERS" > $WORKDIR/private_peers.txt
+# Clear out persistent peers. Will peer after services are bootstrapped.
+echo > $WORKDIR/persistent_peers.txt
 
 helm get values $HELM_RELEASE 2>&1 > /dev/null
 if [ "$?" -eq "0" ]; then
@@ -81,6 +83,7 @@ fi
 
 echo "Deploying network..."
 
+# Will deploy nodes, but will not be able to peer. Need to get IPs of services, then can peer
 helm $HELM_CMD $HELM_RELEASE helm --set numValidators=$NVALS,numFullNodes=$NFULLNODES,penumbra.image=$IMAGE,penumbra.version=$PENUMBRA_VERSION,penumbra.uidGid=$PENUMBRA_UID_GID,tendermint.version=$TENDERMINT_VERSION
 
 while true; do
@@ -99,33 +102,37 @@ while true; do
   fi
 done
 
-RETRIES=0
-while true; do
-  echo "Waiting for pods to be running..."
-  PODS=($(kubectl get pods --no-headers | awk '{print $1}'))
-  FOUND_PENDING=false
-  for POD in "${PODS[@]}"; do
-    STATUS=$(kubectl get pod --no-headers "$POD" | awk '{print $3}')
-    if [[ "$STATUS" == "Error" ]] || [[ "$STATUS" == "CrashLoopBackOff" ]]; then
-      echo "Node $POD startup failed!"
-      kubectl logs $POD
-      exit 1
-    fi
-    if [[ "$STATUS" != "Running" ]]; then
-      RETRIES=$((RETRIES+1))
-      if [[ "$RETRIES" == "50" ]]; then
-        echo "Giving up starting nodes"
+function wait_for_pods_to_be_running() {
+  RETRIES=0
+  while true; do
+    echo "Waiting for pods to be running..."
+    PODS=($(kubectl get pods --no-headers | awk '{print $1}'))
+    FOUND_PENDING=false
+    for POD in "${PODS[@]}"; do
+      STATUS=$(kubectl get pod --no-headers "$POD" | awk '{print $3}')
+      if [[ "$STATUS" == "Error" ]] || [[ "$STATUS" == "CrashLoopBackOff" ]]; then
+        echo "Node $POD startup failed!"
+        kubectl logs $POD
         exit 1
       fi
-      sleep 5
-      FOUND_PENDING=true
+      if [[ "$STATUS" != "Running" ]]; then
+        RETRIES=$((RETRIES+1))
+        if [[ "$RETRIES" == "50" ]]; then
+          echo "Giving up starting nodes"
+          exit 1
+        fi
+        sleep 5
+        FOUND_PENDING=true
+        break
+      fi
+    done
+    if [[ "$FOUND_PENDING" == "false" ]]; then
       break
     fi
   done
-  if [[ "$FOUND_PENDING" == "false" ]]; then
-    break
-  fi
-done
+}
+
+wait_for_pods_to_be_running
 
 PPE=""
 
@@ -139,6 +146,10 @@ for i in $(seq $NVALS); do
   else
     PPE="$PPE,$NODE_ID@$IP:26656"
   fi
+  # Now write private peering connection to other nodes for validator, and external service address to advertise.
+  PVAR=PERSISTENT_PEERS_$I
+  echo "${!PVAR}" > $WORKDIR/persistent_peers_$I.txt
+  echo "$IP:26656" > $WORKDIR/external_address_val_$I.txt
 done
 
 for i in $(seq $NFULLNODES); do
@@ -147,7 +158,22 @@ for i in $(seq $NFULLNODES); do
   NODE_ID="$(kubectl exec $(kubectl get pods | grep penumbra-fn-$I | awk '{print $1}') -c tm -- tendermint --home=/home/.tendermint show-node-id | tr -d '\r')"
   IP="$(kubectl get svc p2p-fn-$I -o json | jq -r .status.loadBalancer.ingress[0].ip | tr -d '\r')"
   PPE="$PPE,$NODE_ID@$IP:26656"
+  # Now write external service address to advertise.
+  echo "$IP:26656" > $WORKDIR/external_address_fn_$I.txt
 done
+
+# Now write private peering connection to other nodes for full nodes.
+echo "$PERSISTENT_PEERS" > $WORKDIR/persistent_peers.txt
+
+# Delete existing replication controllers
+kubectl delete rc --all --wait=false 2>&1 > /dev/null
+# Delete all existing PVCs so that fresh testnet is created
+kubectl delete pvc --all 2>&1 > /dev/null
+
+# Apply values so that nodes can peer and advertise external addresses.
+helm $HELM_CMD $HELM_RELEASE helm --set numValidators=$NVALS,numFullNodes=$NFULLNODES,penumbra.image=$IMAGE,penumbra.version=$PENUMBRA_VERSION,penumbra.uidGid=$PENUMBRA_UID_GID,tendermint.version=$TENDERMINT_VERSION
+
+wait_for_pods_to_be_running
 
 echo "persistent_peers = \"$PPE\""
 

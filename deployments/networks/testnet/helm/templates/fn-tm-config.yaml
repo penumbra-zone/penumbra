@@ -1,7 +1,10 @@
+{{ $count := (.Values.numFullNodes | int) }}
+{{ range $i,$e := until $count }}
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: tm-config-fn
+  name: "tm-config-fn-{{$i}}"
 data:
   config.toml: |
     proxy_app = "tcp://localhost:26658"
@@ -14,10 +17,11 @@ data:
     max_num_outbound-peers = 50
 
     persistent_peers = "{{ $.Files.Get "pdcli/persistent_peers.txt" | trim }}"
-    private_peer_ids = "{{ $.Files.Get "pdcli/private_peers.txt" | trim }}"
+    external_address = "{{ $.Files.Get (printf "pdcli/external_address_fn_%d.txt" $i) | trim }}"
 
     [tx_index]
     indexer = "null"
 
     [instrumentation]
     prometheus = true
+{{ end }}
