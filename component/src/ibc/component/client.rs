@@ -334,28 +334,6 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
 
         Ok(())
     }
-
-    // adds the provided connection ID to the client identified by client_id. returns an error if
-    // the client does not exist.
-    async fn add_connection_to_client(
-        &mut self,
-        client_id: &ClientId,
-        connection_id: &ConnectionId,
-    ) -> Result<()> {
-        self.get_client_state(client_id).await?;
-        self.get_client_type(client_id).await?;
-
-        let mut connections: ClientConnections = self
-            .get(&state_key::client_connections(client_id))
-            .await?
-            .unwrap_or_default();
-
-        connections.connection_ids.push(connection_id.clone());
-
-        self.put(state_key::client_connections(client_id), connections);
-
-        Ok(())
-    }
 }
 
 impl<T: StateWrite + ?Sized> StateWriteExt for T {}
