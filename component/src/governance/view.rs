@@ -12,8 +12,6 @@ use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::action::{Proposal, ProposalPayload, Vote};
 
-use crate::stake::{self, validator};
-
 use super::{
     proposal::{self, ProposalList},
     state_key,

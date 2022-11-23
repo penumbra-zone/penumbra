@@ -162,7 +162,9 @@ pub mod client {
             pub async fn prefix_domain<T, P>(
                 &mut self,
                 prefix: impl AsRef<str>,
-            ) -> anyhow::Result<Pin<Box<dyn Stream<Item = anyhow::Result<T>> + Send + 'static>>>
+            ) -> anyhow::Result<
+                Pin<Box<dyn Stream<Item = anyhow::Result<(String, T)>> + Send + 'static>>,
+            >
             where
                 T: crate::Protobuf<P> + TryFrom<P> + Send + Sync + 'static + Unpin,
                 T::Error: Into<anyhow::Error> + Send + Sync + 'static,
@@ -182,7 +184,7 @@ pub mod client {
                 let out_stream = try_stream! {
                     while let Some(pv_rsp) = stream.message().await? {
                         let t = T::decode(pv_rsp.value.as_slice())?;
-                        yield t;
+                        yield (pv_rsp.key, t);
                     }
                 };
 

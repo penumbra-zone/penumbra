@@ -1,16 +1,14 @@
 use std::{
     collections::BTreeMap,
     io::{stdout, Write},
+    str::FromStr,
 };
 
-use anyhow::Result;
-use futures::TryStreamExt;
-use penumbra_component::{
-    governance::{
-        proposal::{self, chain_params::MutableParam, ProposalList},
-        state_key::*,
-    },
-    stake::validator,
+use anyhow::{Context, Result};
+use futures::{StreamExt, TryStreamExt};
+use penumbra_component::governance::{
+    proposal::{self, chain_params::MutableParam, ProposalList},
+    state_key::*,
 };
 use penumbra_crypto::IdentityKey;
 use penumbra_proto::client::v1alpha1::MutableParametersRequest;
@@ -136,19 +134,24 @@ impl GovernanceCmd {
                     json(&period)?;
                 }
                 ValidatorVotes => {
-                    let voting_validators: Vec<IdentityKey> = client
-                        .prefix_domain::<IdentityKey, _>(voting_validators_list(*proposal_id))
-                        .await?
-                        .try_collect()
-                        .await?;
-
                     let mut votes: BTreeMap<IdentityKey, Vote> = BTreeMap::new();
-                    for identity_key in voting_validators.iter() {
-                        let vote: Vote = client
-                            .key_domain(validator_vote(*proposal_id, *identity_key))
-                            .await?;
-                        votes.insert(*identity_key, vote);
-                    }
+                    client
+                        .prefix_domain::<Vote, _>(voting_validators_list(*proposal_id))
+                        .await?
+                        .next()
+                        .await
+                        .into_iter()
+                        .try_for_each(|r| {
+                            let r = r?;
+                            votes.insert(
+                                IdentityKey::from_str(
+                                    r.0.rsplit('/').next().context("invalid key")?,
+                                )?,
+                                r.1,
+                            );
+                            Ok::<(), anyhow::Error>(())
+                        })?;
+
                     json(&votes)?;
                 }
                 Tally => {
