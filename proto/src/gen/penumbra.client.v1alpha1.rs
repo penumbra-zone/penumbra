@@ -169,6 +169,23 @@ pub struct KeyValueResponse {
     #[prost(message, optional, tag="2")]
     pub proof: ::core::option::Option<::ibc_proto::ibc::core::commitment::v1::MerkleProof>,
 }
+/// Performs a prefixed key-value query, by string prefix.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PrefixValueRequest {
+    /// The expected chain id (empty string if no expectation).
+    #[prost(string, tag="1")]
+    pub chain_id: ::prost::alloc::string::String,
+    /// The prefix to fetch subkeys from storage.
+    #[prost(string, tag="2")]
+    pub prefix: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PrefixValueResponse {
+    #[prost(string, tag="1")]
+    pub key: ::prost::alloc::string::String,
+    #[prost(bytes="vec", tag="2")]
+    pub value: ::prost::alloc::vec::Vec<u8>,
+}
 /// Generated client implementations.
 pub mod oblivious_query_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
@@ -557,6 +574,30 @@ pub mod specific_query_service_client {
                 "/penumbra.client.v1alpha1.SpecificQueryService/KeyValue",
             );
             self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// General-purpose prefixed key-value state query API, that can be used to query
+        /// arbitrary prefixes in the JMT storage.
+        pub async fn prefix_value(
+            &mut self,
+            request: impl tonic::IntoRequest<super::PrefixValueRequest>,
+        ) -> Result<
+            tonic::Response<tonic::codec::Streaming<super::PrefixValueResponse>>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.client.v1alpha1.SpecificQueryService/PrefixValue",
+            );
+            self.inner.server_streaming(request.into_request(), path, codec).await
         }
     }
 }
@@ -951,6 +992,18 @@ pub mod specific_query_service_server {
             &self,
             request: tonic::Request<super::KeyValueRequest>,
         ) -> Result<tonic::Response<super::KeyValueResponse>, tonic::Status>;
+        ///Server streaming response type for the PrefixValue method.
+        type PrefixValueStream: futures_core::Stream<
+                Item = Result<super::PrefixValueResponse, tonic::Status>,
+            >
+            + Send
+            + 'static;
+        /// General-purpose prefixed key-value state query API, that can be used to query
+        /// arbitrary prefixes in the JMT storage.
+        async fn prefix_value(
+            &self,
+            request: tonic::Request<super::PrefixValueRequest>,
+        ) -> Result<tonic::Response<Self::PrefixValueStream>, tonic::Status>;
     }
     /// Methods for accessing chain state that are "specific" in the sense that they
     /// request specific portions of the chain state that could reveal private
@@ -1289,6 +1342,47 @@ pub mod specific_query_service_server {
                                 send_compression_encodings,
                             );
                         let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.client.v1alpha1.SpecificQueryService/PrefixValue" => {
+                    #[allow(non_camel_case_types)]
+                    struct PrefixValueSvc<T: SpecificQueryService>(pub Arc<T>);
+                    impl<
+                        T: SpecificQueryService,
+                    > tonic::server::ServerStreamingService<super::PrefixValueRequest>
+                    for PrefixValueSvc<T> {
+                        type Response = super::PrefixValueResponse;
+                        type ResponseStream = T::PrefixValueStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::PrefixValueRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).prefix_value(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = PrefixValueSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)

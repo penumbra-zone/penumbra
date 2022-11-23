@@ -136,11 +136,14 @@ impl GovernanceCmd {
                     json(&period)?;
                 }
                 ValidatorVotes => {
-                    let voting_validators: validator::List =
-                        client.key_domain(voting_validators(*proposal_id)).await?;
+                    let voting_validators: Vec<IdentityKey> = client
+                        .prefix_domain::<IdentityKey, _>(voting_validators_list(*proposal_id))
+                        .await?
+                        .try_collect()
+                        .await?;
 
                     let mut votes: BTreeMap<IdentityKey, Vote> = BTreeMap::new();
-                    for identity_key in voting_validators.0.iter() {
+                    for identity_key in voting_validators.iter() {
                         let vote: Vote = client
                             .key_domain(validator_vote(*proposal_id, *identity_key))
                             .await?;

@@ -9,14 +9,12 @@ use crate::stake::{FundingStream, FundingStreams, IdentityKey};
 mod bonding;
 mod definition;
 mod info;
-mod list;
 mod state;
 mod status;
 
 pub use bonding::State as BondingState;
 pub use definition::Definition;
 pub use info::Info;
-pub use list::List;
 pub use state::State;
 pub use status::Status;
 

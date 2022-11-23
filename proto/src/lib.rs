@@ -100,7 +100,11 @@ pub mod client {
     pub mod v1alpha1 {
         include!("gen/penumbra.client.v1alpha1.rs");
 
+        use async_stream::try_stream;
+        use futures::Stream;
+        use futures::StreamExt;
         use specific_query_service_client::SpecificQueryServiceClient;
+        use std::pin::Pin;
         use tonic::{
             body::BoxBody,
             codegen::{Body, StdError},
@@ -152,6 +156,37 @@ pub mod client {
                 let t = T::decode(self.key_value(request).await?.into_inner().value.as_slice())?;
 
                 Ok(t)
+            }
+
+            /// Get the typed domain value corresponding to prefixes of a state key.
+            pub async fn prefix_domain<T, P>(
+                &mut self,
+                prefix: impl AsRef<str>,
+            ) -> anyhow::Result<Pin<Box<dyn Stream<Item = anyhow::Result<T>> + Send + 'static>>>
+            where
+                T: crate::Protobuf<P> + TryFrom<P> + Send + Sync + 'static + Unpin,
+                T::Error: Into<anyhow::Error> + Send + Sync + 'static,
+                P: prost::Message + Default + From<T>,
+                C: tonic::client::GrpcService<BoxBody> + 'static,
+                C::ResponseBody: Send,
+                <C as tonic::client::GrpcService<BoxBody>>::ResponseBody:
+                    tonic::codegen::Body<Data = bytes::Bytes>,
+                <C::ResponseBody as Body>::Error: Into<StdError> + Send,
+            {
+                let request = PrefixValueRequest {
+                    prefix: prefix.as_ref().to_string(),
+                    ..Default::default()
+                };
+
+                let mut stream = self.prefix_value(request).await?.into_inner();
+                let out_stream = try_stream! {
+                    while let Some(pv_rsp) = stream.message().await? {
+                        let t = T::decode(pv_rsp.value.as_slice())?;
+                        yield t;
+                    }
+                };
+
+                Ok(out_stream.boxed())
             }
         }
     }

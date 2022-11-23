@@ -1,3 +1,10 @@
+use std::pin::Pin;
+
+use async_stream::try_stream;
+use futures::FutureExt;
+use futures::Stream;
+use futures::StreamExt;
+use futures::TryStreamExt;
 use penumbra_chain::AppHashRead;
 use penumbra_chain::StateReadExt as _;
 use penumbra_component::dex::StateReadExt as _;
@@ -13,13 +20,17 @@ use penumbra_proto::{
     },
 };
 
+use penumbra_storage::StateRead;
 use proto::client::v1alpha1::BatchSwapOutputDataResponse;
 use proto::client::v1alpha1::NextValidatorRateRequest;
 use proto::client::v1alpha1::NextValidatorRateResponse;
+use proto::client::v1alpha1::PrefixValueRequest;
+use proto::client::v1alpha1::PrefixValueResponse;
 use proto::client::v1alpha1::StubCpmmReservesResponse;
 use proto::client::v1alpha1::TransactionByNoteRequest;
 use proto::client::v1alpha1::TransactionByNoteResponse;
 use proto::client::v1alpha1::ValidatorStatusResponse;
+use proto::StateReadProto;
 use tonic::Status;
 use tracing::instrument;
 
@@ -33,6 +44,9 @@ use super::Info;
 
 #[tonic::async_trait]
 impl SpecificQueryService for Info {
+    type PrefixValueStream =
+        Pin<Box<dyn futures::Stream<Item = Result<PrefixValueResponse, tonic::Status>> + Send>>;
+
     #[instrument(skip(self, request))]
     async fn key_value(
         &self,
@@ -71,6 +85,62 @@ impl SpecificQueryService for Info {
                 None
             },
         }))
+    }
+
+    #[instrument(skip(self, request))]
+    async fn prefix_value(
+        &self,
+        request: tonic::Request<PrefixValueRequest>,
+    ) -> Result<tonic::Response<Self::PrefixValueStream>, Status> {
+        let state = self.storage.latest_state();
+        state.check_chain_id(&request.get_ref().chain_id).await?;
+
+        let request = request.into_inner();
+        tracing::debug!(?request);
+
+        if request.prefix.is_empty() {
+            return Err(Status::invalid_argument("prefix is empty"));
+        }
+
+        let mut stream = state.prefix_raw(&request.prefix);
+        // TODO: is there a way to keep `state` alive long enough that we don't need to `.collect()`
+        // here?
+        let items: Vec<Result<(String, Vec<u8>), tonic::Status>> = stream
+            .next()
+            .await
+            .into_iter()
+            .map(|item| {
+                if item.is_err() {
+                    return Err(Status::internal(item.unwrap_err().to_string()));
+                }
+                let item = item.unwrap();
+
+                let (key, value) = item;
+                return Ok((key, value));
+            })
+            .collect();
+
+        let s = try_stream! {
+            for item in items {
+                yield item;
+            }
+        };
+
+        Ok(tonic::Response::new(
+            s.map_ok(|i: Result<(String, Vec<u8>), tonic::Status>| {
+                let (key, value) = i.unwrap();
+                PrefixValueResponse { key, value }
+            })
+            .map_err(|e: anyhow::Error| {
+                tonic::Status::unavailable(format!(
+                    "error getting prefix value from storage: {}",
+                    e
+                ))
+            })
+            // TODO: how do we instrument a Stream
+            //.instrument(Span::current())
+            .boxed(),
+        ))
     }
 
     #[instrument(skip(self, request))]
