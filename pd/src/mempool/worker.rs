@@ -1,11 +1,6 @@
-use std::sync::Arc;
-
 use anyhow::Result;
-use bytes::Bytes;
 
-use penumbra_proto::Protobuf;
 use penumbra_storage::{StateNotification, Storage};
-use penumbra_transaction::Transaction;
 
 use tokio::sync::{mpsc, watch};
 use tracing::{instrument, Instrument};
@@ -13,6 +8,18 @@ use tracing::{instrument, Instrument};
 use super::Message;
 use crate::App;
 
+/// When using ABCI, we can't control block proposal directly, so we could
+/// potentially end up creating blocks with mutually incompatible transactions.
+/// While we'd reject one of them during execution, it's nicer to try to filter
+/// them out at the mempool stage. Currently, the way we do this is by having
+/// the mempool worker maintain an ephemeral fork of the entire execution state,
+/// and execute incoming transactions against the fork.  This prevents
+/// conflicting transactions in the local mempool, since we'll update the fork,
+/// then reject the second transaction against the forked state. When we learn a
+/// new state has been committed, we discard and recreate the ephemeral fork.
+///
+/// After switching to ABCI++, we can eliminate this mechanism and just build
+/// blocks we want.
 pub struct Worker {
     queue: mpsc::Receiver<Message>,
     app: App,
@@ -30,18 +37,6 @@ impl Worker {
             app,
             state_rx,
         })
-    }
-
-    /// Currently, we perform all stateless and stateful checks sequentially in
-    /// the mempool worker.  A possibly more performant design would be to only
-    /// perform the stateful checks in the worker, and have a frontend service
-    /// that performs the stateless checks.  However, this probably isn't
-    /// important to do until we know that it's a bottleneck.
-    async fn check_and_execute_tx(&mut self, tx_bytes: Bytes) -> Result<()> {
-        // TODO: should this wrapper fn exist?
-        let tx = Arc::new(Transaction::decode(tx_bytes.as_ref())?);
-        self.app.deliver_tx(tx).await?;
-        Ok(())
     }
 
     pub async fn run(mut self) -> Result<()> {
@@ -70,11 +65,8 @@ impl Worker {
                         rsp_sender,
                         span,
                     }) = message {
-                        let _ = rsp_sender.send(
-                            self.check_and_execute_tx(tx_bytes)
-                                .instrument(span)
-                                .await
-                        );
+                        let rsp = self.app.deliver_tx_bytes(tx_bytes.as_ref()).instrument(span).await.map(|_| ());
+                        let _ = rsp_sender.send(rsp);
                     } else {
                         // The queue is closed, so we're done.
                         return Ok(());

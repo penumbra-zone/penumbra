@@ -3,13 +3,15 @@ use penumbra_chain::genesis;
 use penumbra_storage::StateTransaction;
 use tendermint::abci;
 
-pub mod action_handler;
+mod action_handler;
 pub mod app;
 pub mod dex;
 pub mod governance;
 pub mod ibc;
 pub mod shielded_pool;
 pub mod stake;
+
+pub use action_handler::ActionHandler;
 
 /// A component of the Penumbra application.
 #[async_trait]
