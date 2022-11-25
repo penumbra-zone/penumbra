@@ -3069,7 +3069,6 @@ dependencies = [
  "hex",
  "http-body",
  "indicatif",
- "pd",
  "penumbra-chain",
  "penumbra-component",
  "penumbra-crypto",
