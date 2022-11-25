@@ -1,12 +1,7 @@
-use std::sync::Arc;
-
 use anyhow::{anyhow, Result};
-
-use penumbra_proto::Protobuf;
 
 use penumbra_chain::genesis;
 use penumbra_storage::Storage;
-use penumbra_transaction::Transaction;
 use tendermint::abci::{self, ConsensusRequest as Request, ConsensusResponse as Response};
 use tokio::sync::mpsc;
 use tracing::{instrument, Instrument};
@@ -56,28 +51,7 @@ impl Worker {
                         .expect("begin_block must succeed"),
                 ),
                 Request::DeliverTx(deliver_tx) => {
-                    // Unlike the other messages, DeliverTx is fallible, so
-                    // we use a wrapper function to catch bubbled errors.
-                    let rsp = self.deliver_tx(deliver_tx).instrument(span.clone()).await;
-                    span.in_scope(|| {
-                        Response::DeliverTx(match rsp {
-                            Ok(events) => {
-                                tracing::info!("deliver_tx succeeded");
-                                abci::response::DeliverTx {
-                                    events,
-                                    ..Default::default()
-                                }
-                            }
-                            Err(e) => {
-                                tracing::info!(?e, "deliver_tx failed");
-                                abci::response::DeliverTx {
-                                    code: 1,
-                                    log: e.to_string(),
-                                    ..Default::default()
-                                }
-                            }
-                        })
-                    })
+                    Response::DeliverTx(self.deliver_tx(deliver_tx).instrument(span.clone()).await)
                 }
                 Request::EndBlock(end_block) => Response::EndBlock(
                     self.end_block(end_block)
@@ -124,11 +98,7 @@ impl Worker {
         let validators = self.app.tendermint_validator_updates();
 
         // Note: App::commit resets internal components, so we don't need to do that ourselves.
-        let app_hash = self
-            .app
-            .commit(self.storage.clone())
-            .await
-            .expect("must be able to commit state");
+        let app_hash = self.app.commit(self.storage.clone()).await;
 
         tracing::info!(
             consensus_params = ?init_chain.consensus_params,
@@ -152,19 +122,31 @@ impl Worker {
         Ok(abci::response::BeginBlock { events })
     }
 
-    /// Perform full transaction validation via `DeliverTx`.
-    ///
-    /// This wrapper function allows us to bubble up errors and then finally
-    /// convert to an ABCI error code in one place.
     async fn deliver_tx(
         &mut self,
         deliver_tx: abci::request::DeliverTx,
-    ) -> Result<Vec<abci::Event>> {
-        // TODO: do we still need this wrapper function?
-        // Verify the transaction is well-formed...
-        let transaction = Arc::new(Transaction::decode(deliver_tx.tx)?);
-        // ... then execute the transaction.
-        self.app.deliver_tx(transaction).await
+    ) -> abci::response::DeliverTx {
+        // Unlike the other messages, DeliverTx is fallible, so
+        // inspect the response to report errors.
+        let rsp = self.app.deliver_tx_bytes(deliver_tx.tx.as_ref()).await;
+
+        match rsp {
+            Ok(events) => {
+                tracing::info!("deliver_tx succeeded");
+                abci::response::DeliverTx {
+                    events,
+                    ..Default::default()
+                }
+            }
+            Err(e) => {
+                tracing::info!(?e, "deliver_tx failed");
+                abci::response::DeliverTx {
+                    code: 1,
+                    log: e.to_string(),
+                    ..Default::default()
+                }
+            }
+        }
     }
 
     async fn end_block(
@@ -192,13 +174,7 @@ impl Worker {
     }
 
     async fn commit(&mut self) -> Result<abci::response::Commit> {
-        let app_hash = self
-            .app
-            .commit(self.storage.clone())
-            .await
-            .expect("commit must succeed")
-            .0
-            .to_vec();
+        let app_hash = self.app.commit(self.storage.clone()).await.0.to_vec();
 
         Ok(abci::response::Commit {
             data: app_hash.into(),

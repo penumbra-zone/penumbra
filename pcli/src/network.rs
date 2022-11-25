@@ -61,7 +61,9 @@ impl App {
         await_detection_of_nullifier: Option<Nullifier>,
     ) -> Result<(), anyhow::Error> {
         println!("pre-checking transaction...");
-        pd::App::check_tx_stateless(std::sync::Arc::new(transaction.clone()))
+        use penumbra_component::ActionHandler;
+        transaction
+            .check_stateless(std::sync::Arc::new(transaction.clone()))
             .context("transaction pre-submission checks failed")?;
 
         println!("broadcasting transaction...");
