@@ -199,23 +199,36 @@ impl App {
         Ok(())
     }
 
+    async fn pd_channel(&self) -> anyhow::Result<Channel> {
+        let channel = match self.pd_url.scheme() {
+            "http" => {
+                Channel::from_shared(self.pd_url.to_string())?
+                    .connect()
+                    .await?
+            }
+            "https" => {
+                Channel::from_shared(self.pd_url.to_string())?
+                    .tls_config(ClientTlsConfig::new())?
+                    .connect()
+                    .await?
+            }
+            _ => return Err(anyhow::anyhow!("unknown scheme")),
+        };
+
+        Ok(channel)
+    }
+
     pub async fn specific_client(
         &self,
     ) -> Result<SpecificQueryServiceClient<Channel>, anyhow::Error> {
-        let channel = Channel::from_shared(self.pd_url.to_string())?
-            .tls_config(ClientTlsConfig::new())?
-            .connect()
-            .await?;
+        let channel = self.pd_channel().await?;
         Ok(SpecificQueryServiceClient::new(channel))
     }
 
     pub async fn oblivious_client(
         &self,
     ) -> Result<ObliviousQueryServiceClient<Channel>, anyhow::Error> {
-        let channel = Channel::from_shared(self.pd_url.to_string())?
-            .tls_config(ClientTlsConfig::new())?
-            .connect()
-            .await?;
+        let channel = self.pd_channel().await?;
         Ok(ObliviousQueryServiceClient::new(channel))
     }
 }
