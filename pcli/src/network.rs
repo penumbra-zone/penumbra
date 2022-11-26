@@ -12,7 +12,7 @@ use penumbra_view::ViewClient;
 use rand::Rng;
 use rand_core::OsRng;
 use std::future::Future;
-use tonic::transport::Channel;
+use tonic::transport::{Channel, ClientTlsConfig};
 use tracing::instrument;
 
 use crate::App;
@@ -202,16 +202,20 @@ impl App {
     pub async fn specific_client(
         &self,
     ) -> Result<SpecificQueryServiceClient<Channel>, anyhow::Error> {
-        SpecificQueryServiceClient::connect(self.pd_url.as_ref().to_owned())
-            .await
-            .map_err(Into::into)
+        let channel = Channel::from_shared(self.pd_url.to_string())?
+            .tls_config(ClientTlsConfig::new())?
+            .connect()
+            .await?;
+        Ok(SpecificQueryServiceClient::new(channel))
     }
 
     pub async fn oblivious_client(
         &self,
     ) -> Result<ObliviousQueryServiceClient<Channel>, anyhow::Error> {
-        ObliviousQueryServiceClient::connect(self.pd_url.as_ref().to_owned())
-            .await
-            .map_err(Into::into)
+        let channel = Channel::from_shared(self.pd_url.to_string())?
+            .tls_config(ClientTlsConfig::new())?
+            .connect()
+            .await?;
+        Ok(ObliviousQueryServiceClient::new(channel))
     }
 }

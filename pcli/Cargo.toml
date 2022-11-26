@@ -52,7 +52,7 @@ tokio-stream = "0.1"
 tokio-util = "0.6"
 tower = { version = "0.4", features = ["full"] }
 tracing = "0.1"
-tonic = "0.8.1"
+tonic = { version = "0.8.1", features = ["tls-webpki-roots", "tls"] }
 tracing-subscriber = "0.3"
 pin-project = "1"
 serde_json = "1"
