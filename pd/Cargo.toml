@@ -98,6 +98,7 @@ console-subscriber = "0.1.8"
 metrics-tracing-context = "0.11.0"
 metrics-util = "0.13"
 clap = { version = "3", features = ["derive", "env"] }
+rustls-acme = "0.6"
 
 [build-dependencies]
 vergen = "5"
