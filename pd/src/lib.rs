@@ -1,6 +1,7 @@
 //! Source code for the Penumbra node software.
 #![allow(clippy::clone_on_copy)]
 
+pub mod auto_https;
 mod consensus;
 mod info;
 mod mempool;

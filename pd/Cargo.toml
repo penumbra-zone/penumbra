@@ -52,7 +52,7 @@ csv = "1.1"
 directories = "4.0"
 # Temporarily pin due to https://github.com/penumbra-zone/penumbra/issues/1355
 tokio = { version = "=1.21.1", features = ["full"] }
-tokio-stream = "0.1"
+tokio-stream = {version = "0.1", features = ["net"] }
 tokio-util = "0.7"
 tower = { version = "0.4", features = ["full"] }
 tower-service = "0.3.2"
@@ -94,6 +94,7 @@ console-subscriber = "=0.1.8"
 metrics-tracing-context = "0.11.0"
 metrics-util = "0.13"
 clap = { version = "3", features = ["derive"] }
+rustls-acme = "0.5"
 
 [build-dependencies]
 vergen = "5"

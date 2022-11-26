@@ -10,6 +10,7 @@ use metrics_util::layers::Stack;
 
 use anyhow::Context;
 use clap::{Parser, Subcommand};
+use futures::stream::TryStreamExt;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::testnet::{canonicalize_path, generate_tm_config, write_configs, ValidatorKeys};
 use penumbra_chain::{genesis::Allocation, params::ChainParameters};
@@ -22,7 +23,7 @@ use penumbra_proto::client::v1alpha1::{
 use penumbra_storage::Storage;
 use rand::Rng;
 use rand_core::OsRng;
-use tokio::runtime;
+use tokio::{net::TcpListener, runtime};
 use tonic::transport::Server;
 use tracing_subscriber::{prelude::*, EnvFilter};
 
@@ -60,6 +61,9 @@ enum RootCommand {
         /// Bind the metrics endpoint to this port.
         #[clap(short, long, default_value = "9000")]
         metrics_port: u16,
+        /// If set, attempt to serve RPC on this domain with auto https
+        #[clap(long)]
+        grpc_domain: Option<String>,
     },
 
     /// Generate, join, or reset a testnet.
@@ -165,8 +169,9 @@ async fn main() -> anyhow::Result<()> {
             abci_port,
             grpc_port,
             metrics_port,
+            grpc_domain,
         } => {
-            tracing::info!(?host, ?abci_port, ?grpc_port, "starting pd");
+            tracing::info!(?host, ?grpc_domain, ?abci_port, ?grpc_port, "starting pd");
 
             let mut rocks_path = home.clone();
             rocks_path.push("rocksdb");
@@ -194,32 +199,58 @@ async fn main() -> anyhow::Result<()> {
                 )
                 .expect("failed to spawn abci server");
 
-            let grpc_server = tokio::task::Builder::new()
-                .name("grpc_server")
-                .spawn(
-                    Server::builder()
-                        .trace_fn(|req| match remote_addr(req) {
-                            Some(remote_addr) => {
-                                tracing::error_span!("grpc", ?remote_addr)
-                            }
-                            None => tracing::error_span!("grpc"),
-                        })
-                        // Allow HTTP/1, which will be used by grpc-web connections.
-                        .accept_http1(true)
-                        // Wrap each of the gRPC services in a tonic-web proxy:
-                        .add_service(tonic_web::enable(ObliviousQueryServiceServer::new(
-                            info.clone(),
-                        )))
-                        .add_service(tonic_web::enable(SpecificQueryServiceServer::new(
-                            info.clone(),
-                        )))
-                        .serve(
+            let grpc_server = Server::builder()
+                .trace_fn(|req| match remote_addr(req) {
+                    Some(remote_addr) => {
+                        tracing::error_span!("grpc", ?remote_addr)
+                    }
+                    None => tracing::error_span!("grpc"),
+                })
+                // Allow HTTP/1, which will be used by grpc-web connections.
+                .accept_http1(true)
+                // Wrap each of the gRPC services in a tonic-web proxy:
+                .add_service(tonic_web::enable(ObliviousQueryServiceServer::new(
+                    info.clone(),
+                )))
+                .add_service(tonic_web::enable(SpecificQueryServiceServer::new(
+                    info.clone(),
+                )));
+
+            let grpc_server = if let Some(domain) = grpc_domain {
+                use pd::auto_https::Wrapper;
+                use rustls_acme::{caches::DirCache, AcmeConfig};
+                use tokio_stream::wrappers::TcpListenerStream;
+                use tokio_util::compat::{FuturesAsyncReadCompatExt, TokioAsyncReadCompatExt};
+
+                let mut acme_cache = home.clone();
+                acme_cache.push("rustls_acme_cache");
+
+                let listener =
+                    TcpListenerStream::new(TcpListener::bind(format!("{}:{}", host, 443)).await?);
+                let tls_incoming = AcmeConfig::new([domain.as_str()])
+                    .cache(DirCache::new(acme_cache))
+                    .directory_lets_encrypt(true) // Use the production LE environment
+                    .incoming(listener.map_ok(|conn| conn.compat()))
+                    .map_ok(|incoming| Wrapper {
+                        inner: incoming.compat(),
+                    });
+
+                tokio::task::Builder::new()
+                    .name("grpc_server")
+                    .spawn(grpc_server.serve_with_incoming(tls_incoming))
+                    .expect("failed to spawn grpc server")
+            } else {
+                tokio::task::Builder::new()
+                    .name("grpc_server")
+                    .spawn(
+                        grpc_server.serve(
                             format!("{}:{}", host, grpc_port)
                                 .parse()
                                 .expect("this is a valid address"),
                         ),
-                )
-                .expect("failed to spawn grpc server");
+                    )
+                    .expect("failed to spawn grpc server")
+            };
 
             // Configure a Prometheus recorder and exporter.
             let (recorder, exporter) = PrometheusBuilder::new()
