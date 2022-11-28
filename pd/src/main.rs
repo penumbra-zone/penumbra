@@ -318,12 +318,47 @@ async fn main() -> anyhow::Result<()> {
             let node_id = serde_json::value::from_value(node_id)?;
             tracing::info!(?node_id, "fetched node id");
 
+            // Crawl the node's
+            let net_info_peers = client
+                .get(format!("http://{}:26657/net_info", node))
+                .send()
+                .await?
+                .json::<serde_json::Value>()
+                .await?
+                .get("result")
+                .and_then(|v| v.get("peers"))
+                .and_then(|v| v.as_array())
+                .map(|v| v.clone())
+                .unwrap_or_default();
+
+            let mut peers = Vec::new();
+            peers.push((node_id, node));
+            tracing::info!(?peers);
+
+            for raw_peer in net_info_peers {
+                let node_id: Option<tendermint::node::Id> = raw_peer
+                    .get("node_info")
+                    .and_then(|v| v.get("id"))
+                    .and_then(|v| serde_json::value::from_value(v.clone()).ok());
+                let remote_ip = raw_peer
+                    .get("remote_ip")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string());
+                match (node_id, remote_ip) {
+                    (Some(node_id), Some(remote_ip)) => {
+                        peers.push((node_id, remote_ip));
+                    }
+                    _ => continue,
+                }
+            }
+            tracing::info!(?peers);
+
             let node_name = if let Some(moniker) = moniker {
                 moniker
             } else {
                 format!("node-{}", hex::encode(OsRng.gen::<u32>().to_le_bytes()))
             };
-            let tm_config = generate_tm_config(&node_name, &[(node_id, node)]);
+            let tm_config = generate_tm_config(&node_name, peers.as_ref());
 
             write_configs(node_dir, &vk, &genesis, tm_config)?;
         }
