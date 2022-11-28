@@ -1,20 +1,27 @@
 {{ $count := (.Values.numValidators | int) }}
 {{ range $i,$e := until $count }}
+{{ $val_name := printf "%s-val-%d" (include "penumbra.fullname" $) $i }}
+{{ $pd_name := printf "%s-pd-val-%d" (include "penumbra.fullname" $) $i }}
+{{ $tm_name := printf "%s-tm-val-%d" (include "penumbra.fullname" $) $i }}
 ---
 apiVersion: v1
 kind: ReplicationController
 metadata:
-  name: "penumbra-val-{{$i}}"
+  name: {{ $val_name }}
+  labels:
+    app: {{ $val_name }}
+    {{- include "penumbra.labels" $ | nindent 4 }}
 spec:
   replicas: 1
   selector:
-    app: "penumbra-val-{{$i}}"
+    app: {{ $val_name }}
   template:
     metadata:
-      name: "penumbra-val-{{$i}}"
+      name: {{ $val_name }}
       labels:
-        app: "penumbra-val-{{$i}}"
+        app: {{ $val_name }}
         network: "{{ $.Values.network }}"
+        {{- include "penumbra.labels" $ | nindent 8 }}
     spec:
       affinity:
         podAntiAffinity:
@@ -24,30 +31,30 @@ spec:
                   - key: app
                     operator: In
                     values:
-                      - "penumbra-val-{{$i}}"
+                      - {{ $val_name }}
               topologyKey: kubernetes.io/hostname
       volumes:
-        - name: "pv-{{ include "penumbra.name" $ }}-{{$i}}"
+        - name: pv-{{ $pd_name }}
           persistentVolumeClaim:
-            claimName: "pvc-val-{{ include "penumbra.name" $ }}-{{$i}}"
-        - name: "pv-{{ include "tendermint.name" $ }}-{{$i}}"
+            claimName: pvc-{{ $pd_name }}
+        - name: pv-{{ $tm_name }}
           persistentVolumeClaim:
-            claimName: "pvc-val-{{ include "tendermint.name" $ }}-{{$i}}"
+            claimName: pvc-{{ $tm_name }}
         - name: tm-config
           configMap:
-            name: "tm-config-val-{{$i}}"
+            name: config-{{ $tm_name }}
             items:
               - key: "config.toml"
                 path: "config.toml"
         - name: genesis-config
           configMap:
-            name: genesis-config
+            name: {{ include "penumbra.fullname" $ }}-genesis-config
             items:
               - key: "genesis.json"
                 path: "genesis.json"
         - name: val-secrets
           secret:
-            secretName: "val-secrets-{{$i}}"
+            secretName: {{ include "penumbra.fullname" $ }}-val-secrets-{{$i}}
             items:
               - key: "priv_validator_key.json"
                 path: "priv_validator_key.json"
@@ -62,13 +69,14 @@ spec:
             - sh
             - -c
             - |
-                chown -R 1025:1025 "/home/pv-{{ include "tendermint.name" $ }}-{{$i}}"
-                chown -R {{ $.Values.penumbra.uidGid }} "/home/pv-{{ include "penumbra.name" $ }}-{{$i}}"
+                set -eux
+                chown -R 1025:1025 "/home/pv-{{ $tm_name }}"
+                chown -R {{ $.Values.penumbra.uidGid }} "/home/pv-{{ $pd_name }}"
           volumeMounts:
-            - name: "pv-{{ include "tendermint.name" $ }}-{{$i}}"
-              mountPath: "/home/pv-{{ include "tendermint.name" $ }}-{{$i}}"
-            - name: "pv-{{ include "penumbra.name" $ }}-{{$i}}"
-              mountPath: "/home/pv-{{ include "penumbra.name" $ }}-{{$i}}"
+            - name: pv-{{ $tm_name }}
+              mountPath: /home/pv-{{ $tm_name }}
+            - name: pv-{{ $pd_name }}
+              mountPath: /home/pv-{{ $pd_name }}
         - name: config-init
           image: "{{ $.Values.tendermint.image }}:{{ $.Values.tendermint.version }}"
           command:
@@ -84,7 +92,7 @@ spec:
                 tendermint init validator --home $TMP_DIR
               fi
           volumeMounts:
-            - name: "pv-{{ include "tendermint.name" $ }}-{{$i}}"
+            - name: "pv-{{ $tm_name }}"
               mountPath: /home
         - name: config-merge
           image: "{{ $.Values.toolkit.image }}:{{ $.Values.toolkit.version }}"
@@ -112,7 +120,7 @@ spec:
             runAsUser: 1025
             runAsGroup: 1025
           volumeMounts:
-            - name: "pv-{{ include "tendermint.name" $ }}-{{$i}}"
+            - name: pv-{{ $tm_name }}
               mountPath: /home
             - name: tm-config
               mountPath: "/config"
@@ -133,7 +141,7 @@ spec:
               protocol: TCP
               name: p2p
           volumeMounts:
-            - name: "pv-{{ include "tendermint.name" $ }}-{{$i}}"
+            - name: pv-{{ $tm_name }}
               mountPath: /home
           command:
             - tendermint
@@ -150,7 +158,7 @@ spec:
               protocol: TCP
               name: metrics
           volumeMounts:
-            - name: "pv-{{ include "penumbra.name" $ }}-{{$i}}"
+            - name: pv-{{ $pd_name }}
               mountPath: /home
           command:
             - pd

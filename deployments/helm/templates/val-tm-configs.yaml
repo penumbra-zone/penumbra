@@ -1,10 +1,13 @@
 {{ $count := (.Values.numValidators | int) }}
 {{ range $i,$e := until $count }}
+{{ $tm_config := printf "config-%s-val-%d" (include "tendermint.name" $) $i }}
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: "tm-config-val-{{$i}}"
+  name: {{ $tm_config }}
+  labels:
+    {{- include "penumbra.labels" $ | nindent 4 }}
 data:
   config.toml: |
     proxy_app = "tcp://localhost:26658"

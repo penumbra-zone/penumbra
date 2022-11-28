@@ -1,0 +1,18 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: {{ include "penumbra.fullname" . }}-ingress-cert
+  labels:
+    {{- include "penumbra.labels" . | nindent 4 }}
+{{/*
+We instruct Helm to preserve the ManagedCertificate indefinitely,
+not removing it on subsequent deploys. Doing so ensures there's always
+a cert available, and avoids needless exercising of the HTTPS cert
+provisioning process.
+*/}}
+  annotations:
+    "helm.sh/resource-policy": keep
+spec:
+  domains:
+    - {{ .Values.ingress.hosts.rpc }}
+    - {{ .Values.ingress.hosts.grpc }}

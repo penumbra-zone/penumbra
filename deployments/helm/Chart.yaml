@@ -1,6 +1,6 @@
 apiVersion: v2
-name: node-cluster
-description: A Helm chart for Kubernetes
+name: penumbra
+description: Run Penumbra nodes and/or validators
 
 # A chart can be either an 'application' or a 'library' chart.
 #
@@ -21,4 +21,8 @@ version: 0.1.0
 # incremented each time you make changes to the application. Versions are not expected to
 # follow Semantic Versioning. They should reflect the version the application is using.
 # It is recommended to use it with quotes.
-appVersion: "1.16.0"
+
+# Pre-mainnet, we set this to a tag name for the given testnet, e.g. '036-iocaste.2'.
+# Container images are automatically tagged for each testnet; we can also use "latest"
+# for the HEAD of main branch in the penumbra git repository.
+appVersion: "036-iocaste.2"

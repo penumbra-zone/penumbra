@@ -51,13 +51,14 @@ jobs:
           project_id: penumbra-sl-testnet
           location: us-central1
 
-      - name: deploy 
+      - name: deploy
         run: |-
-          cd deployments/networks/testnet
+          cd deployments/
           export NVALS='${{ github.event.inputs.nvals }}'
           export NFULLNODES='${{ github.event.inputs.nfullnodes }}'
           export TENDERMINT_VERSION=v0.34.21
           export IMAGE='${{ github.event.inputs.image_repository }}'
           export PENUMBRA_VERSION='${{ github.event.inputs.image_tag }}'
           export PENUMBRA_UID_GID='${{ github.event.inputs.image_uid_gid }}'
+          export HELM_RELEASE='penumbra-testnet'
           ./ci.sh
