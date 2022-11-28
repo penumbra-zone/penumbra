@@ -80,14 +80,14 @@ enum TestnetCommand {
     /// configuration.
     Generate {
         /// Number of blocks per epoch.
-        #[clap(long, default_value = "719")]
-        epoch_duration: u64,
+        #[clap(long)]
+        epoch_duration: Option<u64>,
         /// Number of epochs before unbonding stake is released.
-        #[clap(long, default_value = "2")]
-        unbonding_epochs: u64,
+        #[clap(long)]
+        unbonding_epochs: Option<u64>,
         /// Maximum number of validators in the consensus set.
-        #[clap(long, default_value = "32")]
-        active_validator_limit: u64,
+        #[clap(long)]
+        active_validator_limit: Option<u64>,
         /// Whether to preserve the chain ID (useful for public testnets) or append a random suffix (useful for dev/testing).
         #[clap(long)]
         preserve_chain_id: bool,
@@ -551,6 +551,12 @@ async fn main() -> anyhow::Result<()> {
                     })
                 })
                 .collect::<Result<Vec<Validator>, anyhow::Error>>()?;
+
+            let default_params = ChainParameters::default();
+            let active_validator_limit =
+                active_validator_limit.unwrap_or(default_params.active_validator_limit);
+            let epoch_duration = epoch_duration.unwrap_or(default_params.epoch_duration);
+            let unbonding_epochs = unbonding_epochs.unwrap_or(default_params.unbonding_epochs);
 
             let app_state = genesis::AppState {
                 allocations: allocations.clone(),

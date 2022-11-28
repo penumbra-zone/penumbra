@@ -181,8 +181,8 @@ impl Default for ChainParameters {
         Self {
             chain_id: String::new(),
             epoch_duration: 719,
-            unbonding_epochs: 30,
-            active_validator_limit: 10,
+            unbonding_epochs: 2,
+            active_validator_limit: 80,
             // copied from cosmos hub
             signed_blocks_window_len: 10000,
             missed_blocks_maximum: 9500,
