@@ -14,8 +14,8 @@ penumbra-tct = { path = "../tct" }
 # Git deps
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 decaf377-rdsa = { git = "https://github.com/penumbra-zone/decaf377-rdsa" }
-poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377", branch="main" }
-ibc = { git = "https://github.com/cosmos/ibc-rs", branch = "main" }
+poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377", branch = "main" }
+ibc = { git = "https://github.com/cosmos/ibc-rs", tag = "v0.23.0" }
 ibc-proto = { git = "https://github.com/cosmos/ibc-proto-rs", tag = "v0.22.0" }
 
 

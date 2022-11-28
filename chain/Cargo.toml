@@ -17,7 +17,7 @@ decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 jmt = { path = "../../jmt" }
 
 tendermint = { git = "https://github.com/informalsystems/tendermint-rs", tag = "v0.26.0" }
-ibc = { git = "https://github.com/cosmos/ibc-rs", branch = "main" }
+ibc = { git = "https://github.com/cosmos/ibc-rs", tag = "v0.23.0" }
 ics23 = { version = "=0.8.1" }
 
 # Crates.io deps

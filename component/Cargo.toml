@@ -44,7 +44,7 @@ prost = "0.11"
 tendermint = { git = "https://github.com/informalsystems/tendermint-rs", tag = "v0.26.0" }
 tendermint-proto = { git = "https://github.com/informalsystems/tendermint-rs", tag = "v0.26.0" }
 tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs", tag = "v0.26.0" }
-ibc = { git = "https://github.com/cosmos/ibc-rs", branch = "mikhail/tendermint-0.26" }
+ibc = { git = "https://github.com/cosmos/ibc-rs", tag = "v0.23.0" }
 ibc-proto = { git = "https://github.com/cosmos/ibc-proto-rs", tag = "v0.22.0" }
 
 num-rational = "0.4"
