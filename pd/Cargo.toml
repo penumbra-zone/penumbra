@@ -43,7 +43,7 @@ tendermint-config = { git = "https://github.com/informalsystems/tendermint-rs", 
 # TODO(erwan): update comments
 tendermint-proto = { git = "https://github.com/informalsystems/tendermint-rs", tag = "v0.26.0" }
 tendermint = { git = "https://github.com/informalsystems/tendermint-rs", tag = "v0.26.0" }
-ibc = { git = "https://github.com/cosmos/ibc-rs", branch = "main" }
+ibc = { git = "https://github.com/cosmos/ibc-rs", tag = "v0.23.0" }
 ibc-proto = { git = "https://github.com/cosmos/ibc-proto-rs", tag = "v0.22.0" }
 tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs", tag = "v0.26.0" }
 
