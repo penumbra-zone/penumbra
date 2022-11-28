@@ -1,7 +1,9 @@
 apiVersion: cloud.google.com/v1beta1
 kind: BackendConfig
 metadata:
-  name: testnet-backend-config
+  name: {{ include "penumbra.fullname" . }}-backend-config
+  labels:
+    {{- include "penumbra.labels" $ | nindent 4 }}
 spec:
   timeoutSec: 600
   healthCheck:
@@ -16,16 +18,17 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: testnet
+  name: {{ include "penumbra.fullname" . }}
   labels:
-    network: testnet
+    network: "{{ $.Values.network }}"
+    {{- include "penumbra.labels" $ | nindent 4 }}
   annotations:
-    cloud.google.com/backend-config: '{"default": "testnet-backend-config"}'
+    cloud.google.com/backend-config: '{"default": "{{ include "penumbra.fullname" . }}-backend-config"}'
     cloud.google.com/app-protocols: '{"grpc":"HTTP2"}'
 spec:
   type: NodePort
   selector:
-    network: testnet
+    network: "{{ $.Values.network }}"
     type: fullnode
   ports:
     - protocol: TCP

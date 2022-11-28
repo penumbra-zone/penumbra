@@ -1,8 +1,0 @@
-apiVersion: networking.gke.io/v1
-kind: ManagedCertificate
-metadata:
-  name: testnet-ingress-cert
-spec:
-  domains:
-    - rpc.testnet.penumbra.strange.love
-    - grpc.testnet.penumbra.strange.love

@@ -1,0 +1,40 @@
+{{ $count := (.Values.numFullNodes | int) }}
+{{ range $i,$e := until $count }}
+{{ $svc_name := printf "%s-p2p-fn-%d" (include "penumbra.fullname" $) $i }}
+{{ $fn_name := printf "%s-fn-%d" (include "penumbra.fullname" $) $i }}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ $svc_name }}
+  labels:
+    app: {{ $svc_name }}
+    {{- include "penumbra.labels" $ | nindent 4 }}
+{{/*
+We instruct Helm to preserve the LoadBalancer Service indefinitely,
+not removing it on subsequent deploys. Doing so ensures the IP address
+for DNS remains the same, so we don't have to update DNS records
+on every re-deploy.
+*/}}
+  annotations:
+    "helm.sh/resource-policy": keep
+spec:
+  type: LoadBalancer
+  selector:
+    app: {{ $fn_name }}
+  ports:
+    - protocol: TCP
+      port: 26656
+      targetPort: p2p
+      name: tm-p2p
+{{ if eq $i 0 }}
+    - protocol: TCP
+      port: 26657
+      targetPort: rpc
+      name: tm-rpc
+    - protocol: TCP
+      port: 8080
+      targetPort: grpc
+      name: pd-grpc
+{{ end }}
+{{ end }}

@@ -1,0 +1,47 @@
+---
+apiVersion: networking.gke.io/v1beta1
+kind: FrontendConfig
+metadata:
+  name: {{ include "penumbra.fullname" . }}-ingress-frontend-config
+  labels:
+    {{- include "penumbra.labels" . | nindent 4 }}
+spec:
+  redirectToHttps:
+    enabled: true
+
+{{- if .Values.ingress.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "penumbra.fullname" . }}-ingress
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: {{ include "penumbra.fullname" . }}-ingress-ip
+    networking.gke.io/managed-certificates: {{ include "penumbra.fullname" . }}-ingress-cert
+    kubernetes.io/ingress.class: "gce"
+    networking.gke.io/v1beta1.FrontendConfig: {{ include "penumbra.fullname" . }}-ingress-frontend-config
+  labels:
+    {{- include "penumbra.labels" . | nindent 4 }}
+spec:
+  rules:
+    - host: {{ .Values.ingress.hosts.rpc }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "penumbra.fullname" . }}
+                port:
+                  number: 26657
+    - host: {{ .Values.ingress.hosts.grpc }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "penumbra.fullname" . }}
+                port:
+                  number: 8080
+{{- end }}

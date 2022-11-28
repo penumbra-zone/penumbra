@@ -1,0 +1,43 @@
+---
+# The name of the network that all nodes and validators will belong to.
+# Prior to mainnet, we use "testnet" and "testnet-preview".
+network: testnet
+
+# Support custom naming of deployment. By default, name is "penumbra"
+# and fullname is "penumbra-<network>". See _helpers.tpl for details.
+nameOverride: ""
+fullnameOverride: ""
+
+# Configure the number of Full Nodes and Validators to run on the network.
+numFullNodes: 1
+numValidators: 2
+
+# Image spec.
+penumbra:
+  image: ghcr.io/penumbra-zone/penumbra
+  uidGid: 1000:1000
+  # Penumbra version defaults to .Chart.AppVersion; can be overridden
+  # via CLI with '--set penumbra.version=x.y.z'.
+  version:
+tendermint:
+  image: ghcr.io/strangelove-ventures/heighliner/tendermint
+  version: v0.34.23
+toolkit:
+  image: ghcr.io/strangelove-ventures/infra-toolkit
+  version: v0.0.6
+health:
+  image: ghcr.io/strangelove-ventures/ignite-health-check
+  version: v0.0.1
+
+# Configure FQDNs for use in routing external traffic.
+# Assumes DNS has been configured out of band.
+# N.B. the GKE-specific resources like ManagedCertificate
+# are annotated with "helm.sh/resource-policy=keep"
+# to avoid frequent regeneration.
+ingress:
+  enabled: false
+  hosts:
+    # FQDN to route traffic to the Tendermint RPC port.
+    rpc: rpc.testnet.penumbra.strange.love
+    # FQDN to route traffic to the pd gRPC port.
+    grpc: grpc.testnet.penumbra.strange.love

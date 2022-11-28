@@ -1,10 +1,14 @@
 {{ $count := (.Values.numFullNodes | int) }}
 {{ range $i,$e := until $count }}
+{{ $pd_name := printf "%s-pd-fn-%d" (include "penumbra.fullname" $) $i }}
+{{ $tm_name := printf "%s-tm-fn-%d" (include "penumbra.fullname" $) $i }}
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: "pvc-fn-{{ include "tendermint.name" $ }}-{{$i}}"
+  name: pvc-{{ $tm_name }}
+  labels:
+    {{- include "penumbra.labels" $ | nindent 4 }}
 spec:
   accessModes:
     - ReadWriteOnce
@@ -16,7 +20,9 @@ spec:
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: "pvc-fn-{{ include "penumbra.name" $ }}-{{$i}}"
+  name: pvc-{{ $pd_name }}
+  labels:
+    {{- include "penumbra.labels" $ | nindent 4 }}
 spec:
   accessModes:
     - ReadWriteOnce
