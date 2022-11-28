@@ -34,8 +34,9 @@ pub mod connections {
 
     use std::string::String;
 
-    // TODO: is this going to be needed in the future? When refactoring,
-    // I noticed the previous `client_connections` was not used anywhere.
+    // This is part of the ICS-3 spec but not exposed yet:
+    // https://github.com/cosmos/ibc/tree/main/spec/core/ics-003-connection-semantics
+    #[allow(dead_code)]
     pub fn by_client_id_list(client_id: &ClientId) -> String {
         format!("clients/{}/connections/", client_id)
     }
