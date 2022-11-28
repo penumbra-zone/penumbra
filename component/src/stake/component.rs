@@ -1,12 +1,11 @@
 // Implementation of a pd component for the staking system.
 use std::collections::{BTreeMap, BTreeSet};
-use std::pin::Pin;
 
 use crate::Component;
 use ::metrics::{decrement_gauge, gauge, increment_gauge};
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
-use futures::{Stream, StreamExt};
+use futures::StreamExt;
 use penumbra_chain::quarantined::Slashed;
 use penumbra_chain::{genesis, Epoch, NoteSource, StateReadExt as _};
 use penumbra_crypto::{DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID};
@@ -1021,20 +1020,13 @@ pub trait StateReadExt: StateRead {
     }
 
     async fn validator_list(&self) -> Result<Vec<Validator>> {
-        let mut range: Pin<Box<dyn Stream<Item = Result<(String, Validator)>> + Send + '_>> =
-            self.prefix(state_key::validators::list());
-        let mut validators = Vec::new();
-
-        while let Some(r) = range.next().await {
-            let validator: Result<Validator, anyhow::Error> = match r {
-                Ok((_k, v)) => Ok(v),
-                Err(e) => Err(e),
-            };
-
-            validators.push(validator?);
-        }
-
-        Ok(validators)
+        self.prefix(state_key::validators::list())
+            .next()
+            .await
+            .into_iter()
+            // The prefix stream returns keys and values, but we only want the values.
+            .map(|r| Ok(r?.1))
+            .collect()
     }
 
     async fn delegation_changes(&self, height: block::Height) -> Result<DelegationChanges> {

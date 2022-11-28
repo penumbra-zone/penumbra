@@ -20,7 +20,6 @@ use penumbra_storage::{StateRead, StateTransaction, StateWrite};
 use tendermint::abci;
 use tracing::instrument;
 
-use super::client::StateWriteExt as _;
 use super::state_key;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 
@@ -45,7 +44,7 @@ impl Component for ConnectionComponent {
 #[async_trait]
 pub trait StateWriteExt: StateWrite {
     fn put_connection_counter(&mut self, counter: ConnectionCounter) {
-        self.put(state_key::connection_counter().into(), counter);
+        self.put(state_key::connections::counter().into(), counter);
     }
 
     // puts a new connection into the state, updating the connections associated with the client,
@@ -55,21 +54,32 @@ pub trait StateWriteExt: StateWrite {
         connection_id: &ConnectionId,
         connection: ConnectionEnd,
     ) -> Result<()> {
-        self.put(state_key::connection(connection_id), connection.clone());
+        self.put(
+            state_key::connections::by_connection_id(connection_id),
+            connection.clone(),
+        );
+        self.put(
+            state_key::connections::by_client_id(connection.client_id(), connection_id),
+            connection.clone(),
+        );
         let counter = self
             .get_connection_counter()
             .await
             .unwrap_or(ConnectionCounter(0));
         self.put_connection_counter(ConnectionCounter(counter.0 + 1));
 
-        self.add_connection_to_client(connection.client_id(), connection_id)
-            .await?;
-
         return Ok(());
     }
 
     fn update_connection(&mut self, connection_id: &ConnectionId, connection: ConnectionEnd) {
-        self.put(state_key::connection(connection_id), connection);
+        self.put(
+            state_key::connections::by_connection_id(connection_id),
+            connection.clone(),
+        );
+        self.put(
+            state_key::connections::by_client_id(connection.client_id(), connection_id),
+            connection,
+        );
     }
 }
 
@@ -78,13 +88,14 @@ impl<T: StateWrite> StateWriteExt for T {}
 #[async_trait]
 pub trait StateReadExt: StateRead {
     async fn get_connection_counter(&self) -> Result<ConnectionCounter> {
-        self.get(state_key::connection_counter())
+        self.get(state_key::connections::counter())
             .await
             .map(|counter| counter.unwrap_or(ConnectionCounter(0)))
     }
 
     async fn get_connection(&self, connection_id: &ConnectionId) -> Result<Option<ConnectionEnd>> {
-        self.get(&state_key::connection(connection_id)).await
+        self.get(&state_key::connections::by_connection_id(connection_id))
+            .await
     }
 }
 

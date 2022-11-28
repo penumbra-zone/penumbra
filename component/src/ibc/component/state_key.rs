@@ -1,7 +1,7 @@
 use ibc::{
     core::{
         ics04_channel::packet::Packet,
-        ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+        ics24_host::identifier::{ChannelId, ClientId, PortId},
     },
     Height,
 };
@@ -29,16 +29,33 @@ pub fn client_processed_times(client_id: &ClientId, height: &Height) -> String {
     format!("clients/{}/processedTimes/{}", client_id, height)
 }
 
-pub fn client_connections(client_id: &ClientId) -> String {
-    format!("clients/{}/connections", client_id)
-}
+pub mod connections {
+    use ibc::core::ics24_host::identifier::{ClientId, ConnectionId};
 
-pub fn connection(connection_id: &ConnectionId) -> String {
-    format!("connections/{}", connection_id.as_str())
-}
+    use std::string::String;
 
-pub fn connection_counter() -> &'static str {
-    "ibc/ics03-connection/connection_counter"
+    // This is part of the ICS-3 spec but not exposed yet:
+    // https://github.com/cosmos/ibc/tree/main/spec/core/ics-003-connection-semantics
+    #[allow(dead_code)]
+    pub fn by_client_id_list(client_id: &ClientId) -> String {
+        format!("clients/{}/connections/", client_id)
+    }
+
+    pub fn by_client_id(client_id: &ClientId, connection_id: &ConnectionId) -> String {
+        format!(
+            "clients/{}/connections/{}",
+            client_id,
+            connection_id.as_str()
+        )
+    }
+
+    pub fn by_connection_id(connection_id: &ConnectionId) -> String {
+        format!("connections/{}", connection_id.as_str())
+    }
+
+    pub fn counter() -> &'static str {
+        "ibc/ics03-connection/connection_counter"
+    }
 }
 
 pub fn channel(channel_id: &ChannelId, port_id: &PortId) -> String {
