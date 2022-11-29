@@ -11,7 +11,7 @@ use crate::{action_handler::ActionHandler, shielded_pool::StateReadExt as _};
 #[async_trait]
 impl ActionHandler for Spend {
     #[instrument(name = "spend", skip(self, context))]
-    fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
+    async fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
         let spend = self;
         let auth_hash = context.transaction_body().auth_hash();
         let anchor = context.anchor;

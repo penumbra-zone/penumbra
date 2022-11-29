@@ -17,7 +17,7 @@ use crate::ibc::component::connection::stateless::connection_open_try::{
 #[async_trait]
 impl ActionHandler for MsgConnectionOpenTry {
     #[instrument(name = "connection_open_try", skip(self, _context))]
-    fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         has_client_state(self)?;
         has_client_proof(self)?;
         has_consensus_proof(self)?;

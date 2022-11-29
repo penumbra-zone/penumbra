@@ -14,7 +14,7 @@ use crate::ibc::component::connection::stateful::connection_open_confirm::Connec
 #[async_trait]
 impl ActionHandler for MsgConnectionOpenConfirm {
     #[instrument(name = "connection_open_confirm", skip(self, _context))]
-    fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         // NOTE: other than that the message is a well formed ConnectionOpenConfirm,
         // there is no other stateless validation to perform.
 

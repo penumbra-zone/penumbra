@@ -14,7 +14,7 @@ use crate::{
 #[async_trait]
 impl ActionHandler for SwapClaim {
     #[instrument(name = "swap_claim", skip(self))]
-    fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
+    async fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
         let swap_claim = self;
 
         let fee = swap_claim.body.fee.clone();

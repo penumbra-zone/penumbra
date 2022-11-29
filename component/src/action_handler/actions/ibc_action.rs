@@ -34,7 +34,7 @@ mod msg;
 #[async_trait]
 impl ActionHandler for IbcAction {
     #[instrument(name = "ibc_action", skip(self, context))]
-    fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
+    async fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
         // Each stateless check is a distinct function in an appropriate submodule,
         // so that we can easily add new stateless checks and see a birds' eye view
         // of all of the checks we're performing.
@@ -43,78 +43,78 @@ impl ActionHandler for IbcAction {
             Some(CreateClient(msg)) => {
                 let msg = MsgCreateAnyClient::try_from(msg.clone())?;
 
-                msg.check_stateless(context)?;
+                msg.check_stateless(context).await?;
             }
             Some(UpdateClient(msg)) => {
                 let msg = MsgUpdateAnyClient::try_from(msg.clone())?;
 
-                msg.check_stateless(context)?;
+                msg.check_stateless(context).await?;
             }
             Some(ChannelOpenInit(msg)) => {
                 let msg = MsgChannelOpenInit::try_from(msg.clone())?;
 
-                msg.check_stateless(context)?;
+                msg.check_stateless(context).await?;
             }
             Some(ChannelOpenTry(msg)) => {
                 let msg = MsgChannelOpenTry::try_from(msg.clone())?;
 
-                msg.check_stateless(context)?;
+                msg.check_stateless(context).await?;
             }
             Some(ChannelOpenAck(msg)) => {
                 let msg = MsgChannelOpenAck::try_from(msg.clone())?;
 
-                msg.check_stateless(context)?;
+                msg.check_stateless(context).await?;
             }
             Some(ChannelOpenConfirm(msg)) => {
                 let msg = MsgChannelOpenConfirm::try_from(msg.clone())?;
 
-                msg.check_stateless(context)?;
+                msg.check_stateless(context).await?;
             }
             Some(ChannelCloseInit(msg)) => {
                 let msg = MsgChannelCloseInit::try_from(msg.clone())?;
 
-                msg.check_stateless(context)?;
+                msg.check_stateless(context).await?;
             }
             Some(ChannelCloseConfirm(msg)) => {
                 let msg = MsgChannelCloseConfirm::try_from(msg.clone())?;
 
-                msg.check_stateless(context)?;
+                msg.check_stateless(context).await?;
             }
             Some(RecvPacket(msg)) => {
                 let msg = MsgRecvPacket::try_from(msg.clone())?;
 
-                msg.check_stateless(context)?;
+                msg.check_stateless(context).await?;
             }
             Some(Acknowledgement(msg)) => {
                 let msg = MsgAcknowledgement::try_from(msg.clone())?;
 
-                msg.check_stateless(context)?;
+                msg.check_stateless(context).await?;
             }
             Some(Timeout(msg)) => {
                 let msg = MsgTimeout::try_from(msg.clone())?;
 
-                msg.check_stateless(context)?;
+                msg.check_stateless(context).await?;
             }
             Some(ConnectionOpenInit(msg)) => {
                 let msg = MsgConnectionOpenInit::try_from(msg.clone())?;
 
-                msg.check_stateless(context)?;
+                msg.check_stateless(context).await?;
             }
             Some(ConnectionOpenTry(msg)) => {
                 let msg = MsgConnectionOpenTry::try_from(msg.clone())?;
 
-                msg.check_stateless(context)?;
+                msg.check_stateless(context).await?;
             }
             Some(ConnectionOpenAck(msg)) => {
                 let msg = MsgConnectionOpenAck::try_from(msg.clone())?;
 
-                msg.check_stateless(context)?;
+                msg.check_stateless(context).await?;
             }
 
             Some(ConnectionOpenConfirm(msg)) => {
                 let msg = MsgConnectionOpenConfirm::try_from(msg.clone())?;
 
-                msg.check_stateless(context)?;
+                msg.check_stateless(context).await?;
             }
             _ => {}
         }

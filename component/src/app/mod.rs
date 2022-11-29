@@ -102,7 +102,7 @@ impl App {
         // Both stateful and stateless checks take the transaction as
         // verification context.  The separate clone of the Arc<Transaction>
         // means it can be passed through the whole tree of checks.
-        tx.check_stateless(tx.clone())?;
+        tx.check_stateless(tx.clone()).await?;
         tx.check_stateful(self.state.clone(), tx.clone()).await?;
 
         // At this point, the stateful checks should have completed,
@@ -168,10 +168,5 @@ impl App {
         self.state
             .tendermint_validator_updates()
             .expect("tendermint validator updates should be set when called in end_block")
-    }
-
-    #[instrument(skip(tx))]
-    pub fn check_tx_stateless(tx: Arc<Transaction>) -> Result<()> {
-        tx.check_stateless(tx.clone())
     }
 }

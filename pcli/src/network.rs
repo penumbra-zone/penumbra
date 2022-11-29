@@ -64,6 +64,7 @@ impl App {
         println!("pre-checking transaction...");
         transaction
             .check_stateless(std::sync::Arc::new(transaction.clone()))
+            .await
             .context("transaction pre-submission checks failed")?;
 
         println!("broadcasting transaction...");

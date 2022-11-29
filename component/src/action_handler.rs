@@ -15,7 +15,7 @@ mod transaction;
 pub trait ActionHandler {
     /// Performs all of this component's stateless validity checks in the context of
     /// the given [`Transaction`].
-    fn check_stateless(&self, context: Arc<Transaction>) -> Result<()>;
+    async fn check_stateless(&self, context: Arc<Transaction>) -> Result<()>;
 
     /// Performs all of this component's stateful validity checks in the context of the given
     /// [`Transaction`].

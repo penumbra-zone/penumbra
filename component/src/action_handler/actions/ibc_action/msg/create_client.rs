@@ -17,7 +17,7 @@ use crate::ibc::component::client::{
 #[async_trait]
 impl ActionHandler for MsgCreateAnyClient {
     #[instrument(name = "ibc_action", skip(self, _context))]
-    fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         client_state_is_tendermint(self)?;
         consensus_state_is_tendermint(self)?;
 

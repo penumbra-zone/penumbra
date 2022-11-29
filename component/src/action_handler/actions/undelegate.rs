@@ -14,7 +14,7 @@ use crate::{
 #[async_trait]
 impl ActionHandler for Undelegate {
     #[instrument(name = "undelegate", skip(self, _context))]
-    fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         // All stateless undelegation-related checks are performed
         // at the Transaction-level.
         Ok(())

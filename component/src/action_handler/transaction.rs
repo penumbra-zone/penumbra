@@ -24,7 +24,7 @@ use stateless::{at_most_one_undelegate, no_duplicate_nullifiers, valid_binding_s
 
 #[async_trait]
 impl ActionHandler for Transaction {
-    fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
+    async fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
         // TODO: add a check that ephemeral_key is not identity to prevent scanning dos attack ?
 
         valid_binding_signature(self)?;
@@ -33,7 +33,7 @@ impl ActionHandler for Transaction {
 
         // TODO: these can all be parallel tasks
         for action in self.actions() {
-            action.check_stateless(context.clone())?;
+            action.check_stateless(context.clone()).await?;
         }
 
         // TODO: move these out of component code?
