@@ -4,6 +4,10 @@ use penumbra_storage::StateTransaction;
 use tendermint::abci;
 
 mod action_handler;
+
+mod temp_storage_ext;
+pub use temp_storage_ext::TempStorageExt;
+
 pub mod app;
 pub mod dex;
 pub mod governance;

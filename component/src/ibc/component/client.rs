@@ -485,6 +485,7 @@ mod tests {
     use std::sync::Arc;
 
     use crate::action_handler::ActionHandler;
+    use crate::TempStorageExt;
 
     use super::*;
     use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
@@ -492,45 +493,30 @@ mod tests {
     use penumbra_chain::StateWriteExt as _;
     use penumbra_proto::core::ibc::v1alpha1::{ibc_action::Action as IbcActionInner, IbcAction};
     use penumbra_proto::Message;
-    use penumbra_storage::Storage;
-    use penumbra_tct as tct;
-    use penumbra_transaction::{Action, Transaction, TransactionBody};
-    use tempfile::tempdir;
+    use penumbra_storage::{ArcStateExt, TempStorage};
+    use penumbra_transaction::Transaction;
     use tendermint::Time;
 
     // test that we can create and update a light client.
     #[tokio::test]
-    async fn test_create_and_update_light_client() {
+    async fn test_create_and_update_light_client() -> anyhow::Result<()> {
         // create a storage backend for testing
-        let dir = tempdir().unwrap();
-        let file_path = dir.path().join("ibc-testing.db");
+        let storage = TempStorage::new().await?.apply_default_genesis().await?;
 
-        let storage = Storage::load(file_path.clone()).await.unwrap();
         let mut state = Arc::new(storage.latest_state());
-        let state_mut =
-            Arc::get_mut(&mut state).expect("state Arc should not be referenced elsewhere");
-        let mut state_tx = state_mut.begin_transaction();
 
-        // init chain should result in client counter = 0
-        let genesis_state = genesis::AppState::default();
-        let timestamp = Time::parse_from_rfc3339("2022-02-11T17:30:50.425417198Z").unwrap();
+        // Light client verification is time-dependent.  In practice, the latest
+        // (consensus) time will be delivered in each BeginBlock and written
+        // into the state.  Here, set the block timestamp manually so it's
+        // available to the unit test.
+        let timestamp = Time::parse_from_rfc3339("2022-02-11T17:30:50.425417198Z")?;
+        let mut state_tx = state.try_begin_transaction().unwrap();
         state_tx.put_block_timestamp(timestamp);
-        state_tx.put_block_height(0);
-        Ics2Client::init_chain(&mut state_tx, &genesis_state).await;
-
         state_tx.apply();
-        storage
-            .commit(Arc::try_unwrap(state).unwrap())
-            .await
-            .unwrap();
-
-        let mut state = Arc::new(storage.latest_state());
 
         // base64 encoded MsgCreateClient that was used to create the currently in-use Stargaze
         // light client on the cosmos hub:
         // https://cosmos.bigdipper.live/transactions/13C1ECC54F088473E2925AD497DDCC092101ADE420BC64BADE67D34A75769CE9
-        //
-        //
         let msg_create_client_stargaze_raw =
             base64::decode(include_str!("../../ibc/test/create_client.msg").replace('\n', ""))
                 .unwrap();
@@ -549,87 +535,37 @@ mod tests {
         let create_client_action = IbcAction {
             action: Some(IbcActionInner::CreateClient(msg_create_stargaze_client)),
         };
-        let create_client_tx = Arc::new(Transaction {
-            transaction_body: TransactionBody {
-                actions: vec![Action::IBCAction(create_client_action)],
-                expiry_height: 0,
-                chain_id: "".to_string(),
-                fee: Default::default(),
-                fmd_clues: vec![],
-                memo: None,
-            },
-            anchor: tct::Tree::new().root(),
-            binding_sig: [0u8; 64].into(),
-        });
-
         let update_client_action = IbcAction {
             action: Some(IbcActionInner::UpdateClient(msg_update_stargaze_client)),
         };
-        let update_client_tx = Arc::new(Transaction {
-            transaction_body: TransactionBody {
-                actions: vec![Action::IBCAction(update_client_action)],
-                expiry_height: 0,
-                chain_id: "".to_string(),
-                fee: Default::default(),
-                fmd_clues: vec![],
-                memo: None,
-            },
-            binding_sig: [0u8; 64].into(),
-            anchor: tct::Tree::new().root(),
-        });
 
-        if let Action::IBCAction(inner_action) = create_client_tx.actions().collect::<Vec<_>>()[0] {
-            inner_action
-                .check_stateless(create_client_tx.clone())
-                .unwrap();
-            inner_action
-                .check_stateful(state.clone(), create_client_tx.clone())
-                .await
-                .unwrap();
-            // execute (save client)
-            let state_mut =
-                Arc::get_mut(&mut state).expect("state Arc should not be referenced elsewhere");
-            let mut state_tx = state_mut.begin_transaction();
-            inner_action.execute(&mut state_tx).await.unwrap();
-            state_tx.apply();
-            storage
-                .commit(Arc::try_unwrap(state).unwrap())
-                .await
-                .unwrap();
-        } else {
-            panic!("expected ibc action");
-        }
+        // The ActionHandler trait provides the transaction the action was part
+        // of as context available during verification.  This is used, for instance,
+        // to allow spend and output proofs to access the (transaction-wide) anchor.
+        // Since the context is not used by the IBC action handlers, we can pass a dummy transaction.
+        let dummy_context = Arc::new(Transaction::default());
 
-        let mut state = Arc::new(storage.latest_state());
-        assert_eq!(state.clone().client_counter().await.unwrap().0, 1);
+        create_client_action.check_stateless(dummy_context.clone())?;
+        create_client_action
+            .check_stateful(state.clone(), dummy_context.clone())
+            .await?;
+        let mut state_tx = state.try_begin_transaction().unwrap();
+        create_client_action.execute(&mut state_tx).await?;
+        state_tx.apply();
 
-        // now try update client
-        if let Action::IBCAction(inner_action) = update_client_tx.actions().collect::<Vec<_>>()[0] {
-            inner_action
-                .check_stateless(update_client_tx.clone())
-                .unwrap();
-            // verify the ClientUpdate proof
-            inner_action
-                .check_stateful(state.clone(), update_client_tx.clone())
-                .await
-                .unwrap();
-            // save the next tm state
-            let state_mut =
-                Arc::get_mut(&mut state).expect("state Arc should not be referenced elsewhere");
-            let mut state_tx = state_mut.begin_transaction();
-            inner_action.execute(&mut state_tx).await.unwrap();
-            state_tx.apply();
-            storage
-                .commit(Arc::try_unwrap(state).unwrap())
-                .await
-                .unwrap();
-        } else {
-            panic!("expected ibc action");
-        }
+        // Check that state reflects +1 client apps registered.
+        assert_eq!(state.client_counter().await.unwrap().0, 1);
 
-        let mut state = Arc::new(storage.latest_state());
+        // Now we update the client and confirm that the update landed in state.
+        update_client_action.check_stateless(dummy_context.clone())?;
+        update_client_action
+            .check_stateful(state.clone(), dummy_context.clone())
+            .await?;
+        let mut state_tx = state.try_begin_transaction().unwrap();
+        update_client_action.execute(&mut state_tx).await?;
+        state_tx.apply();
 
-        // try one more client update
+        // We've had one client update, yes. What about second client update?
         // https://cosmos.bigdipper.live/transactions/ED217D360F51E622859F7B783FEF98BDE3544AA32BBD13C6C77D8D0D57A19FFD
         let msg_update_second =
             base64::decode(include_str!("../../ibc/test/update_client_2.msg").replace('\n', ""))
@@ -640,42 +576,15 @@ mod tests {
         let second_update_client_action = IbcAction {
             action: Some(IbcActionInner::UpdateClient(second_update)),
         };
-        let second_update_client_tx = Arc::new(Transaction {
-            transaction_body: TransactionBody {
-                actions: vec![Action::IBCAction(second_update_client_action)],
-                expiry_height: 0,
-                chain_id: "".to_string(),
-                fee: Default::default(),
-                fmd_clues: vec![],
-                memo: None,
-            },
-            anchor: tct::Tree::new().root(),
-            binding_sig: [0u8; 64].into(),
-        });
 
-        if let Action::IBCAction(inner_action) =
-            second_update_client_tx.actions().collect::<Vec<_>>()[0]
-        {
-            inner_action
-                .check_stateless(second_update_client_tx.clone())
-                .unwrap();
-            // verify the ClientUpdate proof
-            inner_action
-                .check_stateful(state.clone(), second_update_client_tx.clone())
-                .await
-                .unwrap();
-            // save the next tm state
-            let state_mut =
-                Arc::get_mut(&mut state).expect("state Arc should not be referenced elsewhere");
-            let mut state_tx = state_mut.begin_transaction();
-            inner_action.execute(&mut state_tx).await.unwrap();
-            state_tx.apply();
-            storage
-                .commit(Arc::try_unwrap(state).unwrap())
-                .await
-                .unwrap();
-        } else {
-            panic!("expected ibc action");
-        }
+        second_update_client_action.check_stateless(dummy_context.clone())?;
+        second_update_client_action
+            .check_stateful(state.clone(), dummy_context.clone())
+            .await?;
+        let mut state_tx = state.try_begin_transaction().unwrap();
+        second_update_client_action.execute(&mut state_tx).await?;
+        state_tx.apply();
+
+        Ok(())
     }
 }

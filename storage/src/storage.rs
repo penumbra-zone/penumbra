@@ -14,6 +14,9 @@ use crate::snapshot::Snapshot;
 use crate::snapshot_cache::SnapshotCache;
 use crate::State;
 
+mod temp;
+pub use temp::TempStorage;
+
 /// A handle for a storage instance, backed by RocksDB.
 ///
 /// The handle is cheaply clonable; all clones share the same backing data store.
