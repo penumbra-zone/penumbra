@@ -22,10 +22,10 @@ async-trait = "0.1.52"
 tracing = "0.1"
 futures = "0.3"
 
-ibc-proto = { git = "https://github.com/cosmos/ibc-proto-rs", tag = "v0.22.0" }
-ibc = { git = "https://github.com/cosmos/ibc-rs", tag = "v0.23.0" }
+ibc-proto = "0.22.0"
+ibc = "0.23.0"
 ics23 = "0.8.1"
-tendermint = { git = "https://github.com/informalsystems/tendermint-rs", tag = "v0.26.0" }
+tendermint = "0.26.0"
 
 # TODO(erwan): remove
 num-rational = "0.4"

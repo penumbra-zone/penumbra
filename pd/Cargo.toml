@@ -33,7 +33,7 @@ jmt = { path = "../../jmt" }
 
 
 # External dependencies
-tendermint-config = { git = "https://github.com/informalsystems/tendermint-rs", tag = "v0.26.0" }
+tendermint-config = "0.26.0"
 # These are = dependencies to force the whole workspace's dependency tree to go
 # back onto 0.24.0-pre.1, which, unlike 0.24.0-pre.2, doesn't have
 # ecosystem-incompatible breaking changes to the prost version.
@@ -41,11 +41,11 @@ tendermint-config = { git = "https://github.com/informalsystems/tendermint-rs", 
 # Longer-term, we can't rely on the upstream to publish versions, so we should plan
 # to fork the crates and maintain our fork.
 # TODO(erwan): update comments
-tendermint-proto = { git = "https://github.com/informalsystems/tendermint-rs", tag = "v0.26.0" }
-tendermint = { git = "https://github.com/informalsystems/tendermint-rs", tag = "v0.26.0" }
-ibc = { git = "https://github.com/cosmos/ibc-rs", tag = "v0.23.0" }
-ibc-proto = { git = "https://github.com/cosmos/ibc-proto-rs", tag = "v0.22.0" }
-tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs", tag = "v0.26.0" }
+tendermint-proto = "0.26.0"
+tendermint = "0.26.0"
+ibc = "0.23.0"
+ibc-proto = "0.22.0"
+tendermint-light-client-verifier = "0.26.0"
 
 prost = "0.11"
 # We don't need this crate at all, but its upstream published a breaking change as
