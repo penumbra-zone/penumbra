@@ -28,7 +28,7 @@ impl ActionHandler for MsgChannelOpenTry {
     async fn check_stateful(&self, state: Arc<State>) -> Result<()> {
         state.validate(self).await?;
         let transfer = PortId::transfer();
-        if self.port_id == transfer {
+        if self.port_id_on_b == transfer {
             Ics20Transfer::chan_open_try_check(state, self).await?;
         } else {
             return Err(anyhow::anyhow!("invalid port id"));
@@ -41,7 +41,7 @@ impl ActionHandler for MsgChannelOpenTry {
     async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
         state.execute(self).await;
         let transfer = PortId::transfer();
-        if self.port_id == transfer {
+        if self.port_id_on_b == transfer {
             Ics20Transfer::chan_open_try_execute(state, self).await;
         } else {
             return Err(anyhow::anyhow!("invalid port id"));
