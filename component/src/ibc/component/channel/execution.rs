@@ -104,8 +104,8 @@ pub mod channel_open_confirm {
             self.put_channel(&msg.channel_id, &msg.port_id, channel.clone());
 
             self.record(event::channel_open_confirm(
-                &msg.port_id,
-                &msg.channel_id,
+                &msg.port_id_on_b,
+                &msg.chan_id_on_b,
                 &channel,
             ));
         }

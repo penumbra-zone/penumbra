@@ -1,3 +1,4 @@
+use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics02_client::trust_threshold::TrustThreshold;
 use ibc::core::ics02_client::{client_state::AnyClientState, height::Height};
 use ibc::core::ics24_host::identifier::ChainId;
@@ -110,7 +111,7 @@ fn validate_trust_threshold(trust_threshold: TrustThreshold) -> Result<(), anyho
 // validate the parameters of an AnyClientState, verifying that it is a valid Penumbra client
 // state.
 pub fn validate_penumbra_client_state(
-    client_state: AnyClientState,
+    client_state: dyn ClientState,
     chain_id: &str,
     current_height: u64,
 ) -> Result<(), anyhow::Error> {
