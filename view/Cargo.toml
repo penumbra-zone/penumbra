@@ -50,8 +50,8 @@ parking_lot = "0.12"
 clap = { version = "3", features = ["derive"] }
 camino = "1"
 async-trait = "0.1"
-tendermint = { git = "https://github.com/informalsystems/tendermint-rs", tag = "v0.26.0" }
-tendermint-rpc = { git = "https://github.com/informalsystems/tendermint-rs", tag = "v0.26.0", features = ["http-client"] }
+tendermint = "0.26.0"
+tendermint-rpc = { version = "0.26.0", features = ["http-client"] }
 sha2 = "0.10.1"
 
 [build-dependencies]
