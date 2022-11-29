@@ -5,7 +5,7 @@ use super::Allocation;
 use crate::params::ChainParameters;
 
 /// The application state at genesis.
-#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(try_from = "pb::GenesisAppState", into = "pb::GenesisAppState")]
 pub struct AppState {
     /// Global configuration for the chain, such as chain ID and epoch duration.
@@ -14,6 +14,33 @@ pub struct AppState {
     pub validators: Vec<pb_stake::Validator>,
     /// The initial token allocations.
     pub allocations: Vec<Allocation>,
+}
+
+impl Default for AppState {
+    fn default() -> Self {
+        Self {
+            chain_params: Default::default(),
+            // TODO: create a test validator
+            validators: Default::default(),
+            allocations: vec![
+                Allocation {
+                    amount: 1000,
+                    denom: "penumbra".parse().unwrap(),
+                    address: crate::test::TEST_ADDRESS_0.parse().unwrap(),
+                },
+                Allocation {
+                    amount: 100,
+                    denom: "gm".parse().unwrap(),
+                    address: crate::test::TEST_ADDRESS_1.parse().unwrap(),
+                },
+                Allocation {
+                    amount: 100,
+                    denom: "gn".parse().unwrap(),
+                    address: crate::test::TEST_ADDRESS_1.parse().unwrap(),
+                },
+            ],
+        }
+    }
 }
 
 impl From<AppState> for pb::GenesisAppState {

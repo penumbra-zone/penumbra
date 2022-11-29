@@ -19,13 +19,7 @@ use regex::Regex;
 use serde_json::Value;
 use tempfile::{tempdir, NamedTempFile, TempDir};
 
-// This address is for test purposes, allocations were added beginning with
-// the 016-Pandia testnet.
-const TEST_SEED_PHRASE: &str = "benefit cherry cannon tooth exhibit law avocado spare tooth that amount pumpkin scene foil tape mobile shine apology add crouch situate sun business explain";
-
-// These addresses both correspond to the test wallet above.
-const TEST_ADDRESS_0: &str = "penumbrav2t13vh0fkf3qkqjacpm59g23ufea9n5us45e4p5h6hty8vg73r2t8g5l3kynad87u0n9eragf3hhkgkhqe5vhngq2cw493k48c9qg9ms4epllcmndd6ly4v4dw2jcnxaxzjqnlvnw";
-const TEST_ADDRESS_1: &str = "penumbrav2t1gl609fq6xzjcqn3hz3crysw2s0nkt330lyhaq403ztmrm3yygsgdklt9uxfs0gedwp6sypp5k5ln9t62lvs9t0a990q832wnxak8r939g5u6uz5aessd8saxvv7ewlz4hhqnws";
+use penumbra_chain::test::{TEST_ADDRESS_0, TEST_ADDRESS_1, TEST_SEED_PHRASE};
 
 const TEST_ASSET: &str = "1cube";
 
