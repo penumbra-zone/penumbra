@@ -103,7 +103,7 @@ impl App {
         // verification context.  The separate clone of the Arc<Transaction>
         // means it can be passed through the whole tree of checks.
         tx.check_stateless(tx.clone()).await?;
-        tx.check_stateful(self.state.clone(), tx.clone()).await?;
+        tx.check_stateful(self.state.clone()).await?;
 
         // At this point, the stateful checks should have completed,
         // leaving us with exclusive access to the Arc<State>.

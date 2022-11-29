@@ -16,8 +16,8 @@ impl ActionHandler for Ics20Withdrawal {
         self.validate()
     }
 
-    #[instrument(name = "ics20_withdrawal", skip(self, state, _context))]
-    async fn check_stateful(&self, state: Arc<State>, _context: Arc<Transaction>) -> Result<()> {
+    #[instrument(name = "ics20_withdrawal", skip(self, state))]
+    async fn check_stateful(&self, state: Arc<State>) -> Result<()> {
         state.withdrawal_check(self).await
     }
 

@@ -23,8 +23,8 @@ impl ActionHandler for MsgChannelOpenConfirm {
         Ok(())
     }
 
-    #[instrument(name = "channel_open_confirm", skip(self, state, _context))]
-    async fn check_stateful(&self, state: Arc<State>, _context: Arc<Transaction>) -> Result<()> {
+    #[instrument(name = "channel_open_confirm", skip(self, state))]
+    async fn check_stateful(&self, state: Arc<State>) -> Result<()> {
         state.validate(self).await?;
         let transfer = PortId::transfer();
         if self.port_id == transfer {

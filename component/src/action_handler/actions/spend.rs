@@ -37,8 +37,8 @@ impl ActionHandler for Spend {
         Ok(())
     }
 
-    #[instrument(name = "spend", skip(self, state, _context))]
-    async fn check_stateful(&self, state: Arc<State>, _context: Arc<Transaction>) -> Result<()> {
+    #[instrument(name = "spend", skip(self, state))]
+    async fn check_stateful(&self, state: Arc<State>) -> Result<()> {
         // Check that the `Nullifier` has not been spent before.
         let spent_nullifier = self.body.nullifier;
         state.check_nullifier_unspent(spent_nullifier).await

@@ -45,8 +45,8 @@ impl ActionHandler for Swap {
         Ok(())
     }
 
-    #[instrument(name = "swap", skip(self, _state, _context))]
-    async fn check_stateful(&self, _state: Arc<State>, _context: Arc<Transaction>) -> Result<()> {
+    #[instrument(name = "swap", skip(self, _state))]
+    async fn check_stateful(&self, _state: Arc<State>) -> Result<()> {
         // TODO: are any other checks necessary?
 
         Ok(())

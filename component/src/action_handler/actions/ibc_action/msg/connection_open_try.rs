@@ -25,8 +25,8 @@ impl ActionHandler for MsgConnectionOpenTry {
         Ok(())
     }
 
-    #[instrument(name = "connection_open_try", skip(self, state, _context))]
-    async fn check_stateful(&self, state: Arc<State>, _context: Arc<Transaction>) -> Result<()> {
+    #[instrument(name = "connection_open_try", skip(self, state))]
+    async fn check_stateful(&self, state: Arc<State>) -> Result<()> {
         state.validate(self).await?;
 
         Ok(())

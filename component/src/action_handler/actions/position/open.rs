@@ -18,8 +18,8 @@ impl ActionHandler for PositionOpen {
         Err(anyhow::anyhow!("lp actions not supported yet"))
     }
 
-    #[instrument(name = "position_close", skip(self, _state, _context))]
-    async fn check_stateful(&self, _state: Arc<State>, _context: Arc<Transaction>) -> Result<()> {
+    #[instrument(name = "position_close", skip(self, _state))]
+    async fn check_stateful(&self, _state: Arc<State>) -> Result<()> {
         // It's important to reject all LP actions for now, to prevent
         // inflation / minting bugs until we implement all required checks
         // (e.g., minting tokens by withdrawing reserves we don't check)

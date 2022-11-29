@@ -548,9 +548,7 @@ mod tests {
         create_client_action
             .check_stateless(dummy_context.clone())
             .await?;
-        create_client_action
-            .check_stateful(state.clone(), dummy_context.clone())
-            .await?;
+        create_client_action.check_stateful(state.clone()).await?;
         let mut state_tx = state.try_begin_transaction().unwrap();
         create_client_action.execute(&mut state_tx).await?;
         state_tx.apply();
@@ -562,9 +560,7 @@ mod tests {
         update_client_action
             .check_stateless(dummy_context.clone())
             .await?;
-        update_client_action
-            .check_stateful(state.clone(), dummy_context.clone())
-            .await?;
+        update_client_action.check_stateful(state.clone()).await?;
         let mut state_tx = state.try_begin_transaction().unwrap();
         update_client_action.execute(&mut state_tx).await?;
         state_tx.apply();
@@ -585,7 +581,7 @@ mod tests {
             .check_stateless(dummy_context.clone())
             .await?;
         second_update_client_action
-            .check_stateful(state.clone(), dummy_context.clone())
+            .check_stateful(state.clone())
             .await?;
         let mut state_tx = state.try_begin_transaction().unwrap();
         second_update_client_action.execute(&mut state_tx).await?;
