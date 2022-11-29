@@ -1,0 +1,5223 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <title>Protocol Documentation</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Ubuntu:400,700,400italic"/>
+    <style>
+      body {
+        width: 60em;
+        margin: 1em auto;
+        color: #222;
+        font-family: "Ubuntu", sans-serif;
+        padding-bottom: 4em;
+      }
+
+      h1 {
+        font-weight: normal;
+        border-bottom: 1px solid #aaa;
+        padding-bottom: 0.5ex;
+      }
+
+      h2 {
+        border-bottom: 1px solid #aaa;
+        padding-bottom: 0.5ex;
+        margin: 1.5em 0;
+      }
+
+      h3 {
+        font-weight: normal;
+        border-bottom: 1px solid #aaa;
+        padding-bottom: 0.5ex;
+      }
+
+      a {
+        text-decoration: none;
+        color: #567e25;
+      }
+
+      table {
+        width: 100%;
+        font-size: 80%;
+        border-collapse: collapse;
+      }
+
+      thead {
+        font-weight: 700;
+        background-color: #dcdcdc;
+      }
+
+      tbody tr:nth-child(even) {
+        background-color: #fbfbfb;
+      }
+
+      td {
+        border: 1px solid #ccc;
+        padding: 0.5ex 2ex;
+      }
+
+      td p {
+        text-indent: 1em;
+        margin: 0;
+      }
+
+      td p:nth-child(1) {
+        text-indent: 0;  
+      }
+
+       
+      .field-table td:nth-child(1) {  
+        width: 10em;
+      }
+      .field-table td:nth-child(2) {  
+        width: 10em;
+      }
+      .field-table td:nth-child(3) {  
+        width: 6em;
+      }
+      .field-table td:nth-child(4) {  
+        width: auto;
+      }
+
+       
+      .extension-table td:nth-child(1) {  
+        width: 10em;
+      }
+      .extension-table td:nth-child(2) {  
+        width: 10em;
+      }
+      .extension-table td:nth-child(3) {  
+        width: 10em;
+      }
+      .extension-table td:nth-child(4) {  
+        width: 5em;
+      }
+      .extension-table td:nth-child(5) {  
+        width: auto;
+      }
+
+       
+      .enum-table td:nth-child(1) {  
+        width: 10em;
+      }
+      .enum-table td:nth-child(2) {  
+        width: 10em;
+      }
+      .enum-table td:nth-child(3) {  
+        width: auto;
+      }
+
+       
+      .scalar-value-types-table tr {
+        height: 3em;
+      }
+
+       
+      #toc-container ul {
+        list-style-type: none;
+        padding-left: 1em;
+        line-height: 180%;
+        margin: 0;
+      }
+      #toc > li > a {
+        font-weight: bold;
+      }
+
+       
+      .file-heading {
+        width: 100%;
+        display: table;
+        border-bottom: 1px solid #aaa;
+        margin: 4em 0 1.5em 0;
+      }
+      .file-heading h2 {
+        border: none;
+        display: table-cell;
+      }
+      .file-heading a {
+        text-align: right;
+        display: table-cell;
+      }
+
+       
+      .badge {
+        width: 1.6em;
+        height: 1.6em;
+        display: inline-block;
+
+        line-height: 1.6em;
+        text-align: center;
+        font-weight: bold;
+        font-size: 60%;
+
+        color: #89ba48;
+        background-color: #dff0c8;
+
+        margin: 0.5ex 1em 0.5ex -1em;
+        border: 1px solid #fbfbfb;
+        border-radius: 1ex;
+      }
+    </style>
+
+    
+    <link rel="stylesheet" type="text/css" href="stylesheet.css"/>
+  </head>
+
+  <body>
+
+    <h1 id="title">Protocol Documentation</h1>
+
+    <h2>Table of Contents</h2>
+
+    <div id="toc-container">
+      <ul id="toc">
+        
+          
+          <li>
+            <a href="#chain.proto">chain.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#penumbra.chain.AnnotatedNotePayload"><span class="badge">M</span>AnnotatedNotePayload</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.chain.AssetInfo"><span class="badge">M</span>AssetInfo</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.chain.ChainParams"><span class="badge">M</span>ChainParams</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.chain.CompactBlock"><span class="badge">M</span>CompactBlock</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.chain.DelibleNoteSource"><span class="badge">M</span>DelibleNoteSource</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.chain.GenesisAppState"><span class="badge">M</span>GenesisAppState</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.chain.GenesisAppState.Allocation"><span class="badge">M</span>GenesisAppState.Allocation</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.chain.KnownAssets"><span class="badge">M</span>KnownAssets</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.chain.NoteSource"><span class="badge">M</span>NoteSource</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.chain.Quarantined"><span class="badge">M</span>Quarantined</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.chain.Quarantined.EpochEntry"><span class="badge">M</span>Quarantined.EpochEntry</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.chain.Quarantined.Scheduled"><span class="badge">M</span>Quarantined.Scheduled</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.chain.Quarantined.Unbonding"><span class="badge">M</span>Quarantined.Unbonding</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.chain.Quarantined.ValidatorEntry"><span class="badge">M</span>Quarantined.ValidatorEntry</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.chain.Slashed"><span class="badge">M</span>Slashed</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#client%2foblivious.proto">client/oblivious.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#penumbra.client.oblivious.AssetListRequest"><span class="badge">M</span>AssetListRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.client.oblivious.ChainParamsRequest"><span class="badge">M</span>ChainParamsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.client.oblivious.CompactBlockRangeRequest"><span class="badge">M</span>CompactBlockRangeRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.client.oblivious.ValidatorInfoRequest"><span class="badge">M</span>ValidatorInfoRequest</a>
+                </li>
+              
+              
+              
+              
+                <li>
+                  <a href="#penumbra.client.oblivious.ObliviousQuery"><span class="badge">S</span>ObliviousQuery</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#client%2fspecific.proto">client/specific.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#penumbra.client.specific.KeyValueRequest"><span class="badge">M</span>KeyValueRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.client.specific.KeyValueResponse"><span class="badge">M</span>KeyValueResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.client.specific.ValidatorStatusRequest"><span class="badge">M</span>ValidatorStatusRequest</a>
+                </li>
+              
+              
+              
+              
+                <li>
+                  <a href="#penumbra.client.specific.SpecificQuery"><span class="badge">S</span>SpecificQuery</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#crypto.proto">crypto.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#penumbra.crypto.Address"><span class="badge">M</span>Address</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.crypto.AddressIndex"><span class="badge">M</span>AddressIndex</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.crypto.Asset"><span class="badge">M</span>Asset</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.crypto.AssetId"><span class="badge">M</span>AssetId</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.crypto.BindingSignature"><span class="badge">M</span>BindingSignature</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.crypto.Denom"><span class="badge">M</span>Denom</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.crypto.Diversifier"><span class="badge">M</span>Diversifier</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.crypto.FullViewingKey"><span class="badge">M</span>FullViewingKey</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.crypto.FullViewingKeyHash"><span class="badge">M</span>FullViewingKeyHash</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.crypto.IdentityKey"><span class="badge">M</span>IdentityKey</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.crypto.MerklePathChunk"><span class="badge">M</span>MerklePathChunk</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.crypto.MerkleRoot"><span class="badge">M</span>MerkleRoot</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.crypto.Note"><span class="badge">M</span>Note</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.crypto.NoteCommitment"><span class="badge">M</span>NoteCommitment</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.crypto.NoteCommitmentBlockProof"><span class="badge">M</span>NoteCommitmentBlockProof</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.crypto.NoteCommitmentProof"><span class="badge">M</span>NoteCommitmentProof</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.crypto.NotePayload"><span class="badge">M</span>NotePayload</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.crypto.Nullifier"><span class="badge">M</span>Nullifier</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.crypto.SpendAuthSignature"><span class="badge">M</span>SpendAuthSignature</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.crypto.SpendKey"><span class="badge">M</span>SpendKey</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.crypto.Value"><span class="badge">M</span>Value</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#custody.proto">custody.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#penumbra.custody.AuthorizeRequest"><span class="badge">M</span>AuthorizeRequest</a>
+                </li>
+              
+              
+              
+              
+                <li>
+                  <a href="#penumbra.custody.CustodyProtocol"><span class="badge">S</span>CustodyProtocol</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#dex.proto">dex.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#penumbra.dex.MockFlowCiphertext"><span class="badge">M</span>MockFlowCiphertext</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.dex.Swap"><span class="badge">M</span>Swap</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.dex.SwapBody"><span class="badge">M</span>SwapBody</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.dex.SwapClaim"><span class="badge">M</span>SwapClaim</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.dex.SwapPlaintext"><span class="badge">M</span>SwapPlaintext</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.dex.TradingPair"><span class="badge">M</span>TradingPair</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#ibc.proto">ibc.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#penumbra.ibc.ClientConnections"><span class="badge">M</span>ClientConnections</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.ibc.ClientCounter"><span class="badge">M</span>ClientCounter</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.ibc.ClientData"><span class="badge">M</span>ClientData</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.ibc.ConnectionCounter"><span class="badge">M</span>ConnectionCounter</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.ibc.ConsensusState"><span class="badge">M</span>ConsensusState</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.ibc.IBCAction"><span class="badge">M</span>IBCAction</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.ibc.VerifiedHeights"><span class="badge">M</span>VerifiedHeights</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#stake.proto">stake.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#penumbra.stake.BaseRateData"><span class="badge">M</span>BaseRateData</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.stake.BondingState"><span class="badge">M</span>BondingState</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.stake.CommissionAmount"><span class="badge">M</span>CommissionAmount</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.stake.CommissionAmounts"><span class="badge">M</span>CommissionAmounts</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.stake.Delegate"><span class="badge">M</span>Delegate</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.stake.DelegationChanges"><span class="badge">M</span>DelegationChanges</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.stake.FundingStream"><span class="badge">M</span>FundingStream</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.stake.RateData"><span class="badge">M</span>RateData</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.stake.Undelegate"><span class="badge">M</span>Undelegate</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.stake.Uptime"><span class="badge">M</span>Uptime</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.stake.Validator"><span class="badge">M</span>Validator</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.stake.ValidatorDefinition"><span class="badge">M</span>ValidatorDefinition</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.stake.ValidatorInfo"><span class="badge">M</span>ValidatorInfo</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.stake.ValidatorList"><span class="badge">M</span>ValidatorList</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.stake.ValidatorState"><span class="badge">M</span>ValidatorState</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.stake.ValidatorStatus"><span class="badge">M</span>ValidatorStatus</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#penumbra.stake.BondingState.BondingStateEnum"><span class="badge">E</span>BondingState.BondingStateEnum</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.stake.ValidatorState.ValidatorStateEnum"><span class="badge">E</span>ValidatorState.ValidatorStateEnum</a>
+                </li>
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#transaction.proto">transaction.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#penumbra.transaction.Action"><span class="badge">M</span>Action</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.transaction.ActionPlan"><span class="badge">M</span>ActionPlan</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.transaction.AuthHash"><span class="badge">M</span>AuthHash</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.transaction.AuthorizationData"><span class="badge">M</span>AuthorizationData</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.transaction.Fee"><span class="badge">M</span>Fee</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.transaction.Output"><span class="badge">M</span>Output</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.transaction.OutputBody"><span class="badge">M</span>OutputBody</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.transaction.OutputPlan"><span class="badge">M</span>OutputPlan</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.transaction.Spend"><span class="badge">M</span>Spend</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.transaction.SpendBody"><span class="badge">M</span>SpendBody</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.transaction.SpendPlan"><span class="badge">M</span>SpendPlan</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.transaction.Transaction"><span class="badge">M</span>Transaction</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.transaction.TransactionBody"><span class="badge">M</span>TransactionBody</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.transaction.TransactionPlan"><span class="badge">M</span>TransactionPlan</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.transaction.WitnessData"><span class="badge">M</span>WitnessData</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#transparent_proofs.proto">transparent_proofs.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#penumbra.transparent_proofs.OutputProof"><span class="badge">M</span>OutputProof</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.transparent_proofs.SpendProof"><span class="badge">M</span>SpendProof</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.transparent_proofs.SwapProof"><span class="badge">M</span>SwapProof</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#view.proto">view.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#penumbra.view.AssetRequest"><span class="badge">M</span>AssetRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.view.ChainParamsRequest"><span class="badge">M</span>ChainParamsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.view.NoteByCommitmentRequest"><span class="badge">M</span>NoteByCommitmentRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.view.NoteRecord"><span class="badge">M</span>NoteRecord</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.view.NotesRequest"><span class="badge">M</span>NotesRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.view.QuarantinedNoteRecord"><span class="badge">M</span>QuarantinedNoteRecord</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.view.QuarantinedNotesRequest"><span class="badge">M</span>QuarantinedNotesRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.view.StatusRequest"><span class="badge">M</span>StatusRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.view.StatusResponse"><span class="badge">M</span>StatusResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.view.StatusStreamRequest"><span class="badge">M</span>StatusStreamRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.view.StatusStreamResponse"><span class="badge">M</span>StatusStreamResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#penumbra.view.WitnessRequest"><span class="badge">M</span>WitnessRequest</a>
+                </li>
+              
+              
+              
+              
+                <li>
+                  <a href="#penumbra.view.ViewProtocol"><span class="badge">S</span>ViewProtocol</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+        <li><a href="#scalar-value-types">Scalar Value Types</a></li>
+      </ul>
+    </div>
+
+    
+      
+      <div class="file-heading">
+        <h2 id="chain.proto">chain.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="penumbra.chain.AnnotatedNotePayload">AnnotatedNotePayload</h3>
+        <p>A note payload, annotated with the note source.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>payload</td>
+                  <td><a href="#penumbra.crypto.NotePayload">penumbra.crypto.NotePayload</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>source</td>
+                  <td><a href="#penumbra.chain.NoteSource">NoteSource</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.chain.AssetInfo">AssetInfo</h3>
+        <p>TODO: delete with legacy code</p><p>Information about a given asset at a given time (as specified by block</p><p>height). Currently this only contains the total supply.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>asset_id</td>
+                  <td><a href="#penumbra.crypto.AssetId">penumbra.crypto.AssetId</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>denom</td>
+                  <td><a href="#penumbra.crypto.Denom">penumbra.crypto.Denom</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>as_of_block_height</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>total_supply</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.chain.ChainParams">ChainParams</h3>
+        <p>Global chain configuration data, such as chain ID, epoch duration, etc.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>chain_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The identifier of the chain. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>epoch_duration</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The duration of each epoch, in number of blocks. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>unbonding_epochs</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The number of epochs an unbonding note for before being released. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>active_validator_limit</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The maximum number of validators in the consensus set. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>base_reward_rate</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The base reward rate, expressed in basis points of basis points </p></td>
+                </tr>
+              
+                <tr>
+                  <td>slashing_penalty_misbehavior_bps</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The penalty for slashing due to misbehavior, expressed in basis points. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>slashing_penalty_downtime_bps</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The penalty for slashing due to downtime, expressed in basis points. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>signed_blocks_window_len</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The number of blocks in the window to check for downtime. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>missed_blocks_maximum</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The maximum number of blocks in the window each validator can miss signing without slashing. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ibc_enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether IBC (forming connections, processing IBC packets) is enabled. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>inbound_ics20_transfers_enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether inbound ICS-20 transfers are enabled </p></td>
+                </tr>
+              
+                <tr>
+                  <td>outbound_ics20_transfers_enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether outbound ICS-20 transfers are enabled </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.chain.CompactBlock">CompactBlock</h3>
+        <p>Contains the minimum data needed to update client state.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>height</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>note_payloads</td>
+                  <td><a href="#penumbra.chain.AnnotatedNotePayload">AnnotatedNotePayload</a></td>
+                  <td>repeated</td>
+                  <td><p>NotePayloads describing new notes. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>nullifiers</td>
+                  <td><a href="#penumbra.crypto.Nullifier">penumbra.crypto.Nullifier</a></td>
+                  <td>repeated</td>
+                  <td><p>Nullifiers identifying spent notes. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>block_root</td>
+                  <td><a href="#penumbra.crypto.MerkleRoot">penumbra.crypto.MerkleRoot</a></td>
+                  <td></td>
+                  <td><p>The block root of this block. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>epoch_root</td>
+                  <td><a href="#penumbra.crypto.MerkleRoot">penumbra.crypto.MerkleRoot</a></td>
+                  <td></td>
+                  <td><p>The epoch root of this epoch (only present when the block is the last in an epoch). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>quarantined</td>
+                  <td><a href="#penumbra.chain.Quarantined">Quarantined</a></td>
+                  <td></td>
+                  <td><p>Newly quarantined things in this block. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>slashed</td>
+                  <td><a href="#penumbra.crypto.IdentityKey">penumbra.crypto.IdentityKey</a></td>
+                  <td>repeated</td>
+                  <td><p>Validators slashed in this block. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.chain.DelibleNoteSource">DelibleNoteSource</h3>
+        <p>A spicier transaction ID: one which can be missing</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>source</td>
+                  <td><a href="#penumbra.chain.NoteSource">NoteSource</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.chain.GenesisAppState">GenesisAppState</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>chain_params</td>
+                  <td><a href="#penumbra.chain.ChainParams">ChainParams</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>validators</td>
+                  <td><a href="#penumbra.stake.Validator">penumbra.stake.Validator</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>allocations</td>
+                  <td><a href="#penumbra.chain.GenesisAppState.Allocation">GenesisAppState.Allocation</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.chain.GenesisAppState.Allocation">GenesisAppState.Allocation</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>amount</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>denom</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>address</td>
+                  <td><a href="#penumbra.crypto.Address">penumbra.crypto.Address</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.chain.KnownAssets">KnownAssets</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>assets</td>
+                  <td><a href="#penumbra.crypto.Asset">penumbra.crypto.Asset</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.chain.NoteSource">NoteSource</h3>
+        <p>A spicy transaction ID</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>inner</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.chain.Quarantined">Quarantined</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>per_epoch</td>
+                  <td><a href="#penumbra.chain.Quarantined.EpochEntry">Quarantined.EpochEntry</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.chain.Quarantined.EpochEntry">Quarantined.EpochEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>unbonding_epoch</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>scheduled</td>
+                  <td><a href="#penumbra.chain.Quarantined.Scheduled">Quarantined.Scheduled</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.chain.Quarantined.Scheduled">Quarantined.Scheduled</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>per_validator</td>
+                  <td><a href="#penumbra.chain.Quarantined.ValidatorEntry">Quarantined.ValidatorEntry</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.chain.Quarantined.Unbonding">Quarantined.Unbonding</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>note_payloads</td>
+                  <td><a href="#penumbra.chain.AnnotatedNotePayload">AnnotatedNotePayload</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>nullifiers</td>
+                  <td><a href="#penumbra.crypto.Nullifier">penumbra.crypto.Nullifier</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.chain.Quarantined.ValidatorEntry">Quarantined.ValidatorEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>identity_key</td>
+                  <td><a href="#penumbra.crypto.IdentityKey">penumbra.crypto.IdentityKey</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>unbonding</td>
+                  <td><a href="#penumbra.chain.Quarantined.Unbonding">Quarantined.Unbonding</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.chain.Slashed">Slashed</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>validators</td>
+                  <td><a href="#penumbra.crypto.IdentityKey">penumbra.crypto.IdentityKey</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="client/oblivious.proto">client/oblivious.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="penumbra.client.oblivious.AssetListRequest">AssetListRequest</h3>
+        <p>Lists all assets in Asset Registry</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>chain_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The expected chain id (empty string if no expectation). </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.client.oblivious.ChainParamsRequest">ChainParamsRequest</h3>
+        <p>Requests the global configuration data for the chain.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>chain_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The expected chain id (empty string if no expectation). </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.client.oblivious.CompactBlockRangeRequest">CompactBlockRangeRequest</h3>
+        <p>Requests a range of compact block data.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>chain_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The expected chain id (empty string if no expectation). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>start_height</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The start height of the range. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end_height</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The end height of the range.
+
+If unset, defaults to the latest block height. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>keep_alive</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set, keep the connection alive past end_height,
+streaming new compact blocks as they are created. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.client.oblivious.ValidatorInfoRequest">ValidatorInfoRequest</h3>
+        <p>Requests information on the chain's validators.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>chain_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The expected chain id (empty string if no expectation). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>show_inactive</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether or not to return inactive validators </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+        <h3 id="penumbra.client.oblivious.ObliviousQuery">ObliviousQuery</h3>
+        <p>Methods for accessing chain state that are "oblivious" in the sense that they</p><p>do not request specific portions of the chain state that could reveal private</p><p>client data.  For instance, requesting all asset denominations is oblivious,</p><p>but requesting the asset denomination for a specific asset id is not, because</p><p>it reveals that the client has an interest in that asset specifically.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>CompactBlockRange</td>
+                <td><a href="#penumbra.client.oblivious.CompactBlockRangeRequest">CompactBlockRangeRequest</a></td>
+                <td><a href="#penumbra.chain.CompactBlock">.penumbra.chain.CompactBlock</a> stream</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ChainParams</td>
+                <td><a href="#penumbra.client.oblivious.ChainParamsRequest">ChainParamsRequest</a></td>
+                <td><a href="#penumbra.chain.ChainParams">.penumbra.chain.ChainParams</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ValidatorInfo</td>
+                <td><a href="#penumbra.client.oblivious.ValidatorInfoRequest">ValidatorInfoRequest</a></td>
+                <td><a href="#penumbra.stake.ValidatorInfo">.penumbra.stake.ValidatorInfo</a> stream</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>AssetList</td>
+                <td><a href="#penumbra.client.oblivious.AssetListRequest">AssetListRequest</a></td>
+                <td><a href="#penumbra.chain.KnownAssets">.penumbra.chain.KnownAssets</a></td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+    
+      
+      <div class="file-heading">
+        <h2 id="client/specific.proto">client/specific.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="penumbra.client.specific.KeyValueRequest">KeyValueRequest</h3>
+        <p>Performs a key-value query, either by key or by key hash.</p><p>Proofs are only supported by key.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>chain_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The expected chain id (empty string if no expectation). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>If set, the key to fetch from storage. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>key_hash</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>If set, the hash of the key to fetch from storage. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>proof</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>whether to return a proof </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.client.specific.KeyValueResponse">KeyValueResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>proof</td>
+                  <td><a href="#ics23.CommitmentProof">ics23.CommitmentProof</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.client.specific.ValidatorStatusRequest">ValidatorStatusRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>chain_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The expected chain id (empty string if no expectation). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>identity_key</td>
+                  <td><a href="#penumbra.crypto.IdentityKey">penumbra.crypto.IdentityKey</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+        <h3 id="penumbra.client.specific.SpecificQuery">SpecificQuery</h3>
+        <p>Methods for accessing chain state that are "specific" in the sense that they</p><p>request specific portions of the chain state that could reveal private</p><p>client data.  For instance, requesting all asset denominations is oblivious,</p><p>but requesting the asset denomination for a specific asset id is not, because</p><p>it reveals that the client has an interest in that asset specifically.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TransactionByNote</td>
+                <td><a href="#penumbra.crypto.NoteCommitment">.penumbra.crypto.NoteCommitment</a></td>
+                <td><a href="#penumbra.chain.NoteSource">.penumbra.chain.NoteSource</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ValidatorStatus</td>
+                <td><a href="#penumbra.client.specific.ValidatorStatusRequest">ValidatorStatusRequest</a></td>
+                <td><a href="#penumbra.stake.ValidatorStatus">.penumbra.stake.ValidatorStatus</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>NextValidatorRate</td>
+                <td><a href="#penumbra.crypto.IdentityKey">.penumbra.crypto.IdentityKey</a></td>
+                <td><a href="#penumbra.stake.RateData">.penumbra.stake.RateData</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>KeyValue</td>
+                <td><a href="#penumbra.client.specific.KeyValueRequest">KeyValueRequest</a></td>
+                <td><a href="#penumbra.client.specific.KeyValueResponse">KeyValueResponse</a></td>
+                <td><p>General-purpose key-value state query API, that can be used to query
+arbitrary keys in the JMT storage.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+    
+      
+      <div class="file-heading">
+        <h2 id="crypto.proto">crypto.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="penumbra.crypto.Address">Address</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>inner</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.crypto.AddressIndex">AddressIndex</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>inner</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.crypto.Asset">Asset</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>id</td>
+                  <td><a href="#penumbra.crypto.AssetId">AssetId</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>denom</td>
+                  <td><a href="#penumbra.crypto.Denom">Denom</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.crypto.AssetId">AssetId</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>inner</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.crypto.BindingSignature">BindingSignature</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>inner</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.crypto.Denom">Denom</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>denom</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.crypto.Diversifier">Diversifier</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>inner</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.crypto.FullViewingKey">FullViewingKey</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>inner</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.crypto.FullViewingKeyHash">FullViewingKeyHash</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>inner</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.crypto.IdentityKey">IdentityKey</h3>
+        <p>A validator's identity key (decaf377-rdsa spendauth verification key).</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>ik</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.crypto.MerklePathChunk">MerklePathChunk</h3>
+        <p>A set of 3 sibling hashes in the auth path for some note commitment.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>sibling_1</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sibling_2</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sibling_3</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.crypto.MerkleRoot">MerkleRoot</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>inner</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.crypto.Note">Note</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#penumbra.crypto.Value">Value</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>note_blinding</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>diversifier</td>
+                  <td><a href="#penumbra.crypto.Diversifier">Diversifier</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>transmission_key</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.crypto.NoteCommitment">NoteCommitment</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>inner</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.crypto.NoteCommitmentBlockProof">NoteCommitmentBlockProof</h3>
+        <p>An authentication path from a note commitment to a block root of the note commitment tree.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>note_commitment</td>
+                  <td><a href="#penumbra.crypto.NoteCommitment">NoteCommitment</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>position</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>auth_path</td>
+                  <td><a href="#penumbra.crypto.MerklePathChunk">MerklePathChunk</a></td>
+                  <td>repeated</td>
+                  <td><p>always length 8 </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.crypto.NoteCommitmentProof">NoteCommitmentProof</h3>
+        <p>An authentication path from a note commitment to the root of the note commitment tree.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>note_commitment</td>
+                  <td><a href="#penumbra.crypto.NoteCommitment">NoteCommitment</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>position</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>auth_path</td>
+                  <td><a href="#penumbra.crypto.MerklePathChunk">MerklePathChunk</a></td>
+                  <td>repeated</td>
+                  <td><p>always length 24 </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.crypto.NotePayload">NotePayload</h3>
+        <p>The body of an output description, including only the minimal</p><p>data required to scan and process the output.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>note_commitment</td>
+                  <td><a href="#penumbra.crypto.NoteCommitment">NoteCommitment</a></td>
+                  <td></td>
+                  <td><p>The note commitment for the output note. 32 bytes. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ephemeral_key</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>The encoding of an ephemeral public key. 32 bytes. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>encrypted_note</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>An encryption of the newly created note.
+132 = 1(type) &#43; 11(d) &#43; 8(amount) &#43; 32(asset_id) &#43; 32(rcm) &#43; 32(pk_d) &#43; 16(MAC) bytes. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.crypto.Nullifier">Nullifier</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>inner</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.crypto.SpendAuthSignature">SpendAuthSignature</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>inner</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.crypto.SpendKey">SpendKey</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>inner</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.crypto.Value">Value</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>amount</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>asset_id</td>
+                  <td><a href="#penumbra.crypto.AssetId">AssetId</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="custody.proto">custody.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="penumbra.custody.AuthorizeRequest">AuthorizeRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>plan</td>
+                  <td><a href="#penumbra.transaction.TransactionPlan">penumbra.transaction.TransactionPlan</a></td>
+                  <td></td>
+                  <td><p>The transaction plan to authorize. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>fvk_hash</td>
+                  <td><a href="#penumbra.crypto.FullViewingKeyHash">penumbra.crypto.FullViewingKeyHash</a></td>
+                  <td></td>
+                  <td><p>Identifies the FVK (and hence the spend authorization key) to use for signing. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+        <h3 id="penumbra.custody.CustodyProtocol">CustodyProtocol</h3>
+        <p>The custody protocol is used by a wallet client to request authorization for</p><p>a transaction they've constructed.</p><p>Modeling transaction authorization as an asynchronous RPC call encourages</p><p>software to be written in a way that has a compatible data flow with a "soft</p><p>HSM", threshold signing, a hardware wallet, etc.</p><p>The custody protocol does not trust the client to authorize spends, so</p><p>custody requests must contain sufficient information for the custodian to</p><p>understand the transaction and determine whether or not it should be</p><p>authorized.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>Authorize</td>
+                <td><a href="#penumbra.custody.AuthorizeRequest">AuthorizeRequest</a></td>
+                <td><a href="#penumbra.transaction.AuthorizationData">.penumbra.transaction.AuthorizationData</a></td>
+                <td><p>Requests authorization of the transaction with the given description.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+    
+      
+      <div class="file-heading">
+        <h2 id="dex.proto">dex.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="penumbra.dex.MockFlowCiphertext">MockFlowCiphertext</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.dex.Swap">Swap</h3>
+        <p>A transaction action that submits a swap to the dex.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>zkproof</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>enc_amount_1</td>
+                  <td><a href="#penumbra.dex.MockFlowCiphertext">MockFlowCiphertext</a></td>
+                  <td></td>
+                  <td><p>Encrypted amount of asset 1 of the trading pair. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>enc_amount_2</td>
+                  <td><a href="#penumbra.dex.MockFlowCiphertext">MockFlowCiphertext</a></td>
+                  <td></td>
+                  <td><p>Encrypted amount of asset 2 of the trading pair. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>body</td>
+                  <td><a href="#penumbra.dex.SwapBody">SwapBody</a></td>
+                  <td></td>
+                  <td><p>Encapsulates the authorized fields of the Swap transaction, used in signing. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.dex.SwapBody">SwapBody</h3>
+        <p>The authorized data of a Swap transaction.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>trading_pair</td>
+                  <td><a href="#penumbra.dex.TradingPair">TradingPair</a></td>
+                  <td></td>
+                  <td><p>The trading pair to swap. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ca1</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>Commitment to the amount for asset 1 (delta 1). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ca2</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>Commitment to the amount for asset 2 (delta 2). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>cf</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>A commitment to the fee&#39;s contribution to the transaction&#39;s value balance. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>swap_nft</td>
+                  <td><a href="#penumbra.crypto.NotePayload">penumbra.crypto.NotePayload</a></td>
+                  <td></td>
+                  <td><p>Swap NFT recording the user&#39;s contribution. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>swap_ciphertext</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>Encrypted version of the original `Swap`, symmetrically encrypted w/ viewing key. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.dex.SwapClaim">SwapClaim</h3>
+        <p>A transaction action that obtains assets previously confirmed</p><p>via a Swap transaction. Does not include a spend authorization</p><p>signature, as it is only capable of consuming the NFT from a</p><p>Swap transaction.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>zkproof</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>Proves the spent note records 1 unit of the swap NFT. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>nullifier</td>
+                  <td><a href="#penumbra.crypto.Nullifier">penumbra.crypto.Nullifier</a></td>
+                  <td></td>
+                  <td><p>The nullifier for the Swap NFT to be consumed. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>fee</td>
+                  <td><a href="#penumbra.transaction.Fee">penumbra.transaction.Fee</a></td>
+                  <td></td>
+                  <td><p>The fee allows `SwapClaim` without an additional `Spend`. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>output_1</td>
+                  <td><a href="#penumbra.crypto.NotePayload">penumbra.crypto.NotePayload</a></td>
+                  <td></td>
+                  <td><p>Note output for asset 1. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>output_2</td>
+                  <td><a href="#penumbra.crypto.NotePayload">penumbra.crypto.NotePayload</a></td>
+                  <td></td>
+                  <td><p>Note output for asset 2. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>anchor</td>
+                  <td><a href="#penumbra.crypto.MerkleRoot">penumbra.crypto.MerkleRoot</a></td>
+                  <td></td>
+                  <td><p>Block root for the associated `Swap` action, identifying the block the `Swap` was included in. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>price_1</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>Price for asset 1 in the associated `Swap`. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>price_2</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>Price for asset 2 in the associated `Swap`. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.dex.SwapPlaintext">SwapPlaintext</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>trading_pair</td>
+                  <td><a href="#penumbra.dex.TradingPair">TradingPair</a></td>
+                  <td></td>
+                  <td><p>The trading pair to swap. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>t1</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>Amount of asset 1 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>t2</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>Amount of asset 2 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>fee</td>
+                  <td><a href="#penumbra.transaction.Fee">penumbra.transaction.Fee</a></td>
+                  <td></td>
+                  <td><p>Fee </p></td>
+                </tr>
+              
+                <tr>
+                  <td>b_d</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>Diversified basepoint </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pk_d</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>Diversified public key </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.dex.TradingPair">TradingPair</h3>
+        <p>Holds two asset IDs. Ordering doesn't reflect trading direction, however</p><p>since the `AssetId` type is `Ord + PartialOrd`, there can be only one</p><p>`TradingPair` per asset pair.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>asset_1</td>
+                  <td><a href="#penumbra.crypto.AssetId">penumbra.crypto.AssetId</a></td>
+                  <td></td>
+                  <td><p>The first asset of the pair. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>asset_2</td>
+                  <td><a href="#penumbra.crypto.AssetId">penumbra.crypto.AssetId</a></td>
+                  <td></td>
+                  <td><p>The second asset of the pair. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="ibc.proto">ibc.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="penumbra.ibc.ClientConnections">ClientConnections</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>connections</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.ibc.ClientCounter">ClientCounter</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>counter</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.ibc.ClientData">ClientData</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>clientID</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>clientState</td>
+                  <td><a href="#google.protobuf.Any">google.protobuf.Any</a></td>
+                  <td></td>
+                  <td><p>NOTE: left as Any to allow us to add more client types later </p></td>
+                </tr>
+              
+                <tr>
+                  <td>processedTime</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>processedHeight</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.ibc.ConnectionCounter">ConnectionCounter</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>counter</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.ibc.ConsensusState">ConsensusState</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>consensusState</td>
+                  <td><a href="#google.protobuf.Any">google.protobuf.Any</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.ibc.IBCAction">IBCAction</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>connectionOpenInit</td>
+                  <td><a href="#ibc.core.connection.v1.MsgConnectionOpenInit">ibc.core.connection.v1.MsgConnectionOpenInit</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>connectionOpenTry</td>
+                  <td><a href="#ibc.core.connection.v1.MsgConnectionOpenTry">ibc.core.connection.v1.MsgConnectionOpenTry</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>connectionOpenAck</td>
+                  <td><a href="#ibc.core.connection.v1.MsgConnectionOpenAck">ibc.core.connection.v1.MsgConnectionOpenAck</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>connectionOpenConfirm</td>
+                  <td><a href="#ibc.core.connection.v1.MsgConnectionOpenConfirm">ibc.core.connection.v1.MsgConnectionOpenConfirm</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>channelOpenInit</td>
+                  <td><a href="#ibc.core.channel.v1.MsgChannelOpenInit">ibc.core.channel.v1.MsgChannelOpenInit</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>channelOpenTry</td>
+                  <td><a href="#ibc.core.channel.v1.MsgChannelOpenTry">ibc.core.channel.v1.MsgChannelOpenTry</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>channelOpenAck</td>
+                  <td><a href="#ibc.core.channel.v1.MsgChannelOpenAck">ibc.core.channel.v1.MsgChannelOpenAck</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>channelOpenConfirm</td>
+                  <td><a href="#ibc.core.channel.v1.MsgChannelOpenConfirm">ibc.core.channel.v1.MsgChannelOpenConfirm</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>channelCloseInit</td>
+                  <td><a href="#ibc.core.channel.v1.MsgChannelCloseInit">ibc.core.channel.v1.MsgChannelCloseInit</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>channelCloseConfirm</td>
+                  <td><a href="#ibc.core.channel.v1.MsgChannelCloseConfirm">ibc.core.channel.v1.MsgChannelCloseConfirm</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>recvPacket</td>
+                  <td><a href="#ibc.core.channel.v1.MsgRecvPacket">ibc.core.channel.v1.MsgRecvPacket</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>timeout</td>
+                  <td><a href="#ibc.core.channel.v1.MsgTimeout">ibc.core.channel.v1.MsgTimeout</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>acknowledgement</td>
+                  <td><a href="#ibc.core.channel.v1.MsgAcknowledgement">ibc.core.channel.v1.MsgAcknowledgement</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>createClient</td>
+                  <td><a href="#ibc.core.client.v1.MsgCreateClient">ibc.core.client.v1.MsgCreateClient</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>updateClient</td>
+                  <td><a href="#ibc.core.client.v1.MsgUpdateClient">ibc.core.client.v1.MsgUpdateClient</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>upgradeClient</td>
+                  <td><a href="#ibc.core.client.v1.MsgUpgradeClient">ibc.core.client.v1.MsgUpgradeClient</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>submitMisbehaviour</td>
+                  <td><a href="#ibc.core.client.v1.MsgSubmitMisbehaviour">ibc.core.client.v1.MsgSubmitMisbehaviour</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.ibc.VerifiedHeights">VerifiedHeights</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>heights</td>
+                  <td><a href="#ibc.core.client.v1.Height">ibc.core.client.v1.Height</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="stake.proto">stake.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="penumbra.stake.BaseRateData">BaseRateData</h3>
+        <p>Describes the base reward and exchange rates in some epoch.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>epoch_index</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>base_reward_rate</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>base_exchange_rate</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.stake.BondingState">BondingState</h3>
+        <p>Describes the unbonding state of a validator's stake pool.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>state</td>
+                  <td><a href="#penumbra.stake.BondingState.BondingStateEnum">BondingState.BondingStateEnum</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>unbonding_epoch</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.stake.CommissionAmount">CommissionAmount</h3>
+        <p>A commission amount to be minted as part of processing the epoch transition.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>amount</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>destination</td>
+                  <td><a href="#penumbra.crypto.Address">penumbra.crypto.Address</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.stake.CommissionAmounts">CommissionAmounts</h3>
+        <p>A list of commission amounts to be minted as part of processing the epoch transition.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>notes</td>
+                  <td><a href="#penumbra.stake.CommissionAmount">CommissionAmount</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.stake.Delegate">Delegate</h3>
+        <p>A transaction action adding stake to a validator's delegation pool.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>validator_identity</td>
+                  <td><a href="#penumbra.crypto.IdentityKey">penumbra.crypto.IdentityKey</a></td>
+                  <td></td>
+                  <td><p>The identity key of the validator to delegate to. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>epoch_index</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The index of the epoch in which this delegation was performed.
+The delegation takes effect in the next epoch. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>unbonded_amount</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The delegation amount, in units of unbonded stake.
+TODO: use flow aggregation to hide this, replacing it with bytes amount_ciphertext; </p></td>
+                </tr>
+              
+                <tr>
+                  <td>delegation_amount</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The amount of delegation tokens produced by this action.
+
+This is implied by the validator&#39;s exchange rate in the specified epoch
+(and should be checked in transaction validation!), but including it allows
+stateless verification that the transaction is internally consistent. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.stake.DelegationChanges">DelegationChanges</h3>
+        <p>A list of pending delegations and undelegations.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>delegations</td>
+                  <td><a href="#penumbra.stake.Delegate">Delegate</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>undelegations</td>
+                  <td><a href="#penumbra.stake.Undelegate">Undelegate</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.stake.FundingStream">FundingStream</h3>
+        <p>A portion of a validator's commission.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>address</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The destination address for the funding stream. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>rate_bps</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>The portion of the staking reward for the entire delegation pool
+allocated to this funding stream, specified in basis points. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.stake.RateData">RateData</h3>
+        <p>Describes the reward and exchange rates and voting power for a validator in some epoch.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>identity_key</td>
+                  <td><a href="#penumbra.crypto.IdentityKey">penumbra.crypto.IdentityKey</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>epoch_index</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>validator_reward_rate</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>validator_exchange_rate</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.stake.Undelegate">Undelegate</h3>
+        <p>A transaction action withdrawing stake from a validator's delegation pool.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>validator_identity</td>
+                  <td><a href="#penumbra.crypto.IdentityKey">penumbra.crypto.IdentityKey</a></td>
+                  <td></td>
+                  <td><p>The identity key of the validator to undelegate from. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>epoch_index</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The index of the epoch in which this undelegation was performed. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>unbonded_amount</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The amount to undelegate, in units of unbonded stake. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>delegation_amount</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The amount of delegation tokens consumed by this action.
+
+This is implied by the validator&#39;s exchange rate in the specified epoch
+(and should be checked in transaction validation!), but including it allows
+stateless verification that the transaction is internally consistent. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.stake.Uptime">Uptime</h3>
+        <p>Track's a validator's uptime.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>as_of_block_height</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>window_len</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>bitvec</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.stake.Validator">Validator</h3>
+        <p>Describes a validator's configuration data.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>identity_key</td>
+                  <td><a href="#penumbra.crypto.IdentityKey">penumbra.crypto.IdentityKey</a></td>
+                  <td></td>
+                  <td><p>The validator&#39;s identity verification key. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>consensus_key</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>The validator&#39;s consensus pubkey for use in Tendermint (Ed25519). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The validator&#39;s (human-readable) name. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>website</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The validator&#39;s website. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>description</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The validator&#39;s description. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the validator is enabled or not.
+
+Disabled validators cannot be delegated to, and immediately begin unbonding. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>funding_streams</td>
+                  <td><a href="#penumbra.stake.FundingStream">FundingStream</a></td>
+                  <td>repeated</td>
+                  <td><p>A list of funding streams describing the validator&#39;s commission. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sequence_number</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>The sequence number determines which validator data takes priority, and
+prevents replay attacks.  The chain only accepts new validator definitions
+with increasing sequence numbers. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.stake.ValidatorDefinition">ValidatorDefinition</h3>
+        <p>A transaction action (re)defining a validator.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>validator</td>
+                  <td><a href="#penumbra.stake.Validator">Validator</a></td>
+                  <td></td>
+                  <td><p>The configuration data for the validator. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>auth_sig</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>A signature by the validator&#39;s identity key over the validator data. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.stake.ValidatorInfo">ValidatorInfo</h3>
+        <p>Combines all validator info into a single packet.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>validator</td>
+                  <td><a href="#penumbra.stake.Validator">Validator</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status</td>
+                  <td><a href="#penumbra.stake.ValidatorStatus">ValidatorStatus</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>rate_data</td>
+                  <td><a href="#penumbra.stake.RateData">RateData</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.stake.ValidatorList">ValidatorList</h3>
+        <p>For storing the list of keys of known validators.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>validator_keys</td>
+                  <td><a href="#penumbra.crypto.IdentityKey">penumbra.crypto.IdentityKey</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.stake.ValidatorState">ValidatorState</h3>
+        <p>Describes the state of a validator</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>state</td>
+                  <td><a href="#penumbra.stake.ValidatorState.ValidatorStateEnum">ValidatorState.ValidatorStateEnum</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.stake.ValidatorStatus">ValidatorStatus</h3>
+        <p>Describes the current state of a validator on-chain</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>identity_key</td>
+                  <td><a href="#penumbra.crypto.IdentityKey">penumbra.crypto.IdentityKey</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>state</td>
+                  <td><a href="#penumbra.stake.ValidatorState">ValidatorState</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>voting_power</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>bonding_state</td>
+                  <td><a href="#penumbra.stake.BondingState">BondingState</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="penumbra.stake.BondingState.BondingStateEnum">BondingState.BondingStateEnum</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>BONDED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>UNBONDING</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>UNBONDED</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="penumbra.stake.ValidatorState.ValidatorStateEnum">ValidatorState.ValidatorStateEnum</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>INACTIVE</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ACTIVE</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>JAILED</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>TOMBSTONED</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DISABLED</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="transaction.proto">transaction.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="penumbra.transaction.Action">Action</h3>
+        <p>A state change performed by a transaction.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>spend</td>
+                  <td><a href="#penumbra.transaction.Spend">Spend</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>output</td>
+                  <td><a href="#penumbra.transaction.Output">Output</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>delegate</td>
+                  <td><a href="#penumbra.stake.Delegate">penumbra.stake.Delegate</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>undelegate</td>
+                  <td><a href="#penumbra.stake.Undelegate">penumbra.stake.Undelegate</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>validator_definition</td>
+                  <td><a href="#penumbra.stake.ValidatorDefinition">penumbra.stake.ValidatorDefinition</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ibc_action</td>
+                  <td><a href="#penumbra.ibc.IBCAction">penumbra.ibc.IBCAction</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.transaction.ActionPlan">ActionPlan</h3>
+        <p>Describes a planned transaction action.</p><p>Some transaction Actions don't have any private data and are treated as being plans</p><p>themselves.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>spend</td>
+                  <td><a href="#penumbra.transaction.SpendPlan">SpendPlan</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>output</td>
+                  <td><a href="#penumbra.transaction.OutputPlan">OutputPlan</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>delegate</td>
+                  <td><a href="#penumbra.stake.Delegate">penumbra.stake.Delegate</a></td>
+                  <td></td>
+                  <td><p>We don&#39;t need any extra information (yet) to understand delegations,
+because we don&#39;t yet use flow encryption. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>undelegate</td>
+                  <td><a href="#penumbra.stake.Undelegate">penumbra.stake.Undelegate</a></td>
+                  <td></td>
+                  <td><p>We don&#39;t need any extra information (yet) to understand undelegations,
+because we don&#39;t yet use flow encryption. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>validator_definition</td>
+                  <td><a href="#penumbra.stake.ValidatorDefinition">penumbra.stake.ValidatorDefinition</a></td>
+                  <td></td>
+                  <td><p>This is just a message relayed to the chain. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ibc_action</td>
+                  <td><a href="#penumbra.ibc.IBCAction">penumbra.ibc.IBCAction</a></td>
+                  <td></td>
+                  <td><p>This is just a message relayed to the chain. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.transaction.AuthHash">AuthHash</h3>
+        <p>An authorization hash for a Penumbra transaction.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>inner</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.transaction.AuthorizationData">AuthorizationData</h3>
+        <p>The data required to authorize a transaction plan.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>auth_hash</td>
+                  <td><a href="#penumbra.transaction.AuthHash">AuthHash</a></td>
+                  <td></td>
+                  <td><p>The computed auth hash for the approved transaction plan. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>spend_auths</td>
+                  <td><a href="#penumbra.crypto.SpendAuthSignature">penumbra.crypto.SpendAuthSignature</a></td>
+                  <td>repeated</td>
+                  <td><p>The required spend authorizations, returned in the same order as the
+Spend actions in the original request. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.transaction.Fee">Fee</h3>
+        <p>Specifies fees paid by a transaction.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>amount</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.transaction.Output">Output</h3>
+        <p>Creates a new shielded note.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>body</td>
+                  <td><a href="#penumbra.transaction.OutputBody">OutputBody</a></td>
+                  <td></td>
+                  <td><p>The authorizing data for the output. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>zkproof</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>The output proof is effecting data. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.transaction.OutputBody">OutputBody</h3>
+        <p>The body of an output description, containing only the "authorizing" data</p><p>included in the authorization hash used for signing, and not the "effecting"</p><p>data which is bound to the authorizing data by some other means.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>note_payload</td>
+                  <td><a href="#penumbra.crypto.NotePayload">penumbra.crypto.NotePayload</a></td>
+                  <td></td>
+                  <td><p>The minimal data required to scan and process the new output note. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>cv</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>A commitment to the value of the output note. 32 bytes. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>encrypted_memo</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>An encrypted memo. 528 bytes. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ovk_wrapped_key</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>The key material used for note encryption, wrapped in encryption to the
+sender&#39;s outgoing viewing key. 80 bytes. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.transaction.OutputPlan">OutputPlan</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#penumbra.crypto.Value">penumbra.crypto.Value</a></td>
+                  <td></td>
+                  <td><p>The value to send to this output. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>dest_address</td>
+                  <td><a href="#penumbra.crypto.Address">penumbra.crypto.Address</a></td>
+                  <td></td>
+                  <td><p>The destination address to send it to. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>memo</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>The memo describing the output. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>note_blinding</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>The blinding factor to use for the new note. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value_blinding</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>The blinding factor to use for the value commitment. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>esk</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>The ephemeral secret key to use for the note encryption. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.transaction.Spend">Spend</h3>
+        <p>Spends a shielded note.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>body</td>
+                  <td><a href="#penumbra.transaction.SpendBody">SpendBody</a></td>
+                  <td></td>
+                  <td><p>The authorizing data for the spend, which is included in the authorization hash used for signing. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>auth_sig</td>
+                  <td><a href="#penumbra.crypto.SpendAuthSignature">penumbra.crypto.SpendAuthSignature</a></td>
+                  <td></td>
+                  <td><p>The spend authorization signature is effecting data. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>zkproof</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>The spend proof is effecting data. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.transaction.SpendBody">SpendBody</h3>
+        <p>The body of a spend description, containing only the "authorizing" data</p><p>included in the authorization hash used for signing, and not the "effecting"</p><p>data which is bound to the authorizing data by some other means.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>cv</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>A commitment to the value of the input note. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>nullifier</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>The nullifier of the input note. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>rk</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>The randomized validating key for the spend authorization signature. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.transaction.SpendPlan">SpendPlan</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>note</td>
+                  <td><a href="#penumbra.crypto.Note">penumbra.crypto.Note</a></td>
+                  <td></td>
+                  <td><p>The plaintext note we plan to spend. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>position</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The position of the note we plan to spend. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>randomizer</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>The randomizer to use for the spend. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value_blinding</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>The blinding factor to use for the value commitment. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.transaction.Transaction">Transaction</h3>
+        <p>A Penumbra transaction.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>body</td>
+                  <td><a href="#penumbra.transaction.TransactionBody">TransactionBody</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>binding_sig</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>The binding signature is stored separately from the transaction body that it signs. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>anchor</td>
+                  <td><a href="#penumbra.crypto.MerkleRoot">penumbra.crypto.MerkleRoot</a></td>
+                  <td></td>
+                  <td><p>The root of some previous state of the note commitment tree, used as an anchor for all
+ZK state transition proofs. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.transaction.TransactionBody">TransactionBody</h3>
+        <p>The body of a transaction.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>actions</td>
+                  <td><a href="#penumbra.transaction.Action">Action</a></td>
+                  <td>repeated</td>
+                  <td><p>A list of actions (state changes) performed by this transaction. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>expiry_height</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The maximum height that this transaction can be included in the chain.
+
+If zero, there is no maximum. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>chain_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The chain this transaction is intended for.  Including this prevents
+replaying a transaction on one chain onto a different chain. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>fee</td>
+                  <td><a href="#penumbra.transaction.Fee">Fee</a></td>
+                  <td></td>
+                  <td><p>The transaction fee. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.transaction.TransactionPlan">TransactionPlan</h3>
+        <p>Describes a planned transaction.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>actions</td>
+                  <td><a href="#penumbra.transaction.ActionPlan">ActionPlan</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>expiry_height</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>chain_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>fee</td>
+                  <td><a href="#penumbra.transaction.Fee">Fee</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.transaction.WitnessData">WitnessData</h3>
+        <p>The data required for proving when building a transaction from a plan.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>anchor</td>
+                  <td><a href="#penumbra.crypto.MerkleRoot">penumbra.crypto.MerkleRoot</a></td>
+                  <td></td>
+                  <td><p>The anchor for the state transition proofs. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>note_commitment_proofs</td>
+                  <td><a href="#penumbra.crypto.NoteCommitmentProof">penumbra.crypto.NoteCommitmentProof</a></td>
+                  <td>repeated</td>
+                  <td><p>The auth paths for the notes the transaction spends, in the
+same order as the spends in the transaction plan. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="transparent_proofs.proto">transparent_proofs.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="penumbra.transparent_proofs.OutputProof">OutputProof</h3>
+        <p>A Penumbra transparent output proof.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>g_d</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>Auxiliary inputs </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pk_d</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value_amount</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value_asset_id</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>v_blinding</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>note_blinding</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>esk</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.transparent_proofs.SpendProof">SpendProof</h3>
+        <p>A Penumbra transparent Spend Proof.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>note_commitment_proof</td>
+                  <td><a href="#penumbra.crypto.NoteCommitmentProof">penumbra.crypto.NoteCommitmentProof</a></td>
+                  <td></td>
+                  <td><p>Auxiliary inputs </p></td>
+                </tr>
+              
+                <tr>
+                  <td>g_d</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pk_d</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value_amount</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value_asset_id</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>v_blinding</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>note_blinding</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>spend_auth_randomizer</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ak</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>nk</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.transparent_proofs.SwapProof">SwapProof</h3>
+        <p>A Penumbra transparent Swap Proof.</p><p>TODO: placeholder</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>note_commitment_block_proof</td>
+                  <td><a href="#penumbra.crypto.NoteCommitmentBlockProof">penumbra.crypto.NoteCommitmentBlockProof</a></td>
+                  <td></td>
+                  <td><p>Auxiliary inputs </p></td>
+                </tr>
+              
+                <tr>
+                  <td>note_commitment_position</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>g_d</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pk_d</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value_amount</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value_asset_id</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>v_blinding</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>note_blinding</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>spend_auth_randomizer</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ak</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>nk</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="view.proto">view.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="penumbra.view.AssetRequest">AssetRequest</h3>
+        <p>Requests all assets known to the view service.</p>
+
+        
+
+        
+      
+        <h3 id="penumbra.view.ChainParamsRequest">ChainParamsRequest</h3>
+        <p>Requests the current chain parameters from the view service.</p>
+
+        
+
+        
+      
+        <h3 id="penumbra.view.NoteByCommitmentRequest">NoteByCommitmentRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>fvk_hash</td>
+                  <td><a href="#penumbra.crypto.FullViewingKeyHash">penumbra.crypto.FullViewingKeyHash</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>note_commitment</td>
+                  <td><a href="#penumbra.crypto.NoteCommitment">penumbra.crypto.NoteCommitment</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>await_detection</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, waits to return until the requested note is detected. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.view.NoteRecord">NoteRecord</h3>
+        <p>A note plaintext with associated metadata about its status.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>note_commitment</td>
+                  <td><a href="#penumbra.crypto.NoteCommitment">penumbra.crypto.NoteCommitment</a></td>
+                  <td></td>
+                  <td><p>The note commitment, identifying the note. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>note</td>
+                  <td><a href="#penumbra.crypto.Note">penumbra.crypto.Note</a></td>
+                  <td></td>
+                  <td><p>The note plaintext itself. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>address_index</td>
+                  <td><a href="#penumbra.crypto.AddressIndex">penumbra.crypto.AddressIndex</a></td>
+                  <td></td>
+                  <td><p>A precomputed decryption of the note&#39;s address index. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>nullifier</td>
+                  <td><a href="#penumbra.crypto.Nullifier">penumbra.crypto.Nullifier</a></td>
+                  <td></td>
+                  <td><p>The note&#39;s nullifier. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>height_created</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The height at which the note was created. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>height_spent</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td>optional</td>
+                  <td><p>Records whether the note was spent (and if so, at what height). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>position</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The note position. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>source</td>
+                  <td><a href="#penumbra.chain.NoteSource">penumbra.chain.NoteSource</a></td>
+                  <td></td>
+                  <td><p>The source of the note (a tx hash or otherwise) </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.view.NotesRequest">NotesRequest</h3>
+        <p>A query for notes known by the view service.</p><p>This message uses the fact that all proto fields are optional</p><p>to allow various filtering on the returned notes.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>fvk_hash</td>
+                  <td><a href="#penumbra.crypto.FullViewingKeyHash">penumbra.crypto.FullViewingKeyHash</a></td>
+                  <td></td>
+                  <td><p>Identifies the FVK for the notes to query. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>include_spent</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set, return spent notes as well as unspent notes. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>asset_id</td>
+                  <td><a href="#penumbra.crypto.AssetId">penumbra.crypto.AssetId</a></td>
+                  <td></td>
+                  <td><p>If set, only return notes with the specified asset id. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>address_index</td>
+                  <td><a href="#penumbra.crypto.AddressIndex">penumbra.crypto.AddressIndex</a></td>
+                  <td></td>
+                  <td><p>If set, only return notes with the specified address index. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>amount_to_spend</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>If set, stop returning notes once the total exceeds this amount.
+
+Ignored if `asset_id` is unset or if `include_spent` is set. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.view.QuarantinedNoteRecord">QuarantinedNoteRecord</h3>
+        <p>The plaintext of a note that has been quarantined until the end of an unbonding period.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>note_commitment</td>
+                  <td><a href="#penumbra.crypto.NoteCommitment">penumbra.crypto.NoteCommitment</a></td>
+                  <td></td>
+                  <td><p>The note commitment, identifying the note. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>note</td>
+                  <td><a href="#penumbra.crypto.Note">penumbra.crypto.Note</a></td>
+                  <td></td>
+                  <td><p>The note plaintext itself. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>address_index</td>
+                  <td><a href="#penumbra.crypto.AddressIndex">penumbra.crypto.AddressIndex</a></td>
+                  <td></td>
+                  <td><p>A precomputed decryption of the note&#39;s address index. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>height_created</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The height at which the note was created. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>unbonding_epoch</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The epoch at which the note will exit quarantine, if unbonding is not interrupted by slashing. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>identity_key</td>
+                  <td><a href="#penumbra.crypto.IdentityKey">penumbra.crypto.IdentityKey</a></td>
+                  <td></td>
+                  <td><p>The validator identity the quarantining is bound to. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>source</td>
+                  <td><a href="#penumbra.chain.NoteSource">penumbra.chain.NoteSource</a></td>
+                  <td></td>
+                  <td><p>The source of the note (a tx hash or otherwise) </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.view.QuarantinedNotesRequest">QuarantinedNotesRequest</h3>
+        <p>A query for quarantined notes known by the view service.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>fvk_hash</td>
+                  <td><a href="#penumbra.crypto.FullViewingKeyHash">penumbra.crypto.FullViewingKeyHash</a></td>
+                  <td></td>
+                  <td><p>Identifies the FVK for the notes to query. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.view.StatusRequest">StatusRequest</h3>
+        <p>Requests sync status of the view service.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>fvk_hash</td>
+                  <td><a href="#penumbra.crypto.FullViewingKeyHash">penumbra.crypto.FullViewingKeyHash</a></td>
+                  <td></td>
+                  <td><p>Identifies the FVK for the notes to query. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.view.StatusResponse">StatusResponse</h3>
+        <p>Returns the status of the view service and whether it is synchronized with the chain state.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>sync_height</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The height the view service has synchronized to so far </p></td>
+                </tr>
+              
+                <tr>
+                  <td>catching_up</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the view service is catching up with the chain state </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.view.StatusStreamRequest">StatusStreamRequest</h3>
+        <p>Requests streaming updates on the sync height until the view service is synchronized.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>fvk_hash</td>
+                  <td><a href="#penumbra.crypto.FullViewingKeyHash">penumbra.crypto.FullViewingKeyHash</a></td>
+                  <td></td>
+                  <td><p>Identifies the FVK for the notes to query. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.view.StatusStreamResponse">StatusStreamResponse</h3>
+        <p>A streaming sync status update</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>latest_known_block_height</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sync_height</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="penumbra.view.WitnessRequest">WitnessRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>fvk_hash</td>
+                  <td><a href="#penumbra.crypto.FullViewingKeyHash">penumbra.crypto.FullViewingKeyHash</a></td>
+                  <td></td>
+                  <td><p>Identifies the FVK for the note commitments to query. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>note_commitments</td>
+                  <td><a href="#penumbra.crypto.NoteCommitment">penumbra.crypto.NoteCommitment</a></td>
+                  <td>repeated</td>
+                  <td><p>The note commitments to obtain auth paths for. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+        <h3 id="penumbra.view.ViewProtocol">ViewProtocol</h3>
+        <p>The view protocol is used by a view client, who wants to do some</p><p>transaction-related actions, to request data from a view service, which is</p><p>responsible for synchronizing and scanning the public chain state with one or</p><p>more full viewing keys.</p><p>View protocol requests include a hash of the full viewing key, used to</p><p>identify which set of data to query.  This also works as a pseudo-auth system</p><p>(assuming transport security, the client has to know the FVK to request its</p><p>data).  (TODO: refine this)</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>Status</td>
+                <td><a href="#penumbra.view.StatusRequest">StatusRequest</a></td>
+                <td><a href="#penumbra.view.StatusResponse">StatusResponse</a></td>
+                <td><p>Get current status of chain sync</p></td>
+              </tr>
+            
+              <tr>
+                <td>StatusStream</td>
+                <td><a href="#penumbra.view.StatusStreamRequest">StatusStreamRequest</a></td>
+                <td><a href="#penumbra.view.StatusStreamResponse">StatusStreamResponse</a> stream</td>
+                <td><p>Stream sync status updates until the view service has caught up with the chain.</p></td>
+              </tr>
+            
+              <tr>
+                <td>Notes</td>
+                <td><a href="#penumbra.view.NotesRequest">NotesRequest</a></td>
+                <td><a href="#penumbra.view.NoteRecord">NoteRecord</a> stream</td>
+                <td><p>Queries for notes that have been accepted by the chain.</p></td>
+              </tr>
+            
+              <tr>
+                <td>QuarantinedNotes</td>
+                <td><a href="#penumbra.view.QuarantinedNotesRequest">QuarantinedNotesRequest</a></td>
+                <td><a href="#penumbra.view.QuarantinedNoteRecord">QuarantinedNoteRecord</a> stream</td>
+                <td><p>Queries for notes that have been quarantined until the end of an unbonding period.</p></td>
+              </tr>
+            
+              <tr>
+                <td>Witness</td>
+                <td><a href="#penumbra.view.WitnessRequest">WitnessRequest</a></td>
+                <td><a href="#penumbra.transaction.WitnessData">.penumbra.transaction.WitnessData</a></td>
+                <td><p>Returns authentication paths for the given note commitments.
+
+This method takes a batch of input commitments, rather than just one, so
+that the client can get a consistent set of authentication paths to a
+common root.  (Otherwise, if a client made multiple requests, the wallet
+service could have advanced the note commitment tree state between queries).</p></td>
+              </tr>
+            
+              <tr>
+                <td>Assets</td>
+                <td><a href="#penumbra.view.AssetRequest">AssetRequest</a></td>
+                <td><a href="#penumbra.crypto.Asset">.penumbra.crypto.Asset</a> stream</td>
+                <td><p>Queries for assets.</p></td>
+              </tr>
+            
+              <tr>
+                <td>ChainParams</td>
+                <td><a href="#penumbra.view.ChainParamsRequest">ChainParamsRequest</a></td>
+                <td><a href="#penumbra.chain.ChainParams">.penumbra.chain.ChainParams</a></td>
+                <td><p>Query for the current chain parameters.</p></td>
+              </tr>
+            
+              <tr>
+                <td>NoteByCommitment</td>
+                <td><a href="#penumbra.view.NoteByCommitmentRequest">NoteByCommitmentRequest</a></td>
+                <td><a href="#penumbra.view.NoteRecord">NoteRecord</a></td>
+                <td><p>Query for a note by its note commitment, optionally waiting until the note is detected.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+    
+
+    <h2 id="scalar-value-types">Scalar Value Types</h2>
+    <table class="scalar-value-types-table">
+      <thead>
+        <tr><td>.proto Type</td><td>Notes</td><td>C++</td><td>Java</td><td>Python</td><td>Go</td><td>C#</td><td>PHP</td><td>Ruby</td></tr>
+      </thead>
+      <tbody>
+        
+          <tr id="double">
+            <td>double</td>
+            <td></td>
+            <td>double</td>
+            <td>double</td>
+            <td>float</td>
+            <td>float64</td>
+            <td>double</td>
+            <td>float</td>
+            <td>Float</td>
+          </tr>
+        
+          <tr id="float">
+            <td>float</td>
+            <td></td>
+            <td>float</td>
+            <td>float</td>
+            <td>float</td>
+            <td>float32</td>
+            <td>float</td>
+            <td>float</td>
+            <td>Float</td>
+          </tr>
+        
+          <tr id="int32">
+            <td>int32</td>
+            <td>Uses variable-length encoding. Inefficient for encoding negative numbers – if your field is likely to have negative values, use sint32 instead.</td>
+            <td>int32</td>
+            <td>int</td>
+            <td>int</td>
+            <td>int32</td>
+            <td>int</td>
+            <td>integer</td>
+            <td>Bignum or Fixnum (as required)</td>
+          </tr>
+        
+          <tr id="int64">
+            <td>int64</td>
+            <td>Uses variable-length encoding. Inefficient for encoding negative numbers – if your field is likely to have negative values, use sint64 instead.</td>
+            <td>int64</td>
+            <td>long</td>
+            <td>int/long</td>
+            <td>int64</td>
+            <td>long</td>
+            <td>integer/string</td>
+            <td>Bignum</td>
+          </tr>
+        
+          <tr id="uint32">
+            <td>uint32</td>
+            <td>Uses variable-length encoding.</td>
+            <td>uint32</td>
+            <td>int</td>
+            <td>int/long</td>
+            <td>uint32</td>
+            <td>uint</td>
+            <td>integer</td>
+            <td>Bignum or Fixnum (as required)</td>
+          </tr>
+        
+          <tr id="uint64">
+            <td>uint64</td>
+            <td>Uses variable-length encoding.</td>
+            <td>uint64</td>
+            <td>long</td>
+            <td>int/long</td>
+            <td>uint64</td>
+            <td>ulong</td>
+            <td>integer/string</td>
+            <td>Bignum or Fixnum (as required)</td>
+          </tr>
+        
+          <tr id="sint32">
+            <td>sint32</td>
+            <td>Uses variable-length encoding. Signed int value. These more efficiently encode negative numbers than regular int32s.</td>
+            <td>int32</td>
+            <td>int</td>
+            <td>int</td>
+            <td>int32</td>
+            <td>int</td>
+            <td>integer</td>
+            <td>Bignum or Fixnum (as required)</td>
+          </tr>
+        
+          <tr id="sint64">
+            <td>sint64</td>
+            <td>Uses variable-length encoding. Signed int value. These more efficiently encode negative numbers than regular int64s.</td>
+            <td>int64</td>
+            <td>long</td>
+            <td>int/long</td>
+            <td>int64</td>
+            <td>long</td>
+            <td>integer/string</td>
+            <td>Bignum</td>
+          </tr>
+        
+          <tr id="fixed32">
+            <td>fixed32</td>
+            <td>Always four bytes. More efficient than uint32 if values are often greater than 2^28.</td>
+            <td>uint32</td>
+            <td>int</td>
+            <td>int</td>
+            <td>uint32</td>
+            <td>uint</td>
+            <td>integer</td>
+            <td>Bignum or Fixnum (as required)</td>
+          </tr>
+        
+          <tr id="fixed64">
+            <td>fixed64</td>
+            <td>Always eight bytes. More efficient than uint64 if values are often greater than 2^56.</td>
+            <td>uint64</td>
+            <td>long</td>
+            <td>int/long</td>
+            <td>uint64</td>
+            <td>ulong</td>
+            <td>integer/string</td>
+            <td>Bignum</td>
+          </tr>
+        
+          <tr id="sfixed32">
+            <td>sfixed32</td>
+            <td>Always four bytes.</td>
+            <td>int32</td>
+            <td>int</td>
+            <td>int</td>
+            <td>int32</td>
+            <td>int</td>
+            <td>integer</td>
+            <td>Bignum or Fixnum (as required)</td>
+          </tr>
+        
+          <tr id="sfixed64">
+            <td>sfixed64</td>
+            <td>Always eight bytes.</td>
+            <td>int64</td>
+            <td>long</td>
+            <td>int/long</td>
+            <td>int64</td>
+            <td>long</td>
+            <td>integer/string</td>
+            <td>Bignum</td>
+          </tr>
+        
+          <tr id="bool">
+            <td>bool</td>
+            <td></td>
+            <td>bool</td>
+            <td>boolean</td>
+            <td>boolean</td>
+            <td>bool</td>
+            <td>bool</td>
+            <td>boolean</td>
+            <td>TrueClass/FalseClass</td>
+          </tr>
+        
+          <tr id="string">
+            <td>string</td>
+            <td>A string must always contain UTF-8 encoded or 7-bit ASCII text.</td>
+            <td>string</td>
+            <td>String</td>
+            <td>str/unicode</td>
+            <td>string</td>
+            <td>string</td>
+            <td>string</td>
+            <td>String (UTF-8)</td>
+          </tr>
+        
+          <tr id="bytes">
+            <td>bytes</td>
+            <td>May contain any arbitrary sequence of bytes.</td>
+            <td>string</td>
+            <td>ByteString</td>
+            <td>str</td>
+            <td>[]byte</td>
+            <td>ByteString</td>
+            <td>string</td>
+            <td>String (ASCII-8BIT)</td>
+          </tr>
+        
+      </tbody>
+    </table>
+  </body>
+</html>
+

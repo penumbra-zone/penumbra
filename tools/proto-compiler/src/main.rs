@@ -75,6 +75,7 @@ fn main() -> Result<()> {
                 "../../proto/proto/penumbra/client/v1alpha1/client.proto",
                 "../../proto/proto/penumbra/view/v1alpha1/view.proto",
                 "../../proto/proto/penumbra/custody/v1alpha1/custody.proto",
+                "../../proto/ibc-go-vendor/cosmos/base/tendermint/v1beta1/query.proto",
             ],
             &["../../proto/proto/", "../../proto/ibc-go-vendor/"],
         )?;

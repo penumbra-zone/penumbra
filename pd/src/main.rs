@@ -57,9 +57,20 @@ enum RootCommand {
         /// Bind the gRPC server to this port.
         #[clap(short, long, default_value = "8080")]
         grpc_port: u16,
-        /// Bind the metrics endpoint to this port.
+        /// bind the metrics endpoint to this port.
         #[clap(short, long, default_value = "9000")]
         metrics_port: u16,
+        /// Proxy Tendermint requests against the gRPC server to this host.
+        #[clap(
+            short,
+            long,
+            default_value = "testnet.penumbra.zone",
+            parse(try_from_str = url::Host::parse)
+        )]
+        tendermint_host: url::Host,
+        /// The port to use to speak to tendermint's RPC server.
+        #[clap(long, default_value_t = 26657)]
+        tendermint_port: u16,
     },
 
     /// Generate, join, or reset a testnet.
@@ -165,6 +176,8 @@ async fn main() -> anyhow::Result<()> {
             abci_port,
             grpc_port,
             metrics_port,
+            tendermint_host,
+            tendermint_port,
         } => {
             tracing::info!(?host, ?abci_port, ?grpc_port, "starting pd");
 
