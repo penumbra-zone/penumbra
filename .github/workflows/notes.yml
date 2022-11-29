@@ -26,6 +26,9 @@ jobs:
       - name: Load get-version action to grab version component of deployment path
         uses: battila7/get-version-action@v2
         id: get_version
+      - name: Print version component of deployment path
+        run: |
+          echo ${{ steps.get_version.outputs.version }}
       - name: Install mdbook
         run: |
           cargo install mdbook mdbook-katex mdbook-mermaid
