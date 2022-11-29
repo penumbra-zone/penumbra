@@ -488,4 +488,61 @@ mod tests {
             .expect("can compute success or not");
         assert!(!proof_result);
     }
+
+    #[test]
+    /// Check that the `SpendProof` verification always suceeds for dummy (zero value) spends.
+    fn spend_proof_dummy_verification_suceeds() {
+        let (pk, vk) = SpendCircuit::generate_test_parameters();
+        let mut rng = OsRng;
+
+        let seed_phrase = SeedPhrase::generate(rng);
+        let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let fvk_sender = sk_sender.full_viewing_key();
+        let ivk_sender = fvk_sender.incoming();
+        let (sender, _dtk_d) = ivk_sender.payment_address(0u64.into());
+        let v_blinding = Fr::rand(&mut rng);
+
+        let value_to_send = Value {
+            amount: 0u64.into(),
+            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+        };
+
+        let note = Note::generate(&mut rng, &sender, value_to_send);
+        let note_commitment = note.commit();
+        let spend_auth_randomizer = Fr::rand(&mut rng);
+        let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
+        let nk = *sk_sender.nullifier_key();
+        let ak = sk_sender.spend_auth_key().into();
+        let mut nct = tct::Tree::new();
+        nct.insert(tct::Witness::Keep, note_commitment).unwrap();
+        let anchor = nct.root();
+        let note_commitment_proof = nct.witness(note_commitment).unwrap();
+        // Using a random blinding factor here, but the proof will verify
+        // since for dummies we only check if the value is zero, and choose
+        // not to enforce the other equality constraint.
+        let balance_commitment = value_to_send.commit(Fr::rand(&mut rng));
+        let rk: VerificationKey<SpendAuth> = rsk.into();
+        let nf = nk.derive_nullifier(0.into(), &note_commitment);
+
+        let proof = SpendProof::prove(
+            &mut rng,
+            &pk,
+            note_commitment_proof,
+            note,
+            v_blinding,
+            spend_auth_randomizer,
+            ak,
+            nk,
+            anchor,
+            balance_commitment,
+            nf,
+            rk,
+        )
+        .expect("should be able to form proof");
+
+        let proof_result = proof
+            .verify(&vk, anchor, balance_commitment, nf, rk)
+            .expect("can compute success or not");
+        assert!(proof_result);
+    }
 }
