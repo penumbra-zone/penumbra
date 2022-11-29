@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics02_client::trust_threshold::TrustThreshold;
 use ibc::core::ics02_client::{client_state::AnyClientState, height::Height};
@@ -36,9 +37,11 @@ impl TryFrom<pb::VerifiedHeights> for VerifiedHeights {
     type Error = anyhow::Error;
 
     fn try_from(msg: pb::VerifiedHeights) -> Result<Self, Self::Error> {
-        Ok(VerifiedHeights {
-            heights: msg.heights.into_iter().map(|h| h.into()).collect(),
-        })
+        let heights = msg.heights.into_iter().map(TryFrom::try_from).collect();
+        match heights {
+            Ok(heights) => Ok(VerifiedHeights { heights }),
+            Err(e) => Err(anyhow!(format!("invalid height: {}", e.to_string()))),
+        }
     }
 }
 
@@ -111,7 +114,7 @@ fn validate_trust_threshold(trust_threshold: TrustThreshold) -> Result<(), anyho
 // validate the parameters of an AnyClientState, verifying that it is a valid Penumbra client
 // state.
 pub fn validate_penumbra_client_state(
-    client_state: dyn ClientState,
+    client_state: AnyClientState,
     chain_id: &str,
     current_height: u64,
 ) -> Result<(), anyhow::Error> {

@@ -212,22 +212,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ark-groth16"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38f8fff7468e947130b5caf9bdd27de8b913cf30e15104b4f0cd301726b3d897"
-dependencies = [
- "ark-crypto-primitives",
- "ark-ec",
- "ark-ff",
- "ark-poly",
- "ark-relations",
- "ark-serialize",
- "ark-std",
- "rayon",
-]
-
-[[package]]
 name = "ark-nonnative-field"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -319,17 +303,6 @@ dependencies = [
  "ark-relations",
  "ark-std",
 >>>>>>> 6b7a6446 (checkpoint: backup)
-]
-
-[[package]]
-name = "ark-snark"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0dc3dff1a5f67a9c0b34df32b079752d8dd17f1e9d06253da0453db6c1b7cc8a"
-dependencies = [
- "ark-ff",
- "ark-relations",
- "ark-std",
 ]
 
 [[package]]
@@ -2311,36 +2284,7 @@ dependencies = [
  "dyn-clone",
  "erased-serde",
  "flex-error",
- "ibc-proto 0.22.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ics23",
- "num-traits",
- "primitive-types",
- "prost",
- "safe-regex",
- "serde",
- "serde_derive",
- "serde_json",
- "sha2 0.10.6",
- "subtle-encoding",
- "tendermint",
- "tendermint-light-client-verifier",
- "tendermint-proto",
- "time 0.3.16",
- "tracing",
- "uint",
-]
-
-[[package]]
-name = "ibc"
-version = "0.23.0"
-source = "git+https://github.com/cosmos/ibc-rs?tag=v0.23.0#999b74d412fa8c776de672944db54919bc5d09d7"
-dependencies = [
- "bytes",
- "derive_more",
- "dyn-clone",
- "erased-serde",
- "flex-error",
- "ibc-proto 0.22.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ibc-proto",
  "ics23",
  "num-traits",
  "primitive-types",
@@ -2364,21 +2308,6 @@ name = "ibc-proto"
 version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "874af3f9f3fe1a3458e54b1d4ebb2ab1fadc22b02470eb2d623a59f3c7d907c0"
-dependencies = [
- "base64",
- "bytes",
- "flex-error",
- "prost",
- "serde",
- "subtle-encoding",
- "tendermint-proto",
- "tonic",
-]
-
-[[package]]
-name = "ibc-proto"
-version = "0.22.0"
-source = "git+https://github.com/cosmos/ibc-proto-rs?tag=v0.22.0#33f301ecbad117c40daef73f3a1bd88ca8ff1623"
 dependencies = [
  "base64",
  "bytes",
@@ -3290,7 +3219,6 @@ dependencies = [
  "http-body",
  "indicatif",
  "jmt",
- "pd",
  "penumbra-chain",
  "penumbra-component",
  "penumbra-crypto",
@@ -3347,8 +3275,8 @@ dependencies = [
  "futures",
  "hex",
  "http",
- "ibc 0.23.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ibc-proto 0.22.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ibc",
+ "ibc-proto",
  "ics23",
  "jmt",
  "metrics",
@@ -3437,7 +3365,7 @@ dependencies = [
  "bytes",
  "decaf377 0.1.0 (git+https://github.com/penumbra-zone/decaf377)",
  "hex",
- "ibc 0.23.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ibc",
  "ics23",
  "jmt",
  "num-rational",
@@ -3470,8 +3398,8 @@ dependencies = [
  "ed25519-consensus",
  "futures",
  "hex",
- "ibc 0.23.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ibc-proto 0.22.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ibc",
+ "ibc-proto",
  "jmt",
  "metrics",
  "num-rational",
@@ -3615,7 +3543,6 @@ name = "penumbra-proto"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-stream 0.2.1",
  "async-trait",
  "bech32",
  "bytes",
@@ -3623,8 +3550,8 @@ dependencies = [
  "decaf377-rdsa",
  "futures",
  "hex",
- "ibc 0.23.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ibc-proto 0.22.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ibc",
+ "ibc-proto",
  "ics23",
  "num-rational",
  "penumbra-storage",
@@ -3647,8 +3574,8 @@ dependencies = [
  "bincode",
  "futures",
  "hex",
- "ibc 0.23.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ibc-proto 0.22.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ibc",
+ "ibc-proto",
  "ics23",
  "jmt",
  "metrics",
@@ -3759,8 +3686,8 @@ dependencies = [
  "derivative",
  "fpe",
  "hex",
- "ibc 0.23.0 (git+https://github.com/cosmos/ibc-rs?tag=v0.23.0)",
- "ibc-proto 0.22.0 (git+https://github.com/cosmos/ibc-proto-rs?tag=v0.22.0)",
+ "ibc",
+ "ibc-proto",
  "num-bigint",
  "once_cell",
  "penumbra-crypto",

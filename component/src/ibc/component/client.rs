@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::sync::Arc;
 
 use crate::Component;
 use anyhow::Result;
@@ -192,6 +192,7 @@ pub(crate) trait Ics2ClientExt: StateWrite {
                 return (
                     trusted_client_state
                         .with_header(verified_header.clone())
+                        .unwrap()
                         .with_frozen_height(verified_header.height())
                         .unwrap(),
                     verified_consensus_state,
@@ -224,6 +225,7 @@ pub(crate) trait Ics2ClientExt: StateWrite {
                 return (
                     trusted_client_state
                         .with_header(verified_header.clone())
+                        .unwrap()
                         .with_frozen_height(verified_header.height())
                         .unwrap(),
                     verified_consensus_state,
@@ -242,6 +244,7 @@ pub(crate) trait Ics2ClientExt: StateWrite {
                 return (
                     trusted_client_state
                         .with_header(verified_header.clone())
+                        .unwrap()
                         .with_frozen_height(verified_header.height())
                         .unwrap(),
                     verified_consensus_state,
@@ -250,7 +253,9 @@ pub(crate) trait Ics2ClientExt: StateWrite {
         }
 
         (
-            trusted_client_state.with_header(verified_header.clone()),
+            trusted_client_state
+                .with_header(verified_header.clone())
+                .unwrap(),
             verified_consensus_state,
         )
     }
@@ -316,7 +321,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
 
         self.put(
             state_key::client_processed_heights(&client_id, &height),
-            ibc::Height::zero().with_revision_height(current_height),
+            ibc::Height::new(0, current_height)?,
         );
 
         // update verified heights
@@ -346,12 +351,10 @@ pub trait StateReadExt: StateRead {
     }
 
     async fn get_client_type(&self, client_id: &ClientId) -> Result<ClientType> {
-        let client_type_str: String = self
-            .get_proto(&state_key::client_type(client_id))
+        self.get_proto(&state_key::client_type(client_id))
             .await?
-            .ok_or_else(|| anyhow::anyhow!("client not found"))?;
-
-        ClientType::from_str(&client_type_str).map_err(|_| anyhow::anyhow!("invalid client type"))
+            .ok_or_else(|| anyhow::anyhow!("client not found"))
+            .map(ClientType::new)
     }
 
     async fn get_client_state(&self, client_id: &ClientId) -> Result<AnyClientState> {

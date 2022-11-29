@@ -166,8 +166,8 @@ use ibc_rs::core::ics03_connection::connection::ConnectionEnd;
 use ibc_rs::core::ics04_channel::channel::ChannelEnd;
 use ibc_rs::Height;
 
-// impl Protobuf<RawConnectionEnd> for ConnectionEnd {}
 // impl Protobuf<Any> for dyn ClientState {}
 // impl Protobuf<Any> for dyn ConsensusState {}
-// impl Protobuf<RawChannel> for ChannelEnd {}
-// impl Protobuf<RawHeight> for Height {}
+impl Protobuf<RawConnectionEnd> for ConnectionEnd {}
+impl Protobuf<RawChannel> for ChannelEnd {}
+impl Protobuf<RawHeight> for Height {}
