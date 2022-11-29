@@ -8,7 +8,7 @@ pub mod channel_open_init {
         async fn validate(&self, msg: &MsgChannelOpenInit) -> anyhow::Result<()> {
             let channel_id = self.get_channel_id().await?;
 
-            self.verify_channel_does_not_exist(&channel_id, &msg.port_id)
+            self.verify_channel_does_not_exist(&channel_id, &msg.port_id_on_a)
                 .await?;
 
             // NOTE: optimistic channel handshakes are allowed, so we don't check if the connection
@@ -31,7 +31,7 @@ pub mod channel_open_init {
                 &self,
                 msg: &MsgChannelOpenInit,
             ) -> anyhow::Result<()> {
-                self.get_connection(&msg.channel.connection_hops[0])
+                self.get_connection(&msg.chan_end_on_a.connection_hops[0])
                     .await?
                     .ok_or_else(|| anyhow::anyhow!("connection not found"))
                     .map(|_| ())
@@ -59,6 +59,8 @@ pub mod channel_open_init {
 }
 
 pub mod channel_open_try {
+    use ibc::proofs::Proofs;
+
     use super::super::*;
     use super::proof_verification::ChannelProofVerifier;
 
@@ -72,25 +74,33 @@ pub mod channel_open_try {
             // TODO: do we want to do capability authentication?
             // TODO: version intersection
 
-            let expected_counterparty = Counterparty::new(msg.port_id.clone(), None);
+            let expected_counterparty = Counterparty::new(msg.port_id_on_b.clone(), None);
 
             let expected_channel = ChannelEnd {
                 state: ChannelState::Init,
-                ordering: msg.channel.ordering,
+                ordering: msg.chan_end_on_b.ordering,
                 remote: expected_counterparty,
                 connection_hops: vec![connection
                     .counterparty()
                     .connection_id
                     .clone()
                     .ok_or_else(|| anyhow::anyhow!("no counterparty connection id provided"))?],
-                version: msg.counterparty_version.clone(),
+                version: msg.version_on_a.clone(),
             };
+
+            let proof = Proofs::new(
+                msg.proof_chan_end_on_a,
+                None,
+                None,
+                None,
+                msg.proof_height_on_a,
+            )?;
 
             self.verify_channel_proof(
                 &connection,
-                &msg.proofs,
+                &proof,
                 &channel_id,
-                &msg.port_id,
+                &msg.port_id_on_b,
                 &expected_channel,
             )
             .await
@@ -107,7 +117,7 @@ pub mod channel_open_try {
                 msg: &MsgChannelOpenTry,
             ) -> anyhow::Result<ConnectionEnd> {
                 let connection = self
-                    .get_connection(&msg.channel.connection_hops[0])
+                    .get_connection(&msg.chan_end_on_b.connection_hops[0])
                     .await?
                     .ok_or_else(|| anyhow::anyhow!("connection not found"))?;
 
@@ -124,6 +134,8 @@ pub mod channel_open_try {
 }
 
 pub mod channel_open_ack {
+    use ibc::proofs::Proofs;
+
     use super::super::*;
     use super::proof_verification::ChannelProofVerifier;
 
@@ -139,7 +151,7 @@ pub mod channel_open_ack {
     pub trait ChannelOpenAckCheck: ChannelProofVerifier + inner::Inner {
         async fn validate(&self, msg: &MsgChannelOpenAck) -> anyhow::Result<()> {
             let channel = self
-                .get_channel(&msg.channel_id, &msg.port_id)
+                .get_channel(&msg.chan_id_on_a, &msg.port_id_on_a)
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("channel not found"))?;
 
@@ -150,7 +162,7 @@ pub mod channel_open_ack {
             let connection = self.verify_channel_connection_open(&channel).await?;
 
             let expected_counterparty =
-                Counterparty::new(msg.port_id.clone(), Some(msg.channel_id));
+                Counterparty::new(msg.port_id_on_a.clone(), Some(msg.chan_id_on_a));
 
             let expected_connection_hops = vec![connection
                 .counterparty()
@@ -163,13 +175,21 @@ pub mod channel_open_ack {
                 ordering: channel.ordering,
                 remote: expected_counterparty,
                 connection_hops: expected_connection_hops,
-                version: msg.counterparty_version.clone(),
+                version: msg.version_on_b.clone(),
             };
+
+            let proof = Proofs::new(
+                msg.proof_chan_end_on_b,
+                None,
+                None,
+                None,
+                msg.proof_height_on_b,
+            )?;
 
             self.verify_channel_proof(
                 &connection,
-                &msg.proofs,
-                &msg.counterparty_channel_id,
+                &proof,
+                &msg.chan_id_on_b,
                 &channel.remote.port_id,
                 &expected_channel,
             )
@@ -205,6 +225,8 @@ pub mod channel_open_ack {
 }
 
 pub mod channel_open_confirm {
+    use ibc::proofs::Proofs;
+
     use crate::ibc::component::connection::StateReadExt as _;
 
     use super::super::*;
@@ -214,7 +236,7 @@ pub mod channel_open_confirm {
     pub trait ChannelOpenConfirmCheck: ChannelProofVerifier {
         async fn validate(&self, msg: &MsgChannelOpenConfirm) -> anyhow::Result<()> {
             let channel = self
-                .get_channel(&msg.channel_id, &msg.port_id)
+                .get_channel(&msg.chan_id_on_b, &msg.port_id_on_b)
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("channel not found"))?;
             if !channel.state_matches(&ChannelState::TryOpen) {
@@ -238,7 +260,7 @@ pub mod channel_open_confirm {
                 .ok_or_else(|| anyhow::anyhow!("no counterparty connection id provided"))?];
 
             let expected_counterparty =
-                Counterparty::new(msg.port_id.clone(), Some(msg.channel_id));
+                Counterparty::new(msg.port_id_on_b.clone(), Some(msg.chan_id_on_b));
 
             let expected_channel = ChannelEnd {
                 state: ChannelState::Open,
@@ -248,9 +270,17 @@ pub mod channel_open_confirm {
                 version: channel.version.clone(),
             };
 
+            let proof = Proofs::new(
+                msg.proof_chan_end_on_a,
+                None,
+                None,
+                None,
+                msg.proof_height_on_a,
+            )?;
+
             self.verify_channel_proof(
                 &connection,
-                &msg.proofs,
+                &proof,
                 &channel
                     .remote
                     .channel_id
@@ -302,6 +332,8 @@ pub mod channel_close_init {
 }
 
 pub mod channel_close_confirm {
+    use ibc::proofs::Proofs;
+
     use crate::ibc::component::connection::StateReadExt as _;
 
     use super::super::*;
@@ -316,7 +348,7 @@ pub mod channel_close_confirm {
             // method, to prevent anyone from spuriously closing channels.
             //
             let channel = self
-                .get_channel(&msg.channel_id, &msg.port_id)
+                .get_channel(&msg.chan_id_on_b, &msg.port_id_on_b)
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("channel not found"))?;
             if channel.state_matches(&ChannelState::Closed) {
@@ -338,7 +370,7 @@ pub mod channel_close_confirm {
                 .ok_or_else(|| anyhow::anyhow!("no counterparty connection id provided"))?];
 
             let expected_counterparty =
-                Counterparty::new(msg.port_id.clone(), Some(msg.channel_id));
+                Counterparty::new(msg.port_id_on_b.clone(), Some(msg.chan_id_on_b));
 
             let expected_channel = ChannelEnd {
                 state: ChannelState::Closed,
@@ -348,9 +380,17 @@ pub mod channel_close_confirm {
                 version: channel.version.clone(),
             };
 
+            let proof = Proofs::new(
+                msg.proof_chan_end_on_a,
+                None,
+                None,
+                None,
+                msg.proof_height_on_a,
+            )?;
+
             self.verify_channel_proof(
                 &connection,
-                &msg.proofs,
+                &proof,
                 &channel
                     .remote
                     .channel_id
@@ -419,14 +459,13 @@ pub mod recv_packet {
                 return Err(anyhow::anyhow!("packet has timed out"));
             }
 
-            if msg.packet.timeout_timestamp != IBCTimestamp::none()
-                && self.get_block_timestamp().await?
-                    >= msg
-                        .packet
-                        .timeout_timestamp
-                        .into_tm_time()
-                        .ok_or_else(|| anyhow::anyhow!("invalid timestamp"))?
-            {
+            let packet_timeout = msg
+                .packet
+                .timeout_timestamp
+                .into_tm_time()
+                .ok_or_else(|| anyhow::anyhow!("invalid timestamp"))?;
+
+            if self.get_block_timestamp().await? >= packet_timeout {
                 return Err(anyhow::anyhow!("packet has timed out"));
             }
 

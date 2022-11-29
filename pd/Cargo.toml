@@ -51,7 +51,7 @@ prost = "0.11"
 # We don't need this crate at all, but its upstream published a breaking change as
 # 0.7.1 (also prost-related), and depending on an exact version here will exclude
 # the bad update until it's yanked.
-ics23 = { git = "https://github.com/cosmos/ics23", version = "=0.8.1" }
+ics23 = "0.8.1"
 
 ark-ff = "0.3"
 async-stream = "0.2"
