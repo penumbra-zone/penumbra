@@ -309,7 +309,7 @@ pub mod channel_close_init {
             // method, to prevent anyone from spuriously closing channels.
             //
             let channel = self
-                .get_channel(&msg.channel_id, &msg.port_id)
+                .get_channel(&msg.chan_id_on_a, &msg.port_id_on_a)
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("channel not found"))?;
             if channel.state_matches(&ChannelState::Closed) {
@@ -410,7 +410,6 @@ pub mod recv_packet {
 
     use super::super::*;
     use super::proof_verification::PacketProofVerifier;
-    use ibc::timestamp::Timestamp as IBCTimestamp;
     use ibc::Height as IBCHeight;
     use penumbra_chain::StateReadExt as _;
 
@@ -452,10 +451,10 @@ pub mod recv_packet {
                 return Err(anyhow::anyhow!("connection for channel is not open"));
             }
 
-            if msg.packet.timeout_height != IBCHeight::zero()
-                && IBCHeight::zero().with_revision_height(self.get_block_height().await?)
-                    >= msg.packet.timeout_height
-            {
+            let block_height = self.get_block_height().await?;
+            let height = IBCHeight::new(0, block_height)?;
+
+            if msg.packet.timeout_height.has_expired(height) {
                 return Err(anyhow::anyhow!("packet has timed out"));
             }
 
@@ -571,7 +570,6 @@ pub mod timeout {
     use super::super::*;
     use super::proof_verification::commit_packet;
     use super::proof_verification::PacketProofVerifier;
-    use ibc::timestamp::Timestamp as IBCTimestamp;
 
     #[async_trait]
     pub trait TimeoutCheck: PacketProofVerifier {
@@ -606,21 +604,13 @@ pub mod timeout {
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("connection not found for channel"))?;
 
+            let chain_ts = self
+                .get_client_update_time(connection.client_id(), &msg.proofs.height())
+                .await?;
+            let chain_height = msg.proofs.height();
+
             // check that timeout height or timeout timestamp has passed on the other end
-            if msg.packet.timeout_height == ibc::Height::zero()
-                || msg.proofs.height() < msg.packet.timeout_height
-            {
-                return Err(anyhow::anyhow!(
-                    "packet has not timed out on the counterparty chain"
-                ));
-            }
-            if msg.packet.timeout_timestamp == IBCTimestamp::none()
-                || self
-                    .get_client_update_time(connection.client_id(), &msg.proofs.height())
-                    .await?
-                    .nanoseconds()
-                    < msg.packet.timeout_timestamp.nanoseconds()
-            {
+            if !msg.packet.timed_out(&chain_ts, chain_height) {
                 return Err(anyhow::anyhow!(
                     "packet has not timed out on the counterparty chain"
                 ));
