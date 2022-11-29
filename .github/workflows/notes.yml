@@ -129,6 +129,7 @@ jobs:
           if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
           mkdir firebase-tmp
           mv book firebase-tmp/${{ steps.get_version.outputs.version }}
+          tree firebase-tmp
       - name: Deploy protocol spec to firebase
         uses: w9jds/firebase-action@v2.0.0
         with:
@@ -147,6 +148,7 @@ jobs:
           if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
           mkdir firebase-tmp
           mv book firebase-tmp/${{ steps.get_version.outputs.version }}
+          tree firebase-tmp
       - name: Deploy software guide to firebase
         uses: w9jds/firebase-action@v2.0.0
         with:
