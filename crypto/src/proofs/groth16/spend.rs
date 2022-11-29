@@ -1,6 +1,9 @@
 use std::str::FromStr;
 
-use ark_r1cs_std::uint8::UInt8;
+use ark_r1cs_std::{
+    prelude::{EqGadget, FieldVar},
+    uint8::UInt8,
+};
 use decaf377::{
     r1cs::{ElementVar, FqVar},
     Bls12_377, Fq, Fr,
@@ -75,7 +78,7 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
             FqVar::new_witness(cs.clone(), || Ok(self.note.transmission_key_s().clone()))?;
         let element_transmission_key = decaf377::Encoding(self.note.transmission_key().0)
             .vartime_decompress()
-            .map_err(|err| SynthesisError::AssignmentMissing)?;
+            .map_err(|_| SynthesisError::AssignmentMissing)?;
         let transmission_key_var: ElementVar =
             AllocVar::<Element, Fq>::new_witness(cs.clone(), || Ok(element_transmission_key))?;
         let clue_key_var = FqVar::new_witness(cs.clone(), || {
@@ -107,10 +110,15 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
 
         let rk_fq_var = rk_var.compress_to_field()?;
 
-        // TODO: Short circuit to true if value released is 0. That means this is a _dummy_ spend.
+        // We short circuit to true if value released is 0. That means this is a _dummy_ spend.
+        let is_dummy = value_amount_var.is_eq(&FqVar::zero())?;
+        // We use a Boolean constraint to enforce the below constraints only if this is not a
+        // dummy spend.
+        let is_not_dummy = is_dummy.not();
 
         gadgets::note_commitment_integrity(
             cs.clone(),
+            &is_not_dummy,
             note_blinding_var,
             value_amount_var,
             value_asset_id_var.clone(),
@@ -122,21 +130,28 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         // TODO: Merkle path integrity.
         gadgets::rk_integrity(
             cs.clone(),
+            &is_not_dummy,
             ak_element_var.clone(),
             spend_auth_randomizer_var,
             rk_fq_var,
         )?;
         gadgets::diversified_address_integrity(
             cs.clone(),
+            &is_not_dummy,
             ak_var,
             nk_var.clone(),
             transmission_key_var,
             diversified_generator_var.clone(),
         )?;
-        gadgets::diversified_basepoint_not_identity(cs.clone(), diversified_generator_var)?;
-        gadgets::ak_not_identity(cs.clone(), ak_element_var)?;
+        gadgets::diversified_basepoint_not_identity(
+            cs.clone(),
+            &is_not_dummy,
+            diversified_generator_var,
+        )?;
+        gadgets::ak_not_identity(cs.clone(), &is_not_dummy, ak_element_var)?;
         gadgets::value_commitment_integrity(
             cs.clone(),
+            &is_not_dummy,
             value_vars,
             value_asset_id_var,
             v_blinding_vars,
@@ -144,6 +159,7 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         )?;
         gadgets::nullifier_integrity(
             cs,
+            &is_not_dummy,
             note_commitment_var,
             nk_var,
             nct_position_var,

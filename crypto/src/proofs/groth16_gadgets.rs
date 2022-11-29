@@ -18,22 +18,24 @@ pub(crate) static SPENDAUTH_BASEPOINT: Lazy<Element> = Lazy::new(decaf377::basep
 /// Check the diversified basepoint is not identity.
 pub(crate) fn diversified_basepoint_not_identity(
     cs: ConstraintSystemRef<Fq>,
+    enforce: &Boolean<Fq>,
     // Witness
     g_d: ElementVar,
 ) -> Result<(), SynthesisError> {
     let identity = ElementVar::new_constant(cs, decaf377::Element::default())?;
-    identity.enforce_not_equal(&g_d)?;
+    identity.conditional_enforce_not_equal(&g_d, &enforce)?;
     Ok(())
 }
 
 /// Check the spend auth key is not identity.
 pub(crate) fn ak_not_identity(
     cs: ConstraintSystemRef<Fq>,
+    enforce: &Boolean<Fq>,
     // Witness
     ak: ElementVar,
 ) -> Result<(), SynthesisError> {
     let identity = ElementVar::new_constant(cs, decaf377::Element::default())?;
-    identity.enforce_not_equal(&ak)?;
+    identity.conditional_enforce_not_equal(&ak, &enforce)?;
     Ok(())
 }
 
@@ -53,6 +55,7 @@ pub(crate) fn ephemeral_public_key_integrity(
 /// Check the integrity of the value commitment.
 pub(crate) fn value_commitment_integrity(
     cs: ConstraintSystemRef<Fq>,
+    enforce: &Boolean<Fq>,
     // Witnesses
     value_amount: Vec<UInt8<Fq>>,
     value_asset_id: FqVar,
@@ -68,13 +71,14 @@ pub(crate) fn value_commitment_integrity(
     let test_commitment = asset_generator.scalar_mul_le(value_amount.to_bits_le()?.iter())?
         + value_blinding_generator.scalar_mul_le(value_blinding.to_bits_le()?.iter())?;
 
-    commitment.enforce_equal(&test_commitment)?;
+    commitment.conditional_enforce_equal(&test_commitment, &enforce)?;
     Ok(())
 }
 
 /// Check the integrity of the note commitment.
 pub(crate) fn note_commitment_integrity(
     cs: ConstraintSystemRef<Fq>,
+    enforce: &Boolean<Fq>,
     // Witnesses
     note_blinding: FqVar,
     value_amount: FqVar,
@@ -101,13 +105,14 @@ pub(crate) fn note_commitment_integrity(
         ),
     )?;
 
-    commitment.enforce_equal(&commitment_test)?;
+    commitment.conditional_enforce_equal(&commitment_test, &enforce)?;
     Ok(())
 }
 
 /// Check integrity of nullifier derivation.
 pub(crate) fn nullifier_integrity(
     cs: ConstraintSystemRef<Fq>,
+    enforce: &Boolean<Fq>,
     // Witnesses
     note_commitment: FqVar,
     nk: FqVar,
@@ -120,13 +125,14 @@ pub(crate) fn nullifier_integrity(
     let computed_nullifier =
         poseidon377::r1cs::hash_3(cs, &nullifier_constant, (nk, note_commitment, position))?;
 
-    nullifier.enforce_equal(&computed_nullifier)?;
+    nullifier.conditional_enforce_equal(&computed_nullifier, &enforce)?;
     Ok(())
 }
 
 /// Check integrity of the diversified address.
 pub(crate) fn diversified_address_integrity(
     cs: ConstraintSystemRef<Fq>,
+    enforce: &Boolean<Fq>,
     // Witnesses
     ak: FqVar,
     nk: FqVar,
@@ -139,13 +145,14 @@ pub(crate) fn diversified_address_integrity(
     let ivk_vars = ivk.to_bits_le()?;
     let test_transmission_key =
         diversified_generator.scalar_mul_le(ivk_vars.to_bits_le()?.iter())?;
-    transmission_key.enforce_equal(&test_transmission_key)?;
+    transmission_key.conditional_enforce_equal(&test_transmission_key, &enforce)?;
     Ok(())
 }
 
 /// Check integrity of randomized verification key.
 pub(crate) fn rk_integrity(
     cs: ConstraintSystemRef<Fq>,
+    enforce: &Boolean<Fq>,
     // Witnesses
     ak: ElementVar,
     spend_auth_randomizer: Vec<UInt8<Fq>>,
@@ -156,7 +163,7 @@ pub(crate) fn rk_integrity(
     let point =
         ak + spend_auth_basepoint_var.scalar_mul_le(spend_auth_randomizer.to_bits_le()?.iter())?;
     let computed_rk = ElementVar::compress_to_field(&point)?;
-    rk.enforce_equal(&computed_rk)?;
+    rk.conditional_enforce_equal(&computed_rk, &enforce)?;
     Ok(())
 }
 
@@ -214,6 +221,7 @@ mod tests {
 
             note_commitment_integrity(
                 cs,
+                &Boolean::TRUE,
                 note_blinding_var,
                 value_amount_var,
                 value_asset_id_var,

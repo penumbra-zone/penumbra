@@ -11,7 +11,7 @@ use decaf377_ka as ka;
 
 use ark_ff::{PrimeField, ToConstraintField};
 use ark_groth16::{Groth16, Proof, ProvingKey, VerifyingKey};
-use ark_r1cs_std::prelude::AllocVar;
+use ark_r1cs_std::prelude::*;
 use ark_relations::ns;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
@@ -83,10 +83,15 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
         let balance_commitment_var =
             ElementVar::new_input(cs.clone(), || Ok(self.balance_commitment.0))?;
 
-        gadgets::diversified_basepoint_not_identity(cs.clone(), diversified_generator_var.clone())?;
+        gadgets::diversified_basepoint_not_identity(
+            cs.clone(),
+            &Boolean::TRUE,
+            diversified_generator_var.clone(),
+        )?;
         gadgets::ephemeral_public_key_integrity(esk_vars, diversified_generator_var.clone(), epk)?;
         gadgets::value_commitment_integrity(
             cs.clone(),
+            &Boolean::TRUE,
             value_vars,
             value_asset_id_var.clone(),
             v_blinding_vars,
@@ -94,6 +99,7 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
         )?;
         gadgets::note_commitment_integrity(
             cs,
+            &Boolean::TRUE,
             note_blinding_var,
             value_amount_var,
             value_asset_id_var,
