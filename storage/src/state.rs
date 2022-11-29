@@ -1,4 +1,4 @@
-use std::{any::Any, collections::BTreeMap, pin::Pin};
+use std::{any::Any, collections::BTreeMap, pin::Pin, sync::Arc};
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -177,5 +177,17 @@ impl StateRead for State {
         prefix: &'a [u8],
     ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + Sync + 'a>> {
         nonconsensus_prefix_raw_with_cache(&self.snapshot, &self.nonconsensus_changes, prefix)
+    }
+}
+
+/// Extension trait providing `try_begin_transaction()` on `Arc<State>`.
+pub trait ArcStateExt: Sized {
+    /// Attempts to begin a transaction on this `Arc<State>`, returning `None` if the `Arc` is shared.
+    fn try_begin_transaction<'a>(&'a mut self) -> Option<StateTransaction<'a>>;
+}
+
+impl ArcStateExt for Arc<State> {
+    fn try_begin_transaction<'a>(&'a mut self) -> Option<StateTransaction<'a>> {
+        Arc::get_mut(self).map(|state| state.begin_transaction())
     }
 }

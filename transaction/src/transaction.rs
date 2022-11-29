@@ -45,6 +45,23 @@ pub struct Transaction {
     pub anchor: tct::Root,
 }
 
+impl Default for Transaction {
+    fn default() -> Self {
+        Transaction {
+            transaction_body: TransactionBody {
+                actions: Default::default(),
+                expiry_height: Default::default(),
+                chain_id: Default::default(),
+                fee: Default::default(),
+                fmd_clues: Default::default(),
+                memo: None,
+            },
+            binding_sig: [0u8; 64].into(),
+            anchor: tct::Tree::new().root(),
+        }
+    }
+}
+
 impl Transaction {
     pub fn payload_keys(
         &self,
