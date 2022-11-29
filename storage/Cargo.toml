@@ -6,9 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-
-# jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "newmain" }
-jmt = { path = "../../jmt" }
+jmt = { git = "https://github.com/penumbra-zone/jmt", branch = "upstream-ics23" }
 tokio = { version = "1.21.1", features = ["full", "tracing"] }
 tokio-stream = { version = "0.1.11" }
 sha2 = "0.9"
@@ -25,8 +23,9 @@ tonic = "0.8.1"
 hex = "0.4"
 metrics = "0.19.0"
 parking_lot = "0.12"
-# Tendermint ecosystem
-ics23 = "0.8.1"
+
+# Tendermint/IBC crates 
+ics23 = "=0.8.1"
 tendermint = "0.26.0"
 ibc-proto = "0.22.0"
 ibc = "0.23.0"

@@ -2484,6 +2484,31 @@ checksum = "4217ad341ebadf8d8e724e264f13e593e0648f5b3e94b3896a5df283be015ecc"
 [[package]]
 name = "jmt"
 version = "0.2.0"
+source = "git+https://github.com/penumbra-zone/jellyfish-merkle.git?branch=upstream-ics23#d4f4fab429cc14f0074f1bb8937dc9f21799827b"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "byteorder",
+ "hex",
+ "ics23",
+ "itertools",
+ "mirai-annotations",
+ "num-derive",
+ "num-traits",
+ "once_cell",
+ "prometheus",
+ "proptest",
+ "proptest-derive",
+ "serde",
+ "sha2 0.10.6",
+ "thiserror",
+ "tracing",
+]
+
+[[package]]
+name = "jmt"
+version = "0.2.0"
+source = "git+https://github.com/penumbra-zone/jmt?branch=upstream-ics23#d4f4fab429cc14f0074f1bb8937dc9f21799827b"
 dependencies = [
  "anyhow",
  "bcs",
@@ -3218,7 +3243,7 @@ dependencies = [
  "hex",
  "http-body",
  "indicatif",
- "jmt",
+ "jmt 0.2.0 (git+https://github.com/penumbra-zone/jmt?branch=upstream-ics23)",
  "penumbra-chain",
  "penumbra-component",
  "penumbra-crypto",
@@ -3278,7 +3303,7 @@ dependencies = [
  "ibc",
  "ibc-proto",
  "ics23",
- "jmt",
+ "jmt 0.2.0 (git+https://github.com/penumbra-zone/jmt?branch=upstream-ics23)",
  "metrics",
  "metrics-exporter-prometheus",
  "metrics-tracing-context",
@@ -3367,7 +3392,7 @@ dependencies = [
  "hex",
  "ibc",
  "ics23",
- "jmt",
+ "jmt 0.2.0 (git+https://github.com/penumbra-zone/jellyfish-merkle.git?branch=upstream-ics23)",
  "num-rational",
  "once_cell",
  "penumbra-crypto",
@@ -3400,7 +3425,7 @@ dependencies = [
  "hex",
  "ibc",
  "ibc-proto",
- "jmt",
+ "jmt 0.2.0 (git+https://github.com/penumbra-zone/jmt?branch=upstream-ics23)",
  "metrics",
  "num-rational",
  "once_cell",
@@ -3455,7 +3480,7 @@ dependencies = [
  "frost377",
  "hex",
  "hmac",
- "jmt",
+ "jmt 0.2.0 (git+https://github.com/penumbra-zone/jmt?branch=upstream-ics23)",
  "num-bigint",
  "once_cell",
  "pbkdf2",
@@ -3578,7 +3603,7 @@ dependencies = [
  "ibc",
  "ibc-proto",
  "ics23",
- "jmt",
+ "jmt 0.2.0 (git+https://github.com/penumbra-zone/jmt?branch=upstream-ics23)",
  "metrics",
  "once_cell",
  "parking_lot 0.12.1",
@@ -5586,6 +5611,7 @@ dependencies = [
 [[package]]
 name = "tower-abci"
 version = "0.1.0"
+source = "git+https://github.com/penumbra-zone/tower-abci?branch=tendermint-026#bdd5642f41e06903692a15743bf7077055512275"
 dependencies = [
  "bytes",
  "futures",

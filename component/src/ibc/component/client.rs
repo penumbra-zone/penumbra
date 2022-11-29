@@ -3,7 +3,6 @@ use std::sync::Arc;
 use crate::Component;
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc::core::ics02_client::client_state::ClientState;
 use ibc::downcast;
 use ibc::{
     clients::ics07_tendermint::{
@@ -13,12 +12,12 @@ use ibc::{
     },
     core::{
         ics02_client::{
-            client_consensus::AnyConsensusState,
-            client_state::AnyClientState,
+            consensus_state::ConsensusState,
+            client_state::ClientState,
             client_type::ClientType,
-            header::AnyHeader,
+            header::Header,
             height::Height,
-            msgs::{create_client::MsgCreateAnyClient, update_client::MsgUpdateAnyClient},
+            msgs::{create_client::MsgCreateClient, update_client::MsgUpdateClient},
         },
         ics24_host::identifier::ClientId,
     },
