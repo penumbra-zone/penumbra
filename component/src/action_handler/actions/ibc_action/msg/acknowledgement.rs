@@ -23,8 +23,8 @@ impl ActionHandler for MsgAcknowledgement {
         Ok(())
     }
 
-    #[instrument(name = "acknowledgement", skip(self, state, _context))]
-    async fn check_stateful(&self, state: Arc<State>, _context: Arc<Transaction>) -> Result<()> {
+    #[instrument(name = "acknowledgement", skip(self, state))]
+    async fn check_stateful(&self, state: Arc<State>) -> Result<()> {
         state.validate(self).await?;
         let transfer = PortId::transfer();
         if self.packet.destination_port == transfer {

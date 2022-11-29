@@ -21,8 +21,8 @@ impl ActionHandler for MsgConnectionOpenConfirm {
         Ok(())
     }
 
-    #[instrument(name = "connection_open_confirm", skip(self, state, _context))]
-    async fn check_stateful(&self, state: Arc<State>, _context: Arc<Transaction>) -> Result<()> {
+    #[instrument(name = "connection_open_confirm", skip(self, state))]
+    async fn check_stateful(&self, state: Arc<State>) -> Result<()> {
         state.validate(self).await?;
 
         Ok(())

@@ -122,83 +122,83 @@ impl ActionHandler for IbcAction {
         Ok(())
     }
 
-    #[instrument(name = "ibc_action", skip(self, state, context))]
-    async fn check_stateful(&self, state: Arc<State>, context: Arc<Transaction>) -> Result<()> {
+    #[instrument(name = "ibc_action", skip(self, state))]
+    async fn check_stateful(&self, state: Arc<State>) -> Result<()> {
         match &self.action {
             Some(CreateClient(msg)) => {
                 let msg = MsgCreateAnyClient::try_from(msg.clone())?;
 
-                msg.check_stateful(state, context).await?;
+                msg.check_stateful(state).await?;
             }
             Some(UpdateClient(msg)) => {
                 let msg = MsgUpdateAnyClient::try_from(msg.clone())?;
 
-                msg.check_stateful(state, context).await?;
+                msg.check_stateful(state).await?;
             }
             Some(ChannelOpenInit(msg)) => {
                 let msg = MsgChannelOpenInit::try_from(msg.clone())?;
 
-                msg.check_stateful(state, context).await?;
+                msg.check_stateful(state).await?;
             }
             Some(ChannelOpenTry(msg)) => {
                 let msg = MsgChannelOpenTry::try_from(msg.clone())?;
 
-                msg.check_stateful(state, context).await?;
+                msg.check_stateful(state).await?;
             }
             Some(ChannelOpenAck(msg)) => {
                 let msg = MsgChannelOpenAck::try_from(msg.clone())?;
 
-                msg.check_stateful(state, context).await?;
+                msg.check_stateful(state).await?;
             }
             Some(ChannelOpenConfirm(msg)) => {
                 let msg = MsgChannelOpenConfirm::try_from(msg.clone())?;
 
-                msg.check_stateful(state, context).await?;
+                msg.check_stateful(state).await?;
             }
             Some(ChannelCloseInit(msg)) => {
                 let msg = MsgChannelCloseInit::try_from(msg.clone())?;
 
-                msg.check_stateful(state, context).await?;
+                msg.check_stateful(state).await?;
             }
             Some(ChannelCloseConfirm(msg)) => {
                 let msg = MsgChannelCloseConfirm::try_from(msg.clone())?;
 
-                msg.check_stateful(state, context).await?;
+                msg.check_stateful(state).await?;
             }
             Some(RecvPacket(msg)) => {
                 let msg = MsgRecvPacket::try_from(msg.clone())?;
 
-                msg.check_stateful(state, context).await?;
+                msg.check_stateful(state).await?;
             }
             Some(Acknowledgement(msg)) => {
                 let msg = MsgAcknowledgement::try_from(msg.clone())?;
 
-                msg.check_stateful(state, context).await?;
+                msg.check_stateful(state).await?;
             }
             Some(Timeout(msg)) => {
                 let msg = MsgTimeout::try_from(msg.clone())?;
 
-                msg.check_stateful(state, context).await?;
+                msg.check_stateful(state).await?;
             }
             Some(ConnectionOpenInit(msg)) => {
                 let msg = MsgConnectionOpenInit::try_from(msg.clone())?;
 
-                msg.check_stateful(state, context).await?;
+                msg.check_stateful(state).await?;
             }
             Some(ConnectionOpenTry(msg)) => {
                 let msg = MsgConnectionOpenTry::try_from(msg.clone())?;
 
-                msg.check_stateful(state, context).await?;
+                msg.check_stateful(state).await?;
             }
             Some(ConnectionOpenAck(msg)) => {
                 let msg = MsgConnectionOpenAck::try_from(msg.clone())?;
 
-                msg.check_stateful(state, context).await?;
+                msg.check_stateful(state).await?;
             }
             Some(ConnectionOpenConfirm(msg)) => {
                 let msg = MsgConnectionOpenConfirm::try_from(msg.clone())?;
 
-                msg.check_stateful(state, context).await?;
+                msg.check_stateful(state).await?;
             }
             _ => {}
         }

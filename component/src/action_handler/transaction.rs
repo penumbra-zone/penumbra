@@ -43,16 +43,13 @@ impl ActionHandler for Transaction {
         Ok(())
     }
 
-    async fn check_stateful(&self, state: Arc<State>, context: Arc<Transaction>) -> Result<()> {
-        claimed_anchor_is_valid(state.clone(), context.clone()).await?;
-
-        fmd_parameters_valid(state.clone(), context.clone()).await?;
+    async fn check_stateful(&self, state: Arc<State>) -> Result<()> {
+        claimed_anchor_is_valid(state.clone(), self).await?;
+        fmd_parameters_valid(state.clone(), self).await?;
 
         // TODO: these can all be parallel tasks
         for action in self.actions() {
-            action
-                .check_stateful(state.clone(), context.clone())
-                .await?;
+            action.check_stateful(state.clone()).await?;
         }
 
         Ok(())

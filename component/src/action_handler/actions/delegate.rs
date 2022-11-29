@@ -19,8 +19,8 @@ impl ActionHandler for Delegate {
         Ok(())
     }
 
-    #[instrument(name = "delegate", skip(self, state, _context))]
-    async fn check_stateful(&self, state: Arc<State>, _context: Arc<Transaction>) -> Result<()> {
+    #[instrument(name = "delegate", skip(self, state))]
+    async fn check_stateful(&self, state: Arc<State>) -> Result<()> {
         let d = self;
         let next_rate_data = state
             .next_validator_rate(&d.validator_identity)

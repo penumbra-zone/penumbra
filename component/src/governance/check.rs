@@ -2,7 +2,7 @@ use anyhow::{Context as _, Result};
 
 use super::proposal::{self, chain_params};
 use penumbra_transaction::action::{
-    ProposalSubmit, ProposalWithdraw, ProposalWithdrawBody, ValidatorVote, ValidatorVoteBody,
+    ProposalSubmit, ProposalWithdraw, ValidatorVote, ValidatorVoteBody,
 };
 
 pub mod stateless {
@@ -89,7 +89,7 @@ pub mod stateful {
     use penumbra_chain::StateReadExt as _;
     use penumbra_crypto::{GovernanceKey, IdentityKey, STAKING_TOKEN_DENOM};
     use penumbra_storage::State;
-    use penumbra_transaction::{action::ProposalPayload, AuthHash};
+    use penumbra_transaction::action::ProposalPayload;
 
     pub async fn proposal_submit(
         state: &State,
@@ -160,6 +160,7 @@ pub mod stateful {
         Ok(())
     }
 
+    /*
     pub async fn proposal_withdraw(
         state: &State,
         auth_hash: &AuthHash,
@@ -213,6 +214,7 @@ pub mod stateful {
 
         Ok(())
     }
+    */
 
     pub async fn validator_vote(
         state: &State,
