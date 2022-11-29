@@ -32,8 +32,18 @@ use sha2::{Digest, Sha256};
 pub fn commit_packet(packet: &Packet) -> Vec<u8> {
     let mut commit = vec![];
     commit.extend_from_slice(&packet.timeout_timestamp.nanoseconds().to_be_bytes());
-    commit.extend_from_slice(&packet.timeout_height.revision_number.to_be_bytes());
-    commit.extend_from_slice(&packet.timeout_height.revision_height.to_be_bytes());
+    commit.extend_from_slice(
+        &packet
+            .timeout_height
+            .commitment_revision_number()
+            .to_be_bytes(),
+    );
+    commit.extend_from_slice(
+        &packet
+            .timeout_height
+            .commitment_revision_height()
+            .to_be_bytes(),
+    );
     commit.extend_from_slice(&Sha256::digest(&packet.data)[..]);
 
     Sha256::digest(&commit).to_vec()
@@ -179,7 +189,7 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
             msg.proofs.object_proof(),
             trusted_consensus_state.root(),
             ack_path,
-            msg.acknowledgement.clone().into_bytes(),
+            msg.acknowledgement.clone().into(),
         )?;
 
         Ok(())
@@ -295,7 +305,7 @@ mod inner {
 
             TendermintClientState::verify_delay_passed(
                 current_timestamp.into(),
-                ibc::Height::zero().with_revision_height(current_height),
+                ibc::Height::new(0, current_height)?,
                 processed_time,
                 processed_height,
                 delay_period_time,

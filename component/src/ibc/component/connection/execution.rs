@@ -10,7 +10,7 @@ pub mod connection_open_init {
 
             let new_connection_end = ConnectionEnd::new(
                 ConnectionState::Init,
-                msg.client_id.clone(),
+                msg.client_id_on_a.clone(),
                 msg.counterparty.clone(),
                 compatible_versions,
                 msg.delay_period,
@@ -23,7 +23,7 @@ pub mod connection_open_init {
 
             self.record(event::connection_open_init(
                 &connection_id,
-                &msg.client_id,
+                &msg.client_id_on_a,
                 &msg.counterparty,
             ));
         }
@@ -41,26 +41,23 @@ pub mod connection_open_try {
             // new_conn is the new connection that we will open on this chain
             let mut new_conn = ConnectionEnd::new(
                 ConnectionState::TryOpen,
-                msg.client_id.clone(),
+                msg.client_id_on_b.clone(),
                 msg.counterparty.clone(),
-                msg.counterparty_versions.clone(),
+                msg.versions_on_a.clone(),
                 msg.delay_period,
             );
             new_conn.set_version(
-                pick_version(
-                    SUPPORTED_VERSIONS.to_vec(),
-                    msg.counterparty_versions.clone(),
-                )
-                .unwrap(),
+                pick_version(SUPPORTED_VERSIONS.to_vec(), msg.versions_on_a.clone()).unwrap(),
             );
 
             let mut new_connection_id =
                 ConnectionId::new(self.get_connection_counter().await.unwrap().0);
 
-            if let Some(prev_conn_id) = &msg.previous_connection_id {
-                // prev conn ID already validated in check_tx_stateful
-                new_connection_id = prev_conn_id.clone();
-            }
+            // TODO(erwan): deprecated now?
+            // if let Some(prev_conn_id) = &msg.previous_connection_id {
+            //     // prev conn ID already validated in check_tx_stateful
+            //     new_connection_id = prev_conn_id.clone();
+            // }
 
             self.put_new_connection(&new_connection_id, new_conn)
                 .await
@@ -68,7 +65,7 @@ pub mod connection_open_try {
 
             self.record(event::connection_open_try(
                 &new_connection_id,
-                &msg.client_id,
+                &msg.client_id_on_b,
                 &msg.counterparty,
             ));
         }
@@ -84,7 +81,7 @@ pub mod connection_open_confirm {
     pub trait ConnectionOpenConfirmExecute: StateWriteExt {
         async fn execute(&mut self, msg: &MsgConnectionOpenConfirm) {
             let mut connection = self
-                .get_connection(&msg.connection_id)
+                .get_connection(&msg.conn_id_on_b)
                 .await
                 .unwrap()
                 .ok_or_else(|| anyhow::anyhow!("no connection with the given ID"))
@@ -92,10 +89,10 @@ pub mod connection_open_confirm {
 
             connection.set_state(ConnectionState::Open);
 
-            self.update_connection(&msg.connection_id, connection.clone());
+            self.update_connection(&msg.conn_id_on_b, connection.clone());
 
             self.record(event::connection_open_confirm(
-                &msg.connection_id,
+                &msg.conn_id_on_b,
                 &connection,
             ));
         }
@@ -110,24 +107,25 @@ pub mod connection_open_ack {
     pub trait ConnectionOpenAckExecute: StateWriteExt {
         async fn execute(&mut self, msg: &MsgConnectionOpenAck) {
             let mut connection = self
-                .get_connection(&msg.connection_id)
+                .get_connection(&msg.conn_id_on_a)
                 .await
                 .unwrap()
                 .unwrap();
 
+            // TODO(erwan): reviewer should check that CP is correct pls
             let prev_counterparty = connection.counterparty();
             let counterparty = Counterparty::new(
                 prev_counterparty.client_id().clone(),
-                Some(msg.counterparty_connection_id.clone()),
+                Some(msg.conn_id_on_b.clone()),
                 prev_counterparty.prefix().clone(),
             );
             connection.set_state(ConnectionState::Open);
             connection.set_version(msg.version.clone());
             connection.set_counterparty(counterparty);
 
-            self.update_connection(&msg.connection_id, connection.clone());
+            self.update_connection(&msg.conn_id_on_a, connection.clone());
 
-            self.record(event::connection_open_ack(&msg.connection_id, &connection));
+            self.record(event::connection_open_ack(&msg.conn_id_on_a, &connection));
         }
     }
 

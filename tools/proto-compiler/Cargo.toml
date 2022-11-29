@@ -10,5 +10,5 @@ prost-types = "0.11"
 prost-build = "0.11"
 tonic-build = "0.8.0"
 
-ibc-proto = { git = "https://github.com/cosmos/ibc-proto-rs", tag = "v0.22.0" }
+ibc-proto = "0.22.0"
 ics23 = "0.8.1"

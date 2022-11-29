@@ -108,13 +108,13 @@ impl<T: StateWrite> Ics20TransferWriteExt for T {}
 #[async_trait]
 impl AppHandlerCheck for Ics20Transfer {
     async fn chan_open_init_check(_state: Arc<State>, msg: &MsgChannelOpenInit) -> Result<()> {
-        if msg.channel.ordering != ChannelOrder::Unordered {
+        if msg.chan_end_on_a.ordering != ChannelOrder::Unordered {
             return Err(anyhow::anyhow!(
                 "channel order must be unordered for Ics20 transfer"
             ));
         }
 
-        if msg.channel.version != Version::ics20() {
+        if msg.chan_end_on_a.version != Version::ics20() {
             return Err(anyhow::anyhow!(
                 "channel version must be ics20 for Ics20 transfer"
             ));
@@ -124,13 +124,13 @@ impl AppHandlerCheck for Ics20Transfer {
     }
 
     async fn chan_open_try_check(_state: Arc<State>, msg: &MsgChannelOpenTry) -> Result<()> {
-        if msg.channel.ordering != ChannelOrder::Unordered {
+        if msg.chan_end_on_b.ordering != ChannelOrder::Unordered {
             return Err(anyhow::anyhow!(
                 "channel order must be unordered for Ics20 transfer"
             ));
         }
 
-        if msg.counterparty_version != Version::ics20() {
+        if msg.version_on_a != Version::ics20() {
             return Err(anyhow::anyhow!(
                 "counterparty version must be ics20-1 for Ics20 transfer"
             ));
@@ -140,7 +140,7 @@ impl AppHandlerCheck for Ics20Transfer {
     }
 
     async fn chan_open_ack_check(_state: Arc<State>, msg: &MsgChannelOpenAck) -> Result<()> {
-        if msg.counterparty_version != Version::ics20() {
+        if msg.version_on_b != Version::ics20() {
             return Err(anyhow::anyhow!(
                 "counterparty version must be ics20-1 for Ics20 transfer"
             ));

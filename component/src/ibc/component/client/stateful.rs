@@ -67,7 +67,7 @@ pub mod update_client {
             // We also have to convert from an IBC height, which has two
             // components, to a Tendermint height, which has only one.
             let trusted_height = trusted_height
-                .revision_height
+                .revision_height()
                 .try_into()
                 .map_err(|_| anyhow::anyhow!("invalid header height"))?;
 
@@ -125,7 +125,7 @@ pub mod update_client {
         trusted_client_state: &TendermintClientState,
         untrusted_header: &TendermintHeader,
     ) -> anyhow::Result<()> {
-        if untrusted_header.height().revision_number != trusted_client_state.chain_id.version() {
+        if untrusted_header.height().revision_number() != trusted_client_state.chain_id.version() {
             Err(anyhow::anyhow!(
                 "client update revision number does not match client state"
             ))

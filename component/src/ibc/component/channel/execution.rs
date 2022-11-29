@@ -7,19 +7,19 @@ pub mod channel_open_init {
             let channel_id = self.next_channel_id().await.unwrap();
             let new_channel = ChannelEnd {
                 state: ChannelState::Init,
-                ordering: msg.channel.ordering,
-                remote: msg.channel.remote.clone(),
-                connection_hops: msg.channel.connection_hops.clone(),
-                version: msg.channel.version.clone(),
+                ordering: msg.chan_end_on_a.ordering,
+                remote: msg.chan_end_on_a.remote.clone(),
+                connection_hops: msg.chan_end_on_a.connection_hops.clone(),
+                version: msg.chan_end_on_a.version.clone(),
             };
 
-            self.put_channel(&channel_id, &msg.port_id, new_channel.clone());
-            self.put_send_sequence(&channel_id, &msg.port_id, 1);
-            self.put_recv_sequence(&channel_id, &msg.port_id, 1);
-            self.put_ack_sequence(&channel_id, &msg.port_id, 1);
+            self.put_channel(&channel_id, &msg.port_id_on_a, new_channel.clone());
+            self.put_send_sequence(&channel_id, &msg.port_id_on_a, 1);
+            self.put_recv_sequence(&channel_id, &msg.port_id_on_a, 1);
+            self.put_ack_sequence(&channel_id, &msg.port_id_on_a, 1);
 
             self.record(event::channel_open_init(
-                &msg.port_id,
+                &msg.port_id_on_a,
                 &channel_id,
                 &new_channel,
             ));
@@ -38,19 +38,19 @@ pub mod channel_open_try {
             let channel_id = self.next_channel_id().await.unwrap();
             let new_channel = ChannelEnd {
                 state: ChannelState::TryOpen,
-                ordering: msg.channel.ordering,
-                remote: msg.channel.remote.clone(),
-                connection_hops: msg.channel.connection_hops.clone(),
-                version: msg.channel.version.clone(),
+                ordering: msg.chan_end_on_b.ordering,
+                remote: msg.chan_end_on_b.remote.clone(),
+                connection_hops: msg.chan_end_on_b.connection_hops.clone(),
+                version: msg.chan_end_on_b.version.clone(),
             };
 
-            self.put_channel(&channel_id, &msg.port_id, new_channel.clone());
-            self.put_send_sequence(&channel_id, &msg.port_id, 1);
-            self.put_recv_sequence(&channel_id, &msg.port_id, 1);
-            self.put_ack_sequence(&channel_id, &msg.port_id, 1);
+            self.put_channel(&channel_id, &msg.port_id_on_b, new_channel.clone());
+            self.put_send_sequence(&channel_id, &msg.port_id_on_b, 1);
+            self.put_recv_sequence(&channel_id, &msg.port_id_on_b, 1);
+            self.put_ack_sequence(&channel_id, &msg.port_id_on_b, 1);
 
             self.record(event::channel_open_try(
-                &msg.port_id,
+                &msg.port_id_on_b,
                 &channel_id,
                 &new_channel,
             ));
@@ -67,19 +67,19 @@ pub mod channel_open_ack {
     pub trait ChannelOpenAckExecute: StateWriteExt {
         async fn execute(&mut self, msg: &MsgChannelOpenAck) {
             let mut channel = self
-                .get_channel(&msg.channel_id, &msg.port_id)
+                .get_channel(&msg.chan_id_on_a, &msg.port_id_on_a)
                 .await
                 .unwrap()
                 .unwrap();
 
             channel.set_state(ChannelState::Open);
-            channel.set_version(msg.counterparty_version.clone());
-            channel.set_counterparty_channel_id(msg.counterparty_channel_id);
-            self.put_channel(&msg.channel_id, &msg.port_id, channel.clone());
+            channel.set_version(msg.version_on_b.clone());
+            channel.set_counterparty_channel_id(msg.chan_id_on_b);
+            self.put_channel(&msg.chan_id_on_a, &msg.port_id_on_a, channel.clone());
 
             self.record(event::channel_open_ack(
-                &msg.port_id,
-                &msg.channel_id,
+                &msg.port_id_on_a,
+                &msg.chan_id_on_a,
                 &channel,
             ));
         }
@@ -95,13 +95,13 @@ pub mod channel_open_confirm {
     pub trait ChannelOpenConfirmExecute: StateWriteExt {
         async fn execute(&mut self, msg: &MsgChannelOpenConfirm) {
             let mut channel = self
-                .get_channel(&msg.channel_id, &msg.port_id)
+                .get_channel(&msg.chan_id_on_b, &msg.port_id_on_b)
                 .await
                 .unwrap()
                 .unwrap();
 
             channel.set_state(ChannelState::Open);
-            self.put_channel(&msg.channel_id, &msg.port_id, channel.clone());
+            self.put_channel(&msg.chan_id_on_b, &msg.port_id_on_b, channel.clone());
 
             self.record(event::channel_open_confirm(
                 &msg.port_id_on_b,
@@ -121,16 +121,16 @@ pub mod channel_close_init {
     pub trait ChannelCloseInitExecute: StateWriteExt {
         async fn execute(&mut self, msg: &MsgChannelCloseInit) {
             let mut channel = self
-                .get_channel(&msg.channel_id, &msg.port_id)
+                .get_channel(&msg.chan_id_on_a, &msg.port_id_on_a)
                 .await
                 .unwrap()
                 .unwrap();
             channel.set_state(ChannelState::Closed);
-            self.put_channel(&msg.channel_id, &msg.port_id, channel.clone());
+            self.put_channel(&msg.chan_id_on_a, &msg.port_id_on_a, channel.clone());
 
             self.record(event::channel_close_init(
-                &msg.port_id,
-                &msg.channel_id,
+                &msg.port_id_on_a,
+                &msg.chan_id_on_a,
                 &channel,
             ));
         }
@@ -146,17 +146,17 @@ pub mod channel_close_confirm {
     pub trait ChannelCloseConfirmExecute: StateWriteExt {
         async fn execute(&mut self, msg: &MsgChannelCloseConfirm) {
             let mut channel = self
-                .get_channel(&msg.channel_id, &msg.port_id)
+                .get_channel(&msg.chan_id_on_b, &msg.port_id_on_b)
                 .await
                 .unwrap()
                 .unwrap();
 
             channel.set_state(ChannelState::Closed);
-            self.put_channel(&msg.channel_id, &msg.port_id, channel.clone());
+            self.put_channel(&msg.chan_id_on_b, &msg.port_id_on_b, channel.clone());
 
             self.record(event::channel_close_confirm(
-                &msg.port_id,
-                &msg.channel_id,
+                &msg.port_id_on_b,
+                &msg.chan_id_on_b,
                 &channel,
             ));
         }
