@@ -16,7 +16,7 @@ use crate::ibc::component::client::{
 #[async_trait]
 impl ActionHandler for MsgUpdateAnyClient {
     #[instrument(name = "ibc_action", skip(self, _context))]
-    fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         header_is_tendermint(self)?;
 
         Ok(())

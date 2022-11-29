@@ -14,7 +14,7 @@ use crate::{
 #[async_trait]
 impl ActionHandler for ProposalWithdraw {
     #[instrument(name = "proposal_withdraw", skip(self, _context))]
-    fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         check::stateless::proposal_withdraw(self)
     }
 

@@ -12,7 +12,7 @@ use crate::ibc::transfer::Ics20TransferReadExt as _;
 #[async_trait]
 impl ActionHandler for Ics20Withdrawal {
     #[instrument(name = "ics20_withdrawal", skip(self, _context))]
-    fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         self.validate()
     }
 

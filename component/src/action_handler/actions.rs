@@ -23,7 +23,7 @@ mod validator_vote;
 
 #[async_trait]
 impl ActionHandler for Action {
-    fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
+    async fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
         match self {
             Action::Delegate(action) => action.check_stateless(context),
             Action::Undelegate(action) => action.check_stateless(context),
@@ -42,6 +42,7 @@ impl ActionHandler for Action {
             Action::IBCAction(action) => action.check_stateless(context),
             Action::Ics20Withdrawal(action) => action.check_stateless(context),
         }
+        .await
     }
 
     async fn check_stateful(&self, state: Arc<State>, context: Arc<Transaction>) -> Result<()> {

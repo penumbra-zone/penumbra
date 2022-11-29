@@ -18,7 +18,7 @@ use crate::ibc::transfer::Ics20Transfer;
 #[async_trait]
 impl ActionHandler for MsgChannelOpenInit {
     #[instrument(name = "channel_open_init", skip(self, _context))]
-    fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         connection_hops_eq_1(self)?;
 
         Ok(())

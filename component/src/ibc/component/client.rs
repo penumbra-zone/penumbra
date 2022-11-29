@@ -545,7 +545,9 @@ mod tests {
         // Since the context is not used by the IBC action handlers, we can pass a dummy transaction.
         let dummy_context = Arc::new(Transaction::default());
 
-        create_client_action.check_stateless(dummy_context.clone())?;
+        create_client_action
+            .check_stateless(dummy_context.clone())
+            .await?;
         create_client_action
             .check_stateful(state.clone(), dummy_context.clone())
             .await?;
@@ -557,7 +559,9 @@ mod tests {
         assert_eq!(state.client_counter().await.unwrap().0, 1);
 
         // Now we update the client and confirm that the update landed in state.
-        update_client_action.check_stateless(dummy_context.clone())?;
+        update_client_action
+            .check_stateless(dummy_context.clone())
+            .await?;
         update_client_action
             .check_stateful(state.clone(), dummy_context.clone())
             .await?;
@@ -577,7 +581,9 @@ mod tests {
             action: Some(IbcActionInner::UpdateClient(second_update)),
         };
 
-        second_update_client_action.check_stateless(dummy_context.clone())?;
+        second_update_client_action
+            .check_stateless(dummy_context.clone())
+            .await?;
         second_update_client_action
             .check_stateful(state.clone(), dummy_context.clone())
             .await?;

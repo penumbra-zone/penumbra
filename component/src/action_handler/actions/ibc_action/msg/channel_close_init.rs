@@ -17,7 +17,7 @@ use crate::ibc::transfer::Ics20Transfer;
 #[async_trait]
 impl ActionHandler for MsgChannelCloseInit {
     #[instrument(name = "channel_close_init", skip(self, _context))]
-    fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         // NOTE: no additional stateless validation is possible
 
         Ok(())

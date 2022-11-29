@@ -17,7 +17,7 @@ use crate::ibc::transfer::Ics20Transfer;
 #[async_trait]
 impl ActionHandler for MsgChannelOpenAck {
     #[instrument(name = "channel_open_ack", skip(self, _context))]
-    fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         // NOTE: no additional stateless validation is possible
 
         Ok(())

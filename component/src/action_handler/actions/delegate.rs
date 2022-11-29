@@ -14,7 +14,7 @@ use crate::{
 #[async_trait]
 impl ActionHandler for Delegate {
     #[instrument(name = "delegate", skip(self, _context))]
-    fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         // There are no stateless checks specific to this action.
         Ok(())
     }

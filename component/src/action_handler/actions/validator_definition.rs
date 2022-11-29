@@ -16,7 +16,7 @@ use crate::{
 #[async_trait]
 impl ActionHandler for ValidatorDefinition {
     #[instrument(name = "validator_definition", skip(self, _context))]
-    fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         // Check that validator definition is correctly signed and well-formed:
         let definition = validator::Definition::try_from(self.clone())
             .context("supplied proto is not a valid definition")?;

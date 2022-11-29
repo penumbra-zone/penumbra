@@ -15,7 +15,7 @@ use crate::ibc::component::connection::stateless::connection_open_init::version_
 #[async_trait]
 impl ActionHandler for MsgConnectionOpenInit {
     #[instrument(name = "connection_open_init", skip(self, _context))]
-    fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         version_is_supported(self)?;
 
         Ok(())
