@@ -257,6 +257,14 @@ impl TreeReader for Snapshot {
 
 impl HasPreimage for Snapshot {
     fn preimage(&self, key_hash: jmt::KeyHash) -> Result<Option<Vec<u8>>> {
-        todo!()
+        let jmt_keys_inverse_cf = self
+            .0
+            .db
+            .cf_handle("jmt_keys_inverse")
+            .expect("jmt_keys_inverse column family not found");
+        let key = self.0.snapshot.get_cf(jmt_keys_inverse_cf, key_hash.0)?;
+
+        tracing::trace!(?key_hash, ?key);
+        Ok(key)
     }
 }
