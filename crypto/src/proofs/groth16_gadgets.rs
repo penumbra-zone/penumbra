@@ -1,5 +1,4 @@
 #![allow(clippy::too_many_arguments)]
-use ark_ff::PrimeField;
 use ark_r1cs_std::{prelude::*, ToBitsGadget};
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use decaf377::{

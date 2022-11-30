@@ -187,7 +187,7 @@ impl OutputProof {
         balance_commitment: balance::Commitment,
         note_commitment: note::Commitment,
         epk: ka::Public,
-    ) -> anyhow::Result<bool> {
+    ) -> anyhow::Result<()> {
         let processed_pvk = Groth16::process_vk(&vk).map_err(|err| anyhow::anyhow!(err))?;
         let element_pk = decaf377::Encoding(epk.0).vartime_decompress().unwrap();
         let mut public_inputs = Vec::new();
@@ -198,6 +198,8 @@ impl OutputProof {
         let proof_result =
             Groth16::verify_with_processed_vk(&processed_pvk, public_inputs.as_slice(), &self.0)
                 .map_err(|err| anyhow::anyhow!(err))?;
-        Ok(proof_result)
+        proof_result
+            .then_some(())
+            .ok_or_else(|| anyhow::anyhow!("proof did not verify"))
     }
 }

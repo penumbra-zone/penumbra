@@ -263,7 +263,7 @@ impl SpendProof {
         balance_commitment: balance::Commitment,
         nullifier: Nullifier,
         rk: VerificationKey<SpendAuth>,
-    ) -> anyhow::Result<bool> {
+    ) -> anyhow::Result<()> {
         let processed_pvk = Groth16::process_vk(&vk).map_err(|err| anyhow::anyhow!(err))?;
         let mut public_inputs = Vec::new();
         public_inputs.extend(Fq::from(anchor.0).to_field_elements().unwrap());
@@ -277,6 +277,8 @@ impl SpendProof {
         let proof_result =
             Groth16::verify_with_processed_vk(&processed_pvk, public_inputs.as_slice(), &self.0)
                 .map_err(|err| anyhow::anyhow!(err))?;
-        Ok(proof_result)
+        proof_result
+            .then_some(())
+            .ok_or_else(|| anyhow::anyhow!("proof did not verify"))
     }
 }
