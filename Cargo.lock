@@ -3327,6 +3327,7 @@ dependencies = [
  "anyhow",
  "bincode",
  "bytes",
+ "ed25519-consensus",
  "futures",
  "hex",
  "penumbra-chain",

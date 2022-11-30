@@ -6,11 +6,27 @@ pub struct AuthorizeRequest {
     /// Identifies the FVK (and hence the spend authorization key) to use for signing.
     #[prost(message, optional, tag="2")]
     pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
+    /// Optionally, pre-authorization data, if required by the custodian.
+    #[prost(message, optional, tag="3")]
+    pub pre_auth: ::core::option::Option<PreAuthorization>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuthorizeResponse {
     #[prost(message, optional, tag="1")]
     pub data: ::core::option::Option<super::super::core::transaction::v1alpha1::AuthorizationData>,
+}
+/// A pre-authorization packet, containing an Ed25519 signature over a
+/// `TransactionPlan`.  This allows a custodian to delegate (partial) signing
+/// authority to Ed25519 keys.  Details of how a custodian manages those keys
+/// are out-of-scope for the custody protocol and are custodian-specific.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PreAuthorization {
+    /// The Ed25519 verification key used to verify the signature.
+    #[prost(bytes="vec", tag="1")]
+    pub vk: ::prost::alloc::vec::Vec<u8>,
+    /// The Ed25519 signature over the `TransactionPlan`.
+    #[prost(bytes="vec", tag="2")]
+    pub sig: ::prost::alloc::vec::Vec<u8>,
 }
 /// Generated client implementations.
 pub mod custody_protocol_service_client {
