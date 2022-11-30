@@ -60,11 +60,9 @@ mod tests {
         )
         .expect("can create proof");
 
-        let proof_result = proof
-            .verify(&vk, balance_commitment, note_commitment, epk)
-            .expect("can compute success or not");
+        let proof_result = proof.verify(&vk, balance_commitment, note_commitment, epk);
 
-        assert!(proof_result);
+        assert!(proof_result.is_ok());
     }
 
     #[test]
@@ -110,11 +108,9 @@ mod tests {
             note.clue_key(),
         );
 
-        let proof_result = proof
-            .verify(&vk, balance_commitment, incorrect_note_commitment, epk)
-            .expect("can compute success or not");
+        let proof_result = proof.verify(&vk, balance_commitment, incorrect_note_commitment, epk);
 
-        assert!(!proof_result);
+        assert!(proof_result.is_err());
     }
 
     #[test]
@@ -154,11 +150,9 @@ mod tests {
 
         let incorrect_balance_commitment = value_to_send.commit(Fr::rand(&mut rng));
 
-        let proof_result = proof
-            .verify(&vk, incorrect_balance_commitment, note_commitment, epk)
-            .expect("can compute success or not");
+        let proof_result = proof.verify(&vk, incorrect_balance_commitment, note_commitment, epk);
 
-        assert!(!proof_result);
+        assert!(proof_result.is_err());
     }
 
     #[test]
@@ -199,11 +193,9 @@ mod tests {
         let incorrect_esk = ka::Secret::new(&mut rng);
         let incorrect_epk = incorrect_esk.diversified_public(&note.diversified_generator());
 
-        let proof_result = proof
-            .verify(&vk, balance_commitment, note_commitment, incorrect_epk)
-            .expect("can compute success or not");
+        let proof_result = proof.verify(&vk, balance_commitment, note_commitment, incorrect_epk);
 
-        assert!(!proof_result);
+        assert!(proof_result.is_err());
     }
 
     #[test]
@@ -254,10 +246,8 @@ mod tests {
         )
         .expect("can create proof");
 
-        let proof_result = proof
-            .verify(&vk, anchor, balance_commitment, nf, rk)
-            .expect("can compute success or not");
-        assert!(proof_result);
+        let proof_result = proof.verify(&vk, anchor, balance_commitment, nf, rk);
+        assert!(proof_result.is_ok());
     }
 
     #[test]
@@ -368,10 +358,8 @@ mod tests {
         )
         .expect("can create proof");
 
-        let proof_result = proof
-            .verify(&vk, anchor, balance_commitment, incorrect_nf, rk)
-            .expect("can compute success or not");
-        assert!(!proof_result);
+        let proof_result = proof.verify(&vk, anchor, balance_commitment, incorrect_nf, rk);
+        assert!(proof_result.is_err());
     }
 
     #[test]
@@ -425,10 +413,8 @@ mod tests {
 
         let incorrect_balance_commitment = value_to_send.commit(Fr::rand(&mut rng));
 
-        let proof_result = proof
-            .verify(&vk, anchor, incorrect_balance_commitment, nf, rk)
-            .expect("can compute success or not");
-        assert!(!proof_result);
+        let proof_result = proof.verify(&vk, anchor, incorrect_balance_commitment, nf, rk);
+        assert!(proof_result.is_err());
     }
 
     #[test]
@@ -485,10 +471,8 @@ mod tests {
         )
         .expect("should be able to form proof");
 
-        let proof_result = proof
-            .verify(&vk, anchor, balance_commitment, nf, incorrect_rk)
-            .expect("can compute success or not");
-        assert!(!proof_result);
+        let proof_result = proof.verify(&vk, anchor, balance_commitment, nf, incorrect_rk);
+        assert!(proof_result.is_err());
     }
 
     #[test]
@@ -542,9 +526,7 @@ mod tests {
         )
         .expect("should be able to form proof");
 
-        let proof_result = proof
-            .verify(&vk, anchor, balance_commitment, nf, rk)
-            .expect("can compute success or not");
-        assert!(proof_result);
+        let proof_result = proof.verify(&vk, anchor, balance_commitment, nf, rk);
+        assert!(proof_result.is_ok());
     }
 }
