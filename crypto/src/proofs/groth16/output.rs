@@ -18,7 +18,7 @@ use ark_snark::SNARK;
 use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
-use crate::proofs::groth16_gadgets as gadgets;
+use crate::proofs::{groth16::ParameterSetup, groth16_gadgets as gadgets};
 use crate::{balance, keys::Diversifier, note, Address, Note, Value};
 
 // Public:
@@ -113,8 +113,8 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
     }
 }
 
-impl OutputCircuit {
-    pub fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
+impl ParameterSetup for OutputCircuit {
+    fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
         let diversifier_bytes = [1u8; 16];
         let pk_d_bytes = [1u8; 32];
         let clue_key_bytes = [1; 32];

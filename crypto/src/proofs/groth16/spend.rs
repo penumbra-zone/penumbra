@@ -20,7 +20,7 @@ use penumbra_tct as tct;
 use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
-use crate::proofs::groth16_gadgets as gadgets;
+use crate::proofs::{groth16::ParameterSetup, groth16_gadgets as gadgets};
 use crate::{
     balance,
     keys::{NullifierKey, SeedPhrase, SpendKey},
@@ -170,8 +170,8 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
     }
 }
 
-impl SpendCircuit {
-    pub fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
+impl ParameterSetup for SpendCircuit {
+    fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
         let seed_phrase = SeedPhrase::from_randomness([b'f'; 32]);
         let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk_sender = sk_sender.full_viewing_key();

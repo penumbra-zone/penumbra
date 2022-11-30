@@ -1,8 +1,10 @@
 mod output;
 mod spend;
+mod traits;
 
 pub use output::{OutputCircuit, OutputProof};
 pub use spend::{SpendCircuit, SpendProof};
+pub use traits::ParameterSetup;
 
 #[cfg(test)]
 mod tests {
