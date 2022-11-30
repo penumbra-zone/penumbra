@@ -7,9 +7,11 @@
 //! offline threshold signing, ...).
 
 mod client;
+mod pre_auth;
 mod request;
 mod soft_kms;
 
 pub use client::CustodyClient;
+pub use pre_auth::PreAuthorization;
 pub use request::AuthorizeRequest;
 pub use soft_kms::SoftKms;
