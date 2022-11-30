@@ -7,7 +7,7 @@ use camino::Utf8PathBuf;
 use clap::Parser;
 use directories::ProjectDirs;
 use penumbra_crypto::FullViewingKey;
-use penumbra_custody::SoftHSM;
+use penumbra_custody::SoftKms;
 use penumbra_proto::{
     custody::v1alpha1::{
         custody_protocol_service_client::CustodyProtocolServiceClient,
@@ -79,8 +79,8 @@ impl Opt {
 
         // Build the custody service...
         let wallet = KeyStore::load(custody_path)?;
-        let soft_hsm = SoftHSM::new(vec![wallet.spend_key.clone()]);
-        let custody_svc = CustodyProtocolServiceServer::new(soft_hsm);
+        let soft_kms = SoftKms::new(vec![wallet.spend_key.clone()]);
+        let custody_svc = CustodyProtocolServiceServer::new(soft_kms);
         let custody = CustodyProtocolServiceClient::new(box_grpc_svc::local(custody_svc));
 
         let fvk = wallet.spend_key.full_viewing_key().clone();

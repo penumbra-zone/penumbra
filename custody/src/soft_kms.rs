@@ -8,14 +8,15 @@ use tonic::{async_trait, Request, Response, Status};
 
 use crate::AuthorizeRequest;
 
-/// A basic "SoftHSM" that stores keys in memory but presents as an asynchronous signer.
-pub struct SoftHSM {
+/// A basic software key management system that stores keys in memory but
+/// presents as an asynchronous signer.
+pub struct SoftKms {
     /// Store keys in a BTreeMap so we can identify them by account ID.
     keys: BTreeMap<AccountID, SpendKey>,
 }
 
-impl SoftHSM {
-    /// Initialize the SoftHSM with the given keys.
+impl SoftKms {
+    /// Initialize with the given keys.
     pub fn new(keys: Vec<SpendKey>) -> Self {
         Self {
             keys: keys
@@ -25,6 +26,7 @@ impl SoftHSM {
         }
     }
 
+    /// Attempt to authorize the requested [`TransactionPlan`].
     #[tracing::instrument(skip(self, request), name = "softhsm_sign")]
     pub fn sign(&self, request: &AuthorizeRequest) -> anyhow::Result<AuthorizationData> {
         let sk = self.keys.get(&request.account_id).ok_or_else(|| {
@@ -38,7 +40,7 @@ impl SoftHSM {
 }
 
 #[async_trait]
-impl pb::custody_protocol_service_server::CustodyProtocolService for SoftHSM {
+impl pb::custody_protocol_service_server::CustodyProtocolService for SoftKms {
     async fn authorize(
         &self,
         request: Request<pb::AuthorizeRequest>,
