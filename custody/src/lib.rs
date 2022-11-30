@@ -8,8 +8,8 @@
 
 mod client;
 mod request;
-mod soft_hsm;
+mod soft_kms;
 
 pub use client::CustodyClient;
 pub use request::AuthorizeRequest;
-pub use soft_hsm::SoftHSM;
+pub use soft_kms::SoftKms;
