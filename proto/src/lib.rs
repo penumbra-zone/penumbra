@@ -93,6 +93,47 @@ pub mod core {
             include!("gen/penumbra.core.transparent_proofs.v1alpha1.rs");
         }
     }
+
+    // TODO(erwan): explore ways to provide a flatter namespace for clients
+    /// Tendermint RPCs.
+    pub mod tendermint {
+        pub mod crypto {
+            include!("gen/tendermint.crypto.rs");
+        }
+
+        pub mod types {
+            include!("gen/tendermint.types.rs");
+        }
+
+        pub mod version {
+            include!("gen/tendermint.version.rs");
+        }
+
+        pub mod p2p {
+            include!("gen/tendermint.p2p.rs");
+        }
+    }
+    // TODO(erwan): figure out path to upstream those. maybe they should be in their own crate or repo?
+    pub mod cosmos {
+        pub mod base {
+            pub mod query {
+                pub mod v1beta1 {
+                    include!("gen/cosmos.base.query.v1beta1.rs");
+                }
+            }
+
+            pub mod tendermint {
+                pub mod v1beta1 {
+                    include!("gen/cosmos.base.tendermint.v1beta1.rs");
+                }
+            }
+        }
+    }
+
+    // TODO(erwan): this is one way to flatten the complex proto hierarchy, should be easy to lift
+    pub mod tendermint_proxy {
+        pub use crate::core::cosmos::base::tendermint::v1beta1::*;
+    }
 }
 
 /// Client protocol structures.
