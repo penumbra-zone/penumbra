@@ -3,7 +3,7 @@ use std::{any::Any, pin::Pin, sync::Arc};
 use anyhow::Result;
 use async_trait::async_trait;
 use futures::Stream;
-use jmt::storage::{LeafNode, Node, NodeKey, TreeReader};
+use jmt::storage::{HasPreimage, LeafNode, Node, NodeKey, TreeReader};
 use tokio::sync::mpsc;
 use tracing::Span;
 
@@ -252,5 +252,11 @@ impl TreeReader for Snapshot {
         }
 
         Ok(None)
+    }
+}
+
+impl HasPreimage for Snapshot {
+    fn preimage(&self, key_hash: jmt::KeyHash) -> Result<Option<Vec<u8>>> {
+        todo!()
     }
 }

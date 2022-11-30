@@ -86,11 +86,10 @@ impl State {
     ///
     /// This method may only be used on a clean [`State`] fork, and will error
     /// if [`is_dirty`] returns `true`.
-    ///
-    /// Errors if the key is not present.
-    /// TODO: change return type to `Option<Vec<u8>>` and an
-    /// existence-or-nonexistence proof.
-    pub async fn get_with_proof(&self, key: Vec<u8>) -> Result<(Vec<u8>, ics23::ExistenceProof)> {
+    pub async fn get_with_proof(
+        &self,
+        key: Vec<u8>,
+    ) -> Result<(Option<Vec<u8>>, ics23::CommitmentProof)> {
         if self.is_dirty() {
             return Err(anyhow::anyhow!("requested get_with_proof on dirty State"));
         }
@@ -103,7 +102,20 @@ impl State {
                 span.in_scope(|| {
                     let tree = jmt::JellyfishMerkleTree::new(&snapshot);
                     let proof = tree.get_with_ics23_proof(key, snapshot.version())?;
-                    Ok((proof.value.clone(), proof))
+                    Ok((
+                        match proof
+                            .proof
+                            .as_ref()
+                            .expect("CommitmentProof contains some kind of proof")
+                        {
+                            ics23::commitment_proof::Proof::Exist(exist) => {
+                                Some(exist.value.clone())
+                            }
+                            ics23::commitment_proof::Proof::Nonexist(_) => None,
+                            _ => anyhow::bail!("unsupported proof type"),
+                        },
+                        proof,
+                    ))
                 })
             })?
             .await?

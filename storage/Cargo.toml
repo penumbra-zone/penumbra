@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 
-jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "newmain" }
+jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "exclusion-proofs" }
 ibc-proto = { git = "https://github.com/penumbra-zone/ibc-rs", branch = "penumbra-034" }
 tokio = { version = "1.21.1", features = ["full", "tracing"] }
 tokio-stream = { version = "0.1.11" }
@@ -27,7 +27,7 @@ tonic = "0.8.1"
 hex = "0.4"
 metrics = "0.19.0"
 parking_lot = "0.12"
-ics23 = { git = "https://github.com/penumbra-zone/ics23", branch = "penumbra-034" }
+ics23 = "0.7"
 
 [dev-dependencies]
 tempfile = "3.3.0"

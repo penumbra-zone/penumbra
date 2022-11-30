@@ -63,7 +63,7 @@ impl Storage {
                     let db = Arc::new(DB::open_cf(
                         &opts,
                         path,
-                        ["jmt", "nonconsensus", "jmt_keys"],
+                        ["jmt", "nonconsensus", "jmt_keys", "jmt_keys_inverse"],
                     )?);
 
                     // TODO: For compatibility reasons with Tendermint, we set the "pre-genesis"
@@ -149,13 +149,26 @@ impl Storage {
                         .db
                         .cf_handle("jmt_keys")
                         .expect("jmt_keys column family not found");
+                    let jmt_keys_inverse_cf = inner
+                        .db
+                        .cf_handle("jmt_keys_inverse")
+                        .expect("jmt_keys_inverse column family not found");
+
                     for (keyhash, key_preimage, v) in unwritten_changes.iter() {
                         match v {
                             // Key still exists, so we need to store the key preimage
-                            Some(_) => inner.db.put_cf(jmt_keys_cf, key_preimage, keyhash.0)?,
+                            Some(_) => {
+                                // Track both the key -> hash and hash -> key mappings
+                                inner.db.put_cf(jmt_keys_cf, key_preimage, keyhash.0)?;
+                                inner
+                                    .db
+                                    .put_cf(jmt_keys_inverse_cf, keyhash.0, key_preimage)?;
+                            }
                             // Key was deleted, so delete the key preimage
                             None => {
+                                // Delete both the key -> hash and hash -> key mappings
                                 inner.db.delete_cf(jmt_keys_cf, key_preimage)?;
+                                inner.db.delete_cf(jmt_keys_inverse_cf, keyhash.0)?;
                             }
                         };
                     }

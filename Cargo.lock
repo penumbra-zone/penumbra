@@ -658,6 +658,7 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4152116fd6e9dadb291ae18fc1ec3575ed6d84c29642d97890f4b4a3417297e4"
 dependencies = [
+ "block-padding",
  "generic-array",
 ]
 
@@ -964,7 +965,7 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e57ff02e8ad8e06ab9731d5dc72dc23bef9200778eae1a89d555d8c42e5d4a86"
 dependencies = [
- "prost",
+ "prost 0.11.2",
  "prost-types",
  "tonic",
  "tracing-core",
@@ -2153,9 +2154,9 @@ dependencies = [
  "derive_more",
  "flex-error",
  "ibc-proto",
- "ics23",
+ "ics23 0.8.1",
  "num-traits",
- "prost",
+ "prost 0.11.2",
  "prost-types",
  "safe-regex",
  "serde",
@@ -2178,11 +2179,27 @@ source = "git+https://github.com/penumbra-zone/ibc-rs?branch=penumbra-034#27639d
 dependencies = [
  "base64",
  "bytes",
- "prost",
+ "prost 0.11.2",
  "prost-types",
  "serde",
  "tendermint-proto",
  "tonic",
+]
+
+[[package]]
+name = "ics23"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9d454cc0a22bd556cc3d3c69f9d75a392a36244634840697a4b9eb81bc5c8ae0"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "hex",
+ "prost 0.9.0",
+ "ripemd160",
+ "sha2 0.9.9",
+ "sha3 0.9.1",
+ "sp-std",
 ]
 
 [[package]]
@@ -2193,10 +2210,10 @@ dependencies = [
  "anyhow",
  "bytes",
  "hex",
- "prost",
+ "prost 0.11.2",
  "ripemd",
  "sha2 0.10.6",
- "sha3",
+ "sha3 0.10.6",
 ]
 
 [[package]]
@@ -2340,13 +2357,13 @@ checksum = "4217ad341ebadf8d8e724e264f13e593e0648f5b3e94b3896a5df283be015ecc"
 [[package]]
 name = "jmt"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/jellyfish-merkle.git?branch=newmain#fc529b26af6a5b488876b6770430076ecaabd8e4"
+source = "git+https://github.com/penumbra-zone/jellyfish-merkle.git?branch=exclusion-proofs#c511daa19c582c4001d2cafa772167984110ce43"
 dependencies = [
  "anyhow",
  "bcs",
  "byteorder",
  "hex",
- "ics23",
+ "ics23 0.7.0",
  "itertools",
  "mirai-annotations",
  "num-derive",
@@ -3127,7 +3144,7 @@ dependencies = [
  "http",
  "ibc",
  "ibc-proto",
- "ics23",
+ "ics23 0.8.1",
  "metrics",
  "metrics-exporter-prometheus",
  "metrics-tracing-context",
@@ -3141,7 +3158,7 @@ dependencies = [
  "penumbra-transaction",
  "penumbra-wallet",
  "pin-project",
- "prost",
+ "prost 0.11.2",
  "prost-types",
  "rand",
  "rand_chacha",
@@ -3215,7 +3232,7 @@ dependencies = [
  "decaf377",
  "hex",
  "ibc",
- "ics23",
+ "ics23 0.8.1",
  "num-rational",
  "once_cell",
  "penumbra-crypto",
@@ -3257,7 +3274,7 @@ dependencies = [
  "penumbra-storage",
  "penumbra-tct",
  "penumbra-transaction",
- "prost",
+ "prost 0.11.2",
  "prost-types",
  "rand_core",
  "regex",
@@ -3333,7 +3350,7 @@ dependencies = [
  "penumbra-crypto",
  "penumbra-proto",
  "penumbra-transaction",
- "prost",
+ "prost 0.11.2",
  "rand_core",
  "serde",
  "serde_json",
@@ -3397,10 +3414,10 @@ dependencies = [
  "hex",
  "ibc",
  "ibc-proto",
- "ics23",
+ "ics23 0.8.1",
  "num-rational",
  "penumbra-storage",
- "prost",
+ "prost 0.11.2",
  "prost-types",
  "serde",
  "subtle-encoding",
@@ -3421,7 +3438,7 @@ dependencies = [
  "hex",
  "ibc",
  "ibc-proto",
- "ics23",
+ "ics23 0.7.0",
  "jmt",
  "metrics",
  "once_cell",
@@ -3497,7 +3514,7 @@ dependencies = [
  "include-flate",
  "parking_lot 0.12.1",
  "penumbra-tct",
- "prost",
+ "prost 0.11.2",
  "rand",
  "rand_chacha",
  "rand_distr",
@@ -3573,7 +3590,7 @@ dependencies = [
  "penumbra-proto",
  "penumbra-tct",
  "penumbra-transaction",
- "prost",
+ "prost 0.11.2",
  "rand",
  "rand_core",
  "reqwest",
@@ -3892,12 +3909,35 @@ dependencies = [
 
 [[package]]
 name = "prost"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "444879275cb4fd84958b1a1d5420d15e6fcf7c235fe47f053c9c2a80aceb6001"
+dependencies = [
+ "bytes",
+ "prost-derive 0.9.0",
+]
+
+[[package]]
+name = "prost"
 version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a0841812012b2d4a6145fae9a6af1534873c32aa67fff26bd09f8fa42c83f95a"
 dependencies = [
  "bytes",
- "prost-derive",
+ "prost-derive 0.11.2",
+]
+
+[[package]]
+name = "prost-derive"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f9cc1a3263e07e0bf68e96268f37665207b49560d98739662cdfaae215c720fe"
+dependencies = [
+ "anyhow",
+ "itertools",
+ "proc-macro2 1.0.47",
+ "quote 1.0.21",
+ "syn 1.0.103",
 ]
 
 [[package]]
@@ -3920,7 +3960,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "747761bc3dc48f9a34553bf65605cf6cb6288ba219f3450b4275dbd81539551a"
 dependencies = [
  "bytes",
- "prost",
+ "prost 0.11.2",
 ]
 
 [[package]]
@@ -4195,6 +4235,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd124222d17ad93a644ed9d011a40f4fb64aa54275c08cc216524a9ea82fb09f"
 dependencies = [
  "digest 0.10.6",
+]
+
+[[package]]
+name = "ripemd160"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2eca4ecc81b7f313189bf73ce724400a07da2a6dac19588b03c8bd76a2dcc251"
+dependencies = [
+ "block-buffer 0.9.0",
+ "digest 0.9.0",
+ "opaque-debug",
 ]
 
 [[package]]
@@ -4597,6 +4648,18 @@ dependencies = [
 
 [[package]]
 name = "sha3"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f81199417d4e5de3f04b1e871023acea7389672c4135918f05aa9cbf2f2fa809"
+dependencies = [
+ "block-buffer 0.9.0",
+ "digest 0.9.0",
+ "keccak",
+ "opaque-debug",
+]
+
+[[package]]
+name = "sha3"
 version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bdf0c33fae925bdc080598b84bc15c55e7b9a4a43b3c704da051f977469691c9"
@@ -4696,6 +4759,12 @@ dependencies = [
  "libc",
  "winapi",
 ]
+
+[[package]]
+name = "sp-std"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "35391ea974fa5ee869cb094d5b437688fbf3d8127d64d1b9fed5822a1ed39b12"
 
 [[package]]
 name = "spin"
@@ -4971,7 +5040,7 @@ dependencies = [
  "futures",
  "num-traits",
  "once_cell",
- "prost",
+ "prost 0.11.2",
  "prost-types",
  "serde",
  "serde_bytes",
@@ -5020,7 +5089,7 @@ dependencies = [
  "flex-error",
  "num-derive",
  "num-traits",
- "prost",
+ "prost 0.11.2",
  "prost-types",
  "serde",
  "serde_bytes",
@@ -5330,8 +5399,8 @@ dependencies = [
  "hyper-timeout",
  "percent-encoding",
  "pin-project",
- "prost",
- "prost-derive",
+ "prost 0.11.2",
+ "prost-derive 0.11.2",
  "tokio",
  "tokio-stream",
  "tokio-util 0.7.4",
@@ -5389,7 +5458,7 @@ dependencies = [
  "bytes",
  "futures",
  "pin-project",
- "prost",
+ "prost 0.11.2",
  "tendermint",
  "tendermint-proto",
  "tokio",
