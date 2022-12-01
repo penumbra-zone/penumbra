@@ -244,13 +244,9 @@ async fn main() -> anyhow::Result<()> {
                         .add_service(tonic_web::enable(TendermintServiceServer::new(
                             info.clone(),
                         )))
-                        .serve(
-                            format!("{}:{}", host, grpc_port)
-                                .parse()
-                                .expect("this is a valid address"),
-                        ),
+                        .serve(tendermint_addr),
                 )
-                .expect("failed to spawn grpc server");
+                .expect("failed to spawn tendermint_proxy server");
 
             // Configure a Prometheus recorder and exporter.
             let (recorder, exporter) = PrometheusBuilder::new()
@@ -276,10 +272,11 @@ async fn main() -> anyhow::Result<()> {
             pd::register_metrics();
 
             // TODO: better error reporting
-            // We error out if either service errors, rather than keep running
+            // We error out if a service errors, rather than keep running
             tokio::select! {
                 x = abci_server => x?.map_err(|e| anyhow::anyhow!(e))?,
                 x = grpc_server => x?.map_err(|e| anyhow::anyhow!(e))?,
+                x = tendermint_proxy_server => x?.map_err(|e| anyhow::anyhow!(e))?,
             };
         }
 
