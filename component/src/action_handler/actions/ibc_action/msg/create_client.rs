@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
+use ibc::core::ics02_client::msgs::create_client::MsgCreateClient;
 use penumbra_storage::{State, StateTransaction};
 use penumbra_transaction::Transaction;
 use tracing::instrument;
@@ -15,7 +15,7 @@ use crate::ibc::component::client::{
 };
 
 #[async_trait]
-impl ActionHandler for MsgCreateAnyClient {
+impl ActionHandler for MsgCreateClient {
     #[instrument(name = "ibc_action", skip(self, _context))]
     async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         client_state_is_tendermint(self)?;

@@ -4,6 +4,7 @@ use super::component::client::StateReadExt as _;
 use super::component::connection::StateReadExt as _;
 use anyhow::Result;
 use async_trait::async_trait;
+use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics02_client::height::Height;
 use ibc::core::ics04_channel::channel::State as ChannelState;
 use ibc::core::ics04_channel::packet::Packet;
@@ -57,7 +58,7 @@ impl From<Ics20Withdrawal> for IBCPacket<Unchecked> {
     fn from(withdrawal: Ics20Withdrawal) -> Self {
         Self {
             source_port: withdrawal.source_port.clone(),
-            source_channel: withdrawal.source_channel,
+            source_channel: withdrawal.source_channel.clone(),
             timeout_height: ibc::Height::new(0, withdrawal.timeout_height).unwrap(),
             timeout_timestamp: withdrawal.timeout_time,
             data: withdrawal.packet_data(),

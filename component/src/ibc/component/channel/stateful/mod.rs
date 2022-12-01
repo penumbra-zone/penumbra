@@ -89,7 +89,7 @@ pub mod channel_open_try {
             };
 
             let proof = Proofs::new(
-                msg.proof_chan_end_on_a,
+                msg.proof_chan_end_on_a.clone(),
                 None,
                 None,
                 None,
@@ -162,7 +162,7 @@ pub mod channel_open_ack {
             let connection = self.verify_channel_connection_open(&channel).await?;
 
             let expected_counterparty =
-                Counterparty::new(msg.port_id_on_a.clone(), Some(msg.chan_id_on_a));
+                Counterparty::new(msg.port_id_on_a.clone(), Some(msg.chan_id_on_a.clone()));
 
             let expected_connection_hops = vec![connection
                 .counterparty()
@@ -179,7 +179,7 @@ pub mod channel_open_ack {
             };
 
             let proof = Proofs::new(
-                msg.proof_chan_end_on_b,
+                msg.proof_chan_end_on_b.clone(),
                 None,
                 None,
                 None,
@@ -260,7 +260,7 @@ pub mod channel_open_confirm {
                 .ok_or_else(|| anyhow::anyhow!("no counterparty connection id provided"))?];
 
             let expected_counterparty =
-                Counterparty::new(msg.port_id_on_b.clone(), Some(msg.chan_id_on_b));
+                Counterparty::new(msg.port_id_on_b.clone(), Some(msg.chan_id_on_b.clone()));
 
             let expected_channel = ChannelEnd {
                 state: ChannelState::Open,
@@ -271,7 +271,7 @@ pub mod channel_open_confirm {
             };
 
             let proof = Proofs::new(
-                msg.proof_chan_end_on_a,
+                msg.proof_chan_end_on_a.clone(),
                 None,
                 None,
                 None,
@@ -370,7 +370,7 @@ pub mod channel_close_confirm {
                 .ok_or_else(|| anyhow::anyhow!("no counterparty connection id provided"))?];
 
             let expected_counterparty =
-                Counterparty::new(msg.port_id_on_b.clone(), Some(msg.chan_id_on_b));
+                Counterparty::new(msg.port_id_on_b.clone(), Some(msg.chan_id_on_b.clone()));
 
             let expected_channel = ChannelEnd {
                 state: ChannelState::Closed,
@@ -381,7 +381,7 @@ pub mod channel_close_confirm {
             };
 
             let proof = Proofs::new(
-                msg.proof_chan_end_on_a,
+                msg.proof_chan_end_on_a.clone(),
                 None,
                 None,
                 None,
@@ -432,12 +432,12 @@ pub mod recv_packet {
             if msg.packet.source_port != channel.counterparty().port_id {
                 return Err(anyhow::anyhow!("packet source port does not match channel"));
             }
-            if msg.packet.source_channel
-                != channel
-                    .counterparty()
-                    .channel_id
-                    .ok_or_else(|| anyhow::anyhow!("missing channel id"))?
-            {
+            let counterparty_channel = channel
+                .counterparty()
+                .channel_id()
+                .ok_or_else(|| anyhow::anyhow!("missing channel id"))?;
+
+            if msg.packet.source_channel.ne(counterparty_channel) {
                 return Err(anyhow::anyhow!(
                     "packet source channel does not match channel"
                 ));
@@ -447,6 +447,7 @@ pub mod recv_packet {
                 .get_connection(&channel.connection_hops[0])
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("connection not found for channel"))?;
+
             if !connection.state_matches(&ConnectionState::Open) {
                 return Err(anyhow::anyhow!("connection for channel is not open"));
             }
@@ -512,20 +513,15 @@ pub mod acknowledge_packet {
 
             // TODO: capability authentication?
 
-            if msg.packet.destination_port != channel.counterparty().port_id {
-                return Err(anyhow::anyhow!(
-                    "packet destination port does not match channel"
-                ));
-            }
-
-            if msg.packet.destination_channel
-                != channel
-                    .counterparty()
-                    .channel_id
-                    .ok_or_else(|| anyhow::anyhow!("missing counterparty channel id"))?
+            // TODO(erwan): MERGEBLOCK partialeq only works through explicit method call? why?
+            // TODO(erwan): realizing now that there are a bunch of helper methods we could rather use POLISH
+            if channel
+                .counterparty()
+                .port_id()
+                .ne(&msg.packet.destination_port)
             {
                 return Err(anyhow::anyhow!(
-                    "packet destination channel does not match channel"
+                    "packet destination port does not match channel"
                 ));
             }
 
@@ -583,11 +579,10 @@ pub mod timeout {
             }
 
             // TODO: capability authentication?
-            if msg.packet.destination_channel
-                != channel
-                    .counterparty()
-                    .channel_id
-                    .ok_or_else(|| anyhow::anyhow!("missing channel id"))?
+            if msg.packet.destination_channel.ne(channel
+                .counterparty()
+                .channel_id()
+                .ok_or_else(|| anyhow::anyhow!("missing channel id"))?)
             {
                 return Err(anyhow::anyhow!(
                     "packet destination channel does not match channel"
