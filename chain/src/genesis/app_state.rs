@@ -26,17 +26,17 @@ impl Default for AppState {
                 Allocation {
                     amount: 1000,
                     denom: "penumbra".parse().unwrap(),
-                    address: crate::test::TEST_ADDRESS_0.parse().unwrap(),
+                    address: crate::test_keys::ADDRESS_0_STR.parse().unwrap(),
                 },
                 Allocation {
                     amount: 100,
                     denom: "gm".parse().unwrap(),
-                    address: crate::test::TEST_ADDRESS_1.parse().unwrap(),
+                    address: crate::test_keys::ADDRESS_1_STR.parse().unwrap(),
                 },
                 Allocation {
                     amount: 100,
                     denom: "gn".parse().unwrap(),
-                    address: crate::test::TEST_ADDRESS_1.parse().unwrap(),
+                    address: crate::test_keys::ADDRESS_1_STR.parse().unwrap(),
                 },
             ],
         }

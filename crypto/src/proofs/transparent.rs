@@ -349,14 +349,15 @@ impl SwapClaimProof {
             .map_err(|_| anyhow!("merkle root mismatch"))?;
 
         // Generate swap plaintext from which to generate the asset ID
-
-        let swap_plaintext = SwapPlaintext::new(
-            self.trading_pair.clone(),
-            self.delta_1_i.into(),
-            self.delta_2_i.into(),
-            fee,
-            self.claim_address,
-        );
+        // TODO: store all of these fields as a SwapPlaintext in the proof ?
+        let swap_plaintext = SwapPlaintext {
+            trading_pair: self.trading_pair.clone(),
+            delta_1_i: self.delta_1_i.into(),
+            delta_2_i: self.delta_2_i.into(),
+            claim_fee: fee,
+            claim_address: self.claim_address,
+            swap_blinding: self.swap_blinding,
+        };
 
         // Check that the provided note commitment is for the proof's Swap NFT.
         let note = Note::from_parts(
@@ -598,13 +599,14 @@ impl SwapProof {
         // Generate trading pair & swap plaintext from parts, in order to include asset id generation in verification
         let trading_pair = TradingPair::new(self.value_t1.asset_id, self.value_t2.asset_id)?;
 
-        let swap_plaintext = SwapPlaintext::new(
+        let swap_plaintext = SwapPlaintext {
             trading_pair,
-            self.value_t1.amount,
-            self.value_t2.amount,
-            self.fee_delta.clone(),
-            self.claim_address,
-        );
+            delta_1_i: self.value_t1.amount,
+            delta_2_i: self.value_t2.amount,
+            claim_fee: self.fee_delta.clone(),
+            claim_address: self.claim_address,
+            swap_blinding: self.swap_blinding,
+        };
 
         // Checks the note commitment of the Swap NFT.
         gadgets::note_commitment_integrity(
@@ -615,7 +617,7 @@ impl SwapProof {
                     amount: 1u64.into(),
                     asset_id: swap_plaintext.asset_id(),
                 },
-                self.swap_blinding,
+                self.note_blinding,
             )?,
             note_commitment,
         )?;

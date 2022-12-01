@@ -19,7 +19,7 @@ use regex::Regex;
 use serde_json::Value;
 use tempfile::{tempdir, NamedTempFile, TempDir};
 
-use penumbra_chain::test::{TEST_ADDRESS_0, TEST_ADDRESS_1, TEST_SEED_PHRASE};
+use penumbra_chain::test_keys::{ADDRESS_0_STR, ADDRESS_1_STR, SEED_PHRASE};
 
 const TEST_ASSET: &str = "1cube";
 
@@ -40,7 +40,7 @@ fn load_wallet_into_tmpdir() -> TempDir {
             "keys",
             "import",
             "phrase",
-            TEST_SEED_PHRASE,
+            SEED_PHRASE,
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     setup_cmd
@@ -91,7 +91,7 @@ fn transaction_send_from_addr_0_to_addr_1() {
             "send",
             TEST_ASSET,
             "--to",
-            TEST_ADDRESS_1,
+            ADDRESS_1_STR,
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     send_cmd.assert().success();
@@ -127,7 +127,7 @@ fn transaction_send_from_addr_0_to_addr_1() {
             "send",
             TEST_ASSET,
             "--to",
-            TEST_ADDRESS_0,
+            ADDRESS_0_STR,
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
 

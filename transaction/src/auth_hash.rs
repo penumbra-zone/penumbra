@@ -578,6 +578,7 @@ mod tests {
         .unwrap();
 
         let swap_plaintext = SwapPlaintext::new(
+            &mut OsRng,
             trading_pair,
             100000u64.into(),
             1u64.into(),

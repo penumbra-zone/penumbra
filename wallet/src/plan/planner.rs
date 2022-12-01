@@ -163,6 +163,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         // Create the `SwapPlaintext` representing the swap to be performed:
         let swap_plaintext = SwapPlaintext::new(
+            &mut self.rng,
             trading_pair,
             delta_1,
             delta_2,
