@@ -6,7 +6,7 @@ use decaf377::{FieldExt, Fq};
 use once_cell::sync::Lazy;
 use penumbra_proto::{core::crypto::v1alpha1 as pb_crypto, core::dex::v1alpha1 as pb, Protobuf};
 use poseidon377::{hash_1, hash_4, hash_7};
-use rand_core::OsRng;
+use rand::{CryptoRng, RngCore};
 
 use crate::dex::TradingPair;
 use crate::symmetric::{PayloadKey, PayloadKind};
@@ -103,14 +103,15 @@ impl SwapPlaintext {
         SwapCiphertext(ciphertext)
     }
 
-    pub fn new(
+    pub fn new<R: RngCore + CryptoRng>(
+        rng: &mut R,
         trading_pair: TradingPair,
         delta_1_i: Amount,
         delta_2_i: Amount,
         claim_fee: Fee,
         claim_address: Address,
     ) -> SwapPlaintext {
-        let swap_blinding = Fq::rand(&mut OsRng);
+        let swap_blinding = Fq::rand(rng);
 
         Self {
             trading_pair,
@@ -273,6 +274,7 @@ mod tests {
         };
 
         let swap = SwapPlaintext::new(
+            &mut rng,
             trading_pair,
             100000u64.into(),
             1u64.into(),

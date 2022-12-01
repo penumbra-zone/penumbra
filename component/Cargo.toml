@@ -50,6 +50,7 @@ num-rational = "0.4"
 ed25519-consensus = "2"
 rand_core = "0.6"
 penumbra-tct = { path = "../tct" }
+rand_chacha = "0.3"
 
 [build-dependencies]
 vergen = "5"

@@ -3259,6 +3259,7 @@ dependencies = [
  "penumbra-transaction",
  "prost",
  "prost-types",
+ "rand_chacha",
  "rand_core",
  "regex",
  "serde",

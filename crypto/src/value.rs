@@ -104,6 +104,7 @@ impl FromStr for Value {
 #[cfg(test)]
 mod tests {
     use decaf377::Fr;
+    use rand_core::OsRng;
     use std::ops::Deref;
 
     use crate::{
@@ -219,6 +220,7 @@ mod tests {
         // Swap NFTs have no associated denom, make sure we can roundtrip parse/format.
         let gm_base_denom = asset::REGISTRY.parse_denom("ugm").unwrap();
         let sp = SwapPlaintext::new(
+            &mut OsRng,
             TradingPair::new(
                 asset::Id::from(gm_base_denom),
                 asset::Id::from(upenumbra_base_denom),
@@ -255,6 +257,7 @@ mod tests {
         let v3: Value = "4000000upenumbra".parse().unwrap();
         // Swap NFTs have no associated denom, make sure the formatter doesn't blow up.
         let sp = SwapPlaintext::new(
+            &mut OsRng,
             TradingPair::new(
                 asset::Id::from(gm_base_denom),
                 asset::Id::from(upenumbra_base_denom),
