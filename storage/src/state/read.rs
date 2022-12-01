@@ -170,7 +170,6 @@ pub(crate) fn nonconsensus_prefix_raw_with_cache<'a>(
     Box::pin(merged)
 }
 
-//#[async_trait(?Send)]
 #[async_trait]
 impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
     async fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>> {

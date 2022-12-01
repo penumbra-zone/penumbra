@@ -166,6 +166,11 @@ pub trait StateReadExt: StateRead {
         Ok(())
     }
 
+    /// Returns the NCT anchor for the given height.
+    async fn anchor_by_height(&self, height: u64) -> Result<Option<tct::Root>> {
+        self.get(&state_key::anchor_by_height(height)).await
+    }
+
     /// Checks whether a claimed NCT anchor is a previous valid state root.
     async fn check_claimed_anchor(&self, anchor: tct::Root) -> Result<()> {
         if let Some(anchor_height) = self
