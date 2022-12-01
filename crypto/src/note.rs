@@ -283,7 +283,10 @@ impl std::fmt::Debug for Note {
         f.debug_struct("Note")
             .field("value", &self.value)
             .field("address", &self.address())
-            .field("note_blinding", &self.note_blinding())
+            .field(
+                "note_blinding",
+                &hex::encode(self.note_blinding().to_bytes()),
+            )
             .finish()
     }
 }

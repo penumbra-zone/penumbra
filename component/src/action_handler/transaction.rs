@@ -56,6 +56,17 @@ impl ActionHandler for Transaction {
     }
 
     async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
+        // TODO: we'd ideally like to get rid of all of the code in the body of this
+        // function, and just call each individual ActionHandler.
+        //
+        // We can't do this currently, for two reasons:
+        //
+        // 1. The existing quarantining system means we have to quarantine outputs
+        // on a transaction-wide basis, not an action-by-action one;
+        //
+        // 2. We currently use this method to construct the `source` we use for the
+        // `AnnotatedNoteSource`; we'll need a way to plumb that through to other
+        // ActionHandlers (perhaps by using the StateTransaction's object store...)
         let source = NoteSource::Transaction { id: self.id() };
 
         if let Some((epoch, identity_key)) = state.should_quarantine(self).await {
