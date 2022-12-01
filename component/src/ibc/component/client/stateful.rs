@@ -3,9 +3,19 @@ pub mod create_client {
 
     #[async_trait]
     pub trait CreateClientCheck: StateReadExt {
-        async fn validate(&self, msg: &MsgCreateAnyClient) -> anyhow::Result<()> {
+        async fn validate(&self, msg: &MsgCreateClient) -> anyhow::Result<()> {
             let id_counter = self.client_counter().await?;
-            ClientId::new(msg.client_state.client_type(), id_counter.0)?;
+            let client_state = match msg.client_state.type_url.as_str() {
+                TENDERMINT_CLIENT_STATE_TYPE_URL => {
+                    TendermintClientState::try_from(msg.client_state.clone())?
+                }
+                _ => {
+                    return Err(anyhow::anyhow!(
+                        "invalid client state: not a tendermint client state"
+                    ))
+                }
+            };
+            ClientId::new(client_state.client_type(), id_counter.0)?;
 
             Ok(())
         }
@@ -19,22 +29,23 @@ pub mod update_client {
 
     #[async_trait]
     pub trait UpdateClientCheck: StateReadExt + inner::Inner {
-        async fn validate(&self, msg: &MsgUpdateAnyClient) -> anyhow::Result<()> {
+        async fn validate(&self, msg: &MsgUpdateClient) -> anyhow::Result<()> {
             let client_state = self.client_is_present(msg).await?;
 
             client_is_not_frozen(&client_state)?;
             self.client_is_not_expired(&msg.client_id, &client_state)
                 .await?;
 
-            let trusted_client_state = downcast!(client_state => AnyClientState::Tendermint)
-                .ok_or_else(|| anyhow::anyhow!("invalid client state: not Tendermint"))?;
+            let trusted_client_state = client_state;
 
-            let untrusted_header = downcast!(&msg.header => AnyHeader::Tendermint)
-                .ok_or_else(|| anyhow::anyhow!("invalid header: not Tendermint"))?;
+            let untrusted_header = match msg.header.type_url.as_str() {
+                TENDERMINT_HEADER_TYPE_URL => TendermintHeader::try_from(msg.header.clone())?,
+                _ => unimplemented!("not a tendermint header"),
+            };
 
             // Optimization: reject duplicate updates instead of verifying them.
             if self
-                .update_is_already_committed(&msg.client_id, untrusted_header)
+                .update_is_already_committed(&msg.client_id, &untrusted_header)
                 .await?
             {
                 // If the update is already committed, return an error to reject a duplicate update.
@@ -43,8 +54,8 @@ pub mod update_client {
                 ));
             }
 
-            header_revision_matches_client_state(&trusted_client_state, untrusted_header)?;
-            header_height_is_consistent(untrusted_header)?;
+            header_revision_matches_client_state(&trusted_client_state, &untrusted_header)?;
+            header_height_is_consistent(&untrusted_header)?;
 
             // The (still untrusted) header uses the `trusted_height` field to
             // specify the trusted anchor data it is extending.
@@ -56,13 +67,7 @@ pub mod update_client {
                 .get_verified_consensus_state(trusted_height, msg.client_id.clone())
                 .await?;
 
-            let last_trusted_consensus_state =
-                downcast!(last_trusted_consensus_state => AnyConsensusState::Tendermint)
-                    .ok_or_else(|| {
-                        anyhow::anyhow!(
-                            "stored consensus state is not a Tendermint consensus state!"
-                        )
-                    })?;
+            let last_trusted_consensus_state = last_trusted_consensus_state;
 
             // We also have to convert from an IBC height, which has two
             // components, to a Tendermint height, which has only one.
@@ -72,7 +77,7 @@ pub mod update_client {
                 .map_err(|_| anyhow::anyhow!("invalid header height"))?;
 
             let trusted_validator_set =
-                verify_header_validator_set(untrusted_header, &last_trusted_consensus_state)?;
+                verify_header_validator_set(&untrusted_header, &last_trusted_consensus_state)?;
 
             // Now we build the trusted and untrusted states to feed to the Tendermint light client.
 
@@ -113,7 +118,7 @@ pub mod update_client {
         }
     }
 
-    fn client_is_not_frozen(client: &AnyClientState) -> anyhow::Result<()> {
+    fn client_is_not_frozen(client: &TendermintClientState) -> anyhow::Result<()> {
         if client.is_frozen() {
             Err(anyhow::anyhow!("client is frozen"))
         } else {
@@ -166,8 +171,8 @@ pub mod update_client {
         pub trait Inner: StateReadExt {
             async fn client_is_present(
                 &self,
-                msg: &MsgUpdateAnyClient,
-            ) -> anyhow::Result<AnyClientState> {
+                msg: &MsgUpdateClient,
+            ) -> anyhow::Result<TendermintClientState> {
                 self.get_client_type(&msg.client_id).await?;
 
                 self.get_client_state(&msg.client_id).await
@@ -176,20 +181,15 @@ pub mod update_client {
             async fn client_is_not_expired(
                 &self,
                 client_id: &ClientId,
-                client_state: &AnyClientState,
+                client_state: &TendermintClientState,
             ) -> anyhow::Result<()> {
                 let latest_consensus_state = self
                     .get_verified_consensus_state(client_state.latest_height(), client_id.clone())
                     .await?;
 
-                let latest_consensus_state_tm =
-                    downcast!(latest_consensus_state => AnyConsensusState::Tendermint).ok_or_else(
-                        || {
-                            anyhow::anyhow!(
-                                "invalid consensus state: not a Tendermint consensus state"
-                            )
-                        },
-                    )?;
+                // TODO(erwan): for now there is no casting that needs to happen because `get_verified_consensus_state` does not return an
+                // abstracted consensus state.
+                let latest_consensus_state_tm = latest_consensus_state;
 
                 let now = self.get_block_timestamp().await?;
                 let time_elapsed = now.duration_since(latest_consensus_state_tm.timestamp)?;
@@ -214,13 +214,7 @@ pub mod update_client {
                     .get_verified_consensus_state(untrusted_header.height(), client_id.clone())
                     .await
                 {
-                    let stored_tm_consensus_state =
-                        downcast!(stored_consensus_state => AnyConsensusState::Tendermint)
-                            .ok_or_else(|| {
-                                anyhow::anyhow!(
-                                    "invalid consensus state: not a Tendermint consensus state"
-                                )
-                            })?;
+                    let stored_tm_consensus_state = stored_consensus_state;
 
                     Ok(stored_tm_consensus_state == untrusted_consensus_state)
                 } else {

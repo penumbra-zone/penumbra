@@ -1,10 +1,14 @@
 use anyhow::anyhow;
 use ibc::core::ics02_client::client_state::ClientState;
+use ibc::core::ics02_client::consensus_state::ConsensusState;
+use ibc::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
+use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
+use ibc::clients::ics07_tendermint::client_state::TENDERMINT_CLIENT_STATE_TYPE_URL;
 use ibc::core::ics02_client::trust_threshold::TrustThreshold;
-use ibc::core::ics02_client::{client_state::AnyClientState, height::Height};
+use ibc::core::ics02_client::height::Height;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::core::ics24_host::identifier::ConnectionId;
-use ibc::downcast;
+use ibc_proto::google::protobuf::Any;
 use penumbra_proto::{core::ibc::v1alpha1 as pb, Protobuf};
 
 #[derive(Clone, Debug)]
@@ -114,14 +118,16 @@ fn validate_trust_threshold(trust_threshold: TrustThreshold) -> Result<(), anyho
 // validate the parameters of an AnyClientState, verifying that it is a valid Penumbra client
 // state.
 pub fn validate_penumbra_client_state(
-    client_state: AnyClientState,
+    client_state: Any,
     chain_id: &str,
     current_height: u64,
 ) -> Result<(), anyhow::Error> {
-    let tm_client_state = downcast!(client_state => AnyClientState::Tendermint)
-        .ok_or_else(|| anyhow::anyhow!("invalid client state: not a Tendermint client state"))?;
+    let tm_client_state = match client_state.type_url.as_str() {
+        TENDERMINT_CLIENT_STATE_TYPE_URL => TendermintClientState::try_from(client_state)?,
+        _ => return Err(anyhow::anyhow!("invalid client state: not a tendermint client state")),
+    };
 
-    if tm_client_state.frozen_height.is_some() {
+    if tm_client_state.frozen_height().is_some() {
         return Err(anyhow::anyhow!("invalid client state: frozen"));
     }
 
@@ -135,14 +141,14 @@ pub fn validate_penumbra_client_state(
     }
 
     // check that the revision number is the same as our chain ID's version
-    if tm_client_state.latest_height.revision_number != chain_id.version() {
+    if tm_client_state.latest_height().revision_number() != chain_id.version() {
         return Err(anyhow::anyhow!(
             "invalid client state: revision number does not match"
         ));
     }
 
     // check that the latest height isn't gte the current block height
-    if tm_client_state.latest_height.revision_height >= current_height {
+    if tm_client_state.latest_height().revision_height() >= current_height {
         return Err(anyhow::anyhow!(
                 "invalid client state: latest height is greater than or equal to the current block height"
             ));

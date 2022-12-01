@@ -34,6 +34,7 @@ where
 
 use crate::core::crypto::v1alpha1::{BindingSignature, SpendAuthSignature, SpendVerificationKey};
 use decaf377_rdsa::{Binding, Signature, SpendAuth, VerificationKey};
+use ibc_rs::clients::ics07_tendermint;
 
 impl Protobuf<SpendAuthSignature> for Signature<SpendAuth> {}
 impl Protobuf<BindingSignature> for Signature<Binding> {}
@@ -166,8 +167,10 @@ use ibc_rs::core::ics03_connection::connection::ConnectionEnd;
 use ibc_rs::core::ics04_channel::channel::ChannelEnd;
 use ibc_rs::Height;
 
-// impl Protobuf<Any> for dyn ClientState {}
-// impl Protobuf<Any> for dyn ConsensusState {}
 impl Protobuf<RawConnectionEnd> for ConnectionEnd {}
 impl Protobuf<RawChannel> for ChannelEnd {}
 impl Protobuf<RawHeight> for Height {}
+
+// TODO(erwan): create ticket to switch to a trait object based approach
+impl Protobuf<Any> for ics07_tendermint::client_state::ClientState {}
+impl Protobuf<Any> for ics07_tendermint::consensus_state::ConsensusState {}

@@ -65,16 +65,13 @@ pub mod connection_open_confirm {
                 .get_verified_consensus_state(msg.proof_height_on_a, connection.client_id().clone())
                 .await?;
 
-            let client_def = AnyClient::from_client_type(trusted_client_state.client_type());
-
             // PROOF VERIFICATION
             // in connectionOpenConfirm, only the inclusion of the connection state must be
             // verified, not the client or consensus states.
-            client_def.verify_connection_state(
-                &trusted_client_state,
+            trusted_client_state.verify_connection_state(
                 msg.proof_height_on_a,
                 connection.counterparty().prefix(),
-                msg.proof_conn_end_on_a,
+                &msg.proof_conn_end_on_a,
                 trusted_consensus_state.root(),
                 connection
                     .counterparty()
@@ -176,16 +173,13 @@ pub mod connection_open_ack {
                 )
                 .await?;
 
-            let client_def = AnyClient::from_client_type(trusted_client_state.client_type());
-
             // PROOF VERIFICATION
             // 1. verify that the counterparty chain committed the expected_conn to its state
-            client_def
+            trusted_client_state
                 .verify_connection_state(
-                    &trusted_client_state,
                     msg.proofs_height_on_b,
                     connection.counterparty().prefix(),
-                    msg.proof_conn_end_on_b,
+                    &msg.proof_conn_end_on_b,
                     trusted_consensus_state.root(),
                     &msg.conn_id_on_b,
                     &expected_conn,
@@ -194,33 +188,31 @@ pub mod connection_open_ack {
 
             // 2. verify that the counterparty chain committed the correct ClientState (that was
             //    provided in the msg)
-            client_def
+            trusted_client_state
                 .verify_client_full_state(
-                    &trusted_client_state,
                     msg.proofs_height_on_b,
                     connection.counterparty().prefix(),
-                    msg.proof_client_state_of_a_on_b,
+                    &msg.proof_client_state_of_a_on_b,
                     trusted_consensus_state.root(),
                     connection.counterparty().client_id(),
-                    msg.client_state_of_a_on_b,
+                    msg.client_state_of_a_on_b.clone(),
                 )
                 .map_err(|e| anyhow::anyhow!("couldn't verify client state: {}", e))?;
 
             let expected_consensus = self
-                .get_penumbra_consensus_state(&msg.consensus_height_of_a_on_b)
+                .get_penumbra_consensus_state(msg.consensus_height_of_a_on_b)
                 .await?;
 
             // 3. verify that the counterparty chain stored the correct consensus state of Penumbra at
             //    the given consensus height
-            client_def
+            trusted_client_state
                 .verify_client_consensus_state(
-                    &trusted_client_state,
                     msg.proofs_height_on_b,
                     connection.counterparty().prefix(),
-                    msg.proof_consensus_state_of_a_on_b,
+                    &msg.proof_consensus_state_of_a_on_b,
                     trusted_consensus_state.root(),
                     connection.counterparty().client_id(),
-                    msg.consensus_height_of_a_on_b,
+                    msg.consensus_height_of_a_on_b.clone(),
                     &expected_consensus,
                 )
                 .map_err(|e| anyhow::anyhow!("couldn't verify client consensus state: {}", e))?;
@@ -254,7 +246,7 @@ pub mod connection_open_ack {
             ) -> anyhow::Result<()> {
                 let height = self.get_block_height().await?;
                 let chain_id = self.get_chain_id().await?;
-                _ = validate_penumbra_client_state(msg.client_state_of_a_on_b, &chain_id, height)?;
+                _ = validate_penumbra_client_state(msg.client_state_of_a_on_b.clone(), &chain_id, height)?;
 
                 Ok(())
             }
@@ -361,15 +353,12 @@ pub mod connection_open_try {
                 )
                 .await?;
 
-            let client_def = AnyClient::from_client_type(trusted_client_state.client_type());
-
             // PROOF VERIFICATION
             // 1. verify that the counterparty chain committed the expected_conn to its state
-            client_def.verify_connection_state(
-                &trusted_client_state,
+            trusted_client_state.verify_connection_state(
                 msg.proofs_height_on_a,
                 msg.counterparty.prefix(),
-                msg.proof_conn_end_on_a,
+                &msg.proof_conn_end_on_a,
                 trusted_consensus_state.root(),
                 msg.counterparty
                     .connection_id
@@ -380,14 +369,13 @@ pub mod connection_open_try {
 
             // 2. verify that the counterparty chain committed the correct ClientState (that was
             //    provided in the msg)
-            client_def.verify_client_full_state(
-                &trusted_client_state,
+            trusted_client_state.verify_client_full_state(
                 msg.proofs_height_on_a,
                 msg.counterparty.prefix(),
-                msg.proof_client_state_of_b_on_a,
+                &msg.proof_client_state_of_b_on_a,
                 trusted_consensus_state.root(),
                 msg.counterparty.client_id(),
-                msg.client_state_of_b_on_a,
+                msg.client_state_of_b_on_a.clone(),
             )?;
 
             let expected_consensus = self
@@ -396,11 +384,10 @@ pub mod connection_open_try {
 
             // 3. verify that the counterparty chain stored the correct consensus state of Penumbra at
             //    the given consensus height
-            client_def.verify_client_consensus_state(
-                &trusted_client_state,
+            trusted_client_state.verify_client_consensus_state(
                 msg.proofs_height_on_a,
                 msg.counterparty.prefix(),
-                msg.proof_consensus_state_of_b_on_a,
+                &msg.proof_consensus_state_of_b_on_a,
                 trusted_consensus_state.root(),
                 msg.counterparty.client_id(),
                 msg.consensus_height_of_b_on_a,
@@ -411,6 +398,9 @@ pub mod connection_open_try {
         }
     }
     mod inner {
+        use ibc::clients::ics07_tendermint::client_state::ClientState as TendermintClienState;
+        use ibc::clients::ics07_tendermint::client_state::TENDERMINT_CLIENT_STATE_TYPE_URL;
+
         use penumbra_chain::StateReadExt as _;
 
         use super::*;
@@ -436,7 +426,7 @@ pub mod connection_open_try {
             ) -> anyhow::Result<()> {
                 let height = self.get_block_height().await?;
                 let chain_id = self.get_chain_id().await?;
-                validate_penumbra_client_state(msg.client_state_of_b_on_a, &chain_id, height)?;
+                validate_penumbra_client_state(msg.client_state_of_b_on_a.clone(), &chain_id, height)?;
 
                 Ok(())
             }

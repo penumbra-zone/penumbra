@@ -2,6 +2,7 @@ use crate::ibc::component::client::StateReadExt;
 
 use super::super::*;
 use ibc::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
+use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics04_channel::context::calculate_block_delay;
 use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
@@ -20,7 +21,6 @@ use ibc::downcast;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 use prost::Message;
 
-use ibc::core::ics02_client::client_state::AnyClientState;
 use penumbra_chain::StateReadExt as _;
 use sha2::{Digest, Sha256};
 
@@ -108,12 +108,11 @@ pub trait ChannelProofVerifier: StateReadExt {
             .get_verified_consensus_state(proofs.height(), connection.client_id().clone())
             .await?;
 
-        let client_def = AnyClient::from_client_type(trusted_client_state.client_type());
+        let client_def = trusted_client_state;
 
         // PROOF VERIFICATION. verify that our counterparty committed expected_channel to its
         // state.
         client_def.verify_channel_state(
-            &trusted_client_state,
             proofs.height(),
             connection.counterparty().prefix(),
             proofs.object_proof(),
@@ -146,7 +145,7 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
 
         let commitment_path = CommitmentsPath {
             port_id: msg.packet.destination_port.clone(),
-            channel_id: msg.packet.destination_channel,
+            channel_id: msg.packet.destination_channel.clone(),
             sequence: msg.packet.sequence,
         };
 
@@ -179,7 +178,7 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
 
         let ack_path = AcksPath {
             port_id: msg.packet.destination_port.clone(),
-            channel_id: msg.packet.destination_channel,
+            channel_id: msg.packet.destination_channel.clone(),
             sequence: msg.packet.sequence,
         };
 
@@ -215,7 +214,7 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
 
         let seq_path = SeqRecvsPath(
             msg.packet.destination_port.clone(),
-            msg.packet.destination_channel,
+            msg.packet.destination_channel.clone(),
         );
 
         verify_merkle_proof(
@@ -245,7 +244,7 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
 
         let receipt_path = ReceiptsPath {
             port_id: msg.packet.destination_port.clone(),
-            channel_id: msg.packet.destination_channel,
+            channel_id: msg.packet.destination_channel.clone(),
             sequence: msg.packet.sequence,
         };
 
@@ -273,7 +272,7 @@ mod inner {
             client_id: &ClientId,
             height: &ibc::Height,
             connection: &ConnectionEnd,
-        ) -> anyhow::Result<(TendermintClientState, AnyConsensusState)> {
+        ) -> anyhow::Result<(TendermintClientState, TendermintConsensusState)> {
             let trusted_client_state = self.get_client_state(client_id).await?;
 
             // TODO: should we also check if the client is expired here?
@@ -285,8 +284,7 @@ mod inner {
                 .get_verified_consensus_state(*height, client_id.clone())
                 .await?;
 
-            let tm_client_state = downcast!(trusted_client_state => AnyClientState::Tendermint)
-                .ok_or_else(|| anyhow::anyhow!("client state is not tendermint"))?;
+            let tm_client_state = trusted_client_state;
 
             tm_client_state.verify_height(*height)?;
 

@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
-use ibc::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
+use ibc::core::ics02_client::msgs::create_client::MsgCreateClient;
+use ibc::core::ics02_client::msgs::update_client::MsgUpdateClient;
 use ibc::core::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 use ibc::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 use ibc::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
@@ -41,12 +41,12 @@ impl ActionHandler for IbcAction {
 
         match &self.action {
             Some(CreateClient(msg)) => {
-                let msg = MsgCreateAnyClient::try_from(msg.clone())?;
+                let msg = MsgCreateClient::try_from(msg.clone())?;
 
                 msg.check_stateless(context).await?;
             }
             Some(UpdateClient(msg)) => {
-                let msg = MsgUpdateAnyClient::try_from(msg.clone())?;
+                let msg = MsgUpdateClient::try_from(msg.clone())?;
 
                 msg.check_stateless(context).await?;
             }
@@ -126,12 +126,12 @@ impl ActionHandler for IbcAction {
     async fn check_stateful(&self, state: Arc<State>) -> Result<()> {
         match &self.action {
             Some(CreateClient(msg)) => {
-                let msg = MsgCreateAnyClient::try_from(msg.clone())?;
+                let msg = MsgCreateClient::try_from(msg.clone())?;
 
                 msg.check_stateful(state).await?;
             }
             Some(UpdateClient(msg)) => {
-                let msg = MsgUpdateAnyClient::try_from(msg.clone())?;
+                let msg = MsgUpdateClient::try_from(msg.clone())?;
 
                 msg.check_stateful(state).await?;
             }
@@ -210,12 +210,12 @@ impl ActionHandler for IbcAction {
         // Handle the message type of this IBC action.
         match &self.action {
             Some(CreateClient(raw_msg_create_client)) => {
-                let msg = MsgCreateAnyClient::try_from(raw_msg_create_client.clone()).unwrap();
+                let msg = MsgCreateClient::try_from(raw_msg_create_client.clone()).unwrap();
 
                 msg.execute(state).await?;
             }
             Some(UpdateClient(raw_msg_update_client)) => {
-                let msg = MsgUpdateAnyClient::try_from(raw_msg_update_client.clone()).unwrap();
+                let msg = MsgUpdateClient::try_from(raw_msg_update_client.clone()).unwrap();
 
                 msg.execute(state).await?;
             }

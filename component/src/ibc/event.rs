@@ -1,14 +1,16 @@
 use ibc::core::{
-    ics02_client::{client_state::AnyClientState, header::AnyHeader, header::Header},
+    ics02_client::{client_state::ClientState, header::Header},
     ics03_connection::connection::ConnectionEnd,
     ics03_connection::connection::Counterparty,
     ics04_channel::{channel::ChannelEnd, packet::Packet},
     ics24_host::identifier::ClientId,
     ics24_host::identifier::{ChannelId, ConnectionId, PortId},
 };
+// TODO(erwan): generalize this
+use ibc::clients::ics07_tendermint as tm;
 use tendermint::abci::{Event, EventAttributeIndexExt};
 
-pub fn create_client(client_id: ClientId, client_state: AnyClientState) -> Event {
+pub fn create_client(client_id: ClientId, client_state: tm::client_state::ClientState) -> Event {
     Event::new(
         "create_client",
         vec![
@@ -21,8 +23,8 @@ pub fn create_client(client_id: ClientId, client_state: AnyClientState) -> Event
 
 pub fn update_client(
     client_id: ClientId,
-    client_state: AnyClientState,
-    header: AnyHeader,
+    client_state: tm::client_state::ClientState,
+    header: tm::header::Header,
 ) -> Event {
     Event::new(
         "update_client",
@@ -30,7 +32,7 @@ pub fn update_client(
             ("client_id", client_id.to_string()).index(),
             ("client_type", client_state.client_type().to_string()).index(),
             ("consensus_height", header.height().to_string()).index(),
-            ("header", header.encode_to_string()).index(),
+            ("header", header.to_string()).index(),
         ],
     )
 }

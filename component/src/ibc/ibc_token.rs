@@ -20,7 +20,7 @@ impl IBCToken {
             .expect("IBC denom is invalid");
 
         IBCToken {
-            channel_id: *channel_id,
+            channel_id: channel_id.clone(),
             port_id: port_id.clone(),
             original_denom: denom.to_string(),
 
