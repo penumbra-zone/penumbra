@@ -63,6 +63,9 @@ enum RootCommand {
         /// bind the metrics endpoint to this port.
         #[clap(short, long, default_value = "9000")]
         metrics_port: u16,
+        /// bind the tendermint proxy server to this port.
+        #[clap(short, long, default_value = "36657")]
+        tendermint_proxy_port: u16,
         /// Proxy Tendermint requests against the gRPC server to this address.
         #[clap(short, long, default_value = "127.0.0.1:26657")]
         tendermint_addr: std::net::SocketAddr,
@@ -170,6 +173,7 @@ async fn main() -> anyhow::Result<()> {
             abci_port,
             grpc_port,
             metrics_port,
+            tendermint_proxy_port,
             tendermint_addr,
         } => {
             tracing::info!(?host, ?abci_port, ?grpc_port, "starting pd");
@@ -244,7 +248,11 @@ async fn main() -> anyhow::Result<()> {
                         .add_service(tonic_web::enable(TendermintServiceServer::new(
                             info.clone(),
                         )))
-                        .serve(tendermint_addr),
+                        .serve(
+                            format!("{}:{}", host, tendermint_proxy_port)
+                                .parse()
+                                .expect("this is a valid address"),
+                        ),
                 )
                 .expect("failed to spawn tendermint_proxy server");
 
