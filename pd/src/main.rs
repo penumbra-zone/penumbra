@@ -15,9 +15,12 @@ use pd::testnet::{canonicalize_path, generate_tm_config, write_configs, Validato
 use penumbra_chain::{genesis::Allocation, params::ChainParameters};
 use penumbra_component::stake::{validator::Validator, FundingStream, FundingStreams};
 use penumbra_crypto::{keys::SpendKey, DelegationToken, GovernanceKey};
-use penumbra_proto::client::v1alpha1::{
-    oblivious_query_service_server::ObliviousQueryServiceServer,
-    specific_query_service_server::SpecificQueryServiceServer,
+use penumbra_proto::{
+    client::v1alpha1::{
+        oblivious_query_service_server::ObliviousQueryServiceServer,
+        specific_query_service_server::SpecificQueryServiceServer,
+    },
+    tendermint_proxy::service_server::ServiceServer as TendermintServiceServer,
 };
 use penumbra_storage::Storage;
 use rand::Rng;
@@ -60,19 +63,10 @@ enum RootCommand {
         /// bind the metrics endpoint to this port.
         #[clap(short, long, default_value = "9000")]
         metrics_port: u16,
-        /// Proxy Tendermint requests against the gRPC server to this host.
-        #[clap(
-            short,
-            long,
-            default_value = "testnet.penumbra.zone",
-            parse(try_from_str = url::Host::parse)
-        )]
-        tendermint_host: url::Host,
-        /// The port to use to speak to tendermint's RPC server.
-        #[clap(long, default_value_t = 26657)]
-        tendermint_port: u16,
+        /// Proxy Tendermint requests against the gRPC server to this address.
+        #[clap(short, long, default_value = "127.0.0.1:26657")]
+        tendermint_addr: std::net::SocketAddr,
     },
-
     /// Generate, join, or reset a testnet.
     Testnet {
         /// Path to directory to store output in. Must not exist. Defaults to
@@ -176,8 +170,7 @@ async fn main() -> anyhow::Result<()> {
             abci_port,
             grpc_port,
             metrics_port,
-            tendermint_host,
-            tendermint_port,
+            tendermint_addr,
         } => {
             tracing::info!(?host, ?abci_port, ?grpc_port, "starting pd");
 
@@ -224,6 +217,31 @@ async fn main() -> anyhow::Result<()> {
                             info.clone(),
                         )))
                         .add_service(tonic_web::enable(SpecificQueryServiceServer::new(
+                            info.clone(),
+                        )))
+                        .serve(
+                            format!("{}:{}", host, grpc_port)
+                                .parse()
+                                .expect("this is a valid address"),
+                        ),
+                )
+                .expect("failed to spawn grpc server");
+
+            // Configure a proxy to the configured Tendermint instance's API.
+            let tendermint_proxy_server = tokio::task::Builder::new()
+                .name("tendermint_proxy_server")
+                .spawn(
+                    Server::builder()
+                        .trace_fn(|req| match remote_addr(req) {
+                            Some(remote_addr) => {
+                                tracing::error_span!("tendermint_proxy", ?remote_addr)
+                            }
+                            None => tracing::error_span!("tendermint_proxy"),
+                        })
+                        // Allow HTTP/1, which will be used by grpc-web connections.
+                        .accept_http1(true)
+                        // Wrap each of the gRPC services in a tonic-web proxy:
+                        .add_service(tonic_web::enable(TendermintServiceServer::new(
                             info.clone(),
                         )))
                         .serve(

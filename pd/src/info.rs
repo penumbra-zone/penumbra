@@ -15,6 +15,7 @@ use crate::RequestExt;
 
 mod oblivious;
 mod specific;
+mod tendermint_proxy;
 
 const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
 const APP_VERSION: u64 = 1;

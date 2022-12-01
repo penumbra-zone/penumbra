@@ -129,11 +129,11 @@ pub mod core {
             }
         }
     }
+}
 
-    // TODO(erwan): this is one way to flatten the complex proto hierarchy, should be easy to lift
-    pub mod tendermint_proxy {
-        pub use crate::core::cosmos::base::tendermint::v1beta1::*;
-    }
+// TODO(erwan): this is one way to flatten the complex proto hierarchy, should be easy to lift
+pub mod tendermint_proxy {
+    pub use crate::core::cosmos::base::tendermint::v1beta1::*;
 }
 
 /// Client protocol structures.
