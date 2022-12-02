@@ -27,17 +27,17 @@ pub mod connection_open_init {
 pub mod connection_open_ack {
     use super::super::*;
 
-    pub fn has_client_proof(msg: &MsgConnectionOpenAck) -> anyhow::Result<()> {
+    pub fn has_client_proof(_msg: &MsgConnectionOpenAck) -> anyhow::Result<()> {
         // TODO(erwan): remove now?
         Ok(())
     }
 
-    pub fn has_client_state(msg: &MsgConnectionOpenAck) -> anyhow::Result<()> {
+    pub fn has_client_state(_msg: &MsgConnectionOpenAck) -> anyhow::Result<()> {
         // TODO(erwan): `Any` can't be empty?
         Ok(())
     }
 
-    pub fn has_consensus_proof(msg: &MsgConnectionOpenAck) -> anyhow::Result<()> {
+    pub fn has_consensus_proof(_msg: &MsgConnectionOpenAck) -> anyhow::Result<()> {
         // TODO(erwan): remove now?
         Ok(())
     }
@@ -46,17 +46,17 @@ pub mod connection_open_ack {
 pub mod connection_open_try {
     use super::super::*;
 
-    pub fn has_client_proof(msg: &MsgConnectionOpenTry) -> anyhow::Result<()> {
+    pub fn has_client_proof(_msg: &MsgConnectionOpenTry) -> anyhow::Result<()> {
         // TODO(erwan): remove now?
         Ok(())
     }
 
-    pub fn has_client_state(msg: &MsgConnectionOpenTry) -> anyhow::Result<()> {
+    pub fn has_client_state(_msg: &MsgConnectionOpenTry) -> anyhow::Result<()> {
         // TODO(erwan): remove now?
         Ok(())
     }
 
-    pub fn has_consensus_proof(msg: &MsgConnectionOpenTry) -> anyhow::Result<()> {
+    pub fn has_consensus_proof(_msg: &MsgConnectionOpenTry) -> anyhow::Result<()> {
         // TODO(erwan): remove now?
         Ok(())
     }

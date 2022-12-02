@@ -156,13 +156,11 @@ impl From<crate::core::chain::v1alpha1::Ratio> for num_rational::Ratio<u64> {
 
 extern crate ibc as ibc_rs;
 
-use ibc_rs::core::ics02_client::client_state::ClientState;
-
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 use ibc_proto::ibc::core::connection::v1::ConnectionEnd as RawConnectionEnd;
-use ibc_rs::core::ics02_client::consensus_state::ConsensusState;
+
 use ibc_rs::core::ics03_connection::connection::ConnectionEnd;
 use ibc_rs::core::ics04_channel::channel::ChannelEnd;
 use ibc_rs::Height;

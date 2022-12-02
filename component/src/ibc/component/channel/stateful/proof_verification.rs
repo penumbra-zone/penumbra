@@ -17,7 +17,7 @@ use ibc::core::ics24_host::path::CommitmentsPath;
 use ibc::core::ics24_host::path::ReceiptsPath;
 use ibc::core::ics24_host::path::SeqRecvsPath;
 use ibc::core::ics24_host::Path;
-use ibc::downcast;
+
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 use prost::Message;
 

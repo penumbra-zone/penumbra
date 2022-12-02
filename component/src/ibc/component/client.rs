@@ -1,6 +1,3 @@
-use std::any::Any;
-use std::sync::Arc;
-
 use crate::Component;
 use anyhow::Result;
 use async_trait::async_trait;
@@ -8,7 +5,7 @@ use ibc::clients::ics07_tendermint;
 use ibc::clients::ics07_tendermint::client_state::TENDERMINT_CLIENT_STATE_TYPE_URL;
 use ibc::clients::ics07_tendermint::consensus_state::TENDERMINT_CONSENSUS_STATE_TYPE_URL;
 use ibc::clients::ics07_tendermint::header::TENDERMINT_HEADER_TYPE_URL;
-use ibc::downcast;
+
 use ibc::{
     clients::ics07_tendermint::{
         client_state::ClientState as TendermintClientState,

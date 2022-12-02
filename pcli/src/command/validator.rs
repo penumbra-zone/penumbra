@@ -188,7 +188,7 @@ impl ValidatorCmd {
                 let verification_key_bytes = consensus_key.verification_key();
                 let verification_key_bytes = verification_key_bytes.as_bytes().as_slice();
                 // TODO(erwan): surely there's a better way to do this?
-                let mut keypair = [signing_key_bytes, verification_key_bytes].concat();
+                let keypair = [signing_key_bytes, verification_key_bytes].concat();
                 let keypair = keypair.as_slice();
 
                 let consensus_key = ed25519_dalek::Keypair::from_bytes(keypair.as_ref()).unwrap();

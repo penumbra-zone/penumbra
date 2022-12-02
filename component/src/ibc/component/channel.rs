@@ -3,7 +3,7 @@ use crate::ibc::event;
 use crate::Component;
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc::core::ics02_client::client_state::ClientState;
+
 use ibc::core::ics02_client::consensus_state::ConsensusState;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, State as ConnectionState};
 use ibc::core::ics04_channel::channel::Order as ChannelOrder;
