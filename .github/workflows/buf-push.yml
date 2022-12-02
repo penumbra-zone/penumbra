@@ -1,8 +1,14 @@
 name: buf-push
+
+# We want to rebuild on every commit to main, and also for named testnet tags,
+# so that API users can pick a tagged version of the protobuf definitions
+# to use against a matching testnet.
 on:
   push:
     branches:
       - main
+    tags:
+      - '**'
 jobs:
   build:
     runs-on: ubuntu-latest
