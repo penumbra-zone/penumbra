@@ -187,7 +187,7 @@ async fn main() -> anyhow::Result<()> {
 
             let consensus = pd::Consensus::new(storage.clone()).await?;
             let mempool = pd::Mempool::new(storage.clone()).await?;
-            let info = pd::Info::new(storage.clone());
+            let info = pd::Info::new(storage.clone(), tendermint_addr);
             let snapshot = pd::Snapshot {};
 
             let abci_server = tokio::task::Builder::new()
