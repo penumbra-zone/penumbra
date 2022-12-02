@@ -99,8 +99,10 @@ pub(crate) trait Ics2ClientExt: StateWrite {
         // TODO(erwan): deferred client state deserialization means `execute_update_client` is faillible
         // see ibc-rs ADR004: https://github.com/cosmos/ibc-rs/blob/main/docs/architecture/adr-004-light-client-crates-extraction.md#light-client-specific-code
         let tm_header = match msg_update_client.header.type_url.as_str() {
-            TENDERMINT_HEADER_TYPE_URL => TendermintHeader::try_from(msg_update_client.header.clone())
-                .expect("decoding tendermint header"),
+            TENDERMINT_HEADER_TYPE_URL => {
+                TendermintHeader::try_from(msg_update_client.header.clone())
+                    .expect("decoding tendermint header")
+            }
             _ => unimplemented!("not a tendermint header"),
         };
 
