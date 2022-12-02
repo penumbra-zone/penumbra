@@ -74,6 +74,9 @@ pub struct WitnessRequest {
     /// The note commitments to obtain auth paths for.
     #[prost(message, repeated, tag="2")]
     pub note_commitments: ::prost::alloc::vec::Vec<super::super::core::crypto::v1alpha1::NoteCommitment>,
+    /// The transaction plan to witness
+    #[prost(message, optional, tag="3")]
+    pub transaction_plan: ::core::option::Option<super::super::core::transaction::v1alpha1::TransactionPlan>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WitnessResponse {

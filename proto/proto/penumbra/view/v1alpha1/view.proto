@@ -128,6 +128,9 @@ message WitnessRequest {
 
   // The note commitments to obtain auth paths for.
   repeated core.crypto.v1alpha1.NoteCommitment note_commitments = 2;
+
+  // The transaction plan to witness
+  core.transaction.v1alpha1.TransactionPlan transaction_plan = 3;
 }
 
 message WitnessResponse {
