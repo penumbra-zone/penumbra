@@ -1,19 +1,10 @@
-use std::pin::Pin;
 use std::str::FromStr;
 
-use async_stream::try_stream;
 use chrono::DateTime;
-use futures::StreamExt;
-use futures::TryStreamExt;
-use penumbra_chain::AppHashRead;
-use penumbra_chain::StateReadExt as _;
-use penumbra_component::stake::StateReadExt as _;
-use penumbra_crypto::asset::{self, Asset};
 use penumbra_proto::{
     self as proto, tendermint_proxy::service_server::Service as TendermintService,
 };
 
-use penumbra_storage::StateRead;
 use proto::tendermint_proxy::AbciQueryRequest;
 use proto::tendermint_proxy::AbciQueryResponse;
 use proto::tendermint_proxy::GetBlockByHeightRequest;
@@ -29,13 +20,9 @@ use proto::tendermint_proxy::GetSyncingResponse;
 use proto::tendermint_proxy::GetValidatorSetByHeightRequest;
 use proto::tendermint_proxy::GetValidatorSetByHeightResponse;
 use tendermint::block::Height;
-use tendermint::time as tm_time;
-use tendermint_config::net;
 use tendermint_rpc::abci::Path;
-use tendermint_rpc::HttpClientUrl;
 use tendermint_rpc::{Client, HttpClient};
 use tonic::Status;
-use tracing::instrument;
 
 // We need to use the tracing-futures version of Instrument,
 // because we want to instrument a Stream, and the Stream trait
@@ -47,7 +34,8 @@ use super::Info;
 
 // Note: the conversions that take place in here could be moved to
 // from/try_from impls, but they're not used anywhere else, so it's
-// unimportant right now.
+// unimportant right now, and would require additional wrappers
+// since none of the structs are defined in our crates :(
 
 #[tonic::async_trait]
 impl TendermintService for Info {
@@ -59,24 +47,19 @@ impl TendermintService for Info {
         // render the URL as a String, then borrow it, then re-parse the borrowed &str
         let client = HttpClient::new(self.tendermint_url.to_string().as_ref()).unwrap();
 
-        let path = Path::from_str(&req.get_ref().path)
-            .or_else(|_| Err(tonic::Status::invalid_argument("invalid abci path")))?;
-        let data = req.get_ref().data;
+        let path = Path::from_str(&req.get_ref().path).map_err(|_| tonic::Status::invalid_argument("invalid abci path"))?;
+        let data = &req.get_ref().data;
         let height: Height = req
             .get_ref()
             .height
-            .try_into()
-            .or_else(|_| Err(tonic::Status::invalid_argument("invalid height")))?;
+            .try_into().map_err(|_| tonic::Status::invalid_argument("invalid height"))?;
         let prove = req.get_ref().prove;
         let res = client
-            .abci_query(Some(path), data, Some(height), prove)
-            .await
-            .or_else(|e| {
-                Err(tonic::Status::unavailable(format!(
+            .abci_query(Some(path), data.clone(), Some(height), prove)
+            .await.map_err(|e| tonic::Status::unavailable(format!(
                     "error querying abci: {}",
-                    e.to_string()
-                )))
-            })?;
+                    e
+                )))?;
 
         match res.code {
             tendermint_rpc::abci::Code::Ok => Ok(tonic::Response::new(AbciQueryResponse {
@@ -93,9 +76,9 @@ impl TendermintService for Info {
                             .ops
                             .into_iter()
                             .map(|op| penumbra_proto::tendermint_proxy::ProofOp {
-                                r#type: op.field_type.into(),
-                                key: op.key.into(),
-                                data: op.data.into(),
+                                r#type: op.field_type,
+                                key: op.key,
+                                data: op.data,
                             })
                             .collect(),
                     }),
@@ -108,7 +91,7 @@ impl TendermintService for Info {
             })),
             tendermint_rpc::abci::Code::Err(e) => Err(tonic::Status::unavailable(format!(
                 "error querying abci: {}",
-                e.to_string()
+                e
             ))),
         }
     }
@@ -147,24 +130,21 @@ impl TendermintService for Info {
                 tendermint::block::Height::try_from(req.get_ref().height)
                     .expect("height should be less than 2^63"),
             )
-            .await
-            .or_else(|e| {
-                Err(tonic::Status::unavailable(format!(
+            .await.map_err(|e| tonic::Status::unavailable(format!(
                     "error querying abci: {}",
-                    e.to_string()
-                )))
-            })?;
+                    e
+                )))?;
 
         // The tendermint-rs `Timestamp` type is a newtype wrapper
         // around a `time::PrimitiveDateTime` however it's private so we
         // have to use string parsing to get to the prost type we want :(
-        let time = DateTime::parse_from_rfc3339(&res.block.header.time.to_rfc3339())
+        let header_time = DateTime::parse_from_rfc3339(&res.block.header.time.to_rfc3339())
             .expect("timestamp should roundtrip to string");
         Ok(tonic::Response::new(GetBlockByHeightResponse {
             block_id: Some(penumbra_proto::core::tendermint::types::BlockId {
                 hash: res.block_id.hash.into(),
                 part_set_header: Some(penumbra_proto::core::tendermint::types::PartSetHeader {
-                    total: res.block_id.part_set_header.total.into(),
+                    total: res.block_id.part_set_header.total,
                     hash: res.block_id.part_set_header.hash.into(),
                 }),
             }),
@@ -177,15 +157,15 @@ impl TendermintService for Info {
                     chain_id: res.block.header.chain_id.into(),
                     height: res.block.header.height.into(),
                     time: Some(prost_types::Timestamp {
-                        seconds: time.timestamp(),
-                        nanos: time.timestamp_nanos() as i32,
+                        seconds: header_time.timestamp(),
+                        nanos: header_time.timestamp_nanos() as i32,
                     }),
                     last_block_id: res.block.header.last_block_id.map(|id| {
                         penumbra_proto::core::tendermint::types::BlockId {
                             hash: id.hash.into(),
                             part_set_header: Some(
                                 penumbra_proto::core::tendermint::types::PartSetHeader {
-                                    total: id.part_set_header.total.into(),
+                                    total: id.part_set_header.total,
                                     hash: id.part_set_header.hash.into(),
                                 },
                             ),
@@ -230,17 +210,84 @@ impl TendermintService for Info {
                         .evidence
                         .into_vec()
                         .iter()
-                        .map(Into::into)
+                        .map(|e| proto::core::tendermint::types::Evidence {
+                            sum: Some( match e {
+                                tendermint::evidence::Evidence::DuplicateVote(e) => {
+                                   let e2 = tendermint_proto::types::DuplicateVoteEvidence::from(e.clone()); 
+                                    proto::core::tendermint::types::evidence::Sum::DuplicateVoteEvidence(proto::core::tendermint::types::DuplicateVoteEvidence{
+                                    vote_a: Some(proto::core::tendermint::types::Vote{
+                                        r#type: match e.votes().0.vote_type {
+                                            tendermint::vote::Type::Prevote => proto::core::tendermint::types::SignedMsgType::Prevote as i32,
+                                            tendermint::vote::Type::Precommit => proto::core::tendermint::types::SignedMsgType::Precommit as i32,
+                                        },
+                                        height: e.votes().0.height.into(),
+                                        round: e.votes().0.round.into(),
+                                        block_id: Some(proto::core::tendermint::types::BlockId{
+                                            hash: e.votes().0.block_id.expect("block id").hash.into(),
+                                            part_set_header: Some(proto::core::tendermint::types::PartSetHeader{
+                                                total: e.votes().0.block_id.expect("block id").part_set_header.total,
+                                                hash: e.votes().0.block_id.expect("block id").part_set_header.hash.into(),
+                                            }),
+                                        }),
+                                        timestamp: Some(prost_types::Timestamp{
+                                            seconds: DateTime::parse_from_rfc3339(&e.votes().0.timestamp.expect("timestamp").to_rfc3339()).expect("timestamp should roundtrip to string").timestamp(),
+                                            nanos: DateTime::parse_from_rfc3339(&e.votes().0.timestamp.expect("timestamp").to_rfc3339()).expect("timestamp should roundtrip to string").timestamp_nanos() as i32,
+                                        }),
+                                        validator_address: e.votes().0.validator_address.into(),
+                                        validator_index: e.votes().0.validator_index.into(),
+                                        signature: e.votes().0.signature.clone().expect("signed vote").into(),
+                                    }),
+                                    vote_b: Some(proto::core::tendermint::types::Vote{
+                                        r#type: match e.votes().1.vote_type {
+                                            tendermint::vote::Type::Prevote => proto::core::tendermint::types::SignedMsgType::Prevote as i32,
+                                            tendermint::vote::Type::Precommit => proto::core::tendermint::types::SignedMsgType::Precommit as i32,
+                                        },
+                                        height: e.votes().1.height.into(),
+                                        round: e.votes().1.round.into(),
+                                        block_id: Some(proto::core::tendermint::types::BlockId{
+                                            hash: e.votes().1.block_id.expect("block id").hash.into(),
+                                            part_set_header: Some(proto::core::tendermint::types::PartSetHeader{
+                                                total: e.votes().1.block_id.expect("block id").part_set_header.total,
+                                                hash: e.votes().1.block_id.expect("block id").part_set_header.hash.into(),
+                                            }),
+                                        }),
+                                        timestamp: Some(prost_types::Timestamp{
+                                            seconds: DateTime::parse_from_rfc3339(&e.votes().1.timestamp.expect("timestamp").to_rfc3339()).expect("timestamp should roundtrip to string").timestamp(),
+                                            nanos: DateTime::parse_from_rfc3339(&e.votes().1.timestamp.expect("timestamp").to_rfc3339()).expect("timestamp should roundtrip to string").timestamp_nanos() as i32,
+                                        }),
+                                        validator_address: e.votes().1.validator_address.into(),
+                                        validator_index: e.votes().1.validator_index.into(),
+                                        signature: e.votes().1.signature.clone().expect("signed vote").into(),
+                                    }),
+                                    total_voting_power: e2.total_voting_power,
+                                    validator_power: e2.validator_power,
+                                    timestamp: e2.timestamp.map(|t| prost_types::Timestamp{seconds: t.seconds, nanos: t.nanos}),
+                                })
+                            },
+                                // This variant is currently unimplemented in tendermint-rs, so we can't supply
+                                // conversions for it.
+                                tendermint::evidence::Evidence::LightClientAttackEvidence => proto::core::tendermint::types::evidence::Sum::LightClientAttackEvidence(proto::core::tendermint::types::LightClientAttackEvidence{
+                                    conflicting_block: None,
+                                    common_height: -1,
+                                    byzantine_validators: vec![],
+                                    timestamp: None,
+                                    total_voting_power: -1,
+                                }),
+                                // This variant is described as not-implemented in tendermint-rs,
+                                // and doesn't exist in the prost-generated protobuf types
+                                tendermint::evidence::Evidence::ConflictingHeaders(_) => panic!("unimplemented"),
+                        }),
+                        })
                         .collect(),
                 }),
                 last_commit: Some(proto::core::tendermint::types::Commit {
-                    height: res.block.last_commit.height.into(),
-                    round: res.block.last_commit.round.into(),
+                    height: res.block.last_commit.as_ref().expect("last_commit").height.into(),
+                    round: res.block.last_commit.as_ref().expect("last_commit").round.into(),
                     block_id: Some(proto::core::tendermint::types::BlockId {
-                        hash: res.block.last_commit.block_id.hash.into(),
+                        hash: res.block.last_commit.as_ref().expect("last_commit").block_id.hash.into(),
                         part_set_header: Some(proto::core::tendermint::types::PartSetHeader {
-                            total: res.block.last_commit.block_id.part_set_header.total.into(),
-                            hash: res.block.last_commit.block_id.part_set_header.hash.into(),
+                            total: res.block.last_commit.as_ref().expect("last_commit").block_id.part_set_header.total,
+                            hash: res.block.last_commit.as_ref().expect("last_commit").block_id.part_set_header.hash.into(),
                         }),
                     }),
                     signatures: match res.block.last_commit {
@@ -248,15 +295,33 @@ impl TendermintService for Info {
                             .signatures
                             .into_iter()
                             .map(|s| {
-                                Some(proto::core::tendermint::types::CommitSig {
-                                    block_id_flag: s.block_id_flag.into(),
-                                    validator_address: s.validator_address.to_string(),
-                                    timestamp: Some(prost_types::Timestamp {
-                                        seconds: s.timestamp.timestamp(),
-                                        nanos: s.timestamp.timestamp_nanos() as i32,
-                                    }),
-                                    signature: s.signature.into(),
-                                })
+                                match s {
+                                    tendermint::block::CommitSig::BlockIdFlagAbsent => proto::core::tendermint::types::CommitSig {
+                                        block_id_flag: proto::core::tendermint::types::BlockIdFlag::Absent as i32,
+                                        // No validator address, or timestamp is recorded for this variant. Not sure if this is a bug in tendermint-rs or not.
+                                        validator_address: vec![],
+                                        timestamp: None,
+                                        signature: vec![],
+                                    },
+                                    tendermint::block::CommitSig::BlockIdFlagCommit { validator_address, timestamp, signature } => proto::core::tendermint::types::CommitSig {
+                                        block_id_flag: proto::core::tendermint::types::BlockIdFlag::Commit as i32,
+                                        validator_address: validator_address.into(),
+                                        timestamp: Some(prost_types::Timestamp{
+                                            seconds: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339()).expect("timestamp should roundtrip to string").timestamp(),
+                                            nanos: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339()).expect("timestamp should roundtrip to string").timestamp_nanos() as i32,
+                                        }),
+                                        signature: signature.expect("signature").into(),
+                                    },
+                                    tendermint::block::CommitSig::BlockIdFlagNil { validator_address, timestamp, signature } => proto::core::tendermint::types::CommitSig {
+                                        block_id_flag: proto::core::tendermint::types::BlockIdFlag::Nil as i32,
+                                        validator_address: validator_address.into(),
+                                        timestamp: Some(prost_types::Timestamp{
+                                            seconds: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339()).expect("timestamp should roundtrip to string").timestamp(),
+                                            nanos: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339()).expect("timestamp should roundtrip to string").timestamp_nanos() as i32,
+                                        }),
+                                        signature: signature.expect("signature").into(),
+                                    },
+                                }
                             })
                             .collect(),
                         None => vec![],

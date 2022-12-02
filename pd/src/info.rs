@@ -1,6 +1,5 @@
 use std::{
     future::Future,
-    net::SocketAddr,
     pin::Pin,
     task::{Context, Poll},
 };
@@ -9,7 +8,6 @@ use futures::FutureExt;
 use penumbra_chain::AppHashRead;
 use penumbra_storage::Storage;
 use tendermint::abci::{self, response::Echo, InfoRequest, InfoResponse};
-use tendermint_config::net;
 use tower_abci::BoxError;
 use tracing::Instrument;
 

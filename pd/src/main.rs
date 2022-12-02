@@ -68,7 +68,7 @@ enum RootCommand {
         tendermint_proxy_port: u16,
         /// Proxy Tendermint requests against the gRPC server to this address.
         #[clap(short, long, default_value = "127.0.0.1:26657")]
-        tendermint_addr: std::net::SocketAddr,
+        tendermint_addr: url::Url,
     },
     /// Generate, join, or reset a testnet.
     Testnet {
