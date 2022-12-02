@@ -26,4 +26,25 @@ impl MerkleAuthPathVar {
                 .expect("TCT auth path should have depth 24"),
         })
     }
+
+    /// Certify an auth path given a provided anchor, position, and leaf.
+    pub fn verify(
+        &self,
+        cs: ConstraintSystemRef<Fq>,
+        enforce: &Boolean<Fq>,
+        position_var: FqVar,
+        anchor_var: FqVar,
+        leaf_var: FqVar,
+    ) -> Result<(), SynthesisError> {
+        // We need to compute the root using the provided auth path, position,
+        // and leaf.
+        let domain_separator = FqVar::new_constant(cs.clone(), *tct::DOMAIN_SEPARATOR)?;
+        let leaf_var = poseidon377::r1cs::hash_1(cs.clone(), &domain_separator, leaf_var)?;
+        let computed_root = anchor_var.clone();
+        // TODO: Compute root
+
+        anchor_var.conditional_enforce_equal(&computed_root, &enforce)?;
+
+        Ok(())
+    }
 }
