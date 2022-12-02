@@ -61,7 +61,7 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         let note_commitment_var =
             FqVar::new_witness(cs.clone(), || Ok(self.note_commitment_proof.commitment().0))?;
         let position_fq: Fq = Fq::from(u64::from(self.note_commitment_proof.position()));
-        let nct_position_var = FqVar::new_witness(cs.clone(), || Ok(position_fq))?;
+        let position_var = FqVar::new_witness(cs.clone(), || Ok(position_fq))?;
         let merkle_path_var = MerkleAuthPathVar::new(cs.clone(), self.note_commitment_proof)?;
 
         let note_blinding_var =
@@ -127,7 +127,13 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
             clue_key_var,
             note_commitment_var.clone(),
         )?;
-        // TODO: Merkle path integrity.
+        merkle_path_var.verify(
+            cs.clone(),
+            &is_not_dummy,
+            position_var.clone(),
+            anchor_var,
+            note_commitment_var.clone(),
+        )?;
         gadgets::rk_integrity(
             cs.clone(),
             &is_not_dummy,
@@ -162,7 +168,7 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
             &is_not_dummy,
             note_commitment_var,
             nk_var,
-            nct_position_var,
+            position_var,
             nullifier_var,
         )?;
 
