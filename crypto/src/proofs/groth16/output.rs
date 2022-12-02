@@ -18,7 +18,7 @@ use ark_snark::SNARK;
 use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
-use crate::proofs::{groth16::ParameterSetup, groth16_gadgets as gadgets};
+use crate::proofs::groth16::{gadgets, ParameterSetup};
 use crate::{balance, keys::Diversifier, note, Address, Note, Value};
 
 // Public:

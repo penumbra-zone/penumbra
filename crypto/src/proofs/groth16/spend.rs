@@ -20,7 +20,7 @@ use penumbra_tct as tct;
 use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
-use crate::proofs::{groth16::ParameterSetup, groth16_gadgets as gadgets};
+use crate::proofs::groth16::{gadgets, ParameterSetup};
 use crate::{
     balance,
     keys::{NullifierKey, SeedPhrase, SpendKey},
