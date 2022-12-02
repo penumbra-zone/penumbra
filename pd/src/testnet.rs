@@ -97,7 +97,7 @@ impl ValidatorKeys {
         let verification_key_bytes = validator_cons_sk.verification_key();
         let verification_key_bytes = verification_key_bytes.as_ref();
         // TODO(erwan): surely there's a better way to do this?
-        let mut keypair = [signing_key_bytes, verification_key_bytes].concat();
+        let keypair = [signing_key_bytes, verification_key_bytes].concat();
         let keypair = keypair.as_slice();
 
         let validator_cons_sk = ed25519_dalek::Keypair::from_bytes(keypair).unwrap();
@@ -116,7 +116,7 @@ impl ValidatorKeys {
         let verification_key_bytes = node_key_sk.verification_key();
         let verification_key_bytes = verification_key_bytes.as_ref();
         // TODO(erwan): surely there's a better way to do this?
-        let mut keypair = [signing_key_bytes, verification_key_bytes].concat();
+        let keypair = [signing_key_bytes, verification_key_bytes].concat();
         let keypair = keypair.as_slice();
 
         let node_key_sk = ed25519_dalek::Keypair::from_bytes(keypair).unwrap();

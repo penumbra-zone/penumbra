@@ -50,7 +50,7 @@ pub mod connection_open_try {
                 pick_version(SUPPORTED_VERSIONS.to_vec(), msg.versions_on_a.clone()).unwrap(),
             );
 
-            let mut new_connection_id =
+            let new_connection_id =
                 ConnectionId::new(self.get_connection_counter().await.unwrap().0);
 
             // TODO(erwan): deprecated now?

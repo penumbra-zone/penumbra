@@ -1,9 +1,9 @@
 use anyhow::anyhow;
 use ibc::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
 use ibc::clients::ics07_tendermint::client_state::TENDERMINT_CLIENT_STATE_TYPE_URL;
-use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
+
 use ibc::core::ics02_client::client_state::ClientState;
-use ibc::core::ics02_client::consensus_state::ConsensusState;
+
 use ibc::core::ics02_client::height::Height;
 use ibc::core::ics02_client::trust_threshold::TrustThreshold;
 use ibc::core::ics24_host::identifier::ChainId;

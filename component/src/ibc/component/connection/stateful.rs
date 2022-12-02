@@ -402,8 +402,6 @@ pub mod connection_open_try {
         }
     }
     mod inner {
-        use ibc::clients::ics07_tendermint::client_state::ClientState as TendermintClienState;
-        use ibc::clients::ics07_tendermint::client_state::TENDERMINT_CLIENT_STATE_TYPE_URL;
 
         use penumbra_chain::StateReadExt as _;
 
