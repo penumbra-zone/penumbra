@@ -208,7 +208,6 @@ dependencies = [
  "ark-serialize",
  "ark-std",
  "rayon",
->>>>>>> 6b7a6446 (checkpoint: backup)
 ]
 
 [[package]]
@@ -302,7 +301,6 @@ dependencies = [
  "ark-ff",
  "ark-relations",
  "ark-std",
->>>>>>> 6b7a6446 (checkpoint: backup)
 ]
 
 [[package]]
@@ -1799,7 +1797,7 @@ dependencies = [
  "ark-poly",
  "blake2b_simd 0.5.11",
  "decaf377 0.1.0 (git+https://github.com/penumbra-zone/decaf377)",
- "rand",
+ "rand 0.8.5",
 ]
 
 [[package]]
@@ -3452,8 +3450,8 @@ dependencies = [
  "penumbra-transaction",
  "prost",
  "prost-types",
- "rand_chacha",
- "rand_core",
+ "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
  "regex",
  "serde",
  "serde_json",
@@ -3924,7 +3922,7 @@ dependencies = [
  "merlin",
  "num",
  "num-bigint",
- "rand_core",
+ "rand_core 0.6.4",
 ]
 
 [[package]]
@@ -6032,8 +6030,7 @@ dependencies = [
  "once_cell",
  "proc-macro2 1.0.47",
  "quote 1.0.21",
- "syn 1.0.104",
->>>>>>> 76505773 (checkpoint: compiles!)
+ "syn 1.0.105",
  "wasm-bindgen-shared",
 ]
 
