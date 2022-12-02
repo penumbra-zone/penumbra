@@ -21,7 +21,8 @@ use penumbra_proto::{
     },
 };
 use penumbra_tct::{Commitment, Proof};
-use penumbra_transaction::{TransactionPerspective, WitnessData};
+use penumbra_transaction::{plan::TransactionPlan, TransactionPerspective, WitnessData};
+use rand_core::OsRng;
 use tokio::sync::{watch, RwLock};
 use tokio_stream::wrappers::WatchStream;
 use tonic::async_trait;
@@ -639,7 +640,7 @@ impl ViewProtocolService for ViewService {
         // Release the read lock on the NCT
         drop(nct);
 
-        let witness_data = WitnessData {
+        let mut witness_data = WitnessData {
             anchor,
             note_commitment_proofs: auth_paths
                 .into_iter()
@@ -648,6 +649,26 @@ impl ViewProtocolService for ViewService {
         };
 
         tracing::debug!(?witness_data);
+
+        let tx_plan: TransactionPlan =
+            request
+                .get_ref()
+                .to_owned()
+                .transaction_plan
+                .map_or(TransactionPlan::default(), |x| {
+                    x.try_into()
+                        .expect("TransactionPlan should exist in request")
+                });
+
+        // Now we need to augment the witness data with dummy proofs such that
+        // note commitments corresponding to dummy spends also have proofs.
+        for nc in tx_plan
+            .spend_plans()
+            .filter(|plan| plan.note.amount() == 0u64.into())
+            .map(|plan| plan.note.commit())
+        {
+            witness_data.add_proof(nc, Proof::dummy(&mut OsRng, nc));
+        }
 
         let witness_response = WitnessResponse {
             witness_data: Some(witness_data.into()),

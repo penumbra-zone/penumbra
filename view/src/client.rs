@@ -8,11 +8,10 @@ use penumbra_crypto::{asset, keys::AddressIndex, note, Asset, Nullifier};
 use penumbra_proto::view::v1alpha1::{
     self as pb, view_protocol_service_client::ViewProtocolServiceClient, WitnessRequest,
 };
-use penumbra_tct::Proof;
+
 use penumbra_transaction::{
     plan::TransactionPlan, Transaction, TransactionPerspective, WitnessData,
 };
-use rand::Rng;
 use tendermint_rpc::abci;
 use tonic::async_trait;
 use tonic::codegen::Bytes;
@@ -94,7 +93,6 @@ pub trait ViewClient {
     async fn witness(
         &mut self,
         account_id: AccountID,
-        mut rng: impl Rng,
         plan: &TransactionPlan,
     ) -> Result<WitnessData>
     where
@@ -452,7 +450,6 @@ where
     async fn witness(
         &mut self,
         account_id: AccountID,
-        mut rng: impl Rng,
         plan: &TransactionPlan,
     ) -> Result<WitnessData>
     where
@@ -473,27 +470,16 @@ where
         let request = WitnessRequest {
             account_id: Some(account_id.into()),
             note_commitments,
+            transaction_plan: Some(plan.clone().into()),
         };
 
-        let response = self
+        let witness_data = self
             .witness(tonic::Request::new(request))
             .await?
-            .into_inner();
-
-        let mut witness_data: WitnessData = response
+            .into_inner()
             .witness_data
             .ok_or_else(|| anyhow::anyhow!("empty WitnessResponse message"))?
             .try_into()?;
-
-        // Now we need to augment the witness data with dummy proofs such that
-        // note commitments corresponding to dummy spends also have proofs.
-        for nc in plan
-            .spend_plans()
-            .filter(|plan| plan.note.amount() == 0u64.into())
-            .map(|plan| plan.note.commit())
-        {
-            witness_data.add_proof(nc, Proof::dummy(&mut rng, nc));
-        }
 
         Ok(witness_data)
     }
