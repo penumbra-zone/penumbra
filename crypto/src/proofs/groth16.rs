@@ -1,3 +1,4 @@
+pub(crate) mod gadgets;
 mod output;
 mod spend;
 mod traits;
