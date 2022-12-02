@@ -524,6 +524,7 @@ mod tests {
     use super::*;
     use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
     use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
+    use penumbra_chain::StateWriteExt;
     use penumbra_chain::StateWriteExt as _;
     use penumbra_proto::core::ibc::v1alpha1::{ibc_action::Action as IbcActionInner, IbcAction};
     use penumbra_proto::Message;
@@ -546,6 +547,10 @@ mod tests {
         let timestamp = Time::parse_from_rfc3339("2022-02-11T17:30:50.425417198Z")?;
         let mut state_tx = state.try_begin_transaction().unwrap();
         state_tx.put_block_timestamp(timestamp);
+        // TODO(erwan): check that this is a correct assumption to make?
+        //              the ibc::ics02::Height constructor forbids building `Height` with value zero.
+        //              Semantically this seem to correspond to a blockchain that has not begun to produce blocks
+        state_tx.put_block_height(1);
         state_tx.apply();
 
         // base64 encoded MsgCreateClient that was used to create the currently in-use Stargaze
