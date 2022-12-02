@@ -95,9 +95,9 @@ impl ValidatorKeys {
         // TODO(erwan): turning our ed25519-consensus signing key into a dalek keypair
         let signing_key_bytes = validator_cons_sk.as_bytes().as_slice();
         let verification_key_bytes = validator_cons_sk.verification_key();
-        let verification_key_bytes = verification_key_bytes.as_bytes().as_slice();
+        let verification_key_bytes = verification_key_bytes.as_ref();
         // TODO(erwan): surely there's a better way to do this?
-        let mut keypair = [verification_key_bytes, signing_key_bytes].concat();
+        let mut keypair = [signing_key_bytes, verification_key_bytes].concat();
         let keypair = keypair.as_slice();
 
         let validator_cons_sk = ed25519_dalek::Keypair::from_bytes(keypair).unwrap();
@@ -114,9 +114,9 @@ impl ValidatorKeys {
         // TODO(erwan): turning our ed25519-consensus signing key into a dalek keypair
         let signing_key_bytes = node_key_sk.as_bytes();
         let verification_key_bytes = node_key_sk.verification_key();
-        let verification_key_bytes = verification_key_bytes.as_bytes().as_slice();
+        let verification_key_bytes = verification_key_bytes.as_ref();
         // TODO(erwan): surely there's a better way to do this?
-        let mut keypair = [verification_key_bytes, signing_key_bytes].concat();
+        let mut keypair = [signing_key_bytes, verification_key_bytes].concat();
         let keypair = keypair.as_slice();
 
         let node_key_sk = ed25519_dalek::Keypair::from_bytes(keypair).unwrap();
