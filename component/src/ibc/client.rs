@@ -1,11 +1,11 @@
 use anyhow::anyhow;
+use ibc::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
+use ibc::clients::ics07_tendermint::client_state::TENDERMINT_CLIENT_STATE_TYPE_URL;
+use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics02_client::consensus_state::ConsensusState;
-use ibc::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
-use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
-use ibc::clients::ics07_tendermint::client_state::TENDERMINT_CLIENT_STATE_TYPE_URL;
-use ibc::core::ics02_client::trust_threshold::TrustThreshold;
 use ibc::core::ics02_client::height::Height;
+use ibc::core::ics02_client::trust_threshold::TrustThreshold;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::core::ics24_host::identifier::ConnectionId;
 use ibc_proto::google::protobuf::Any;
@@ -124,7 +124,11 @@ pub fn validate_penumbra_client_state(
 ) -> Result<(), anyhow::Error> {
     let tm_client_state = match client_state.type_url.as_str() {
         TENDERMINT_CLIENT_STATE_TYPE_URL => TendermintClientState::try_from(client_state)?,
-        _ => return Err(anyhow::anyhow!("invalid client state: not a tendermint client state")),
+        _ => {
+            return Err(anyhow::anyhow!(
+                "invalid client state: not a tendermint client state"
+            ))
+        }
     };
 
     if tm_client_state.frozen_height().is_some() {

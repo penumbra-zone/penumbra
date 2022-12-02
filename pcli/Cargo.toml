@@ -37,6 +37,8 @@ tendermint-rpc = { version = "0.26.0", features = ["http-client"] }
 # External dependencies
 ark-ff = "0.3"
 ed25519-consensus = "2"
+# TODO(erwan): temporary addition
+ed25519-dalek = "1.0.1"
 futures = "0.3"
 async-stream = "0.2"
 bincode = "1.3.3"

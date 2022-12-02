@@ -2,8 +2,8 @@ use crate::ibc::{event, validate_penumbra_client_state, ConnectionCounter, SUPPO
 use crate::Component;
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc::core::ics02_client::consensus_state::ConsensusState; 
 use ibc::core::ics02_client::client_state::ClientState;
+use ibc::core::ics02_client::consensus_state::ConsensusState;
 // TODO(erwan): remove in polish MERGEBLOCK
 // use ibc::core::ics02_client::client_def::AnyClient;
 // use ibc::core::ics02_client::client_def::ClientDef;

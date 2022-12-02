@@ -181,9 +181,20 @@ impl ValidatorCmd {
                 let governance_key = GovernanceKey(identity_key.0);
                 // Generate a random consensus key.
                 // TODO: not great because the private key is discarded here and this isn't obvious to the user
-                let consensus_key =
-                    tendermint::PrivateKey::Ed25519(ed25519_consensus::SigningKey::new(OsRng))
-                        .public_key();
+                let consensus_key = ed25519_consensus::SigningKey::new(OsRng);
+
+                /* MAKESHIFT RAFT ZONE */
+                let signing_key_bytes = consensus_key.as_bytes().as_slice();
+                let verification_key_bytes = consensus_key.verification_key();
+                let verification_key_bytes = verification_key_bytes.as_bytes().as_slice();
+                // TODO(erwan): surely there's a better way to do this?
+                let mut keypair = [verification_key_bytes, signing_key_bytes].concat();
+                let keypair = keypair.as_slice();
+
+                let consensus_key = ed25519_dalek::Keypair::from_bytes(keypair.as_ref()).unwrap();
+                /* END */
+
+                let consensus_key = tendermint::PrivateKey::Ed25519(consensus_key).public_key();
 
                 let template = Validator {
                     identity_key,

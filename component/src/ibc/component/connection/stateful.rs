@@ -246,7 +246,11 @@ pub mod connection_open_ack {
             ) -> anyhow::Result<()> {
                 let height = self.get_block_height().await?;
                 let chain_id = self.get_chain_id().await?;
-                _ = validate_penumbra_client_state(msg.client_state_of_a_on_b.clone(), &chain_id, height)?;
+                _ = validate_penumbra_client_state(
+                    msg.client_state_of_a_on_b.clone(),
+                    &chain_id,
+                    height,
+                )?;
 
                 Ok(())
             }
@@ -426,7 +430,11 @@ pub mod connection_open_try {
             ) -> anyhow::Result<()> {
                 let height = self.get_block_height().await?;
                 let chain_id = self.get_chain_id().await?;
-                validate_penumbra_client_state(msg.client_state_of_b_on_a.clone(), &chain_id, height)?;
+                validate_penumbra_client_state(
+                    msg.client_state_of_b_on_a.clone(),
+                    &chain_id,
+                    height,
+                )?;
 
                 Ok(())
             }
