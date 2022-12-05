@@ -1294,9 +1294,9 @@ dependencies = [
 
 [[package]]
 name = "cxx"
-version = "1.0.82"
+version = "1.0.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d4a41a86530d0fe7f5d9ea779916b7cadd2d4f9add748b99c2c029cbbdfaf453"
+checksum = "bdf07d07d6531bfcdbe9b8b739b104610c6508dcc4d63b410585faf338241daf"
 dependencies = [
  "cc",
  "cxxbridge-flags",
@@ -1306,9 +1306,9 @@ dependencies = [
 
 [[package]]
 name = "cxx-build"
-version = "1.0.82"
+version = "1.0.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06416d667ff3e3ad2df1cd8cd8afae5da26cf9cec4d0825040f88b5ca659a2f0"
+checksum = "d2eb5b96ecdc99f72657332953d4d9c50135af1bac34277801cc3937906ebd39"
 dependencies = [
  "cc",
  "codespan-reporting",
@@ -1321,15 +1321,15 @@ dependencies = [
 
 [[package]]
 name = "cxxbridge-flags"
-version = "1.0.82"
+version = "1.0.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "820a9a2af1669deeef27cb271f476ffd196a2c4b6731336011e0ba63e2c7cf71"
+checksum = "ac040a39517fd1674e0f32177648334b0f4074625b5588a64519804ba0553b12"
 
 [[package]]
 name = "cxxbridge-macro"
-version = "1.0.82"
+version = "1.0.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a08a6e2fcc370a089ad3b4aaf54db3b1b4cee38ddabce5896b33eb693275f470"
+checksum = "1362b0ddcfc4eb0a1f57b68bd77dd99f0e826958a96abd0ae9bd092e114ffed6"
 dependencies = [
  "proc-macro2 1.0.47",
  "quote 1.0.21",
@@ -2495,30 +2495,6 @@ checksum = "4217ad341ebadf8d8e724e264f13e593e0648f5b3e94b3896a5df283be015ecc"
 [[package]]
 name = "jmt"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/jellyfish-merkle.git?branch=upstream-ics23#d4f4fab429cc14f0074f1bb8937dc9f21799827b"
-dependencies = [
- "anyhow",
- "bcs",
- "byteorder",
- "hex",
- "ics23",
- "itertools",
- "mirai-annotations",
- "num-derive",
- "num-traits",
- "once_cell",
- "prometheus",
- "proptest",
- "proptest-derive",
- "serde",
- "sha2 0.10.6",
- "thiserror",
- "tracing",
-]
-
-[[package]]
-name = "jmt"
-version = "0.2.0"
 source = "git+https://github.com/penumbra-zone/jmt?branch=upstream-ics23#d4f4fab429cc14f0074f1bb8937dc9f21799827b"
 dependencies = [
  "anyhow",
@@ -2581,9 +2557,9 @@ checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 
 [[package]]
 name = "libc"
-version = "0.2.137"
+version = "0.2.138"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc7fcc620a3bff7cdd7a365be3376c97191aeaccc2a603e600951e452615bf89"
+checksum = "db6d7e329c562c5dfab7a46a2afabc8b987ab9a4834c9d1ca04dc54c1546cef8"
 
 [[package]]
 name = "libflate"
@@ -3255,7 +3231,7 @@ dependencies = [
  "hex",
  "http-body",
  "indicatif",
- "jmt 0.2.0 (git+https://github.com/penumbra-zone/jmt?branch=upstream-ics23)",
+ "jmt",
  "penumbra-chain",
  "penumbra-component",
  "penumbra-crypto",
@@ -3316,7 +3292,7 @@ dependencies = [
  "ibc",
  "ibc-proto",
  "ics23",
- "jmt 0.2.0 (git+https://github.com/penumbra-zone/jmt?branch=upstream-ics23)",
+ "jmt",
  "metrics",
  "metrics-exporter-prometheus",
  "metrics-tracing-context",
@@ -3405,7 +3381,7 @@ dependencies = [
  "hex",
  "ibc",
  "ics23",
- "jmt 0.2.0 (git+https://github.com/penumbra-zone/jellyfish-merkle.git?branch=upstream-ics23)",
+ "jmt",
  "num-rational",
  "once_cell",
  "penumbra-crypto",
@@ -3438,7 +3414,7 @@ dependencies = [
  "hex",
  "ibc",
  "ibc-proto",
- "jmt 0.2.0 (git+https://github.com/penumbra-zone/jmt?branch=upstream-ics23)",
+ "jmt",
  "metrics",
  "num-rational",
  "once_cell",
@@ -3493,7 +3469,7 @@ dependencies = [
  "frost377",
  "hex",
  "hmac",
- "jmt 0.2.0 (git+https://github.com/penumbra-zone/jmt?branch=upstream-ics23)",
+ "jmt",
  "num-bigint",
  "once_cell",
  "pbkdf2",
@@ -3616,7 +3592,7 @@ dependencies = [
  "ibc",
  "ibc-proto",
  "ics23",
- "jmt 0.2.0 (git+https://github.com/penumbra-zone/jmt?branch=upstream-ics23)",
+ "jmt",
  "metrics",
  "once_cell",
  "parking_lot 0.12.1",
@@ -4713,9 +4689,9 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.148"
+version = "1.0.149"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e53f64bb4ba0191d6d0676e1b141ca55047d83b74f5607e6d8eb88126c52c2dc"
+checksum = "256b9932320c590e707b94576e3cc1f7c9024d0ee6612dfbcf1cb106cbe8e055"
 dependencies = [
  "serde_derive",
 ]
@@ -4741,9 +4717,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.148"
+version = "1.0.149"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a55492425aa53521babf6137309e7d34c20bbfbbfcfe2c7f3a047fd1f6b92c0c"
+checksum = "b4eae9b04cbffdfd550eb462ed33bc6a1b68c935127d008b27444d08380f94e4"
 dependencies = [
  "proc-macro2 1.0.47",
  "quote 1.0.21",
@@ -5819,9 +5795,9 @@ checksum = "59547bce71d9c38b83d9c0e92b6066c4253371f15005def0c30d9657f50c7642"
 
 [[package]]
 name = "typenum"
-version = "1.15.0"
+version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dcf81ac59edc17cc8697ff311e8f5ef2d99fcbd9817b34cec66f90b6c3dfd987"
+checksum = "497961ef93d974e23eb6f433eb5fe1b7930b659f06d12dec6fc44a8f554c0bba"
 
 [[package]]
 name = "ucd-trie"
