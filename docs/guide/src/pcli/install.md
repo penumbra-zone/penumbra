@@ -56,7 +56,7 @@ latest tag for the current
 [testnet](https://github.com/penumbra-zone/penumbra/releases):
 
 ```bash
-cd penumbra && git fetch && git checkout 036-iocaste.2
+cd penumbra && git fetch && git checkout 037-megaclite
 ```
 
 ### Building the `pcli` client software
