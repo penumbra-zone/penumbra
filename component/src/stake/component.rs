@@ -5,7 +5,7 @@ use crate::Component;
 use ::metrics::{decrement_gauge, gauge, increment_gauge};
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
-use futures::StreamExt;
+use futures::{StreamExt, TryStreamExt};
 use penumbra_chain::quarantined::Slashed;
 use penumbra_chain::{genesis, Epoch, NoteSource, StateReadExt as _};
 use penumbra_crypto::{DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID};
@@ -1021,12 +1021,10 @@ pub trait StateReadExt: StateRead {
 
     async fn validator_list(&self) -> Result<Vec<Validator>> {
         self.prefix(state_key::validators::list())
-            .next()
-            .await
-            .into_iter()
             // The prefix stream returns keys and values, but we only want the values.
-            .map(|r| Ok(r?.1))
-            .collect()
+            .map_ok(|(_key, validator)| validator)
+            .try_collect()
+            .await
     }
 
     async fn delegation_changes(&self, height: block::Height) -> Result<DelegationChanges> {
