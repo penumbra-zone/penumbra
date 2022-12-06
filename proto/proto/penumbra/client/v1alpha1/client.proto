@@ -234,7 +234,7 @@ message BroadcastTxAsyncRequest {
 // BroadcastTxAsyncResponse is the response type for the BroadcastTxAsync RPC method.
 message BroadcastTxAsyncResponse {
     uint64 code = 1;
-    bytes data = 2
+    bytes data = 2;
     string log = 3;
     bytes hash = 4;
 }
@@ -248,7 +248,7 @@ message BroadcastTxSyncRequest {
 // BroadcastTxSyncResponse is the response type for the BroadcastTxSync RPC method.
 message BroadcastTxSyncResponse {
     uint64 code = 1;
-    bytes data = 2
+    bytes data = 2;
     string log = 3;
     bytes hash = 4;
 }

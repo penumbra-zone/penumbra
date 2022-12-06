@@ -186,6 +186,46 @@ pub struct PrefixValueResponse {
     #[prost(bytes="vec", tag="2")]
     pub value: ::prost::alloc::vec::Vec<u8>,
 }
+/// BroadcastTxAsyncRequest is the request type for the BroadcastTxAsync RPC method.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct BroadcastTxAsyncRequest {
+    #[prost(bytes="vec", tag="1")]
+    pub params: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="vec", tag="2")]
+    pub req_id: ::prost::alloc::vec::Vec<u8>,
+}
+/// BroadcastTxAsyncResponse is the response type for the BroadcastTxAsync RPC method.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct BroadcastTxAsyncResponse {
+    #[prost(uint64, tag="1")]
+    pub code: u64,
+    #[prost(bytes="vec", tag="2")]
+    pub data: ::prost::alloc::vec::Vec<u8>,
+    #[prost(string, tag="3")]
+    pub log: ::prost::alloc::string::String,
+    #[prost(bytes="vec", tag="4")]
+    pub hash: ::prost::alloc::vec::Vec<u8>,
+}
+/// BroadcastTxSyncRequest is the request type for the BroadcastTxSync RPC method.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct BroadcastTxSyncRequest {
+    #[prost(bytes="vec", tag="1")]
+    pub params: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="vec", tag="2")]
+    pub req_id: ::prost::alloc::vec::Vec<u8>,
+}
+/// BroadcastTxSyncResponse is the response type for the BroadcastTxSync RPC method.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct BroadcastTxSyncResponse {
+    #[prost(uint64, tag="1")]
+    pub code: u64,
+    #[prost(bytes="vec", tag="2")]
+    pub data: ::prost::alloc::vec::Vec<u8>,
+    #[prost(string, tag="3")]
+    pub log: ::prost::alloc::string::String,
+    #[prost(bytes="vec", tag="4")]
+    pub hash: ::prost::alloc::vec::Vec<u8>,
+}
 /// GetStatusRequest is the request type for the Query/GetStatus RPC method.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetStatusRequest {
@@ -723,6 +763,46 @@ pub mod tendermint_proxy_service_client {
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.client.v1alpha1.TendermintProxyService/GetStatus",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// Broadcast a transaction asynchronously.
+        pub async fn broadcast_tx_async(
+            &mut self,
+            request: impl tonic::IntoRequest<super::BroadcastTxAsyncRequest>,
+        ) -> Result<tonic::Response<super::BroadcastTxAsyncResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.client.v1alpha1.TendermintProxyService/BroadcastTxAsync",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// Broadcast a transaction synchronously.
+        pub async fn broadcast_tx_sync(
+            &mut self,
+            request: impl tonic::IntoRequest<super::BroadcastTxSyncRequest>,
+        ) -> Result<tonic::Response<super::BroadcastTxSyncResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.client.v1alpha1.TendermintProxyService/BroadcastTxSync",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -1566,6 +1646,16 @@ pub mod tendermint_proxy_service_server {
             &self,
             request: tonic::Request<super::GetStatusRequest>,
         ) -> Result<tonic::Response<super::GetStatusResponse>, tonic::Status>;
+        /// Broadcast a transaction asynchronously.
+        async fn broadcast_tx_async(
+            &self,
+            request: tonic::Request<super::BroadcastTxAsyncRequest>,
+        ) -> Result<tonic::Response<super::BroadcastTxAsyncResponse>, tonic::Status>;
+        /// Broadcast a transaction synchronously.
+        async fn broadcast_tx_sync(
+            &self,
+            request: tonic::Request<super::BroadcastTxSyncRequest>,
+        ) -> Result<tonic::Response<super::BroadcastTxSyncResponse>, tonic::Status>;
     }
     /// Defines the gRPC query service for proxying requests to an upstream Tendermint RPC.
     #[derive(Debug)]
@@ -1655,6 +1745,86 @@ pub mod tendermint_proxy_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = GetStatusSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.client.v1alpha1.TendermintProxyService/BroadcastTxAsync" => {
+                    #[allow(non_camel_case_types)]
+                    struct BroadcastTxAsyncSvc<T: TendermintProxyService>(pub Arc<T>);
+                    impl<
+                        T: TendermintProxyService,
+                    > tonic::server::UnaryService<super::BroadcastTxAsyncRequest>
+                    for BroadcastTxAsyncSvc<T> {
+                        type Response = super::BroadcastTxAsyncResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::BroadcastTxAsyncRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).broadcast_tx_async(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = BroadcastTxAsyncSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.client.v1alpha1.TendermintProxyService/BroadcastTxSync" => {
+                    #[allow(non_camel_case_types)]
+                    struct BroadcastTxSyncSvc<T: TendermintProxyService>(pub Arc<T>);
+                    impl<
+                        T: TendermintProxyService,
+                    > tonic::server::UnaryService<super::BroadcastTxSyncRequest>
+                    for BroadcastTxSyncSvc<T> {
+                        type Response = super::BroadcastTxSyncResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::BroadcastTxSyncRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).broadcast_tx_sync(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = BroadcastTxSyncSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
