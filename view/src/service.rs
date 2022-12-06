@@ -13,6 +13,9 @@ use penumbra_crypto::{
     keys::{AccountID, AddressIndex, FullViewingKey},
 };
 use penumbra_proto::{
+    client::v1alpha1::{
+        tendermint_proxy_service_client::TendermintProxyServiceClient, GetStatusRequest,
+    },
     core::crypto::v1alpha1 as pbc,
     view::v1alpha1::{
         self as pb, view_protocol_service_server::ViewProtocolService, ChainParametersResponse,
@@ -145,36 +148,27 @@ impl ViewService {
     /// well as whether the fullnode is caught up with that height.
     #[instrument(skip(self))]
     pub async fn latest_known_block_height(&self) -> Result<(u64, bool), anyhow::Error> {
-        let client = reqwest::Client::new();
+        // TODO: this should probably happen in the view worker
+        let mut client = TendermintProxyServiceClient::connect(format!(
+            "http://{}:{}",
+            self.node, self.tendermint_port
+        ))
+        .await?;
 
-        // TODO: use TendermintServiceClient
-        let rsp: serde_json::Value = client
-            .get(format!(
-                r#"http://{}:{}/status"#,
-                self.node, self.tendermint_port
-            ))
-            .send()
-            .await?
-            .json()
-            .await?;
+        println!("get_status");
 
-        tracing::debug!("{}", rsp);
+        let rsp = client.get_status(GetStatusRequest {}).await?.into_inner();
+
+        println!("{:#?}", rsp);
+        tracing::debug!("{:#?}", rsp);
 
         let sync_info = rsp
-            .get("result")
-            .and_then(|r| r.get("sync_info"))
-            .ok_or_else(|| anyhow::anyhow!("could not parse sync_info in JSON response"))?;
+            .sync_info
+            .ok_or_else(|| anyhow::anyhow!("could not parse sync_info in gRPC response"))?;
 
-        let latest_block_height = sync_info
-            .get("latest_block_height")
-            .and_then(|c| c.as_str())
-            .ok_or_else(|| anyhow::anyhow!("could not parse latest_block_height in JSON response"))?
-            .parse()?;
+        let latest_block_height = sync_info.latest_block_height;
 
-        let node_catching_up = sync_info
-            .get("catching_up")
-            .and_then(|c| c.as_bool())
-            .ok_or_else(|| anyhow::anyhow!("could not parse catching_up in JSON response"))?;
+        let node_catching_up = sync_info.catching_up;
 
         // There is a `max_peer_block_height` available in TM 0.35, however it should not be used
         // as it does not seem to reflect the consensus height. Since clients use `latest_known_block_height`

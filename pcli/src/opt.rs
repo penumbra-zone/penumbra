@@ -41,7 +41,7 @@ pub struct Opt {
     )]
     node: url::Host,
     /// The port to use to speak to tendermint's RPC server.
-    #[clap(long, default_value_t = 36657, env = "PENUMBRA_TENDERMINT_PORT")]
+    #[clap(long, default_value_t = 8080, env = "PENUMBRA_TENDERMINT_PORT")]
     tendermint_port: u16,
     /// The port to use to speak to pd's gRPC server.
     #[clap(long, default_value_t = 8080, env = "PENUMBRA_PD_PORT")]

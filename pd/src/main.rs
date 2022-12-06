@@ -62,9 +62,6 @@ enum RootCommand {
         /// bind the metrics endpoint to this port.
         #[clap(short, long, default_value = "9000")]
         metrics_port: u16,
-        /// bind the tendermint proxy server to this port.
-        #[clap(short, long, default_value = "36657")]
-        tendermint_proxy_port: u16,
         /// Proxy Tendermint requests against the gRPC server to this address.
         #[clap(short, long, default_value = "http://127.0.0.1:26657")]
         tendermint_addr: url::Url,
@@ -172,7 +169,6 @@ async fn main() -> anyhow::Result<()> {
             abci_port,
             grpc_port,
             metrics_port,
-            tendermint_proxy_port,
             tendermint_addr,
         } => {
             tracing::info!(?host, ?abci_port, ?grpc_port, "starting pd");
@@ -222,28 +218,6 @@ async fn main() -> anyhow::Result<()> {
                         .add_service(tonic_web::enable(SpecificQueryServiceServer::new(
                             info.clone(),
                         )))
-                        .serve(
-                            format!("{}:{}", host, grpc_port)
-                                .parse()
-                                .expect("this is a valid address"),
-                        ),
-                )
-                .expect("failed to spawn grpc server");
-
-            // Configure a proxy to the configured Tendermint instance's API.
-            let tendermint_proxy_server = tokio::task::Builder::new()
-                .name("tendermint_proxy_server")
-                .spawn(
-                    Server::builder()
-                        .trace_fn(|req| match remote_addr(req) {
-                            Some(remote_addr) => {
-                                tracing::error_span!("tendermint_proxy", ?remote_addr)
-                            }
-                            None => tracing::error_span!("tendermint_proxy"),
-                        })
-                        // Allow HTTP/1, which will be used by grpc-web connections.
-                        .accept_http1(true)
-                        // Wrap each of the gRPC services in a tonic-web proxy:
                         .add_service(tonic_web::enable(TendermintServiceServer::new(
                             info.clone(),
                         )))
@@ -251,12 +225,12 @@ async fn main() -> anyhow::Result<()> {
                             info.clone(),
                         )))
                         .serve(
-                            format!("{}:{}", host, tendermint_proxy_port)
+                            format!("{}:{}", host, grpc_port)
                                 .parse()
                                 .expect("this is a valid address"),
                         ),
                 )
-                .expect("failed to spawn tendermint_proxy server");
+                .expect("failed to spawn grpc server");
 
             // Configure a Prometheus recorder and exporter.
             let (recorder, exporter) = PrometheusBuilder::new()
@@ -286,7 +260,6 @@ async fn main() -> anyhow::Result<()> {
             tokio::select! {
                 x = abci_server => x?.map_err(|e| anyhow::anyhow!(e))?,
                 x = grpc_server => x?.map_err(|e| anyhow::anyhow!(e))?,
-                x = tendermint_proxy_server => x?.map_err(|e| anyhow::anyhow!(e))?,
             };
         }
 

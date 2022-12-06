@@ -6,6 +6,7 @@ use penumbra_proto::{
         oblivious_query_service_client::ObliviousQueryServiceClient,
         specific_query_service_client::SpecificQueryServiceClient,
         tendermint_proxy::service_client::ServiceClient as TendermintServiceClient,
+        tendermint_proxy_service_client::TendermintProxyServiceClient,
     },
     Protobuf,
 };
@@ -225,6 +226,14 @@ impl App {
         &self,
     ) -> Result<TendermintServiceClient<Channel>, anyhow::Error> {
         TendermintServiceClient::connect(self.tendermint_url.as_ref().to_owned())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn tendermint_proxy_client(
+        &self,
+    ) -> Result<TendermintProxyServiceClient<Channel>, anyhow::Error> {
+        TendermintProxyServiceClient::connect(self.tendermint_url.as_ref().to_owned())
             .await
             .map_err(Into::into)
     }

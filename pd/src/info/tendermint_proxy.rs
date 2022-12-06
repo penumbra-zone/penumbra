@@ -8,6 +8,7 @@ use penumbra_proto::{
 
 use proto::client::v1alpha1::GetStatusRequest;
 use proto::client::v1alpha1::GetStatusResponse;
+use proto::client::v1alpha1::SyncInfo;
 use proto::client::v1alpha1::tendermint_proxy::AbciQueryRequest;
 use proto::client::v1alpha1::tendermint_proxy::AbciQueryResponse;
 use proto::client::v1alpha1::tendermint_proxy::GetBlockByHeightRequest;
@@ -22,8 +23,10 @@ use proto::client::v1alpha1::tendermint_proxy::GetSyncingRequest;
 use proto::client::v1alpha1::tendermint_proxy::GetSyncingResponse;
 use proto::client::v1alpha1::tendermint_proxy::GetValidatorSetByHeightRequest;
 use proto::client::v1alpha1::tendermint_proxy::GetValidatorSetByHeightResponse;
+use proto::core::stake::v1alpha1::ValidatorInfo;
 use proto::client::v1alpha1::tendermint_proxy_service_server::TendermintProxyService;
 use tendermint::block::Height;
+use penumbra_proto::tendermint::p2p::DefaultNodeInfo;
 use tendermint_rpc::abci::Path;
 use tendermint_rpc::{Client, HttpClient};
 use tonic::Status;
@@ -48,7 +51,33 @@ impl TendermintProxyService for Info {
         &self,
         req: tonic::Request<GetStatusRequest>,
     ) -> Result<tonic::Response<GetStatusResponse>, Status> {
-        todo!()
+        // generic bounds on HttpClient::new are not well-constructed, so we have to
+        // render the URL as a String, then borrow it, then re-parse the borrowed &str
+        let client = HttpClient::new(self.tendermint_url.to_string().as_ref()).unwrap();
+
+        let path = Path::from_str(&req.get_ref().path).map_err(|_| tonic::Status::invalid_argument("invalid abci path"))?;
+        let data = &req.get_ref().data;
+        let height: Height = req
+            .get_ref()
+            .height
+            .try_into().map_err(|_| tonic::Status::invalid_argument("invalid height"))?;
+        let prove = req.get_ref().prove;
+        let res = client
+            .abci_query(Some(path), data.clone(), Some(height), prove)
+            .await.map_err(|e| tonic::Status::unavailable(format!(
+                    "error querying abci: {}",
+                    e
+                )))?;
+
+        match res.code {
+            tendermint_rpc::abci::Code::Ok => Ok(tonic::Response::new(GetStatusResponse {
+                node_info:
+            })),
+            tendermint_rpc::abci::Code::Err(e) => Err(tonic::Status::unavailable(format!(
+                "error querying abci: {}",
+                e
+            ))),
+        }
     }
 }
 
@@ -163,8 +192,8 @@ impl TendermintService for Info {
                     hash: res.block_id.part_set_header.hash.into(),
                 }),
             }),
-            sdk_block: Some(penumbra_proto::client::v1alpha1::tendermint_proxy::Block {
-                header: Some(penumbra_proto::client::v1alpha1::tendermint_proxy::Header {
+            sdk_block: Some(penumbra_proto::cosmos::base::tendermint::v1beta1::Block {
+                header: Some(penumbra_proto::cosmos::base::tendermint::v1beta1::Header {
                     version: Some(penumbra_proto::tendermint::version::Consensus {
                         block: res.block.header.version.block,
                         app: res.block.header.version.app,
