@@ -19,6 +19,7 @@ use penumbra_proto::{
     client::v1alpha1::{
         oblivious_query_service_server::ObliviousQueryServiceServer,
         specific_query_service_server::SpecificQueryServiceServer,
+        tendermint_proxy::TendermintProxyServiceServer,
     },
     tendermint_proxy::service_server::ServiceServer as TendermintServiceServer,
 };
@@ -67,7 +68,7 @@ enum RootCommand {
         #[clap(short, long, default_value = "36657")]
         tendermint_proxy_port: u16,
         /// Proxy Tendermint requests against the gRPC server to this address.
-        #[clap(short, long, default_value = "127.0.0.1:26657")]
+        #[clap(short, long, default_value = "http://127.0.0.1:26657")]
         tendermint_addr: url::Url,
     },
     /// Generate, join, or reset a testnet.
@@ -246,6 +247,9 @@ async fn main() -> anyhow::Result<()> {
                         .accept_http1(true)
                         // Wrap each of the gRPC services in a tonic-web proxy:
                         .add_service(tonic_web::enable(TendermintServiceServer::new(
+                            info.clone(),
+                        )))
+                        .add_service(tonic_web::enable(TendermintTxServiceServer::new(
                             info.clone(),
                         )))
                         .serve(

@@ -195,3 +195,47 @@ message PrefixValueResponse {
   string key = 1;
   bytes value = 2;
 }
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/any.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "tendermint/p2p/types.proto";
+import "tendermint/types/types.proto";
+import "tendermint/types/validator.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "cosmos/base/tendermint/v1beta1/types.proto";
+import "cosmos_proto/cosmos.proto";
+import "tendermint/types/block.proto";
+import "amino/amino.proto";
+
+// Defines the gRPC query service for proxying requests to an upstream Tendermint RPC.
+service TendermintProxyService {
+  // Status queries the current status.
+  rpc GetStatus(GetStatusRequest) returns (GetStatusResponse) {
+    option (google.api.http).get = "/status";
+  }
+}
+
+// GetStatusRequest is the request type for the Query/GetStatus RPC method.
+message GetStatusRequest {
+}
+
+// GetStatusResponse is the response type for the Query/GetStatus RPC method.
+message GetStatusResponse {
+  tendermint.p2p.DefaultNodeInfo node_info = 1;
+  SyncInfo sync_info = 2;
+  tendermint.types.Validator validator_info = 3;
+}
+
+message SyncInfo {
+    bytes latest_block_hash = 1;
+    bytes latest_app_hash = 2;
+    uint64 latest_block_height = 3;
+    google.protobuf.Timestamp latest_block_time = 4;
+    bytes earliest_block_hash = 5;
+    bytes earliest_app_hash = 6;
+    uint64 earliest_block_height = 7;
+    google.protobuf.Timestamp earliest_block_time = 8;
+    bool catching_up = 9;
+}

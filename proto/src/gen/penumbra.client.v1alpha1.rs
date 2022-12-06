@@ -2,141 +2,144 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CompactBlockRangeRequest {
     /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
     /// The start height of the range.
-    #[prost(uint64, tag="2")]
+    #[prost(uint64, tag = "2")]
     pub start_height: u64,
     /// The end height of the range, defaults to the latest block height.
-    #[prost(uint64, tag="3")]
+    #[prost(uint64, tag = "3")]
     pub end_height: u64,
     /// If set, keeps the connection alive past `end_height`,
     /// streaming new compact blocks as they are created.
-    #[prost(bool, tag="4")]
+    #[prost(bool, tag = "4")]
     pub keep_alive: bool,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CompactBlockRangeResponse {
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub compact_block: ::core::option::Option<super::super::core::chain::v1alpha1::CompactBlock>,
 }
 /// Requests the global configuration data for the chain.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ChainParametersRequest {
     /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ChainParametersResponse {
-    #[prost(message, optional, tag="1")]
-    pub chain_parameters: ::core::option::Option<super::super::core::chain::v1alpha1::ChainParameters>,
+    #[prost(message, optional, tag = "1")]
+    pub chain_parameters:
+        ::core::option::Option<super::super::core::chain::v1alpha1::ChainParameters>,
 }
 /// Requests the governance-mutable parameters available for the chain.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MutableParametersRequest {
     /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MutableParametersResponse {
-    #[prost(message, optional, tag="1")]
-    pub chain_parameter: ::core::option::Option<super::super::core::governance::v1alpha1::MutableChainParameter>,
+    #[prost(message, optional, tag = "1")]
+    pub chain_parameter:
+        ::core::option::Option<super::super::core::governance::v1alpha1::MutableChainParameter>,
 }
 /// Requests information on the chain's validators.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorInfoRequest {
     /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
     /// Whether or not to return inactive validators
-    #[prost(bool, tag="2")]
+    #[prost(bool, tag = "2")]
     pub show_inactive: bool,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorInfoResponse {
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub validator_info: ::core::option::Option<super::super::core::stake::v1alpha1::ValidatorInfo>,
 }
 /// Lists all assets in Asset Registry
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AssetListRequest {
     /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AssetListResponse {
     /// TODO: deprecate in favor of SpecificQuery.AssetInfo
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub asset_list: ::core::option::Option<super::super::core::chain::v1alpha1::KnownAssets>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionByNoteRequest {
-    #[prost(message, optional, tag="1")]
-    pub note_commitment: ::core::option::Option<super::super::core::crypto::v1alpha1::NoteCommitment>,
+    #[prost(message, optional, tag = "1")]
+    pub note_commitment:
+        ::core::option::Option<super::super::core::crypto::v1alpha1::NoteCommitment>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionByNoteResponse {
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub note_source: ::core::option::Option<super::super::core::chain::v1alpha1::NoteSource>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorStatusRequest {
     /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
-    #[prost(message, optional, tag="2")]
+    #[prost(message, optional, tag = "2")]
     pub identity_key: ::core::option::Option<super::super::core::crypto::v1alpha1::IdentityKey>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorStatusResponse {
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub status: ::core::option::Option<super::super::core::stake::v1alpha1::ValidatorStatus>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NextValidatorRateRequest {
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub identity_key: ::core::option::Option<super::super::core::crypto::v1alpha1::IdentityKey>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NextValidatorRateResponse {
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub data: ::core::option::Option<super::super::core::stake::v1alpha1::RateData>,
 }
 /// Requests batch swap data associated with a given height and trading pair from the view service.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BatchSwapOutputDataRequest {
-    #[prost(uint64, tag="1")]
+    #[prost(uint64, tag = "1")]
     pub height: u64,
-    #[prost(message, optional, tag="2")]
+    #[prost(message, optional, tag = "2")]
     pub trading_pair: ::core::option::Option<super::super::core::dex::v1alpha1::TradingPair>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BatchSwapOutputDataResponse {
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub data: ::core::option::Option<super::super::core::dex::v1alpha1::BatchSwapOutputData>,
 }
 /// Requests CPMM reserves data associated with a given trading pair from the view service.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StubCpmmReservesRequest {
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub trading_pair: ::core::option::Option<super::super::core::dex::v1alpha1::TradingPair>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StubCpmmReservesResponse {
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub reserves: ::core::option::Option<super::super::core::dex::v1alpha1::Reserves>,
 }
 /// Requests information on an asset by asset id
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AssetInfoRequest {
     /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
     /// The asset id to request information on.
-    #[prost(message, optional, tag="2")]
+    #[prost(message, optional, tag = "2")]
     pub asset_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AssetId>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -144,7 +147,7 @@ pub struct AssetInfoResponse {
     /// If present, information on the requested asset.
     ///
     /// If the requested asset was unknown, this field will not be present.
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub asset: ::core::option::Option<super::super::core::crypto::v1alpha1::Asset>,
 }
 /// Performs a key-value query, either by key or by key hash.
@@ -153,44 +156,78 @@ pub struct AssetInfoResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct KeyValueRequest {
     /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
     /// If set, the key to fetch from storage.
-    #[prost(string, tag="2")]
+    #[prost(string, tag = "2")]
     pub key: ::prost::alloc::string::String,
     /// whether to return a proof
-    #[prost(bool, tag="3")]
+    #[prost(bool, tag = "3")]
     pub proof: bool,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct KeyValueResponse {
-    #[prost(bytes="vec", tag="1")]
+    #[prost(bytes = "vec", tag = "1")]
     pub value: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag="2")]
+    #[prost(message, optional, tag = "2")]
     pub proof: ::core::option::Option<::ibc_proto::ibc::core::commitment::v1::MerkleProof>,
 }
 /// Performs a prefixed key-value query, by string prefix.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PrefixValueRequest {
     /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
     /// The prefix to fetch subkeys from storage.
-    #[prost(string, tag="2")]
+    #[prost(string, tag = "2")]
     pub prefix: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PrefixValueResponse {
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub key: ::prost::alloc::string::String,
-    #[prost(bytes="vec", tag="2")]
+    #[prost(bytes = "vec", tag = "2")]
     pub value: ::prost::alloc::vec::Vec<u8>,
+}
+/// GetStatusRequest is the request type for the Query/GetStatus RPC method.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetStatusRequest {}
+/// GetStatusResponse is the response type for the Query/GetStatus RPC method.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetStatusResponse {
+    #[prost(message, optional, tag = "1")]
+    pub node_info: ::core::option::Option<super::super::super::tendermint::p2p::DefaultNodeInfo>,
+    #[prost(message, optional, tag = "2")]
+    pub sync_info: ::core::option::Option<SyncInfo>,
+    #[prost(message, optional, tag = "3")]
+    pub validator_info: ::core::option::Option<super::super::super::tendermint::types::Validator>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SyncInfo {
+    #[prost(bytes = "vec", tag = "1")]
+    pub latest_block_hash: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "2")]
+    pub latest_app_hash: ::prost::alloc::vec::Vec<u8>,
+    #[prost(uint64, tag = "3")]
+    pub latest_block_height: u64,
+    #[prost(message, optional, tag = "4")]
+    pub latest_block_time: ::core::option::Option<::prost_types::Timestamp>,
+    #[prost(bytes = "vec", tag = "5")]
+    pub earliest_block_hash: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "6")]
+    pub earliest_app_hash: ::prost::alloc::vec::Vec<u8>,
+    #[prost(uint64, tag = "7")]
+    pub earliest_block_height: u64,
+    #[prost(message, optional, tag = "8")]
+    pub earliest_block_time: ::core::option::Option<::prost_types::Timestamp>,
+    #[prost(bool, tag = "9")]
+    pub catching_up: bool,
 }
 /// Generated client implementations.
 pub mod oblivious_query_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::*;
     use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     /// Methods for accessing chain state that are "oblivious" in the sense that they
     /// do not request specific portions of the chain state that could reveal private
     /// client data.  For instance, requesting all asset denominations is oblivious,
@@ -239,9 +276,8 @@ pub mod oblivious_query_service_client {
                     <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<
-                http::Request<tonic::body::BoxBody>,
-            >>::Error: Into<StdError> + Send + Sync,
+            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
+                Into<StdError> + Send + Sync,
         {
             ObliviousQueryServiceClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -267,34 +303,30 @@ pub mod oblivious_query_service_client {
             tonic::Response<tonic::codec::Streaming<super::CompactBlockRangeResponse>>,
             tonic::Status,
         > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.client.v1alpha1.ObliviousQueryService/CompactBlockRange",
             );
-            self.inner.server_streaming(request.into_request(), path, codec).await
+            self.inner
+                .server_streaming(request.into_request(), path, codec)
+                .await
         }
         pub async fn chain_parameters(
             &mut self,
             request: impl tonic::IntoRequest<super::ChainParametersRequest>,
         ) -> Result<tonic::Response<super::ChainParametersResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.client.v1alpha1.ObliviousQueryService/ChainParameters",
@@ -308,20 +340,19 @@ pub mod oblivious_query_service_client {
             tonic::Response<tonic::codec::Streaming<super::MutableParametersResponse>>,
             tonic::Status,
         > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.client.v1alpha1.ObliviousQueryService/MutableParameters",
             );
-            self.inner.server_streaming(request.into_request(), path, codec).await
+            self.inner
+                .server_streaming(request.into_request(), path, codec)
+                .await
         }
         pub async fn validator_info(
             &mut self,
@@ -330,34 +361,30 @@ pub mod oblivious_query_service_client {
             tonic::Response<tonic::codec::Streaming<super::ValidatorInfoResponse>>,
             tonic::Status,
         > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.client.v1alpha1.ObliviousQueryService/ValidatorInfo",
             );
-            self.inner.server_streaming(request.into_request(), path, codec).await
+            self.inner
+                .server_streaming(request.into_request(), path, codec)
+                .await
         }
         pub async fn asset_list(
             &mut self,
             request: impl tonic::IntoRequest<super::AssetListRequest>,
         ) -> Result<tonic::Response<super::AssetListResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.client.v1alpha1.ObliviousQueryService/AssetList",
@@ -369,8 +396,8 @@ pub mod oblivious_query_service_client {
 /// Generated client implementations.
 pub mod specific_query_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::*;
     use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     /// Methods for accessing chain state that are "specific" in the sense that they
     /// request specific portions of the chain state that could reveal private
     /// client data.  For instance, requesting all asset denominations is oblivious,
@@ -419,9 +446,8 @@ pub mod specific_query_service_client {
                     <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<
-                http::Request<tonic::body::BoxBody>,
-            >>::Error: Into<StdError> + Send + Sync,
+            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
+                Into<StdError> + Send + Sync,
         {
             SpecificQueryServiceClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -444,15 +470,12 @@ pub mod specific_query_service_client {
             &mut self,
             request: impl tonic::IntoRequest<super::TransactionByNoteRequest>,
         ) -> Result<tonic::Response<super::TransactionByNoteResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.client.v1alpha1.SpecificQueryService/TransactionByNote",
@@ -463,15 +486,12 @@ pub mod specific_query_service_client {
             &mut self,
             request: impl tonic::IntoRequest<super::ValidatorStatusRequest>,
         ) -> Result<tonic::Response<super::ValidatorStatusResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.client.v1alpha1.SpecificQueryService/ValidatorStatus",
@@ -482,15 +502,12 @@ pub mod specific_query_service_client {
             &mut self,
             request: impl tonic::IntoRequest<super::NextValidatorRateRequest>,
         ) -> Result<tonic::Response<super::NextValidatorRateResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.client.v1alpha1.SpecificQueryService/NextValidatorRate",
@@ -501,15 +518,12 @@ pub mod specific_query_service_client {
             &mut self,
             request: impl tonic::IntoRequest<super::BatchSwapOutputDataRequest>,
         ) -> Result<tonic::Response<super::BatchSwapOutputDataResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.client.v1alpha1.SpecificQueryService/BatchSwapOutputData",
@@ -520,15 +534,12 @@ pub mod specific_query_service_client {
             &mut self,
             request: impl tonic::IntoRequest<super::StubCpmmReservesRequest>,
         ) -> Result<tonic::Response<super::StubCpmmReservesResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.client.v1alpha1.SpecificQueryService/StubCPMMReserves",
@@ -539,15 +550,12 @@ pub mod specific_query_service_client {
             &mut self,
             request: impl tonic::IntoRequest<super::AssetInfoRequest>,
         ) -> Result<tonic::Response<super::AssetInfoResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.client.v1alpha1.SpecificQueryService/AssetInfo",
@@ -560,15 +568,12 @@ pub mod specific_query_service_client {
             &mut self,
             request: impl tonic::IntoRequest<super::KeyValueRequest>,
         ) -> Result<tonic::Response<super::KeyValueResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.client.v1alpha1.SpecificQueryService/KeyValue",
@@ -584,20 +589,107 @@ pub mod specific_query_service_client {
             tonic::Response<tonic::codec::Streaming<super::PrefixValueResponse>>,
             tonic::Status,
         > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.client.v1alpha1.SpecificQueryService/PrefixValue",
             );
-            self.inner.server_streaming(request.into_request(), path, codec).await
+            self.inner
+                .server_streaming(request.into_request(), path, codec)
+                .await
+        }
+    }
+}
+/// Generated client implementations.
+pub mod tendermint_proxy_service_client {
+    #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
+    use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
+    /// Defines the gRPC query service for proxying requests to an upstream Tendermint RPC.
+    #[derive(Debug, Clone)]
+    pub struct TendermintProxyServiceClient<T> {
+        inner: tonic::client::Grpc<T>,
+    }
+    impl TendermintProxyServiceClient<tonic::transport::Channel> {
+        /// Attempt to create a new client by connecting to a given endpoint.
+        pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
+        where
+            D: std::convert::TryInto<tonic::transport::Endpoint>,
+            D::Error: Into<StdError>,
+        {
+            let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
+            Ok(Self::new(conn))
+        }
+    }
+    impl<T> TendermintProxyServiceClient<T>
+    where
+        T: tonic::client::GrpcService<tonic::body::BoxBody>,
+        T::Error: Into<StdError>,
+        T::ResponseBody: Body<Data = Bytes> + Send + 'static,
+        <T::ResponseBody as Body>::Error: Into<StdError> + Send,
+    {
+        pub fn new(inner: T) -> Self {
+            let inner = tonic::client::Grpc::new(inner);
+            Self { inner }
+        }
+        pub fn with_origin(inner: T, origin: Uri) -> Self {
+            let inner = tonic::client::Grpc::with_origin(inner, origin);
+            Self { inner }
+        }
+        pub fn with_interceptor<F>(
+            inner: T,
+            interceptor: F,
+        ) -> TendermintProxyServiceClient<InterceptedService<T, F>>
+        where
+            F: tonic::service::Interceptor,
+            T::ResponseBody: Default,
+            T: tonic::codegen::Service<
+                http::Request<tonic::body::BoxBody>,
+                Response = http::Response<
+                    <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
+                >,
+            >,
+            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
+                Into<StdError> + Send + Sync,
+        {
+            TendermintProxyServiceClient::new(InterceptedService::new(inner, interceptor))
+        }
+        /// Compress requests with the given encoding.
+        ///
+        /// This requires the server to support it otherwise it might respond with an
+        /// error.
+        #[must_use]
+        pub fn send_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.inner = self.inner.send_compressed(encoding);
+            self
+        }
+        /// Enable decompressing responses.
+        #[must_use]
+        pub fn accept_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.inner = self.inner.accept_compressed(encoding);
+            self
+        }
+        /// Status queries the current status.
+        pub async fn get_status(
+            &mut self,
+            request: impl tonic::IntoRequest<super::GetStatusRequest>,
+        ) -> Result<tonic::Response<super::GetStatusResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.client.v1alpha1.TendermintProxyService/GetStatus",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
         }
     }
 }
@@ -609,9 +701,7 @@ pub mod oblivious_query_service_server {
     #[async_trait]
     pub trait ObliviousQueryService: Send + Sync + 'static {
         ///Server streaming response type for the CompactBlockRange method.
-        type CompactBlockRangeStream: futures_core::Stream<
-                Item = Result<super::CompactBlockRangeResponse, tonic::Status>,
-            >
+        type CompactBlockRangeStream: futures_core::Stream<Item = Result<super::CompactBlockRangeResponse, tonic::Status>>
             + Send
             + 'static;
         async fn compact_block_range(
@@ -623,9 +713,7 @@ pub mod oblivious_query_service_server {
             request: tonic::Request<super::ChainParametersRequest>,
         ) -> Result<tonic::Response<super::ChainParametersResponse>, tonic::Status>;
         ///Server streaming response type for the MutableParameters method.
-        type MutableParametersStream: futures_core::Stream<
-                Item = Result<super::MutableParametersResponse, tonic::Status>,
-            >
+        type MutableParametersStream: futures_core::Stream<Item = Result<super::MutableParametersResponse, tonic::Status>>
             + Send
             + 'static;
         async fn mutable_parameters(
@@ -633,9 +721,7 @@ pub mod oblivious_query_service_server {
             request: tonic::Request<super::MutableParametersRequest>,
         ) -> Result<tonic::Response<Self::MutableParametersStream>, tonic::Status>;
         ///Server streaming response type for the ValidatorInfo method.
-        type ValidatorInfoStream: futures_core::Stream<
-                Item = Result<super::ValidatorInfoResponse, tonic::Status>,
-            >
+        type ValidatorInfoStream: futures_core::Stream<Item = Result<super::ValidatorInfoResponse, tonic::Status>>
             + Send
             + 'static;
         async fn validator_info(
@@ -671,10 +757,7 @@ pub mod oblivious_query_service_server {
                 send_compression_encodings: Default::default(),
             }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -693,8 +776,7 @@ pub mod oblivious_query_service_server {
             self
         }
     }
-    impl<T, B> tonic::codegen::Service<http::Request<B>>
-    for ObliviousQueryServiceServer<T>
+    impl<T, B> tonic::codegen::Service<http::Request<B>> for ObliviousQueryServiceServer<T>
     where
         T: ObliviousQueryService,
         B: Body + Send + 'static,
@@ -703,10 +785,7 @@ pub mod oblivious_query_service_server {
         type Response = http::Response<tonic::body::BoxBody>;
         type Error = std::convert::Infallible;
         type Future = BoxFuture<Self::Response, Self::Error>;
-        fn poll_ready(
-            &mut self,
-            _cx: &mut Context<'_>,
-        ) -> Poll<Result<(), Self::Error>> {
+        fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
@@ -715,25 +794,20 @@ pub mod oblivious_query_service_server {
                 "/penumbra.client.v1alpha1.ObliviousQueryService/CompactBlockRange" => {
                     #[allow(non_camel_case_types)]
                     struct CompactBlockRangeSvc<T: ObliviousQueryService>(pub Arc<T>);
-                    impl<
-                        T: ObliviousQueryService,
-                    > tonic::server::ServerStreamingService<
-                        super::CompactBlockRangeRequest,
-                    > for CompactBlockRangeSvc<T> {
+                    impl<T: ObliviousQueryService>
+                        tonic::server::ServerStreamingService<super::CompactBlockRangeRequest>
+                        for CompactBlockRangeSvc<T>
+                    {
                         type Response = super::CompactBlockRangeResponse;
                         type ResponseStream = T::CompactBlockRangeStream;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::ResponseStream>,
-                            tonic::Status,
-                        >;
+                        type Future =
+                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::CompactBlockRangeRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).compact_block_range(request).await
-                            };
+                            let fut = async move { (*inner).compact_block_range(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -744,11 +818,10 @@ pub mod oblivious_query_service_server {
                         let inner = inner.0;
                         let method = CompactBlockRangeSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
@@ -757,23 +830,18 @@ pub mod oblivious_query_service_server {
                 "/penumbra.client.v1alpha1.ObliviousQueryService/ChainParameters" => {
                     #[allow(non_camel_case_types)]
                     struct ChainParametersSvc<T: ObliviousQueryService>(pub Arc<T>);
-                    impl<
-                        T: ObliviousQueryService,
-                    > tonic::server::UnaryService<super::ChainParametersRequest>
-                    for ChainParametersSvc<T> {
+                    impl<T: ObliviousQueryService>
+                        tonic::server::UnaryService<super::ChainParametersRequest>
+                        for ChainParametersSvc<T>
+                    {
                         type Response = super::ChainParametersResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::ChainParametersRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).chain_parameters(request).await
-                            };
+                            let fut = async move { (*inner).chain_parameters(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -784,11 +852,10 @@ pub mod oblivious_query_service_server {
                         let inner = inner.0;
                         let method = ChainParametersSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -797,25 +864,20 @@ pub mod oblivious_query_service_server {
                 "/penumbra.client.v1alpha1.ObliviousQueryService/MutableParameters" => {
                     #[allow(non_camel_case_types)]
                     struct MutableParametersSvc<T: ObliviousQueryService>(pub Arc<T>);
-                    impl<
-                        T: ObliviousQueryService,
-                    > tonic::server::ServerStreamingService<
-                        super::MutableParametersRequest,
-                    > for MutableParametersSvc<T> {
+                    impl<T: ObliviousQueryService>
+                        tonic::server::ServerStreamingService<super::MutableParametersRequest>
+                        for MutableParametersSvc<T>
+                    {
                         type Response = super::MutableParametersResponse;
                         type ResponseStream = T::MutableParametersStream;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::ResponseStream>,
-                            tonic::Status,
-                        >;
+                        type Future =
+                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::MutableParametersRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).mutable_parameters(request).await
-                            };
+                            let fut = async move { (*inner).mutable_parameters(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -826,11 +888,10 @@ pub mod oblivious_query_service_server {
                         let inner = inner.0;
                         let method = MutableParametersSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
@@ -839,24 +900,20 @@ pub mod oblivious_query_service_server {
                 "/penumbra.client.v1alpha1.ObliviousQueryService/ValidatorInfo" => {
                     #[allow(non_camel_case_types)]
                     struct ValidatorInfoSvc<T: ObliviousQueryService>(pub Arc<T>);
-                    impl<
-                        T: ObliviousQueryService,
-                    > tonic::server::ServerStreamingService<super::ValidatorInfoRequest>
-                    for ValidatorInfoSvc<T> {
+                    impl<T: ObliviousQueryService>
+                        tonic::server::ServerStreamingService<super::ValidatorInfoRequest>
+                        for ValidatorInfoSvc<T>
+                    {
                         type Response = super::ValidatorInfoResponse;
                         type ResponseStream = T::ValidatorInfoStream;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::ResponseStream>,
-                            tonic::Status,
-                        >;
+                        type Future =
+                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::ValidatorInfoRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).validator_info(request).await
-                            };
+                            let fut = async move { (*inner).validator_info(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -867,11 +924,10 @@ pub mod oblivious_query_service_server {
                         let inner = inner.0;
                         let method = ValidatorInfoSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
@@ -880,15 +936,11 @@ pub mod oblivious_query_service_server {
                 "/penumbra.client.v1alpha1.ObliviousQueryService/AssetList" => {
                     #[allow(non_camel_case_types)]
                     struct AssetListSvc<T: ObliviousQueryService>(pub Arc<T>);
-                    impl<
-                        T: ObliviousQueryService,
-                    > tonic::server::UnaryService<super::AssetListRequest>
-                    for AssetListSvc<T> {
+                    impl<T: ObliviousQueryService>
+                        tonic::server::UnaryService<super::AssetListRequest> for AssetListSvc<T>
+                    {
                         type Response = super::AssetListResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::AssetListRequest>,
@@ -905,28 +957,23 @@ pub mod oblivious_query_service_server {
                         let inner = inner.0;
                         let method = AssetListSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
                 }
-                _ => {
-                    Box::pin(async move {
-                        Ok(
-                            http::Response::builder()
-                                .status(200)
-                                .header("grpc-status", "12")
-                                .header("content-type", "application/grpc")
-                                .body(empty_body())
-                                .unwrap(),
-                        )
-                    })
-                }
+                _ => Box::pin(async move {
+                    Ok(http::Response::builder()
+                        .status(200)
+                        .header("grpc-status", "12")
+                        .header("content-type", "application/grpc")
+                        .body(empty_body())
+                        .unwrap())
+                }),
             }
         }
     }
@@ -950,8 +997,7 @@ pub mod oblivious_query_service_server {
             write!(f, "{:?}", self.0)
         }
     }
-    impl<T: ObliviousQueryService> tonic::server::NamedService
-    for ObliviousQueryServiceServer<T> {
+    impl<T: ObliviousQueryService> tonic::server::NamedService for ObliviousQueryServiceServer<T> {
         const NAME: &'static str = "penumbra.client.v1alpha1.ObliviousQueryService";
     }
 }
@@ -993,9 +1039,7 @@ pub mod specific_query_service_server {
             request: tonic::Request<super::KeyValueRequest>,
         ) -> Result<tonic::Response<super::KeyValueResponse>, tonic::Status>;
         ///Server streaming response type for the PrefixValue method.
-        type PrefixValueStream: futures_core::Stream<
-                Item = Result<super::PrefixValueResponse, tonic::Status>,
-            >
+        type PrefixValueStream: futures_core::Stream<Item = Result<super::PrefixValueResponse, tonic::Status>>
             + Send
             + 'static;
         /// General-purpose prefixed key-value state query API, that can be used to query
@@ -1029,10 +1073,7 @@ pub mod specific_query_service_server {
                 send_compression_encodings: Default::default(),
             }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -1051,8 +1092,7 @@ pub mod specific_query_service_server {
             self
         }
     }
-    impl<T, B> tonic::codegen::Service<http::Request<B>>
-    for SpecificQueryServiceServer<T>
+    impl<T, B> tonic::codegen::Service<http::Request<B>> for SpecificQueryServiceServer<T>
     where
         T: SpecificQueryService,
         B: Body + Send + 'static,
@@ -1061,10 +1101,7 @@ pub mod specific_query_service_server {
         type Response = http::Response<tonic::body::BoxBody>;
         type Error = std::convert::Infallible;
         type Future = BoxFuture<Self::Response, Self::Error>;
-        fn poll_ready(
-            &mut self,
-            _cx: &mut Context<'_>,
-        ) -> Poll<Result<(), Self::Error>> {
+        fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
@@ -1073,23 +1110,18 @@ pub mod specific_query_service_server {
                 "/penumbra.client.v1alpha1.SpecificQueryService/TransactionByNote" => {
                     #[allow(non_camel_case_types)]
                     struct TransactionByNoteSvc<T: SpecificQueryService>(pub Arc<T>);
-                    impl<
-                        T: SpecificQueryService,
-                    > tonic::server::UnaryService<super::TransactionByNoteRequest>
-                    for TransactionByNoteSvc<T> {
+                    impl<T: SpecificQueryService>
+                        tonic::server::UnaryService<super::TransactionByNoteRequest>
+                        for TransactionByNoteSvc<T>
+                    {
                         type Response = super::TransactionByNoteResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::TransactionByNoteRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).transaction_by_note(request).await
-                            };
+                            let fut = async move { (*inner).transaction_by_note(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -1100,11 +1132,10 @@ pub mod specific_query_service_server {
                         let inner = inner.0;
                         let method = TransactionByNoteSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -1113,23 +1144,18 @@ pub mod specific_query_service_server {
                 "/penumbra.client.v1alpha1.SpecificQueryService/ValidatorStatus" => {
                     #[allow(non_camel_case_types)]
                     struct ValidatorStatusSvc<T: SpecificQueryService>(pub Arc<T>);
-                    impl<
-                        T: SpecificQueryService,
-                    > tonic::server::UnaryService<super::ValidatorStatusRequest>
-                    for ValidatorStatusSvc<T> {
+                    impl<T: SpecificQueryService>
+                        tonic::server::UnaryService<super::ValidatorStatusRequest>
+                        for ValidatorStatusSvc<T>
+                    {
                         type Response = super::ValidatorStatusResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::ValidatorStatusRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).validator_status(request).await
-                            };
+                            let fut = async move { (*inner).validator_status(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -1140,11 +1166,10 @@ pub mod specific_query_service_server {
                         let inner = inner.0;
                         let method = ValidatorStatusSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -1153,23 +1178,18 @@ pub mod specific_query_service_server {
                 "/penumbra.client.v1alpha1.SpecificQueryService/NextValidatorRate" => {
                     #[allow(non_camel_case_types)]
                     struct NextValidatorRateSvc<T: SpecificQueryService>(pub Arc<T>);
-                    impl<
-                        T: SpecificQueryService,
-                    > tonic::server::UnaryService<super::NextValidatorRateRequest>
-                    for NextValidatorRateSvc<T> {
+                    impl<T: SpecificQueryService>
+                        tonic::server::UnaryService<super::NextValidatorRateRequest>
+                        for NextValidatorRateSvc<T>
+                    {
                         type Response = super::NextValidatorRateResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::NextValidatorRateRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).next_validator_rate(request).await
-                            };
+                            let fut = async move { (*inner).next_validator_rate(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -1180,11 +1200,10 @@ pub mod specific_query_service_server {
                         let inner = inner.0;
                         let method = NextValidatorRateSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -1193,23 +1212,18 @@ pub mod specific_query_service_server {
                 "/penumbra.client.v1alpha1.SpecificQueryService/BatchSwapOutputData" => {
                     #[allow(non_camel_case_types)]
                     struct BatchSwapOutputDataSvc<T: SpecificQueryService>(pub Arc<T>);
-                    impl<
-                        T: SpecificQueryService,
-                    > tonic::server::UnaryService<super::BatchSwapOutputDataRequest>
-                    for BatchSwapOutputDataSvc<T> {
+                    impl<T: SpecificQueryService>
+                        tonic::server::UnaryService<super::BatchSwapOutputDataRequest>
+                        for BatchSwapOutputDataSvc<T>
+                    {
                         type Response = super::BatchSwapOutputDataResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::BatchSwapOutputDataRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).batch_swap_output_data(request).await
-                            };
+                            let fut = async move { (*inner).batch_swap_output_data(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -1220,11 +1234,10 @@ pub mod specific_query_service_server {
                         let inner = inner.0;
                         let method = BatchSwapOutputDataSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -1233,23 +1246,18 @@ pub mod specific_query_service_server {
                 "/penumbra.client.v1alpha1.SpecificQueryService/StubCPMMReserves" => {
                     #[allow(non_camel_case_types)]
                     struct StubCPMMReservesSvc<T: SpecificQueryService>(pub Arc<T>);
-                    impl<
-                        T: SpecificQueryService,
-                    > tonic::server::UnaryService<super::StubCpmmReservesRequest>
-                    for StubCPMMReservesSvc<T> {
+                    impl<T: SpecificQueryService>
+                        tonic::server::UnaryService<super::StubCpmmReservesRequest>
+                        for StubCPMMReservesSvc<T>
+                    {
                         type Response = super::StubCpmmReservesResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::StubCpmmReservesRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).stub_cpmm_reserves(request).await
-                            };
+                            let fut = async move { (*inner).stub_cpmm_reserves(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -1260,11 +1268,10 @@ pub mod specific_query_service_server {
                         let inner = inner.0;
                         let method = StubCPMMReservesSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -1273,15 +1280,11 @@ pub mod specific_query_service_server {
                 "/penumbra.client.v1alpha1.SpecificQueryService/AssetInfo" => {
                     #[allow(non_camel_case_types)]
                     struct AssetInfoSvc<T: SpecificQueryService>(pub Arc<T>);
-                    impl<
-                        T: SpecificQueryService,
-                    > tonic::server::UnaryService<super::AssetInfoRequest>
-                    for AssetInfoSvc<T> {
+                    impl<T: SpecificQueryService>
+                        tonic::server::UnaryService<super::AssetInfoRequest> for AssetInfoSvc<T>
+                    {
                         type Response = super::AssetInfoResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::AssetInfoRequest>,
@@ -1298,11 +1301,10 @@ pub mod specific_query_service_server {
                         let inner = inner.0;
                         let method = AssetInfoSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -1311,15 +1313,11 @@ pub mod specific_query_service_server {
                 "/penumbra.client.v1alpha1.SpecificQueryService/KeyValue" => {
                     #[allow(non_camel_case_types)]
                     struct KeyValueSvc<T: SpecificQueryService>(pub Arc<T>);
-                    impl<
-                        T: SpecificQueryService,
-                    > tonic::server::UnaryService<super::KeyValueRequest>
-                    for KeyValueSvc<T> {
+                    impl<T: SpecificQueryService>
+                        tonic::server::UnaryService<super::KeyValueRequest> for KeyValueSvc<T>
+                    {
                         type Response = super::KeyValueResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::KeyValueRequest>,
@@ -1336,11 +1334,10 @@ pub mod specific_query_service_server {
                         let inner = inner.0;
                         let method = KeyValueSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -1349,24 +1346,20 @@ pub mod specific_query_service_server {
                 "/penumbra.client.v1alpha1.SpecificQueryService/PrefixValue" => {
                     #[allow(non_camel_case_types)]
                     struct PrefixValueSvc<T: SpecificQueryService>(pub Arc<T>);
-                    impl<
-                        T: SpecificQueryService,
-                    > tonic::server::ServerStreamingService<super::PrefixValueRequest>
-                    for PrefixValueSvc<T> {
+                    impl<T: SpecificQueryService>
+                        tonic::server::ServerStreamingService<super::PrefixValueRequest>
+                        for PrefixValueSvc<T>
+                    {
                         type Response = super::PrefixValueResponse;
                         type ResponseStream = T::PrefixValueStream;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::ResponseStream>,
-                            tonic::Status,
-                        >;
+                        type Future =
+                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::PrefixValueRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).prefix_value(request).await
-                            };
+                            let fut = async move { (*inner).prefix_value(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -1377,28 +1370,23 @@ pub mod specific_query_service_server {
                         let inner = inner.0;
                         let method = PrefixValueSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
                         let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
                 }
-                _ => {
-                    Box::pin(async move {
-                        Ok(
-                            http::Response::builder()
-                                .status(200)
-                                .header("grpc-status", "12")
-                                .header("content-type", "application/grpc")
-                                .body(empty_body())
-                                .unwrap(),
-                        )
-                    })
-                }
+                _ => Box::pin(async move {
+                    Ok(http::Response::builder()
+                        .status(200)
+                        .header("grpc-status", "12")
+                        .header("content-type", "application/grpc")
+                        .body(empty_body())
+                        .unwrap())
+                }),
             }
         }
     }
@@ -1422,8 +1410,142 @@ pub mod specific_query_service_server {
             write!(f, "{:?}", self.0)
         }
     }
-    impl<T: SpecificQueryService> tonic::server::NamedService
-    for SpecificQueryServiceServer<T> {
+    impl<T: SpecificQueryService> tonic::server::NamedService for SpecificQueryServiceServer<T> {
         const NAME: &'static str = "penumbra.client.v1alpha1.SpecificQueryService";
+    }
+}
+/// Generated server implementations.
+pub mod tendermint_proxy_service_server {
+    #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
+    use tonic::codegen::*;
+    ///Generated trait containing gRPC methods that should be implemented for use with TendermintProxyServiceServer.
+    #[async_trait]
+    pub trait TendermintProxyService: Send + Sync + 'static {
+        /// Status queries the current status.
+        async fn get_status(
+            &self,
+            request: tonic::Request<super::GetStatusRequest>,
+        ) -> Result<tonic::Response<super::GetStatusResponse>, tonic::Status>;
+    }
+    /// Defines the gRPC query service for proxying requests to an upstream Tendermint RPC.
+    #[derive(Debug)]
+    pub struct TendermintProxyServiceServer<T: TendermintProxyService> {
+        inner: _Inner<T>,
+        accept_compression_encodings: EnabledCompressionEncodings,
+        send_compression_encodings: EnabledCompressionEncodings,
+    }
+    struct _Inner<T>(Arc<T>);
+    impl<T: TendermintProxyService> TendermintProxyServiceServer<T> {
+        pub fn new(inner: T) -> Self {
+            Self::from_arc(Arc::new(inner))
+        }
+        pub fn from_arc(inner: Arc<T>) -> Self {
+            let inner = _Inner(inner);
+            Self {
+                inner,
+                accept_compression_encodings: Default::default(),
+                send_compression_encodings: Default::default(),
+            }
+        }
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
+        where
+            F: tonic::service::Interceptor,
+        {
+            InterceptedService::new(Self::new(inner), interceptor)
+        }
+        /// Enable decompressing requests with the given encoding.
+        #[must_use]
+        pub fn accept_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.accept_compression_encodings.enable(encoding);
+            self
+        }
+        /// Compress responses with the given encoding, if the client supports it.
+        #[must_use]
+        pub fn send_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.send_compression_encodings.enable(encoding);
+            self
+        }
+    }
+    impl<T, B> tonic::codegen::Service<http::Request<B>> for TendermintProxyServiceServer<T>
+    where
+        T: TendermintProxyService,
+        B: Body + Send + 'static,
+        B::Error: Into<StdError> + Send + 'static,
+    {
+        type Response = http::Response<tonic::body::BoxBody>;
+        type Error = std::convert::Infallible;
+        type Future = BoxFuture<Self::Response, Self::Error>;
+        fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+            Poll::Ready(Ok(()))
+        }
+        fn call(&mut self, req: http::Request<B>) -> Self::Future {
+            let inner = self.inner.clone();
+            match req.uri().path() {
+                "/penumbra.client.v1alpha1.TendermintProxyService/GetStatus" => {
+                    #[allow(non_camel_case_types)]
+                    struct GetStatusSvc<T: TendermintProxyService>(pub Arc<T>);
+                    impl<T: TendermintProxyService>
+                        tonic::server::UnaryService<super::GetStatusRequest> for GetStatusSvc<T>
+                    {
+                        type Response = super::GetStatusResponse;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::GetStatusRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move { (*inner).get_status(request).await };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = GetStatusSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                _ => Box::pin(async move {
+                    Ok(http::Response::builder()
+                        .status(200)
+                        .header("grpc-status", "12")
+                        .header("content-type", "application/grpc")
+                        .body(empty_body())
+                        .unwrap())
+                }),
+            }
+        }
+    }
+    impl<T: TendermintProxyService> Clone for TendermintProxyServiceServer<T> {
+        fn clone(&self) -> Self {
+            let inner = self.inner.clone();
+            Self {
+                inner,
+                accept_compression_encodings: self.accept_compression_encodings,
+                send_compression_encodings: self.send_compression_encodings,
+            }
+        }
+    }
+    impl<T: TendermintProxyService> Clone for _Inner<T> {
+        fn clone(&self) -> Self {
+            Self(self.0.clone())
+        }
+    }
+    impl<T: std::fmt::Debug> std::fmt::Debug for _Inner<T> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{:?}", self.0)
+        }
+    }
+    impl<T: TendermintProxyService> tonic::server::NamedService for TendermintProxyServiceServer<T> {
+        const NAME: &'static str = "penumbra.client.v1alpha1.TendermintProxyService";
     }
 }

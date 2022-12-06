@@ -113,6 +113,7 @@ pub mod core {
             include!("gen/tendermint.p2p.rs");
         }
     }
+
     // TODO(erwan): figure out path to upstream those. maybe they should be in their own crate or repo?
     pub mod cosmos {
         pub mod base {
@@ -134,6 +135,24 @@ pub mod core {
 // TODO(erwan): this is one way to flatten the complex proto hierarchy, should be easy to lift
 pub mod tendermint_proxy {
     pub use crate::core::cosmos::base::tendermint::v1beta1::*;
+}
+
+pub mod tendermint {
+    pub mod crypto {
+        include!("gen/tendermint.crypto.rs");
+    }
+
+    pub mod types {
+        include!("gen/tendermint.types.rs");
+    }
+
+    pub mod version {
+        include!("gen/tendermint.version.rs");
+    }
+
+    pub mod p2p {
+        include!("gen/tendermint.p2p.rs");
+    }
 }
 
 /// Client protocol structures.

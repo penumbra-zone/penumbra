@@ -3,6 +3,7 @@ use std::str::FromStr;
 use chrono::DateTime;
 use penumbra_proto::{
     self as proto, tendermint_proxy::service_server::Service as TendermintService,
+    tendermint_proxy::service_server::ServiceServer as TendermintServiceServer,
 };
 
 use proto::tendermint_proxy::AbciQueryRequest;
@@ -32,10 +33,18 @@ use tonic::Status;
 
 use super::Info;
 
+#[tonic::async_trait]
+trait TendermintServiceExt {}
+
 // Note: the conversions that take place in here could be moved to
 // from/try_from impls, but they're not used anywhere else, so it's
 // unimportant right now, and would require additional wrappers
 // since none of the structs are defined in our crates :(
+// TODO: move those to proto/src/protobuf.rs
+
+#[tonic::async_trait]
+impl<T: TendermintService> TendermintServiceExt for T {
+}
 
 #[tonic::async_trait]
 impl TendermintService for Info {

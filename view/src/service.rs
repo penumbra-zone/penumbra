@@ -147,6 +147,7 @@ impl ViewService {
     pub async fn latest_known_block_height(&self) -> Result<(u64, bool), anyhow::Error> {
         let client = reqwest::Client::new();
 
+        // TODO: use TendermintServiceClient
         let rsp: serde_json::Value = client
             .get(format!(
                 r#"http://{}:{}/status"#,

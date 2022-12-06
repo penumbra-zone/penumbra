@@ -75,7 +75,8 @@ fn main() -> Result<()> {
                 "../../proto/proto/penumbra/client/v1alpha1/client.proto",
                 "../../proto/proto/penumbra/view/v1alpha1/view.proto",
                 "../../proto/proto/penumbra/custody/v1alpha1/custody.proto",
-                "../../proto/ibc-go-vendor/cosmos/base/tendermint/v1beta1/types.proto",
+                "../../proto/ibc-go-vendor/tendermint/p2p/types.proto",
+                "../../proto/ibc-go-vendor/tendermint/types/types.proto",
                 "../../proto/ibc-go-vendor/cosmos/base/tendermint/v1beta1/query.proto",
             ],
             &["../../proto/proto/", "../../proto/ibc-go-vendor/"],
@@ -136,6 +137,10 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.core.stake.v1alpha1.Uptime", SERIALIZE),
     (
         ".penumbra.core.stake.v1alpha1.CurrentConsensusKeys",
+        SERIALIZE,
+    ),
+    (
+        ".penumbra.client.v1alpha1.tendermint_proxy.Validator",
         SERIALIZE,
     ),
     (".penumbra.core.crypto.v1alpha1.IdentityKey", SERIALIZE),
