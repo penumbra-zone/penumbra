@@ -28,6 +28,8 @@ HELM_RELEASE="${HELM_RELEASE:=penumbra-testnet}"
 # Check that the network we're trying to configure has a valid config.
 if [[ "$HELM_RELEASE" =~ ^penumbra-testnet$ ]] ; then
     HELM_VARS_FILE="networks/testnet/helm-values-for-${HELM_RELEASE}.yml"
+elif [[ "$HELM_RELEASE" =~ ^penumbra-testnet-preview$ ]] ; then
+    HELM_VARS_FILE="networks/testnet-preview/helm-values-for-${HELM_RELEASE}.yml"
 else
     >&2 echo "ERROR: helm release name '$HELM_RELEASE' not supported"
     exit 1
@@ -90,7 +92,7 @@ container_cli="$(get_container_cli)"
     --entrypoint pd \
     "${IMAGE}:${PENUMBRA_VERSION}" \
     testnet generate \
-    "$preserve_chain_opt" \
+    $preserve_chain_opt \
     --validators-input-file "${CONTAINERHOME}/vals.json" > /dev/null
 
 PERSISTENT_PEERS=""
