@@ -228,7 +228,7 @@ service TendermintProxyService {
 // BroadcastTxAsyncRequest is the request type for the BroadcastTxAsync RPC method.
 message BroadcastTxAsyncRequest {
     bytes params = 1;
-    bytes req_id = 2;
+    uint64 req_id = 2;
 }
 
 // BroadcastTxAsyncResponse is the response type for the BroadcastTxAsync RPC method.
@@ -242,7 +242,7 @@ message BroadcastTxAsyncResponse {
 // BroadcastTxSyncRequest is the request type for the BroadcastTxSync RPC method.
 message BroadcastTxSyncRequest {
     bytes params = 1;
-    bytes req_id = 2;
+    uint64 req_id = 2;
 }
 
 // BroadcastTxSyncResponse is the response type for the BroadcastTxSync RPC method.

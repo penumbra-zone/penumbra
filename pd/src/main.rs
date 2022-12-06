@@ -340,7 +340,7 @@ async fn main() -> anyhow::Result<()> {
                 .get("result")
                 .and_then(|v| v.get("peers"))
                 .and_then(|v| v.as_array())
-                .map(|v| v.clone())
+                .cloned()
                 .unwrap_or_default();
 
             let mut peers = Vec::new();

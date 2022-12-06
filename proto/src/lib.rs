@@ -241,6 +241,7 @@ pub mod tendermint {
         include!("gen/tendermint.crypto.rs");
     }
 
+    #[allow(clippy::large_enum_variant)]
     pub mod types {
         include!("gen/tendermint.types.rs");
     }

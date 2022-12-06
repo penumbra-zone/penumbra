@@ -191,8 +191,8 @@ pub struct PrefixValueResponse {
 pub struct BroadcastTxAsyncRequest {
     #[prost(bytes="vec", tag="1")]
     pub params: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bytes="vec", tag="2")]
-    pub req_id: ::prost::alloc::vec::Vec<u8>,
+    #[prost(uint64, tag="2")]
+    pub req_id: u64,
 }
 /// BroadcastTxAsyncResponse is the response type for the BroadcastTxAsync RPC method.
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -211,8 +211,8 @@ pub struct BroadcastTxAsyncResponse {
 pub struct BroadcastTxSyncRequest {
     #[prost(bytes="vec", tag="1")]
     pub params: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bytes="vec", tag="2")]
-    pub req_id: ::prost::alloc::vec::Vec<u8>,
+    #[prost(uint64, tag="2")]
+    pub req_id: u64,
 }
 /// BroadcastTxSyncResponse is the response type for the BroadcastTxSync RPC method.
 #[derive(Clone, PartialEq, ::prost::Message)]

@@ -3,12 +3,14 @@ use std::str::FromStr;
 use chrono::DateTime;
 use penumbra_proto::{
     self as proto, client::v1alpha1::tendermint_proxy::service_server::Service as TendermintService,
-    client::v1alpha1::tendermint_proxy::service_server::ServiceServer as TendermintServiceServer,
 };
 
+use proto::client::v1alpha1::BroadcastTxAsyncRequest;
+use proto::client::v1alpha1::BroadcastTxAsyncResponse;
+use proto::client::v1alpha1::BroadcastTxSyncRequest;
+use proto::client::v1alpha1::BroadcastTxSyncResponse;
 use proto::client::v1alpha1::GetStatusRequest;
 use proto::client::v1alpha1::GetStatusResponse;
-use proto::client::v1alpha1::SyncInfo;
 use proto::client::v1alpha1::tendermint_proxy::AbciQueryRequest;
 use proto::client::v1alpha1::tendermint_proxy::AbciQueryResponse;
 use proto::client::v1alpha1::tendermint_proxy::GetBlockByHeightRequest;
@@ -23,10 +25,8 @@ use proto::client::v1alpha1::tendermint_proxy::GetSyncingRequest;
 use proto::client::v1alpha1::tendermint_proxy::GetSyncingResponse;
 use proto::client::v1alpha1::tendermint_proxy::GetValidatorSetByHeightRequest;
 use proto::client::v1alpha1::tendermint_proxy::GetValidatorSetByHeightResponse;
-use proto::core::stake::v1alpha1::ValidatorInfo;
 use proto::client::v1alpha1::tendermint_proxy_service_server::TendermintProxyService;
 use tendermint::block::Height;
-use penumbra_proto::tendermint::p2p::DefaultNodeInfo;
 use tendermint_rpc::abci::Path;
 use tendermint_rpc::{Client, HttpClient};
 use tonic::Status;
@@ -37,8 +37,6 @@ use tonic::Status;
 // (stable) std types.
 //use tracing_futures::Instrument;
 
-use super::Info;
-
 // Note: the conversions that take place in here could be moved to
 // from/try_from impls, but they're not used anywhere else, so it's
 // unimportant right now, and would require additional wrappers
@@ -47,6 +45,53 @@ use super::Info;
 
 #[tonic::async_trait]
 impl TendermintProxyService for TendermintProxy {
+    async fn broadcast_tx_async(
+        &self,
+        req: tonic::Request<BroadcastTxAsyncRequest>,
+    ) -> Result<tonic::Response<BroadcastTxAsyncResponse>, Status> {
+        let client = HttpClient::new(self.tendermint_url.to_string().as_ref()).unwrap();
+
+        let res = client
+            .broadcast_tx_async(req.into_inner().params.try_into().map_err(|e| {
+                tonic::Status::invalid_argument(format!("invalid transaction: {}", e))
+            })?)
+            .await.map_err(|e| tonic::Status::unavailable(format!(
+                    "error broadcasting tx async: {}",
+                    e
+                )))?;
+
+        Ok(tonic::Response::new(BroadcastTxAsyncResponse {
+            code: u32::from(res.code) as u64,
+            data: res.data.value().to_vec(),
+            log: res.log.to_string(),
+            hash: res.hash.as_bytes().to_vec(),
+        }))
+    }
+
+    async fn broadcast_tx_sync(
+        &self,
+        req: tonic::Request<BroadcastTxSyncRequest>,
+    ) -> Result<tonic::Response<BroadcastTxSyncResponse>, Status> {
+        let client = HttpClient::new(self.tendermint_url.to_string().as_ref()).unwrap();
+
+        let res = client
+            .broadcast_tx_sync(req.into_inner().params.try_into().map_err(|e| {
+                tonic::Status::invalid_argument(format!("invalid transaction: {}", e))
+            })?)
+            .await.map_err(|e| tonic::Status::unavailable(format!(
+                    "error broadcasting tx sync: {}",
+                    e
+                )))?;
+
+        tracing::info!("{:#?}", res);
+        Ok(tonic::Response::new(BroadcastTxSyncResponse {
+            code: u32::from(res.code) as u64,
+            data: res.data.value().to_vec(),
+            log: res.log.to_string(),
+            hash: res.hash.as_bytes().to_vec(),
+        }))
+    }
+
     async fn get_status(
         &self,
         _req: tonic::Request<GetStatusRequest>,
