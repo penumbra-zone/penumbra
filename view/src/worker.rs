@@ -53,7 +53,6 @@ impl Worker {
         storage: Storage,
         node: String,
         pd_port: u16,
-        tendermint_port: u16,
     ) -> Result<
         (
             Self,
@@ -82,11 +81,9 @@ impl Worker {
             SpecificQueryServiceClient::connect(format!("http://{}:{}", node, pd_port)).await?;
 
         let tm_client =
-            TendermintServiceClient::connect(format!("http://{}:{}", node, tendermint_port))
-                .await?;
+            TendermintServiceClient::connect(format!("http://{}:{}", node, pd_port)).await?;
         let tm_proxy_client =
-            TendermintProxyServiceClient::connect(format!("http://{}:{}", node, tendermint_port))
-                .await?;
+            TendermintProxyServiceClient::connect(format!("http://{}:{}", node, pd_port)).await?;
 
         Ok((
             Self {

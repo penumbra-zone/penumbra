@@ -175,7 +175,7 @@ impl App {
     pub async fn tendermint_client(
         &self,
     ) -> Result<TendermintServiceClient<Channel>, anyhow::Error> {
-        TendermintServiceClient::connect(self.tendermint_url.as_ref().to_owned())
+        TendermintServiceClient::connect(self.pd_url.as_ref().to_owned())
             .await
             .map_err(Into::into)
     }
@@ -183,7 +183,7 @@ impl App {
     pub async fn tendermint_proxy_client(
         &self,
     ) -> Result<TendermintProxyServiceClient<Channel>, anyhow::Error> {
-        TendermintProxyServiceClient::connect(self.tendermint_url.as_ref().to_owned())
+        TendermintProxyServiceClient::connect(self.pd_url.as_ref().to_owned())
             .await
             .map_err(Into::into)
     }

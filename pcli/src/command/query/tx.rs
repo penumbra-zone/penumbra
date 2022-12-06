@@ -18,7 +18,7 @@ impl Tx {
 
         // generic bounds on HttpClient::new are not well-constructed, so we have to
         // render the URL as a String, then borrow it, then re-parse the borrowed &str
-        let client = HttpClient::new(app.tendermint_url.to_string().as_ref()).unwrap();
+        let client = HttpClient::new(app.pd_url.to_string().as_ref()).unwrap();
 
         let rsp = client.tx(self.hash.parse()?, false).await?;
 

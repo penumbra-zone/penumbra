@@ -27,9 +27,6 @@ struct Opt {
     /// The address of the pd+tendermint node.
     #[clap(short, long, default_value = "testnet.penumbra.zone")]
     node: String,
-    /// The port to use to speak to tendermint's RPC server.
-    #[clap(long, default_value = "26657")]
-    tendermint_port: u16,
     /// The port to use to speak to pd's gRPC server.
     #[clap(long, default_value = "8080")]
     pd_port: u16,
@@ -83,12 +80,11 @@ async fn main() -> Result<()> {
             Ok(())
         }
         Command::Start { host, view_port } => {
-            tracing::info!(?opt.sqlite_path, ?host, ?view_port, ?opt.node, ?opt.tendermint_port, ?opt.pd_port, "starting pviewd");
+            tracing::info!(?opt.sqlite_path, ?host, ?view_port, ?opt.node, ?opt.pd_port, "starting pviewd");
 
             let storage = penumbra_view::Storage::load(opt.sqlite_path).await?;
 
-            let service =
-                ViewService::new(storage, opt.node, opt.pd_port, opt.tendermint_port).await?;
+            let service = ViewService::new(storage, opt.node, opt.pd_port).await?;
 
             tokio::spawn(
                 Server::builder()

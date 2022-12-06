@@ -52,8 +52,8 @@ pub struct ViewService {
     note_commitment_tree: Arc<RwLock<penumbra_tct::Tree>>,
     // The address of the pd+tendermint node.
     node: String,
-    // The port to use to speak to tendermint's RPC server.
-    tendermint_port: u16,
+    /// The port to talk to tendermint on.
+    pd_port: u16,
     /// Used to watch for changes to the sync height.
     sync_height_rx: watch::Receiver<u64>,
 }
@@ -65,11 +65,10 @@ impl ViewService {
         fvk: &FullViewingKey,
         node: String,
         pd_port: u16,
-        tendermint_port: u16,
     ) -> anyhow::Result<Self> {
         let storage = Storage::load_or_initialize(storage_path, fvk, node.clone(), pd_port).await?;
 
-        Self::new(storage, node, pd_port, tendermint_port).await
+        Self::new(storage, node, pd_port).await
     }
 
     /// Constructs a new [`ViewService`], spawning a sync task internally.
@@ -79,14 +78,9 @@ impl ViewService {
     /// To create multiple [`ViewService`]s, clone the [`ViewService`] returned
     /// by this method, rather than calling it multiple times.  That way, each clone
     /// will be backed by the same scanning task, rather than each spawning its own.
-    pub async fn new(
-        storage: Storage,
-        node: String,
-        pd_port: u16,
-        tendermint_port: u16,
-    ) -> Result<Self, anyhow::Error> {
+    pub async fn new(storage: Storage, node: String, pd_port: u16) -> Result<Self, anyhow::Error> {
         let (worker, nct, error_slot, sync_height_rx) =
-            Worker::new(storage.clone(), node.clone(), pd_port, tendermint_port).await?;
+            Worker::new(storage.clone(), node.clone(), pd_port).await?;
 
         tokio::spawn(worker.run());
 
@@ -100,7 +94,7 @@ impl ViewService {
             sync_height_rx,
             note_commitment_tree: nct,
             node,
-            tendermint_port,
+            pd_port,
         })
     }
 
@@ -148,11 +142,9 @@ impl ViewService {
     /// well as whether the fullnode is caught up with that height.
     #[instrument(skip(self))]
     pub async fn latest_known_block_height(&self) -> Result<(u64, bool), anyhow::Error> {
-        let mut client = TendermintProxyServiceClient::connect(format!(
-            "http://{}:{}",
-            self.node, self.tendermint_port
-        ))
-        .await?;
+        let mut client =
+            TendermintProxyServiceClient::connect(format!("http://{}:{}", self.node, self.pd_port))
+                .await?;
 
         let rsp = client.get_status(GetStatusRequest {}).await?.into_inner();
 
