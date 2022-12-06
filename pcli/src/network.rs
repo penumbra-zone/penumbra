@@ -143,7 +143,6 @@ impl App {
         let mut client = self.tendermint_proxy_client().await?;
         let req_id: u8 = rand::thread_rng().gen();
         let tx_encoding = &transaction.encode_to_vec();
-        println!("post to {}", self.tendermint_url.clone());
         let rsp = client
             .broadcast_tx_async(BroadcastTxAsyncRequest {
                 params: tx_encoding.to_vec(),
