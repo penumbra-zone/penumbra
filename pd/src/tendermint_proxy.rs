@@ -5,12 +5,6 @@ use penumbra_proto::{
     self as proto, client::v1alpha1::tendermint_proxy::service_server::Service as TendermintService,
 };
 
-use proto::client::v1alpha1::BroadcastTxAsyncRequest;
-use proto::client::v1alpha1::BroadcastTxAsyncResponse;
-use proto::client::v1alpha1::BroadcastTxSyncRequest;
-use proto::client::v1alpha1::BroadcastTxSyncResponse;
-use proto::client::v1alpha1::GetStatusRequest;
-use proto::client::v1alpha1::GetStatusResponse;
 use proto::client::v1alpha1::tendermint_proxy::AbciQueryRequest;
 use proto::client::v1alpha1::tendermint_proxy::AbciQueryResponse;
 use proto::client::v1alpha1::tendermint_proxy::GetBlockByHeightRequest;
@@ -26,6 +20,12 @@ use proto::client::v1alpha1::tendermint_proxy::GetSyncingResponse;
 use proto::client::v1alpha1::tendermint_proxy::GetValidatorSetByHeightRequest;
 use proto::client::v1alpha1::tendermint_proxy::GetValidatorSetByHeightResponse;
 use proto::client::v1alpha1::tendermint_proxy_service_server::TendermintProxyService;
+use proto::client::v1alpha1::BroadcastTxAsyncRequest;
+use proto::client::v1alpha1::BroadcastTxAsyncResponse;
+use proto::client::v1alpha1::BroadcastTxSyncRequest;
+use proto::client::v1alpha1::BroadcastTxSyncResponse;
+use proto::client::v1alpha1::GetStatusRequest;
+use proto::client::v1alpha1::GetStatusResponse;
 use tendermint::block::Height;
 use tendermint_rpc::abci::Path;
 use tendermint_rpc::{Client, HttpClient};
@@ -55,10 +55,10 @@ impl TendermintProxyService for TendermintProxy {
             .broadcast_tx_async(req.into_inner().params.try_into().map_err(|e| {
                 tonic::Status::invalid_argument(format!("invalid transaction: {}", e))
             })?)
-            .await.map_err(|e| tonic::Status::unavailable(format!(
-                    "error broadcasting tx async: {}",
-                    e
-                )))?;
+            .await
+            .map_err(|e| {
+                tonic::Status::unavailable(format!("error broadcasting tx async: {}", e))
+            })?;
 
         Ok(tonic::Response::new(BroadcastTxAsyncResponse {
             code: u32::from(res.code) as u64,
@@ -78,10 +78,10 @@ impl TendermintProxyService for TendermintProxy {
             .broadcast_tx_sync(req.into_inner().params.try_into().map_err(|e| {
                 tonic::Status::invalid_argument(format!("invalid transaction: {}", e))
             })?)
-            .await.map_err(|e| tonic::Status::unavailable(format!(
-                    "error broadcasting tx sync: {}",
-                    e
-                )))?;
+            .await
+            .map_err(|e| {
+                tonic::Status::unavailable(format!("error broadcasting tx sync: {}", e))
+            })?;
 
         tracing::info!("{:#?}", res);
         Ok(tonic::Response::new(BroadcastTxSyncResponse {
@@ -102,19 +102,18 @@ impl TendermintProxyService for TendermintProxy {
 
         let res = client
             .status()
-            .await.map_err(|e| tonic::Status::unavailable(format!(
-                    "error querying status: {}",
-                    e
-                )))?;
+            .await
+            .map_err(|e| tonic::Status::unavailable(format!("error querying status: {}", e)))?;
 
         // The tendermint-rs `Timestamp` type is a newtype wrapper
         // around a `time::PrimitiveDateTime` however it's private so we
         // have to use string parsing to get to the prost type we want :(
-        let latest_block_time = DateTime::parse_from_rfc3339(&res.sync_info.latest_block_time.to_rfc3339())
-            .expect("timestamp should roundtrip to string");
+        let latest_block_time =
+            DateTime::parse_from_rfc3339(&res.sync_info.latest_block_time.to_rfc3339())
+                .expect("timestamp should roundtrip to string");
         Ok(tonic::Response::new(GetStatusResponse {
-            node_info: Some(penumbra_proto::tendermint::p2p::DefaultNodeInfo{
-                protocol_version: Some(penumbra_proto::tendermint::p2p::ProtocolVersion{
+            node_info: Some(penumbra_proto::tendermint::p2p::DefaultNodeInfo {
+                protocol_version: Some(penumbra_proto::tendermint::p2p::ProtocolVersion {
                     p2p: res.node_info.protocol_version.p2p,
                     block: res.node_info.protocol_version.block,
                     app: res.node_info.protocol_version.app,
@@ -125,17 +124,29 @@ impl TendermintProxyService for TendermintProxy {
                 version: res.node_info.version.to_string(),
                 channels: res.node_info.channels.to_string().as_bytes().to_vec(),
                 moniker: res.node_info.moniker.to_string(),
-                other: Some(penumbra_proto::tendermint::p2p::DefaultNodeInfoOther{tx_index: match res.node_info.other.tx_index{
-                    tendermint::node::info::TxIndexStatus::On => "on".to_string(),
-                    tendermint::node::info::TxIndexStatus::Off => "off".to_string(),
-                },
-                rpc_address: res.node_info.other.rpc_address.to_string()}),
+                other: Some(penumbra_proto::tendermint::p2p::DefaultNodeInfoOther {
+                    tx_index: match res.node_info.other.tx_index {
+                        tendermint::node::info::TxIndexStatus::On => "on".to_string(),
+                        tendermint::node::info::TxIndexStatus::Off => "off".to_string(),
+                    },
+                    rpc_address: res.node_info.other.rpc_address.to_string(),
+                }),
             }),
-            sync_info: Some(penumbra_proto::client::v1alpha1::SyncInfo{
-                latest_block_hash: res.sync_info.latest_block_hash.to_string().as_bytes().to_vec(),
-                latest_app_hash: res.sync_info.latest_app_hash.to_string().as_bytes().to_vec(),
+            sync_info: Some(penumbra_proto::client::v1alpha1::SyncInfo {
+                latest_block_hash: res
+                    .sync_info
+                    .latest_block_hash
+                    .to_string()
+                    .as_bytes()
+                    .to_vec(),
+                latest_app_hash: res
+                    .sync_info
+                    .latest_app_hash
+                    .to_string()
+                    .as_bytes()
+                    .to_vec(),
                 latest_block_height: res.sync_info.latest_block_height.value(),
-                latest_block_time: Some(prost_types::Timestamp{
+                latest_block_time: Some(prost_types::Timestamp {
                     seconds: latest_block_time.timestamp(),
                     nanos: latest_block_time.timestamp_nanos() as i32,
                 }),
@@ -149,10 +160,14 @@ impl TendermintProxyService for TendermintProxy {
                 // }),
                 catching_up: res.sync_info.catching_up,
             }),
-            validator_info: Some(penumbra_proto::tendermint::types::Validator{
+            validator_info: Some(penumbra_proto::tendermint::types::Validator {
                 address: res.validator_info.address.to_string().as_bytes().to_vec(),
-                pub_key: Some(penumbra_proto::tendermint::crypto::PublicKey{
-                    sum: Some(penumbra_proto::tendermint::crypto::public_key::Sum::Ed25519(res.validator_info.pub_key.to_bytes().to_vec()))
+                pub_key: Some(penumbra_proto::tendermint::crypto::PublicKey {
+                    sum: Some(
+                        penumbra_proto::tendermint::crypto::public_key::Sum::Ed25519(
+                            res.validator_info.pub_key.to_bytes().to_vec(),
+                        ),
+                    ),
                 }),
                 voting_power: res.validator_info.power.into(),
                 proposer_priority: res.validator_info.proposer_priority.into(),
@@ -171,19 +186,19 @@ impl TendermintService for TendermintProxy {
         // render the URL as a String, then borrow it, then re-parse the borrowed &str
         let client = HttpClient::new(self.tendermint_url.to_string().as_ref()).unwrap();
 
-        let path = Path::from_str(&req.get_ref().path).map_err(|_| tonic::Status::invalid_argument("invalid abci path"))?;
+        let path = Path::from_str(&req.get_ref().path)
+            .map_err(|_| tonic::Status::invalid_argument("invalid abci path"))?;
         let data = &req.get_ref().data;
         let height: Height = req
             .get_ref()
             .height
-            .try_into().map_err(|_| tonic::Status::invalid_argument("invalid height"))?;
+            .try_into()
+            .map_err(|_| tonic::Status::invalid_argument("invalid height"))?;
         let prove = req.get_ref().prove;
         let res = client
             .abci_query(Some(path), data.clone(), Some(height), prove)
-            .await.map_err(|e| tonic::Status::unavailable(format!(
-                    "error querying abci: {}",
-                    e
-                )))?;
+            .await
+            .map_err(|e| tonic::Status::unavailable(format!("error querying abci: {}", e)))?;
 
         match res.code {
             tendermint_rpc::abci::Code::Ok => Ok(tonic::Response::new(AbciQueryResponse {
@@ -193,19 +208,21 @@ impl TendermintService for TendermintProxy {
                 index: res.index,
                 key: res.key,
                 value: res.value,
-                proof_ops: res
-                    .proof
-                    .map(|p| penumbra_proto::client::v1alpha1::tendermint_proxy::ProofOps {
+                proof_ops: res.proof.map(|p| {
+                    penumbra_proto::client::v1alpha1::tendermint_proxy::ProofOps {
                         ops: p
                             .ops
                             .into_iter()
-                            .map(|op| penumbra_proto::client::v1alpha1::tendermint_proxy::ProofOp {
-                                r#type: op.field_type,
-                                key: op.key,
-                                data: op.data,
-                            })
+                            .map(
+                                |op| penumbra_proto::client::v1alpha1::tendermint_proxy::ProofOp {
+                                    r#type: op.field_type,
+                                    key: op.key,
+                                    data: op.data,
+                                },
+                            )
                             .collect(),
-                    }),
+                    }
+                }),
                 height: i64::try_from(res.height.value()).map_err(|_| {
                     tonic::Status::internal(
                         "height from tendermint overflowed i64, this should never happen",
@@ -254,10 +271,8 @@ impl TendermintService for TendermintProxy {
                 tendermint::block::Height::try_from(req.get_ref().height)
                     .expect("height should be less than 2^63"),
             )
-            .await.map_err(|e| tonic::Status::unavailable(format!(
-                    "error querying abci: {}",
-                    e
-                )))?;
+            .await
+            .map_err(|e| tonic::Status::unavailable(format!("error querying abci: {}", e)))?;
 
         // The tendermint-rs `Timestamp` type is a newtype wrapper
         // around a `time::PrimitiveDateTime` however it's private so we
@@ -337,7 +352,7 @@ impl TendermintService for TendermintProxy {
                         .map(|e| proto::tendermint::types::Evidence {
                             sum: Some( match e {
                                 tendermint::evidence::Evidence::DuplicateVote(e) => {
-                                   let e2 = tendermint_proto::types::DuplicateVoteEvidence::from(e.clone()); 
+                                   let e2 = tendermint_proto::types::DuplicateVoteEvidence::from(e.clone());
                                     proto::tendermint::types::evidence::Sum::DuplicateVoteEvidence(proto::tendermint::types::DuplicateVoteEvidence{
                                     vote_a: Some(proto::tendermint::types::Vote{
                                         r#type: match e.votes().0.vote_type {
@@ -486,8 +501,6 @@ pub struct TendermintProxy {
 
 impl TendermintProxy {
     pub fn new(tendermint_url: url::Url) -> Self {
-        Self {
-            tendermint_url,
-        }
+        Self { tendermint_url }
     }
 }
