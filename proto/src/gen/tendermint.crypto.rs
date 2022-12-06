@@ -46,6 +46,7 @@ pub struct ProofOps {
     pub ops: ::prost::alloc::vec::Vec<ProofOp>,
 }
 /// PublicKey defines the keys available for use with Tendermint Validators
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PublicKey {
     #[prost(oneof="public_key::Sum", tags="1, 2")]
@@ -53,6 +54,7 @@ pub struct PublicKey {
 }
 /// Nested message and enum types in `PublicKey`.
 pub mod public_key {
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Sum {
         #[prost(bytes, tag="1")]

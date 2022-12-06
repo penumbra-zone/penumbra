@@ -7,6 +7,7 @@ pub struct NetAddress {
     #[prost(uint32, tag="3")]
     pub port: u32,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProtocolVersion {
     #[prost(uint64, tag="1")]
@@ -16,6 +17,7 @@ pub struct ProtocolVersion {
     #[prost(uint64, tag="3")]
     pub app: u64,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DefaultNodeInfo {
     #[prost(message, optional, tag="1")]
@@ -35,6 +37,7 @@ pub struct DefaultNodeInfo {
     #[prost(message, optional, tag="8")]
     pub other: ::core::option::Option<DefaultNodeInfoOther>,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DefaultNodeInfoOther {
     #[prost(string, tag="1")]

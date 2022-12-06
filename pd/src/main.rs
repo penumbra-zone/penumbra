@@ -15,13 +15,11 @@ use pd::testnet::{canonicalize_path, generate_tm_config, write_configs, Validato
 use penumbra_chain::{genesis::Allocation, params::ChainParameters};
 use penumbra_component::stake::{validator::Validator, FundingStream, FundingStreams};
 use penumbra_crypto::{keys::SpendKey, DelegationToken, GovernanceKey};
-use penumbra_proto::{
-    client::v1alpha1::{
-        oblivious_query_service_server::ObliviousQueryServiceServer,
-        specific_query_service_server::SpecificQueryServiceServer,
-        tendermint_proxy::TendermintProxyServiceServer,
-    },
+use penumbra_proto::client::v1alpha1::{
+    oblivious_query_service_server::ObliviousQueryServiceServer,
+    specific_query_service_server::SpecificQueryServiceServer,
     tendermint_proxy::service_server::ServiceServer as TendermintServiceServer,
+    tendermint_proxy_service_server::TendermintProxyServiceServer,
 };
 use penumbra_storage::Storage;
 use rand::Rng;
@@ -249,7 +247,7 @@ async fn main() -> anyhow::Result<()> {
                         .add_service(tonic_web::enable(TendermintServiceServer::new(
                             info.clone(),
                         )))
-                        .add_service(tonic_web::enable(TendermintTxServiceServer::new(
+                        .add_service(tonic_web::enable(TendermintProxyServiceServer::new(
                             info.clone(),
                         )))
                         .serve(

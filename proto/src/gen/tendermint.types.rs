@@ -7,6 +7,7 @@ pub struct ValidatorSet {
     #[prost(int64, tag="3")]
     pub total_voting_power: i64,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Validator {
     #[prost(bytes="vec", tag="1")]

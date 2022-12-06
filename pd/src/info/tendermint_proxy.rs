@@ -2,24 +2,27 @@ use std::str::FromStr;
 
 use chrono::DateTime;
 use penumbra_proto::{
-    self as proto, tendermint_proxy::service_server::Service as TendermintService,
-    tendermint_proxy::service_server::ServiceServer as TendermintServiceServer,
+    self as proto, client::v1alpha1::tendermint_proxy::service_server::Service as TendermintService,
+    client::v1alpha1::tendermint_proxy::service_server::ServiceServer as TendermintServiceServer,
 };
 
-use proto::tendermint_proxy::AbciQueryRequest;
-use proto::tendermint_proxy::AbciQueryResponse;
-use proto::tendermint_proxy::GetBlockByHeightRequest;
-use proto::tendermint_proxy::GetBlockByHeightResponse;
-use proto::tendermint_proxy::GetLatestBlockRequest;
-use proto::tendermint_proxy::GetLatestBlockResponse;
-use proto::tendermint_proxy::GetLatestValidatorSetRequest;
-use proto::tendermint_proxy::GetLatestValidatorSetResponse;
-use proto::tendermint_proxy::GetNodeInfoRequest;
-use proto::tendermint_proxy::GetNodeInfoResponse;
-use proto::tendermint_proxy::GetSyncingRequest;
-use proto::tendermint_proxy::GetSyncingResponse;
-use proto::tendermint_proxy::GetValidatorSetByHeightRequest;
-use proto::tendermint_proxy::GetValidatorSetByHeightResponse;
+use proto::client::v1alpha1::GetStatusRequest;
+use proto::client::v1alpha1::GetStatusResponse;
+use proto::client::v1alpha1::tendermint_proxy::AbciQueryRequest;
+use proto::client::v1alpha1::tendermint_proxy::AbciQueryResponse;
+use proto::client::v1alpha1::tendermint_proxy::GetBlockByHeightRequest;
+use proto::client::v1alpha1::tendermint_proxy::GetBlockByHeightResponse;
+use proto::client::v1alpha1::tendermint_proxy::GetLatestBlockRequest;
+use proto::client::v1alpha1::tendermint_proxy::GetLatestBlockResponse;
+use proto::client::v1alpha1::tendermint_proxy::GetLatestValidatorSetRequest;
+use proto::client::v1alpha1::tendermint_proxy::GetLatestValidatorSetResponse;
+use proto::client::v1alpha1::tendermint_proxy::GetNodeInfoRequest;
+use proto::client::v1alpha1::tendermint_proxy::GetNodeInfoResponse;
+use proto::client::v1alpha1::tendermint_proxy::GetSyncingRequest;
+use proto::client::v1alpha1::tendermint_proxy::GetSyncingResponse;
+use proto::client::v1alpha1::tendermint_proxy::GetValidatorSetByHeightRequest;
+use proto::client::v1alpha1::tendermint_proxy::GetValidatorSetByHeightResponse;
+use proto::client::v1alpha1::tendermint_proxy_service_server::TendermintProxyService;
 use tendermint::block::Height;
 use tendermint_rpc::abci::Path;
 use tendermint_rpc::{Client, HttpClient};
@@ -33,9 +36,6 @@ use tonic::Status;
 
 use super::Info;
 
-#[tonic::async_trait]
-trait TendermintServiceExt {}
-
 // Note: the conversions that take place in here could be moved to
 // from/try_from impls, but they're not used anywhere else, so it's
 // unimportant right now, and would require additional wrappers
@@ -43,7 +43,13 @@ trait TendermintServiceExt {}
 // TODO: move those to proto/src/protobuf.rs
 
 #[tonic::async_trait]
-impl<T: TendermintService> TendermintServiceExt for T {
+impl TendermintProxyService for Info {
+    async fn get_status(
+        &self,
+        req: tonic::Request<GetStatusRequest>,
+    ) -> Result<tonic::Response<GetStatusResponse>, Status> {
+        todo!()
+    }
 }
 
 #[tonic::async_trait]
@@ -80,11 +86,11 @@ impl TendermintService for Info {
                 value: res.value,
                 proof_ops: res
                     .proof
-                    .map(|p| penumbra_proto::tendermint_proxy::ProofOps {
+                    .map(|p| penumbra_proto::client::v1alpha1::tendermint_proxy::ProofOps {
                         ops: p
                             .ops
                             .into_iter()
-                            .map(|op| penumbra_proto::tendermint_proxy::ProofOp {
+                            .map(|op| penumbra_proto::client::v1alpha1::tendermint_proxy::ProofOp {
                                 r#type: op.field_type,
                                 key: op.key,
                                 data: op.data,
@@ -150,16 +156,16 @@ impl TendermintService for Info {
         let header_time = DateTime::parse_from_rfc3339(&res.block.header.time.to_rfc3339())
             .expect("timestamp should roundtrip to string");
         Ok(tonic::Response::new(GetBlockByHeightResponse {
-            block_id: Some(penumbra_proto::core::tendermint::types::BlockId {
+            block_id: Some(penumbra_proto::tendermint::types::BlockId {
                 hash: res.block_id.hash.into(),
-                part_set_header: Some(penumbra_proto::core::tendermint::types::PartSetHeader {
+                part_set_header: Some(penumbra_proto::tendermint::types::PartSetHeader {
                     total: res.block_id.part_set_header.total,
                     hash: res.block_id.part_set_header.hash.into(),
                 }),
             }),
-            sdk_block: Some(penumbra_proto::tendermint_proxy::Block {
-                header: Some(penumbra_proto::tendermint_proxy::Header {
-                    version: Some(penumbra_proto::core::tendermint::version::Consensus {
+            sdk_block: Some(penumbra_proto::client::v1alpha1::tendermint_proxy::Block {
+                header: Some(penumbra_proto::client::v1alpha1::tendermint_proxy::Header {
+                    version: Some(penumbra_proto::tendermint::version::Consensus {
                         block: res.block.header.version.block,
                         app: res.block.header.version.app,
                     }),
@@ -170,10 +176,10 @@ impl TendermintService for Info {
                         nanos: header_time.timestamp_nanos() as i32,
                     }),
                     last_block_id: res.block.header.last_block_id.map(|id| {
-                        penumbra_proto::core::tendermint::types::BlockId {
+                        penumbra_proto::tendermint::types::BlockId {
                             hash: id.hash.into(),
                             part_set_header: Some(
-                                penumbra_proto::core::tendermint::types::PartSetHeader {
+                                penumbra_proto::tendermint::types::PartSetHeader {
                                     total: id.part_set_header.total,
                                     hash: id.part_set_header.hash.into(),
                                 },
@@ -210,30 +216,30 @@ impl TendermintService for Info {
                         .unwrap_or_default(),
                     proposer_address: res.block.header.proposer_address.to_string(),
                 }),
-                data: Some(proto::core::tendermint::types::Data {
+                data: Some(proto::tendermint::types::Data {
                     txs: res.block.data,
                 }),
-                evidence: Some(proto::core::tendermint::types::EvidenceList {
+                evidence: Some(proto::tendermint::types::EvidenceList {
                     evidence: res
                         .block
                         .evidence
                         .into_vec()
                         .iter()
-                        .map(|e| proto::core::tendermint::types::Evidence {
+                        .map(|e| proto::tendermint::types::Evidence {
                             sum: Some( match e {
                                 tendermint::evidence::Evidence::DuplicateVote(e) => {
                                    let e2 = tendermint_proto::types::DuplicateVoteEvidence::from(e.clone()); 
-                                    proto::core::tendermint::types::evidence::Sum::DuplicateVoteEvidence(proto::core::tendermint::types::DuplicateVoteEvidence{
-                                    vote_a: Some(proto::core::tendermint::types::Vote{
+                                    proto::tendermint::types::evidence::Sum::DuplicateVoteEvidence(proto::tendermint::types::DuplicateVoteEvidence{
+                                    vote_a: Some(proto::tendermint::types::Vote{
                                         r#type: match e.votes().0.vote_type {
-                                            tendermint::vote::Type::Prevote => proto::core::tendermint::types::SignedMsgType::Prevote as i32,
-                                            tendermint::vote::Type::Precommit => proto::core::tendermint::types::SignedMsgType::Precommit as i32,
+                                            tendermint::vote::Type::Prevote => proto::tendermint::types::SignedMsgType::Prevote as i32,
+                                            tendermint::vote::Type::Precommit => proto::tendermint::types::SignedMsgType::Precommit as i32,
                                         },
                                         height: e.votes().0.height.into(),
                                         round: e.votes().0.round.into(),
-                                        block_id: Some(proto::core::tendermint::types::BlockId{
+                                        block_id: Some(proto::tendermint::types::BlockId{
                                             hash: e.votes().0.block_id.expect("block id").hash.into(),
-                                            part_set_header: Some(proto::core::tendermint::types::PartSetHeader{
+                                            part_set_header: Some(proto::tendermint::types::PartSetHeader{
                                                 total: e.votes().0.block_id.expect("block id").part_set_header.total,
                                                 hash: e.votes().0.block_id.expect("block id").part_set_header.hash.into(),
                                             }),
@@ -246,16 +252,16 @@ impl TendermintService for Info {
                                         validator_index: e.votes().0.validator_index.into(),
                                         signature: e.votes().0.signature.clone().expect("signed vote").into(),
                                     }),
-                                    vote_b: Some(proto::core::tendermint::types::Vote{
+                                    vote_b: Some(proto::tendermint::types::Vote{
                                         r#type: match e.votes().1.vote_type {
-                                            tendermint::vote::Type::Prevote => proto::core::tendermint::types::SignedMsgType::Prevote as i32,
-                                            tendermint::vote::Type::Precommit => proto::core::tendermint::types::SignedMsgType::Precommit as i32,
+                                            tendermint::vote::Type::Prevote => proto::tendermint::types::SignedMsgType::Prevote as i32,
+                                            tendermint::vote::Type::Precommit => proto::tendermint::types::SignedMsgType::Precommit as i32,
                                         },
                                         height: e.votes().1.height.into(),
                                         round: e.votes().1.round.into(),
-                                        block_id: Some(proto::core::tendermint::types::BlockId{
+                                        block_id: Some(proto::tendermint::types::BlockId{
                                             hash: e.votes().1.block_id.expect("block id").hash.into(),
-                                            part_set_header: Some(proto::core::tendermint::types::PartSetHeader{
+                                            part_set_header: Some(proto::tendermint::types::PartSetHeader{
                                                 total: e.votes().1.block_id.expect("block id").part_set_header.total,
                                                 hash: e.votes().1.block_id.expect("block id").part_set_header.hash.into(),
                                             }),
@@ -275,7 +281,7 @@ impl TendermintService for Info {
                             },
                                 // This variant is currently unimplemented in tendermint-rs, so we can't supply
                                 // conversions for it.
-                                tendermint::evidence::Evidence::LightClientAttackEvidence => proto::core::tendermint::types::evidence::Sum::LightClientAttackEvidence(proto::core::tendermint::types::LightClientAttackEvidence{
+                                tendermint::evidence::Evidence::LightClientAttackEvidence => proto::tendermint::types::evidence::Sum::LightClientAttackEvidence(proto::tendermint::types::LightClientAttackEvidence{
                                     conflicting_block: None,
                                     common_height: -1,
                                     byzantine_validators: vec![],
@@ -289,12 +295,12 @@ impl TendermintService for Info {
                         })
                         .collect(),
                 }),
-                last_commit: Some(proto::core::tendermint::types::Commit {
+                last_commit: Some(proto::tendermint::types::Commit {
                     height: res.block.last_commit.as_ref().expect("last_commit").height.into(),
                     round: res.block.last_commit.as_ref().expect("last_commit").round.into(),
-                    block_id: Some(proto::core::tendermint::types::BlockId {
+                    block_id: Some(proto::tendermint::types::BlockId {
                         hash: res.block.last_commit.as_ref().expect("last_commit").block_id.hash.into(),
-                        part_set_header: Some(proto::core::tendermint::types::PartSetHeader {
+                        part_set_header: Some(proto::tendermint::types::PartSetHeader {
                             total: res.block.last_commit.as_ref().expect("last_commit").block_id.part_set_header.total,
                             hash: res.block.last_commit.as_ref().expect("last_commit").block_id.part_set_header.hash.into(),
                         }),
@@ -305,15 +311,15 @@ impl TendermintService for Info {
                             .into_iter()
                             .map(|s| {
                                 match s {
-                                    tendermint::block::CommitSig::BlockIdFlagAbsent => proto::core::tendermint::types::CommitSig {
-                                        block_id_flag: proto::core::tendermint::types::BlockIdFlag::Absent as i32,
+                                    tendermint::block::CommitSig::BlockIdFlagAbsent => proto::tendermint::types::CommitSig {
+                                        block_id_flag: proto::tendermint::types::BlockIdFlag::Absent as i32,
                                         // No validator address, or timestamp is recorded for this variant. Not sure if this is a bug in tendermint-rs or not.
                                         validator_address: vec![],
                                         timestamp: None,
                                         signature: vec![],
                                     },
-                                    tendermint::block::CommitSig::BlockIdFlagCommit { validator_address, timestamp, signature } => proto::core::tendermint::types::CommitSig {
-                                        block_id_flag: proto::core::tendermint::types::BlockIdFlag::Commit as i32,
+                                    tendermint::block::CommitSig::BlockIdFlagCommit { validator_address, timestamp, signature } => proto::tendermint::types::CommitSig {
+                                        block_id_flag: proto::tendermint::types::BlockIdFlag::Commit as i32,
                                         validator_address: validator_address.into(),
                                         timestamp: Some(prost_types::Timestamp{
                                             seconds: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339()).expect("timestamp should roundtrip to string").timestamp(),
@@ -321,8 +327,8 @@ impl TendermintService for Info {
                                         }),
                                         signature: signature.expect("signature").into(),
                                     },
-                                    tendermint::block::CommitSig::BlockIdFlagNil { validator_address, timestamp, signature } => proto::core::tendermint::types::CommitSig {
-                                        block_id_flag: proto::core::tendermint::types::BlockIdFlag::Nil as i32,
+                                    tendermint::block::CommitSig::BlockIdFlagNil { validator_address, timestamp, signature } => proto::tendermint::types::CommitSig {
+                                        block_id_flag: proto::tendermint::types::BlockIdFlag::Nil as i32,
                                         validator_address: validator_address.into(),
                                         timestamp: Some(prost_types::Timestamp{
                                             seconds: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339()).expect("timestamp should roundtrip to string").timestamp(),

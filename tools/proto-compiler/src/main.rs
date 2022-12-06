@@ -51,6 +51,15 @@ fn main() -> Result<()> {
     // See https://docs.rs/prost-build/0.5.0/prost_build/struct.Config.html#method.extern_path
     config.extern_path(".ibc", "::ibc_proto::ibc");
     config.extern_path(".ics23", "::ics23");
+    // The same applies for some of the tendermint types.
+    // config.extern_path(
+    //     ".tendermint.types.Validator",
+    //     "::tendermint::types::Validator",
+    // );
+    // config.extern_path(
+    //     ".tendermint.p2p.DefaultNodeInfo",
+    //     "::tendermint::p2p::DefaultNodeInfo",
+    // );
 
     config.compile_protos(
         &[
@@ -62,6 +71,8 @@ fn main() -> Result<()> {
             "../../proto/proto/penumbra/core/dex/v1alpha1/dex.proto",
             "../../proto/proto/penumbra/core/transparent_proofs/v1alpha1/transparent_proofs.proto",
             "../../proto/proto/penumbra/core/governance/v1alpha1/governance.proto",
+            "../../proto/ibc-go-vendor/tendermint/types/validator.proto",
+            "../../proto/ibc-go-vendor/tendermint/p2p/types.proto",
         ],
         &["../../proto/proto/", "../../proto/ibc-go-vendor/"],
     )?;
@@ -75,9 +86,9 @@ fn main() -> Result<()> {
                 "../../proto/proto/penumbra/client/v1alpha1/client.proto",
                 "../../proto/proto/penumbra/view/v1alpha1/view.proto",
                 "../../proto/proto/penumbra/custody/v1alpha1/custody.proto",
-                "../../proto/ibc-go-vendor/tendermint/p2p/types.proto",
-                "../../proto/ibc-go-vendor/tendermint/types/types.proto",
                 "../../proto/ibc-go-vendor/cosmos/base/tendermint/v1beta1/query.proto",
+                "../../proto/ibc-go-vendor/tendermint/types/validator.proto",
+                "../../proto/ibc-go-vendor/tendermint/p2p/types.proto",
             ],
             &["../../proto/proto/", "../../proto/ibc-go-vendor/"],
         )?;
@@ -139,10 +150,6 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
         ".penumbra.core.stake.v1alpha1.CurrentConsensusKeys",
         SERIALIZE,
     ),
-    (
-        ".penumbra.client.v1alpha1.tendermint_proxy.Validator",
-        SERIALIZE,
-    ),
     (".penumbra.core.crypto.v1alpha1.IdentityKey", SERIALIZE),
     (
         ".penumbra.core.crypto.v1alpha1.IdentityKey",
@@ -175,6 +182,11 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
         SERDE_TRANSPARENT,
     ),
     (".penumbra.core.crypto.v1alpha1.NotePayload", SERIALIZE),
+    (".tendermint.types.Validator", SERIALIZE),
+    (".tendermint.p2p.DefaultNodeInfo", SERIALIZE),
+    (".tendermint.p2p.DefaultNodeInfoOther", SERIALIZE),
+    (".tendermint.p2p.ProtocolVersion", SERIALIZE),
+    (".tendermint.crypto.PublicKey", SERIALIZE),
     (".penumbra.core.crypto.v1alpha1.AssetId", SERIALIZE),
     (".penumbra.core.crypto.v1alpha1.AssetId", SERDE_TRANSPARENT),
     (".penumbra.core.crypto.v1alpha1.Value", SERIALIZE),

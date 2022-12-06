@@ -8,6 +8,17 @@ import "penumbra/core/crypto/v1alpha1/crypto.proto";
 import "penumbra/core/dex/v1alpha1/dex.proto";
 import "penumbra/core/governance/v1alpha1/governance.proto";
 import "penumbra/core/stake/v1alpha1/stake.proto";
+
+import "google/protobuf/any.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "tendermint/p2p/types.proto";
+import "tendermint/types/types.proto";
+import "tendermint/types/validator.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "cosmos/base/tendermint/v1beta1/types.proto";
+import "cosmos_proto/cosmos.proto";
+import "tendermint/types/block.proto";
 // TODO: clean up import paths (this is pulling from the ibc-go-vendor root)
 // import "proofs.proto";
 
@@ -196,19 +207,6 @@ message PrefixValueResponse {
   bytes value = 2;
 }
 
-import "gogoproto/gogo.proto";
-import "google/protobuf/any.proto";
-import "google/api/annotations.proto";
-import "google/protobuf/timestamp.proto";
-import "tendermint/p2p/types.proto";
-import "tendermint/types/types.proto";
-import "tendermint/types/validator.proto";
-import "cosmos/base/query/v1beta1/pagination.proto";
-import "cosmos/base/tendermint/v1beta1/types.proto";
-import "cosmos_proto/cosmos.proto";
-import "tendermint/types/block.proto";
-import "amino/amino.proto";
-
 // Defines the gRPC query service for proxying requests to an upstream Tendermint RPC.
 service TendermintProxyService {
   // Status queries the current status.
@@ -223,9 +221,9 @@ message GetStatusRequest {
 
 // GetStatusResponse is the response type for the Query/GetStatus RPC method.
 message GetStatusResponse {
-  tendermint.p2p.DefaultNodeInfo node_info = 1;
+  .tendermint.p2p.DefaultNodeInfo node_info = 1;
   SyncInfo sync_info = 2;
-  tendermint.types.Validator validator_info = 3;
+  .tendermint.types.Validator validator_info = 3;
 }
 
 message SyncInfo {

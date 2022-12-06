@@ -5,8 +5,8 @@ use penumbra_proto::{
     client::v1alpha1::{
         oblivious_query_service_client::ObliviousQueryServiceClient,
         specific_query_service_client::SpecificQueryServiceClient,
+        tendermint_proxy::service_client::ServiceClient as TendermintServiceClient,
     },
-    tendermint_proxy::service_client::ServiceClient as TendermintServiceClient,
     Protobuf,
 };
 use penumbra_transaction::{plan::TransactionPlan, Transaction};
