@@ -1,7 +1,7 @@
 ---
-# Deploys the most recent tagged testnet (e.g. "037-iocaste.2") to cluster
-# at testnet.penumbra.zone.
-name: Deploy Testnet (Kubernetes)
+# Deploys the latest changes on 'main' branch, via a container
+# image tagged with 'main', to testnet-preview.penumbra.zone.
+name: Deploy Testnet Preview (Kubernetes)
 on:
   workflow_dispatch:
     inputs:
@@ -19,24 +19,25 @@ on:
         default: 'ghcr.io/penumbra-zone/penumbra'
       image_tag:
         description: 'Docker image tag to deploy'
+        default: "main"
         required: true
       image_uid_gid:
         description: 'Docker image user uid:gid'
         required: true
         default: '1000:1000'
   push:
-    tags:
-      - '[0-9][0-9][0-9]-*'
+    branches:
+      - main
 
 jobs:
   deploy:
     permissions:
       contents: 'read'
       id-token: 'write'
-    name: Deploy to Testnet
+    name: Deploy to Testnet Preview
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: testnet
+    environment: testnet-preview
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -62,5 +63,5 @@ jobs:
           export IMAGE='${{ github.event.inputs.image_repository }}'
           export PENUMBRA_VERSION='${{ github.event.inputs.image_tag }}'
           export PENUMBRA_UID_GID='${{ github.event.inputs.image_uid_gid }}'
-          export HELM_RELEASE='penumbra-testnet'
+          export HELM_RELEASE='penumbra-testnet-preview'
           ./ci.sh

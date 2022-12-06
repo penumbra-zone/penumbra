@@ -1,0 +1,10 @@
+---
+# Values file for "testnet-preview.penumbra.zone" CI deploys.
+# Mostly sets the FQDNs on the ingress.
+ingress:
+  enabled: true
+  hosts:
+    # The Tendermint RPC port.
+    rpc: rpc.testnet-preview.penumbra.zone
+    # The pd gRPC port.
+    grpc: grpc.testnet-preview.penumbra.zone
