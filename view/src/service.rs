@@ -148,18 +148,14 @@ impl ViewService {
     /// well as whether the fullnode is caught up with that height.
     #[instrument(skip(self))]
     pub async fn latest_known_block_height(&self) -> Result<(u64, bool), anyhow::Error> {
-        // TODO: this should probably happen in the view worker
         let mut client = TendermintProxyServiceClient::connect(format!(
             "http://{}:{}",
             self.node, self.tendermint_port
         ))
         .await?;
 
-        println!("get_status");
-
         let rsp = client.get_status(GetStatusRequest {}).await?.into_inner();
 
-        println!("{:#?}", rsp);
         tracing::debug!("{:#?}", rsp);
 
         let sync_info = rsp

@@ -7,6 +7,7 @@ mod mempool;
 mod metrics;
 mod request_ext;
 mod snapshot;
+mod tendermint_proxy;
 
 pub mod testnet;
 
@@ -18,3 +19,4 @@ pub use info::Info;
 pub use mempool::Mempool;
 pub use penumbra_component::app::App;
 pub use snapshot::Snapshot;
+pub use tendermint_proxy::TendermintProxy;

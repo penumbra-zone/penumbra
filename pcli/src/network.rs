@@ -83,6 +83,7 @@ impl App {
         }
 
         println!("post to {}", self.tendermint_url.clone());
+        // TODO: use TendermintProxyServiceClient
         let rsp: serde_json::Value = client
             .post(self.tendermint_url.clone())
             .json(&serde_json::json!(
@@ -187,6 +188,7 @@ impl App {
         let client = reqwest::Client::new();
         let req_id: u8 = rand::thread_rng().gen();
         println!("post to {}", self.tendermint_url.clone());
+        // TODO: use TendermintProxyServiceClient
         let rsp: serde_json::Value = client
             .post(self.tendermint_url.clone())
             .json(&serde_json::json!(

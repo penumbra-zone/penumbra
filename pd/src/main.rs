@@ -182,7 +182,8 @@ async fn main() -> anyhow::Result<()> {
 
             let consensus = pd::Consensus::new(storage.clone()).await?;
             let mempool = pd::Mempool::new(storage.clone()).await?;
-            let info = pd::Info::new(storage.clone(), tendermint_addr);
+            let info = pd::Info::new(storage.clone());
+            let tm_proxy = pd::TendermintProxy::new(tendermint_addr);
             let snapshot = pd::Snapshot {};
 
             let abci_server = tokio::task::Builder::new()
@@ -219,10 +220,10 @@ async fn main() -> anyhow::Result<()> {
                             info.clone(),
                         )))
                         .add_service(tonic_web::enable(TendermintServiceServer::new(
-                            info.clone(),
+                            tm_proxy.clone(),
                         )))
                         .add_service(tonic_web::enable(TendermintProxyServiceServer::new(
-                            info.clone(),
+                            tm_proxy.clone(),
                         )))
                         .serve(
                             format!("{}:{}", host, grpc_port)

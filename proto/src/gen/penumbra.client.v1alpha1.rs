@@ -210,14 +210,12 @@ pub struct SyncInfo {
     pub latest_block_height: u64,
     #[prost(message, optional, tag="4")]
     pub latest_block_time: ::core::option::Option<::prost_types::Timestamp>,
-    #[prost(bytes="vec", tag="5")]
-    pub earliest_block_hash: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bytes="vec", tag="6")]
-    pub earliest_app_hash: ::prost::alloc::vec::Vec<u8>,
-    #[prost(uint64, tag="7")]
-    pub earliest_block_height: u64,
-    #[prost(message, optional, tag="8")]
-    pub earliest_block_time: ::core::option::Option<::prost_types::Timestamp>,
+    /// These are implemented in tendermint, but not
+    /// in tendermint-rpc.
+    /// bytes earliest_block_hash = 5;
+    /// bytes earliest_app_hash = 6;
+    /// uint64 earliest_block_height = 7;
+    /// google.protobuf.Timestamp earliest_block_time = 8;
     #[prost(bool, tag="9")]
     pub catching_up: bool,
 }

@@ -46,43 +46,78 @@ use super::Info;
 // TODO: move those to proto/src/protobuf.rs
 
 #[tonic::async_trait]
-impl TendermintProxyService for Info {
+impl TendermintProxyService for TendermintProxy {
     async fn get_status(
         &self,
-        req: tonic::Request<GetStatusRequest>,
+        _req: tonic::Request<GetStatusRequest>,
     ) -> Result<tonic::Response<GetStatusResponse>, Status> {
         // generic bounds on HttpClient::new are not well-constructed, so we have to
         // render the URL as a String, then borrow it, then re-parse the borrowed &str
         let client = HttpClient::new(self.tendermint_url.to_string().as_ref()).unwrap();
 
-        let path = Path::from_str(&req.get_ref().path).map_err(|_| tonic::Status::invalid_argument("invalid abci path"))?;
-        let data = &req.get_ref().data;
-        let height: Height = req
-            .get_ref()
-            .height
-            .try_into().map_err(|_| tonic::Status::invalid_argument("invalid height"))?;
-        let prove = req.get_ref().prove;
         let res = client
-            .abci_query(Some(path), data.clone(), Some(height), prove)
+            .status()
             .await.map_err(|e| tonic::Status::unavailable(format!(
-                    "error querying abci: {}",
+                    "error querying status: {}",
                     e
                 )))?;
 
-        match res.code {
-            tendermint_rpc::abci::Code::Ok => Ok(tonic::Response::new(GetStatusResponse {
-                node_info:
-            })),
-            tendermint_rpc::abci::Code::Err(e) => Err(tonic::Status::unavailable(format!(
-                "error querying abci: {}",
-                e
-            ))),
-        }
+        // The tendermint-rs `Timestamp` type is a newtype wrapper
+        // around a `time::PrimitiveDateTime` however it's private so we
+        // have to use string parsing to get to the prost type we want :(
+        let latest_block_time = DateTime::parse_from_rfc3339(&res.sync_info.latest_block_time.to_rfc3339())
+            .expect("timestamp should roundtrip to string");
+        Ok(tonic::Response::new(GetStatusResponse {
+            node_info: Some(penumbra_proto::tendermint::p2p::DefaultNodeInfo{
+                protocol_version: Some(penumbra_proto::tendermint::p2p::ProtocolVersion{
+                    p2p: res.node_info.protocol_version.p2p,
+                    block: res.node_info.protocol_version.block,
+                    app: res.node_info.protocol_version.app,
+                }),
+                default_node_id: res.node_info.id.to_string(),
+                listen_addr: res.node_info.listen_addr.to_string(),
+                network: res.node_info.network.to_string(),
+                version: res.node_info.version.to_string(),
+                channels: res.node_info.channels.to_string().as_bytes().to_vec(),
+                moniker: res.node_info.moniker.to_string(),
+                other: Some(penumbra_proto::tendermint::p2p::DefaultNodeInfoOther{tx_index: match res.node_info.other.tx_index{
+                    tendermint::node::info::TxIndexStatus::On => "on".to_string(),
+                    tendermint::node::info::TxIndexStatus::Off => "off".to_string(),
+                },
+                rpc_address: res.node_info.other.rpc_address.to_string()}),
+            }),
+            sync_info: Some(penumbra_proto::client::v1alpha1::SyncInfo{
+                latest_block_hash: res.sync_info.latest_block_hash.to_string().as_bytes().to_vec(),
+                latest_app_hash: res.sync_info.latest_app_hash.to_string().as_bytes().to_vec(),
+                latest_block_height: res.sync_info.latest_block_height.value(),
+                latest_block_time: Some(prost_types::Timestamp{
+                    seconds: latest_block_time.timestamp(),
+                    nanos: latest_block_time.timestamp_nanos() as i32,
+                }),
+                // These don't exist in tendermint-rpc right now.
+                // earliest_app_hash: res.sync_info.earliest_app_hash.to_string().as_bytes().to_vec(),
+                // earliest_block_hash: res.sync_info.earliest_block_hash.to_string().as_bytes().to_vec(),
+                // earliest_block_height: res.sync_info.earliest_block_height.value(),
+                // earliest_block_time: Some(prost_types::Timestamp{
+                //     seconds: earliest_block_time.timestamp(),
+                //     nanos: earliest_block_time.timestamp_nanos() as i32,
+                // }),
+                catching_up: res.sync_info.catching_up,
+            }),
+            validator_info: Some(penumbra_proto::tendermint::types::Validator{
+                address: res.validator_info.address.to_string().as_bytes().to_vec(),
+                pub_key: Some(penumbra_proto::tendermint::crypto::PublicKey{
+                    sum: Some(penumbra_proto::tendermint::crypto::public_key::Sum::Ed25519(res.validator_info.pub_key.to_bytes().to_vec()))
+                }),
+                voting_power: res.validator_info.power.into(),
+                proposer_priority: res.validator_info.proposer_priority.into(),
+            }),
+        }))
     }
 }
 
 #[tonic::async_trait]
-impl TendermintService for Info {
+impl TendermintService for TendermintProxy {
     async fn abci_query(
         &self,
         req: tonic::Request<AbciQueryRequest>,
@@ -142,23 +177,23 @@ impl TendermintService for Info {
 
     async fn get_node_info(
         &self,
-        req: tonic::Request<GetNodeInfoRequest>,
+        _req: tonic::Request<GetNodeInfoRequest>,
     ) -> Result<tonic::Response<GetNodeInfoResponse>, Status> {
-        todo!()
+        Err(tonic::Status::unimplemented("unimplemented"))
     }
 
     async fn get_syncing(
         &self,
-        req: tonic::Request<GetSyncingRequest>,
+        _req: tonic::Request<GetSyncingRequest>,
     ) -> Result<tonic::Response<GetSyncingResponse>, Status> {
-        todo!()
+        Err(tonic::Status::unimplemented("unimplemented"))
     }
 
     async fn get_latest_block(
         &self,
-        req: tonic::Request<GetLatestBlockRequest>,
+        _req: tonic::Request<GetLatestBlockRequest>,
     ) -> Result<tonic::Response<GetLatestBlockResponse>, Status> {
-        todo!()
+        Err(tonic::Status::unimplemented("unimplemented"))
     }
 
     async fn get_block_by_height(
@@ -380,15 +415,34 @@ impl TendermintService for Info {
 
     async fn get_latest_validator_set(
         &self,
-        req: tonic::Request<GetLatestValidatorSetRequest>,
+        _req: tonic::Request<GetLatestValidatorSetRequest>,
     ) -> Result<tonic::Response<GetLatestValidatorSetResponse>, Status> {
-        todo!()
+        Err(tonic::Status::unimplemented("unimplemented"))
     }
 
     async fn get_validator_set_by_height(
         &self,
-        req: tonic::Request<GetValidatorSetByHeightRequest>,
+        _req: tonic::Request<GetValidatorSetByHeightRequest>,
     ) -> Result<tonic::Response<GetValidatorSetByHeightResponse>, Status> {
-        todo!()
+        Err(tonic::Status::unimplemented("unimplemented"))
+    }
+}
+
+/// Implements service traits for Tonic gRPC services.
+///
+/// The fields of this struct are the configuration and data
+/// necessary to the gRPC services.
+#[derive(Clone, Debug)]
+pub struct TendermintProxy {
+    /// Address of upstream Tendermint server to proxy requests to.
+    tendermint_url: url::Url,
+    // height_rx: watch::Receiver<block::Height>,
+}
+
+impl TendermintProxy {
+    pub fn new(tendermint_url: url::Url) -> Self {
+        Self {
+            tendermint_url,
+        }
     }
 }

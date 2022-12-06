@@ -15,7 +15,6 @@ use crate::RequestExt;
 
 mod oblivious;
 mod specific;
-mod tendermint_proxy;
 
 const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
 const APP_VERSION: u64 = 1;
@@ -28,19 +27,12 @@ const APP_VERSION: u64 = 1;
 pub struct Info {
     /// Storage interface for retrieving chain state.
     storage: Storage,
-    /// Address of upstream Tendermint server to proxy requests to.
-    /// TODO: this is really only needed by the `tendermint_proxy::TendermintService` trait's methods,
-    /// should there be a second `Info` struct to implement that trait?
-    tendermint_url: url::Url,
     // height_rx: watch::Receiver<block::Height>,
 }
 
 impl Info {
-    pub fn new(storage: Storage, tendermint_url: url::Url) -> Self {
-        Self {
-            storage,
-            tendermint_url,
-        }
+    pub fn new(storage: Storage) -> Self {
+        Self { storage }
     }
 
     async fn info(&self, info: abci::request::Info) -> Result<abci::response::Info, anyhow::Error> {

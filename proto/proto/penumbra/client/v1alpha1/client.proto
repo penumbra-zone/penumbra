@@ -213,6 +213,44 @@ service TendermintProxyService {
   rpc GetStatus(GetStatusRequest) returns (GetStatusResponse) {
     option (google.api.http).get = "/status";
   }
+
+  // Broadcast a transaction asynchronously.
+  rpc BroadcastTxAsync(BroadcastTxAsyncRequest) returns (BroadcastTxAsyncResponse) {
+    option (google.api.http).get = "/broadcast_tx_async";
+  }
+
+  // Broadcast a transaction synchronously.
+  rpc BroadcastTxSync(BroadcastTxSyncRequest) returns (BroadcastTxSyncResponse) {
+    option (google.api.http).get = "/broadcast_tx_sync";
+  }
+}
+
+// BroadcastTxAsyncRequest is the request type for the BroadcastTxAsync RPC method.
+message BroadcastTxAsyncRequest {
+    bytes params = 1;
+    bytes req_id = 2;
+}
+
+// BroadcastTxAsyncResponse is the response type for the BroadcastTxAsync RPC method.
+message BroadcastTxAsyncResponse {
+    uint64 code = 1;
+    bytes data = 2
+    string log = 3;
+    bytes hash = 4;
+}
+
+// BroadcastTxSyncRequest is the request type for the BroadcastTxSync RPC method.
+message BroadcastTxSyncRequest {
+    bytes params = 1;
+    bytes req_id = 2;
+}
+
+// BroadcastTxSyncResponse is the response type for the BroadcastTxSync RPC method.
+message BroadcastTxSyncResponse {
+    uint64 code = 1;
+    bytes data = 2
+    string log = 3;
+    bytes hash = 4;
 }
 
 // GetStatusRequest is the request type for the Query/GetStatus RPC method.
@@ -231,9 +269,11 @@ message SyncInfo {
     bytes latest_app_hash = 2;
     uint64 latest_block_height = 3;
     google.protobuf.Timestamp latest_block_time = 4;
-    bytes earliest_block_hash = 5;
-    bytes earliest_app_hash = 6;
-    uint64 earliest_block_height = 7;
-    google.protobuf.Timestamp earliest_block_time = 8;
+    // These are implemented in tendermint, but not
+    // in tendermint-rpc.
+    // bytes earliest_block_hash = 5;
+    // bytes earliest_app_hash = 6;
+    // uint64 earliest_block_height = 7;
+    // google.protobuf.Timestamp earliest_block_time = 8;
     bool catching_up = 9;
 }
