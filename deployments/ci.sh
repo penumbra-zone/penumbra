@@ -17,7 +17,7 @@ set -euo pipefail
 # in GitHub Actions, so the values below may be out of date.
 WORKDIR="${WORKDIR:=$(pwd)/helm/pdcli}"
 IMAGE="${IMAGE:=ghcr.io/penumbra-zone/penumbra}"
-PENUMBRA_VERSION="${PENUMBRA_VERSION:=036-iocaste.2}"
+PENUMBRA_VERSION="${PENUMBRA_VERSION:=037-megaclite.1}"
 PENUMBRA_UID_GID="${PENUMBRA_UID_GID:=1000\:1000}"
 TENDERMINT_VERSION="${TENDERMINT_VERSION:=v0.34.23}"
 NVALS="${NVALS:=2}"
@@ -75,6 +75,14 @@ function get_container_cli() {
     fi
 }
 
+# For the weekly testnets, we pass `--preserve-chain-id` when generating
+# the config. For testnet-preview, we don't want that option: we want
+# a unique chain id for every deploy.
+if [[ "$HELM_RELEASE" =~ ^penumbra-testnet$ ]] ; then
+    preserve_chain_opt="--preserve-chain-id"
+else
+    preserve_chain_opt=""
+fi
 echo "Generating new testnet files..."
 container_cli="$(get_container_cli)"
 "$container_cli" run --user 0:0 \
@@ -82,6 +90,7 @@ container_cli="$(get_container_cli)"
     --entrypoint pd \
     "${IMAGE}:${PENUMBRA_VERSION}" \
     testnet generate \
+    "$preserve_chain_opt" \
     --validators-input-file "${CONTAINERHOME}/vals.json" > /dev/null
 
 PERSISTENT_PEERS=""

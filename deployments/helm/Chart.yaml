@@ -25,4 +25,4 @@ version: 0.1.0
 # Pre-mainnet, we set this to a tag name for the given testnet, e.g. '036-iocaste.2'.
 # Container images are automatically tagged for each testnet; we can also use "latest"
 # for the HEAD of main branch in the penumbra git repository.
-appVersion: "036-iocaste.2"
+appVersion: "037-megaclite.1"
