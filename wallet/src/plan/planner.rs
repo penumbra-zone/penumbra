@@ -320,6 +320,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                     address_index: source.map(Into::into),
                     amount_to_spend: amount.into(),
                     include_spent: false,
+                    ..Default::default()
                 })
                 .await?,
             );

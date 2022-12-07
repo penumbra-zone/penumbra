@@ -197,6 +197,7 @@ pub trait ViewClient {
         let notes = self
             .quarantined_notes(pb::QuarantinedNotesRequest {
                 account_id: Some(account_id.into()),
+                ..Default::default()
             })
             .await?;
         tracing::trace!(?notes);
@@ -225,6 +226,7 @@ pub trait ViewClient {
         let notes = self
             .quarantined_notes(pb::QuarantinedNotesRequest {
                 account_id: Some(account_id.into()),
+                ..Default::default()
             })
             .await?;
         tracing::trace!(?notes);
@@ -263,6 +265,7 @@ where
         let status = self
             .status(tonic::Request::new(pb::StatusRequest {
                 account_id: Some(account_id.into()),
+                ..Default::default()
             }))
             .await?
             .into_inner();
@@ -277,6 +280,7 @@ where
         let stream = self
             .status_stream(tonic::Request::new(pb::StatusStreamRequest {
                 account_id: Some(account_id.into()),
+                ..Default::default()
             }))
             .await?
             .into_inner();
@@ -376,6 +380,7 @@ where
                 account_id: Some(account_id.into()),
                 note_commitment: Some(note_commitment.into()),
                 await_detection: false,
+                ..Default::default()
             }),
         )
         .await?
@@ -401,6 +406,7 @@ where
                 account_id: Some(account_id.into()),
                 note_commitment: Some(note_commitment.into()),
                 await_detection: true,
+                ..Default::default()
             }),
         )
         .await?
@@ -424,6 +430,7 @@ where
                 account_id: Some(account_id.into()),
                 nullifier: Some(nullifier.into()),
                 await_detection: false,
+                ..Default::default()
             }),
         )
         .await?
@@ -440,6 +447,7 @@ where
                 account_id: Some(account_id.into()),
                 nullifier: Some(nullifier.into()),
                 await_detection: true,
+                ..Default::default()
             }),
         )
         .await?;
@@ -471,6 +479,7 @@ where
             account_id: Some(account_id.into()),
             note_commitments,
             transaction_plan: Some(plan.clone().into()),
+            ..Default::default()
         };
 
         let witness_data = self

@@ -63,10 +63,31 @@ service ViewProtocolService {
   rpc TransactionPerspective(TransactionPerspectiveRequest) returns (TransactionPerspectiveResponse);
 }
 
+// Scaffolding for bearer-token authentication for the ViewService.
+// The `account_id` and `token` fields are both optional,
+// and numbered as 14 & 15 throughout the view service protocol.
+message ViewAuthToken {
+  bytes inner = 1;
+}
+
+message ViewAuthRequest {
+  core.crypto.v1alpha1.FullViewingKey fvk = 1;
+}
+
+message ViewAuthResponse {
+  ViewAuthToken token = 1;
+}
+
+service ViewAuthService {
+  rpc ViewAuth(ViewAuthRequest) returns (ViewAuthResponse);
+}
+
 // Requests sync status of the view service.
 message StatusRequest {
   // Identifies the FVK for the notes to query.
-  core.crypto.v1alpha1.AccountID account_id = 1;
+  optional core.crypto.v1alpha1.AccountID account_id = 14;
+  // Authorizes the request.
+  optional ViewAuthToken token = 15;
 }
 
 // Returns the status of the view service and whether it is synchronized with the chain state.
@@ -80,7 +101,9 @@ message StatusResponse {
 // Requests streaming updates on the sync height until the view service is synchronized.
 message StatusStreamRequest {
   // Identifies the FVK for the notes to query.
-  core.crypto.v1alpha1.AccountID account_id = 1;
+  optional core.crypto.v1alpha1.AccountID account_id = 14;
+  // Authorizes the request.
+  optional ViewAuthToken token = 15;
 }
 
 // A streaming sync status update
@@ -94,9 +117,6 @@ message StatusStreamResponse {
 // This message uses the fact that all proto fields are optional
 // to allow various filtering on the returned notes.
 message NotesRequest {
-  // Identifies the FVK for the notes to query.
-  core.crypto.v1alpha1.AccountID account_id = 1;
-
   // If set, return spent notes as well as unspent notes.
   bool include_spent = 2;
 
@@ -110,12 +130,19 @@ message NotesRequest {
   //
   // Ignored if `asset_id` is unset or if `include_spent` is set.
   uint64 amount_to_spend = 5;
+
+  // Identifies the FVK for the notes to query.
+  optional core.crypto.v1alpha1.AccountID account_id = 14;
+  // Authorizes the request.
+  optional ViewAuthToken token = 15;
 }
 
 // A query for quarantined notes known by the view service.
 message QuarantinedNotesRequest {
   // Identifies the FVK for the notes to query.
-  core.crypto.v1alpha1.AccountID account_id = 1;
+  optional core.crypto.v1alpha1.AccountID account_id = 14;
+  // Authorizes the request.
+  optional ViewAuthToken token = 15;
 }
 
 message QuarantinedNotesResponse {
@@ -123,14 +150,16 @@ message QuarantinedNotesResponse {
 }
 
 message WitnessRequest {
-  // Identifies the FVK for the note commitments to query.
-  core.crypto.v1alpha1.AccountID account_id = 1;
-
   // The note commitments to obtain auth paths for.
   repeated core.crypto.v1alpha1.NoteCommitment note_commitments = 2;
 
   // The transaction plan to witness
   core.transaction.v1alpha1.TransactionPlan transaction_plan = 3;
+
+  // Identifies the FVK for the notes to query.
+  optional core.crypto.v1alpha1.AccountID account_id = 14;
+  // Authorizes the request.
+  optional ViewAuthToken token = 15;
 }
 
 message WitnessResponse {
@@ -160,10 +189,13 @@ message FMDParametersResponse {
 }
 
 message NoteByCommitmentRequest {
-  core.crypto.v1alpha1.AccountID account_id = 1;
   core.crypto.v1alpha1.NoteCommitment note_commitment = 2;
   // If set to true, waits to return until the requested note is detected.
   bool await_detection = 3;
+  // Identifies the FVK for the notes to query.
+  optional core.crypto.v1alpha1.AccountID account_id = 14;
+  // Authorizes the request.
+  optional ViewAuthToken token = 15;
 }
 
 message NoteByCommitmentResponse {
@@ -171,9 +203,12 @@ message NoteByCommitmentResponse {
 }
 
 message NullifierStatusRequest {
-  core.crypto.v1alpha1.AccountID account_id = 1;
   core.crypto.v1alpha1.Nullifier nullifier = 2;
   bool await_detection = 3;
+  // Identifies the FVK for the notes to query.
+  optional core.crypto.v1alpha1.AccountID account_id = 14;
+  // Authorizes the request.
+  optional ViewAuthToken token = 15;
 }
 
 message NullifierStatusResponse {

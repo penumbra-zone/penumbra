@@ -1,9 +1,30 @@
+/// Scaffolding for bearer-token authentication for the ViewService.
+/// The `account_id` and `token` fields are both optional,
+/// and numbered as 14 & 15 throughout the view service protocol.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ViewAuthToken {
+    #[prost(bytes="vec", tag="1")]
+    pub inner: ::prost::alloc::vec::Vec<u8>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ViewAuthRequest {
+    #[prost(message, optional, tag="1")]
+    pub fvk: ::core::option::Option<super::super::core::crypto::v1alpha1::FullViewingKey>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ViewAuthResponse {
+    #[prost(message, optional, tag="1")]
+    pub token: ::core::option::Option<ViewAuthToken>,
+}
 /// Requests sync status of the view service.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatusRequest {
     /// Identifies the FVK for the notes to query.
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag="14")]
     pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
+    /// Authorizes the request.
+    #[prost(message, optional, tag="15")]
+    pub token: ::core::option::Option<ViewAuthToken>,
 }
 /// Returns the status of the view service and whether it is synchronized with the chain state.
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -19,8 +40,11 @@ pub struct StatusResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatusStreamRequest {
     /// Identifies the FVK for the notes to query.
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag="14")]
     pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
+    /// Authorizes the request.
+    #[prost(message, optional, tag="15")]
+    pub token: ::core::option::Option<ViewAuthToken>,
 }
 /// A streaming sync status update
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -36,9 +60,6 @@ pub struct StatusStreamResponse {
 /// to allow various filtering on the returned notes.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NotesRequest {
-    /// Identifies the FVK for the notes to query.
-    #[prost(message, optional, tag="1")]
-    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
     /// If set, return spent notes as well as unspent notes.
     #[prost(bool, tag="2")]
     pub include_spent: bool,
@@ -53,13 +74,22 @@ pub struct NotesRequest {
     /// Ignored if `asset_id` is unset or if `include_spent` is set.
     #[prost(uint64, tag="5")]
     pub amount_to_spend: u64,
+    /// Identifies the FVK for the notes to query.
+    #[prost(message, optional, tag="14")]
+    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
+    /// Authorizes the request.
+    #[prost(message, optional, tag="15")]
+    pub token: ::core::option::Option<ViewAuthToken>,
 }
 /// A query for quarantined notes known by the view service.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QuarantinedNotesRequest {
     /// Identifies the FVK for the notes to query.
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag="14")]
     pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
+    /// Authorizes the request.
+    #[prost(message, optional, tag="15")]
+    pub token: ::core::option::Option<ViewAuthToken>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QuarantinedNotesResponse {
@@ -68,15 +98,18 @@ pub struct QuarantinedNotesResponse {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WitnessRequest {
-    /// Identifies the FVK for the note commitments to query.
-    #[prost(message, optional, tag="1")]
-    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
     /// The note commitments to obtain auth paths for.
     #[prost(message, repeated, tag="2")]
     pub note_commitments: ::prost::alloc::vec::Vec<super::super::core::crypto::v1alpha1::NoteCommitment>,
     /// The transaction plan to witness
     #[prost(message, optional, tag="3")]
     pub transaction_plan: ::core::option::Option<super::super::core::transaction::v1alpha1::TransactionPlan>,
+    /// Identifies the FVK for the notes to query.
+    #[prost(message, optional, tag="14")]
+    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
+    /// Authorizes the request.
+    #[prost(message, optional, tag="15")]
+    pub token: ::core::option::Option<ViewAuthToken>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WitnessResponse {
@@ -113,13 +146,17 @@ pub struct FmdParametersResponse {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NoteByCommitmentRequest {
-    #[prost(message, optional, tag="1")]
-    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
     #[prost(message, optional, tag="2")]
     pub note_commitment: ::core::option::Option<super::super::core::crypto::v1alpha1::NoteCommitment>,
     /// If set to true, waits to return until the requested note is detected.
     #[prost(bool, tag="3")]
     pub await_detection: bool,
+    /// Identifies the FVK for the notes to query.
+    #[prost(message, optional, tag="14")]
+    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
+    /// Authorizes the request.
+    #[prost(message, optional, tag="15")]
+    pub token: ::core::option::Option<ViewAuthToken>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NoteByCommitmentResponse {
@@ -128,12 +165,16 @@ pub struct NoteByCommitmentResponse {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NullifierStatusRequest {
-    #[prost(message, optional, tag="1")]
-    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
     #[prost(message, optional, tag="2")]
     pub nullifier: ::core::option::Option<super::super::core::crypto::v1alpha1::Nullifier>,
     #[prost(bool, tag="3")]
     pub await_detection: bool,
+    /// Identifies the FVK for the notes to query.
+    #[prost(message, optional, tag="14")]
+    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
+    /// Authorizes the request.
+    #[prost(message, optional, tag="15")]
+    pub token: ::core::option::Option<ViewAuthToken>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NullifierStatusResponse {
@@ -640,6 +681,96 @@ pub mod view_protocol_service_client {
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/TransactionPerspective",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+    }
+}
+/// Generated client implementations.
+pub mod view_auth_service_client {
+    #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
+    use tonic::codegen::*;
+    use tonic::codegen::http::Uri;
+    #[derive(Debug, Clone)]
+    pub struct ViewAuthServiceClient<T> {
+        inner: tonic::client::Grpc<T>,
+    }
+    impl ViewAuthServiceClient<tonic::transport::Channel> {
+        /// Attempt to create a new client by connecting to a given endpoint.
+        pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
+        where
+            D: std::convert::TryInto<tonic::transport::Endpoint>,
+            D::Error: Into<StdError>,
+        {
+            let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
+            Ok(Self::new(conn))
+        }
+    }
+    impl<T> ViewAuthServiceClient<T>
+    where
+        T: tonic::client::GrpcService<tonic::body::BoxBody>,
+        T::Error: Into<StdError>,
+        T::ResponseBody: Body<Data = Bytes> + Send + 'static,
+        <T::ResponseBody as Body>::Error: Into<StdError> + Send,
+    {
+        pub fn new(inner: T) -> Self {
+            let inner = tonic::client::Grpc::new(inner);
+            Self { inner }
+        }
+        pub fn with_origin(inner: T, origin: Uri) -> Self {
+            let inner = tonic::client::Grpc::with_origin(inner, origin);
+            Self { inner }
+        }
+        pub fn with_interceptor<F>(
+            inner: T,
+            interceptor: F,
+        ) -> ViewAuthServiceClient<InterceptedService<T, F>>
+        where
+            F: tonic::service::Interceptor,
+            T::ResponseBody: Default,
+            T: tonic::codegen::Service<
+                http::Request<tonic::body::BoxBody>,
+                Response = http::Response<
+                    <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
+                >,
+            >,
+            <T as tonic::codegen::Service<
+                http::Request<tonic::body::BoxBody>,
+            >>::Error: Into<StdError> + Send + Sync,
+        {
+            ViewAuthServiceClient::new(InterceptedService::new(inner, interceptor))
+        }
+        /// Compress requests with the given encoding.
+        ///
+        /// This requires the server to support it otherwise it might respond with an
+        /// error.
+        #[must_use]
+        pub fn send_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.inner = self.inner.send_compressed(encoding);
+            self
+        }
+        /// Enable decompressing responses.
+        #[must_use]
+        pub fn accept_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.inner = self.inner.accept_compressed(encoding);
+            self
+        }
+        pub async fn view_auth(
+            &mut self,
+            request: impl tonic::IntoRequest<super::ViewAuthRequest>,
+        ) -> Result<tonic::Response<super::ViewAuthResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1alpha1.ViewAuthService/ViewAuth",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -1433,5 +1564,153 @@ pub mod view_protocol_service_server {
     impl<T: ViewProtocolService> tonic::server::NamedService
     for ViewProtocolServiceServer<T> {
         const NAME: &'static str = "penumbra.view.v1alpha1.ViewProtocolService";
+    }
+}
+/// Generated server implementations.
+pub mod view_auth_service_server {
+    #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
+    use tonic::codegen::*;
+    ///Generated trait containing gRPC methods that should be implemented for use with ViewAuthServiceServer.
+    #[async_trait]
+    pub trait ViewAuthService: Send + Sync + 'static {
+        async fn view_auth(
+            &self,
+            request: tonic::Request<super::ViewAuthRequest>,
+        ) -> Result<tonic::Response<super::ViewAuthResponse>, tonic::Status>;
+    }
+    #[derive(Debug)]
+    pub struct ViewAuthServiceServer<T: ViewAuthService> {
+        inner: _Inner<T>,
+        accept_compression_encodings: EnabledCompressionEncodings,
+        send_compression_encodings: EnabledCompressionEncodings,
+    }
+    struct _Inner<T>(Arc<T>);
+    impl<T: ViewAuthService> ViewAuthServiceServer<T> {
+        pub fn new(inner: T) -> Self {
+            Self::from_arc(Arc::new(inner))
+        }
+        pub fn from_arc(inner: Arc<T>) -> Self {
+            let inner = _Inner(inner);
+            Self {
+                inner,
+                accept_compression_encodings: Default::default(),
+                send_compression_encodings: Default::default(),
+            }
+        }
+        pub fn with_interceptor<F>(
+            inner: T,
+            interceptor: F,
+        ) -> InterceptedService<Self, F>
+        where
+            F: tonic::service::Interceptor,
+        {
+            InterceptedService::new(Self::new(inner), interceptor)
+        }
+        /// Enable decompressing requests with the given encoding.
+        #[must_use]
+        pub fn accept_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.accept_compression_encodings.enable(encoding);
+            self
+        }
+        /// Compress responses with the given encoding, if the client supports it.
+        #[must_use]
+        pub fn send_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.send_compression_encodings.enable(encoding);
+            self
+        }
+    }
+    impl<T, B> tonic::codegen::Service<http::Request<B>> for ViewAuthServiceServer<T>
+    where
+        T: ViewAuthService,
+        B: Body + Send + 'static,
+        B::Error: Into<StdError> + Send + 'static,
+    {
+        type Response = http::Response<tonic::body::BoxBody>;
+        type Error = std::convert::Infallible;
+        type Future = BoxFuture<Self::Response, Self::Error>;
+        fn poll_ready(
+            &mut self,
+            _cx: &mut Context<'_>,
+        ) -> Poll<Result<(), Self::Error>> {
+            Poll::Ready(Ok(()))
+        }
+        fn call(&mut self, req: http::Request<B>) -> Self::Future {
+            let inner = self.inner.clone();
+            match req.uri().path() {
+                "/penumbra.view.v1alpha1.ViewAuthService/ViewAuth" => {
+                    #[allow(non_camel_case_types)]
+                    struct ViewAuthSvc<T: ViewAuthService>(pub Arc<T>);
+                    impl<
+                        T: ViewAuthService,
+                    > tonic::server::UnaryService<super::ViewAuthRequest>
+                    for ViewAuthSvc<T> {
+                        type Response = super::ViewAuthResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::ViewAuthRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move { (*inner).view_auth(request).await };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = ViewAuthSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                _ => {
+                    Box::pin(async move {
+                        Ok(
+                            http::Response::builder()
+                                .status(200)
+                                .header("grpc-status", "12")
+                                .header("content-type", "application/grpc")
+                                .body(empty_body())
+                                .unwrap(),
+                        )
+                    })
+                }
+            }
+        }
+    }
+    impl<T: ViewAuthService> Clone for ViewAuthServiceServer<T> {
+        fn clone(&self) -> Self {
+            let inner = self.inner.clone();
+            Self {
+                inner,
+                accept_compression_encodings: self.accept_compression_encodings,
+                send_compression_encodings: self.send_compression_encodings,
+            }
+        }
+    }
+    impl<T: ViewAuthService> Clone for _Inner<T> {
+        fn clone(&self) -> Self {
+            Self(self.0.clone())
+        }
+    }
+    impl<T: std::fmt::Debug> std::fmt::Debug for _Inner<T> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{:?}", self.0)
+        }
+    }
+    impl<T: ViewAuthService> tonic::server::NamedService for ViewAuthServiceServer<T> {
+        const NAME: &'static str = "penumbra.view.v1alpha1.ViewAuthService";
     }
 }
