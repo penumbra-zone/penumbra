@@ -204,7 +204,7 @@ message Output {
 // data which is bound to the authorizing data by some other means.
 message OutputBody {
   // The minimal data required to scan and process the new output note.
-  crypto.v1alpha1.NotePayload note_payload = 1;
+  crypto.v1alpha1.EncryptedNote note_payload = 1;
   // A commitment to the value of the output note. 32 bytes.
   crypto.v1alpha1.BalanceCommitment balance_commitment = 2;
   // An encrypted key for decrypting the memo.

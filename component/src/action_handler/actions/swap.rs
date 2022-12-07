@@ -8,7 +8,7 @@ use anyhow::{Context, Result};
 use ark_ff::Zero;
 use async_trait::async_trait;
 use decaf377::Fr;
-use penumbra_chain::AnnotatedNotePayload;
+use penumbra_chain::sync::StatePayload;
 use penumbra_crypto::{MockFlowCiphertext, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_storage::{State, StateRead, StateTransaction};
 use penumbra_transaction::{action::Swap, Transaction};
@@ -75,9 +75,9 @@ impl ActionHandler for Swap {
         // Record the Swap NFT in the state.
         let source = state.object_get("source").cloned().unwrap_or_default();
         state
-            .add_note(AnnotatedNotePayload {
+            .add_state_payload(StatePayload::Note {
                 source,
-                payload: swap.body.swap_nft.clone(),
+                note: self.body.swap_nft.clone(),
             })
             .await;
 

@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use penumbra_chain::{AnnotatedNotePayload, CompactBlock, Epoch};
+use penumbra_chain::{CompactBlock, Epoch, StatePayload};
 use penumbra_crypto::{note, FullViewingKey, Note};
 use penumbra_storage::StateRead;
 
@@ -62,14 +62,21 @@ impl MockClient {
             ));
         }
 
-        for AnnotatedNotePayload { payload, .. } in block.note_payloads {
-            match payload.trial_decrypt(&self.fvk) {
-                Some(note) => {
-                    self.notes.insert(payload.note_commitment, note.clone());
-                    self.nct.insert(Keep, payload.note_commitment)?;
+        for payload in block.state_payloads {
+            match payload {
+                StatePayload::Note { note: payload, .. } => {
+                    match payload.trial_decrypt(&self.fvk) {
+                        Some(note) => {
+                            self.notes.insert(payload.note_commitment, note.clone());
+                            self.nct.insert(Keep, payload.note_commitment)?;
+                        }
+                        None => {
+                            self.nct.insert(Forget, payload.note_commitment)?;
+                        }
+                    }
                 }
-                None => {
-                    self.nct.insert(Forget, payload.note_commitment)?;
+                StatePayload::RolledUp(commitment) => {
+                    self.nct.insert(Forget, commitment)?;
                 }
             }
         }

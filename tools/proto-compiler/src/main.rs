@@ -35,7 +35,7 @@ fn main() -> Result<()> {
         ".penumbra.core.transaction",
         // The byte fields in a compact block will also be converted to fixed-size
         // byte arrays and then discarded.
-        ".penumbra.core.crypto.v1alpha1.NotePayload",
+        ".penumbra.core.crypto.v1alpha1.EncryptedNote",
         ".penumbra.core.chain.v1alpha1.CompactBlock",
     ]);
 
@@ -191,12 +191,12 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
         ".penumbra.core.crypto.v1alpha1.BalanceCommitment",
         SERDE_TRANSPARENT,
     ),
-    (".penumbra.core.crypto.v1alpha1.NotePayload", SERIALIZE),
     (".tendermint.types.Validator", SERIALIZE),
     (".tendermint.p2p.DefaultNodeInfo", SERIALIZE),
     (".tendermint.p2p.DefaultNodeInfoOther", SERIALIZE),
     (".tendermint.p2p.ProtocolVersion", SERIALIZE),
     (".tendermint.crypto.PublicKey", SERIALIZE),
+    (".penumbra.core.crypto.v1alpha1.EncryptedNote", SERIALIZE),
     (".penumbra.core.crypto.v1alpha1.AssetId", SERIALIZE),
     (".penumbra.core.crypto.v1alpha1.AssetId", SERDE_TRANSPARENT),
     (".penumbra.core.crypto.v1alpha1.Value", SERIALIZE),
@@ -251,10 +251,7 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.core.chain.v1alpha1.ChainParameters", SERIALIZE),
     (".penumbra.core.chain.v1alpha1.FmdParameters", SERIALIZE),
     (".penumbra.core.chain.v1alpha1.CompactBlock", SERIALIZE),
-    (
-        ".penumbra.core.chain.v1alpha1.AnnotatedNotePayload",
-        SERIALIZE,
-    ),
+    (".penumbra.core.chain.v1alpha1.StatePayload", SERIALIZE),
     (".penumbra.core.chain.v1alpha1.KnownAssets", SERIALIZE),
     (
         ".penumbra.core.chain.v1alpha1.KnownAssets",
@@ -478,11 +475,11 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         AS_HEX,
     ),
     (
-        ".penumbra.core.crypto.v1alpha1.NotePayload.ephemeral_key",
+        ".penumbra.core.crypto.v1alpha1.EncryptedNote.ephemeral_key",
         AS_HEX_FOR_BYTES,
     ),
     (
-        ".penumbra.core.crypto.v1alpha1.NotePayload.encrypted_note",
+        ".penumbra.core.crypto.v1alpha1.EncryptedNote.encrypted_note",
         AS_HEX_FOR_BYTES,
     ),
     (".penumbra.core.crypto.v1alpha1.Nullifier.inner", AS_HEX),

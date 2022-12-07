@@ -96,9 +96,9 @@ pub struct AssetInfo {
 pub struct CompactBlock {
     #[prost(uint64, tag="1")]
     pub height: u64,
-    /// NotePayloads describing new notes.
+    /// State payloads describing new state fragments.
     #[prost(message, repeated, tag="2")]
-    pub note_payloads: ::prost::alloc::vec::Vec<AnnotatedNotePayload>,
+    pub state_payloads: ::prost::alloc::vec::Vec<StatePayload>,
     /// Nullifiers identifying spent notes.
     #[prost(message, repeated, tag="3")]
     pub nullifiers: ::prost::alloc::vec::Vec<super::super::crypto::v1alpha1::Nullifier>,
@@ -106,7 +106,7 @@ pub struct CompactBlock {
     #[prost(message, optional, tag="4")]
     pub block_root: ::core::option::Option<super::super::crypto::v1alpha1::MerkleRoot>,
     /// The epoch root of this epoch (only present when the block is the last in an epoch).
-    #[prost(message, optional, tag="5")]
+    #[prost(message, optional, tag="17")]
     pub epoch_root: ::core::option::Option<super::super::crypto::v1alpha1::MerkleRoot>,
     /// If a proposal started voting in this block, this is set to `true`.
     #[prost(bool, tag="20")]
@@ -115,14 +115,36 @@ pub struct CompactBlock {
     #[prost(message, optional, tag="100")]
     pub fmd_parameters: ::core::option::Option<FmdParameters>,
 }
-/// A note payload, annotated with the note source.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct AnnotatedNotePayload {
-    #[prost(message, optional, tag="1")]
-    pub payload: ::core::option::Option<super::super::crypto::v1alpha1::NotePayload>,
-    #[prost(message, optional, tag="2")]
-    pub source: ::core::option::Option<NoteSource>,
+pub struct StatePayload {
+    #[prost(oneof="state_payload::StatePayload", tags="1, 2")]
+    pub state_payload: ::core::option::Option<state_payload::StatePayload>,
+}
+/// Nested message and enum types in `StatePayload`.
+pub mod state_payload {
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct RolledUp {
+        #[prost(message, optional, tag="1")]
+        pub commitment: ::core::option::Option<super::super::super::crypto::v1alpha1::StateCommitment>,
+    }
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Note {
+        #[prost(message, optional, tag="1")]
+        pub source: ::core::option::Option<super::NoteSource>,
+        #[prost(message, optional, tag="2")]
+        pub note: ::core::option::Option<super::super::super::crypto::v1alpha1::EncryptedNote>,
+    }
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum StatePayload {
+        #[prost(message, tag="1")]
+        RolledUp(RolledUp),
+        #[prost(message, tag="2")]
+        Note(Note),
+    }
 }
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[serde(transparent)]

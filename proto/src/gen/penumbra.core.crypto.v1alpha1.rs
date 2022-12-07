@@ -188,7 +188,7 @@ pub struct BindingSignature {
 /// data required to scan and process the output.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct NotePayload {
+pub struct EncryptedNote {
     /// The note commitment for the output note. 32 bytes.
     #[prost(message, optional, tag="1")]
     pub note_commitment: ::core::option::Option<StateCommitment>,

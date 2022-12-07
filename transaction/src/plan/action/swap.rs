@@ -4,7 +4,7 @@ use decaf377::Fq;
 use penumbra_crypto::dex::swap::SwapPlaintext;
 use penumbra_crypto::Balance;
 use penumbra_crypto::{
-    asset, proofs::transparent::SwapProof, FieldExt, Fr, FullViewingKey, Note, NotePayload, Value,
+    asset, proofs::transparent::SwapProof, EncryptedNote, FieldExt, Fr, FullViewingKey, Note, Value,
 };
 use penumbra_proto::{core::transaction::v1alpha1 as pb, Protobuf};
 use rand_core::{CryptoRng, RngCore};
@@ -74,7 +74,7 @@ impl SwapPlan {
 
         let encrypted_note = swap_nft_note.encrypt(&self.esk);
         let diversified_generator = swap_nft_note.diversified_generator();
-        let swap_nft = NotePayload {
+        let swap_nft = EncryptedNote {
             note_commitment,
             ephemeral_key: self.esk.diversified_public(&diversified_generator),
             encrypted_note,

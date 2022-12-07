@@ -42,10 +42,10 @@ pub struct SwapClaimBody {
     pub fee: ::core::option::Option<super::super::crypto::v1alpha1::Fee>,
     /// Note output for asset 1.
     #[prost(message, optional, tag="3")]
-    pub output_1: ::core::option::Option<super::super::crypto::v1alpha1::NotePayload>,
+    pub output_1: ::core::option::Option<super::super::crypto::v1alpha1::EncryptedNote>,
     /// Note output for asset 2.
     #[prost(message, optional, tag="4")]
-    pub output_2: ::core::option::Option<super::super::crypto::v1alpha1::NotePayload>,
+    pub output_2: ::core::option::Option<super::super::crypto::v1alpha1::EncryptedNote>,
     /// Input and output amounts, and asset IDs for the assets in the swap.
     #[prost(message, optional, tag="6")]
     pub output_data: ::core::option::Option<BatchSwapOutputData>,
@@ -76,7 +76,7 @@ pub struct SwapBody {
     pub fee_commitment: ::prost::alloc::vec::Vec<u8>,
     /// Swap NFT recording the user's contribution.
     #[prost(message, optional, tag="5")]
-    pub swap_nft: ::core::option::Option<super::super::crypto::v1alpha1::NotePayload>,
+    pub swap_nft: ::core::option::Option<super::super::crypto::v1alpha1::EncryptedNote>,
     /// Encrypted version of the original `Swap`, symmetrically encrypted w/ viewing key.
     #[prost(bytes="vec", tag="6")]
     pub swap_ciphertext: ::prost::alloc::vec::Vec<u8>,

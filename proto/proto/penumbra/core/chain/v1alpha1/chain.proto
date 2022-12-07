@@ -76,24 +76,32 @@ message AssetInfo {
 // Contains the minimum data needed to update client state.
 message CompactBlock {
   uint64 height = 1;
-  // NotePayloads describing new notes.
-  repeated AnnotatedNotePayload note_payloads = 2;
+  // State payloads describing new state fragments.
+  repeated StatePayload state_payloads = 2;
   // Nullifiers identifying spent notes.
   repeated crypto.v1alpha1.Nullifier nullifiers = 3;
   // The block root of this block.
   crypto.v1alpha1.MerkleRoot block_root = 4;
   // The epoch root of this epoch (only present when the block is the last in an epoch).
-  crypto.v1alpha1.MerkleRoot epoch_root = 5;
+  crypto.v1alpha1.MerkleRoot epoch_root = 17;
   // If a proposal started voting in this block, this is set to `true`.
   bool proposal_started = 20;
   // Latest Fuzzy Message Detection parameters.
   FmdParameters fmd_parameters = 100;
 }
 
-// A note payload, annotated with the note source.
-message AnnotatedNotePayload {
-  crypto.v1alpha1.NotePayload payload = 1;
-  NoteSource source = 2;
+message StatePayload {
+  message RolledUp {
+    crypto.v1alpha1.StateCommitment commitment = 1;
+  }
+  message Note {
+    NoteSource source = 1;
+    crypto.v1alpha1.EncryptedNote note = 2;
+  }
+  oneof state_payload {
+    RolledUp rolled_up = 1;
+    Note note = 2;
+  }
 }
 
 message KnownAssets {

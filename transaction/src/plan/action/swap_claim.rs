@@ -3,7 +3,7 @@ use penumbra_crypto::{
     ka,
     keys::{IncomingViewingKey, NullifierKey},
     proofs::transparent::SwapClaimProof,
-    FullViewingKey, Note, NotePayload, Value,
+    EncryptedNote, FullViewingKey, Note, Value,
 };
 use penumbra_proto::{core::transaction::v1alpha1 as pb, Protobuf};
 use penumbra_tct as tct;
@@ -124,12 +124,12 @@ impl SwapClaimPlan {
 
         // We need to get the correct diversified generator to use with DH:
         let g_d = self.swap_plaintext.claim_address.diversified_generator();
-        let output_1 = NotePayload {
+        let output_1 = EncryptedNote {
             note_commitment: output_1_note.commit(),
             ephemeral_key: self.esk_1.diversified_public(g_d),
             encrypted_note: output_1_note.encrypt(&self.esk_1),
         };
-        let output_2 = NotePayload {
+        let output_2 = EncryptedNote {
             note_commitment: output_2_note.commit(),
             ephemeral_key: self.esk_2.diversified_public(g_d),
             encrypted_note: output_2_note.encrypt(&self.esk_2),

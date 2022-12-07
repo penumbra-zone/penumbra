@@ -3,7 +3,7 @@ use crate::{ActionView, IsAction, TransactionPerspective};
 use ark_ff::Zero;
 use penumbra_crypto::dex::BatchSwapOutputData;
 use penumbra_crypto::transaction::Fee;
-use penumbra_crypto::{proofs::transparent::SwapClaimProof, Fr, NotePayload};
+use penumbra_crypto::{proofs::transparent::SwapClaimProof, EncryptedNote, Fr};
 use penumbra_crypto::{Balance, Note, Nullifier};
 use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 
@@ -96,8 +96,8 @@ impl TryFrom<pb::SwapClaim> for SwapClaim {
 pub struct Body {
     pub nullifier: Nullifier,
     pub fee: Fee,
-    pub output_1: NotePayload,
-    pub output_2: NotePayload,
+    pub output_1: EncryptedNote,
+    pub output_2: EncryptedNote,
     pub output_data: BatchSwapOutputData,
     pub epoch_duration: u64,
 }

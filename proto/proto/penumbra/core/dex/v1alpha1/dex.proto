@@ -36,9 +36,9 @@ message SwapClaimBody {
   // The fee allows `SwapClaim` without an additional `Spend`.
   crypto.v1alpha1.Fee fee = 2;
   // Note output for asset 1.
-  crypto.v1alpha1.NotePayload output_1 = 3;
+  crypto.v1alpha1.EncryptedNote output_1 = 3;
   // Note output for asset 2.
-  crypto.v1alpha1.NotePayload output_2 = 4;
+  crypto.v1alpha1.EncryptedNote output_2 = 4;
   // Input and output amounts, and asset IDs for the assets in the swap.
   BatchSwapOutputData output_data = 6;
   // The epoch duration of the chain when the swap claim took place.
@@ -61,7 +61,7 @@ message SwapBody {
   // A commitment to a prepaid fee for the future SwapClaim.
   bytes fee_commitment = 4;
   // Swap NFT recording the user's contribution.
-  crypto.v1alpha1.NotePayload swap_nft = 5;
+  crypto.v1alpha1.EncryptedNote swap_nft = 5;
   // Encrypted version of the original `Swap`, symmetrically encrypted w/ viewing key.
   bytes swap_ciphertext = 6;
 }

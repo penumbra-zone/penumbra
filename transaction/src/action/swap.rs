@@ -4,7 +4,7 @@ use penumbra_crypto::asset::Amount;
 use penumbra_crypto::dex::TradingPair;
 use penumbra_crypto::proofs::transparent::SwapProof;
 use penumbra_crypto::{balance, dex::swap::SwapCiphertext, Balance};
-use penumbra_crypto::{Note, NotePayload, Value};
+use penumbra_crypto::{EncryptedNote, Note, Value};
 use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 
 use crate::view::action_view::SwapView;
@@ -114,7 +114,7 @@ pub struct Body {
     pub delta_2_i: Amount,
     pub fee_commitment: balance::Commitment,
     // TODO: rename to note_payload
-    pub swap_nft: NotePayload,
+    pub swap_nft: EncryptedNote,
     pub swap_ciphertext: SwapCiphertext,
 }
 

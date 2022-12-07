@@ -12,7 +12,7 @@ use penumbra_crypto::{
     note::Commitment,
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
     transaction::Fee,
-    Fr, FullViewingKey, Note, NotePayload, Nullifier, PayloadKey,
+    EncryptedNote, Fr, FullViewingKey, Note, Nullifier, PayloadKey,
 };
 use penumbra_proto::{
     core::ibc::v1alpha1 as pb_ibc, core::stake::v1alpha1 as pbs,
@@ -275,7 +275,10 @@ impl Transaction {
         })
     }
 
-    pub fn note_payloads(&self) -> impl Iterator<Item = &NotePayload> {
+    // TODO: re-evaluate this API, do we want to be iterating over encrypted notes?
+    // or state payloads? but the state payloads have sources, so we'd have to construct them
+    // on the fly with the tx hash? how do we really want to be using tihs?
+    pub fn encrypted_notes(&self) -> impl Iterator<Item = &EncryptedNote> {
         // This is somewhat cursed but avoids the need to allocate or erase types, I guess?
         self.actions()
             .flat_map(|action| match action {

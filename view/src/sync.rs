@@ -1,9 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use penumbra_chain::{
-    params::FmdParameters, AnnotatedNotePayload, CompactBlock, Epoch, NoteSource,
-};
-use penumbra_crypto::{FullViewingKey, Note, NotePayload, Nullifier};
+use penumbra_chain::{params::FmdParameters, CompactBlock, Epoch, NoteSource, StatePayload};
+use penumbra_crypto::{EncryptedNote, FullViewingKey, Note, Nullifier};
 use penumbra_tct as tct;
 
 use crate::{SpendableNoteRecord, Storage};
@@ -30,13 +28,13 @@ impl FilteredBlock {
     }
 }
 
-#[tracing::instrument(skip(fvk, note_commitment_tree, note_payloads, nullifiers, storage))]
+#[tracing::instrument(skip(fvk, note_commitment_tree, state_payloads, nullifiers, storage))]
 pub async fn scan_block(
     fvk: &FullViewingKey,
     note_commitment_tree: &mut tct::Tree,
     CompactBlock {
         height,
-        note_payloads,
+        state_payloads,
         nullifiers,
         block_root,
         epoch_root,
@@ -47,7 +45,7 @@ pub async fn scan_block(
     storage: &Storage,
 ) -> anyhow::Result<FilteredBlock> {
     // Trial-decrypt a note with our own specific viewing key
-    let trial_decrypt = |note_payload: NotePayload| -> tokio::task::JoinHandle<Option<Note>> {
+    let trial_decrypt = |note_payload: EncryptedNote| -> tokio::task::JoinHandle<Option<Note>> {
         // TODO: change fvk to Arc<FVK> in Worker and pass to scan_block as Arc
         // need this so the task is 'static and not dependent on key lifetime
         let fvk2 = fvk.clone();
@@ -61,13 +59,18 @@ pub async fn scan_block(
     let spent_nullifiers: Vec<Nullifier> = nullifiers;
 
     // Trial-decrypt the notes in this block, keeping track of the ones that were meant for us
-    let decryptions = note_payloads
+    let decryptions = state_payloads
         .iter()
-        .map(|annotated| trial_decrypt(annotated.payload.clone()))
+        .filter_map(|x| match x {
+            StatePayload::Note { note, source } => Some((trial_decrypt(note.clone()), source)),
+            _ => None,
+        })
         .collect::<Vec<_>>();
+
     let mut decrypted_applied_notes = BTreeMap::new();
+
     for decryption in decryptions {
-        if let Some(note) = decryption.await.unwrap() {
+        if let Some(note) = decryption.0.await.unwrap() {
             decrypted_applied_notes.insert(note.commit(), note);
         }
     }
@@ -84,42 +87,45 @@ pub async fn scan_block(
     } else {
         // If we found at least one note for us in this block, we have to explicitly construct the
         // whole block in the NCT by inserting each commitment one at a time
-        new_notes = note_payloads
+        new_notes = state_payloads
             .into_iter()
-            .filter_map(|AnnotatedNotePayload { payload, source }| {
-                let note_commitment = payload.note_commitment;
+            .filter_map(|x| match x {
+                StatePayload::Note { note, source } => {
+                    let note_commitment = note.note_commitment;
 
-                if let Some(note) = decrypted_applied_notes.remove(&note_commitment) {
-                    // Keep track of this commitment for later witnessing
-                    let position = note_commitment_tree
-                        .insert(tct::Witness::Keep, note_commitment)
-                        .expect("inserting a commitment must succeed");
+                    if let Some(note) = decrypted_applied_notes.remove(&note_commitment) {
+                        // Keep track of this commitment for later witnessing
+                        let position = note_commitment_tree
+                            .insert(tct::Witness::Keep, note_commitment)
+                            .expect("inserting a commitment must succeed");
 
-                    let nullifier = fvk.derive_nullifier(position, &note_commitment);
+                        let nullifier = fvk.derive_nullifier(position, &note_commitment);
 
-                    let diversifier = note.diversifier();
-                    let address_index = fvk.incoming().index_for_diversifier(diversifier);
+                        let diversifier = note.diversifier();
+                        let address_index = fvk.incoming().index_for_diversifier(diversifier);
 
-                    let record = SpendableNoteRecord {
-                        note_commitment,
-                        height_spent: None,
-                        height_created: height,
-                        note,
-                        address_index,
-                        nullifier,
-                        position,
-                        source,
-                    };
+                        let record = SpendableNoteRecord {
+                            note_commitment,
+                            height_spent: None,
+                            height_created: height,
+                            note,
+                            address_index,
+                            nullifier,
+                            position,
+                            source,
+                        };
 
-                    Some(record)
-                } else {
-                    // Don't remember this commitment; it wasn't ours
-                    note_commitment_tree
-                        .insert(tct::Witness::Forget, note_commitment)
-                        .expect("inserting a commitment must succeed");
+                        Some(record)
+                    } else {
+                        // Don't remember this commitment; it wasn't ours
+                        note_commitment_tree
+                            .insert(tct::Witness::Forget, note_commitment)
+                            .expect("inserting a commitment must succeed");
 
-                    None
+                        None
+                    }
                 }
+                _ => None,
             })
             .collect();
 

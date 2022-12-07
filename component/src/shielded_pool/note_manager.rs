@@ -6,8 +6,8 @@ use anyhow::Result;
 use ark_ff::PrimeField;
 use async_trait::async_trait;
 use decaf377::{Fq, Fr};
-use penumbra_chain::{sync::AnnotatedNotePayload, NoteSource};
-use penumbra_crypto::{ka, Address, Note, NotePayload, Nullifier, One, Value};
+use penumbra_chain::{sync::StatePayload, NoteSource};
+use penumbra_crypto::{ka, Address, EncryptedNote, Note, Nullifier, One, Value};
 use penumbra_proto::StateWriteProto;
 use penumbra_storage::StateWrite;
 use penumbra_tct as tct;
@@ -21,15 +21,7 @@ pub trait NoteManager: StateWrite {
     /// Most notes in the shielded pool are created by client transactions.
     /// This method allows the chain to inject new value into the shielded pool
     /// on its own.
-    #[instrument(
-        skip(self, value, address, source),
-        // fields(
-        //     position = u64::from(self
-        //         .note_commitment_tree
-        //         .position()
-        //         .unwrap_or_else(|| u64::MAX.into())),
-        // )
-    )]
+    #[instrument(skip(self, value, address, source))]
     async fn mint_note(
         &mut self,
         value: Value,
@@ -46,8 +38,6 @@ pub trait NoteManager: StateWrite {
         // Hashing the current NCT root would be sufficient, since it will
         // change every time we insert a new note.  But computing the NCT root
         // is very slow, so instead we hash the current position.
-        //
-        // TODO: how does this work if we were to build the NCT only at the end of the block?
 
         let position: u64 = self
             .stub_note_commitment_tree()
@@ -78,8 +68,8 @@ pub trait NoteManager: StateWrite {
         // Now record the note and update the total supply:
         self.update_token_supply(&value.asset_id, i64::from(value.amount))
             .await?;
-        self.add_note(AnnotatedNotePayload {
-            payload: NotePayload {
+        self.add_state_payload(StatePayload::Note {
+            note: EncryptedNote {
                 note_commitment,
                 ephemeral_key,
                 encrypted_note,
@@ -91,27 +81,25 @@ pub trait NoteManager: StateWrite {
         Ok(())
     }
 
-    #[instrument(skip(self, ap), fields(note_commitment = ?ap.payload.note_commitment))]
-    async fn add_note(&mut self, ap: AnnotatedNotePayload) {
-        let AnnotatedNotePayload { payload, source } = ap;
-        tracing::debug!("adding note");
+    #[instrument(skip(self, payload), fields(commitment = ?payload.commitment()))]
+    async fn add_state_payload(&mut self, payload: StatePayload) {
+        tracing::debug!(?payload);
 
         // 1. Insert it into the NCT
-        // TODO: build up data incrementally
         let mut nct = self.stub_note_commitment_tree().await;
-        nct.insert(tct::Witness::Forget, payload.note_commitment)
+        nct.insert(tct::Witness::Forget, *payload.commitment())
             // TODO: why? can't we exceed the number of note commitments in a block?
             .expect("inserting into the note commitment tree never fails");
         self.stub_put_note_commitment_tree(&nct);
 
-        // 2. Record its source in the JMT
-        self.put(state_key::note_source(&payload.note_commitment), source);
+        // 2. Record its source in the JMT, if present
+        if let Some(source) = payload.source() {
+            self.put(state_key::note_source(payload.commitment()), source.clone());
+        }
 
         // 3. Finally, record it in the pending compact block.
         let mut compact_block = self.stub_compact_block();
-        compact_block
-            .note_payloads
-            .push(AnnotatedNotePayload { payload, source });
+        compact_block.state_payloads.push(payload);
         self.stub_put_compact_block(compact_block);
     }
 

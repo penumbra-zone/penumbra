@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use penumbra_chain::{AnnotatedNotePayload, StateReadExt as _};
+use penumbra_chain::{sync::StatePayload, StateReadExt as _};
 use penumbra_storage::{State, StateRead, StateTransaction, StateWrite};
 use penumbra_transaction::{action::SwapClaim, Transaction};
 use tracing::instrument;
@@ -87,15 +87,15 @@ impl ActionHandler for SwapClaim {
         let source = state.object_get("source").cloned().unwrap_or_default();
 
         state
-            .add_note(AnnotatedNotePayload {
+            .add_state_payload(StatePayload::Note {
                 source,
-                payload: self.body.output_1.clone(),
+                note: self.body.output_1.clone(),
             })
             .await;
         state
-            .add_note(AnnotatedNotePayload {
+            .add_state_payload(StatePayload::Note {
                 source,
-                payload: self.body.output_2.clone(),
+                note: self.body.output_2.clone(),
             })
             .await;
 
