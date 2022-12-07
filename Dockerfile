@@ -83,7 +83,7 @@ RUN apt update && apt install -y clang libssl1.1 openssl
 COPY --from=build-env /root/bin /root/bin
 RUN mkdir -p /root/lib_abs && touch /root/lib_abs.list
 RUN bash -c \
-  'readarray -t LIBS < { for b in $(ls -1 /root/bin/* | sort -u) ; do ldd target/release/$b | awk "{print \$1, \$2, \$3 }"; done ; } | sort -u > /tmp/list.txt \
+  'readarray -t LIBS < <( for b in $(ls -1 /root/bin/* | sort -u) ; do ldd $b | awk "{print \$1, \$2, \$3 }" | sort -u; done | sort -u ; ) \
     i=0; for LIB in "${LIBS[@]}"; do \
       PATH1=$(echo $LIB | awk "{print \$1}") ; \
       if [ "$PATH1" = "linux-vdso.so.1" ]; then continue; fi; \
