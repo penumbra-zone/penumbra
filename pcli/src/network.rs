@@ -5,6 +5,9 @@ use penumbra_proto::{
     client::v1alpha1::{
         oblivious_query_service_client::ObliviousQueryServiceClient,
         specific_query_service_client::SpecificQueryServiceClient,
+        tendermint_proxy::service_client::ServiceClient as TendermintServiceClient,
+        tendermint_proxy_service_client::TendermintProxyServiceClient, BroadcastTxAsyncRequest,
+        BroadcastTxSyncRequest,
     },
     Protobuf,
 };
@@ -69,7 +72,7 @@ impl App {
 
         println!("broadcasting transaction...");
 
-        let client = reqwest::Client::new();
+        let mut client = self.tendermint_proxy_client().await?;
         let req_id: u8 = rand::thread_rng().gen();
         let tx_encoding = &transaction.encode_to_vec();
 
@@ -80,63 +83,19 @@ impl App {
             ));
         }
 
-        let rsp: serde_json::Value = client
-            .post(self.tendermint_url.clone())
-            .json(&serde_json::json!(
-                {
-                    "method": "broadcast_tx_sync",
-                    "params": [&tx_encoding],
-                    "id": req_id,
-                }
-            ))
-            .send()
+        let rsp = client
+            .broadcast_tx_sync(BroadcastTxSyncRequest {
+                params: tx_encoding.to_vec(),
+                req_id: req_id.into(),
+            })
             .await?
-            .json()
-            .await?;
+            .into_inner();
 
-        tracing::info!("{}", rsp);
+        tracing::info!("{:#?}", rsp);
 
-        // Sometimes the result is in a result key, and sometimes it's bare? (??)
-        let result = rsp.get("result").unwrap_or(&rsp);
-
-        // Just in case something changes in the wrapping JSON resulting in a different byte-size triggering the
-        // "request body too large" error, check any error message:
-        if let Some(error) = result.get("error") {
-            let error = error
-                .as_object()
-                .ok_or_else(|| anyhow::anyhow!("could not parse JSON response"))?;
-            let code = error
-                .get("code")
-                .and_then(|c| c.as_i64())
-                .ok_or_else(|| anyhow::anyhow!("could not parse JSON response"))?;
-            let data = error
-                .get("data")
-                .and_then(|c| c.as_str())
-                .ok_or_else(|| anyhow::anyhow!("could not parse JSON response"))?;
-            if data.contains("request body too large") {
-                return Err(anyhow::anyhow!(
-                "Transaction is too large to be broadcasted to the network. Please run `pcli tx sweep` and then re-try the transaction."
-            ));
-            } else {
-                return Err(anyhow::anyhow!(
-                    "Error submitting transaction: code {}, data: {}",
-                    code,
-                    data
-                ));
-            }
-        }
-
-        // Some other errors are structured differently in the JSON:
-        let code = result
-            .get("code")
-            .and_then(|c| c.as_i64())
-            .ok_or_else(|| anyhow::anyhow!("could not parse JSON response"))?;
-
+        let code = rsp.code;
         if code != 0 {
-            let log = result
-                .get("log")
-                .and_then(|l| l.as_str())
-                .ok_or_else(|| anyhow::anyhow!("could not parse JSON response"))?;
+            let log = rsp.log;
 
             return Err(anyhow::anyhow!(
                 "Error submitting transaction: code {}, log: {}",
@@ -181,23 +140,18 @@ impl App {
     ) -> Result<(), anyhow::Error> {
         println!("broadcasting transaction...");
 
-        let client = reqwest::Client::new();
+        let mut client = self.tendermint_proxy_client().await?;
         let req_id: u8 = rand::thread_rng().gen();
-        let rsp: serde_json::Value = client
-            .post(self.tendermint_url.clone())
-            .json(&serde_json::json!(
-                {
-                    "method": "broadcast_tx_async",
-                    "params": [&transaction.encode_to_vec()],
-                    "id": req_id,
-                }
-            ))
-            .send()
+        let tx_encoding = &transaction.encode_to_vec();
+        let rsp = client
+            .broadcast_tx_async(BroadcastTxAsyncRequest {
+                params: tx_encoding.to_vec(),
+                req_id: req_id.into(),
+            })
             .await?
-            .json()
-            .await?;
+            .into_inner();
 
-        tracing::info!("{}", rsp);
+        tracing::info!("{:#?}", rsp);
 
         Ok(())
     }
@@ -214,6 +168,22 @@ impl App {
         &self,
     ) -> Result<ObliviousQueryServiceClient<Channel>, anyhow::Error> {
         ObliviousQueryServiceClient::connect(self.pd_url.as_ref().to_owned())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn tendermint_client(
+        &self,
+    ) -> Result<TendermintServiceClient<Channel>, anyhow::Error> {
+        TendermintServiceClient::connect(self.pd_url.as_ref().to_owned())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn tendermint_proxy_client(
+        &self,
+    ) -> Result<TendermintProxyServiceClient<Channel>, anyhow::Error> {
+        TendermintProxyServiceClient::connect(self.pd_url.as_ref().to_owned())
             .await
             .map_err(Into::into)
     }

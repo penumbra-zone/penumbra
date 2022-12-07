@@ -26,6 +26,7 @@ pub struct Opt {
         parse(try_from_str = url::Host::parse)
     )]
     node: url::Host,
+    // TODO: use TendermintProxyService instead
     /// The port to use to speak to tendermint's RPC server.
     #[clap(long, default_value_t = 26657, env = "PENUMBRA_TENDERMINT_PORT")]
     tendermint_port: u16,

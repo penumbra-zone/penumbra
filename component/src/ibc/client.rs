@@ -44,7 +44,7 @@ impl TryFrom<pb::VerifiedHeights> for VerifiedHeights {
         let heights = msg.heights.into_iter().map(TryFrom::try_from).collect();
         match heights {
             Ok(heights) => Ok(VerifiedHeights { heights }),
-            Err(e) => Err(anyhow!(format!("invalid height: {}", e.to_string()))),
+            Err(e) => Err(anyhow!(format!("invalid height: {}", e))),
         }
     }
 }

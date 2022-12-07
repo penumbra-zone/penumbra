@@ -43,13 +43,13 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
     let delta_1 = Amount::from(100_000u64);
     let delta_2 = Amount::from(0u64);
     let fee = Fee::default();
-    let claim_address: Address = test_keys::ADDRESS_0.clone();
+    let claim_address: Address = *test_keys::ADDRESS_0;
 
     let plaintext =
         SwapPlaintext::new(&mut rng, trading_pair, delta_1, delta_2, fee, claim_address);
 
     let swap_plan = SwapPlan::new(&mut rng, plaintext.clone());
-    let swap = swap_plan.swap(&*test_keys::FULL_VIEWING_KEY);
+    let swap = swap_plan.swap(&test_keys::FULL_VIEWING_KEY);
 
     // 3. Simulate execution of the Swap action
 
@@ -123,7 +123,7 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
         epoch_duration,
         output_data,
     );
-    let claim = claim_plan.swap_claim(&*test_keys::FULL_VIEWING_KEY, &swap_nft_note_auth_path);
+    let claim = claim_plan.swap_claim(&test_keys::FULL_VIEWING_KEY, &swap_nft_note_auth_path);
 
     // 7. Execute the SwapClaim action
 

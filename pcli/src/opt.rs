@@ -40,9 +40,6 @@ pub struct Opt {
         parse(try_from_str = url::Host::parse)
     )]
     node: url::Host,
-    /// The port to use to speak to tendermint's RPC server.
-    #[clap(long, default_value_t = 26657, env = "PENUMBRA_TENDERMINT_PORT")]
-    tendermint_port: u16,
     /// The port to use to speak to pd's gRPC server.
     #[clap(long, default_value_t = 8080, env = "PENUMBRA_PD_PORT")]
     pd_port: u16,
@@ -92,16 +89,12 @@ impl Opt {
             None
         };
 
-        let mut tendermint_url = format!("http://{}", self.node)
+        let mut pd_url = format!("http://{}", self.node)
             .parse::<Url>()
             .with_context(|| format!("Invalid node URL: {}", self.node))?;
-        let mut pd_url = tendermint_url.clone();
         pd_url
             .set_port(Some(self.pd_port))
             .expect("pd URL will not be `file://`");
-        tendermint_url
-            .set_port(Some(self.tendermint_port))
-            .expect("tendermint URL will not be `file://`");
 
         let app = App {
             view,
@@ -109,7 +102,6 @@ impl Opt {
             fvk,
             wallet,
             pd_url,
-            tendermint_url,
         };
         Ok((app, self.cmd))
     }
@@ -130,14 +122,9 @@ impl Opt {
             let path = self.data_path.join(crate::VIEW_FILE_NAME);
             tracing::info!(%path, "using local view service");
 
-            let svc = ViewService::load_or_initialize(
-                path,
-                fvk,
-                self.node.to_string(),
-                self.pd_port,
-                self.tendermint_port,
-            )
-            .await?;
+            let svc =
+                ViewService::load_or_initialize(path, fvk, self.node.to_string(), self.pd_port)
+                    .await?;
 
             // Now build the view and custody clients, doing gRPC with ourselves
             let svc = ViewProtocolServiceServer::new(svc);

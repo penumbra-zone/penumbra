@@ -183,11 +183,11 @@ impl StateRead for State {
 /// Extension trait providing `try_begin_transaction()` on `Arc<State>`.
 pub trait ArcStateExt: Sized {
     /// Attempts to begin a transaction on this `Arc<State>`, returning `None` if the `Arc` is shared.
-    fn try_begin_transaction<'a>(&'a mut self) -> Option<StateTransaction<'a>>;
+    fn try_begin_transaction(&'_ mut self) -> Option<StateTransaction<'_>>;
 }
 
 impl ArcStateExt for Arc<State> {
-    fn try_begin_transaction<'a>(&'a mut self) -> Option<StateTransaction<'a>> {
+    fn try_begin_transaction(&'_ mut self) -> Option<StateTransaction<'_>> {
         Arc::get_mut(self).map(|state| state.begin_transaction())
     }
 }

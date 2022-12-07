@@ -8,6 +8,11 @@ import "penumbra/core/crypto/v1alpha1/crypto.proto";
 import "penumbra/core/dex/v1alpha1/dex.proto";
 import "penumbra/core/governance/v1alpha1/governance.proto";
 import "penumbra/core/stake/v1alpha1/stake.proto";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "tendermint/p2p/types.proto";
+import "tendermint/types/validator.proto";
 // TODO: clean up import paths (this is pulling from the ibc-go-vendor root)
 // import "proofs.proto";
 
@@ -194,4 +199,111 @@ message PrefixValueRequest {
 message PrefixValueResponse {
   string key = 1;
   bytes value = 2;
+}
+
+// Defines the gRPC query service for proxying requests to an upstream Tendermint RPC.
+service TendermintProxyService {
+  // Status queries the current status.
+  rpc GetStatus(GetStatusRequest) returns (GetStatusResponse) {
+    option (google.api.http).get = "/status";
+  }
+
+  // Broadcast a transaction asynchronously.
+  rpc BroadcastTxAsync(BroadcastTxAsyncRequest) returns (BroadcastTxAsyncResponse) {
+    option (google.api.http).get = "/broadcast_tx_async";
+  }
+
+  // Broadcast a transaction synchronously.
+  rpc BroadcastTxSync(BroadcastTxSyncRequest) returns (BroadcastTxSyncResponse) {
+    option (google.api.http).get = "/broadcast_tx_sync";
+  }
+
+  // Fetch a transaction by hash.
+  rpc GetTx(GetTxRequest) returns (GetTxResponse) {
+    option (google.api.http).get = "/tx";
+  }
+}
+
+// GetTxRequest is the request type for the GetTx RPC method.
+message GetTxRequest {
+    // Hash of transaction to retrieve
+    bytes hash = 1;
+    // Include proofs of the transaction's inclusion in the block
+    bool prove = 2;
+}
+
+// GetTxResponse is the response type for the GetTx RPC method.
+message GetTxResponse {
+    // Hash of transaction
+    bytes hash = 1;
+    uint64 height = 2;
+    uint64 index = 3;
+    TxResult tx_result = 4;
+    bytes tx = 5;
+}
+
+message TxResult {
+  string log = 1;
+  uint64 gas_wanted = 2;
+  uint64 gas_used = 3;
+  repeated Tag tags = 4;
+}
+
+message Tag {
+  bytes key = 1;
+  bytes value = 2;
+  bool index = 3;
+}
+
+// BroadcastTxAsyncRequest is the request type for the BroadcastTxAsync RPC method.
+message BroadcastTxAsyncRequest {
+    bytes params = 1;
+    uint64 req_id = 2;
+}
+
+// BroadcastTxAsyncResponse is the response type for the BroadcastTxAsync RPC method.
+message BroadcastTxAsyncResponse {
+    uint64 code = 1;
+    bytes data = 2;
+    string log = 3;
+    bytes hash = 4;
+}
+
+// BroadcastTxSyncRequest is the request type for the BroadcastTxSync RPC method.
+message BroadcastTxSyncRequest {
+    bytes params = 1;
+    uint64 req_id = 2;
+}
+
+// BroadcastTxSyncResponse is the response type for the BroadcastTxSync RPC method.
+message BroadcastTxSyncResponse {
+    uint64 code = 1;
+    bytes data = 2;
+    string log = 3;
+    bytes hash = 4;
+}
+
+// GetStatusRequest is the request type for the Query/GetStatus RPC method.
+message GetStatusRequest {
+}
+
+// GetStatusResponse is the response type for the Query/GetStatus RPC method.
+message GetStatusResponse {
+  .tendermint.p2p.DefaultNodeInfo node_info = 1;
+  SyncInfo sync_info = 2;
+  .tendermint.types.Validator validator_info = 3;
+}
+
+message SyncInfo {
+    bytes latest_block_hash = 1;
+    bytes latest_app_hash = 2;
+    uint64 latest_block_height = 3;
+    google.protobuf.Timestamp latest_block_time = 4;
+    // These are implemented in tendermint, but not
+    // in tendermint-rpc.
+    // bytes earliest_block_hash = 5;
+    // bytes earliest_app_hash = 6;
+    // uint64 earliest_block_height = 7;
+    // google.protobuf.Timestamp earliest_block_time = 8;
+    bool catching_up = 9;
 }

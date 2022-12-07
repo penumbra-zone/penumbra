@@ -18,6 +18,8 @@ use penumbra_crypto::{keys::SpendKey, DelegationToken, GovernanceKey};
 use penumbra_proto::client::v1alpha1::{
     oblivious_query_service_server::ObliviousQueryServiceServer,
     specific_query_service_server::SpecificQueryServiceServer,
+    tendermint_proxy::service_server::ServiceServer as TendermintServiceServer,
+    tendermint_proxy_service_server::TendermintProxyServiceServer,
 };
 use penumbra_storage::Storage;
 use rand::Rng;
@@ -57,11 +59,13 @@ enum RootCommand {
         /// Bind the gRPC server to this port.
         #[clap(short, long, default_value = "8080")]
         grpc_port: u16,
-        /// Bind the metrics endpoint to this port.
+        /// bind the metrics endpoint to this port.
         #[clap(short, long, default_value = "9000")]
         metrics_port: u16,
+        /// Proxy Tendermint requests against the gRPC server to this address.
+        #[clap(short, long, default_value = "http://127.0.0.1:26657")]
+        tendermint_addr: url::Url,
     },
-
     /// Generate, join, or reset a testnet.
     Testnet {
         /// Path to directory to store output in. Must not exist. Defaults to
@@ -165,6 +169,7 @@ async fn main() -> anyhow::Result<()> {
             abci_port,
             grpc_port,
             metrics_port,
+            tendermint_addr,
         } => {
             tracing::info!(?host, ?abci_port, ?grpc_port, "starting pd");
 
@@ -178,6 +183,7 @@ async fn main() -> anyhow::Result<()> {
             let consensus = pd::Consensus::new(storage.clone()).await?;
             let mempool = pd::Mempool::new(storage.clone()).await?;
             let info = pd::Info::new(storage.clone());
+            let tm_proxy = pd::TendermintProxy::new(tendermint_addr);
             let snapshot = pd::Snapshot {};
 
             let abci_server = tokio::task::Builder::new()
@@ -213,6 +219,12 @@ async fn main() -> anyhow::Result<()> {
                         .add_service(tonic_web::enable(SpecificQueryServiceServer::new(
                             info.clone(),
                         )))
+                        .add_service(tonic_web::enable(TendermintServiceServer::new(
+                            tm_proxy.clone(),
+                        )))
+                        .add_service(tonic_web::enable(TendermintProxyServiceServer::new(
+                            tm_proxy.clone(),
+                        )))
                         .serve(
                             format!("{}:{}", host, grpc_port)
                                 .parse()
@@ -245,7 +257,7 @@ async fn main() -> anyhow::Result<()> {
             pd::register_metrics();
 
             // TODO: better error reporting
-            // We error out if either service errors, rather than keep running
+            // We error out if a service errors, rather than keep running
             tokio::select! {
                 x = abci_server => x?.map_err(|e| anyhow::anyhow!(e))?,
                 x = grpc_server => x?.map_err(|e| anyhow::anyhow!(e))?,
@@ -289,6 +301,7 @@ async fn main() -> anyhow::Result<()> {
 
             tracing::info!("fetching genesis");
             // We need to download the genesis data and the node ID from the remote node.
+            // TODO: replace with TendermintProxyServiceClient
             let client = reqwest::Client::new();
             let genesis_json = client
                 .get(format!("http://{}:26657/genesis", node))
@@ -328,7 +341,7 @@ async fn main() -> anyhow::Result<()> {
                 .get("result")
                 .and_then(|v| v.get("peers"))
                 .and_then(|v| v.as_array())
-                .map(|v| v.clone())
+                .cloned()
                 .unwrap_or_default();
 
             let mut peers = Vec::new();

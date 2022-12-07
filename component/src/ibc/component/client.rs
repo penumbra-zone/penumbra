@@ -17,7 +17,6 @@ use ibc::{
             client_state::ClientState,
             client_type::ClientType,
             consensus_state::ConsensusState,
-            header::Header,
             height::Height,
             msgs::{create_client::MsgCreateClient, update_client::MsgUpdateClient},
         },
@@ -522,7 +521,6 @@ mod tests {
     use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
     use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
     use penumbra_chain::StateWriteExt;
-    use penumbra_chain::StateWriteExt as _;
     use penumbra_proto::core::ibc::v1alpha1::{ibc_action::Action as IbcActionInner, IbcAction};
     use penumbra_proto::Message;
     use penumbra_storage::{ArcStateExt, TempStorage};

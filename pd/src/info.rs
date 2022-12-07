@@ -19,8 +19,13 @@ mod specific;
 const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
 const APP_VERSION: u64 = 1;
 
+/// Implements service traits for Tonic gRPC services.
+///
+/// The fields of this struct are the configuration and data
+/// necessary to the gRPC services.
 #[derive(Clone, Debug)]
 pub struct Info {
+    /// Storage interface for retrieving chain state.
     storage: Storage,
     // height_rx: watch::Receiver<block::Height>,
 }

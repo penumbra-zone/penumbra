@@ -3323,6 +3323,7 @@ dependencies = [
  "tendermint-config",
  "tendermint-light-client-verifier",
  "tendermint-proto",
+ "tendermint-rpc",
  "tokio",
  "tokio-stream",
  "tokio-util 0.7.4",
@@ -3333,6 +3334,7 @@ dependencies = [
  "tower-service",
  "tracing",
  "tracing-subscriber 0.3.16",
+ "url",
  "vergen",
 ]
 

@@ -429,14 +429,14 @@ fn mismatched_consensus_key_update_fails() {
     let tmpdir = load_wallet_into_tmpdir();
     let mut template_cmd = Command::cargo_bin("pcli").unwrap();
     template_cmd
-        .args(&[
+        .args([
             "--data-path",
             tmpdir.path().to_str().unwrap(),
             "validator",
             "definition",
             "template",
             "--file",
-            &validator_filepath.path().to_str().unwrap(),
+            (validator_filepath.path().to_str().unwrap()),
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     template_cmd.assert().success();
@@ -455,7 +455,7 @@ fn mismatched_consensus_key_update_fails() {
         .to_str()
         .expect("Could not find home directory");
     let tm_key_filepath: PathBuf = [
-        &homedir,
+        homedir,
         ".penumbra",
         "testnet_data",
         "node0",
@@ -494,7 +494,7 @@ fn mismatched_consensus_key_update_fails() {
     // to confirm that subsequent validator updates fail.
     let mut resubmit_cmd = Command::cargo_bin("pcli").unwrap();
     resubmit_cmd
-        .args(&[
+        .args([
             "--data-path",
             tmpdir.path().to_str().unwrap(),
             "validator",

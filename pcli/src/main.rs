@@ -38,7 +38,6 @@ pub struct App {
     pub fvk: FullViewingKey,
     pub wallet: KeyStore,
     pub pd_url: Url,
-    pub tendermint_url: Url,
 }
 
 impl App {
