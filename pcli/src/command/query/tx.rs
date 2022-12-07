@@ -18,7 +18,7 @@ impl Tx {
 
         let rsp = client
             .get_tx(GetTxRequest {
-                hash: self.hash.to_string().as_bytes().to_vec(),
+                hash: hex::decode(self.hash.clone())?,
                 prove: false,
             })
             .await?;
