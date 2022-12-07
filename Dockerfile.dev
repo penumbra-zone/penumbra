@@ -148,4 +148,4 @@ USER penumbra
 ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL
 ENV RUST_LOG=warn,pd=info,penumbra=info
-CMD [ "RUST_BACKTRACE=1 /usr/bin/pd" ]
+CMD [ "RUST_BACKTRACE=1 /bin/pd" ]

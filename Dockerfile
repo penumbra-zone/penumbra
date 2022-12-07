@@ -155,4 +155,4 @@ USER penumbra
 ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL
 ENV RUST_LOG=warn,pd=info,penumbra=info
-CMD [ "/usr/bin/pd" ]
+CMD [ "/bin/pd" ]

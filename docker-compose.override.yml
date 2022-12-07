@@ -16,7 +16,7 @@ services:
       dockerfile: Dockerfile.dev
     volumes:
       - ~/.penumbra/testnet_data/node0/pd:/pd
-    command: pd start --host 0.0.0.0 --home /pd --tendermint-addr http://tendermint-node0:26657
+    command: /bin/pd start --host 0.0.0.0 --home /pd --tendermint-addr http://tendermint-node0:26657
 
   # add prometheus and grafana
   #
