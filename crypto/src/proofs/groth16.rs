@@ -1,5 +1,4 @@
 pub(crate) mod gadgets;
-pub(crate) mod merkle;
 mod output;
 mod spend;
 mod traits;

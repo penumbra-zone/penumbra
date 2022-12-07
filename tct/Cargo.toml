@@ -19,13 +19,15 @@ parking_lot = "0.12"
 ark-ff = "0.3"
 ark-serialize = "0.3"
 poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377", branch = "main" }
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377", features = ["r1cs"] }
 tracing = { version = "0.1" }
 async-trait = { version = "0.1" }
 futures = "0.3"
 ark-ed-on-bls12-377 = "0.3"
 rand = "0.8"
 im = { version = "^15.1.0", features = ["serde"] } # IMPORTANT: an OrdMap correctness bug was fixed in 15.1.0, as well as a performance improvement to `union`
+ark-relations = {version = "0.3", optional=true }
+ark-r1cs-std = {version = "0.3", optional=true }
 
 # Dependencies for random testing
 proptest = { version = "1", optional = true }
@@ -34,6 +36,7 @@ proptest-derive = { version = "0.3", optional = true }
 [features]
 internal = []
 arbitrary = ["proptest", "proptest-derive"]
+r1cs = ["ark-r1cs-std", "ark-relations"]
 
 [dev-dependencies]
 static_assertions = "1"
