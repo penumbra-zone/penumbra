@@ -29,10 +29,6 @@ spec:
     type: fullnode
   ports:
     - protocol: TCP
-      port: 26657
-      targetPort: rpc
-      name: rpc
-    - protocol: TCP
       port: 8080
       targetPort: grpc
       name: grpc

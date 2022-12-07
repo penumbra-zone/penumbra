@@ -301,6 +301,7 @@ async fn main() -> anyhow::Result<()> {
 
             tracing::info!("fetching genesis");
             // We need to download the genesis data and the node ID from the remote node.
+            // TODO: replace with TendermintProxyServiceClient
             let client = reqwest::Client::new();
             let genesis_json = client
                 .get(format!("http://{}:26657/genesis", node))

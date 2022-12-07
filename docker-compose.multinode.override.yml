@@ -16,7 +16,7 @@ services:
       dockerfile: Dockerfile.dev
     volumes:
       - ~/.penumbra/testnet_data/node0/pd:/pd
-    command: pd start --host 0.0.0.0 --home /pd
+    command: pd start --host 0.0.0.0 --home /pd --tendermint-addr http://tendermint-node1:26657
 
   # for local development, configure the penumbra daemon with more logging.
   pd-node1:
@@ -30,7 +30,7 @@ services:
       context: .
     volumes:
       - ~/.penumbra/testnet_data/node1/pd:/pd
-    command: pd start --host 0.0.0.0 --home /pd
+    command: pd start --host 0.0.0.0 --home /pd --tendermint-addr http://tendermint-node1:26657
     restart: on-failure
     networks:
       localnet:

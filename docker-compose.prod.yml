@@ -8,6 +8,7 @@ services:
       [
         "bash",
         "-c",
+        # TODO: how do we specify --tendermint-addr here?
         "pd start --host 0.0.0.0 --home /pd"
       ]
     logging:
