@@ -29,6 +29,8 @@ lint:
     - RPC_REQUEST_STANDARD_NAME
   ignore:
     - proofs.proto # confio/ics23
+    - cosmos.proto
+    - cosmos_proto.rs
     - gogoproto
     - google
     - tendermint
