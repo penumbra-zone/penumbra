@@ -37,7 +37,7 @@ pub struct Worker {
     error_slot: Arc<Mutex<Option<anyhow::Error>>>,
     sync_height_tx: watch::Sender<u64>,
     tm_client: TendermintServiceClient<Channel>,
-    tm_proxy_client: TendermintProxyServiceClient<Channel>,
+    _tm_proxy_client: TendermintProxyServiceClient<Channel>,
     #[cfg(feature = "nct-divergence-check")]
     specific_client: SpecificQueryServiceClient<Channel>,
 }
@@ -94,7 +94,7 @@ impl Worker {
                 error_slot: error_slot.clone(),
                 sync_height_tx,
                 tm_client,
-                tm_proxy_client,
+                _tm_proxy_client: tm_proxy_client,
                 #[cfg(feature = "nct-divergence-check")]
                 specific_client,
             },

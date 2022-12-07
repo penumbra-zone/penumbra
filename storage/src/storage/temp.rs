@@ -1,5 +1,4 @@
 use crate::Storage;
-use anyhow;
 use std::ops::Deref;
 use tempfile::TempDir;
 

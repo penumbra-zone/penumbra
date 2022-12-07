@@ -43,7 +43,7 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
     let delta_1 = Amount::from(100_000u64);
     let delta_2 = Amount::from(0u64);
     let fee = Fee::default();
-    let claim_address: Address = test_keys::ADDRESS_0.clone();
+    let claim_address: Address = test_keys::ADDRESS_0;
 
     let plaintext =
         SwapPlaintext::new(&mut rng, trading_pair, delta_1, delta_2, fee, claim_address);
