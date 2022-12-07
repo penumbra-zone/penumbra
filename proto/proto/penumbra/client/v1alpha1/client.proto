@@ -217,6 +217,42 @@ service TendermintProxyService {
   rpc BroadcastTxSync(BroadcastTxSyncRequest) returns (BroadcastTxSyncResponse) {
     option (google.api.http).get = "/broadcast_tx_sync";
   }
+
+  // Fetch a transaction by hash.
+  rpc GetTx(GetTxRequest) returns (GetTxResponse) {
+    option (google.api.http).get = "/tx";
+  }
+}
+
+// GetTxRequest is the request type for the GetTx RPC method.
+message GetTxRequest {
+    // Hash of transaction to retrieve
+    bytes hash = 1;
+    // Include proofs of the transaction's inclusion in the block
+    bool prove = 2;
+}
+
+// GetTxResponse is the response type for the GetTx RPC method.
+message GetTxResponse {
+    // Hash of transaction
+    bytes hash = 1;
+    uint64 height = 2;
+    uint64 index = 3;
+    TxResult tx_result = 4;
+    bytes tx = 5;
+}
+
+message TxResult {
+  string log = 1;
+  uint64 gas_wanted = 2;
+  uint64 gas_used = 3;
+  repeated Tag tags = 4;
+}
+
+message Tag {
+  bytes key = 1;
+  bytes value = 2;
+  bool index = 3;
 }
 
 // BroadcastTxAsyncRequest is the request type for the BroadcastTxAsync RPC method.

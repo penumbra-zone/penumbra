@@ -5,6 +5,7 @@ use penumbra_proto::{
     self as proto, client::v1alpha1::tendermint_proxy::service_server::Service as TendermintService,
 };
 
+use penumbra_transaction::Transaction;
 use proto::client::v1alpha1::tendermint_proxy::AbciQueryRequest;
 use proto::client::v1alpha1::tendermint_proxy::AbciQueryResponse;
 use proto::client::v1alpha1::tendermint_proxy::GetBlockByHeightRequest;
@@ -26,7 +27,11 @@ use proto::client::v1alpha1::BroadcastTxSyncRequest;
 use proto::client::v1alpha1::BroadcastTxSyncResponse;
 use proto::client::v1alpha1::GetStatusRequest;
 use proto::client::v1alpha1::GetStatusResponse;
+use proto::client::v1alpha1::GetTxRequest;
+use proto::client::v1alpha1::GetTxResponse;
+use proto::Protobuf;
 use tendermint::block::Height;
+use tendermint_rpc::abci;
 use tendermint_rpc::abci::Path;
 use tendermint_rpc::{Client, HttpClient};
 use tonic::Status;
@@ -45,6 +50,57 @@ use tonic::Status;
 
 #[tonic::async_trait]
 impl TendermintProxyService for TendermintProxy {
+    async fn get_tx(
+        &self,
+        req: tonic::Request<GetTxRequest>,
+    ) -> Result<tonic::Response<GetTxResponse>, Status> {
+        let client = HttpClient::new(self.tendermint_url.to_string().as_ref()).unwrap();
+
+        let req = req.into_inner();
+        let hash = req.hash;
+        let prove = req.prove;
+        let rsp = client
+            .tx(
+                abci::transaction::Hash::new(hash.try_into().map_err(|e| {
+                    tonic::Status::invalid_argument(format!("invalid transaction hash: {:#?}", e))
+                })?),
+                prove,
+            )
+            .await
+            .map_err(|e| tonic::Status::unavailable(format!("error getting tx: {}", e)))?;
+
+        let tx = Transaction::decode(rsp.tx.as_bytes())
+            .map_err(|e| tonic::Status::unavailable(format!("error decoding tx: {}", e)))?;
+
+        Ok(tonic::Response::new(GetTxResponse {
+            tx: tx.into(),
+            tx_result: Some(proto::client::v1alpha1::TxResult {
+                log: rsp.tx_result.log.to_string(),
+                gas_wanted: rsp.tx_result.gas_wanted.into(),
+                gas_used: rsp.tx_result.gas_used.into(),
+                tags: rsp
+                    .tx_result
+                    .events
+                    .iter()
+                    .flat_map(|e| {
+                        let a = &e.attributes;
+                        a.iter().map(move |a| {
+                            proto::client::v1alpha1::Tag {
+                                key: a.key.to_string().as_bytes().to_vec(),
+                                value: a.value.to_string().as_bytes().to_vec(),
+                                // TODO: not sure where this index value comes from
+                                index: false,
+                            }
+                        })
+                    })
+                    .collect(),
+            }),
+            height: rsp.height.value(),
+            index: rsp.index as u64,
+            hash: rsp.hash.as_bytes().to_vec(),
+        }))
+    }
+
     async fn broadcast_tx_async(
         &self,
         req: tonic::Request<BroadcastTxAsyncRequest>,

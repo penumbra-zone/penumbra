@@ -186,6 +186,51 @@ pub struct PrefixValueResponse {
     #[prost(bytes="vec", tag="2")]
     pub value: ::prost::alloc::vec::Vec<u8>,
 }
+/// GetTxRequest is the request type for the GetTx RPC method.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetTxRequest {
+    /// Hash of transaction to retrieve
+    #[prost(bytes="vec", tag="1")]
+    pub hash: ::prost::alloc::vec::Vec<u8>,
+    /// Include proofs of the transaction's inclusion in the block
+    #[prost(bool, tag="2")]
+    pub prove: bool,
+}
+/// GetTxResponse is the response type for the GetTx RPC method.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetTxResponse {
+    /// Hash of transaction
+    #[prost(bytes="vec", tag="1")]
+    pub hash: ::prost::alloc::vec::Vec<u8>,
+    #[prost(uint64, tag="2")]
+    pub height: u64,
+    #[prost(uint64, tag="3")]
+    pub index: u64,
+    #[prost(message, optional, tag="4")]
+    pub tx_result: ::core::option::Option<TxResult>,
+    #[prost(bytes="vec", tag="5")]
+    pub tx: ::prost::alloc::vec::Vec<u8>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TxResult {
+    #[prost(string, tag="1")]
+    pub log: ::prost::alloc::string::String,
+    #[prost(uint64, tag="2")]
+    pub gas_wanted: u64,
+    #[prost(uint64, tag="3")]
+    pub gas_used: u64,
+    #[prost(message, repeated, tag="4")]
+    pub tags: ::prost::alloc::vec::Vec<Tag>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Tag {
+    #[prost(bytes="vec", tag="1")]
+    pub key: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="vec", tag="2")]
+    pub value: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bool, tag="3")]
+    pub index: bool,
+}
 /// BroadcastTxAsyncRequest is the request type for the BroadcastTxAsync RPC method.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BroadcastTxAsyncRequest {
@@ -803,6 +848,26 @@ pub mod tendermint_proxy_service_client {
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.client.v1alpha1.TendermintProxyService/BroadcastTxSync",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// Fetch a transaction by hash.
+        pub async fn get_tx(
+            &mut self,
+            request: impl tonic::IntoRequest<super::GetTxRequest>,
+        ) -> Result<tonic::Response<super::GetTxResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.client.v1alpha1.TendermintProxyService/GetTx",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -1656,6 +1721,11 @@ pub mod tendermint_proxy_service_server {
             &self,
             request: tonic::Request<super::BroadcastTxSyncRequest>,
         ) -> Result<tonic::Response<super::BroadcastTxSyncResponse>, tonic::Status>;
+        /// Fetch a transaction by hash.
+        async fn get_tx(
+            &self,
+            request: tonic::Request<super::GetTxRequest>,
+        ) -> Result<tonic::Response<super::GetTxResponse>, tonic::Status>;
     }
     /// Defines the gRPC query service for proxying requests to an upstream Tendermint RPC.
     #[derive(Debug)]
@@ -1825,6 +1895,43 @@ pub mod tendermint_proxy_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = BroadcastTxSyncSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.client.v1alpha1.TendermintProxyService/GetTx" => {
+                    #[allow(non_camel_case_types)]
+                    struct GetTxSvc<T: TendermintProxyService>(pub Arc<T>);
+                    impl<
+                        T: TendermintProxyService,
+                    > tonic::server::UnaryService<super::GetTxRequest> for GetTxSvc<T> {
+                        type Response = super::GetTxResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::GetTxRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move { (*inner).get_tx(request).await };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = GetTxSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
