@@ -10,7 +10,7 @@ edition = "2021"
 decaf377-ka = { path = "../decaf377-ka/" }
 decaf377-fmd = { path = "../decaf377-fmd/" }
 penumbra-proto = { path = "../proto/" }
-penumbra-tct = { path = "../tct/" }
+penumbra-tct = { path = "../tct/", features = ["r1cs"] }
 
 # Git deps
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377", features = ["r1cs"] }

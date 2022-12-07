@@ -3615,6 +3615,8 @@ version = "0.1.0"
 dependencies = [
  "ark-ed-on-bls12-377",
  "ark-ff",
+ "ark-r1cs-std",
+ "ark-relations",
  "ark-serialize",
  "async-trait",
  "bincode",

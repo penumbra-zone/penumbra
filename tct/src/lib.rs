@@ -77,6 +77,9 @@ pub mod internal;
 #[cfg(not(any(doc, feature = "internal")))]
 mod internal;
 
+#[cfg(feature = "r1cs")]
+pub mod r1cs;
+
 pub mod builder {
     //! Builders for individual epochs and blocks: useful when constructing a [`Tree`](super::Tree)
     //! in parallel, but unnecessary in a single thread.

@@ -20,7 +20,7 @@ use penumbra_tct as tct;
 use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
-use crate::proofs::groth16::{gadgets, merkle::MerkleAuthPathVar, ParameterSetup};
+use crate::proofs::groth16::{gadgets, ParameterSetup};
 use crate::{
     balance,
     keys::{NullifierKey, SeedPhrase, SpendKey},
@@ -62,7 +62,8 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
             FqVar::new_witness(cs.clone(), || Ok(self.note_commitment_proof.commitment().0))?;
         let position_fq: Fq = Fq::from(u64::from(self.note_commitment_proof.position()));
         let position_var = FqVar::new_witness(cs.clone(), || Ok(position_fq))?;
-        let merkle_path_var = MerkleAuthPathVar::new(cs.clone(), self.note_commitment_proof)?;
+        let merkle_path_var =
+            tct::r1cs::MerkleAuthPathVar::new(cs.clone(), self.note_commitment_proof)?;
 
         let note_blinding_var =
             FqVar::new_witness(cs.clone(), || Ok(self.note.note_blinding().clone()))?;
