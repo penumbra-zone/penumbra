@@ -69,18 +69,23 @@ RUN cp /usr/src/target/$(uname -m)-unknown-linux-gnu/release/pcli \
 # Absolute path of each library is appended to /root/lib_abs.list for restoring in final image.
 RUN mkdir -p /root/lib_abs && touch /root/lib_abs.list
 RUN bash -c \
-  'for BIN in /root/bin/*; do \
-    readarray -t LIBS < <(ldd "$BIN"); \
+  'for BIN in $(ls -1 /root/bin/* | sort -u); do \
+    readarray -t LIBS < <(ldd "$BIN" | sort -u); \
     i=0; for LIB in "${LIBS[@]}"; do \
       PATH1=$(echo $LIB | awk "{print \$1}") ; \
       if [ "$PATH1" = "linux-vdso.so.1" ]; then continue; fi; \
+      if [ "$PATH1" = "/lib/ld-linux-aarch64.so.1" ]; then continue; fi; \
       PATH2=$(echo $LIB | awk "{print \$3}") ; \
-      if [ ! -z "$PATH2" ]; then \
+      if [ -n "$PATH2" ]; then \
         cp $PATH2 /root/lib_abs/$i ; \
         echo $PATH2 >> /root/lib_abs.list; \
+        echo "cp $PATH2 /root/lib_abs/$i"; \
+        echo "echo $PATH2 >> /root/lib_abs.list"; \
       else \
         cp $PATH1 /root/lib_abs/$i ; \
         echo $PATH1 >> /root/lib_abs.list; \
+        echo "cp $PATH1 /root/lib_abs/$i"; \
+        echo "echo $PATH1 >> /root/lib_abs.list"; \
       fi; \
       ((i = i + 1)) ;\
     done; \
