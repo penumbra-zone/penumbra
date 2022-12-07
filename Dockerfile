@@ -83,13 +83,13 @@ RUN apt update && apt install -y clang libssl1.1 openssl
 COPY --from=build-env /root/bin /root/bin
 RUN mkdir -p /root/lib_abs && touch /root/lib_abs.list
 RUN bash -c \
-  'for BIN in /root/bin/*; do \
-    readarray -t LIBS < <(ldd "$BIN"); \
+  'readarray -t LIBS < { for b in $(ls -1 /root/bin/* | sort -u) ; do ldd target/release/$b | awk "{print \$1, \$2, \$3 }"; done ; } | sort -u > /tmp/list.txt \
     i=0; for LIB in "${LIBS[@]}"; do \
       PATH1=$(echo $LIB | awk "{print \$1}") ; \
       if [ "$PATH1" = "linux-vdso.so.1" ]; then continue; fi; \
+      if [ "$PATH1" = "/lib/ld-linux-aarch64.so.1" ]; then continue; fi; \
       PATH2=$(echo $LIB | awk "{print \$3}") ; \
-      if [ ! -z "$PATH2" ]; then \
+      if [ -n "$PATH2" ]; then \
         cp $PATH2 /root/lib_abs/$i ; \
         echo $PATH2 >> /root/lib_abs.list; \
       else \
@@ -97,7 +97,6 @@ RUN bash -c \
         echo $PATH1 >> /root/lib_abs.list; \
       fi; \
       ((i = i + 1)) ;\
-    done; \
   done'
 
 # Build final image from scratch
