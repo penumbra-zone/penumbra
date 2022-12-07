@@ -10,7 +10,7 @@ services:
       - RUST_LOG=${RUST_LOG:-warn,pd=debug,penumbra=debug,jmt=info}
     volumes:
       - ~/.penumbra/testnet_data/node0/pd:/pd
-    command: /bin/pd start --host 0.0.0.0 --home /pd --tendermint-addr http://tendermint-node0:26657
+    command: /bin/pd start --host 0.0.0.0 --home /pd --tendermint-addr http://192.167.10.11:26657
     restart: on-failure
     networks:
       localnet:
