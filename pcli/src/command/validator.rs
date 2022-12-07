@@ -191,7 +191,7 @@ impl ValidatorCmd {
                 let keypair = [signing_key_bytes, verification_key_bytes].concat();
                 let keypair = keypair.as_slice();
 
-                let consensus_key = ed25519_dalek::Keypair::from_bytes(keypair.as_ref()).unwrap();
+                let consensus_key = ed25519_dalek::Keypair::from_bytes(keypair).unwrap();
                 /* END */
 
                 let consensus_key = tendermint::PrivateKey::Ed25519(consensus_key).public_key();

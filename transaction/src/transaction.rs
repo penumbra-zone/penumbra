@@ -27,7 +27,7 @@ use crate::{
     Action, ActionView, IsAction, TransactionPerspective, TransactionView,
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct TransactionBody {
     pub actions: Vec<Action>,
     pub expiry_height: u64,
@@ -51,19 +51,6 @@ impl Default for Transaction {
             transaction_body: Default::default(),
             binding_sig: [0u8; 64].into(),
             anchor: tct::Tree::new().root(),
-        }
-    }
-}
-
-impl Default for TransactionBody {
-    fn default() -> Self {
-        Self {
-            actions: Default::default(),
-            expiry_height: Default::default(),
-            chain_id: Default::default(),
-            fee: Default::default(),
-            fmd_clues: Default::default(),
-            memo: None,
         }
     }
 }

@@ -89,10 +89,9 @@ impl Opt {
             None
         };
 
-        let mut tendermint_url = format!("http://{}", self.node)
+        let mut pd_url = format!("http://{}", self.node)
             .parse::<Url>()
             .with_context(|| format!("Invalid node URL: {}", self.node))?;
-        let mut pd_url = tendermint_url.clone();
         pd_url
             .set_port(Some(self.pd_port))
             .expect("pd URL will not be `file://`");

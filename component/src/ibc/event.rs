@@ -1,5 +1,5 @@
 use ibc::core::{
-    ics02_client::{client_state::ClientState, header::Header},
+    ics02_client::client_state::ClientState,
     ics03_connection::connection::ConnectionEnd,
     ics03_connection::connection::Counterparty,
     ics04_channel::{channel::ChannelEnd, packet::Packet},
