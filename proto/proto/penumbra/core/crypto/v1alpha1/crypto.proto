@@ -44,6 +44,10 @@ message NoteCommitment {
     bytes inner = 1;
 }
 
+message SwapCommitment {
+    bytes inner = 1;
+}
+
 message BalanceCommitment {
     bytes inner = 1;
 }
