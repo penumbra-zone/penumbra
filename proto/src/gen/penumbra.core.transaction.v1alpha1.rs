@@ -293,7 +293,7 @@ pub struct Output {
 pub struct OutputBody {
     /// The minimal data required to scan and process the new output note.
     #[prost(message, optional, tag="1")]
-    pub note_payload: ::core::option::Option<super::super::crypto::v1alpha1::NotePayload>,
+    pub note_payload: ::core::option::Option<super::super::crypto::v1alpha1::EncryptedNote>,
     /// A commitment to the value of the output note. 32 bytes.
     #[prost(message, optional, tag="2")]
     pub balance_commitment: ::core::option::Option<super::super::crypto::v1alpha1::BalanceCommitment>,

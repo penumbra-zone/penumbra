@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_chain::AnnotatedNotePayload;
+use penumbra_chain::sync::StatePayload;
 use penumbra_storage::{State, StateRead, StateTransaction};
 use penumbra_transaction::{action::Output, Transaction};
 use tracing::instrument;
@@ -34,9 +34,9 @@ impl ActionHandler for Output {
         let source = state.object_get("source").cloned().unwrap_or_default();
 
         state
-            .add_note(AnnotatedNotePayload {
+            .add_state_payload(StatePayload::Note {
                 source,
-                payload: self.body.note_payload.clone(),
+                note: self.body.note_payload.clone(),
             })
             .await;
 

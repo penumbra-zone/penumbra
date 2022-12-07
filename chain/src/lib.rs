@@ -13,7 +13,7 @@ pub use app_hash::{AppHash, AppHashRead, PENUMBRA_COMMITMENT_PREFIX, PENUMBRA_PR
 pub use epoch::Epoch;
 pub use known_assets::KnownAssets;
 pub use note_source::NoteSource;
-pub use sync::{AnnotatedNotePayload, CompactBlock};
+pub use sync::{CompactBlock, StatePayload};
 pub use view::{StateReadExt, StateWriteExt};
 
 /// Hardcoded test data.

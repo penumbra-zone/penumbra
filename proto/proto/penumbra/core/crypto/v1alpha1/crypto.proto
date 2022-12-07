@@ -109,7 +109,7 @@ message BindingSignature {
 
 // The body of an output description, including only the minimal
 // data required to scan and process the output.
-message NotePayload {
+message EncryptedNote {
   // The note commitment for the output note. 32 bytes.
   StateCommitment note_commitment = 1;
   // The encoding of an ephemeral public key. 32 bytes.
