@@ -113,7 +113,7 @@ service SpecificQueryService {
 }
 
 message TransactionByNoteRequest {
-  core.crypto.v1alpha1.NoteCommitment note_commitment = 1;
+  core.crypto.v1alpha1.StateCommitment note_commitment = 1;
 }
 
 message TransactionByNoteResponse {

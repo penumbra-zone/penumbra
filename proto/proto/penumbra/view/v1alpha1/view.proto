@@ -136,7 +136,7 @@ message NotesRequest {
 
 message WitnessRequest {
   // The note commitments to obtain auth paths for.
-  repeated core.crypto.v1alpha1.NoteCommitment note_commitments = 2;
+  repeated core.crypto.v1alpha1.StateCommitment note_commitments = 2;
 
   // The transaction plan to witness
   core.transaction.v1alpha1.TransactionPlan transaction_plan = 3;
@@ -174,7 +174,7 @@ message FMDParametersResponse {
 }
 
 message NoteByCommitmentRequest {
-  core.crypto.v1alpha1.NoteCommitment note_commitment = 2;
+  core.crypto.v1alpha1.StateCommitment note_commitment = 2;
   // If set to true, waits to return until the requested note is detected.
   bool await_detection = 3;
   // Identifies the FVK for the notes to query.
@@ -252,7 +252,7 @@ message NotesResponse {
 // A note plaintext with associated metadata about its status.
 message SpendableNoteRecord {
   // The note commitment, identifying the note.
-  core.crypto.v1alpha1.NoteCommitment note_commitment = 1;
+  core.crypto.v1alpha1.StateCommitment note_commitment = 1;
   // The note plaintext itself.
   core.crypto.v1alpha1.Note note = 2;
   // A precomputed decryption of the note's address incore.dex.v1alpha1.

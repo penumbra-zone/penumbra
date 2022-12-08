@@ -75,7 +75,7 @@ pub struct AssetListResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionByNoteRequest {
     #[prost(message, optional, tag="1")]
-    pub note_commitment: ::core::option::Option<super::super::core::crypto::v1alpha1::NoteCommitment>,
+    pub note_commitment: ::core::option::Option<super::super::core::crypto::v1alpha1::StateCommitment>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionByNoteResponse {
