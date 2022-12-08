@@ -1,14 +1,12 @@
-name: Create and publish a Docker image
-
-# Build strategy: we want to build new containers
-# on merges into main branch (for testnet-preview)
-# and every tag (weekly testnet iterations).
+---
+name: Create and publish container image
+# Build strategy: we want to build new containers immediately
+# prior to deploying testnets using those containers. We don't
+# trigger the container-build workflow on merge or tag events;
+# rather, we set `workflow_call` so the different deploy workflows
+# can execute this workflow and wait on its completion.
 on:
-  push:
-    tags:
-    - '**'
-    branches:
-    - main
+  workflow_call:
 
 jobs:
   build-and-push-image:
