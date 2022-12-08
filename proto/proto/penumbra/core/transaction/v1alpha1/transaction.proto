@@ -49,10 +49,10 @@ message Action {
   oneof action {
     Spend spend = 1;
     Output output = 2;
-    stake.v1alpha1.Delegate delegate = 3;
-    stake.v1alpha1.Undelegate undelegate = 4;
-    dex.v1alpha1.Swap swap = 5;
-    dex.v1alpha1.SwapClaim swap_claim = 6;
+    dex.v1alpha1.Swap swap = 3;
+    dex.v1alpha1.SwapClaim swap_claim = 4;
+
+    // Uncommon actions have numbers > 15.
 
     stake.v1alpha1.ValidatorDefinition validator_definition = 16;
     ibc.v1alpha1.IbcAction ibc_action = 17;
@@ -68,16 +68,19 @@ message Action {
     dex.v1alpha1.PositionWithdraw position_withdraw = 32;
     dex.v1alpha1.PositionRewardClaim position_reward_claim = 34;
 
+    // (un)delegation
+    stake.v1alpha1.Delegate delegate = 40;
+    stake.v1alpha1.Undelegate undelegate = 41;
+    stake.v1alpha1.UndelegateClaim undelegate_claim = 42;
+
     ibc.v1alpha1.Ics20Withdrawal ics20_withdrawal = 200;
 
   }
 }
 
 message TransactionPerspective {
-
   repeated PayloadKeyWithCommitment payload_keys = 1;
   repeated NullifierWithNote spend_nullifiers = 2;
-
 }
 
 message PayloadKeyWithCommitment {
@@ -137,10 +140,8 @@ message ActionView {
   oneof action_view {
     SpendView spend = 1;
     OutputView output = 2;
-    stake.v1alpha1.Delegate delegate = 3;
-    stake.v1alpha1.Undelegate undelegate = 4;
-    SwapView swap = 5;
-    SwapClaimView swap_claim = 6;
+    SwapView swap = 3;
+    SwapClaimView swap_claim = 4;
 
     stake.v1alpha1.ValidatorDefinition validator_definition = 16;
     ibc.v1alpha1.IbcAction ibc_action = 17;
@@ -155,6 +156,13 @@ message ActionView {
     dex.v1alpha1.PositionClose position_close = 31;
     dex.v1alpha1.PositionWithdraw position_withdraw = 32;
     dex.v1alpha1.PositionRewardClaim position_reward_claim = 34;
+
+    stake.v1alpha1.Delegate delegate = 41;
+    stake.v1alpha1.Undelegate undelegate = 42;
+    // TODO: we have no way to recover the opening of the undelegate_claim's
+    // balance commitment, and can only infer the value from looking at the rest
+    // of the transaction. is that fine?
+    stake.v1alpha1.UndelegateClaim undelegate_claim = 43;
 
     ibc.v1alpha1.Ics20Withdrawal ics20_withdrawal = 200;
 
@@ -322,12 +330,9 @@ message ActionPlan {
     oneof action {
         SpendPlan spend = 1;
         OutputPlan output = 2;
-        // We don't need any extra information (yet) to understand delegations,
-        // because we don't yet use flow encryption.
-        stake.v1alpha1.Delegate delegate = 3;
-        // We don't need any extra information (yet) to understand undelegations,
-        // because we don't yet use flow encryption.
-        stake.v1alpha1.Undelegate undelegate = 4;
+        SwapPlan swap = 3;
+        SwapClaimPlan swap_claim = 4;
+
         // This is just a message relayed to the chain.
         stake.v1alpha1.ValidatorDefinition validator_definition = 16;
         // This is just a message relayed to the chain.
@@ -343,8 +348,13 @@ message ActionPlan {
         dex.v1alpha1.PositionWithdraw position_withdraw = 32;
         dex.v1alpha1.PositionRewardClaim position_reward_claim = 34;
 
-        SwapPlan swap = 40;
-        SwapClaimPlan swap_claim = 41;
+        // We don't need any extra information (yet) to understand delegations,
+        // because we don't yet use flow encryption.
+        stake.v1alpha1.Delegate delegate = 40;
+        // We don't need any extra information (yet) to understand undelegations,
+        // because we don't yet use flow encryption.
+        stake.v1alpha1.Undelegate undelegate = 41;
+        stake.v1alpha1.UndelegateClaimPlan undelegate_claim = 42;
     }
 }
 
