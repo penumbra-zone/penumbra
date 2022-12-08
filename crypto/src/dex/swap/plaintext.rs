@@ -11,7 +11,9 @@ use rand::{CryptoRng, RngCore};
 use crate::dex::TradingPair;
 use crate::symmetric::{PayloadKey, PayloadKind};
 
-use super::{SwapCiphertext, DOMAIN_SEPARATOR, SWAP_CIPHERTEXT_BYTES, SWAP_LEN_BYTES};
+use super::{
+    SwapCiphertext, SwapCommitment, DOMAIN_SEPARATOR, SWAP_CIPHERTEXT_BYTES, SWAP_LEN_BYTES,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SwapPlaintext {
@@ -51,8 +53,8 @@ impl SwapPlaintext {
     // Constructs the unique asset ID for a swap as a poseidon hash of the input data for the swap.
     //
     // https://protocol.penumbra.zone/main/zswap/swap.html#swap-actions
-    pub fn asset_id(&self) -> asset::Id {
-        let asset_id_hash = hash_7(
+    pub fn swap_commitment(&self) -> SwapCommitment {
+        let inner = hash_7(
             &DOMAIN_SEPARATOR,
             (
                 self.swap_blinding,
@@ -75,7 +77,7 @@ impl SwapPlaintext {
             ),
         );
 
-        asset::Id(asset_id_hash)
+        SwapCommitment(inner)
     }
 
     pub fn diversified_generator(&self) -> &decaf377::Element {

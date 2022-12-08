@@ -4,7 +4,7 @@ use decaf377::Fq;
 use penumbra_crypto::dex::swap::SwapPlaintext;
 use penumbra_crypto::Balance;
 use penumbra_crypto::{
-    proofs::transparent::SwapProof, FieldExt, Fr, FullViewingKey, Note, NotePayload, Value,
+    asset, proofs::transparent::SwapProof, FieldExt, Fr, FullViewingKey, Note, NotePayload, Value,
 };
 use penumbra_proto::{core::transaction::v1alpha1 as pb, Protobuf};
 use rand_core::{CryptoRng, RngCore};
@@ -57,7 +57,7 @@ impl SwapPlan {
             .value()
             .commit(self.fee_blinding);
 
-        let swap_nft_asset_id = self.swap_plaintext.asset_id();
+        let swap_nft_asset_id = asset::Id(self.swap_plaintext.swap_commitment().0);
 
         let swap_nft_value = Value {
             amount: 1u64.into(),
