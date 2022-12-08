@@ -74,14 +74,6 @@ pub struct NoteCommitment {
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[serde(transparent)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SwapCommitment {
-    #[prost(bytes="vec", tag="1")]
-    #[serde(with = "crate::serializers::hexstr")]
-    pub inner: ::prost::alloc::vec::Vec<u8>,
-}
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(transparent)]
-#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BalanceCommitment {
     #[prost(bytes="vec", tag="1")]
     #[serde(with = "crate::serializers::hexstr")]
