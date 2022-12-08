@@ -4,4 +4,4 @@ deps:
   - remote: buf.build
     owner: penumbra-zone
     repository: ibc-go-vendor
-    commit: ecbdd28221a046d2b9101423583f978f
+    commit: 378df39922324afb87afe011ba1783c2
