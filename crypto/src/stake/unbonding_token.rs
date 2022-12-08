@@ -2,7 +2,8 @@ use std::str::FromStr;
 
 use regex::Regex;
 
-use crate::{asset, Amount, Balance, IdentityKey, Value, STAKING_TOKEN_ASSET_ID};
+use super::IdentityKey;
+use crate::{asset, Amount, Balance, Value, STAKING_TOKEN_ASSET_ID};
 
 /// Unbonding tokens represent staking tokens that are currently unbonding and
 /// subject to slashing.

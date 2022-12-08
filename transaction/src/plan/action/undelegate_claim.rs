@@ -1,5 +1,7 @@
 use penumbra_crypto::{
-    proofs::transparent::UndelegateClaimProof, Amount, FieldExt, Fr, IdentityKey, UnbondingToken,
+    proofs::transparent::UndelegateClaimProof,
+    stake::{IdentityKey, UnbondingToken},
+    Amount, FieldExt, Fr,
 };
 use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
 

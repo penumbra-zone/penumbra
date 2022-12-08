@@ -1,4 +1,4 @@
-use penumbra_crypto::{balance, proofs::transparent::UndelegateClaimProof, IdentityKey};
+use penumbra_crypto::{balance, proofs::transparent::UndelegateClaimProof, stake::IdentityKey};
 use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 

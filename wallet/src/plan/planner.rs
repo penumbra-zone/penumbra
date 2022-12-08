@@ -12,8 +12,9 @@ use penumbra_crypto::{
     dex::{swap::SwapPlaintext, BatchSwapOutputData, TradingPair},
     keys::AddressIndex,
     rdsa::{SpendAuth, VerificationKey},
+    stake::DelegationToken,
     transaction::Fee,
-    Address, DelegationToken, FieldExt, Fr, FullViewingKey, Note, Value, STAKING_TOKEN_ASSET_ID,
+    Address, FieldExt, Fr, FullViewingKey, Note, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::view::v1alpha1::NotesRequest;
 use penumbra_tct as tct;

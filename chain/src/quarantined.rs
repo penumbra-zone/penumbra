@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-use penumbra_crypto::{IdentityKey, Nullifier};
+use penumbra_crypto::{stake::IdentityKey, Nullifier};
 use penumbra_proto::{core::chain::v1alpha1 as pb, Protobuf};
 
 use crate::sync::AnnotatedNotePayload;

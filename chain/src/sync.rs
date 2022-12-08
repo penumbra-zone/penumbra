@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 
 use anyhow::Result;
-use penumbra_crypto::{IdentityKey, NotePayload, Nullifier};
+use penumbra_crypto::{stake::IdentityKey, NotePayload, Nullifier};
 use penumbra_proto::{
     client::v1alpha1::CompactBlockRangeResponse, core::chain::v1alpha1 as pb, Protobuf,
 };

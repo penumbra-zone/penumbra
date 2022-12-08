@@ -7,7 +7,7 @@ use penumbra_chain::{
     sync::{AnnotatedNotePayload, CompactBlock},
     Epoch, NoteSource, StateReadExt as _,
 };
-use penumbra_crypto::{asset, note, IdentityKey, NotePayload, Nullifier, Value};
+use penumbra_crypto::{asset, note, stake::IdentityKey, NotePayload, Nullifier, Value};
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateTransaction, StateWrite};
 use penumbra_tct as tct;

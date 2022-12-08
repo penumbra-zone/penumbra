@@ -3,8 +3,11 @@ use std::{fs::File, io::Write};
 use anyhow::{anyhow, Context, Result};
 use penumbra_component::stake::rate::RateData;
 use penumbra_crypto::{
-    asset, dex::BatchSwapOutputData, transaction::Fee, Address, DelegationToken, IdentityKey,
-    Value, STAKING_TOKEN_ASSET_ID,
+    asset,
+    dex::BatchSwapOutputData,
+    stake::{DelegationToken, IdentityKey},
+    transaction::Fee,
+    Address, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::{
     client::v1alpha1::{BatchSwapOutputDataRequest, KeyValueRequest},

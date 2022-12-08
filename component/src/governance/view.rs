@@ -6,7 +6,8 @@ use futures::{Stream, StreamExt};
 use penumbra_crypto::{
     asset::Amount,
     rdsa::{SpendAuth, VerificationKey},
-    Address, IdentityKey, Value, STAKING_TOKEN_ASSET_ID,
+    stake::IdentityKey,
+    Address, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};

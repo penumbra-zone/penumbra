@@ -14,7 +14,7 @@ use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::testnet::{canonicalize_path, generate_tm_config, write_configs, ValidatorKeys};
 use penumbra_chain::{genesis::Allocation, params::ChainParameters};
 use penumbra_component::stake::{validator::Validator, FundingStream, FundingStreams};
-use penumbra_crypto::{keys::SpendKey, DelegationToken, GovernanceKey};
+use penumbra_crypto::{keys::SpendKey, stake::DelegationToken, GovernanceKey};
 use penumbra_proto::client::v1alpha1::{
     oblivious_query_service_server::ObliviousQueryServiceServer,
     specific_query_service_server::SpecificQueryServiceServer,
@@ -416,7 +416,7 @@ async fn main() -> anyhow::Result<()> {
 
             use pd::testnet::*;
             use penumbra_chain::genesis;
-            use penumbra_crypto::{Address, IdentityKey};
+            use penumbra_crypto::{stake::IdentityKey, Address};
             use tendermint::{node, public_key::Algorithm, Genesis, Time};
 
             let genesis_time = Time::from_unix_timestamp(

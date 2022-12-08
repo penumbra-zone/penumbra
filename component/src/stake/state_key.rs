@@ -1,4 +1,4 @@
-use penumbra_crypto::IdentityKey;
+use penumbra_crypto::stake::IdentityKey;
 use std::string::String;
 use tendermint::PublicKey;
 
@@ -11,7 +11,8 @@ pub fn next_base_rate() -> &'static str {
 }
 
 pub mod validators {
-    use penumbra_crypto::IdentityKey;
+    use super::*;
+
     pub fn list() -> &'static str {
         "staking/validator/"
     }

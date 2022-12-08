@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use penumbra_chain::{
     params::FmdParameters, AnnotatedNotePayload, CompactBlock, Epoch, NoteSource,
 };
-use penumbra_crypto::{FullViewingKey, IdentityKey, Note, NotePayload, Nullifier};
+use penumbra_crypto::{stake::IdentityKey, FullViewingKey, Note, NotePayload, Nullifier};
 use penumbra_tct as tct;
 
 use crate::{QuarantinedNoteRecord, SpendableNoteRecord, Storage};

@@ -8,7 +8,10 @@ use async_trait::async_trait;
 use futures::TryStreamExt;
 use penumbra_chain::quarantined::Slashed;
 use penumbra_chain::{genesis, Epoch, NoteSource, StateReadExt as _};
-use penumbra_crypto::{DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_crypto::{
+    stake::{DelegationToken, IdentityKey},
+    Value, STAKING_TOKEN_ASSET_ID,
+};
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateTransaction, StateWrite};
 use penumbra_transaction::{

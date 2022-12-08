@@ -2,7 +2,8 @@ use std::str::FromStr;
 
 use regex::Regex;
 
-use crate::{asset, IdentityKey};
+use super::IdentityKey;
+use crate::asset;
 
 /// Delegation tokens represent a share of a particular validator's delegation pool.
 pub struct DelegationToken {

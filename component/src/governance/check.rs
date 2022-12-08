@@ -87,7 +87,7 @@ pub mod stateful {
     use super::*;
     use crate::stake::StateReadExt as _;
     use penumbra_chain::StateReadExt as _;
-    use penumbra_crypto::{GovernanceKey, IdentityKey, STAKING_TOKEN_DENOM};
+    use penumbra_crypto::{stake::IdentityKey, GovernanceKey, STAKING_TOKEN_DENOM};
     use penumbra_storage::State;
     use penumbra_transaction::action::ProposalPayload;
 
