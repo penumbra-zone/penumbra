@@ -12,9 +12,12 @@ use serde::{Deserialize, Serialize};
 use once_cell::sync::Lazy;
 
 use penumbra_proto::{
-    client::v1alpha1::BatchSwapOutputDataResponse, core::crypto::v1alpha1 as pbc,
-    core::dex::v1alpha1 as pb, Protobuf,
+    client::v1alpha1::BatchSwapOutputDataResponse,
+    core::dex::v1alpha1 as pb,
+    core::{crypto::v1alpha1 as pbc, dex::v1alpha1::Swap},
+    Protobuf,
 };
+use penumbra_tct as tct;
 
 use super::TradingPair;
 
@@ -160,5 +163,11 @@ impl TryFrom<pbc::SwapCommitment> for SwapCommitment {
             Fq::from_bytes(bytes).map_err(|_| anyhow::anyhow!("invalid swap commitment"))?;
 
         Ok(SwapCommitment(inner))
+    }
+}
+
+impl From<SwapCommitment> for tct::Commitment {
+    fn from(swap_commitment: SwapCommitment) -> tct::Commitment {
+        tct::Commitment(swap_commitment.0)
     }
 }
