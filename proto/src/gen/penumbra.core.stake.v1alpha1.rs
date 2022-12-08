@@ -235,6 +235,7 @@ pub struct Undelegate {
 }
 /// A transaction action finishing an undelegation, converting (slashable)
 /// "unbonding tokens" to (unslashable) staking tokens.
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UndelegateClaim {
     #[prost(message, optional, tag="1")]
@@ -242,6 +243,7 @@ pub struct UndelegateClaim {
     #[prost(bytes="vec", tag="2")]
     pub proof: ::prost::alloc::vec::Vec<u8>,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UndelegateClaimBody {
     /// The identity key of the validator to finish undelegating from.
@@ -261,6 +263,7 @@ pub struct UndelegateClaimBody {
     #[prost(message, optional, tag="5")]
     pub balance_commitment: ::core::option::Option<super::super::crypto::v1alpha1::BalanceCommitment>,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UndelegateClaimPlan {
     /// The identity key of the validator to finish undelegating from.
@@ -280,9 +283,9 @@ pub struct UndelegateClaimPlan {
     /// This is a bare number because its denom is determined by the preceding data.
     #[prost(message, optional, tag="5")]
     pub unbonding_amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
-    /// The blinding factor to use for the value commitment.
+    /// The blinding factor to use for the balance commitment.
     #[prost(bytes="vec", tag="6")]
-    pub value_blinding: ::prost::alloc::vec::Vec<u8>,
+    pub balance_blinding: ::prost::alloc::vec::Vec<u8>,
 }
 /// A list of pending delegations and undelegations.
 #[derive(::serde::Deserialize, ::serde::Serialize)]

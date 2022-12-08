@@ -14,7 +14,7 @@ pub use swap_view::SwapView;
 
 use crate::action::{
     Delegate, Ics20Withdrawal, PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw,
-    ProposalSubmit, ProposalWithdraw, Undelegate, ValidatorVote,
+    ProposalSubmit, ProposalWithdraw, Undelegate, UndelegateClaim, ValidatorVote,
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -29,6 +29,7 @@ pub enum ActionView {
     // Action types with transparent contents
     Delegate(Delegate),
     Undelegate(Undelegate),
+    UndelegateClaim(UndelegateClaim),
     ValidatorDefinition(ValidatorDefinition),
     IBCAction(IbcAction),
     ProposalSubmit(ProposalSubmit),
@@ -57,6 +58,7 @@ impl TryFrom<pbt::ActionView> for ActionView {
                 AV::Spend(x) => ActionView::Spend(x.try_into()?),
                 AV::Output(x) => ActionView::Output(x.try_into()?),
                 AV::Undelegate(x) => ActionView::Undelegate(x.try_into()?),
+                AV::UndelegateClaim(x) => ActionView::UndelegateClaim(x.try_into()?),
                 AV::Swap(x) => ActionView::Swap(x.try_into()?),
                 AV::SwapClaim(x) => ActionView::SwapClaim(x.try_into()?),
                 AV::ValidatorDefinition(x) => ActionView::ValidatorDefinition(x),
@@ -85,6 +87,7 @@ impl From<ActionView> for pbt::ActionView {
                 ActionView::Spend(x) => AV::Spend(x.into()),
                 ActionView::Delegate(x) => AV::Delegate(x.into()),
                 ActionView::Undelegate(x) => AV::Undelegate(x.into()),
+                ActionView::UndelegateClaim(x) => AV::UndelegateClaim(x.into()),
                 ActionView::ValidatorDefinition(x) => AV::ValidatorDefinition(x),
                 ActionView::IBCAction(x) => AV::IbcAction(x),
                 ActionView::ProposalSubmit(x) => AV::ProposalSubmit(x.into()),

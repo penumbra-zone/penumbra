@@ -114,3 +114,8 @@ message SwapProof {
   // Swap blinding factor
   bytes swap_blinding = 44;
 }
+
+message UndelegateClaimProof {
+  crypto.v1alpha1.Amount unbonding_amount = 1;
+  bytes balance_blinding = 2;
+}

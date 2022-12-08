@@ -23,6 +23,7 @@ mod prf;
 pub mod proofs;
 pub mod symmetric;
 pub mod transaction;
+mod unbonding_token;
 pub mod value;
 
 pub use address::Address;
@@ -38,6 +39,7 @@ pub use note::Note;
 pub use note_payload::NotePayload;
 pub use nullifier::Nullifier;
 pub use symmetric::PayloadKey;
+pub use unbonding_token::UnbondingToken;
 pub use value::Value;
 
 fn fmt_hex<T: AsRef<[u8]>>(data: T, f: &mut std::fmt::Formatter) -> std::fmt::Result {

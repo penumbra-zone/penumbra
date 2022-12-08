@@ -8,7 +8,8 @@ use crate::{
     action::{
         output, spend, swap, swap_claim, Delegate, Ics20Withdrawal, PositionClose, PositionOpen,
         PositionRewardClaim, PositionWithdraw, Proposal, ProposalSubmit, ProposalWithdraw,
-        ProposalWithdrawBody, Undelegate, ValidatorVote, ValidatorVoteBody, Vote,
+        ProposalWithdrawBody, Undelegate, UndelegateClaimBody, ValidatorVote, ValidatorVoteBody,
+        Vote,
     },
     plan::{ProposalWithdrawPlan, TransactionPlan},
     Action, Transaction, TransactionBody,
@@ -162,6 +163,10 @@ impl TransactionPlan {
         for undelegation in self.undelegations() {
             state.update(undelegation.auth_hash().as_bytes());
         }
+        for undelegation_claim in self.undelegate_claim_plans() {
+            // TODO: build from plan
+            state.update(undelegation_claim.auth_hash().as_bytes());
+        }
         for proposal_submit in self.proposal_submits() {
             state.update(proposal_submit.auth_hash().as_bytes());
         }
@@ -211,6 +216,7 @@ impl AuthorizingData for Action {
             Action::Spend(spend) => spend.body.auth_hash(),
             Action::Delegate(delegate) => delegate.auth_hash(),
             Action::Undelegate(undelegate) => undelegate.auth_hash(),
+            Action::UndelegateClaim(claim) => claim.body.auth_hash(),
             Action::ProposalSubmit(submit) => submit.auth_hash(),
             Action::ProposalWithdraw(withdraw) => withdraw.auth_hash(),
             Action::ValidatorVote(vote) => vote.auth_hash(),
@@ -332,9 +338,28 @@ impl AuthorizingData for Undelegate {
         // All of these fields are fixed-length, so we can just throw them
         // in the hash one after the other.
         state.update(&self.validator_identity.0.to_bytes());
-        state.update(&self.epoch_index.to_le_bytes());
+        state.update(&self.start_epoch_index.to_le_bytes());
+        state.update(&self.end_epoch_index.to_le_bytes());
         state.update(&self.unbonded_amount.to_le_bytes());
         state.update(&self.delegation_amount.to_le_bytes());
+
+        state.finalize()
+    }
+}
+
+impl AuthorizingData for UndelegateClaimBody {
+    fn auth_hash(&self) -> Hash {
+        let mut state = blake2b_simd::Params::default()
+            .personal(b"PAH:udlgclm_body")
+            .to_state();
+
+        // All of these fields are fixed-length, so we can just throw them
+        // in the hash one after the other.
+        state.update(&self.validator_identity.0.to_bytes());
+        state.update(&self.start_epoch_index.to_le_bytes());
+        state.update(&self.end_epoch_index.to_le_bytes());
+        state.update(&self.penalty.to_le_bytes());
+        state.update(&self.balance_commitment.to_bytes());
 
         state.finalize()
     }

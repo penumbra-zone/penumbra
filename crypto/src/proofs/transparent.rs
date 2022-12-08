@@ -1,6 +1,6 @@
 //! Transparent proofs for `MVP1` of the Penumbra system.
 
-use anyhow::{anyhow, Error, Result};
+use anyhow::{anyhow, ensure, Error, Ok, Result};
 use std::convert::{TryFrom, TryInto};
 
 use decaf377::FieldExt;
@@ -14,7 +14,7 @@ use crate::{
     dex::{swap::SwapPlaintext, BatchSwapOutputData, TradingPair},
     ka, keys, note,
     transaction::Fee,
-    Address, Balance, Fq, Fr, Note, Nullifier, Value,
+    Address, Amount, Balance, Fq, Fr, IdentityKey, Note, Nullifier, Value, STAKING_TOKEN_ASSET_ID,
 };
 
 /// Transparent proof for spending existing notes.
@@ -772,6 +772,77 @@ impl TryFrom<&[u8]> for SwapProof {
         protobuf_serialized_proof
             .try_into()
             .map_err(|_| anyhow!("proto malformed"))
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct UndelegateClaimProof {
+    unbonding_amount: Amount,
+    balance_blinding: Fr,
+}
+
+impl UndelegateClaimProof {
+    pub fn verify(
+        &self,
+        balance_commitment: balance::Commitment,
+        unbonding_id: asset::Id,
+        penalty: u64,
+    ) -> anyhow::Result<()> {
+        // TODO: need widening Amount mul to handle 128-bit values, but we don't do that for staking anyways
+        let unbonded_amount = (u128::try_from(self.unbonding_amount)?)
+            * (1_0000_0000 - penalty as u128)
+            / 1_0000_0000;
+
+        // The undelegate claim action subtracts the unbonding amount and adds
+        // the unbonded amount from the transaction's value balance.
+        let expected_balance = Balance::zero()
+            - Value {
+                amount: self.unbonding_amount,
+                asset_id: unbonding_id,
+            }
+            + Value {
+                // TODO fix type conversions
+                amount: Amount::from(u64::try_from(unbonded_amount)?),
+                asset_id: *STAKING_TOKEN_ASSET_ID,
+            };
+        let expected_commitment = expected_balance.commit(self.balance_blinding);
+        ensure!(
+            expected_commitment == balance_commitment,
+            "balance commitment mismatch"
+        );
+        Ok(())
+    }
+}
+
+impl Protobuf<transparent_proofs::UndelegateClaimProof> for UndelegateClaimProof {}
+
+impl From<UndelegateClaimProof> for transparent_proofs::UndelegateClaimProof {
+    fn from(claim_proof: UndelegateClaimProof) -> Self {
+        transparent_proofs::UndelegateClaimProof {
+            unbonding_amount: Some(claim_proof.unbonding_amount.into()),
+            balance_blinding: claim_proof.balance_blinding.to_bytes().into(),
+        }
+    }
+}
+
+impl TryFrom<transparent_proofs::UndelegateClaimProof> for UndelegateClaimProof {
+    type Error = Error;
+
+    fn try_from(proto: transparent_proofs::UndelegateClaimProof) -> Result<Self, Self::Error> {
+        let unbonding_amount = proto
+            .unbonding_amount
+            .ok_or_else(|| anyhow!("proto malformed"))?
+            .try_into()
+            .map_err(|_| anyhow!("proto malformed"))?;
+        let balance_blinding_bytes: [u8; 32] = proto.balance_blinding[..]
+            .try_into()
+            .map_err(|_| anyhow!("proto malformed"))?;
+        let balance_blinding = Fr::from_bytes(balance_blinding_bytes)?;
+
+        Ok(UndelegateClaimProof {
+            unbonding_amount,
+            balance_blinding,
+        })
     }
 }
 

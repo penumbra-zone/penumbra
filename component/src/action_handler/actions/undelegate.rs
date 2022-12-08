@@ -32,10 +32,10 @@ impl ActionHandler for Undelegate {
 
         // Check whether the epoch is correct first, to give a more helpful
         // error message if it's wrong.
-        if u.epoch_index != rate_data.epoch_index {
+        if u.start_epoch_index != rate_data.epoch_index {
             return Err(anyhow::anyhow!(
                 "undelegation was prepared for next epoch {} but the next epoch is {}",
-                u.epoch_index,
+                u.start_epoch_index,
                 rate_data.epoch_index
             ));
         }

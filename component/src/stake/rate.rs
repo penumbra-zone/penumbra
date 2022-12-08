@@ -151,7 +151,7 @@ impl RateData {
     /// undelegates `delegation_amount` of the validator's delegation tokens.
     pub fn build_undelegate(&self, delegation_amount: u64) -> Undelegate {
         Undelegate {
-            epoch_index: self.epoch_index,
+            start_epoch_index: self.epoch_index,
             delegation_amount: delegation_amount.into(),
             unbonded_amount: self.unbonded_amount(delegation_amount).into(),
             validator_identity: self.identity_key.clone(),

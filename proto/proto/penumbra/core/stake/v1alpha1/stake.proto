@@ -179,8 +179,8 @@ message UndelegateClaimPlan {
   // The amount of unbonding tokens to claim.
   // This is a bare number because its denom is determined by the preceding data.
   crypto.v1alpha1.Amount unbonding_amount = 5;
-  // The blinding factor to use for the value commitment.
-  bytes value_blinding = 6;
+  // The blinding factor to use for the balance commitment.
+  bytes balance_blinding = 6;
 }
 
 // A list of pending delegations and undelegations.
