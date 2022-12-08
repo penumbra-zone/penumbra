@@ -183,11 +183,6 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
         ".penumbra.core.crypto.v1alpha1.NoteCommitment",
         SERDE_TRANSPARENT,
     ),
-    (".penumbra.core.crypto.v1alpha1.SwapCommitment", SERIALIZE),
-    (
-        ".penumbra.core.crypto.v1alpha1.SwapCommitment",
-        SERDE_TRANSPARENT,
-    ),
     (
         ".penumbra.core.crypto.v1alpha1.BalanceCommitment",
         SERIALIZE,
@@ -447,10 +442,6 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     ),
     (
         ".penumbra.core.crypto.v1alpha1.NoteCommitment.inner",
-        AS_HEX,
-    ),
-    (
-        ".penumbra.core.crypto.v1alpha1.SwapCommitment.inner",
         AS_HEX,
     ),
     (
