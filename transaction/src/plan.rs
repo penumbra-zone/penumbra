@@ -25,6 +25,8 @@ pub use action::{
 pub use clue::CluePlan;
 pub use memo::MemoPlan;
 
+use self::action::UndelegateClaimPlan;
+
 /// A declaration of a planned [`Transaction`](crate::Transaction),
 /// for use in transaction authorization and creation.
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -77,6 +79,16 @@ impl TransactionPlan {
     pub fn undelegations(&self) -> impl Iterator<Item = &Undelegate> {
         self.actions.iter().filter_map(|action| {
             if let ActionPlan::Undelegate(d) = action {
+                Some(d)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn undelegate_claim_plans(&self) -> impl Iterator<Item = &UndelegateClaimPlan> {
+        self.actions.iter().filter_map(|action| {
+            if let ActionPlan::UndelegateClaim(d) = action {
                 Some(d)
             } else {
                 None

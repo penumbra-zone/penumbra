@@ -118,9 +118,9 @@ impl TransactionPlan {
         for undelegation in self.undelegations().cloned() {
             actions.push(Action::Undelegate(undelegation))
         }
-        for undelegation_claim in self.undelegation_claim_plans() {
-            // TODO: build from plan
-            state.update(undelegation_claim.auth_hash().as_bytes());
+        for plan in self.undelegate_claim_plans() {
+            let undelegate_claim = plan.undelegate_claim();
+            actions.push(Action::UndelegateClaim(undelegate_claim));
         }
         for proposal_submit in self.proposal_submits().cloned() {
             actions.push(Action::ProposalSubmit(proposal_submit))

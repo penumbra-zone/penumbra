@@ -152,6 +152,7 @@ impl RateData {
     pub fn build_undelegate(&self, delegation_amount: u64) -> Undelegate {
         Undelegate {
             start_epoch_index: self.epoch_index,
+            end_epoch_index: todo!(),
             delegation_amount: delegation_amount.into(),
             unbonded_amount: self.unbonded_amount(delegation_amount).into(),
             validator_identity: self.identity_key.clone(),

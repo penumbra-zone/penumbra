@@ -2,7 +2,7 @@ use ark_ff::UniformRand;
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_crypto::{
     proofs::transparent::{SpendProof, UndelegateClaimProof},
-    Address, Amount, FieldExt, Fq, Fr, FullViewingKey, IdentityKey, Note, Value,
+    Address, Amount, FieldExt, Fq, Fr, FullViewingKey, IdentityKey, Note, UnbondingToken, Value,
     STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
@@ -38,16 +38,29 @@ impl UndelegateClaimPlan {
 
     /// Construct the [`UndelegateClaimBody`] described by this [`UndelegateClaimPlan`].
     pub fn undelegate_claim_body(&self) -> UndelegateClaimBody {
-        todo!()
+        UndelegateClaimBody {
+            validator_identity: self.validator_identity,
+            start_epoch_index: self.start_epoch_index,
+            end_epoch_index: self.end_epoch_index,
+            penalty: self.penalty,
+            balance_commitment: self.balance().commit(self.balance_blinding),
+        }
     }
 
     /// Construct the [`UndelegateClaimProof`] required by the [`UndelegateClaimBody`] described by this [`UndelegateClaimPlan`].
     pub fn undelegate_claim_proof(&self) -> UndelegateClaimProof {
-        todo!()
+        UndelegateClaimProof::new(self.unbonding_amount, self.balance_blinding)
     }
 
     pub fn balance(&self) -> penumbra_crypto::Balance {
-        todo!()
+        let unbonding_id = UnbondingToken::new(
+            self.validator_identity,
+            self.start_epoch_index,
+            self.end_epoch_index,
+        )
+        .id();
+        UnbondingToken::balance_for_claim(unbonding_id, self.unbonding_amount, self.penalty)
+            .unwrap()
     }
 }
 

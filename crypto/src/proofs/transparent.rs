@@ -14,7 +14,8 @@ use crate::{
     dex::{swap::SwapPlaintext, BatchSwapOutputData, TradingPair},
     ka, keys, note,
     transaction::Fee,
-    Address, Amount, Balance, Fq, Fr, IdentityKey, Note, Nullifier, Value, STAKING_TOKEN_ASSET_ID,
+    Address, Amount, Balance, Fq, Fr, IdentityKey, Note, Nullifier, UnbondingToken, Value,
+    STAKING_TOKEN_ASSET_ID,
 };
 
 /// Transparent proof for spending existing notes.
@@ -782,29 +783,21 @@ pub struct UndelegateClaimProof {
 }
 
 impl UndelegateClaimProof {
+    pub fn new(unbonding_amount: Amount, balance_blinding: Fr) -> Self {
+        Self {
+            unbonding_amount,
+            balance_blinding,
+        }
+    }
+
     pub fn verify(
         &self,
         balance_commitment: balance::Commitment,
         unbonding_id: asset::Id,
         penalty: u64,
     ) -> anyhow::Result<()> {
-        // TODO: need widening Amount mul to handle 128-bit values, but we don't do that for staking anyways
-        let unbonded_amount = (u128::try_from(self.unbonding_amount)?)
-            * (1_0000_0000 - penalty as u128)
-            / 1_0000_0000;
-
-        // The undelegate claim action subtracts the unbonding amount and adds
-        // the unbonded amount from the transaction's value balance.
-        let expected_balance = Balance::zero()
-            - Value {
-                amount: self.unbonding_amount,
-                asset_id: unbonding_id,
-            }
-            + Value {
-                // TODO fix type conversions
-                amount: Amount::from(u64::try_from(unbonded_amount)?),
-                asset_id: *STAKING_TOKEN_ASSET_ID,
-            };
+        let expected_balance =
+            UnbondingToken::balance_for_claim(unbonding_id, self.unbonding_amount, penalty)?;
         let expected_commitment = expected_balance.commit(self.balance_blinding);
         ensure!(
             expected_commitment == balance_commitment,

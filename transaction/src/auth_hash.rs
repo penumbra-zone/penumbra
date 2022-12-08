@@ -163,9 +163,8 @@ impl TransactionPlan {
         for undelegation in self.undelegations() {
             state.update(undelegation.auth_hash().as_bytes());
         }
-        for undelegation_claim in self.undelegate_claim_plans() {
-            // TODO: build from plan
-            state.update(undelegation_claim.auth_hash().as_bytes());
+        for plan in self.undelegate_claim_plans() {
+            state.update(plan.undelegate_claim_body().auth_hash().as_bytes());
         }
         for proposal_submit in self.proposal_submits() {
             state.update(proposal_submit.auth_hash().as_bytes());
