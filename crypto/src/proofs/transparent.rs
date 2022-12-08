@@ -365,7 +365,7 @@ impl SwapClaimProof {
             self.claim_address,
             Value {
                 amount: 1u64.into(),
-                asset_id: swap_plaintext.asset_id(),
+                asset_id: asset::Id(swap_plaintext.swap_commitment().0),
             },
             self.note_blinding,
         )?;
@@ -616,7 +616,7 @@ impl SwapProof {
                 Value {
                     // The swap NFT is always amount 1.
                     amount: 1u64.into(),
-                    asset_id: swap_plaintext.asset_id(),
+                    asset_id: asset::Id(swap_plaintext.swap_commitment().0),
                 },
                 self.note_blinding,
             )?,

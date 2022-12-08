@@ -232,7 +232,7 @@ mod tests {
         );
         let v3: Value = Value {
             amount: 1u64.into(),
-            asset_id: sp.asset_id(),
+            asset_id: asset::Id(sp.swap_commitment().0),
         };
         let asset_id = v3.format(&cache);
         assert_eq!(v3, asset_id.parse().unwrap());
@@ -269,7 +269,7 @@ mod tests {
         );
         let v4: Value = Value {
             amount: 1u64.into(),
-            asset_id: sp.asset_id(),
+            asset_id: asset::Id(sp.swap_commitment().0),
         };
 
         assert_eq!(v1.format(&cache), "999upenumbra");
