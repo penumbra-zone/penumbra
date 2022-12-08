@@ -85,7 +85,7 @@ pub struct NotesRequest {
 pub struct WitnessRequest {
     /// The note commitments to obtain auth paths for.
     #[prost(message, repeated, tag="2")]
-    pub note_commitments: ::prost::alloc::vec::Vec<super::super::core::crypto::v1alpha1::NoteCommitment>,
+    pub note_commitments: ::prost::alloc::vec::Vec<super::super::core::crypto::v1alpha1::StateCommitment>,
     /// The transaction plan to witness
     #[prost(message, optional, tag="3")]
     pub transaction_plan: ::core::option::Option<super::super::core::transaction::v1alpha1::TransactionPlan>,
@@ -132,7 +132,7 @@ pub struct FmdParametersResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NoteByCommitmentRequest {
     #[prost(message, optional, tag="2")]
-    pub note_commitment: ::core::option::Option<super::super::core::crypto::v1alpha1::NoteCommitment>,
+    pub note_commitment: ::core::option::Option<super::super::core::crypto::v1alpha1::StateCommitment>,
     /// If set to true, waits to return until the requested note is detected.
     #[prost(bool, tag="3")]
     pub await_detection: bool,
@@ -236,7 +236,7 @@ pub struct NotesResponse {
 pub struct SpendableNoteRecord {
     /// The note commitment, identifying the note.
     #[prost(message, optional, tag="1")]
-    pub note_commitment: ::core::option::Option<super::super::core::crypto::v1alpha1::NoteCommitment>,
+    pub note_commitment: ::core::option::Option<super::super::core::crypto::v1alpha1::StateCommitment>,
     /// The note plaintext itself.
     #[prost(message, optional, tag="2")]
     pub note: ::core::option::Option<super::super::core::crypto::v1alpha1::Note>,

@@ -2,9 +2,9 @@ use decaf377::FieldExt;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
 use poseidon377::Fq;
 
-/// A commitment to the value of a note.
+/// A commitment to a note or swap.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[serde(into = "pb::NoteCommitment", try_from = "pb::NoteCommitment")]
+#[serde(into = "pb::StateCommitment", try_from = "pb::StateCommitment")]
 pub struct Commitment(pub Fq);
 
 /// An error when decoding a commitment from a hex string.
@@ -15,7 +15,7 @@ pub enum ParseCommitmentError {
     InvalidHex(#[from] hex::FromHexError),
     /// The bytes did not encode a valid commitment.
     #[error(transparent)]
-    InvalidCommitment(#[from] InvalidNoteCommitment),
+    InvalidCommitment(#[from] InvalidStateCommitment),
 }
 
 impl Commitment {
@@ -26,7 +26,7 @@ impl Commitment {
     }
 }
 
-impl Protobuf<pb::NoteCommitment> for Commitment {}
+impl Protobuf<pb::StateCommitment> for Commitment {}
 
 #[cfg(test)]
 mod test_serde {
@@ -51,7 +51,7 @@ mod test_serde {
     }
 }
 
-impl From<Commitment> for pb::NoteCommitment {
+impl From<Commitment> for pb::StateCommitment {
     fn from(nc: Commitment) -> Self {
         Self {
             inner: nc.0.to_bytes().to_vec(),
@@ -62,17 +62,17 @@ impl From<Commitment> for pb::NoteCommitment {
 /// Error returned when a note commitment cannot be deserialized because it is not in range.
 #[derive(thiserror::Error, Debug, Clone, Copy)]
 #[error("Invalid note commitment")]
-pub struct InvalidNoteCommitment;
+pub struct InvalidStateCommitment;
 
-impl TryFrom<pb::NoteCommitment> for Commitment {
-    type Error = InvalidNoteCommitment;
+impl TryFrom<pb::StateCommitment> for Commitment {
+    type Error = InvalidStateCommitment;
 
-    fn try_from(value: pb::NoteCommitment) -> Result<Self, Self::Error> {
+    fn try_from(value: pb::StateCommitment) -> Result<Self, Self::Error> {
         let bytes: [u8; 32] = value.inner[..]
             .try_into()
-            .map_err(|_| InvalidNoteCommitment)?;
+            .map_err(|_| InvalidStateCommitment)?;
 
-        let inner = Fq::from_bytes(bytes).map_err(|_| InvalidNoteCommitment)?;
+        let inner = Fq::from_bytes(bytes).map_err(|_| InvalidStateCommitment)?;
 
         Ok(Commitment(inner))
     }
@@ -100,10 +100,10 @@ impl From<Commitment> for [u8; 32] {
 }
 
 impl TryFrom<[u8; 32]> for Commitment {
-    type Error = InvalidNoteCommitment;
+    type Error = InvalidStateCommitment;
 
     fn try_from(bytes: [u8; 32]) -> Result<Commitment, Self::Error> {
-        let inner = Fq::from_bytes(bytes).map_err(|_| InvalidNoteCommitment)?;
+        let inner = Fq::from_bytes(bytes).map_err(|_| InvalidStateCommitment)?;
 
         Ok(Commitment(inner))
     }
@@ -111,12 +111,12 @@ impl TryFrom<[u8; 32]> for Commitment {
 
 // TODO: remove? aside from sqlx is there a use case for non-proto conversion from byte slices?
 impl TryFrom<&[u8]> for Commitment {
-    type Error = InvalidNoteCommitment;
+    type Error = InvalidStateCommitment;
 
     fn try_from(slice: &[u8]) -> Result<Commitment, Self::Error> {
-        let bytes: [u8; 32] = slice[..].try_into().map_err(|_| InvalidNoteCommitment)?;
+        let bytes: [u8; 32] = slice[..].try_into().map_err(|_| InvalidStateCommitment)?;
 
-        let inner = Fq::from_bytes(bytes).map_err(|_| InvalidNoteCommitment)?;
+        let inner = Fq::from_bytes(bytes).map_err(|_| InvalidStateCommitment)?;
 
         Ok(Commitment(inner))
     }

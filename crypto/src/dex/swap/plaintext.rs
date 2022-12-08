@@ -5,15 +5,14 @@ use ark_ff::{PrimeField, UniformRand};
 use decaf377::{FieldExt, Fq};
 use once_cell::sync::Lazy;
 use penumbra_proto::{core::crypto::v1alpha1 as pb_crypto, core::dex::v1alpha1 as pb, Protobuf};
+use penumbra_tct::Commitment;
 use poseidon377::{hash_1, hash_4, hash_7};
 use rand::{CryptoRng, RngCore};
 
 use crate::dex::TradingPair;
 use crate::symmetric::{PayloadKey, PayloadKind};
 
-use super::{
-    SwapCiphertext, SwapCommitment, DOMAIN_SEPARATOR, SWAP_CIPHERTEXT_BYTES, SWAP_LEN_BYTES,
-};
+use super::{SwapCiphertext, DOMAIN_SEPARATOR, SWAP_CIPHERTEXT_BYTES, SWAP_LEN_BYTES};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SwapPlaintext {
@@ -53,7 +52,7 @@ impl SwapPlaintext {
     // Constructs the unique asset ID for a swap as a poseidon hash of the input data for the swap.
     //
     // https://protocol.penumbra.zone/main/zswap/swap.html#swap-actions
-    pub fn swap_commitment(&self) -> SwapCommitment {
+    pub fn swap_commitment(&self) -> Commitment {
         let inner = hash_7(
             &DOMAIN_SEPARATOR,
             (
@@ -77,7 +76,7 @@ impl SwapPlaintext {
             ),
         );
 
-        SwapCommitment(inner)
+        Commitment(inner)
     }
 
     pub fn diversified_generator(&self) -> &decaf377::Element {

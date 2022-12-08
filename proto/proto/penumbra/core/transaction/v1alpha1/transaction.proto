@@ -85,7 +85,7 @@ message TransactionPerspective {
 
 message PayloadKeyWithCommitment {
   bytes payload_key = 1;
-  crypto.v1alpha1.NoteCommitment commitment = 2;
+  crypto.v1alpha1.StateCommitment commitment = 2;
 }
 
 message NullifierWithNote {

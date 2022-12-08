@@ -66,7 +66,7 @@ pub struct AddressIndex {
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[serde(transparent)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct NoteCommitment {
+pub struct StateCommitment {
     #[prost(bytes="vec", tag="1")]
     #[serde(with = "crate::serializers::hexstr")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
@@ -191,7 +191,7 @@ pub struct BindingSignature {
 pub struct NotePayload {
     /// The note commitment for the output note. 32 bytes.
     #[prost(message, optional, tag="1")]
-    pub note_commitment: ::core::option::Option<NoteCommitment>,
+    pub note_commitment: ::core::option::Option<StateCommitment>,
     /// The encoding of an ephemeral public key. 32 bytes.
     #[prost(bytes="bytes", tag="2")]
     #[serde(with = "crate::serializers::hexstr_bytes")]
@@ -206,7 +206,7 @@ pub struct NotePayload {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NoteCommitmentProof {
     #[prost(message, optional, tag="1")]
-    pub note_commitment: ::core::option::Option<NoteCommitment>,
+    pub note_commitment: ::core::option::Option<StateCommitment>,
     #[prost(uint64, tag="2")]
     pub position: u64,
     /// always length 24

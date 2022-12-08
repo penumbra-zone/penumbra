@@ -178,9 +178,9 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.core.crypto.v1alpha1.Address", SERIALIZE),
     (".penumbra.core.crypto.v1alpha1.Address", SERDE_TRANSPARENT),
     (".penumbra.core.crypto.v1alpha1.Note", SERIALIZE),
-    (".penumbra.core.crypto.v1alpha1.NoteCommitment", SERIALIZE),
+    (".penumbra.core.crypto.v1alpha1.StateCommitment", SERIALIZE),
     (
-        ".penumbra.core.crypto.v1alpha1.NoteCommitment",
+        ".penumbra.core.crypto.v1alpha1.StateCommitment",
         SERDE_TRANSPARENT,
     ),
     (
@@ -441,7 +441,7 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         AS_BECH32_ASSET_ID,
     ),
     (
-        ".penumbra.core.crypto.v1alpha1.NoteCommitment.inner",
+        ".penumbra.core.crypto.v1alpha1.StateCommitment.inner",
         AS_HEX,
     ),
     (

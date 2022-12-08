@@ -114,7 +114,7 @@ pub struct PayloadKeyWithCommitment {
     #[prost(bytes="bytes", tag="1")]
     pub payload_key: ::prost::bytes::Bytes,
     #[prost(message, optional, tag="2")]
-    pub commitment: ::core::option::Option<super::super::crypto::v1alpha1::NoteCommitment>,
+    pub commitment: ::core::option::Option<super::super::crypto::v1alpha1::StateCommitment>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NullifierWithNote {
