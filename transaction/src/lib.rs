@@ -1,3 +1,17 @@
+//! Data modeling for Penumbra transactions.
+//!
+//! This crate defines data structures that provide modeling of shielded
+//! transactions through their entire lifecycle:
+//!
+//! * the [`TransactionPlan`](plan::TransactionPlan) type completely describes a
+//! planned transaction before it is created;
+//!
+//! * the [`Transaction`] type represents the shielded transaction itself;
+//!
+//! * the [`TransactionView`] type represents a view from a particular
+//! [`TransactionPerspective`] (e.g., the sender or receiver) of the cleartext
+//! contents of a shielded transaction after it has been created.
+
 #![allow(clippy::clone_on_copy)]
 
 mod auth_data;
