@@ -1,5 +1,6 @@
 //! Staking reward and delegation token exchange rates.
 
+use penumbra_crypto::stake::Penalty;
 use penumbra_proto::{
     client::v1alpha1::NextValidatorRateResponse, core::stake::v1alpha1 as pb, Protobuf,
 };
@@ -95,13 +96,18 @@ impl RateData {
             .unwrap()
     }
 
-    pub fn slash(&self, slashing_penalty_bps: u64) -> Self {
+    pub fn slash(&self, penalty: Penalty) -> Self {
         let mut slashed = self.clone();
         // (1 - penalty) * exchange_rate
         slashed.validator_exchange_rate = self
             .validator_exchange_rate
-            // Slashing penalty is in basis points, so we divide by 1e4
-            .saturating_sub((self.validator_exchange_rate * slashing_penalty_bps) / 1_0000);
+            // Slashing penalty is in bps^2, so we divide by 1e8
+            .saturating_sub(
+                u64::try_from(
+                    (self.validator_exchange_rate as u128 * penalty.0 as u128) / 1_0000_0000,
+                )
+                .unwrap(),
+            );
 
         slashed
     }
@@ -253,5 +259,28 @@ impl TryFrom<NextValidatorRateResponse> for RateData {
             .data
             .ok_or_else(|| anyhow::anyhow!("empty NextValidatorRateResponse message"))?
             .try_into()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand_core::OsRng;
+
+    #[test]
+    fn slash_rate_by_penalty() {
+        let sk = penumbra_crypto::rdsa::SigningKey::new(OsRng);
+        let ik = IdentityKey((&sk).into());
+
+        let rate_data = RateData {
+            identity_key: ik,
+            epoch_index: 0,
+            validator_reward_rate: 1_0000_0000,
+            validator_exchange_rate: 2_0000_0000,
+        };
+        // 10%
+        let penalty = Penalty(1000_0000);
+        let slashed = rate_data.slash(penalty);
+        assert_eq!(slashed.validator_exchange_rate, 1_8000_0000);
     }
 }

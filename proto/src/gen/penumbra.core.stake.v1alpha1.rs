@@ -316,3 +316,10 @@ pub struct CurrentConsensusKeys {
     #[prost(message, repeated, tag="1")]
     pub consensus_keys: ::prost::alloc::vec::Vec<super::super::crypto::v1alpha1::ConsensusKey>,
 }
+/// Tracks slashing penalties applied to a validator in some epoch.
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Penalty {
+    #[prost(uint64, tag="1")]
+    pub inner: u64,
+}

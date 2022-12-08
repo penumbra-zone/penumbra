@@ -19,10 +19,10 @@ message ChainParameters {
   uint64 active_validator_limit = 4;
   // The base reward rate, expressed in basis points of basis points
   uint64 base_reward_rate = 9;
-  // The penalty for slashing due to misbehavior, expressed in basis points.
-  uint64 slashing_penalty_misbehavior_bps = 5;
-  // The penalty for slashing due to downtime, expressed in basis points.
-  uint64 slashing_penalty_downtime_bps = 10;
+  // The penalty for slashing due to misbehavior.
+  stake.v1alpha1.Penalty slashing_penalty_misbehavior = 5;
+  // The penalty for slashing due to downtime.
+  stake.v1alpha1.Penalty slashing_penalty_downtime = 10;
   // The number of blocks in the window to check for downtime.
   uint64 signed_blocks_window_len = 11;
   // The maximum number of blocks in the window each validator can miss signing without slashing.

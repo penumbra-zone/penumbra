@@ -149,6 +149,7 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.core.stake.v1alpha1.CommissionAmount", SERIALIZE),
     (".penumbra.core.stake.v1alpha1.CommissionAmounts", SERIALIZE),
     (".penumbra.core.stake.v1alpha1.Uptime", SERIALIZE),
+    (".penumbra.core.stake.v1alpha1.Penalty", SERIALIZE),
     (
         ".penumbra.core.stake.v1alpha1.CurrentConsensusKeys",
         SERIALIZE,

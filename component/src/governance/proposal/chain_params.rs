@@ -17,8 +17,8 @@ pub enum MutableParam {
     UnbondingEpochs,
     ActiveValidatorLimit,
     BaseRewardRate,
-    SlashingPenaltyMisbehaviorBps,
-    SlashingPenaltyDowntimeBps,
+    SlashingPenaltyMisbehavior,
+    SlashingPenaltyDowntime,
     SignedBlocksWindowLen,
     MissedBlocksMaximum,
 }
@@ -58,8 +58,8 @@ impl MutableParam {
             MutableParam::UnbondingEpochs,
             MutableParam::ActiveValidatorLimit,
             MutableParam::BaseRewardRate,
-            MutableParam::SlashingPenaltyMisbehaviorBps,
-            MutableParam::SlashingPenaltyDowntimeBps,
+            MutableParam::SlashingPenaltyMisbehavior,
+            MutableParam::SlashingPenaltyDowntime,
             MutableParam::SignedBlocksWindowLen,
             MutableParam::MissedBlocksMaximum,
         ]
@@ -72,8 +72,8 @@ impl MutableParam {
             }
             MutableParam::ActiveValidatorLimit => "The number of validators that may be in the active validator set. Must be at least 1.",
             MutableParam::BaseRewardRate => "The base reward rate for delegator pools, expressed in basis points of basis points, and accrued each epoch. Must be at least 1.",
-            MutableParam::SlashingPenaltyMisbehaviorBps => "Slashing penalty specified in basis points applied to validator reward rates for as punishment for misbehavior. Must be at least 1.",
-            MutableParam::SlashingPenaltyDowntimeBps => "Slashing penalty specified in basis points applied to validator reward rates as punishment for downtime. Must be at least 1.",
+            MutableParam::SlashingPenaltyMisbehavior => "Slashing penalty specified in basis points applied to validator reward rates for as punishment for misbehavior. Must be at least 1.",
+            MutableParam::SlashingPenaltyDowntime => "Slashing penalty specified in basis points applied to validator reward rates as punishment for downtime. Must be at least 1.",
             MutableParam::SignedBlocksWindowLen => "Number of blocks to use as the window for detecting validator downtime. Must be at least 2 and greater than or equal to missed_blocks_maximum.",
             MutableParam::MissedBlocksMaximum => "The maximum number of blocks a validator may miss in the signed_blocks_window_len before being slashed for downtime. Must be at least 1 and less than or equal to signed_blocks_window_len.",
         }
@@ -88,10 +88,8 @@ impl std::str::FromStr for MutableParam {
             "unbonding_epochs" => Result::Ok(MutableParam::UnbondingEpochs),
             "active_validator_limit" => Result::Ok(MutableParam::ActiveValidatorLimit),
             "base_reward_rate" => ::core::result::Result::Ok(MutableParam::BaseRewardRate),
-            "slashing_penalty_misbehavior_bps" => {
-                Result::Ok(MutableParam::SlashingPenaltyMisbehaviorBps)
-            }
-            "slashing_penalty_downtime_bps" => Result::Ok(MutableParam::SlashingPenaltyDowntimeBps),
+            "slashing_penalty_misbehavior" => Result::Ok(MutableParam::SlashingPenaltyMisbehavior),
+            "slashing_penalty_downtime" => Result::Ok(MutableParam::SlashingPenaltyDowntime),
             "signed_blocks_window_len" => Result::Ok(MutableParam::SignedBlocksWindowLen),
             "missed_blocks_maximum" => Result::Ok(MutableParam::MissedBlocksMaximum),
             _ => Err(anyhow::anyhow!("mutable parameter not found")),
@@ -105,10 +103,10 @@ impl fmt::Display for MutableParam {
             MutableParam::UnbondingEpochs => write!(f, "unbonding_epochs"),
             MutableParam::ActiveValidatorLimit => write!(f, "active_validator_limit"),
             MutableParam::BaseRewardRate => write!(f, "base_reward_rate"),
-            MutableParam::SlashingPenaltyMisbehaviorBps => {
-                write!(f, "slashing_penalty_misbehavior_bps")
+            MutableParam::SlashingPenaltyMisbehavior => {
+                write!(f, "slashing_penalty_misbehavior")
             }
-            MutableParam::SlashingPenaltyDowntimeBps => write!(f, "slashing_penalty_downtime_bps"),
+            MutableParam::SlashingPenaltyDowntime => write!(f, "slashing_penalty_downtime"),
             MutableParam::SignedBlocksWindowLen => write!(f, "signed_blocks_window_len"),
             MutableParam::MissedBlocksMaximum => write!(f, "missed_blocks_maximum"),
         }
@@ -208,12 +206,12 @@ pub fn resolve_parameters(
             MutableParam::BaseRewardRate => {
                 new_chain_params.base_reward_rate = value.parse().context("invalid value")?
             }
-            MutableParam::SlashingPenaltyMisbehaviorBps => {
-                new_chain_params.slashing_penalty_misbehavior_bps =
+            MutableParam::SlashingPenaltyMisbehavior => {
+                new_chain_params.slashing_penalty_misbehavior =
                     value.parse().context("invalid value")?
             }
-            MutableParam::SlashingPenaltyDowntimeBps => {
-                new_chain_params.slashing_penalty_downtime_bps =
+            MutableParam::SlashingPenaltyDowntime => {
+                new_chain_params.slashing_penalty_misbehavior =
                     value.parse().context("invalid value")?
             }
             MutableParam::SignedBlocksWindowLen => {
@@ -261,7 +259,7 @@ fn param_value_is_valid(param: &MutableParam, value: &str) -> bool {
             // Base reward rate must be at least 1.
             value >= 1
         }
-        MutableParam::SlashingPenaltyMisbehaviorBps => {
+        MutableParam::SlashingPenaltyMisbehavior => {
             let value = match value.parse::<u64>() {
                 Ok(value) => value,
                 Err(_) => return false,
@@ -270,7 +268,7 @@ fn param_value_is_valid(param: &MutableParam, value: &str) -> bool {
             // Slashing penalty for misbehavior must be at least 1.
             value >= 1
         }
-        MutableParam::SlashingPenaltyDowntimeBps => {
+        MutableParam::SlashingPenaltyDowntime => {
             let value = match value.parse::<u64>() {
                 Ok(value) => value,
                 Err(_) => return false,

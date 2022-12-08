@@ -8,6 +8,7 @@ use async_trait::async_trait;
 use futures::TryStreamExt;
 use penumbra_chain::quarantined::Slashed;
 use penumbra_chain::{genesis, Epoch, NoteSource, StateReadExt as _};
+use penumbra_crypto::stake::Penalty;
 use penumbra_crypto::{
     stake::{DelegationToken, IdentityKey},
     Value, STAKING_TOKEN_ASSET_ID,
@@ -220,7 +221,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 Ok(())
             }
             (Active, Jailed) => {
-                let penalty = self.get_chain_params().await?.slashing_penalty_downtime_bps;
+                let penalty = self.get_chain_params().await?.slashing_penalty_downtime;
 
                 // Apply the penalty to the validator's current exchange rate.
                 self.apply_slashing_penalty(identity_key, penalty).await?;
@@ -243,10 +244,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 Ok(())
             }
             (Active | Inactive | Disabled | Jailed, Tombstoned) => {
-                let penalty = self
-                    .get_chain_params()
-                    .await?
-                    .slashing_penalty_misbehavior_bps;
+                let penalty = self.get_chain_params().await?.slashing_penalty_misbehavior;
 
                 // Apply the penalty to the validator's current exchange rate.
                 self.apply_slashing_penalty(identity_key, penalty).await?;
@@ -1189,7 +1187,7 @@ pub trait StateWriteExt: StateWrite {
     async fn apply_slashing_penalty(
         &mut self,
         identity_key: &IdentityKey,
-        slashing_penalty_bps: u64,
+        slashing_penalty: Penalty,
     ) -> Result<()> {
         let mut cur_rate = self
             .current_validator_rate(identity_key)
@@ -1199,7 +1197,7 @@ pub trait StateWriteExt: StateWrite {
             })?;
 
         // Apply the slashing penalty to the current rate...
-        cur_rate = cur_rate.slash(slashing_penalty_bps);
+        cur_rate = cur_rate.slash(slashing_penalty);
         // ...and ensure they're held constant at the penalized rate.
         let next_rate = {
             let mut rate = cur_rate.clone();

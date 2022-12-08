@@ -201,3 +201,8 @@ message Uptime {
 message CurrentConsensusKeys {
   repeated crypto.v1alpha1.ConsensusKey consensus_keys = 1;
 }
+
+// Tracks slashing penalties applied to a validator in some epoch.
+message Penalty {
+  uint64 inner = 1;
+}

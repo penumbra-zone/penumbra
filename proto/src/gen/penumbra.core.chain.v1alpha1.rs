@@ -17,12 +17,12 @@ pub struct ChainParameters {
     /// The base reward rate, expressed in basis points of basis points
     #[prost(uint64, tag="9")]
     pub base_reward_rate: u64,
-    /// The penalty for slashing due to misbehavior, expressed in basis points.
-    #[prost(uint64, tag="5")]
-    pub slashing_penalty_misbehavior_bps: u64,
-    /// The penalty for slashing due to downtime, expressed in basis points.
-    #[prost(uint64, tag="10")]
-    pub slashing_penalty_downtime_bps: u64,
+    /// The penalty for slashing due to misbehavior.
+    #[prost(message, optional, tag="5")]
+    pub slashing_penalty_misbehavior: ::core::option::Option<super::super::stake::v1alpha1::Penalty>,
+    /// The penalty for slashing due to downtime.
+    #[prost(message, optional, tag="10")]
+    pub slashing_penalty_downtime: ::core::option::Option<super::super::stake::v1alpha1::Penalty>,
     /// The number of blocks in the window to check for downtime.
     #[prost(uint64, tag="11")]
     pub signed_blocks_window_len: u64,

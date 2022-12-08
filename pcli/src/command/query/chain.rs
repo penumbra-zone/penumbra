@@ -55,16 +55,16 @@ impl ChainCmd {
                 &format!("{}", params.active_validator_limit),
             ])
             .add_row(vec![
-                "Base Reward Rate (bps of bps)",
+                "Base Reward Rate (bps^2)",
                 &format!("{}", params.base_reward_rate),
             ])
             .add_row(vec![
-                "Slashing Penalty (Misbehavior) (bps)",
-                &format!("{}", params.slashing_penalty_misbehavior_bps),
+                "Slashing Penalty (Misbehavior) (bps^2)",
+                &format!("{}", params.slashing_penalty_misbehavior),
             ])
             .add_row(vec![
-                "Slashing Penalty (Downtime) (bps)",
-                &format!("{}", params.slashing_penalty_downtime_bps),
+                "Slashing Penalty (Downtime) (bps^2)",
+                &format!("{}", params.slashing_penalty_downtime),
             ])
             .add_row(vec![
                 "Signed Blocks Window (blocks)",
