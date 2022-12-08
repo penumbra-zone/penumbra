@@ -1,104 +1,69 @@
-# One day, this would be better handled via pushing Docker images up
-# and using Kubernetes or similar, but this will work for now.
-name: Deploy Testnet
+---
+# Deploys the most recent tagged testnet (e.g. "037-iocaste.2") to cluster
+# at testnet.penumbra.zone.
+name: Deploy Testnet (Kubernetes)
 on:
   workflow_dispatch:
+    inputs:
+      nvals:
+        description: 'Number of validators at genesis'
+        required: true
+        default: '2'
+      nfullnodes:
+        description: 'Number of fullnodes at genesis'
+        required: true
+        default: '2'
+      image_repository:
+        description: 'Docker image to deploy'
+        required: true
+        default: 'ghcr.io/penumbra-zone/penumbra'
+      image_tag:
+        description: 'Docker image tag to deploy'
+        required: true
+      image_uid_gid:
+        description: 'Docker image user uid:gid'
+        required: true
+        default: '1000:1000'
   push:
     tags:
       - '[0-9][0-9][0-9]-*'
-
 jobs:
-
+  # Before deploying, we must wait for the container build to complete,
+  # so that the relevant tag is present in container registry.
+  build-container:
+    uses: ./.github/workflows/containers.yml
   deploy:
-    name: Trigger Deployment
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+    name: Deploy to Testnet
     environment: testnet
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    timeout-minutes: 30
     steps:
-    - name: Get the git tag
-      id: get_tag
-      run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
-    - name: Update git repository
-      uses: appleboy/ssh-action@master
-      env:
-        TESTNET_HOST: ${{ secrets.TESTNET_HOST }}
-        VERSION: ${{ steps.get_tag.outputs.VERSION }}
-      with:
-        host: ${{ secrets.TESTNET_HOST }}
-        username: ${{ secrets.TUNNEL_USERNAME }}
-        key: ${{ secrets.ID_ED25519 }}
-        port: ${{ secrets.TUNNEL_PORT }}
-        envs: TESTNET_HOST,VERSION
-        script: |
-          cd ~/penumbra
-          # Wipe away any existing version of this tag that might exist
-          git tag -d ${VERSION}
-          git reset --hard
-          git fetch --all --tags
-          git pull
-          git checkout ${VERSION}
-          cargo update
-    - name: Delete existing state
-      uses: appleboy/ssh-action@master
-      env:
-        TESTNET_HOST: ${{ secrets.TESTNET_HOST }}
-      with:
-        host: ${{ secrets.TESTNET_HOST }}
-        username: ${{ secrets.TUNNEL_USERNAME }}
-        key: ${{ secrets.ID_ED25519 }}
-        port: ${{ secrets.TUNNEL_PORT }}
-        envs: TESTNET_HOST
-        script: |
-          cd ~/penumbra
-          TESTNET_HOST=$TESTNET_HOST docker-compose -f docker-compose.yml -f docker-compose.prod.yml stop
-          rm -rf ~/.penumbra/testnet_data/
-          docker system prune -f
-    - name: Update Grafana configs and data
-      uses: appleboy/ssh-action@master
-      env:
-        TESTNET_HOST: ${{ secrets.TESTNET_HOST }}
-        GRAFANA_CLIENT_ID: ${{ secrets.GRAFANA_CLIENT_ID }}
-        GRAFANA_CLIENT_SECRET: ${{ secrets.GRAFANA_CLIENT_SECRET }}
-        GRAFANA_SECRET: ${{ secrets.GRAFANA_SECRET }}
-      with:
-        host: ${{ secrets.TESTNET_HOST }}
-        username: ${{ secrets.TUNNEL_USERNAME }}
-        key: ${{ secrets.ID_ED25519 }}
-        port: ${{ secrets.TUNNEL_PORT }}
-        envs: TESTNET_HOST,GRAFANA_CLIENT_SECRET,GRAFANA_CLIENT_ID,GRAFANA_SECRET
-        script: |
-          cd ~/penumbra
-          sed 's/CLIENT_SECRET/'${GRAFANA_CLIENT_SECRET}'/' config/grafana/grafana.prod.ini | sed 's/CLIENT_ID/'${GRAFANA_CLIENT_ID}'/' | sed 's/DOMAIN/'${TESTNET_HOST}'/' | sed 's/SECRET_KEY/'${GRAFANA_SECRET}'/' > /tmp/grafana.ini
-          cat /tmp/grafana.ini
-          docker cp /tmp/grafana.ini penumbra_grafana_1:/etc/grafana/grafana.ini
-          TESTNET_HOST=$TESTNET_HOST docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d grafana
-          rm /tmp/grafana.ini
-    - name: Generate testnet
-      uses: appleboy/ssh-action@master
-      env:
-        TESTNET_HOST: ${{ secrets.TESTNET_HOST }}
-      with:
-        host: ${{ secrets.TESTNET_HOST }}
-        username: ${{ secrets.TUNNEL_USERNAME }}
-        key: ${{ secrets.ID_ED25519 }}
-        port: ${{ secrets.TUNNEL_PORT }}
-        envs: TESTNET_HOST
-        script: |
-          cd ~/penumbra
-          /root/.cargo/bin/cargo run --release --bin pd -- testnet generate --preserve-chain-id
-          chmod -R 777 ~/.penumbra/testnet_data
-    - name: Restart deployment
-      uses: appleboy/ssh-action@master
-      timeout-minutes: 30
-      env:
-        TESTNET_HOST: ${{ secrets.TESTNET_HOST }}
-      with:
-        host: ${{ secrets.TESTNET_HOST }}
-        username: ${{ secrets.TUNNEL_USERNAME }}
-        key: ${{ secrets.ID_ED25519 }}
-        port: ${{ secrets.TUNNEL_PORT }}
-        command_timeout: 30m
-        envs: TESTNET_HOST
-        script: |
-          cd ~/penumbra
-          TESTNET_HOST=$TESTNET_HOST docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+      - name: checkout
+        uses: actions/checkout@v3
+
+      - id: gcloudauth
+        uses: google-github-actions/auth@v0
+        with:
+          workload_identity_provider: 'projects/1006847873719/locations/global/workloadIdentityPools/gh-runner-pool/providers/my-provider'
+          service_account: 'github-actions@penumbra-sl-testnet.iam.gserviceaccount.com'
+
+      - name: get gke credentials
+        uses: google-github-actions/get-gke-credentials@v0
+        with:
+          cluster_name: testnet
+          project_id: penumbra-sl-testnet
+          location: us-central1
+
+      - name: deploy
+        run: |-
+          cd deployments/
+          export NVALS='${{ github.event.inputs.nvals }}'
+          export NFULLNODES='${{ github.event.inputs.nfullnodes }}'
+          export IMAGE='${{ github.event.inputs.image_repository }}'
+          export PENUMBRA_VERSION='${{ github.event.inputs.image_tag }}'
+          export PENUMBRA_UID_GID='${{ github.event.inputs.image_uid_gid }}'
+          export HELM_RELEASE='penumbra-testnet'
+          ./ci.sh
