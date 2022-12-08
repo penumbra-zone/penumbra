@@ -5,15 +5,13 @@ use anyhow::{anyhow, Result};
 use ark_ff::PrimeField;
 use blake2b_simd::Hash;
 pub use ciphertext::SwapCiphertext;
-use decaf377::{FieldExt, Fq};
+use decaf377::Fq;
 pub use plaintext::SwapPlaintext;
-use serde::{Deserialize, Serialize};
 
 use once_cell::sync::Lazy;
 
 use penumbra_proto::{
-    client::v1alpha1::BatchSwapOutputDataResponse, core::crypto::v1alpha1 as pbc,
-    core::dex::v1alpha1 as pb, Protobuf,
+    client::v1alpha1::BatchSwapOutputDataResponse, core::dex::v1alpha1 as pb, Protobuf,
 };
 
 use super::TradingPair;
@@ -130,35 +128,5 @@ impl TryFrom<BatchSwapOutputDataResponse> for BatchSwapOutputData {
             .data
             .ok_or_else(|| anyhow::anyhow!("empty BatchSwapOutputDataResponse message"))?
             .try_into()
-    }
-}
-
-/// A commitment to the value of a swap.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[serde(into = "pbc::SwapCommitment", try_from = "pbc::SwapCommitment")]
-pub struct SwapCommitment(pub Fq);
-
-impl Protobuf<pbc::SwapCommitment> for SwapCommitment {}
-
-impl From<SwapCommitment> for pbc::SwapCommitment {
-    fn from(swap_commitment: SwapCommitment) -> Self {
-        Self {
-            inner: swap_commitment.0.to_bytes().to_vec(),
-        }
-    }
-}
-
-impl TryFrom<pbc::SwapCommitment> for SwapCommitment {
-    type Error = anyhow::Error;
-
-    fn try_from(proto: pbc::SwapCommitment) -> Result<Self, Self::Error> {
-        let bytes: [u8; 32] = proto.inner[..]
-            .try_into()
-            .map_err(|_| anyhow::anyhow!("invalid swap commitment"))?;
-
-        let inner =
-            Fq::from_bytes(bytes).map_err(|_| anyhow::anyhow!("invalid swap commitment"))?;
-
-        Ok(SwapCommitment(inner))
     }
 }
