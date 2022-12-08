@@ -1,16 +1,11 @@
-use ark_ff::UniformRand;
-use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_crypto::{
-    proofs::transparent::{SpendProof, UndelegateClaimProof},
-    Address, Amount, FieldExt, Fq, Fr, FullViewingKey, IdentityKey, Note, UnbondingToken, Value,
-    STAKING_TOKEN_ASSET_ID,
+    proofs::transparent::UndelegateClaimProof, Amount, FieldExt, Fr, IdentityKey, UnbondingToken,
 };
 use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
-use penumbra_tct as tct;
-use rand_core::{CryptoRng, RngCore};
+
 use serde::{Deserialize, Serialize};
 
-use crate::action::{spend, Spend, UndelegateClaim, UndelegateClaimBody};
+use crate::action::{UndelegateClaim, UndelegateClaimBody};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(try_from = "pb::UndelegateClaimPlan", into = "pb::UndelegateClaimPlan")]

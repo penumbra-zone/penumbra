@@ -14,8 +14,7 @@ use crate::{
     dex::{swap::SwapPlaintext, BatchSwapOutputData, TradingPair},
     ka, keys, note,
     transaction::Fee,
-    Address, Amount, Balance, Fq, Fr, IdentityKey, Note, Nullifier, UnbondingToken, Value,
-    STAKING_TOKEN_ASSET_ID,
+    Address, Amount, Balance, Fq, Fr, Note, Nullifier, UnbondingToken, Value,
 };
 
 /// Transparent proof for spending existing notes.
