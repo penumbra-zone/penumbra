@@ -433,10 +433,15 @@ impl TxCmd {
                             if token.end_epoch_index() <= current_epoch.index {
                                 Some((token, notes))
                             } else {
+                                println!(
+                                    "skipping {} because it is not yet ready to be claimed",
+                                    token.denom().default_unit(),
+                                );
                                 None
                             }
                         })
                     {
+                        println!("claiming {}", token.denom().default_unit());
                         let validator_identity = token.validator();
                         let start_epoch_index = token.start_epoch_index();
                         let end_epoch_index = token.end_epoch_index();
