@@ -188,7 +188,7 @@ impl OutputProof {
         note_commitment: note::Commitment,
         epk: ka::Public,
     ) -> anyhow::Result<()> {
-        let processed_pvk = Groth16::process_vk(&vk).map_err(|err| anyhow::anyhow!(err))?;
+        let processed_pvk = Groth16::process_vk(vk).map_err(|err| anyhow::anyhow!(err))?;
         let element_pk = decaf377::Encoding(epk.0).vartime_decompress().unwrap();
         let mut public_inputs = Vec::new();
         public_inputs.extend(note_commitment.0.to_field_elements().unwrap());
