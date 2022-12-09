@@ -76,7 +76,6 @@ impl TryFrom<asset::Denom> for UnbondingToken {
         // Note: this regex must be in sync with both asset::REGISTRY
         // and VALIDATOR_IDENTITY_BECH32_PREFIX
         // The data capture group is used by asset::REGISTRY
-        dbg!(&base_string);
         let captures =
             Regex::new("^uunbonding_(?P<data>epoch_(?P<start>[0-9]+)_until_(?P<end>[0-9]+)_(?P<validator>penumbravalid1[a-zA-HJ-NP-Z0-9]+))$")
                 .expect("regex is valid")
