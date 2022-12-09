@@ -9,7 +9,6 @@ import "penumbra/core/dex/v1alpha1/dex.proto";
 import "penumbra/core/governance/v1alpha1/governance.proto";
 import "penumbra/core/stake/v1alpha1/stake.proto";
 
-import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "tendermint/p2p/types.proto";
 import "tendermint/crypto/proof.proto";
