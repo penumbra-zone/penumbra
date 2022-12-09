@@ -1,5 +1,4 @@
-name: buf-push
-
+name: Update protobuf docs
 # We want to rebuild on every commit to main, and also for named testnet tags,
 # so that API users can pick a tagged version of the protobuf definitions
 # to use against a matching testnet.

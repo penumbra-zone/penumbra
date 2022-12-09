@@ -1,7 +1,8 @@
-name: buf-pull-request
+name: Lint protobuf
 on: pull_request
 jobs:
-  build:
+  lint:
+    name: Lint protobuf
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -11,6 +12,34 @@ jobs:
       - uses: bufbuild/buf-lint-action@v1
         with:
           input: 'proto'
+
+      - name: Check for module path changes (1/2)
+        shell: bash
+        run: |
+          cd proto/proto
+          buf mod update
+          s="$(git status --porcelain)"
+          if [[ -n "$s" ]]; then
+              echo "ERROR: run 'buf mod update' to synchronize buf.lock"
+              echo "$s"
+              exit 1
+          else
+              echo "OK: no changes required to buf.lock"
+          fi
+
+      - name: Check for module path changes (2/2)
+        shell: bash
+        run: |
+          cd proto/ibc-go-vendor
+          buf mod update
+          s="$(git status --porcelain)"
+          if [[ -n "$s" ]]; then
+              echo "ERROR: run 'buf mod update' to synchronize buf.lock"
+              echo "$s"
+              exit 1
+          else
+              echo "OK: no changes required to buf.lock"
+          fi
       # Disabled because we don't have any changes to compare against
       # - uses: bufbuild/buf-breaking-action@v1
       #   with:
@@ -32,9 +61,9 @@ jobs:
           override: false
 
       - name: Install protobuf compiler
-        # use base for 'set -eo pipefail'
         shell: bash
         run: |
+          cd /tmp
           curl -sSfL -O https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip
           unzip protoc-${PROTOC_VERSION}-linux-x86_64.zip -d $HOME/.local
         env:
@@ -50,9 +79,10 @@ jobs:
         run: |
           cd tools/proto-compiler
           cargo run
-          if ! git diff --quiet; then
+          s="$(git status --porcelain)"
+          if [[ -n "$s" ]]; then
               echo "ERROR: protobuf files must be regenerated and committed:"
-              git diff --stat
+              echo "$s"
               exit 1
           else
               echo "OK: no changes required to protobuf specs"
