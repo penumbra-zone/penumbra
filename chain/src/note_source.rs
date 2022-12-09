@@ -6,9 +6,16 @@ use serde::{Deserialize, Serialize};
 #[serde(try_from = "pb::NoteSource", into = "pb::NoteSource")]
 pub enum NoteSource {
     Transaction { id: [u8; 32] },
+    Unknown,
     Genesis,
     FundingStreamReward { epoch_index: u64 },
     ProposalDepositRefund { proposal_id: u64 },
+}
+
+impl Default for NoteSource {
+    fn default() -> Self {
+        Self::Unknown
+    }
 }
 
 const CODE_INDEX: usize = 23;
@@ -17,6 +24,7 @@ impl NoteSource {
     pub fn to_bytes(&self) -> [u8; 32] {
         match self {
             Self::Transaction { id } => *id,
+            Self::Unknown => [0; 32],
             Self::Genesis => {
                 let mut bytes = [0u8; 32];
                 bytes[CODE_INDEX] = 1;
@@ -45,6 +53,7 @@ impl TryFrom<[u8; 32]> for NoteSource {
             Ok(Self::Transaction { id: bytes })
         } else {
             match (bytes[CODE_INDEX], &bytes[CODE_INDEX + 1..]) {
+                (0, &[0, 0, 0, 0, 0, 0, 0, 0]) => Ok(Self::Unknown),
                 (1, &[0, 0, 0, 0, 0, 0, 0, 0]) => Ok(Self::Genesis),
                 (2, epoch_bytes) => {
                     let epoch_index =
@@ -100,6 +109,7 @@ impl std::fmt::Debug for NoteSource {
                 f.write_fmt(format_args!("NoteSource::Transaction({})", hex::encode(id)))
             }
             NoteSource::Genesis => f.write_fmt(format_args!("NoteSource::Genesis")),
+            NoteSource::Unknown => f.write_fmt(format_args!("NoteSource::Unknown")),
             NoteSource::FundingStreamReward { epoch_index } => f.write_fmt(format_args!(
                 "NoteSource::FundingStreamReward({})",
                 epoch_index

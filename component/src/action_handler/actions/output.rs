@@ -31,10 +31,8 @@ impl ActionHandler for Output {
 
     #[instrument(name = "output", skip(self, state))]
     async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
-        let source = state
-            .object_get("source")
-            .cloned()
-            .expect("set in Transaction::execute");
+        let source = state.object_get("source").cloned().unwrap_or_default();
+
         state
             .add_note(AnnotatedNotePayload {
                 source,

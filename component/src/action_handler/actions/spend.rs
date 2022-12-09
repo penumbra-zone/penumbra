@@ -49,10 +49,7 @@ impl ActionHandler for Spend {
 
     #[instrument(name = "spend", skip(self, state))]
     async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
-        let source = state
-            .object_get("source")
-            .cloned()
-            .expect("set in Transaction::execute");
+        let source = state.object_get("source").cloned().unwrap_or_default();
 
         state.spend_nullifier(self.body.nullifier, source).await;
         // TODO: why do we manage event emission separately up at the top level
