@@ -37,10 +37,12 @@ jobs:
     uses: ./.github/workflows/containers.yml
     secrets: inherit
   deploy:
+    name: Deploy to Testnet Preview
     permissions:
       contents: 'read'
       id-token: 'write'
-    name: Deploy to Testnet Preview
+    needs:
+      - build-container
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: testnet-preview

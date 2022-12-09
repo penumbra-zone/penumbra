@@ -35,11 +35,13 @@ jobs:
     secrets: inherit
   deploy:
     name: Deploy to Testnet
-    environment: testnet
+    needs:
+      - build-container
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
       id-token: 'write'
+    environment: testnet
     timeout-minutes: 30
     steps:
       - name: checkout
