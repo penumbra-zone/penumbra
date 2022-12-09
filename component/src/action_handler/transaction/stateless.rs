@@ -3,8 +3,11 @@ use std::collections::BTreeSet;
 use anyhow::{Context, Result};
 use penumbra_transaction::Transaction;
 
+#[tracing::instrument(skip(tx))]
 pub(super) fn valid_binding_signature(tx: &Transaction) -> Result<()> {
     let auth_hash = tx.transaction_body().auth_hash();
+
+    tracing::debug!(bvk = ?tx.binding_verification_key(), auth_hash = ?auth_hash);
 
     // Check binding signature.
     tx.binding_verification_key()
