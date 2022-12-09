@@ -1,7 +1,7 @@
 ---
 # Deploys the latest changes on 'main' branch, via a container
 # image tagged with 'main', to testnet-preview.penumbra.zone.
-name: Deploy Testnet Preview (Kubernetes)
+name: Deploy testnet-preview.penumbra.zone
 on:
   workflow_dispatch:
     inputs:
@@ -34,10 +34,11 @@ on:
 
 jobs:
   build-container:
+    name: Build container for preview
     uses: ./.github/workflows/containers.yml
     secrets: inherit
   deploy:
-    name: Deploy to Testnet Preview
+    name: Deploy preview to cluster
     permissions:
       contents: 'read'
       id-token: 'write'

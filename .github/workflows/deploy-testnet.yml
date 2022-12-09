@@ -1,7 +1,7 @@
 ---
 # Deploys the most recent tagged testnet (e.g. "037-iocaste.2") to cluster
 # at testnet.penumbra.zone.
-name: Deploy Testnet (Kubernetes)
+name: Deploy testnet.penumbra.zone
 on:
   workflow_dispatch:
     inputs:
@@ -31,10 +31,11 @@ jobs:
   # Before deploying, we must wait for the container build to complete,
   # so that the relevant tag is present in container registry.
   build-container:
+    name: Build container for testnet
     uses: ./.github/workflows/containers.yml
     secrets: inherit
   deploy:
-    name: Deploy to Testnet
+    name: Deploy testnet to cluster
     needs:
       - build-container
     runs-on: ubuntu-latest
