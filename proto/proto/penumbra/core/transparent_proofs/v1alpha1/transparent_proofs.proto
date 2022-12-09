@@ -37,7 +37,7 @@ message SwapClaimProof {
   dex.v1alpha1.SwapPlaintext swap_plaintext = 1;
 
   // Inclusion proof for the swap commitment
-  crypto.v1alpha1.NoteCommitmentProof note_commitment_proof = 4;
+  crypto.v1alpha1.NoteCommitmentProof swap_commitment_proof = 4;
 
   // The nullifier key used to derive the swap nullifier
   bytes nk = 6;

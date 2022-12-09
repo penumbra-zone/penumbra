@@ -37,7 +37,7 @@ pub struct SwapClaimProof {
     pub swap_plaintext: ::core::option::Option<super::super::dex::v1alpha1::SwapPlaintext>,
     /// Inclusion proof for the swap commitment
     #[prost(message, optional, tag="4")]
-    pub note_commitment_proof: ::core::option::Option<super::super::crypto::v1alpha1::NoteCommitmentProof>,
+    pub swap_commitment_proof: ::core::option::Option<super::super::crypto::v1alpha1::NoteCommitmentProof>,
     /// The nullifier key used to derive the swap nullifier
     #[prost(bytes="vec", tag="6")]
     pub nk: ::prost::alloc::vec::Vec<u8>,

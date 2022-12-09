@@ -1,6 +1,7 @@
 //! Transparent proofs for `MVP1` of the Penumbra system.
 
 use anyhow::{anyhow, ensure, Error, Ok, Result};
+use ark_ff::Zero;
 use std::convert::{TryFrom, TryInto};
 
 use decaf377::FieldExt;
@@ -291,46 +292,20 @@ impl TryFrom<&[u8]> for OutputProof {
 /// This structure keeps track of the auxiliary (private) inputs.
 #[derive(Clone, Debug)]
 pub struct SwapClaimProof {
-    // Describes the input note with the Swap NFT
-
-    // The address associated with the swap NFT and outputs.
-    pub claim_address: Address,
-    // Proves the note commitment was included in the TCT.
-    pub note_commitment_proof: tct::Proof,
-    // The blinding factor used for generating the note commitment for the Swap NFT.
-    pub note_blinding: Fq,
+    // The swap being claimed
+    pub swap_plaintext: SwapPlaintext,
+    // Inclusion proof for the swap commitment
+    pub swap_commitment_proof: tct::Proof,
     // The nullifier deriving key for the Swap NFT note.
     pub nk: keys::NullifierKey,
-
-    // Describes opening of Swap NFT asset ID for commitment verification
-    pub trading_pair: TradingPair,
-    pub delta_1_i: u64,
-    pub delta_2_i: u64,
-
     // Describes output amounts
     pub lambda_1_i: u64,
     pub lambda_2_i: u64,
-
-    // Describes first output note (lambda 1)
-    pub esk_1: ka::Secret,
-
-    // Describes second output note (lambda 2)
-    pub esk_2: ka::Secret,
-
-    // The blinding factor for the swap
-    pub swap_blinding: Fq,
 }
 
 impl SwapClaimProof {
     /// Called to verify the proof using the provided public inputs.
     ///
-    /// The public inputs are:
-    /// * the merkle root of the note commitment tree,
-    /// * value commitment of the note to be spent,
-    /// * nullifier of the note to be spent,
-    /// * the randomized verification spend key,
-    /// * the pre-paid fee amount for the swap,
-    /// * the note commitments for the outputs,
     #[allow(clippy::too_many_arguments)]
     pub fn verify(
         &self,
@@ -341,106 +316,82 @@ impl SwapClaimProof {
         note_commitment_1: note::Commitment,
         note_commitment_2: note::Commitment,
         fee: Fee,
-        epk_1: ka::Public,
-        epk_2: ka::Public,
     ) -> anyhow::Result<()> {
+        // Swap commitment integrity
+        let swap_commitment = self.swap_plaintext.swap_commitment();
+        ensure!(
+            swap_commitment == self.swap_commitment_proof.commitment(),
+            "swap commitment mismatch"
+        );
+
         // Merkle path integrity. Ensure the provided note commitment is in the TCT.
-        self.note_commitment_proof
+        self.swap_commitment_proof
             .verify(anchor)
             .map_err(|_| anyhow!("merkle root mismatch"))?;
 
-        // Generate swap plaintext from which to generate the asset ID
-        // TODO: store all of these fields as a SwapPlaintext in the proof ?
-        let swap_plaintext = SwapPlaintext {
-            trading_pair: self.trading_pair.clone(),
-            delta_1_i: self.delta_1_i.into(),
-            delta_2_i: self.delta_2_i.into(),
-            claim_fee: fee,
-            claim_address: self.claim_address,
-            swap_blinding: self.swap_blinding,
-        };
-
-        // Check that the provided note commitment is for the proof's Swap NFT.
-        let note = Note::from_parts(
-            self.claim_address,
-            Value {
-                amount: 1u64.into(),
-                asset_id: asset::Id(swap_plaintext.swap_commitment().0),
-            },
-            self.note_blinding,
+        // Swap commitment nullifier integrity. Ensure the nullifier is correctly formed.
+        gadgets::nullifier_integrity(
+            nullifier,
+            self.nk,
+            self.swap_commitment_proof.position(),
+            self.swap_commitment_proof.commitment(),
         )?;
 
-        gadgets::note_commitment_integrity(note, self.note_commitment_proof.commitment())?;
-
-        // Validate the note commitment's height matches the output data's height.
-        let position = self.note_commitment_proof.position();
+        // Validate the swap commitment's height matches the output data's height.
+        let position = self.swap_commitment_proof.position();
         let block = position.block();
         let epoch = position.epoch();
         let note_commitment_block_height: u64 =
             epoch_duration * u64::from(epoch) + u64::from(block);
-        if note_commitment_block_height != output_data.height {
-            return Err(anyhow::anyhow!(
-                "note commitment was not for clearing price height"
-            ));
-        }
+        ensure!(
+            note_commitment_block_height == output_data.height,
+            "note commitment was not for clearing price height"
+        );
 
         // Validate that the output data's trading pair matches the note commitment's trading pair.
-        if output_data.trading_pair != self.trading_pair {
-            return Err(anyhow::anyhow!("trading pair mismatch"));
-        }
+        ensure!(
+            output_data.trading_pair == self.swap_plaintext.trading_pair,
+            "trading pair mismatch"
+        );
 
-        // At this point, we've:
-        // * verified the note commitment is in the TCT,
-        // * verified the note commitment commits to the swap NFT for correct SwapPlaintext,
-        // * proved that the prices in the OutputData are for the trading pair at the correct height
-        //
-        // Now we want to:
-        // * spend the swap NFT,
-        // * and verify the output notes
+        // Fee consistency check
+        ensure!(fee == self.swap_plaintext.claim_fee, "fee mismatch");
 
-        // Swap NFT nullifier integrity. Ensure the nullifier is correctly formed.
-        gadgets::nullifier_integrity(
-            nullifier,
-            self.nk,
-            position,
-            self.note_commitment_proof.commitment(),
-        )?;
+        // Output amounts integrity
+        let (lambda_1_i, lambda_2_i) =
+            output_data.pro_rata_outputs((self.lambda_1_i, self.lambda_2_i));
+        ensure!(self.lambda_1_i == lambda_1_i, "lambda_1_i mismatch");
+        ensure!(self.lambda_2_i == lambda_2_i, "lambda_2_i mismatch");
 
-        gadgets::diversified_basepoint_not_identity(
-            self.claim_address.diversified_generator().clone(),
-        )?;
+        // Output note integrity
+        let (output_blinding_1, output_blinding_2) = self.swap_plaintext.output_blinding_factors();
+        let output_1_commitment = Note::from_parts(
+            self.swap_plaintext.claim_address,
+            Value {
+                amount: self.lambda_1_i.into(),
+                asset_id: self.swap_plaintext.trading_pair.asset_1(),
+            },
+            output_blinding_1,
+        )?
+        .commit();
+        let output_2_commitment = Note::from_parts(
+            self.swap_plaintext.claim_address,
+            Value {
+                amount: self.lambda_2_i.into(),
+                asset_id: self.swap_plaintext.trading_pair.asset_2(),
+            },
+            output_blinding_2,
+        )?
+        .commit();
 
-        let (note_blinding_1, note_blinding_2) = swap_plaintext.output_blinding_factors();
-
-        // Check output 1
-        let value_1 = Value {
-            amount: self.lambda_1_i.into(),
-            asset_id: self.trading_pair.asset_1(),
-        };
-        gadgets::note_commitment_integrity(
-            Note::from_parts(self.claim_address, value_1, note_blinding_1)?,
-            note_commitment_1,
-        )?;
-        gadgets::ephemeral_public_key_integrity(
-            epk_1,
-            self.esk_1.clone(),
-            self.claim_address.diversified_generator().clone(),
-        )?;
-
-        // Check output 2
-        let value_2 = Value {
-            amount: self.lambda_2_i.into(),
-            asset_id: self.trading_pair.asset_2(),
-        };
-        gadgets::note_commitment_integrity(
-            Note::from_parts(self.claim_address, value_2, note_blinding_2)?,
-            note_commitment_2,
-        )?;
-        gadgets::ephemeral_public_key_integrity(
-            epk_2,
-            self.esk_2.clone(),
-            self.claim_address.diversified_generator().clone(),
-        )?;
+        ensure!(
+            output_1_commitment == note_commitment_1,
+            "output 1 commitment mismatch"
+        );
+        ensure!(
+            output_2_commitment == note_commitment_2,
+            "output 2 commitment mismatch"
+        );
 
         Ok(())
     }
@@ -557,97 +508,49 @@ impl TryFrom<transparent_proofs::SwapClaimProof> for SwapClaimProof {
 /// This structure keeps track of the auxiliary (private) inputs.
 #[derive(Clone, Debug)]
 pub struct SwapProof {
-    // The address associated with the swap.
-    pub claim_address: Address,
-    // The value of asset 1 in the swap.
-    pub value_t1: Value,
-    // The value of asset 2 in the swap.
-    pub value_t2: Value,
-    // The fee amount associated with the swap.
-    pub fee_delta: Fee,
+    pub swap_plaintext: SwapPlaintext,
     // The blinding factor for the fee.
     pub fee_blinding: Fr,
-    // The blinding factor used for generating the note commitment for the Swap NFT.
-    pub note_blinding: Fq,
-    // The ephemeral secret key that corresponds to the public key.
-    pub esk: ka::Secret,
-    // The blinding factor for the swap
-    pub swap_blinding: Fq,
-    // TODO: no value commitments for delta 1/delta 2 until flow encryption is available
-    // // The blinding factor used for generating the value commitment for delta 1.
-    // pub delta_1_blinding: Fr,
-    // // The blinding factor used for generating the value commitment for delta 2.
-    // pub delta_2_blinding: Fr,
 }
 
 impl SwapProof {
     /// Called to verify the proof using the provided public inputs.
-    ///
-    /// The public inputs are:
-    /// * value commitment of the asset 1's contribution to the transaction,
-    /// * value commitment of the asset 2's contribution to the transaction,
-    /// * value commitment of the fee's contribution to the transaction,
-    /// * note commitment of the new swap NFT note,
-    /// * the ephemeral public key used to generate the new swap NFT note.
     pub fn verify(
         &self,
-        _value_1_commitment: balance::Commitment,
-        _value_2_commitment: balance::Commitment,
-        value_fee_commitment: balance::Commitment,
-        note_commitment: note::Commitment,
-        epk: ka::Public,
+        fee_commitment: balance::Commitment,
+        swap_commitment: tct::Commitment,
+        balance_commitment: balance::Commitment,
     ) -> anyhow::Result<(), Error> {
-        // Generate trading pair & swap plaintext from parts, in order to include asset id generation in verification
-        let trading_pair = TradingPair::new(self.value_t1.asset_id, self.value_t2.asset_id)?;
+        // Swap commitment integrity check
+        ensure!(
+            swap_commitment == self.swap_plaintext.swap_commitment(),
+            "swap commitment mismatch"
+        );
 
-        let swap_plaintext = SwapPlaintext {
-            trading_pair,
-            delta_1_i: self.value_t1.amount,
-            delta_2_i: self.value_t2.amount,
-            claim_fee: self.fee_delta.clone(),
-            claim_address: self.claim_address,
-            swap_blinding: self.swap_blinding,
-        };
+        // Fee commitment integrity check
+        ensure!(
+            fee_commitment == self.swap_plaintext.claim_fee.commit(self.fee_blinding),
+            "fee commitment mismatch"
+        );
 
-        // Checks the note commitment of the Swap NFT.
-        gadgets::note_commitment_integrity(
-            Note::from_parts(
-                self.claim_address,
-                Value {
-                    // The swap NFT is always amount 1.
-                    amount: 1u64.into(),
-                    asset_id: asset::Id(swap_plaintext.swap_commitment().0),
-                },
-                self.note_blinding,
-            )?,
-            note_commitment,
-        )?;
+        // Now reconstruct the swap action's balance commitment
+        let transparent_balance = Balance::default()
+            - Value {
+                amount: self.swap_plaintext.delta_1_i,
+                asset_id: self.swap_plaintext.trading_pair.asset_1(),
+            }
+            - Value {
+                amount: self.swap_plaintext.delta_2_i,
+                asset_id: self.swap_plaintext.trading_pair.asset_1(),
+            };
+        let transparent_balance_commitment = transparent_balance.commit(Fr::zero());
 
-        // TODO: no value commitment checks until flow encryption is available
-        // // Value commitment integrity.
-        // if value_1_commitment != -self.value_t1.commit(self.delta_1_blinding) {
-        //     return Err(anyhow!("value commitment mismatch"));
-        // }
-
-        // if value_2_commitment != -self.value_t2.commit(self.delta_2_blinding) {
-        //     return Err(anyhow!("value commitment mismatch"));
-        // }
-
-        gadgets::balance_commitment_integrity(
-            value_fee_commitment,
-            self.fee_blinding,
-            Balance::from(self.fee_delta.0),
-        )?;
-
-        gadgets::ephemeral_public_key_integrity(
-            epk,
-            self.esk.clone(),
-            self.claim_address.diversified_generator().clone(),
-        )?;
-
-        gadgets::diversified_basepoint_not_identity(
-            self.claim_address.diversified_generator().clone(),
-        )?;
+        // XXX sign error here and elsewhere with swaps, the fee should be SUBTRACTED, not added
+        // but we want to avoid having to twiddle signs for synthetic blinding factor in binding sig
+        ensure!(
+            balance_commitment == transparent_balance_commitment + fee_commitment,
+            "balance commitment mismatch"
+        );
 
         Ok(())
     }
