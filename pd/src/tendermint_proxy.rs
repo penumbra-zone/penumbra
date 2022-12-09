@@ -1,30 +1,18 @@
 use std::str::FromStr;
 
 use chrono::DateTime;
-use penumbra_proto::{
-    self as proto, client::v1alpha1::tendermint_proxy::service_server::Service as TendermintService,
-};
+use penumbra_proto::{self as proto};
 
 use penumbra_transaction::Transaction;
-use proto::client::v1alpha1::tendermint_proxy::AbciQueryRequest;
-use proto::client::v1alpha1::tendermint_proxy::AbciQueryResponse;
-use proto::client::v1alpha1::tendermint_proxy::GetBlockByHeightRequest;
-use proto::client::v1alpha1::tendermint_proxy::GetBlockByHeightResponse;
-use proto::client::v1alpha1::tendermint_proxy::GetLatestBlockRequest;
-use proto::client::v1alpha1::tendermint_proxy::GetLatestBlockResponse;
-use proto::client::v1alpha1::tendermint_proxy::GetLatestValidatorSetRequest;
-use proto::client::v1alpha1::tendermint_proxy::GetLatestValidatorSetResponse;
-use proto::client::v1alpha1::tendermint_proxy::GetNodeInfoRequest;
-use proto::client::v1alpha1::tendermint_proxy::GetNodeInfoResponse;
-use proto::client::v1alpha1::tendermint_proxy::GetSyncingRequest;
-use proto::client::v1alpha1::tendermint_proxy::GetSyncingResponse;
-use proto::client::v1alpha1::tendermint_proxy::GetValidatorSetByHeightRequest;
-use proto::client::v1alpha1::tendermint_proxy::GetValidatorSetByHeightResponse;
 use proto::client::v1alpha1::tendermint_proxy_service_server::TendermintProxyService;
+use proto::client::v1alpha1::AbciQueryRequest;
+use proto::client::v1alpha1::AbciQueryResponse;
 use proto::client::v1alpha1::BroadcastTxAsyncRequest;
 use proto::client::v1alpha1::BroadcastTxAsyncResponse;
 use proto::client::v1alpha1::BroadcastTxSyncRequest;
 use proto::client::v1alpha1::BroadcastTxSyncResponse;
+use proto::client::v1alpha1::GetBlockByHeightRequest;
+use proto::client::v1alpha1::GetBlockByHeightResponse;
 use proto::client::v1alpha1::GetStatusRequest;
 use proto::client::v1alpha1::GetStatusResponse;
 use proto::client::v1alpha1::GetTxRequest;
@@ -230,10 +218,7 @@ impl TendermintProxyService for TendermintProxy {
             }),
         }))
     }
-}
 
-#[tonic::async_trait]
-impl TendermintService for TendermintProxy {
     async fn abci_query(
         &self,
         req: tonic::Request<AbciQueryRequest>,
@@ -264,20 +249,16 @@ impl TendermintService for TendermintProxy {
                 index: res.index,
                 key: res.key,
                 value: res.value,
-                proof_ops: res.proof.map(|p| {
-                    penumbra_proto::client::v1alpha1::tendermint_proxy::ProofOps {
-                        ops: p
-                            .ops
-                            .into_iter()
-                            .map(
-                                |op| penumbra_proto::client::v1alpha1::tendermint_proxy::ProofOp {
-                                    r#type: op.field_type,
-                                    key: op.key,
-                                    data: op.data,
-                                },
-                            )
-                            .collect(),
-                    }
+                proof_ops: res.proof.map(|p| proto::tendermint::crypto::ProofOps {
+                    ops: p
+                        .ops
+                        .into_iter()
+                        .map(|op| proto::tendermint::crypto::ProofOp {
+                            r#type: op.field_type,
+                            key: op.key,
+                            data: op.data,
+                        })
+                        .collect(),
                 }),
                 height: i64::try_from(res.height.value()).map_err(|_| {
                     tonic::Status::internal(
@@ -291,27 +272,6 @@ impl TendermintService for TendermintProxy {
                 e
             ))),
         }
-    }
-
-    async fn get_node_info(
-        &self,
-        _req: tonic::Request<GetNodeInfoRequest>,
-    ) -> Result<tonic::Response<GetNodeInfoResponse>, Status> {
-        Err(tonic::Status::unimplemented("unimplemented"))
-    }
-
-    async fn get_syncing(
-        &self,
-        _req: tonic::Request<GetSyncingRequest>,
-    ) -> Result<tonic::Response<GetSyncingResponse>, Status> {
-        Err(tonic::Status::unimplemented("unimplemented"))
-    }
-
-    async fn get_latest_block(
-        &self,
-        _req: tonic::Request<GetLatestBlockRequest>,
-    ) -> Result<tonic::Response<GetLatestBlockResponse>, Status> {
-        Err(tonic::Status::unimplemented("unimplemented"))
     }
 
     async fn get_block_by_height(
@@ -343,8 +303,8 @@ impl TendermintService for TendermintProxy {
                     hash: res.block_id.part_set_header.hash.into(),
                 }),
             }),
-            sdk_block: Some(penumbra_proto::cosmos::base::tendermint::v1beta1::Block {
-                header: Some(penumbra_proto::cosmos::base::tendermint::v1beta1::Header {
+            block: Some(proto::tendermint::types::Block {
+                header: Some(proto::tendermint::types::Header {
                     version: Some(penumbra_proto::tendermint::version::Consensus {
                         block: res.block.header.version.block,
                         app: res.block.header.version.app,
@@ -394,7 +354,7 @@ impl TendermintService for TendermintProxy {
                         .evidence_hash
                         .map(Into::into)
                         .unwrap_or_default(),
-                    proposer_address: res.block.header.proposer_address.to_string(),
+                    proposer_address: res.block.header.proposer_address.into(),
                 }),
                 data: Some(proto::tendermint::types::Data {
                     txs: res.block.data,
@@ -523,24 +483,7 @@ impl TendermintService for TendermintProxy {
                     },
                 }),
             }),
-
-            // Deprecated:
-            block: None,
         }))
-    }
-
-    async fn get_latest_validator_set(
-        &self,
-        _req: tonic::Request<GetLatestValidatorSetRequest>,
-    ) -> Result<tonic::Response<GetLatestValidatorSetResponse>, Status> {
-        Err(tonic::Status::unimplemented("unimplemented"))
-    }
-
-    async fn get_validator_set_by_height(
-        &self,
-        _req: tonic::Request<GetValidatorSetByHeightRequest>,
-    ) -> Result<tonic::Response<GetValidatorSetByHeightResponse>, Status> {
-        Err(tonic::Status::unimplemented("unimplemented"))
     }
 }
 
@@ -552,7 +495,6 @@ impl TendermintService for TendermintProxy {
 pub struct TendermintProxy {
     /// Address of upstream Tendermint server to proxy requests to.
     tendermint_url: url::Url,
-    // height_rx: watch::Receiver<block::Height>,
 }
 
 impl TendermintProxy {

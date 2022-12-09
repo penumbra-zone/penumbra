@@ -322,6 +322,59 @@ pub struct SyncInfo {
     #[prost(bool, tag="9")]
     pub catching_up: bool,
 }
+/// ABCIQueryRequest defines the request structure for the ABCIQuery gRPC query.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AbciQueryRequest {
+    #[prost(bytes="vec", tag="1")]
+    pub data: ::prost::alloc::vec::Vec<u8>,
+    #[prost(string, tag="2")]
+    pub path: ::prost::alloc::string::String,
+    #[prost(int64, tag="3")]
+    pub height: i64,
+    #[prost(bool, tag="4")]
+    pub prove: bool,
+}
+/// ABCIQueryResponse defines the response structure for the ABCIQuery gRPC query.
+///
+/// Note: This type is a duplicate of the ResponseQuery proto type defined in
+/// Tendermint.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AbciQueryResponse {
+    #[prost(uint32, tag="1")]
+    pub code: u32,
+    /// nondeterministic
+    #[prost(string, tag="3")]
+    pub log: ::prost::alloc::string::String,
+    /// nondeterministic
+    #[prost(string, tag="4")]
+    pub info: ::prost::alloc::string::String,
+    #[prost(int64, tag="5")]
+    pub index: i64,
+    #[prost(bytes="vec", tag="6")]
+    pub key: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="vec", tag="7")]
+    pub value: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag="8")]
+    pub proof_ops: ::core::option::Option<super::super::super::tendermint::crypto::ProofOps>,
+    #[prost(int64, tag="9")]
+    pub height: i64,
+    #[prost(string, tag="10")]
+    pub codespace: ::prost::alloc::string::String,
+}
+/// GetBlockByHeightRequest is the request type for the Query/GetBlockByHeight RPC method.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetBlockByHeightRequest {
+    #[prost(int64, tag="1")]
+    pub height: i64,
+}
+/// GetBlockByHeightResponse is the response type for the Query/GetBlockByHeight RPC method.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetBlockByHeightResponse {
+    #[prost(message, optional, tag="1")]
+    pub block_id: ::core::option::Option<super::super::super::tendermint::types::BlockId>,
+    #[prost(message, optional, tag="2")]
+    pub block: ::core::option::Option<super::super::super::tendermint::types::Block>,
+}
 /// Generated client implementations.
 pub mod oblivious_query_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
@@ -905,6 +958,48 @@ pub mod tendermint_proxy_service_client {
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.client.v1alpha1.TendermintProxyService/GetTx",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// ABCIQuery defines a query handler that supports ABCI queries directly to the
+        /// application, bypassing Tendermint completely. The ABCI query must contain
+        /// a valid and supported path, including app, custom, p2p, and store.
+        pub async fn abci_query(
+            &mut self,
+            request: impl tonic::IntoRequest<super::AbciQueryRequest>,
+        ) -> Result<tonic::Response<super::AbciQueryResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.client.v1alpha1.TendermintProxyService/ABCIQuery",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// GetBlockByHeight queries block for given height.
+        pub async fn get_block_by_height(
+            &mut self,
+            request: impl tonic::IntoRequest<super::GetBlockByHeightRequest>,
+        ) -> Result<tonic::Response<super::GetBlockByHeightResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.client.v1alpha1.TendermintProxyService/GetBlockByHeight",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -1807,6 +1902,18 @@ pub mod tendermint_proxy_service_server {
             &self,
             request: tonic::Request<super::GetTxRequest>,
         ) -> Result<tonic::Response<super::GetTxResponse>, tonic::Status>;
+        /// ABCIQuery defines a query handler that supports ABCI queries directly to the
+        /// application, bypassing Tendermint completely. The ABCI query must contain
+        /// a valid and supported path, including app, custom, p2p, and store.
+        async fn abci_query(
+            &self,
+            request: tonic::Request<super::AbciQueryRequest>,
+        ) -> Result<tonic::Response<super::AbciQueryResponse>, tonic::Status>;
+        /// GetBlockByHeight queries block for given height.
+        async fn get_block_by_height(
+            &self,
+            request: tonic::Request<super::GetBlockByHeightRequest>,
+        ) -> Result<tonic::Response<super::GetBlockByHeightResponse>, tonic::Status>;
     }
     /// Defines the gRPC query service for proxying requests to an upstream Tendermint RPC.
     #[derive(Debug)]
@@ -2013,6 +2120,84 @@ pub mod tendermint_proxy_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = GetTxSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.client.v1alpha1.TendermintProxyService/ABCIQuery" => {
+                    #[allow(non_camel_case_types)]
+                    struct ABCIQuerySvc<T: TendermintProxyService>(pub Arc<T>);
+                    impl<
+                        T: TendermintProxyService,
+                    > tonic::server::UnaryService<super::AbciQueryRequest>
+                    for ABCIQuerySvc<T> {
+                        type Response = super::AbciQueryResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::AbciQueryRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move { (*inner).abci_query(request).await };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = ABCIQuerySvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.client.v1alpha1.TendermintProxyService/GetBlockByHeight" => {
+                    #[allow(non_camel_case_types)]
+                    struct GetBlockByHeightSvc<T: TendermintProxyService>(pub Arc<T>);
+                    impl<
+                        T: TendermintProxyService,
+                    > tonic::server::UnaryService<super::GetBlockByHeightRequest>
+                    for GetBlockByHeightSvc<T> {
+                        type Response = super::GetBlockByHeightResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::GetBlockByHeightRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).get_block_by_height(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = GetBlockByHeightSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

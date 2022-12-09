@@ -18,7 +18,6 @@ use penumbra_crypto::{keys::SpendKey, stake::DelegationToken, GovernanceKey};
 use penumbra_proto::client::v1alpha1::{
     oblivious_query_service_server::ObliviousQueryServiceServer,
     specific_query_service_server::SpecificQueryServiceServer,
-    tendermint_proxy::service_server::ServiceServer as TendermintServiceServer,
     tendermint_proxy_service_server::TendermintProxyServiceServer,
 };
 use penumbra_storage::Storage;
@@ -218,9 +217,6 @@ async fn main() -> anyhow::Result<()> {
                         )))
                         .add_service(tonic_web::enable(SpecificQueryServiceServer::new(
                             info.clone(),
-                        )))
-                        .add_service(tonic_web::enable(TendermintServiceServer::new(
-                            tm_proxy.clone(),
                         )))
                         .add_service(tonic_web::enable(TendermintProxyServiceServer::new(
                             tm_proxy.clone(),
