@@ -17,7 +17,7 @@ use tonic::async_trait;
 use tonic::codegen::Bytes;
 use tracing::instrument;
 
-use crate::{QuarantinedNoteRecord, SpendableNoteRecord, StatusStreamResponse};
+use crate::{SpendableNoteRecord, StatusStreamResponse};
 
 /// The view protocol is used by a view client, who wants to do some
 /// transaction-related actions, to request data from a view service, which is
@@ -50,12 +50,6 @@ pub trait ViewClient {
 
     /// Queries for notes.
     async fn notes(&mut self, request: pb::NotesRequest) -> Result<Vec<SpendableNoteRecord>>;
-
-    /// Queries for quarantined notes.
-    async fn quarantined_notes(
-        &mut self,
-        request: pb::QuarantinedNotesRequest,
-    ) -> Result<Vec<QuarantinedNoteRecord>>;
 
     /// Queries for a specific note by commitment, returning immediately if it is not found.
     async fn note_by_commitment(
@@ -187,64 +181,6 @@ pub trait ViewClient {
 
         Ok(notes_by_asset_and_address)
     }
-
-    /// Return quarantined notes, grouped by address index and then by asset id.
-    #[instrument(skip(self, account_id))]
-    async fn quarantined_notes_by_address_and_asset(
-        &mut self,
-        account_id: AccountID,
-    ) -> Result<BTreeMap<AddressIndex, BTreeMap<asset::Id, Vec<QuarantinedNoteRecord>>>> {
-        let notes = self
-            .quarantined_notes(pb::QuarantinedNotesRequest {
-                account_id: Some(account_id.into()),
-                ..Default::default()
-            })
-            .await?;
-        tracing::trace!(?notes);
-
-        let mut notes_by_address_and_asset = BTreeMap::new();
-
-        for note_record in notes {
-            notes_by_address_and_asset
-                .entry(note_record.address_index)
-                .or_insert_with(BTreeMap::new)
-                .entry(note_record.note.asset_id())
-                .or_insert_with(Vec::new)
-                .push(note_record);
-        }
-        tracing::trace!(?notes_by_address_and_asset);
-
-        Ok(notes_by_address_and_asset)
-    }
-
-    /// Return quarantined notes, grouped by denom and then by address index.
-    #[instrument(skip(self, account_id))]
-    async fn quarantined_notes_by_asset_and_address(
-        &mut self,
-        account_id: AccountID,
-    ) -> Result<BTreeMap<asset::Id, BTreeMap<AddressIndex, Vec<QuarantinedNoteRecord>>>> {
-        let notes = self
-            .quarantined_notes(pb::QuarantinedNotesRequest {
-                account_id: Some(account_id.into()),
-                ..Default::default()
-            })
-            .await?;
-        tracing::trace!(?notes);
-
-        let mut notes_by_asset_and_address = BTreeMap::new();
-
-        for note_record in notes {
-            notes_by_asset_and_address
-                .entry(note_record.note.asset_id())
-                .or_insert_with(BTreeMap::new)
-                .entry(note_record.address_index)
-                .or_insert_with(Vec::new)
-                .push(note_record);
-        }
-        tracing::trace!(?notes_by_asset_and_address);
-
-        Ok(notes_by_asset_and_address)
-    }
 }
 
 // We need to tell `async_trait` not to add a `Send` bound to the boxed
@@ -338,34 +274,6 @@ where
                 }
             })
             .collect();
-        Ok(notes?)
-    }
-
-    async fn quarantined_notes(
-        &mut self,
-        request: pb::QuarantinedNotesRequest,
-    ) -> Result<Vec<QuarantinedNoteRecord>> {
-        let pb_notes: Vec<_> = self
-            .quarantined_notes(tonic::Request::new(request))
-            .await?
-            .into_inner()
-            .try_collect()
-            .await?;
-
-        let notes: Result<Vec<QuarantinedNoteRecord>> = pb_notes
-            .into_iter()
-            .map(|note_rsp| {
-                let note_record = note_rsp
-                    .note_record
-                    .ok_or_else(|| anyhow::anyhow!("empty QuarantinedNotesResponse message"));
-
-                match note_record {
-                    Ok(note) => note.try_into(),
-                    Err(e) => Err(e),
-                }
-            })
-            .collect();
-
         Ok(notes?)
     }
 

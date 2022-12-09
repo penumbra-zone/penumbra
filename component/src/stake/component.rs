@@ -1107,52 +1107,6 @@ pub trait StateReadExt: StateRead {
 
         Ok(std::cmp::min(default_unbonding, validator_unbonding))
     }
-
-    /// Returns the epoch and identity key for quarantining a transaction, if it should be
-    /// quarantined, otherwise `None`.
-    async fn should_quarantine(&self, transaction: &Transaction) -> Option<(u64, IdentityKey)> {
-        let validator_identity =
-            transaction
-                .transaction_body
-                .actions
-                .iter()
-                .find_map(|action| {
-                    if let Action::Undelegate(Undelegate {
-                        validator_identity, ..
-                    }) = action
-                    {
-                        Some(validator_identity)
-                    } else {
-                        None
-                    }
-                })?;
-
-        let validator_bonding_state = self
-            .validator_bonding_state(validator_identity)
-            .await
-            .expect("validator lookup in state succeeds")
-            .expect("validator is present in state");
-
-        let should_quarantine = match validator_bonding_state {
-            validator::BondingState::Unbonded => None,
-            validator::BondingState::Unbonding { unbonding_epoch } => {
-                Some((unbonding_epoch, *validator_identity))
-            }
-            validator::BondingState::Bonded => {
-                let unbonding_epochs = self
-                    .get_chain_params()
-                    .await
-                    .expect("can get chain params")
-                    .unbonding_epochs;
-                Some((
-                    self.epoch().await.unwrap().index + unbonding_epochs,
-                    *validator_identity,
-                ))
-            }
-        };
-        tracing::debug!(?should_quarantine, "should quarantine");
-        should_quarantine
-    }
 }
 
 impl<T: StateRead + ?Sized> StateReadExt for T {}

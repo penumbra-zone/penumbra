@@ -1,14 +1,14 @@
 use std::convert::TryFrom;
 
 use anyhow::Result;
-use penumbra_crypto::{stake::IdentityKey, NotePayload, Nullifier};
+use penumbra_crypto::{NotePayload, Nullifier};
 use penumbra_proto::{
     client::v1alpha1::CompactBlockRangeResponse, core::chain::v1alpha1 as pb, Protobuf,
 };
 use penumbra_tct::builder::{block, epoch};
 use serde::{Deserialize, Serialize};
 
-use crate::{params::FmdParameters, quarantined::Quarantined, NoteSource};
+use crate::{params::FmdParameters, NoteSource};
 
 /// A note payload annotated with the source of the note.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -35,10 +35,6 @@ pub struct CompactBlock {
     pub block_root: block::Root,
     // The epoch root of this epoch, if this block ends an epoch (`None` otherwise).
     pub epoch_root: Option<epoch::Root>,
-    // Newly quarantined things in this block.
-    pub quarantined: Quarantined,
-    // Newly slashed validators in this block.
-    pub slashed: Vec<IdentityKey>,
     // Latest FMD parameters. `None` if unchanged.
     pub fmd_parameters: Option<FmdParameters>,
     // If the block indicated a proposal was being started.
@@ -57,8 +53,6 @@ impl Default for CompactBlock {
             nullifiers: Vec::new(),
             block_root: block::Finalized::default().root(),
             epoch_root: None,
-            quarantined: Quarantined::default(),
-            slashed: Vec::new(),
             fmd_parameters: None,
             proposal_started: false,
         }
@@ -70,8 +64,6 @@ impl CompactBlock {
     pub fn requires_scanning(&self) -> bool {
         !self.note_payloads.is_empty() // need to scan notes
             || !self.nullifiers.is_empty() // need to collect nullifiers
-            || !self.quarantined.is_empty() // need to scan quarantined notes
-            || !self.slashed.is_empty() // need to process slashing
             || self.fmd_parameters.is_some() // need to save latest FMD parameters
             || self.proposal_started // need to process proposal start
     }
@@ -120,12 +112,6 @@ impl From<CompactBlock> for pb::CompactBlock {
                 Some(cb.block_root.into())
             },
             epoch_root: cb.epoch_root.map(Into::into),
-            quarantined: if cb.quarantined.is_empty() {
-                None
-            } else {
-                Some(cb.quarantined.into())
-            },
-            slashed: cb.slashed.into_iter().map(Into::into).collect(),
             fmd_parameters: cb.fmd_parameters.map(Into::into),
             proposal_started: cb.proposal_started,
         }
@@ -155,18 +141,6 @@ impl TryFrom<pb::CompactBlock> for CompactBlock {
                 // If the block root wasn't present, that means it's the default finalized block root
                 .unwrap_or_else(|| block::Finalized::default().root()),
             epoch_root: value.epoch_root.map(TryInto::try_into).transpose()?,
-            quarantined: value
-                .quarantined
-                .map(TryInto::try_into)
-                .transpose()?
-                // If the quarantined set wasn't present, that means it contained nothing, so make
-                // it the default, empty set
-                .unwrap_or_default(),
-            slashed: value
-                .slashed
-                .into_iter()
-                .map(IdentityKey::try_from)
-                .collect::<Result<Vec<_>>>()?,
             fmd_parameters: value.fmd_parameters.map(TryInto::try_into).transpose()?,
             proposal_started: value.proposal_started,
         })

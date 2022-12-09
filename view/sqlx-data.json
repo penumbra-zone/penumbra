@@ -170,16 +170,6 @@
     },
     "query": "SELECT hash FROM nct_hashes WHERE position = ? AND height = ? LIMIT 1"
   },
-  "58e7cd62f2177d2bd0fa3b34c8be3495c9a0d8e331f846b56bf7c756a534ea64": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "DELETE FROM quarantined_notes WHERE note_commitment = ?"
-  },
   "5b0931e85f189748ade34b5b64f218ae43800c48283a98fbbb4755a9b4231035": {
     "describe": {
       "columns": [],
@@ -296,24 +286,6 @@
     },
     "query": "SELECT block_height, tx_hash, tx_bytes\n            FROM tx\n            WHERE block_height BETWEEN ? AND ?"
   },
-  "8ecf6591d5fcf8d364e7457ef4b5d927d9c079c23e633dc4475d6c2c60192c8f": {
-    "describe": {
-      "columns": [
-        {
-          "name": "nullifier",
-          "ordinal": 0,
-          "type_info": "Blob"
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "DELETE FROM quarantined_nullifiers WHERE identity_key = ? RETURNING nullifier"
-  },
   "916844d5f99c975bd2bfcac3956625f040ea91697c4f0c0a9cb4f48e472b302d": {
     "describe": {
       "columns": [
@@ -344,66 +316,6 @@
     },
     "query": "SELECT position, height, hash FROM nct_hashes"
   },
-  "94781fd10341bb230d568592af61265d3043df96c84cc0659904ac1804eec10b": {
-    "describe": {
-      "columns": [
-        {
-          "name": "note_commitment",
-          "ordinal": 0,
-          "type_info": "Blob"
-        },
-        {
-          "name": "address",
-          "ordinal": 1,
-          "type_info": "Blob"
-        },
-        {
-          "name": "amount",
-          "ordinal": 2,
-          "type_info": "Int64"
-        },
-        {
-          "name": "asset_id",
-          "ordinal": 3,
-          "type_info": "Blob"
-        },
-        {
-          "name": "blinding_factor",
-          "ordinal": 4,
-          "type_info": "Blob"
-        },
-        {
-          "name": "height_created",
-          "ordinal": 5,
-          "type_info": "Int64"
-        },
-        {
-          "name": "address_index",
-          "ordinal": 6,
-          "type_info": "Blob"
-        },
-        {
-          "name": "source",
-          "ordinal": 7,
-          "type_info": "Blob"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "SELECT * FROM notes WHERE note_commitment = ?"
-  },
   "95df7ed7e4e2444a04608f6250f0aeaedf0a054f15787c6c147233cc965dcbbb": {
     "describe": {
       "columns": [
@@ -421,16 +333,6 @@
       }
     },
     "query": "SELECT commitment FROM nct_commitments WHERE position = ? LIMIT 1"
-  },
-  "982b5f03b4628f7fb3ae7ab903b964e77fd3f5b626be440b672f182503204f2d": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 3
-      }
-    },
-    "query": "INSERT INTO quarantined_notes\n                    (\n                        note_commitment,\n                        unbonding_epoch,\n                        identity_key\n                    )\n                VALUES (?, ?, ?)"
   },
   "9d43e7b6d12a9610329e29651fa0d8134ebf18735ba93630b5f8a987dc17642f": {
     "describe": {
@@ -456,16 +358,6 @@
     },
     "query": "SELECT position, commitment FROM nct_commitments"
   },
-  "a43839bc75670a52de169be6a9c36aa8da0b2efe8c56d68e4e4cd437d63cc2cb": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "DELETE FROM quarantined_nullifiers WHERE nullifier = ?"
-  },
   "a96e4094367da72f81a656389748b9bac9f1931178dfc74bcc92e8f32b581b98": {
     "describe": {
       "columns": [],
@@ -475,26 +367,6 @@
       }
     },
     "query": "UPDATE nct_position SET position = ?"
-  },
-  "b77110b5b1885fb9388256f434ffb1690a7ffc7f5aa4c400fe1072dbb2638b2c": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 2
-      }
-    },
-    "query": "UPDATE spendable_notes SET height_spent = ? WHERE nullifier = ?"
-  },
-  "b8c80b31e23d061d621a5486b84e80b4a4b4fa409bf4510b5ad301ef54a66101": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "DELETE FROM quarantined_notes WHERE identity_key = ?"
   },
   "c32e78cceb56549a9333f4fcd707147c91c3772439d1fd55bee4f79ff3d5bc3c": {
     "describe": {
@@ -532,16 +404,6 @@
     },
     "query": "\n            SELECT bytes\n            FROM fmd_parameters\n            LIMIT 1\n        "
   },
-  "ce4148ecb83f1152688735c4b12d807dcab0d61c96dffefefc8c560315623534": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 2
-      }
-    },
-    "query": "INSERT INTO quarantined_nullifiers\n                        (\n                            identity_key,\n                            nullifier\n                        )\n                    VALUES (?, ?)"
-  },
   "d9457e681452f3f59288bbfc13e05ee7c568915c5227e058aaabc1e1c144a5f1": {
     "describe": {
       "columns": [
@@ -575,16 +437,6 @@
       }
     },
     "query": "DELETE FROM nct_hashes WHERE position >= ? AND position < ? AND height < ?"
-  },
-  "e3780cf2225cccfa2f397de4c9c0116da7b7eccfbbab4532b44f422250300b39": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "UPDATE spendable_notes SET height_spent = NULL WHERE nullifier = ?"
   },
   "ea78fd2a11683801c7ea96c3564e1103446663e51894e99ef42610ba87e3e152": {
     "describe": {

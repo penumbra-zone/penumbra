@@ -15,7 +15,7 @@ use super::ActionHandler;
 mod stateful;
 mod stateless;
 
-use stateless::{at_most_one_undelegate, no_duplicate_nullifiers, valid_binding_signature};
+use stateless::{no_duplicate_nullifiers, valid_binding_signature};
 
 #[async_trait]
 impl ActionHandler for Transaction {
@@ -24,7 +24,6 @@ impl ActionHandler for Transaction {
 
         valid_binding_signature(self)?;
         no_duplicate_nullifiers(self)?;
-        at_most_one_undelegate(self)?;
 
         // TODO: these can all be parallel tasks
         for action in self.actions() {

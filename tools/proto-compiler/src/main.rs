@@ -272,11 +272,6 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     ),
     (".penumbra.core.chain.v1alpha1.GenesisAppState", SERIALIZE),
     (".penumbra.core.chain.v1alpha1.GenesisAllocation", SERIALIZE),
-    (".penumbra.core.chain.v1alpha1.Quarantined", SERIALIZE),
-    (
-        ".penumbra.core.chain.v1alpha1.QuarantinedPerValidator",
-        SERIALIZE,
-    ),
     (".penumbra.core.chain.v1alpha1.Ratio", SERIALIZE),
     (".penumbra.core.transaction.v1alpha1.AuthHash", SERIALIZE),
     (
@@ -427,7 +422,6 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
         SERDE_TRANSPARENT,
     ),
     (".penumbra.view.v1alpha1.SpendableNoteRecord", SERIALIZE),
-    (".penumbra.view.v1alpha1.QuarantinedNoteRecord", SERIALIZE),
 ];
 
 static FIELD_ATTRIBUTES: &[(&str, &str)] = &[

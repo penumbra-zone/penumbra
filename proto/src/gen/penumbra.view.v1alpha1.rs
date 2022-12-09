@@ -81,21 +81,6 @@ pub struct NotesRequest {
     #[prost(message, optional, tag="15")]
     pub token: ::core::option::Option<ViewAuthToken>,
 }
-/// A query for quarantined notes known by the view service.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QuarantinedNotesRequest {
-    /// Identifies the FVK for the notes to query.
-    #[prost(message, optional, tag="14")]
-    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
-    /// Authorizes the request.
-    #[prost(message, optional, tag="15")]
-    pub token: ::core::option::Option<ViewAuthToken>,
-}
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QuarantinedNotesResponse {
-    #[prost(message, optional, tag="1")]
-    pub note_record: ::core::option::Option<QuarantinedNoteRecord>,
-}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WitnessRequest {
     /// The note commitments to obtain auth paths for.
@@ -274,32 +259,6 @@ pub struct SpendableNoteRecord {
     #[prost(message, optional, tag="8")]
     pub source: ::core::option::Option<super::super::core::chain::v1alpha1::NoteSource>,
 }
-/// The plaintext of a note that has been quarantined until the end of an unbonding period.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QuarantinedNoteRecord {
-    /// The note commitment, identifying the note.
-    #[prost(message, optional, tag="1")]
-    pub note_commitment: ::core::option::Option<super::super::core::crypto::v1alpha1::NoteCommitment>,
-    /// The note plaintext itself.
-    #[prost(message, optional, tag="2")]
-    pub note: ::core::option::Option<super::super::core::crypto::v1alpha1::Note>,
-    /// A precomputed decryption of the note's address incore.dex.v1alpha1.
-    #[prost(message, optional, tag="3")]
-    pub address_index: ::core::option::Option<super::super::core::crypto::v1alpha1::AddressIndex>,
-    /// The height at which the note was created.
-    #[prost(uint64, tag="4")]
-    pub height_created: u64,
-    /// The epoch at which the note will exit quarantine, if unbonding is not interrupted by slashing.
-    #[prost(uint64, tag="5")]
-    pub unbonding_epoch: u64,
-    /// The validator identity the quarantining is bound to.
-    #[prost(message, optional, tag="6")]
-    pub identity_key: ::core::option::Option<super::super::core::crypto::v1alpha1::IdentityKey>,
-    /// The source of the note (a tx hash or otherwise)
-    #[prost(message, optional, tag="7")]
-    pub source: ::core::option::Option<super::super::core::chain::v1alpha1::NoteSource>,
-}
 /// Generated client implementations.
 pub mod view_protocol_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
@@ -441,29 +400,6 @@ pub mod view_protocol_service_client {
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/Notes",
-            );
-            self.inner.server_streaming(request.into_request(), path, codec).await
-        }
-        /// Queries for notes that have been quarantined until the end of an unbonding period.
-        pub async fn quarantined_notes(
-            &mut self,
-            request: impl tonic::IntoRequest<super::QuarantinedNotesRequest>,
-        ) -> Result<
-            tonic::Response<tonic::codec::Streaming<super::QuarantinedNotesResponse>>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocolService/QuarantinedNotes",
             );
             self.inner.server_streaming(request.into_request(), path, codec).await
         }
@@ -810,17 +746,6 @@ pub mod view_protocol_service_server {
             &self,
             request: tonic::Request<super::NotesRequest>,
         ) -> Result<tonic::Response<Self::NotesStream>, tonic::Status>;
-        ///Server streaming response type for the QuarantinedNotes method.
-        type QuarantinedNotesStream: futures_core::Stream<
-                Item = Result<super::QuarantinedNotesResponse, tonic::Status>,
-            >
-            + Send
-            + 'static;
-        /// Queries for notes that have been quarantined until the end of an unbonding period.
-        async fn quarantined_notes(
-            &self,
-            request: tonic::Request<super::QuarantinedNotesRequest>,
-        ) -> Result<tonic::Response<Self::QuarantinedNotesStream>, tonic::Status>;
         /// Returns authentication paths for the given note commitments.
         ///
         /// This method takes a batch of input commitments, rather than just one, so
@@ -1073,48 +998,6 @@ pub mod view_protocol_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = NotesSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
-                        let res = grpc.server_streaming(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/penumbra.view.v1alpha1.ViewProtocolService/QuarantinedNotes" => {
-                    #[allow(non_camel_case_types)]
-                    struct QuarantinedNotesSvc<T: ViewProtocolService>(pub Arc<T>);
-                    impl<
-                        T: ViewProtocolService,
-                    > tonic::server::ServerStreamingService<
-                        super::QuarantinedNotesRequest,
-                    > for QuarantinedNotesSvc<T> {
-                        type Response = super::QuarantinedNotesResponse;
-                        type ResponseStream = T::QuarantinedNotesStream;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::ResponseStream>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::QuarantinedNotesRequest>,
-                        ) -> Self::Future {
-                            let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).quarantined_notes(request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let inner = inner.0;
-                        let method = QuarantinedNotesSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

@@ -84,10 +84,6 @@ message CompactBlock {
   crypto.v1alpha1.MerkleRoot block_root = 4;
   // The epoch root of this epoch (only present when the block is the last in an epoch).
   crypto.v1alpha1.MerkleRoot epoch_root = 5;
-  // Newly quarantined things in this block.
-  Quarantined quarantined = 6;
-  // Validators slashed in this block.
-  repeated crypto.v1alpha1.IdentityKey slashed = 16;
   // If a proposal started voting in this block, this is set to `true`.
   bool proposal_started = 20;
   // Latest Fuzzy Message Detection parameters.
@@ -109,11 +105,6 @@ message NoteSource {
   bytes inner = 1;
 }
 
-// A spicier transaction ID: one which can be missing
-message DelibleNoteSource {
-  NoteSource source = 1;
-}
-
 message GenesisAppState {
     message Allocation {
         uint64 amount = 1;
@@ -124,31 +115,4 @@ message GenesisAppState {
     ChainParameters chain_params = 1;
     repeated stake.v1alpha1.Validator validators = 2;
     repeated Allocation allocations = 3;
-}
-
-message Quarantined {
-  message Unbonding {
-    repeated AnnotatedNotePayload note_payloads = 1;
-    repeated crypto.v1alpha1.Nullifier nullifiers = 2;
-  }
-
-  message ValidatorEntry {
-    crypto.v1alpha1.IdentityKey identity_key = 1;
-    Unbonding unbonding = 2;
-  }
-
-  message Scheduled {
-    repeated ValidatorEntry per_validator = 1;
-  }
-
-  message EpochEntry {
-    uint64 unbonding_epoch = 1;
-    Scheduled scheduled = 2;
-  }
-
-  repeated EpochEntry per_epoch = 1;
-}
-
-message Slashed {
-  repeated crypto.v1alpha1.IdentityKey validators = 1;
 }
