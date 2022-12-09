@@ -219,9 +219,6 @@ async fn main() -> anyhow::Result<()> {
                         .add_service(tonic_web::enable(SpecificQueryServiceServer::new(
                             info.clone(),
                         )))
-                        .add_service(tonic_web::enable(TendermintServiceServer::new(
-                            tm_proxy.clone(),
-                        )))
                         .add_service(tonic_web::enable(TendermintProxyServiceServer::new(
                             tm_proxy.clone(),
                         )))
