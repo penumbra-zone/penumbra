@@ -89,12 +89,8 @@ message MockFlowCiphertext {
 message SwapPlan {
     // The plaintext version of the swap to be performed.
     dex.v1alpha1.SwapPlaintext swap_plaintext = 1;
-    // The blinding factor for the fee commitment. The fee in the SwapPlan is private to prevent linkability with the SwapClaim.
-    bytes fee_blinding = 5;
-    // The blinding factor to use for the new swap NFT note.
-    bytes note_blinding = 7;
-    // The ephemeral secret key to use for the swap NFT note encryption.
-    bytes esk = 8;
+    // The blinding factor for the balance commitment. The fee in the SwapPlan is private to prevent linkability with the SwapClaim.
+    bytes balance_blinding = 2;
 }
 
 message SwapClaimPlan {
@@ -111,11 +107,6 @@ message SwapClaimPlan {
 
     // Input and output amounts for the Swap.
     dex.v1alpha1.BatchSwapOutputData output_data = 11;
-
-    // The ephemeral secret key used for the first output note encryption.
-    bytes esk_1 = 17;
-    // The ephemeral secret key used for the second output note encryption.
-    bytes esk_2 = 18;
 
     // The epoch duration when the swap claim took place.
     uint64 epoch_duration = 20;

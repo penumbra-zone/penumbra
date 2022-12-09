@@ -3,9 +3,9 @@ use penumbra_crypto::{
     ka,
     keys::{IncomingViewingKey, NullifierKey},
     proofs::transparent::SwapClaimProof,
-    EncryptedNote, FullViewingKey, Note, Value,
+    FullViewingKey, Note, Value,
 };
-use penumbra_proto::{core::transaction::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 use penumbra_tct as tct;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
@@ -21,12 +21,12 @@ pub struct SwapClaimPlan {
     pub swap_nft_position: Position,
     pub swap_plaintext: SwapPlaintext,
     pub output_data: BatchSwapOutputData,
-    pub esk_1: ka::Secret,
-    pub esk_2: ka::Secret,
     pub epoch_duration: u64,
 }
 
 impl SwapClaimPlan {
+    // if no rng required, better to just pass a SwapClaimPlan, so args are named
+    /* 
     /// Create a new [`SwapClaimPlan`] that redeems output notes to `claim_address` using
     /// the associated swap NFT.
     #[allow(clippy::too_many_arguments)]
@@ -38,19 +38,15 @@ impl SwapClaimPlan {
         epoch_duration: u64,
         output_data: BatchSwapOutputData,
     ) -> SwapClaimPlan {
-        let esk_1 = ka::Secret::new(rng);
-        let esk_2 = ka::Secret::new(rng);
-
         Self {
             swap_nft_note,
-            esk_1,
-            esk_2,
             output_data,
             swap_plaintext,
             swap_nft_position,
             epoch_duration,
         }
     }
+    */
 
     /// Convenience method to construct the [`SwapClaim`] described by this
     /// [`SwapClaimPlan`].
@@ -124,24 +120,16 @@ impl SwapClaimPlan {
 
         // We need to get the correct diversified generator to use with DH:
         let g_d = self.swap_plaintext.claim_address.diversified_generator();
-        let output_1 = EncryptedNote {
-            note_commitment: output_1_note.commit(),
-            ephemeral_key: self.esk_1.diversified_public(g_d),
-            encrypted_note: output_1_note.encrypt(&self.esk_1),
-        };
-        let output_2 = EncryptedNote {
-            note_commitment: output_2_note.commit(),
-            ephemeral_key: self.esk_2.diversified_public(g_d),
-            encrypted_note: output_2_note.encrypt(&self.esk_2),
-        };
+        let output_1_commitment = output_1_note.commit();
+        let output_2_commitment = output_2_note.commit();
 
         let nullifier = fvk.derive_nullifier(self.swap_nft_position, &self.swap_nft_note.commit());
 
         swap_claim::Body {
             nullifier,
             fee: self.swap_plaintext.claim_fee.clone(),
-            output_1,
-            output_2,
+            output_1_commitment,
+            output_2_commitment,
             output_data: self.output_data,
             epoch_duration: self.epoch_duration,
         }
@@ -173,8 +161,6 @@ impl From<SwapClaimPlan> for pb::SwapClaimPlan {
             swap_nft_note: Some(msg.swap_nft_note.into()),
             swap_nft_position: msg.swap_nft_position.into(),
             output_data: Some(msg.output_data.into()),
-            esk_1: msg.esk_1.to_bytes().to_vec().into(),
-            esk_2: msg.esk_2.to_bytes().to_vec().into(),
             epoch_duration: msg.epoch_duration,
         }
     }
@@ -197,8 +183,6 @@ impl TryFrom<pb::SwapClaimPlan> for SwapClaimPlan {
                 .output_data
                 .ok_or_else(|| anyhow::anyhow!("missing output_data"))?
                 .try_into()?,
-            esk_1: msg.esk_1.as_ref().try_into()?,
-            esk_2: msg.esk_2.as_ref().try_into()?,
             epoch_duration: msg.epoch_duration,
         })
     }

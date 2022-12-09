@@ -120,18 +120,9 @@ pub struct SwapPlan {
     /// The plaintext version of the swap to be performed.
     #[prost(message, optional, tag="1")]
     pub swap_plaintext: ::core::option::Option<SwapPlaintext>,
-    /// The blinding factor for the fee commitment. The fee in the SwapPlan is private to prevent linkability with the SwapClaim.
-    #[prost(bytes="vec", tag="5")]
-    #[serde(with = "crate::serializers::hexstr")]
-    pub fee_blinding: ::prost::alloc::vec::Vec<u8>,
-    /// The blinding factor to use for the new swap NFT note.
-    #[prost(bytes="vec", tag="7")]
-    #[serde(with = "crate::serializers::hexstr")]
-    pub note_blinding: ::prost::alloc::vec::Vec<u8>,
-    /// The ephemeral secret key to use for the swap NFT note encryption.
-    #[prost(bytes="vec", tag="8")]
-    #[serde(with = "crate::serializers::hexstr")]
-    pub esk: ::prost::alloc::vec::Vec<u8>,
+    /// The blinding factor for the balance commitment. The fee in the SwapPlan is private to prevent linkability with the SwapClaim.
+    #[prost(bytes="vec", tag="2")]
+    pub balance_blinding: ::prost::alloc::vec::Vec<u8>,
 }
 ///
 /// @exclude
@@ -151,14 +142,6 @@ pub struct SwapClaimPlan {
     /// Input and output amounts for the Swap.
     #[prost(message, optional, tag="11")]
     pub output_data: ::core::option::Option<BatchSwapOutputData>,
-    /// The ephemeral secret key used for the first output note encryption.
-    #[prost(bytes="vec", tag="17")]
-    #[serde(with = "crate::serializers::hexstr")]
-    pub esk_1: ::prost::alloc::vec::Vec<u8>,
-    /// The ephemeral secret key used for the second output note encryption.
-    #[prost(bytes="vec", tag="18")]
-    #[serde(with = "crate::serializers::hexstr")]
-    pub esk_2: ::prost::alloc::vec::Vec<u8>,
     /// The epoch duration when the swap claim took place.
     #[prost(uint64, tag="20")]
     pub epoch_duration: u64,

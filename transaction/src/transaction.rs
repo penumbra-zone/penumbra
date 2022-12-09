@@ -12,7 +12,7 @@ use penumbra_crypto::{
     note::Commitment,
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
     transaction::Fee,
-    EncryptedNote, Fr, FullViewingKey, Note, Nullifier, PayloadKey,
+    Fr, FullViewingKey, Note, Nullifier, PayloadKey,
 };
 use penumbra_proto::{
     core::ibc::v1alpha1 as pb_ibc, core::stake::v1alpha1 as pbs,
@@ -65,25 +65,12 @@ impl Transaction {
         for action in self.actions() {
             match action {
                 Action::Swap(swap) => {
-                    let epk = &swap.body.swap_nft.ephemeral_key;
+                    let epk = &swap.body.payload.ephemeral_key;
                     let shared_secret = fvk.incoming().key_agreement_with(epk)?;
                     let payload_key = PayloadKey::derive(&shared_secret, epk);
-                    let commitment = swap.body.swap_nft.note_commitment;
+                    let commitment = swap.body.payload.commitment;
 
                     result.insert(commitment, payload_key);
-                }
-                Action::SwapClaim(swap_claim) => {
-                    let epk_1 = &swap_claim.body.output_1.ephemeral_key;
-                    let epk_2 = &swap_claim.body.output_2.ephemeral_key;
-                    let shared_secret_1 = fvk.incoming().key_agreement_with(epk_1)?;
-                    let shared_secret_2 = fvk.incoming().key_agreement_with(epk_2)?;
-                    let payload_key_1 = PayloadKey::derive(&shared_secret_1, epk_1);
-                    let payload_key_2 = PayloadKey::derive(&shared_secret_2, epk_2);
-                    let commitment_1 = swap_claim.body.output_1.note_commitment;
-                    let commitment_2 = swap_claim.body.output_2.note_commitment;
-
-                    result.insert(commitment_1, payload_key_1);
-                    result.insert(commitment_2, payload_key_2);
                 }
                 Action::Output(output) => {
                     // Outputs may be either incoming or outgoing; for an outgoing output
@@ -114,6 +101,7 @@ impl Transaction {
                 }
                 // These actions have no payload keys; they're listed explicitly
                 // for exhaustiveness.
+                Action::SwapClaim(swap_claim) => {}
                 Action::Spend(_) => {}
                 Action::Delegate(_) => {}
                 Action::Undelegate(_) => {}

@@ -16,27 +16,17 @@ use crate::action::{swap, Swap};
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(try_from = "pb::SwapPlan", into = "pb::SwapPlan")]
 pub struct SwapPlan {
-    // No commitments for the values, as they're plaintext
-    // until flow encryption is available
-    // pub asset_1_commitment: balance::Commitment,
-    // pub asset_2_commitment: balance::Commitment,
     pub swap_plaintext: SwapPlaintext,
     pub fee_blinding: Fr,
-    pub note_blinding: Fq,
-    pub esk: decaf377_ka::Secret,
 }
 
 impl SwapPlan {
     /// Create a new [`SwapPlan`] that requests a swap between the given assets and input amounts.
     pub fn new<R: CryptoRng + RngCore>(rng: &mut R, swap_plaintext: SwapPlaintext) -> SwapPlan {
-        let note_blinding = Fq::rand(rng);
         let fee_blinding = Fr::rand(rng);
-        let esk = decaf377_ka::Secret::new(rng);
 
         SwapPlan {
             fee_blinding,
-            note_blinding,
-            esk,
             swap_plaintext,
         }
     }
