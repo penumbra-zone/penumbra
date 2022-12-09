@@ -56,57 +56,10 @@ impl ActionHandler for Transaction {
     }
 
     async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
-        // TODO: we'd ideally like to get rid of all of the code in the body of this
-        // function, and just call each individual ActionHandler.
-        //
-        // We can't do this currently, for two reasons:
-        //
-        // 1. The existing quarantining system means we have to quarantine outputs
-        // on a transaction-wide basis, not an action-by-action one;
-        //
-        // 2. We currently use this method to construct the `source` we use for the
-        // `AnnotatedNoteSource`; we'll need a way to plumb that through to other
-        // ActionHandlers (perhaps by using the StateTransaction's object store...)
+        // While we have access to the full Transaction, hash it to
+        // obtain a NoteSource we can cache for various actions.
         let source = NoteSource::Transaction { id: self.id() };
-
-        if let Some((epoch, identity_key)) = state.should_quarantine(self).await {
-            for quarantined_output in self.note_payloads().cloned() {
-                // Queue up scheduling this note to be unquarantined: the actual state-writing for
-                // all quarantined notes happens during end_block, to avoid state churn
-                state
-                    .schedule_note(epoch, identity_key, quarantined_output, source)
-                    .await;
-            }
-            for quarantined_spent_nullifier in self.spent_nullifiers() {
-                state
-                    .quarantined_spend_nullifier(
-                        epoch,
-                        identity_key,
-                        quarantined_spent_nullifier,
-                        source,
-                    )
-                    .await;
-                state.record(event::quarantine_spend(quarantined_spent_nullifier));
-            }
-        } else {
-            for payload in self.note_payloads().cloned() {
-                state
-                    .add_note(AnnotatedNotePayload { payload, source })
-                    .await;
-            }
-            for spent_nullifier in self.spent_nullifiers() {
-                state.spend_nullifier(spent_nullifier, source).await;
-                state.record(event::spend(spent_nullifier));
-            }
-        }
-
-        // If there was any proposal submitted in the block, ensure we track this so that clients
-        // can retain state needed to vote as delegators
-        if self.proposal_submits().next().is_some() {
-            let mut compact_block = state.stub_compact_block();
-            compact_block.proposal_started = true;
-            state.stub_put_compact_block(compact_block);
-        }
+        state.object_put("source", source);
 
         for action in self.actions() {
             action.execute(state).await?;
