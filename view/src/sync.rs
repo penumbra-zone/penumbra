@@ -87,6 +87,7 @@ pub async fn scan_block(
     } else {
         // If we found at least one note for us in this block, we have to explicitly construct the
         // whole block in the NCT by inserting each commitment one at a time
+        // TODO: this will desync on rolled up note commitments, rewrite using for loop technology
         new_notes = state_payloads
             .into_iter()
             .filter_map(|x| match x {

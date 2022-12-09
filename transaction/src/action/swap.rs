@@ -1,6 +1,7 @@
 use ark_ff::Zero;
 use decaf377::Fr;
 use penumbra_crypto::asset::Amount;
+use penumbra_crypto::dex::swap::SwapPayload;
 use penumbra_crypto::dex::TradingPair;
 use penumbra_crypto::proofs::transparent::SwapProof;
 use penumbra_crypto::{balance, dex::swap::SwapCiphertext, Balance};
@@ -12,13 +13,7 @@ use crate::{ActionView, IsAction, TransactionPerspective};
 
 #[derive(Clone, Debug)]
 pub struct Swap {
-    // A proof that this is a valid state change.
     pub proof: SwapProof,
-    // Amounts will be plaintext until flow encryption is available.
-    // // The encrypted amount of asset 1 to be swapped.
-    // pub enc_amount_1: MockFlowCiphertext,
-    // // The encrypted amount of asset 2 to be swapped.
-    // pub enc_amount_2: MockFlowCiphertext,
     pub body: Body,
 }
 
@@ -43,37 +38,23 @@ impl IsAction for Swap {
     }
 
     fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {
-        let note_commitment = self.body.swap_nft.note_commitment;
+        let commitment = self.body.payload.commitment;
 
-        // Get payload key for note commitment of swap NFT.
-
-        let swap_view = if let Some(payload_key) = txp.payload_keys.get(&note_commitment) {
-            // Decrypt swap NFT
-            let swap_nft =
-                Note::decrypt_with_payload_key(&self.body.swap_nft.encrypted_note, payload_key);
-
+        let plaintext = txp.payload_keys.get(&commitment).and_then(|payload_key| {
             // Decrypt swap ciphertext
-            let swap_plaintext =
-                SwapCiphertext::decrypt_with_payload_key(&self.body.swap_ciphertext, payload_key);
+            SwapCiphertext::decrypt_with_payload_key(&self.body.payload.encrypted_swap, payload_key)
+                .ok()
+        });
 
-            if let (Ok(swap_nft), Ok(swap_plaintext)) = (swap_nft, swap_plaintext) {
-                SwapView::Visible {
-                    swap: self.to_owned(),
-                    swap_nft,
-                    swap_plaintext,
-                }
-            } else {
-                SwapView::Opaque {
-                    swap: self.to_owned(),
-                }
-            }
-        } else {
-            SwapView::Opaque {
+        ActionView::Swap(match plaintext {
+            Some(swap_plaintext) => SwapView::Visible {
                 swap: self.to_owned(),
-            }
-        };
-
-        ActionView::Swap(swap_view)
+                swap_plaintext,
+            },
+            None => SwapView::Opaque {
+                swap: self.to_owned(),
+            },
+        })
     }
 }
 
@@ -106,16 +87,10 @@ impl TryFrom<pb::Swap> for Swap {
 #[derive(Debug, Clone)]
 pub struct Body {
     pub trading_pair: TradingPair,
-    // No commitments for the values, as they're plaintext
-    // until flow encryption is available
-    // pub asset_1_commitment: balance::Commitment,
-    // pub asset_2_commitment: balance::Commitment,
     pub delta_1_i: Amount,
     pub delta_2_i: Amount,
     pub fee_commitment: balance::Commitment,
-    // TODO: rename to note_payload
-    pub swap_nft: EncryptedNote,
-    pub swap_ciphertext: SwapCiphertext,
+    pub payload: SwapPayload,
 }
 
 impl Protobuf<pb::SwapBody> for Body {}
@@ -127,8 +102,7 @@ impl From<Body> for pb::SwapBody {
             delta_1_i: Some(s.delta_1_i.into()),
             delta_2_i: Some(s.delta_2_i.into()),
             fee_commitment: s.fee_commitment.to_bytes().to_vec(),
-            swap_nft: Some(s.swap_nft.into()),
-            swap_ciphertext: s.swap_ciphertext.0.to_vec(),
+            payload: Some(s.payload.into()),
         }
     }
 }
@@ -152,11 +126,10 @@ impl TryFrom<pb::SwapBody> for Body {
                 .try_into()?,
 
             fee_commitment: (&s.fee_commitment[..]).try_into()?,
-            swap_nft: s
-                .swap_nft
-                .ok_or_else(|| anyhow::anyhow!("missing swap_nft"))?
+            payload: s
+                .payload
+                .ok_or_else(|| anyhow::anyhow!("missing payload"))?
                 .try_into()?,
-            swap_ciphertext: (&s.swap_ciphertext[..]).try_into()?,
         })
     }
 }

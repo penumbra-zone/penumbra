@@ -81,6 +81,9 @@ message Action {
 message TransactionPerspective {
   repeated PayloadKeyWithCommitment payload_keys = 1;
   repeated NullifierWithNote spend_nullifiers = 2;
+  // The openings of note commitments referred to in the transaction
+  // but not included in the transaction.
+  repeated crypto.v1alpha1.Note advice_notes = 3;
 }
 
 message PayloadKeyWithCommitment {
@@ -123,25 +126,13 @@ message OutputView {
     bytes payload_key = 3;
 }
 
-message SwapView {
-    dex.v1alpha1.Swap swap = 1;
-    crypto.v1alpha1.Note swap_nft = 2;
-    dex.v1alpha1.SwapPlaintext swap_plaintext = 3;
-}
-
-message SwapClaimView {
-    dex.v1alpha1.SwapClaim swap_claim = 1;
-    crypto.v1alpha1.Note output_1 = 2;
-    crypto.v1alpha1.Note output_2 = 3;
-}
-
 // A view of a specific state change action performed by a transaction.
 message ActionView {
   oneof action_view {
     SpendView spend = 1;
     OutputView output = 2;
-    SwapView swap = 3;
-    SwapClaimView swap_claim = 4;
+    dex.v1alpha1.SwapView swap = 3;
+    dex.v1alpha1.SwapClaimView swap_claim = 4;
 
     stake.v1alpha1.ValidatorDefinition validator_definition = 16;
     ibc.v1alpha1.IbcAction ibc_action = 17;
@@ -330,8 +321,8 @@ message ActionPlan {
     oneof action {
         SpendPlan spend = 1;
         OutputPlan output = 2;
-        SwapPlan swap = 3;
-        SwapClaimPlan swap_claim = 4;
+        dex.v1alpha1.SwapPlan swap = 3;
+        dex.v1alpha1.SwapClaimPlan swap_claim = 4;
 
         // This is just a message relayed to the chain.
         stake.v1alpha1.ValidatorDefinition validator_definition = 16;
@@ -398,41 +389,6 @@ message OutputPlan {
     bytes value_blinding = 4;
     // The ephemeral secret key to use for the note encryption.
     bytes esk = 5;
-}
-
-message SwapPlan {
-    // The plaintext version of the swap to be performed.
-    dex.v1alpha1.SwapPlaintext swap_plaintext = 1;
-    // The blinding factor for the fee commitment. The fee in the SwapPlan is private to prevent linkability with the SwapClaim.
-    bytes fee_blinding = 5;
-    // The blinding factor to use for the new swap NFT note.
-    bytes note_blinding = 7;
-    // The ephemeral secret key to use for the swap NFT note encryption.
-    bytes esk = 8;
-}
-
-message SwapClaimPlan {
-    /*
-     * @exclude
-     * Fields describing the swap NFT note to be redeemed.
-     */
-    // The input swap NFT note to be spent.
-    crypto.v1alpha1.Note swap_nft_note = 1;
-    // The position of the input swap NFT note.
-    uint64 swap_nft_position = 2;
-    // The plaintext version of the swap to be performed.
-    dex.v1alpha1.SwapPlaintext swap_plaintext = 3;
-
-    // Input and output amounts for the Swap.
-    dex.v1alpha1.BatchSwapOutputData output_data = 11;
-
-    // The ephemeral secret key used for the first output note encryption.
-    bytes esk_1 = 17;
-    // The ephemeral secret key used for the second output note encryption.
-    bytes esk_2 = 18;
-
-    // The epoch duration when the swap claim took place.
-    uint64 epoch_duration = 20;
 }
 
 message ProposalWithdrawPlan {

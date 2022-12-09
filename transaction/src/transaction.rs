@@ -275,26 +275,6 @@ impl Transaction {
         })
     }
 
-    // TODO: re-evaluate this API, do we want to be iterating over encrypted notes?
-    // or state payloads? but the state payloads have sources, so we'd have to construct them
-    // on the fly with the tx hash? how do we really want to be using tihs?
-    pub fn encrypted_notes(&self) -> impl Iterator<Item = &EncryptedNote> {
-        // This is somewhat cursed but avoids the need to allocate or erase types, I guess?
-        self.actions()
-            .flat_map(|action| match action {
-                Action::Output(output) => [Some(&output.body.note_payload), None],
-                Action::Swap(swap) => [Some(&swap.body.swap_nft), None],
-                Action::SwapClaim(swap_claim) => [
-                    Some(&swap_claim.body.output_1),
-                    Some(&swap_claim.body.output_2),
-                ],
-                _ => [None, None],
-            })
-            // We've padded arrays with None to be able to unify types, now strip the
-            // bogus padding values away:
-            .flatten()
-    }
-
     pub fn spent_nullifiers(&self) -> impl Iterator<Item = Nullifier> + '_ {
         self.actions().filter_map(|action| {
             // Note: adding future actions that include nullifiers

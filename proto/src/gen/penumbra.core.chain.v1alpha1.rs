@@ -114,11 +114,14 @@ pub struct CompactBlock {
     /// Latest Fuzzy Message Detection parameters.
     #[prost(message, optional, tag="100")]
     pub fmd_parameters: ::core::option::Option<FmdParameters>,
+    /// Price data for swaps executed in this block.
+    #[prost(message, repeated, tag="5")]
+    pub swap_outputs: ::prost::alloc::vec::Vec<super::super::dex::v1alpha1::BatchSwapOutputData>,
 }
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatePayload {
-    #[prost(oneof="state_payload::StatePayload", tags="1, 2")]
+    #[prost(oneof="state_payload::StatePayload", tags="1, 2, 3")]
     pub state_payload: ::core::option::Option<state_payload::StatePayload>,
 }
 /// Nested message and enum types in `StatePayload`.
@@ -138,12 +141,22 @@ pub mod state_payload {
         pub note: ::core::option::Option<super::super::super::crypto::v1alpha1::EncryptedNote>,
     }
     #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Swap {
+        #[prost(message, optional, tag="1")]
+        pub source: ::core::option::Option<super::NoteSource>,
+        #[prost(message, optional, tag="2")]
+        pub swap: ::core::option::Option<super::super::super::dex::v1alpha1::SwapPayload>,
+    }
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum StatePayload {
         #[prost(message, tag="1")]
         RolledUp(RolledUp),
         #[prost(message, tag="2")]
         Note(Note),
+        #[prost(message, tag="3")]
+        Swap(Swap),
     }
 }
 #[derive(::serde::Deserialize, ::serde::Serialize)]

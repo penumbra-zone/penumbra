@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 
 use anyhow::Result;
-use penumbra_crypto::{note, EncryptedNote};
+use penumbra_crypto::{dex::swap::SwapPayload, note, EncryptedNote};
 use penumbra_proto::core::chain::v1alpha1::{self as pb};
 
 use serde::{Deserialize, Serialize};
@@ -17,6 +17,10 @@ pub enum StatePayload {
         source: NoteSource,
         note: EncryptedNote,
     },
+    Swap {
+        source: NoteSource,
+        swap: SwapPayload,
+    },
 }
 
 impl StatePayload {
@@ -24,6 +28,7 @@ impl StatePayload {
         match self {
             Self::RolledUp(commitment) => commitment,
             Self::Note { note, .. } => &note.note_commitment,
+            Self::Swap { swap, .. } => &swap.commitment,
         }
     }
 
@@ -31,6 +36,7 @@ impl StatePayload {
         match self {
             Self::RolledUp(_) => None,
             Self::Note { source, .. } => Some(source),
+            Self::Swap { source, .. } => Some(source),
         }
     }
 }
@@ -50,6 +56,14 @@ impl From<StatePayload> for pb::StatePayload {
                     pb::state_payload::Note {
                         source: Some(source.into()),
                         note: Some(note.into()),
+                    },
+                )),
+            },
+            StatePayload::Swap { source, swap } => pb::StatePayload {
+                state_payload: Some(pb::state_payload::StatePayload::Swap(
+                    pb::state_payload::Swap {
+                        source: Some(source.into()),
+                        swap: Some(swap.into()),
                     },
                 )),
             },
@@ -74,6 +88,17 @@ impl TryFrom<pb::StatePayload> for StatePayload {
             })) => Ok(StatePayload::Note {
                 note: note
                     .ok_or_else(|| anyhow::anyhow!("missing note"))?
+                    .try_into()?,
+                source: source
+                    .ok_or_else(|| anyhow::anyhow!("missing source"))?
+                    .try_into()?,
+            }),
+            Some(pb::state_payload::StatePayload::Swap(pb::state_payload::Swap {
+                source,
+                swap,
+            })) => Ok(StatePayload::Swap {
+                swap: swap
+                    .ok_or_else(|| anyhow::anyhow!("missing swap"))?
                     .try_into()?,
                 source: source
                     .ok_or_else(|| anyhow::anyhow!("missing source"))?

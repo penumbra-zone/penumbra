@@ -6,6 +6,7 @@ use penumbra_crypto::transaction::Fee;
 use penumbra_crypto::{proofs::transparent::SwapClaimProof, EncryptedNote, Fr};
 use penumbra_crypto::{Balance, Note, Nullifier};
 use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
+use penumbra_tct as tct;
 
 #[derive(Debug, Clone)]
 pub struct SwapClaim {
@@ -96,8 +97,8 @@ impl TryFrom<pb::SwapClaim> for SwapClaim {
 pub struct Body {
     pub nullifier: Nullifier,
     pub fee: Fee,
-    pub output_1: EncryptedNote,
-    pub output_2: EncryptedNote,
+    pub output_1_commitment: tct::Commitment,
+    pub output_2_commitment: tct::Commitment,
     pub output_data: BatchSwapOutputData,
     pub epoch_duration: u64,
 }
@@ -109,8 +110,8 @@ impl From<Body> for pb::SwapClaimBody {
         pb::SwapClaimBody {
             nullifier: Some(s.nullifier.into()),
             fee: Some(s.fee.into()),
-            output_1: Some(s.output_1.into()),
-            output_2: Some(s.output_2.into()),
+            output_1_commitment: Some(s.output_1_commitment.into()),
+            output_2_commitment: Some(s.output_2_commitment.into()),
             output_data: Some(s.output_data.into()),
             epoch_duration: s.epoch_duration,
         }
@@ -129,12 +130,12 @@ impl TryFrom<pb::SwapClaimBody> for Body {
                 .fee
                 .ok_or_else(|| anyhow::anyhow!("missing fee"))?
                 .try_into()?,
-            output_1: sc
-                .output_1
+            output_1_commitment: sc
+                .output_1_commitment
                 .ok_or_else(|| anyhow::anyhow!("missing output_1"))?
                 .try_into()?,
-            output_2: sc
-                .output_2
+            output_2_commitment: sc
+                .output_2_commitment
                 .ok_or_else(|| anyhow::anyhow!("missing output_2"))?
                 .try_into()?,
             output_data: sc

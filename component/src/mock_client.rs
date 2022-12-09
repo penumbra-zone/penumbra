@@ -78,6 +78,7 @@ impl MockClient {
                 StatePayload::RolledUp(commitment) => {
                     self.nct.insert(Forget, commitment)?;
                 }
+                StatePayload::Swap { .. } => todo!(),
             }
         }
         self.nct.end_block()?;

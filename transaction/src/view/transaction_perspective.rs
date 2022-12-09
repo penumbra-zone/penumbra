@@ -23,7 +23,9 @@ pub struct TransactionPerspective {
     /// there is one memo shared between all outputs.
     pub payload_keys: BTreeMap<note::Commitment, PayloadKey>,
     /// Mapping of nullifiers spent in this transaction to notes.
-    pub spend_nullifiers: BTreeMap<Nullifier, Option<Note>>,
+    pub spend_nullifiers: BTreeMap<Nullifier, Note>,
+    /// The openings of note commitments referred to in the transaction but otherwise not included in the transaction.
+    pub advice_notes: BTreeMap<note::Commitment, Note>,
 }
 
 impl TransactionPerspective {}
@@ -32,6 +34,7 @@ impl From<TransactionPerspective> for pb::TransactionPerspective {
     fn from(msg: TransactionPerspective) -> Self {
         let mut payload_keys = Vec::new();
         let mut spend_nullifiers = Vec::new();
+        let mut advice_notes = Vec::new();
 
         for (commitment, payload_key) in msg.payload_keys {
             payload_keys.push(PayloadKeyWithCommitment {
@@ -41,16 +44,18 @@ impl From<TransactionPerspective> for pb::TransactionPerspective {
         }
 
         for (nullifier, note) in msg.spend_nullifiers {
-            if let Some(note) = note {
-                spend_nullifiers.push(NullifierWithNote {
-                    nullifier: Some(nullifier.into()),
-                    note: Some(note.into()),
-                })
-            }
+            spend_nullifiers.push(NullifierWithNote {
+                nullifier: Some(nullifier.into()),
+                note: Some(note.into()),
+            })
+        }
+        for note in msg.advice_notes.into_values() {
+            advice_notes.push(note.into());
         }
         Self {
             payload_keys,
             spend_nullifiers,
+            advice_notes,
         }
     }
 }
@@ -61,6 +66,7 @@ impl TryFrom<pb::TransactionPerspective> for TransactionPerspective {
     fn try_from(msg: pb::TransactionPerspective) -> Result<Self, Self::Error> {
         let mut payload_keys = BTreeMap::new();
         let mut spend_nullifiers = BTreeMap::new();
+        let mut advice_notes = BTreeMap::new();
 
         for pk in msg.payload_keys {
             if pk.commitment.is_some() {
@@ -74,12 +80,19 @@ impl TryFrom<pb::TransactionPerspective> for TransactionPerspective {
         for nwn in msg.spend_nullifiers {
             spend_nullifiers.insert(
                 nwn.nullifier.unwrap().try_into()?,
-                Some(nwn.note.unwrap().try_into()?),
+                nwn.note.unwrap().try_into()?,
             );
         }
+
+        for note in msg.advice_notes {
+            let note: Note = note.try_into()?;
+            advice_notes.insert(note.commit(), note);
+        }
+
         Ok(Self {
             payload_keys,
             spend_nullifiers,
+            advice_notes,
         })
     }
 }
