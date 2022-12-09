@@ -20,12 +20,10 @@ mod memo;
 
 pub use action::{
     ActionPlan, DelegatorVotePlan, OutputPlan, ProposalWithdrawPlan, SpendPlan, SwapClaimPlan,
-    SwapPlan,
+    SwapPlan, UndelegateClaimPlan,
 };
 pub use clue::CluePlan;
 pub use memo::MemoPlan;
-
-use self::action::UndelegateClaimPlan;
 
 /// A declaration of a planned [`Transaction`](crate::Transaction),
 /// for use in transaction authorization and creation.

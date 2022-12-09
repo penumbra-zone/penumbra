@@ -12,9 +12,8 @@ use penumbra_crypto::{
     dex::{swap::SwapPlaintext, BatchSwapOutputData, TradingPair},
     keys::AddressIndex,
     rdsa::{SpendAuth, VerificationKey},
-    stake::DelegationToken,
     transaction::Fee,
-    Address, FieldExt, Fr, FullViewingKey, Note, Value, STAKING_TOKEN_ASSET_ID,
+    Address, FieldExt, Fr, FullViewingKey, Note, Value,
 };
 use penumbra_proto::view::v1alpha1::NotesRequest;
 use penumbra_tct as tct;
@@ -22,7 +21,7 @@ use penumbra_transaction::{
     action::{Proposal, ProposalSubmit, ProposalWithdrawBody, ValidatorVote},
     plan::{
         ActionPlan, MemoPlan, OutputPlan, ProposalWithdrawPlan, SpendPlan, SwapClaimPlan, SwapPlan,
-        TransactionPlan,
+        TransactionPlan, UndelegateClaimPlan,
     },
 };
 use penumbra_view::ViewClient;
@@ -205,7 +204,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     #[instrument(skip(self))]
     pub fn undelegate(
         &mut self,
-        delegation_amount: u64,
+        delegation_amount: Amount,
         rate_data: RateData,
         end_epoch_index: u64,
     ) -> &mut Self {
@@ -213,6 +212,13 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             .build_undelegate(delegation_amount, end_epoch_index)
             .into();
         self.action(undelegation);
+        self
+    }
+
+    /// Add an undelegate claim to this transaction.
+    #[instrument(skip(self))]
+    pub fn undelegate_claim(&mut self, claim_plan: UndelegateClaimPlan) -> &mut Self {
+        self.action(ActionPlan::UndelegateClaim(claim_plan));
         self
     }
 

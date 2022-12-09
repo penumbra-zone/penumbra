@@ -14,10 +14,7 @@ use penumbra_crypto::{
 };
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateTransaction, StateWrite};
-use penumbra_transaction::{
-    action::{Delegate, Undelegate},
-    Action, Transaction,
-};
+use penumbra_transaction::action::{Delegate, Undelegate};
 use sha2::{Digest, Sha256};
 use tendermint::{
     abci::{

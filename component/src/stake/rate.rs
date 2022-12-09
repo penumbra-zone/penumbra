@@ -1,6 +1,6 @@
 //! Staking reward and delegation token exchange rates.
 
-use penumbra_crypto::stake::Penalty;
+use penumbra_crypto::{stake::Penalty, Amount};
 use penumbra_proto::{
     client::v1alpha1::NextValidatorRateResponse, core::stake::v1alpha1 as pb, Protobuf,
 };
@@ -155,12 +155,14 @@ impl RateData {
 
     /// Uses this `RateData` to build an `Undelegate` transaction action that
     /// undelegates `delegation_amount` of the validator's delegation tokens.
-    pub fn build_undelegate(&self, delegation_amount: u64, end_epoch_index: u64) -> Undelegate {
+    pub fn build_undelegate(&self, delegation_amount: Amount, end_epoch_index: u64) -> Undelegate {
+        // TODO: port to amounts
+        let delegation_amount_u64 = u64::try_from(delegation_amount).unwrap();
         Undelegate {
             start_epoch_index: self.epoch_index,
             end_epoch_index: end_epoch_index,
-            delegation_amount: delegation_amount.into(),
-            unbonded_amount: self.unbonded_amount(delegation_amount).into(),
+            delegation_amount: delegation_amount,
+            unbonded_amount: self.unbonded_amount(delegation_amount_u64).into(),
             validator_identity: self.identity_key.clone(),
         }
     }

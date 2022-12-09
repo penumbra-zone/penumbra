@@ -97,6 +97,7 @@ message AssetListResponse {
 service SpecificQueryService {
   rpc TransactionByNote(TransactionByNoteRequest) returns (TransactionByNoteResponse);
   rpc ValidatorStatus(ValidatorStatusRequest) returns (ValidatorStatusResponse);
+  rpc ValidatorPenalty(ValidatorPenaltyRequest) returns (ValidatorPenaltyResponse);
   rpc NextValidatorRate(NextValidatorRateRequest) returns (NextValidatorRateResponse);
   rpc BatchSwapOutputData(BatchSwapOutputDataRequest) returns (BatchSwapOutputDataResponse);
   rpc StubCPMMReserves(StubCPMMReservesRequest) returns (StubCPMMReservesResponse);
@@ -127,6 +128,19 @@ message ValidatorStatusRequest {
 
 message ValidatorStatusResponse {
   core.stake.v1alpha1.ValidatorStatus status = 1;
+}
+
+// Requests the compounded penalty for a validator over a range of epochs.
+message ValidatorPenaltyRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  core.crypto.v1alpha1.IdentityKey identity_key = 2;
+  uint64 start_epoch_index = 3;
+  uint64 end_epoch_index = 4;
+}
+
+message ValidatorPenaltyResponse {
+  core.stake.v1alpha1.Penalty penalty = 1;
 }
 
 message NextValidatorRateRequest {

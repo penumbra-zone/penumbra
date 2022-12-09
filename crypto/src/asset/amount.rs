@@ -1,7 +1,7 @@
 use crate::{Fq, Fr};
 use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
-use std::{fmt::Display, num::NonZeroU64, ops};
+use std::{fmt::Display, iter::Sum, num::NonZeroU64, ops};
 
 #[derive(Serialize, Deserialize, PartialEq, PartialOrd, Eq, Clone, Debug, Copy)]
 #[serde(try_from = "pb::Amount", into = "pb::Amount")]
@@ -191,5 +191,11 @@ impl TryFrom<Vec<u8>> for Amount {
         Ok(Amount {
             inner: u64::from_le_bytes(array),
         })
+    }
+}
+
+impl Sum for Amount {
+    fn sum<I: Iterator<Item = Amount>>(iter: I) -> Amount {
+        iter.fold(Amount::zero(), |acc, x| acc + x)
     }
 }

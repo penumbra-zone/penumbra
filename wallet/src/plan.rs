@@ -92,40 +92,6 @@ where
         .context("can't build delegate plan")
 }
 
-/// Generate a new transaction plan undelegating stake
-pub async fn undelegate<V, R>(
-    fvk: &FullViewingKey,
-    view: &mut V,
-    rng: R,
-    rate_data: RateData,
-    end_epoch_index: u64,
-    delegation_notes: Vec<SpendableNoteRecord>,
-    fee: Fee,
-    source_address: Option<u64>,
-) -> Result<TransactionPlan>
-where
-    V: ViewClient,
-    R: RngCore + CryptoRng,
-{
-    let delegation_amount = delegation_notes
-        .iter()
-        .map(|record| u64::from(record.note.amount()))
-        .sum();
-
-    let mut planner = Planner::new(rng);
-    planner
-        .fee(fee)
-        .undelegate(delegation_amount, rate_data, end_epoch_index);
-    for record in delegation_notes {
-        planner.spend(record.note, record.position);
-    }
-
-    planner
-        .plan(view, fvk, source_address.map(Into::into))
-        .await
-        .context("can't build undelegate plan")
-}
-
 #[allow(clippy::too_many_arguments)]
 #[allow(dead_code)]
 #[instrument(skip(
