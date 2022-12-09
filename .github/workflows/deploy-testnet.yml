@@ -32,6 +32,7 @@ jobs:
   # so that the relevant tag is present in container registry.
   build-container:
     uses: ./.github/workflows/containers.yml
+    secrets: inherit
   deploy:
     name: Deploy to Testnet
     environment: testnet

@@ -35,6 +35,7 @@ on:
 jobs:
   build-container:
     uses: ./.github/workflows/containers.yml
+    secrets: inherit
   deploy:
     permissions:
       contents: 'read'
