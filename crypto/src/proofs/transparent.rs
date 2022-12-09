@@ -13,7 +13,7 @@ use crate::{
     asset, balance,
     dex::{swap::SwapPlaintext, BatchSwapOutputData, TradingPair},
     ka, keys, note,
-    stake::{Penalty, UnbondingToken},
+    stake::Penalty,
     transaction::Fee,
     Address, Amount, Balance, Fq, Fr, Note, Nullifier, Value,
 };

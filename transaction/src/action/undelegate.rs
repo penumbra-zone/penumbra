@@ -2,7 +2,7 @@ use ark_ff::Zero;
 use penumbra_crypto::{
     asset::Amount,
     stake::{DelegationToken, IdentityKey, UnbondingToken},
-    Balance, Fr, Value, STAKING_TOKEN_ASSET_ID,
+    Balance, Fr, Value,
 };
 use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};

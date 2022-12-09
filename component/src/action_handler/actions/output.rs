@@ -35,10 +35,12 @@ impl ActionHandler for Output {
             .object_get("source")
             .cloned()
             .expect("set in Transaction::execute");
-        state.add_note(AnnotatedNotePayload {
-            source,
-            payload: self.body.note_payload.clone(),
-        }).await;
+        state
+            .add_note(AnnotatedNotePayload {
+                source,
+                payload: self.body.note_payload.clone(),
+            })
+            .await;
 
         Ok(())
     }

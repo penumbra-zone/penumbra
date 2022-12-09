@@ -2,16 +2,11 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_chain::{AnnotatedNotePayload, NoteSource};
+use penumbra_chain::NoteSource;
 use penumbra_storage::{State, StateTransaction, StateWrite as _};
 use penumbra_transaction::Transaction;
 
-use crate::{
-    shielded_pool::{
-        consensus_rules, event, NoteManager as _, StateReadExt as _, StateWriteExt as _,
-    },
-    stake::StateReadExt as _,
-};
+use crate::shielded_pool::consensus_rules;
 
 use self::stateful::{claimed_anchor_is_valid, fmd_parameters_valid};
 
