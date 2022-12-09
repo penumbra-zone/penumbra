@@ -3,8 +3,8 @@ use crate::{ActionView, IsAction, TransactionPerspective};
 use ark_ff::Zero;
 use penumbra_crypto::dex::BatchSwapOutputData;
 use penumbra_crypto::transaction::Fee;
-use penumbra_crypto::{proofs::transparent::SwapClaimProof, EncryptedNote, Fr};
-use penumbra_crypto::{Balance, Note, Nullifier};
+use penumbra_crypto::{proofs::transparent::SwapClaimProof, Fr};
+use penumbra_crypto::{Balance, Nullifier};
 use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 use penumbra_tct as tct;
 
@@ -21,10 +21,8 @@ impl IsAction for SwapClaim {
 
     fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {
         // Get the advice notes for each output from the swap claim
-        let note_commitment_1 = self.body.output_1.note_commitment;
-        let note_commitment_2 = self.body.output_2.note_commitment;
-        let output_1 = txp.advice_notes.get(&note_commitment_1);
-        let output_2 = txp.advice_notes.get(&note_commitment_2);
+        let output_1 = txp.advice_notes.get(&self.body.output_1_commitment);
+        let output_2 = txp.advice_notes.get(&self.body.output_2_commitment);
 
         match (output_1, output_2) {
             (Some(output_1), Some(output_2)) => {
@@ -86,6 +84,7 @@ pub struct Body {
     pub output_1_commitment: tct::Commitment,
     pub output_2_commitment: tct::Commitment,
     pub output_data: BatchSwapOutputData,
+    // TODO: move to SwapClaim, out of Body
     pub epoch_duration: u64,
 }
 

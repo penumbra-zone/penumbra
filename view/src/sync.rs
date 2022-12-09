@@ -40,6 +40,7 @@ pub async fn scan_block(
         epoch_root,
         fmd_parameters,
         proposal_started,
+        swap_outputs,
     }: CompactBlock,
     epoch_duration: u64,
     storage: &Storage,

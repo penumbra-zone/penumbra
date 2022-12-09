@@ -28,13 +28,12 @@ impl TryFrom<pb::SwapView> for SwapView {
             .ok_or_else(|| anyhow::anyhow!("missing swap field"))?
             .try_into()?;
 
-        match (v.swap_plaintext, v.swap_nft) {
-            (Some(swap_plaintext), Some(swap_nft)) => Ok(SwapView::Visible {
+        match v.swap_plaintext {
+            Some(swap_plaintext) => Ok(SwapView::Visible {
                 swap,
                 swap_plaintext: swap_plaintext.try_into()?,
             }),
-            (None, None) => Ok(SwapView::Opaque { swap }),
-            _ => Err(anyhow::anyhow!("malformed swap view")),
+            None => Ok(SwapView::Opaque { swap }),
         }
     }
 }
@@ -44,7 +43,6 @@ impl From<SwapView> for pb::SwapView {
         match v {
             SwapView::Visible {
                 swap,
-                swap_nft,
                 swap_plaintext,
             } => Self {
                 swap: Some(swap.into()),

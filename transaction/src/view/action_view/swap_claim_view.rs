@@ -1,11 +1,11 @@
 use penumbra_crypto::Note;
-use penumbra_proto::{core::transaction::v1alpha1 as pbt, Protobuf};
+use penumbra_proto::{core::dex::v1alpha1 as pbd, Protobuf};
 use serde::{Deserialize, Serialize};
 
 use crate::action::SwapClaim;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(try_from = "pbt::SwapClaimView", into = "pbt::SwapClaimView")]
+#[serde(try_from = "pbd::SwapClaimView", into = "pbd::SwapClaimView")]
 #[allow(clippy::large_enum_variant)]
 pub enum SwapClaimView {
     Visible {
@@ -18,12 +18,12 @@ pub enum SwapClaimView {
     },
 }
 
-impl Protobuf<pbt::SwapClaimView> for SwapClaimView {}
+impl Protobuf<pbd::SwapClaimView> for SwapClaimView {}
 
-impl TryFrom<pbt::SwapClaimView> for SwapClaimView {
+impl TryFrom<pbd::SwapClaimView> for SwapClaimView {
     type Error = anyhow::Error;
 
-    fn try_from(v: pbt::SwapClaimView) -> Result<Self, Self::Error> {
+    fn try_from(v: pbd::SwapClaimView) -> Result<Self, Self::Error> {
         let swap_claim = v
             .swap_claim
             .ok_or_else(|| anyhow::anyhow!("missing swap_claim field"))?
@@ -41,7 +41,7 @@ impl TryFrom<pbt::SwapClaimView> for SwapClaimView {
     }
 }
 
-impl From<SwapClaimView> for pbt::SwapClaimView {
+impl From<SwapClaimView> for pbd::SwapClaimView {
     fn from(v: SwapClaimView) -> Self {
         match v {
             SwapClaimView::Visible {

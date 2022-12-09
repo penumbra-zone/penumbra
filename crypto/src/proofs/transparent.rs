@@ -13,7 +13,9 @@ use super::transparent_gadgets as gadgets;
 use crate::{
     asset, balance,
     dex::{swap::SwapPlaintext, BatchSwapOutputData, TradingPair},
-    ka, keys, note,
+    ka,
+    keys::{self, NullifierKey},
+    note,
     stake::Penalty,
     transaction::Fee,
     Address, Amount, Balance, Fq, Fr, Note, Nullifier, Value,
@@ -420,20 +422,12 @@ impl Protobuf<transparent_proofs::SwapClaimProof> for SwapClaimProof {}
 
 impl From<SwapClaimProof> for transparent_proofs::SwapClaimProof {
     fn from(msg: SwapClaimProof) -> Self {
-        let nk_bytes: [u8; 32] = msg.nk.0.to_bytes();
-        transparent_proofs::SwapClaimProof {
-            note_commitment_proof: Some(msg.note_commitment_proof.into()),
-            claim_address: Some(msg.claim_address.into()),
-            trading_pair: Some(msg.trading_pair.into()),
-            delta_1_i: msg.delta_1_i,
-            delta_2_i: msg.delta_2_i,
+        Self {
+            swap_commitment_proof: Some(msg.swap_commitment_proof.into()),
+            swap_plaintext: Some(msg.swap_plaintext.into()),
+            nk: msg.nk.0.to_bytes().to_vec(),
             lambda_1_i: msg.lambda_1_i,
             lambda_2_i: msg.lambda_2_i,
-            esk_1: msg.esk_1.to_bytes().to_vec(),
-            esk_2: msg.esk_2.to_bytes().to_vec(),
-            note_blinding: msg.note_blinding.to_bytes().to_vec(),
-            nk: nk_bytes.into(),
-            swap_blinding: msg.swap_blinding.to_bytes().to_vec(),
         }
     }
 }
@@ -442,61 +436,27 @@ impl TryFrom<transparent_proofs::SwapClaimProof> for SwapClaimProof {
     type Error = Error;
 
     fn try_from(proto: transparent_proofs::SwapClaimProof) -> anyhow::Result<Self, Self::Error> {
-        let esk_1_bytes: [u8; 32] = proto.esk_1[..]
-            .try_into()
-            .map_err(|_| anyhow!("proto malformed"))?;
-        let esk_1 = ka::Secret::new_from_field(
-            Fr::from_bytes(esk_1_bytes).map_err(|_| anyhow!("proto malformed"))?,
+        let swap_commitment_proof = proto
+            .swap_commitment_proof
+            .ok_or_else(|| anyhow!("missing swap commitment proof"))?
+            .try_into()?;
+        let swap_plaintext = proto
+            .swap_plaintext
+            .ok_or_else(|| anyhow!("missing swap plaintext"))?
+            .try_into()?;
+        let nk = NullifierKey(
+            Fq::from_bytes(proto.nk.try_into().map_err(|_| anyhow!("invalid nk"))?)
+                .map_err(|_| anyhow!("invalid nk"))?,
         );
-        let esk_2_bytes: [u8; 32] = proto.esk_2[..]
-            .try_into()
-            .map_err(|_| anyhow!("proto malformed"))?;
-        let esk_2 = ka::Secret::new_from_field(
-            Fr::from_bytes(esk_2_bytes).map_err(|_| anyhow!("proto malformed"))?,
-        );
+        let lambda_1_i = proto.lambda_1_i;
+        let lambda_2_i = proto.lambda_2_i;
 
-        Ok(SwapClaimProof {
-            esk_1,
-            esk_2,
-            lambda_2_i: proto.lambda_2_i,
-            lambda_1_i: proto.lambda_1_i,
-            delta_2_i: proto.delta_2_i,
-            delta_1_i: proto.delta_1_i,
-            trading_pair: proto
-                .trading_pair
-                .ok_or_else(|| anyhow!("proto malformed"))?
-                .try_into()
-                .map_err(|_| anyhow!("proto malformed"))?,
-            note_commitment_proof: proto
-                .note_commitment_proof
-                .ok_or_else(|| anyhow!("proto malformed"))?
-                .try_into()
-                .map_err(|_| anyhow!("proto malformed"))?,
-            claim_address: proto
-                .claim_address
-                .ok_or_else(|| anyhow!("proto malformed"))?
-                .try_into()
-                .map_err(|_| anyhow!("proto malformed"))?,
-            note_blinding: Fq::from_bytes(
-                proto.note_blinding[..]
-                    .try_into()
-                    .map_err(|_| anyhow!("proto malformed"))?,
-            )
-            .map_err(|_| anyhow!("proto malformed"))?,
-            nk: keys::NullifierKey(
-                Fq::from_bytes(
-                    proto.nk[..]
-                        .try_into()
-                        .map_err(|_| anyhow!("proto malformed"))?,
-                )
-                .map_err(|_| anyhow!("proto malformed"))?,
-            ),
-            swap_blinding: Fq::from_bytes(
-                proto.swap_blinding[..]
-                    .try_into()
-                    .map_err(|_| anyhow!("proto malformed"))?,
-            )
-            .map_err(|_| anyhow!("proto malformed"))?,
+        Ok(Self {
+            swap_commitment_proof,
+            swap_plaintext,
+            nk,
+            lambda_1_i,
+            lambda_2_i,
         })
     }
 }
@@ -545,10 +505,9 @@ impl SwapProof {
             };
         let transparent_balance_commitment = transparent_balance.commit(Fr::zero());
 
-        // XXX sign error here and elsewhere with swaps, the fee should be SUBTRACTED, not added
-        // but we want to avoid having to twiddle signs for synthetic blinding factor in binding sig
+        // XXX we want to avoid having to twiddle signs for synthetic blinding factor in binding sig
         ensure!(
-            balance_commitment == transparent_balance_commitment + fee_commitment,
+            balance_commitment == transparent_balance_commitment - fee_commitment,
             "balance commitment mismatch"
         );
 
@@ -561,19 +520,8 @@ impl Protobuf<transparent_proofs::SwapProof> for SwapProof {}
 impl From<SwapProof> for transparent_proofs::SwapProof {
     fn from(msg: SwapProof) -> Self {
         transparent_proofs::SwapProof {
-            claim_address: Some(msg.claim_address.into()),
-            delta_1: msg.value_t1.amount.into(),
-            t1: msg.value_t1.asset_id.0.to_bytes().to_vec(),
-            delta_2: msg.value_t2.amount.into(),
-            t2: msg.value_t2.asset_id.0.to_bytes().to_vec(),
-            fee: Some(msg.fee_delta.into()),
+            swap_plaintext: Some(msg.swap_plaintext.into()),
             fee_blinding: msg.fee_blinding.to_bytes().to_vec(),
-            // TODO: no value commitments for delta 1/delta 2 until flow encryption is available
-            // delta_1_blinding: msg.delta_1_blinding.to_bytes().to_vec(),
-            // delta_2_blinding: msg.delta_2_blinding.to_bytes().to_vec(),
-            note_blinding: msg.note_blinding.to_bytes().to_vec(),
-            esk: msg.esk.to_bytes().to_vec(),
-            swap_blinding: msg.swap_blinding.to_bytes().to_vec(),
         }
     }
 }
@@ -582,80 +530,21 @@ impl TryFrom<transparent_proofs::SwapProof> for SwapProof {
     type Error = Error;
 
     fn try_from(proto: transparent_proofs::SwapProof) -> anyhow::Result<Self, Self::Error> {
-        // let delta_1_blinding_bytes: [u8; 32] = proto.delta_1_blinding[..]
-        //     .try_into()
-        //     .map_err(|_| anyhow!("proto malformed"))?;
-        // let delta_2_blinding_bytes: [u8; 32] = proto.delta_2_blinding[..]
-        //     .try_into()
-        //     .map_err(|_| anyhow!("proto malformed"))?;
-
-        let fee_blinding_bytes: [u8; 32] = proto.fee_blinding[..]
-            .try_into()
-            .map_err(|_| anyhow::anyhow!("proto malformed"))?;
-
-        let esk_bytes: [u8; 32] = proto.esk[..]
+        let swap_plaintext = proto
+            .swap_plaintext
+            .ok_or_else(|| anyhow!("proto malformed"))?
             .try_into()
             .map_err(|_| anyhow!("proto malformed"))?;
-        let esk = ka::Secret::new_from_field(
-            Fr::from_bytes(esk_bytes).map_err(|_| anyhow!("proto malformed"))?,
-        );
-
-        let _pen_denom = asset::REGISTRY.parse_denom("upenumbra").unwrap();
+        let fee_blinding = Fr::from_bytes(
+            proto.fee_blinding[..]
+                .try_into()
+                .map_err(|_| anyhow!("proto malformed"))?,
+        )
+        .map_err(|_| anyhow!("proto malformed"))?;
 
         Ok(SwapProof {
-            claim_address: proto
-                .claim_address
-                .ok_or_else(|| anyhow!("proto malformed"))?
-                .try_into()
-                .map_err(|_| anyhow!("proto malformed"))?,
-            value_t1: Value {
-                amount: proto.delta_1.into(),
-                asset_id: asset::Id(
-                    Fq::from_bytes(
-                        proto
-                            .t1
-                            .try_into()
-                            .map_err(|_| anyhow!("proto malformed"))?,
-                    )
-                    .map_err(|_| anyhow!("proto malformed"))?,
-                ),
-            },
-            value_t2: Value {
-                amount: proto.delta_2.into(),
-                asset_id: asset::Id(
-                    Fq::from_bytes(
-                        proto
-                            .t2
-                            .try_into()
-                            .map_err(|_| anyhow!("proto malformed"))?,
-                    )
-                    .map_err(|_| anyhow!("proto malformed"))?,
-                ),
-            },
-            fee_delta: proto
-                .fee
-                .ok_or_else(|| anyhow::anyhow!("proto malformed"))?
-                .try_into()
-                .map_err(|_| anyhow!("proto malformed"))?,
-            fee_blinding: Fr::from_bytes(fee_blinding_bytes)?,
-            // TODO: no value commitment checks until flow encryption is available
-            // delta_1_blinding: Fr::from_bytes(delta_1_blinding_bytes)
-            //     .map_err(|_| anyhow!("proto malformed"))?,
-            // delta_2_blinding: Fr::from_bytes(delta_2_blinding_bytes)
-            //     .map_err(|_| anyhow!("proto malformed"))?,
-            note_blinding: Fq::from_bytes(
-                proto.note_blinding[..]
-                    .try_into()
-                    .map_err(|_| anyhow!("proto malformed"))?,
-            )
-            .map_err(|_| anyhow!("proto malformed"))?,
-            esk,
-            swap_blinding: Fq::from_bytes(
-                proto.swap_blinding[..]
-                    .try_into()
-                    .map_err(|_| anyhow!("proto malformed"))?,
-            )
-            .map_err(|_| anyhow!("proto malformed"))?,
+            swap_plaintext,
+            fee_blinding,
         })
     }
 }

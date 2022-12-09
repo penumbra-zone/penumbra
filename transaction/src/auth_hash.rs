@@ -286,8 +286,9 @@ impl AuthorizingData for swap::Body {
         state.update(&self.delta_1_i.to_le_bytes());
         state.update(&self.delta_2_i.to_le_bytes());
         state.update(&self.fee_commitment.to_bytes());
-        state.update(self.swap_nft.auth_hash().as_bytes());
-        state.update(&self.swap_ciphertext.0);
+        state.update(&self.payload.commitment.0.to_bytes());
+        state.update(&self.payload.ephemeral_key.0);
+        state.update(&self.payload.encrypted_swap.0);
 
         state.finalize()
     }
@@ -303,8 +304,8 @@ impl AuthorizingData for swap_claim::Body {
         // in the hash one after the other.
         state.update(&self.nullifier.0.to_bytes());
         state.update(self.fee.auth_hash().as_bytes());
-        state.update(self.output_1.auth_hash().as_bytes());
-        state.update(self.output_2.auth_hash().as_bytes());
+        state.update(&self.output_1_commitment.0.to_bytes());
+        state.update(&self.output_2_commitment.0.to_bytes());
         state.update(self.output_data.auth_hash().as_bytes());
 
         state.finalize()

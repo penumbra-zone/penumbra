@@ -26,7 +26,7 @@ pub struct SwapClaimPlan {
 
 impl SwapClaimPlan {
     // if no rng required, better to just pass a SwapClaimPlan, so args are named
-    /* 
+    /*
     /// Create a new [`SwapClaimPlan`] that redeems output notes to `claim_address` using
     /// the associated swap NFT.
     #[allow(clippy::too_many_arguments)]
@@ -74,18 +74,11 @@ impl SwapClaimPlan {
         ));
 
         SwapClaimProof {
-            claim_address: self.swap_nft_note.address(),
-            note_commitment_proof: note_commitment_proof.clone(),
-            trading_pair: self.swap_plaintext.trading_pair,
-            note_blinding: self.swap_nft_note.note_blinding(),
-            delta_1_i: self.swap_plaintext.delta_1_i.into(),
-            delta_2_i: self.swap_plaintext.delta_2_i.into(),
+            swap_plaintext: self.swap_plaintext.clone(),
             lambda_1_i,
             lambda_2_i,
-            esk_1: self.esk_1.clone(),
-            esk_2: self.esk_2.clone(),
             nk: nk.clone(),
-            swap_blinding: self.swap_plaintext.swap_blinding,
+            swap_commitment_proof: note_commitment_proof.clone(),
         }
     }
 

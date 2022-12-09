@@ -12,7 +12,7 @@ use rand::{CryptoRng, RngCore};
 use crate::dex::TradingPair;
 use crate::symmetric::{PayloadKey, PayloadKind};
 
-use super::{SwapCiphertext, DOMAIN_SEPARATOR, SWAP_CIPHERTEXT_BYTES, SWAP_LEN_BYTES};
+use super::{SwapCiphertext, SwapPayload, DOMAIN_SEPARATOR, SWAP_CIPHERTEXT_BYTES, SWAP_LEN_BYTES};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SwapPlaintext {
@@ -87,7 +87,7 @@ impl SwapPlaintext {
         self.claim_address.transmission_key()
     }
 
-    pub fn encrypt(&self, esk: &ka::Secret) -> SwapCiphertext {
+    pub fn encrypt(&self, esk: &ka::Secret) -> SwapPayload {
         let epk = esk.diversified_public(self.diversified_generator());
         let shared_secret = esk
             .key_agreement_with(self.transmission_key())
@@ -101,7 +101,11 @@ impl SwapPlaintext {
             .try_into()
             .expect("swap encryption result fits in ciphertext len");
 
-        SwapCiphertext(ciphertext)
+        SwapPayload {
+            encrypted_swap: SwapCiphertext(ciphertext),
+            ephemeral_key: epk,
+            commitment: self.swap_commitment(),
+        }
     }
 
     pub fn new<R: RngCore + CryptoRng>(
@@ -288,7 +292,7 @@ mod tests {
 
         let esk = ka::Secret::new(&mut rng);
 
-        let ciphertext = swap.encrypt(&esk);
+        let ciphertext = swap.encrypt(&esk).encrypted_swap;
         let diversified_basepoint = dest.diversified_generator();
         let transmission_key = swap.transmission_key();
         let plaintext =

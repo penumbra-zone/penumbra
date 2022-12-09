@@ -1,7 +1,10 @@
-use std::convert::TryFrom;
+use std::{collections::BTreeMap, convert::TryFrom};
 
 use anyhow::Result;
-use penumbra_crypto::Nullifier;
+use penumbra_crypto::{
+    dex::{BatchSwapOutputData, TradingPair},
+    Nullifier,
+};
 use penumbra_proto::{
     client::v1alpha1::CompactBlockRangeResponse, core::chain::v1alpha1 as pb, Protobuf,
 };
@@ -18,18 +21,20 @@ use super::StatePayload;
 #[serde(try_from = "pb::CompactBlock", into = "pb::CompactBlock")]
 pub struct CompactBlock {
     pub height: u64,
-    // State payloads describing new state fragments.
+    /// State payloads describing new state fragments.
     pub state_payloads: Vec<StatePayload>,
-    // Nullifiers identifying spent notes.
+    /// Nullifiers identifying spent notes.
     pub nullifiers: Vec<Nullifier>,
-    // The block root of this block.
+    /// The block root of this block.
     pub block_root: block::Root,
-    // The epoch root of this epoch, if this block ends an epoch (`None` otherwise).
+    /// The epoch root of this epoch, if this block ends an epoch (`None` otherwise).
     pub epoch_root: Option<epoch::Root>,
-    // Latest FMD parameters. `None` if unchanged.
+    /// Latest FMD parameters. `None` if unchanged.
     pub fmd_parameters: Option<FmdParameters>,
-    // If the block indicated a proposal was being started.
+    /// If the block indicated a proposal was being started.
     pub proposal_started: bool,
+    /// Output prices for batch swaps occurring in this block.
+    pub swap_outputs: BTreeMap<TradingPair, BatchSwapOutputData>,
     // **IMPORTANT NOTE FOR FUTURE HUMANS**: if you want to add new fields to the `CompactBlock`,
     // you must update `CompactBlock::requires_scanning` to check for the emptiness of those fields,
     // because the client will skip processing any compact block that is marked as not requiring
@@ -46,6 +51,7 @@ impl Default for CompactBlock {
             epoch_root: None,
             fmd_parameters: None,
             proposal_started: false,
+            swap_outputs: BTreeMap::new(),
         }
     }
 }
@@ -77,6 +83,7 @@ impl From<CompactBlock> for pb::CompactBlock {
             epoch_root: cb.epoch_root.map(Into::into),
             fmd_parameters: cb.fmd_parameters.map(Into::into),
             proposal_started: cb.proposal_started,
+            swap_outputs: cb.swap_outputs.into_values().map(Into::into).collect(),
         }
     }
 }
@@ -92,6 +99,12 @@ impl TryFrom<pb::CompactBlock> for CompactBlock {
                 .into_iter()
                 .map(StatePayload::try_from)
                 .collect::<Result<Vec<StatePayload>>>()?,
+            swap_outputs: value
+                .swap_outputs
+                .into_iter()
+                .map(BatchSwapOutputData::try_from)
+                .map(|s| s.map(|swap_output| (swap_output.trading_pair, swap_output)))
+                .collect::<Result<BTreeMap<TradingPair, BatchSwapOutputData>>>()?,
             nullifiers: value
                 .nullifiers
                 .into_iter()

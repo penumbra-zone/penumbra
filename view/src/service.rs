@@ -256,19 +256,22 @@ impl ViewProtocolService for ViewService {
         for action in tx.actions() {
             if let penumbra_transaction::Action::Spend(spend) = action {
                 let nullifier = spend.body.nullifier;
-                let spendable_note_record = self.storage.note_by_nullifier(nullifier, false).await;
-
-                if spendable_note_record.is_err() {
-                    spend_nullifiers.insert(nullifier, None);
-                } else if let Ok(spendable_note_record) = spendable_note_record {
-                    spend_nullifiers.insert(nullifier, Some(spendable_note_record.note));
+                // An error here indicates we don't know the nullifier, so we omit it from the Perspective.
+                if let Ok(spendable_note_record) =
+                    self.storage.note_by_nullifier(nullifier, false).await
+                {
+                    spend_nullifiers.insert(nullifier, spendable_note_record.note);
                 }
             }
         }
 
+        // TODO: query for advice notes
+        let advice_notes = Default::default();
+
         let txp = TransactionPerspective {
             payload_keys,
             spend_nullifiers,
+            advice_notes,
         };
 
         let response = pb::TransactionPerspectiveResponse {
