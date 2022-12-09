@@ -6,13 +6,11 @@ use std::{
 use penumbra_chain::{sync::CompactBlock, Epoch};
 use penumbra_crypto::{Asset, FullViewingKey, Nullifier};
 use penumbra_proto::{
+    self as proto,
     client::v1alpha1::{
         oblivious_query_service_client::ObliviousQueryServiceClient,
-        tendermint_proxy::{
-            service_client::ServiceClient as TendermintServiceClient, GetBlockByHeightRequest,
-        },
-        tendermint_proxy_service_client::TendermintProxyServiceClient,
-        AssetListRequest, CompactBlockRangeRequest,
+        tendermint_proxy_service_client::TendermintProxyServiceClient, AssetListRequest,
+        CompactBlockRangeRequest, GetBlockByHeightRequest,
     },
     Protobuf,
 };
@@ -36,8 +34,7 @@ pub struct Worker {
     fvk: FullViewingKey, // TODO: notifications (see TODOs on ViewService)
     error_slot: Arc<Mutex<Option<anyhow::Error>>>,
     sync_height_tx: watch::Sender<u64>,
-    tm_client: TendermintServiceClient<Channel>,
-    _tm_proxy_client: TendermintProxyServiceClient<Channel>,
+    tm_client: TendermintProxyServiceClient<Channel>,
     #[cfg(feature = "nct-divergence-check")]
     specific_client: SpecificQueryServiceClient<Channel>,
 }
@@ -81,8 +78,6 @@ impl Worker {
             SpecificQueryServiceClient::connect(format!("http://{}:{}", node, pd_port)).await?;
 
         let tm_client =
-            TendermintServiceClient::connect(format!("http://{}:{}", node, pd_port)).await?;
-        let tm_proxy_client =
             TendermintProxyServiceClient::connect(format!("http://{}:{}", node, pd_port)).await?;
 
         Ok((
@@ -94,7 +89,6 @@ impl Worker {
                 error_slot: error_slot.clone(),
                 sync_height_tx,
                 tm_client,
-                _tm_proxy_client: tm_proxy_client,
                 #[cfg(feature = "nct-divergence-check")]
                 specific_client,
             },
@@ -310,14 +304,14 @@ impl Worker {
 }
 
 async fn fetch_block(
-    client: &mut TendermintServiceClient<Channel>,
+    client: &mut TendermintProxyServiceClient<Channel>,
     height: i64,
-) -> Result<penumbra_proto::client::v1alpha1::tendermint_proxy::Block, anyhow::Error> {
+) -> Result<proto::tendermint::types::Block, anyhow::Error> {
     Ok(client
         .get_block_by_height(GetBlockByHeightRequest { height })
         .await?
         .into_inner()
-        .sdk_block
+        .block
         .expect("block not found"))
 }
 

@@ -5,7 +5,6 @@ use penumbra_proto::{
     client::v1alpha1::{
         oblivious_query_service_client::ObliviousQueryServiceClient,
         specific_query_service_client::SpecificQueryServiceClient,
-        tendermint_proxy::service_client::ServiceClient as TendermintServiceClient,
         tendermint_proxy_service_client::TendermintProxyServiceClient, BroadcastTxAsyncRequest,
         BroadcastTxSyncRequest,
     },
@@ -168,14 +167,6 @@ impl App {
         &self,
     ) -> Result<ObliviousQueryServiceClient<Channel>, anyhow::Error> {
         ObliviousQueryServiceClient::connect(self.pd_url.as_ref().to_owned())
-            .await
-            .map_err(Into::into)
-    }
-
-    pub async fn tendermint_client(
-        &self,
-    ) -> Result<TendermintServiceClient<Channel>, anyhow::Error> {
-        TendermintServiceClient::connect(self.pd_url.as_ref().to_owned())
             .await
             .map_err(Into::into)
     }

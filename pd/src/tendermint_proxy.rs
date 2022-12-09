@@ -1,9 +1,7 @@
 use std::str::FromStr;
 
 use chrono::DateTime;
-use penumbra_proto::{
-    self as proto, client::v1alpha1::tendermint_proxy::service_server::Service as TendermintService,
-};
+use penumbra_proto::{self as proto};
 
 use penumbra_transaction::Transaction;
 use proto::client::v1alpha1::tendermint_proxy_service_server::TendermintProxyService;
