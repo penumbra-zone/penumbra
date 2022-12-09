@@ -10,7 +10,7 @@ use penumbra_component::governance::{
     proposal::{self, chain_params::MutableParam, ProposalList},
     state_key::*,
 };
-use penumbra_crypto::IdentityKey;
+use penumbra_crypto::stake::IdentityKey;
 use penumbra_proto::client::v1alpha1::MutableParametersRequest;
 use penumbra_transaction::action::{Proposal, ProposalPayload, Vote};
 use penumbra_view::ViewClient;

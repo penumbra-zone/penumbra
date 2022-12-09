@@ -1,4 +1,4 @@
-use penumbra_crypto::IdentityKey;
+use penumbra_crypto::stake::IdentityKey;
 
 pub fn latest_proposal_id() -> &'static str {
     "governance/latest_proposal_id"

@@ -1,6 +1,5 @@
 use num_rational::Ratio;
-use penumbra_crypto::asset;
-use penumbra_crypto::asset::Amount;
+use penumbra_crypto::{asset, stake::Penalty, Amount};
 use penumbra_proto::client::v1alpha1 as pb_client;
 use penumbra_proto::core::chain::v1alpha1 as pb_chain;
 use penumbra_proto::core::crypto::v1alpha1 as pb_crypto;
@@ -56,10 +55,10 @@ pub struct ChainParameters {
     pub active_validator_limit: u64,
     /// The base reward rate, expressed in basis points of basis points
     pub base_reward_rate: u64,
-    /// The penalty for slashing due to misbehavior, expressed in basis points.
-    pub slashing_penalty_misbehavior_bps: u64,
-    /// The penalty for slashing due to downtime, expressed in basis points.
-    pub slashing_penalty_downtime_bps: u64,
+    /// The penalty for slashing due to misbehavior, expressed in basis points squared (10^-8)
+    pub slashing_penalty_misbehavior: Penalty,
+    /// The penalty for slashing due to downtime, expressed in basis points squared (10^-8)
+    pub slashing_penalty_downtime: Penalty,
     /// The number of blocks in the window to check for downtime.
     pub signed_blocks_window_len: u64,
     /// The maximum number of blocks in the window each validator can miss signing without slashing.
@@ -97,8 +96,20 @@ impl TryFrom<pb_chain::ChainParameters> for ChainParameters {
             epoch_duration: msg.epoch_duration,
             unbonding_epochs: msg.unbonding_epochs,
             active_validator_limit: msg.active_validator_limit,
-            slashing_penalty_downtime_bps: msg.slashing_penalty_downtime_bps,
-            slashing_penalty_misbehavior_bps: msg.slashing_penalty_misbehavior_bps,
+            slashing_penalty_downtime: msg
+                .slashing_penalty_downtime
+                .ok_or_else(|| {
+                    anyhow::anyhow!("slashing_penalty_downtime_bps must be set in ChainParameters")
+                })?
+                .try_into()?,
+            slashing_penalty_misbehavior: msg
+                .slashing_penalty_misbehavior
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "slashing_penalty_misbehavior_bps must be set in ChainParameters"
+                    )
+                })?
+                .try_into()?,
             base_reward_rate: msg.base_reward_rate,
             missed_blocks_maximum: msg.missed_blocks_maximum,
             signed_blocks_window_len: msg.signed_blocks_window_len,
@@ -159,8 +170,8 @@ impl From<ChainParameters> for pb_chain::ChainParameters {
             active_validator_limit: params.active_validator_limit,
             signed_blocks_window_len: params.signed_blocks_window_len,
             missed_blocks_maximum: params.missed_blocks_maximum,
-            slashing_penalty_downtime_bps: params.slashing_penalty_downtime_bps,
-            slashing_penalty_misbehavior_bps: params.slashing_penalty_misbehavior_bps,
+            slashing_penalty_downtime: Some(params.slashing_penalty_downtime.into()),
+            slashing_penalty_misbehavior: Some(params.slashing_penalty_misbehavior.into()),
             base_reward_rate: params.base_reward_rate,
             ibc_enabled: params.ibc_enabled,
             inbound_ics20_transfers_enabled: params.inbound_ics20_transfers_enabled,
@@ -187,9 +198,9 @@ impl Default for ChainParameters {
             signed_blocks_window_len: 10000,
             missed_blocks_maximum: 9500,
             // 1000 basis points = 10%
-            slashing_penalty_misbehavior_bps: 1000,
+            slashing_penalty_misbehavior: Penalty(1000_0000),
             // 1 basis point = 0.01%
-            slashing_penalty_downtime_bps: 1,
+            slashing_penalty_downtime: Penalty(1_0000),
             // 3bps -> 11% return over 365 epochs
             base_reward_rate: 3_0000,
             ibc_enabled: true,

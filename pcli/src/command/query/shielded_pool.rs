@@ -1,6 +1,6 @@
 use anyhow::Result;
 use colored_json::prelude::*;
-use penumbra_chain::{quarantined::Scheduled, CompactBlock, NoteSource};
+use penumbra_chain::{CompactBlock, NoteSource};
 use penumbra_crypto::Nullifier;
 use penumbra_proto::Protobuf;
 use penumbra_tct::Commitment;
@@ -22,11 +22,6 @@ pub enum ShieldedPool {
         /// The epoch to query.
         epoch: u64,
     },
-    /// Queries the scheduled notes and nullifiers to unquarantine at a given epoch.
-    Scheduled {
-        /// The epoch to query.
-        epoch: u64,
-    },
     /// Queries the source of a given commitment.
     Commitment {
         /// The commitment to query.
@@ -35,12 +30,6 @@ pub enum ShieldedPool {
     },
     /// Queries the note source of a given nullifier.
     Nullifier {
-        /// The nullifier to query.
-        #[clap(parse(try_from_str = Nullifier::parse_hex))]
-        nullifier: Nullifier,
-    },
-    /// Queries the note source of a given quarantined nullifier.
-    QuarantinedNullifier {
         /// The nullifier to query.
         #[clap(parse(try_from_str = Nullifier::parse_hex))]
         nullifier: Nullifier,
@@ -57,12 +46,8 @@ impl ShieldedPool {
             ShieldedPool::BlockAnchor { height } => state_key::block_anchor_by_height(*height),
             ShieldedPool::EpochAnchor { epoch } => state_key::epoch_anchor_by_index(*epoch),
             ShieldedPool::CompactBlock { height } => state_key::compact_block(*height),
-            ShieldedPool::Scheduled { epoch } => state_key::scheduled_to_apply(*epoch),
             ShieldedPool::Commitment { commitment } => state_key::note_source(commitment),
             ShieldedPool::Nullifier { nullifier } => state_key::spent_nullifier_lookup(*nullifier),
-            ShieldedPool::QuarantinedNullifier { nullifier } => {
-                state_key::quarantined_spent_nullifier_lookup(*nullifier)
-            }
         }
     }
 
@@ -84,19 +69,11 @@ impl ShieldedPool {
                 let compact_block = CompactBlock::decode(bytes)?;
                 serde_json::to_string_pretty(&compact_block)?
             }
-            ShieldedPool::Scheduled { .. } => {
-                let notes = Scheduled::decode(bytes)?;
-                serde_json::to_string_pretty(&notes.scheduled)?
-            }
             ShieldedPool::Commitment { .. } => {
                 let note_source = NoteSource::decode(bytes)?;
                 serde_json::to_string_pretty(&note_source)?
             }
             ShieldedPool::Nullifier { .. } => {
-                let note_source = NoteSource::decode(bytes)?;
-                serde_json::to_string_pretty(&note_source)?
-            }
-            ShieldedPool::QuarantinedNullifier { .. } => {
                 let note_source = NoteSource::decode(bytes)?;
                 serde_json::to_string_pretty(&note_source)?
             }

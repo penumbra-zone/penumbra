@@ -1,6 +1,8 @@
 use ark_ff::Zero;
 use penumbra_crypto::{
-    asset::Amount, Balance, DelegationToken, Fr, IdentityKey, Value, STAKING_TOKEN_ASSET_ID,
+    asset::Amount,
+    stake::{DelegationToken, IdentityKey},
+    Balance, Fr, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};

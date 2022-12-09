@@ -2,43 +2,44 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_storage::{State, StateTransaction};
+use penumbra_chain::AnnotatedNotePayload;
+use penumbra_storage::{State, StateRead, StateTransaction};
 use penumbra_transaction::{action::Output, Transaction};
 use tracing::instrument;
 
-use crate::action_handler::ActionHandler;
+use crate::{action_handler::ActionHandler, shielded_pool::NoteManager};
 
 #[async_trait]
 impl ActionHandler for Output {
     #[instrument(name = "output", skip(self, _context))]
     async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         let output = self;
-        if output
-            .proof
-            .verify(
-                output.body.balance_commitment,
-                output.body.note_payload.note_commitment,
-                output.body.note_payload.ephemeral_key,
-            )
-            .is_err()
-        {
-            // TODO should the verification error be bubbled up here?
-            return Err(anyhow::anyhow!("An output proof did not verify"));
-        }
+
+        output.proof.verify(
+            output.body.balance_commitment,
+            output.body.note_payload.note_commitment,
+            output.body.note_payload.ephemeral_key,
+        )?;
 
         Ok(())
     }
 
     #[instrument(name = "output", skip(self, _state))]
     async fn check_stateful(&self, _state: Arc<State>) -> Result<()> {
-        // No `Output`-specific stateful checks to perform; all checks are
-        // performed at the `Transaction` level.
         Ok(())
     }
 
-    #[instrument(name = "output", skip(self, _state))]
-    async fn execute(&self, _state: &mut StateTransaction) -> Result<()> {
-        // Handled at the `Transaction` level.
+    #[instrument(name = "output", skip(self, state))]
+    async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
+        let source = state.object_get("source").cloned().unwrap_or_default();
+
+        state
+            .add_note(AnnotatedNotePayload {
+                source,
+                payload: self.body.note_payload.clone(),
+            })
+            .await;
+
         Ok(())
     }
 }

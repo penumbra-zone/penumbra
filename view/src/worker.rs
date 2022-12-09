@@ -148,7 +148,8 @@ impl Worker {
     ) -> anyhow::Result<Vec<Transaction>> {
         let inbound_transaction_ids = filtered_block.inbound_transaction_ids();
         let spent_nullifiers = filtered_block
-            .all_nullifiers()
+            .spent_nullifiers
+            .iter()
             .cloned()
             .collect::<BTreeSet<Nullifier>>();
 

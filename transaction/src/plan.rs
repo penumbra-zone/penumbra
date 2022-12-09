@@ -20,7 +20,7 @@ mod memo;
 
 pub use action::{
     ActionPlan, DelegatorVotePlan, OutputPlan, ProposalWithdrawPlan, SpendPlan, SwapClaimPlan,
-    SwapPlan,
+    SwapPlan, UndelegateClaimPlan,
 };
 pub use clue::CluePlan;
 pub use memo::MemoPlan;
@@ -77,6 +77,16 @@ impl TransactionPlan {
     pub fn undelegations(&self) -> impl Iterator<Item = &Undelegate> {
         self.actions.iter().filter_map(|action| {
             if let ActionPlan::Undelegate(d) = action {
+                Some(d)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn undelegate_claim_plans(&self) -> impl Iterator<Item = &UndelegateClaimPlan> {
+        self.actions.iter().filter_map(|action| {
+            if let ActionPlan::UndelegateClaim(d) = action {
                 Some(d)
             } else {
                 None

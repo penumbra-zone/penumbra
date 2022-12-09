@@ -2,13 +2,15 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use penumbra_chain::StateReadExt as _;
-use penumbra_storage::{State, StateTransaction};
+use penumbra_chain::{AnnotatedNotePayload, StateReadExt as _};
+use penumbra_storage::{State, StateRead, StateTransaction, StateWrite};
 use penumbra_transaction::{action::SwapClaim, Transaction};
 use tracing::instrument;
 
 use crate::{
-    action_handler::ActionHandler, dex::StateReadExt as _, shielded_pool::StateReadExt as _,
+    action_handler::ActionHandler,
+    dex::StateReadExt as _,
+    shielded_pool::{self, NoteManager, StateReadExt as _},
 };
 
 #[async_trait]
@@ -79,9 +81,28 @@ impl ActionHandler for SwapClaim {
         Ok(())
     }
 
-    #[instrument(name = "swap_claim", skip(self, _state))]
-    async fn execute(&self, _state: &mut StateTransaction) -> Result<()> {
-        // Nothing to do here, note payloads and nullifiers processed in shielded pool
+    #[instrument(name = "swap_claim", skip(self, state))]
+    async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
+        // Record the output notes in the state.
+        let source = state.object_get("source").cloned().unwrap_or_default();
+
+        state
+            .add_note(AnnotatedNotePayload {
+                source,
+                payload: self.body.output_1.clone(),
+            })
+            .await;
+        state
+            .add_note(AnnotatedNotePayload {
+                source,
+                payload: self.body.output_2.clone(),
+            })
+            .await;
+
+        state.spend_nullifier(self.body.nullifier, source).await;
+        // TODO: why do we manage event emission separately up at the top level
+        // instead of integrated into state machine?
+        state.record(shielded_pool::event::spend(self.body.nullifier));
 
         Ok(())
     }

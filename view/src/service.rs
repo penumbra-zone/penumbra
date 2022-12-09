@@ -19,8 +19,8 @@ use penumbra_proto::{
     core::crypto::v1alpha1 as pbc,
     view::v1alpha1::{
         self as pb, view_protocol_service_server::ViewProtocolService, ChainParametersResponse,
-        FmdParametersResponse, NoteByCommitmentResponse, QuarantinedNotesResponse, StatusResponse,
-        TransactionHashesResponse, TransactionsResponse, WitnessResponse,
+        FmdParametersResponse, NoteByCommitmentResponse, StatusResponse, TransactionHashesResponse,
+        TransactionsResponse, WitnessResponse,
     },
 };
 use penumbra_tct::{Commitment, Proof};
@@ -148,7 +148,7 @@ impl ViewService {
 
         let rsp = client.get_status(GetStatusRequest {}).await?.into_inner();
 
-        tracing::debug!("{:#?}", rsp);
+        //tracing::debug!("{:#?}", rsp);
 
         let sync_info = rsp
             .sync_info
@@ -206,9 +206,6 @@ impl ViewService {
 impl ViewProtocolService for ViewService {
     type NotesStream =
         Pin<Box<dyn futures::Stream<Item = Result<pb::NotesResponse, tonic::Status>> + Send>>;
-    type QuarantinedNotesStream = Pin<
-        Box<dyn futures::Stream<Item = Result<pb::QuarantinedNotesResponse, tonic::Status>> + Send>,
-    >;
     type AssetsStream =
         Pin<Box<dyn futures::Stream<Item = Result<pb::AssetsResponse, tonic::Status>> + Send>>;
     type StatusStreamStream = Pin<
@@ -428,37 +425,6 @@ impl ViewProtocolService for ViewService {
             stream
                 .map_err(|e: anyhow::Error| {
                     tonic::Status::unavailable(format!("error getting notes: {}", e))
-                })
-                .boxed(),
-        ))
-    }
-
-    async fn quarantined_notes(
-        &self,
-        request: tonic::Request<pb::QuarantinedNotesRequest>,
-    ) -> Result<tonic::Response<Self::QuarantinedNotesStream>, tonic::Status> {
-        self.check_worker().await?;
-        self.check_fvk(request.get_ref().account_id.as_ref())
-            .await?;
-
-        let notes = self
-            .storage
-            .quarantined_notes()
-            .await
-            .map_err(|e| tonic::Status::unavailable(format!("database error: {}", e)))?;
-
-        let stream = try_stream! {
-            for note in notes {
-                yield QuarantinedNotesResponse {
-                    note_record: Some(note.into()),
-                }
-            }
-        };
-
-        Ok(tonic::Response::new(
-            stream
-                .map_err(|e: anyhow::Error| {
-                    tonic::Status::unavailable(format!("database error: {}", e))
                 })
                 .boxed(),
         ))

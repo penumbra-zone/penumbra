@@ -1,5 +1,6 @@
 #![allow(clippy::clone_on_copy)]
-use penumbra_crypto::IdentityKey;
+
+use penumbra_crypto::stake::IdentityKey;
 
 mod changes;
 mod current_consensus_keys;

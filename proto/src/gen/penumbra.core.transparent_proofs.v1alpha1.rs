@@ -123,3 +123,10 @@ pub struct SwapProof {
     #[prost(bytes="vec", tag="44")]
     pub swap_blinding: ::prost::alloc::vec::Vec<u8>,
 }
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UndelegateClaimProof {
+    #[prost(message, optional, tag="1")]
+    pub unbonding_amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
+    #[prost(bytes="vec", tag="2")]
+    pub balance_blinding: ::prost::alloc::vec::Vec<u8>,
+}

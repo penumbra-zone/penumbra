@@ -1,12 +1,16 @@
 use std::sync::Arc;
 
-use crate::dex::{StateReadExt as _, StateWriteExt as _};
+use crate::{
+    dex::{StateReadExt as _, StateWriteExt as _},
+    shielded_pool::NoteManager,
+};
 use anyhow::{Context, Result};
 use ark_ff::Zero;
 use async_trait::async_trait;
 use decaf377::Fr;
+use penumbra_chain::AnnotatedNotePayload;
 use penumbra_crypto::{MockFlowCiphertext, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_storage::{State, StateTransaction};
+use penumbra_storage::{State, StateRead, StateTransaction};
 use penumbra_transaction::{action::Swap, Transaction};
 use tracing::instrument;
 
@@ -67,6 +71,15 @@ impl ActionHandler for Swap {
 
         // Set the batch swap flow for the trading pair.
         state.put_swap_flow(&swap.body.trading_pair, swap_flow);
+
+        // Record the Swap NFT in the state.
+        let source = state.object_get("source").cloned().unwrap_or_default();
+        state
+            .add_note(AnnotatedNotePayload {
+                source,
+                payload: swap.body.swap_nft.clone(),
+            })
+            .await;
 
         Ok(())
     }

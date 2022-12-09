@@ -2,16 +2,11 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_chain::{AnnotatedNotePayload, NoteSource};
+use penumbra_chain::NoteSource;
 use penumbra_storage::{State, StateTransaction, StateWrite as _};
 use penumbra_transaction::Transaction;
 
-use crate::{
-    shielded_pool::{
-        consensus_rules, event, NoteManager as _, StateReadExt as _, StateWriteExt as _,
-    },
-    stake::StateReadExt as _,
-};
+use crate::shielded_pool::consensus_rules;
 
 use self::stateful::{claimed_anchor_is_valid, fmd_parameters_valid};
 
@@ -20,7 +15,7 @@ use super::ActionHandler;
 mod stateful;
 mod stateless;
 
-use stateless::{at_most_one_undelegate, no_duplicate_nullifiers, valid_binding_signature};
+use stateless::{no_duplicate_nullifiers, valid_binding_signature};
 
 #[async_trait]
 impl ActionHandler for Transaction {
@@ -29,7 +24,6 @@ impl ActionHandler for Transaction {
 
         valid_binding_signature(self)?;
         no_duplicate_nullifiers(self)?;
-        at_most_one_undelegate(self)?;
 
         // TODO: these can all be parallel tasks
         for action in self.actions() {
@@ -56,57 +50,10 @@ impl ActionHandler for Transaction {
     }
 
     async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
-        // TODO: we'd ideally like to get rid of all of the code in the body of this
-        // function, and just call each individual ActionHandler.
-        //
-        // We can't do this currently, for two reasons:
-        //
-        // 1. The existing quarantining system means we have to quarantine outputs
-        // on a transaction-wide basis, not an action-by-action one;
-        //
-        // 2. We currently use this method to construct the `source` we use for the
-        // `AnnotatedNoteSource`; we'll need a way to plumb that through to other
-        // ActionHandlers (perhaps by using the StateTransaction's object store...)
+        // While we have access to the full Transaction, hash it to
+        // obtain a NoteSource we can cache for various actions.
         let source = NoteSource::Transaction { id: self.id() };
-
-        if let Some((epoch, identity_key)) = state.should_quarantine(self).await {
-            for quarantined_output in self.note_payloads().cloned() {
-                // Queue up scheduling this note to be unquarantined: the actual state-writing for
-                // all quarantined notes happens during end_block, to avoid state churn
-                state
-                    .schedule_note(epoch, identity_key, quarantined_output, source)
-                    .await;
-            }
-            for quarantined_spent_nullifier in self.spent_nullifiers() {
-                state
-                    .quarantined_spend_nullifier(
-                        epoch,
-                        identity_key,
-                        quarantined_spent_nullifier,
-                        source,
-                    )
-                    .await;
-                state.record(event::quarantine_spend(quarantined_spent_nullifier));
-            }
-        } else {
-            for payload in self.note_payloads().cloned() {
-                state
-                    .add_note(AnnotatedNotePayload { payload, source })
-                    .await;
-            }
-            for spent_nullifier in self.spent_nullifiers() {
-                state.spend_nullifier(spent_nullifier, source).await;
-                state.record(event::spend(spent_nullifier));
-            }
-        }
-
-        // If there was any proposal submitted in the block, ensure we track this so that clients
-        // can retain state needed to vote as delegators
-        if self.proposal_submits().next().is_some() {
-            let mut compact_block = state.stub_compact_block();
-            compact_block.proposal_started = true;
-            state.stub_put_compact_block(compact_block);
-        }
+        state.object_put("source", source);
 
         for action in self.actions() {
             action.execute(state).await?;

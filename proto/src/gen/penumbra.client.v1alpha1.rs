@@ -95,6 +95,24 @@ pub struct ValidatorStatusResponse {
     #[prost(message, optional, tag="1")]
     pub status: ::core::option::Option<super::super::core::stake::v1alpha1::ValidatorStatus>,
 }
+/// Requests the compounded penalty for a validator over a range of epochs.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ValidatorPenaltyRequest {
+    /// The expected chain id (empty string if no expectation).
+    #[prost(string, tag="1")]
+    pub chain_id: ::prost::alloc::string::String,
+    #[prost(message, optional, tag="2")]
+    pub identity_key: ::core::option::Option<super::super::core::crypto::v1alpha1::IdentityKey>,
+    #[prost(uint64, tag="3")]
+    pub start_epoch_index: u64,
+    #[prost(uint64, tag="4")]
+    pub end_epoch_index: u64,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ValidatorPenaltyResponse {
+    #[prost(message, optional, tag="1")]
+    pub penalty: ::core::option::Option<super::super::core::stake::v1alpha1::Penalty>,
+}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NextValidatorRateRequest {
     #[prost(message, optional, tag="1")]
@@ -593,6 +611,25 @@ pub mod specific_query_service_client {
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.client.v1alpha1.SpecificQueryService/ValidatorStatus",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        pub async fn validator_penalty(
+            &mut self,
+            request: impl tonic::IntoRequest<super::ValidatorPenaltyRequest>,
+        ) -> Result<tonic::Response<super::ValidatorPenaltyResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.client.v1alpha1.SpecificQueryService/ValidatorPenalty",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -1242,6 +1279,10 @@ pub mod specific_query_service_server {
             &self,
             request: tonic::Request<super::ValidatorStatusRequest>,
         ) -> Result<tonic::Response<super::ValidatorStatusResponse>, tonic::Status>;
+        async fn validator_penalty(
+            &self,
+            request: tonic::Request<super::ValidatorPenaltyRequest>,
+        ) -> Result<tonic::Response<super::ValidatorPenaltyResponse>, tonic::Status>;
         async fn next_validator_rate(
             &self,
             request: tonic::Request<super::NextValidatorRateRequest>,
@@ -1411,6 +1452,46 @@ pub mod specific_query_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = ValidatorStatusSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.client.v1alpha1.SpecificQueryService/ValidatorPenalty" => {
+                    #[allow(non_camel_case_types)]
+                    struct ValidatorPenaltySvc<T: SpecificQueryService>(pub Arc<T>);
+                    impl<
+                        T: SpecificQueryService,
+                    > tonic::server::UnaryService<super::ValidatorPenaltyRequest>
+                    for ValidatorPenaltySvc<T> {
+                        type Response = super::ValidatorPenaltyResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::ValidatorPenaltyRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).validator_penalty(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = ValidatorPenaltySvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

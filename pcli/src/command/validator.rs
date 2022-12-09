@@ -2,7 +2,7 @@ use std::{fs::File, io::Write};
 
 use anyhow::{Context, Result};
 use penumbra_component::stake::{validator, validator::Validator, FundingStream, FundingStreams};
-use penumbra_crypto::{transaction::Fee, GovernanceKey, IdentityKey};
+use penumbra_crypto::{stake::IdentityKey, transaction::Fee, GovernanceKey};
 use penumbra_proto::{core::stake::v1alpha1::Validator as ProtoValidator, Message, Protobuf};
 use penumbra_transaction::action::{ValidatorVote, ValidatorVoteBody, Vote};
 use penumbra_wallet::plan;

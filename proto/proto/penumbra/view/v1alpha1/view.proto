@@ -27,9 +27,6 @@ service ViewProtocolService {
   // Queries for notes that have been accepted by the core.chain.v1alpha1.
   rpc Notes(NotesRequest) returns (stream NotesResponse);
 
-  // Queries for notes that have been quarantined until the end of an unbonding period.
-  rpc QuarantinedNotes(QuarantinedNotesRequest) returns (stream QuarantinedNotesResponse);
-
   // Returns authentication paths for the given note commitments.
   //
   // This method takes a batch of input commitments, rather than just one, so
@@ -135,18 +132,6 @@ message NotesRequest {
   optional core.crypto.v1alpha1.AccountID account_id = 14;
   // Authorizes the request.
   optional ViewAuthToken token = 15;
-}
-
-// A query for quarantined notes known by the view service.
-message QuarantinedNotesRequest {
-  // Identifies the FVK for the notes to query.
-  optional core.crypto.v1alpha1.AccountID account_id = 14;
-  // Authorizes the request.
-  optional ViewAuthToken token = 15;
-}
-
-message QuarantinedNotesResponse {
-  QuarantinedNoteRecord note_record = 1;
 }
 
 message WitnessRequest {
@@ -282,22 +267,4 @@ message SpendableNoteRecord {
   uint64 position = 7;
   // The source of the note (a tx hash or otherwise)
   core.chain.v1alpha1.NoteSource source = 8;
-}
-
-// The plaintext of a note that has been quarantined until the end of an unbonding period.
-message QuarantinedNoteRecord {
-  // The note commitment, identifying the note.
-  core.crypto.v1alpha1.NoteCommitment note_commitment = 1;
-  // The note plaintext itself.
-  core.crypto.v1alpha1.Note note = 2;
-  // A precomputed decryption of the note's address incore.dex.v1alpha1.
-  core.crypto.v1alpha1.AddressIndex address_index = 3;
-  // The height at which the note was created.
-  uint64 height_created = 4;
-  // The epoch at which the note will exit quarantine, if unbonding is not interrupted by slashing.
-  uint64 unbonding_epoch = 5;
-  // The validator identity the quarantining is bound to.
-  core.crypto.v1alpha1.IdentityKey identity_key = 6;
-  // The source of the note (a tx hash or otherwise)
-  core.chain.v1alpha1.NoteSource source = 7;
 }

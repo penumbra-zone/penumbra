@@ -2,11 +2,14 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use penumbra_storage::{State, StateTransaction};
+use penumbra_storage::{State, StateRead, StateTransaction, StateWrite};
 use penumbra_transaction::{action::Spend, Transaction};
 use tracing::instrument;
 
-use crate::{action_handler::ActionHandler, shielded_pool::StateReadExt as _};
+use crate::{
+    action_handler::ActionHandler,
+    shielded_pool::{self, NoteManager, StateReadExt as _},
+};
 
 #[async_trait]
 impl ActionHandler for Spend {
@@ -44,9 +47,14 @@ impl ActionHandler for Spend {
         state.check_nullifier_unspent(spent_nullifier).await
     }
 
-    #[instrument(name = "spend", skip(self, _state))]
-    async fn execute(&self, _state: &mut StateTransaction) -> Result<()> {
-        // Handled in [`crate::action_handler::transaction::Transaction`].
+    #[instrument(name = "spend", skip(self, state))]
+    async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
+        let source = state.object_get("source").cloned().unwrap_or_default();
+
+        state.spend_nullifier(self.body.nullifier, source).await;
+        // TODO: why do we manage event emission separately up at the top level
+        // instead of integrated into state machine?
+        state.record(shielded_pool::event::spend(self.body.nullifier));
 
         Ok(())
     }

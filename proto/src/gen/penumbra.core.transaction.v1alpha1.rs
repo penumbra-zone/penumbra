@@ -53,7 +53,7 @@ pub struct TransactionBody {
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Action {
-    #[prost(oneof="action::Action", tags="1, 2, 3, 4, 5, 6, 16, 17, 18, 19, 20, 30, 31, 32, 34, 200")]
+    #[prost(oneof="action::Action", tags="1, 2, 3, 4, 16, 17, 18, 19, 20, 30, 31, 32, 34, 40, 41, 42, 200")]
     pub action: ::core::option::Option<action::Action>,
 }
 /// Nested message and enum types in `Action`.
@@ -66,13 +66,11 @@ pub mod action {
         #[prost(message, tag="2")]
         Output(super::Output),
         #[prost(message, tag="3")]
-        Delegate(super::super::super::stake::v1alpha1::Delegate),
-        #[prost(message, tag="4")]
-        Undelegate(super::super::super::stake::v1alpha1::Undelegate),
-        #[prost(message, tag="5")]
         Swap(super::super::super::dex::v1alpha1::Swap),
-        #[prost(message, tag="6")]
+        #[prost(message, tag="4")]
         SwapClaim(super::super::super::dex::v1alpha1::SwapClaim),
+        // Uncommon actions have numbers > 15.
+
         #[prost(message, tag="16")]
         ValidatorDefinition(super::super::super::stake::v1alpha1::ValidatorDefinition),
         #[prost(message, tag="17")]
@@ -93,6 +91,13 @@ pub mod action {
         PositionWithdraw(super::super::super::dex::v1alpha1::PositionWithdraw),
         #[prost(message, tag="34")]
         PositionRewardClaim(super::super::super::dex::v1alpha1::PositionRewardClaim),
+        /// (un)delegation
+        #[prost(message, tag="40")]
+        Delegate(super::super::super::stake::v1alpha1::Delegate),
+        #[prost(message, tag="41")]
+        Undelegate(super::super::super::stake::v1alpha1::Undelegate),
+        #[prost(message, tag="42")]
+        UndelegateClaim(super::super::super::stake::v1alpha1::UndelegateClaim),
         #[prost(message, tag="200")]
         Ics20Withdrawal(super::super::super::ibc::v1alpha1::Ics20Withdrawal),
     }
@@ -186,7 +191,7 @@ pub struct SwapClaimView {
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ActionView {
-    #[prost(oneof="action_view::ActionView", tags="1, 2, 3, 4, 5, 6, 16, 17, 18, 19, 20, 30, 31, 32, 34, 200")]
+    #[prost(oneof="action_view::ActionView", tags="1, 2, 3, 4, 16, 17, 18, 19, 20, 30, 31, 32, 34, 41, 42, 43, 200")]
     pub action_view: ::core::option::Option<action_view::ActionView>,
 }
 /// Nested message and enum types in `ActionView`.
@@ -199,12 +204,8 @@ pub mod action_view {
         #[prost(message, tag="2")]
         Output(super::OutputView),
         #[prost(message, tag="3")]
-        Delegate(super::super::super::stake::v1alpha1::Delegate),
-        #[prost(message, tag="4")]
-        Undelegate(super::super::super::stake::v1alpha1::Undelegate),
-        #[prost(message, tag="5")]
         Swap(super::SwapView),
-        #[prost(message, tag="6")]
+        #[prost(message, tag="4")]
         SwapClaim(super::SwapClaimView),
         #[prost(message, tag="16")]
         ValidatorDefinition(super::super::super::stake::v1alpha1::ValidatorDefinition),
@@ -226,6 +227,15 @@ pub mod action_view {
         PositionWithdraw(super::super::super::dex::v1alpha1::PositionWithdraw),
         #[prost(message, tag="34")]
         PositionRewardClaim(super::super::super::dex::v1alpha1::PositionRewardClaim),
+        #[prost(message, tag="41")]
+        Delegate(super::super::super::stake::v1alpha1::Delegate),
+        #[prost(message, tag="42")]
+        Undelegate(super::super::super::stake::v1alpha1::Undelegate),
+        /// TODO: we have no way to recover the opening of the undelegate_claim's
+        /// balance commitment, and can only infer the value from looking at the rest
+        /// of the transaction. is that fine?
+        #[prost(message, tag="43")]
+        UndelegateClaim(super::super::super::stake::v1alpha1::UndelegateClaim),
         #[prost(message, tag="200")]
         Ics20Withdrawal(super::super::super::ibc::v1alpha1::Ics20Withdrawal),
     }
@@ -455,7 +465,7 @@ pub struct TransactionPlan {
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ActionPlan {
-    #[prost(oneof="action_plan::Action", tags="1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 30, 31, 32, 34, 40, 41")]
+    #[prost(oneof="action_plan::Action", tags="1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 30, 31, 32, 34, 40, 41, 42")]
     pub action: ::core::option::Option<action_plan::Action>,
 }
 /// Nested message and enum types in `ActionPlan`.
@@ -467,14 +477,10 @@ pub mod action_plan {
         Spend(super::SpendPlan),
         #[prost(message, tag="2")]
         Output(super::OutputPlan),
-        /// We don't need any extra information (yet) to understand delegations,
-        /// because we don't yet use flow encryption.
         #[prost(message, tag="3")]
-        Delegate(super::super::super::stake::v1alpha1::Delegate),
-        /// We don't need any extra information (yet) to understand undelegations,
-        /// because we don't yet use flow encryption.
+        Swap(super::SwapPlan),
         #[prost(message, tag="4")]
-        Undelegate(super::super::super::stake::v1alpha1::Undelegate),
+        SwapClaim(super::SwapClaimPlan),
         /// This is just a message relayed to the chain.
         #[prost(message, tag="16")]
         ValidatorDefinition(super::super::super::stake::v1alpha1::ValidatorDefinition),
@@ -498,10 +504,16 @@ pub mod action_plan {
         PositionWithdraw(super::super::super::dex::v1alpha1::PositionWithdraw),
         #[prost(message, tag="34")]
         PositionRewardClaim(super::super::super::dex::v1alpha1::PositionRewardClaim),
+        /// We don't need any extra information (yet) to understand delegations,
+        /// because we don't yet use flow encryption.
         #[prost(message, tag="40")]
-        Swap(super::SwapPlan),
+        Delegate(super::super::super::stake::v1alpha1::Delegate),
+        /// We don't need any extra information (yet) to understand undelegations,
+        /// because we don't yet use flow encryption.
         #[prost(message, tag="41")]
-        SwapClaim(super::SwapClaimPlan),
+        Undelegate(super::super::super::stake::v1alpha1::Undelegate),
+        #[prost(message, tag="42")]
+        UndelegateClaim(super::super::super::stake::v1alpha1::UndelegateClaimPlan),
     }
 }
 /// Describes a plan for forming a `Clue`.

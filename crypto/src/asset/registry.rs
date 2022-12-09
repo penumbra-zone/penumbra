@@ -257,6 +257,32 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
             }) as for<'r> fn(&'r str) -> _,
         )
         .add_asset(
+            // Note: this regex must be in sync with UnbondingToken::try_from
+            // and VALIDATOR_IDENTITY_BECH32_PREFIX in the penumbra-stake crate
+            // TODO: this doesn't restrict the length of the bech32 encoding
+            "^uunbonding_(?P<data>epoch_(?P<start>[0-9]+)_until_(?P<end>[0-9]+)_(?P<validator>penumbravalid1[a-zA-HJ-NP-Z0-9]+))$",
+            &[
+                "^unbonding_(?P<data>epoch_(?P<start>[0-9]+)_until_(?P<end>[0-9]+)_(?P<validator>penumbravalid1[a-zA-HJ-NP-Z0-9]+))$",
+                "^munbonding_(?P<data>epoch_(?P<start>[0-9]+)_until_(?P<end>[0-9]+)_(?P<validator>penumbravalid1[a-zA-HJ-NP-Z0-9]+))$",
+            ],
+            (|data: &str| {
+                assert!(!data.is_empty());
+                denom::Inner::new(
+                    format!("uunbonding_{}", data),
+                    vec![
+                        denom::UnitData {
+                            exponent: 6,
+                            denom: format!("unbonding_{}", data),
+                        },
+                        denom::UnitData {
+                            exponent: 3,
+                            denom: format!("munbonding_{}", data),
+                        },
+                    ],
+                )
+            }) as for<'r> fn(&'r str) -> _,
+        )
+        .add_asset(
             // Note: this regex must be in sync with LpNft::try_from
             // and the bech32 prefix for LP IDs defined in the proto crate.
             // TODO: this doesn't restrict the length of the bech32 encoding

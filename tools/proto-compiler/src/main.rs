@@ -142,10 +142,20 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.core.stake.v1alpha1.BaseRateData", SERIALIZE),
     (".penumbra.core.stake.v1alpha1.Delegate", SERIALIZE),
     (".penumbra.core.stake.v1alpha1.Undelegate", SERIALIZE),
+    (".penumbra.core.stake.v1alpha1.UndelegateClaim", SERIALIZE),
+    (
+        ".penumbra.core.stake.v1alpha1.UndelegateClaimBody",
+        SERIALIZE,
+    ),
+    (
+        ".penumbra.core.stake.v1alpha1.UndelegateClaimPlan",
+        SERIALIZE,
+    ),
     (".penumbra.core.stake.v1alpha1.DelegationChanges", SERIALIZE),
     (".penumbra.core.stake.v1alpha1.CommissionAmount", SERIALIZE),
     (".penumbra.core.stake.v1alpha1.CommissionAmounts", SERIALIZE),
     (".penumbra.core.stake.v1alpha1.Uptime", SERIALIZE),
+    (".penumbra.core.stake.v1alpha1.Penalty", SERIALIZE),
     (
         ".penumbra.core.stake.v1alpha1.CurrentConsensusKeys",
         SERIALIZE,
@@ -262,11 +272,6 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     ),
     (".penumbra.core.chain.v1alpha1.GenesisAppState", SERIALIZE),
     (".penumbra.core.chain.v1alpha1.GenesisAllocation", SERIALIZE),
-    (".penumbra.core.chain.v1alpha1.Quarantined", SERIALIZE),
-    (
-        ".penumbra.core.chain.v1alpha1.QuarantinedPerValidator",
-        SERIALIZE,
-    ),
     (".penumbra.core.chain.v1alpha1.Ratio", SERIALIZE),
     (".penumbra.core.transaction.v1alpha1.AuthHash", SERIALIZE),
     (
@@ -417,7 +422,6 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
         SERDE_TRANSPARENT,
     ),
     (".penumbra.view.v1alpha1.SpendableNoteRecord", SERIALIZE),
-    (".penumbra.view.v1alpha1.QuarantinedNoteRecord", SERIALIZE),
 ];
 
 static FIELD_ATTRIBUTES: &[(&str, &str)] = &[

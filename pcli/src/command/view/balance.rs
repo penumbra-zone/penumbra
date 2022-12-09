@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use anyhow::Result;
 use comfy_table::{presets, Table};
 use penumbra_crypto::{asset::Cache, keys::AddressIndex, FullViewingKey, Value};
@@ -26,11 +24,8 @@ impl BalanceCmd {
         let mut table = Table::new();
         table.load_preset(presets::NOTHING);
 
-        let rows: Vec<(Option<AddressIndex>, Value, Option<u64>)> = if self.by_note {
+        let rows: Vec<(Option<AddressIndex>, Value)> = if self.by_note {
             let notes = view.unspent_notes_by_address_and_asset(fvk.hash()).await?;
-            let quarantined_notes = view
-                .quarantined_notes_by_address_and_asset(fvk.hash())
-                .await?;
 
             notes
                 .iter()
@@ -39,33 +34,13 @@ impl BalanceCmd {
                     notes_by_asset.iter().flat_map(|(asset, notes)| {
                         notes
                             .iter()
-                            .map(|record| (Some(*index), asset.value(record.note.amount()), None))
+                            .map(|record| (Some(*index), asset.value(record.note.amount())))
                     })
                 })
-                .chain(
-                    quarantined_notes
-                        .iter()
-                        .flat_map(|(index, notes_by_asset)| {
-                            // Include each note individually:
-                            notes_by_asset.iter().flat_map(|(asset, notes)| {
-                                notes.iter().map(|record| {
-                                    (
-                                        Some(*index),
-                                        asset.value(record.note.amount()),
-                                        Some(record.unbonding_epoch),
-                                    )
-                                })
-                            })
-                        }),
-                )
                 .collect()
         } else if self.by_address {
             let notes = view.unspent_notes_by_address_and_asset(fvk.hash()).await?;
-            let quarantined_notes = view
-                .quarantined_notes_by_address_and_asset(fvk.hash())
-                .await?;
 
-            // `Option<u64>` indicates the unbonding epoch, if any, for a quarantined note
             notes
                 .iter()
                 .flat_map(|(index, notes_by_asset)| {
@@ -75,39 +50,12 @@ impl BalanceCmd {
                             .iter()
                             .map(|record| u64::from(record.note.amount()))
                             .sum();
-                        (Some(*index), asset.value(sum.into()), None)
+                        (Some(*index), asset.value(sum.into()))
                     })
                 })
-                .chain(
-                    quarantined_notes
-                        .iter()
-                        .flat_map(|(index, notes_by_asset)| {
-                            // Sum the notes for each asset, separating them by unbonding epoch:
-                            notes_by_asset.iter().flat_map(|(asset, records)| {
-                                let mut sums_by_unbonding_epoch = BTreeMap::<u64, u64>::new();
-                                for record in records {
-                                    let unbonding_epoch = record.unbonding_epoch;
-                                    *sums_by_unbonding_epoch.entry(unbonding_epoch).or_default() +=
-                                        u64::from(record.note.amount());
-                                }
-                                sums_by_unbonding_epoch
-                                    .into_iter()
-                                    .map(|(unbonding_epoch, sum)| {
-                                        (
-                                            Some(*index),
-                                            asset.value(sum.into()),
-                                            Some(unbonding_epoch),
-                                        )
-                                    })
-                            })
-                        }),
-                )
                 .collect()
         } else {
             let notes = view.unspent_notes_by_asset_and_address(fvk.hash()).await?;
-            let quarantined_notes = view
-                .quarantined_notes_by_asset_and_address(fvk.hash())
-                .await?;
 
             notes
                 .iter()
@@ -119,24 +67,8 @@ impl BalanceCmd {
                             records.iter().map(|record| u64::from(record.note.amount()))
                         })
                         .sum();
-                    (None, asset.value(sum.into()), None)
+                    (None, asset.value(sum.into()))
                 })
-                .chain(quarantined_notes.iter().flat_map(|(asset, records)| {
-                    // Sum the notes for each index, separating them by unbonding epoch:
-                    let mut sums_by_unbonding_epoch = BTreeMap::<u64, u64>::new();
-                    for records in records.values() {
-                        for record in records {
-                            let unbonding_epoch = record.unbonding_epoch;
-                            *sums_by_unbonding_epoch.entry(unbonding_epoch).or_default() +=
-                                u64::from(record.note.amount());
-                        }
-                    }
-                    sums_by_unbonding_epoch
-                        .into_iter()
-                        .map(|(unbonding_epoch, sum)| {
-                            (None, asset.value(sum.into()), Some(unbonding_epoch))
-                        })
-                }))
                 .collect()
         };
 
@@ -159,11 +91,11 @@ impl BalanceCmd {
 }
 
 fn format_row(
-    row: &(Option<AddressIndex>, Value, Option<u64>),
+    row: &(Option<AddressIndex>, Value),
     by_address: bool,
     asset_cache: &Cache,
 ) -> Vec<String> {
-    let (index, value, quarantined) = row;
+    let (index, value) = row;
 
     let mut string_row = Vec::with_capacity(2);
 
@@ -175,17 +107,9 @@ fn format_row(
             "Ephemeral".to_string()
         };
 
-        string_row.push(index_text)
+        string_row.push(index_text);
     }
-    string_row.push(format!(
-        "{}{}",
-        value.format(asset_cache),
-        if let Some(unbonding_epoch) = quarantined {
-            format!(" (unbonding until epoch {})", unbonding_epoch)
-        } else {
-            "".to_string()
-        }
-    ));
+    string_row.push(value.format(asset_cache));
 
     string_row
 }
@@ -195,11 +119,11 @@ fn format_row(
 /// the table parsing. This should be changed when well typed, JSON output is supported
 #[allow(clippy::type_complexity)]
 fn combine_ephemeral(
-    rows: Vec<(Option<AddressIndex>, Value, Option<u64>)>,
+    rows: Vec<(Option<AddressIndex>, Value)>,
     by_note: bool,
 ) -> (
-    Vec<(Option<AddressIndex>, Value, Option<u64>)>,
-    Vec<(Option<AddressIndex>, Value, Option<u64>)>,
+    Vec<(Option<AddressIndex>, Value)>,
+    Vec<(Option<AddressIndex>, Value)>,
 ) {
     if by_note {
         return (rows, Vec::new());
@@ -207,7 +131,7 @@ fn combine_ephemeral(
 
     // get all ephemeral rows
     let (mut ephemeral_notes, indexed_rows): (Vec<_>, Vec<_>) =
-        rows.into_iter().partition(|(index, _, _)| {
+        rows.into_iter().partition(|(index, _)| {
             if let Some(index) = index {
                 u128::from(*index) > u64::MAX as u128
             } else {

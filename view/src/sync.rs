@@ -3,35 +3,24 @@ use std::collections::{BTreeMap, BTreeSet};
 use penumbra_chain::{
     params::FmdParameters, AnnotatedNotePayload, CompactBlock, Epoch, NoteSource,
 };
-use penumbra_crypto::{FullViewingKey, IdentityKey, Note, NotePayload, Nullifier};
+use penumbra_crypto::{FullViewingKey, Note, NotePayload, Nullifier};
 use penumbra_tct as tct;
 
-use crate::{QuarantinedNoteRecord, SpendableNoteRecord, Storage};
+use crate::{SpendableNoteRecord, Storage};
 
 /// Contains the results of scanning a single block.
 #[derive(Debug, Clone)]
 pub struct FilteredBlock {
     pub new_notes: Vec<SpendableNoteRecord>,
-    pub new_quarantined_notes: Vec<QuarantinedNoteRecord>,
     pub spent_nullifiers: Vec<Nullifier>,
-    pub spent_quarantined_nullifiers: BTreeMap<IdentityKey, Vec<Nullifier>>,
-    pub slashed_validators: Vec<IdentityKey>,
     pub height: u64,
     pub fmd_parameters: Option<FmdParameters>,
 }
 
 impl FilteredBlock {
-    pub fn all_nullifiers(&self) -> impl Iterator<Item = &Nullifier> {
-        self.spent_quarantined_nullifiers
-            .values()
-            .flat_map(|v| v.iter())
-            .chain(self.spent_nullifiers.iter())
-    }
-
     pub fn inbound_transaction_ids(&self) -> BTreeSet<[u8; 32]> {
         let mut ids = BTreeSet::new();
         let sources = self.new_notes.iter().map(|n| n.source);
-        //.chain(self.new_quarantined_notes.iter().map(|n| n.source));
         for source in sources {
             if let NoteSource::Transaction { id } = source {
                 ids.insert(id);
@@ -51,8 +40,6 @@ pub async fn scan_block(
         nullifiers,
         block_root,
         epoch_root,
-        quarantined,
-        slashed,
         fmd_parameters,
         proposal_started,
     }: CompactBlock,
@@ -69,49 +56,9 @@ pub async fn scan_block(
 
     // Notes we've found in this block that are meant for us
     let new_notes: Vec<SpendableNoteRecord>;
-    let mut new_quarantined_notes: Vec<QuarantinedNoteRecord> = Vec::new();
 
     // Nullifiers we've found in this block
     let spent_nullifiers: Vec<Nullifier> = nullifiers;
-    let mut spent_quarantined_nullifiers: BTreeMap<IdentityKey, Vec<Nullifier>> = BTreeMap::new();
-
-    // Collect quarantined nullifiers, and add all quarantined notes we can decrypt to the new
-    // quarantined notes set
-    for (unbonding_epoch, mut scheduled) in quarantined {
-        // For any validator slashed in this block, so any quarantined transactions in this block
-        // are immediately reverted; we don't even report them to the state, so that the state can
-        // avoid worrying about update ordering
-        for &identity_key in slashed.iter() {
-            scheduled.unschedule_validator(identity_key);
-        }
-
-        for (identity_key, unbonding) in scheduled {
-            // Remember these nullifiers (not all of them are ours, we have to check the database)
-            spent_quarantined_nullifiers
-                .entry(identity_key)
-                .or_default()
-                .extend(unbonding.nullifiers);
-            // Trial-decrypt the quarantined notes, keeping track of the ones that were meant for us
-            let decryptions = unbonding
-                .note_payloads
-                .into_iter()
-                .map(|AnnotatedNotePayload { payload, source }| (trial_decrypt(payload), source))
-                .collect::<Vec<_>>();
-            for (decryption, source) in decryptions {
-                if let Some(note) = decryption.await.unwrap() {
-                    new_quarantined_notes.push(QuarantinedNoteRecord {
-                        note_commitment: note.commit(),
-                        height_created: height,
-                        address_index: fvk.incoming().index_for_diversifier(note.diversifier()),
-                        note,
-                        unbonding_epoch,
-                        identity_key,
-                        source,
-                    });
-                }
-            }
-        }
-    }
 
     // Trial-decrypt the notes in this block, keeping track of the ones that were meant for us
     let decryptions = note_payloads
@@ -197,27 +144,13 @@ pub async fn scan_block(
 
     let filtered_nullifiers = storage.filter_nullifiers(spent_nullifiers).await?;
 
-    let mut filtered_quarantined_nullifiers = BTreeMap::new();
-
-    for (id, nullifiers) in spent_quarantined_nullifiers {
-        filtered_quarantined_nullifiers.insert(id, storage.filter_nullifiers(nullifiers).await?);
-    }
-
     // Construct filtered block
-
     let result = FilteredBlock {
         new_notes,
-        new_quarantined_notes,
         spent_nullifiers: filtered_nullifiers,
-        spent_quarantined_nullifiers: filtered_quarantined_nullifiers,
-        slashed_validators: slashed,
         height,
         fmd_parameters,
     };
-
-    if !result.spent_quarantined_nullifiers.is_empty() || !result.new_quarantined_notes.is_empty() {
-        tracing::debug!(?result, "scan result contained quarantined things");
-    }
 
     Ok(result)
 }

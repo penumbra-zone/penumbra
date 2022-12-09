@@ -15,6 +15,7 @@ pub mod spend;
 pub mod swap;
 pub mod swap_claim;
 mod undelegate;
+mod undelegate_claim;
 mod vote;
 
 use crate::{ActionView, TransactionPerspective};
@@ -30,6 +31,7 @@ pub use spend::Spend;
 pub use swap::Swap;
 pub use swap_claim::SwapClaim;
 pub use undelegate::Undelegate;
+pub use undelegate_claim::{UndelegateClaim, UndelegateClaimBody};
 pub use vote::{DelegatorVote, ValidatorVote, ValidatorVoteBody, Vote};
 
 /// Common behavior between Penumbra actions.
@@ -44,8 +46,6 @@ pub trait IsAction {
 pub enum Action {
     Output(output::Output),
     Spend(spend::Spend),
-    Delegate(Delegate),
-    Undelegate(Undelegate),
     ValidatorDefinition(pbs::ValidatorDefinition),
     IBCAction(pb_ibc::IbcAction),
     Swap(Swap),
@@ -60,6 +60,10 @@ pub enum Action {
     PositionWithdraw(PositionWithdraw),
     PositionRewardClaim(PositionRewardClaim),
 
+    Delegate(Delegate),
+    Undelegate(Undelegate),
+    UndelegateClaim(UndelegateClaim),
+
     Ics20Withdrawal(Ics20Withdrawal),
 }
 
@@ -70,6 +74,7 @@ impl IsAction for Action {
             Action::Spend(spend) => spend.balance_commitment(),
             Action::Delegate(delegate) => delegate.balance_commitment(),
             Action::Undelegate(undelegate) => undelegate.balance_commitment(),
+            Action::UndelegateClaim(undelegate_claim) => undelegate_claim.balance_commitment(),
             Action::Swap(swap) => swap.balance_commitment(),
             Action::SwapClaim(swap_claim) => swap_claim.balance_commitment(),
             Action::ProposalSubmit(submit) => submit.balance_commitment(),
@@ -96,6 +101,7 @@ impl IsAction for Action {
             Action::Spend(x) => x.view_from_perspective(txp),
             Action::Delegate(x) => x.view_from_perspective(txp),
             Action::Undelegate(x) => x.view_from_perspective(txp),
+            Action::UndelegateClaim(x) => x.view_from_perspective(txp),
             Action::ProposalSubmit(x) => x.view_from_perspective(txp),
             Action::ProposalWithdraw(x) => x.view_from_perspective(txp),
             Action::ValidatorVote(x) => x.view_from_perspective(txp),
@@ -127,6 +133,9 @@ impl From<Action> for pb::Action {
             },
             Action::Undelegate(inner) => pb::Action {
                 action: Some(pb::action::Action::Undelegate(inner.into())),
+            },
+            Action::UndelegateClaim(inner) => pb::Action {
+                action: Some(pb::action::Action::UndelegateClaim(inner.into())),
             },
             Action::ValidatorDefinition(inner) => pb::Action {
                 action: Some(pb::action::Action::ValidatorDefinition(inner)),
@@ -182,6 +191,9 @@ impl TryFrom<pb::Action> for Action {
             pb::action::Action::Spend(inner) => Ok(Action::Spend(inner.try_into()?)),
             pb::action::Action::Delegate(inner) => Ok(Action::Delegate(inner.try_into()?)),
             pb::action::Action::Undelegate(inner) => Ok(Action::Undelegate(inner.try_into()?)),
+            pb::action::Action::UndelegateClaim(inner) => {
+                Ok(Action::UndelegateClaim(inner.try_into()?))
+            }
             pb::action::Action::ValidatorDefinition(inner) => {
                 Ok(Action::ValidatorDefinition(inner))
             }

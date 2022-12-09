@@ -53,33 +53,12 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
 
     // 3. Simulate execution of the Swap action
 
-    // TODO: this is slightly cursed: although exection of the Swap action is
-    // supposed to happen in its ActionHandler, just calling the swap.execute()
-    // won't cause us to actually record its note payload, because the logic
-    // that records the note payload (for any action) is in the transaction-wide
-    // ActionHandler impl.  Why? because with the current quarantine system, we
-    // have to quarantine all outputs from any action if a quarantined output is
-    // present, so we can't do the correct and simple thing of executing each
-    // action in its own action handler. After tokenized unbonding, we should
-    // fix this!
-    //
-    // Because of this, we have to construct a whole dummy tx that we can
-    // .execute().  Otherwise, we won't actually record the swap nft for use in
-    // testing the SwapClaim logic.
-
-    let swap_transaction = Arc::new(Transaction {
-        transaction_body: TransactionBody {
-            actions: vec![Action::Swap(swap.clone())],
-            ..Default::default()
-        },
-        ..Default::default()
-    });
-
-    swap.check_stateless(swap_transaction.clone()).await?;
+    // We don't use the context in the Swap::check_stateless impl, so use a dummy one.
+    let dummy_context = Arc::new(Transaction::default());
+    swap.check_stateless(dummy_context.clone()).await?;
     swap.check_stateful(state.clone()).await?;
     let mut state_tx = state.try_begin_transaction().unwrap();
-    // This will call swap.execute()
-    swap_transaction.execute(&mut state_tx).await?;
+    swap.execute(&mut state_tx).await?;
     state_tx.apply();
 
     // 4. Execute EndBlock (where the swap is actually executed)

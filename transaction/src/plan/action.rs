@@ -11,6 +11,7 @@ mod proposal_withdraw;
 mod spend;
 mod swap;
 mod swap_claim;
+mod undelegate_claim;
 
 pub use delegator_vote::DelegatorVotePlan;
 pub use output::OutputPlan;
@@ -18,6 +19,7 @@ pub use proposal_withdraw::ProposalWithdrawPlan;
 pub use spend::SpendPlan;
 pub use swap::SwapPlan;
 pub use swap_claim::SwapClaimPlan;
+pub use undelegate_claim::UndelegateClaimPlan;
 
 use crate::action::{
     Delegate, PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw, ProposalSubmit,
@@ -43,6 +45,7 @@ pub enum ActionPlan {
     /// We don't need any extra information (yet) to understand undelegations,
     /// because we don't yet use flow encryption.
     Undelegate(Undelegate),
+    UndelegateClaim(UndelegateClaimPlan),
     ValidatorDefinition(pb_stake::ValidatorDefinition),
     /// Describes a proposed swap.
     Swap(SwapPlan),
@@ -73,6 +76,7 @@ impl ActionPlan {
             Output(output) => output.balance(),
             Delegate(delegate) => delegate.balance(),
             Undelegate(undelegate) => undelegate.balance(),
+            UndelegateClaim(undelegate_claim) => undelegate_claim.balance(),
             Swap(swap) => swap.balance(),
             SwapClaim(swap_claim) => swap_claim.balance(),
             ProposalSubmit(proposal_submit) => proposal_submit.balance(),
@@ -207,6 +211,9 @@ impl From<ActionPlan> for pb_t::ActionPlan {
             ActionPlan::Undelegate(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::Undelegate(inner.into())),
             },
+            ActionPlan::UndelegateClaim(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::UndelegateClaim(inner.into())),
+            },
             ActionPlan::ValidatorDefinition(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::ValidatorDefinition(inner)),
             },
@@ -263,6 +270,9 @@ impl TryFrom<pb_t::ActionPlan> for ActionPlan {
             }
             pb_t::action_plan::Action::Undelegate(inner) => {
                 Ok(ActionPlan::Undelegate(inner.try_into()?))
+            }
+            pb_t::action_plan::Action::UndelegateClaim(inner) => {
+                Ok(ActionPlan::UndelegateClaim(inner.try_into()?))
             }
             pb_t::action_plan::Action::ValidatorDefinition(inner) => {
                 Ok(ActionPlan::ValidatorDefinition(inner))

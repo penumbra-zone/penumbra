@@ -27,6 +27,8 @@ use proto::client::v1alpha1::PrefixValueResponse;
 use proto::client::v1alpha1::StubCpmmReservesResponse;
 use proto::client::v1alpha1::TransactionByNoteRequest;
 use proto::client::v1alpha1::TransactionByNoteResponse;
+use proto::client::v1alpha1::ValidatorPenaltyRequest;
+use proto::client::v1alpha1::ValidatorPenaltyResponse;
 use proto::client::v1alpha1::ValidatorStatusResponse;
 use tonic::Status;
 use tracing::instrument;
@@ -207,6 +209,31 @@ impl SpecificQueryService for Info {
 
         Ok(tonic::Response::new(ValidatorStatusResponse {
             status: Some(status.into()),
+        }))
+    }
+
+    #[instrument(skip(self, request))]
+    async fn validator_penalty(
+        &self,
+        request: tonic::Request<ValidatorPenaltyRequest>,
+    ) -> Result<tonic::Response<ValidatorPenaltyResponse>, Status> {
+        let state = self.storage.latest_state();
+        state.check_chain_id(&request.get_ref().chain_id).await?;
+
+        let request = request.into_inner();
+        let id = request
+            .identity_key
+            .ok_or_else(|| Status::invalid_argument("missing identity key"))?
+            .try_into()
+            .map_err(|_| Status::invalid_argument("invalid identity key"))?;
+
+        let penalty = state
+            .compounded_penalty_over_range(&id, request.start_epoch_index, request.end_epoch_index)
+            .await
+            .map_err(|e| Status::unavailable(format!("error getting validator penalty: {}", e)))?;
+
+        Ok(tonic::Response::new(ValidatorPenaltyResponse {
+            penalty: Some(penalty.into()),
         }))
     }
 

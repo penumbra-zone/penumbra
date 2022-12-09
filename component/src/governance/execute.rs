@@ -1,4 +1,7 @@
-use crate::governance::proposal::Outcome;
+use crate::{
+    governance::proposal::Outcome,
+    shielded_pool::{StateReadExt as _, StateWriteExt as _},
+};
 
 use super::{
     proposal::{self, chain_params},
@@ -65,6 +68,12 @@ pub async fn proposal_submit(
         .put_proposal_voting_start(proposal_id, current_block)
         .await;
     state.put_proposal_voting_end(proposal_id, voting_end).await;
+
+    // If there was a proposal submitted, ensure we track this so that clients
+    // can retain state needed to vote as delegators
+    let mut compact_block = state.stub_compact_block();
+    compact_block.proposal_started = true;
+    state.stub_put_compact_block(compact_block);
 
     tracing::debug!(proposal = %proposal_id, "created proposal");
 

@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::anyhow;
 use decaf377_rdsa::{Signature, SpendAuth};
-use penumbra_crypto::{GovernanceKey, IdentityKey};
+use penumbra_crypto::{stake::IdentityKey, GovernanceKey};
 use penumbra_proto::{
     core::governance::v1alpha1 as pb_g, core::transaction::v1alpha1 as pb_t, Protobuf,
 };

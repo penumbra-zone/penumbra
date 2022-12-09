@@ -131,11 +131,13 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn build_16() {
         build_bitsize(16).await;
     }
 
     #[tokio::test]
+    #[ignore]
     async fn build_21() {
         build_bitsize(21).await;
     }

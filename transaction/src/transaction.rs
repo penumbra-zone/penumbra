@@ -112,9 +112,12 @@ impl Transaction {
                         }
                     }
                 }
+                // These actions have no payload keys; they're listed explicitly
+                // for exhaustiveness.
                 Action::Spend(_) => {}
                 Action::Delegate(_) => {}
                 Action::Undelegate(_) => {}
+                Action::UndelegateClaim(_) => {}
                 Action::ValidatorDefinition(_) => {}
                 Action::IBCAction(_) => {}
                 Action::ProposalSubmit(_) => {}

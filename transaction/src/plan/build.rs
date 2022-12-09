@@ -118,6 +118,11 @@ impl TransactionPlan {
         for undelegation in self.undelegations().cloned() {
             actions.push(Action::Undelegate(undelegation))
         }
+        for plan in self.undelegate_claim_plans() {
+            synthetic_blinding_factor += plan.balance_blinding;
+            let undelegate_claim = plan.undelegate_claim();
+            actions.push(Action::UndelegateClaim(undelegate_claim));
+        }
         for proposal_submit in self.proposal_submits().cloned() {
             actions.push(Action::ProposalSubmit(proposal_submit))
         }
@@ -144,6 +149,7 @@ impl TransactionPlan {
         // Finally, compute the binding signature and assemble the transaction.
         let binding_signing_key = rdsa::SigningKey::from(synthetic_blinding_factor);
         let binding_sig = binding_signing_key.sign(rng, auth_data.auth_hash.as_ref());
+        tracing::debug!(bvk = ?rdsa::VerificationKey::from(&binding_signing_key), auth_hash = ?auth_data.auth_hash);
 
         // TODO: add consistency checks?
 

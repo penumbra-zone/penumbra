@@ -218,17 +218,74 @@ pub struct Undelegate {
     pub validator_identity: ::core::option::Option<super::super::crypto::v1alpha1::IdentityKey>,
     /// The index of the epoch in which this undelegation was performed.
     #[prost(uint64, tag="2")]
-    pub epoch_index: u64,
-    /// The amount to undelegate, in units of unbonded stake.
-    #[prost(message, optional, tag="3")]
+    pub start_epoch_index: u64,
+    /// The index of the epoch in which unbonding should complete.
+    #[prost(uint64, tag="3")]
+    pub end_epoch_index: u64,
+    /// The amount to undelegate, in units of unbonding tokens.
+    #[prost(message, optional, tag="4")]
     pub unbonded_amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
     /// The amount of delegation tokens consumed by this action.
     ///
     /// This is implied by the validator's exchange rate in the specified epoch
     /// (and should be checked in transaction validation!), but including it allows
     /// stateless verification that the transaction is internally consistent.
-    #[prost(message, optional, tag="4")]
+    #[prost(message, optional, tag="5")]
     pub delegation_amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
+}
+/// A transaction action finishing an undelegation, converting (slashable)
+/// "unbonding tokens" to (unslashable) staking tokens.
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UndelegateClaim {
+    #[prost(message, optional, tag="1")]
+    pub body: ::core::option::Option<UndelegateClaimBody>,
+    #[prost(bytes="vec", tag="2")]
+    pub proof: ::prost::alloc::vec::Vec<u8>,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UndelegateClaimBody {
+    /// The identity key of the validator to finish undelegating from.
+    #[prost(message, optional, tag="1")]
+    pub validator_identity: ::core::option::Option<super::super::crypto::v1alpha1::IdentityKey>,
+    /// The epoch in which unbonding began, used to verify the penalty.
+    #[prost(uint64, tag="2")]
+    pub start_epoch_index: u64,
+    /// The epoch in which unbonding finished, used to verify the penalty.
+    #[prost(uint64, tag="3")]
+    pub end_epoch_index: u64,
+    /// The penalty applied to undelegation, in bps^2 (10e-8).
+    /// In the happy path (no slashing), this is 0.
+    #[prost(message, optional, tag="4")]
+    pub penalty: ::core::option::Option<Penalty>,
+    /// The action's contribution to the transaction's value balance.
+    #[prost(message, optional, tag="5")]
+    pub balance_commitment: ::core::option::Option<super::super::crypto::v1alpha1::BalanceCommitment>,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UndelegateClaimPlan {
+    /// The identity key of the validator to finish undelegating from.
+    #[prost(message, optional, tag="1")]
+    pub validator_identity: ::core::option::Option<super::super::crypto::v1alpha1::IdentityKey>,
+    /// The epoch in which unbonding began, used to verify the penalty.
+    #[prost(uint64, tag="2")]
+    pub start_epoch_index: u64,
+    /// The epoch in which unbonding finished, used to verify the penalty.
+    #[prost(uint64, tag="3")]
+    pub end_epoch_index: u64,
+    /// The penalty applied to undelegation, in bps^2 (10e-8).
+    /// In the happy path (no slashing), this is 0.
+    #[prost(message, optional, tag="4")]
+    pub penalty: ::core::option::Option<Penalty>,
+    /// The amount of unbonding tokens to claim.
+    /// This is a bare number because its denom is determined by the preceding data.
+    #[prost(message, optional, tag="5")]
+    pub unbonding_amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
+    /// The blinding factor to use for the balance commitment.
+    #[prost(bytes="vec", tag="6")]
+    pub balance_blinding: ::prost::alloc::vec::Vec<u8>,
 }
 /// A list of pending delegations and undelegations.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
@@ -258,4 +315,11 @@ pub struct Uptime {
 pub struct CurrentConsensusKeys {
     #[prost(message, repeated, tag="1")]
     pub consensus_keys: ::prost::alloc::vec::Vec<super::super::crypto::v1alpha1::ConsensusKey>,
+}
+/// Tracks slashing penalties applied to a validator in some epoch.
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Penalty {
+    #[prost(uint64, tag="1")]
+    pub inner: u64,
 }
