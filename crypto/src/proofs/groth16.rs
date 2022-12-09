@@ -252,6 +252,60 @@ mod tests {
     }
 
     #[test]
+    /// Check that the `SpendProof` verification fails when using an incorrect
+    /// NCT root (`anchor`).
+    fn spend_proof_verification_merkle_path_integrity_failure() {
+        let (pk, vk) = SpendCircuit::generate_test_parameters();
+        let mut rng = OsRng;
+
+        let seed_phrase = SeedPhrase::generate(rng);
+        let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let fvk_sender = sk_sender.full_viewing_key();
+        let ivk_sender = fvk_sender.incoming();
+        let (sender, _dtk_d) = ivk_sender.payment_address(0u64.into());
+        let v_blinding = Fr::rand(&mut rng);
+
+        let value_to_send = Value {
+            amount: 10u64.into(),
+            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+        };
+
+        let note = Note::generate(&mut rng, &sender, value_to_send);
+        let note_commitment = note.commit();
+        let spend_auth_randomizer = Fr::rand(&mut rng);
+        let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
+        let nk = *sk_sender.nullifier_key();
+        let ak: VerificationKey<SpendAuth> = sk_sender.spend_auth_key().into();
+        let mut nct = tct::Tree::new();
+        let incorrect_anchor = nct.root();
+        nct.insert(tct::Witness::Keep, note_commitment).unwrap();
+        let anchor = nct.root();
+        let note_commitment_proof = nct.witness(note_commitment).unwrap();
+        let balance_commitment = value_to_send.commit(v_blinding);
+        let rk: VerificationKey<SpendAuth> = rsk.into();
+        let nf = nk.derive_nullifier(0.into(), &note_commitment);
+
+        let proof = SpendProof::prove(
+            &mut rng,
+            &pk,
+            note_commitment_proof,
+            note,
+            v_blinding,
+            spend_auth_randomizer,
+            ak,
+            nk,
+            anchor,
+            balance_commitment,
+            nf,
+            rk,
+        )
+        .expect("can create proof");
+
+        let proof_result = proof.verify(&vk, incorrect_anchor, balance_commitment, nf, rk);
+        assert!(proof_result.is_err());
+    }
+
+    #[test]
     #[should_panic]
     /// Check that the `SpendProof` proof creation fails when the diversified address is wrong.
     fn spend_proof_verification_diversified_address_integrity_failure() {

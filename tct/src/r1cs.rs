@@ -77,7 +77,6 @@ impl MerkleAuthPathVar {
         // Start hashing from height 1, first hashing the leaf and its three siblings together,
         // then the next level and so on, until we reach the root of the quadtree.
         for height_value in 1..=24 {
-            dbg!(height_value);
             let which_way = WhichWay::at(height_value, index_value).0;
             let siblings = &self.inner[(24 - height_value) as usize];
             let [leftmost, left, right, rightmost] =

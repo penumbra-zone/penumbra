@@ -271,7 +271,7 @@ impl SpendProof {
         nullifier: Nullifier,
         rk: VerificationKey<SpendAuth>,
     ) -> anyhow::Result<()> {
-        let processed_pvk = Groth16::process_vk(&vk).map_err(|err| anyhow::anyhow!(err))?;
+        let processed_pvk = Groth16::process_vk(vk).map_err(|err| anyhow::anyhow!(err))?;
         let mut public_inputs = Vec::new();
         public_inputs.extend(Fq::from(anchor.0).to_field_elements().unwrap());
         public_inputs.extend(balance_commitment.0.to_field_elements().unwrap());

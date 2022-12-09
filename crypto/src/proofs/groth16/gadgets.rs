@@ -22,7 +22,7 @@ pub(crate) fn diversified_basepoint_not_identity(
     g_d: ElementVar,
 ) -> Result<(), SynthesisError> {
     let identity = ElementVar::new_constant(cs, decaf377::Element::default())?;
-    identity.conditional_enforce_not_equal(&g_d, &enforce)?;
+    identity.conditional_enforce_not_equal(&g_d, enforce)?;
     Ok(())
 }
 
@@ -34,7 +34,7 @@ pub(crate) fn ak_not_identity(
     ak: ElementVar,
 ) -> Result<(), SynthesisError> {
     let identity = ElementVar::new_constant(cs, decaf377::Element::default())?;
-    identity.conditional_enforce_not_equal(&ak, &enforce)?;
+    identity.conditional_enforce_not_equal(&ak, enforce)?;
     Ok(())
 }
 
@@ -70,7 +70,7 @@ pub(crate) fn value_commitment_integrity(
     let test_commitment = asset_generator.scalar_mul_le(value_amount.to_bits_le()?.iter())?
         + value_blinding_generator.scalar_mul_le(value_blinding.to_bits_le()?.iter())?;
 
-    commitment.conditional_enforce_equal(&test_commitment, &enforce)?;
+    commitment.conditional_enforce_equal(&test_commitment, enforce)?;
     Ok(())
 }
 
@@ -104,7 +104,7 @@ pub(crate) fn note_commitment_integrity(
         ),
     )?;
 
-    commitment.conditional_enforce_equal(&commitment_test, &enforce)?;
+    commitment.conditional_enforce_equal(&commitment_test, enforce)?;
     Ok(())
 }
 
@@ -124,7 +124,7 @@ pub(crate) fn nullifier_integrity(
     let computed_nullifier =
         poseidon377::r1cs::hash_3(cs, &nullifier_constant, (nk, note_commitment, position))?;
 
-    nullifier.conditional_enforce_equal(&computed_nullifier, &enforce)?;
+    nullifier.conditional_enforce_equal(&computed_nullifier, enforce)?;
     Ok(())
 }
 
@@ -140,11 +140,11 @@ pub(crate) fn diversified_address_integrity(
 ) -> Result<(), SynthesisError> {
     let ivk_domain_sep = FqVar::new_constant(cs.clone(), *IVK_DOMAIN_SEP)?;
     let ivk = poseidon377::r1cs::hash_2(cs, &ivk_domain_sep, (nk, ak))?;
-
+    // TODO: Reduce ivk here mod r?
     let ivk_vars = ivk.to_bits_le()?;
     let test_transmission_key =
         diversified_generator.scalar_mul_le(ivk_vars.to_bits_le()?.iter())?;
-    transmission_key.conditional_enforce_equal(&test_transmission_key, &enforce)?;
+    transmission_key.conditional_enforce_equal(&test_transmission_key, enforce)?;
     Ok(())
 }
 
@@ -162,7 +162,7 @@ pub(crate) fn rk_integrity(
     let point =
         ak + spend_auth_basepoint_var.scalar_mul_le(spend_auth_randomizer.to_bits_le()?.iter())?;
     let computed_rk = ElementVar::compress_to_field(&point)?;
-    rk.conditional_enforce_equal(&computed_rk, &enforce)?;
+    rk.conditional_enforce_equal(&computed_rk, enforce)?;
     Ok(())
 }
 
