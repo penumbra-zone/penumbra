@@ -9,7 +9,9 @@ use serde::{Deserialize, Serialize};
 
 use super::{DiversifierKey, IncomingViewingKey, NullifierKey, OutgoingViewingKey};
 use crate::{
-    ka, note, prf,
+    ka,
+    note::Commitment,
+    prf,
     rdsa::{SpendAuth, VerificationKey},
     Fq, Fr, Note, Nullifier,
 };
@@ -87,14 +89,14 @@ impl FullViewingKey {
         &self.nk
     }
 
-    /// Derive the [`Nullifier`] for a positioned note given its [`merkle::Position`] and
-    /// [`note::Commitment`].
+    /// Derive the [`Nullifier`] for a positioned note or swap given its [`merkle::Position`]
+    /// and [`Commitment`].
     pub fn derive_nullifier(
         &self,
         pos: penumbra_tct::Position,
-        note_commitment: &note::Commitment,
+        state_commitment: &Commitment,
     ) -> Nullifier {
-        self.nk.derive_nullifier(pos, note_commitment)
+        self.nk.derive_nullifier(pos, state_commitment)
     }
 
     /// Returns the spend verification key contained in this full viewing key.
