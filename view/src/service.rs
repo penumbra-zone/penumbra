@@ -148,7 +148,7 @@ impl ViewService {
 
         let rsp = client.get_status(GetStatusRequest {}).await?.into_inner();
 
-        tracing::debug!("{:#?}", rsp);
+        //tracing::debug!("{:#?}", rsp);
 
         let sync_info = rsp
             .sync_info
