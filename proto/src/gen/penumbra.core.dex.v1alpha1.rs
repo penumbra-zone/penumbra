@@ -67,6 +67,9 @@ pub struct SwapBody {
     #[prost(message, optional, tag="3")]
     pub delta_2_i: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
     /// A commitment to a prepaid fee for the future SwapClaim.
+    /// This is recorded separately from delta_j_i because it's shielded;
+    /// in the future we'll want separate commitments to each delta_j_i
+    /// anyways in order to prove consistency with flow encryption.
     #[prost(bytes="vec", tag="4")]
     pub fee_commitment: ::prost::alloc::vec::Vec<u8>,
     /// The swap commitment and encryption of the swap data.
@@ -120,9 +123,14 @@ pub struct SwapPlan {
     /// The plaintext version of the swap to be performed.
     #[prost(message, optional, tag="1")]
     pub swap_plaintext: ::core::option::Option<SwapPlaintext>,
-    /// The blinding factor for the balance commitment. The fee in the SwapPlan is private to prevent linkability with the SwapClaim.
+    /// The blinding factor for the fee commitment. The fee in the SwapPlan is private to prevent linkability with the SwapClaim.
     #[prost(bytes="vec", tag="2")]
-    pub balance_blinding: ::prost::alloc::vec::Vec<u8>,
+    #[serde(with = "crate::serializers::hexstr")]
+    pub fee_blinding: ::prost::alloc::vec::Vec<u8>,
+    /// The ephemeral secret used to encrypt the swap payload.
+    #[prost(bytes="vec", tag="3")]
+    #[serde(with = "crate::serializers::hexstr")]
+    pub esk: ::prost::alloc::vec::Vec<u8>,
 }
 ///
 /// @exclude

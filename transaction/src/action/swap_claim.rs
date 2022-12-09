@@ -20,42 +20,28 @@ impl IsAction for SwapClaim {
     }
 
     fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {
-        // For each note payload (output_1, output_2)
+        // Get the advice notes for each output from the swap claim
         let note_commitment_1 = self.body.output_1.note_commitment;
         let note_commitment_2 = self.body.output_2.note_commitment;
-        // Get payload key for note commitment of note payload
-        let payload_key_1 = txp.payload_keys.get(&note_commitment_1);
-        let payload_key_2 = txp.payload_keys.get(&note_commitment_2);
+        let output_1 = txp.advice_notes.get(&note_commitment_1);
+        let output_2 = txp.advice_notes.get(&note_commitment_2);
 
-        let swap_claim_view = if let (Some(payload_key_1), Some(payload_key_2)) =
-            (payload_key_1, payload_key_2)
-        {
-            // * Decrypt notes
-            let decrypted_note_1 =
-                Note::decrypt_with_payload_key(&self.body.output_1.encrypted_note, payload_key_1);
-            let decrypted_note_2 =
-                Note::decrypt_with_payload_key(&self.body.output_2.encrypted_note, payload_key_2);
-
-            if let (Ok(decrypted_note_1), Ok(decrypted_note_2)) =
-                (decrypted_note_1, decrypted_note_2)
-            {
-                SwapClaimView::Visible {
+        match (output_1, output_2) {
+            (Some(output_1), Some(output_2)) => {
+                let swap_claim_view = SwapClaimView::Visible {
                     swap_claim: self.to_owned(),
-                    output_1: decrypted_note_1,
-                    output_2: decrypted_note_2,
-                }
-            } else {
-                SwapClaimView::Opaque {
+                    output_1: output_1.to_owned(),
+                    output_2: output_2.to_owned(),
+                };
+                ActionView::SwapClaim(swap_claim_view)
+            }
+            _ => {
+                let swap_claim_view = SwapClaimView::Opaque {
                     swap_claim: self.to_owned(),
-                }
+                };
+                ActionView::SwapClaim(swap_claim_view)
             }
-        } else {
-            SwapClaimView::Opaque {
-                swap_claim: self.to_owned(),
-            }
-        };
-
-        ActionView::SwapClaim(swap_claim_view)
+        }
     }
 }
 

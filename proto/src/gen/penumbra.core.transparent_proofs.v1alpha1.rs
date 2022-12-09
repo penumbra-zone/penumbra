@@ -54,9 +54,9 @@ pub struct SwapClaimProof {
 pub struct SwapProof {
     #[prost(message, optional, tag="1")]
     pub swap_plaintext: ::core::option::Option<super::super::dex::v1alpha1::SwapPlaintext>,
-    /// The blinding factor used for the Swap action's balance commitment.
+    /// The blinding factor used for the Swap action's fee commitment.
     #[prost(bytes="vec", tag="2")]
-    pub balance_blinding: ::prost::alloc::vec::Vec<u8>,
+    pub fee_blinding: ::prost::alloc::vec::Vec<u8>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UndelegateClaimProof {

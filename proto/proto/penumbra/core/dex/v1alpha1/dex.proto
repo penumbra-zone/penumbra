@@ -54,6 +54,9 @@ message SwapBody {
   // The amount for asset 2.
   crypto.v1alpha1.Amount delta_2_i = 3;
   // A commitment to a prepaid fee for the future SwapClaim.
+  // This is recorded separately from delta_j_i because it's shielded;
+  // in the future we'll want separate commitments to each delta_j_i
+  // anyways in order to prove consistency with flow encryption.
   bytes fee_commitment = 4;
   // The swap commitment and encryption of the swap data.
   SwapPayload payload = 5;
@@ -89,8 +92,10 @@ message MockFlowCiphertext {
 message SwapPlan {
     // The plaintext version of the swap to be performed.
     dex.v1alpha1.SwapPlaintext swap_plaintext = 1;
-    // The blinding factor for the balance commitment. The fee in the SwapPlan is private to prevent linkability with the SwapClaim.
-    bytes balance_blinding = 2;
+    // The blinding factor for the fee commitment. The fee in the SwapPlan is private to prevent linkability with the SwapClaim.
+    bytes fee_blinding = 2;
+    // The ephemeral secret used to encrypt the swap payload.
+    bytes esk = 3;
 }
 
 message SwapClaimPlan {

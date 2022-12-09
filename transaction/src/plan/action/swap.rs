@@ -46,6 +46,9 @@ impl SwapPlan {
             .claim_fee
             .value()
             .commit(self.fee_blinding);
+        
+        let commitment = self.swap_plaintext.swap_commitment();
+        let payload = 
 
         let swap_nft_asset_id = asset::Id(self.swap_plaintext.swap_commitment().0);
 
