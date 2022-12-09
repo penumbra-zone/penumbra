@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use regex::Regex;
 
-use super::IdentityKey;
+use super::{IdentityKey, Penalty};
 use crate::{asset, Amount, Balance, Value, STAKING_TOKEN_ASSET_ID};
 
 /// Unbonding tokens represent staking tokens that are currently unbonding and
@@ -65,38 +65,6 @@ impl UnbondingToken {
 
     pub fn end_epoch_index(&self) -> u64 {
         self.end_epoch_index
-    }
-
-    /// Helper method to compute the effect of an UndelegateClaim on the
-    /// transaction's value balance, used in planning and (transparent) proof
-    /// verification.
-    ///
-    /// This method takes the `unbonding_id` rather than the `UnbondingToken` so
-    /// that it can be used in mock proof verification, where computation of the
-    /// unbonding token's asset ID happens outside of the circuit.
-    pub fn balance_for_claim(
-        unbonding_id: asset::Id,
-        unbonding_amount: Amount,
-        penalty: u64,
-    ) -> anyhow::Result<Balance> {
-        // TODO: need widening Amount mul to handle 128-bit values, but we don't do that for staking anyways
-        let unbonded_amount =
-            (u128::try_from(unbonding_amount)?) * (1_0000_0000 - penalty as u128) / 1_0000_0000;
-
-        // The undelegate claim action subtracts the unbonding amount and adds
-        // the unbonded amount from the transaction's value balance.
-        let balance = Balance::zero()
-            - Value {
-                amount: unbonding_amount,
-                asset_id: unbonding_id,
-            }
-            + Value {
-                // TODO fix type conversions
-                amount: Amount::from(u64::try_from(unbonded_amount)?),
-                asset_id: *STAKING_TOKEN_ASSET_ID,
-            };
-
-        Ok(balance)
     }
 }
 

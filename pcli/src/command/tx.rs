@@ -433,6 +433,7 @@ impl TxCmd {
                     app.view.as_mut().unwrap(),
                     OsRng,
                     rate_data,
+                    todo!("end epoch"),
                     delegation_notes,
                     fee,
                     *source,

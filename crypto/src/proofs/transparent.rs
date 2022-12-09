@@ -13,7 +13,7 @@ use crate::{
     asset, balance,
     dex::{swap::SwapPlaintext, BatchSwapOutputData, TradingPair},
     ka, keys, note,
-    stake::UnbondingToken,
+    stake::{Penalty, UnbondingToken},
     transaction::Fee,
     Address, Amount, Balance, Fq, Fr, Note, Nullifier, Value,
 };
@@ -794,10 +794,9 @@ impl UndelegateClaimProof {
         &self,
         balance_commitment: balance::Commitment,
         unbonding_id: asset::Id,
-        penalty: u64,
+        penalty: Penalty,
     ) -> anyhow::Result<()> {
-        let expected_balance =
-            UnbondingToken::balance_for_claim(unbonding_id, self.unbonding_amount, penalty)?;
+        let expected_balance = penalty.balance_for_claim(unbonding_id, self.unbonding_amount);
         let expected_commitment = expected_balance.commit(self.balance_blinding);
         ensure!(
             expected_commitment == balance_commitment,

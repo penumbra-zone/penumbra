@@ -98,6 +98,7 @@ pub async fn undelegate<V, R>(
     view: &mut V,
     rng: R,
     rate_data: RateData,
+    end_epoch_index: u64,
     delegation_notes: Vec<SpendableNoteRecord>,
     fee: Fee,
     source_address: Option<u64>,
@@ -112,7 +113,9 @@ where
         .sum();
 
     let mut planner = Planner::new(rng);
-    planner.fee(fee).undelegate(delegation_amount, rate_data);
+    planner
+        .fee(fee)
+        .undelegate(delegation_amount, rate_data, end_epoch_index);
     for record in delegation_notes {
         planner.spend(record.note, record.position);
     }

@@ -1,4 +1,8 @@
-use penumbra_crypto::{balance, proofs::transparent::UndelegateClaimProof, stake::IdentityKey};
+use penumbra_crypto::{
+    balance,
+    proofs::transparent::UndelegateClaimProof,
+    stake::{IdentityKey, Penalty},
+};
 use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
@@ -14,7 +18,7 @@ pub struct UndelegateClaimBody {
     /// The epoch in which unbonding ended, used to verify the penalty.
     pub end_epoch_index: u64,
     /// The penalty applied to undelegation, in bps^2.
-    pub penalty: u64,
+    pub penalty: Penalty,
     /// The action's contribution to the transaction's value balance.
     pub balance_commitment: balance::Commitment,
 }
@@ -44,7 +48,7 @@ impl From<UndelegateClaimBody> for pb::UndelegateClaimBody {
             validator_identity: Some(d.validator_identity.into()),
             start_epoch_index: d.start_epoch_index,
             end_epoch_index: d.end_epoch_index,
-            penalty: d.penalty,
+            penalty: Some(d.penalty.into()),
             balance_commitment: Some(d.balance_commitment.into()),
         }
     }
@@ -60,7 +64,10 @@ impl TryFrom<pb::UndelegateClaimBody> for UndelegateClaimBody {
                 .try_into()?,
             start_epoch_index: d.start_epoch_index,
             end_epoch_index: d.end_epoch_index,
-            penalty: d.penalty,
+            penalty: d
+                .penalty
+                .ok_or_else(|| anyhow::anyhow!("missing penalty"))?
+                .try_into()?,
             balance_commitment: d
                 .balance_commitment
                 .ok_or_else(|| anyhow::anyhow!("missing balance_commitment"))?

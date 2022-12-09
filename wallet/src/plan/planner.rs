@@ -201,22 +201,17 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
     /// Add an undelegation to this transaction.
     ///
-    /// Undelegations have special rules to prevent you from accidentally locking up funds while the
-    /// transaction is unbonding: any transaction containing an undelegation must contain exactly
-    /// one undelegation, must spend only delegation tokens matching the validator from which the
-    /// undelegation is being performed, and must output only staking tokens. This means that it
-    /// must be an "exact change" transaction with no other actions.
-    ///
-    /// In order to ensure that the transaction is an "exact change" transaction, you should
-    /// probably explicitly add the precisely correct spends to the transaction, after having
-    /// generated those exact notes by splitting notes in a previous transaction, if necessary.
-    ///
-    /// The conditions imposed by the consensus rules are more permissive, but the planner will
-    /// protect you from shooting yourself in the foot by throwing an error, should the built
-    /// transaction fail these conditions.
+    /// TODO: can we put the chain parameters into the planner at the start, so we can compute end_epoch_index?
     #[instrument(skip(self))]
-    pub fn undelegate(&mut self, delegation_amount: u64, rate_data: RateData) -> &mut Self {
-        let undelegation = rate_data.build_undelegate(delegation_amount).into();
+    pub fn undelegate(
+        &mut self,
+        delegation_amount: u64,
+        rate_data: RateData,
+        end_epoch_index: u64,
+    ) -> &mut Self {
+        let undelegation = rate_data
+            .build_undelegate(delegation_amount, end_epoch_index)
+            .into();
         self.action(undelegation);
         self
     }

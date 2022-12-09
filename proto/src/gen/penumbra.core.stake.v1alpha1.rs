@@ -257,8 +257,8 @@ pub struct UndelegateClaimBody {
     pub end_epoch_index: u64,
     /// The penalty applied to undelegation, in bps^2 (10e-8).
     /// In the happy path (no slashing), this is 0.
-    #[prost(uint64, tag="4")]
-    pub penalty: u64,
+    #[prost(message, optional, tag="4")]
+    pub penalty: ::core::option::Option<Penalty>,
     /// The action's contribution to the transaction's value balance.
     #[prost(message, optional, tag="5")]
     pub balance_commitment: ::core::option::Option<super::super::crypto::v1alpha1::BalanceCommitment>,
@@ -277,8 +277,8 @@ pub struct UndelegateClaimPlan {
     pub end_epoch_index: u64,
     /// The penalty applied to undelegation, in bps^2 (10e-8).
     /// In the happy path (no slashing), this is 0.
-    #[prost(uint64, tag="4")]
-    pub penalty: u64,
+    #[prost(message, optional, tag="4")]
+    pub penalty: ::core::option::Option<Penalty>,
     /// The amount of unbonding tokens to claim.
     /// This is a bare number because its denom is determined by the preceding data.
     #[prost(message, optional, tag="5")]

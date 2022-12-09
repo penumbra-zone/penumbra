@@ -1,6 +1,6 @@
 use penumbra_crypto::{
     proofs::transparent::UndelegateClaimProof,
-    stake::{IdentityKey, UnbondingToken},
+    stake::{IdentityKey, Penalty, UnbondingToken},
     Amount, FieldExt, Fr,
 };
 use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
@@ -19,7 +19,7 @@ pub struct UndelegateClaimPlan {
     /// The epoch in which unbonding ended, used to verify the penalty.
     pub end_epoch_index: u64,
     /// The penalty applied to undelegation, in bps^2.
-    pub penalty: u64,
+    pub penalty: Penalty,
     /// The amount of unbonding tokens to claim. This is a bare number because its denom is determined by the preceding data.
     pub unbonding_amount: Amount,
     /// The blinding factor that will be used for the balance commitment.
@@ -30,7 +30,10 @@ pub struct UndelegateClaimPlan {
 impl UndelegateClaimPlan {
     /// Convenience method to construct the [`UndelegateClaim`] described by this [`UndelegateClaimPlan`].
     pub fn undelegate_claim(&self) -> UndelegateClaim {
-        todo!()
+        UndelegateClaim {
+            body: self.undelegate_claim_body(),
+            proof: self.undelegate_claim_proof(),
+        }
     }
 
     /// Construct the [`UndelegateClaimBody`] described by this [`UndelegateClaimPlan`].
@@ -56,8 +59,8 @@ impl UndelegateClaimPlan {
             self.end_epoch_index,
         )
         .id();
-        UnbondingToken::balance_for_claim(unbonding_id, self.unbonding_amount, self.penalty)
-            .unwrap()
+        self.penalty
+            .balance_for_claim(unbonding_id, self.unbonding_amount)
     }
 }
 
@@ -69,7 +72,7 @@ impl From<UndelegateClaimPlan> for pb::UndelegateClaimPlan {
             validator_identity: Some(msg.validator_identity.into()),
             start_epoch_index: msg.start_epoch_index,
             end_epoch_index: msg.end_epoch_index,
-            penalty: msg.penalty,
+            penalty: Some(msg.penalty.into()),
             unbonding_amount: Some(msg.unbonding_amount.into()),
             balance_blinding: msg.balance_blinding.to_bytes().to_vec(),
         }
@@ -86,7 +89,10 @@ impl TryFrom<pb::UndelegateClaimPlan> for UndelegateClaimPlan {
                 .try_into()?,
             start_epoch_index: msg.start_epoch_index,
             end_epoch_index: msg.end_epoch_index,
-            penalty: msg.penalty,
+            penalty: msg
+                .penalty
+                .ok_or_else(|| anyhow::anyhow!("missing penalty"))?
+                .try_into()?,
             unbonding_amount: msg
                 .unbonding_amount
                 .ok_or_else(|| anyhow::anyhow!("missing unbonding_amount"))?

@@ -18,6 +18,7 @@ mod spend;
 mod swap;
 mod swap_claim;
 mod undelegate;
+mod undelegate_claim;
 mod validator_definition;
 mod validator_vote;
 
@@ -27,7 +28,7 @@ impl ActionHandler for Action {
         match self {
             Action::Delegate(action) => action.check_stateless(context),
             Action::Undelegate(action) => action.check_stateless(context),
-            Action::UndelegateClaim(action) => todo!(),
+            Action::UndelegateClaim(action) => action.check_stateless(context),
             Action::ValidatorDefinition(action) => action.check_stateless(context),
             Action::ValidatorVote(action) => action.check_stateless(context),
             Action::PositionClose(action) => action.check_stateless(context),
@@ -50,7 +51,7 @@ impl ActionHandler for Action {
         match self {
             Action::Delegate(action) => action.check_stateful(state).await,
             Action::Undelegate(action) => action.check_stateful(state).await,
-            Action::UndelegateClaim(action) => todo!(),
+            Action::UndelegateClaim(action) => action.check_stateful(state).await,
             Action::ValidatorDefinition(action) => action.check_stateful(state).await,
             Action::ValidatorVote(action) => action.check_stateful(state).await,
             Action::PositionClose(action) => action.check_stateful(state).await,
@@ -80,7 +81,7 @@ impl ActionHandler for Action {
         match self {
             Action::Delegate(action) => action.execute(state).await,
             Action::Undelegate(action) => action.execute(state).await,
-            Action::UndelegateClaim(action) => todo!(),
+            Action::UndelegateClaim(action) => action.execute(state).await,
             Action::ValidatorDefinition(action) => action.execute(state).await,
             Action::ValidatorVote(action) => action.execute(state).await,
             Action::PositionClose(action) => action.execute(state).await,

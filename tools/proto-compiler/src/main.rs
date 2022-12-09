@@ -143,8 +143,14 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.core.stake.v1alpha1.Delegate", SERIALIZE),
     (".penumbra.core.stake.v1alpha1.Undelegate", SERIALIZE),
     (".penumbra.core.stake.v1alpha1.UndelegateClaim", SERIALIZE),
-    (".penumbra.core.stake.v1alpha1.UndelegateClaimBody", SERIALIZE),
-    (".penumbra.core.stake.v1alpha1.UndelegateClaimPlan", SERIALIZE),
+    (
+        ".penumbra.core.stake.v1alpha1.UndelegateClaimBody",
+        SERIALIZE,
+    ),
+    (
+        ".penumbra.core.stake.v1alpha1.UndelegateClaimPlan",
+        SERIALIZE,
+    ),
     (".penumbra.core.stake.v1alpha1.DelegationChanges", SERIALIZE),
     (".penumbra.core.stake.v1alpha1.CommissionAmount", SERIALIZE),
     (".penumbra.core.stake.v1alpha1.CommissionAmounts", SERIALIZE),

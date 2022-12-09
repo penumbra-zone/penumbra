@@ -6,7 +6,6 @@ use ::metrics::{decrement_gauge, gauge, increment_gauge};
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use futures::TryStreamExt;
-use penumbra_chain::quarantined::Slashed;
 use penumbra_chain::{genesis, Epoch, NoteSource, StateReadExt as _};
 use penumbra_crypto::stake::Penalty;
 use penumbra_crypto::{
@@ -182,7 +181,9 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 self.set_validator_bonding_state(
                     identity_key,
                     Unbonding {
-                        unbonding_epoch: self.current_unbonding_end_epoch().await?,
+                        unbonding_epoch: self
+                            .current_unbonding_end_epoch_for(&identity_key)
+                            .await?,
                     },
                 )
                 .await;
@@ -223,8 +224,8 @@ pub(crate) trait StakingImpl: StateWriteExt {
             (Active, Jailed) => {
                 let penalty = self.get_chain_params().await?.slashing_penalty_downtime;
 
-                // Apply the penalty to the validator's current exchange rate.
-                self.apply_slashing_penalty(identity_key, penalty).await?;
+                // Record the slashing penalty on this validator.
+                self.record_slashing_penalty(identity_key, penalty).await?;
 
                 // The validator's delegation pool begins unbonding.  Jailed
                 // validators are not unbonded immediately, because they need to
@@ -233,7 +234,9 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 self.set_validator_bonding_state(
                     identity_key,
                     Unbonding {
-                        unbonding_epoch: self.current_unbonding_end_epoch().await?,
+                        unbonding_epoch: self
+                            .current_unbonding_end_epoch_for(&identity_key)
+                            .await?,
                     },
                 )
                 .await;
@@ -246,8 +249,8 @@ pub(crate) trait StakingImpl: StateWriteExt {
             (Active | Inactive | Disabled | Jailed, Tombstoned) => {
                 let penalty = self.get_chain_params().await?.slashing_penalty_misbehavior;
 
-                // Apply the penalty to the validator's current exchange rate.
-                self.apply_slashing_penalty(identity_key, penalty).await?;
+                // Record the slashing penalty on this validator.
+                self.record_slashing_penalty(identity_key, penalty).await?;
 
                 // Regardless of its current bonding state, the validator's
                 // delegation pool is unbonded immediately, because the
@@ -324,13 +327,19 @@ pub(crate) trait StakingImpl: StateWriteExt {
 
         let validator_list = self.validator_list().await?;
         for validator in &validator_list {
-            // The old epoch's "next rate" is now the "current rate".
-            let current_rate = self
+            // The old epoch's "next rate" is now the "current rate"...
+            let old_next_rate = self
                 .next_validator_rate(&validator.identity_key)
                 .await?
                 .ok_or_else(|| {
                     anyhow::anyhow!("validator had ID in validator_list but rate not found in JMT")
                 })?;
+            // ... as soon as we apply any penalties recorded in the previous epoch.
+            let penalty = self
+                .penalty_in_epoch(&validator.identity_key, epoch_to_end.index)
+                .await?
+                .unwrap_or_default();
+            let current_rate = old_next_rate.slash(penalty);
 
             let validator_state = self
                 .validator_state(&validator.identity_key)
@@ -912,6 +921,39 @@ pub trait StateReadExt: StateRead {
             .unwrap_or_default()
     }
 
+    async fn penalty_in_epoch(
+        &self,
+        id: &IdentityKey,
+        epoch_index: u64,
+    ) -> Result<Option<Penalty>> {
+        self.get(&state_key::penalty_in_epoch(id, epoch_index))
+            .await
+    }
+
+    /// Returns the compounded penalty for the given validator over the half-open range of epochs [start, end).
+    async fn compounded_penalty_over_range(
+        &self,
+        id: &IdentityKey,
+        start: u64,
+        end: u64,
+    ) -> Result<Penalty> {
+        let prefix = state_key::penalty_in_epoch_prefix(id);
+        let all_penalties = self
+            .prefix::<Penalty, _>(&prefix)
+            .try_collect::<BTreeMap<String, Penalty>>()
+            .await?;
+
+        let start_key = state_key::penalty_in_epoch(id, start);
+        let end_key = state_key::penalty_in_epoch(id, end);
+
+        let mut compounded = Penalty::default();
+        for (_key, penalty) in all_penalties.range(start_key..end_key) {
+            compounded = compounded.compound(*penalty);
+        }
+
+        Ok(compounded)
+    }
+
     async fn current_base_rate(&self) -> Result<BaseRateData> {
         self.get(state_key::current_base_rate())
             .await
@@ -1048,11 +1090,22 @@ pub trait StateReadExt: StateRead {
         Ok(self.get_chain_params().await?.missed_blocks_maximum)
     }
 
-    async fn current_unbonding_end_epoch(&self) -> Result<u64> {
+    async fn current_unbonding_end_epoch_for(&self, id: &IdentityKey) -> Result<u64> {
         let current_epoch = self.get_current_epoch().await?;
         let unbonding_epochs = self.get_chain_params().await?.unbonding_epochs;
 
-        Ok(current_epoch.index + unbonding_epochs)
+        let default_unbonding = current_epoch.index + unbonding_epochs;
+
+        let validator_unbonding =
+            if let Some(validator::BondingState::Unbonding { unbonding_epoch }) =
+                self.validator_bonding_state(id).await?
+            {
+                unbonding_epoch
+            } else {
+                u64::MAX
+            };
+
+        Ok(std::cmp::min(default_unbonding, validator_unbonding))
     }
 
     /// Returns the epoch and identity key for quarantining a transaction, if it should be
@@ -1184,42 +1237,25 @@ pub trait StateWriteExt: StateWrite {
         );
     }
 
-    async fn apply_slashing_penalty(
+    async fn record_slashing_penalty(
         &mut self,
         identity_key: &IdentityKey,
         slashing_penalty: Penalty,
     ) -> Result<()> {
-        let mut cur_rate = self
-            .current_validator_rate(identity_key)
+        let current_epoch_index = self.epoch().await?.index;
+
+        let current_penalty = self
+            .penalty_in_epoch(identity_key, current_epoch_index)
             .await?
-            .ok_or_else(|| {
-                anyhow::anyhow!("validator to be slashed did not have current rate in JMT")
-            })?;
+            .unwrap_or_default();
 
-        // Apply the slashing penalty to the current rate...
-        cur_rate = cur_rate.slash(slashing_penalty);
-        // ...and ensure they're held constant at the penalized rate.
-        let next_rate = {
-            let mut rate = cur_rate.clone();
-            rate.epoch_index += 1;
-            rate
-        };
+        let new_penalty = current_penalty.compound(slashing_penalty);
 
-        self.set_validator_rates(identity_key, cur_rate, next_rate);
+        self.put(
+            state_key::penalty_in_epoch(identity_key, current_epoch_index),
+            new_penalty,
+        );
 
-        // Whenever a slashing penalty is applied, we need to record that the validator was slashedt
-        // in this block so that the shielded pool can unschedule unquarantines
-        self.record_slashing(identity_key.clone()).await?;
-
-        Ok(())
-    }
-
-    async fn record_slashing(&mut self, identity_key: IdentityKey) -> Result<()> {
-        let height = self.get_block_height().await?;
-        let key = super::state_key::slashed_validators(height).to_owned();
-        let mut slashed: Slashed = self.get(&key).await?.unwrap_or_default();
-        slashed.validators.push(identity_key);
-        self.put(key, slashed);
         Ok(())
     }
 

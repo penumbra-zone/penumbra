@@ -3,6 +3,8 @@ use std::str::FromStr;
 use penumbra_proto::{core::stake::v1alpha1 as pbs, Protobuf};
 use serde::{Deserialize, Serialize};
 
+use crate::{asset, Amount, Balance, Value, STAKING_TOKEN_ASSET_ID};
+
 /// Tracks slashing penalties applied to a validator in some epoch.
 ///
 /// The penalty is represented as a fixed-point integer in bps^2 (denominator 10^8).
@@ -28,6 +30,38 @@ impl Penalty {
         let q = u64::try_from(one - (((one - p1) * (one - p2)) / 1_0000_0000))
             .expect("value should fit in 64 bits");
         Penalty(q)
+    }
+
+    /// Apply this `Penalty` to an `Amount` of unbonding tokens.
+    pub fn apply_to(&self, amount: Amount) -> Amount {
+        // TODO: need widening Amount mul to handle 128-bit values, but we don't do that for staking anyways
+        // TODO: this should all be infallible
+        let penalized_amount =
+            (u128::try_from(amount).unwrap()) * (1_0000_0000 - self.0 as u128) / 1_0000_0000;
+        Amount::try_from(u64::try_from(penalized_amount).unwrap()).unwrap()
+    }
+
+    /// Helper method to compute the effect of an UndelegateClaim on the
+    /// transaction's value balance, used in planning and (transparent) proof
+    /// verification.
+    ///
+    /// This method takes the `unbonding_id` rather than the `UnbondingToken` so
+    /// that it can be used in mock proof verification, where computation of the
+    /// unbonding token's asset ID happens outside of the circuit.
+    pub fn balance_for_claim(&self, unbonding_id: asset::Id, unbonding_amount: Amount) -> Balance {
+        // The undelegate claim action subtracts the unbonding amount and adds
+        // the unbonded amount from the transaction's value balance.
+        let balance = Balance::zero()
+            - Value {
+                amount: unbonding_amount,
+                asset_id: unbonding_id,
+            }
+            + Value {
+                amount: self.apply_to(unbonding_amount),
+                asset_id: *STAKING_TOKEN_ASSET_ID,
+            };
+
+        balance
     }
 }
 
