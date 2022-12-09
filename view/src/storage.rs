@@ -179,13 +179,13 @@ impl Storage {
                 format!(
                     "SELECT
                         notes.note_commitment,
-                        notes.height_created,
+                        spendable_notes.height_created,
                         notes.address,
                         notes.amount,
                         notes.asset_id,
                         notes.blinding_factor,
-                        notes.address_index,
-                        notes.source,
+                        spendable_notes.address_index,
+                        spendable_notes.source,
                         spendable_notes.height_spent,
                         spendable_notes.nullifier,
                         spendable_notes.position
@@ -453,13 +453,13 @@ impl Storage {
                 format!(
                     "SELECT
                         notes.note_commitment,
-                        notes.height_created,
+                        spendable_notes.height_created,
                         notes.address,
                         notes.amount,
                         notes.asset_id,
                         notes.blinding_factor,
-                        notes.address_index,
-                        notes.source,
+                        spendable_notes.address_index,
+                        spendable_notes.source,
                         spendable_notes.height_spent,
                         spendable_notes.nullifier,
                         spendable_notes.position
@@ -564,13 +564,13 @@ impl Storage {
         let result = sqlx::query_as::<_, SpendableNoteRecord>(
             format!(
                 "SELECT notes.note_commitment,
-                        notes.height_created,
+                        spendable_notes.height_created,
                         notes.address,
                         notes.amount,
                         notes.asset_id,
                         notes.blinding_factor,
-                        notes.address_index,
-                        notes.source,
+                        spendable_notes.address_index,
+                        spendable_notes.source,
                         spendable_notes.height_spent,
                         spendable_notes.nullifier,
                         spendable_notes.position
@@ -578,7 +578,7 @@ impl Storage {
             JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
             WHERE spendable_notes.height_spent IS {}
             AND notes.asset_id IS {}
-            AND notes.address_index IS {}",
+            AND spendable_notes.address_index IS {}",
                 spent_clause, asset_clause, address_clause
             )
             .as_str(),
@@ -685,13 +685,13 @@ impl Storage {
         Ok(sqlx::query_as::<_, SpendableNoteRecord>(
             format!(
                 "SELECT notes.note_commitment,
-                        notes.height_created,
+                        spendable_notes.height_created,
                         notes.address,
                         notes.amount,
                         notes.asset_id,
                         notes.blinding_factor,
-                        notes.address_index,
-                        notes.source,
+                        spendable_notes.address_index,
+                        spendable_notes.source,
                         spendable_notes.height_spent,
                         spendable_notes.nullifier,
                         spendable_notes.position
@@ -760,23 +760,17 @@ impl Storage {
                 "INSERT INTO notes
                     (
                         note_commitment,
-                        height_created,
                         address,
                         amount,
                         asset_id,
-                        blinding_factor,
-                        address_index,
-                        source
+                        blinding_factor
                     )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                VALUES (?, ?, ?, ?, ?)",
                 note_commitment,
-                height_created,
                 address,
                 amount,
                 asset_id,
                 blinding_factor,
-                address_index,
-                source,
             )
             .execute(&mut dbtx)
             .await?;
@@ -785,21 +779,22 @@ impl Storage {
                 "INSERT INTO spendable_notes
                     (
                         note_commitment,
-                        height_spent,
                         nullifier,
-                        position
+                        position,
+                        height_created,
+                        address_index,
+                        source,
+                        height_spent
                     )
                     VALUES
-                    (
-                        ?,
-                        NULL,
-                        ?,
-                        ?
-                    )",
+                    (?, ?, ?, ?, ?, ?, NULL)",
                 note_commitment,
-                // height_spent is NULL
                 nullifier,
-                position
+                position,
+                height_created,
+                address_index,
+                source,
+                // height_spent is NULL
             )
             .execute(&mut dbtx)
             .await?;

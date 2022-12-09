@@ -58,16 +58,6 @@
     },
     "query": "INSERT INTO sync_height (height) VALUES (?)"
   },
-  "240f35a686d912511ad6db5342cf7f3eafa0452b0979233f48eb5c56871ad152": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 3
-      }
-    },
-    "query": "INSERT INTO spendable_notes\n                    (\n                        note_commitment,\n                        height_spent,\n                        nullifier,\n                        position\n                    )\n                    VALUES\n                    (\n                        ?,\n                        NULL,\n                        ?,\n                        ?\n                    )"
-  },
   "2547294717840bcb1bef870394b99cf275bcba98d005f1f18b03c7a3d93909e1": {
     "describe": {
       "columns": [],
@@ -77,6 +67,16 @@
       }
     },
     "query": "INSERT INTO assets\n                    (\n                        asset_id,\n                        denom\n                    )\n                    VALUES\n                    (\n                        ?,\n                        ?\n                    )"
+  },
+  "2ea376bc5364276b0aa3a2b7a436ad3dc56a4c0b22813635320aa67f3952af0c": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 5
+      }
+    },
+    "query": "INSERT INTO notes\n                    (\n                        note_commitment,\n                        address,\n                        amount,\n                        asset_id,\n                        blinding_factor\n                    )\n                VALUES (?, ?, ?, ?, ?)"
   },
   "3330ad89b630f87f1ed502363de779624f72710fb59f2133c5db2c1dc8d30b2d": {
     "describe": {
@@ -169,16 +169,6 @@
       }
     },
     "query": "SELECT hash FROM nct_hashes WHERE position = ? AND height = ? LIMIT 1"
-  },
-  "5b0931e85f189748ade34b5b64f218ae43800c48283a98fbbb4755a9b4231035": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 8
-      }
-    },
-    "query": "INSERT INTO notes\n                    (\n                        note_commitment,\n                        height_created,\n                        address,\n                        amount,\n                        asset_id,\n                        blinding_factor,\n                        address_index,\n                        source\n                    )\n                VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
   },
   "63aad4faac1ffefd5525595f9ca5a82186181368251da9fbacf65a4d48671a01": {
     "describe": {
@@ -385,6 +375,16 @@
       }
     },
     "query": "UPDATE spendable_notes SET height_spent = ? WHERE nullifier = ? RETURNING note_commitment"
+  },
+  "c883f3f9af27f775ef238515f88a55e5ece0402a72d3c1fde0b07bbe321cbecc": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 6
+      }
+    },
+    "query": "INSERT INTO spendable_notes\n                    (\n                        note_commitment,\n                        nullifier,\n                        position,\n                        height_created,\n                        address_index,\n                        source,\n                        height_spent\n                    )\n                    VALUES\n                    (?, ?, ?, ?, ?, ?, NULL)"
   },
   "ccf9c7b45b2a68b2323a357b9780e79e359cf0de78da122ac8db978f9d834471": {
     "describe": {
