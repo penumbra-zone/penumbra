@@ -870,6 +870,9 @@ impl Storage {
             let position = (u64::from(note_record.position)) as i64;
             let source = note_record.source.to_bytes().to_vec();
 
+            // We might have already seen the notes in the form of advice,
+            // so we use ON CONFLICT DO NOTHING to skip re-inserting them
+            // in that case.
             sqlx::query!(
                 "INSERT INTO notes
                     (
@@ -879,7 +882,8 @@ impl Storage {
                         asset_id,
                         blinding_factor
                     )
-                VALUES (?, ?, ?, ?, ?)",
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT DO NOTHING",
                 note_commitment,
                 address,
                 amount,
@@ -951,6 +955,7 @@ impl Storage {
             )
             .fetch_optional(&mut dbtx)
             .await?;
+            // TODO: mark spent swaps as spent
 
             if let Some(bytes) = spent_commitment_bytes {
                 // Forget spent note commitments from the NCT
