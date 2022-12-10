@@ -505,7 +505,7 @@ impl SwapProof {
             }
             - Value {
                 amount: self.swap_plaintext.delta_2_i,
-                asset_id: self.swap_plaintext.trading_pair.asset_1(),
+                asset_id: self.swap_plaintext.trading_pair.asset_2(),
             };
         let transparent_balance_commitment = transparent_balance.commit(Fr::zero());
 
