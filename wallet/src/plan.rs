@@ -1,17 +1,10 @@
-use penumbra_tct::Position;
 use std::collections::BTreeMap;
 use tonic::transport::Channel;
 
 use anyhow::{Context, Result};
 use penumbra_component::stake::rate::RateData;
 use penumbra_component::stake::validator;
-use penumbra_crypto::{
-    asset::Denom,
-    dex::{swap::SwapPlaintext, BatchSwapOutputData},
-    keys::AddressIndex,
-    transaction::Fee,
-    Address, FullViewingKey, Note, Value,
-};
+use penumbra_crypto::{keys::AddressIndex, transaction::Fee, Address, FullViewingKey, Note, Value};
 use penumbra_proto::{
     client::v1alpha1::{
         specific_query_service_client::SpecificQueryServiceClient, BatchSwapOutputDataRequest,
@@ -144,12 +137,12 @@ where
     Ok(plans)
 }
 
-#[instrument(skip(fvk, view, rng))]
+//#[instrument(skip(_fvk, _view, _rng))]
 pub async fn claim_unclaimed_swaps<V, R>(
-    fvk: &FullViewingKey,
-    view: &mut V,
-    mut rng: R,
-    mut specific_client: SpecificQueryServiceClient<Channel>,
+    _fvk: &FullViewingKey,
+    _view: &mut V,
+    mut _rng: R,
+    mut _specific_client: SpecificQueryServiceClient<Channel>,
 ) -> Result<Vec<TransactionPlan>, anyhow::Error>
 where
     V: ViewClient,
