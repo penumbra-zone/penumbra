@@ -4,12 +4,12 @@ use crate::{
     dex::{StateReadExt as _, StateWriteExt as _},
     shielded_pool::NoteManager,
 };
-use anyhow::{Context, Result};
-use ark_ff::Zero;
+use anyhow::Result;
+
 use async_trait::async_trait;
-use decaf377::Fr;
+
 use penumbra_chain::sync::StatePayload;
-use penumbra_crypto::{MockFlowCiphertext, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_crypto::MockFlowCiphertext;
 use penumbra_storage::{State, StateRead, StateTransaction};
 use penumbra_transaction::{action::Swap, IsAction, Transaction};
 use tracing::instrument;

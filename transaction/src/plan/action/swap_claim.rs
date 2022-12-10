@@ -1,13 +1,12 @@
 use penumbra_crypto::{
     dex::{swap::SwapPlaintext, BatchSwapOutputData},
-    ka,
     keys::{IncomingViewingKey, NullifierKey},
     proofs::transparent::SwapClaimProof,
-    FullViewingKey, Note, Value,
+    FullViewingKey, Value,
 };
 use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 use penumbra_tct as tct;
-use rand_core::{CryptoRng, RngCore};
+
 use serde::{Deserialize, Serialize};
 use tct::Position;
 

@@ -1,9 +1,7 @@
 use penumbra_chain::NoteSource;
 use penumbra_crypto::{
-    asset,
     dex::{swap::SwapPlaintext, BatchSwapOutputData},
-    keys::AddressIndex,
-    note, Address, FieldExt, Fq, Note, Nullifier, Value,
+    Nullifier,
 };
 use penumbra_proto::{view::v1alpha1 as pb, Protobuf};
 use penumbra_tct as tct;

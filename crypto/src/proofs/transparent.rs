@@ -12,13 +12,13 @@ use penumbra_tct as tct;
 use super::transparent_gadgets as gadgets;
 use crate::{
     asset, balance,
-    dex::{swap::SwapPlaintext, BatchSwapOutputData, TradingPair},
+    dex::{swap::SwapPlaintext, BatchSwapOutputData},
     ka,
     keys::{self, NullifierKey},
     note,
     stake::Penalty,
     transaction::Fee,
-    Address, Amount, Balance, Fq, Fr, Note, Nullifier, Value,
+    Amount, Balance, Fq, Fr, Note, Nullifier, Value,
 };
 
 /// Transparent proof for spending existing notes.

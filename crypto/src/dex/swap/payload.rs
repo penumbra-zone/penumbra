@@ -1,6 +1,6 @@
 use anyhow::anyhow;
-use penumbra_proto::{core::crypto::v1alpha1 as pb_crypto, core::dex::v1alpha1 as pb, Protobuf};
-use penumbra_tct as tct;
+use penumbra_proto::core::dex::v1alpha1 as pb;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{ka, FullViewingKey};

@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, sync::Arc};
+use std::collections::BTreeMap;
 
 use penumbra_chain::{CompactBlock, Epoch, StatePayload};
 use penumbra_crypto::{dex::swap::SwapPlaintext, note, FullViewingKey, Note};

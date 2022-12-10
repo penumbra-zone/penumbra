@@ -1,12 +1,9 @@
 use anyhow::{anyhow, Result};
 use ark_ff::UniformRand;
-use decaf377::Fq;
+
 use penumbra_crypto::dex::swap::SwapPlaintext;
 use penumbra_crypto::Balance;
-use penumbra_crypto::{
-    asset, ka, proofs::transparent::SwapProof, EncryptedNote, FieldExt, Fr, FullViewingKey, Note,
-    Value,
-};
+use penumbra_crypto::{ka, proofs::transparent::SwapProof, FieldExt, Fr, FullViewingKey, Value};
 use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};

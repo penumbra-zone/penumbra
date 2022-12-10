@@ -1,4 +1,4 @@
-use penumbra_crypto::{dex::swap::SwapPlaintext, Note};
+use penumbra_crypto::dex::swap::SwapPlaintext;
 use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 

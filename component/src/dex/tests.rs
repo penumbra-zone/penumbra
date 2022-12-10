@@ -10,7 +10,7 @@ use penumbra_crypto::{
 use penumbra_storage::{ArcStateExt, TempStorage};
 use penumbra_transaction::{
     plan::{SwapClaimPlan, SwapPlan},
-    Action, Transaction, TransactionBody,
+    Transaction,
 };
 use rand_core::SeedableRng;
 use tendermint::abci;

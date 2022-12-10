@@ -101,7 +101,7 @@ impl Transaction {
                 }
                 // These actions have no payload keys; they're listed explicitly
                 // for exhaustiveness.
-                Action::SwapClaim(swap_claim) => {}
+                Action::SwapClaim(_swap_claim) => {}
                 Action::Spend(_) => {}
                 Action::Delegate(_) => {}
                 Action::Undelegate(_) => {}
