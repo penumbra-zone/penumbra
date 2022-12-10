@@ -126,7 +126,8 @@ where
     let mut plans = Vec::new();
 
     // First, find any un-claimed swaps and add `SwapClaim` plans for them.
-    plans.extend(claim_unclaimed_swaps(fvk, view, &mut rng, specific_client).await?);
+    // TODO: re-enable
+    //plans.extend(claim_unclaimed_swaps(fvk, view, &mut rng, specific_client).await?);
 
     // Finally, sweep dust notes by spending them to their owner's address.
     // This will consolidate small-value notes into larger ones.
