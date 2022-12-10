@@ -360,8 +360,12 @@ impl SwapClaimProof {
         ensure!(fee == self.swap_plaintext.claim_fee, "fee mismatch");
 
         // Output amounts integrity
-        let (lambda_1_i, lambda_2_i) =
-            output_data.pro_rata_outputs((self.lambda_1_i, self.lambda_2_i));
+        let (lambda_1_i, lambda_2_i) = output_data
+            // TODO: Amount conversion ?
+            .pro_rata_outputs((
+                self.swap_plaintext.delta_1_i.try_into()?,
+                self.swap_plaintext.delta_2_i.try_into()?,
+            ));
         ensure!(self.lambda_1_i == lambda_1_i, "lambda_1_i mismatch");
         ensure!(self.lambda_2_i == lambda_2_i, "lambda_2_i mismatch");
 
@@ -505,9 +509,10 @@ impl SwapProof {
             };
         let transparent_balance_commitment = transparent_balance.commit(Fr::zero());
 
+        // XXX sign error here
         // XXX we want to avoid having to twiddle signs for synthetic blinding factor in binding sig
         ensure!(
-            balance_commitment == transparent_balance_commitment - fee_commitment,
+            balance_commitment == transparent_balance_commitment + fee_commitment,
             "balance commitment mismatch"
         );
 

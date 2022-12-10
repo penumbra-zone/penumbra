@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use crate::shielded_pool::{StateReadExt as _, StateWriteExt as _};
 use crate::Component;
 use anyhow::Result;
 use async_trait::async_trait;
@@ -126,9 +127,14 @@ impl<T: StateRead> StateReadExt for T {}
 #[async_trait]
 pub trait StateWriteExt: StateWrite + StateReadExt {
     fn set_output_data(&mut self, output_data: BatchSwapOutputData) {
+        // Write the output data to the state under a known key, for querying, ...
         let height = output_data.height;
         let trading_pair = output_data.trading_pair;
         self.put(state_key::output_data(height, trading_pair), output_data);
+        // ... and also add it to the compact block to be pushed out to clients.
+        let mut compact_block = self.stub_compact_block();
+        compact_block.swap_outputs.insert(trading_pair, output_data);
+        self.stub_put_compact_block(compact_block);
     }
 
     fn set_stub_cpmm_reserves(&mut self, trading_pair: &TradingPair, reserves: Reserves) {

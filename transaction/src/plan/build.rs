@@ -88,7 +88,7 @@ impl TransactionPlan {
 
         // Build the transaction's swap claims.
         for swap_claim_plan in self.swap_claim_plans().cloned() {
-            let note_commitment = swap_claim_plan.swap_nft_note.commit();
+            let note_commitment = swap_claim_plan.swap_plaintext.swap_commitment();
             let auth_path = witness_data
                 .note_commitment_proofs
                 .get(&note_commitment)

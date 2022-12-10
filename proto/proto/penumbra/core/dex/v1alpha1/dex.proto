@@ -27,6 +27,8 @@ message SwapClaim {
   bytes proof = 1;
   // Encapsulates the authorized fields of the SwapClaim action, used in signing.
   SwapClaimBody body = 2;
+  // The epoch duration of the chain when the swap claim took place.
+  uint64 epoch_duration = 7;
 }
 
 // Encapsulates the authorized fields of the SwapClaim action, used in signing.
@@ -41,8 +43,6 @@ message SwapClaimBody {
   crypto.v1alpha1.StateCommitment output_2_commitment = 4;
   // Input and output amounts, and asset IDs for the assets in the swap.
   BatchSwapOutputData output_data = 6;
-  // The epoch duration of the chain when the swap claim took place.
-  uint64 epoch_duration = 7;
 }
 
 // The authorized data of a Swap transaction.
@@ -99,22 +99,14 @@ message SwapPlan {
 }
 
 message SwapClaimPlan {
-    /*
-     * @exclude
-     * Fields describing the swap NFT note to be redeemed.
-     */
-    // The input swap NFT note to be spent.
-    crypto.v1alpha1.Note swap_nft_note = 1;
-    // The position of the input swap NFT note.
-    uint64 swap_nft_position = 2;
     // The plaintext version of the swap to be performed.
-    dex.v1alpha1.SwapPlaintext swap_plaintext = 3;
-
+    dex.v1alpha1.SwapPlaintext swap_plaintext = 1;
+    // The position of the swap commitment.
+    uint64 position = 2;
     // Input and output amounts for the Swap.
-    dex.v1alpha1.BatchSwapOutputData output_data = 11;
-
-    // The epoch duration when the swap claim took place.
-    uint64 epoch_duration = 20;
+    dex.v1alpha1.BatchSwapOutputData output_data = 3;
+    // The epoch duration, used in proving.
+    uint64 epoch_duration = 4;
 }
 
 message SwapView {

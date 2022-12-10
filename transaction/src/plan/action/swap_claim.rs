@@ -17,37 +17,13 @@ use crate::action::{swap_claim, SwapClaim};
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(try_from = "pb::SwapClaimPlan", into = "pb::SwapClaimPlan")]
 pub struct SwapClaimPlan {
-    pub swap_nft_note: Note,
-    pub swap_nft_position: Position,
     pub swap_plaintext: SwapPlaintext,
+    pub position: Position,
     pub output_data: BatchSwapOutputData,
     pub epoch_duration: u64,
 }
 
 impl SwapClaimPlan {
-    // if no rng required, better to just pass a SwapClaimPlan, so args are named
-    /*
-    /// Create a new [`SwapClaimPlan`] that redeems output notes to `claim_address` using
-    /// the associated swap NFT.
-    #[allow(clippy::too_many_arguments)]
-    pub fn new<R: RngCore + CryptoRng>(
-        rng: &mut R,
-        swap_plaintext: SwapPlaintext,
-        swap_nft_note: Note,
-        swap_nft_position: Position,
-        epoch_duration: u64,
-        output_data: BatchSwapOutputData,
-    ) -> SwapClaimPlan {
-        Self {
-            swap_nft_note,
-            output_data,
-            swap_plaintext,
-            swap_nft_position,
-            epoch_duration,
-        }
-    }
-    */
-
     /// Convenience method to construct the [`SwapClaim`] described by this
     /// [`SwapClaimPlan`].
     pub fn swap_claim(
@@ -58,6 +34,7 @@ impl SwapClaimPlan {
         SwapClaim {
             body: self.swap_claim_body(fvk),
             proof: self.swap_claim_proof(note_commitment_proof, fvk.nullifier_key()),
+            epoch_duration: self.epoch_duration,
         }
     }
 
@@ -84,39 +61,14 @@ impl SwapClaimPlan {
 
     /// Construct the [`swap_claim::Body`] described by this plan.
     pub fn swap_claim_body(&self, fvk: &FullViewingKey) -> swap_claim::Body {
-        let (lambda_1_i, lambda_2_i) = self.output_data.pro_rata_outputs((
-            self.swap_plaintext.delta_1_i.into(),
-            self.swap_plaintext.delta_2_i.into(),
-        ));
-
-        let (output_blinding_1, output_blinding_2) = self.swap_plaintext.output_blinding_factors();
-
-        let output_1_note = Note::from_parts(
-            self.swap_nft_note.address(),
-            Value {
-                amount: lambda_1_i.into(),
-                asset_id: self.swap_plaintext.trading_pair.asset_1(),
-            },
-            output_blinding_1,
-        )
-        .expect("transmission key in address is always valid");
-        let output_2_note = Note::from_parts(
-            self.swap_nft_note.address(),
-            Value {
-                amount: lambda_2_i.into(),
-                asset_id: self.swap_plaintext.trading_pair.asset_2(),
-            },
-            output_blinding_2,
-        )
-        .expect("transmission key in address is always valid");
+        let (output_1_note, output_2_note) = self.swap_plaintext.output_notes(&self.output_data);
         tracing::debug!(?output_1_note, ?output_2_note);
 
         // We need to get the correct diversified generator to use with DH:
-        let g_d = self.swap_plaintext.claim_address.diversified_generator();
         let output_1_commitment = output_1_note.commit();
         let output_2_commitment = output_2_note.commit();
 
-        let nullifier = fvk.derive_nullifier(self.swap_nft_position, &self.swap_nft_note.commit());
+        let nullifier = fvk.derive_nullifier(self.position, &self.swap_plaintext.swap_commitment());
 
         swap_claim::Body {
             nullifier,
@@ -124,13 +76,12 @@ impl SwapClaimPlan {
             output_1_commitment,
             output_2_commitment,
             output_data: self.output_data,
-            epoch_duration: self.epoch_duration,
         }
     }
 
     /// Checks whether this plan's output is viewed by the given IVK.
     pub fn is_viewed_by(&self, ivk: &IncomingViewingKey) -> bool {
-        ivk.views_address(&self.swap_nft_note.address())
+        ivk.views_address(&self.swap_plaintext.claim_address)
     }
 
     pub fn balance(&self) -> penumbra_crypto::Balance {
@@ -151,8 +102,7 @@ impl From<SwapClaimPlan> for pb::SwapClaimPlan {
     fn from(msg: SwapClaimPlan) -> Self {
         Self {
             swap_plaintext: Some(msg.swap_plaintext.into()),
-            swap_nft_note: Some(msg.swap_nft_note.into()),
-            swap_nft_position: msg.swap_nft_position.into(),
+            position: msg.position.into(),
             output_data: Some(msg.output_data.into()),
             epoch_duration: msg.epoch_duration,
         }
@@ -167,11 +117,7 @@ impl TryFrom<pb::SwapClaimPlan> for SwapClaimPlan {
                 .swap_plaintext
                 .ok_or_else(|| anyhow::anyhow!("missing swap_plaintext"))?
                 .try_into()?,
-            swap_nft_note: msg
-                .swap_nft_note
-                .ok_or_else(|| anyhow::anyhow!("missing swap_nft_note"))?
-                .try_into()?,
-            swap_nft_position: msg.swap_nft_position.try_into()?,
+            position: msg.position.into(),
             output_data: msg
                 .output_data
                 .ok_or_else(|| anyhow::anyhow!("missing output_data"))?

@@ -29,6 +29,9 @@ pub struct SwapClaim {
     /// Encapsulates the authorized fields of the SwapClaim action, used in signing.
     #[prost(message, optional, tag="2")]
     pub body: ::core::option::Option<SwapClaimBody>,
+    /// The epoch duration of the chain when the swap claim took place.
+    #[prost(uint64, tag="7")]
+    pub epoch_duration: u64,
 }
 /// Encapsulates the authorized fields of the SwapClaim action, used in signing.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
@@ -49,9 +52,6 @@ pub struct SwapClaimBody {
     /// Input and output amounts, and asset IDs for the assets in the swap.
     #[prost(message, optional, tag="6")]
     pub output_data: ::core::option::Option<BatchSwapOutputData>,
-    /// The epoch duration of the chain when the swap claim took place.
-    #[prost(uint64, tag="7")]
-    pub epoch_duration: u64,
 }
 /// The authorized data of a Swap transaction.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
@@ -132,26 +132,20 @@ pub struct SwapPlan {
     #[serde(with = "crate::serializers::hexstr")]
     pub esk: ::prost::alloc::vec::Vec<u8>,
 }
-///
-/// @exclude
-/// Fields describing the swap NFT note to be redeemed.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapClaimPlan {
-    /// The input swap NFT note to be spent.
-    #[prost(message, optional, tag="1")]
-    pub swap_nft_note: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
-    /// The position of the input swap NFT note.
-    #[prost(uint64, tag="2")]
-    pub swap_nft_position: u64,
     /// The plaintext version of the swap to be performed.
-    #[prost(message, optional, tag="3")]
+    #[prost(message, optional, tag="1")]
     pub swap_plaintext: ::core::option::Option<SwapPlaintext>,
+    /// The position of the swap commitment.
+    #[prost(uint64, tag="2")]
+    pub position: u64,
     /// Input and output amounts for the Swap.
-    #[prost(message, optional, tag="11")]
+    #[prost(message, optional, tag="3")]
     pub output_data: ::core::option::Option<BatchSwapOutputData>,
-    /// The epoch duration when the swap claim took place.
-    #[prost(uint64, tag="20")]
+    /// The epoch duration, used in proving.
+    #[prost(uint64, tag="4")]
     pub epoch_duration: u64,
 }
 #[derive(::serde::Deserialize, ::serde::Serialize)]

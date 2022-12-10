@@ -22,7 +22,7 @@ impl ActionHandler for SwapClaim {
                 context.anchor,
                 self.body.nullifier,
                 self.body.output_data,
-                self.body.epoch_duration,
+                self.epoch_duration,
                 self.body.output_1_commitment,
                 self.body.output_2_commitment,
                 self.body.fee.clone(),
@@ -39,7 +39,7 @@ impl ActionHandler for SwapClaim {
         // 1. Validate the epoch duration passed in the swap claim matches
         // what we know.
         let epoch_duration = state.get_epoch_duration().await?;
-        let provided_epoch_duration = swap_claim.body.epoch_duration;
+        let provided_epoch_duration = swap_claim.epoch_duration;
         if epoch_duration != provided_epoch_duration {
             return Err(anyhow::anyhow!(
                 "provided epoch duration does not match chain epoch duration"

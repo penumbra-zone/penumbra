@@ -12,6 +12,7 @@ use penumbra_tct as tct;
 pub struct SwapClaim {
     pub proof: SwapClaimProof,
     pub body: Body,
+    pub epoch_duration: u64,
 }
 
 impl IsAction for SwapClaim {
@@ -58,6 +59,7 @@ impl From<SwapClaim> for pb::SwapClaim {
         pb::SwapClaim {
             proof: sc.proof.into(),
             body: Some(sc.body.into()),
+            epoch_duration: sc.epoch_duration,
         }
     }
 }
@@ -73,6 +75,7 @@ impl TryFrom<pb::SwapClaim> for SwapClaim {
                 .body
                 .ok_or_else(|| anyhow::anyhow!("missing nullifier"))?
                 .try_into()?,
+            epoch_duration: sc.epoch_duration,
         })
     }
 }
@@ -84,8 +87,6 @@ pub struct Body {
     pub output_1_commitment: tct::Commitment,
     pub output_2_commitment: tct::Commitment,
     pub output_data: BatchSwapOutputData,
-    // TODO: move to SwapClaim, out of Body
-    pub epoch_duration: u64,
 }
 
 impl Protobuf<pb::SwapClaimBody> for Body {}
@@ -98,7 +99,6 @@ impl From<Body> for pb::SwapClaimBody {
             output_1_commitment: Some(s.output_1_commitment.into()),
             output_2_commitment: Some(s.output_2_commitment.into()),
             output_data: Some(s.output_data.into()),
-            epoch_duration: s.epoch_duration,
         }
     }
 }
@@ -127,7 +127,6 @@ impl TryFrom<pb::SwapClaimBody> for Body {
                 .output_data
                 .ok_or_else(|| anyhow::anyhow!("missing anchor"))?
                 .try_into()?,
-            epoch_duration: sc.epoch_duration,
         })
     }
 }
