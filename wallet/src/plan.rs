@@ -4,16 +4,16 @@ use tonic::transport::Channel;
 use anyhow::{Context, Result};
 use penumbra_component::stake::rate::RateData;
 use penumbra_component::stake::validator;
-use penumbra_crypto::{keys::AddressIndex, transaction::Fee, Address, FullViewingKey, Note, Value};
+use penumbra_crypto::{keys::AddressIndex, transaction::Fee, Address, FullViewingKey, Value};
 use penumbra_proto::{
     client::v1alpha1::{
-        specific_query_service_client::SpecificQueryServiceClient, BatchSwapOutputDataRequest,
+        specific_query_service_client::SpecificQueryServiceClient,
     },
     view::v1alpha1::NotesRequest,
 };
 use penumbra_transaction::{
     action::{Proposal, ValidatorVote},
-    plan::{SwapClaimPlan, TransactionPlan},
+    plan::{TransactionPlan},
 };
 use penumbra_view::{SpendableNoteRecord, ViewClient};
 use rand_core::{CryptoRng, RngCore};

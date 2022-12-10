@@ -9,7 +9,7 @@ use penumbra_component::stake::{rate::RateData, validator};
 use penumbra_crypto::{
     asset::Amount,
     asset::Denom,
-    dex::{swap::SwapPlaintext, BatchSwapOutputData, TradingPair},
+    dex::{swap::SwapPlaintext, TradingPair},
     keys::AddressIndex,
     rdsa::{SpendAuth, VerificationKey},
     transaction::Fee,
