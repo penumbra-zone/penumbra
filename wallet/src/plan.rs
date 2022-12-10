@@ -6,14 +6,12 @@ use penumbra_component::stake::rate::RateData;
 use penumbra_component::stake::validator;
 use penumbra_crypto::{keys::AddressIndex, transaction::Fee, Address, FullViewingKey, Value};
 use penumbra_proto::{
-    client::v1alpha1::{
-        specific_query_service_client::SpecificQueryServiceClient,
-    },
+    client::v1alpha1::specific_query_service_client::SpecificQueryServiceClient,
     view::v1alpha1::NotesRequest,
 };
 use penumbra_transaction::{
     action::{Proposal, ValidatorVote},
-    plan::{TransactionPlan},
+    plan::TransactionPlan,
 };
 use penumbra_view::{SpendableNoteRecord, ViewClient};
 use rand_core::{CryptoRng, RngCore};
