@@ -78,16 +78,6 @@
     },
     "query": "INSERT INTO assets\n                    (\n                        asset_id,\n                        denom\n                    )\n                    VALUES\n                    (\n                        ?,\n                        ?\n                    )"
   },
-  "2ea376bc5364276b0aa3a2b7a436ad3dc56a4c0b22813635320aa67f3952af0c": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 5
-      }
-    },
-    "query": "INSERT INTO notes\n                    (\n                        note_commitment,\n                        address,\n                        amount,\n                        asset_id,\n                        blinding_factor\n                    )\n                VALUES (?, ?, ?, ?, ?)"
-  },
   "3330ad89b630f87f1ed502363de779624f72710fb59f2133c5db2c1dc8d30b2d": {
     "describe": {
       "columns": [],
@@ -475,6 +465,16 @@
       }
     },
     "query": "SELECT position FROM nct_position LIMIT 1"
+  },
+  "ebccd7cad2e61f7ad3ae8f24e4b9a58428fd0a36805ce284f651323b232ded2e": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 5
+      }
+    },
+    "query": "INSERT INTO notes\n                    (\n                        note_commitment,\n                        address,\n                        amount,\n                        asset_id,\n                        blinding_factor\n                    )\n                VALUES (?, ?, ?, ?, ?)\n                ON CONFLICT DO NOTHING"
   },
   "efb5f4932197a38ca134b63d8ea5d2fad9145fb56d03a60351f15b5302905402": {
     "describe": {
