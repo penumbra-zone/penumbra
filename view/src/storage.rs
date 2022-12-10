@@ -916,7 +916,7 @@ impl Storage {
 
         for swap in &filtered_block.new_swaps {
             let swap_commitment = swap.swap_commitment.0.to_bytes().to_vec();
-            let swap_bytes = swap.encode_to_vec();
+            let swap_bytes = swap.swap.encode_to_vec();
             let position = (u64::from(swap.position)) as i64;
             let nullifier = swap.nullifier.to_bytes().to_vec();
             let source = swap.source.to_bytes().to_vec();
