@@ -149,6 +149,25 @@ pub struct NoteByCommitmentResponse {
     pub spendable_note: ::core::option::Option<SpendableNoteRecord>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SwapByCommitmentRequest {
+    #[prost(message, optional, tag="2")]
+    pub swap_commitment: ::core::option::Option<super::super::core::crypto::v1alpha1::StateCommitment>,
+    /// If set to true, waits to return until the requested swap is detected.
+    #[prost(bool, tag="3")]
+    pub await_detection: bool,
+    /// Identifies the FVK for the notes to query.
+    #[prost(message, optional, tag="14")]
+    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
+    /// Authorizes the request.
+    #[prost(message, optional, tag="15")]
+    pub token: ::core::option::Option<ViewAuthToken>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SwapByCommitmentResponse {
+    #[prost(message, optional, tag="1")]
+    pub swap: ::core::option::Option<SwapRecord>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NullifierStatusRequest {
     #[prost(message, optional, tag="2")]
     pub nullifier: ::core::option::Option<super::super::core::crypto::v1alpha1::Nullifier>,
@@ -257,6 +276,24 @@ pub struct SpendableNoteRecord {
     pub position: u64,
     /// The source of the note (a tx hash or otherwise)
     #[prost(message, optional, tag="8")]
+    pub source: ::core::option::Option<super::super::core::chain::v1alpha1::NoteSource>,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SwapRecord {
+    #[prost(message, optional, tag="1")]
+    pub swap_commitment: ::core::option::Option<super::super::core::crypto::v1alpha1::StateCommitment>,
+    #[prost(message, optional, tag="2")]
+    pub swap: ::core::option::Option<super::super::core::dex::v1alpha1::SwapPlaintext>,
+    #[prost(uint64, tag="3")]
+    pub position: u64,
+    #[prost(message, optional, tag="4")]
+    pub nullifier: ::core::option::Option<super::super::core::crypto::v1alpha1::Nullifier>,
+    #[prost(message, optional, tag="5")]
+    pub output_data: ::core::option::Option<super::super::core::dex::v1alpha1::BatchSwapOutputData>,
+    #[prost(uint64, optional, tag="6")]
+    pub height_claimed: ::core::option::Option<u64>,
+    #[prost(message, optional, tag="7")]
     pub source: ::core::option::Option<super::super::core::chain::v1alpha1::NoteSource>,
 }
 /// Generated client implementations.
@@ -508,6 +545,26 @@ pub mod view_protocol_service_client {
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/NoteByCommitment",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// Query for a swap by its swap commitment, optionally waiting until the swap is detected.
+        pub async fn swap_by_commitment(
+            &mut self,
+            request: impl tonic::IntoRequest<super::SwapByCommitmentRequest>,
+        ) -> Result<tonic::Response<super::SwapByCommitmentResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1alpha1.ViewProtocolService/SwapByCommitment",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -782,6 +839,11 @@ pub mod view_protocol_service_server {
             &self,
             request: tonic::Request<super::NoteByCommitmentRequest>,
         ) -> Result<tonic::Response<super::NoteByCommitmentResponse>, tonic::Status>;
+        /// Query for a swap by its swap commitment, optionally waiting until the swap is detected.
+        async fn swap_by_commitment(
+            &self,
+            request: tonic::Request<super::SwapByCommitmentRequest>,
+        ) -> Result<tonic::Response<super::SwapByCommitmentResponse>, tonic::Status>;
         /// Query for whether a nullifier has been spent, optionally waiting until it is spent.
         async fn nullifier_status(
             &self,
@@ -1195,6 +1257,46 @@ pub mod view_protocol_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = NoteByCommitmentSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1alpha1.ViewProtocolService/SwapByCommitment" => {
+                    #[allow(non_camel_case_types)]
+                    struct SwapByCommitmentSvc<T: ViewProtocolService>(pub Arc<T>);
+                    impl<
+                        T: ViewProtocolService,
+                    > tonic::server::UnaryService<super::SwapByCommitmentRequest>
+                    for SwapByCommitmentSvc<T> {
+                        type Response = super::SwapByCommitmentResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::SwapByCommitmentRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).swap_by_commitment(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = SwapByCommitmentSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

@@ -106,29 +106,13 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
     /// Perform a swap claim based on an input swap NFT with a pre-paid fee.
     #[instrument(skip(self))]
-    pub fn swap_claim(
-        &mut self,
-        swap_plaintext: SwapPlaintext,
-        swap_nft_note: Note,
-        swap_nft_position: tct::Position,
-        epoch_duration: u64,
-        output_data: BatchSwapOutputData,
-    ) -> &mut Self {
-        // Add a `SwapClaimPlan` action:
-        let swap_claim = SwapClaimPlan::new(
-            &mut self.rng,
-            swap_plaintext,
-            swap_nft_note,
-            swap_nft_position,
-            epoch_duration,
-            output_data,
-        )
-        .into();
-
+    pub fn swap_claim(&mut self, plan: SwapClaimPlan) -> &mut Self {
         // Nothing needs to be spent, since the fee is pre-paid and the
         // swap NFT will be automatically consumed when the SwapClaim action
         // is processed by the validators.
-        self.action(swap_claim);
+        // TODO: need to set the intended fee so the tx actually balances,
+        // otherwise the planner will create an output
+        self.action(plan.into());
         self
     }
 

@@ -19,8 +19,8 @@ use penumbra_proto::{
     core::crypto::v1alpha1 as pbc,
     view::v1alpha1::{
         self as pb, view_protocol_service_server::ViewProtocolService, ChainParametersResponse,
-        FmdParametersResponse, NoteByCommitmentResponse, StatusResponse, TransactionHashesResponse,
-        TransactionsResponse, WitnessResponse,
+        FmdParametersResponse, NoteByCommitmentResponse, StatusResponse, SwapByCommitmentResponse,
+        TransactionHashesResponse, TransactionsResponse, WitnessResponse,
     },
 };
 use penumbra_tct::{Commitment, Proof};
@@ -281,6 +281,39 @@ impl ViewProtocolService for ViewService {
 
         Ok(tonic::Response::new(response))
     }
+
+    async fn swap_by_commitment(
+        &self,
+        request: tonic::Request<pb::SwapByCommitmentRequest>,
+    ) -> Result<tonic::Response<pb::SwapByCommitmentResponse>, tonic::Status> {
+        self.check_worker().await?;
+        self.check_fvk(request.get_ref().account_id.as_ref())
+            .await?;
+
+        let request = request.into_inner();
+
+        let swap_commitment = request
+            .swap_commitment
+            .ok_or_else(|| {
+                tonic::Status::failed_precondition("Missing swap commitment in request")
+            })?
+            .try_into()
+            .map_err(|_| {
+                tonic::Status::failed_precondition("Invalid swap commitment in request")
+            })?;
+
+        let swap = pb::SwapRecord::from(
+            self.storage
+                .swap_by_commitment(swap_commitment, request.await_detection)
+                .await
+                .map_err(|e| tonic::Status::internal(format!("error: {}", e)))?,
+        );
+
+        Ok(tonic::Response::new(SwapByCommitmentResponse {
+            swap: Some(swap),
+        }))
+    }
+
     async fn note_by_commitment(
         &self,
         request: tonic::Request<pb::NoteByCommitmentRequest>,

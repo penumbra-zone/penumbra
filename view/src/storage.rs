@@ -5,7 +5,7 @@ use parking_lot::Mutex;
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::{
     asset::{self, Id},
-    Amount, Asset, FieldExt, FullViewingKey, Nullifier,
+    note, Address, Amount, Asset, FieldExt, Fq, FullViewingKey, Note, Nullifier, Value,
 };
 use penumbra_proto::{
     client::v1alpha1::{
@@ -16,12 +16,12 @@ use penumbra_proto::{
 use penumbra_tct as tct;
 use penumbra_transaction::Transaction;
 use sha2::Digest;
-use sqlx::{migrate::MigrateDatabase, query, Pool, Sqlite};
-use std::{num::NonZeroU64, sync::Arc};
+use sqlx::{migrate::MigrateDatabase, query, Pool, Row, Sqlite};
+use std::{collections::BTreeMap, num::NonZeroU64, sync::Arc};
 use tct::Commitment;
 use tokio::sync::broadcast::{self, error::RecvError};
 
-use crate::{sync::FilteredBlock, SpendableNoteRecord};
+use crate::{sync::FilteredBlock, SpendableNoteRecord, SwapRecord};
 
 mod nct;
 use nct::TreeStore;
@@ -231,6 +231,37 @@ impl Storage {
                         }
                     },
                 };
+            }
+        }
+    }
+
+    /// Query for a swap by its swap commitment, optionally waiting until the note is detected.
+    pub fn swap_by_commitment(
+        &self,
+        swap_commitment: tct::Commitment,
+        await_detection: bool,
+    ) -> impl Future<Output = anyhow::Result<SwapRecord>> {
+        // Clone the pool handle so that the returned future is 'static
+        let pool = self.pool.clone();
+        async move {
+            // Check if we already have the note
+            if let Some(record) = sqlx::query_as::<_, SwapRecord>(
+                format!(
+                    "SELECT * FROM swaps WHERE swaps.swap_commitment = x'{}'",
+                    hex::encode(swap_commitment.0.to_bytes())
+                )
+                .as_str(),
+            )
+            .fetch_optional(&pool)
+            .await?
+            {
+                return Ok(record);
+            }
+
+            if !await_detection {
+                return Err(anyhow!("swap commitment {} not found", swap_commitment));
+            } else {
+                return Err(anyhow!("swap commitment await_detection not implemented"));
             }
         }
     }
@@ -666,6 +697,97 @@ impl Storage {
         Ok(())
     }
 
+    pub async fn give_advice(&self, note: Note) -> anyhow::Result<()> {
+        let mut tx = self.pool.begin().await?;
+
+        let note_commitment = note.commit().0.to_bytes().to_vec();
+        let address = note.address().to_vec();
+        let amount = u64::from(note.amount()) as i64;
+        let asset_id = note.asset_id().to_bytes().to_vec();
+        let blinding_factor = note.note_blinding().to_bytes().to_vec();
+
+        sqlx::query!(
+            "INSERT INTO notes
+                    (
+                        note_commitment,
+                        address,
+                        amount,
+                        asset_id,
+                        blinding_factor
+                    )
+                    VALUES
+                    (?, ?, ?, ?, ?)",
+            note_commitment,
+            address,
+            amount,
+            asset_id,
+            blinding_factor,
+        )
+        .execute(&mut tx)
+        .await?;
+
+        tx.commit().await?;
+
+        Ok(())
+    }
+
+    /// Return advice about note contents for use in scanning.
+    ///
+    /// Given a list of note commitments, this method checks whether any of them
+    /// correspond to notes that have been recorded in the database but not yet
+    /// observed during scanning.
+    pub async fn scan_advice(
+        &self,
+        note_commitments: Vec<note::Commitment>,
+    ) -> anyhow::Result<BTreeMap<note::Commitment, Note>> {
+        if note_commitments.is_empty() {
+            return Ok(BTreeMap::new());
+        }
+
+        let rows = sqlx::query(
+            format!(
+                "SELECT notes.address,
+                        notes.amount,
+                        notes.asset_id,
+                        notes.blinding_factor
+                FROM notes
+                LEFT OUTER JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
+                WHERE (spendable_notes.note_commitment IS NULL) AND (notes.note_commitment IN ({}))",
+                note_commitments
+                    .iter()
+                    .map(|cm| format!("x'{}'", hex::encode(cm.0.to_bytes())))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )
+            .as_str(),
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let mut notes = BTreeMap::new();
+        for row in rows {
+            let address = Address::try_from(row.get::<&[u8], _>("address"))?;
+            let amount = (row.get::<i64, _>("amount") as u64).into();
+            let asset_id = asset::Id(Fq::from_bytes(
+                row.get::<&[u8], _>("asset_id")
+                    .try_into()
+                    .expect("32 bytes"),
+            )?);
+            let blinding_factor = Fq::from_bytes(
+                row.get::<&[u8], _>("blinding_factor")
+                    .try_into()
+                    .expect("32 bytes"),
+            )?;
+
+            let note =
+                Note::from_parts(address, Value { amount, asset_id }, blinding_factor).unwrap();
+
+            notes.insert(note.commit(), note);
+        }
+
+        Ok(notes)
+    }
+
     /// Filters for nullifiers whose notes we control
     pub async fn filter_nullifiers(
         &self,
@@ -674,14 +796,6 @@ impl Storage {
         if nullifiers.is_empty() {
             return Ok(Vec::new());
         }
-        // pub note_commitment: note::Commitment,
-        //     pub note: Note,
-        //     pub address_index: AddressIndex,
-        //     pub nullifier: Nullifier,
-        //     pub height_created: u64,
-        //     pub height_spent: Option<u64>,
-        //     pub position: tct::Position,
-        //     pub source: NoteSource,
         Ok(sqlx::query_as::<_, SpendableNoteRecord>(
             format!(
                 "SELECT notes.note_commitment,
@@ -798,6 +912,27 @@ impl Storage {
             )
             .execute(&mut dbtx)
             .await?;
+        }
+
+        for swap in &filtered_block.new_swaps {
+            let swap_commitment = swap.swap_commitment.0.to_bytes().to_vec();
+            let swap_bytes = swap.encode_to_vec();
+            let position = (u64::from(swap.position)) as i64;
+            let nullifier = swap.nullifier.to_bytes().to_vec();
+            let source = swap.source.to_bytes().to_vec();
+            let output_data = swap.output_data.encode_to_vec();
+
+            sqlx::query!(
+                "INSERT INTO swaps (swap_commitment, swap, position, nullifier, output_data, height_claimed, source)
+                VALUES (?, ?, ?, ?, ?, NULL, ?)",
+                swap_commitment,
+                swap_bytes,
+                position,
+                nullifier,
+                output_data,
+                // height_claimed is NULL
+                source,
+            ).execute(&mut dbtx).await?;
         }
 
         // Update any rows of the table with matching nullifiers to have height_spent

@@ -93,82 +93,6 @@ where
 }
 
 #[allow(clippy::too_many_arguments)]
-#[allow(dead_code)]
-#[instrument(skip(
-    fvk,
-    view,
-    rng,
-    swap_plaintext,
-    swap_nft_note,
-    swap_nft_position,
-    output_data
-))]
-pub async fn swap_claim<V, R>(
-    fvk: &FullViewingKey,
-    view: &mut V,
-    rng: R,
-    swap_plaintext: SwapPlaintext,
-    swap_nft_note: Note,
-    swap_nft_position: Position,
-    output_data: BatchSwapOutputData,
-) -> Result<TransactionPlan, anyhow::Error>
-where
-    V: ViewClient,
-    R: RngCore + CryptoRng,
-{
-    tracing::debug!(?swap_plaintext, ?swap_nft_note);
-
-    let chain_params = view.chain_params().await?;
-    let epoch_duration = chain_params.epoch_duration;
-
-    let mut planner = Planner::new(rng);
-    planner.swap_claim(
-        swap_plaintext,
-        swap_nft_note,
-        swap_nft_position,
-        epoch_duration,
-        output_data,
-    );
-    planner
-        .plan(view, fvk, None)
-        .await
-        .context("can't build send transaction")
-}
-
-#[allow(clippy::too_many_arguments)]
-#[instrument(skip(fvk, view, rng, input_value, swap_fee, swap_claim_fee, source_address))]
-pub async fn swap<V, R>(
-    fvk: &FullViewingKey,
-    view: &mut V,
-    rng: R,
-    input_value: Value,
-    into_denom: Denom,
-    swap_fee: Fee,
-    swap_claim_fee: Fee,
-    source_address: Option<u64>,
-) -> Result<TransactionPlan, anyhow::Error>
-where
-    V: ViewClient,
-    R: RngCore + CryptoRng,
-{
-    tracing::debug!(?input_value, ?swap_fee, ?swap_claim_fee, ?source_address);
-
-    // If a source address was specified, use it for the swap, otherwise,
-    // use the default address.
-    let (claim_address, _dtk_d) = fvk
-        .incoming()
-        .payment_address(source_address.unwrap_or(0).into());
-
-    let mut planner = Planner::new(rng);
-    planner.fee(swap_fee);
-    planner.swap(input_value, into_denom, swap_claim_fee, claim_address)?;
-    planner
-        .plan(view, fvk, source_address.map(Into::into))
-        .await
-        .context("can't build send transaction")
-}
-
-#[allow(clippy::too_many_arguments)]
 #[instrument(skip(fvk, view, rng, values, fee, dest_address, source_address, tx_memo))]
 pub async fn send<V, R>(
     fvk: &FullViewingKey,
@@ -231,6 +155,7 @@ where
     V: ViewClient,
     R: RngCore + CryptoRng,
 {
+    /*
     let mut plans = Vec::new();
     // fetch all transactions
     // check if they contain Swap actions
@@ -306,6 +231,8 @@ where
     }
 
     Ok(plans)
+    */
+    unimplemented!("This function has not been implemented since we changed the swap mechanism to auto-claim in scanning.")
 }
 
 #[instrument(skip(fvk, view, rng))]

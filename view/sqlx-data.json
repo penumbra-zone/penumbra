@@ -10,6 +10,16 @@
     },
     "query": "INSERT INTO full_viewing_key (bytes) VALUES (?)"
   },
+  "023ab6887ce515eb0338e05ceebe3fcf140e45ed1928390eb83cb63cb33767f5": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 6
+      }
+    },
+    "query": "INSERT INTO swaps (swap_commitment, swap, position, nullifier, output_data, height_claimed, source)\n                VALUES (?, ?, ?, ?, ?, NULL, ?)"
+  },
   "02a70ba8f6259880d717d74751d6464ccf1243bb2118b845e99cd85e21d6d44d": {
     "describe": {
       "columns": [
@@ -111,6 +121,16 @@
       }
     },
     "query": "SELECT *\n            FROM assets"
+  },
+  "33a8631f81455f7c7caa0e5e3c38108a4b54b3b391912a7b0fbd9b47be891785": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 5
+      }
+    },
+    "query": "INSERT INTO notes\n                    (\n                        note_commitment,\n                        address,\n                        amount,\n                        asset_id,\n                        blinding_factor\n                    )\n                    VALUES\n                    (?, ?, ?, ?, ?)"
   },
   "3538feca20e2988f50760f66152cf14f3051d7c4d2ca3a97446754b8547b6eaf": {
     "describe": {

@@ -7,16 +7,18 @@ use penumbra_chain::Epoch;
 use penumbra_component::stake::rate::RateData;
 use penumbra_crypto::{
     asset,
-    dex::BatchSwapOutputData,
     stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken},
     transaction::Fee,
     Address, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::{
-    client::v1alpha1::{BatchSwapOutputDataRequest, KeyValueRequest, ValidatorPenaltyRequest},
+    client::v1alpha1::{KeyValueRequest, ValidatorPenaltyRequest},
     Protobuf,
 };
-use penumbra_transaction::{action::Proposal, plan::UndelegateClaimPlan};
+use penumbra_transaction::{
+    action::Proposal,
+    plan::{SwapClaimPlan, UndelegateClaimPlan},
+};
 use penumbra_view::ViewClient;
 use penumbra_wallet::plan::{self, Planner};
 use rand_core::OsRng;
@@ -215,73 +217,53 @@ impl TxCmd {
 
                 // Since the swap command consists of two transactions (the swap and the swap claim),
                 // the fee is split equally over both for now.
-                let swap_fee = fee / 2;
-                let swap_claim_fee = fee / 2;
+                let swap_fee = Fee::from_staking_token_amount((fee / 2).into());
+                let swap_claim_fee = Fee::from_staking_token_amount((fee / 2).into());
 
-                let swap_plan = plan::swap(
-                    &app.fvk,
-                    app.view.as_mut().unwrap(),
-                    OsRng,
-                    input,
-                    into,
-                    Fee::from_staking_token_amount(swap_fee.into()),
-                    Fee::from_staking_token_amount(swap_claim_fee.into()),
-                    *source,
-                )
-                .await?;
-                let swap_plan_inner = swap_plan
+                let fvk = app.fvk.clone();
+                let account_id = fvk.hash();
+
+                // If a source address was specified, use it for the swap, otherwise,
+                // use the default address.
+                let (claim_address, _dtk_d) =
+                    fvk.incoming().payment_address(source.unwrap_or(0).into());
+
+                let mut planner = Planner::new(OsRng);
+                planner.fee(swap_fee);
+                planner.swap(input, into, swap_claim_fee.clone(), claim_address)?;
+                let plan = planner
+                    .plan(app.view(), &fvk, source.map(Into::into))
+                    .await
+                    .context("can't plan swap transaction")?;
+
+                // Hold on to the swap plaintext to be able to claim.
+                let swap_plaintext = plan
                     .swap_plans()
                     .next()
-                    .expect("expected swap plan")
+                    .expect("swap plan must be present")
+                    .swap_plaintext
                     .clone();
 
-                // Submit the `Swap` transaction.
-                app.build_and_submit_transaction(swap_plan).await?;
+                // Submit the `Swap` transaction, waiting for confirmation,
+                // at which point the swap will be available for claiming.
+                app.build_and_submit_transaction(plan).await?;
 
-                // Wait for detection of the note commitment containing the Swap NFT.
-                let account_id = app.fvk.hash();
-                let note_commitment = swap_plan_inner.swap_body(&app.fvk).swap_nft.note_commitment;
-                // Find the swap NFT note associated with the swap plan.
-                let swap_nft_record = tokio::time::timeout(
-                    std::time::Duration::from_secs(20),
-                    app.view()
-                        .await_note_by_commitment(account_id, note_commitment),
-                )
-                .await
-                .context("timeout waiting to detect commitment of submitted transaction")?
-                .context("error while waiting for detection of submitted transaction")?;
+                // Fetch the SwapRecord with the claimable swap.
+                let swap_record = app
+                    .view()
+                    .swap_by_commitment(account_id, swap_plaintext.swap_commitment())
+                    .await?;
 
-                // Now that the note commitment is detected, we can submit the `SwapClaim` transaction.
-                let swap_plaintext = swap_plan_inner.swap_plaintext;
+                let asset_cache = app.view().assets().await?;
 
-                // Fetch the batch swap output data associated with the block height
-                // and trading pair of the swap action.
-                //
-                // This batch swap output data comes from the client, it's necessary because
-                // the client has to encrypt the SwapPlaintext, however the validators *must*
-                // validate that the BatchSwapOutputData is correct when processing the SwapClaim!
-                let mut client = app.specific_client().await?;
-                let output_data: BatchSwapOutputData = client
-                    .batch_swap_output_data(BatchSwapOutputDataRequest {
-                        height: swap_nft_record.height_created,
-                        trading_pair: Some(swap_plaintext.trading_pair.into()),
-                    })
-                    .await?
-                    .into_inner()
-                    .try_into()
-                    .context("cannot parse batch swap output data")?;
-
-                let view_client: &mut dyn ViewClient = app.view.as_mut().unwrap();
-                let asset_cache = view_client.assets().await?;
-
-                let pro_rata_outputs = output_data.pro_rata_outputs((
+                let pro_rata_outputs = swap_record.output_data.pro_rata_outputs((
                     swap_plaintext.delta_1_i.into(),
                     swap_plaintext.delta_2_i.into(),
                 ));
                 println!("Swap submitted and batch confirmed!");
                 println!(
                     "Swap was: {}",
-                    if output_data.success {
+                    if swap_record.output_data.success {
                         "successful"
                     } else {
                         "unsuccessful"
@@ -291,30 +273,33 @@ impl TxCmd {
                     "You will receive outputs of {} and {}. Claiming now...",
                     Value {
                         amount: pro_rata_outputs.0.into(),
-                        asset_id: output_data.trading_pair.asset_1()
+                        asset_id: swap_record.output_data.trading_pair.asset_1()
                     }
                     .format(&asset_cache),
                     Value {
                         amount: pro_rata_outputs.1.into(),
-                        asset_id: output_data.trading_pair.asset_2()
+                        asset_id: swap_record.output_data.trading_pair.asset_2()
                     }
                     .format(&asset_cache),
                 );
 
-                let claim_plan = plan::swap_claim(
-                    &app.fvk,
-                    app.view.as_mut().unwrap(),
-                    OsRng,
-                    swap_plaintext,
-                    swap_nft_record.note,
-                    swap_nft_record.position,
-                    output_data,
-                )
-                .await?;
+                let params = app.view.as_mut().unwrap().chain_params().await?;
+
+                let mut planner = Planner::new(OsRng);
+                let plan = planner
+                    .swap_claim(SwapClaimPlan {
+                        swap_plaintext,
+                        position: swap_record.position,
+                        output_data: swap_record.output_data,
+                        epoch_duration: params.epoch_duration,
+                    })
+                    .plan(app.view(), &fvk, source.map(Into::into))
+                    .await
+                    .context("can't plan swap claim")?;
 
                 // Submit the `SwapClaim` transaction. TODO: should probably wait for the output notes
                 // of a SwapClaim to sync.
-                app.build_and_submit_transaction(claim_plan).await?;
+                app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Delegate {
                 to,

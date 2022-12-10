@@ -339,10 +339,7 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     ),
     (".penumbra.core.transaction.v1alpha1.SpendView", SERIALIZE),
     (".penumbra.core.transaction.v1alpha1.OutputView", SERIALIZE),
-    (
-        ".penumbra.core.dex.v1alpha1.SwapClaimView",
-        SERIALIZE,
-    ),
+    (".penumbra.core.dex.v1alpha1.SwapClaimView", SERIALIZE),
     (".penumbra.core.dex.v1alpha1.SwapView", SERIALIZE),
     (".penumbra.core.transaction.v1alpha1.ActionView", SERIALIZE),
     (
@@ -410,6 +407,7 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
         SERDE_TRANSPARENT,
     ),
     (".penumbra.view.v1alpha1.SpendableNoteRecord", SERIALIZE),
+    (".penumbra.view.v1alpha1.SwapRecord", SERIALIZE),
 ];
 
 static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
