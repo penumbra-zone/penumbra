@@ -5,6 +5,7 @@ mod note_record;
 mod service;
 mod status;
 mod storage;
+mod swap_record;
 mod sync;
 mod worker;
 
@@ -16,3 +17,4 @@ pub use note_record::SpendableNoteRecord;
 pub use service::ViewService;
 pub use status::StatusStreamResponse;
 pub use storage::Storage;
+pub use swap_record::SwapRecord;

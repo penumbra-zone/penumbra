@@ -34,11 +34,17 @@ CREATE TABLE spendable_notes (
     height_spent            BIGINT 
 );
 
+CREATE INDEX spendable_notes_by_nullifier_idx ON spendable_notes (
+    nullifier
+);
+
+CREATE INDEX spendable_notes_by_source_idx ON spendable_notes (
+    source
+);
+
 -- general purpose note queries
 CREATE INDEX spendable_notes_idx ON spendable_notes (
     address_index,
-    source,
     height_created,
-    nullifier,
     height_spent       -- null if unspent, so spent/unspent is first
 );

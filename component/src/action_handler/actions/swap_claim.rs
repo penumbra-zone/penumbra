@@ -17,28 +17,17 @@ use crate::{
 impl ActionHandler for SwapClaim {
     #[instrument(name = "swap_claim", skip(self))]
     async fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
-        let swap_claim = self;
-
-        let fee = swap_claim.body.fee.clone();
-
-        // Check swap claim proof
-        let anchor = context.anchor;
-        swap_claim
-            .proof
+        self.proof
             .verify(
-                anchor,
-                swap_claim.body.nullifier,
-                swap_claim.body.output_data,
-                swap_claim.body.epoch_duration,
-                swap_claim.body.output_1.note_commitment,
-                swap_claim.body.output_2.note_commitment,
-                fee,
-                swap_claim.body.output_1.ephemeral_key,
-                swap_claim.body.output_2.ephemeral_key,
+                context.anchor,
+                self.body.nullifier,
+                self.body.output_data,
+                self.epoch_duration,
+                self.body.output_1_commitment,
+                self.body.output_2_commitment,
+                self.body.fee.clone(),
             )
             .context("a swap claim proof did not verify")?;
-
-        // TODO: any other stateless checks?
 
         Ok(())
     }
@@ -50,7 +39,7 @@ impl ActionHandler for SwapClaim {
         // 1. Validate the epoch duration passed in the swap claim matches
         // what we know.
         let epoch_duration = state.get_epoch_duration().await?;
-        let provided_epoch_duration = swap_claim.body.epoch_duration;
+        let provided_epoch_duration = swap_claim.epoch_duration;
         if epoch_duration != provided_epoch_duration {
             return Err(anyhow::anyhow!(
                 "provided epoch duration does not match chain epoch duration"
@@ -87,16 +76,14 @@ impl ActionHandler for SwapClaim {
         let source = state.object_get("source").cloned().unwrap_or_default();
 
         state
-            .add_state_payload(StatePayload::Note {
-                source,
-                note: self.body.output_1.clone(),
-            })
+            .add_state_payload(StatePayload::RolledUp(
+                self.body.output_1_commitment.clone(),
+            ))
             .await;
         state
-            .add_state_payload(StatePayload::Note {
-                source,
-                note: self.body.output_2.clone(),
-            })
+            .add_state_payload(StatePayload::RolledUp(
+                self.body.output_2_commitment.clone(),
+            ))
             .await;
 
         state.spend_nullifier(self.body.nullifier, source).await;

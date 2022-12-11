@@ -108,6 +108,10 @@ pub struct TransactionPerspective {
     pub payload_keys: ::prost::alloc::vec::Vec<PayloadKeyWithCommitment>,
     #[prost(message, repeated, tag="2")]
     pub spend_nullifiers: ::prost::alloc::vec::Vec<NullifierWithNote>,
+    /// The openings of note commitments referred to in the transaction
+    /// but not included in the transaction.
+    #[prost(message, repeated, tag="3")]
+    pub advice_notes: ::prost::alloc::vec::Vec<super::super::crypto::v1alpha1::Note>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PayloadKeyWithCommitment {
@@ -167,26 +171,6 @@ pub struct OutputView {
     #[prost(bytes="bytes", tag="3")]
     pub payload_key: ::prost::bytes::Bytes,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SwapView {
-    #[prost(message, optional, tag="1")]
-    pub swap: ::core::option::Option<super::super::dex::v1alpha1::Swap>,
-    #[prost(message, optional, tag="2")]
-    pub swap_nft: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
-    #[prost(message, optional, tag="3")]
-    pub swap_plaintext: ::core::option::Option<super::super::dex::v1alpha1::SwapPlaintext>,
-}
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SwapClaimView {
-    #[prost(message, optional, tag="1")]
-    pub swap_claim: ::core::option::Option<super::super::dex::v1alpha1::SwapClaim>,
-    #[prost(message, optional, tag="2")]
-    pub output_1: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
-    #[prost(message, optional, tag="3")]
-    pub output_2: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
-}
 /// A view of a specific state change action performed by a transaction.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -204,9 +188,9 @@ pub mod action_view {
         #[prost(message, tag="2")]
         Output(super::OutputView),
         #[prost(message, tag="3")]
-        Swap(super::SwapView),
+        Swap(super::super::super::dex::v1alpha1::SwapView),
         #[prost(message, tag="4")]
-        SwapClaim(super::SwapClaimView),
+        SwapClaim(super::super::super::dex::v1alpha1::SwapClaimView),
         #[prost(message, tag="16")]
         ValidatorDefinition(super::super::super::stake::v1alpha1::ValidatorDefinition),
         #[prost(message, tag="17")]
@@ -478,9 +462,9 @@ pub mod action_plan {
         #[prost(message, tag="2")]
         Output(super::OutputPlan),
         #[prost(message, tag="3")]
-        Swap(super::SwapPlan),
+        Swap(super::super::super::dex::v1alpha1::SwapPlan),
         #[prost(message, tag="4")]
-        SwapClaim(super::SwapClaimPlan),
+        SwapClaim(super::super::super::dex::v1alpha1::SwapClaimPlan),
         /// This is just a message relayed to the chain.
         #[prost(message, tag="16")]
         ValidatorDefinition(super::super::super::stake::v1alpha1::ValidatorDefinition),
@@ -580,55 +564,6 @@ pub struct OutputPlan {
     #[prost(bytes="bytes", tag="5")]
     #[serde(with = "crate::serializers::hexstr_bytes")]
     pub esk: ::prost::bytes::Bytes,
-}
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SwapPlan {
-    /// The plaintext version of the swap to be performed.
-    #[prost(message, optional, tag="1")]
-    pub swap_plaintext: ::core::option::Option<super::super::dex::v1alpha1::SwapPlaintext>,
-    /// The blinding factor for the fee commitment. The fee in the SwapPlan is private to prevent linkability with the SwapClaim.
-    #[prost(bytes="bytes", tag="5")]
-    #[serde(with = "crate::serializers::hexstr_bytes")]
-    pub fee_blinding: ::prost::bytes::Bytes,
-    /// The blinding factor to use for the new swap NFT note.
-    #[prost(bytes="bytes", tag="7")]
-    #[serde(with = "crate::serializers::hexstr_bytes")]
-    pub note_blinding: ::prost::bytes::Bytes,
-    /// The ephemeral secret key to use for the swap NFT note encryption.
-    #[prost(bytes="bytes", tag="8")]
-    #[serde(with = "crate::serializers::hexstr_bytes")]
-    pub esk: ::prost::bytes::Bytes,
-}
-///
-/// @exclude
-/// Fields describing the swap NFT note to be redeemed.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SwapClaimPlan {
-    /// The input swap NFT note to be spent.
-    #[prost(message, optional, tag="1")]
-    pub swap_nft_note: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
-    /// The position of the input swap NFT note.
-    #[prost(uint64, tag="2")]
-    pub swap_nft_position: u64,
-    /// The plaintext version of the swap to be performed.
-    #[prost(message, optional, tag="3")]
-    pub swap_plaintext: ::core::option::Option<super::super::dex::v1alpha1::SwapPlaintext>,
-    /// Input and output amounts for the Swap.
-    #[prost(message, optional, tag="11")]
-    pub output_data: ::core::option::Option<super::super::dex::v1alpha1::BatchSwapOutputData>,
-    /// The ephemeral secret key used for the first output note encryption.
-    #[prost(bytes="bytes", tag="17")]
-    #[serde(with = "crate::serializers::hexstr_bytes")]
-    pub esk_1: ::prost::bytes::Bytes,
-    /// The ephemeral secret key used for the second output note encryption.
-    #[prost(bytes="bytes", tag="18")]
-    #[serde(with = "crate::serializers::hexstr_bytes")]
-    pub esk_2: ::prost::bytes::Bytes,
-    /// The epoch duration when the swap claim took place.
-    #[prost(uint64, tag="20")]
-    pub epoch_duration: u64,
 }
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]

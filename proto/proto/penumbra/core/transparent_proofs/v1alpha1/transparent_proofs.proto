@@ -33,22 +33,14 @@ message OutputProof {
 
 // A Penumbra transparent SwapClaimProof.
 message SwapClaimProof {
+  // The swap being claimed
+  dex.v1alpha1.SwapPlaintext swap_plaintext = 1;
 
-  crypto.v1alpha1.Address claim_address = 2;
-  // Inclusion proof for the Swap NFT
-  crypto.v1alpha1.NoteCommitmentProof note_commitment_proof = 4;
-  bytes note_blinding = 5;
+  // Inclusion proof for the swap commitment
+  crypto.v1alpha1.NoteCommitmentProof swap_commitment_proof = 4;
+
+  // The nullifier key used to derive the swap nullifier
   bytes nk = 6;
-
-  /**
-   * @exclude
-   * Describes opening of Swap NFT asset ID for commitment verification
-  */
-  dex.v1alpha1.TradingPair trading_pair = 10;
-  // uint64 fee = 7; // fee is public data so not included in client's submitted SwapClaimProof
-  // The user's contribution to the swap
-  uint64 delta_1_i = 11;
-  uint64 delta_2_i = 12;
 
   /**
    * @exclude
@@ -56,63 +48,13 @@ message SwapClaimProof {
   */
   uint64 lambda_1_i = 20;
   uint64 lambda_2_i = 21;
-
-  /**
-   * @exclude
-   * Describes first output note (lambda 1)
-  */
-  bytes esk_1 = 31;
-
-  /**
-   * @exclude
-   * Describes second output note (lambda 2)
-  */
-  bytes esk_2 = 41;
-
-  // Swap blinding factor
-  bytes swap_blinding = 42;
 }
 
 // A Penumbra transparent SwapProof.
 message SwapProof {
-  /**
-   * @exclude
-   * Describes swap inputs
-  */
-  // Input amount of asset 1
-  uint64 delta_1 = 1;
-  // Id of asset 1
-  bytes t1 = 2;
-  // Input amount of asset 2
-  uint64 delta_2 = 3;
-  // Id of asset 2
-  bytes t2 = 4;
-
-  // Fee
-  crypto.v1alpha1.Fee fee = 10;
-  // Fee blinding factor.
-  bytes fee_blinding = 11;
-
-  /**
-   * @exclude
-   * Blinding factors for value commitments
-   * TODO: not included until flow encryption is available
-  */
-  // bytes delta_1_blinding = 20;
-  // bytes delta_2_blinding = 21;
-
-  /**
-   * @exclude
-   * Data about the output note recording the Swap NFT.
-  */
-  // Address associated with the swap.
-  crypto.v1alpha1.Address claim_address = 40;
-  // Note blinding factor
-  bytes note_blinding = 42;
-  // Ephemeral secret key
-  bytes esk = 43;
-  // Swap blinding factor
-  bytes swap_blinding = 44;
+  dex.v1alpha1.SwapPlaintext swap_plaintext = 1;
+  // The blinding factor used for the Swap action's fee commitment.
+  bytes fee_blinding = 2;
 }
 
 message UndelegateClaimProof {

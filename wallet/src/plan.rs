@@ -1,26 +1,17 @@
-use penumbra_tct::Position;
 use std::collections::BTreeMap;
 use tonic::transport::Channel;
 
 use anyhow::{Context, Result};
 use penumbra_component::stake::rate::RateData;
 use penumbra_component::stake::validator;
-use penumbra_crypto::{
-    asset::Denom,
-    dex::{swap::SwapPlaintext, BatchSwapOutputData},
-    keys::AddressIndex,
-    transaction::Fee,
-    Address, FullViewingKey, Note, Value,
-};
+use penumbra_crypto::{keys::AddressIndex, transaction::Fee, Address, FullViewingKey, Value};
 use penumbra_proto::{
-    client::v1alpha1::{
-        specific_query_service_client::SpecificQueryServiceClient, BatchSwapOutputDataRequest,
-    },
+    client::v1alpha1::specific_query_service_client::SpecificQueryServiceClient,
     view::v1alpha1::NotesRequest,
 };
 use penumbra_transaction::{
     action::{Proposal, ValidatorVote},
-    plan::{SwapClaimPlan, TransactionPlan},
+    plan::TransactionPlan,
 };
 use penumbra_view::{SpendableNoteRecord, ViewClient};
 use rand_core::{CryptoRng, RngCore};
@@ -93,82 +84,6 @@ where
 }
 
 #[allow(clippy::too_many_arguments)]
-#[allow(dead_code)]
-#[instrument(skip(
-    fvk,
-    view,
-    rng,
-    swap_plaintext,
-    swap_nft_note,
-    swap_nft_position,
-    output_data
-))]
-pub async fn swap_claim<V, R>(
-    fvk: &FullViewingKey,
-    view: &mut V,
-    rng: R,
-    swap_plaintext: SwapPlaintext,
-    swap_nft_note: Note,
-    swap_nft_position: Position,
-    output_data: BatchSwapOutputData,
-) -> Result<TransactionPlan, anyhow::Error>
-where
-    V: ViewClient,
-    R: RngCore + CryptoRng,
-{
-    tracing::debug!(?swap_plaintext, ?swap_nft_note);
-
-    let chain_params = view.chain_params().await?;
-    let epoch_duration = chain_params.epoch_duration;
-
-    let mut planner = Planner::new(rng);
-    planner.swap_claim(
-        swap_plaintext,
-        swap_nft_note,
-        swap_nft_position,
-        epoch_duration,
-        output_data,
-    );
-    planner
-        .plan(view, fvk, None)
-        .await
-        .context("can't build send transaction")
-}
-
-#[allow(clippy::too_many_arguments)]
-#[instrument(skip(fvk, view, rng, input_value, swap_fee, swap_claim_fee, source_address))]
-pub async fn swap<V, R>(
-    fvk: &FullViewingKey,
-    view: &mut V,
-    rng: R,
-    input_value: Value,
-    into_denom: Denom,
-    swap_fee: Fee,
-    swap_claim_fee: Fee,
-    source_address: Option<u64>,
-) -> Result<TransactionPlan, anyhow::Error>
-where
-    V: ViewClient,
-    R: RngCore + CryptoRng,
-{
-    tracing::debug!(?input_value, ?swap_fee, ?swap_claim_fee, ?source_address);
-
-    // If a source address was specified, use it for the swap, otherwise,
-    // use the default address.
-    let (claim_address, _dtk_d) = fvk
-        .incoming()
-        .payment_address(source_address.unwrap_or(0).into());
-
-    let mut planner = Planner::new(rng);
-    planner.fee(swap_fee);
-    planner.swap(input_value, into_denom, swap_claim_fee, claim_address)?;
-    planner
-        .plan(view, fvk, source_address.map(Into::into))
-        .await
-        .context("can't build send transaction")
-}
-
-#[allow(clippy::too_many_arguments)]
 #[instrument(skip(fvk, view, rng, values, fee, dest_address, source_address, tx_memo))]
 pub async fn send<V, R>(
     fvk: &FullViewingKey,
@@ -211,7 +126,8 @@ where
     let mut plans = Vec::new();
 
     // First, find any un-claimed swaps and add `SwapClaim` plans for them.
-    plans.extend(claim_unclaimed_swaps(fvk, view, &mut rng, specific_client).await?);
+    // TODO: re-enable
+    //plans.extend(claim_unclaimed_swaps(fvk, view, &mut rng, specific_client).await?);
 
     // Finally, sweep dust notes by spending them to their owner's address.
     // This will consolidate small-value notes into larger ones.
@@ -220,17 +136,18 @@ where
     Ok(plans)
 }
 
-#[instrument(skip(fvk, view, rng))]
+//#[instrument(skip(_fvk, _view, _rng))]
 pub async fn claim_unclaimed_swaps<V, R>(
-    fvk: &FullViewingKey,
-    view: &mut V,
-    mut rng: R,
-    mut specific_client: SpecificQueryServiceClient<Channel>,
+    _fvk: &FullViewingKey,
+    _view: &mut V,
+    mut _rng: R,
+    mut _specific_client: SpecificQueryServiceClient<Channel>,
 ) -> Result<Vec<TransactionPlan>, anyhow::Error>
 where
     V: ViewClient,
     R: RngCore + CryptoRng,
 {
+    /*
     let mut plans = Vec::new();
     // fetch all transactions
     // check if they contain Swap actions
@@ -306,6 +223,8 @@ where
     }
 
     Ok(plans)
+    */
+    unimplemented!("This function has not been implemented since we changed the swap mechanism to auto-claim in scanning.")
 }
 
 #[instrument(skip(fvk, view, rng))]

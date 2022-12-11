@@ -1,8 +1,9 @@
 use std::collections::BTreeMap;
 
 use penumbra_chain::{CompactBlock, Epoch, StatePayload};
-use penumbra_crypto::{note, FullViewingKey, Note};
+use penumbra_crypto::{dex::swap::SwapPlaintext, note, FullViewingKey, Note};
 use penumbra_storage::StateRead;
+use penumbra_tct as tct;
 
 use crate::shielded_pool::StateReadExt as _;
 
@@ -12,6 +13,7 @@ pub struct MockClient {
     epoch_duration: u64,
     fvk: FullViewingKey,
     notes: BTreeMap<note::Commitment, Note>,
+    swaps: BTreeMap<tct::Commitment, SwapPlaintext>,
     nct: penumbra_tct::Tree,
 }
 
@@ -23,6 +25,7 @@ impl MockClient {
             epoch_duration,
             notes: Default::default(),
             nct: Default::default(),
+            swaps: Default::default(),
         }
     }
 
@@ -75,8 +78,39 @@ impl MockClient {
                         }
                     }
                 }
+                StatePayload::Swap { swap: payload, .. } => {
+                    match payload.trial_decrypt(&self.fvk) {
+                        Some(swap) => {
+                            self.nct.insert(Keep, payload.commitment)?;
+                            // At this point, we need to retain the swap plaintext,
+                            // and also derive the expected output notes so we can
+                            // notice them while scanning later blocks.
+                            self.swaps.insert(payload.commitment, swap.clone());
+
+                            let batch_data =
+                                block.swap_outputs.get(&swap.trading_pair).ok_or_else(|| {
+                                    anyhow::anyhow!("server gave invalid compact block")
+                                })?;
+
+                            let (output_1, output_2) = swap.output_notes(batch_data);
+                            // Pre-insert the output notes into our notes table, so that
+                            // we can notice them when we scan the block where they are claimed.
+                            self.notes.insert(output_1.commit(), output_1);
+                            self.notes.insert(output_2.commit(), output_2);
+                        }
+                        None => {
+                            self.nct.insert(Forget, payload.commitment)?;
+                        }
+                    }
+                }
                 StatePayload::RolledUp(commitment) => {
-                    self.nct.insert(Forget, commitment)?;
+                    if self.notes.contains_key(&commitment) {
+                        // This is a note we anticipated, so retain its auth path.
+                        self.nct.insert(Keep, commitment)?;
+                    } else {
+                        // This is someone else's note.
+                        self.nct.insert(Forget, commitment)?;
+                    }
                 }
             }
         }
@@ -96,6 +130,10 @@ impl MockClient {
 
     pub fn note_by_commitment(&self, commitment: &note::Commitment) -> Option<Note> {
         self.notes.get(commitment).cloned()
+    }
+
+    pub fn swap_by_commitment(&self, commitment: &note::Commitment) -> Option<SwapPlaintext> {
+        self.swaps.get(commitment).cloned()
     }
 
     pub fn witness(&self, commitment: note::Commitment) -> Option<penumbra_tct::Proof> {

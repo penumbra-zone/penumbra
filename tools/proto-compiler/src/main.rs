@@ -273,11 +273,8 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.core.transaction.v1alpha1.ActionPlan", SERIALIZE),
     (".penumbra.core.transaction.v1alpha1.SpendPlan", SERIALIZE),
     (".penumbra.core.transaction.v1alpha1.OutputPlan", SERIALIZE),
-    (".penumbra.core.transaction.v1alpha1.SwapPlan", SERIALIZE),
-    (
-        ".penumbra.core.transaction.v1alpha1.SwapClaimPlan",
-        SERIALIZE,
-    ),
+    (".penumbra.core.dex.v1alpha1.SwapPlan", SERIALIZE),
+    (".penumbra.core.dex.v1alpha1.SwapClaimPlan", SERIALIZE),
     (".penumbra.core.transaction.v1alpha1.CluePlan", SERIALIZE),
     (".penumbra.core.transaction.v1alpha1.MemoPlan", SERIALIZE),
     (".penumbra.core.transaction.v1alpha1.Transaction", SERIALIZE),
@@ -342,11 +339,8 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     ),
     (".penumbra.core.transaction.v1alpha1.SpendView", SERIALIZE),
     (".penumbra.core.transaction.v1alpha1.OutputView", SERIALIZE),
-    (
-        ".penumbra.core.transaction.v1alpha1.SwapClaimView",
-        SERIALIZE,
-    ),
-    (".penumbra.core.transaction.v1alpha1.SwapView", SERIALIZE),
+    (".penumbra.core.dex.v1alpha1.SwapClaimView", SERIALIZE),
+    (".penumbra.core.dex.v1alpha1.SwapView", SERIALIZE),
     (".penumbra.core.transaction.v1alpha1.ActionView", SERIALIZE),
     (
         ".penumbra.core.transaction.v1alpha1.TransactionView",
@@ -372,10 +366,9 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.core.dex.v1alpha1.PositionRewardClaim", SERIALIZE),
     (".penumbra.core.dex.v1alpha1.Swap", SERIALIZE),
     (".penumbra.core.dex.v1alpha1.SwapBody", SERIALIZE),
+    (".penumbra.core.dex.v1alpha1.SwapPayload", SERIALIZE),
     (".penumbra.core.dex.v1alpha1.SwapClaim", SERIALIZE),
     (".penumbra.core.dex.v1alpha1.SwapClaimBody", SERIALIZE),
-    (".penumbra.core.dex.v1alpha1.ClaimedSwap", SERIALIZE),
-    (".penumbra.core.dex.v1alpha1.ClaimedSwapList", SERIALIZE),
     (".penumbra.core.dex.v1alpha1.SwapPlaintext", SERIALIZE),
     (".penumbra.core.dex.v1alpha1.BatchSwapOutputData", SERIALIZE),
     // see below re: prost issue #504
@@ -414,6 +407,7 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
         SERDE_TRANSPARENT,
     ),
     (".penumbra.view.v1alpha1.SpendableNoteRecord", SERIALIZE),
+    (".penumbra.view.v1alpha1.SwapRecord", SERIALIZE),
 ];
 
 static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
@@ -514,34 +508,19 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         ".penumbra.core.transaction.v1alpha1.OutputPlan.memo",
         AS_HEX_FOR_BYTES,
     ),
+    (".penumbra.core.dex.v1alpha1.SwapPlan.note_blinding", AS_HEX),
+    (".penumbra.core.dex.v1alpha1.SwapPlan.fee_blinding", AS_HEX),
+    (".penumbra.core.dex.v1alpha1.SwapPlan.esk", AS_HEX),
     (
-        ".penumbra.core.transaction.v1alpha1.SwapPlan.note_blinding",
+        ".penumbra.core.dex.v1alpha1.SwapClaimPlan.output_1_blinding",
         AS_HEX_FOR_BYTES,
     ),
     (
-        ".penumbra.core.transaction.v1alpha1.SwapPlan.fee_blinding",
+        ".penumbra.core.dex.v1alpha1.SwapClaimPlan.output_2_blinding",
         AS_HEX_FOR_BYTES,
     ),
-    (
-        ".penumbra.core.transaction.v1alpha1.SwapPlan.esk",
-        AS_HEX_FOR_BYTES,
-    ),
-    (
-        ".penumbra.core.transaction.v1alpha1.SwapClaimPlan.output_1_blinding",
-        AS_HEX_FOR_BYTES,
-    ),
-    (
-        ".penumbra.core.transaction.v1alpha1.SwapClaimPlan.output_2_blinding",
-        AS_HEX_FOR_BYTES,
-    ),
-    (
-        ".penumbra.core.transaction.v1alpha1.SwapClaimPlan.esk_1",
-        AS_HEX_FOR_BYTES,
-    ),
-    (
-        ".penumbra.core.transaction.v1alpha1.SwapClaimPlan.esk_2",
-        AS_HEX_FOR_BYTES,
-    ),
+    (".penumbra.core.dex.v1alpha1.SwapClaimPlan.esk_1", AS_HEX),
+    (".penumbra.core.dex.v1alpha1.SwapClaimPlan.esk_2", AS_HEX),
     // Transaction formatting
     (
         ".penumbra.core.transaction.v1alpha1.Transaction.binding_sig",

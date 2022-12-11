@@ -4,14 +4,14 @@ use crate::{
     dex::{StateReadExt as _, StateWriteExt as _},
     shielded_pool::NoteManager,
 };
-use anyhow::{Context, Result};
-use ark_ff::Zero;
+use anyhow::Result;
+
 use async_trait::async_trait;
-use decaf377::Fr;
+
 use penumbra_chain::sync::StatePayload;
-use penumbra_crypto::{MockFlowCiphertext, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_crypto::MockFlowCiphertext;
 use penumbra_storage::{State, StateRead, StateTransaction};
-use penumbra_transaction::{action::Swap, Transaction};
+use penumbra_transaction::{action::Swap, IsAction, Transaction};
 use tracing::instrument;
 
 use crate::action_handler::ActionHandler;
@@ -20,39 +20,17 @@ use crate::action_handler::ActionHandler;
 impl ActionHandler for Swap {
     #[instrument(name = "swap", skip(self, _context))]
     async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
-        let swap = self;
-
-        // Check swap proof
-        swap.proof
-            .verify(
-                // TODO: no value commitments until flow encryption is available
-                // so we pass placeholder values here, the proof doesn't check these right now
-                // and will fail when checking is re-enabled.
-                Value {
-                    amount: 0u64.into(),
-                    asset_id: *STAKING_TOKEN_ASSET_ID,
-                }
-                .commit(Fr::zero()),
-                Value {
-                    amount: 0u64.into(),
-                    asset_id: *STAKING_TOKEN_ASSET_ID,
-                }
-                .commit(Fr::zero()),
-                swap.body.fee_commitment,
-                swap.body.swap_nft.note_commitment,
-                swap.body.swap_nft.ephemeral_key,
-            )
-            .context("A swap proof did not verify")?;
-
-        // TODO: are any other checks necessary?
+        self.proof.verify(
+            self.body.fee_commitment,
+            self.body.payload.commitment,
+            self.balance_commitment(),
+        )?;
 
         Ok(())
     }
 
     #[instrument(name = "swap", skip(self, _state))]
     async fn check_stateful(&self, _state: Arc<State>) -> Result<()> {
-        // TODO: are any other checks necessary?
-
         Ok(())
     }
 
@@ -72,12 +50,12 @@ impl ActionHandler for Swap {
         // Set the batch swap flow for the trading pair.
         state.put_swap_flow(&swap.body.trading_pair, swap_flow);
 
-        // Record the Swap NFT in the state.
+        // Record the swap commitment in the state.
         let source = state.object_get("source").cloned().unwrap_or_default();
         state
-            .add_state_payload(StatePayload::Note {
+            .add_state_payload(StatePayload::Swap {
                 source,
-                note: self.body.swap_nft.clone(),
+                swap: self.body.payload.clone(),
             })
             .await;
 

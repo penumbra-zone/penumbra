@@ -221,7 +221,6 @@ impl TxCmd {
                 actions_table.add_row(match av {
                     penumbra_transaction::ActionView::Swap(SwapView::Visible {
                         swap: _,
-                        swap_nft: _,
                         swap_plaintext,
                     }) => [
                         "Swap".to_string(),

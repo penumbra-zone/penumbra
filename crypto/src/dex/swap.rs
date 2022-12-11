@@ -1,20 +1,21 @@
-mod ciphertext;
-mod plaintext;
-
 use anyhow::{anyhow, Result};
 use ark_ff::PrimeField;
 use blake2b_simd::Hash;
-pub use ciphertext::SwapCiphertext;
 use decaf377::Fq;
-pub use plaintext::SwapPlaintext;
-
 use once_cell::sync::Lazy;
-
 use penumbra_proto::{
     client::v1alpha1::BatchSwapOutputDataResponse, core::dex::v1alpha1 as pb, Protobuf,
 };
 
 use super::TradingPair;
+
+mod ciphertext;
+mod payload;
+mod plaintext;
+
+pub use ciphertext::SwapCiphertext;
+pub use payload::SwapPayload;
+pub use plaintext::SwapPlaintext;
 
 // Swap ciphertext byte length
 pub const SWAP_CIPHERTEXT_BYTES: usize = 248;

@@ -12,7 +12,7 @@ use penumbra_crypto::{
     note::Commitment,
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
     transaction::Fee,
-    EncryptedNote, Fr, FullViewingKey, Note, Nullifier, PayloadKey,
+    Fr, FullViewingKey, Note, Nullifier, PayloadKey,
 };
 use penumbra_proto::{
     core::ibc::v1alpha1 as pb_ibc, core::stake::v1alpha1 as pbs,
@@ -65,25 +65,12 @@ impl Transaction {
         for action in self.actions() {
             match action {
                 Action::Swap(swap) => {
-                    let epk = &swap.body.swap_nft.ephemeral_key;
+                    let epk = &swap.body.payload.ephemeral_key;
                     let shared_secret = fvk.incoming().key_agreement_with(epk)?;
                     let payload_key = PayloadKey::derive(&shared_secret, epk);
-                    let commitment = swap.body.swap_nft.note_commitment;
+                    let commitment = swap.body.payload.commitment;
 
                     result.insert(commitment, payload_key);
-                }
-                Action::SwapClaim(swap_claim) => {
-                    let epk_1 = &swap_claim.body.output_1.ephemeral_key;
-                    let epk_2 = &swap_claim.body.output_2.ephemeral_key;
-                    let shared_secret_1 = fvk.incoming().key_agreement_with(epk_1)?;
-                    let shared_secret_2 = fvk.incoming().key_agreement_with(epk_2)?;
-                    let payload_key_1 = PayloadKey::derive(&shared_secret_1, epk_1);
-                    let payload_key_2 = PayloadKey::derive(&shared_secret_2, epk_2);
-                    let commitment_1 = swap_claim.body.output_1.note_commitment;
-                    let commitment_2 = swap_claim.body.output_2.note_commitment;
-
-                    result.insert(commitment_1, payload_key_1);
-                    result.insert(commitment_2, payload_key_2);
                 }
                 Action::Output(output) => {
                     // Outputs may be either incoming or outgoing; for an outgoing output
@@ -114,6 +101,7 @@ impl Transaction {
                 }
                 // These actions have no payload keys; they're listed explicitly
                 // for exhaustiveness.
+                Action::SwapClaim(_swap_claim) => {}
                 Action::Spend(_) => {}
                 Action::Delegate(_) => {}
                 Action::Undelegate(_) => {}
@@ -273,26 +261,6 @@ impl Transaction {
                 None
             }
         })
-    }
-
-    // TODO: re-evaluate this API, do we want to be iterating over encrypted notes?
-    // or state payloads? but the state payloads have sources, so we'd have to construct them
-    // on the fly with the tx hash? how do we really want to be using tihs?
-    pub fn encrypted_notes(&self) -> impl Iterator<Item = &EncryptedNote> {
-        // This is somewhat cursed but avoids the need to allocate or erase types, I guess?
-        self.actions()
-            .flat_map(|action| match action {
-                Action::Output(output) => [Some(&output.body.note_payload), None],
-                Action::Swap(swap) => [Some(&swap.body.swap_nft), None],
-                Action::SwapClaim(swap_claim) => [
-                    Some(&swap_claim.body.output_1),
-                    Some(&swap_claim.body.output_2),
-                ],
-                _ => [None, None],
-            })
-            // We've padded arrays with None to be able to unify types, now strip the
-            // bogus padding values away:
-            .flatten()
     }
 
     pub fn spent_nullifiers(&self) -> impl Iterator<Item = Nullifier> + '_ {

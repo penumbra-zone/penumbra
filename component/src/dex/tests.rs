@@ -10,7 +10,7 @@ use penumbra_crypto::{
 use penumbra_storage::{ArcStateExt, TempStorage};
 use penumbra_transaction::{
     plan::{SwapClaimPlan, SwapPlan},
-    Action, Transaction, TransactionBody,
+    Transaction,
 };
 use rand_core::SeedableRng;
 use tendermint::abci;
@@ -86,23 +86,18 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
 
     let output_data = state.output_data(height, trading_pair).await?.unwrap();
 
-    let swap_nft_note = client
-        .note_by_commitment(&swap.body.swap_nft.note_commitment)
-        .expect("client should have detected the swap nft note");
+    let commitment = swap.body.payload.commitment;
+    let swap_auth_path = client.witness(commitment).unwrap();
+    let detected_plaintext = client.swap_by_commitment(&commitment).unwrap();
+    assert_eq!(plaintext, detected_plaintext);
 
-    let swap_nft_note_auth_path = client
-        .witness(swap.body.swap_nft.note_commitment)
-        .expect("client should have detected the swap nft note");
-
-    let claim_plan = SwapClaimPlan::new(
-        &mut rng,
-        plaintext,
-        swap_nft_note,
-        swap_nft_note_auth_path.position(),
-        epoch_duration,
+    let claim_plan = SwapClaimPlan {
+        swap_plaintext: plaintext,
+        position: swap_auth_path.position(),
         output_data,
-    );
-    let claim = claim_plan.swap_claim(&test_keys::FULL_VIEWING_KEY, &swap_nft_note_auth_path);
+        epoch_duration,
+    };
+    let claim = claim_plan.swap_claim(&test_keys::FULL_VIEWING_KEY, &swap_auth_path);
 
     // 7. Execute the SwapClaim action
 

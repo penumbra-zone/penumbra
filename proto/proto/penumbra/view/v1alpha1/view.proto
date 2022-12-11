@@ -4,6 +4,7 @@ package penumbra.view.v1alpha1;
 
 import "penumbra/core/chain/v1alpha1/chain.proto";
 import "penumbra/core/crypto/v1alpha1/crypto.proto";
+import "penumbra/core/dex/v1alpha1/dex.proto";
 import "penumbra/core/transaction/v1alpha1/transaction.proto";
 
 option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
@@ -46,6 +47,8 @@ service ViewProtocolService {
 
   // Query for a note by its note commitment, optionally waiting until the note is detected.
   rpc NoteByCommitment(NoteByCommitmentRequest) returns (NoteByCommitmentResponse);
+  // Query for a swap by its swap commitment, optionally waiting until the swap is detected.
+  rpc SwapByCommitment(SwapByCommitmentRequest) returns (SwapByCommitmentResponse);
 
   // Query for whether a nullifier has been spent, optionally waiting until it is spent.
   rpc NullifierStatus(NullifierStatusRequest) returns (NullifierStatusResponse);
@@ -187,6 +190,20 @@ message NoteByCommitmentResponse {
   SpendableNoteRecord spendable_note = 1;
 }
 
+message SwapByCommitmentRequest {
+  core.crypto.v1alpha1.StateCommitment swap_commitment = 2;
+  // If set to true, waits to return until the requested swap is detected.
+  bool await_detection = 3;
+  // Identifies the FVK for the notes to query.
+  optional core.crypto.v1alpha1.AccountID account_id = 14;
+  // Authorizes the request.
+  optional ViewAuthToken token = 15;
+}
+
+message SwapByCommitmentResponse {
+  SwapRecord swap = 1;
+}
+
 message NullifierStatusRequest {
   core.crypto.v1alpha1.Nullifier nullifier = 2;
   bool await_detection = 3;
@@ -267,4 +284,14 @@ message SpendableNoteRecord {
   uint64 position = 7;
   // The source of the note (a tx hash or otherwise)
   core.chain.v1alpha1.NoteSource source = 8;
+}
+
+message SwapRecord {
+  core.crypto.v1alpha1.StateCommitment swap_commitment = 1;
+  core.dex.v1alpha1.SwapPlaintext swap = 2;
+  uint64 position = 3;
+  core.crypto.v1alpha1.Nullifier nullifier = 4;
+  core.dex.v1alpha1.BatchSwapOutputData output_data = 5;
+  optional uint64 height_claimed = 6;
+  core.chain.v1alpha1.NoteSource source = 7;
 }

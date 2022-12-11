@@ -27,43 +27,46 @@ message SwapClaim {
   bytes proof = 1;
   // Encapsulates the authorized fields of the SwapClaim action, used in signing.
   SwapClaimBody body = 2;
+  // The epoch duration of the chain when the swap claim took place.
+  uint64 epoch_duration = 7;
 }
 
 // Encapsulates the authorized fields of the SwapClaim action, used in signing.
 message SwapClaimBody {
-  // The nullifier for the Swap NFT to be consumed.
+  // The nullifier for the Swap commitment to be consumed.
   crypto.v1alpha1.Nullifier nullifier = 1;
   // The fee allows `SwapClaim` without an additional `Spend`.
   crypto.v1alpha1.Fee fee = 2;
   // Note output for asset 1.
-  crypto.v1alpha1.EncryptedNote output_1 = 3;
+  crypto.v1alpha1.StateCommitment output_1_commitment = 3;
   // Note output for asset 2.
-  crypto.v1alpha1.EncryptedNote output_2 = 4;
+  crypto.v1alpha1.StateCommitment output_2_commitment = 4;
   // Input and output amounts, and asset IDs for the assets in the swap.
   BatchSwapOutputData output_data = 6;
-  // The epoch duration of the chain when the swap claim took place.
-  uint64 epoch_duration = 7;
 }
 
 // The authorized data of a Swap transaction.
 message SwapBody {
   // The trading pair to swap.
   TradingPair trading_pair = 1;
-  // @exclude These will become commitments when flow encryption/ABCI++ are available
   // The amount for asset 1.
   crypto.v1alpha1.Amount delta_1_i = 2;
   // The amount for asset 2.
   crypto.v1alpha1.Amount delta_2_i = 3;
-  // @exclude // Commitment to the amount for asset 1 (delta 1).
-  // @exclude bytes delta_1_commitment = 2;
-  // @exclude // Commitment to the amount for asset 2 (delta 2).
-  // @exclude bytes delta_2_commitment = 3;
   // A commitment to a prepaid fee for the future SwapClaim.
+  // This is recorded separately from delta_j_i because it's shielded;
+  // in the future we'll want separate commitments to each delta_j_i
+  // anyways in order to prove consistency with flow encryption.
   bytes fee_commitment = 4;
-  // Swap NFT recording the user's contribution.
-  crypto.v1alpha1.EncryptedNote swap_nft = 5;
-  // Encrypted version of the original `Swap`, symmetrically encrypted w/ viewing key.
-  bytes swap_ciphertext = 6;
+  // The swap commitment and encryption of the swap data.
+  SwapPayload payload = 5;
+}
+
+message SwapPayload {
+  crypto.v1alpha1.StateCommitment commitment = 1;
+  // TODO: replace with ovk-based encryption
+  bytes ephemeral_key = 2;
+  bytes encrypted_swap = 3;
 }
 
 message SwapPlaintext {
@@ -84,6 +87,37 @@ message SwapPlaintext {
 message MockFlowCiphertext {
     // Represents this transaction's contribution to flow's value.
     uint64 value = 1;
+}
+
+message SwapPlan {
+    // The plaintext version of the swap to be performed.
+    dex.v1alpha1.SwapPlaintext swap_plaintext = 1;
+    // The blinding factor for the fee commitment. The fee in the SwapPlan is private to prevent linkability with the SwapClaim.
+    bytes fee_blinding = 2;
+    // The ephemeral secret used to encrypt the swap payload.
+    bytes esk = 3;
+}
+
+message SwapClaimPlan {
+    // The plaintext version of the swap to be performed.
+    dex.v1alpha1.SwapPlaintext swap_plaintext = 1;
+    // The position of the swap commitment.
+    uint64 position = 2;
+    // Input and output amounts for the Swap.
+    dex.v1alpha1.BatchSwapOutputData output_data = 3;
+    // The epoch duration, used in proving.
+    uint64 epoch_duration = 4;
+}
+
+message SwapView {
+    dex.v1alpha1.Swap swap = 1;
+    dex.v1alpha1.SwapPlaintext swap_plaintext = 3;
+}
+
+message SwapClaimView {
+    dex.v1alpha1.SwapClaim swap_claim = 1;
+    crypto.v1alpha1.Note output_1 = 2;
+    crypto.v1alpha1.Note output_2 = 3;
 }
 
 // Holds two asset IDs. Ordering doesn't reflect trading direction. Instead, we

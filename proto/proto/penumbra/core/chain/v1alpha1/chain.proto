@@ -5,6 +5,7 @@ package penumbra.core.chain.v1alpha1;
 
 import "penumbra/core/crypto/v1alpha1/crypto.proto";
 import "penumbra/core/stake/v1alpha1/stake.proto";
+import "penumbra/core/dex/v1alpha1/dex.proto";
 
 // Global chain configuration data, such as chain ID, epoch duration, etc.
 message ChainParameters {
@@ -88,6 +89,8 @@ message CompactBlock {
   bool proposal_started = 20;
   // Latest Fuzzy Message Detection parameters.
   FmdParameters fmd_parameters = 100;
+  // Price data for swaps executed in this block.
+  repeated dex.v1alpha1.BatchSwapOutputData swap_outputs = 5;
 }
 
 message StatePayload {
@@ -98,9 +101,14 @@ message StatePayload {
     NoteSource source = 1;
     crypto.v1alpha1.EncryptedNote note = 2;
   }
+  message Swap {
+    NoteSource source = 1;
+    dex.v1alpha1.SwapPayload swap = 2;
+  }
   oneof state_payload {
     RolledUp rolled_up = 1;
     Note note = 2;
+    Swap swap = 3;
   }
 }
 

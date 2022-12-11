@@ -17,7 +17,7 @@ use tonic::async_trait;
 use tonic::codegen::Bytes;
 use tracing::instrument;
 
-use crate::{SpendableNoteRecord, StatusStreamResponse};
+use crate::{SpendableNoteRecord, StatusStreamResponse, SwapRecord};
 
 /// The view protocol is used by a view client, who wants to do some
 /// transaction-related actions, to request data from a view service, which is
@@ -57,6 +57,13 @@ pub trait ViewClient {
         account_id: AccountID,
         note_commitment: note::Commitment,
     ) -> Result<SpendableNoteRecord>;
+
+    /// Queries for a specific swap by commitment, returning immediately if it is not found.
+    async fn swap_by_commitment(
+        &mut self,
+        account_id: AccountID,
+        swap_commitment: penumbra_tct::Commitment,
+    ) -> Result<SwapRecord>;
 
     /// Queries for a specific nullifier's status, returning immediately if it is not found.
     async fn nullifier_status(
@@ -300,6 +307,29 @@ where
             .try_into()
     }
 
+    async fn swap_by_commitment(
+        &mut self,
+        account_id: AccountID,
+        swap_commitment: penumbra_tct::Commitment,
+    ) -> Result<SwapRecord> {
+        let swap_commitment_response = ViewProtocolServiceClient::swap_by_commitment(
+            self,
+            tonic::Request::new(pb::SwapByCommitmentRequest {
+                account_id: Some(account_id.into()),
+                swap_commitment: Some(swap_commitment.into()),
+                await_detection: false,
+                ..Default::default()
+            }),
+        )
+        .await?
+        .into_inner();
+
+        swap_commitment_response
+            .swap
+            .ok_or_else(|| anyhow::anyhow!("empty SwapByCommitmentResponse message"))?
+            .try_into()
+    }
+
     /// Queries for a specific note by commitment, waiting until the note is detected if it is not found.
     ///
     /// This is useful for waiting for a note to be detected by the view service.
@@ -379,7 +409,7 @@ where
             .map(|spend| spend.note.commit().into())
             .chain(
                 plan.swap_claim_plans()
-                    .map(|swap_claim| swap_claim.swap_nft_note.commit().into()),
+                    .map(|swap_claim| swap_claim.swap_plaintext.swap_commitment().into()),
             )
             .collect();
 
