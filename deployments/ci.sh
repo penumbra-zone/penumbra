@@ -16,14 +16,15 @@ set -euo pipefail
 # for the helm chart. N.B. these env vars are also configured
 # in GitHub Actions, so the values below may be out of date.
 WORKDIR="${WORKDIR:=$(pwd)/helm/pdcli}"
-IMAGE="${IMAGE:=ghcr.io/penumbra-zone/penumbra}"
-PENUMBRA_VERSION="${PENUMBRA_VERSION:=037-megaclite.1}"
-PENUMBRA_UID_GID="${PENUMBRA_UID_GID:=1000\:1000}"
-TENDERMINT_VERSION="${TENDERMINT_VERSION:=v0.34.23}"
-NVALS="${NVALS:=2}"
-NFULLNODES="${NFULLNODES:=1}"
-CONTAINERHOME="${CONTAINERHOME:=/root}"
-HELM_RELEASE="${HELM_RELEASE:=penumbra-testnet}"
+IMAGE="${IMAGE:-ghcr.io/penumbra-zone/penumbra}"
+PENUMBRA_VERSION="${PENUMBRA_VERSION:-main}"
+PENUMBRA_UID_GID="${PENUMBRA_UID_GID:-1000\:1000}"
+TENDERMINT_VERSION="${TENDERMINT_VERSION:-v0.34.23}"
+NVALS="${NVALS:-2}"
+NFULLNODES="${NFULLNODES:-1}"
+CONTAINERHOME="${CONTAINERHOME:-/root}"
+# Default to preview for deployments; less likely to break public testnet.
+HELM_RELEASE="${HELM_RELEASE:-penumbra-testnet-preview}"
 
 # Check that the network we're trying to configure has a valid config.
 if [[ "$HELM_RELEASE" =~ ^penumbra-testnet$ ]] ; then
@@ -57,7 +58,7 @@ function helm_uninstall() {
 echo "Shutting down existing testnet if necessary..."
 helm_uninstall
 
-for i in $(seq $NVALS); do
+for i in $(seq "$NVALS"); do
     I="$((i-1))"
     NODEDIR="node${I}"
     mkdir -p "${WORKDIR}/${NODEDIR}"
@@ -87,7 +88,10 @@ else
 fi
 echo "Generating new testnet files..."
 container_cli="$(get_container_cli)"
+# Silence shellcheck warning on 'preserve_chain_opt' being an empty string.
+# shellcheck disable=SC2086
 "$container_cli" run --user 0:0 \
+    --pull always \
     -v "${WORKDIR}:${CONTAINERHOME}" --rm \
     --entrypoint pd \
     "${IMAGE}:${PENUMBRA_VERSION}" \
@@ -96,11 +100,11 @@ container_cli="$(get_container_cli)"
     --validators-input-file "${CONTAINERHOME}/vals.json" > /dev/null
 
 PERSISTENT_PEERS=""
-for i in $(seq $NVALS); do
+for i in $(seq "$NVALS"); do
     I=$((i-1))
     NODE_ID=$(jq -r '.priv_key.value' "${WORKDIR}/.penumbra/testnet_data/node${I}/tendermint/config/node_key.json" | base64 --decode | tail -c 32 | sha256sum  | cut -c -40)
     SVC_NAME="${HELM_RELEASE}-p2p-val-${I}"
-    for j in $(seq $NVALS)
+    for j in $(seq "$NVALS")
     do
       J=$((j-1))
       if [ "$I" -ne "$J" ]; then
@@ -123,7 +127,7 @@ for i in $(seq $NVALS); do
     echo > "${WORKDIR}/persistent_peers_${I}.txt"
 done
 
-for i in $(seq $NFULLNODES); do
+for i in $(seq "$NFULLNODES"); do
     I=$((i-1))
     # Clear out external address. Will peer after services are bootstrapped.
     echo > "${WORKDIR}/external_address_fn_${I}.txt"
@@ -176,7 +180,7 @@ wait_for_pods_to_be_running
 PPE=""
 
 echo "Collecting config values for each node..."
-for i in $(seq $NVALS); do
+for i in $(seq "$NVALS"); do
   I=$((i-1))
   echo "Getting public peer string for validator $I"
   NODE_ID="$(kubectl exec "$(kubectl get pods -l app.kubernetes.io/instance="$HELM_RELEASE" -o name | grep "penumbra.*val-${I}")" -c tm -- tendermint --home=/home/.tendermint show-node-id | tr -d '\r')"
@@ -192,10 +196,9 @@ for i in $(seq $NVALS); do
   echo "${IP}:26656" > "${WORKDIR}/external_address_val_${I}.txt"
 done
 
-for i in $(seq $NFULLNODES); do
+for i in $(seq "$NFULLNODES"); do
   I=$((i-1))
   echo "Getting public peer string for fullnode $I"
-  # TODO: look up pods by label, otherwise the query is too broad.
   NODE_ID="$(kubectl exec "$(kubectl get pods -l app.kubernetes.io/instance="$HELM_RELEASE" -o name | grep "penumbra.*-fn-${I}")" -c tm -- tendermint --home=/home/.tendermint show-node-id | tr -d '\r')"
   IP="$(kubectl get svc "${HELM_RELEASE}-p2p-fn-${I}" -o json | jq -r .status.loadBalancer.ingress[0].ip | tr -d '\r')"
   PPE="${PPE},${NODE_ID}@${IP}:26656"
