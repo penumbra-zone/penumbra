@@ -105,21 +105,24 @@ pub mod penumbra {
 
             // TODO(erwan): this is one way to flatten the complex proto hierarchy, should be easy to lift
             pub mod tendermint_proxy {
+                #[cfg(feature = "rpc")]
                 pub use crate::cosmos::base::tendermint::v1beta1::*;
             }
 
             use async_stream::try_stream;
             use futures::Stream;
             use futures::StreamExt;
-            use specific_query_service_client::SpecificQueryServiceClient;
             use std::pin::Pin;
+            #[cfg(feature = "rpc")]
             use tonic::{
                 body::BoxBody,
                 codegen::{Body, StdError},
             };
 
             // Convenience methods for fetching data...
-
+            #[cfg(feature = "rpc")]
+            use specific_query_service_client::SpecificQueryServiceClient;
+            #[cfg(feature = "rpc")]
             impl<C> SpecificQueryServiceClient<C> {
                 /// Get the Rust protobuf type corresponding to a state key.
                 ///
@@ -214,6 +217,7 @@ pub mod penumbra {
     /// Custody protocol structures.
     pub mod custody {
         pub mod v1alpha1 {
+            #[cfg(feature = "rpc")]
             include!("gen/penumbra.custody.v1alpha1.rs");
         }
     }
@@ -224,12 +228,14 @@ pub mod cosmos {
     pub mod base {
         pub mod query {
             pub mod v1beta1 {
+                #[cfg(feature = "rpc")]
                 include!("gen/cosmos.base.query.v1beta1.rs");
             }
         }
 
         pub mod tendermint {
             pub mod v1beta1 {
+                #[cfg(feature = "rpc")]
                 include!("gen/cosmos.base.tendermint.v1beta1.rs");
             }
         }

@@ -297,6 +297,7 @@ pub struct SwapRecord {
     pub source: ::core::option::Option<super::super::core::chain::v1alpha1::NoteSource>,
 }
 /// Generated client implementations.
+#[cfg(feature = "rpc")]
 pub mod view_protocol_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
@@ -680,6 +681,7 @@ pub mod view_protocol_service_client {
     }
 }
 /// Generated client implementations.
+#[cfg(feature = "rpc")]
 pub mod view_auth_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
@@ -770,6 +772,7 @@ pub mod view_auth_service_client {
     }
 }
 /// Generated server implementations.
+#[cfg(feature = "rpc")]
 pub mod view_protocol_service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
@@ -1552,6 +1555,7 @@ pub mod view_protocol_service_server {
     }
 }
 /// Generated server implementations.
+#[cfg(feature = "rpc")]
 pub mod view_auth_service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
