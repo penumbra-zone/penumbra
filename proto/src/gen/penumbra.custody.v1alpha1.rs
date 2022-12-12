@@ -29,6 +29,7 @@ pub struct PreAuthorization {
     pub sig: ::prost::alloc::vec::Vec<u8>,
 }
 /// Generated client implementations.
+#[cfg(feature = "rpc")]
 pub mod custody_protocol_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
@@ -133,6 +134,7 @@ pub mod custody_protocol_service_client {
     }
 }
 /// Generated server implementations.
+#[cfg(feature = "rpc")]
 pub mod custody_protocol_service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;

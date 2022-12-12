@@ -84,6 +84,10 @@ fn main() -> Result<()> {
         .client_mod_attribute("penumbra.client.v1alpha1", "#[cfg(feature = \"rpc\")]")
         .server_mod_attribute("penumbra.view.v1alpha1", "#[cfg(feature = \"rpc\")]")
         .client_mod_attribute("penumbra.view.v1alpha1", "#[cfg(feature = \"rpc\")]")
+        .server_mod_attribute("penumbra.custody.v1alpha1", "#[cfg(feature = \"rpc\")]")
+        .client_mod_attribute("penumbra.custody.v1alpha1", "#[cfg(feature = \"rpc\")]")
+        .server_mod_attribute("cosmos.base.tendermint.v1beta1", "#[cfg(feature = \"rpc\")]")
+        .client_mod_attribute("cosmos.base.tendermint.v1beta1", "#[cfg(feature = \"rpc\")]")
         .compile_with_config(
             config,
             &[

@@ -266,6 +266,7 @@ pub struct ProofOps {
     pub ops: ::prost::alloc::vec::Vec<ProofOp>,
 }
 /// Generated client implementations.
+#[cfg(feature = "rpc")]
 pub mod service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
@@ -488,6 +489,7 @@ pub mod service_client {
     }
 }
 /// Generated server implementations.
+#[cfg(feature = "rpc")]
 pub mod service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
