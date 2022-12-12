@@ -637,7 +637,13 @@ pub(crate) trait StakingImpl: StateWriteExt {
                     .try_into()
                     .unwrap();
 
-                let voted = did_address_vote.get(&addr).cloned().unwrap_or(false);
+                let voted = did_address_vote
+                    .get(&addr)
+                    .cloned()
+                    // If the height is `1`, then the `LastCommitInfo` refers to the genesis block,
+                    // which has no signers -- so we'll mark all validators as having signed.
+                    // https://github.com/penumbra-zone/penumbra/issues/1050
+                    .unwrap_or(height == 1);
                 let mut uptime =
                     self.validator_uptime(&v.identity_key)
                         .await?
