@@ -70,7 +70,7 @@ jobs:
           export NVALS='${{ github.event.inputs.nvals }}'
           export NFULLNODES='${{ github.event.inputs.nfullnodes }}'
           export IMAGE='${{ github.event.inputs.image_repository }}'
-          export PENUMBRA_VERSION='${{ github.event.inputs.image_tag }}'
+          export PENUMBRA_VERSION='main'
           export PENUMBRA_UID_GID='${{ github.event.inputs.image_uid_gid }}'
           export HELM_RELEASE='penumbra-testnet-preview'
           ./ci.sh
