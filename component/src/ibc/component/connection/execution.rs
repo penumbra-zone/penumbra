@@ -53,12 +53,6 @@ pub mod connection_open_try {
             let new_connection_id =
                 ConnectionId::new(self.get_connection_counter().await.unwrap().0);
 
-            // TODO(erwan): deprecated now?
-            // if let Some(prev_conn_id) = &msg.previous_connection_id {
-            //     // prev conn ID already validated in check_tx_stateful
-            //     new_connection_id = prev_conn_id.clone();
-            // }
-
             self.put_new_connection(&new_connection_id, new_conn)
                 .await
                 .unwrap();

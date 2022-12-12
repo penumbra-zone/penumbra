@@ -436,34 +436,6 @@ pub mod connection_open_try {
 
                 Ok(())
             }
-
-            // TODO(erwan): how to handle this with ibc-rs@0.23.0?
-            //async fn check_previous_connection(
-            //    &self,
-            //    msg: &MsgConnectionOpenTry,
-            //) -> anyhow::Result<Option<ConnectionEnd>> {
-            //    if let Some(prev_conn_id) = &msg.previous_connection_id {
-            //        // check that we have a valid connection with the given ID
-            //        let prev_connection = self
-            //            .get_connection(prev_conn_id)
-            //            .await?
-            //            .ok_or_else(|| anyhow::anyhow!("no connection with the given ID"))?;
-
-            //        // check that the existing connection matches the incoming connectionOpenTry
-            //        if !(prev_connection.state_matches(&ConnectionState::Init)
-            //            && prev_connection.counterparty_matches(&msg.counterparty)
-            //            && prev_connection.client_id_matches(&msg.client_id)
-            //            && prev_connection.delay_period() == msg.delay_period)
-            //        {
-            //            return Err(anyhow::anyhow!(
-            //                "connection with the given ID is not in the correct state",
-            //            ));
-            //        }
-            //        return Ok(Some(prev_connection));
-            //    } else {
-            //        return Ok(None);
-            //    }
-            //}
         }
 
         impl<T: StateReadExt> Inner for T {}
