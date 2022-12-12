@@ -10,7 +10,7 @@ decaf377-fmd = { path ="../decaf377-fmd" }
 decaf377-rdsa = { version = "0.5", git = "https://github.com/penumbra-zone/decaf377-rdsa" }
 bytes = { version = "1", features = ["serde"] }
 prost = "0.11"
-tonic = "0.8.1"
+tonic = { version = "0.8.1", optional = true }
 serde = { version = "1", features = ["derive"] }
 hex = "0.4"
 anyhow = "1.0"
@@ -23,10 +23,13 @@ async-stream = "0.2.0"
 tracing = "0.1"
 futures = "0.3"
 
-ibc-proto = "0.22.0"
+ibc-proto = { version = "0.22.0", default-features = false, features = ["std"] }
 ibc = "0.23.0"
 ics23 = "0.8.1"
 tendermint = "0.26.0"
 
 # TODO(erwan): remove
 num-rational = "0.4"
+
+[features]
+rpc = ["dep:tonic", "ibc-proto/client"]
