@@ -1,10 +1,8 @@
+use crate::ibc::client::ics02_validation;
 use crate::Component;
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc::clients::ics07_tendermint;
-use ibc::clients::ics07_tendermint::client_state::TENDERMINT_CLIENT_STATE_TYPE_URL;
-use ibc::clients::ics07_tendermint::consensus_state::TENDERMINT_CONSENSUS_STATE_TYPE_URL;
-use ibc::clients::ics07_tendermint::header::TENDERMINT_HEADER_TYPE_URL;
 
 use ibc::{
     clients::ics07_tendermint::{
@@ -94,13 +92,8 @@ pub(crate) trait Ics2ClientExt: StateWrite {
     async fn execute_update_client(&mut self, msg_update_client: &MsgUpdateClient) {
         // TODO(erwan): deferred client state deserialization means `execute_update_client` is faillible
         // see ibc-rs ADR004: https://github.com/cosmos/ibc-rs/blob/main/docs/architecture/adr-004-light-client-crates-extraction.md#light-client-specific-code
-        let tm_header = match msg_update_client.header.type_url.as_str() {
-            TENDERMINT_HEADER_TYPE_URL => {
-                TendermintHeader::try_from(msg_update_client.header.clone())
-                    .expect("decoding tendermint header")
-            }
-            _ => unimplemented!("not a tendermint header"),
-        };
+        let tm_header =
+            ics02_validation::get_tendermint_header(msg_update_client.header.clone()).unwrap();
 
         // get the latest client state
         let client_state = self
@@ -144,13 +137,9 @@ pub(crate) trait Ics2ClientExt: StateWrite {
         tracing::info!("deserializing client state");
         // TODO(erwan): deferred client state deserialization means `execute_create_client` is faillible
         // see ibc-rs ADR004: https://github.com/cosmos/ibc-rs/blob/main/docs/architecture/adr-004-light-client-crates-extraction.md#light-client-specific-code
-        let client_state = match msg_create_client.client_state.type_url.as_str() {
-            TENDERMINT_CLIENT_STATE_TYPE_URL => {
-                TendermintClientState::try_from(msg_create_client.client_state.clone())
-                    .expect("decoding the tendermint client state")
-            }
-            _ => unimplemented!("not a tendermint lightclient"),
-        };
+        let client_state =
+            ics02_validation::get_tendermint_client_state(msg_create_client.client_state.clone())
+                .unwrap();
 
         // get the current client counter
         let id_counter = self.client_counter().await.unwrap();
@@ -158,13 +147,10 @@ pub(crate) trait Ics2ClientExt: StateWrite {
 
         tracing::info!("creating client {:?}", client_id);
 
-        let consensus_state = match msg_create_client.consensus_state.type_url.as_str() {
-            TENDERMINT_CONSENSUS_STATE_TYPE_URL => {
-                TendermintConsensusState::try_from(msg_create_client.consensus_state.clone())
-                    .expect("decoding the tendermint consensus state")
-            }
-            _ => unimplemented!("not a tendermint lightclient"),
-        };
+        let consensus_state = ics02_validation::get_tendermint_consensus_state(
+            msg_create_client.consensus_state.clone(),
+        )
+        .unwrap();
 
         // store the client data
         self.put_client(&client_id, client_state.clone());

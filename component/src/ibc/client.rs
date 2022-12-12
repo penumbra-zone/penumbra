@@ -1,6 +1,4 @@
 use anyhow::anyhow;
-use ibc::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
-use ibc::clients::ics07_tendermint::client_state::TENDERMINT_CLIENT_STATE_TYPE_URL;
 
 use ibc::core::ics02_client::client_state::ClientState;
 
@@ -90,6 +88,71 @@ impl From<ClientConnections> for pb::ClientConnections {
     }
 }
 
+pub(crate) mod ics02_validation {
+    use anyhow::{anyhow, Result};
+    use ibc::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
+    use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
+    use ibc::clients::ics07_tendermint::header::Header as TendermintHeader;
+    use ibc::clients::ics07_tendermint::{
+        client_state::TENDERMINT_CLIENT_STATE_TYPE_URL,
+        consensus_state::TENDERMINT_CONSENSUS_STATE_TYPE_URL, header::TENDERMINT_HEADER_TYPE_URL,
+    };
+    use ibc_proto::google::protobuf::Any;
+
+    pub fn is_tendermint_header_state(header: &Any) -> bool {
+        header.type_url.as_str() == TENDERMINT_HEADER_TYPE_URL
+    }
+    pub fn is_tendermint_consensus_state(consensus_state: &Any) -> bool {
+        consensus_state.type_url.as_str() == TENDERMINT_CONSENSUS_STATE_TYPE_URL
+    }
+    pub fn is_tendermint_client_state(client_state: &Any) -> bool {
+        client_state.type_url.as_str() == TENDERMINT_CLIENT_STATE_TYPE_URL
+    }
+
+    pub fn get_tendermint_header(header: Any) -> Result<TendermintHeader> {
+        if is_tendermint_header_state(&header) {
+            TendermintHeader::try_from(header)
+                .map_err(|e| anyhow!(format!("failed to deserialize tendermint header: {e}")))
+        } else {
+            Err(anyhow!(format!(
+                "expected a tendermint light client header, got: {}",
+                header.type_url.as_str()
+            )))
+        }
+    }
+
+    pub fn get_tendermint_consensus_state(
+        consensus_state: Any,
+    ) -> Result<TendermintConsensusState> {
+        if is_tendermint_consensus_state(&consensus_state) {
+            TendermintConsensusState::try_from(consensus_state).map_err(|e| {
+                anyhow!(format!(
+                    "failed to deserialize tendermint consensus state: {e}"
+                ))
+            })
+        } else {
+            Err(anyhow!(format!(
+                "expected tendermint consensus state, got: {}",
+                consensus_state.type_url.as_str()
+            )))
+        }
+    }
+    pub fn get_tendermint_client_state(client_state: Any) -> Result<TendermintClientState> {
+        if is_tendermint_client_state(&client_state) {
+            TendermintClientState::try_from(client_state).map_err(|e| {
+                anyhow!(format!(
+                    "failed to deserialize tendermint client state: {e}"
+                ))
+            })
+        } else {
+            Err(anyhow!(format!(
+                "expected tendermint client state, got: {}",
+                client_state.type_url.as_str()
+            )))
+        }
+    }
+}
+
 // Check that the trust threshold is:
 //
 // a) non-zero
@@ -122,14 +185,7 @@ pub fn validate_penumbra_client_state(
     chain_id: &str,
     current_height: u64,
 ) -> Result<(), anyhow::Error> {
-    let tm_client_state = match client_state.type_url.as_str() {
-        TENDERMINT_CLIENT_STATE_TYPE_URL => TendermintClientState::try_from(client_state)?,
-        _ => {
-            return Err(anyhow::anyhow!(
-                "invalid client state: not a tendermint client state"
-            ))
-        }
-    };
+    let tm_client_state = ics02_validation::get_tendermint_client_state(client_state)?;
 
     if tm_client_state.frozen_height().is_some() {
         return Err(anyhow::anyhow!("invalid client state: frozen"));
