@@ -33,7 +33,7 @@ impl ActionHandler for MsgCreateClient {
 
     #[instrument(name = "ibc_action", skip(self, state))]
     async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
-        state.execute_create_client(self).await;
+        state.execute_create_client(self).await?;
 
         Ok(())
     }
