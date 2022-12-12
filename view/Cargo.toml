@@ -19,7 +19,7 @@ nct-divergence-check = []
 
 [dependencies]
 # Workspace dependencies
-penumbra-proto = { path = "../proto" }
+penumbra-proto = { path = "../proto", features = ["rpc"] }
 penumbra-chain = { path = "../chain" }
 penumbra-crypto = { path = "../crypto" }
 penumbra-tct = { path = "../tct" }
