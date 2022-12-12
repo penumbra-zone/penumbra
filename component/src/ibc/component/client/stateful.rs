@@ -5,16 +5,9 @@ pub mod create_client {
     pub trait CreateClientCheck: StateReadExt {
         async fn validate(&self, msg: &MsgCreateClient) -> anyhow::Result<()> {
             let id_counter = self.client_counter().await?;
-            let client_state = match msg.client_state.type_url.as_str() {
-                TENDERMINT_CLIENT_STATE_TYPE_URL => {
-                    TendermintClientState::try_from(msg.client_state.clone())?
-                }
-                _ => {
-                    return Err(anyhow::anyhow!(
-                        "invalid client state: not a tendermint client state"
-                    ))
-                }
-            };
+            let client_state =
+                ics02_validation::get_tendermint_client_state(msg.client_state.clone())?;
+
             ClientId::new(client_state.client_type(), id_counter.0)?;
 
             Ok(())
@@ -38,10 +31,7 @@ pub mod update_client {
 
             let trusted_client_state = client_state;
 
-            let untrusted_header = match msg.header.type_url.as_str() {
-                TENDERMINT_HEADER_TYPE_URL => TendermintHeader::try_from(msg.header.clone())?,
-                _ => unimplemented!("not a tendermint header"),
-            };
+            let untrusted_header = ics02_validation::get_tendermint_header(msg.header.clone())?;
 
             // Optimization: reject duplicate updates instead of verifying them.
             if self
