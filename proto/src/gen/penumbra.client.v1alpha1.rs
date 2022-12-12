@@ -376,6 +376,7 @@ pub struct GetBlockByHeightResponse {
     pub block: ::core::option::Option<super::super::super::tendermint::types::Block>,
 }
 /// Generated client implementations.
+#[cfg(feature = "rpc")]
 pub mod oblivious_query_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
@@ -556,6 +557,7 @@ pub mod oblivious_query_service_client {
     }
 }
 /// Generated client implementations.
+#[cfg(feature = "rpc")]
 pub mod specific_query_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
@@ -810,6 +812,7 @@ pub mod specific_query_service_client {
     }
 }
 /// Generated client implementations.
+#[cfg(feature = "rpc")]
 pub mod tendermint_proxy_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
@@ -1006,6 +1009,7 @@ pub mod tendermint_proxy_service_client {
     }
 }
 /// Generated server implementations.
+#[cfg(feature = "rpc")]
 pub mod oblivious_query_service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
@@ -1360,6 +1364,7 @@ pub mod oblivious_query_service_server {
     }
 }
 /// Generated server implementations.
+#[cfg(feature = "rpc")]
 pub mod specific_query_service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
@@ -1876,6 +1881,7 @@ pub mod specific_query_service_server {
     }
 }
 /// Generated server implementations.
+#[cfg(feature = "rpc")]
 pub mod tendermint_proxy_service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;

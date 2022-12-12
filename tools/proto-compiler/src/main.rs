@@ -80,6 +80,10 @@ fn main() -> Result<()> {
     // For the client code, we also want to generate RPC instances, so compile via tonic:
     tonic_build::configure()
         .out_dir(&target_dir)
+        .server_mod_attribute("penumbra.client.v1alpha1", "#[cfg(feature = \"rpc\")]")
+        .client_mod_attribute("penumbra.client.v1alpha1", "#[cfg(feature = \"rpc\")]")
+        .server_mod_attribute("penumbra.view.v1alpha1", "#[cfg(feature = \"rpc\")]")
+        .client_mod_attribute("penumbra.view.v1alpha1", "#[cfg(feature = \"rpc\")]")
         .compile_with_config(
             config,
             &[
