@@ -152,6 +152,8 @@ spec:
             - start
             - --home
             - /home/pd
+            - --host
+            - 0.0.0.0
         - name: health-check
           image: "{{ $.Values.health.image }}:{{ $.Values.health.version }}"
           imagePullPolicy: IfNotPresent

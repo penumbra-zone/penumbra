@@ -42,9 +42,6 @@ app.kubernetes.io/name: {{ include "penumbra.name" . }}
 helm.sh/chart: {{ include "penumbra.chart" . }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-{{- if .Chart.AppVersion }}
-app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
-{{- end }}
 {{- end }}
 
 {{/*
