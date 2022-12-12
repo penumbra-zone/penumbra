@@ -31,7 +31,7 @@ impl ActionHandler for MsgUpdateClient {
 
     #[instrument(name = "ibc_action", skip(self, state))]
     async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
-        state.execute_update_client(self).await;
+        state.execute_update_client(self).await?;
 
         Ok(())
     }

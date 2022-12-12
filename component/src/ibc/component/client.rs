@@ -89,11 +89,10 @@ impl Component for Ics2Client {
 pub(crate) trait Ics2ClientExt: StateWrite {
     // execute a UpdateClient IBC action. this assumes that the UpdateClient has already been
     // validated, including header verification.
-    async fn execute_update_client(&mut self, msg_update_client: &MsgUpdateClient) {
+    async fn execute_update_client(&mut self, msg_update_client: &MsgUpdateClient) -> Result<()> {
         // TODO(erwan): deferred client state deserialization means `execute_update_client` is faillible
         // see ibc-rs ADR004: https://github.com/cosmos/ibc-rs/blob/main/docs/architecture/adr-004-light-client-crates-extraction.md#light-client-specific-code
-        let tm_header =
-            ics02_validation::get_tendermint_header(msg_update_client.header.clone()).unwrap();
+        let tm_header = ics02_validation::get_tendermint_header(msg_update_client.header.clone())?;
 
         // get the latest client state
         let client_state = self
@@ -124,6 +123,7 @@ pub(crate) trait Ics2ClientExt: StateWrite {
             client_state,
             tm_header,
         ));
+        Ok(())
     }
 
     // execute IBC CreateClient.
@@ -133,13 +133,12 @@ pub(crate) trait Ics2ClientExt: StateWrite {
     // - client type
     // - consensus state
     // - processed time and height
-    async fn execute_create_client(&mut self, msg_create_client: &MsgCreateClient) {
+    async fn execute_create_client(&mut self, msg_create_client: &MsgCreateClient) -> Result<()> {
         tracing::info!("deserializing client state");
         // TODO(erwan): deferred client state deserialization means `execute_create_client` is faillible
         // see ibc-rs ADR004: https://github.com/cosmos/ibc-rs/blob/main/docs/architecture/adr-004-light-client-crates-extraction.md#light-client-specific-code
         let client_state =
-            ics02_validation::get_tendermint_client_state(msg_create_client.client_state.clone())
-                .unwrap();
+            ics02_validation::get_tendermint_client_state(msg_create_client.client_state.clone())?;
 
         // get the current client counter
         let id_counter = self.client_counter().await.unwrap();
@@ -149,8 +148,7 @@ pub(crate) trait Ics2ClientExt: StateWrite {
 
         let consensus_state = ics02_validation::get_tendermint_consensus_state(
             msg_create_client.consensus_state.clone(),
-        )
-        .unwrap();
+        )?;
 
         // store the client data
         self.put_client(&client_id, client_state.clone());
@@ -169,6 +167,7 @@ pub(crate) trait Ics2ClientExt: StateWrite {
         self.put_client_counter(ClientCounter(counter.0 + 1));
 
         self.record(event::create_client(client_id, client_state));
+        Ok(())
     }
 
     // given an already verified tendermint header, and a trusted tendermint client state, compute
