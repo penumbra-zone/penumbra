@@ -16,6 +16,7 @@ mod tests {
     };
     use decaf377::{Fq, Fr};
     use decaf377_ka as ka;
+    use proptest::prelude::*;
 
     use decaf377_rdsa::{SpendAuth, VerificationKey};
     use penumbra_tct as tct;
@@ -23,51 +24,67 @@ mod tests {
 
     use crate::{note, Note, Value};
 
-    use ark_ff::UniformRand;
+    use ark_ff::{PrimeField, UniformRand};
 
-    #[test]
-    fn output_proof_happy_path() {
-        let (pk, vk) = OutputCircuit::generate_test_parameters();
-
-        let mut rng = OsRng;
-
-        let seed_phrase = SeedPhrase::generate(rng);
-        let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
-        let fvk_recipient = sk_recipient.full_viewing_key();
-        let ivk_recipient = fvk_recipient.incoming();
-        let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
-
-        let value_to_send = Value {
-            amount: 10u64.into(),
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
-        };
-
-        let v_blinding = Fr::rand(&mut rng);
-        let note = Note::generate(&mut rng, &dest, value_to_send);
-        let note_commitment = note.commit();
-        let esk = ka::Secret::new_from_field(Fr::rand(&mut rng));
-        let epk = esk.diversified_public(&note.diversified_generator());
-        let balance_commitment = value_to_send.commit(v_blinding);
-
-        let proof = OutputProof::prove(
-            &mut rng,
-            &pk,
-            note,
-            v_blinding,
-            esk,
-            balance_commitment,
-            note_commitment,
-            epk,
-        )
-        .expect("can create proof");
-
-        let proof_result = proof.verify(&vk, balance_commitment, note_commitment, epk);
-
-        assert!(proof_result.is_ok());
+    fn fq_strategy() -> BoxedStrategy<Fq> {
+        any::<[u8; 32]>()
+            .prop_map(|bytes| Fq::from_le_bytes_mod_order(&bytes[..]))
+            .boxed()
     }
 
+    fn fr_strategy() -> BoxedStrategy<Fr> {
+        any::<[u8; 32]>()
+            .prop_map(|bytes| Fr::from_le_bytes_mod_order(&bytes[..]))
+            .boxed()
+    }
+
+    proptest! {
+    #![proptest_config(ProptestConfig::with_cases(2))]
     #[test]
-    fn output_proof_verification_note_commitment_integrity_failure() {
+    fn output_proof_happy_path(v_blinding in fr_strategy(), value_amount in 2..200u64, esk_inner in fr_strategy()) {
+            let (pk, vk) = OutputCircuit::generate_test_parameters();
+
+            let mut rng = OsRng;
+
+            let seed_phrase = SeedPhrase::generate(rng);
+            let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
+            let fvk_recipient = sk_recipient.full_viewing_key();
+            let ivk_recipient = fvk_recipient.incoming();
+            let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
+
+            let value_to_send = Value {
+                amount: value_amount.into(),
+                asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            };
+
+            let note = Note::generate(&mut rng, &dest, value_to_send);
+            let note_commitment = note.commit();
+            let esk = ka::Secret::new_from_field(esk_inner);
+            let epk = esk.diversified_public(&note.diversified_generator());
+            let balance_commitment = value_to_send.commit(v_blinding);
+
+            let proof = OutputProof::prove(
+                &mut rng,
+                &pk,
+                note,
+                v_blinding,
+                esk,
+                balance_commitment,
+                note_commitment,
+                epk,
+            )
+            .expect("can create proof");
+
+            let proof_result = proof.verify(&vk, balance_commitment, note_commitment, epk);
+
+            assert!(proof_result.is_ok());
+        }
+    }
+
+    proptest! {
+    #![proptest_config(ProptestConfig::with_cases(2))]
+    #[test]
+    fn output_proof_verification_note_commitment_integrity_failure(v_blinding in fr_strategy(), value_amount in 2..200u64, esk_inner in fr_strategy(), note_blinding in fq_strategy()) {
         let (pk, vk) = OutputCircuit::generate_test_parameters();
         let mut rng = OsRng;
 
@@ -78,14 +95,13 @@ mod tests {
         let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
 
         let value_to_send = Value {
-            amount: 10u64.into(),
+            amount: value_amount.into(),
             asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
         };
 
-        let v_blinding = Fr::rand(&mut rng);
         let note = Note::generate(&mut rng, &dest, value_to_send);
         let note_commitment = note.commit();
-        let esk = ka::Secret::new_from_field(Fr::rand(&mut rng));
+        let esk = ka::Secret::new_from_field(esk_inner);
         let epk = esk.diversified_public(&note.diversified_generator());
         let balance_commitment = value_to_send.commit(v_blinding);
 
@@ -102,7 +118,7 @@ mod tests {
         .expect("can create proof");
 
         let incorrect_note_commitment = note::commitment(
-            Fq::rand(&mut rng),
+            note_blinding,
             value_to_send,
             note.diversified_generator(),
             note.transmission_key_s(),
@@ -113,9 +129,12 @@ mod tests {
 
         assert!(proof_result.is_err());
     }
+    }
 
-    #[test]
-    fn output_proof_verification_balance_commitment_integrity_failure() {
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(2))]
+        #[test]
+    fn output_proof_verification_balance_commitment_integrity_failure(v_blinding in fr_strategy(), value_amount in 2..200u64, esk_inner in fr_strategy(), incorrect_v_blinding in fr_strategy()) {
         let (pk, vk) = OutputCircuit::generate_test_parameters();
         let mut rng = OsRng;
 
@@ -126,14 +145,13 @@ mod tests {
         let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
 
         let value_to_send = Value {
-            amount: 10u64.into(),
+            amount: value_amount.into(),
             asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
         };
 
-        let v_blinding = Fr::rand(&mut rng);
         let note = Note::generate(&mut rng, &dest, value_to_send);
         let note_commitment = note.commit();
-        let esk = ka::Secret::new_from_field(Fr::rand(&mut rng));
+        let esk = ka::Secret::new_from_field(esk_inner);
         let epk = esk.diversified_public(&note.diversified_generator());
         let balance_commitment = value_to_send.commit(v_blinding);
 
@@ -149,15 +167,18 @@ mod tests {
         )
         .expect("can create proof");
 
-        let incorrect_balance_commitment = value_to_send.commit(Fr::rand(&mut rng));
+        let incorrect_balance_commitment = value_to_send.commit(incorrect_v_blinding);
 
         let proof_result = proof.verify(&vk, incorrect_balance_commitment, note_commitment, epk);
 
         assert!(proof_result.is_err());
     }
+        }
 
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(2))]
     #[test]
-    fn output_proof_verification_ephemeral_public_key_integrity_failure() {
+    fn output_proof_verification_ephemeral_public_key_integrity_failure(v_blinding in fr_strategy(), value_amount in 2..200u64, esk_inner in fr_strategy(), incorrect_esk_inner in fr_strategy()) {
         let (pk, vk) = OutputCircuit::generate_test_parameters();
         let mut rng = OsRng;
 
@@ -168,14 +189,13 @@ mod tests {
         let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
 
         let value_to_send = Value {
-            amount: 10u64.into(),
+            amount: value_amount.into(),
             asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
         };
 
-        let v_blinding = Fr::rand(&mut rng);
         let note = Note::generate(&mut rng, &dest, value_to_send);
         let note_commitment = note.commit();
-        let esk = ka::Secret::new_from_field(Fr::rand(&mut rng));
+        let esk = ka::Secret::new_from_field(esk_inner);
         let epk = esk.diversified_public(&note.diversified_generator());
         let balance_commitment = value_to_send.commit(v_blinding);
 
@@ -191,12 +211,13 @@ mod tests {
         )
         .expect("can create proof");
 
-        let incorrect_esk = ka::Secret::new(&mut rng);
+        let incorrect_esk = ka::Secret::new_from_field(incorrect_esk_inner);
         let incorrect_epk = incorrect_esk.diversified_public(&note.diversified_generator());
 
         let proof_result = proof.verify(&vk, balance_commitment, note_commitment, incorrect_epk);
 
         assert!(proof_result.is_err());
+    }
     }
 
     #[test]
