@@ -208,12 +208,15 @@ pub struct BatchSwapOutputData {
     #[prost(message, optional, tag="7")]
     pub trading_pair: ::core::option::Option<TradingPair>,
 }
-/// A trading function along with a `TradingPair`
+/// The trading function for a specific pair.
+/// For a pair (asset_1, asset_2), a trading function is defined by:
+/// `phi(R) = p*R_1 + q*R_2` and `gamma = 1 - fee`.
+/// The trading function is frequently referred to as "phi".
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TradingFunction {
     #[prost(message, optional, tag="1")]
-    pub phi: ::core::option::Option<BareTradingFunction>,
+    pub component: ::core::option::Option<BareTradingFunction>,
     #[prost(message, optional, tag="2")]
     pub pair: ::core::option::Option<TradingPair>,
 }
@@ -222,18 +225,16 @@ pub struct TradingFunction {
 /// This implicitly treats the trading function as being between assets 1 and 2,
 /// without specifying what those assets are, to avoid duplicating data (each
 /// asset ID alone is twice the size of the trading function).
-///
-/// The trading function is `phi(R) = p*R_1 + q*R_2`, with fee parameter `gamma = 1 - fee`.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BareTradingFunction {
-    #[prost(uint32, tag="2")]
+    #[prost(uint32, tag="1")]
     pub fee: u32,
     /// This is not actually an amount, it's an integer the same width as an amount
-    #[prost(message, optional, tag="4")]
+    #[prost(message, optional, tag="2")]
     pub p: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
     /// This is not actually an amount, it's an integer the same width as an amount
-    #[prost(message, optional, tag="5")]
+    #[prost(message, optional, tag="3")]
     pub q: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
 }
 /// The reserves of a position.
@@ -255,15 +256,13 @@ pub struct Reserves {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Position {
     #[prost(message, optional, tag="1")]
-    pub pair: ::core::option::Option<TradingPair>,
-    #[prost(message, optional, tag="2")]
     pub phi: ::core::option::Option<TradingFunction>,
     /// A random value used to disambiguate different positions with the exact same
     /// trading function.  The chain should reject newly created positions with the
     /// same nonce as an existing position.  This ensures that `PositionId`s will
     /// be unique, and allows us to track position ownership with a
     /// sequence of stateful NFTs based on the `PositionId`.
-    #[prost(bytes="vec", tag="3")]
+    #[prost(bytes="vec", tag="2")]
     #[serde(with = "crate::serializers::hexstr")]
     pub nonce: ::prost::alloc::vec::Vec<u8>,
 }

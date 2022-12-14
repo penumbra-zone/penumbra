@@ -51,12 +51,12 @@ impl PositionOpen {
 
         let r1 = Value {
             amount: self.initial_reserves.r1,
-            asset_id: self.position.pair.asset_1(),
+            asset_id: self.position.phi.pair.asset_1(),
         };
 
         let r2 = Value {
             amount: self.initial_reserves.r2,
-            asset_id: self.position.pair.asset_2(),
+            asset_id: self.position.phi.pair.asset_2(),
         };
 
         let reserves = Balance::from(r1) + r2;
