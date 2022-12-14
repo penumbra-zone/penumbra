@@ -32,7 +32,7 @@ jobs:
       - name: Install mdbook
         run: |
           cargo install mdbook mdbook-katex mdbook-mermaid
-      
+
       # This is disabled for now because it broke during the proto reorganization.
       # We are currently rendering docs by pushing protos to Buf.build.
       #
@@ -67,43 +67,8 @@ jobs:
       #    PROJECT_PATH: docs/protobuf
 
       - name: Build API docs
-        run: |
-          # Explicitly specify which crates should be included.
-          # Guidelines:
-          # - workspace crates are included
-          # - git dependencies are included
-          # - published crates are excluded
-          # Doing this in one go is useful because the JSON file with search
-          # indexes is overwritten on each cargo doc invocation.
-          #
-          # When updating, also check docs/rustdoc/README.md to regenerate index.html
-          cargo doc --no-deps \
-            -p tendermint \
-            -p tower-abci \
-            -p jmt@0.2.0 \
-            -p ark-ff \
-            -p ark-serialize \
-            -p ark-sponge \
-            -p poseidon377 \
-            -p https://github.com/rust-lang/crates.io-index#poseidon-paramgen@0.1.0 \
-            -p poseidon-permutation \
-            -p https://github.com/penumbra-zone/decaf377#0.1.0 \
-            -p decaf377-rdsa \
-            -p decaf377-fmd \
-            -p decaf377-ka \
-            -p penumbra-proto \
-            -p penumbra-chain \
-            -p penumbra-component \
-            -p penumbra-crypto \
-            -p penumbra-custody \
-            -p penumbra-measure \
-            -p penumbra-storage \
-            -p penumbra-tct \
-            -p penumbra-transaction \
-            -p penumbra-wallet \
-            -p penumbra-view \
-            -p pd \
-            -p pcli
+        run: ./scripts/rust-docs
+
       - name: Move API docs to subdirectory
         run: |
           cd docs/rustdoc
@@ -112,6 +77,7 @@ jobs:
           mv ../../target/doc firebase-tmp/${{ steps.get_version.outputs.version }}
           # Copy in the static index file
           cp index.html firebase-tmp/${{ steps.get_version.outputs.version }}
+
       - name: Deploy API docs to firebase
         uses: w9jds/firebase-action@v2.0.0
         with:
