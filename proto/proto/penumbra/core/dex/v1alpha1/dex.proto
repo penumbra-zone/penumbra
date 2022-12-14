@@ -152,9 +152,12 @@ message BatchSwapOutputData {
   TradingPair trading_pair = 7;
 }
 
-// A trading function along with a `TradingPair`
+// The trading function for a specific pair.
+// For a pair (asset_1, asset_2), a trading function is defined by:
+// `phi(R) = p*R_1 + q*R_2` and `gamma = 1 - fee`.
+// The trading function is frequently referred to as "phi".
 message TradingFunction {
-  BareTradingFunction phi = 1;
+  BareTradingFunction component = 1;
   TradingPair pair = 2;
 }
 
@@ -163,14 +166,12 @@ message TradingFunction {
 // This implicitly treats the trading function as being between assets 1 and 2,
 // without specifying what those assets are, to avoid duplicating data (each
 // asset ID alone is twice the size of the trading function).
-//
-// The trading function is `phi(R) = p*R_1 + q*R_2`, with fee parameter `gamma = 1 - fee`.
 message BareTradingFunction {
-  uint32 fee = 2;
+  uint32 fee = 1;
   // This is not actually an amount, it's an integer the same width as an amount
-  crypto.v1alpha1.Amount p = 4;
+  crypto.v1alpha1.Amount p = 2;
   // This is not actually an amount, it's an integer the same width as an amount
-  crypto.v1alpha1.Amount q = 5;
+  crypto.v1alpha1.Amount q = 3;
 }
 
 // The reserves of a position.
@@ -186,14 +187,13 @@ message Reserves {
 
 // Data identifying a position.
 message Position {
-  TradingPair pair = 1;
-  TradingFunction phi = 2;
+  TradingFunction phi = 1;
   // A random value used to disambiguate different positions with the exact same
   // trading function.  The chain should reject newly created positions with the
   // same nonce as an existing position.  This ensures that `PositionId`s will
   // be unique, and allows us to track position ownership with a
   // sequence of stateful NFTs based on the `PositionId`.
-  bytes nonce = 3;
+  bytes nonce = 2;
 }
 
 // A hash of a `Position`.

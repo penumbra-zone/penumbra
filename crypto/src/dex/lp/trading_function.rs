@@ -6,32 +6,37 @@ use crate::{dex::TradingPair, Amount};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::TradingFunction", into = "pb::TradingFunction")]
 pub struct TradingFunction {
-    pub phi: BareTradingFunction,
+    pub component: BareTradingFunction,
     pub pair: TradingPair,
 }
 
 impl TryFrom<pb::TradingFunction> for TradingFunction {
     type Error = anyhow::Error;
 
-    fn try_from(value: pb::TradingFunction) -> Result<Self, Self::Error> {
+    fn try_from(phi: pb::TradingFunction) -> Result<Self, Self::Error> {
         Ok(Self {
-            phi: value.phi.ok_or_else(|| anyhow::anyhow!("missing BareTradingFunction")).try_into()?,
-            pair: value.pair.ok_or_else(|| anyhow::anyhow!("missing TradingPair")).try_into()?,
+            component: phi
+                .component
+                .ok_or_else(|| anyhow::anyhow!("missing BareTradingFunction"))?
+                .try_into()?,
+            pair: phi
+                .pair
+                .ok_or_else(|| anyhow::anyhow!("missing TradingPair"))?
+                .try_into()?,
         })
     }
 }
 
 impl From<TradingFunction> for pb::TradingFunction {
-    fn from(f: TradingFunction) -> Self {
+    fn from(phi: TradingFunction) -> Self {
         Self {
-            phi: Some(f.phi),
-            pair: Some(f.pair),
+            component: Some(phi.component.into()),
+            pair: Some(phi.pair.into()),
+        }
     }
-}
 }
 
 impl Protobuf<pb::TradingFunction> for TradingFunction {}
-
 
 /// The data describing a trading function.
 ///

@@ -2,14 +2,14 @@ use anyhow::{anyhow, Context};
 use penumbra_proto::{core::dex::v1alpha1 as pb, serializers::bech32str, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use super::{super::TradingPair, BareTradingFunction};
+use super::trading_function::TradingFunction;
 
 /// Data identifying a position.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::Position", into = "pb::Position")]
 pub struct Position {
-    pub pair: TradingPair,
-    pub phi: BareTradingFunction,
+    /// A trading function to a specific trading pair.
+    pub phi: TradingFunction,
     /// A random value used to disambiguate different positions with the exact same
     /// trading function.  The chain should reject newly created positions with the
     /// same nonce as an existing position.  This ensures that [`Id`]s will
@@ -26,11 +26,11 @@ impl Position {
             .to_state();
 
         state.update(&self.nonce);
-        state.update(&self.pair.asset_1.to_bytes());
-        state.update(&self.pair.asset_2.to_bytes());
-        state.update(&self.phi.fee.to_le_bytes());
-        state.update(&self.phi.p.to_le_bytes());
-        state.update(&self.phi.q.to_le_bytes());
+        state.update(&self.phi.pair.asset_1.to_bytes());
+        state.update(&self.phi.pair.asset_2.to_bytes());
+        state.update(&self.phi.component.fee.to_le_bytes());
+        state.update(&self.phi.component.p.to_le_bytes());
+        state.update(&self.phi.component.q.to_le_bytes());
 
         let hash = state.finalize();
         let mut bytes = [0; 32];
@@ -129,10 +129,6 @@ impl TryFrom<pb::Position> for Position {
                 .phi
                 .ok_or_else(|| anyhow::anyhow!("missing trading function"))?
                 .try_into()?,
-            pair: value
-                .pair
-                .ok_or_else(|| anyhow::anyhow!("missing trading pair"))?
-                .try_into()?,
             nonce: value
                 .nonce
                 .as_slice()
@@ -146,7 +142,6 @@ impl From<Position> for pb::Position {
     fn from(value: Position) -> Self {
         Self {
             phi: Some(value.phi.into()),
-            pair: Some(value.pair.into()),
             nonce: value.nonce.to_vec(),
         }
     }
