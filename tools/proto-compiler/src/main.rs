@@ -361,6 +361,7 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
         ".penumbra.core.dex.v1alpha1.MockFlowCiphertext",
         SERDE_TRANSPARENT,
     ),
+    (".penumbra.core.dex.v1alpha1.BareTradingFunction", SERIALIZE),
     (".penumbra.core.dex.v1alpha1.TradingPair", SERIALIZE),
     (".penumbra.core.dex.v1alpha1.TradingFunction", SERIALIZE),
     (".penumbra.core.dex.v1alpha1.Reserves", SERIALIZE),

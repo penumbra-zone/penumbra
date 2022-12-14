@@ -2,14 +2,14 @@ use anyhow::{anyhow, Context};
 use penumbra_proto::{core::dex::v1alpha1 as pb, serializers::bech32str, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use super::{super::TradingPair, TradingFunction};
+use super::{super::TradingPair, BareTradingFunction};
 
 /// Data identifying a position.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::Position", into = "pb::Position")]
 pub struct Position {
     pub pair: TradingPair,
-    pub phi: TradingFunction,
+    pub phi: BareTradingFunction,
     /// A random value used to disambiguate different positions with the exact same
     /// trading function.  The chain should reject newly created positions with the
     /// same nonce as an existing position.  This ensures that [`Id`]s will
