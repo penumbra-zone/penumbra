@@ -208,7 +208,16 @@ pub struct BatchSwapOutputData {
     #[prost(message, optional, tag="7")]
     pub trading_pair: ::core::option::Option<TradingPair>,
 }
-/// The data describing a trading function.
+/// A trading function along with a `TradingPair`
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TradingFunction {
+    #[prost(message, optional, tag="1")]
+    pub phi: ::core::option::Option<BareTradingFunction>,
+    #[prost(message, optional, tag="2")]
+    pub pair: ::core::option::Option<TradingPair>,
+}
+/// The minimum amount of data describing a trading function.
 ///
 /// This implicitly treats the trading function as being between assets 1 and 2,
 /// without specifying what those assets are, to avoid duplicating data (each
@@ -217,7 +226,7 @@ pub struct BatchSwapOutputData {
 /// The trading function is `phi(R) = p*R_1 + q*R_2`, with fee parameter `gamma = 1 - fee`.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TradingFunction {
+pub struct BareTradingFunction {
     #[prost(uint32, tag="2")]
     pub fee: u32,
     /// This is not actually an amount, it's an integer the same width as an amount

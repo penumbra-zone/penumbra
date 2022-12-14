@@ -1,7 +1,37 @@
 use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use crate::Amount;
+use crate::{dex::TradingPair, Amount};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(try_from = "pb::TradingFunction", into = "pb::TradingFunction")]
+pub struct TradingFunction {
+    pub phi: BareTradingFunction,
+    pub pair: TradingPair,
+}
+
+impl TryFrom<pb::TradingFunction> for TradingFunction {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::TradingFunction) -> Result<Self, Self::Error> {
+        Ok(Self {
+            phi: value.phi.ok_or_else(|| anyhow::anyhow!("missing BareTradingFunction")).try_into()?,
+            pair: value.pair.ok_or_else(|| anyhow::anyhow!("missing TradingPair")).try_into()?,
+        })
+    }
+}
+
+impl From<TradingFunction> for pb::TradingFunction {
+    fn from(f: TradingFunction) -> Self {
+        Self {
+            phi: Some(f.phi),
+            pair: Some(f.pair),
+    }
+}
+}
+
+impl Protobuf<pb::TradingFunction> for TradingFunction {}
+
 
 /// The data describing a trading function.
 ///
@@ -15,20 +45,19 @@ use crate::Amount;
 /// NOTE: the use of floats here is a placeholder ONLY, so we can stub out the implementation,
 /// and then decide what type of fixed-point, deterministic arithmetic should be used.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(try_from = "pb::TradingFunction", into = "pb::TradingFunction")]
-
-pub struct TradingFunction {
+#[serde(try_from = "pb::BareTradingFunction", into = "pb::BareTradingFunction")]
+pub struct BareTradingFunction {
     pub fee: u32,
     pub p: Amount,
     pub q: Amount,
 }
 
-impl Protobuf<pb::TradingFunction> for TradingFunction {}
+impl Protobuf<pb::BareTradingFunction> for BareTradingFunction {}
 
-impl TryFrom<pb::TradingFunction> for TradingFunction {
+impl TryFrom<pb::BareTradingFunction> for BareTradingFunction {
     type Error = anyhow::Error;
 
-    fn try_from(value: pb::TradingFunction) -> Result<Self, Self::Error> {
+    fn try_from(value: pb::BareTradingFunction) -> Result<Self, Self::Error> {
         Ok(Self {
             fee: value.fee,
             p: value
@@ -43,8 +72,8 @@ impl TryFrom<pb::TradingFunction> for TradingFunction {
     }
 }
 
-impl From<TradingFunction> for pb::TradingFunction {
-    fn from(value: TradingFunction) -> Self {
+impl From<BareTradingFunction> for pb::BareTradingFunction {
+    fn from(value: BareTradingFunction) -> Self {
         Self {
             fee: value.fee,
             p: Some(value.p.into()),

@@ -149,7 +149,7 @@ impl From<LpNft> for pb::LpNft {
 mod tests {
     use super::*;
 
-    use super::super::{super::TradingPair, position::*, TradingFunction};
+    use super::super::{super::TradingPair, position::*, BareTradingFunction};
 
     #[test]
     fn lpnft_denom_parsing_roundtrip() {
@@ -159,7 +159,7 @@ mod tests {
             asset_1: crate::STAKING_TOKEN_ASSET_ID.clone(),
             asset_2: crate::asset::REGISTRY.parse_denom("cube").unwrap().id(),
         };
-        let phi = TradingFunction {
+        let phi = BareTradingFunction {
             fee: 1,
             p: 1u64.into(),
             q: 1u64.into(),

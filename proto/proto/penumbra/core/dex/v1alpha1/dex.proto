@@ -1,9 +1,10 @@
 syntax = "proto3";
-option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
 
 package penumbra.core.dex.v1alpha1;
 
 import "penumbra/core/crypto/v1alpha1/crypto.proto";
+
+option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
 
 // A transaction action that submits a swap to the dex.
 message Swap {
@@ -70,54 +71,54 @@ message SwapPayload {
 }
 
 message SwapPlaintext {
-    // The trading pair to swap.
-    TradingPair trading_pair = 1;
-    // Input amount of asset 1
-    crypto.v1alpha1.Amount delta_1_i = 2;
-    // Input amount of asset 2
-    crypto.v1alpha1.Amount delta_2_i = 3;
-    // Pre-paid fee to claim the swap
-    crypto.v1alpha1.Fee claim_fee = 4;
-    // Address that will claim the swap outputs via SwapClaim.
-    crypto.v1alpha1.Address claim_address = 5;
-    // Swap blinding factor
-    bytes swap_blinding = 6;
+  // The trading pair to swap.
+  TradingPair trading_pair = 1;
+  // Input amount of asset 1
+  crypto.v1alpha1.Amount delta_1_i = 2;
+  // Input amount of asset 2
+  crypto.v1alpha1.Amount delta_2_i = 3;
+  // Pre-paid fee to claim the swap
+  crypto.v1alpha1.Fee claim_fee = 4;
+  // Address that will claim the swap outputs via SwapClaim.
+  crypto.v1alpha1.Address claim_address = 5;
+  // Swap blinding factor
+  bytes swap_blinding = 6;
 }
 
 message MockFlowCiphertext {
-    // Represents this transaction's contribution to flow's value.
-    uint64 value = 1;
+  // Represents this transaction's contribution to flow's value.
+  uint64 value = 1;
 }
 
 message SwapPlan {
-    // The plaintext version of the swap to be performed.
-    dex.v1alpha1.SwapPlaintext swap_plaintext = 1;
-    // The blinding factor for the fee commitment. The fee in the SwapPlan is private to prevent linkability with the SwapClaim.
-    bytes fee_blinding = 2;
-    // The ephemeral secret used to encrypt the swap payload.
-    bytes esk = 3;
+  // The plaintext version of the swap to be performed.
+  dex.v1alpha1.SwapPlaintext swap_plaintext = 1;
+  // The blinding factor for the fee commitment. The fee in the SwapPlan is private to prevent linkability with the SwapClaim.
+  bytes fee_blinding = 2;
+  // The ephemeral secret used to encrypt the swap payload.
+  bytes esk = 3;
 }
 
 message SwapClaimPlan {
-    // The plaintext version of the swap to be performed.
-    dex.v1alpha1.SwapPlaintext swap_plaintext = 1;
-    // The position of the swap commitment.
-    uint64 position = 2;
-    // Input and output amounts for the Swap.
-    dex.v1alpha1.BatchSwapOutputData output_data = 3;
-    // The epoch duration, used in proving.
-    uint64 epoch_duration = 4;
+  // The plaintext version of the swap to be performed.
+  dex.v1alpha1.SwapPlaintext swap_plaintext = 1;
+  // The position of the swap commitment.
+  uint64 position = 2;
+  // Input and output amounts for the Swap.
+  dex.v1alpha1.BatchSwapOutputData output_data = 3;
+  // The epoch duration, used in proving.
+  uint64 epoch_duration = 4;
 }
 
 message SwapView {
-    dex.v1alpha1.Swap swap = 1;
-    dex.v1alpha1.SwapPlaintext swap_plaintext = 3;
+  dex.v1alpha1.Swap swap = 1;
+  dex.v1alpha1.SwapPlaintext swap_plaintext = 3;
 }
 
 message SwapClaimView {
-    dex.v1alpha1.SwapClaim swap_claim = 1;
-    crypto.v1alpha1.Note output_1 = 2;
-    crypto.v1alpha1.Note output_2 = 3;
+  dex.v1alpha1.SwapClaim swap_claim = 1;
+  crypto.v1alpha1.Note output_1 = 2;
+  crypto.v1alpha1.Note output_2 = 3;
 }
 
 // Holds two asset IDs. Ordering doesn't reflect trading direction. Instead, we
@@ -151,14 +152,20 @@ message BatchSwapOutputData {
   TradingPair trading_pair = 7;
 }
 
-// The data describing a trading function.
+// A trading function along with a `TradingPair`
+message TradingFunction {
+  BareTradingFunction phi = 1;
+  TradingPair pair = 2;
+}
+
+// The minimum amount of data describing a trading function.
 //
 // This implicitly treats the trading function as being between assets 1 and 2,
 // without specifying what those assets are, to avoid duplicating data (each
 // asset ID alone is twice the size of the trading function).
 //
 // The trading function is `phi(R) = p*R_1 + q*R_2`, with fee parameter `gamma = 1 - fee`.
-message TradingFunction {
+message BareTradingFunction {
   uint32 fee = 2;
   // This is not actually an amount, it's an integer the same width as an amount
   crypto.v1alpha1.Amount p = 4;
