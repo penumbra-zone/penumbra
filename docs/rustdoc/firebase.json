@@ -6,12 +6,6 @@
       "**/.*",
       "**/node_modules/**"
     ],
-    "redirects": [
-      {
-        "source": "/",
-        "destination": "/main/index.html",
-        "type": 301
-      }
-    ]
+    "redirects": []
   }
 }
