@@ -51,6 +51,7 @@ fn main() -> Result<()> {
     // See https://docs.rs/prost-build/0.5.0/prost_build/struct.Config.html#method.extern_path
     config.extern_path(".ibc", "::ibc_proto::ibc");
     config.extern_path(".ics23", "::ics23");
+    config.extern_path(".google.protobuf.Any", "::prost_wkt_types::Any");
     // The same applies for some of the tendermint types.
     // config.extern_path(
     //     ".tendermint.types.Validator",
@@ -60,6 +61,7 @@ fn main() -> Result<()> {
     //     ".tendermint.p2p.DefaultNodeInfo",
     //     "::tendermint::p2p::DefaultNodeInfo",
     // );
+    //
 
     config.compile_protos(
         &[

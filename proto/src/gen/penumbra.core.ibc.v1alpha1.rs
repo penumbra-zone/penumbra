@@ -1,49 +1,31 @@
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct IbcAction {
-    #[prost(oneof="ibc_action::Action", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17")]
-    pub action: ::core::option::Option<ibc_action::Action>,
-}
-/// Nested message and enum types in `IbcAction`.
-pub mod ibc_action {
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
-    #[derive(Clone, PartialEq, ::prost::Oneof)]
-    pub enum Action {
-        #[prost(message, tag="1")]
-        ConnectionOpenInit(::ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit),
-        #[prost(message, tag="2")]
-        ConnectionOpenTry(::ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry),
-        #[prost(message, tag="3")]
-        ConnectionOpenAck(::ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck),
-        #[prost(message, tag="4")]
-        ConnectionOpenConfirm(::ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm),
-        #[prost(message, tag="5")]
-        ChannelOpenInit(::ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit),
-        #[prost(message, tag="6")]
-        ChannelOpenTry(::ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry),
-        #[prost(message, tag="7")]
-        ChannelOpenAck(::ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck),
-        #[prost(message, tag="8")]
-        ChannelOpenConfirm(::ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm),
-        #[prost(message, tag="9")]
-        ChannelCloseInit(::ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit),
-        #[prost(message, tag="10")]
-        ChannelCloseConfirm(::ibc_proto::ibc::core::channel::v1::MsgChannelCloseConfirm),
-        #[prost(message, tag="11")]
-        RecvPacket(::ibc_proto::ibc::core::channel::v1::MsgRecvPacket),
-        #[prost(message, tag="12")]
-        Timeout(::ibc_proto::ibc::core::channel::v1::MsgTimeout),
-        #[prost(message, tag="13")]
-        Acknowledgement(::ibc_proto::ibc::core::channel::v1::MsgAcknowledgement),
-        #[prost(message, tag="14")]
-        CreateClient(::ibc_proto::ibc::core::client::v1::MsgCreateClient),
-        #[prost(message, tag="15")]
-        UpdateClient(::ibc_proto::ibc::core::client::v1::MsgUpdateClient),
-        #[prost(message, tag="16")]
-        UpgradeClient(::ibc_proto::ibc::core::client::v1::MsgUpgradeClient),
-        #[prost(message, tag="17")]
-        SubmitMisbehaviour(::ibc_proto::ibc::core::client::v1::MsgSubmitMisbehaviour),
-    }
+    ///
+    /// oneof action {
+    /// .ibc.core.connection.v1.MsgConnectionOpenInit connection_open_init = 1;
+    /// .ibc.core.connection.v1.MsgConnectionOpenTry connection_open_try = 2;
+    /// .ibc.core.connection.v1.MsgConnectionOpenAck connection_open_ack = 3;
+    /// .ibc.core.connection.v1.MsgConnectionOpenConfirm connection_open_confirm = 4;
+    ///
+    /// .ibc.core.channel.v1.MsgChannelOpenInit channel_open_init = 5;
+    /// .ibc.core.channel.v1.MsgChannelOpenTry channel_open_try = 6;
+    /// .ibc.core.channel.v1.MsgChannelOpenAck channel_open_ack = 7;
+    /// .ibc.core.channel.v1.MsgChannelOpenConfirm channel_open_confirm = 8;
+    /// .ibc.core.channel.v1.MsgChannelCloseInit channel_close_init = 9;
+    /// .ibc.core.channel.v1.MsgChannelCloseConfirm channel_close_confirm = 10;
+    ///
+    /// .ibc.core.channel.v1.MsgRecvPacket recv_packet = 11;
+    /// .ibc.core.channel.v1.MsgTimeout timeout = 12;
+    /// .ibc.core.channel.v1.MsgAcknowledgement acknowledgement = 13;
+    ///
+    /// .ibc.core.client.v1.MsgCreateClient create_client = 14;
+    /// .ibc.core.client.v1.MsgUpdateClient update_client = 15;
+    /// .ibc.core.client.v1.MsgUpgradeClient upgrade_client = 16;
+    /// .ibc.core.client.v1.MsgSubmitMisbehaviour submit_misbehaviour = 17;
+    /// }
+    #[prost(message, optional, tag="1")]
+    pub raw_action: ::core::option::Option<::prost_wkt_types::Any>,
 }
 /// FungibleTokenPacketData defines a struct for the packet payload
 /// See FungibleTokenPacketData spec:
@@ -103,7 +85,7 @@ pub struct ClientData {
     pub client_id: ::prost::alloc::string::String,
     /// NOTE: left as Any to allow us to add more client types later
     #[prost(message, optional, tag="2")]
-    pub client_state: ::core::option::Option<::prost_types::Any>,
+    pub client_state: ::core::option::Option<::prost_wkt_types::Any>,
     #[prost(string, tag="3")]
     pub processed_time: ::prost::alloc::string::String,
     #[prost(uint64, tag="4")]
@@ -117,7 +99,7 @@ pub struct ClientCounter {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConsensusState {
     #[prost(message, optional, tag="1")]
-    pub consensus_state: ::core::option::Option<::prost_types::Any>,
+    pub consensus_state: ::core::option::Option<::prost_wkt_types::Any>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct VerifiedHeights {
