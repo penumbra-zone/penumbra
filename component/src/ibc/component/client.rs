@@ -521,7 +521,7 @@ mod tests {
     use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
     use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
     use penumbra_chain::StateWriteExt;
-    use penumbra_proto::core::ibc::v1alpha1::{ibc_action::Action as IbcActionInner, IbcAction};
+    use penumbra_proto::core::ibc::v1alpha1::IbcAction;
     use penumbra_proto::Message;
     use penumbra_storage::{ArcStateExt, TempStorage};
     use penumbra_transaction::Transaction;
@@ -567,10 +567,10 @@ mod tests {
         msg_update_stargaze_client.client_id = "07-tendermint-0".to_string();
 
         let create_client_action = IbcAction {
-            action: Some(IbcActionInner::CreateClient(msg_create_stargaze_client)),
+            raw_action: Some(msg_create_stargaze_client.into()),
         };
         let update_client_action = IbcAction {
-            action: Some(IbcActionInner::UpdateClient(msg_update_stargaze_client)),
+            raw_action: Some(msg_update_stargaze_client.into()),
         };
 
         // The ActionHandler trait provides the transaction the action was part
@@ -608,7 +608,7 @@ mod tests {
         let mut second_update = RawMsgUpdateClient::decode(msg_update_second.as_slice()).unwrap();
         second_update.client_id = "07-tendermint-0".to_string();
         let second_update_client_action = IbcAction {
-            action: Some(IbcActionInner::UpdateClient(second_update)),
+            raw_action: Some(second_update.into()),
         };
 
         second_update_client_action
