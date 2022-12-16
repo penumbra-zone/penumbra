@@ -279,7 +279,7 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.core.chain.v1alpha1.GenesisAppState", SERIALIZE),
     (".penumbra.core.chain.v1alpha1.GenesisAllocation", SERIALIZE),
     (".penumbra.core.chain.v1alpha1.Ratio", SERIALIZE),
-    (".penumbra.core.transaction.v1alpha1.AuthHash", SERIALIZE),
+    (".penumbra.core.transaction.v1alpha1.EffectHash", SERIALIZE),
     (
         ".penumbra.core.transaction.v1alpha1.AuthorizationData",
         SERIALIZE,
@@ -422,7 +422,7 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
         SERDE_TAG_OUTCOME,
     ),
     (
-        ".penumbra.core.transaction.v1alpha1.AuthHash",
+        ".penumbra.core.transaction.v1alpha1.EffectHash",
         SERDE_TRANSPARENT,
     ),
     (".penumbra.view.v1alpha1.SpendableNoteRecord", SERIALIZE),
@@ -616,7 +616,7 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     // see above re: prost issue #504
     ("penumbra.core.governance.v1alpha1.Vote.vote", AS_VOTE),
     (
-        ".penumbra.core.transaction.v1alpha1.AuthHash.inner",
+        ".penumbra.core.transaction.v1alpha1.EffectHash.inner",
         AS_HEX_FOR_BYTES,
     ),
     (

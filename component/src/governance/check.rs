@@ -163,7 +163,7 @@ pub mod stateful {
     /*
     pub async fn proposal_withdraw(
         state: &State,
-        auth_hash: &AuthHash,
+        effect_hash: &EffectHash,
         proposal_withdraw @ ProposalWithdraw {
             body:
                 ProposalWithdrawBody {
@@ -174,7 +174,7 @@ pub mod stateful {
         }: &ProposalWithdraw,
     ) -> Result<()> {
         proposal_withdrawable(state, *proposal).await?;
-        proposal_withdraw_key_verifies(state, auth_hash, proposal_withdraw).await?;
+        proposal_withdraw_key_verifies(state, effect_hash, proposal_withdraw).await?;
         Ok(())
     }
 
@@ -201,12 +201,12 @@ pub mod stateful {
 
     async fn proposal_withdraw_key_verifies(
         state: &State,
-        auth_hash: &AuthHash,
+        effect_hash: &EffectHash,
         ProposalWithdraw { body, auth_sig }: &ProposalWithdraw,
     ) -> Result<()> {
         if let Some(withdraw_proposal_key) = state.proposal_withdrawal_key(body.proposal).await? {
             withdraw_proposal_key
-                .verify(auth_hash.as_ref(), auth_sig)
+                .verify(effect_hash.as_ref(), auth_sig)
                 .context("proposal withdraw signature failed to verify")?;
         } else {
             anyhow::bail!("proposal {} does not exist", body.proposal);

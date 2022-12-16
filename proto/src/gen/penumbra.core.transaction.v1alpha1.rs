@@ -2,7 +2,7 @@
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[serde(transparent)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct AuthHash {
+pub struct EffectHash {
     #[prost(bytes="bytes", tag="1")]
     #[serde(with = "crate::serializers::hexstr_bytes")]
     pub inner: ::prost::bytes::Bytes,
@@ -228,20 +228,20 @@ pub mod action_view {
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Spend {
-    /// The authorizing data for the spend, which is included in the authorization hash used for signing.
+    /// The effecting data of the spend.
     #[prost(message, optional, tag="1")]
     pub body: ::core::option::Option<SpendBody>,
-    /// The spend authorization signature is effecting data.
+    /// The authorizing signature for the spend.
     #[prost(message, optional, tag="2")]
     pub auth_sig: ::core::option::Option<super::super::crypto::v1alpha1::SpendAuthSignature>,
-    /// The spend proof is effecting data.
+    /// The proof that the spend is well-formed is authorizing data.
     #[prost(bytes="bytes", tag="3")]
     #[serde(with = "crate::serializers::base64str_bytes")]
     pub proof: ::prost::bytes::Bytes,
 }
-/// The body of a spend description, containing only the "authorizing" data
-/// included in the authorization hash used for signing, and not the "effecting"
-/// data which is bound to the authorizing data by some other means.
+/// The body of a spend description, containing only the effecting data
+/// describing changes to the ledger, and not the authorizing data that allows
+/// those changes to be performed.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SpendBody {
@@ -261,17 +261,17 @@ pub struct SpendBody {
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Output {
-    /// The authorizing data for the output.
+    /// The effecting data for the output.
     #[prost(message, optional, tag="1")]
     pub body: ::core::option::Option<OutputBody>,
-    /// The output proof is effecting data.
+    /// The output proof is authorizing data.
     #[prost(bytes="bytes", tag="2")]
     #[serde(with = "crate::serializers::base64str_bytes")]
     pub proof: ::prost::bytes::Bytes,
 }
-/// The body of an output description, containing only the "authorizing" data
-/// included in the authorization hash used for signing, and not the "effecting"
-/// data which is bound to the authorizing data by some other means.
+/// The body of an output description, containing only the effecting data
+/// describing changes to the ledger, and not the authorizing data that allows
+/// those changes to be performed.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct OutputBody {
@@ -330,10 +330,10 @@ pub struct ProposalWithdrawBody {
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorVote {
-    /// The authorizing data for the vote.
+    /// The effecting data for the vote.
     #[prost(message, optional, tag="1")]
     pub body: ::core::option::Option<ValidatorVoteBody>,
-    /// The vote authorization signature is effecting data.
+    /// The vote authorization signature is authorizing data.
     #[prost(message, optional, tag="2")]
     pub auth_sig: ::core::option::Option<super::super::crypto::v1alpha1::SpendAuthSignature>,
 }
@@ -356,13 +356,13 @@ pub struct ValidatorVoteBody {
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DelegatorVote {
-    /// The authorizing data for the vote, which is included in the authorization hash used for signing.
+    /// The effecting data for the vote.
     #[prost(message, optional, tag="1")]
     pub body: ::core::option::Option<DelegatorVoteBody>,
-    /// The vote authorization signature is effecting data.
+    /// The vote authorization signature is authorizing data.
     #[prost(message, optional, tag="2")]
     pub auth_sig: ::core::option::Option<super::super::crypto::v1alpha1::SpendAuthSignature>,
-    /// The vote proof is effecting data.
+    /// The vote proof is authorizing data.
     #[prost(bytes="bytes", tag="3")]
     pub proof: ::prost::bytes::Bytes,
 }
@@ -405,7 +405,7 @@ pub struct DelegatorVoteBody {
 pub struct AuthorizationData {
     /// The computed auth hash for the approved transaction plan.
     #[prost(message, optional, tag="1")]
-    pub auth_hash: ::core::option::Option<AuthHash>,
+    pub effect_hash: ::core::option::Option<EffectHash>,
     /// The required spend authorizations, returned in the same order as the
     /// Spend actions in the original request.
     #[prost(message, repeated, tag="2")]
@@ -736,7 +736,7 @@ pub mod proposal {
             pub scheduled_at_height: u64,
             /// The auth hash of the transaction to cancel.
             #[prost(message, optional, tag="2")]
-            pub auth_hash: ::core::option::Option<super::super::AuthHash>,
+            pub effect_hash: ::core::option::Option<super::super::EffectHash>,
         }
     }
 }

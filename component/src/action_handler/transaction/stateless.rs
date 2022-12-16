@@ -5,13 +5,13 @@ use penumbra_transaction::Transaction;
 
 #[tracing::instrument(skip(tx))]
 pub(super) fn valid_binding_signature(tx: &Transaction) -> Result<()> {
-    let auth_hash = tx.transaction_body().auth_hash();
+    let effect_hash = tx.transaction_body().effect_hash();
 
-    tracing::debug!(bvk = ?tx.binding_verification_key(), auth_hash = ?auth_hash);
+    tracing::debug!(bvk = ?tx.binding_verification_key(), effect_hash = ?effect_hash);
 
     // Check binding signature.
     tx.binding_verification_key()
-        .verify(auth_hash.as_ref(), tx.binding_sig())
+        .verify(effect_hash.as_ref(), tx.binding_sig())
         .context("binding signature failed to verify")
 }
 

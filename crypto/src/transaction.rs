@@ -1,5 +1,3 @@
-use blake2b_simd::Hash;
-
 use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
 
 use crate::{asset, balance, Balance, Fr, Value, STAKING_TOKEN_ASSET_ID};
@@ -79,16 +77,6 @@ impl TryFrom<pb::Fee> for Fee {
 }
 
 impl Fee {
-    pub fn auth_hash(&self) -> Hash {
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:fee")
-            .to_state();
-        state.update(&self.0.amount.to_le_bytes());
-        state.update(&self.0.asset_id.to_bytes());
-
-        state.finalize()
-    }
-
     pub fn value(&self) -> Value {
         self.0
     }
