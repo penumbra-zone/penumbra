@@ -3,22 +3,6 @@ on: [pull_request]
 name: Rust CI
 
 jobs:
-  check:
-    name: Check
-    runs-on: buildjet-16vcpu-ubuntu-2004
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - uses: Swatinem/rust-cache@v1
-      - uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --all-features
-
   test:
     name: Test Suite
     runs-on: buildjet-16vcpu-ubuntu-2004
@@ -29,15 +13,15 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+      - uses: taiki-e/install-action@nextest
       - uses: Swatinem/rust-cache@v1
-      - uses: actions-rs/cargo@v1
+      - name: Run tests with nextest
+        uses: actions-rs/cargo@v1
         with:
-          command: test
-          args: --workspace --exclude penumbra-tct-property-test
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --release -p penumbra-tct-property-test
+          command: nextest
+          args: run --release
+        env:
+          CARGO_TERM_COLOR: always
 
   fmt:
     name: Rustfmt

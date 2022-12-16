@@ -1,4 +1,4 @@
-name: Lint protobuf
+name: Protobuf
 on: pull_request
 jobs:
   lint:
