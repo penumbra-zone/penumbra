@@ -1,317 +1,389 @@
 /// Requests a range of compact block data.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CompactBlockRangeRequest {
     /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
     /// The start height of the range.
-    #[prost(uint64, tag="2")]
+    #[prost(uint64, tag = "2")]
     pub start_height: u64,
     /// The end height of the range, defaults to the latest block height.
-    #[prost(uint64, tag="3")]
+    #[prost(uint64, tag = "3")]
     pub end_height: u64,
     /// If set, keeps the connection alive past `end_height`,
     /// streaming new compact blocks as they are created.
-    #[prost(bool, tag="4")]
+    #[prost(bool, tag = "4")]
     pub keep_alive: bool,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CompactBlockRangeResponse {
-    #[prost(message, optional, tag="1")]
-    pub compact_block: ::core::option::Option<super::super::core::chain::v1alpha1::CompactBlock>,
+    #[prost(message, optional, tag = "1")]
+    pub compact_block: ::core::option::Option<
+        super::super::core::chain::v1alpha1::CompactBlock,
+    >,
 }
 /// Requests the global configuration data for the chain.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ChainParametersRequest {
     /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ChainParametersResponse {
-    #[prost(message, optional, tag="1")]
-    pub chain_parameters: ::core::option::Option<super::super::core::chain::v1alpha1::ChainParameters>,
+    #[prost(message, optional, tag = "1")]
+    pub chain_parameters: ::core::option::Option<
+        super::super::core::chain::v1alpha1::ChainParameters,
+    >,
 }
 /// Requests the governance-mutable parameters available for the chain.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MutableParametersRequest {
     /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MutableParametersResponse {
-    #[prost(message, optional, tag="1")]
-    pub chain_parameter: ::core::option::Option<super::super::core::governance::v1alpha1::MutableChainParameter>,
+    #[prost(message, optional, tag = "1")]
+    pub chain_parameter: ::core::option::Option<
+        super::super::core::governance::v1alpha1::MutableChainParameter,
+    >,
 }
 /// Requests information on the chain's validators.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorInfoRequest {
     /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
     /// Whether or not to return inactive validators
-    #[prost(bool, tag="2")]
+    #[prost(bool, tag = "2")]
     pub show_inactive: bool,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorInfoResponse {
-    #[prost(message, optional, tag="1")]
-    pub validator_info: ::core::option::Option<super::super::core::stake::v1alpha1::ValidatorInfo>,
+    #[prost(message, optional, tag = "1")]
+    pub validator_info: ::core::option::Option<
+        super::super::core::stake::v1alpha1::ValidatorInfo,
+    >,
 }
 /// Lists all assets in Asset Registry
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AssetListRequest {
     /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AssetListResponse {
     /// TODO: deprecate in favor of SpecificQuery.AssetInfo
-    #[prost(message, optional, tag="1")]
-    pub asset_list: ::core::option::Option<super::super::core::chain::v1alpha1::KnownAssets>,
+    #[prost(message, optional, tag = "1")]
+    pub asset_list: ::core::option::Option<
+        super::super::core::chain::v1alpha1::KnownAssets,
+    >,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionByNoteRequest {
-    #[prost(message, optional, tag="1")]
-    pub note_commitment: ::core::option::Option<super::super::core::crypto::v1alpha1::StateCommitment>,
+    #[prost(message, optional, tag = "1")]
+    pub note_commitment: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::StateCommitment,
+    >,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionByNoteResponse {
-    #[prost(message, optional, tag="1")]
-    pub note_source: ::core::option::Option<super::super::core::chain::v1alpha1::NoteSource>,
+    #[prost(message, optional, tag = "1")]
+    pub note_source: ::core::option::Option<
+        super::super::core::chain::v1alpha1::NoteSource,
+    >,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorStatusRequest {
     /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
-    #[prost(message, optional, tag="2")]
-    pub identity_key: ::core::option::Option<super::super::core::crypto::v1alpha1::IdentityKey>,
+    #[prost(message, optional, tag = "2")]
+    pub identity_key: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::IdentityKey,
+    >,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorStatusResponse {
-    #[prost(message, optional, tag="1")]
-    pub status: ::core::option::Option<super::super::core::stake::v1alpha1::ValidatorStatus>,
+    #[prost(message, optional, tag = "1")]
+    pub status: ::core::option::Option<
+        super::super::core::stake::v1alpha1::ValidatorStatus,
+    >,
 }
 /// Requests the compounded penalty for a validator over a range of epochs.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorPenaltyRequest {
     /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
-    #[prost(message, optional, tag="2")]
-    pub identity_key: ::core::option::Option<super::super::core::crypto::v1alpha1::IdentityKey>,
-    #[prost(uint64, tag="3")]
+    #[prost(message, optional, tag = "2")]
+    pub identity_key: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::IdentityKey,
+    >,
+    #[prost(uint64, tag = "3")]
     pub start_epoch_index: u64,
-    #[prost(uint64, tag="4")]
+    #[prost(uint64, tag = "4")]
     pub end_epoch_index: u64,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorPenaltyResponse {
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub penalty: ::core::option::Option<super::super::core::stake::v1alpha1::Penalty>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NextValidatorRateRequest {
-    #[prost(message, optional, tag="1")]
-    pub identity_key: ::core::option::Option<super::super::core::crypto::v1alpha1::IdentityKey>,
+    #[prost(message, optional, tag = "1")]
+    pub identity_key: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::IdentityKey,
+    >,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NextValidatorRateResponse {
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub data: ::core::option::Option<super::super::core::stake::v1alpha1::RateData>,
 }
 /// Requests batch swap data associated with a given height and trading pair from the view service.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BatchSwapOutputDataRequest {
-    #[prost(uint64, tag="1")]
+    #[prost(uint64, tag = "1")]
     pub height: u64,
-    #[prost(message, optional, tag="2")]
-    pub trading_pair: ::core::option::Option<super::super::core::dex::v1alpha1::TradingPair>,
+    #[prost(message, optional, tag = "2")]
+    pub trading_pair: ::core::option::Option<
+        super::super::core::dex::v1alpha1::TradingPair,
+    >,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BatchSwapOutputDataResponse {
-    #[prost(message, optional, tag="1")]
-    pub data: ::core::option::Option<super::super::core::dex::v1alpha1::BatchSwapOutputData>,
+    #[prost(message, optional, tag = "1")]
+    pub data: ::core::option::Option<
+        super::super::core::dex::v1alpha1::BatchSwapOutputData,
+    >,
 }
 /// Requests CPMM reserves data associated with a given trading pair from the view service.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StubCpmmReservesRequest {
-    #[prost(message, optional, tag="1")]
-    pub trading_pair: ::core::option::Option<super::super::core::dex::v1alpha1::TradingPair>,
+    #[prost(message, optional, tag = "1")]
+    pub trading_pair: ::core::option::Option<
+        super::super::core::dex::v1alpha1::TradingPair,
+    >,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StubCpmmReservesResponse {
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub reserves: ::core::option::Option<super::super::core::dex::v1alpha1::Reserves>,
 }
 /// Requests information on an asset by asset id
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AssetInfoRequest {
     /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
     /// The asset id to request information on.
-    #[prost(message, optional, tag="2")]
+    #[prost(message, optional, tag = "2")]
     pub asset_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AssetId>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AssetInfoResponse {
     /// If present, information on the requested asset.
     ///
     /// If the requested asset was unknown, this field will not be present.
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub asset: ::core::option::Option<super::super::core::crypto::v1alpha1::Asset>,
 }
 /// Performs a key-value query, either by key or by key hash.
 ///
 /// Proofs are only supported by key.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct KeyValueRequest {
     /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
     /// If set, the key to fetch from storage.
-    #[prost(string, tag="2")]
+    #[prost(string, tag = "2")]
     pub key: ::prost::alloc::string::String,
     /// whether to return a proof
-    #[prost(bool, tag="3")]
+    #[prost(bool, tag = "3")]
     pub proof: bool,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct KeyValueResponse {
-    #[prost(bytes="vec", tag="1")]
+    #[prost(bytes = "vec", tag = "1")]
     pub value: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag="2")]
-    pub proof: ::core::option::Option<::ibc_proto::ibc::core::commitment::v1::MerkleProof>,
+    #[prost(message, optional, tag = "2")]
+    pub proof: ::core::option::Option<
+        ::ibc_proto::ibc::core::commitment::v1::MerkleProof,
+    >,
 }
 /// Performs a prefixed key-value query, by string prefix.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PrefixValueRequest {
     /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
     /// The prefix to fetch subkeys from storage.
-    #[prost(string, tag="2")]
+    #[prost(string, tag = "2")]
     pub prefix: ::prost::alloc::string::String,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PrefixValueResponse {
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub key: ::prost::alloc::string::String,
-    #[prost(bytes="vec", tag="2")]
+    #[prost(bytes = "vec", tag = "2")]
     pub value: ::prost::alloc::vec::Vec<u8>,
 }
 /// GetTxRequest is the request type for the GetTx RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetTxRequest {
     /// Hash of transaction to retrieve
-    #[prost(bytes="vec", tag="1")]
+    #[prost(bytes = "vec", tag = "1")]
     pub hash: ::prost::alloc::vec::Vec<u8>,
     /// Include proofs of the transaction's inclusion in the block
-    #[prost(bool, tag="2")]
+    #[prost(bool, tag = "2")]
     pub prove: bool,
 }
 /// GetTxResponse is the response type for the GetTx RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetTxResponse {
     /// Hash of transaction
-    #[prost(bytes="vec", tag="1")]
+    #[prost(bytes = "vec", tag = "1")]
     pub hash: ::prost::alloc::vec::Vec<u8>,
-    #[prost(uint64, tag="2")]
+    #[prost(uint64, tag = "2")]
     pub height: u64,
-    #[prost(uint64, tag="3")]
+    #[prost(uint64, tag = "3")]
     pub index: u64,
-    #[prost(message, optional, tag="4")]
+    #[prost(message, optional, tag = "4")]
     pub tx_result: ::core::option::Option<TxResult>,
-    #[prost(bytes="vec", tag="5")]
+    #[prost(bytes = "vec", tag = "5")]
     pub tx: ::prost::alloc::vec::Vec<u8>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxResult {
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub log: ::prost::alloc::string::String,
-    #[prost(uint64, tag="2")]
+    #[prost(uint64, tag = "2")]
     pub gas_wanted: u64,
-    #[prost(uint64, tag="3")]
+    #[prost(uint64, tag = "3")]
     pub gas_used: u64,
-    #[prost(message, repeated, tag="4")]
+    #[prost(message, repeated, tag = "4")]
     pub tags: ::prost::alloc::vec::Vec<Tag>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Tag {
-    #[prost(bytes="vec", tag="1")]
+    #[prost(bytes = "vec", tag = "1")]
     pub key: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bytes="vec", tag="2")]
+    #[prost(bytes = "vec", tag = "2")]
     pub value: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bool, tag="3")]
+    #[prost(bool, tag = "3")]
     pub index: bool,
 }
 /// BroadcastTxAsyncRequest is the request type for the BroadcastTxAsync RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BroadcastTxAsyncRequest {
-    #[prost(bytes="vec", tag="1")]
+    #[prost(bytes = "vec", tag = "1")]
     pub params: ::prost::alloc::vec::Vec<u8>,
-    #[prost(uint64, tag="2")]
+    #[prost(uint64, tag = "2")]
     pub req_id: u64,
 }
 /// BroadcastTxAsyncResponse is the response type for the BroadcastTxAsync RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BroadcastTxAsyncResponse {
-    #[prost(uint64, tag="1")]
+    #[prost(uint64, tag = "1")]
     pub code: u64,
-    #[prost(bytes="vec", tag="2")]
+    #[prost(bytes = "vec", tag = "2")]
     pub data: ::prost::alloc::vec::Vec<u8>,
-    #[prost(string, tag="3")]
+    #[prost(string, tag = "3")]
     pub log: ::prost::alloc::string::String,
-    #[prost(bytes="vec", tag="4")]
+    #[prost(bytes = "vec", tag = "4")]
     pub hash: ::prost::alloc::vec::Vec<u8>,
 }
 /// BroadcastTxSyncRequest is the request type for the BroadcastTxSync RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BroadcastTxSyncRequest {
-    #[prost(bytes="vec", tag="1")]
+    #[prost(bytes = "vec", tag = "1")]
     pub params: ::prost::alloc::vec::Vec<u8>,
-    #[prost(uint64, tag="2")]
+    #[prost(uint64, tag = "2")]
     pub req_id: u64,
 }
 /// BroadcastTxSyncResponse is the response type for the BroadcastTxSync RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BroadcastTxSyncResponse {
-    #[prost(uint64, tag="1")]
+    #[prost(uint64, tag = "1")]
     pub code: u64,
-    #[prost(bytes="vec", tag="2")]
+    #[prost(bytes = "vec", tag = "2")]
     pub data: ::prost::alloc::vec::Vec<u8>,
-    #[prost(string, tag="3")]
+    #[prost(string, tag = "3")]
     pub log: ::prost::alloc::string::String,
-    #[prost(bytes="vec", tag="4")]
+    #[prost(bytes = "vec", tag = "4")]
     pub hash: ::prost::alloc::vec::Vec<u8>,
 }
 /// GetStatusRequest is the request type for the Query/GetStatus RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GetStatusRequest {
-}
+pub struct GetStatusRequest {}
 /// GetStatusResponse is the response type for the Query/GetStatus RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetStatusResponse {
-    #[prost(message, optional, tag="1")]
-    pub node_info: ::core::option::Option<super::super::super::tendermint::p2p::DefaultNodeInfo>,
-    #[prost(message, optional, tag="2")]
+    #[prost(message, optional, tag = "1")]
+    pub node_info: ::core::option::Option<
+        super::super::super::tendermint::p2p::DefaultNodeInfo,
+    >,
+    #[prost(message, optional, tag = "2")]
     pub sync_info: ::core::option::Option<SyncInfo>,
-    #[prost(message, optional, tag="3")]
-    pub validator_info: ::core::option::Option<super::super::super::tendermint::types::Validator>,
+    #[prost(message, optional, tag = "3")]
+    pub validator_info: ::core::option::Option<
+        super::super::super::tendermint::types::Validator,
+    >,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SyncInfo {
-    #[prost(bytes="vec", tag="1")]
+    #[prost(bytes = "vec", tag = "1")]
     pub latest_block_hash: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bytes="vec", tag="2")]
+    #[prost(bytes = "vec", tag = "2")]
     pub latest_app_hash: ::prost::alloc::vec::Vec<u8>,
-    #[prost(uint64, tag="3")]
+    #[prost(uint64, tag = "3")]
     pub latest_block_height: u64,
-    #[prost(message, optional, tag="4")]
+    #[prost(message, optional, tag = "4")]
     pub latest_block_time: ::core::option::Option<::prost_types::Timestamp>,
     /// These are implemented in tendermint, but not
     /// in tendermint-rpc.
@@ -319,60 +391,68 @@ pub struct SyncInfo {
     /// bytes earliest_app_hash = 6;
     /// uint64 earliest_block_height = 7;
     /// google.protobuf.Timestamp earliest_block_time = 8;
-    #[prost(bool, tag="9")]
+    #[prost(bool, tag = "9")]
     pub catching_up: bool,
 }
 /// ABCIQueryRequest defines the request structure for the ABCIQuery gRPC query.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AbciQueryRequest {
-    #[prost(bytes="vec", tag="1")]
+    #[prost(bytes = "vec", tag = "1")]
     pub data: ::prost::alloc::vec::Vec<u8>,
-    #[prost(string, tag="2")]
+    #[prost(string, tag = "2")]
     pub path: ::prost::alloc::string::String,
-    #[prost(int64, tag="3")]
+    #[prost(int64, tag = "3")]
     pub height: i64,
-    #[prost(bool, tag="4")]
+    #[prost(bool, tag = "4")]
     pub prove: bool,
 }
 /// ABCIQueryResponse defines the response structure for the ABCIQuery gRPC query.
 ///
 /// Note: This type is a duplicate of the ResponseQuery proto type defined in
 /// Tendermint.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AbciQueryResponse {
-    #[prost(uint32, tag="1")]
+    #[prost(uint32, tag = "1")]
     pub code: u32,
     /// nondeterministic
-    #[prost(string, tag="3")]
+    #[prost(string, tag = "3")]
     pub log: ::prost::alloc::string::String,
     /// nondeterministic
-    #[prost(string, tag="4")]
+    #[prost(string, tag = "4")]
     pub info: ::prost::alloc::string::String,
-    #[prost(int64, tag="5")]
+    #[prost(int64, tag = "5")]
     pub index: i64,
-    #[prost(bytes="vec", tag="6")]
+    #[prost(bytes = "vec", tag = "6")]
     pub key: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bytes="vec", tag="7")]
+    #[prost(bytes = "vec", tag = "7")]
     pub value: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag="8")]
-    pub proof_ops: ::core::option::Option<super::super::super::tendermint::crypto::ProofOps>,
-    #[prost(int64, tag="9")]
+    #[prost(message, optional, tag = "8")]
+    pub proof_ops: ::core::option::Option<
+        super::super::super::tendermint::crypto::ProofOps,
+    >,
+    #[prost(int64, tag = "9")]
     pub height: i64,
-    #[prost(string, tag="10")]
+    #[prost(string, tag = "10")]
     pub codespace: ::prost::alloc::string::String,
 }
 /// GetBlockByHeightRequest is the request type for the Query/GetBlockByHeight RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetBlockByHeightRequest {
-    #[prost(int64, tag="1")]
+    #[prost(int64, tag = "1")]
     pub height: i64,
 }
 /// GetBlockByHeightResponse is the response type for the Query/GetBlockByHeight RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetBlockByHeightResponse {
-    #[prost(message, optional, tag="1")]
-    pub block_id: ::core::option::Option<super::super::super::tendermint::types::BlockId>,
-    #[prost(message, optional, tag="2")]
+    #[prost(message, optional, tag = "1")]
+    pub block_id: ::core::option::Option<
+        super::super::super::tendermint::types::BlockId,
+    >,
+    #[prost(message, optional, tag = "2")]
     pub block: ::core::option::Option<super::super::super::tendermint::types::Block>,
 }
 /// Generated client implementations.
