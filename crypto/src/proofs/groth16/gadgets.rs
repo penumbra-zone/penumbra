@@ -77,12 +77,12 @@ pub(crate) fn note_commitment_integrity(
     // Public inputs
     commitment: FqVar,
 ) -> Result<(), SynthesisError> {
-    let value_blinding_generator = FqVar::new_constant(cs.clone(), *NOTECOMMIT_DOMAIN_SEP)?;
+    let note_domain_separator = FqVar::new_constant(cs.clone(), *NOTECOMMIT_DOMAIN_SEP)?;
 
     let compressed_g_d = diversified_generator.compress_to_field()?;
     let commitment_test = poseidon377::r1cs::hash_6(
         cs,
-        &value_blinding_generator,
+        &note_domain_separator,
         (
             note_blinding,
             value_amount,

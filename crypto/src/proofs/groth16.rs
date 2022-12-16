@@ -1,4 +1,5 @@
 pub(crate) mod gadgets;
+mod gadgets2;
 mod output;
 mod spend;
 mod traits;
