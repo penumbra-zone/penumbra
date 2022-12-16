@@ -8,6 +8,7 @@ publish = false
 prost = "0.11"
 prost-types = "0.11"
 prost-build = "0.11"
+prost-wkt-types = "0.3.4"
 tonic-build = "0.8.0"
 
 ibc-proto = "0.22.0"

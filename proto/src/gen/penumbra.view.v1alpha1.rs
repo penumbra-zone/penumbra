@@ -1,299 +1,383 @@
 /// Scaffolding for bearer-token authentication for the ViewService.
 /// The `account_id` and `token` fields are both optional,
 /// and numbered as 14 & 15 throughout the view service protocol.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ViewAuthToken {
-    #[prost(bytes="vec", tag="1")]
+    #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ViewAuthRequest {
-    #[prost(message, optional, tag="1")]
-    pub fvk: ::core::option::Option<super::super::core::crypto::v1alpha1::FullViewingKey>,
+    #[prost(message, optional, tag = "1")]
+    pub fvk: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::FullViewingKey,
+    >,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ViewAuthResponse {
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub token: ::core::option::Option<ViewAuthToken>,
 }
 /// Requests sync status of the view service.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatusRequest {
     /// Identifies the FVK for the notes to query.
-    #[prost(message, optional, tag="14")]
-    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
+    #[prost(message, optional, tag = "14")]
+    pub account_id: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AccountId,
+    >,
     /// Authorizes the request.
-    #[prost(message, optional, tag="15")]
+    #[prost(message, optional, tag = "15")]
     pub token: ::core::option::Option<ViewAuthToken>,
 }
 /// Returns the status of the view service and whether it is synchronized with the chain state.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatusResponse {
     /// The height the view service has synchronized to so far
-    #[prost(uint64, tag="1")]
+    #[prost(uint64, tag = "1")]
     pub sync_height: u64,
     /// Whether the view service is catching up with the chain state
-    #[prost(bool, tag="2")]
+    #[prost(bool, tag = "2")]
     pub catching_up: bool,
 }
 /// Requests streaming updates on the sync height until the view service is synchronized.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatusStreamRequest {
     /// Identifies the FVK for the notes to query.
-    #[prost(message, optional, tag="14")]
-    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
+    #[prost(message, optional, tag = "14")]
+    pub account_id: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AccountId,
+    >,
     /// Authorizes the request.
-    #[prost(message, optional, tag="15")]
+    #[prost(message, optional, tag = "15")]
     pub token: ::core::option::Option<ViewAuthToken>,
 }
 /// A streaming sync status update
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatusStreamResponse {
-    #[prost(uint64, tag="1")]
+    #[prost(uint64, tag = "1")]
     pub latest_known_block_height: u64,
-    #[prost(uint64, tag="2")]
+    #[prost(uint64, tag = "2")]
     pub sync_height: u64,
 }
 /// A query for notes known by the view service.
 ///
 /// This message uses the fact that all proto fields are optional
 /// to allow various filtering on the returned notes.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NotesRequest {
     /// If set, return spent notes as well as unspent notes.
-    #[prost(bool, tag="2")]
+    #[prost(bool, tag = "2")]
     pub include_spent: bool,
     /// If set, only return notes with the specified asset id.
-    #[prost(message, optional, tag="3")]
+    #[prost(message, optional, tag = "3")]
     pub asset_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AssetId>,
     /// If set, only return notes with the specified address incore.dex.v1alpha1.
-    #[prost(message, optional, tag="4")]
-    pub address_index: ::core::option::Option<super::super::core::crypto::v1alpha1::AddressIndex>,
+    #[prost(message, optional, tag = "4")]
+    pub address_index: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AddressIndex,
+    >,
     /// If set, stop returning notes once the total exceeds this amount.
     ///
     /// Ignored if `asset_id` is unset or if `include_spent` is set.
-    #[prost(uint64, tag="5")]
+    #[prost(uint64, tag = "5")]
     pub amount_to_spend: u64,
     /// Identifies the FVK for the notes to query.
-    #[prost(message, optional, tag="14")]
-    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
+    #[prost(message, optional, tag = "14")]
+    pub account_id: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AccountId,
+    >,
     /// Authorizes the request.
-    #[prost(message, optional, tag="15")]
+    #[prost(message, optional, tag = "15")]
     pub token: ::core::option::Option<ViewAuthToken>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WitnessRequest {
     /// The note commitments to obtain auth paths for.
-    #[prost(message, repeated, tag="2")]
-    pub note_commitments: ::prost::alloc::vec::Vec<super::super::core::crypto::v1alpha1::StateCommitment>,
+    #[prost(message, repeated, tag = "2")]
+    pub note_commitments: ::prost::alloc::vec::Vec<
+        super::super::core::crypto::v1alpha1::StateCommitment,
+    >,
     /// The transaction plan to witness
-    #[prost(message, optional, tag="3")]
-    pub transaction_plan: ::core::option::Option<super::super::core::transaction::v1alpha1::TransactionPlan>,
+    #[prost(message, optional, tag = "3")]
+    pub transaction_plan: ::core::option::Option<
+        super::super::core::transaction::v1alpha1::TransactionPlan,
+    >,
     /// Identifies the FVK for the notes to query.
-    #[prost(message, optional, tag="14")]
-    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
+    #[prost(message, optional, tag = "14")]
+    pub account_id: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AccountId,
+    >,
     /// Authorizes the request.
-    #[prost(message, optional, tag="15")]
+    #[prost(message, optional, tag = "15")]
     pub token: ::core::option::Option<ViewAuthToken>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WitnessResponse {
-    #[prost(message, optional, tag="1")]
-    pub witness_data: ::core::option::Option<super::super::core::transaction::v1alpha1::WitnessData>,
+    #[prost(message, optional, tag = "1")]
+    pub witness_data: ::core::option::Option<
+        super::super::core::transaction::v1alpha1::WitnessData,
+    >,
 }
 /// Requests all assets known to the view service.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct AssetsRequest {
-}
+pub struct AssetsRequest {}
 /// Requests all assets known to the view service.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AssetsResponse {
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub asset: ::core::option::Option<super::super::core::crypto::v1alpha1::Asset>,
 }
 /// Requests the current chain parameters from the view service.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ChainParametersRequest {
-}
+pub struct ChainParametersRequest {}
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ChainParametersResponse {
-    #[prost(message, optional, tag="1")]
-    pub parameters: ::core::option::Option<super::super::core::chain::v1alpha1::ChainParameters>,
+    #[prost(message, optional, tag = "1")]
+    pub parameters: ::core::option::Option<
+        super::super::core::chain::v1alpha1::ChainParameters,
+    >,
 }
 /// Requests the current FMD parameters from the view service.
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct FmdParametersRequest {
-}
+pub struct FmdParametersRequest {}
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FmdParametersResponse {
-    #[prost(message, optional, tag="1")]
-    pub parameters: ::core::option::Option<super::super::core::chain::v1alpha1::FmdParameters>,
+    #[prost(message, optional, tag = "1")]
+    pub parameters: ::core::option::Option<
+        super::super::core::chain::v1alpha1::FmdParameters,
+    >,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NoteByCommitmentRequest {
-    #[prost(message, optional, tag="2")]
-    pub note_commitment: ::core::option::Option<super::super::core::crypto::v1alpha1::StateCommitment>,
+    #[prost(message, optional, tag = "2")]
+    pub note_commitment: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::StateCommitment,
+    >,
     /// If set to true, waits to return until the requested note is detected.
-    #[prost(bool, tag="3")]
+    #[prost(bool, tag = "3")]
     pub await_detection: bool,
     /// Identifies the FVK for the notes to query.
-    #[prost(message, optional, tag="14")]
-    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
+    #[prost(message, optional, tag = "14")]
+    pub account_id: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AccountId,
+    >,
     /// Authorizes the request.
-    #[prost(message, optional, tag="15")]
+    #[prost(message, optional, tag = "15")]
     pub token: ::core::option::Option<ViewAuthToken>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NoteByCommitmentResponse {
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub spendable_note: ::core::option::Option<SpendableNoteRecord>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapByCommitmentRequest {
-    #[prost(message, optional, tag="2")]
-    pub swap_commitment: ::core::option::Option<super::super::core::crypto::v1alpha1::StateCommitment>,
+    #[prost(message, optional, tag = "2")]
+    pub swap_commitment: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::StateCommitment,
+    >,
     /// If set to true, waits to return until the requested swap is detected.
-    #[prost(bool, tag="3")]
+    #[prost(bool, tag = "3")]
     pub await_detection: bool,
     /// Identifies the FVK for the notes to query.
-    #[prost(message, optional, tag="14")]
-    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
+    #[prost(message, optional, tag = "14")]
+    pub account_id: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AccountId,
+    >,
     /// Authorizes the request.
-    #[prost(message, optional, tag="15")]
+    #[prost(message, optional, tag = "15")]
     pub token: ::core::option::Option<ViewAuthToken>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapByCommitmentResponse {
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub swap: ::core::option::Option<SwapRecord>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NullifierStatusRequest {
-    #[prost(message, optional, tag="2")]
-    pub nullifier: ::core::option::Option<super::super::core::crypto::v1alpha1::Nullifier>,
-    #[prost(bool, tag="3")]
+    #[prost(message, optional, tag = "2")]
+    pub nullifier: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::Nullifier,
+    >,
+    #[prost(bool, tag = "3")]
     pub await_detection: bool,
     /// Identifies the FVK for the notes to query.
-    #[prost(message, optional, tag="14")]
-    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
+    #[prost(message, optional, tag = "14")]
+    pub account_id: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AccountId,
+    >,
     /// Authorizes the request.
-    #[prost(message, optional, tag="15")]
+    #[prost(message, optional, tag = "15")]
     pub token: ::core::option::Option<ViewAuthToken>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NullifierStatusResponse {
-    #[prost(bool, tag="1")]
+    #[prost(bool, tag = "1")]
     pub spent: bool,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionHashesRequest {
     /// If present, return only transactions after this height.
-    #[prost(uint64, optional, tag="1")]
+    #[prost(uint64, optional, tag = "1")]
     pub start_height: ::core::option::Option<u64>,
     /// If present, return only transactions before this height.
-    #[prost(uint64, optional, tag="2")]
+    #[prost(uint64, optional, tag = "2")]
     pub end_height: ::core::option::Option<u64>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionHashesResponse {
-    #[prost(uint64, tag="1")]
+    #[prost(uint64, tag = "1")]
     pub block_height: u64,
-    #[prost(bytes="vec", tag="2")]
+    #[prost(bytes = "vec", tag = "2")]
     pub tx_hash: ::prost::alloc::vec::Vec<u8>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionByHashRequest {
     /// The transaction hash to query for.
-    #[prost(bytes="vec", tag="1")]
+    #[prost(bytes = "vec", tag = "1")]
     pub tx_hash: ::prost::alloc::vec::Vec<u8>,
 }
 /// A full transaction response
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionByHashResponse {
-    #[prost(message, optional, tag="1")]
-    pub tx: ::core::option::Option<super::super::core::transaction::v1alpha1::Transaction>,
+    #[prost(message, optional, tag = "1")]
+    pub tx: ::core::option::Option<
+        super::super::core::transaction::v1alpha1::Transaction,
+    >,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionsRequest {
     /// If present, return only transactions after this height.
-    #[prost(uint64, optional, tag="1")]
+    #[prost(uint64, optional, tag = "1")]
     pub start_height: ::core::option::Option<u64>,
     /// If present, return only transactions before this height.
-    #[prost(uint64, optional, tag="2")]
+    #[prost(uint64, optional, tag = "2")]
     pub end_height: ::core::option::Option<u64>,
 }
 /// A streaming full transaction response
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionsResponse {
-    #[prost(uint64, tag="1")]
+    #[prost(uint64, tag = "1")]
     pub block_height: u64,
-    #[prost(bytes="vec", tag="2")]
+    #[prost(bytes = "vec", tag = "2")]
     pub tx_hash: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag="3")]
-    pub tx: ::core::option::Option<super::super::core::transaction::v1alpha1::Transaction>,
+    #[prost(message, optional, tag = "3")]
+    pub tx: ::core::option::Option<
+        super::super::core::transaction::v1alpha1::Transaction,
+    >,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionPerspectiveRequest {
-    #[prost(bytes="vec", tag="1")]
+    #[prost(bytes = "vec", tag = "1")]
     pub tx_hash: ::prost::alloc::vec::Vec<u8>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionPerspectiveResponse {
-    #[prost(message, optional, tag="1")]
-    pub txp: ::core::option::Option<super::super::core::transaction::v1alpha1::TransactionPerspective>,
-    #[prost(message, optional, tag="2")]
-    pub tx: ::core::option::Option<super::super::core::transaction::v1alpha1::Transaction>,
+    #[prost(message, optional, tag = "1")]
+    pub txp: ::core::option::Option<
+        super::super::core::transaction::v1alpha1::TransactionPerspective,
+    >,
+    #[prost(message, optional, tag = "2")]
+    pub tx: ::core::option::Option<
+        super::super::core::transaction::v1alpha1::Transaction,
+    >,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NotesResponse {
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub note_record: ::core::option::Option<SpendableNoteRecord>,
 }
 /// A note plaintext with associated metadata about its status.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SpendableNoteRecord {
     /// The note commitment, identifying the note.
-    #[prost(message, optional, tag="1")]
-    pub note_commitment: ::core::option::Option<super::super::core::crypto::v1alpha1::StateCommitment>,
+    #[prost(message, optional, tag = "1")]
+    pub note_commitment: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::StateCommitment,
+    >,
     /// The note plaintext itself.
-    #[prost(message, optional, tag="2")]
+    #[prost(message, optional, tag = "2")]
     pub note: ::core::option::Option<super::super::core::crypto::v1alpha1::Note>,
     /// A precomputed decryption of the note's address incore.dex.v1alpha1.
-    #[prost(message, optional, tag="3")]
-    pub address_index: ::core::option::Option<super::super::core::crypto::v1alpha1::AddressIndex>,
+    #[prost(message, optional, tag = "3")]
+    pub address_index: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AddressIndex,
+    >,
     /// The note's nullifier.
-    #[prost(message, optional, tag="4")]
-    pub nullifier: ::core::option::Option<super::super::core::crypto::v1alpha1::Nullifier>,
+    #[prost(message, optional, tag = "4")]
+    pub nullifier: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::Nullifier,
+    >,
     /// The height at which the note was created.
-    #[prost(uint64, tag="5")]
+    #[prost(uint64, tag = "5")]
     pub height_created: u64,
     /// Records whether the note was spent (and if so, at what height).
-    #[prost(uint64, optional, tag="6")]
+    #[prost(uint64, optional, tag = "6")]
     pub height_spent: ::core::option::Option<u64>,
     /// The note position.
-    #[prost(uint64, tag="7")]
+    #[prost(uint64, tag = "7")]
     pub position: u64,
     /// The source of the note (a tx hash or otherwise)
-    #[prost(message, optional, tag="8")]
+    #[prost(message, optional, tag = "8")]
     pub source: ::core::option::Option<super::super::core::chain::v1alpha1::NoteSource>,
 }
 #[derive(::serde::Deserialize, ::serde::Serialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapRecord {
-    #[prost(message, optional, tag="1")]
-    pub swap_commitment: ::core::option::Option<super::super::core::crypto::v1alpha1::StateCommitment>,
-    #[prost(message, optional, tag="2")]
+    #[prost(message, optional, tag = "1")]
+    pub swap_commitment: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::StateCommitment,
+    >,
+    #[prost(message, optional, tag = "2")]
     pub swap: ::core::option::Option<super::super::core::dex::v1alpha1::SwapPlaintext>,
-    #[prost(uint64, tag="3")]
+    #[prost(uint64, tag = "3")]
     pub position: u64,
-    #[prost(message, optional, tag="4")]
-    pub nullifier: ::core::option::Option<super::super::core::crypto::v1alpha1::Nullifier>,
-    #[prost(message, optional, tag="5")]
-    pub output_data: ::core::option::Option<super::super::core::dex::v1alpha1::BatchSwapOutputData>,
-    #[prost(uint64, optional, tag="6")]
+    #[prost(message, optional, tag = "4")]
+    pub nullifier: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::Nullifier,
+    >,
+    #[prost(message, optional, tag = "5")]
+    pub output_data: ::core::option::Option<
+        super::super::core::dex::v1alpha1::BatchSwapOutputData,
+    >,
+    #[prost(uint64, optional, tag = "6")]
     pub height_claimed: ::core::option::Option<u64>,
-    #[prost(message, optional, tag="7")]
+    #[prost(message, optional, tag = "7")]
     pub source: ::core::option::Option<super::super::core::chain::v1alpha1::NoteSource>,
 }
 /// Generated client implementations.
