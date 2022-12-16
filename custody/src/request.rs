@@ -12,7 +12,7 @@ pub struct AuthorizeRequest {
     /// Identifies the FVK (and hence the spend authorization key) to use for signing.
     pub account_id: AccountID,
     /// Optionally, pre-authorization data, if required by the custodian.
-    pub pre_auth: Option<PreAuthorization>,
+    pub pre_authorizations: Vec<PreAuthorization>,
 }
 
 impl Protobuf<pb::AuthorizeRequest> for AuthorizeRequest {}
@@ -29,10 +29,11 @@ impl TryFrom<pb::AuthorizeRequest> for AuthorizeRequest {
                 .account_id
                 .ok_or_else(|| anyhow::anyhow!("missing account ID"))?
                 .try_into()?,
-            pre_auth: value
-                .pre_auth
-                .map(|pre_auth| pre_auth.try_into())
-                .transpose()?,
+            pre_authorizations: value
+                .pre_authorizations
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<Vec<_>, _>>()?,
         })
     }
 }
@@ -42,7 +43,11 @@ impl From<AuthorizeRequest> for pb::AuthorizeRequest {
         Self {
             plan: Some(value.plan.into()),
             account_id: Some(value.account_id.into()),
-            pre_auth: value.pre_auth.map(Into::into),
+            pre_authorizations: value
+                .pre_authorizations
+                .into_iter()
+                .map(Into::into)
+                .collect(),
         }
     }
 }

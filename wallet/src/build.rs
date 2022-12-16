@@ -22,7 +22,7 @@ where
         .authorize(AuthorizeRequest {
             account_id: fvk.hash(),
             plan: plan.clone(),
-            pre_auth: None,
+            pre_authorizations: Vec::new(),
         })
         .await?
         .data

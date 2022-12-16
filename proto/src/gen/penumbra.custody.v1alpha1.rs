@@ -1,3 +1,4 @@
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuthorizeRequest {
     /// The transaction plan to authorize.
@@ -7,26 +8,50 @@ pub struct AuthorizeRequest {
     #[prost(message, optional, tag="2")]
     pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
     /// Optionally, pre-authorization data, if required by the custodian.
-    #[prost(message, optional, tag="3")]
-    pub pre_auth: ::core::option::Option<PreAuthorization>,
+    ///
+    /// Multiple `PreAuthorization` packets can be included in a single request,
+    /// to support multi-party pre-authorizations.
+    #[prost(message, repeated, tag="3")]
+    pub pre_authorizations: ::prost::alloc::vec::Vec<PreAuthorization>,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuthorizeResponse {
     #[prost(message, optional, tag="1")]
     pub data: ::core::option::Option<super::super::core::transaction::v1alpha1::AuthorizationData>,
 }
-/// A pre-authorization packet, containing an Ed25519 signature over a
-/// `TransactionPlan`.  This allows a custodian to delegate (partial) signing
-/// authority to Ed25519 keys.  Details of how a custodian manages those keys
-/// are out-of-scope for the custody protocol and are custodian-specific.
+/// A pre-authorization packet.  This allows a custodian to delegate (partial)
+/// signing authority to other authorization mechanisms.  Details of how a
+/// custodian manages those keys are out-of-scope for the custody protocol and
+/// are custodian-specific.
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PreAuthorization {
-    /// The Ed25519 verification key used to verify the signature.
-    #[prost(bytes="vec", tag="1")]
-    pub vk: ::prost::alloc::vec::Vec<u8>,
-    /// The Ed25519 signature over the `TransactionPlan`.
-    #[prost(bytes="vec", tag="2")]
-    pub sig: ::prost::alloc::vec::Vec<u8>,
+    #[prost(oneof="pre_authorization::PreAuthorization", tags="1")]
+    pub pre_authorization: ::core::option::Option<pre_authorization::PreAuthorization>,
+}
+/// Nested message and enum types in `PreAuthorization`.
+pub mod pre_authorization {
+    /// An Ed25519-based preauthorization, containing an Ed25519 signature over the
+    /// `TransactionPlan`.
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Ed25519 {
+        /// The Ed25519 verification key used to verify the signature.
+        #[prost(bytes="vec", tag="1")]
+        #[serde(with = "crate::serializers::base64str")]
+        pub vk: ::prost::alloc::vec::Vec<u8>,
+        /// The Ed25519 signature over the `TransactionPlan`.
+        #[prost(bytes="vec", tag="2")]
+        #[serde(with = "crate::serializers::base64str")]
+        pub sig: ::prost::alloc::vec::Vec<u8>,
+    }
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum PreAuthorization {
+        #[prost(message, tag="1")]
+        Ed25519(Ed25519),
+    }
 }
 /// Generated client implementations.
 #[cfg(feature = "rpc")]

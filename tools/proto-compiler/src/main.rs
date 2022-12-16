@@ -86,8 +86,14 @@ fn main() -> Result<()> {
         .client_mod_attribute("penumbra.view.v1alpha1", "#[cfg(feature = \"rpc\")]")
         .server_mod_attribute("penumbra.custody.v1alpha1", "#[cfg(feature = \"rpc\")]")
         .client_mod_attribute("penumbra.custody.v1alpha1", "#[cfg(feature = \"rpc\")]")
-        .server_mod_attribute("cosmos.base.tendermint.v1beta1", "#[cfg(feature = \"rpc\")]")
-        .client_mod_attribute("cosmos.base.tendermint.v1beta1", "#[cfg(feature = \"rpc\")]")
+        .server_mod_attribute(
+            "cosmos.base.tendermint.v1beta1",
+            "#[cfg(feature = \"rpc\")]",
+        )
+        .client_mod_attribute(
+            "cosmos.base.tendermint.v1beta1",
+            "#[cfg(feature = \"rpc\")]",
+        )
         .compile_with_config(
             config,
             &[
@@ -275,6 +281,10 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.core.chain.v1alpha1.Ratio", SERIALIZE),
     (".penumbra.core.transaction.v1alpha1.AuthHash", SERIALIZE),
     (
+        ".penumbra.core.transaction.v1alpha1.AuthorizationData",
+        SERIALIZE,
+    ),
+    (
         ".penumbra.core.transaction.v1alpha1.TransactionPlan",
         SERIALIZE,
     ),
@@ -417,6 +427,9 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     ),
     (".penumbra.view.v1alpha1.SpendableNoteRecord", SERIALIZE),
     (".penumbra.view.v1alpha1.SwapRecord", SERIALIZE),
+    (".penumbra.custody.v1alpha1.AuthorizeRequest", SERIALIZE),
+    (".penumbra.custody.v1alpha1.AuthorizeResponse", SERIALIZE),
+    (".penumbra.custody.v1alpha1.PreAuthorization", SERIALIZE),
 ];
 
 static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
@@ -605,5 +618,13 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (
         ".penumbra.core.transaction.v1alpha1.AuthHash.inner",
         AS_HEX_FOR_BYTES,
+    ),
+    (
+        ".penumbra.custody.v1alpha1.PreAuthorization.Ed25519.vk",
+        AS_BASE64,
+    ),
+    (
+        ".penumbra.custody.v1alpha1.PreAuthorization.Ed25519.sig",
+        AS_BASE64,
     ),
 ];
