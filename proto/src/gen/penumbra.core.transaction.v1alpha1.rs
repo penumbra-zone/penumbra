@@ -400,6 +400,7 @@ pub struct DelegatorVoteBody {
     pub no_with_veto_balance_commitment: ::core::option::Option<super::super::crypto::v1alpha1::BalanceCommitment>,
 }
 /// The data required to authorize a transaction plan.
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuthorizationData {
     /// The computed auth hash for the approved transaction plan.

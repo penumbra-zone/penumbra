@@ -30,20 +30,30 @@ message AuthorizeRequest {
   core.crypto.v1alpha1.AccountID account_id = 2;
 
   // Optionally, pre-authorization data, if required by the custodian.
-  PreAuthorization pre_auth = 3;
+  //
+  // Multiple `PreAuthorization` packets can be included in a single request,
+  // to support multi-party pre-authorizations.
+  repeated PreAuthorization pre_authorizations = 3;
 }
 
 message AuthorizeResponse {
   core.transaction.v1alpha1.AuthorizationData data = 1;
 }
 
-// A pre-authorization packet, containing an Ed25519 signature over a
-// `TransactionPlan`.  This allows a custodian to delegate (partial) signing
-// authority to Ed25519 keys.  Details of how a custodian manages those keys
-// are out-of-scope for the custody protocol and are custodian-specific.
+// A pre-authorization packet.  This allows a custodian to delegate (partial)
+// signing authority to other authorization mechanisms.  Details of how a
+// custodian manages those keys are out-of-scope for the custody protocol and
+// are custodian-specific.
 message PreAuthorization {
-  // The Ed25519 verification key used to verify the signature.
-  bytes vk = 1;
-  // The Ed25519 signature over the `TransactionPlan`.
-  bytes sig = 2;
+  // An Ed25519-based preauthorization, containing an Ed25519 signature over the
+  // `TransactionPlan`.
+  message Ed25519 {
+    // The Ed25519 verification key used to verify the signature.
+    bytes vk = 1;
+    // The Ed25519 signature over the `TransactionPlan`.
+    bytes sig = 2;
+  }
+  oneof pre_authorization {
+    Ed25519 ed25519 = 1;
+  }
 }
