@@ -24,9 +24,9 @@ impl ActionHandler for ProposalWithdraw {
         // but not fixed because we want to change the proposal withdrawal
         // mechanism anyways.
         /*
-        let auth_hash = context.transaction_body().auth_hash();
+        let effect_hash = context.transaction_body().effect_hash();
 
-        check::stateful::proposal_withdraw(&state, &auth_hash, self).await
+        check::stateful::proposal_withdraw(&state, &effect_hash, self).await
         */
         Ok(())
     }

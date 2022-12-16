@@ -12,23 +12,23 @@ impl TransactionPlan {
         mut rng: R,
         sk: &SpendKey,
     ) -> AuthorizationData {
-        let auth_hash = self.auth_hash(sk.full_viewing_key());
+        let effect_hash = self.effect_hash(sk.full_viewing_key());
         let mut spend_auths = Vec::new();
         let mut withdraw_proposal_auths = Vec::new();
         for spend_plan in self.spend_plans() {
             let rsk = sk.spend_auth_key().randomize(&spend_plan.randomizer);
-            let auth_sig = rsk.sign(&mut rng, auth_hash.as_ref());
+            let auth_sig = rsk.sign(&mut rng, effect_hash.as_ref());
             spend_auths.push(auth_sig);
         }
         for withdraw_proposal_plan in self.proposal_withdraws() {
             let rsk = sk
                 .spend_auth_key()
                 .randomize(&withdraw_proposal_plan.randomizer);
-            let auth_sig = rsk.sign(&mut rng, auth_hash.as_ref());
+            let auth_sig = rsk.sign(&mut rng, effect_hash.as_ref());
             withdraw_proposal_auths.push(auth_sig);
         }
         AuthorizationData {
-            auth_hash,
+            effect_hash,
             spend_auths,
             withdraw_proposal_auths,
         }

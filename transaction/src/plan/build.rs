@@ -48,7 +48,7 @@ impl TransactionPlan {
 
         // We build the actions sorted by type, with all spends first, then all
         // outputs, etc.  This order has to align with the ordering in
-        // TransactionPlan::auth_hash, which computes the auth hash of the
+        // TransactionPlan::effect_hash, which computes the auth hash of the
         // transaction we'll build here without actually building it.
 
         // Build the transaction's spends.
@@ -148,8 +148,8 @@ impl TransactionPlan {
 
         // Finally, compute the binding signature and assemble the transaction.
         let binding_signing_key = rdsa::SigningKey::from(synthetic_blinding_factor);
-        let binding_sig = binding_signing_key.sign(rng, auth_data.auth_hash.as_ref());
-        tracing::debug!(bvk = ?rdsa::VerificationKey::from(&binding_signing_key), auth_hash = ?auth_data.auth_hash);
+        let binding_sig = binding_signing_key.sign(rng, auth_data.effect_hash.as_ref());
+        tracing::debug!(bvk = ?rdsa::VerificationKey::from(&binding_signing_key), effect_hash = ?auth_data.effect_hash);
 
         // TODO: add consistency checks?
 

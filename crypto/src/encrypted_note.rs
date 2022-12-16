@@ -1,7 +1,7 @@
 use anyhow::Error;
-use blake2b_simd::Hash;
+
 use bytes::Bytes;
-use decaf377::FieldExt;
+
 use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
@@ -59,16 +59,6 @@ impl EncryptedNote {
         // See "REJECT" attack (CVE-2019-16930) for a similar attack in ZCash
         // Section 4.1 in https://crypto.stanford.edu/timings/pingreject.pdf
         Some(note)
-    }
-
-    pub fn auth_hash(&self) -> Hash {
-        blake2b_simd::Params::default()
-            .personal(b"PAH:note_payload")
-            .to_state()
-            .update(&self.note_commitment.0.to_bytes())
-            .update(&self.ephemeral_key.0)
-            .update(&self.encrypted_note)
-            .finalize()
     }
 }
 

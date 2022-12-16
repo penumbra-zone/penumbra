@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use ark_ff::PrimeField;
-use blake2b_simd::Hash;
+
 use decaf377::Fq;
 use once_cell::sync::Lazy;
 use penumbra_proto::{
@@ -63,20 +63,6 @@ impl BatchSwapOutputData {
             // the same token type. But this is exactly the delta_j_i.
             (delta_1_i, delta_2_i)
         }
-    }
-
-    pub fn auth_hash(&self) -> Hash {
-        blake2b_simd::Params::default()
-            .personal(b"PAH:btchswp_otpt")
-            .to_state()
-            .update(&self.delta_1.to_le_bytes())
-            .update(&self.delta_2.to_le_bytes())
-            .update(&self.lambda_1.to_le_bytes())
-            .update(&self.lambda_2.to_le_bytes())
-            .update(&self.height.to_le_bytes())
-            .update(self.trading_pair.auth_hash().as_bytes())
-            .update(&(self.success as i64).to_le_bytes())
-            .finalize()
     }
 }
 

@@ -6,7 +6,7 @@ use std::{collections::BTreeMap, str::FromStr};
 use penumbra_crypto::{asset::Amount, Address, Balance, Fr, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::{core::transaction::v1alpha1 as pb, Protobuf};
 
-use crate::{plan::TransactionPlan, ActionView, AuthHash, IsAction, TransactionPerspective};
+use crate::{plan::TransactionPlan, ActionView, EffectHash, IsAction, TransactionPerspective};
 
 /// A governance proposal.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -115,7 +115,7 @@ impl ProposalKind {
                         ..Default::default()
                     },
                 )],
-                cancel_transactions: vec![(0, AuthHash::default())],
+                cancel_transactions: vec![(0, EffectHash::default())],
             },
         };
         Proposal {
@@ -156,7 +156,7 @@ pub enum ProposalPayload {
         /// Schedule these new transactions at the given heights.
         schedule_transactions: Vec<(u64, TransactionPlan)>,
         /// Cancel these previously-scheduled transactions at the given heights.
-        cancel_transactions: Vec<(u64, AuthHash)>,
+        cancel_transactions: Vec<(u64, EffectHash)>,
     },
 }
 
@@ -221,10 +221,10 @@ impl From<ProposalPayload> for pb::proposal::Payload {
                         .collect(),
                     cancel_transactions: cancel_transactions
                         .into_iter()
-                        .map(|(scheduled_at_height, auth_hash)| {
+                        .map(|(scheduled_at_height, effect_hash)| {
                             pb::proposal::dao_spend::CancelTransaction {
                                 scheduled_at_height,
-                                auth_hash: Some(auth_hash.into()),
+                                effect_hash: Some(effect_hash.into()),
                             }
                         })
                         .collect(),
@@ -282,7 +282,7 @@ impl TryFrom<pb::proposal::Payload> for ProposalPayload {
                         Ok((
                             inner.scheduled_at_height,
                             inner
-                                .auth_hash
+                                .effect_hash
                                 .ok_or_else(|| {
                                     anyhow::anyhow!("missing auth hash in `DaoSpend` cancel")
                                 })?

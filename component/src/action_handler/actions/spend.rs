@@ -16,14 +16,14 @@ impl ActionHandler for Spend {
     #[instrument(name = "spend", skip(self, context))]
     async fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
         let spend = self;
-        let auth_hash = context.transaction_body().auth_hash();
+        let effect_hash = context.transaction_body().effect_hash();
         let anchor = context.anchor;
 
         // 2. Check spend auth signature using provided spend auth key.
         spend
             .body
             .rk
-            .verify(auth_hash.as_ref(), &spend.auth_sig)
+            .verify(effect_hash.as_ref(), &spend.auth_sig)
             .context("spend auth signature failed to verify")?;
 
         // 3. Check that the proof verifies.

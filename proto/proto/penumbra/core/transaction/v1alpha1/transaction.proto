@@ -10,7 +10,7 @@ import "penumbra/core/dex/v1alpha1/dex.proto";
 import "penumbra/core/governance/v1alpha1/governance.proto";
 
 // An authorization hash for a Penumbra transaction.
-message AuthHash {
+message EffectHash {
   bytes inner = 1;
 }
 
@@ -162,17 +162,17 @@ message ActionView {
 
 // Spends a shielded note.
 message Spend {
-  // The authorizing data for the spend, which is included in the authorization hash used for signing.
+  // The effecting data of the spend.
   SpendBody body = 1;
-  // The spend authorization signature is effecting data.
+  // The authorizing signature for the spend.
   crypto.v1alpha1.SpendAuthSignature auth_sig = 2;
-  // The spend proof is effecting data.
+  // The proof that the spend is well-formed is authorizing data.
   bytes proof = 3;
 }
 
-// The body of a spend description, containing only the "authorizing" data
-// included in the authorization hash used for signing, and not the "effecting"
-// data which is bound to the authorizing data by some other means.
+// The body of a spend description, containing only the effecting data
+// describing changes to the ledger, and not the authorizing data that allows
+// those changes to be performed.
 message SpendBody {
   // A commitment to the value of the input note.
   crypto.v1alpha1.BalanceCommitment balance_commitment = 1;
@@ -184,15 +184,15 @@ message SpendBody {
 
 // Creates a new shielded note.
 message Output {
-  // The authorizing data for the output.
+  // The effecting data for the output.
   OutputBody body = 1;
-  // The output proof is effecting data.
+  // The output proof is authorizing data.
   bytes proof = 2;
 }
 
-// The body of an output description, containing only the "authorizing" data
-// included in the authorization hash used for signing, and not the "effecting"
-// data which is bound to the authorizing data by some other means.
+// The body of an output description, containing only the effecting data
+// describing changes to the ledger, and not the authorizing data that allows
+// those changes to be performed.
 message OutputBody {
   // The minimal data required to scan and process the new output note.
   crypto.v1alpha1.EncryptedNote note_payload = 1;
@@ -231,9 +231,9 @@ message ProposalWithdrawBody {
 }
 
 message ValidatorVote {
-  // The authorizing data for the vote.
+  // The effecting data for the vote.
   ValidatorVoteBody body = 1;
-  // The vote authorization signature is effecting data.
+  // The vote authorization signature is authorizing data.
   crypto.v1alpha1.SpendAuthSignature auth_sig = 2;
 }
 
@@ -249,11 +249,11 @@ message ValidatorVoteBody {
 }
 
 message DelegatorVote {
-  // The authorizing data for the vote, which is included in the authorization hash used for signing.
+  // The effecting data for the vote.
   DelegatorVoteBody body = 1;
-  // The vote authorization signature is effecting data.
+  // The vote authorization signature is authorizing data.
   crypto.v1alpha1.SpendAuthSignature auth_sig = 2;
-  // The vote proof is effecting data.
+  // The vote proof is authorizing data.
   bytes proof = 3;
 }
 
@@ -285,7 +285,7 @@ message DelegatorVoteBody {
 // The data required to authorize a transaction plan.
 message AuthorizationData {
     // The computed auth hash for the approved transaction plan.
-    AuthHash auth_hash = 1;
+    EffectHash effect_hash = 1;
     // The required spend authorizations, returned in the same order as the
     // Spend actions in the original request.
     repeated crypto.v1alpha1.SpendAuthSignature spend_auths = 2;
@@ -506,7 +506,7 @@ message Proposal {
       // The height for which the transaction was scheduled.
       uint64 scheduled_at_height = 1;
       // The auth hash of the transaction to cancel.
-      AuthHash auth_hash = 2;
+      EffectHash effect_hash = 2;
     }
   }
 }
