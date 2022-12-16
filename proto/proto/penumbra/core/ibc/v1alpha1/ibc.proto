@@ -4,9 +4,6 @@ package penumbra.core.ibc.v1alpha1;
 
 import "penumbra/core/crypto/v1alpha1/crypto.proto";
 
-import "ibc/core/connection/v1/tx.proto";
-import "ibc/core/channel/v1/tx.proto";
-import "ibc/core/client/v1/tx.proto";
 import "ibc/core/client/v1/client.proto";
 
 import "google/protobuf/any.proto";
