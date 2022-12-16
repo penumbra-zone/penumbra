@@ -543,6 +543,7 @@ dependencies = [
  "prost",
  "prost-build",
  "prost-types",
+ "prost-wkt-build",
  "tonic-build",
 ]
 
@@ -670,6 +671,19 @@ checksum = "4dfaa718ad76a44b3415e6c4d53b17c8f99160dcb3a99b10470fce8ad43f6e3e"
 dependencies = [
  "bytes",
  "prost",
+]
+
+[[package]]
+name = "prost-wkt-build"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "40fa7a9d6ce3a2641ceeecba9be52684b988672ac52cbdba4fd08b4a7117cad3"
+dependencies = [
+ "heck",
+ "prost",
+ "prost-build",
+ "prost-types",
+ "quote",
 ]
 
 [[package]]
