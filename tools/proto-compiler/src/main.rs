@@ -51,7 +51,7 @@ fn main() -> Result<()> {
     // See https://docs.rs/prost-build/0.5.0/prost_build/struct.Config.html#method.extern_path
     config.extern_path(".ibc", "::ibc_proto::ibc");
     config.extern_path(".ics23", "::ics23");
-    config.extern_path(".google.protobuf.Any", "::prost_wkt_types::Any");
+    //    config.extern_path(".google.protobuf.Any", "::prost_wkt_types::Any");
     // The same applies for some of the tendermint types.
     // config.extern_path(
     //     ".tendermint.types.Validator",
@@ -137,6 +137,7 @@ static AS_BECH32_FULL_VIEWING_KEY: &str =
     r#"#[serde(with = "crate::serializers::bech32str::full_viewing_key")]"#;
 static AS_BECH32_LP_ID: &str = r#"#[serde(with = "crate::serializers::bech32str::lp_id")]"#;
 static AS_VOTE: &str = r#"#[serde(with = "crate::serializers::vote")]"#;
+static AS_ANY: &str = r#"#[serde(with = "crate::serializers::prost_any")]"#;
 
 static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.core.stake.v1alpha1.Validator", SERIALIZE),
@@ -629,4 +630,5 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         ".penumbra.custody.v1alpha1.PreAuthorization.Ed25519.sig",
         AS_BASE64,
     ),
+    ("penumbra.core.ibc.v1alpha1.IbcAction.raw_action", AS_ANY),
 ];
