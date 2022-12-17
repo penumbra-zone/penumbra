@@ -1,7 +1,6 @@
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use subtle_encoding::base64;
 
-/// Deserialize base64string into Vec<u8>
 pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<prost_types::Any>, D::Error>
 where
     D: Deserializer<'de>,
