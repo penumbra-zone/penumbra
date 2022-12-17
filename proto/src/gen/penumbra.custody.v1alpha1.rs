@@ -1,11 +1,17 @@
-#[derive(::serde::Deserialize, ::serde::Serialize, Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuthorizeRequest {
     /// The transaction plan to authorize.
     #[prost(message, optional, tag = "1")]
-    pub plan: ::core::option::Option<super::super::core::transaction::v1alpha1::TransactionPlan>,
+    pub plan: ::core::option::Option<
+        super::super::core::transaction::v1alpha1::TransactionPlan,
+    >,
     /// Identifies the FVK (and hence the spend authorization key) to use for signing.
     #[prost(message, optional, tag = "2")]
-    pub account_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AccountId>,
+    pub account_id: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AccountId,
+    >,
     /// Optionally, pre-authorization data, if required by the custodian.
     ///
     /// Multiple `PreAuthorization` packets can be included in a single request,
@@ -13,16 +19,22 @@ pub struct AuthorizeRequest {
     #[prost(message, repeated, tag = "3")]
     pub pre_authorizations: ::prost::alloc::vec::Vec<PreAuthorization>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize, Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuthorizeResponse {
     #[prost(message, optional, tag = "1")]
-    pub data: ::core::option::Option<super::super::core::transaction::v1alpha1::AuthorizationData>,
+    pub data: ::core::option::Option<
+        super::super::core::transaction::v1alpha1::AuthorizationData,
+    >,
 }
 /// A pre-authorization packet.  This allows a custodian to delegate (partial)
 /// signing authority to other authorization mechanisms.  Details of how a
 /// custodian manages those keys are out-of-scope for the custody protocol and
 /// are custodian-specific.
-#[derive(::serde::Deserialize, ::serde::Serialize, Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PreAuthorization {
     #[prost(oneof = "pre_authorization::PreAuthorization", tags = "1")]
     pub pre_authorization: ::core::option::Option<pre_authorization::PreAuthorization>,
@@ -31,7 +43,9 @@ pub struct PreAuthorization {
 pub mod pre_authorization {
     /// An Ed25519-based preauthorization, containing an Ed25519 signature over the
     /// `TransactionPlan`.
-    #[derive(::serde::Deserialize, ::serde::Serialize, Clone, PartialEq, ::prost::Message)]
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Ed25519 {
         /// The Ed25519 verification key used to verify the signature.
         #[prost(bytes = "vec", tag = "1")]
@@ -42,7 +56,9 @@ pub mod pre_authorization {
         #[serde(with = "crate::serializers::base64str")]
         pub sig: ::prost::alloc::vec::Vec<u8>,
     }
-    #[derive(::serde::Deserialize, ::serde::Serialize, Clone, PartialEq, ::prost::Oneof)]
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum PreAuthorization {
         #[prost(message, tag = "1")]
         Ed25519(Ed25519),
@@ -52,8 +68,8 @@ pub mod pre_authorization {
 #[cfg(feature = "rpc")]
 pub mod custody_protocol_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::http::Uri;
     use tonic::codegen::*;
+    use tonic::codegen::http::Uri;
     /// The custody protocol is used by a wallet client to request authorization for
     /// a transaction they've constructed.
     ///
@@ -108,10 +124,13 @@ pub mod custody_protocol_service_client {
                     <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
-                Into<StdError> + Send + Sync,
+            <T as tonic::codegen::Service<
+                http::Request<tonic::body::BoxBody>,
+            >>::Error: Into<StdError> + Send + Sync,
         {
-            CustodyProtocolServiceClient::new(InterceptedService::new(inner, interceptor))
+            CustodyProtocolServiceClient::new(
+                InterceptedService::new(inner, interceptor),
+            )
         }
         /// Compress requests with the given encoding.
         ///
@@ -133,12 +152,15 @@ pub mod custody_protocol_service_client {
             &mut self,
             request: impl tonic::IntoRequest<super::AuthorizeRequest>,
         ) -> Result<tonic::Response<super::AuthorizeResponse>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.custody.v1alpha1.CustodyProtocolService/Authorize",
@@ -191,7 +213,10 @@ pub mod custody_protocol_service_server {
                 send_compression_encodings: Default::default(),
             }
         }
-        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(
+            inner: T,
+            interceptor: F,
+        ) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -210,7 +235,8 @@ pub mod custody_protocol_service_server {
             self
         }
     }
-    impl<T, B> tonic::codegen::Service<http::Request<B>> for CustodyProtocolServiceServer<T>
+    impl<T, B> tonic::codegen::Service<http::Request<B>>
+    for CustodyProtocolServiceServer<T>
     where
         T: CustodyProtocolService,
         B: Body + Send + 'static,
@@ -219,7 +245,10 @@ pub mod custody_protocol_service_server {
         type Response = http::Response<tonic::body::BoxBody>;
         type Error = std::convert::Infallible;
         type Future = BoxFuture<Self::Response, Self::Error>;
-        fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        fn poll_ready(
+            &mut self,
+            _cx: &mut Context<'_>,
+        ) -> Poll<Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
@@ -228,11 +257,15 @@ pub mod custody_protocol_service_server {
                 "/penumbra.custody.v1alpha1.CustodyProtocolService/Authorize" => {
                     #[allow(non_camel_case_types)]
                     struct AuthorizeSvc<T: CustodyProtocolService>(pub Arc<T>);
-                    impl<T: CustodyProtocolService>
-                        tonic::server::UnaryService<super::AuthorizeRequest> for AuthorizeSvc<T>
-                    {
+                    impl<
+                        T: CustodyProtocolService,
+                    > tonic::server::UnaryService<super::AuthorizeRequest>
+                    for AuthorizeSvc<T> {
                         type Response = super::AuthorizeResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::AuthorizeRequest>,
@@ -249,23 +282,28 @@ pub mod custody_protocol_service_server {
                         let inner = inner.0;
                         let method = AuthorizeSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
-                            accept_compression_encodings,
-                            send_compression_encodings,
-                        );
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
                 }
-                _ => Box::pin(async move {
-                    Ok(http::Response::builder()
-                        .status(200)
-                        .header("grpc-status", "12")
-                        .header("content-type", "application/grpc")
-                        .body(empty_body())
-                        .unwrap())
-                }),
+                _ => {
+                    Box::pin(async move {
+                        Ok(
+                            http::Response::builder()
+                                .status(200)
+                                .header("grpc-status", "12")
+                                .header("content-type", "application/grpc")
+                                .body(empty_body())
+                                .unwrap(),
+                        )
+                    })
+                }
             }
         }
     }
@@ -289,7 +327,8 @@ pub mod custody_protocol_service_server {
             write!(f, "{:?}", self.0)
         }
     }
-    impl<T: CustodyProtocolService> tonic::server::NamedService for CustodyProtocolServiceServer<T> {
+    impl<T: CustodyProtocolService> tonic::server::NamedService
+    for CustodyProtocolServiceServer<T> {
         const NAME: &'static str = "penumbra.custody.v1alpha1.CustodyProtocolService";
     }
 }
