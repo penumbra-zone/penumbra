@@ -16,7 +16,7 @@ pub use note_source::NoteSource;
 pub use sync::{CompactBlock, StatePayload};
 pub use view::{StateReadExt, StateWriteExt};
 
-/// Hardcoded test data.
+/// Hardcoded test data used by the `Default` genesis state.
 pub mod test_keys {
     use once_cell::sync::Lazy;
     use penumbra_crypto::{keys::SpendKey, Address, FullViewingKey};
