@@ -100,6 +100,7 @@ pub trait Ics20TransferWriteExt: StateWrite {
     }
 }
 
+
 impl<T: StateWrite> Ics20TransferWriteExt for T {}
 
 // TODO: Ics20 implementation.

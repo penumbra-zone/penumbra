@@ -33,6 +33,7 @@ where
 // that shouldn't depend on the Penumbra proto framework.
 
 use crate::core::crypto::v1alpha1::{BindingSignature, SpendAuthSignature, SpendVerificationKey};
+use crate::core::ibc::v1alpha1::IbcAction;
 use decaf377_rdsa::{Binding, Signature, SpendAuth, VerificationKey};
 use ibc_rs::clients::ics07_tendermint;
 
@@ -172,3 +173,19 @@ impl Protobuf<RawHeight> for Height {}
 // TODO(erwan): create ticket to switch to a trait object based approach
 impl Protobuf<Any> for ics07_tendermint::client_state::ClientState {}
 impl Protobuf<Any> for ics07_tendermint::consensus_state::ConsensusState {}
+
+impl<T> From<T> for IbcAction
+where
+    T: ibc::tx_msg::Msg,
+{
+    fn from(v: T) -> Self {
+        let any = prost_types::Any {
+            type_url: v.type_url(),
+            value: v.to_any().value,
+        };
+
+        Self {
+            raw_action: Some(any),
+        }
+    }
+}

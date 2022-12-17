@@ -518,13 +518,12 @@ mod tests {
     use crate::TempStorageExt;
 
     use super::*;
-    use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
-    use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
+    use ibc_proto::protobuf::Protobuf;
     use penumbra_chain::StateWriteExt;
     use penumbra_proto::core::ibc::v1alpha1::IbcAction;
-    use penumbra_proto::Message;
     use penumbra_storage::{ArcStateExt, TempStorage};
     use penumbra_transaction::Transaction;
+    use std::str::FromStr;
     use tendermint::Time;
 
     // test that we can create and update a light client.
@@ -555,7 +554,7 @@ mod tests {
             base64::decode(include_str!("../../ibc/test/create_client.msg").replace('\n', ""))
                 .unwrap();
         let msg_create_stargaze_client =
-            RawMsgCreateClient::decode(msg_create_client_stargaze_raw.as_slice()).unwrap();
+            MsgCreateClient::decode(msg_create_client_stargaze_raw.as_slice()).unwrap();
 
         // base64 encoded MsgUpdateClient that was used to issue the first update to the in-use stargaze light client on the cosmos hub:
         // https://cosmos.bigdipper.live/transactions/24F1E19F218CAF5CA41D6E0B653E85EB965843B1F3615A6CD7BCF336E6B0E707
@@ -563,15 +562,12 @@ mod tests {
             base64::decode(include_str!("../../ibc/test/update_client_1.msg").replace('\n', ""))
                 .unwrap();
         let mut msg_update_stargaze_client =
-            RawMsgUpdateClient::decode(msg_update_client_stargaze_raw.as_slice()).unwrap();
-        msg_update_stargaze_client.client_id = "07-tendermint-0".to_string();
+            MsgUpdateClient::decode(msg_update_client_stargaze_raw.as_slice()).unwrap();
 
-        let create_client_action = IbcAction {
-            raw_action: Some(msg_create_stargaze_client.into()),
-        };
-        let update_client_action = IbcAction {
-            raw_action: Some(msg_update_stargaze_client.into()),
-        };
+        msg_update_stargaze_client.client_id = ClientId::from_str("07-tendermint-0").unwrap();
+
+        let create_client_action: IbcAction = msg_create_stargaze_client.into();
+        let update_client_action: IbcAction = msg_update_stargaze_client.into();
 
         // The ActionHandler trait provides the transaction the action was part
         // of as context available during verification.  This is used, for instance,
@@ -605,11 +601,9 @@ mod tests {
             base64::decode(include_str!("../../ibc/test/update_client_2.msg").replace('\n', ""))
                 .unwrap();
 
-        let mut second_update = RawMsgUpdateClient::decode(msg_update_second.as_slice()).unwrap();
-        second_update.client_id = "07-tendermint-0".to_string();
-        let second_update_client_action = IbcAction {
-            raw_action: Some(second_update.into()),
-        };
+        let mut second_update = MsgUpdateClient::decode(msg_update_second.as_slice()).unwrap();
+        second_update.client_id = ClientId::from_str("07-tendermint-0").unwrap();
+        let second_update_client_action: IbcAction = second_update.into();
 
         second_update_client_action
             .check_stateless(dummy_context.clone())
