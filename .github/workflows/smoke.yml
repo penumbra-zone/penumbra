@@ -8,6 +8,9 @@ on:
 jobs:
   smoke_test:
     runs-on: buildjet-16vcpu-ubuntu-2004
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     environment: smoke-test
     steps:
       - uses: actions/checkout@v2
