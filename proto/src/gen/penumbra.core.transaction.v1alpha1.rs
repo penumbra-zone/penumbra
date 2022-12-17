@@ -4,7 +4,7 @@
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EffectHash {
-    #[prost(bytes="bytes", tag="1")]
+    #[prost(bytes = "bytes", tag = "1")]
     #[serde(with = "crate::serializers::hexstr_bytes")]
     pub inner: ::prost::bytes::Bytes,
 }
@@ -248,27 +248,16 @@ pub mod action_view {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Spend {
-<<<<<<< HEAD
     /// The effecting data of the spend.
-    #[prost(message, optional, tag="1")]
-    pub body: ::core::option::Option<SpendBody>,
-    /// The authorizing signature for the spend.
-    #[prost(message, optional, tag="2")]
-    pub auth_sig: ::core::option::Option<super::super::crypto::v1alpha1::SpendAuthSignature>,
-    /// The proof that the spend is well-formed is authorizing data.
-    #[prost(bytes="bytes", tag="3")]
-=======
-    /// The authorizing data for the spend, which is included in the authorization hash used for signing.
     #[prost(message, optional, tag = "1")]
     pub body: ::core::option::Option<SpendBody>,
-    /// The spend authorization signature is effecting data.
+    /// The authorizing signature for the spend.
     #[prost(message, optional, tag = "2")]
     pub auth_sig: ::core::option::Option<
         super::super::crypto::v1alpha1::SpendAuthSignature,
     >,
-    /// The spend proof is effecting data.
+    /// The proof that the spend is well-formed is authorizing data.
     #[prost(bytes = "bytes", tag = "3")]
->>>>>>> 25400281 (use wkt-types 0.3.4)
     #[serde(with = "crate::serializers::base64str_bytes")]
     pub proof: ::prost::bytes::Bytes,
 }
@@ -299,10 +288,10 @@ pub struct SpendBody {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Output {
     /// The effecting data for the output.
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub body: ::core::option::Option<OutputBody>,
     /// The output proof is authorizing data.
-    #[prost(bytes="bytes", tag="2")]
+    #[prost(bytes = "bytes", tag = "2")]
     #[serde(with = "crate::serializers::base64str_bytes")]
     pub proof: ::prost::bytes::Bytes,
 }
@@ -381,11 +370,13 @@ pub struct ProposalWithdrawBody {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorVote {
     /// The effecting data for the vote.
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub body: ::core::option::Option<ValidatorVoteBody>,
     /// The vote authorization signature is authorizing data.
-    #[prost(message, optional, tag="2")]
-    pub auth_sig: ::core::option::Option<super::super::crypto::v1alpha1::SpendAuthSignature>,
+    #[prost(message, optional, tag = "2")]
+    pub auth_sig: ::core::option::Option<
+        super::super::crypto::v1alpha1::SpendAuthSignature,
+    >,
 }
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -413,13 +404,15 @@ pub struct ValidatorVoteBody {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DelegatorVote {
     /// The effecting data for the vote.
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub body: ::core::option::Option<DelegatorVoteBody>,
     /// The vote authorization signature is authorizing data.
-    #[prost(message, optional, tag="2")]
-    pub auth_sig: ::core::option::Option<super::super::crypto::v1alpha1::SpendAuthSignature>,
+    #[prost(message, optional, tag = "2")]
+    pub auth_sig: ::core::option::Option<
+        super::super::crypto::v1alpha1::SpendAuthSignature,
+    >,
     /// The vote proof is authorizing data.
-    #[prost(bytes="bytes", tag="3")]
+    #[prost(bytes = "bytes", tag = "3")]
     pub proof: ::prost::bytes::Bytes,
 }
 #[derive(::serde::Deserialize, ::serde::Serialize)]
@@ -466,10 +459,11 @@ pub struct DelegatorVoteBody {
 }
 /// The data required to authorize a transaction plan.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuthorizationData {
     /// The computed auth hash for the approved transaction plan.
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub effect_hash: ::core::option::Option<EffectHash>,
     /// The required spend authorizations, returned in the same order as the
     /// Spend actions in the original request.
@@ -824,7 +818,7 @@ pub mod proposal {
             #[prost(uint64, tag = "1")]
             pub scheduled_at_height: u64,
             /// The auth hash of the transaction to cancel.
-            #[prost(message, optional, tag="2")]
+            #[prost(message, optional, tag = "2")]
             pub effect_hash: ::core::option::Option<super::super::EffectHash>,
         }
     }
