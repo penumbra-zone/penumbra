@@ -14,28 +14,3 @@ spec:
     port: 1251
     type: HTTP
     requestPath: /
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ include "penumbra.fullname" . }}
-  labels:
-    network: "{{ $.Values.network }}"
-    {{- include "penumbra.labels" $ | nindent 4 }}
-  annotations:
-    cloud.google.com/backend-config: '{"default": "{{ include "penumbra.fullname" . }}-backend-config"}'
-    cloud.google.com/app-protocols: '{"grpc":"HTTP2"}'
-spec:
-  type: NodePort
-  selector:
-    network: "{{ $.Values.network }}"
-    type: fullnode
-  ports:
-    - protocol: TCP
-      port: 26657
-      targetPort: rpc
-      name: rpc
-    - protocol: TCP
-      port: 8080
-      targetPort: grpc
-      name: grpc
