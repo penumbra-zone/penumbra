@@ -24,7 +24,7 @@ services:
   # in production, users will want to bring their own monitoring stack, rather
   # than running a separate prometheus and grafana instance on every node.
   prometheus:
-    image: "prom/prometheus:latest"
+    image: "docker.io/prom/prometheus:latest"
     ports:
       - '9090:9090'
     volumes:
@@ -37,7 +37,7 @@ services:
       - monitoring
 
   grafana:
-    image: "grafana/grafana:latest"
+    image: "docker.io/grafana/grafana:latest"
     ports:
       - '3000'
     volumes:

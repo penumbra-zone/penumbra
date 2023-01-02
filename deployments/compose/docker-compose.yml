@@ -15,13 +15,15 @@ services:
     networks:
       localnet:
         ipv4_address: 192.167.10.10
+    user: "${UID:-1000}"
     ports:
       - "26658:26658"
       - "8080:8080"
 
   # The Tendermint node
   tendermint-node0:
-    image: "tendermint/tendermint:v0.34.23"
+    image: "docker.io/tendermint/tendermint:v0.34.23"
+    user: "${UID:-1000}"
     container_name: tendermint-node0
     ports:
       - "26656:26656"
