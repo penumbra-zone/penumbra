@@ -3,7 +3,7 @@
 Follow the [same steps](https://guide.penumbra.zone/main/pcli/install.html#cloning-the-repository) to update to the latest testnet [release](https://github.com/penumbra-zone/penumbra/releases)
 
 ```
-cd penumbra && git fetch && git checkout 038-kalyke
+cd penumbra && git fetch && git checkout 039-praxidike
 ```
 
 Once again, build `pcli` with cargo
