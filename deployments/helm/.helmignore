@@ -21,3 +21,18 @@
 .idea/
 *.tmproj
 .vscode/
+
+# Flat files generated for testnet, but not used in interpolation.
+# We selectively omit these to stay under the 1MB limit for Secrets.
+pdcli/node0/
+pdcli/node1/
+pdcli/vals.json
+
+pdcli/.penumbra/testnet_data/node0/tendermint/data/
+pdcli/.penumbra/testnet_data/node0/tendermint/config/config.toml
+pdcli/.penumbra/testnet_data/node0/pd/
+
+pdcli/.penumbra/testnet_data/node1/tendermint/data/
+pdcli/.penumbra/testnet_data/node1/tendermint/config/config.toml
+pdcli/.penumbra/testnet_data/node1/tendermint/config/genesis.json
+pdcli/.penumbra/testnet_data/node1/pd/
