@@ -24,38 +24,50 @@ impl TryFrom<pbt::OutputView> for OutputView {
     type Error = anyhow::Error;
 
     fn try_from(v: pbt::OutputView) -> Result<Self, Self::Error> {
-        let output = v
-            .output
+        match v
+            .output_view
             .ok_or_else(|| anyhow::anyhow!("missing output field"))?
-            .try_into()?;
-
-        match v.note {
-            Some(note) => Ok(OutputView::Visible {
-                output,
-                note: note.try_into()?,
-                payload_key: v.payload_key.as_ref().try_into()?,
+        {
+            pbt::output_view::OutputView::Visible(x) => Ok(OutputView::Visible {
+                output: x
+                    .output
+                    .ok_or_else(|| anyhow::anyhow!("missing output field"))?
+                    .try_into()?,
+                note: x
+                    .note
+                    .ok_or_else(|| anyhow::anyhow!("missing note field"))?
+                    .try_into()?,
+                payload_key: x.payload_key.as_ref().try_into()?,
             }),
-            None => Ok(OutputView::Opaque { output }),
+            pbt::output_view::OutputView::Opaque(x) => Ok(OutputView::Opaque {
+                output: x
+                    .output
+                    .ok_or_else(|| anyhow::anyhow!("missing output field"))?
+                    .try_into()?,
+            }),
         }
     }
 }
 
 impl From<OutputView> for pbt::OutputView {
     fn from(v: OutputView) -> Self {
+        use pbt::output_view as ov;
         match v {
             OutputView::Visible {
                 output,
                 note,
                 payload_key,
             } => Self {
-                output: Some(output.into()),
-                note: Some(note.into()),
-                payload_key: payload_key.to_vec().into(),
+                output_view: Some(ov::OutputView::Visible(ov::Visible {
+                    output: Some(output.into()),
+                    note: Some(note.into()),
+                    payload_key: payload_key.to_vec().into(),
+                })),
             },
             OutputView::Opaque { output } => Self {
-                output: Some(output.into()),
-                note: None,
-                payload_key: Default::default(),
+                output_view: Some(ov::OutputView::Opaque(ov::Opaque {
+                    output: Some(output.into()),
+                })),
             },
         }
     }

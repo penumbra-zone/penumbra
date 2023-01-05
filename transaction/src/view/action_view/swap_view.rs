@@ -23,34 +23,47 @@ impl TryFrom<pb::SwapView> for SwapView {
     type Error = anyhow::Error;
 
     fn try_from(v: pb::SwapView) -> Result<Self, Self::Error> {
-        let swap = v
-            .swap
+        match v
+            .swap_view
             .ok_or_else(|| anyhow::anyhow!("missing swap field"))?
-            .try_into()?;
-
-        match v.swap_plaintext {
-            Some(swap_plaintext) => Ok(SwapView::Visible {
-                swap,
-                swap_plaintext: swap_plaintext.try_into()?,
+        {
+            pb::swap_view::SwapView::Visible(x) => Ok(SwapView::Visible {
+                swap: x
+                    .swap
+                    .ok_or_else(|| anyhow::anyhow!("missing swap field"))?
+                    .try_into()?,
+                swap_plaintext: x
+                    .swap_plaintext
+                    .ok_or_else(|| anyhow::anyhow!("missing swap plaintext field"))?
+                    .try_into()?,
             }),
-            None => Ok(SwapView::Opaque { swap }),
+            pb::swap_view::SwapView::Opaque(x) => Ok(SwapView::Opaque {
+                swap: x
+                    .swap
+                    .ok_or_else(|| anyhow::anyhow!("missing swap field"))?
+                    .try_into()?,
+            }),
         }
     }
 }
 
 impl From<SwapView> for pb::SwapView {
     fn from(v: SwapView) -> Self {
+        use pb::swap_view as sv;
         match v {
             SwapView::Visible {
                 swap,
                 swap_plaintext,
             } => Self {
-                swap: Some(swap.into()),
-                swap_plaintext: Some(swap_plaintext.into()),
+                swap_view: Some(sv::SwapView::Visible(sv::Visible {
+                    swap: Some(swap.into()),
+                    swap_plaintext: Some(swap_plaintext.into()),
+                })),
             },
             SwapView::Opaque { swap } => Self {
-                swap: Some(swap.into()),
-                swap_plaintext: None,
+                swap_view: Some(sv::SwapView::Opaque(sv::Opaque {
+                    swap: Some(swap.into()),
+                })),
             },
         }
     }

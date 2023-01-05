@@ -167,21 +167,77 @@ pub struct SwapClaimPlan {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapView {
-    #[prost(message, optional, tag = "1")]
-    pub swap: ::core::option::Option<Swap>,
-    #[prost(message, optional, tag = "3")]
-    pub swap_plaintext: ::core::option::Option<SwapPlaintext>,
+    #[prost(oneof = "swap_view::SwapView", tags = "1, 2")]
+    pub swap_view: ::core::option::Option<swap_view::SwapView>,
+}
+/// Nested message and enum types in `SwapView`.
+pub mod swap_view {
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Visible {
+        #[prost(message, optional, tag = "1")]
+        pub swap: ::core::option::Option<super::Swap>,
+        #[prost(message, optional, tag = "3")]
+        pub swap_plaintext: ::core::option::Option<super::SwapPlaintext>,
+    }
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Opaque {
+        #[prost(message, optional, tag = "1")]
+        pub swap: ::core::option::Option<super::Swap>,
+    }
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum SwapView {
+        #[prost(message, tag = "1")]
+        Visible(Visible),
+        #[prost(message, tag = "2")]
+        Opaque(Opaque),
+    }
 }
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapClaimView {
-    #[prost(message, optional, tag = "1")]
-    pub swap_claim: ::core::option::Option<SwapClaim>,
-    #[prost(message, optional, tag = "2")]
-    pub output_1: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
-    #[prost(message, optional, tag = "3")]
-    pub output_2: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
+    #[prost(oneof = "swap_claim_view::SwapClaimView", tags = "1, 2")]
+    pub swap_claim_view: ::core::option::Option<swap_claim_view::SwapClaimView>,
+}
+/// Nested message and enum types in `SwapClaimView`.
+pub mod swap_claim_view {
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Visible {
+        #[prost(message, optional, tag = "1")]
+        pub swap_claim: ::core::option::Option<super::SwapClaim>,
+        #[prost(message, optional, tag = "2")]
+        pub output_1: ::core::option::Option<
+            super::super::super::crypto::v1alpha1::Note,
+        >,
+        #[prost(message, optional, tag = "3")]
+        pub output_2: ::core::option::Option<
+            super::super::super::crypto::v1alpha1::Note,
+        >,
+    }
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Opaque {
+        #[prost(message, optional, tag = "1")]
+        pub swap_claim: ::core::option::Option<super::SwapClaim>,
+    }
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum SwapClaimView {
+        #[prost(message, tag = "1")]
+        Visible(Visible),
+        #[prost(message, tag = "2")]
+        Opaque(Opaque),
+    }
 }
 /// Holds two asset IDs. Ordering doesn't reflect trading direction. Instead, we
 /// require `asset_1 < asset_2` as field elements, to ensure a canonical

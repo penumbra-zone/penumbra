@@ -115,48 +115,64 @@ message TransactionView {
   optional string memo = 6;
 }
 
-message SpendView {
-    Spend spend = 1;
-    crypto.v1alpha1.Note note = 2;
-}
-
-message OutputView {
-    Output output = 1;
-    crypto.v1alpha1.Note note = 2;
-    bytes payload_key = 3;
-}
-
 // A view of a specific state change action performed by a transaction.
 message ActionView {
   oneof action_view {
+    // Action types with visible/opaque variants
     SpendView spend = 1;
     OutputView output = 2;
     dex.v1alpha1.SwapView swap = 3;
     dex.v1alpha1.SwapClaimView swap_claim = 4;
-
+    // Action types without visible/opaque variants
     stake.v1alpha1.ValidatorDefinition validator_definition = 16;
     ibc.v1alpha1.IbcAction ibc_action = 17;
-
     // Governance:
     ProposalSubmit proposal_submit = 18;
     ProposalWithdraw proposal_withdraw = 19;
     ValidatorVote validator_vote = 20;
     // DelegatorVote delegator_vote = 21;
-
     dex.v1alpha1.PositionOpen position_open = 30;
     dex.v1alpha1.PositionClose position_close = 31;
     dex.v1alpha1.PositionWithdraw position_withdraw = 32;
     dex.v1alpha1.PositionRewardClaim position_reward_claim = 34;
-
     stake.v1alpha1.Delegate delegate = 41;
     stake.v1alpha1.Undelegate undelegate = 42;
     // TODO: we have no way to recover the opening of the undelegate_claim's
     // balance commitment, and can only infer the value from looking at the rest
     // of the transaction. is that fine?
     stake.v1alpha1.UndelegateClaim undelegate_claim = 43;
-
     ibc.v1alpha1.Ics20Withdrawal ics20_withdrawal = 200;
 
+  }
+}
+
+message SpendView {
+  message Visible {
+    Spend spend = 1;
+    crypto.v1alpha1.Note note = 2;
+  }
+  message Opaque {
+    Spend spend = 1;
+  }
+  oneof spend_view {
+    Visible visible = 1;
+    Opaque opaque = 2;
+  }
+}
+
+message OutputView {
+  message Visible {
+    Output output = 1;
+    crypto.v1alpha1.Note note = 2;
+    bytes payload_key = 3;
+  }
+
+  message Opaque {
+    Output output = 1;
+  }
+  oneof output_view {
+    Visible visible = 1;
+    Opaque opaque = 2;
   }
 }
 
