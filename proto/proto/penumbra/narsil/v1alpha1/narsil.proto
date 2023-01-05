@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package penumbra.narsil.v1alpha1;
+
+// https://www.ietf.org/archive/id/draft-irtf-cfrg-frost-11.html
+
+// Config data
+
+message ConsensusKey {
+    bytes inner = 1;
+}
+
+message ShardOperator {
+    // The validator's consensus pubkey for use in Tendermint (ed25519)
+    ConsensusKey consensus_key = 1;
+    // A label for the shard.
+    string label = 2;
+}
+
+message AccountInfo {
+    // The full viewing key for the shared account.
+    // 
+    // The spend verification key component is the `PK` in the FROST I-D.
+    core.crypto.FullViewingKey full_viewing_key = 1;
+    repeated ShardInfo participants = 2;
+}
+
+message ShardInfo {
+    uint32 index = 1;
+    // The shard verification key, corresponding to `PK_i` in the FROST I-D
+    core.crypto.SpendVerificationKey shard_verification_key = 2;
+}
+
+// On-chain data structures
+
+// - how to identify requests? index by effect hash? number them?
+// - how to identify the committee for each signing run?
+// - how to allow multiple signing runs per request?
+// - how to handle failures / timeouts of signing runs?
+
+// - how to record preauth permissions?
+// - how to update preauth permissions?
+
+// Data flow in steady state:
+//
+// - AuthorizeRequest sent to Narsil node
+// - node will check preauths (against what?)
+// - AuthorizeRequest included in ledger 
+// - shard observes auth request and begins FROST
+// - ledger is frost coordinator and observes completion
+// - node watches for set of auth signatures, responds to AuthorizeRequest
+
+
+message Transaction {
+  oneof transaction {
+    core.custody.AuthorizeRequest auth_request = 1;
+  }
+}
+
+message SigningKeyShare {
+    bytes inner = 1;
+}
+
+// FROST messages
+
+// TODO: need to have "inner" and "outer" types, for a few reasons:
+// - each auth request has multiple required signatures
+// - shards should have a way to explicitly reject auth requests, rather than just ignoring them
+
+message FrostCommitment {
+    bytes payload = 1;
+}
+
+message FrostSignatureShare {
+    bytes payload = 1;
+}
