@@ -165,26 +165,6 @@ pub struct TransactionView {
     #[prost(string, optional, tag = "6")]
     pub memo: ::core::option::Option<::prost::alloc::string::String>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SpendView {
-    #[prost(message, optional, tag = "1")]
-    pub spend: ::core::option::Option<Spend>,
-    #[prost(message, optional, tag = "2")]
-    pub note: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
-}
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct OutputView {
-    #[prost(message, optional, tag = "1")]
-    pub output: ::core::option::Option<Output>,
-    #[prost(message, optional, tag = "2")]
-    pub note: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
-    #[prost(bytes = "bytes", tag = "3")]
-    pub payload_key: ::prost::bytes::Bytes,
-}
 /// A view of a specific state change action performed by a transaction.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -202,6 +182,7 @@ pub mod action_view {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum ActionView {
+        /// Action types with visible/opaque variants
         #[prost(message, tag = "1")]
         Spend(super::SpendView),
         #[prost(message, tag = "2")]
@@ -210,6 +191,7 @@ pub mod action_view {
         Swap(super::super::super::dex::v1alpha1::SwapView),
         #[prost(message, tag = "4")]
         SwapClaim(super::super::super::dex::v1alpha1::SwapClaimView),
+        /// Action types without visible/opaque variants
         #[prost(message, tag = "16")]
         ValidatorDefinition(super::super::super::stake::v1alpha1::ValidatorDefinition),
         #[prost(message, tag = "17")]
@@ -219,9 +201,9 @@ pub mod action_view {
         ProposalSubmit(super::ProposalSubmit),
         #[prost(message, tag = "19")]
         ProposalWithdraw(super::ProposalWithdraw),
-        /// DelegatorVote delegator_vote = 21;
         #[prost(message, tag = "20")]
         ValidatorVote(super::ValidatorVote),
+        /// DelegatorVote delegator_vote = 21;
         #[prost(message, tag = "30")]
         PositionOpen(super::super::super::dex::v1alpha1::PositionOpen),
         #[prost(message, tag = "31")]
@@ -241,6 +223,78 @@ pub mod action_view {
         UndelegateClaim(super::super::super::stake::v1alpha1::UndelegateClaim),
         #[prost(message, tag = "200")]
         Ics20Withdrawal(super::super::super::ibc::v1alpha1::Ics20Withdrawal),
+    }
+}
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SpendView {
+    #[prost(oneof = "spend_view::SpendView", tags = "1, 2")]
+    pub spend_view: ::core::option::Option<spend_view::SpendView>,
+}
+/// Nested message and enum types in `SpendView`.
+pub mod spend_view {
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Visible {
+        #[prost(message, optional, tag = "1")]
+        pub spend: ::core::option::Option<super::Spend>,
+        #[prost(message, optional, tag = "2")]
+        pub note: ::core::option::Option<super::super::super::crypto::v1alpha1::Note>,
+    }
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Opaque {
+        #[prost(message, optional, tag = "1")]
+        pub spend: ::core::option::Option<super::Spend>,
+    }
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum SpendView {
+        #[prost(message, tag = "1")]
+        Visible(Visible),
+        #[prost(message, tag = "2")]
+        Opaque(Opaque),
+    }
+}
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct OutputView {
+    #[prost(oneof = "output_view::OutputView", tags = "1, 2")]
+    pub output_view: ::core::option::Option<output_view::OutputView>,
+}
+/// Nested message and enum types in `OutputView`.
+pub mod output_view {
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Visible {
+        #[prost(message, optional, tag = "1")]
+        pub output: ::core::option::Option<super::Output>,
+        #[prost(message, optional, tag = "2")]
+        pub note: ::core::option::Option<super::super::super::crypto::v1alpha1::Note>,
+        #[prost(bytes = "bytes", tag = "3")]
+        pub payload_key: ::prost::bytes::Bytes,
+    }
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Opaque {
+        #[prost(message, optional, tag = "1")]
+        pub output: ::core::option::Option<super::Output>,
+    }
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum OutputView {
+        #[prost(message, tag = "1")]
+        Visible(Visible),
+        #[prost(message, tag = "2")]
+        Opaque(Opaque),
     }
 }
 /// Spends a shielded note.

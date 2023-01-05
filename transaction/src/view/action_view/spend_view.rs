@@ -18,31 +18,44 @@ impl TryFrom<pbt::SpendView> for SpendView {
     type Error = anyhow::Error;
 
     fn try_from(v: pbt::SpendView) -> Result<Self, Self::Error> {
-        let spend = v
-            .spend
+        match v
+            .spend_view
             .ok_or_else(|| anyhow::anyhow!("missing spend field"))?
-            .try_into()?;
-
-        match v.note {
-            Some(note) => Ok(SpendView::Visible {
-                spend,
-                note: note.try_into()?,
+        {
+            pbt::spend_view::SpendView::Visible(x) => Ok(SpendView::Visible {
+                spend: x
+                    .spend
+                    .ok_or_else(|| anyhow::anyhow!("missing spend field"))?
+                    .try_into()?,
+                note: x
+                    .note
+                    .ok_or_else(|| anyhow::anyhow!("missing note field"))?
+                    .try_into()?,
             }),
-            None => Ok(SpendView::Opaque { spend }),
+            pbt::spend_view::SpendView::Opaque(x) => Ok(SpendView::Opaque {
+                spend: x
+                    .spend
+                    .ok_or_else(|| anyhow::anyhow!("missing spend field"))?
+                    .try_into()?,
+            }),
         }
     }
 }
 
 impl From<SpendView> for pbt::SpendView {
     fn from(v: SpendView) -> Self {
+        use pbt::spend_view as sv;
         match v {
             SpendView::Visible { spend, note } => Self {
-                spend: Some(spend.into()),
-                note: Some(note.into()),
+                spend_view: Some(sv::SpendView::Visible(sv::Visible {
+                    spend: Some(spend.into()),
+                    note: Some(note.into()),
+                })),
             },
             SpendView::Opaque { spend } => Self {
-                spend: Some(spend.into()),
-                note: None,
+                spend_view: Some(sv::SpendView::Opaque(sv::Opaque {
+                    spend: Some(spend.into()),
+                })),
             },
         }
     }

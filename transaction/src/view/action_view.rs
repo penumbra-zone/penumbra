@@ -22,14 +22,11 @@ use crate::action::{
 #[allow(clippy::large_enum_variant)]
 pub enum ActionView {
     // Action types with encrypted contents
+    Spend(SpendView),
+    Output(OutputView),
     Swap(SwapView),
     SwapClaim(SwapClaimView),
-    Output(OutputView),
-    Spend(SpendView),
     // Action types with transparent contents
-    Delegate(Delegate),
-    Undelegate(Undelegate),
-    UndelegateClaim(UndelegateClaim),
     ValidatorDefinition(ValidatorDefinition),
     IBCAction(IbcAction),
     ProposalSubmit(ProposalSubmit),
@@ -39,6 +36,9 @@ pub enum ActionView {
     PositionClose(PositionClose),
     PositionWithdraw(PositionWithdraw),
     PositionRewardClaim(PositionRewardClaim),
+    Delegate(Delegate),
+    Undelegate(Undelegate),
+    UndelegateClaim(UndelegateClaim),
     Ics20Withdrawal(Ics20Withdrawal),
 }
 
