@@ -331,7 +331,6 @@ mod tests {
     proptest! {
             #![proptest_config(ProptestConfig::with_cases(2))]
         #[test]
-        #[ignore]
         #[should_panic]
         /// Check that the `SpendProof` proof creation fails when the diversified address is wrong.
         fn spend_proof_verification_diversified_address_integrity_failure(spend_auth_randomizer in fr_strategy(), value_amount in 2..200u64, v_blinding in fr_strategy()) {

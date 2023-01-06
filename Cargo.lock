@@ -3452,6 +3452,7 @@ dependencies = [
  "anyhow",
  "ark-ff",
  "ark-groth16",
+ "ark-nonnative-field",
  "ark-r1cs-std",
  "ark-relations",
  "ark-serialize",

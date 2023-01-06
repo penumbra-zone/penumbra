@@ -1,9 +1,11 @@
 #![allow(clippy::too_many_arguments)]
+use ark_ff::PrimeField;
+use ark_nonnative_field::NonNativeFieldVar;
 use ark_r1cs_std::{prelude::*, ToBitsGadget};
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use decaf377::{
     r1cs::{ElementVar, FqVar},
-    Element, Fq,
+    Element, FieldExt, Fq, Fr,
 };
 use once_cell::sync::Lazy;
 
@@ -139,8 +141,15 @@ pub(crate) fn diversified_address_integrity(
     diversified_generator: ElementVar,
 ) -> Result<(), SynthesisError> {
     let ivk_domain_sep = FqVar::new_constant(cs.clone(), *IVK_DOMAIN_SEP)?;
-    let ivk = poseidon377::r1cs::hash_2(cs, &ivk_domain_sep, (nk, ak))?;
-    // TODO: Reduce ivk here mod r?
+    let ivk_mod_q = poseidon377::r1cs::hash_2(cs.clone(), &ivk_domain_sep, (nk, ak))?;
+
+    // Reduce `ivk_mod_q` modulo r
+    let inner_ivk_mod_q: Fq = ivk_mod_q.value().unwrap_or_default();
+    let ivk_mod_r = Fr::from_le_bytes_mod_order(&inner_ivk_mod_q.to_bytes());
+    let ivk =
+        NonNativeFieldVar::<Fr, Fq>::new_variable(cs, || Ok(ivk_mod_r), AllocationMode::Witness)?;
+
+    // Now compute [ivk] g_d
     let ivk_vars = ivk.to_bits_le()?;
     let test_transmission_key =
         diversified_generator.scalar_mul_le(ivk_vars.to_bits_le()?.iter())?;
