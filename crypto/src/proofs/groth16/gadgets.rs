@@ -149,7 +149,7 @@ pub(crate) fn diversified_address_integrity(
     let ivk =
         NonNativeFieldVar::<Fr, Fq>::new_variable(cs, || Ok(ivk_mod_r), AllocationMode::Witness)?;
 
-    // Now compute [ivk] g_d
+    // Now add constraints to demonstrate the transmission key = [ivk] g_d
     let ivk_vars = ivk.to_bits_le()?;
     let test_transmission_key =
         diversified_generator.scalar_mul_le(ivk_vars.to_bits_le()?.iter())?;
