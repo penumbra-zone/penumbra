@@ -1,3 +1,4 @@
+{{- if .Values.ingress.enabled }}
 apiVersion: networking.gke.io/v1
 kind: ManagedCertificate
 metadata:
@@ -16,3 +17,4 @@ spec:
   domains:
     - {{ .Values.ingress.hosts.rpc }}
     - {{ .Values.ingress.hosts.grpc }}
+{{- end }}
