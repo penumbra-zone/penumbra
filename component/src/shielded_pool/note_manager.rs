@@ -62,7 +62,7 @@ pub trait NoteManager: StateWrite {
         let encrypted_note = note.encrypt();
 
         // Now record the note and update the total supply:
-        self.update_token_supply(&value.asset_id, i64::from(value.amount))
+        self.update_token_supply(&value.asset_id, value.amount.value() as i64)
             .await?;
         self.add_state_payload(StatePayload::Note {
             note: EncryptedNote {
