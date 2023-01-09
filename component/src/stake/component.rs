@@ -72,7 +72,7 @@ impl<T: StateRead + ?Sized> ValidatorUpdates for T {}
 
 trait PutValidatorUpdates: StateWrite {
     fn put_tendermint_validator_updates(&mut self, updates: Vec<ValidatorUpdate>) {
-        tracing::info!(?updates);
+        tracing::debug!(?updates);
         self.object_put(
             state_key::internal::stub_tendermint_validator_updates(),
             Some(updates),
