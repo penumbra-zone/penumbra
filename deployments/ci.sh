@@ -101,42 +101,18 @@ container_cli="$(get_container_cli)"
     $preserve_chain_opt \
     --validators-input-file "${CONTAINERHOME}/vals.json" > /dev/null
 
-PERSISTENT_PEERS=""
-for i in $(seq "$NVALS"); do
-    I=$((i-1))
-    NODE_ID=$(jq -r '.priv_key.value' "${WORKDIR}/.penumbra/testnet_data/node${I}/tendermint/config/node_key.json" | base64 --decode | tail -c 32 | sha256sum  | cut -c -40)
-    SVC_NAME="${HELM_RELEASE}-p2p-val-${I}"
-    for j in $(seq "$NVALS")
-    do
-      J=$((j-1))
-      if [ "$I" -ne "$J" ]; then
-        PVAR=PERSISTENT_PEERS_$J
-        if [ -z "${PVAR}" ]; then
-          declare PERSISTENT_PEERS_$J="${NODE_ID}@${SVC_NAME}:26656"
-        else
-          declare PERSISTENT_PEERS_$J="${PERSISTENT_PEERS},${NODE_ID}@${SVC_NAME}:26656"
-        fi
-      fi
-    done
-    if [ -z "$PERSISTENT_PEERS" ]; then
-      PERSISTENT_PEERS="${NODE_ID}@${SVC_NAME}:26656"
-    else
-      PERSISTENT_PEERS="${PERSISTENT_PEERS},${NODE_ID}@${SVC_NAME}:26656"
-    fi
-
-    # Clear out external address and persistent peers. Will peer after services are bootstrapped.
-    echo > "${WORKDIR}/external_address_val_${I}.txt"
-    echo > "${WORKDIR}/persistent_peers_${I}.txt"
-done
-
-for i in $(seq "$NFULLNODES"); do
-    I=$((i-1))
-    # Clear out external address. Will peer after services are bootstrapped.
-    echo > "${WORKDIR}/external_address_fn_${I}.txt"
-done
-
 # Clear out persistent peers. Will peer after services are bootstrapped.
-echo > "${WORKDIR}/persistent_peers.txt"
+# The Helm chart requires that these local flat files exist, but we cannot
+# populate them with external IPs just yet. Make sure they're present,
+# but empty, for now.
+for i in $(seq 0 $((NVALS -1))); do
+    echo > "${WORKDIR}/external_address_val_${i}.txt"
+    echo > "${WORKDIR}/persistent_peers_val_${i}.txt"
+done
+for i in $(seq 0 $((NFULLNODES -1))); do
+    echo > "${WORKDIR}/external_address_fn_${i}.txt"
+    echo > "${WORKDIR}/persistent_peers_fn_${i}.txt"
+done
 
 # Apply the Helm configuration to the cluster. Will overwrite resources
 # as necessary. Will *not* replace certain durable resources like
@@ -155,6 +131,7 @@ echo "Performining initial deploy of network, with private IPs..."
 # Will deploy nodes, but will not be able to peer. Need to get IPs of services, then can peer
 helm_install
 
+# Now we wait for the Services' ExternalIP attributes to be populated.
 while true; do
   echo "Waiting for load balancer external IPs to be provisioned..."
   mapfile -t STATUSES < <(kubectl get svc -l app.kubernetes.io/instance="$HELM_RELEASE" --no-headers | grep p2p | awk '{print $4}')
@@ -179,48 +156,51 @@ function wait_for_pods_to_be_running() {
 
 wait_for_pods_to_be_running
 
-PPE=""
-
 echo "Collecting config values for each node..."
-for i in $(seq "$NVALS"); do
-  I=$((i-1))
-  echo "Getting public peer string for validator $I"
-  NODE_ID="$(kubectl exec "$(kubectl get pods -l app.kubernetes.io/instance="$HELM_RELEASE" -o name | grep "penumbra.*val-${I}")" -c tm -- tendermint --home=/home/.tendermint show-node-id | tr -d '\r')"
-  IP="$(kubectl get svc "${HELM_RELEASE}-p2p-val-${I}" -o json | jq -r .status.loadBalancer.ingress[0].ip | tr -d '\r')"
-  if [ -z "$PPE" ]; then
-    PPE="${NODE_ID}@${IP}:26656"
-  else
-    PPE="${PPE},${NODE_ID}@${IP}:26656"
-  fi
-  # Now write private peering connection to other nodes for validator, and external service address to advertise.
-  PVAR=PERSISTENT_PEERS_$I
-  echo "${!PVAR}" > "${WORKDIR}/persistent_peers_${I}.txt"
-  echo "${IP}:26656" > "${WORKDIR}/external_address_val_${I}.txt"
+for i in $(seq 0 $((NVALS - 1))); do
+  echo "Getting public peer string for validator $i"
+  NODE_ID="$(kubectl exec "$(kubectl get pods -l app.kubernetes.io/instance="$HELM_RELEASE" -o name | grep "penumbra.*val-${i}")" -c tm -- tendermint --home=/home/.tendermint show-node-id | tr -d '\r')"
+  IP="$(kubectl get svc "${HELM_RELEASE}-p2p-val-${i}" -o json | jq -r .status.loadBalancer.ingress[0].ip | tr -d '\r')"
+  EXTERNAL_ADDR="${IP}:26656"
+  NODE_ADDR="${NODE_ID}@${EXTERNAL_ADDR}"
+  echo "$EXTERNAL_ADDR" > "${WORKDIR}/external_address_val_${i}.txt"
+  echo "$NODE_ADDR" > "${WORKDIR}/node_address_val_${i}.txt"
 done
 
-for i in $(seq "$NFULLNODES"); do
-  I=$((i-1))
-  echo "Getting public peer string for fullnode $I"
-  NODE_ID="$(kubectl exec "$(kubectl get pods -l app.kubernetes.io/instance="$HELM_RELEASE" -o name | grep "penumbra.*-fn-${I}")" -c tm -- tendermint --home=/home/.tendermint show-node-id | tr -d '\r')"
-  IP="$(kubectl get svc "${HELM_RELEASE}-p2p-fn-${I}" -o json | jq -r .status.loadBalancer.ingress[0].ip | tr -d '\r')"
-  PPE="${PPE},${NODE_ID}@${IP}:26656"
-  # Now write external service address to advertise.
-  echo "${IP}:26656" > "${WORKDIR}/external_address_fn_${I}.txt"
+for i in $(seq 0 $((NFULLNODES - 1))); do
+  echo "Getting public peer string for fullnode $i"
+  NODE_ID="$(kubectl exec "$(kubectl get pods -l app.kubernetes.io/instance="$HELM_RELEASE" -o name | grep "penumbra.*-fn-${i}")" -c tm -- tendermint --home=/home/.tendermint show-node-id | tr -d '\r')"
+  IP="$(kubectl get svc "${HELM_RELEASE}-p2p-fn-${i}" -o json | jq -r .status.loadBalancer.ingress[0].ip | tr -d '\r')"
+  EXTERNAL_ADDR="${IP}:26656"
+  NODE_ADDR="${NODE_ID}@${EXTERNAL_ADDR}"
+  echo "$EXTERNAL_ADDR" > "${WORKDIR}/external_address_fn_${i}.txt"
+  echo "$NODE_ADDR" > "${WORKDIR}/node_address_fn_${i}.txt"
 done
 
-# Now write private peering connection to other nodes for full nodes.
-echo "$PERSISTENT_PEERS" > "${WORKDIR}/persistent_peers.txt"
-
+# Now we've got all the info we need in local flat files: node ids, external ips,
+# tied to designation as a service/pod identity. Let's loop over those local files
+# and assemble the info into tm config attributes for each service.
+for i in $(seq 0 $((NVALS - 1))); do
+    find "$WORKDIR" -type f -iname 'node_address*' -and -not -iname "*val_${i}.txt" -exec cat {} + \
+        | perl -npE 's/\n/,/g' | perl -npE 's/,$//' \
+        > "${WORKDIR}/persistent_peers_val_${i}.txt"
+done
+for i in $(seq 0 $((NFULLNODES - 1))); do
+    find "$WORKDIR" -type f -iname 'node_address*' -and -not -iname "*fn_${i}.txt" -exec cat {} + \
+        | perl -npE 's/\n/,/g' | perl -npE 's/,$//' \
+        > "${WORKDIR}/persistent_peers_fn_${i}.txt"
+done
 
 echo "Applying fresh values so that nodes can peer and advertise external addresses."
 # First, remove the old resources.
 helm_uninstall
+sleep 5
 helm_install
-wait_for_pods_to_be_running
 
-# Display persistent peer string at end of run, to facilitate client connections via copy/paste.
-echo "persistent_peers = \"$PPE\""
-
-# Clean up local secrets, to avoid contaminating deploy config
-# for different environment.
-test -d "$WORKDIR" && rm -r "$WORKDIR"
+# Report results
+if wait_for_pods_to_be_running ; then
+    echo "Deploy complete!"
+else
+    echo "ERROR: pods failed to enter running start. Deploy has failed."
+    exit 1
+fi

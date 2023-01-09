@@ -19,7 +19,7 @@ data:
     max_num_inbound-peers = 50
     max_num_outbound-peers = 50
 
-    persistent_peers = "{{ $.Files.Get "pdcli/persistent_peers.txt" | trim }}"
+    persistent_peers = "{{ $.Files.Get (printf "pdcli/persistent_peers_fn_%d.txt" $i) | trim }}"
     external_address = "{{ $.Files.Get (printf "pdcli/external_address_fn_%d.txt" $i) | trim }}"
 
     [tx_index]
