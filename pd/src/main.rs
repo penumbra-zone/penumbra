@@ -341,7 +341,11 @@ async fn main() -> anyhow::Result<()> {
                 .unwrap_or_default();
 
             let mut peers = Vec::new();
-            peers.push((node_id, node));
+            if node.contains(':') {
+                peers.push((node_id, node));
+            } else {
+                peers.push((node_id, format!("{}:26656", node)));
+            }
             tracing::info!(?peers);
 
             for raw_peer in net_info_peers {
@@ -349,13 +353,31 @@ async fn main() -> anyhow::Result<()> {
                     .get("node_info")
                     .and_then(|v| v.get("id"))
                     .and_then(|v| serde_json::value::from_value(v.clone()).ok());
-                let remote_ip = raw_peer
-                    .get("remote_ip")
+                let listen_addr = raw_peer
+                    .get("node_info")
+                    .and_then(|v| v.get("listen_addr"))
                     .and_then(|v| v.as_str())
-                    .map(|s| s.to_string());
-                match (node_id, remote_ip) {
-                    (Some(node_id), Some(remote_ip)) => {
-                        peers.push((node_id, remote_ip));
+                    .map(|v| v.trim_start_matches("tcp://").to_owned());
+
+                // Filter out addresses that are obviously not external addresses.
+                use std::net::IpAddr;
+                let could_be_external = listen_addr
+                    .as_ref()
+                    .and_then(|v| v.parse::<SocketAddr>().ok())
+                    .map(|addr| match addr.ip() {
+                        IpAddr::V4(ip) => {
+                            !(ip.is_private() || ip.is_loopback() || ip.is_unspecified())
+                        }
+                        IpAddr::V6(ip) => !(ip.is_loopback() || ip.is_unspecified()),
+                    });
+
+                // all of this option-wrapping is bad, but we can't bubble up because
+                // we haven't factored this code into "functions"
+                match (node_id, listen_addr, could_be_external) {
+                    (Some(node_id), Some(listen_addr), Some(could_be_external)) => {
+                        if could_be_external {
+                            peers.push((node_id, listen_addr));
+                        }
                     }
                     _ => continue,
                 }
@@ -638,7 +660,7 @@ async fn main() -> anyhow::Result<()> {
                     .map(|(n, ip)| {
                         (
                             node::Id::from(validator_keys[n].node_key_pk.ed25519().unwrap()),
-                            ip.to_string(),
+                            format!("{}:26656", ip.to_string()),
                         )
                     })
                     .collect::<Vec<_>>();

@@ -56,7 +56,7 @@ pub fn generate_tm_config(node_name: &str, persistent_peers: &[(Id, String)]) ->
         // crypto package.
         // the peer addresses need to match this impl: https://github.com/tendermint/tendermint/blob/f2a8f5e054cf99ebe246818bb6d71f41f9a30faa/internal/p2p/address.go#L43
         // The ID is for the node being connected to, *not* the connecting node's ID.
-        .map(|(id, ip)| format!("{}@{}:26656", id, ip))
+        .map(|(id, ip)| format!("{}@{}", id, ip))
         .collect::<Vec<String>>()
         .join(",");
     format!(
