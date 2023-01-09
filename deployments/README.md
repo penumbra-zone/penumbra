@@ -1,11 +1,12 @@
 # Penumbra deployments
 
 This directory contains config management logic for managing
-Penumbra networks. As of 2022Q4, prior to mainnet,
-Penumbra Labs runs two (2) discrete networks:
+Penumbra networks. As of 2023Q1, prior to mainnet,
+Penumbra Labs runs three (3) discrete networks:
 
   * "testnet", updated approximately weekly
   * "testnet-preview", updated on every push to `main` in the repo
+  * "devnet", updated ad-hoc to serve as a sandbox debugging environment
 
 Those networks each have their own genesis and knowledge of peers.
 The networks are completely separate.
@@ -45,4 +46,5 @@ cd networks/testnet
 terraform output
 ```
 
-The reserved IPv4 address will be displayed.
+The reserved IPv4 address will be displayed. The devnet network may not have a reliable
+DNS record, or any at all.

@@ -31,6 +31,8 @@ if [[ "$HELM_RELEASE" =~ ^penumbra-testnet$ ]] ; then
     HELM_VARS_FILE="networks/testnet/helm-values-for-${HELM_RELEASE}.yml"
 elif [[ "$HELM_RELEASE" =~ ^penumbra-testnet-preview$ ]] ; then
     HELM_VARS_FILE="networks/testnet-preview/helm-values-for-${HELM_RELEASE}.yml"
+elif [[ "$HELM_RELEASE" =~ ^penumbra-devnet$ ]] ; then
+    HELM_VARS_FILE="networks/devnet/helm-values-for-${HELM_RELEASE}.yml"
 else
     >&2 echo "ERROR: helm release name '$HELM_RELEASE' not supported"
     exit 1

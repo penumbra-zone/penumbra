@@ -1,0 +1,4 @@
+---
+# Values file for devnet deploys.
+ingress:
+  enabled: false
