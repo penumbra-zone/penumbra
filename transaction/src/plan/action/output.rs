@@ -20,7 +20,6 @@ pub struct OutputPlan {
     pub dest_address: Address,
     pub note_blinding: Fq,
     pub value_blinding: Fr,
-    pub esk: ka::Secret,
 }
 
 impl OutputPlan {
@@ -32,13 +31,11 @@ impl OutputPlan {
     ) -> OutputPlan {
         let note_blinding = Fq::rand(rng);
         let value_blinding = Fr::rand(rng);
-        let esk = ka::Secret::new(rng);
         Self {
             value,
             dest_address,
             note_blinding,
             value_blinding,
-            esk,
         }
     }
 
@@ -75,7 +72,6 @@ impl OutputPlan {
         OutputProof {
             note: self.output_note(),
             v_blinding: self.value_blinding,
-            esk: self.esk.clone(),
         }
     }
 
@@ -89,14 +85,16 @@ impl OutputPlan {
 
         // Encrypt the note to the recipient...
         let diversified_generator = note.diversified_generator();
-        let ephemeral_key = self.esk.diversified_public(&diversified_generator);
-        let encrypted_note = note.encrypt(&self.esk);
+        // TODO: Derive esk from rseed
+        let esk: ka::Secret = todo!();
+        let ephemeral_key = esk.diversified_public(&diversified_generator);
+        let encrypted_note = note.encrypt(&esk);
         // ... and wrap the encryption key to ourselves.
-        let ovk_wrapped_key = note.encrypt_key(&self.esk, ovk, balance_commitment);
+        let ovk_wrapped_key = note.encrypt_key(&esk, ovk, balance_commitment);
 
         let wrapped_memo_key = WrappedMemoKey::encrypt(
             memo_key,
-            self.esk.clone(),
+            esk.clone(),
             note.transmission_key(),
             &note.diversified_generator(),
         );
@@ -132,7 +130,6 @@ impl From<OutputPlan> for pb::OutputPlan {
             dest_address: Some(msg.dest_address.into()),
             note_blinding: msg.note_blinding.to_bytes().to_vec().into(),
             value_blinding: msg.value_blinding.to_bytes().to_vec().into(),
-            esk: msg.esk.to_bytes().to_vec().into(),
         }
     }
 }
@@ -151,7 +148,6 @@ impl TryFrom<pb::OutputPlan> for OutputPlan {
                 .try_into()?,
             note_blinding: Fq::from_bytes(msg.note_blinding.as_ref().try_into()?)?,
             value_blinding: Fr::from_bytes(msg.value_blinding.as_ref().try_into()?)?,
-            esk: msg.esk.as_ref().try_into()?,
         })
     }
 }
@@ -185,10 +181,9 @@ mod test {
         let balance_commitment = output_plan.balance().commit(blinding_factor);
         let note_commitment = output_plan.output_note().commit();
         let output_proof = output_plan.output_proof();
-        let epk = body.note_payload.ephemeral_key;
 
         output_proof
-            .verify(balance_commitment, note_commitment, epk)
+            .verify(balance_commitment, note_commitment)
             .unwrap();
     }
 }

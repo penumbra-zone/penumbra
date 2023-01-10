@@ -30,8 +30,6 @@ pub struct OutputProof {
     pub note: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
     #[prost(bytes = "vec", tag = "5")]
     pub v_blinding: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bytes = "vec", tag = "7")]
-    pub esk: ::prost::alloc::vec::Vec<u8>,
 }
 /// A Penumbra transparent SwapClaimProof.
 #[allow(clippy::derive_partial_eq_without_eq)]

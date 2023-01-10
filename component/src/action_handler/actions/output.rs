@@ -18,7 +18,6 @@ impl ActionHandler for Output {
         output.proof.verify(
             output.body.balance_commitment,
             output.body.note_payload.note_commitment,
-            output.body.note_payload.ephemeral_key,
         )?;
 
         Ok(())

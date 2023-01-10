@@ -13,7 +13,6 @@ use super::transparent_gadgets as gadgets;
 use crate::{
     asset, balance,
     dex::{swap::SwapPlaintext, BatchSwapOutputData},
-    ka,
     keys::{self, NullifierKey},
     note,
     stake::Penalty,
@@ -103,8 +102,6 @@ pub struct OutputProof {
     pub note: Note,
     // The blinding factor used for generating the balance commitment.
     pub v_blinding: Fr,
-    // The ephemeral secret key that corresponds to the public key.
-    pub esk: ka::Secret,
 }
 
 impl OutputProof {
@@ -113,12 +110,10 @@ impl OutputProof {
     /// The public inputs are:
     /// * balance commitment of the new note,
     /// * note commitment of the new note,
-    /// * the ephemeral public key used to generate the new note.
     pub fn verify(
         &self,
         balance_commitment: balance::Commitment,
         note_commitment: note::Commitment,
-        epk: ka::Public,
     ) -> anyhow::Result<()> {
         gadgets::note_commitment_integrity(self.note.clone(), note_commitment)?;
 
@@ -128,12 +123,6 @@ impl OutputProof {
         let note_balance = -Balance::from(self.note.value());
 
         gadgets::balance_commitment_integrity(balance_commitment, self.v_blinding, note_balance)?;
-
-        gadgets::ephemeral_public_key_integrity(
-            epk,
-            self.esk.clone(),
-            self.note.diversified_generator(),
-        )?;
 
         gadgets::diversified_basepoint_not_identity(
             self.note.address().diversified_generator().clone(),
@@ -215,7 +204,6 @@ impl From<OutputProof> for transparent_proofs::OutputProof {
         transparent_proofs::OutputProof {
             note: Some(msg.note.into()),
             v_blinding: msg.v_blinding.to_bytes().to_vec(),
-            esk: msg.esk.to_bytes().to_vec(),
         }
     }
 }
@@ -228,13 +216,6 @@ impl TryFrom<transparent_proofs::OutputProof> for OutputProof {
             .try_into()
             .map_err(|_| anyhow!("proto malformed"))?;
 
-        let esk_bytes: [u8; 32] = proto.esk[..]
-            .try_into()
-            .map_err(|_| anyhow!("proto malformed"))?;
-        let esk = ka::Secret::new_from_field(
-            Fr::from_bytes(esk_bytes).map_err(|_| anyhow!("proto malformed"))?,
-        );
-
         Ok(OutputProof {
             note: proto
                 .note
@@ -242,7 +223,6 @@ impl TryFrom<transparent_proofs::OutputProof> for OutputProof {
                 .try_into()
                 .map_err(|_| anyhow!("proto malformed"))?,
             v_blinding: Fr::from_bytes(v_blinding_bytes).map_err(|_| anyhow!("proto malformed"))?,
-            esk,
         })
     }
 }
@@ -666,17 +646,14 @@ mod tests {
 
         let v_blinding = Fr::rand(&mut rng);
         let note = Note::generate(&mut rng, &dest, value_to_send);
-        let esk = ka::Secret::new(&mut rng);
-        let epk = esk.diversified_public(&note.diversified_generator());
 
         let proof = OutputProof {
             note: note.clone(),
             v_blinding,
-            esk,
         };
 
         assert!(proof
-            .verify(balance.commit(v_blinding), note.commit(), epk)
+            .verify(balance.commit(v_blinding), note.commit())
             .is_ok());
     }
 
@@ -701,13 +678,10 @@ mod tests {
 
         let v_blinding = Fr::rand(&mut rng);
         let note = Note::generate(&mut rng, &dest, value_to_send);
-        let esk = ka::Secret::new(&mut rng);
-        let epk = esk.diversified_public(&note.diversified_generator());
 
         let proof = OutputProof {
             note: note.clone(),
             v_blinding,
-            esk,
         };
 
         let incorrect_note_commitment = note::commitment(
@@ -722,7 +696,6 @@ mod tests {
             .verify(
                 balance_to_send.commit(v_blinding),
                 incorrect_note_commitment,
-                epk
             )
             .is_err());
     }
@@ -749,53 +722,14 @@ mod tests {
         let incorrect_balance_commitment = bad_balance.commit(Fr::rand(&mut rng));
 
         let note = Note::generate(&mut rng, &dest, value_to_send);
-        let esk = ka::Secret::new(&mut rng);
-        let correct_epk = esk.diversified_public(&note.diversified_generator());
 
         let proof = OutputProof {
             note: note.clone(),
             v_blinding,
-            esk,
         };
 
         assert!(proof
-            .verify(incorrect_balance_commitment, note.commit(), correct_epk)
-            .is_err());
-    }
-
-    #[test]
-    /// Check that the `OutputProof` verification fails when using different ephemeral public keys.
-    fn test_output_proof_verification_ephemeral_public_key_integrity_failure() {
-        let mut rng = OsRng;
-
-        let seed_phrase = SeedPhrase::generate(rng);
-        let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
-        let fvk_recipient = sk_recipient.full_viewing_key();
-        let ivk_recipient = fvk_recipient.incoming();
-        let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
-        let v_blinding = Fr::rand(&mut rng);
-
-        let value_to_send = Value {
-            amount: 10u64.into(),
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
-        };
-
-        let balance_to_send = -Balance::from(value_to_send);
-        let balance_commitment = balance_to_send.commit(v_blinding);
-
-        let note = Note::generate(&mut rng, &dest, value_to_send);
-        let esk = ka::Secret::new(&mut rng);
-
-        let proof = OutputProof {
-            note: note.clone(),
-            v_blinding,
-            esk,
-        };
-        let incorrect_esk = ka::Secret::new(&mut rng);
-        let incorrect_epk = incorrect_esk.diversified_public(&note.diversified_generator());
-
-        assert!(proof
-            .verify(balance_commitment, note.commit(), incorrect_epk)
+            .verify(incorrect_balance_commitment, note.commit())
             .is_err());
     }
 

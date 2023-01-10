@@ -12,7 +12,6 @@ use decaf377_ka as ka;
 use ark_ff::{PrimeField, ToConstraintField};
 use ark_groth16::{Groth16, Proof, ProvingKey, VerifyingKey};
 use ark_r1cs_std::prelude::*;
-use ark_relations::ns;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
 use rand::{CryptoRng, Rng};
@@ -24,7 +23,6 @@ use crate::{balance, keys::Diversifier, note, Address, Note, Value};
 // Public:
 // * vcm (value commitment)
 // * ncm (note commitment)
-// * epk (point)
 //
 // Witnesses:
 // * g_d (point)
@@ -32,7 +30,6 @@ use crate::{balance, keys::Diversifier, note, Address, Note, Value};
 // * v (u64 value plus asset ID (scalar))
 // * vblind (Fr)
 // * nblind (Fq)
-// * esk (scalar)
 #[derive(Clone, Debug)]
 pub struct OutputCircuit {
     // Witnesses
@@ -40,16 +37,12 @@ pub struct OutputCircuit {
     note: Note,
     /// The blinding factor used for generating the balance commitment.
     v_blinding: Fr,
-    /// The ephemeral secret key that corresponds to the public key.
-    esk: ka::Secret,
 
     // Public inputs
     /// balance commitment of the new note,
     pub balance_commitment: balance::Commitment,
     /// note commitment of the new note,
     pub note_commitment: note::Commitment,
-    /// the ephemeral public key used to generate the new note.
-    pub epk: Element,
 }
 
 impl ConstraintSynthesizer<Fq> for OutputCircuit {
@@ -72,14 +65,11 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
         })?;
         let v_blinding_arr: [u8; 32] = self.v_blinding.to_bytes();
         let v_blinding_vars = UInt8::new_witness_vec(cs.clone(), &v_blinding_arr)?;
-        let esk_arr: [u8; 32] = self.esk.to_bytes();
-        let esk_vars = UInt8::new_witness_vec(cs.clone(), &esk_arr)?;
         let value_amount_arr = self.note.value().amount.to_le_bytes();
         let value_vars = UInt8::new_witness_vec(cs.clone(), &value_amount_arr)?;
 
         // Public inputs
         let note_commitment_var = FqVar::new_input(cs.clone(), || Ok(self.note_commitment.0))?;
-        let epk = ElementVar::new_input(ns!(cs, "epk"), || Ok(self.epk))?;
         let balance_commitment_var =
             ElementVar::new_input(cs.clone(), || Ok(self.balance_commitment.0))?;
 
@@ -88,7 +78,6 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
             &Boolean::TRUE,
             diversified_generator_var.clone(),
         )?;
-        gadgets::ephemeral_public_key_integrity(esk_vars, diversified_generator_var.clone(), epk)?;
         gadgets::value_commitment_integrity(
             cs.clone(),
             &Boolean::TRUE,
@@ -132,14 +121,10 @@ impl ParameterSetup for OutputCircuit {
         )
         .expect("can make a note");
         let v_blinding = Fr::from(1);
-        let esk = ka::Secret::new_from_field(Fr::from(1));
-        let epk = decaf377::basepoint();
         let circuit = OutputCircuit {
             note: note.clone(),
             note_commitment: note.commit(),
             v_blinding,
-            esk,
-            epk,
             balance_commitment: balance::Commitment(decaf377::basepoint()),
         };
         let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
@@ -157,18 +142,13 @@ impl OutputProof {
         pk: &ProvingKey<Bls12_377>,
         note: Note,
         v_blinding: Fr,
-        esk: ka::Secret,
         balance_commitment: balance::Commitment,
         note_commitment: note::Commitment,
-        epk: ka::Public,
     ) -> anyhow::Result<Self> {
-        let element_pk = decaf377::Encoding(epk.0).vartime_decompress().unwrap();
         let circuit = OutputCircuit {
             note,
             note_commitment,
             v_blinding,
-            esk,
-            epk: element_pk,
             balance_commitment,
         };
         let proof = Groth16::prove(pk, circuit, rng).map_err(|err| anyhow::anyhow!(err))?;
@@ -180,19 +160,15 @@ impl OutputProof {
     /// The public inputs are:
     /// * balance commitment of the new note,
     /// * note commitment of the new note,
-    /// * the ephemeral public key used to generate the new note.
     pub fn verify(
         &self,
         vk: &VerifyingKey<Bls12_377>,
         balance_commitment: balance::Commitment,
         note_commitment: note::Commitment,
-        epk: ka::Public,
     ) -> anyhow::Result<()> {
         let processed_pvk = Groth16::process_vk(vk).map_err(|err| anyhow::anyhow!(err))?;
-        let element_pk = decaf377::Encoding(epk.0).vartime_decompress().unwrap();
         let mut public_inputs = Vec::new();
         public_inputs.extend(note_commitment.0.to_field_elements().unwrap());
-        public_inputs.extend(element_pk.to_field_elements().unwrap());
         public_inputs.extend(balance_commitment.0.to_field_elements().unwrap());
 
         let proof_result =
