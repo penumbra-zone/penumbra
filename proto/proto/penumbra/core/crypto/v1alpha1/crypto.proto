@@ -91,7 +91,7 @@ message ConsensusKey {
 
 message Note {
     Value value = 1;
-    bytes note_blinding = 2;
+    bytes rseed = 2;
     Address address = 3;
 }
 

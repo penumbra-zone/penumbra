@@ -4,7 +4,7 @@ use rand::{CryptoRng, RngCore};
 use crate::{ka, prf, Fq, Fr};
 
 /// The rseed is a uniformly random 32-byte sequence included in the note plaintext.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Rseed(pub [u8; 32]);
 
 impl Rseed {
@@ -25,5 +25,9 @@ impl Rseed {
     pub fn derive_note_blinding(&self) -> Fq {
         let hash_result = prf::expand(b"Penumbra_DeriRcm", &self.0, &[5u8]);
         Fq::from_le_bytes_mod_order(hash_result.as_bytes())
+    }
+
+    pub fn to_bytes(&self) -> [u8; 32] {
+        self.0
     }
 }
