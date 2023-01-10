@@ -24,7 +24,7 @@ use crate::proofs::groth16::{gadgets, ParameterSetup};
 use crate::{
     balance,
     keys::{NullifierKey, SeedPhrase, SpendKey},
-    Note, Nullifier, Value,
+    Note, Nullifier, Rseed, Value,
 };
 
 /// Groth16 proof for spending existing notes.
@@ -192,7 +192,7 @@ impl ParameterSetup for SpendCircuit {
         let note = Note::from_parts(
             address,
             Value::from_str("1upenumbra").expect("valid value"),
-            Fq::from(1),
+            Rseed([1u8; 32]),
         )
         .expect("can make a note");
         let v_blinding = Fr::from(1);

@@ -351,24 +351,22 @@ impl SwapClaimProof {
 
         // Output note integrity
         let (output_blinding_1, output_blinding_2) = self.swap_plaintext.output_blinding_factors();
-        let output_1_commitment = Note::from_parts(
+        let output_1_commitment = note::commitment_from_address(
             self.swap_plaintext.claim_address,
             Value {
                 amount: self.lambda_1_i.into(),
                 asset_id: self.swap_plaintext.trading_pair.asset_1(),
             },
             output_blinding_1,
-        )?
-        .commit();
-        let output_2_commitment = Note::from_parts(
+        )?;
+        let output_2_commitment = note::commitment_from_address(
             self.swap_plaintext.claim_address,
             Value {
                 amount: self.lambda_2_i.into(),
                 asset_id: self.swap_plaintext.trading_pair.asset_2(),
             },
             output_blinding_2,
-        )?
-        .commit();
+        )?;
 
         ensure!(
             output_1_commitment == note_commitment_1,

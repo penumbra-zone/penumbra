@@ -174,7 +174,7 @@ mod tests {
 
     use super::*;
 
-    use crate::{keys::Diversifier, Address, Note, Value};
+    use crate::{keys::Diversifier, Address, Note, Rseed, Value};
     use decaf377::{r1cs::CountConstraints, Bls12_377, Element};
     use decaf377_fmd as fmd;
     use decaf377_ka as ka;
@@ -245,7 +245,7 @@ mod tests {
             let note = Note::from_parts(
                 address,
                 Value::from_str("1upenumbra").expect("valid value"),
-                Fq::from(1),
+                Rseed([1u8; 32]),
             )
             .expect("can make a note");
             let circuit = TestNoteCommitmentCircuit {
@@ -258,16 +258,10 @@ mod tests {
         }
     }
 
-    fn fq_strategy() -> BoxedStrategy<Fq> {
-        any::<[u8; 32]>()
-            .prop_map(|bytes| Fq::from_le_bytes_mod_order(&bytes[..]))
-            .boxed()
-    }
-
     proptest! {
     #![proptest_config(ProptestConfig::with_cases(2))]
     #[test]
-        fn groth16_note_commitment_proof_happy_path(note_blinding in fq_strategy()) {
+        fn groth16_note_commitment_proof_happy_path(rseed_bytes in any::<[u8; 32]>()) {
             let (pk, vk) = TestNoteCommitmentCircuit::generate_test_parameters();
             let mut rng = OsRng;
 
@@ -282,7 +276,7 @@ mod tests {
             ).unwrap();
             let value = Value::from_str("1upenumbra").expect("this is a valid value");
             let note = Note::from_parts(
-                address, value, note_blinding
+                address, value, Rseed(rseed_bytes)
             ).expect("can make a note");
             let note_commitment = note.commit().0;
             let circuit = TestNoteCommitmentCircuit {
@@ -308,7 +302,7 @@ mod tests {
     proptest! {
     #![proptest_config(ProptestConfig::with_cases(2))]
     #[test]
-        fn groth16_note_commitment_proof_unhappy_path(note_blinding in fq_strategy()) {
+        fn groth16_note_commitment_proof_unhappy_path(rseed_bytes in any::<[u8; 32]>()) {
             let (pk, vk) = TestNoteCommitmentCircuit::generate_test_parameters();
             let mut rng = OsRng;
 
@@ -323,7 +317,7 @@ mod tests {
             ).unwrap();
             let value = Value::from_str("1upenumbra").expect("this is a valid value");
             let note = Note::from_parts(
-                address, value, note_blinding
+                address, value, Rseed(rseed_bytes)
             ).expect("can make a note");
             let note_commitment = note.commit().0;
             let circuit = TestNoteCommitmentCircuit {
