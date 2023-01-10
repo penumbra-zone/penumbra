@@ -6,7 +6,7 @@ CREATE TABLE notes (
     address                 BLOB NOT NULL,
     amount                  BIGINT NOT NULL,
     asset_id                BLOB NOT NULL,
-    blinding_factor         BLOB NOT NULL
+    rseed                   BLOB NOT NULL
 );
 
 -- general purpose note queries

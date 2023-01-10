@@ -1,6 +1,4 @@
-use ark_ff::Zero;
-use decaf377::Fq;
-use penumbra_crypto::{asset, Address, Note, Value};
+use penumbra_crypto::{asset, Address, Note, Rseed, Value};
 use penumbra_proto::{core::chain::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
@@ -56,9 +54,8 @@ impl std::fmt::Debug for Allocation {
 impl Allocation {
     /// Obtain a note corresponding to this allocation.
     ///
-    /// Note: to ensure determinism, this uses a zero blinding factor when
-    /// creating the note. This is fine, because the genesis allocations are
-    /// already public.
+    /// Note: to ensure determinism, this uses a zero rseed when
+    /// creating the note.
     pub fn note(&self) -> Result<Note, anyhow::Error> {
         Note::from_parts(
             self.address,
@@ -69,7 +66,7 @@ impl Allocation {
                     .ok_or_else(|| anyhow::anyhow!("invalid denomination"))?
                     .id(),
             },
-            Fq::zero(),
+            Rseed([0u8; 32]),
         )
         .map_err(Into::into)
     }

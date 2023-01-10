@@ -3,11 +3,9 @@ use super::{
     state_key, SupplyWrite,
 };
 use anyhow::Result;
-use ark_ff::PrimeField;
 use async_trait::async_trait;
-use decaf377::{Fq, Fr};
 use penumbra_chain::{sync::StatePayload, NoteSource};
-use penumbra_crypto::{ka, Address, EncryptedNote, Note, Nullifier, One, Value};
+use penumbra_crypto::{Address, EncryptedNote, Note, Nullifier, Rseed, Value};
 use penumbra_proto::StateWriteProto;
 use penumbra_storage::StateWrite;
 use penumbra_tct as tct;
@@ -46,24 +44,25 @@ pub trait NoteManager: StateWrite {
             .expect("note commitment tree is not full")
             .into();
 
-        let blinding_factor = Fq::from_le_bytes_mod_order(
+        let rseed = Rseed(
             blake2b_simd::Params::default()
                 .personal(b"PenumbraMint")
                 .to_state()
                 .update(&position.to_le_bytes())
                 .finalize()
-                .as_bytes(),
+                .as_bytes()
+                .try_into()?,
         );
 
-        let note = Note::from_parts(*address, value, blinding_factor)?;
+        let note = Note::from_parts(*address, value, rseed)?;
         let note_commitment = note.commit();
 
         // Scanning assumes that notes are encrypted, so we need to create
-        // note ciphertexts, even if the plaintexts are known.  Use the key
-        // "1" to ensure we have contributory behaviour in note encryption.
-        let esk = ka::Secret::new_from_field(Fr::one());
+        // note ciphertexts, even if the plaintexts are known.
+        // TODO: Check "contributory" behavior is preserved/not important
+        let esk = note.ephemeral_secret_key();
         let ephemeral_key = esk.diversified_public(&note.diversified_generator());
-        let encrypted_note = note.encrypt(&esk);
+        let encrypted_note = note.encrypt();
 
         // Now record the note and update the total supply:
         self.update_token_supply(&value.asset_id, i64::from(value.amount))

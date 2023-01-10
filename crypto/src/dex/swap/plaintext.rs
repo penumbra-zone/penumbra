@@ -1,5 +1,5 @@
 use crate::transaction::Fee;
-use crate::{asset, ka, Address, Amount, Note, Value};
+use crate::{asset, ka, Address, Amount, Note, Rseed, Value};
 use anyhow::{anyhow, Error, Result};
 use ark_ff::{PrimeField, UniformRand};
 use decaf377::{FieldExt, Fq};
@@ -61,13 +61,16 @@ impl SwapPlaintext {
             self.delta_2_i.try_into().unwrap(),
         ));
 
+        // TODO: Use rseed for swaps also.
+        let output_1_rseed = todo!();
+        let output_2_rseed = todo!();
         let output_1_note = Note::from_parts(
             self.claim_address,
             Value {
                 amount: lambda_1_i.into(),
                 asset_id: self.trading_pair.asset_1(),
             },
-            output_1_blinding,
+            output_1_rseed,
         )
         .expect("claim address is valid");
 
@@ -77,7 +80,7 @@ impl SwapPlaintext {
                 amount: lambda_2_i.into(),
                 asset_id: self.trading_pair.asset_2(),
             },
-            output_2_blinding,
+            output_2_rseed,
         )
         .expect("claim address is valid");
 

@@ -112,16 +112,6 @@
     },
     "query": "SELECT *\n            FROM assets"
   },
-  "33a8631f81455f7c7caa0e5e3c38108a4b54b3b391912a7b0fbd9b47be891785": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 5
-      }
-    },
-    "query": "INSERT INTO notes\n                    (\n                        note_commitment,\n                        address,\n                        amount,\n                        asset_id,\n                        blinding_factor\n                    )\n                    VALUES\n                    (?, ?, ?, ?, ?)"
-  },
   "3538feca20e2988f50760f66152cf14f3051d7c4d2ca3a97446754b8547b6eaf": {
     "describe": {
       "columns": [],
@@ -256,6 +246,16 @@
     },
     "query": "INSERT INTO nct_commitments (position, commitment) VALUES (?, ?) ON CONFLICT DO NOTHING"
   },
+  "741709fac6ac70295ed4ac0986ea81f230e817a57da49a0c9e2311c91594211f": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 5
+      }
+    },
+    "query": "INSERT INTO notes\n                    (\n                        note_commitment,\n                        address,\n                        amount,\n                        asset_id,\n                        rseed\n                    )\n                    VALUES\n                    (?, ?, ?, ?, ?)"
+  },
   "8b1b113ce163b0c5a5c0bd64be67b36fcc64d1396953483cb6e76fbf51dff639": {
     "describe": {
       "columns": [
@@ -357,6 +357,16 @@
       }
     },
     "query": "SELECT position, commitment FROM nct_commitments"
+  },
+  "9e8c557eb9aac31f8dbd6df3e4ffaa8cc805663123aed9dda22fad05ab8e2f2e": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 5
+      }
+    },
+    "query": "INSERT INTO notes\n                    (\n                        note_commitment,\n                        address,\n                        amount,\n                        asset_id,\n                        rseed\n                    )\n                VALUES (?, ?, ?, ?, ?)\n                ON CONFLICT DO NOTHING"
   },
   "a96e4094367da72f81a656389748b9bac9f1931178dfc74bcc92e8f32b581b98": {
     "describe": {
@@ -465,16 +475,6 @@
       }
     },
     "query": "SELECT position FROM nct_position LIMIT 1"
-  },
-  "ebccd7cad2e61f7ad3ae8f24e4b9a58428fd0a36805ce284f651323b232ded2e": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 5
-      }
-    },
-    "query": "INSERT INTO notes\n                    (\n                        note_commitment,\n                        address,\n                        amount,\n                        asset_id,\n                        blinding_factor\n                    )\n                VALUES (?, ?, ?, ?, ?)\n                ON CONFLICT DO NOTHING"
   },
   "efb5f4932197a38ca134b63d8ea5d2fad9145fb56d03a60351f15b5302905402": {
     "describe": {

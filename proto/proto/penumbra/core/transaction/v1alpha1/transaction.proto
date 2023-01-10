@@ -399,8 +399,8 @@ message OutputPlan {
     crypto.v1alpha1.Value value = 1;
     // The destination address to send it to.
     crypto.v1alpha1.Address dest_address = 2;
-    // The blinding factor to use for the new note.
-    bytes note_blinding = 3;
+    // The rseed to use for the new note.
+    bytes rseed = 3;
     // The blinding factor to use for the value commitment.
     bytes value_blinding = 4;
 }
