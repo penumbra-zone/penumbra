@@ -1,13 +1,3 @@
-/// An authorization hash for a Penumbra transaction.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(transparent)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EffectHash {
-    #[prost(bytes = "bytes", tag = "1")]
-    #[serde(with = "crate::serializers::hexstr_bytes")]
-    pub inner: ::prost::bytes::Bytes,
-}
 /// A Penumbra transaction.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -382,7 +372,7 @@ pub struct OutputBody {
 pub struct ProposalSubmit {
     /// The proposal to be submitted.
     #[prost(message, optional, tag = "1")]
-    pub proposal: ::core::option::Option<Proposal>,
+    pub proposal: ::core::option::Option<super::super::governance::v1alpha1::Proposal>,
     /// The ephemeral transparent refund address for the refund of the proposal deposit.
     #[prost(message, optional, tag = "2")]
     pub deposit_refund_address: ::core::option::Option<
@@ -518,7 +508,7 @@ pub struct DelegatorVoteBody {
 pub struct AuthorizationData {
     /// The computed auth hash for the approved transaction plan.
     #[prost(message, optional, tag = "1")]
-    pub effect_hash: ::core::option::Option<EffectHash>,
+    pub effect_hash: ::core::option::Option<super::super::crypto::v1alpha1::EffectHash>,
     /// The required spend authorizations, returned in the same order as the
     /// Spend actions in the original request.
     #[prost(message, repeated, tag = "2")]
@@ -726,154 +716,4 @@ pub struct DelegatorVotePlan {
     /// The randomizer to use for the proof of spend capability.
     #[prost(bytes = "bytes", tag = "5")]
     pub randomizer: ::prost::bytes::Bytes,
-}
-/// A proposal to be voted upon.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Proposal {
-    #[prost(string, tag = "1")]
-    pub title: ::prost::alloc::string::String,
-    /// A natural-language description of the effect of the proposal and its justification.
-    #[prost(string, tag = "2")]
-    pub description: ::prost::alloc::string::String,
-    /// The payload of the proposal.
-    #[prost(message, optional, tag = "3")]
-    #[serde(flatten)]
-    pub payload: ::core::option::Option<proposal::Payload>,
-}
-/// Nested message and enum types in `Proposal`.
-pub mod proposal {
-    /// The kind of the proposal and details relevant only to that kind of proposal.
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
-    #[serde(rename_all = "snake_case")]
-    #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Message)]
-    pub struct Payload {
-        #[prost(oneof = "payload::Payload", tags = "2, 3, 4, 5")]
-        #[serde(flatten)]
-        pub payload: ::core::option::Option<payload::Payload>,
-    }
-    /// Nested message and enum types in `Payload`.
-    pub mod payload {
-        #[derive(::serde::Deserialize, ::serde::Serialize)]
-        #[serde(rename_all = "snake_case")]
-        #[serde(tag = "kind")]
-        #[allow(clippy::derive_partial_eq_without_eq)]
-        #[derive(Clone, PartialEq, ::prost::Oneof)]
-        pub enum Payload {
-            /// A signaling proposal.
-            #[prost(message, tag = "2")]
-            Signaling(super::Signaling),
-            /// An emergency proposal.
-            #[prost(message, tag = "3")]
-            Emergency(super::Emergency),
-            /// A parameter change proposal.
-            #[prost(message, tag = "4")]
-            ParameterChange(super::ParameterChange),
-            /// A DAO spend proposal.
-            #[prost(message, tag = "5")]
-            DaoSpend(super::DaoSpend),
-        }
-    }
-    /// It optionally contains a reference to a commit which contains code to upgrade the chain.
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
-    #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Message)]
-    pub struct Signaling {
-        /// The commit to be voted upon, if any is relevant.
-        #[prost(string, optional, tag = "1")]
-        pub commit: ::core::option::Option<::prost::alloc::string::String>,
-    }
-    /// An emergency proposal can be passed instantaneously by a 2/3 majority of validators, without
-    /// waiting for the voting period to expire.
-    ///
-    /// If the boolean `halt_chain` is set to `true`, then the chain will halt immediately when the
-    /// proposal is passed.
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
-    #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Message)]
-    pub struct Emergency {
-        /// If `true`, the chain will halt immediately when the proposal is passed.
-        #[prost(bool, tag = "1")]
-        pub halt_chain: bool,
-    }
-    /// A parameter change proposal describes an alteration to one or more chain parameters, which
-    /// should take effect at a particular block height `effective_height` (which should be at least
-    /// the height when the proposal would be passed).
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
-    #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Message)]
-    pub struct ParameterChange {
-        /// The height at which the change should take effect.
-        #[prost(uint64, tag = "1")]
-        pub effective_height: u64,
-        /// The set of changes to chain parameters.
-        #[prost(message, repeated, tag = "2")]
-        pub new_parameters: ::prost::alloc::vec::Vec<parameter_change::SetParameter>,
-    }
-    /// Nested message and enum types in `ParameterChange`.
-    pub mod parameter_change {
-        /// A single change to an individual chain parameter.
-        #[derive(::serde::Deserialize, ::serde::Serialize)]
-        #[allow(clippy::derive_partial_eq_without_eq)]
-        #[derive(Clone, PartialEq, ::prost::Message)]
-        pub struct SetParameter {
-            /// The name of the parameter.
-            #[prost(string, tag = "1")]
-            pub parameter: ::prost::alloc::string::String,
-            /// Its new value, as a string (this will be parsed as appropriate for the parameter's type).
-            #[prost(string, tag = "2")]
-            pub value: ::prost::alloc::string::String,
-        }
-    }
-    /// A DAO spend proposal describes zero or more transactions to execute on behalf of the DAO, with
-    /// access to its funds, and zero or more scheduled transactions from previous passed proposals to
-    /// cancel.
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
-    #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Message)]
-    pub struct DaoSpend {
-        /// The sequence of transactions to schedule for execution.
-        #[prost(message, repeated, tag = "1")]
-        pub schedule_transactions: ::prost::alloc::vec::Vec<
-            dao_spend::ScheduleTransaction,
-        >,
-        /// A sequence of previously-scheduled transactions to cancel before they are executed.
-        #[prost(message, repeated, tag = "2")]
-        pub cancel_transactions: ::prost::alloc::vec::Vec<dao_spend::CancelTransaction>,
-    }
-    /// Nested message and enum types in `DaoSpend`.
-    pub mod dao_spend {
-        /// A transaction to be executed as a consequence of this proposal.
-        ///
-        /// It is permissible for there to be duplicate transactions scheduled for a given height; they
-        /// will both be executed.
-        #[derive(::serde::Deserialize, ::serde::Serialize)]
-        #[allow(clippy::derive_partial_eq_without_eq)]
-        #[derive(Clone, PartialEq, ::prost::Message)]
-        pub struct ScheduleTransaction {
-            /// The height at which the transaction should be executed.
-            #[prost(uint64, tag = "1")]
-            pub execute_at_height: u64,
-            /// The transaction to be executed.
-            #[prost(message, optional, tag = "2")]
-            pub transaction: ::core::option::Option<super::super::TransactionPlan>,
-        }
-        /// A transaction to be canceled as a consequence of this proposal.
-        ///
-        /// If there are multiple duplicate transactions at the height, this cancels only the first.
-        /// To cancel more of them, specify duplicate cancellations.
-        #[derive(::serde::Deserialize, ::serde::Serialize)]
-        #[allow(clippy::derive_partial_eq_without_eq)]
-        #[derive(Clone, PartialEq, ::prost::Message)]
-        pub struct CancelTransaction {
-            /// The height for which the transaction was scheduled.
-            #[prost(uint64, tag = "1")]
-            pub scheduled_at_height: u64,
-            /// The auth hash of the transaction to cancel.
-            #[prost(message, optional, tag = "2")]
-            pub effect_hash: ::core::option::Option<super::super::EffectHash>,
-        }
-    }
 }

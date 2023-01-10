@@ -9,11 +9,6 @@ import "penumbra/core/ibc/v1alpha1/ibc.proto";
 import "penumbra/core/dex/v1alpha1/dex.proto";
 import "penumbra/core/governance/v1alpha1/governance.proto";
 
-// An authorization hash for a Penumbra transaction.
-message EffectHash {
-  bytes inner = 1;
-}
-
 // A Penumbra transaction.
 message Transaction {
   TransactionBody body = 1;
@@ -223,7 +218,7 @@ message OutputBody {
 
 message ProposalSubmit {
   // The proposal to be submitted.
-  Proposal proposal = 1;
+  governance.v1alpha1.Proposal proposal = 1;
   // The ephemeral transparent refund address for the refund of the proposal deposit.
   crypto.v1alpha1.Address deposit_refund_address = 2;
   // The amount of the proposal deposit.
@@ -301,7 +296,7 @@ message DelegatorVoteBody {
 // The data required to authorize a transaction plan.
 message AuthorizationData {
     // The computed auth hash for the approved transaction plan.
-    EffectHash effect_hash = 1;
+    crypto.v1alpha1.EffectHash effect_hash = 1;
     // The required spend authorizations, returned in the same order as the
     // Spend actions in the original request.
     repeated crypto.v1alpha1.SpendAuthSignature spend_auths = 2;
@@ -430,99 +425,3 @@ message DelegatorVotePlan {
 // The reader may ask: why is this here, instead of in a separate `governance.v1alpha1.proto` file? It should
 // be, but protos can't have cyclic file dependencies, and most of the below induces a cycle
 // because `DaoSpend` contains a `TransactionPlan`.
-
-// A proposal to be voted upon.
-message Proposal {
-  string title = 1;
-
-  // A natural-language description of the effect of the proposal and its justification.
-  string description = 2;
-
-  // The kind of the proposal and details relevant only to that kind of proposal.
-  message Payload {
-    oneof payload {
-      // A signaling proposal.
-      Signaling signaling = 2;
-      // An emergency proposal.
-      Emergency emergency = 3;
-      // A parameter change proposal.
-      ParameterChange parameter_change = 4;
-      // A DAO spend proposal.
-      DaoSpend dao_spend = 5;
-    }
-  }
-
-  // The payload of the proposal.
-  Payload payload = 3;
-
-  // A signaling proposal is meant to register a vote on-chain, but does not have an automatic
-  // effect when passed.
-
-  // It optionally contains a reference to a commit which contains code to upgrade the chain.
-  message Signaling {
-    // The commit to be voted upon, if any is relevant.
-    optional string commit = 1;
-  }
-
-  // An emergency proposal can be passed instantaneously by a 2/3 majority of validators, without
-  // waiting for the voting period to expire.
-  //
-  // If the boolean `halt_chain` is set to `true`, then the chain will halt immediately when the
-  // proposal is passed.
-  message Emergency {
-    // If `true`, the chain will halt immediately when the proposal is passed.
-    bool halt_chain = 1;
-  }
-
-  // A parameter change proposal describes an alteration to one or more chain parameters, which
-  // should take effect at a particular block height `effective_height` (which should be at least
-  // the height when the proposal would be passed).
-  message ParameterChange {
-    // The height at which the change should take effect.
-    uint64 effective_height = 1;
-
-    // The set of changes to chain parameters.
-    repeated SetParameter new_parameters = 2;
-
-    // A single change to an individual chain parameter.
-    message SetParameter {
-      // The name of the parameter.
-      string parameter = 1;
-      // Its new value, as a string (this will be parsed as appropriate for the parameter's type).
-      string value = 2;
-    }
-  }
-
-  // A DAO spend proposal describes zero or more transactions to execute on behalf of the DAO, with
-  // access to its funds, and zero or more scheduled transactions from previous passed proposals to
-  // cancel.
-  message DaoSpend {
-    // The sequence of transactions to schedule for execution.
-    repeated ScheduleTransaction schedule_transactions = 1;
-
-    // A sequence of previously-scheduled transactions to cancel before they are executed.
-    repeated CancelTransaction cancel_transactions = 2;
-
-    // A transaction to be executed as a consequence of this proposal.
-    //
-    // It is permissible for there to be duplicate transactions scheduled for a given height; they
-    // will both be executed.
-    message ScheduleTransaction {
-      // The height at which the transaction should be executed.
-      uint64 execute_at_height = 1;
-      // The transaction to be executed.
-      TransactionPlan transaction = 2;
-    }
-
-    // A transaction to be canceled as a consequence of this proposal.
-    //
-    // If there are multiple duplicate transactions at the height, this cancels only the first.
-    // To cancel more of them, specify duplicate cancellations.
-    message CancelTransaction {
-      // The height for which the transaction was scheduled.
-      uint64 scheduled_at_height = 1;
-      // The auth hash of the transaction to cancel.
-      EffectHash effect_hash = 2;
-    }
-  }
-}

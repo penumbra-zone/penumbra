@@ -259,3 +259,11 @@ pub struct Clue {
     #[serde(with = "crate::serializers::hexstr")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
+/// An authorization hash for a Penumbra transaction.
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EffectHash {
+    #[prost(bytes = "vec", tag = "1")]
+    pub inner: ::prost::alloc::vec::Vec<u8>,
+}
