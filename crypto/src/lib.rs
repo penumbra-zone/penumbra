@@ -19,6 +19,7 @@ pub mod note;
 mod nullifier;
 mod prf;
 pub mod proofs;
+pub mod rseed;
 pub mod stake;
 pub mod symmetric;
 pub mod transaction;
