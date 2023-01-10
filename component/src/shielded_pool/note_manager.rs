@@ -44,22 +44,19 @@ pub trait NoteManager: StateWrite {
             .expect("note commitment tree is not full")
             .into();
 
-        let rseed = Rseed(
-            blake2b_simd::Params::default()
-                .personal(b"PenumbraMint")
-                .to_state()
-                .update(&position.to_le_bytes())
-                .finalize()
-                .as_bytes()
-                .try_into()?,
-        );
+        let rseed_bytes: [u8; 32] = blake2b_simd::Params::default()
+            .personal(b"PenumbraMint")
+            .to_state()
+            .update(&position.to_le_bytes())
+            .finalize()
+            .as_bytes()[0..32]
+            .try_into()?;
 
-        let note = Note::from_parts(*address, value, rseed)?;
+        let note = Note::from_parts(*address, value, Rseed(rseed_bytes))?;
         let note_commitment = note.commit();
 
         // Scanning assumes that notes are encrypted, so we need to create
         // note ciphertexts, even if the plaintexts are known.
-        // TODO: Check "contributory" behavior is preserved/not important
         let esk = note.ephemeral_secret_key();
         let ephemeral_key = esk.diversified_public(&note.diversified_generator());
         let encrypted_note = note.encrypt();
