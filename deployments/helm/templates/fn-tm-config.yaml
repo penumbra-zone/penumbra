@@ -16,14 +16,17 @@ data:
     laddr = "tcp://0.0.0.0:26657"
 
     [p2p]
-    max_num_inbound-peers = 50
-    max_num_outbound-peers = 50
+    max_num_inbound_peers = 50
+    max_num_outbound_peers = 50
 
     persistent_peers = "{{ $.Files.Get (printf "pdcli/persistent_peers_fn_%d.txt" $i) | trim }}"
     external_address = "{{ $.Files.Get (printf "pdcli/external_address_fn_%d.txt" $i) | trim }}"
 
     [tx_index]
-    indexer = "null"
+    indexer = "kv"
+
+    [consensus]
+    timeout_commit = "5s"
 
     [instrumentation]
     prometheus = true
