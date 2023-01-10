@@ -28,7 +28,6 @@ message OutputProof {
   // Auxiliary inputs
   crypto.v1alpha1.Note note = 1;
   bytes v_blinding = 5;
-  bytes esk = 7;
 }
 
 // A Penumbra transparent SwapClaimProof.

@@ -691,10 +691,6 @@ pub struct OutputPlan {
     #[prost(bytes = "bytes", tag = "4")]
     #[serde(with = "crate::serializers::hexstr_bytes")]
     pub value_blinding: ::prost::bytes::Bytes,
-    /// The ephemeral secret key to use for the note encryption.
-    #[prost(bytes = "bytes", tag = "5")]
-    #[serde(with = "crate::serializers::hexstr_bytes")]
-    pub esk: ::prost::bytes::Bytes,
 }
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]

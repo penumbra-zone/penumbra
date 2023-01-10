@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_tct as tct;
 
-use crate::{balance, ka, keys, note, Balance, Fr, Note, Nullifier};
+use crate::{balance, keys, note, Balance, Fr, Note, Nullifier};
 
 /// Check the integrity of the nullifier.
 pub(crate) fn nullifier_integrity(
@@ -46,19 +46,6 @@ pub(crate) fn balance_commitment_integrity(
 ) -> Result<()> {
     if balance_commitment != balance.commit(value_blinding) {
         Err(anyhow!("balance commitment mismatch"))
-    } else {
-        Ok(())
-    }
-}
-
-/// Check the integrity of an ephemeral public key.
-pub(crate) fn ephemeral_public_key_integrity(
-    public_key: ka::Public,
-    secret_key: ka::Secret,
-    diversified_generator: decaf377::Element,
-) -> Result<()> {
-    if secret_key.diversified_public(&diversified_generator) != public_key {
-        Err(anyhow!("ephemeral public key mismatch"))
     } else {
         Ok(())
     }

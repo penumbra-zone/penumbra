@@ -403,8 +403,6 @@ message OutputPlan {
     bytes note_blinding = 3;
     // The blinding factor to use for the value commitment.
     bytes value_blinding = 4;
-    // The ephemeral secret key to use for the note encryption.
-    bytes esk = 5;
 }
 
 message ProposalWithdrawPlan {
