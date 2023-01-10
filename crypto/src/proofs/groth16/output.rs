@@ -18,7 +18,7 @@ use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
 use crate::proofs::groth16::{gadgets, ParameterSetup};
-use crate::{balance, keys::Diversifier, Rseed, note, Address, Note, Value};
+use crate::{balance, keys::Diversifier, note, Address, Note, Rseed, Value};
 
 // Public:
 // * vcm (value commitment)

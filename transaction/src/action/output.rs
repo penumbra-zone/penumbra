@@ -27,10 +27,14 @@ impl IsAction for Output {
 
     fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {
         let note_commitment = self.body.note_payload.note_commitment;
+        let epk = self.body.note_payload.ephemeral_key;
         // Retrieve payload key for associated note commitment
         let output_view = if let Some(payload_key) = txp.payload_keys.get(&note_commitment) {
-            let decrypted_note =
-                Note::decrypt_with_payload_key(&self.body.note_payload.encrypted_note, payload_key);
+            let decrypted_note = Note::decrypt_with_payload_key(
+                &self.body.note_payload.encrypted_note,
+                payload_key,
+                &epk,
+            );
 
             let decrypted_memo_key = self.body.wrapped_memo_key.decrypt_outgoing(payload_key);
 

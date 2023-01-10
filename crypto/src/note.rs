@@ -105,6 +105,11 @@ impl Note {
         self.rseed.derive_esk()
     }
 
+    pub fn ephemeral_public_key(&self) -> ka::Public {
+        self.ephemeral_secret_key()
+            .diversified_public(&self.diversified_generator())
+    }
+
     pub fn note_blinding(&self) -> Fq {
         self.rseed.derive_note_blinding()
     }
@@ -203,7 +208,7 @@ impl Note {
             Note::decrypt_key(wrapped_ovk, cm, cv, ovk, epk).map_err(|_| Error::DecryptionError)?;
 
         let key = PayloadKey::derive(&shared_secret, epk);
-        Note::decrypt_with_payload_key(ciphertext, &key)
+        Note::decrypt_with_payload_key(ciphertext, &key, &epk)
     }
 
     /// Decrypt a note ciphertext using the IVK and ephemeral public key to generate a plaintext `Note`.
@@ -221,20 +226,18 @@ impl Note {
             .map_err(|_| Error::DecryptionError)?;
 
         let key = PayloadKey::derive(&shared_secret, epk);
-        Note::decrypt_with_payload_key(ciphertext, &key)
+        Note::decrypt_with_payload_key(ciphertext, &key, &epk)
     }
 
     /// Decrypt a note ciphertext using the [`PayloadKey`].
     pub fn decrypt_with_payload_key(
         ciphertext: &[u8],
         payload_key: &PayloadKey,
+        epk: &ka::Public,
     ) -> Result<Note, Error> {
         if ciphertext.len() != NOTE_CIPHERTEXT_BYTES {
             return Err(Error::DecryptionError);
         }
-
-        // TODO: Here we don't have the epk to check epk = [esk] g_d
-        // We will modify the API to take the epk as an argument.
 
         let plaintext = payload_key
             .decrypt(ciphertext.to_vec(), PayloadKind::Note)
@@ -243,9 +246,16 @@ impl Note {
         let plaintext_bytes: [u8; NOTE_LEN_BYTES] =
             plaintext.try_into().map_err(|_| Error::DecryptionError)?;
 
-        plaintext_bytes
+        let note: Note = plaintext_bytes
             .try_into()
-            .map_err(|_| Error::DecryptionError)
+            .map_err(|_| Error::DecryptionError)?;
+
+        // Ephemeral public key integrity check. See ZIP 212 or Penumbra issue #1688.
+        if note.ephemeral_public_key() != epk.clone() {
+            return Err(Error::DecryptionError);
+        }
+
+        Ok(note)
     }
 
     /// Create the note commitment for this note.
