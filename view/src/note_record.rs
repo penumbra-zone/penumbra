@@ -1,6 +1,6 @@
 use penumbra_chain::NoteSource;
 use penumbra_crypto::{
-    asset, keys::AddressIndex, note, Address, FieldExt, Fq, Note, Nullifier, Value,
+    asset, keys::AddressIndex, note, Address, FieldExt, Fq, Note, Nullifier, Rseed, Value,
 };
 use penumbra_proto::{view::v1alpha1 as pb, Protobuf};
 use penumbra_tct as tct;
@@ -104,18 +104,14 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for SpendableNoteRecord {
             })?,
         );
 
-        let note_blinding = Fq::from_bytes(
-            <[u8; 32]>::try_from(row.get::<'r, &[u8], _>("blinding_factor")).map_err(|e| {
+        let rseed = Rseed(
+            <[u8; 32]>::try_from(row.get::<'r, &[u8], _>("rseed")).map_err(|e| {
                 sqlx::Error::ColumnDecode {
-                    index: "blinding_factor".to_string(),
+                    index: "rseed".to_string(),
                     source: e.into(),
                 }
             })?,
-        )
-        .map_err(|e| sqlx::Error::ColumnDecode {
-            index: "blinding_factor".to_string(),
-            source: e.into(),
-        })?;
+        );
 
         let note_commitment = note::Commitment::try_from(
             row.get::<'r, &[u8], _>("note_commitment"),
@@ -142,12 +138,11 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for SpendableNoteRecord {
             amount: amount.into(),
             asset_id,
         };
-        let note = Note::from_parts(address, value, note_blinding).map_err(|e| {
-            sqlx::Error::ColumnDecode {
+        let note =
+            Note::from_parts(address, value, rseed).map_err(|e| sqlx::Error::ColumnDecode {
                 index: "note".to_string(),
                 source: e.into(),
-            }
-        })?;
+            })?;
 
         let source = NoteSource::try_from(row.get::<'r, &[u8], _>("source")).map_err(|e| {
             sqlx::Error::ColumnDecode {

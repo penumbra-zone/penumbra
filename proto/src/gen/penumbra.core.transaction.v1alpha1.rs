@@ -683,10 +683,9 @@ pub struct OutputPlan {
     /// The destination address to send it to.
     #[prost(message, optional, tag = "2")]
     pub dest_address: ::core::option::Option<super::super::crypto::v1alpha1::Address>,
-    /// The blinding factor to use for the new note.
+    /// The rseed to use for the new note.
     #[prost(bytes = "bytes", tag = "3")]
-    #[serde(with = "crate::serializers::hexstr_bytes")]
-    pub note_blinding: ::prost::bytes::Bytes,
+    pub rseed: ::prost::bytes::Bytes,
     /// The blinding factor to use for the value commitment.
     #[prost(bytes = "bytes", tag = "4")]
     #[serde(with = "crate::serializers::hexstr_bytes")]

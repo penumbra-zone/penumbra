@@ -1,7 +1,7 @@
 use ark_ff::UniformRand;
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_crypto::{
-    proofs::transparent::SpendProof, Address, FieldExt, Fq, Fr, FullViewingKey, Note, Value,
+    proofs::transparent::SpendProof, Address, FieldExt, Fr, FullViewingKey, Note, Rseed, Value,
     STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::{core::transaction::v1alpha1 as pb, Protobuf};
@@ -39,14 +39,14 @@ impl SpendPlan {
     /// Create a dummy [`SpendPlan`].
     pub fn dummy<R: CryptoRng + RngCore>(rng: &mut R) -> SpendPlan {
         let dummy_address = Address::dummy(rng);
-        let note_blinding = Fq::rand(rng);
+        let rseed = Rseed::generate(rng);
         let dummy_note = Note::from_parts(
             dummy_address,
             Value {
                 amount: 0u64.into(),
                 asset_id: *STAKING_TOKEN_ASSET_ID,
             },
-            note_blinding,
+            rseed,
         )
         .expect("dummy note is valid");
 

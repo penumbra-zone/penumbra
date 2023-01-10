@@ -121,6 +121,10 @@ impl Note {
         self.value.amount
     }
 
+    pub fn rseed(&self) -> Rseed {
+        self.rseed
+    }
+
     /// Encrypt a note, returning its ciphertext.
     pub fn encrypt(&self) -> [u8; NOTE_CIPHERTEXT_BYTES] {
         let esk = self.ephemeral_secret_key();
