@@ -18,6 +18,7 @@ impl Amount {
         Self { inner: 0 }
     }
 
+    // We need fixed length encoding to produce encrypted `Note`s.
     pub fn to_le_bytes(&self) -> [u8; 16] {
         self.inner.to_le_bytes()
     }
