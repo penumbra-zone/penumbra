@@ -199,7 +199,7 @@ mod tests {
 
         let value_blinding = Fr::rand(&mut rng);
         let cv = note.value().commit(value_blinding);
-        let wrapped_ovk = note.encrypt_key(&esk, ovk, cv);
+        let wrapped_ovk = note.encrypt_key(ovk, cv);
 
         // Later, still on the sender side, we decrypt the memo by using the decrypt_outgoing method.
         let epk = esk.diversified_public(dest.diversified_generator());

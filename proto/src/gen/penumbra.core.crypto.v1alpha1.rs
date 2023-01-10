@@ -178,8 +178,7 @@ pub struct Note {
     #[prost(message, optional, tag = "1")]
     pub value: ::core::option::Option<Value>,
     #[prost(bytes = "vec", tag = "2")]
-    #[serde(with = "crate::serializers::hexstr")]
-    pub note_blinding: ::prost::alloc::vec::Vec<u8>,
+    pub rseed: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "3")]
     pub address: ::core::option::Option<Address>,
 }
