@@ -8,7 +8,7 @@ on:
       nvals:
         description: 'Number of validators at genesis'
         required: true
-        default: '2'
+        default: '1'
       nfullnodes:
         description: 'Number of fullnodes at genesis'
         required: true
