@@ -137,3 +137,8 @@ message MerklePathChunk {
 message Clue {
   bytes inner = 1;
 }
+
+// An authorization hash for a Penumbra transaction.
+message EffectHash {
+  bytes inner = 1;
+}

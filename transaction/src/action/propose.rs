@@ -4,13 +4,15 @@ use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, str::FromStr};
 
 use penumbra_crypto::{asset::Amount, Address, Balance, Fr, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_proto::{core::transaction::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{
+    core::governance::v1alpha1 as pb_gov, core::transaction::v1alpha1 as pb_tx, Protobuf,
+};
 
 use crate::{plan::TransactionPlan, ActionView, EffectHash, IsAction, TransactionPerspective};
 
 /// A governance proposal.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(try_from = "pb::Proposal", into = "pb::Proposal")]
+#[serde(try_from = "pb_gov::Proposal", into = "pb_gov::Proposal")]
 pub struct Proposal {
     /// A short title describing the intent of the proposal.
     pub title: String,
@@ -22,9 +24,9 @@ pub struct Proposal {
     pub payload: ProposalPayload,
 }
 
-impl From<Proposal> for pb::Proposal {
-    fn from(inner: Proposal) -> pb::Proposal {
-        pb::Proposal {
+impl From<Proposal> for pb_gov::Proposal {
+    fn from(inner: Proposal) -> pb_gov::Proposal {
+        pb_gov::Proposal {
             title: inner.title,
             description: inner.description,
             payload: Some(inner.payload.into()),
@@ -32,10 +34,10 @@ impl From<Proposal> for pb::Proposal {
     }
 }
 
-impl TryFrom<pb::Proposal> for Proposal {
+impl TryFrom<pb_gov::Proposal> for Proposal {
     type Error = anyhow::Error;
 
-    fn try_from(inner: pb::Proposal) -> Result<Proposal, Self::Error> {
+    fn try_from(inner: pb_gov::Proposal) -> Result<Proposal, Self::Error> {
         Ok(Proposal {
             title: inner.title,
             description: inner.description,
@@ -47,7 +49,7 @@ impl TryFrom<pb::Proposal> for Proposal {
     }
 }
 
-impl Protobuf<pb::Proposal> for Proposal {}
+impl Protobuf<pb_gov::Proposal> for Proposal {}
 
 /// The specific kind of a proposal.
 #[derive(Debug, Clone)]
@@ -128,7 +130,10 @@ impl ProposalKind {
 
 /// The machine-interpretable body of a proposal.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(try_from = "pb::proposal::Payload", into = "pb::proposal::Payload")]
+#[serde(
+    try_from = "pb_gov::proposal::Payload",
+    into = "pb_gov::proposal::Payload"
+)]
 pub enum ProposalPayload {
     /// A signaling proposal is merely for coordination; it does not enact anything automatically by
     /// itself.
@@ -178,42 +183,47 @@ impl ProposalPayload {
     }
 }
 
-impl Protobuf<pb::proposal::Payload> for ProposalPayload {}
+impl Protobuf<pb_gov::proposal::Payload> for ProposalPayload {}
 
-impl From<ProposalPayload> for pb::proposal::Payload {
-    fn from(value: ProposalPayload) -> pb::proposal::Payload {
-        pb::proposal::Payload {
+impl From<ProposalPayload> for pb_gov::proposal::Payload {
+    fn from(value: ProposalPayload) -> pb_gov::proposal::Payload {
+        pb_gov::proposal::Payload {
             payload: Some(match value {
                 ProposalPayload::Signaling { commit } => {
-                    pb::proposal::payload::Payload::Signaling(pb::proposal::Signaling { commit })
+                    pb_gov::proposal::payload::Payload::Signaling(pb_gov::proposal::Signaling {
+                        commit,
+                    })
                 }
                 ProposalPayload::Emergency { halt_chain } => {
-                    pb::proposal::payload::Payload::Emergency(pb::proposal::Emergency {
+                    pb_gov::proposal::payload::Payload::Emergency(pb_gov::proposal::Emergency {
                         halt_chain,
                     })
                 }
                 ProposalPayload::ParameterChange {
                     effective_height,
                     new_parameters,
-                } => {
-                    pb::proposal::payload::Payload::ParameterChange(pb::proposal::ParameterChange {
+                } => pb_gov::proposal::payload::Payload::ParameterChange(
+                    pb_gov::proposal::ParameterChange {
                         effective_height,
                         new_parameters: new_parameters
                             .into_iter()
                             .map(|(parameter, value)| {
-                                pb::proposal::parameter_change::SetParameter { parameter, value }
+                                pb_gov::proposal::parameter_change::SetParameter {
+                                    parameter,
+                                    value,
+                                }
                             })
                             .collect(),
-                    })
-                }
+                    },
+                ),
                 ProposalPayload::DaoSpend {
                     schedule_transactions,
                     cancel_transactions,
-                } => pb::proposal::payload::Payload::DaoSpend(pb::proposal::DaoSpend {
+                } => pb_gov::proposal::payload::Payload::DaoSpend(pb_gov::proposal::DaoSpend {
                     schedule_transactions: schedule_transactions
                         .into_iter()
                         .map(|(execute_at_height, transaction)| {
-                            pb::proposal::dao_spend::ScheduleTransaction {
+                            pb_gov::proposal::dao_spend::ScheduleTransaction {
                                 execute_at_height,
                                 transaction: Some(transaction.into()),
                             }
@@ -222,7 +232,7 @@ impl From<ProposalPayload> for pb::proposal::Payload {
                     cancel_transactions: cancel_transactions
                         .into_iter()
                         .map(|(scheduled_at_height, effect_hash)| {
-                            pb::proposal::dao_spend::CancelTransaction {
+                            pb_gov::proposal::dao_spend::CancelTransaction {
                                 scheduled_at_height,
                                 effect_hash: Some(effect_hash.into()),
                             }
@@ -234,22 +244,26 @@ impl From<ProposalPayload> for pb::proposal::Payload {
     }
 }
 
-impl TryFrom<pb::proposal::Payload> for ProposalPayload {
+impl TryFrom<pb_gov::proposal::Payload> for ProposalPayload {
     type Error = anyhow::Error;
 
-    fn try_from(msg: pb::proposal::Payload) -> Result<Self, Self::Error> {
+    fn try_from(msg: pb_gov::proposal::Payload) -> Result<Self, Self::Error> {
         let payload = msg
             .payload
             .ok_or_else(|| anyhow::anyhow!("missing proposal payload"))?;
 
         match payload {
-            pb::proposal::payload::Payload::Signaling(inner) => Ok(ProposalPayload::Signaling {
-                commit: inner.commit,
-            }),
-            pb::proposal::payload::Payload::Emergency(inner) => Ok(ProposalPayload::Emergency {
-                halt_chain: inner.halt_chain,
-            }),
-            pb::proposal::payload::Payload::ParameterChange(inner) => {
+            pb_gov::proposal::payload::Payload::Signaling(inner) => {
+                Ok(ProposalPayload::Signaling {
+                    commit: inner.commit,
+                })
+            }
+            pb_gov::proposal::payload::Payload::Emergency(inner) => {
+                Ok(ProposalPayload::Emergency {
+                    halt_chain: inner.halt_chain,
+                })
+            }
+            pb_gov::proposal::payload::Payload::ParameterChange(inner) => {
                 Ok(ProposalPayload::ParameterChange {
                     effective_height: inner.effective_height,
                     new_parameters: inner
@@ -259,7 +273,7 @@ impl TryFrom<pb::proposal::Payload> for ProposalPayload {
                         .collect(),
                 })
             }
-            pb::proposal::payload::Payload::DaoSpend(inner) => Ok(ProposalPayload::DaoSpend {
+            pb_gov::proposal::payload::Payload::DaoSpend(inner) => Ok(ProposalPayload::DaoSpend {
                 schedule_transactions: inner
                     .schedule_transactions
                     .into_iter()
@@ -299,7 +313,7 @@ impl TryFrom<pb::proposal::Payload> for ProposalPayload {
 /// address for the proposal deposit, along with a key to be used to verify the signature for a
 /// withdrawal of that proposal.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(try_from = "pb::ProposalSubmit", into = "pb::ProposalSubmit")]
+#[serde(try_from = "pb_tx::ProposalSubmit", into = "pb_tx::ProposalSubmit")]
 pub struct ProposalSubmit {
     /// The proposal to propose.
     pub proposal: Proposal,
@@ -335,9 +349,9 @@ impl ProposalSubmit {
     }
 }
 
-impl From<ProposalSubmit> for pb::ProposalSubmit {
-    fn from(value: ProposalSubmit) -> pb::ProposalSubmit {
-        pb::ProposalSubmit {
+impl From<ProposalSubmit> for pb_tx::ProposalSubmit {
+    fn from(value: ProposalSubmit) -> pb_tx::ProposalSubmit {
+        pb_tx::ProposalSubmit {
             proposal: Some(value.proposal.into()),
             deposit_refund_address: Some(value.deposit_refund_address.into()),
             deposit_amount: Some(value.deposit_amount.into()),
@@ -346,10 +360,10 @@ impl From<ProposalSubmit> for pb::ProposalSubmit {
     }
 }
 
-impl TryFrom<pb::ProposalSubmit> for ProposalSubmit {
+impl TryFrom<pb_tx::ProposalSubmit> for ProposalSubmit {
     type Error = anyhow::Error;
 
-    fn try_from(msg: pb::ProposalSubmit) -> Result<Self, Self::Error> {
+    fn try_from(msg: pb_tx::ProposalSubmit) -> Result<Self, Self::Error> {
         Ok(ProposalSubmit {
             proposal: msg
                 .proposal
@@ -370,10 +384,10 @@ impl TryFrom<pb::ProposalSubmit> for ProposalSubmit {
     }
 }
 
-impl Protobuf<pb::ProposalSubmit> for ProposalSubmit {}
+impl Protobuf<pb_tx::ProposalSubmit> for ProposalSubmit {}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(try_from = "pb::ProposalWithdraw", into = "pb::ProposalWithdraw")]
+#[serde(try_from = "pb_tx::ProposalWithdraw", into = "pb_tx::ProposalWithdraw")]
 pub struct ProposalWithdraw {
     /// The proposal withdraw body.
     pub body: ProposalWithdrawBody,
@@ -391,19 +405,19 @@ impl IsAction for ProposalWithdraw {
     }
 }
 
-impl From<ProposalWithdraw> for pb::ProposalWithdraw {
-    fn from(value: ProposalWithdraw) -> pb::ProposalWithdraw {
-        pb::ProposalWithdraw {
+impl From<ProposalWithdraw> for pb_tx::ProposalWithdraw {
+    fn from(value: ProposalWithdraw) -> pb_tx::ProposalWithdraw {
+        pb_tx::ProposalWithdraw {
             body: Some(value.body.into()),
             auth_sig: Some(value.auth_sig.into()),
         }
     }
 }
 
-impl TryFrom<pb::ProposalWithdraw> for ProposalWithdraw {
+impl TryFrom<pb_tx::ProposalWithdraw> for ProposalWithdraw {
     type Error = anyhow::Error;
 
-    fn try_from(msg: pb::ProposalWithdraw) -> Result<Self, Self::Error> {
+    fn try_from(msg: pb_tx::ProposalWithdraw) -> Result<Self, Self::Error> {
         Ok(ProposalWithdraw {
             body: msg
                 .body
@@ -421,8 +435,8 @@ impl TryFrom<pb::ProposalWithdraw> for ProposalWithdraw {
 /// (this is the body, absent the signature).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(
-    try_from = "pb::ProposalWithdrawBody",
-    into = "pb::ProposalWithdrawBody"
+    try_from = "pb_tx::ProposalWithdrawBody",
+    into = "pb_tx::ProposalWithdrawBody"
 )]
 pub struct ProposalWithdrawBody {
     /// The proposal ID to withdraw.
@@ -431,19 +445,19 @@ pub struct ProposalWithdrawBody {
     pub reason: String,
 }
 
-impl From<ProposalWithdrawBody> for pb::ProposalWithdrawBody {
-    fn from(value: ProposalWithdrawBody) -> pb::ProposalWithdrawBody {
-        pb::ProposalWithdrawBody {
+impl From<ProposalWithdrawBody> for pb_tx::ProposalWithdrawBody {
+    fn from(value: ProposalWithdrawBody) -> pb_tx::ProposalWithdrawBody {
+        pb_tx::ProposalWithdrawBody {
             proposal: value.proposal,
             reason: value.reason,
         }
     }
 }
 
-impl TryFrom<pb::ProposalWithdrawBody> for ProposalWithdrawBody {
+impl TryFrom<pb_tx::ProposalWithdrawBody> for ProposalWithdrawBody {
     type Error = anyhow::Error;
 
-    fn try_from(msg: pb::ProposalWithdrawBody) -> Result<Self, Self::Error> {
+    fn try_from(msg: pb_tx::ProposalWithdrawBody) -> Result<Self, Self::Error> {
         Ok(ProposalWithdrawBody {
             proposal: msg.proposal,
             reason: msg.reason,
@@ -451,4 +465,4 @@ impl TryFrom<pb::ProposalWithdrawBody> for ProposalWithdrawBody {
     }
 }
 
-impl Protobuf<pb::ProposalWithdrawBody> for ProposalWithdrawBody {}
+impl Protobuf<pb_tx::ProposalWithdrawBody> for ProposalWithdrawBody {}

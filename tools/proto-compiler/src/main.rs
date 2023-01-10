@@ -282,7 +282,7 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.core.chain.v1alpha1.GenesisAppState", SERIALIZE),
     (".penumbra.core.chain.v1alpha1.GenesisAllocation", SERIALIZE),
     (".penumbra.core.chain.v1alpha1.Ratio", SERIALIZE),
-    (".penumbra.core.transaction.v1alpha1.EffectHash", SERIALIZE),
+    (".penumbra.core.crypto.v1alpha1.EffectHash", SERIALIZE),
     (
         ".penumbra.core.transaction.v1alpha1.AuthorizationData",
         SERIALIZE,
@@ -308,16 +308,15 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.core.transaction.v1alpha1.SpendBody", SERIALIZE),
     (".penumbra.core.transaction.v1alpha1.Output", SERIALIZE),
     (".penumbra.core.transaction.v1alpha1.OutputBody", SERIALIZE),
-    (".penumbra.core.transaction.v1alpha1.Proposal", SERIALIZE),
+    (".penumbra.core.governance.v1alpha1.Proposal", SERIALIZE),
     (
-        ".penumbra.core.transaction.v1alpha1.Proposal.Payload",
+        ".penumbra.core.governance.v1alpha1.Proposal.Payload",
         SERDE_SNAKE_CASE,
     ),
     (
-        ".penumbra.core.transaction.v1alpha1.Proposal.Payload.payload",
+        ".penumbra.core.governance.v1alpha1.Proposal.Payload.payload",
         SERDE_TAG_KIND,
     ),
-    (".penumbra.core.transaction.v1alpha1.Vote", SERIALIZE),
     (
         ".penumbra.core.transaction.v1alpha1.ProposalSubmit",
         SERIALIZE,
@@ -631,4 +630,8 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         AS_BASE64,
     ),
     ("penumbra.core.ibc.v1alpha1.IbcAction.raw_action", AS_ANY),
+    (
+        "penumbra.core.governance.v1alpha1.Proposal.DaoSpend.ScheduleTransaction.transaction",
+        AS_ANY,
+    ),
 ];
