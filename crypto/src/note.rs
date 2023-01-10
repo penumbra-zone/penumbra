@@ -283,6 +283,29 @@ pub fn commitment(
     Commitment(commit)
 }
 
+/// Create a note commitment from the blinding factor, value, and address.
+pub fn commitment_from_address(
+    address: Address,
+    value: Value,
+    note_blinding: Fq,
+) -> Result<Commitment, Error> {
+    let transmission_key_s =
+        Fq::from_bytes(address.transmission_key().0).map_err(|_| Error::InvalidTransmissionKey)?;
+    let commit = poseidon377::hash_6(
+        &NOTECOMMIT_DOMAIN_SEP,
+        (
+            note_blinding,
+            value.amount.into(),
+            value.asset_id.0,
+            address.diversified_generator().vartime_compress_to_field(),
+            transmission_key_s,
+            Fq::from_le_bytes_mod_order(&address.clue_key().0[..]),
+        ),
+    );
+
+    Ok(Commitment(commit))
+}
+
 impl std::fmt::Debug for Note {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Note")

@@ -18,7 +18,7 @@ use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
 use crate::proofs::groth16::{gadgets, ParameterSetup};
-use crate::{balance, keys::Diversifier, note, Address, Note, Value};
+use crate::{balance, keys::Diversifier, Rseed, note, Address, Note, Value};
 
 // Public:
 // * vcm (value commitment)
@@ -117,7 +117,7 @@ impl ParameterSetup for OutputCircuit {
         let note = Note::from_parts(
             address,
             Value::from_str("1upenumbra").expect("valid value"),
-            Fq::from(1),
+            Rseed([1u8; 32]),
         )
         .expect("can make a note");
         let v_blinding = Fr::from(1);
