@@ -1,5 +1,4 @@
 use crate::{Fq, Fr};
-use anyhow::anyhow;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, iter::Sum, num::NonZeroU128, ops};
@@ -13,6 +12,20 @@ pub struct Amount {
 impl Amount {
     pub fn value(&self) -> u64 {
         self.inner as u64
+    }
+
+    pub fn zero() -> Self {
+        Self { inner: 0 }
+    }
+
+    pub fn to_le_bytes(&self) -> [u8; 16] {
+        self.inner.to_le_bytes()
+    }
+
+    pub fn from_le_bytes(bytes: [u8; 16]) -> Amount {
+        Amount {
+            inner: u128::from_le_bytes(bytes),
+        }
     }
 }
 
@@ -58,88 +71,43 @@ impl TryFrom<std::string::String> for Amount {
     }
 }
 
-#[cfg(test)]
-mod test {
-    use crate::Amount;
-    use penumbra_proto::core::crypto::v1alpha1 as pb;
-    use rand::RngCore;
-    use rand_core::OsRng;
+impl Protobuf<pb::Amount> for Amount {}
 
-    fn encode_decode(value: u128) -> u128 {
-        let amount = Amount { inner: value };
-        let proto: pb::Amount = amount.into();
-        Amount::try_from(proto).unwrap().inner
-    }
-
-    #[test]
-    fn encode_decode_max() {
-        let value = u128::MAX;
-        assert_eq!(value, encode_decode(value))
-    }
-
-    #[test]
-    fn encode_decode_zero() {
-        let value = u128::MIN;
-        assert_eq!(value, encode_decode(value))
-    }
-
-    #[test]
-    fn encode_decode_right_border_bit() {
-        let value: u128 = 1 << 64;
-        assert_eq!(value, encode_decode(value))
-    }
-
-    #[test]
-    fn encode_decode_left_border_bit() {
-        let value: u128 = 1 << 63;
-        assert_eq!(value, encode_decode(value))
-    }
-
-    #[test]
-    fn encode_decode_random() {
-        let mut rng = OsRng;
-        let mut dest: [u8; 16] = [0; 16];
-        rng.fill_bytes(&mut dest);
-        let value: u128 = u128::from_le_bytes(dest);
-        assert_eq!(value, encode_decode(value))
-    }
-
-    #[test]
-    fn encode_decode_u64_max() {
-        let value = u64::MAX as u128;
-        assert_eq!(value, encode_decode(value))
-    }
-
-    #[test]
-    fn encode_decode_random_lower_order_bytes() {
-        let mut rng = OsRng;
-        let lo = rng.next_u64() as u128;
-        assert_eq!(lo, encode_decode(lo))
-    }
-
-    #[test]
-    fn encode_decode_random_higher_order_bytes() {
-        let mut rng = OsRng;
-        let value = rng.next_u64();
-        let hi = (value as u128) << 64;
-        assert_eq!(hi, encode_decode(hi))
+impl From<u64> for Amount {
+    fn from(amount: u64) -> Amount {
+        Amount {
+            inner: amount as u128,
+        }
     }
 }
 
-impl Protobuf<pb::Amount> for Amount {}
-
-impl Amount {
-    pub fn zero() -> Self {
-        Self { inner: 0 }
+impl From<Amount> for u64 {
+    fn from(amount: Amount) -> u64 {
+        amount.inner as u64
     }
-    pub fn to_le_bytes(&self) -> [u8; 16] {
-        self.inner.to_le_bytes()
-    }
+}
 
-    pub fn from_le_bytes(bytes: [u8; 16]) -> Self {
-        Self {
-            inner: u128::from_le_bytes(bytes),
+impl TryFrom<Amount> for i64 {
+    type Error = anyhow::Error;
+    fn try_from(value: Amount) -> Result<Self, Self::Error> {
+        value
+            .inner
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("failed conversion!"))
+    }
+}
+
+impl From<u32> for Amount {
+    fn from(amount: u32) -> Amount {
+        Amount {
+            inner: amount as u128,
         }
+    }
+}
+
+impl From<Amount> for u32 {
+    fn from(amount: Amount) -> u32 {
+        amount.inner as u32
     }
 }
 
@@ -243,78 +211,76 @@ impl From<Amount> for i128 {
     }
 }
 
-impl From<[u8; 16]> for Amount {
-    fn from(bytes: [u8; 16]) -> Amount {
-        Amount {
-            inner: u128::from_le_bytes(bytes),
-        }
-    }
-}
-
-impl TryFrom<Vec<u8>> for Amount {
-    type Error = anyhow::Error;
-
-    fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
-        if bytes.len() != 16 {
-            return Err(anyhow::anyhow!(
-                "could not deserialize Amount: input vec is not 16 bytes"
-            ));
-        }
-        let mut array = [0u8; 16];
-        array.copy_from_slice(&bytes);
-        Ok(Amount {
-            inner: u128::from_le_bytes(array),
-        })
-    }
-}
-
 impl Sum for Amount {
     fn sum<I: Iterator<Item = Amount>>(iter: I) -> Amount {
         iter.fold(Amount::zero(), |acc, x| acc + x)
     }
 }
 
-impl From<u64> for Amount {
-    fn from(amount: u64) -> Amount {
-        Amount {
-            inner: amount as u128,
-        }
-    }
-}
+#[cfg(test)]
+mod test {
+    use crate::Amount;
+    use penumbra_proto::core::crypto::v1alpha1 as pb;
+    use rand::RngCore;
+    use rand_core::OsRng;
 
-impl From<Amount> for u64 {
-    fn from(amount: Amount) -> u64 {
-        amount.inner as u64
+    fn encode_decode(value: u128) -> u128 {
+        let amount = Amount { inner: value };
+        let proto: pb::Amount = amount.into();
+        Amount::try_from(proto).unwrap().inner
     }
-}
 
-impl TryFrom<Amount> for i64 {
-    type Error = anyhow::Error;
-    fn try_from(value: Amount) -> Result<Self, Self::Error> {
-        value
-            .inner
-            .try_into()
-            .map_err(|_| anyhow!("failed conversion!"))
+    #[test]
+    fn encode_decode_max() {
+        let value = u128::MAX;
+        assert_eq!(value, encode_decode(value))
     }
-}
 
-impl From<[u8; 8]> for Amount {
-    fn from(bytes: [u8; 8]) -> Amount {
-        Amount {
-            inner: u64::from_le_bytes(bytes) as u128,
-        }
+    #[test]
+    fn encode_decode_zero() {
+        let value = u128::MIN;
+        assert_eq!(value, encode_decode(value))
     }
-}
-impl From<u32> for Amount {
-    fn from(amount: u32) -> Amount {
-        Amount {
-            inner: amount as u128,
-        }
-    }
-}
 
-impl From<Amount> for u32 {
-    fn from(amount: Amount) -> u32 {
-        amount.inner as u32
+    #[test]
+    fn encode_decode_right_border_bit() {
+        let value: u128 = 1 << 64;
+        assert_eq!(value, encode_decode(value))
+    }
+
+    #[test]
+    fn encode_decode_left_border_bit() {
+        let value: u128 = 1 << 63;
+        assert_eq!(value, encode_decode(value))
+    }
+
+    #[test]
+    fn encode_decode_random() {
+        let mut rng = OsRng;
+        let mut dest: [u8; 16] = [0; 16];
+        rng.fill_bytes(&mut dest);
+        let value: u128 = u128::from_le_bytes(dest);
+        assert_eq!(value, encode_decode(value))
+    }
+
+    #[test]
+    fn encode_decode_u64_max() {
+        let value = u64::MAX as u128;
+        assert_eq!(value, encode_decode(value))
+    }
+
+    #[test]
+    fn encode_decode_random_lower_order_bytes() {
+        let mut rng = OsRng;
+        let lo = rng.next_u64() as u128;
+        assert_eq!(lo, encode_decode(lo))
+    }
+
+    #[test]
+    fn encode_decode_random_higher_order_bytes() {
+        let mut rng = OsRng;
+        let value = rng.next_u64();
+        let hi = (value as u128) << 64;
+        assert_eq!(hi, encode_decode(hi))
     }
 }
