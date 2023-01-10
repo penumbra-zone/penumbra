@@ -408,7 +408,7 @@ impl TryFrom<&[u8]> for Note {
                 .try_into()
                 .map_err(|_| Error::NoteDeserializationError)?,
             Value {
-                amount: amount_bytes.into(),
+                amount: crate::asset::Amount::from_le_bytes(amount_bytes),
                 asset_id: asset::Id(
                     Fq::from_bytes(asset_id_bytes).map_err(|_| Error::NoteDeserializationError)?,
                 ),
