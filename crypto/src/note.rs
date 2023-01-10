@@ -208,7 +208,7 @@ impl Note {
             Note::decrypt_key(wrapped_ovk, cm, cv, ovk, epk).map_err(|_| Error::DecryptionError)?;
 
         let key = PayloadKey::derive(&shared_secret, epk);
-        Note::decrypt_with_payload_key(ciphertext, &key, &epk)
+        Note::decrypt_with_payload_key(ciphertext, &key, epk)
     }
 
     /// Decrypt a note ciphertext using the IVK and ephemeral public key to generate a plaintext `Note`.
@@ -226,7 +226,7 @@ impl Note {
             .map_err(|_| Error::DecryptionError)?;
 
         let key = PayloadKey::derive(&shared_secret, epk);
-        Note::decrypt_with_payload_key(ciphertext, &key, &epk)
+        Note::decrypt_with_payload_key(ciphertext, &key, epk)
     }
 
     /// Decrypt a note ciphertext using the [`PayloadKey`].
@@ -497,5 +497,30 @@ mod tests {
                 .expect("can decrypt note");
 
         assert_eq!(plaintext, note);
+    }
+
+    #[test]
+    fn note_decryption_fails_with_incorrect_epk() {
+        let mut rng = OsRng;
+
+        let seed_phrase = SeedPhrase::generate(rng);
+        let sk = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let fvk = sk.full_viewing_key();
+        let ivk = fvk.incoming();
+        let (dest, _dtk_d) = ivk.payment_address(0u64.into());
+
+        let value = Value {
+            amount: 10u64.into(),
+            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+        };
+        let note = Note::generate(&mut rng, &dest, value);
+
+        let ciphertext = note.encrypt();
+
+        let wrong_esk = ka::Secret::new(&mut rng);
+        let wrong_epk = wrong_esk.diversified_public(dest.diversified_generator());
+        let decryption_result = Note::decrypt(&ciphertext, ivk, &wrong_epk);
+
+        assert!(decryption_result.is_err());
     }
 }

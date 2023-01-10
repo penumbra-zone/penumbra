@@ -176,8 +176,6 @@ mod tests {
         let ovk = fvk.outgoing();
         let (dest, _dtk_d) = ivk.payment_address(0u64.into());
 
-        let esk = ka::Secret::new(&mut rng);
-
         let value = Value {
             amount: 10u64.into(),
             asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
@@ -190,6 +188,7 @@ mod tests {
         let memo_key = PayloadKey::random_key(&mut OsRng);
         let ciphertext =
             MemoCiphertext::encrypt(memo_key.clone(), &memo).expect("can encrypt memo");
+        let esk = note.ephemeral_secret_key();
         let wrapped_memo_key = WrappedMemoKey::encrypt(
             &memo_key,
             esk.clone(),
