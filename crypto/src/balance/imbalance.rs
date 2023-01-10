@@ -37,7 +37,7 @@ impl Add for Imbalance<NonZeroU128> {
             (Imbalance::Required(r), Imbalance::Required(s)) => {
                 if let Some(t) = r.get().checked_add(s.get()) {
                     Some(Imbalance::Required(
-                        NonZeroU128::new(t).expect("checked addition of nonzero u64 never is zero"),
+                        NonZeroU128::new(t).expect("checked addition of NonZeroU128 is never zero"),
                     ))
                 } else {
                     panic!("overflow when adding imbalances")
