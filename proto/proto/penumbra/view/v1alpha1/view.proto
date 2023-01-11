@@ -63,6 +63,51 @@ service ViewProtocolService {
   rpc TransactionPerspective(TransactionPerspectiveRequest) returns (TransactionPerspectiveResponse);
 }
 
+service PlannerService {
+  rpc Planner(PlannerRequest) returns (PlannerResponse);
+}
+
+message PlannerRequest {
+    // The expiry height for the requested TransactionPlan
+    uint64 expiry_height = 1;
+    // The fee for the requested TransactionPlan, if any.
+    core.crypto.v1alpha1.Fee fee = 2;
+    // The memo for the requested TransactionPlan
+    string memo = 3;
+    // Identifies the FVK for the notes to query.
+    optional core.crypto.v1alpha1.AccountID account_id = 14;
+    // Authorizes the request.
+    optional ViewAuthToken token = 15;
+
+  // Request contents
+  repeated Output outputs = 20;
+  repeated Swap swaps = 30;
+  repeated Delegate delegations = 40;
+  repeated Undelegate undelegations = 50;
+
+  // Request message subtypes
+  message Output {
+    core.crypto.v1alpha1.Value value = 1;
+    core.crypto.v1alpha1.Address address = 2;
+  }
+  message Swap {
+    core.crypto.v1alpha1.Value value = 1;
+    core.crypto.v1alpha1.AssetId target_asset = 2;
+    core.crypto.v1alpha1.Fee fee = 3;
+  }
+  message Delegate {
+    core.crypto.v1alpha1.Amount amount = 1;
+    core.crypto.v1alpha1.IdentityKey identity_key = 2;
+  }
+  message Undelegate {
+    core.crypto.v1alpha1.Value value = 1;
+  }
+}
+
+message PlannerResponse {
+    core.transaction.v1alpha1.TransactionPlan plan = 1;
+}
+
 // Scaffolding for bearer-token authentication for the ViewService.
 // The `account_id` and `token` fields are both optional,
 // and numbered as 14 & 15 throughout the view service protocol.
