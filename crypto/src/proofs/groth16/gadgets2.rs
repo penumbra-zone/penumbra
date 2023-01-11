@@ -114,7 +114,8 @@ impl ValueVar {
 
 struct AddressVar {
     cs: ConstraintSystemRef<Fq>,
-    // TODO: in some places, we'll want the diversified generator as a validated
+    // TODO: in some places, we'll want the diversified generator (and
+    // transmission key) as a validated
     // curve point, in others we'll want it as the encoding.  which should we
     // pick as the "default" internal representation? for now, use both, and
     // over-constrain, then we can optimize later we could, e.g. have an enum {
@@ -123,22 +124,31 @@ struct AddressVar {
     // accessors take &mut self, and then either fetch the already-allocated
     // variable, or allocate it and mutate the internal state to do constraint
     // on demand ?
-    diversified_generator_s: FqVar,
+    diversified_generator: ElementVar,
+    // transmission_key: ElementVar,
     transmission_key_s: FqVar,
-    // TODO: other fields
+    // Output proof needs: diversified generator as element and does the elligator
+    // map to get an Fq, transmission key as Fq
+    // Spend proof needs: diversified generator as element and does the elligator
+    // map to get an Fq, transmission key as Fq and element
+    clue_key: FqVar,
 }
 
 impl AddressVar {
-    pub fn diversified_generator_s(&self) -> FqVar {
-        todo!()
+    pub fn diversified_generator(&self) -> ElementVar {
+        self.diversified_generator.clone()
     }
+
+    // pub fn transmission_key(&self) -> ElementVar {
+    //     self.transmission_key.clone()
+    // }
 
     pub fn transmission_key_s(&self) -> FqVar {
-        todo!()
+        self.transmission_key_s.clone()
     }
 
-    pub fn clue_key_s(&self) -> FqVar {
-        todo!()
+    pub fn clue_key(&self) -> FqVar {
+        self.clue_key.clone()
     }
 }
 
@@ -148,15 +158,79 @@ impl AllocVar<Address, Fq> for AddressVar {
         f: impl FnOnce() -> Result<T, SynthesisError>,
         mode: ark_r1cs_std::prelude::AllocationMode,
     ) -> Result<Self, SynthesisError> {
-        todo!()
+        let ns = cs.into();
+        let cs = ns.cs();
+        let value1 = f()?;
+        let address: Address = *value1.borrow();
+        match mode {
+            AllocationMode::Constant => unimplemented!(),
+            AllocationMode::Input => unimplemented!(),
+            AllocationMode::Witness => {
+                let diversified_generator: ElementVar =
+                    AllocVar::<Element, Fq>::new_witness(cs.clone(), || {
+                        Ok(address.diversified_generator().clone())
+                    })?;
+                let transmission_key_s =
+                    FqVar::new_witness(cs.clone(), || Ok(address.transmission_key_s().clone()))?;
+                // dbg!(decaf377::Encoding(address.transmission_key().0).vartime_decompress());
+                // let element_transmission_key = decaf377::Encoding(address.transmission_key().0)
+                //     .vartime_decompress()
+                //     .map_err(|_| SynthesisError::AssignmentMissing)?;
+                // let transmission_key: ElementVar =
+                //     AllocVar::<Element, Fq>::new_witness(cs.clone(), || {
+                //         Ok(element_transmission_key)
+                //     })?;
+                let clue_key = FqVar::new_witness(cs.clone(), || {
+                    Ok(Fq::from_le_bytes_mod_order(&address.clue_key().0[..]))
+                })?;
+
+                Ok(Self {
+                    cs,
+                    diversified_generator,
+                    transmission_key_s,
+                    // transmission_key,
+                    clue_key,
+                })
+            }
+        }
     }
 }
 
-struct NoteVar {
+pub struct NoteVar {
     cs: ConstraintSystemRef<Fq>,
     value: ValueVar,
     note_blinding: FqVar,
     address: AddressVar,
+}
+
+impl NoteVar {
+    pub fn amount(&self) -> FqVar {
+        self.value.amount()
+    }
+
+    pub fn asset_id(&self) -> FqVar {
+        self.value.asset_id()
+    }
+
+    pub fn note_blinding(&self) -> FqVar {
+        self.note_blinding.clone()
+    }
+
+    pub fn diversified_generator(&self) -> ElementVar {
+        self.address.diversified_generator.clone()
+    }
+
+    // pub fn transmission_key(&self) -> ElementVar {
+    //     self.address.transmission_key.clone()
+    // }
+
+    pub fn transmission_key_s(&self) -> FqVar {
+        self.address.transmission_key_s.clone()
+    }
+
+    pub fn clue_key(&self) -> FqVar {
+        self.address.clue_key.clone()
+    }
 }
 
 impl AllocVar<Note, Fq> for NoteVar {
@@ -196,9 +270,34 @@ pub struct NoteCommitmentVar {
     inner: FqVar,
 }
 
+impl AllocVar<note::Commitment, Fq> for NoteCommitmentVar {
+    fn new_variable<T: std::borrow::Borrow<note::Commitment>>(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: ark_r1cs_std::prelude::AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        match mode {
+            AllocationMode::Constant => unimplemented!(),
+            AllocationMode::Input => {
+                let note_commitment1 = f()?;
+                let note_commitment: note::Commitment = *note_commitment1.borrow();
+                let inner = FqVar::new_input(cs.clone(), || Ok(note_commitment.0))?;
+
+                Ok(Self { cs, inner })
+            }
+            AllocationMode::Witness => unimplemented!(),
+        }
+    }
+}
+
 impl NoteVar {
     pub fn commit(&self) -> Result<NoteCommitmentVar, SynthesisError> {
         let domain_sep = FqVar::new_constant(self.cs.clone(), *NOTECOMMIT_DOMAIN_SEP)?;
+        // TODO: should we do this as part of allocating AddressVar? Should only be done
+        // if needed as it is expensive. See the comment in the struct def for AddressVar
+        let compressed_g_d = self.address.diversified_generator().compress_to_field()?;
 
         let commitment = poseidon377::r1cs::hash_6(
             self.cs.clone(),
@@ -207,9 +306,9 @@ impl NoteVar {
                 self.note_blinding.clone(),
                 self.value.amount(),
                 self.value.asset_id(),
-                self.address.diversified_generator_s(),
+                compressed_g_d,
                 self.address.transmission_key_s(),
-                self.address.clue_key_s(),
+                self.address.clue_key(),
             ),
         )?;
 
@@ -220,4 +319,8 @@ impl NoteVar {
     }
 }
 
-// TODO: impl EqGadget for NoteCommitmentVar
+impl EqGadget<Fq> for NoteCommitmentVar {
+    fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
+        self.inner.is_eq(&other.inner)
+    }
+}
