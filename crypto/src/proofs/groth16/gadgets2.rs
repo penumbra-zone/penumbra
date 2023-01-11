@@ -12,7 +12,7 @@ use decaf377::{
     Element, Fq,
 };
 
-struct AmountVar {
+pub struct AmountVar {
     cs: ConstraintSystemRef<Fq>,
     amount: FqVar,
 }
@@ -41,9 +41,9 @@ impl AllocVar<Amount, Fq> for AmountVar {
     }
 }
 
-struct AssetIdVar {
+pub struct AssetIdVar {
     cs: ConstraintSystemRef<Fq>,
-    // TODO
+    asset_id: FqVar,
 }
 
 impl AllocVar<asset::Id, Fq> for AssetIdVar {
@@ -52,13 +52,28 @@ impl AllocVar<asset::Id, Fq> for AssetIdVar {
         f: impl FnOnce() -> Result<T, SynthesisError>,
         mode: ark_r1cs_std::prelude::AllocationMode,
     ) -> Result<Self, SynthesisError> {
-        todo!()
+        let ns = cs.into();
+        let cs = ns.cs();
+        let asset_id1 = f()?;
+        let asset_id: asset::Id = *asset_id1.borrow();
+        match mode {
+            AllocationMode::Constant => unimplemented!(),
+            AllocationMode::Input => unimplemented!(),
+            AllocationMode::Witness => {
+                let inner_asset_id_var = FqVar::new_witness(cs.clone(), || Ok(asset_id.0))?;
+                Ok(Self {
+                    cs,
+                    asset_id: inner_asset_id_var,
+                })
+            }
+        }
     }
 }
 
-struct ValueVar {
+pub struct ValueVar {
     cs: ConstraintSystemRef<Fq>,
-    // TODO
+    amount: AmountVar,
+    asset_id: AssetIdVar,
 }
 
 impl AllocVar<Value, Fq> for ValueVar {
@@ -67,17 +82,33 @@ impl AllocVar<Value, Fq> for ValueVar {
         f: impl FnOnce() -> Result<T, SynthesisError>,
         mode: ark_r1cs_std::prelude::AllocationMode,
     ) -> Result<Self, SynthesisError> {
-        todo!()
+        let ns = cs.into();
+        let cs = ns.cs();
+        let value1 = f()?;
+        let value: Value = *value1.borrow();
+        match mode {
+            AllocationMode::Constant => unimplemented!(),
+            AllocationMode::Input => unimplemented!(),
+            AllocationMode::Witness => {
+                let amount_var = AmountVar::new_witness(cs.clone(), || Ok(value.amount))?;
+                let asset_id_var = AssetIdVar::new_witness(cs.clone(), || Ok(value.asset_id))?;
+                Ok(Self {
+                    cs,
+                    amount: amount_var,
+                    asset_id: asset_id_var,
+                })
+            }
+        }
     }
 }
 
 impl ValueVar {
-    fn amount(&self) -> FqVar {
-        todo!()
+    pub fn amount(&self) -> FqVar {
+        self.amount.amount.clone()
     }
 
-    fn asset_id(&self) -> FqVar {
-        todo!()
+    pub fn asset_id(&self) -> FqVar {
+        self.asset_id.asset_id.clone()
     }
 }
 
@@ -160,7 +191,7 @@ impl AllocVar<Note, Fq> for NoteVar {
     }
 }
 
-struct NoteCommitmentVar {
+pub struct NoteCommitmentVar {
     cs: ConstraintSystemRef<Fq>,
     inner: FqVar,
 }
