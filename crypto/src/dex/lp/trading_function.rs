@@ -37,12 +37,12 @@ impl TradingFunction {
         // indepedently to correctly assign coefficients of the trading functions:
         //
         // Starting with the pair 1 <> 2:
-        // Case A: 1 <> 2   +   2   <> 3    = 1   <> 3
-        // Case B: 1 <> 2   +   0   <> 2    = 0   <> 1
-        // Case C: 1 <> 2   +   1.5 <> 2    = 1   <> 1.5
-        // Case D: 1 <> 2   +   1   <> 3    = 2   <> 3
-        // Case E: 1 <> 2   +   1   <> 1.5  = 1.5 <> 2
-        // Case F: 1 <> 2   +   0   <> 1    = 0   <> 2
+        //      Case A: 1 <> 2   +   2   <> 3    = 1   <> 3
+        //      Case B: 1 <> 2   +   0   <> 2    = 0   <> 1
+        //      Case C: 1 <> 2   +   1.5 <> 2    = 1   <> 1.5
+        //      Case D: 1 <> 2   +   1   <> 3    = 2   <> 3
+        //      Case E: 1 <> 2   +   1   <> 1.5  = 1.5 <> 2
+        //      Case F: 1 <> 2   +   0   <> 1    = 0   <> 2
         let fee = self.component.fee * phi.component.fee;
         // Case A: 1 <> 2   +   2   <> 3    = 1   <> 3
         if self.pair.asset_2() == phi.pair.asset_1() {
@@ -60,7 +60,6 @@ impl TradingFunction {
 
             // Case C: 1 <> 2   +   1.5 <> 2    = 1   <> 1.5
             if self.pair.asset_1() < phi.pair.asset_1() {
-                // case where 1 -- 2 cw 1.5 -- 2
                 std::mem::swap(&mut asset_1, &mut asset_2);
             }
 
@@ -74,7 +73,6 @@ impl TradingFunction {
 
             // Case E: 1 <> 2   +   1   <> 1.5  = 1.5 <> 2
             if self.pair.asset_2() > phi.pair.asset_2() {
-                // case 2: 1 -- 2 cw 1 -- 1.5: 1.5 -- 2 E
                 std::mem::swap(&mut asset_1, &mut asset_2);
             }
 
