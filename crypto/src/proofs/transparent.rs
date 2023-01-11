@@ -350,14 +350,14 @@ impl SwapClaimProof {
         ensure!(self.lambda_2_i == lambda_2_i, "lambda_2_i mismatch");
 
         // Output note integrity
-        let (output_blinding_1, output_blinding_2) = self.swap_plaintext.output_blinding_factors();
+        let (output_rseed_1, output_rseed_2) = self.swap_plaintext.output_rseeds();
         let output_1_commitment = note::commitment_from_address(
             self.swap_plaintext.claim_address,
             Value {
                 amount: self.lambda_1_i.into(),
                 asset_id: self.swap_plaintext.trading_pair.asset_1(),
             },
-            output_blinding_1,
+            output_rseed_1.derive_note_blinding(),
         )?;
         let output_2_commitment = note::commitment_from_address(
             self.swap_plaintext.claim_address,
@@ -365,7 +365,7 @@ impl SwapClaimProof {
                 amount: self.lambda_2_i.into(),
                 asset_id: self.swap_plaintext.trading_pair.asset_2(),
             },
-            output_blinding_2,
+            output_rseed_2.derive_note_blinding(),
         )?;
 
         ensure!(
