@@ -117,9 +117,9 @@ pub struct SwapPlaintext {
     /// Address that will claim the swap outputs via SwapClaim.
     #[prost(message, optional, tag = "5")]
     pub claim_address: ::core::option::Option<super::super::crypto::v1alpha1::Address>,
-    /// Swap blinding factor
+    /// Swap rseed (blinding factors are derived from this)
     #[prost(bytes = "vec", tag = "6")]
-    pub swap_blinding: ::prost::alloc::vec::Vec<u8>,
+    pub rseed: ::prost::alloc::vec::Vec<u8>,
 }
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[serde(transparent)]
