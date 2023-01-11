@@ -17,7 +17,7 @@ use ark_snark::SNARK;
 use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
-use crate::proofs::groth16::{gadgets, ParameterSetup};
+use crate::proofs::groth16::{gadgets, gadgets2, ParameterSetup};
 use crate::{balance, keys::Diversifier, note, Address, Note, Rseed, Value};
 
 // Public:
@@ -48,55 +48,35 @@ pub struct OutputCircuit {
 impl ConstraintSynthesizer<Fq> for OutputCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
-        let note_blinding_var =
-            FqVar::new_witness(cs.clone(), || Ok(self.note.note_blinding().clone()))?;
-        let value_amount_var =
-            FqVar::new_witness(cs.clone(), || Ok(Fq::from(self.note.value().amount)))?;
-        let value_asset_id_var =
-            FqVar::new_witness(cs.clone(), || Ok(self.note.value().asset_id.0))?;
-        let diversified_generator_var: ElementVar =
-            AllocVar::<Element, Fq>::new_witness(cs.clone(), || {
-                Ok(self.note.diversified_generator().clone())
-            })?;
-        let transmission_key_s_var =
-            FqVar::new_witness(cs.clone(), || Ok(self.note.transmission_key_s().clone()))?;
-        let clue_key_var = FqVar::new_witness(cs.clone(), || {
-            Ok(Fq::from_le_bytes_mod_order(&self.note.clue_key().0[..]))
-        })?;
+        let note_var = gadgets2::NoteVar::new_witness(cs.clone(), || Ok(self.note.clone()))?;
         let v_blinding_arr: [u8; 32] = self.v_blinding.to_bytes();
         let v_blinding_vars = UInt8::new_witness_vec(cs.clone(), &v_blinding_arr)?;
         let value_amount_arr = self.note.value().amount.to_le_bytes();
         let value_vars = UInt8::new_witness_vec(cs.clone(), &value_amount_arr)?;
 
         // Public inputs
-        let note_commitment_var = FqVar::new_input(cs.clone(), || Ok(self.note_commitment.0))?;
+        let note_commitment_var =
+            gadgets2::NoteCommitmentVar::new_input(cs.clone(), || Ok(self.note_commitment))?;
         let balance_commitment_var =
             ElementVar::new_input(cs.clone(), || Ok(self.balance_commitment.0))?;
 
         gadgets::diversified_basepoint_not_identity(
             cs.clone(),
             &Boolean::TRUE,
-            diversified_generator_var.clone(),
+            note_var.diversified_generator(),
         )?;
         gadgets::value_commitment_integrity(
-            cs.clone(),
+            cs,
             &Boolean::TRUE,
             value_vars,
-            value_asset_id_var.clone(),
+            note_var.asset_id(),
             v_blinding_vars,
             balance_commitment_var,
         )?;
-        gadgets::note_commitment_integrity(
-            cs,
-            &Boolean::TRUE,
-            note_blinding_var,
-            value_amount_var,
-            value_asset_id_var,
-            diversified_generator_var,
-            transmission_key_s_var,
-            clue_key_var,
-            note_commitment_var,
-        )?;
+
+        // Note commitment integrity
+        let note_commitment_test = note_var.commit()?;
+        note_commitment_test.enforce_equal(&note_commitment_var)?;
 
         Ok(())
     }
