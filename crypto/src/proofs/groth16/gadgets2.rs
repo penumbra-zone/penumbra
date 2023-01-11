@@ -14,7 +14,7 @@ use decaf377::{
 
 struct AmountVar {
     cs: ConstraintSystemRef<Fq>,
-    // TODO
+    amount: FqVar,
 }
 
 impl AllocVar<Amount, Fq> for AmountVar {
@@ -23,7 +23,21 @@ impl AllocVar<Amount, Fq> for AmountVar {
         f: impl FnOnce() -> Result<T, SynthesisError>,
         mode: ark_r1cs_std::prelude::AllocationMode,
     ) -> Result<Self, SynthesisError> {
-        todo!()
+        let ns = cs.into();
+        let cs = ns.cs();
+        let amount1 = f()?;
+        let amount: Amount = *amount1.borrow();
+        match mode {
+            AllocationMode::Constant => unimplemented!(),
+            AllocationMode::Input => unimplemented!(),
+            AllocationMode::Witness => {
+                let inner_amount_var = FqVar::new_witness(cs.clone(), || Ok(Fq::from(amount)))?;
+                Ok(Self {
+                    cs,
+                    amount: inner_amount_var,
+                })
+            }
+        }
     }
 }
 
