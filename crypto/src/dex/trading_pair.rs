@@ -1,7 +1,5 @@
 use std::str::FromStr;
 
-use anyhow::{anyhow, Result};
-
 use decaf377::FieldExt;
 use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 
@@ -14,12 +12,15 @@ pub struct TradingPair {
 }
 
 impl TradingPair {
-    pub fn new(asset_1: asset::Id, asset_2: asset::Id) -> Result<Self> {
-        if asset_2 < asset_1 {
-            return Err(anyhow!("asset_2 must be greater than asset_1"));
+    pub fn new(asset_1: asset::Id, asset_2: asset::Id) -> Self {
+        if asset_1 < asset_2 {
+            Self { asset_1, asset_2 }
+        } else {
+            Self {
+                asset_1: asset_2,
+                asset_2: asset_1,
+            }
         }
-
-        Ok(Self { asset_1, asset_2 })
     }
 
     pub fn asset_1(&self) -> asset::Id {
@@ -28,23 +29,6 @@ impl TradingPair {
 
     pub fn asset_2(&self) -> asset::Id {
         self.asset_2
-    }
-
-    /// Constructs the canonical representation of the provided pair.
-    pub fn canonical_order_for(pair: (asset::Id, asset::Id)) -> Result<Self> {
-        if pair.0 == pair.1 {
-            return Err(anyhow!("TradingPair must consist of different assets"));
-        } else if pair.0 < pair.1 {
-            Ok(Self {
-                asset_1: pair.0,
-                asset_2: pair.1,
-            })
-        } else {
-            Ok(Self {
-                asset_1: pair.1,
-                asset_2: pair.0,
-            })
-        }
     }
 
     /// Convert the trading pair to bytes.
@@ -110,11 +94,11 @@ impl FromStr for TradingPair {
         let parts: Vec<&str> = s.split(':').collect();
 
         if parts.len() != 2 {
-            return Err(anyhow!("invalid trading pair string"));
+            return Err(anyhow::anyhow!("invalid trading pair string"));
         }
 
         let denom_1 = REGISTRY.parse_unit(parts[0]);
         let denom_2 = REGISTRY.parse_unit(parts[1]);
-        Self::canonical_order_for((denom_1.id(), denom_2.id()))
+        Ok(Self::new(denom_1.id(), denom_2.id()))
     }
 }

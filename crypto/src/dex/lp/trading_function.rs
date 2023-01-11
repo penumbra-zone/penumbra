@@ -23,42 +23,39 @@ impl TradingFunction {
         }
     }
 
-    // Composes two `TradingFunction` together.
+    // Compose two `TradingFunction` together.
     //
     // ### Errors
     //
-    // This function errors:
-    //
-    // - if the resulting composition is circular, for example: A <> B + B <> A
-    //   yields A <> A.
-    // - if two `TradingFunction`s are asset disjoint, for example: A <> B + C <> D
+    // This function errors if two `TradingFunction`s are asset disjoint, for example: A <> B + C <> D
     fn compose(&self, phi: TradingFunction) -> anyhow::Result<TradingFunction> {
         // Since each pair has a canonical ordering, we must consider different cases
         // indepedently to correctly assign coefficients of the trading functions:
         //
         // Starting with the pair 1 <> 2:
-        //      Case A: 1 <> 2   +   2   <> 3    = 1   <> 3
-        //      Case B: 1 <> 2   +   0   <> 2    = 0   <> 1
-        //      Case C: 1 <> 2   +   1.5 <> 2    = 1   <> 1.5
-        //      Case D: 1 <> 2   +   1   <> 3    = 2   <> 3
-        //      Case E: 1 <> 2   +   1   <> 1.5  = 1.5 <> 2
-        //      Case F: 1 <> 2   +   0   <> 1    = 0   <> 2
+        //              Pair_1  +   Pair_2     =   Synth_Pair
+        //      Case A: 1 <> 2  +  2   <> 3    =  1   <> 3
+        //      Case B: 1 <> 2  +  0   <> 2    =  0   <> 1
+        //      Case C: 1 <> 2  +  1.5 <> 2    =  1   <> 1.5
+        //      Case D: 1 <> 2  +  1   <> 3    =  2   <> 3
+        //      Case E: 1 <> 2  +  1   <> 1.5  =  1.5 <> 2
+        //      Case F: 1 <> 2  +  0   <> 1    =  0   <> 2
         let fee = self.component.fee * phi.component.fee;
-        // Case A: 1 <> 2   +   2   <> 3    = 1   <> 3
+        // Case A: (1 <> 2) + (2 <> 3) = (1 <> 3)
         if self.pair.asset_2() == phi.pair.asset_1() {
-            let pair = TradingPair::canonical_order_for((self.pair.asset_1(), phi.pair.asset_2()))?;
+            let pair = TradingPair::new(self.pair.asset_1(), phi.pair.asset_2());
             let asset_1 = self.component.p * phi.component.p;
             let asset_2 = self.component.q * phi.component.q;
             let composed_amm = TradingFunction::new(pair, fee, asset_1, asset_2);
             Ok(composed_amm)
         } else if self.pair.asset_2() == phi.pair.asset_2() {
-            let pair = TradingPair::canonical_order_for((self.pair.asset_1(), phi.pair.asset_1()))?;
+            let pair = TradingPair::new(self.pair.asset_1(), phi.pair.asset_1());
 
-            // Case B: 1 <> 2   +   0   <> 2    = 0   <> 1
+            // Case B: (1 <> 2) + (0 <> 2) = (0 <> 1)
             let mut asset_1 = self.component.q * phi.component.p;
             let mut asset_2 = self.component.p * phi.component.q;
 
-            // Case C: 1 <> 2   +   1.5 <> 2    = 1   <> 1.5
+            // Case C: (1 <> 2) + (1.5 <> 2) = (1 <> 1.5)
             if self.pair.asset_1() < phi.pair.asset_1() {
                 std::mem::swap(&mut asset_1, &mut asset_2);
             }
@@ -66,22 +63,21 @@ impl TradingFunction {
             let composed_amm = TradingFunction::new(pair, fee, asset_1, asset_2);
             Ok(composed_amm)
         } else if self.pair.asset_1() == phi.pair.asset_1() {
-            let pair = TradingPair::canonical_order_for((self.pair.asset_2(), phi.pair.asset_2()))?;
-            // Case D: 1 <> 2   +   1   <> 3    = 2   <> 3
+            let pair = TradingPair::new(self.pair.asset_2(), phi.pair.asset_2());
+            // Case D: (1 <> 2) + (1 <> 3) = (2 <> 3)
             let mut asset_1 = self.component.q * phi.component.p;
             let mut asset_2 = self.component.p * phi.component.q;
 
-            // Case E: 1 <> 2   +   1   <> 1.5  = 1.5 <> 2
+            // Case E: (1 <> 2) + (1 <> 1.5) = (1.5 <> 2)
             if self.pair.asset_2() > phi.pair.asset_2() {
                 std::mem::swap(&mut asset_1, &mut asset_2);
             }
 
             let composed_amm = TradingFunction::new(pair, fee, asset_1, asset_2);
             Ok(composed_amm)
-            // F
         } else if self.pair.asset_1() == phi.pair.asset_2() {
-            // Case F: 1 <> 2   +   0   <> 1    = 0   <> 2
-            let pair = TradingPair::canonical_order_for((self.pair.asset_2(), phi.pair.asset_1()))?;
+            // Case F: (1 <> 2) + (0 <> 1) = (0 <> 2)
+            let pair = TradingPair::new(self.pair.asset_2(), phi.pair.asset_1());
             let asset_1 = phi.component.p * self.component.p;
             let asset_2 = phi.component.q * self.component.q;
             let composed_amm = TradingFunction::new(pair, fee, asset_1, asset_2);

@@ -127,8 +127,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     ) -> Result<&mut Self> {
         // Determine the canonical order for the assets being swapped.
         // This will determine whether the input amount is assigned to delta_1 or delta_2.
-        let trading_pair =
-            TradingPair::canonical_order_for((input_value.asset_id, into_denom.id()))?;
+        let trading_pair = TradingPair::new(input_value.asset_id, into_denom.id());
 
         // If `trading_pair.asset_1` is the input asset, then `delta_1` is the input amount,
         // and `delta_2` is 0.

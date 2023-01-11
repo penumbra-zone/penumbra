@@ -38,7 +38,7 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
 
     let gm = asset::REGISTRY.parse_unit("gm");
     let gn = asset::REGISTRY.parse_unit("gn");
-    let trading_pair = TradingPair::new(gm.id(), gn.id()).expect("distinct assets");
+    let trading_pair = TradingPair::new(gm.id(), gn.id());
 
     let delta_1 = Amount::from(100_000u64);
     let delta_2 = Amount::from(0u64);
