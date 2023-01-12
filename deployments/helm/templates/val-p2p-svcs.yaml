@@ -20,6 +20,7 @@ on every re-deploy.
     "helm.sh/resource-policy": keep
 spec:
   type: LoadBalancer
+  externalTrafficPolicy: Local
   selector:
     app: {{ $val_name }}
   ports:

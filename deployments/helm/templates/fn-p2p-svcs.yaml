@@ -19,6 +19,7 @@ on every re-deploy.
   annotations:
     "helm.sh/resource-policy": keep
 spec:
+  externalTrafficPolicy: Local
   type: LoadBalancer
   selector:
     app: {{ $fn_name }}
