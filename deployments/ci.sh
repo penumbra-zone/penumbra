@@ -21,7 +21,7 @@ PENUMBRA_VERSION="${PENUMBRA_VERSION:-main}"
 PENUMBRA_UID_GID="${PENUMBRA_UID_GID:-1000\:1000}"
 TENDERMINT_VERSION="${TENDERMINT_VERSION:-v0.34.23}"
 NVALS="${NVALS:-2}"
-NFULLNODES="${NFULLNODES:-1}"
+NFULLNODES="${NFULLNODES:-2}"
 CONTAINERHOME="${CONTAINERHOME:-/root}"
 # Default to preview for deployments; less likely to break public testnet.
 HELM_RELEASE="${HELM_RELEASE:-penumbra-testnet-preview}"
