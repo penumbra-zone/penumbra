@@ -10,6 +10,9 @@ use penumbra_proto::{
 
 use crate::{plan::TransactionPlan, ActionView, EffectHash, IsAction, TransactionPerspective};
 
+/// The protobuf type URL for a transaction plan.
+pub const TRANSACTION_PLAN_TYPE_URL: &str = "/penumbra.core.transaction.v1alpha1.TransactionPlan";
+
 /// A governance proposal.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb_gov::Proposal", into = "pb_gov::Proposal")]
@@ -112,9 +115,13 @@ impl ProposalKind {
             ProposalKind::DaoSpend => ProposalPayload::DaoSpend {
                 schedule_transactions: vec![(
                     0,
-                    TransactionPlan {
-                        chain_id,
-                        ..Default::default()
+                    prost_types::Any {
+                        type_url: TRANSACTION_PLAN_TYPE_URL.to_string(),
+                        value: TransactionPlan {
+                            chain_id,
+                            ..Default::default()
+                        }
+                        .encode_to_vec(),
                     },
                 )],
                 cancel_transactions: vec![(0, EffectHash::default())],
@@ -159,7 +166,7 @@ pub enum ProposalPayload {
     /// specific heights, with the spend authority of the DAO.
     DaoSpend {
         /// Schedule these new transactions at the given heights.
-        schedule_transactions: Vec<(u64, TransactionPlan)>,
+        schedule_transactions: Vec<(u64, prost_types::Any)>,
         /// Cancel these previously-scheduled transactions at the given heights.
         cancel_transactions: Vec<(u64, EffectHash)>,
     },
@@ -225,7 +232,7 @@ impl From<ProposalPayload> for pb_gov::proposal::Payload {
                         .map(|(execute_at_height, transaction)| {
                             pb_gov::proposal::dao_spend::ScheduleTransaction {
                                 execute_at_height,
-                                transaction: Some(transaction.into()),
+                                transaction: Some(transaction),
                             }
                         })
                         .collect(),

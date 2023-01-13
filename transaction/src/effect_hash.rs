@@ -4,7 +4,7 @@ use decaf377_fmd::Clue;
 use penumbra_crypto::{
     dex::TradingPair, transaction::Fee, EncryptedNote, FullViewingKey, PayloadKey,
 };
-use penumbra_proto::{core::transaction::v1alpha1 as pb, Message, Protobuf};
+use penumbra_proto::{core::crypto::v1alpha1 as pb_crypto, Message, Protobuf};
 
 use crate::{
     action::{
@@ -44,9 +44,9 @@ impl std::fmt::Debug for EffectHash {
     }
 }
 
-impl Protobuf<pb::EffectHash> for EffectHash {}
+impl Protobuf<pb_crypto::EffectHash> for EffectHash {}
 
-impl From<EffectHash> for pb::EffectHash {
+impl From<EffectHash> for pb_crypto::EffectHash {
     fn from(msg: EffectHash) -> Self {
         Self {
             inner: msg.0.to_vec().into(),
@@ -54,10 +54,12 @@ impl From<EffectHash> for pb::EffectHash {
     }
 }
 
-impl TryFrom<pb::EffectHash> for EffectHash {
+impl TryFrom<pb_crypto::EffectHash> for EffectHash {
     type Error = anyhow::Error;
-    fn try_from(value: pb::EffectHash) -> Result<Self, Self::Error> {
-        Ok(Self(value.inner.as_ref().try_into()?))
+    fn try_from(value: pb_crypto::EffectHash) -> Result<Self, Self::Error> {
+        Ok(Self(value.inner.try_into().map_err(|_| {
+            anyhow::anyhow!("incorrect length for effect hash")
+        })?))
     }
 }
 
