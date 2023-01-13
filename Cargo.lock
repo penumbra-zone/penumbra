@@ -3716,6 +3716,7 @@ dependencies = [
  "poseidon377",
  "proptest",
  "proptest-derive",
+ "prost-types",
  "rand 0.8.5",
  "rand_core 0.6.4",
  "regex",
