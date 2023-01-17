@@ -9,8 +9,8 @@ use tracing::instrument;
 
 use crate::{
     action_handler::ActionHandler,
-    stubdex::StateReadExt as _,
     shielded_pool::{self, NoteManager, StateReadExt as _},
+    stubdex::StateReadExt as _,
 };
 
 #[async_trait]
