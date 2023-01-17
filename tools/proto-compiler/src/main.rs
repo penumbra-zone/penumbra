@@ -116,10 +116,6 @@ static SERIALIZE: &str = r#"#[derive(::serde::Deserialize, ::serde::Serialize)]"
 /// Serializes newtype structs as if the inner field were serialized on its own.
 static SERDE_TRANSPARENT: &str = r#"#[serde(transparent)]"#;
 static SERDE_FLATTEN: &str = r#"#[serde(flatten)]"#;
-static SERDE_TAG_KIND: &str = r#"#[serde(tag = "kind")]"#;
-static SERDE_TAG_STATE: &str = r#"#[serde(tag = "state")]"#;
-static SERDE_TAG_OUTCOME: &str = r#"#[serde(tag = "outcome")]"#;
-static SERDE_SNAKE_CASE: &str = r#"#[serde(rename_all = "snake_case")]"#;
 static SERDE_SKIP_NONE: &str = r#"#[serde(skip_serializing_if = "Option::is_none", default)]"#;
 
 static AS_HEX: &str = r#"#[serde(with = "crate::serializers::hexstr")]"#;
@@ -310,14 +306,6 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.core.transaction.v1alpha1.OutputBody", SERIALIZE),
     (".penumbra.core.governance.v1alpha1.Proposal", SERIALIZE),
     (
-        ".penumbra.core.governance.v1alpha1.Proposal.Payload",
-        SERDE_SNAKE_CASE,
-    ),
-    (
-        ".penumbra.core.governance.v1alpha1.Proposal.Payload.payload",
-        SERDE_TAG_KIND,
-    ),
-    (
         ".penumbra.core.transaction.v1alpha1.ProposalSubmit",
         SERIALIZE,
     ),
@@ -406,22 +394,6 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (
         ".penumbra.core.governance.v1alpha1.ProposalOutcome",
         SERIALIZE,
-    ),
-    (
-        ".penumbra.core.governance.v1alpha1.ProposalState.state",
-        SERDE_SNAKE_CASE,
-    ),
-    (
-        ".penumbra.core.governance.v1alpha1.ProposalState.state",
-        SERDE_TAG_STATE,
-    ),
-    (
-        ".penumbra.core.governance.v1alpha1.ProposalOutcome.outcome",
-        SERDE_SNAKE_CASE,
-    ),
-    (
-        ".penumbra.core.governance.v1alpha1.ProposalOutcome.outcome",
-        SERDE_TAG_OUTCOME,
     ),
     (
         ".penumbra.core.transaction.v1alpha1.EffectHash",
@@ -580,32 +552,6 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (
         ".penumbra.core.dex.v1alpha1.PositionId.inner",
         AS_BECH32_LP_ID,
-    ),
-    // Proposal JSON formatting
-    (
-        ".penumbra.core.transaction.v1alpha1.Proposal.payload",
-        SERDE_FLATTEN,
-    ),
-    (
-        // IMPORTANT: this *lacks* a leading dot, to work around a bug in prost-build:
-        // https://github.com/tokio-rs/prost/issues/504
-        "penumbra.core.transaction.v1alpha1.Proposal.Payload.payload",
-        SERDE_FLATTEN,
-    ),
-    (
-        // see above re: prost issue #504
-        "penumbra.core.governance.v1alpha1.ProposalState.state",
-        SERDE_FLATTEN,
-    ),
-    (
-        // see above re: prost issue #504
-        "penumbra.core.governance.v1alpha1.ProposalState.Finished.outcome",
-        SERDE_FLATTEN,
-    ),
-    (
-        // see above re: prost issue #504
-        "penumbra.core.governance.v1alpha1.ProposalOutcome.outcome",
-        SERDE_FLATTEN,
     ),
     (
         "penumbra.core.governance.v1alpha1.ProposalOutcome.Failed.withdrawn_with_reason",

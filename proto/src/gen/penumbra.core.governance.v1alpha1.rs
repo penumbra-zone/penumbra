@@ -66,7 +66,6 @@ pub struct MutableChainParameter {
 pub struct ProposalState {
     /// The state of the proposal.
     #[prost(oneof = "proposal_state::State", tags = "2, 3, 4")]
-    #[serde(flatten)]
     pub state: ::core::option::Option<proposal_state::State>,
 }
 /// Nested message and enum types in `ProposalState`.
@@ -91,13 +90,10 @@ pub mod proposal_state {
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Finished {
         #[prost(message, optional, tag = "1")]
-        #[serde(flatten)]
         pub outcome: ::core::option::Option<super::ProposalOutcome>,
     }
     /// The state of the proposal.
     #[derive(::serde::Deserialize, ::serde::Serialize)]
-    #[serde(rename_all = "snake_case")]
-    #[serde(tag = "state")]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum State {
@@ -115,7 +111,6 @@ pub mod proposal_state {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProposalOutcome {
     #[prost(oneof = "proposal_outcome::Outcome", tags = "1, 2, 3")]
-    #[serde(flatten)]
     pub outcome: ::core::option::Option<proposal_outcome::Outcome>,
 }
 /// Nested message and enum types in `ProposalOutcome`.
@@ -150,8 +145,6 @@ pub mod proposal_outcome {
         >,
     }
     #[derive(::serde::Deserialize, ::serde::Serialize)]
-    #[serde(rename_all = "snake_case")]
-    #[serde(tag = "outcome")]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Outcome {
@@ -188,7 +181,6 @@ pub struct Proposal {
 pub mod proposal {
     /// The kind of the proposal and details relevant only to that kind of proposal.
     #[derive(::serde::Deserialize, ::serde::Serialize)]
-    #[serde(rename_all = "snake_case")]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Payload {
@@ -198,8 +190,6 @@ pub mod proposal {
     /// Nested message and enum types in `Payload`.
     pub mod payload {
         #[derive(::serde::Deserialize, ::serde::Serialize)]
-        #[serde(rename_all = "snake_case")]
-        #[serde(tag = "kind")]
         #[allow(clippy::derive_partial_eq_without_eq)]
         #[derive(Clone, PartialEq, ::prost::Oneof)]
         pub enum Payload {
