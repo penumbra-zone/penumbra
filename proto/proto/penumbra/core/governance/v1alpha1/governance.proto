@@ -6,6 +6,94 @@ package penumbra.core.governance.v1alpha1;
 import "google/protobuf/any.proto";
 import "penumbra/core/crypto/v1alpha1/crypto.proto";
 
+message ProposalSubmit {
+  // The proposal to be submitted.
+  governance.v1alpha1.Proposal proposal = 1;
+  // The amount of the proposal deposit.
+  crypto.v1alpha1.Amount deposit_amount = 3;
+}
+
+message ProposalWithdraw {
+  // The proposal to be withdrawn.
+  uint64 proposal = 1;
+  // The reason for the proposal being withdrawn.
+  string reason = 2;
+}
+
+message ValidatorVote {
+  // The effecting data for the vote.
+  ValidatorVoteBody body = 1;
+  // The vote authorization signature is authorizing data.
+  crypto.v1alpha1.SpendAuthSignature auth_sig = 2;
+}
+
+message ValidatorVoteBody {
+  // The proposal being voted on.
+  uint64 proposal = 1;
+  // The vote.
+  governance.v1alpha1.Vote vote = 2;
+  // The validator identity.
+  crypto.v1alpha1.IdentityKey identity_key = 3;
+  // The validator governance key.
+  crypto.v1alpha1.GovernanceKey governance_key = 4;
+}
+
+message DelegatorVote {
+  // The effecting data for the vote.
+  DelegatorVoteBody body = 1;
+  // The vote authorization signature is authorizing data.
+  crypto.v1alpha1.SpendAuthSignature auth_sig = 2;
+  // The vote proof is authorizing data.
+  bytes proof = 3;
+}
+
+message DelegatorVoteBody {
+  // The proposal being voted on.
+  uint64 proposal = 1;
+  // The nullifier of the input note.
+  bytes nullifier = 3;
+  // The randomized validating key for the spend authorization signature.
+  bytes rk = 4;
+  // A commitment to the value voted for "yes".
+  //
+  // A rational voter will place all their voting weight on one vote.
+  crypto.v1alpha1.BalanceCommitment yes_balance_commitment = 5;
+  // A commitment to the value voted for "no".
+  //
+  // A rational voter will place all their voting weight on one vote.
+  crypto.v1alpha1.BalanceCommitment no_balance_commitment = 6;
+  // A commitment to the value voted for "abstain".
+  //
+  // A rational voter will place all their voting weight on one vote.
+  crypto.v1alpha1.BalanceCommitment abstain_balance_commitment = 7;
+  // A commitment to the value voted for "no with veto".
+  //
+  // A rational voter will place all their voting weight on one vote.
+  crypto.v1alpha1.BalanceCommitment no_with_veto_balance_commitment = 8;
+}
+
+message ProposalDepositClaim {
+  // The proposal to claim the deposit for.
+  uint64 proposal = 1;
+  // Whether the proposal was withdrawn before the deposit was claimed.
+  bool withdrawn = 2;
+  // The expected deposit amount.
+  crypto.v1alpha1.Amount deposit_amount = 3;
+}
+
+message DelegatorVotePlan {
+    // The proposal to vote on.
+    uint64 proposal = 1;
+    // The vote to cast.
+    governance.v1alpha1.Vote vote = 2;
+    // The delegation note to prove that we can vote.
+    crypto.v1alpha1.Note staked_note = 3;
+    // The position of that delegation note.
+    uint64 position = 4;
+    // The randomizer to use for the proof of spend capability.
+    bytes randomizer = 5;
+}
+
 // A vote on a proposal.
 message Vote {
   // A vote.

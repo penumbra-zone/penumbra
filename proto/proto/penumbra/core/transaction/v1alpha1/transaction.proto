@@ -53,10 +53,11 @@ message Action {
     ibc.v1alpha1.IbcAction ibc_action = 17;
 
     // Governance:
-    ProposalSubmit proposal_submit = 18;
-    ProposalWithdraw proposal_withdraw = 19;
-    ValidatorVote validator_vote = 20;
+    governance.v1alpha1.ProposalSubmit proposal_submit = 18;
+    governance.v1alpha1.ProposalWithdraw proposal_withdraw = 19;
+    governance.v1alpha1.ValidatorVote validator_vote = 20;
     // DelegatorVote delegator_vote = 21;
+    governance.v1alpha1.ProposalDepositClaim proposal_deposit_claim = 22;
 
     dex.v1alpha1.PositionOpen position_open = 30;
     dex.v1alpha1.PositionClose position_close = 31;
@@ -122,9 +123,10 @@ message ActionView {
     stake.v1alpha1.ValidatorDefinition validator_definition = 16;
     ibc.v1alpha1.IbcAction ibc_action = 17;
     // Governance:
-    ProposalSubmit proposal_submit = 18;
-    ProposalWithdraw proposal_withdraw = 19;
-    ValidatorVote validator_vote = 20;
+    governance.v1alpha1.ProposalSubmit proposal_submit = 18;
+    governance.v1alpha1.ProposalWithdraw proposal_withdraw = 19;
+    governance.v1alpha1.ValidatorVote validator_vote = 20;
+    governance.v1alpha1.ProposalDepositClaim proposal_deposit_claim = 22;
     // DelegatorVote delegator_vote = 21;
     dex.v1alpha1.PositionOpen position_open = 30;
     dex.v1alpha1.PositionClose position_close = 31;
@@ -216,83 +218,6 @@ message OutputBody {
   bytes ovk_wrapped_key = 4;
 }
 
-message ProposalSubmit {
-  // The proposal to be submitted.
-  governance.v1alpha1.Proposal proposal = 1;
-  // The ephemeral transparent refund address for the refund of the proposal deposit.
-  crypto.v1alpha1.Address deposit_refund_address = 2;
-  // The amount of the proposal deposit.
-  crypto.v1alpha1.Amount deposit_amount = 3;
-  // The randomized proposer key (a randomization of the proposer's spend verification key).
-  bytes rk = 4;
-}
-
-message ProposalWithdraw {
-  // The body of the proposal withdraw message.
-  ProposalWithdrawBody body = 1;
-  // The signature with the randomized proposer key of the withdrawal.
-  crypto.v1alpha1.SpendAuthSignature auth_sig = 2;
-}
-
-message ProposalWithdrawBody {
-  // The proposal to be withdrawn.
-  uint64 proposal = 1;
-  // The reason for the proposal being withdrawn.
-  string reason = 2;
-}
-
-message ValidatorVote {
-  // The effecting data for the vote.
-  ValidatorVoteBody body = 1;
-  // The vote authorization signature is authorizing data.
-  crypto.v1alpha1.SpendAuthSignature auth_sig = 2;
-}
-
-message ValidatorVoteBody {
-  // The proposal being voted on.
-  uint64 proposal = 1;
-  // The vote.
-  governance.v1alpha1.Vote vote = 2;
-  // The validator identity.
-  crypto.v1alpha1.IdentityKey identity_key = 3;
-  // The validator governance key.
-  crypto.v1alpha1.GovernanceKey governance_key = 4;
-}
-
-message DelegatorVote {
-  // The effecting data for the vote.
-  DelegatorVoteBody body = 1;
-  // The vote authorization signature is authorizing data.
-  crypto.v1alpha1.SpendAuthSignature auth_sig = 2;
-  // The vote proof is authorizing data.
-  bytes proof = 3;
-}
-
-message DelegatorVoteBody {
-  // The proposal being voted on.
-  uint64 proposal = 1;
-  // The nullifier of the input note.
-  bytes nullifier = 3;
-  // The randomized validating key for the spend authorization signature.
-  bytes rk = 4;
-  // A commitment to the value voted for "yes".
-  //
-  // A rational voter will place all their voting weight on one vote.
-  crypto.v1alpha1.BalanceCommitment yes_balance_commitment = 5;
-  // A commitment to the value voted for "no".
-  //
-  // A rational voter will place all their voting weight on one vote.
-  crypto.v1alpha1.BalanceCommitment no_balance_commitment = 6;
-  // A commitment to the value voted for "abstain".
-  //
-  // A rational voter will place all their voting weight on one vote.
-  crypto.v1alpha1.BalanceCommitment abstain_balance_commitment = 7;
-  // A commitment to the value voted for "no with veto".
-  //
-  // A rational voter will place all their voting weight on one vote.
-  crypto.v1alpha1.BalanceCommitment no_with_veto_balance_commitment = 8;
-}
-
 // The data required to authorize a transaction plan.
 message AuthorizationData {
     // The computed auth hash for the approved transaction plan.
@@ -300,9 +225,6 @@ message AuthorizationData {
     // The required spend authorizations, returned in the same order as the
     // Spend actions in the original request.
     repeated crypto.v1alpha1.SpendAuthSignature spend_auths = 2;
-    // The required withdraw proposal authorizations, returned in the same order as the
-    // ProposalWithdraw actions in the original request.
-    repeated crypto.v1alpha1.SpendAuthSignature withdraw_proposal_auths = 3;
 }
 
 // The data required for proving when building a transaction from a plan.
@@ -340,10 +262,11 @@ message ActionPlan {
         // This is just a message relayed to the chain.
         ibc.v1alpha1.IbcAction ibc_action = 17;
         // Governance:
-        ProposalSubmit proposal_submit = 18;
-        ProposalWithdrawPlan proposal_withdraw = 19;
-        ValidatorVote validator_vote = 20;
-        DelegatorVotePlan delegator_vote = 21;
+        governance.v1alpha1.ProposalSubmit proposal_submit = 18;
+        governance.v1alpha1.ProposalWithdraw proposal_withdraw = 19;
+        governance.v1alpha1.ValidatorVote validator_vote = 20;
+        governance.v1alpha1.DelegatorVotePlan delegator_vote = 21;
+        governance.v1alpha1.ProposalDepositClaim proposal_deposit_claim = 22;
 
         dex.v1alpha1.PositionOpen position_open = 30;
         dex.v1alpha1.PositionClose position_close = 31;
@@ -399,27 +322,3 @@ message OutputPlan {
     // The blinding factor to use for the value commitment.
     bytes value_blinding = 4;
 }
-
-message ProposalWithdrawPlan {
-    // The body of the proposal withdrawal.
-    ProposalWithdrawBody body = 1;
-    // The randomizer to use for signing the proposal withdrawal.
-    bytes randomizer = 2;
-}
-
-message DelegatorVotePlan {
-    // The proposal to vote on.
-    uint64 proposal = 1;
-    // The vote to cast.
-    governance.v1alpha1.Vote vote = 2;
-    // The delegation note to prove that we can vote.
-    crypto.v1alpha1.Note staked_note = 3;
-    // The position of that delegation note.
-    uint64 position = 4;
-    // The randomizer to use for the proof of spend capability.
-    bytes randomizer = 5;
-}
-
-// The reader may ask: why is this here, instead of in a separate `governance.v1alpha1.proto` file? It should
-// be, but protos can't have cyclic file dependencies, and most of the below induces a cycle
-// because `DaoSpend` contains a `TransactionPlan`.

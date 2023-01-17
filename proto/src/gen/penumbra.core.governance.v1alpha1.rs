@@ -1,3 +1,151 @@
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ProposalSubmit {
+    /// The proposal to be submitted.
+    #[prost(message, optional, tag = "1")]
+    pub proposal: ::core::option::Option<Proposal>,
+    /// The amount of the proposal deposit.
+    #[prost(message, optional, tag = "3")]
+    pub deposit_amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ProposalWithdraw {
+    /// The proposal to be withdrawn.
+    #[prost(uint64, tag = "1")]
+    pub proposal: u64,
+    /// The reason for the proposal being withdrawn.
+    #[prost(string, tag = "2")]
+    pub reason: ::prost::alloc::string::String,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ValidatorVote {
+    /// The effecting data for the vote.
+    #[prost(message, optional, tag = "1")]
+    pub body: ::core::option::Option<ValidatorVoteBody>,
+    /// The vote authorization signature is authorizing data.
+    #[prost(message, optional, tag = "2")]
+    pub auth_sig: ::core::option::Option<
+        super::super::crypto::v1alpha1::SpendAuthSignature,
+    >,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ValidatorVoteBody {
+    /// The proposal being voted on.
+    #[prost(uint64, tag = "1")]
+    pub proposal: u64,
+    /// The vote.
+    #[prost(message, optional, tag = "2")]
+    pub vote: ::core::option::Option<Vote>,
+    /// The validator identity.
+    #[prost(message, optional, tag = "3")]
+    pub identity_key: ::core::option::Option<
+        super::super::crypto::v1alpha1::IdentityKey,
+    >,
+    /// The validator governance key.
+    #[prost(message, optional, tag = "4")]
+    pub governance_key: ::core::option::Option<
+        super::super::crypto::v1alpha1::GovernanceKey,
+    >,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DelegatorVote {
+    /// The effecting data for the vote.
+    #[prost(message, optional, tag = "1")]
+    pub body: ::core::option::Option<DelegatorVoteBody>,
+    /// The vote authorization signature is authorizing data.
+    #[prost(message, optional, tag = "2")]
+    pub auth_sig: ::core::option::Option<
+        super::super::crypto::v1alpha1::SpendAuthSignature,
+    >,
+    /// The vote proof is authorizing data.
+    #[prost(bytes = "vec", tag = "3")]
+    pub proof: ::prost::alloc::vec::Vec<u8>,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DelegatorVoteBody {
+    /// The proposal being voted on.
+    #[prost(uint64, tag = "1")]
+    pub proposal: u64,
+    /// The nullifier of the input note.
+    #[prost(bytes = "vec", tag = "3")]
+    pub nullifier: ::prost::alloc::vec::Vec<u8>,
+    /// The randomized validating key for the spend authorization signature.
+    #[prost(bytes = "vec", tag = "4")]
+    pub rk: ::prost::alloc::vec::Vec<u8>,
+    /// A commitment to the value voted for "yes".
+    ///
+    /// A rational voter will place all their voting weight on one vote.
+    #[prost(message, optional, tag = "5")]
+    pub yes_balance_commitment: ::core::option::Option<
+        super::super::crypto::v1alpha1::BalanceCommitment,
+    >,
+    /// A commitment to the value voted for "no".
+    ///
+    /// A rational voter will place all their voting weight on one vote.
+    #[prost(message, optional, tag = "6")]
+    pub no_balance_commitment: ::core::option::Option<
+        super::super::crypto::v1alpha1::BalanceCommitment,
+    >,
+    /// A commitment to the value voted for "abstain".
+    ///
+    /// A rational voter will place all their voting weight on one vote.
+    #[prost(message, optional, tag = "7")]
+    pub abstain_balance_commitment: ::core::option::Option<
+        super::super::crypto::v1alpha1::BalanceCommitment,
+    >,
+    /// A commitment to the value voted for "no with veto".
+    ///
+    /// A rational voter will place all their voting weight on one vote.
+    #[prost(message, optional, tag = "8")]
+    pub no_with_veto_balance_commitment: ::core::option::Option<
+        super::super::crypto::v1alpha1::BalanceCommitment,
+    >,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ProposalDepositClaim {
+    /// The proposal to claim the deposit for.
+    #[prost(uint64, tag = "1")]
+    pub proposal: u64,
+    /// Whether the proposal was withdrawn before the deposit was claimed.
+    #[prost(bool, tag = "2")]
+    pub withdrawn: bool,
+    /// The expected deposit amount.
+    #[prost(message, optional, tag = "3")]
+    pub deposit_amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DelegatorVotePlan {
+    /// The proposal to vote on.
+    #[prost(uint64, tag = "1")]
+    pub proposal: u64,
+    /// The vote to cast.
+    #[prost(message, optional, tag = "2")]
+    pub vote: ::core::option::Option<Vote>,
+    /// The delegation note to prove that we can vote.
+    #[prost(message, optional, tag = "3")]
+    pub staked_note: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
+    /// The position of that delegation note.
+    #[prost(uint64, tag = "4")]
+    pub position: u64,
+    /// The randomizer to use for the proof of spend capability.
+    #[prost(bytes = "vec", tag = "5")]
+    pub randomizer: ::prost::alloc::vec::Vec<u8>,
+}
 /// A vote on a proposal.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[serde(transparent)]

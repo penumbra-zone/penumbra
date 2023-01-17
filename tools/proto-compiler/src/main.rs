@@ -306,43 +306,51 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.core.transaction.v1alpha1.OutputBody", SERIALIZE),
     (".penumbra.core.governance.v1alpha1.Proposal", SERIALIZE),
     (
-        ".penumbra.core.transaction.v1alpha1.ProposalSubmit",
+        ".penumbra.core.governance.v1alpha1.ProposalSubmit",
         SERIALIZE,
     ),
     (
-        ".penumbra.core.transaction.v1alpha1.ProposalWithdraw",
+        ".penumbra.core.governance.v1alpha1.ProposalWithdraw",
         SERIALIZE,
     ),
     (
-        ".penumbra.core.transaction.v1alpha1.ProposalWithdrawPlan",
+        ".penumbra.core.governance.v1alpha1.ProposalWithdrawPlan",
         SERIALIZE,
     ),
     (
-        ".penumbra.core.transaction.v1alpha1.ProposalWithdrawBody",
+        ".penumbra.core.governance.v1alpha1.ProposalWithdrawBody",
         SERIALIZE,
     ),
     (
-        ".penumbra.core.transaction.v1alpha1.ValidatorVote",
+        ".penumbra.core.governance.v1alpha1.ValidatorVote",
         SERIALIZE,
     ),
     (
-        ".penumbra.core.transaction.v1alpha1.ValidatorVotePlan",
+        ".penumbra.core.governance.v1alpha1.ValidatorVotePlan",
         SERIALIZE,
     ),
     (
-        ".penumbra.core.transaction.v1alpha1.ValidatorVoteBody",
+        ".penumbra.core.governance.v1alpha1.ValidatorVoteBody",
         SERIALIZE,
     ),
     (
-        ".penumbra.core.transaction.v1alpha1.DelegatorVote",
+        ".penumbra.core.governance.v1alpha1.DelegatorVote",
         SERIALIZE,
     ),
     (
-        ".penumbra.core.transaction.v1alpha1.DelegatorVotePlan",
+        ".penumbra.core.governance.v1alpha1.DelegatorVotePlan",
         SERIALIZE,
     ),
     (
-        ".penumbra.core.transaction.v1alpha1.DelegatorVoteBody",
+        ".penumbra.core.governance.v1alpha1.DelegatorVoteBody",
+        SERIALIZE,
+    ),
+    (
+        ".penumbra.core.governance.v1alpha1.ProposalDepositClaim",
+        SERIALIZE,
+    ),
+    (
+        ".penumbra.core.governance.v1alpha1.ProposalDepositClaimPlan",
         SERIALIZE,
     ),
     (".penumbra.core.transaction.v1alpha1.SpendView", SERIALIZE),

@@ -13,7 +13,7 @@ use anyhow::{Context, Result};
 use penumbra_chain::{StateReadExt as _, StateWriteExt};
 use penumbra_storage::StateTransaction;
 use penumbra_transaction::action::{
-    ProposalPayload, ProposalSubmit, ProposalWithdraw, ProposalWithdrawBody, ValidatorVote,
+    ProposalPayload, ProposalSubmit, ProposalWithdraw, ProposalWithdraw, ValidatorVote,
     ValidatorVoteBody,
 };
 use tracing::instrument;
@@ -85,7 +85,7 @@ pub async fn proposal_withdraw(
     state: &mut StateTransaction<'_>,
     ProposalWithdraw {
         auth_sig: _,
-        body: ProposalWithdrawBody { proposal, reason },
+        body: ProposalWithdraw { proposal, reason },
     }: &ProposalWithdraw,
 ) -> Result<()> {
     state
