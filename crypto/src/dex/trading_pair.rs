@@ -5,6 +5,21 @@ use std::str::FromStr;
 
 use crate::asset::{self, REGISTRY};
 
+pub struct DirectedTradingPair {
+    start: asset::Id,
+    end: asset::Id,
+}
+
+impl DirectedTradingPair {
+    pub fn new(start: asset::Id, end: asset::Id) -> Self {
+        Self { start, end }
+    }
+
+    pub fn to_canonical(&self) -> TradingPair {
+        TradingPair::new(self.start, self.end)
+    }
+}
+
 /// The canonical representation of a tuple of asset [`Id`]s.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
 pub struct TradingPair {
@@ -14,7 +29,7 @@ pub struct TradingPair {
 
 impl TradingPair {
     pub fn new(asset_1: asset::Id, asset_2: asset::Id) -> Self {
-        if asset_1 > asset_2 {
+        if asset_1 < asset_2 {
             Self { asset_1, asset_2 }
         } else {
             Self { asset_2, asset_1 }

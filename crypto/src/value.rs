@@ -224,7 +224,7 @@ mod tests {
             TradingPair::new(
                 asset::Id::from(gm_base_denom),
                 asset::Id::from(upenumbra_base_denom),
-            ).unwrap(),
+            ),
             1u64.into(),
             0u64.into(),
             Fee::default(),
@@ -261,7 +261,7 @@ mod tests {
             TradingPair::new(
                 asset::Id::from(gm_base_denom),
                 asset::Id::from(upenumbra_base_denom),
-            ).unwrap(),
+            ),
             1u64.into(),
             0u64.into(),
             Fee::default(),

@@ -658,8 +658,7 @@ mod tests {
         let trading_pair = TradingPair::new(
             asset::REGISTRY.parse_denom("nala").unwrap().id(),
             asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
-        )
-        .unwrap();
+        );
 
         let swap_plaintext = SwapPlaintext::new(
             &mut OsRng,
