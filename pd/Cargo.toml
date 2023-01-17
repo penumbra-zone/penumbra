@@ -38,6 +38,7 @@ tendermint-light-client-verifier = "0.26.0"
 ibc = "0.23.0"
 ibc-proto = "0.22.0"
 prost = "0.11"
+toml = "0.5"
 # We don't need this crate at all, but its upstream published a breaking change as
 # 0.7.1 (also prost-related), and depending on an exact version here will exclude
 # the bad update until it's yanked.

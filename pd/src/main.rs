@@ -11,7 +11,10 @@ use metrics_util::layers::Stack;
 use anyhow::Context;
 use clap::{Parser, Subcommand};
 use metrics_exporter_prometheus::PrometheusBuilder;
-use pd::testnet::{canonicalize_path, generate_tm_config, write_configs, ValidatorKeys};
+use pd::testnet::{
+    canonicalize_path, fetch_peers, generate_tm_config, parse_tm_address, write_configs,
+    ValidatorKeys,
+};
 use penumbra_chain::{genesis::Allocation, params::ChainParameters};
 use penumbra_component::stake::{validator::Validator, FundingStream, FundingStreams};
 use penumbra_crypto::{keys::SpendKey, stake::DelegationToken, GovernanceKey};
@@ -323,73 +326,24 @@ async fn main() -> anyhow::Result<()> {
                 .and_then(|v| v.get_mut("id"))
                 .ok_or_else(|| anyhow::anyhow!("could not parse JSON from response"))?
                 .take();
-            tracing::info!(?node_id);
-            let node_id = serde_json::value::from_value(node_id)?;
+            let node_id: tendermint::node::Id = serde_json::value::from_value(node_id)?;
+            let node_tm_address = parse_tm_address(&node_id, &node)?;
             tracing::info!(?node_id, "fetched node id");
 
-            // Crawl the node's
-            let net_info_peers = client
-                .get(format!("http://{}:26657/net_info", node))
-                .send()
-                .await?
-                .json::<serde_json::Value>()
-                .await?
-                .get("result")
-                .and_then(|v| v.get("peers"))
-                .and_then(|v| v.as_array())
-                .cloned()
-                .unwrap_or_default();
-
+            // Look up more peers from the target node, so that generated tendermint config
+            // contains multiple addresses, making peering easier.
             let mut peers = Vec::new();
-            if node.contains(':') {
-                peers.push((node_id, node));
-            } else {
-                peers.push((node_id, format!("{}:26656", node)));
-            }
+            let new_peers = fetch_peers(&node_tm_address).await?;
+            peers.push(node_tm_address);
+            peers.extend(new_peers);
             tracing::info!(?peers);
 
-            for raw_peer in net_info_peers {
-                let node_id: Option<tendermint::node::Id> = raw_peer
-                    .get("node_info")
-                    .and_then(|v| v.get("id"))
-                    .and_then(|v| serde_json::value::from_value(v.clone()).ok());
-                let listen_addr = raw_peer
-                    .get("node_info")
-                    .and_then(|v| v.get("listen_addr"))
-                    .and_then(|v| v.as_str())
-                    .map(|v| v.trim_start_matches("tcp://").to_owned());
-
-                // Filter out addresses that are obviously not external addresses.
-                use std::net::IpAddr;
-                let could_be_external = listen_addr
-                    .as_ref()
-                    .and_then(|v| v.parse::<SocketAddr>().ok())
-                    .map(|addr| match addr.ip() {
-                        IpAddr::V4(ip) => {
-                            !(ip.is_private() || ip.is_loopback() || ip.is_unspecified())
-                        }
-                        IpAddr::V6(ip) => !(ip.is_loopback() || ip.is_unspecified()),
-                    });
-
-                // all of this option-wrapping is bad, but we can't bubble up because
-                // we haven't factored this code into "functions"
-                match (node_id, listen_addr, could_be_external) {
-                    (Some(node_id), Some(listen_addr), Some(could_be_external)) => {
-                        if could_be_external {
-                            peers.push((node_id, listen_addr));
-                        }
-                    }
-                    _ => continue,
-                }
-            }
-            tracing::info!(?peers);
-
-            let node_name = if let Some(moniker) = moniker {
-                moniker
-            } else {
-                format!("node-{}", hex::encode(OsRng.gen::<u32>().to_le_bytes()))
+            // Set custom moniker, or default to random string suffix.
+            let node_name = match moniker {
+                Some(m) => m,
+                None => format!("node-{}", hex::encode(OsRng.gen::<u32>().to_le_bytes())),
             };
-            let tm_config = generate_tm_config(&node_name, peers.as_ref());
+            let tm_config = generate_tm_config(&node_name, peers)?;
 
             write_configs(node_dir, &vk, &genesis, tm_config)?;
         }
@@ -660,11 +614,12 @@ async fn main() -> anyhow::Result<()> {
                     .map(|(n, ip)| {
                         (
                             node::Id::from(validator_keys[n].node_key_pk.ed25519().unwrap()),
-                            format!("{}:26656", ip.to_string()),
+                            format!("{}:26656", ip),
                         )
                     })
+                    .filter_map(|(id, ip)| parse_tm_address(&id, &ip).ok())
                     .collect::<Vec<_>>();
-                let tm_config = generate_tm_config(&node_name, &ips_minus_mine);
+                let tm_config = generate_tm_config(&node_name, ips_minus_mine)?;
 
                 write_configs(node_dir, vk, &validator_genesis, tm_config)?;
             }

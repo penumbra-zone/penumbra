@@ -16,11 +16,14 @@ use std::{
     fmt,
     fs::{self, File},
     io::{Read, Write},
+    net::{IpAddr, SocketAddr},
     path::PathBuf,
     str::FromStr,
 };
-use tendermint::{node::Id, Genesis, PrivateKey};
-use tendermint_config::{NodeKey, PrivValidatorKey};
+use tendermint::{node::Id, Genesis, Moniker, PrivateKey};
+use tendermint_config::{
+    net::Address as TendermintAddress, NodeKey, PrivValidatorKey, TendermintConfig,
+};
 
 /// Methods and types used for generating testnet configurations.
 
@@ -42,28 +45,101 @@ pub fn parse_validators(input: impl Read) -> Result<Vec<TestnetValidator>> {
     Ok(serde_json::from_reader(input)?)
 }
 
-/// Hardcoded Tendermint config template. Should produce tendermint config similar to
-/// https://github.com/tendermint/tendermint/blob/6291d22f46f4c4f9121375af700dbdafa51577e7/cmd/tendermint/commands/init.go#L45
-/// There exists https://github.com/informalsystems/tendermint-rs/blob/a12118978f2ffea4042d6d38ebfb290d12611314/config/src/config.rs#L23 but
-/// this seemed more straightforward as only the moniker is changed right now.
-pub fn generate_tm_config(node_name: &str, persistent_peers: &[(Id, String)]) -> String {
-    let peers_string = persistent_peers
-        .iter()
-        // https://docs.tendermint.com/master/spec/p2p/peer.html#peer-identity
-        // Tendermint peers are expected to maintain long-term persistent identities
-        // in the form of a public key. Each peer has an ID defined as
-        // peer.ID == peer.PubKey.Address(), where Address uses the scheme defined in
-        // crypto package.
-        // the peer addresses need to match this impl: https://github.com/tendermint/tendermint/blob/f2a8f5e054cf99ebe246818bb6d71f41f9a30faa/internal/p2p/address.go#L43
-        // The ID is for the node being connected to, *not* the connecting node's ID.
-        .map(|(id, ip)| format!("{}@{}", id, ip))
-        .collect::<Vec<String>>()
-        .join(",");
-    format!(
-        include_str!("../../testnets/tm_config_template.toml"),
-        node_name, peers_string,
-    )
+/// Use a hard-coded Tendermint config as a base template, substitute
+/// values via a typed interface, and rerender as TOML.
+pub fn generate_tm_config(
+    node_name: &str,
+    peers: Vec<TendermintAddress>,
+) -> anyhow::Result<String> {
+    tracing::debug!("List of TM peers: {:?}", peers);
+    let moniker: Moniker = Moniker::from_str(node_name)?;
+    let mut tm_config =
+        TendermintConfig::parse_toml(include_str!("../../testnets/tm_config_template.toml"))
+            .context("Failed to parse the TOML config template for Tendermint")?;
+    tm_config.moniker = moniker;
+    tm_config.p2p.seeds = peers;
+    Ok(toml::to_string(&tm_config)?)
 }
+
+/// Construct a [tendermint_config::net::Address] from a `node_id` and `node_address`.
+/// The `node_address` can be an IP address or a hostname. Supports custom ports, defaulting
+/// to 26656 if not specified.
+pub fn parse_tm_address(node_id: &Id, node_address: &str) -> anyhow::Result<TendermintAddress> {
+    let mut node = String::from(node_address);
+    // Default to 26656 for Tendermint port, if not specified.
+    if !node.contains(':') {
+        node.push_str(":26656");
+    }
+    Ok(format!("{}@{}", node_id, node).parse()?)
+}
+
+/// Query the Tendermint node's RPC endpoint and return a list of all known peers
+/// by their `external_address`es. Omits private/special addresses like `localhost`
+/// or `0.0.0.0`.
+pub async fn fetch_peers(
+    node_address: &TendermintAddress,
+) -> anyhow::Result<Vec<TendermintAddress>> {
+    let hostname = match node_address {
+        TendermintAddress::Tcp { host, .. } => host,
+        _ => {
+            return Err(anyhow::anyhow!(
+                "Only TCP addresses are supported for Tendermint nodes in Penumbra"
+            ))
+        }
+    };
+    let client = reqwest::Client::new();
+    let net_info_peers = client
+        .get(format!("http://{}:26657/net_info", hostname))
+        .send()
+        .await?
+        .json::<serde_json::Value>()
+        .await?
+        .get("result")
+        .and_then(|v| v.get("peers"))
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+
+    let mut peers = Vec::new();
+    for raw_peer in net_info_peers {
+        let node_id: tendermint::node::Id = raw_peer
+            .get("node_info")
+            .and_then(|v| v.get("id"))
+            .and_then(|v| serde_json::value::from_value(v.clone()).ok())
+            .ok_or_else(|| anyhow::anyhow!("Could not parse node_info.id from JSON response"))?;
+
+        let listen_addr = raw_peer
+            .get("node_info")
+            .and_then(|v| v.get("listen_addr"))
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                anyhow::anyhow!("Could not parse node_info.listen_addr from JSON response")
+            })?;
+
+        // Filter out addresses that are obviously not external addresses.
+        if !address_could_be_external(listen_addr) {
+            continue;
+        }
+
+        let peer_tm_address = parse_tm_address(&node_id, listen_addr)?;
+        peers.push(peer_tm_address);
+    }
+    Ok(peers)
+}
+
+/// Check whether IP address spec is likely to be externally-accessible.
+/// Filters out RFC1918 and loopback addresses.
+fn address_could_be_external(address: &str) -> bool {
+    let addr = address.parse::<SocketAddr>().ok();
+    match addr {
+        Some(a) => match a.ip() {
+            IpAddr::V4(ip) => !(ip.is_private() || ip.is_loopback() || ip.is_unspecified()),
+            IpAddr::V6(ip) => !(ip.is_loopback() || ip.is_unspecified()),
+        },
+        _ => false,
+    }
+}
+
 pub struct ValidatorKeys {
     // Penumbra spending key and viewing key for this node.
     pub validator_id_sk: SigningKey<SpendAuth>,
@@ -234,7 +310,7 @@ pub fn get_validator_state() -> String {
 }
 
 /// Expand tildes in a path.
-/// Modified from https://stackoverflow.com/a/68233480
+/// Modified from `<https://stackoverflow.com/a/68233480>`
 pub fn canonicalize_path(input: &str) -> PathBuf {
     let tilde = Regex::new(r"^~(/|$)").unwrap();
     if input.starts_with('/') {
