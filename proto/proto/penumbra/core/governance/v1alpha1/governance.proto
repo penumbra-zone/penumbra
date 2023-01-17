@@ -75,10 +75,10 @@ message DelegatorVoteBody {
 message ProposalDepositClaim {
   // The proposal to claim the deposit for.
   uint64 proposal = 1;
-  // Whether the proposal was withdrawn before the deposit was claimed.
-  bool withdrawn = 2;
   // The expected deposit amount.
-  crypto.v1alpha1.Amount deposit_amount = 3;
+  crypto.v1alpha1.Amount deposit_amount = 2;
+  // The outcome of the proposal.
+  ProposalOutcome outcome = 3;
 }
 
 message DelegatorVotePlan {
@@ -133,11 +133,17 @@ message ProposalState {
         ProposalOutcome outcome = 1;
     }
 
+    // The voting period has ended, and the original proposer has claimed their deposit.
+    message Claimed {
+        ProposalOutcome outcome = 1;
+    }
+
     // The state of the proposal.
     oneof state {
         Voting voting = 2;
         Withdrawn withdrawn = 3;
         Finished finished = 4;
+        Claimed claimed = 5;
     }
 }
 

@@ -10,7 +10,7 @@ use penumbra_proto::{
 use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 
-use crate::action::{Delegate, ProposalSubmit, Undelegate, ValidatorVote};
+use crate::action::{Delegate, ProposalSubmit, ProposalWithdraw, Undelegate, ValidatorVote};
 
 mod action;
 mod auth;
@@ -19,8 +19,8 @@ mod clue;
 mod memo;
 
 pub use action::{
-    ActionPlan, DelegatorVotePlan, OutputPlan, ProposalWithdraw, SpendPlan, SwapClaimPlan,
-    SwapPlan, UndelegateClaimPlan,
+    ActionPlan, DelegatorVotePlan, OutputPlan, SpendPlan, SwapClaimPlan, SwapPlan,
+    UndelegateClaimPlan,
 };
 pub use clue::CluePlan;
 pub use memo::MemoPlan;
@@ -124,7 +124,7 @@ impl TransactionPlan {
         })
     }
 
-    pub fn proposal_withdraws(&self) -> impl Iterator<Item = &ProposalWithdrawPlan> {
+    pub fn proposal_withdraws(&self) -> impl Iterator<Item = &ProposalWithdraw> {
         self.actions.iter().filter_map(|action| {
             if let ActionPlan::ProposalWithdraw(p) = action {
                 Some(p)

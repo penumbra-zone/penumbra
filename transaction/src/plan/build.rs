@@ -126,14 +126,8 @@ impl TransactionPlan {
         for proposal_submit in self.proposal_submits().cloned() {
             actions.push(Action::ProposalSubmit(proposal_submit))
         }
-        for (proposal_withdraw_plan, auth_sig) in self
-            .proposal_withdraws()
-            .cloned()
-            .zip(auth_data.withdraw_proposal_auths.into_iter())
-        {
-            actions.push(Action::ProposalWithdraw(
-                proposal_withdraw_plan.withdraw(auth_sig),
-            ));
+        for proposal_withdraw_plan in self.proposal_withdraws().cloned() {
+            actions.push(Action::ProposalWithdraw(proposal_withdraw_plan));
         }
         for validator_vote in self.validator_votes().cloned() {
             actions.push(Action::ValidatorVote(validator_vote))

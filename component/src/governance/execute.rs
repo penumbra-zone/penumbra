@@ -83,10 +83,7 @@ pub async fn proposal_submit(
 #[instrument(skip(state))]
 pub async fn proposal_withdraw(
     state: &mut StateTransaction<'_>,
-    ProposalWithdraw {
-        auth_sig: _,
-        body: ProposalWithdraw { proposal, reason },
-    }: &ProposalWithdraw,
+    ProposalWithdraw { proposal, reason }: &ProposalWithdraw,
 ) -> Result<()> {
     state
         .put_proposal_state(
