@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 
 mod delegator_vote;
 mod output;
-mod proposal_withdraw;
 mod spend;
 mod swap;
 mod swap_claim;
@@ -15,15 +14,14 @@ mod undelegate_claim;
 
 pub use delegator_vote::DelegatorVotePlan;
 pub use output::OutputPlan;
-pub use proposal_withdraw::ProposalWithdrawPlan;
 pub use spend::SpendPlan;
 pub use swap::SwapPlan;
 pub use swap_claim::SwapClaimPlan;
 pub use undelegate_claim::UndelegateClaimPlan;
 
 use crate::action::{
-    Delegate, PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw, ProposalSubmit,
-    Undelegate, ValidatorVote,
+    Delegate, PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw,
+    ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, Undelegate, ValidatorVote,
 };
 
 /// A declaration of a planned [`Action`], for use in transaction creation.
@@ -55,11 +53,13 @@ pub enum ActionPlan {
     /// Propose a governance vote.
     ProposalSubmit(ProposalSubmit),
     /// Withdraw a proposed vote.
-    ProposalWithdraw(ProposalWithdrawPlan),
+    ProposalWithdraw(ProposalWithdraw),
     /// Vote on a proposal as a delegator.
     DelegatorVote(DelegatorVotePlan),
     /// Vote on a proposal as a validator.
     ValidatorVote(ValidatorVote),
+    /// Claim the deposit for a finished proposal.
+    ProposalDepositClaim(ProposalDepositClaim),
 
     PositionOpen(PositionOpen),
     PositionClose(PositionClose),
@@ -80,6 +80,8 @@ impl ActionPlan {
             Swap(swap) => swap.balance(),
             SwapClaim(swap_claim) => swap_claim.balance(),
             ProposalSubmit(proposal_submit) => proposal_submit.balance(),
+            ProposalWithdraw(proposal_withdraw) => proposal_withdraw.balance(),
+            ProposalDepositClaim(proposal_deposit_claim) => proposal_deposit_claim.balance(),
             PositionOpen(_position_open) => todo!(),
             PositionClose(_position_close) => todo!(),
             PositionWithdraw(_position_withdraw) => todo!(),
@@ -87,11 +89,9 @@ impl ActionPlan {
                 todo!()
             }
             // None of these contribute to transaction balance:
-            IBCAction(_)
-            | ValidatorDefinition(_)
-            | ProposalWithdraw(_)
-            | DelegatorVote(_)
-            | ValidatorVote(_) => Balance::default(),
+            IBCAction(_) | ValidatorDefinition(_) | DelegatorVote(_) | ValidatorVote(_) => {
+                Balance::default()
+            }
         }
     }
 }
@@ -149,12 +149,6 @@ impl From<pb_ibc::IbcAction> for ActionPlan {
 impl From<ProposalSubmit> for ActionPlan {
     fn from(inner: ProposalSubmit) -> ActionPlan {
         ActionPlan::ProposalSubmit(inner)
-    }
-}
-
-impl From<ProposalWithdrawPlan> for ActionPlan {
-    fn from(inner: ProposalWithdrawPlan) -> ActionPlan {
-        ActionPlan::ProposalWithdraw(inner)
     }
 }
 
@@ -238,6 +232,11 @@ impl From<ActionPlan> for pb_t::ActionPlan {
             ActionPlan::ValidatorVote(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::ValidatorVote(inner.into())),
             },
+            ActionPlan::ProposalDepositClaim(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::ProposalDepositClaim(
+                    inner.into(),
+                )),
+            },
             ActionPlan::PositionOpen(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::PositionOpen(inner.into())),
             },
@@ -293,6 +292,9 @@ impl TryFrom<pb_t::ActionPlan> for ActionPlan {
             }
             pb_t::action_plan::Action::DelegatorVote(inner) => {
                 Ok(ActionPlan::DelegatorVote(inner.try_into()?))
+            }
+            pb_t::action_plan::Action::ProposalDepositClaim(inner) => {
+                Ok(ActionPlan::ProposalDepositClaim(inner.try_into()?))
             }
             pb_t::action_plan::Action::PositionOpen(inner) => {
                 Ok(ActionPlan::PositionOpen(inner.try_into()?))

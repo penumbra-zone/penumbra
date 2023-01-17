@@ -1,6 +1,6 @@
 use decaf377::{FieldExt, Fr};
 use penumbra_crypto::Note;
-use penumbra_proto::{core::transaction::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::governance::v1alpha1 as pb, Protobuf};
 use penumbra_tct as tct;
 use serde::{Deserialize, Serialize};
 
@@ -47,7 +47,12 @@ impl TryFrom<pb::DelegatorVotePlan> for DelegatorVotePlan {
                 .ok_or_else(|| anyhow::anyhow!("missing staked note in `DelegatorVotePlan`"))?
                 .try_into()?,
             position: value.position.into(),
-            randomizer: Fr::from_bytes(value.randomizer.as_ref().try_into()?)?,
+            randomizer: Fr::from_bytes(
+                value
+                    .randomizer
+                    .try_into()
+                    .map_err(|_| anyhow::anyhow!("invalid randomizer"))?,
+            )?,
         })
     }
 }

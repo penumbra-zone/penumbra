@@ -19,7 +19,7 @@ mod clue;
 mod memo;
 
 pub use action::{
-    ActionPlan, DelegatorVotePlan, OutputPlan, ProposalWithdrawPlan, SpendPlan, SwapClaimPlan,
+    ActionPlan, DelegatorVotePlan, OutputPlan, ProposalWithdraw, SpendPlan, SwapClaimPlan,
     SwapPlan, UndelegateClaimPlan,
 };
 pub use clue::CluePlan;

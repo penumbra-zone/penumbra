@@ -49,7 +49,7 @@ pub struct TransactionBody {
 pub struct Action {
     #[prost(
         oneof = "action::Action",
-        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 30, 31, 32, 34, 40, 41, 42, 200"
+        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 22, 30, 31, 32, 34, 40, 41, 42, 200"
     )]
     pub action: ::core::option::Option<action::Action>,
 }
@@ -73,12 +73,16 @@ pub mod action {
         IbcAction(super::super::super::ibc::v1alpha1::IbcAction),
         /// Governance:
         #[prost(message, tag = "18")]
-        ProposalSubmit(super::ProposalSubmit),
+        ProposalSubmit(super::super::super::governance::v1alpha1::ProposalSubmit),
         #[prost(message, tag = "19")]
-        ProposalWithdraw(super::ProposalWithdraw),
-        /// DelegatorVote delegator_vote = 21;
+        ProposalWithdraw(super::super::super::governance::v1alpha1::ProposalWithdraw),
         #[prost(message, tag = "20")]
-        ValidatorVote(super::ValidatorVote),
+        ValidatorVote(super::super::super::governance::v1alpha1::ValidatorVote),
+        /// DelegatorVote delegator_vote = 21;
+        #[prost(message, tag = "22")]
+        ProposalDepositClaim(
+            super::super::super::governance::v1alpha1::ProposalDepositClaim,
+        ),
         #[prost(message, tag = "30")]
         PositionOpen(super::super::super::dex::v1alpha1::PositionOpen),
         #[prost(message, tag = "31")]
@@ -162,7 +166,7 @@ pub struct TransactionView {
 pub struct ActionView {
     #[prost(
         oneof = "action_view::ActionView",
-        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 30, 31, 32, 34, 41, 42, 43, 200"
+        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 22, 30, 31, 32, 34, 41, 42, 43, 200"
     )]
     pub action_view: ::core::option::Option<action_view::ActionView>,
 }
@@ -188,11 +192,15 @@ pub mod action_view {
         IbcAction(super::super::super::ibc::v1alpha1::IbcAction),
         /// Governance:
         #[prost(message, tag = "18")]
-        ProposalSubmit(super::ProposalSubmit),
+        ProposalSubmit(super::super::super::governance::v1alpha1::ProposalSubmit),
         #[prost(message, tag = "19")]
-        ProposalWithdraw(super::ProposalWithdraw),
+        ProposalWithdraw(super::super::super::governance::v1alpha1::ProposalWithdraw),
         #[prost(message, tag = "20")]
-        ValidatorVote(super::ValidatorVote),
+        ValidatorVote(super::super::super::governance::v1alpha1::ValidatorVote),
+        #[prost(message, tag = "22")]
+        ProposalDepositClaim(
+            super::super::super::governance::v1alpha1::ProposalDepositClaim,
+        ),
         /// DelegatorVote delegator_vote = 21;
         #[prost(message, tag = "30")]
         PositionOpen(super::super::super::dex::v1alpha1::PositionOpen),
@@ -366,141 +374,6 @@ pub struct OutputBody {
     #[serde(with = "crate::serializers::base64str_bytes")]
     pub ovk_wrapped_key: ::prost::bytes::Bytes,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ProposalSubmit {
-    /// The proposal to be submitted.
-    #[prost(message, optional, tag = "1")]
-    pub proposal: ::core::option::Option<super::super::governance::v1alpha1::Proposal>,
-    /// The ephemeral transparent refund address for the refund of the proposal deposit.
-    #[prost(message, optional, tag = "2")]
-    pub deposit_refund_address: ::core::option::Option<
-        super::super::crypto::v1alpha1::Address,
-    >,
-    /// The amount of the proposal deposit.
-    #[prost(message, optional, tag = "3")]
-    pub deposit_amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
-    /// The randomized proposer key (a randomization of the proposer's spend verification key).
-    #[prost(bytes = "bytes", tag = "4")]
-    pub rk: ::prost::bytes::Bytes,
-}
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ProposalWithdraw {
-    /// The body of the proposal withdraw message.
-    #[prost(message, optional, tag = "1")]
-    pub body: ::core::option::Option<ProposalWithdrawBody>,
-    /// The signature with the randomized proposer key of the withdrawal.
-    #[prost(message, optional, tag = "2")]
-    pub auth_sig: ::core::option::Option<
-        super::super::crypto::v1alpha1::SpendAuthSignature,
-    >,
-}
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ProposalWithdrawBody {
-    /// The proposal to be withdrawn.
-    #[prost(uint64, tag = "1")]
-    pub proposal: u64,
-    /// The reason for the proposal being withdrawn.
-    #[prost(string, tag = "2")]
-    pub reason: ::prost::alloc::string::String,
-}
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ValidatorVote {
-    /// The effecting data for the vote.
-    #[prost(message, optional, tag = "1")]
-    pub body: ::core::option::Option<ValidatorVoteBody>,
-    /// The vote authorization signature is authorizing data.
-    #[prost(message, optional, tag = "2")]
-    pub auth_sig: ::core::option::Option<
-        super::super::crypto::v1alpha1::SpendAuthSignature,
-    >,
-}
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ValidatorVoteBody {
-    /// The proposal being voted on.
-    #[prost(uint64, tag = "1")]
-    pub proposal: u64,
-    /// The vote.
-    #[prost(message, optional, tag = "2")]
-    pub vote: ::core::option::Option<super::super::governance::v1alpha1::Vote>,
-    /// The validator identity.
-    #[prost(message, optional, tag = "3")]
-    pub identity_key: ::core::option::Option<
-        super::super::crypto::v1alpha1::IdentityKey,
-    >,
-    /// The validator governance key.
-    #[prost(message, optional, tag = "4")]
-    pub governance_key: ::core::option::Option<
-        super::super::crypto::v1alpha1::GovernanceKey,
-    >,
-}
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DelegatorVote {
-    /// The effecting data for the vote.
-    #[prost(message, optional, tag = "1")]
-    pub body: ::core::option::Option<DelegatorVoteBody>,
-    /// The vote authorization signature is authorizing data.
-    #[prost(message, optional, tag = "2")]
-    pub auth_sig: ::core::option::Option<
-        super::super::crypto::v1alpha1::SpendAuthSignature,
-    >,
-    /// The vote proof is authorizing data.
-    #[prost(bytes = "bytes", tag = "3")]
-    pub proof: ::prost::bytes::Bytes,
-}
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DelegatorVoteBody {
-    /// The proposal being voted on.
-    #[prost(uint64, tag = "1")]
-    pub proposal: u64,
-    /// The nullifier of the input note.
-    #[prost(bytes = "bytes", tag = "3")]
-    pub nullifier: ::prost::bytes::Bytes,
-    /// The randomized validating key for the spend authorization signature.
-    #[prost(bytes = "bytes", tag = "4")]
-    pub rk: ::prost::bytes::Bytes,
-    /// A commitment to the value voted for "yes".
-    ///
-    /// A rational voter will place all their voting weight on one vote.
-    #[prost(message, optional, tag = "5")]
-    pub yes_balance_commitment: ::core::option::Option<
-        super::super::crypto::v1alpha1::BalanceCommitment,
-    >,
-    /// A commitment to the value voted for "no".
-    ///
-    /// A rational voter will place all their voting weight on one vote.
-    #[prost(message, optional, tag = "6")]
-    pub no_balance_commitment: ::core::option::Option<
-        super::super::crypto::v1alpha1::BalanceCommitment,
-    >,
-    /// A commitment to the value voted for "abstain".
-    ///
-    /// A rational voter will place all their voting weight on one vote.
-    #[prost(message, optional, tag = "7")]
-    pub abstain_balance_commitment: ::core::option::Option<
-        super::super::crypto::v1alpha1::BalanceCommitment,
-    >,
-    /// A commitment to the value voted for "no with veto".
-    ///
-    /// A rational voter will place all their voting weight on one vote.
-    #[prost(message, optional, tag = "8")]
-    pub no_with_veto_balance_commitment: ::core::option::Option<
-        super::super::crypto::v1alpha1::BalanceCommitment,
-    >,
-}
 /// The data required to authorize a transaction plan.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -513,12 +386,6 @@ pub struct AuthorizationData {
     /// Spend actions in the original request.
     #[prost(message, repeated, tag = "2")]
     pub spend_auths: ::prost::alloc::vec::Vec<
-        super::super::crypto::v1alpha1::SpendAuthSignature,
-    >,
-    /// The required withdraw proposal authorizations, returned in the same order as the
-    /// ProposalWithdraw actions in the original request.
-    #[prost(message, repeated, tag = "3")]
-    pub withdraw_proposal_auths: ::prost::alloc::vec::Vec<
         super::super::crypto::v1alpha1::SpendAuthSignature,
     >,
 }
@@ -564,7 +431,7 @@ pub struct TransactionPlan {
 pub struct ActionPlan {
     #[prost(
         oneof = "action_plan::Action",
-        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 30, 31, 32, 34, 40, 41, 42"
+        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 30, 31, 32, 34, 40, 41, 42"
     )]
     pub action: ::core::option::Option<action_plan::Action>,
 }
@@ -590,13 +457,17 @@ pub mod action_plan {
         IbcAction(super::super::super::ibc::v1alpha1::IbcAction),
         /// Governance:
         #[prost(message, tag = "18")]
-        ProposalSubmit(super::ProposalSubmit),
+        ProposalSubmit(super::super::super::governance::v1alpha1::ProposalSubmit),
         #[prost(message, tag = "19")]
-        ProposalWithdraw(super::ProposalWithdrawPlan),
+        ProposalWithdraw(super::super::super::governance::v1alpha1::ProposalWithdraw),
         #[prost(message, tag = "20")]
-        ValidatorVote(super::ValidatorVote),
+        ValidatorVote(super::super::super::governance::v1alpha1::ValidatorVote),
         #[prost(message, tag = "21")]
-        DelegatorVote(super::DelegatorVotePlan),
+        DelegatorVote(super::super::super::governance::v1alpha1::DelegatorVotePlan),
+        #[prost(message, tag = "22")]
+        ProposalDepositClaim(
+            super::super::super::governance::v1alpha1::ProposalDepositClaim,
+        ),
         #[prost(message, tag = "30")]
         PositionOpen(super::super::super::dex::v1alpha1::PositionOpen),
         #[prost(message, tag = "31")]
@@ -680,35 +551,4 @@ pub struct OutputPlan {
     #[prost(bytes = "bytes", tag = "4")]
     #[serde(with = "crate::serializers::hexstr_bytes")]
     pub value_blinding: ::prost::bytes::Bytes,
-}
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ProposalWithdrawPlan {
-    /// The body of the proposal withdrawal.
-    #[prost(message, optional, tag = "1")]
-    pub body: ::core::option::Option<ProposalWithdrawBody>,
-    /// The randomizer to use for signing the proposal withdrawal.
-    #[prost(bytes = "bytes", tag = "2")]
-    pub randomizer: ::prost::bytes::Bytes,
-}
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DelegatorVotePlan {
-    /// The proposal to vote on.
-    #[prost(uint64, tag = "1")]
-    pub proposal: u64,
-    /// The vote to cast.
-    #[prost(message, optional, tag = "2")]
-    pub vote: ::core::option::Option<super::super::governance::v1alpha1::Vote>,
-    /// The delegation note to prove that we can vote.
-    #[prost(message, optional, tag = "3")]
-    pub staked_note: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
-    /// The position of that delegation note.
-    #[prost(uint64, tag = "4")]
-    pub position: u64,
-    /// The randomizer to use for the proof of spend capability.
-    #[prost(bytes = "bytes", tag = "5")]
-    pub randomizer: ::prost::bytes::Bytes,
 }

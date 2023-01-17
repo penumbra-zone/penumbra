@@ -18,7 +18,7 @@ use penumbra_crypto::{
 use penumbra_proto::view::v1alpha1::NotesRequest;
 use penumbra_tct as tct;
 use penumbra_transaction::{
-    action::ValidatorVote,
+    action::{Proposal, ProposalSubmit, ProposalWithdraw, ValidatorVote},
     plan::{
         ActionPlan, MemoPlan, OutputPlan, SpendPlan, SwapClaimPlan, SwapPlan, TransactionPlan,
         UndelegateClaimPlan,
@@ -36,6 +36,8 @@ pub struct Planner<R: RngCore + CryptoRng> {
     rng: R,
     balance: Balance,
     plan: TransactionPlan,
+    proposal_submits: Vec<Proposal>,
+    proposal_withdraws: Vec<(Address, ProposalWithdrawBody)>,
     // IMPORTANT: if you add more fields here, make sure to clear them when the planner is finished
 }
 
@@ -224,6 +226,31 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     #[instrument(skip(self))]
     pub fn validator_definition(&mut self, new_validator: validator::Definition) -> &mut Self {
         self.action(ActionPlan::ValidatorDefinition(new_validator.into()));
+        self
+    }
+
+    /// Submit a new governance proposal in this transaction.
+    #[instrument(skip(self))]
+    pub fn proposal_submit(&mut self, proposal: Proposal) -> &mut Self {
+        self.proposal_submits.push(proposal);
+        self
+    }
+
+    /// Withdraw a governance proposal in this transaction.
+    #[instrument(skip(self))]
+    pub fn proposal_withdraw(
+        &mut self,
+        proposal_id: u64,
+        deposit_refund_address: Address,
+        reason: String,
+    ) -> &mut Self {
+        self.proposal_withdraws.push((
+            deposit_refund_address,
+            ProposalWithdrawBody {
+                proposal: proposal_id,
+                reason,
+            },
+        ));
         self
     }
 
