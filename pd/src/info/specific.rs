@@ -5,9 +5,9 @@ use futures::StreamExt;
 use futures::TryStreamExt;
 use penumbra_chain::AppHashRead;
 use penumbra_chain::StateReadExt as _;
-use penumbra_component::dex::StateReadExt as _;
 use penumbra_component::shielded_pool::{StateReadExt as _, SupplyRead as _};
 use penumbra_component::stake::StateReadExt as _;
+use penumbra_component::stubdex::StateReadExt as _;
 use penumbra_crypto::asset::{self, Asset};
 use penumbra_proto::{
     self as proto,

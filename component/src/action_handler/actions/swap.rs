@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use crate::{
-    dex::{StateReadExt as _, StateWriteExt as _},
     shielded_pool::NoteManager,
+    stubdex::{StateReadExt as _, StateWriteExt as _},
 };
 use anyhow::Result;
 

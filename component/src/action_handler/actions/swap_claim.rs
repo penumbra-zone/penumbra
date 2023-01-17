@@ -9,7 +9,7 @@ use tracing::instrument;
 
 use crate::{
     action_handler::ActionHandler,
-    dex::StateReadExt as _,
+    stubdex::StateReadExt as _,
     shielded_pool::{self, NoteManager, StateReadExt as _},
 };
 
