@@ -9,9 +9,11 @@ jobs:
       - uses: bufbuild/buf-setup-action@v1
         with:
           input: 'proto'
+          buf_token: ${{ secrets.BUF_TOKEN }}
       - uses: bufbuild/buf-lint-action@v1
         with:
           input: 'proto'
+          buf_token: ${{ secrets.BUF_TOKEN }}
 
       - name: Check for module path changes (1/2)
         shell: bash
