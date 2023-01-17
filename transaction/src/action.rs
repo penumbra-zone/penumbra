@@ -10,7 +10,7 @@ mod delegate;
 mod ibc;
 pub mod output;
 mod position;
-mod propose;
+pub mod propose;
 pub mod spend;
 pub mod swap;
 pub mod swap_claim;

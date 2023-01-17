@@ -119,12 +119,12 @@ pub struct ProposalDepositClaim {
     /// The proposal to claim the deposit for.
     #[prost(uint64, tag = "1")]
     pub proposal: u64,
-    /// Whether the proposal was withdrawn before the deposit was claimed.
-    #[prost(bool, tag = "2")]
-    pub withdrawn: bool,
     /// The expected deposit amount.
-    #[prost(message, optional, tag = "3")]
+    #[prost(message, optional, tag = "2")]
     pub deposit_amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
+    /// The outcome of the proposal.
+    #[prost(message, optional, tag = "3")]
+    pub outcome: ::core::option::Option<ProposalOutcome>,
 }
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -213,7 +213,7 @@ pub struct MutableChainParameter {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProposalState {
     /// The state of the proposal.
-    #[prost(oneof = "proposal_state::State", tags = "2, 3, 4")]
+    #[prost(oneof = "proposal_state::State", tags = "2, 3, 4, 5")]
     pub state: ::core::option::Option<proposal_state::State>,
 }
 /// Nested message and enum types in `ProposalState`.
@@ -240,6 +240,14 @@ pub mod proposal_state {
         #[prost(message, optional, tag = "1")]
         pub outcome: ::core::option::Option<super::ProposalOutcome>,
     }
+    /// The voting period has ended, and the original proposer has claimed their deposit.
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Claimed {
+        #[prost(message, optional, tag = "1")]
+        pub outcome: ::core::option::Option<super::ProposalOutcome>,
+    }
     /// The state of the proposal.
     #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -251,6 +259,8 @@ pub mod proposal_state {
         Withdrawn(Withdrawn),
         #[prost(message, tag = "4")]
         Finished(Finished),
+        #[prost(message, tag = "5")]
+        Claimed(Claimed),
     }
 }
 /// The outcome of a concluded proposal.

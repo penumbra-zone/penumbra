@@ -416,18 +416,18 @@ impl Protobuf<pb::ProposalWithdraw> for ProposalWithdraw {}
 pub struct ProposalDepositClaim {
     /// The proposal ID to claim the deposit for.
     pub proposal: u64,
-    /// Whether the proposal was withdrawn before the deposit was claimed.
-    pub withdrawn: bool,
     /// The amount of the deposit.
     pub deposit_amount: Amount,
+    /// The outcome of the proposal.
+    pub outcome: Outcome,
 }
 
 impl From<ProposalDepositClaim> for pb::ProposalDepositClaim {
     fn from(value: ProposalDepositClaim) -> pb::ProposalDepositClaim {
         pb::ProposalDepositClaim {
             proposal: value.proposal,
-            withdrawn: value.withdrawn,
             deposit_amount: Some(value.deposit_amount.into()),
+            outcome: Some(value.outcome.into()),
         }
     }
 }
@@ -438,10 +438,13 @@ impl TryFrom<pb::ProposalDepositClaim> for ProposalDepositClaim {
     fn try_from(msg: pb::ProposalDepositClaim) -> Result<Self, Self::Error> {
         Ok(ProposalDepositClaim {
             proposal: msg.proposal,
-            withdrawn: msg.withdrawn,
             deposit_amount: msg
                 .deposit_amount
                 .ok_or_else(|| anyhow::anyhow!("missing deposit amount in `ProposalDepositClaim`"))?
+                .try_into()?,
+            outcome: msg
+                .outcome
+                .ok_or_else(|| anyhow::anyhow!("missing outcome in `ProposalDepositClaim`"))?
                 .try_into()?,
         })
     }
@@ -454,5 +457,108 @@ impl IsAction for ProposalDepositClaim {
 
     fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {
         todo!()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(try_from = "pb::ProposalOutcome", into = "pb::ProposalOutcome")]
+pub enum Outcome {
+    Passed,
+    Failed { withdrawn: Withdrawn },
+    Vetoed { withdrawn: Withdrawn },
+}
+
+impl Outcome {
+    /// Determines if the outcome should be refunded (i.e. it was not vetoed).
+    pub fn should_be_refunded(&self) -> bool {
+        !self.is_vetoed()
+    }
+
+    pub fn is_vetoed(&self) -> bool {
+        matches!(self, Outcome::Vetoed { .. })
+    }
+
+    pub fn is_failed(&self) -> bool {
+        matches!(self, Outcome::Failed { .. } | Outcome::Vetoed { .. })
+    }
+
+    pub fn is_passed(&self) -> bool {
+        matches!(self, Outcome::Passed)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum Withdrawn {
+    No,
+    WithReason { reason: String },
+}
+
+impl From<Option<String>> for Withdrawn {
+    fn from(reason: Option<String>) -> Self {
+        match reason {
+            Some(reason) => Withdrawn::WithReason { reason },
+            None => Withdrawn::No,
+        }
+    }
+}
+
+impl From<Withdrawn> for Option<String> {
+    fn from(withdrawn: Withdrawn) -> Self {
+        match withdrawn {
+            Withdrawn::No => None,
+            Withdrawn::WithReason { reason } => Some(reason),
+        }
+    }
+}
+
+impl Protobuf<pb::ProposalOutcome> for Outcome {}
+
+impl From<Outcome> for pb::ProposalOutcome {
+    fn from(o: Outcome) -> Self {
+        let outcome = match o {
+            Outcome::Passed => {
+                pb::proposal_outcome::Outcome::Passed(pb::proposal_outcome::Passed {})
+            }
+            Outcome::Failed { withdrawn } => {
+                pb::proposal_outcome::Outcome::Failed(pb::proposal_outcome::Failed {
+                    withdrawn_with_reason: withdrawn.into(),
+                })
+            }
+            Outcome::Vetoed { withdrawn } => {
+                pb::proposal_outcome::Outcome::Vetoed(pb::proposal_outcome::Vetoed {
+                    withdrawn_with_reason: withdrawn.into(),
+                })
+            }
+        };
+        pb::ProposalOutcome {
+            outcome: Some(outcome),
+        }
+    }
+}
+
+impl TryFrom<pb::ProposalOutcome> for Outcome {
+    type Error = anyhow::Error;
+
+    fn try_from(msg: pb::ProposalOutcome) -> Result<Self, Self::Error> {
+        Ok(
+            match msg
+                .outcome
+                .ok_or_else(|| anyhow::anyhow!("missing proposal outcome"))?
+            {
+                pb::proposal_outcome::Outcome::Passed(pb::proposal_outcome::Passed {}) => {
+                    Outcome::Passed
+                }
+                pb::proposal_outcome::Outcome::Failed(pb::proposal_outcome::Failed {
+                    withdrawn_with_reason,
+                }) => Outcome::Failed {
+                    withdrawn: withdrawn_with_reason.into(),
+                },
+                pb::proposal_outcome::Outcome::Vetoed(pb::proposal_outcome::Vetoed {
+                    withdrawn_with_reason,
+                }) => Outcome::Vetoed {
+                    withdrawn: withdrawn_with_reason.into(),
+                },
+            },
+        )
     }
 }

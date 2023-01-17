@@ -36,8 +36,6 @@ pub struct Planner<R: RngCore + CryptoRng> {
     rng: R,
     balance: Balance,
     plan: TransactionPlan,
-    proposal_submits: Vec<Proposal>,
-    proposal_withdraws: Vec<(Address, ProposalWithdrawBody)>,
     // IMPORTANT: if you add more fields here, make sure to clear them when the planner is finished
 }
 

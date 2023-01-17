@@ -293,5 +293,14 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
                 denom::Inner::new(format!("lpnft_{}", data), vec![])
             }) as for<'r> fn(&'r str) -> _,
         )
+        .add_asset(
+            // Note: this regex must be in sync with ProposalNft::try_from
+            "^proposal_(?P<data>[0-9]+_(voting|withdrawn|passed|failed|vetoed))$",
+            &[ /* no display units - nft, unit 1 */ ],
+            (|data: &str| {
+                assert!(!data.is_empty());
+                denom::Inner::new(format!("proposal_{}", data), vec![])
+            }) as for<'r> fn(&'r str) -> _,
+        )
         .build()
 });

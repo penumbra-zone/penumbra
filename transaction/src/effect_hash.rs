@@ -8,9 +8,10 @@ use penumbra_proto::{core::crypto::v1alpha1 as pb_crypto, Message, Protobuf};
 
 use crate::{
     action::{
-        output, spend, swap, swap_claim, Delegate, Ics20Withdrawal, PositionClose, PositionOpen,
-        PositionRewardClaim, PositionWithdraw, Proposal, ProposalDepositClaim, ProposalSubmit,
-        ProposalWithdraw, Undelegate, UndelegateClaimBody, ValidatorVote, ValidatorVoteBody, Vote,
+        output, propose, spend, swap, swap_claim, Delegate, Ics20Withdrawal, PositionClose,
+        PositionOpen, PositionRewardClaim, PositionWithdraw, Proposal, ProposalDepositClaim,
+        ProposalSubmit, ProposalWithdraw, Undelegate, UndelegateClaimBody, ValidatorVote,
+        ValidatorVoteBody, Vote,
     },
     plan::TransactionPlan,
     Action, Transaction, TransactionBody,
@@ -466,8 +467,54 @@ impl EffectingData for ProposalDepositClaim {
         // All of these fields are fixed-length, so we can just throw them in the hash one after the
         // other.
         state.update(&self.proposal.to_le_bytes());
-        state.update(&[self.withdrawn.into()]);
+        state.update(self.outcome.effect_hash().as_bytes());
         state.update(&self.deposit_amount.to_le_bytes());
+
+        EffectHash(state.finalize().as_array().clone())
+    }
+}
+
+impl EffectingData for propose::Outcome {
+    fn effect_hash(&self) -> EffectHash {
+        let mut state = blake2b_simd::Params::default()
+            .personal(b"PAH:prop_outcome")
+            .to_state();
+
+        match self {
+            // Manually choose a distinct byte string prefix for each outcome type, all same length
+            propose::Outcome::Passed => {
+                state.update(b"Passed");
+            }
+            propose::Outcome::Failed { withdrawn } => {
+                state.update(b"Failed");
+                state.update(withdrawn.effect_hash().as_bytes());
+            }
+            propose::Outcome::Vetoed { withdrawn } => {
+                state.update(b"Vetoed");
+                state.update(withdrawn.effect_hash().as_bytes());
+            }
+        }
+
+        EffectHash(state.finalize().as_array().clone())
+    }
+}
+
+impl EffectingData for propose::Withdrawn {
+    fn effect_hash(&self) -> EffectHash {
+        let mut state = blake2b_simd::Params::default()
+            .personal(b"PAH:prop_withdrawn")
+            .to_state();
+
+        match self {
+            // Manually choose a distinct byte prefix for each case
+            propose::Withdrawn::No => {
+                state.update(b"N");
+            }
+            propose::Withdrawn::WithReason { reason } => {
+                state.update(b"Y");
+                state.update(reason.as_bytes());
+            }
+        }
 
         EffectHash(state.finalize().as_array().clone())
     }
