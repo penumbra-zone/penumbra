@@ -3,6 +3,7 @@ use std::str::FromStr;
 use ark_r1cs_std::{
     prelude::{EqGadget, FieldVar},
     uint8::UInt8,
+    R1CSVar,
 };
 use decaf377::{
     r1cs::{ElementVar, FqVar},
@@ -10,7 +11,7 @@ use decaf377::{
 };
 use decaf377::{Element, FieldExt};
 
-use ark_ff::{PrimeField, ToConstraintField};
+use ark_ff::ToConstraintField;
 use ark_groth16::{Groth16, Proof, ProvingKey, VerifyingKey};
 use ark_r1cs_std::prelude::AllocVar;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef, SynthesisError};
@@ -20,7 +21,7 @@ use penumbra_tct as tct;
 use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
-use crate::proofs::groth16::{gadgets, ParameterSetup};
+use crate::proofs::groth16::{gadgets, gadgets2, ParameterSetup};
 use crate::{
     balance,
     keys::{NullifierKey, SeedPhrase, SpendKey},
@@ -58,6 +59,11 @@ pub struct SpendCircuit {
 impl ConstraintSynthesizer<Fq> for SpendCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
+        let note_var = gadgets2::NoteVar::new_witness(cs.clone(), || Ok(self.note.clone()))?;
+        let claimed_note_commitment = gadgets2::NoteCommitmentVar::new_witness(cs.clone(), || {
+            Ok(self.note_commitment_proof.commitment())
+        })?;
+
         let note_commitment_var =
             FqVar::new_witness(cs.clone(), || Ok(self.note_commitment_proof.commitment().0))?;
         let position_fq: Fq = Fq::from(u64::from(self.note_commitment_proof.position()));
@@ -65,8 +71,6 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         let merkle_path_var =
             tct::r1cs::MerkleAuthPathVar::new(cs.clone(), self.note_commitment_proof)?;
 
-        let note_blinding_var =
-            FqVar::new_witness(cs.clone(), || Ok(self.note.note_blinding().clone()))?;
         let value_amount_var =
             FqVar::new_witness(cs.clone(), || Ok(Fq::from(self.note.value().amount)))?;
         let value_asset_id_var =
@@ -75,16 +79,13 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
             AllocVar::<Element, Fq>::new_witness(cs.clone(), || {
                 Ok(self.note.diversified_generator().clone())
             })?;
-        let transmission_key_s_var =
-            FqVar::new_witness(cs.clone(), || Ok(self.note.transmission_key_s().clone()))?;
+
         let element_transmission_key = decaf377::Encoding(self.note.transmission_key().0)
             .vartime_decompress()
             .map_err(|_| SynthesisError::AssignmentMissing)?;
         let transmission_key_var: ElementVar =
             AllocVar::<Element, Fq>::new_witness(cs.clone(), || Ok(element_transmission_key))?;
-        let clue_key_var = FqVar::new_witness(cs.clone(), || {
-            Ok(Fq::from_le_bytes_mod_order(&self.note.clue_key().0[..]))
-        })?;
+
         let v_blinding_arr: [u8; 32] = self.v_blinding.to_bytes();
         let v_blinding_vars = UInt8::new_witness_vec(cs.clone(), &v_blinding_arr)?;
         let value_amount_arr = self.note.value().amount.to_le_bytes();
@@ -117,17 +118,10 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         // dummy spend.
         let is_not_dummy = is_dummy.not();
 
-        gadgets::note_commitment_integrity(
-            cs.clone(),
-            &is_not_dummy,
-            note_blinding_var,
-            value_amount_var,
-            value_asset_id_var.clone(),
-            diversified_generator_var.clone(),
-            transmission_key_s_var,
-            clue_key_var,
-            note_commitment_var.clone(),
-        )?;
+        // Note commitment integrity
+        let note_commitment = note_var.commit()?;
+        note_commitment.conditional_enforce_equal(&claimed_note_commitment, &is_not_dummy)?;
+
         merkle_path_var.verify(
             cs.clone(),
             &is_not_dummy,
