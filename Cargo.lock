@@ -3478,7 +3478,7 @@ dependencies = [
  "pbkdf2",
  "penumbra-proto",
  "penumbra-tct",
- "poseidon-paramgen 0.1.0 (git+https://github.com/penumbra-zone/poseidon377?branch=main)",
+ "poseidon-paramgen 0.1.0 (git+https://github.com/penumbra-zone/poseidon377?rev=a2d8c7a3288e2e877ac88a4d8fd3cc4ff2b52c04)",
  "poseidon377",
  "proptest",
  "rand 0.8.5",
@@ -3910,7 +3910,7 @@ dependencies = [
 [[package]]
 name = "poseidon-paramgen"
 version = "0.1.0"
-source = "git+https://github.com/penumbra-zone/poseidon377?branch=main#a2d8c7a3288e2e877ac88a4d8fd3cc4ff2b52c04"
+source = "git+https://github.com/penumbra-zone/poseidon377?rev=a2d8c7a3288e2e877ac88a4d8fd3cc4ff2b52c04#a2d8c7a3288e2e877ac88a4d8fd3cc4ff2b52c04"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -3923,7 +3923,7 @@ dependencies = [
 [[package]]
 name = "poseidon-permutation"
 version = "0.1.0"
-source = "git+https://github.com/penumbra-zone/poseidon377?branch=main#a2d8c7a3288e2e877ac88a4d8fd3cc4ff2b52c04"
+source = "git+https://github.com/penumbra-zone/poseidon377?rev=a2d8c7a3288e2e877ac88a4d8fd3cc4ff2b52c04#a2d8c7a3288e2e877ac88a4d8fd3cc4ff2b52c04"
 dependencies = [
  "ark-ff",
  "once_cell",
@@ -3933,7 +3933,7 @@ dependencies = [
 [[package]]
 name = "poseidon377"
 version = "0.1.0"
-source = "git+https://github.com/penumbra-zone/poseidon377?branch=main#a2d8c7a3288e2e877ac88a4d8fd3cc4ff2b52c04"
+source = "git+https://github.com/penumbra-zone/poseidon377?rev=a2d8c7a3288e2e877ac88a4d8fd3cc4ff2b52c04#a2d8c7a3288e2e877ac88a4d8fd3cc4ff2b52c04"
 dependencies = [
  "ark-ed-on-bls12-377",
  "ark-ff",
