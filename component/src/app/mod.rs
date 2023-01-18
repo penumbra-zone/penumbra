@@ -15,6 +15,7 @@ use crate::governance::Governance;
 use crate::ibc::IBCComponent;
 use crate::shielded_pool::ShieldedPool;
 use crate::stake::component::{Staking, ValidatorUpdates};
+use crate::stubdex::StubDex;
 use crate::Component;
 
 pub mod state_key;
@@ -59,6 +60,7 @@ impl App {
         Staking::init_chain(&mut state_tx, app_state).await;
         IBCComponent::init_chain(&mut state_tx, app_state).await;
         Dex::init_chain(&mut state_tx, app_state).await;
+        StubDex::init_chain(&mut state_tx, app_state).await;
         Governance::init_chain(&mut state_tx, app_state).await;
         // Shielded pool always executes last.
         ShieldedPool::init_chain(&mut state_tx, app_state).await;
@@ -83,6 +85,7 @@ impl App {
 
         Staking::begin_block(&mut state_tx, begin_block).await;
         IBCComponent::begin_block(&mut state_tx, begin_block).await;
+        StubDex::begin_block(&mut state_tx, begin_block).await;
         Dex::begin_block(&mut state_tx, begin_block).await;
         Governance::begin_block(&mut state_tx, begin_block).await;
         // Shielded pool always executes last.
@@ -128,6 +131,7 @@ impl App {
 
         Staking::end_block(&mut state_tx, end_block).await;
         IBCComponent::end_block(&mut state_tx, end_block).await;
+        StubDex::end_block(&mut state_tx, end_block).await;
         Dex::end_block(&mut state_tx, end_block).await;
         Governance::end_block(&mut state_tx, end_block).await;
         // Shielded pool always executes last.

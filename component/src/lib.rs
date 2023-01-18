@@ -17,6 +17,7 @@ pub mod governance;
 pub mod ibc;
 pub mod shielded_pool;
 pub mod stake;
+pub mod stubdex;
 
 /// A component of the Penumbra application.
 #[async_trait]
