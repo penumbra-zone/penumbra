@@ -28,11 +28,17 @@ pub struct TradingPair {
 }
 
 impl TradingPair {
-    pub fn new(asset_1: asset::Id, asset_2: asset::Id) -> Self {
-        if asset_1 <= asset_2 {
-            Self { asset_1, asset_2 }
+    pub fn new(a: asset::Id, b: asset::Id) -> Self {
+        if a < b {
+            Self {
+                asset_1: a,
+                asset_2: b,
+            }
         } else {
-            Self { asset_2, asset_1 }
+            Self {
+                asset_1: b,
+                asset_2: a,
+            }
         }
     }
 
