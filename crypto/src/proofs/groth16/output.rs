@@ -1,15 +1,12 @@
 use std::str::FromStr;
 
 use ark_r1cs_std::uint8::UInt8;
-use decaf377::{
-    r1cs::{ElementVar, FqVar},
-    Bls12_377, Fq, Fr,
-};
-use decaf377::{Element, FieldExt};
+use decaf377::FieldExt;
+use decaf377::{r1cs::ElementVar, Bls12_377, Fq, Fr};
 use decaf377_fmd as fmd;
 use decaf377_ka as ka;
 
-use ark_ff::{PrimeField, ToConstraintField};
+use ark_ff::ToConstraintField;
 use ark_groth16::{Groth16, Proof, ProvingKey, VerifyingKey};
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
@@ -55,9 +52,9 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
         let value_vars = UInt8::new_witness_vec(cs.clone(), &value_amount_arr)?;
 
         // Public inputs
-        let note_commitment_var =
+        let claimed_note_commitment =
             gadgets2::NoteCommitmentVar::new_input(cs.clone(), || Ok(self.note_commitment))?;
-        let balance_commitment_var =
+        let claimed_balance_commitment =
             ElementVar::new_input(cs.clone(), || Ok(self.balance_commitment.0))?;
 
         gadgets::diversified_basepoint_not_identity(
@@ -65,18 +62,19 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
             &Boolean::TRUE,
             note_var.diversified_generator(),
         )?;
+        // Value commitment integrity
         gadgets::value_commitment_integrity(
             cs,
             &Boolean::TRUE,
             value_vars,
             note_var.asset_id(),
             v_blinding_vars,
-            balance_commitment_var,
+            claimed_balance_commitment,
         )?;
 
         // Note commitment integrity
-        let note_commitment_test = note_var.commit()?;
-        note_commitment_test.enforce_equal(&note_commitment_var)?;
+        let note_commitment = note_var.commit()?;
+        note_commitment.enforce_equal(&claimed_note_commitment)?;
 
         Ok(())
     }

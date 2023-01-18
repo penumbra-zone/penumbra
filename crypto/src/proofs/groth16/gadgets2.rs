@@ -119,7 +119,7 @@ struct AddressVar {
     // curve point, in others we'll want it as the encoding.  which should we
     // pick as the "default" internal representation? for now, use both, and
     // over-constrain, then we can optimize later we could, e.g. have an enum {
-    // Unconstrained, Encoding, Element, EncodingAndElement } that does lazy
+    // Encoding, Element, EncodingAndElement } that does lazy
     // eval of constraints internal mutability on enum, and then have the
     // accessors take &mut self, and then either fetch the already-allocated
     // variable, or allocate it and mutate the internal state to do constraint
@@ -287,7 +287,13 @@ impl AllocVar<note::Commitment, Fq> for NoteCommitmentVar {
 
                 Ok(Self { cs, inner })
             }
-            AllocationMode::Witness => unimplemented!(),
+            AllocationMode::Witness => {
+                let note_commitment1 = f()?;
+                let note_commitment: note::Commitment = *note_commitment1.borrow();
+                let inner = FqVar::new_witness(cs.clone(), || Ok(note_commitment.0))?;
+
+                Ok(Self { cs, inner })
+            }
         }
     }
 }
