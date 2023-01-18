@@ -31,7 +31,7 @@ impl Component for StubDex {
         let penumbra = asset::REGISTRY.parse_unit("penumbra");
 
         state.set_stub_cpmm_reserves(
-            &TradingPair::canonical_order_for((gm.id(), gn.id())).unwrap(),
+            &TradingPair::new(gm.id(), gn.id()),
             Reserves {
                 r1: (10000 * 10u64.pow(gm.exponent().into())).into(),
                 r2: (10000 * 10u64.pow(gn.exponent().into())).into(),
@@ -39,7 +39,7 @@ impl Component for StubDex {
         );
 
         state.set_stub_cpmm_reserves(
-            &TradingPair::canonical_order_for((gm.id(), penumbra.id())).unwrap(),
+            &TradingPair::new(gm.id(), penumbra.id()),
             Reserves {
                 r1: (10000 * 10u64.pow(gm.exponent().into())).into(),
                 r2: (10000 * 10u64.pow(penumbra.exponent().into())).into(),
@@ -47,7 +47,7 @@ impl Component for StubDex {
         );
 
         state.set_stub_cpmm_reserves(
-            &TradingPair::canonical_order_for((gn.id(), penumbra.id())).unwrap(),
+            &TradingPair::new(gn.id(), penumbra.id()),
             Reserves {
                 r1: (10000 * 10u64.pow(gn.exponent().into())).into(),
                 r2: (10000 * 10u64.pow(penumbra.exponent().into())).into(),
