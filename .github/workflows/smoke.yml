@@ -31,19 +31,7 @@ jobs:
           chmod -R 777 ~/.penumbra/testnet_data
           docker-compose build
 
-      - name: Run testnet for smoke test duration.
-        run: timeout --preserve-status $TESTNET_RUNTIME docker-compose up --exit-code-from pd-node0
+      - name: Run the smoke test suite
+        run: scripts/smoke-test.sh
         env:
           TESTNET_RUNTIME: 5m
-
-      - name: Now start testnet in the background so we can run integration tests.
-        run: |
-          docker-compose up --detach
-
-      # DOC: please update the devnet guide if you change this (see "How to run smoke-tests")
-      - name: Run integration tests against localhost.
-        run: cargo test --features nct-divergence-check --package pcli -- --ignored --test-threads 1 --nocapture
-        env:
-          PENUMBRA_NODE_HOSTNAME: 127.0.0.1
-          PCLI_UNLEASH_DANGER: yes
-          RUST_LOG: pcli=debug,penumbra=debug
