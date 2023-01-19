@@ -1,7 +1,8 @@
 version: v1
 name: buf.build/penumbra-zone/penumbra
-deps:
-  - buf.build/penumbra-zone/ibc-go-vendor
+deps: 
+  - buf.build/cosmos/cosmos-proto
+  - buf.build/cosmos/ibc
 breaking:
   use:
     - FILE

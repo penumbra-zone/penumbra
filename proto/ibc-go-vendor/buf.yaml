@@ -5,6 +5,7 @@
 # the previous configuration.
 version: v1
 name: buf.build/penumbra-zone/ibc-go-vendor
+
 build:
   excludes:
     - google/protobuf
