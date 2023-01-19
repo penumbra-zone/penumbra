@@ -65,7 +65,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     }
 
     /// Get all the note requests necessary to fulfill the current [`Balance`].
-    pub fn note_requests(
+    pub fn notes_requests(
         &self,
         fvk: &FullViewingKey,
         source: Option<AddressIndex>,
@@ -260,7 +260,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         let chain_params = view.chain_params().await?;
         let fmd_params = view.fmd_parameters().await?;
         let mut spendable_notes = Vec::new();
-        for request in self.note_requests(fvk, source) {
+        for request in self.notes_requests(fvk, source) {
             let notes = view.notes(request).await?;
             spendable_notes.extend(notes);
         }
