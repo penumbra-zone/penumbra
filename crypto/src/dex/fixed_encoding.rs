@@ -1,4 +1,4 @@
-//! Contains an implementation of a 32-byte big-ending fixed point encoding of fraction values consisting
+//! Contains an implementation of a 32-byte big-endian fixed point encoding of fraction values consisting
 //! of a u128 integer portion and u128 decimal portion.
 use core::fmt::Debug;
 use std::fmt::Display;

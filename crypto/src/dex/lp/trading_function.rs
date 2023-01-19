@@ -1,7 +1,10 @@
 use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use crate::{dex::TradingPair, Amount};
+use crate::{
+    dex::{fixed_encoding::FixedEncoding, TradingPair},
+    Amount,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::TradingFunction", into = "pb::TradingFunction")]
@@ -52,9 +55,40 @@ impl Protobuf<pb::TradingFunction> for TradingFunction {}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::BareTradingFunction", into = "pb::BareTradingFunction")]
 pub struct BareTradingFunction {
+    /// The fee, expressed in basis points.
+    ///
+    /// The equation representing the fee percentage of the trading function (`gamma`) is:
+    /// `gamma = (10_000 - fee) / 10_000`.
     pub fee: u32,
     pub p: Amount,
     pub q: Amount,
+}
+
+impl BareTradingFunction {
+    /// Represent the trading function as a big-endian fixed point encoding
+    /// with 128 bits to the right of the decimal.
+    ///
+    /// Note: Currently this uses floating point to derive the encoding, which
+    /// is a placeholder and should be replaced by width-expanding polynomial arithmetic.
+    pub fn to_bytes(&self) -> [u8; 32] {
+        let effective_price = self.effective_price();
+        let integer = effective_price.trunc() as u128;
+        let fractional = effective_price.fract() as u128;
+
+        FixedEncoding::new(integer, fractional).to_bytes()
+    }
+
+    /// Returns the effective price of the trading function.
+    /// Note: the float math is a placehodler
+    pub fn effective_price(&self) -> f64 {
+        (self.gamma() * self.p.inner as f64 / self.q.inner as f64).floor()
+    }
+
+    /// Returns the fee of the trading function, expressed as a percentage (`gamma`).
+    /// Note: the float math is a placehodler
+    pub fn gamma(&self) -> f64 {
+        (10_000.0 - self.fee as f64) / 10_000.0
+    }
 }
 
 impl Protobuf<pb::BareTradingFunction> for BareTradingFunction {}
