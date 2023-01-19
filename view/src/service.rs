@@ -342,7 +342,7 @@ impl ViewProtocolService for ViewService {
             for element in result {
                 yield pb::BalanceByAddressResponse {
                     asset: Some(element.0.into()),
-                    amount: Some(Amount { inner: element.1 }.into())
+                    amount: Some(Amount::from(element.1).into())
 
                 }
             }
