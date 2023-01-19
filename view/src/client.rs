@@ -3,8 +3,10 @@ use std::{collections::BTreeMap, pin::Pin};
 use anyhow::Result;
 use futures::{Stream, StreamExt, TryStreamExt};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
+use penumbra_crypto::asset::Id;
 use penumbra_crypto::keys::AccountID;
 use penumbra_crypto::{asset, keys::AddressIndex, note, Asset, Nullifier};
+use penumbra_crypto::{Address, Amount};
 use penumbra_proto::view::v1alpha1::{
     self as pb, view_protocol_service_client::ViewProtocolServiceClient, WitnessRequest,
 };
@@ -50,6 +52,9 @@ pub trait ViewClient {
 
     /// Queries for notes.
     async fn notes(&mut self, request: pb::NotesRequest) -> Result<Vec<SpendableNoteRecord>>;
+
+    /// Queries for account balance by address
+    async fn balance_by_address(&mut self, address: Address) -> Result<Vec<(Id, Amount)>>;
 
     /// Queries for a specific note by commitment, returning immediately if it is not found.
     async fn note_by_commitment(
@@ -305,6 +310,34 @@ where
             .spendable_note
             .ok_or_else(|| anyhow::anyhow!("empty NoteByCommitmentResponse message"))?
             .try_into()
+    }
+
+    async fn balance_by_address(&mut self, address: Address) -> Result<Vec<(Id, Amount)>> {
+        let balances: Vec<_> = ViewProtocolServiceClient::balance_by_address(
+            self,
+            tonic::Request::new(pb::BalanceByAddressRequest {
+                address: Some(address.into()),
+            }),
+        )
+        .await?
+        .into_inner()
+        .try_collect()
+        .await?;
+
+        balances
+            .into_iter()
+            .map(|rsp| {
+                let asset = rsp
+                    .asset
+                    .ok_or_else(|| anyhow::anyhow!("empty asset type"))?
+                    .try_into()?;
+                let amount = rsp
+                    .amount
+                    .ok_or_else(|| anyhow::anyhow!("empty amount type"))?
+                    .try_into()?;
+                Ok((asset, amount))
+            })
+            .collect()
     }
 
     async fn swap_by_commitment(
