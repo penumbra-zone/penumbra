@@ -22,6 +22,10 @@ data:
     persistent_peers = "{{ $.Files.Get (printf "pdcli/persistent_peers_fn_%d.txt" $i) | trim }}"
     external_address = "{{ $.Files.Get (printf "pdcli/external_address_fn_%d.txt" $i) | trim }}"
 
+{{ if eq $i 0 }}
+    seed_mode = true
+{{ end }}
+
     [tx_index]
     indexer = "kv"
 
