@@ -4,7 +4,10 @@ use std::{
 };
 
 use anyhow::{anyhow, Result};
+use rand::{CryptoRng, RngCore};
+use tracing::instrument;
 
+use penumbra_chain::params::ChainParameters;
 use penumbra_component::stake::{rate::RateData, validator};
 use penumbra_crypto::{
     asset::Amount,
@@ -13,7 +16,7 @@ use penumbra_crypto::{
     keys::AddressIndex,
     rdsa::{SpendAuth, VerificationKey},
     transaction::Fee,
-    Address, FieldExt, Fr, FullViewingKey, Note, Value,
+    Address, Balance, FieldExt, Fr, FullViewingKey, Note, Value,
 };
 use penumbra_proto::view::v1alpha1::NotesRequest;
 use penumbra_tct as tct;
@@ -24,11 +27,10 @@ use penumbra_transaction::{
         TransactionPlan, UndelegateClaimPlan,
     },
 };
-use penumbra_view::ViewClient;
-use rand::{CryptoRng, RngCore};
-use tracing::instrument;
+use penumbra_view::{SpendableNoteRecord, ViewClient};
 
-use penumbra_crypto::Balance;
+pub mod step;
+use step::Step;
 
 /// A planner for a [`TransactionPlan`] that can fill in the required spends and change outputs upon
 /// finalization to make a transaction balance.
@@ -43,7 +45,7 @@ pub struct Planner<R: RngCore + CryptoRng> {
 
 impl<R: RngCore + CryptoRng> Debug for Planner<R> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Builder")
+        f.debug_struct("Planner")
             .field("balance", &self.balance)
             .field("plan", &self.plan)
             .finish()
@@ -266,95 +268,24 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     ) -> anyhow::Result<TransactionPlan> {
         tracing::debug!(plan = ?self.plan, balance = ?self.balance, "finalizing transaction");
 
-        // Fill in the chain id based on the view service
+        // Get the chain id and FMD parameters based on the view service
         let chain_params = view.chain_params().await?;
-        self.plan.chain_id = chain_params.chain_id;
-
-        // Proposals aren't actually turned into action plans until now, because we need the view
-        // service to fill in the details. Now we have the chain parameters and the FVK, so we can
-        // automatically fill in the rest of the action plan without asking the user for anything:
-        for proposal in mem::take(&mut self.proposal_submits) {
-            let (deposit_refund_address, withdraw_proposal_key) =
-                self.proposal_address_and_withdraw_key(fvk);
-
-            self.action(
-                ProposalSubmit {
-                    proposal,
-                    deposit_amount: chain_params.proposal_deposit_amount,
-                    deposit_refund_address,
-                    withdraw_proposal_key,
-                }
-                .into(),
-            );
-        }
-
-        // Similarly, proposal withdrawals need the FVK to convert the address into the original
-        // randomizer, so we delay adding it to the transaction plan until now
-        for (address, body) in mem::take(&mut self.proposal_withdraws) {
-            let randomizer = self.proposal_withdraw_randomizer(fvk, &address);
-            self.action(ProposalWithdrawPlan { body, randomizer }.into());
-        }
-
-        // Get all notes required to fulfill needed spends
-        let mut spends = Vec::new();
-        for Value { amount, asset_id } in self.balance.required() {
-            spends.extend(
-                view.notes(NotesRequest {
-                    account_id: Some(fvk.hash().into()),
-                    asset_id: Some(asset_id.into()),
-                    address_index: source.map(Into::into),
-                    amount_to_spend: amount.into(),
-                    include_spent: false,
-                    ..Default::default()
-                })
-                .await?,
-            );
-        }
-
-        // Add the required spends to the planner
-        for record in spends {
-            self.spend(record.note, record.position);
-        }
-
-        // For any remaining provided balance, make a single change note for each
-        let self_address = fvk
-            .incoming()
-            .payment_address(source.unwrap_or(AddressIndex::Numeric(0)))
-            .0;
-
-        for value in self.balance.provided().collect::<Vec<_>>() {
-            self.output(value, self_address);
-        }
-
-        // If there are outputs, we check that a memo has been added. If not, we add a default memo.
-        if self.plan.num_outputs() > 0 && self.plan.memo_plan.is_none() {
-            self.memo(String::new())
-                .expect("empty string is a valid memo");
-        } else if self.plan.num_outputs() == 0 && self.plan.memo_plan.is_some() {
-            anyhow::bail!("if no outputs, no memo should be added");
-        }
-
-        // Add clue plans for `Output`s.
         let fmd_params = view.fmd_parameters().await?;
-        let precision_bits = fmd_params.precision_bits;
-        self.plan
-            .add_all_clue_plans(&mut self.rng, precision_bits.into());
 
-        // Now the transaction should be fully balanced, unless we didn't have enough to spend
-        if !self.balance.is_zero() {
-            anyhow::bail!(
-                "balance is non-zero after attempting to balance transaction: {:?}",
-                self.balance
-            );
+        let planner = self;
+
+        // Drive the planner step-by-step, answering each query it issues using the view service as
+        // a source of truth:
+        let mut step = planner.step_by_step(&chain_params, &fmd_params, fvk, source)?;
+        loop {
+            match step {
+                Step::Finished(mut plan) => return Ok(mem::take(&mut plan)),
+                Step::Request { request, respond } => {
+                    let response = view.notes(request).await?;
+                    step = respond.with(response)?;
+                }
+            }
         }
-
-        tracing::debug!(plan = ?self.plan, "finished balancing transaction");
-
-        // Clear the planner and pull out the plan to return
-        self.balance = Balance::zero();
-        let plan = mem::take(&mut self.plan);
-
-        Ok(plan)
     }
 
     /// Get a random address/withdraw key pair for proposals.
