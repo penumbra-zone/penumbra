@@ -357,13 +357,11 @@ fn duplicate_consensus_key_forbidden() {
             "validator",
             "definition",
             validator.as_str(),
-            "--file",
-            (validator_list_filepath.path().to_str().unwrap()),
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     query_cmd.assert().success();
-    let query_result = std::fs::read_to_string(&validator_list_filepath)
-        .expect("Could not read validator list output file");
+    let validator_def_vec = query_cmd.unwrap().stdout;
+    let query_result = std::str::from_utf8(&validator_def_vec).unwrap();
     let original_validator_def: Value = serde_json::from_str(&query_result)
         .expect("Could not parse validator definition query as JSON");
     let consensus_key = original_validator_def
@@ -371,8 +369,6 @@ fn duplicate_consensus_key_forbidden() {
         .expect("Validator definition missing consensus_key field");
 
     // Get template for promoting our node to validator.
-    // We use a named tempfile so we can get a filepath for pcli cli.
-    let validator_filepath = NamedTempFile::new().unwrap();
     let mut template_cmd = Command::cargo_bin("pcli").unwrap();
     template_cmd
         .args([
@@ -381,13 +377,12 @@ fn duplicate_consensus_key_forbidden() {
             "validator",
             "definition",
             "template",
-            "--file",
-            (validator_filepath.path().to_str().unwrap()),
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     template_cmd.assert().success();
+    let template_vec = template_cmd.unwrap().stdout;
     let template_content =
-        std::fs::read_to_string(&validator_filepath).expect("Could not read validator config file");
+        std::str::from_utf8(&template_vec).expect("Could not read validator template output");
     let mut new_validator_def: Value = serde_json::from_str(&template_content)
         .expect("Could not parse validator config file as JSON");
 
@@ -396,6 +391,7 @@ fn duplicate_consensus_key_forbidden() {
     new_validator_def["consensus_key"] = consensus_key.to_owned();
 
     // Write out new, intentionally broken validator definition.
+    let validator_filepath = NamedTempFile::new().unwrap();
     std::fs::write(
         &validator_filepath,
         serde_json::to_string_pretty(&new_validator_def)

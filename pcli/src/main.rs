@@ -57,7 +57,7 @@ impl App {
             .transpose()?
             .ok_or_else(|| anyhow::anyhow!("view service did not report sync status"))?;
 
-        println!(
+        eprintln!(
             "Scanning blocks from last sync height {} to latest height {}",
             initial_status.sync_height, initial_status.latest_known_block_height,
         );
