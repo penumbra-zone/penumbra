@@ -161,6 +161,34 @@ impl Storage {
         })
     }
 
+    /// Query for account balance by address
+    pub async fn balance_by_address(&self, address: Address) -> anyhow::Result<BTreeMap<Id, u64>> {
+        let address = address.to_vec();
+
+        let result = sqlx::query!(
+            "SELECT notes.asset_id,
+                    notes.amount
+            FROM    notes
+            JOIN    spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
+            WHERE   spendable_notes.height_spent IS NULL
+            AND     notes.address IS ?",
+            address
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let mut balance_by_address = BTreeMap::new();
+
+        for record in result {
+            balance_by_address
+                .entry(Id::try_from(record.asset_id.as_slice())?)
+                .and_modify(|x| *x += record.amount as u64)
+                .or_insert(record.amount as u64);
+        }
+
+        Ok(balance_by_address)
+    }
+
     /// Query for a note by its note commitment, optionally waiting until the note is detected.
     pub fn note_by_commitment(
         &self,

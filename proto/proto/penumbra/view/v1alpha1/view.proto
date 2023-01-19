@@ -45,6 +45,9 @@ service ViewProtocolService {
   // Query for the current FMD parameters.
   rpc FMDParameters(FMDParametersRequest) returns (FMDParametersResponse);
 
+  // Query for balance of a given address
+  rpc BalanceByAddress(BalanceByAddressRequest) returns (stream BalanceByAddressResponse);
+
   // Query for a note by its note commitment, optionally waiting until the note is detected.
   rpc NoteByCommitment(NoteByCommitmentRequest) returns (NoteByCommitmentResponse);
   // Query for a swap by its swap commitment, optionally waiting until the swap is detected.
@@ -105,7 +108,17 @@ message PlannerRequest {
 }
 
 message PlannerResponse {
-    core.transaction.v1alpha1.TransactionPlan plan = 1;
+  core.transaction.v1alpha1.TransactionPlan plan = 1;
+}
+
+message BalanceByAddressRequest {
+  core.crypto.v1alpha1.Address address = 1;
+
+}
+
+message BalanceByAddressResponse {
+    core.crypto.v1alpha1.AssetId asset = 1;
+    core.crypto.v1alpha1.Amount amount = 2;
 }
 
 // Scaffolding for bearer-token authentication for the ViewService.
