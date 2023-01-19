@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
@@ -11,6 +12,33 @@ use crate::{
 pub struct TradingFunction {
     pub component: BareTradingFunction,
     pub pair: TradingPair,
+}
+
+impl TradingFunction {
+    pub fn new(pair: TradingPair, fee: u32, p: Amount, q: Amount) -> Self {
+        Self {
+            component: BareTradingFunction::new(fee, p, q),
+            pair,
+        }
+    }
+
+    /// Compose two trading functions together.
+    /// TODO(erwan): doc.
+    pub fn compose(
+        &self,
+        psi: TradingFunction,
+        pair: TradingPair,
+    ) -> anyhow::Result<TradingFunction> {
+        // TODO: * insert scaling code here
+        //       * overflow handling
+        let fee = self.component.fee * psi.component.fee;
+        let r1 = self.component.p * psi.component.p;
+        let r2 = self.component.q * psi.component.q;
+        Ok(TradingFunction::new(pair, fee, r1, r2))
+        //        Err(anyhow!(
+        //            "composing two trading functions require that their trading pairs overlap"
+        //        ))
+    }
 }
 
 impl TryFrom<pb::TradingFunction> for TradingFunction {
@@ -65,6 +93,10 @@ pub struct BareTradingFunction {
 }
 
 impl BareTradingFunction {
+    pub fn new(fee: u32, p: Amount, q: Amount) -> Self {
+        Self { fee, p, q }
+    }
+
     /// Represent the trading function as a big-endian fixed point encoding
     /// with 128 bits to the right of the decimal.
     ///

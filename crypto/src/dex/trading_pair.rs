@@ -5,9 +5,10 @@ use std::{fmt, str::FromStr};
 
 use crate::asset::{self, REGISTRY};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
 pub struct DirectedTradingPair {
-    start: asset::Id,
-    end: asset::Id,
+    pub start: asset::Id,
+    pub end: asset::Id,
 }
 
 impl DirectedTradingPair {
@@ -17,6 +18,12 @@ impl DirectedTradingPair {
 
     pub fn to_canonical(&self) -> TradingPair {
         TradingPair::new(self.start, self.end)
+    }
+}
+
+impl From<DirectedTradingPair> for TradingPair {
+    fn from(pair: DirectedTradingPair) -> Self {
+        pair.to_canonical()
     }
 }
 
