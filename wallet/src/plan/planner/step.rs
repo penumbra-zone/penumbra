@@ -40,12 +40,7 @@ pub struct Respond<'a, R: RngCore + CryptoRng> {
 }
 
 impl<R: RngCore + CryptoRng> Planner<R> {
-    /// Drive the planning of a transaction *externally*, rather than using a [`ViewClient`]
-    /// internally, as in [`Planner::plan`]. If a [`ViewClient`] is available, prefer that method.
-    ///
-    /// For a canonical example of how to interact with this interface, see the implementation of
-    /// the [`Planner::plan`] method.
-    pub fn step_by_step<'a>(
+    pub(super) fn start<'a>(
         &'a mut self,
         chain_params: &'a ChainParameters,
         fmd_params: &'a FmdParameters,

@@ -18,7 +18,7 @@ use rand_core::{CryptoRng, RngCore};
 use tracing::instrument;
 
 mod planner;
-pub use planner::Planner;
+pub use planner::{step, Planner};
 
 pub async fn validator_definition<V, R>(
     fvk: &FullViewingKey,

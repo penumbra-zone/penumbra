@@ -7,7 +7,7 @@ use anyhow::{anyhow, Result};
 use rand::{CryptoRng, RngCore};
 use tracing::instrument;
 
-use penumbra_chain::params::ChainParameters;
+use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_component::stake::{rate::RateData, validator};
 use penumbra_crypto::{
     asset::Amount,
@@ -286,6 +286,20 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                 }
             }
         }
+    }
+
+    /// Get a [`Step`] object that can be used to drive the planner step-by-step externally.
+    ///
+    /// Prefer [`Planner::plan`] whenever a [`ViewClient`] is available: it offers a much simpler
+    /// interface for the same functionality.
+    pub fn step_by_step<'a>(
+        &'a mut self,
+        chain_params: &'a ChainParameters,
+        fmd_params: &'a FmdParameters,
+        fvk: &'a FullViewingKey,
+        source: Option<AddressIndex>,
+    ) -> anyhow::Result<Step<'a, R>> {
+        self.start(chain_params, fmd_params, fvk, source)
     }
 
     /// Get a random address/withdraw key pair for proposals.
