@@ -307,12 +307,13 @@ where
     V: ViewClient,
     R: RngCore + CryptoRng,
 {
-    Planner::new(rng)
-        .fee(fee)
-        .proposal_submit(proposal)
-        .plan(view, fvk, source_address.map(Into::into))
-        .await
-        .context("can't build proposal submit transaction")
+    todo!("Proposal submit is not implemented yet.")
+    // Planner::new(rng)
+    //     .fee(fee)
+    //     .proposal_submit(proposal)
+    //     .plan(view, fvk, source_address.map(Into::into))
+    //     .await
+    //     .context("can't build proposal submit transaction")
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -331,10 +332,11 @@ where
     V: ViewClient,
     R: RngCore + CryptoRng,
 {
-    Planner::new(rng)
-        .fee(fee)
-        .proposal_withdraw(proposal_id, deposit_refund_address, reason)
-        .plan(view, fvk, source_address.map(Into::into))
-        .await
-        .context("can't build proposal withdraw transaction")
+    todo!("Proposal withdraw is not implemented yet.")
+    // Planner::new(rng)
+    //     .fee(fee)
+    //     .proposal_withdraw(proposal_id, deposit_refund_address, reason)
+    //     .plan(view, fvk, source_address.map(Into::into))
+    //     .await
+    //     .context("can't build proposal withdraw transaction")
 }
