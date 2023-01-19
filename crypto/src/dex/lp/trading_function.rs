@@ -81,7 +81,7 @@ impl BareTradingFunction {
     /// Returns the effective price of the trading function.
     /// Note: the float math is a placehodler
     pub fn effective_price(&self) -> f64 {
-        (self.gamma() * self.p.inner as f64 / self.q.inner as f64).floor()
+        self.gamma() * self.p.inner as f64 / self.q.inner as f64
     }
 
     /// Returns the fee of the trading function, expressed as a percentage (`gamma`).
@@ -118,5 +118,43 @@ impl From<BareTradingFunction> for pb::BareTradingFunction {
             p: Some(value.p.into()),
             q: Some(value.q.into()),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_trading_function_to_bytes() {
+        let btf = BareTradingFunction {
+            fee: 0,
+            p: 1_u32.into(),
+            q: 2_u32.into(),
+        };
+
+        assert_eq!(btf.gamma(), 1.0);
+        assert_eq!(btf.effective_price(), 0.5);
+        let bytes = btf.to_bytes();
+        let integer = u128::from_be_bytes(bytes[..16].try_into().unwrap());
+        let fractional = u128::from_be_bytes(bytes[16..].try_into().unwrap());
+
+        assert_eq!(integer, btf.effective_price().trunc() as u128);
+        assert_eq!(fractional, btf.effective_price().fract() as u128);
+
+        let btf = BareTradingFunction {
+            fee: 100,
+            p: 1_u32.into(),
+            q: 1_u32.into(),
+        };
+
+        assert_eq!(btf.gamma(), 0.99);
+        assert_eq!(btf.effective_price(), 0.99);
+        let bytes = btf.to_bytes();
+        let integer = u128::from_be_bytes(bytes[..16].try_into().unwrap());
+        let fractional = u128::from_be_bytes(bytes[16..].try_into().unwrap());
+
+        assert_eq!(integer, btf.effective_price().trunc() as u128);
+        assert_eq!(fractional, btf.effective_price().fract() as u128);
     }
 }

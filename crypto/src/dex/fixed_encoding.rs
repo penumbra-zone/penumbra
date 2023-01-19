@@ -1,16 +1,16 @@
 //! Contains an implementation of a 32-byte big-endian fixed point encoding of fraction values consisting
-//! of a u128 integer portion and u128 decimal portion.
+//! of a u128 integer portion and u128 fractional portion.
 use core::fmt::Debug;
 use std::fmt::Display;
 
 pub struct FixedEncoding([u8; 32]);
 
 impl FixedEncoding {
-    /// Constructs a new fixed point encoding based on an integer portion and a decimal portion.
-    pub fn new(integer: u128, decimal: u128) -> Self {
+    /// Constructs a new fixed point encoding based on an integer portion and a fractional portion.
+    pub fn new(integer: u128, fractional: u128) -> Self {
         let mut result = [0u8; 32];
         result[..16].copy_from_slice(&integer.to_be_bytes());
-        result[16..].copy_from_slice(&decimal.to_be_bytes());
+        result[16..].copy_from_slice(&fractional.to_be_bytes());
         Self(result)
     }
 
@@ -24,8 +24,8 @@ impl FixedEncoding {
 
     pub fn to_parts(&self) -> (u128, u128) {
         let integer = u128::from_be_bytes(self.0[..16].try_into().unwrap());
-        let decimal = u128::from_be_bytes(self.0[16..].try_into().unwrap());
-        (integer, decimal)
+        let fractional = u128::from_be_bytes(self.0[16..].try_into().unwrap());
+        (integer, fractional)
     }
 }
 
@@ -129,9 +129,9 @@ mod tests {
         numbers_fp.sort();
 
         for (i, number) in numbers_fp.iter().enumerate() {
-            let (integer, decimal) = number.to_parts();
+            let (integer, fractional) = number.to_parts();
             assert_eq!(integer, test_numbers[i].0);
-            assert_eq!(decimal, test_numbers[i].1);
+            assert_eq!(fractional, test_numbers[i].1);
         }
     }
 }
