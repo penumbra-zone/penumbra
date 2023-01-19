@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
@@ -28,12 +29,15 @@ impl TradingFunction {
     ) -> anyhow::Result<TradingFunction> {
         // TODO(erwan): we should fail to compose trading functions with non-overlapping assets.
         // but the logic to do this is tedious, so I'll re-insert it in the `Path` PR.
-        // TODO: overflow handling
+        // TODO: * insert scaling code here
+        //       * overflow handling
         let fee = self.component.fee * psi.component.fee;
-        // TODO: insert scaling code here
         let r1 = self.component.p * psi.component.p;
         let r2 = self.component.q * psi.component.q;
         Ok(TradingFunction::new(pair, fee, r1, r2))
+        //        Err(anyhow!(
+        //            "composing two trading functions require that their trading pairs overlap"
+        //        ))
     }
 }
 
