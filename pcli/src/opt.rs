@@ -60,6 +60,7 @@ impl Opt {
     pub fn init_tracing(&mut self) {
         tracing_subscriber::fmt()
             .with_env_filter(std::mem::take(&mut self.trace_filter))
+            .with_writer(std::io::stderr)
             .init();
     }
 
