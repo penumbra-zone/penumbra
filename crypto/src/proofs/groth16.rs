@@ -272,6 +272,7 @@ mod tests {
 
     proptest! {
             #![proptest_config(ProptestConfig::with_cases(2))]
+            #[should_panic]
         #[test]
         /// Check that the `SpendProof` verification fails when the diversified address is wrong.
         fn spend_proof_verification_diversified_address_integrity_failure(seed_phrase_randomness in any::<[u8; 32]>(), incorrect_seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 2..200u64, v_blinding in fr_strategy()) {
@@ -306,6 +307,9 @@ mod tests {
             let rk: VerificationKey<SpendAuth> = rsk.into();
             let nf = nk.derive_nullifier(0.into(), &note_commitment);
 
+            // Note that this will blow up in debug mode as the constraint
+            // system is unsatisified (ark-groth16 has a debug check for this).
+            // In release mode the proof will be created, but will fail to verify.
             let proof = SpendProof::prove(
                 &mut rng,
                 &pk,
@@ -319,10 +323,9 @@ mod tests {
                 balance_commitment,
                 nf,
                 rk,
-            ).expect("can create proof");
+            ).expect("can create proof in release mode");
 
-            let proof_result = proof.verify(&vk, anchor, balance_commitment, nf, rk);
-            assert!(proof_result.is_err());
+            proof.verify(&vk, anchor, balance_commitment, nf, rk).expect("boom");
         }
     }
 
