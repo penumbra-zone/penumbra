@@ -50,6 +50,7 @@ pub fn parse_validators(input: impl Read) -> Result<Vec<TestnetValidator>> {
 pub fn generate_tm_config(
     node_name: &str,
     peers: Vec<TendermintAddress>,
+    external_address: Option<TendermintAddress>,
 ) -> anyhow::Result<String> {
     tracing::debug!("List of TM peers: {:?}", peers);
     let moniker: Moniker = Moniker::from_str(node_name)?;
@@ -58,19 +59,27 @@ pub fn generate_tm_config(
             .context("Failed to parse the TOML config template for Tendermint")?;
     tm_config.moniker = moniker;
     tm_config.p2p.seeds = peers;
+    tracing::debug!("External address looks like: {:?}", external_address);
+    tm_config.p2p.external_address = external_address;
     Ok(toml::to_string(&tm_config)?)
 }
 
 /// Construct a [tendermint_config::net::Address] from a `node_id` and `node_address`.
 /// The `node_address` can be an IP address or a hostname. Supports custom ports, defaulting
 /// to 26656 if not specified.
-pub fn parse_tm_address(node_id: &Id, node_address: &str) -> anyhow::Result<TendermintAddress> {
+pub fn parse_tm_address(
+    node_id: Option<&Id>,
+    node_address: &str,
+) -> anyhow::Result<TendermintAddress> {
     let mut node = String::from(node_address);
     // Default to 26656 for Tendermint port, if not specified.
     if !node.contains(':') {
         node.push_str(":26656");
     }
-    Ok(format!("{}@{}", node_id, node).parse()?)
+    match node_id {
+        Some(id) => Ok(format!("{}@{}", id, node).parse()?),
+        None => Ok(node.to_string().parse()?),
+    }
 }
 
 /// Query the Tendermint node's RPC endpoint and return a list of all known peers
@@ -121,7 +130,7 @@ pub async fn fetch_peers(
             continue;
         }
 
-        let peer_tm_address = parse_tm_address(&node_id, listen_addr)?;
+        let peer_tm_address = parse_tm_address(Some(&node_id), listen_addr)?;
         peers.push(peer_tm_address);
     }
     Ok(peers)

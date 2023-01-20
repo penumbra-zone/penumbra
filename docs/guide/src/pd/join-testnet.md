@@ -36,9 +36,19 @@ cargo run --bin pd --release -- testnet join
 
 This command fetches the genesis file for the current testnet, and writes
 configs to a testnet data directory (by default, `~/.penumbra/testnet_data`).
-
 If any data exists in the testnet data directory, this command will fail.  See
-the section below on resetting node state.
+the section above on resetting node state.
+
+If you want your node to accept inbound connections from other peers,
+you can set an external IP address during the join operation:
+
+```shell
+cargo run --bin pd --release -- testnet join --external-address 1.2.3.4
+```
+
+where `1.2.3.4` is the public IP address of the node you're running.
+Other peers will try to connect to your node over port 26656/TCP,
+so make sure your firewall allows that traffic in.
 
 ### Running `pd` and `tendermint`
 
