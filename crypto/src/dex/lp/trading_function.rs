@@ -86,7 +86,7 @@ impl BareTradingFunction {
     /// This means that if there's a greater fee, the effective price is lower.
     /// Note: the float math is a placehodler
     pub fn effective_price(&self) -> f64 {
-        self.gamma() * self.p.inner.value() as f64 / self.q.inner.value() as f64
+        self.gamma() * self.p.value() as f64 / self.q.value() as f64
     }
 
     /// Returns the fee of the trading function, expressed as a percentage (`gamma`).
