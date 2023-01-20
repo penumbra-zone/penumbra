@@ -6,11 +6,23 @@ use crate::{
 
 use ark_ff::PrimeField;
 use ark_r1cs_std::prelude::*;
-use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef, SynthesisError};
+use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use decaf377::{
     r1cs::{ElementVar, FqVar},
     Element, Fq,
 };
+
+/// Check the element is not identity.
+pub(crate) fn element_not_identity(
+    cs: ConstraintSystemRef<Fq>,
+    enforce: &Boolean<Fq>,
+    // Witness
+    element: ElementVar,
+) -> Result<(), SynthesisError> {
+    let identity = ElementVar::new_constant(cs, decaf377::Element::default())?;
+    identity.conditional_enforce_not_equal(&element, enforce)?;
+    Ok(())
+}
 
 pub struct AmountVar {
     cs: ConstraintSystemRef<Fq>,
@@ -125,7 +137,7 @@ struct AddressVar {
     // variable, or allocate it and mutate the internal state to do constraint
     // on demand ?
     diversified_generator: ElementVar,
-    // transmission_key: ElementVar,
+    transmission_key: ElementVar,
     transmission_key_s: FqVar,
     // Output proof needs: diversified generator as element and does the elligator
     // map to get an Fq, transmission key as Fq
@@ -139,9 +151,9 @@ impl AddressVar {
         self.diversified_generator.clone()
     }
 
-    // pub fn transmission_key(&self) -> ElementVar {
-    //     self.transmission_key.clone()
-    // }
+    pub fn transmission_key(&self) -> ElementVar {
+        self.transmission_key.clone()
+    }
 
     pub fn transmission_key_s(&self) -> FqVar {
         self.transmission_key_s.clone()
@@ -173,13 +185,13 @@ impl AllocVar<Address, Fq> for AddressVar {
                 let transmission_key_s =
                     FqVar::new_witness(cs.clone(), || Ok(address.transmission_key_s().clone()))?;
                 // dbg!(decaf377::Encoding(address.transmission_key().0).vartime_decompress());
-                // let element_transmission_key = decaf377::Encoding(address.transmission_key().0)
-                //     .vartime_decompress()
-                //     .map_err(|_| SynthesisError::AssignmentMissing)?;
-                // let transmission_key: ElementVar =
-                //     AllocVar::<Element, Fq>::new_witness(cs.clone(), || {
-                //         Ok(element_transmission_key)
-                //     })?;
+                let element_transmission_key = decaf377::Encoding(address.transmission_key().0)
+                    .vartime_decompress()
+                    .map_err(|_| SynthesisError::AssignmentMissing)?;
+                let transmission_key: ElementVar =
+                    AllocVar::<Element, Fq>::new_witness(cs.clone(), || {
+                        Ok(element_transmission_key)
+                    })?;
                 let clue_key = FqVar::new_witness(cs.clone(), || {
                     Ok(Fq::from_le_bytes_mod_order(&address.clue_key().0[..]))
                 })?;
@@ -188,7 +200,7 @@ impl AllocVar<Address, Fq> for AddressVar {
                     cs,
                     diversified_generator,
                     transmission_key_s,
-                    // transmission_key,
+                    transmission_key,
                     clue_key,
                 })
             }
@@ -220,9 +232,9 @@ impl NoteVar {
         self.address.diversified_generator.clone()
     }
 
-    // pub fn transmission_key(&self) -> ElementVar {
-    //     self.address.transmission_key.clone()
-    // }
+    pub fn transmission_key(&self) -> ElementVar {
+        self.address.transmission_key.clone()
+    }
 
     pub fn transmission_key_s(&self) -> FqVar {
         self.address.transmission_key_s.clone()
