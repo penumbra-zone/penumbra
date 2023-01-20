@@ -54,6 +54,22 @@ pub enum ProposalCmd {
         #[clap(long)]
         source: Option<u64>,
     },
+    /// Claim a governance proposal deposit for a proposal you submitted that has finished voting.
+    ///
+    /// This consumes the voting or withdrawn proposal NFT and mints an NFT representing whether the
+    /// proposal passed, failed, or was vetoed. In the case of a veto, the deposit is not returned
+    /// by this action; in other cases, it is returned to you.
+    DepositClaim {
+        /// The transaction fee (paid in upenumbra).
+        #[clap(long, default_value = "0")]
+        fee: u64,
+        /// The proposal id to claim the deposit for.
+        #[clap(long = "on")]
+        proposal_id: u64,
+        /// Optional. Only spend funds originally received by the given address index.
+        #[clap(long)]
+        source: Option<u64>,
+    },
 }
 
 impl ProposalCmd {
@@ -62,6 +78,7 @@ impl ProposalCmd {
             ProposalCmd::Template { .. } => false,
             ProposalCmd::Submit { .. } => false,
             ProposalCmd::Withdraw { .. } => false,
+            ProposalCmd::DepositClaim { .. } => false,
             ProposalCmd::Vote { .. } => false,
         }
     }

@@ -2,9 +2,11 @@ use std::collections::BTreeMap;
 use tonic::transport::Channel;
 
 use anyhow::{Context, Result};
-use penumbra_component::stake::rate::RateData;
 use penumbra_component::stake::validator;
-use penumbra_crypto::{keys::AddressIndex, transaction::Fee, Address, FullViewingKey, Value};
+use penumbra_component::{governance::proposal::Outcome, stake::rate::RateData};
+use penumbra_crypto::{
+    keys::AddressIndex, transaction::Fee, Address, Amount, FullViewingKey, Value,
+};
 use penumbra_proto::{
     client::v1alpha1::specific_query_service_client::SpecificQueryServiceClient,
     view::v1alpha1::NotesRequest,
@@ -345,7 +347,8 @@ pub async fn proposal_deposit_claim<V, R>(
     view: &mut V,
     rng: R,
     proposal_id: u64,
-    reason: String,
+    deposit_amount: Amount,
+    outcome: Outcome<()>,
     fee: Fee,
     source_address: Option<u64>,
 ) -> Result<TransactionPlan>
@@ -353,9 +356,6 @@ where
     V: ViewClient,
     R: RngCore + CryptoRng,
 {
-    let deposit_amount = todo!("get the deposit amount for the proposal");
-    let outcome = todo!("get the outcome of the proposal");
-
     Planner::new(rng)
         .fee(fee)
         .proposal_deposit_claim(proposal_id, deposit_amount, outcome)

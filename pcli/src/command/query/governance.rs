@@ -111,6 +111,7 @@ impl GovernanceCmd {
                     let payload: ProposalPayload =
                         client.key_domain(proposal_payload(*proposal_id)).await?;
                     let proposal = Proposal {
+                        id: *proposal_id,
                         title,
                         description,
                         payload,
