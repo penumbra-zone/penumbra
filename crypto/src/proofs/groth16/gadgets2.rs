@@ -270,6 +270,12 @@ pub struct NoteCommitmentVar {
     inner: FqVar,
 }
 
+impl NoteCommitmentVar {
+    pub fn inner(&self) -> FqVar {
+        self.inner.clone()
+    }
+}
+
 impl AllocVar<note::Commitment, Fq> for NoteCommitmentVar {
     fn new_variable<T: std::borrow::Borrow<note::Commitment>>(
         cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,

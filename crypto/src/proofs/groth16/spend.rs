@@ -3,7 +3,6 @@ use std::str::FromStr;
 use ark_r1cs_std::{
     prelude::{EqGadget, FieldVar},
     uint8::UInt8,
-    R1CSVar,
 };
 use decaf377::{
     r1cs::{ElementVar, FqVar},
@@ -64,21 +63,10 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
             Ok(self.note_commitment_proof.commitment())
         })?;
 
-        let note_commitment_var =
-            FqVar::new_witness(cs.clone(), || Ok(self.note_commitment_proof.commitment().0))?;
         let position_fq: Fq = Fq::from(u64::from(self.note_commitment_proof.position()));
         let position_var = FqVar::new_witness(cs.clone(), || Ok(position_fq))?;
         let merkle_path_var =
             tct::r1cs::MerkleAuthPathVar::new(cs.clone(), self.note_commitment_proof)?;
-
-        let value_amount_var =
-            FqVar::new_witness(cs.clone(), || Ok(Fq::from(self.note.value().amount)))?;
-        let value_asset_id_var =
-            FqVar::new_witness(cs.clone(), || Ok(self.note.value().asset_id.0))?;
-        let diversified_generator_var: ElementVar =
-            AllocVar::<Element, Fq>::new_witness(cs.clone(), || {
-                Ok(self.note.diversified_generator().clone())
-            })?;
 
         let element_transmission_key = decaf377::Encoding(self.note.transmission_key().0)
             .vartime_decompress()
@@ -113,21 +101,21 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         let rk_fq_var = rk_var.compress_to_field()?;
 
         // We short circuit to true if value released is 0. That means this is a _dummy_ spend.
-        let is_dummy = value_amount_var.is_eq(&FqVar::zero())?;
+        let is_dummy = note_var.amount().is_eq(&FqVar::zero())?;
         // We use a Boolean constraint to enforce the below constraints only if this is not a
         // dummy spend.
         let is_not_dummy = is_dummy.not();
 
         // Note commitment integrity
-        let note_commitment = note_var.commit()?;
-        note_commitment.conditional_enforce_equal(&claimed_note_commitment, &is_not_dummy)?;
+        let note_commitment_var = note_var.commit()?;
+        note_commitment_var.conditional_enforce_equal(&claimed_note_commitment, &is_not_dummy)?;
 
         merkle_path_var.verify(
             cs.clone(),
             &is_not_dummy,
             position_var.clone(),
             anchor_var,
-            note_commitment_var.clone(),
+            claimed_note_commitment.inner(),
         )?;
         gadgets::rk_integrity(
             cs.clone(),
@@ -142,26 +130,26 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
             ak_var,
             nk_var.clone(),
             transmission_key_var,
-            diversified_generator_var.clone(),
+            note_var.diversified_generator(),
         )?;
         gadgets::diversified_basepoint_not_identity(
             cs.clone(),
             &is_not_dummy,
-            diversified_generator_var,
+            note_var.diversified_generator(),
         )?;
         gadgets::ak_not_identity(cs.clone(), &is_not_dummy, ak_element_var)?;
         gadgets::value_commitment_integrity(
             cs.clone(),
             &is_not_dummy,
             value_vars,
-            value_asset_id_var,
+            note_var.asset_id(),
             v_blinding_vars,
             balance_commitment_var,
         )?;
         gadgets::nullifier_integrity(
             cs,
             &is_not_dummy,
-            note_commitment_var,
+            claimed_note_commitment.inner(),
             nk_var,
             position_var,
             nullifier_var,
