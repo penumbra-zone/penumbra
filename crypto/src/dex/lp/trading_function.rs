@@ -153,8 +153,8 @@ mod tests {
             q: 1_u32.into(),
         };
 
-        assert_eq!(btf.gamma(), 1.01);
-        assert_eq!(btf.effective_price(), 1.01);
+        assert_eq!(btf.gamma(), 0.99);
+        assert_eq!(btf.effective_price(), 0.99);
         let bytes = btf.to_bytes();
         let integer = u128::from_be_bytes(bytes[..16].try_into().unwrap());
         let fractional = u128::from_be_bytes(bytes[16..].try_into().unwrap());
