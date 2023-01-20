@@ -14,7 +14,8 @@ pub use swap_view::SwapView;
 
 use crate::action::{
     Delegate, Ics20Withdrawal, PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw,
-    ProposalSubmit, ProposalWithdraw, Undelegate, UndelegateClaim, ValidatorVote,
+    ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, Undelegate, UndelegateClaim,
+    ValidatorVote,
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -32,6 +33,7 @@ pub enum ActionView {
     ProposalSubmit(ProposalSubmit),
     ProposalWithdraw(ProposalWithdraw),
     ValidatorVote(ValidatorVote),
+    ProposalDepositClaim(ProposalDepositClaim),
     PositionOpen(PositionOpen),
     PositionClose(PositionClose),
     PositionWithdraw(PositionWithdraw),
@@ -65,6 +67,7 @@ impl TryFrom<pbt::ActionView> for ActionView {
                 AV::IbcAction(x) => ActionView::IBCAction(x),
                 AV::ProposalSubmit(x) => ActionView::ProposalSubmit(x.try_into()?),
                 AV::ProposalWithdraw(x) => ActionView::ProposalWithdraw(x.try_into()?),
+                AV::ProposalDepositClaim(x) => ActionView::ProposalDepositClaim(x.try_into()?),
                 AV::ValidatorVote(x) => ActionView::ValidatorVote(x.try_into()?),
                 AV::PositionOpen(x) => ActionView::PositionOpen(x.try_into()?),
                 AV::PositionClose(x) => ActionView::PositionClose(x.try_into()?),
@@ -93,6 +96,7 @@ impl From<ActionView> for pbt::ActionView {
                 ActionView::ProposalSubmit(x) => AV::ProposalSubmit(x.into()),
                 ActionView::ProposalWithdraw(x) => AV::ProposalWithdraw(x.into()),
                 ActionView::ValidatorVote(x) => AV::ValidatorVote(x.into()),
+                ActionView::ProposalDepositClaim(x) => AV::ProposalDepositClaim(x.into()),
                 ActionView::PositionOpen(x) => AV::PositionOpen(x.into()),
                 ActionView::PositionClose(x) => AV::PositionClose(x.into()),
                 ActionView::PositionWithdraw(x) => AV::PositionWithdraw(x.into()),

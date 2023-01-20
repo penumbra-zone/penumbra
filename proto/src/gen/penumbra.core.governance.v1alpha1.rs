@@ -326,6 +326,10 @@ pub struct ProposalList {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Proposal {
+    /// The unique identifier of the proposal.
+    #[prost(uint64, tag = "4")]
+    pub id: u64,
+    /// A short title for the proposal.
     #[prost(string, tag = "1")]
     pub title: ::prost::alloc::string::String,
     /// A natural-language description of the effect of the proposal and its justification.

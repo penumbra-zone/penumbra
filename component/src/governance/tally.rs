@@ -60,7 +60,7 @@ pub struct Tally {
     // Constant during tallying:
     circumstance: Circumstance,
     ending_block: u64,
-    withdrawn: Withdrawn,
+    withdrawn: Withdrawn<String>,
     emergency: bool,
 }
 
@@ -68,7 +68,7 @@ impl Tally {
     pub fn new(
         circumstance: Circumstance,
         ending_block: u64,
-        withdrawn: Withdrawn,
+        withdrawn: Withdrawn<String>,
         emergency: bool,
     ) -> Self {
         Self {
@@ -100,7 +100,7 @@ impl Tally {
         self.yes + self.no + self.no_with_veto
     }
 
-    pub fn evaluate(self, parameters: &Parameters) -> Option<Outcome> {
+    pub fn evaluate(self, parameters: &Parameters) -> Option<Outcome<String>> {
         // Are we before the end of normal voting?
         let before_end = self.circumstance.current_block < self.ending_block;
 
@@ -168,7 +168,7 @@ impl Parameters {
         state: impl StateRead,
         circumstance: Circumstance,
         proposal_id: u64,
-    ) -> Result<Option<Outcome>> {
+    ) -> Result<Option<Outcome<String>>> {
         // Determine the withdrawal state of the proposal
         let withdrawn = state
             .proposal_state(proposal_id)

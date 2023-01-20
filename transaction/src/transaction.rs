@@ -101,21 +101,22 @@ impl Transaction {
                 }
                 // These actions have no payload keys; they're listed explicitly
                 // for exhaustiveness.
-                Action::SwapClaim(_swap_claim) => {}
-                Action::Spend(_) => {}
-                Action::Delegate(_) => {}
-                Action::Undelegate(_) => {}
-                Action::UndelegateClaim(_) => {}
-                Action::ValidatorDefinition(_) => {}
-                Action::IBCAction(_) => {}
-                Action::ProposalSubmit(_) => {}
-                Action::ProposalWithdraw(_) => {}
-                Action::ValidatorVote(_) => {}
-                Action::PositionOpen(_) => {}
-                Action::PositionClose(_) => {}
-                Action::PositionWithdraw(_) => {}
-                Action::PositionRewardClaim(_) => {}
-                Action::Ics20Withdrawal(_) => {}
+                Action::SwapClaim(_)
+                | Action::Spend(_)
+                | Action::Delegate(_)
+                | Action::Undelegate(_)
+                | Action::UndelegateClaim(_)
+                | Action::ValidatorDefinition(_)
+                | Action::IBCAction(_)
+                | Action::ProposalSubmit(_)
+                | Action::ProposalWithdraw(_)
+                | Action::ValidatorVote(_)
+                | Action::ProposalDepositClaim(_)
+                | Action::PositionOpen(_)
+                | Action::PositionClose(_)
+                | Action::PositionWithdraw(_)
+                | Action::PositionRewardClaim(_)
+                | Action::Ics20Withdrawal(_) => {}
             }
         }
 

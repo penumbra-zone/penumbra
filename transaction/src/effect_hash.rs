@@ -8,7 +8,7 @@ use penumbra_proto::{core::crypto::v1alpha1 as pb_crypto, Message, Protobuf};
 
 use crate::{
     action::{
-        output, propose, spend, swap, swap_claim, Delegate, Ics20Withdrawal, PositionClose,
+        output, proposal, spend, swap, swap_claim, Delegate, Ics20Withdrawal, PositionClose,
         PositionOpen, PositionRewardClaim, PositionWithdraw, Proposal, ProposalDepositClaim,
         ProposalSubmit, ProposalWithdraw, Undelegate, UndelegateClaimBody, ValidatorVote,
         ValidatorVoteBody, Vote,
@@ -49,7 +49,7 @@ impl Protobuf<pb_crypto::EffectHash> for EffectHash {}
 impl From<EffectHash> for pb_crypto::EffectHash {
     fn from(msg: EffectHash) -> Self {
         Self {
-            inner: msg.0.to_vec().into(),
+            inner: msg.0.to_vec(),
         }
     }
 }
@@ -474,7 +474,10 @@ impl EffectingData for ProposalDepositClaim {
     }
 }
 
-impl EffectingData for propose::Outcome {
+impl<W> EffectingData for proposal::Outcome<W>
+where
+    proposal::Withdrawn<W>: EffectingData,
+{
     fn effect_hash(&self) -> EffectHash {
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:prop_outcome")
@@ -482,14 +485,14 @@ impl EffectingData for propose::Outcome {
 
         match self {
             // Manually choose a distinct byte string prefix for each outcome type, all same length
-            propose::Outcome::Passed => {
+            proposal::Outcome::Passed => {
                 state.update(b"Passed");
             }
-            propose::Outcome::Failed { withdrawn } => {
+            proposal::Outcome::Failed { withdrawn } => {
                 state.update(b"Failed");
                 state.update(withdrawn.effect_hash().as_bytes());
             }
-            propose::Outcome::Vetoed { withdrawn } => {
+            proposal::Outcome::Vetoed { withdrawn } => {
                 state.update(b"Vetoed");
                 state.update(withdrawn.effect_hash().as_bytes());
             }
@@ -499,7 +502,7 @@ impl EffectingData for propose::Outcome {
     }
 }
 
-impl EffectingData for propose::Withdrawn {
+impl EffectingData for proposal::Withdrawn<String> {
     fn effect_hash(&self) -> EffectHash {
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:prop_withdrawn")
@@ -507,12 +510,32 @@ impl EffectingData for propose::Withdrawn {
 
         match self {
             // Manually choose a distinct byte prefix for each case
-            propose::Withdrawn::No => {
+            proposal::Withdrawn::No => {
                 state.update(b"N");
             }
-            propose::Withdrawn::WithReason { reason } => {
+            proposal::Withdrawn::WithReason { reason } => {
                 state.update(b"Y");
                 state.update(reason.as_bytes());
+            }
+        }
+
+        EffectHash(state.finalize().as_array().clone())
+    }
+}
+
+impl EffectingData for proposal::Withdrawn<()> {
+    fn effect_hash(&self) -> EffectHash {
+        let mut state = blake2b_simd::Params::default()
+            .personal(b"PAH:prop_withdrawn_yn")
+            .to_state();
+
+        match self {
+            // Manually choose a distinct byte prefix for each case
+            proposal::Withdrawn::No => {
+                state.update(b"N");
+            }
+            proposal::Withdrawn::WithReason { reason: () } => {
+                state.update(b"Y");
             }
         }
 

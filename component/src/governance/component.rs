@@ -13,7 +13,7 @@ pub struct Governance {}
 
 #[async_trait]
 impl Component for Governance {
-    //#[instrument(name = "governance", skip(state, _app_state))]
+    #[instrument(name = "governance", skip(state, _app_state))]
     async fn init_chain(state: &mut StateTransaction, _app_state: &genesis::AppState) {
         // Initialize the unfinished proposals tracking key in the JMT.
         // TODO: Replace with the new range queries in storage
@@ -34,8 +34,5 @@ impl Component for Governance {
         execute::enact_pending_parameter_changes(state)
             .await
             .expect("failed to enact parameter changes");
-        execute::apply_proposal_refunds(state)
-            .await
-            .expect("failed to apply proposal refunds");
     }
 }

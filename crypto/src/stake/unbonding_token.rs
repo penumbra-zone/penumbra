@@ -70,6 +70,7 @@ impl UnbondingToken {
 
 impl TryFrom<asset::Denom> for UnbondingToken {
     type Error = anyhow::Error;
+
     fn try_from(base_denom: asset::Denom) -> Result<Self, Self::Error> {
         let base_string = base_denom.to_string();
 

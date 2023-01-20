@@ -2,7 +2,10 @@ use ark_ff::Zero;
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, str::FromStr};
 
-use penumbra_crypto::{asset::Amount, balance, Balance, Fr, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_crypto::{
+    asset::{self, Amount, Denom},
+    balance, Balance, Fr, ProposalNft, Value, STAKING_TOKEN_ASSET_ID,
+};
 use penumbra_proto::{core::governance::v1alpha1 as pb, Protobuf};
 
 use crate::{plan::TransactionPlan, ActionView, EffectHash, IsAction, TransactionPerspective};
@@ -14,6 +17,9 @@ pub const TRANSACTION_PLAN_TYPE_URL: &str = "/penumbra.core.transaction.v1alpha1
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::Proposal", into = "pb::Proposal")]
 pub struct Proposal {
+    /// The ID number of the proposal.
+    pub id: u64,
+
     /// A short title describing the intent of the proposal.
     pub title: String,
 
@@ -27,6 +33,7 @@ pub struct Proposal {
 impl From<Proposal> for pb::Proposal {
     fn from(inner: Proposal) -> pb::Proposal {
         pb::Proposal {
+            id: inner.id,
             title: inner.title,
             description: inner.description,
             payload: Some(inner.payload.into()),
@@ -39,6 +46,7 @@ impl TryFrom<pb::Proposal> for Proposal {
 
     fn try_from(inner: pb::Proposal) -> Result<Proposal, Self::Error> {
         Ok(Proposal {
+            id: inner.id,
             title: inner.title,
             description: inner.description,
             payload: inner
@@ -93,6 +101,7 @@ impl Proposal {
 impl ProposalKind {
     /// Generate a default proposal of a particular kind.
     pub fn template_proposal(&self, chain_id: String) -> Proposal {
+        let id = 0;
         let title = "A short title describing the intent of the proposal.".to_string();
         let description = "A human readable description of the proposal.".to_string();
         let payload = match self {
@@ -125,6 +134,7 @@ impl ProposalKind {
             },
         };
         Proposal {
+            id,
             title,
             description,
             payload,
@@ -272,12 +282,9 @@ impl TryFrom<pb::proposal::Payload> for ProposalPayload {
                     .map(|inner| {
                         Ok((
                             inner.execute_at_height,
-                            inner
-                                .transaction
-                                .ok_or_else(|| {
-                                    anyhow::anyhow!("missing transaction in `DaoSpend` schedule")
-                                })?
-                                .try_into()?,
+                            inner.transaction.ok_or_else(|| {
+                                anyhow::anyhow!("missing transaction in `DaoSpend` schedule")
+                            })?,
                         ))
                     })
                     .collect::<Result<Vec<_>, anyhow::Error>>()?,
@@ -331,9 +338,15 @@ impl ProposalSubmit {
             asset_id: STAKING_TOKEN_ASSET_ID.clone(),
         };
 
+        let proposal_nft = Value {
+            amount: Amount::from(1u64),
+            asset_id: ProposalNft::voting(self.proposal.id).denom().into(),
+        };
+
         // Proposal submissions *require* the deposit amount in order to be accepted, so they
-        // contribute (-deposit) to the value balance of the transaction
-        -Balance::from(deposit)
+        // contribute (-deposit) to the value balance of the transaction, and they contribute a
+        // single proposal NFT to the value balance:
+        Balance::from(proposal_nft) - Balance::from(deposit)
     }
 }
 
@@ -367,11 +380,28 @@ impl Protobuf<pb::ProposalSubmit> for ProposalSubmit {}
 
 impl IsAction for ProposalWithdraw {
     fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
-        Default::default()
+        self.balance().commit(Fr::zero())
     }
 
     fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
         ActionView::ProposalWithdraw(self.to_owned())
+    }
+}
+
+impl ProposalWithdraw {
+    /// Compute a commitment to the value contributed to a transaction by this proposal submission.
+    pub fn balance(&self) -> Balance {
+        let voting_proposal_nft = Value {
+            amount: Amount::from(1u64),
+            asset_id: ProposalNft::voting(self.proposal).denom().into(),
+        };
+        let withdrawn_proposal_nft = Value {
+            amount: Amount::from(1u64),
+            asset_id: ProposalNft::withdrawn(self.proposal).denom().into(),
+        };
+
+        // Proposal withdrawals consume the submitted proposal and produce a withdrawn proposal:
+        Balance::from(withdrawn_proposal_nft) - Balance::from(voting_proposal_nft)
     }
 }
 
@@ -419,7 +449,7 @@ pub struct ProposalDepositClaim {
     /// The amount of the deposit.
     pub deposit_amount: Amount,
     /// The outcome of the proposal.
-    pub outcome: Outcome,
+    pub outcome: Outcome<()>,
 }
 
 impl From<ProposalDepositClaim> for pb::ProposalDepositClaim {
@@ -452,23 +482,178 @@ impl TryFrom<pb::ProposalDepositClaim> for ProposalDepositClaim {
 
 impl IsAction for ProposalDepositClaim {
     fn balance_commitment(&self) -> balance::Commitment {
-        todo!()
+        self.balance().commit(Fr::zero())
     }
 
-    fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {
-        todo!()
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        ActionView::ProposalDepositClaim(self.clone())
+    }
+}
+
+impl ProposalDepositClaim {
+    /// Compute the balance contributed to the transaction by this proposal deposit claim.
+    pub fn balance(&self) -> Balance {
+        let deposit = Value {
+            amount: self.deposit_amount,
+            asset_id: STAKING_TOKEN_ASSET_ID.clone(),
+        };
+
+        let (voting_or_withdrawn_proposal_denom, claimed_proposal_denom): (Denom, Denom) =
+            match self.outcome {
+                Outcome::Passed => (
+                    ProposalNft::voting(self.proposal).denom(),
+                    ProposalNft::passed(self.proposal).denom(),
+                ),
+                Outcome::Failed {
+                    withdrawn: Withdrawn::No,
+                } => (
+                    ProposalNft::voting(self.proposal).denom(),
+                    ProposalNft::failed(self.proposal).denom(),
+                ),
+                Outcome::Failed {
+                    withdrawn: Withdrawn::WithReason { .. },
+                } => (
+                    ProposalNft::withdrawn(self.proposal).denom(),
+                    ProposalNft::failed(self.proposal).denom(),
+                ),
+                Outcome::Vetoed {
+                    withdrawn: Withdrawn::No,
+                } => (
+                    ProposalNft::voting(self.proposal).denom(),
+                    ProposalNft::vetoed(self.proposal).denom(),
+                ),
+                Outcome::Vetoed {
+                    withdrawn: Withdrawn::WithReason { .. },
+                } => (
+                    ProposalNft::withdrawn(self.proposal).denom(),
+                    ProposalNft::vetoed(self.proposal).denom(),
+                ),
+            };
+
+        // NFT to be consumed
+        let voting_or_withdrawn_proposal_nft = Value {
+            amount: Amount::from(1u64),
+            asset_id: asset::Id::from(voting_or_withdrawn_proposal_denom),
+        };
+
+        // NFT to be created
+        let claimed_proposal_nft = Value {
+            amount: Amount::from(1u64),
+            asset_id: asset::Id::from(claimed_proposal_denom),
+        };
+
+        // Proposal deposit claims consume the submitted or withdrawn proposal and produce a claimed
+        // proposal and the deposit:
+        let mut balance =
+            Balance::from(claimed_proposal_nft) - Balance::from(voting_or_withdrawn_proposal_nft);
+
+        // Only issue a refund if the proposal was not vetoed
+        if self.outcome.should_be_refunded() {
+            balance += Balance::from(deposit);
+        }
+
+        balance
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(try_from = "pb::ProposalOutcome", into = "pb::ProposalOutcome")]
-pub enum Outcome {
-    Passed,
-    Failed { withdrawn: Withdrawn },
-    Vetoed { withdrawn: Withdrawn },
+#[serde(try_from = "pb::ProposalState", into = "pb::ProposalState")]
+pub enum State {
+    Voting,
+    Withdrawn { reason: String },
+    Finished { outcome: Outcome<String> },
+    Claimed { outcome: Outcome<String> },
 }
 
-impl Outcome {
+impl State {
+    pub fn withdrawn(self) -> Withdrawn<String> {
+        match self {
+            State::Voting => Withdrawn::No,
+            State::Withdrawn { reason } => Withdrawn::WithReason { reason },
+            State::Finished { outcome } => match outcome {
+                Outcome::Passed => Withdrawn::No,
+                Outcome::Failed { withdrawn } | Outcome::Vetoed { withdrawn } => withdrawn,
+            },
+            State::Claimed { outcome } => match outcome {
+                Outcome::Passed => Withdrawn::No,
+                Outcome::Failed { withdrawn } | Outcome::Vetoed { withdrawn } => withdrawn,
+            },
+        }
+    }
+}
+
+impl Protobuf<pb::ProposalState> for State {}
+
+impl From<State> for pb::ProposalState {
+    fn from(s: State) -> Self {
+        let state = match s {
+            State::Voting => pb::proposal_state::State::Voting(pb::proposal_state::Voting {}),
+            State::Withdrawn { reason } => {
+                pb::proposal_state::State::Withdrawn(pb::proposal_state::Withdrawn { reason })
+            }
+            State::Finished { outcome } => {
+                pb::proposal_state::State::Finished(pb::proposal_state::Finished {
+                    outcome: Some(outcome.into()),
+                })
+            }
+            State::Claimed { outcome } => {
+                pb::proposal_state::State::Finished(pb::proposal_state::Finished {
+                    outcome: Some(outcome.into()),
+                })
+            }
+        };
+        pb::ProposalState { state: Some(state) }
+    }
+}
+
+impl TryFrom<pb::ProposalState> for State {
+    type Error = anyhow::Error;
+
+    fn try_from(msg: pb::ProposalState) -> Result<Self, Self::Error> {
+        Ok(
+            match msg
+                .state
+                .ok_or_else(|| anyhow::anyhow!("missing proposal state"))?
+            {
+                pb::proposal_state::State::Voting(pb::proposal_state::Voting {}) => State::Voting,
+                pb::proposal_state::State::Withdrawn(pb::proposal_state::Withdrawn { reason }) => {
+                    State::Withdrawn { reason }
+                }
+                pb::proposal_state::State::Finished(pb::proposal_state::Finished { outcome }) => {
+                    State::Finished {
+                        outcome: outcome
+                            .ok_or_else(|| anyhow::anyhow!("missing proposal outcome"))?
+                            .try_into()?,
+                    }
+                }
+                pb::proposal_state::State::Claimed(pb::proposal_state::Claimed { outcome }) => {
+                    State::Claimed {
+                        outcome: outcome
+                            .ok_or_else(|| anyhow::anyhow!("missing proposal outcome"))?
+                            .try_into()?,
+                    }
+                }
+            },
+        )
+    }
+}
+
+// This is parameterized by `W`, the withdrawal reason, so that we can use `()` where a reason
+// doesn't need to be specified. When this is the case, the serialized format in protobufs uses an
+// empty string.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(
+    try_from = "pb::ProposalOutcome",
+    into = "pb::ProposalOutcome",
+    bound = "W: Clone, pb::ProposalOutcome: From<Outcome<W>>, Outcome<W>: TryFrom<pb::ProposalOutcome, Error = anyhow::Error>"
+)]
+pub enum Outcome<W> {
+    Passed,
+    Failed { withdrawn: Withdrawn<W> },
+    Vetoed { withdrawn: Withdrawn<W> },
+}
+
+impl<W> Outcome<W> {
     /// Determines if the outcome should be refunded (i.e. it was not vetoed).
     pub fn should_be_refunded(&self) -> bool {
         !self.is_vetoed()
@@ -485,16 +670,52 @@ impl Outcome {
     pub fn is_passed(&self) -> bool {
         matches!(self, Outcome::Passed)
     }
+
+    pub fn as_ref(&self) -> Outcome<&W> {
+        match self {
+            Outcome::Passed => Outcome::Passed,
+            Outcome::Failed { withdrawn } => Outcome::Failed {
+                withdrawn: withdrawn.as_ref(),
+            },
+            Outcome::Vetoed { withdrawn } => Outcome::Vetoed {
+                withdrawn: withdrawn.as_ref(),
+            },
+        }
+    }
+
+    pub fn map<X>(self, f: impl FnOnce(W) -> X) -> Outcome<X> {
+        match self {
+            Outcome::Passed => Outcome::Passed,
+            Outcome::Failed { withdrawn } => Outcome::Failed {
+                withdrawn: Option::from(withdrawn).map(f).into(),
+            },
+            Outcome::Vetoed { withdrawn } => Outcome::Vetoed {
+                withdrawn: Option::from(withdrawn).map(f).into(),
+            },
+        }
+    }
 }
 
-#[derive(Debug, Clone)]
-pub enum Withdrawn {
+// This is parameterized by `W`, the withdrawal reason, so that we can use `()` where a reason
+// doesn't need to be specified. When this is the case, the serialized format in protobufs uses an
+// empty string.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Withdrawn<W> {
     No,
-    WithReason { reason: String },
+    WithReason { reason: W },
 }
 
-impl From<Option<String>> for Withdrawn {
-    fn from(reason: Option<String>) -> Self {
+impl<W> Withdrawn<W> {
+    pub fn as_ref(&self) -> Withdrawn<&W> {
+        match self {
+            Withdrawn::No => Withdrawn::No,
+            Withdrawn::WithReason { reason } => Withdrawn::WithReason { reason },
+        }
+    }
+}
+
+impl<W> From<Option<W>> for Withdrawn<W> {
+    fn from(reason: Option<W>) -> Self {
         match reason {
             Some(reason) => Withdrawn::WithReason { reason },
             None => Withdrawn::No,
@@ -502,8 +723,8 @@ impl From<Option<String>> for Withdrawn {
     }
 }
 
-impl From<Withdrawn> for Option<String> {
-    fn from(withdrawn: Withdrawn) -> Self {
+impl<W> From<Withdrawn<W>> for Option<W> {
+    fn from(withdrawn: Withdrawn<W>) -> Self {
         match withdrawn {
             Withdrawn::No => None,
             Withdrawn::WithReason { reason } => Some(reason),
@@ -511,10 +732,27 @@ impl From<Withdrawn> for Option<String> {
     }
 }
 
-impl Protobuf<pb::ProposalOutcome> for Outcome {}
+impl TryFrom<Withdrawn<String>> for Withdrawn<()> {
+    type Error = anyhow::Error;
 
-impl From<Outcome> for pb::ProposalOutcome {
-    fn from(o: Outcome) -> Self {
+    fn try_from(withdrawn: Withdrawn<String>) -> Result<Self, Self::Error> {
+        Ok(match withdrawn {
+            Withdrawn::No => Withdrawn::No,
+            Withdrawn::WithReason { reason } => {
+                if reason.is_empty() {
+                    Withdrawn::WithReason { reason: () }
+                } else {
+                    anyhow::bail!("withdrawn reason is not empty")
+                }
+            }
+        })
+    }
+}
+
+impl Protobuf<pb::ProposalOutcome> for Outcome<String> {}
+
+impl From<Outcome<String>> for pb::ProposalOutcome {
+    fn from(o: Outcome<String>) -> Self {
         let outcome = match o {
             Outcome::Passed => {
                 pb::proposal_outcome::Outcome::Passed(pb::proposal_outcome::Passed {})
@@ -536,7 +774,7 @@ impl From<Outcome> for pb::ProposalOutcome {
     }
 }
 
-impl TryFrom<pb::ProposalOutcome> for Outcome {
+impl TryFrom<pb::ProposalOutcome> for Outcome<String> {
     type Error = anyhow::Error;
 
     fn try_from(msg: pb::ProposalOutcome) -> Result<Self, Self::Error> {
@@ -557,6 +795,58 @@ impl TryFrom<pb::ProposalOutcome> for Outcome {
                     withdrawn_with_reason,
                 }) => Outcome::Vetoed {
                     withdrawn: withdrawn_with_reason.into(),
+                },
+            },
+        )
+    }
+}
+
+impl Protobuf<pb::ProposalOutcome> for Outcome<()> {}
+
+impl From<Outcome<()>> for pb::ProposalOutcome {
+    fn from(o: Outcome<()>) -> Self {
+        let outcome = match o {
+            Outcome::Passed => {
+                pb::proposal_outcome::Outcome::Passed(pb::proposal_outcome::Passed {})
+            }
+            Outcome::Failed { withdrawn } => {
+                pb::proposal_outcome::Outcome::Failed(pb::proposal_outcome::Failed {
+                    withdrawn_with_reason: <Option<()>>::from(withdrawn).map(|()| "".to_string()),
+                })
+            }
+            Outcome::Vetoed { withdrawn } => {
+                pb::proposal_outcome::Outcome::Vetoed(pb::proposal_outcome::Vetoed {
+                    withdrawn_with_reason: <Option<()>>::from(withdrawn).map(|()| "".to_string()),
+                })
+            }
+        };
+        pb::ProposalOutcome {
+            outcome: Some(outcome),
+        }
+    }
+}
+
+impl TryFrom<pb::ProposalOutcome> for Outcome<()> {
+    type Error = anyhow::Error;
+
+    fn try_from(msg: pb::ProposalOutcome) -> Result<Self, Self::Error> {
+        Ok(
+            match msg
+                .outcome
+                .ok_or_else(|| anyhow::anyhow!("missing proposal outcome"))?
+            {
+                pb::proposal_outcome::Outcome::Passed(pb::proposal_outcome::Passed {}) => {
+                    Outcome::Passed
+                }
+                pb::proposal_outcome::Outcome::Failed(pb::proposal_outcome::Failed {
+                    withdrawn_with_reason,
+                }) => Outcome::Failed {
+                    withdrawn: <Withdrawn<String>>::from(withdrawn_with_reason).try_into()?,
+                },
+                pb::proposal_outcome::Outcome::Vetoed(pb::proposal_outcome::Vetoed {
+                    withdrawn_with_reason,
+                }) => Outcome::Vetoed {
+                    withdrawn: <Withdrawn<String>>::from(withdrawn_with_reason).try_into()?,
                 },
             },
         )
