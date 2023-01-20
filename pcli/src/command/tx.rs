@@ -9,12 +9,9 @@ use penumbra_crypto::{
     asset,
     stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken},
     transaction::Fee,
-    Address, Value, STAKING_TOKEN_ASSET_ID,
+    Amount, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_proto::{
-    client::v1alpha1::{KeyValueRequest, ValidatorPenaltyRequest},
-    Protobuf,
-};
+use penumbra_proto::client::v1alpha1::ValidatorPenaltyRequest;
 use penumbra_transaction::{
     action::Proposal,
     plan::{SwapClaimPlan, UndelegateClaimPlan},
@@ -168,7 +165,7 @@ impl TxCmd {
                     .iter()
                     .map(|v| v.parse())
                     .collect::<Result<Vec<Value>, _>>()?;
-                let fee = Fee::from_staking_token_amount((*fee as u64).into());
+                let fee = Fee::from_staking_token_amount((*fee).into());
                 let to = to
                     .parse()
                     .map_err(|_| anyhow::anyhow!("address is invalid"))?;
@@ -323,7 +320,7 @@ impl TxCmd {
                     .await?
                     .into_inner()
                     .try_into()?;
-                let fee = Fee::from_staking_token_amount((*fee as u64).into());
+                let fee = Fee::from_staking_token_amount((*fee).into());
 
                 let plan = plan::delegate(
                     &app.fvk,
@@ -347,7 +344,7 @@ impl TxCmd {
                     amount: _,
                     asset_id,
                 } = amount.parse::<Value>()?;
-                let fee = Fee::from_staking_token_amount((*fee as u64).into());
+                let fee = Fee::from_staking_token_amount((*fee).into());
 
                 // TODO: it's awkward that we can't just pull the denom out of the `amount` string we were already given
                 let delegation_token: DelegationToken = app
@@ -385,7 +382,7 @@ impl TxCmd {
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::UndelegateClaim { fee } => {
-                let fee = Fee::from_staking_token_amount((*fee as u64).into());
+                let fee = Fee::from_staking_token_amount((*fee).into());
 
                 let account_id = app.fvk.hash(); // this should be optional? or saved in the client statefully?
 
@@ -400,7 +397,6 @@ impl TxCmd {
                 // Query the view client for the list of undelegations that are ready to be claimed.
                 // We want to claim them into the same address index that currently holds the tokens.
                 let notes = view.unspent_notes_by_address_and_asset(account_id).await?;
-                std::mem::drop(view);
 
                 for (address_index, notes_by_asset) in notes.into_iter() {
                     for (token, notes) in notes_by_asset
@@ -476,7 +472,7 @@ impl TxCmd {
             }
             TxCmd::Proposal(ProposalCmd::Submit { file, fee, source }) => {
                 let proposal: Proposal = serde_json::from_reader(File::open(file)?)?;
-                let fee = Fee::from_staking_token_amount((*fee as u64).into());
+                let fee = Fee::from_staking_token_amount((*fee).into());
                 let plan = plan::proposal_submit(
                     &app.fvk,
                     app.view.as_mut().unwrap(),
@@ -494,34 +490,12 @@ impl TxCmd {
                 reason,
                 source,
             }) => {
-                // Download the refund address for the proposal to be withdrawn, so we can derive
-                // the address index (if it's one of ours), which is used to form the randomizer for
-                // the signature
-                let chain_id = app.view().chain_params().await?.chain_id;
-                let mut client = app.specific_client().await?;
-                // TODO: convert this into an actual query method?
-                // Alternatively, store proposals locally, avoiding the remote query?
-                let deposit_refund_address = Address::decode(
-                    &client
-                        .key_value(KeyValueRequest {
-                            chain_id,
-                            key: penumbra_component::governance::state_key::proposal_deposit_refund_address(
-                                *proposal_id,
-                            ),
-                            proof: false,
-                        })
-                        .await?
-                        .into_inner()
-                        .value[..],
-                )?;
-
-                let fee = Fee::from_staking_token_amount((*fee as u64).into());
+                let fee = Fee::from_staking_token_amount((*fee).into());
                 let plan = plan::proposal_withdraw(
                     &app.fvk,
                     app.view.as_mut().unwrap(),
                     OsRng,
                     *proposal_id,
-                    deposit_refund_address,
                     reason.clone(),
                     fee,
                     *source,
@@ -532,7 +506,15 @@ impl TxCmd {
             }
             TxCmd::Proposal(ProposalCmd::Template { file, kind }) => {
                 let chain_id = app.view().chain_params().await?.chain_id;
-                let template = kind.template_proposal(chain_id);
+
+                // Find out what the latest proposal ID is so we can include the next ID in the template:
+                let mut client = app.specific_client().await?;
+                let latest_proposal_id: u64 = client
+                    .key_proto(penumbra_component::governance::state_key::latest_proposal_id())
+                    .await?;
+                let proposal_id = 1 + latest_proposal_id;
+
+                let template = kind.template_proposal(chain_id, proposal_id);
 
                 if let Some(file) = file {
                     File::create(file)
@@ -542,6 +524,45 @@ impl TxCmd {
                 } else {
                     println!("{}", serde_json::to_string_pretty(&template)?);
                 }
+            }
+            TxCmd::Proposal(ProposalCmd::DepositClaim {
+                fee,
+                proposal_id,
+                source,
+            }) => {
+                use penumbra_component::governance::*;
+                let fee = Fee::from_staking_token_amount((*fee).into());
+
+                let mut client = app.specific_client().await?;
+                let state: proposal::State = client
+                    .key_domain(state_key::proposal_state(*proposal_id))
+                    .await?;
+
+                let outcome = match state {
+                    proposal::State::Voting => anyhow::bail!(
+                        "proposal {} is still voting, so the deposit cannot yet be claimed",
+                        proposal_id
+                    ),
+                    proposal::State::Withdrawn { reason: _ } => {
+                        anyhow::bail!("proposal {} has been withdrawn but voting has not yet concluded, so the deposit cannot yet be claimed", proposal_id);
+                    }
+                    proposal::State::Finished { outcome } => outcome.map(|_| ()),
+                    proposal::State::Claimed { outcome: _ } => {
+                        anyhow::bail!("proposal {} has already been claimed", proposal_id)
+                    }
+                };
+
+                let deposit_amount: Amount = client
+                    .key_domain(state_key::proposal_deposit_amount(*proposal_id))
+                    .await?;
+
+                let plan = Planner::new(OsRng)
+                    .proposal_deposit_claim(*proposal_id, deposit_amount, outcome)
+                    .fee(fee)
+                    .plan(app.view.as_mut().unwrap(), &app.fvk, source.map(Into::into))
+                    .await?;
+
+                app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Proposal(ProposalCmd::Vote {
                 proposal_id: _,

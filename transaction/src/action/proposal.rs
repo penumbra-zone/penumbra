@@ -100,8 +100,7 @@ impl Proposal {
 
 impl ProposalKind {
     /// Generate a default proposal of a particular kind.
-    pub fn template_proposal(&self, chain_id: String) -> Proposal {
-        let id = 0;
+    pub fn template_proposal(&self, chain_id: String, id: u64) -> Proposal {
         let title = "A short title describing the intent of the proposal.".to_string();
         let description = "A human readable description of the proposal.".to_string();
         let payload = match self {

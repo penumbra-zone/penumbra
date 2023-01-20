@@ -285,12 +285,21 @@ impl TxCmd {
                     penumbra_transaction::ActionView::IBCAction(_) => {
                         ["IBC Action".to_string(), "".to_string()]
                     }
-                    penumbra_transaction::ActionView::ProposalSubmit(_) => {
-                        ["Submit Governance Proposal".to_string(), "".to_string()]
-                    }
-                    penumbra_transaction::ActionView::ProposalWithdraw(_) => {
-                        ["Governance Withdrawal Proposal".to_string(), "".to_string()]
-                    }
+                    penumbra_transaction::ActionView::ProposalSubmit(prop_submit) => [
+                        format!("Submit Governance Proposal #{}", prop_submit.proposal.id),
+                        "".to_string(),
+                    ],
+                    penumbra_transaction::ActionView::ProposalWithdraw(prop_withdraw) => [
+                        format!("Withdraw Governance Proposal #{}", prop_withdraw.proposal),
+                        "".to_string(),
+                    ],
+                    penumbra_transaction::ActionView::ProposalDepositClaim(prop_deposit_claim) => [
+                        format!(
+                            "Claim Deposit for Governance Proposal #{}",
+                            prop_deposit_claim.proposal
+                        ),
+                        "".to_string(),
+                    ],
                     penumbra_transaction::ActionView::ValidatorVote(_) => {
                         ["Validator Vote".to_string(), "".to_string()]
                     }
