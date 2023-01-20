@@ -178,6 +178,10 @@ message ProposalList {
 
 // A proposal to be voted upon.
 message Proposal {
+  // The unique identifier of the proposal.
+  uint64 id = 4;
+
+  // A short title for the proposal.
   string title = 1;
 
   // A natural-language description of the effect of the proposal and its justification.

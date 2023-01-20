@@ -3,12 +3,7 @@ use std::{collections::BTreeSet, pin::Pin, str::FromStr};
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use futures::{Stream, StreamExt};
-use penumbra_crypto::{
-    asset::Amount,
-    rdsa::{SpendAuth, VerificationKey},
-    stake::IdentityKey,
-    Address, Value, STAKING_TOKEN_ASSET_ID,
-};
+use penumbra_crypto::{asset::Amount, stake::IdentityKey, Address};
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::action::{Proposal, ProposalPayload, Vote};
@@ -28,10 +23,12 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
             .map(|i| i + 1)
             .unwrap_or(0))
     }
+
     /// Get the proposal payload for a proposal.
     async fn proposal_payload(&self, proposal_id: u64) -> Result<Option<ProposalPayload>> {
         self.get(&state_key::proposal_payload(proposal_id)).await
     }
+
     /// Get the proposal deposit refund address for a proposal.
     async fn proposal_deposit_refund_address(&self, proposal_id: u64) -> Result<Option<Address>> {
         self.get(&state_key::proposal_deposit_refund_address(proposal_id))
@@ -39,45 +36,9 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
     }
 
     /// Get the proposal deposit amount for a proposal.
-    async fn proposal_deposit_amount(&self, proposal_id: u64) -> Result<Option<u64>> {
-        self.get_proto(&state_key::proposal_deposit_amount(proposal_id))
+    async fn proposal_deposit_amount(&self, proposal_id: u64) -> Result<Option<Amount>> {
+        self.get(&state_key::proposal_deposit_amount(proposal_id))
             .await
-    }
-
-    /// Get the proposals to be refunded in this block, along with their addresses and deposit
-    /// amounts.
-    ///
-    /// This is meant to be called from within the shielded pool component, which will actually mint
-    /// the notes.
-    async fn proposal_refunds(&self, block_height: u64) -> Result<Vec<(u64, Address, Value)>> {
-        let proposals = self
-            .get::<proposal::ProposalList, _>(&state_key::proposal_refunds(block_height))
-            .await?
-            .unwrap_or_default()
-            .proposals;
-
-        let mut result = Vec::new();
-
-        for proposal_id in proposals {
-            let address = self
-                .proposal_deposit_refund_address(proposal_id)
-                .await?
-                .expect("address must exist for proposal");
-            let amount: Amount = self
-                .get(&state_key::proposal_deposit_amount(proposal_id))
-                .await?
-                .expect("deposit amount must exist for proposal");
-            result.push((
-                proposal_id,
-                address,
-                Value {
-                    asset_id: *STAKING_TOKEN_ASSET_ID,
-                    amount,
-                },
-            ));
-        }
-
-        Ok(result)
     }
 
     /// Get the state of a proposal.
@@ -94,15 +55,6 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
             .await?
             .unwrap_or_default()
             .proposals)
-    }
-    /// Get the withdrawal key of a proposal.
-    async fn proposal_withdrawal_key(
-        &self,
-        proposal_id: u64,
-    ) -> Result<Option<VerificationKey<SpendAuth>>> {
-        Ok(self
-            .get::<VerificationKey<SpendAuth>, _>(&state_key::proposal_withdrawal_key(proposal_id))
-            .await?)
     }
 
     /// Get the list of validators who voted on a proposal.
@@ -166,6 +118,13 @@ pub trait StateWriteExt: StateWrite {
     /// Store a new proposal with a new proposal id.
     async fn new_proposal(&mut self, proposal: &Proposal) -> Result<u64> {
         let proposal_id = self.next_proposal_id().await?;
+        if proposal_id != proposal.id {
+            return Err(anyhow::anyhow!(
+                "proposal id {} does not match next proposal id {}",
+                proposal.id,
+                proposal_id
+            ));
+        }
 
         // Record this proposal id, so we won't re-use it
         self.put_proto(state_key::latest_proposal_id().to_owned(), proposal_id);
@@ -192,36 +151,9 @@ pub trait StateWriteExt: StateWrite {
         Ok(proposal_id)
     }
 
-    /// Store the deposit refund address for a proposal.
-    async fn put_refund_address(&mut self, proposal_id: u64, address: Address) {
-        self.put(
-            state_key::proposal_deposit_refund_address(proposal_id),
-            address,
-        );
-    }
-
-    /// Store the proposal withdrawal key for a proposal.
-    async fn put_withdrawal_key(&mut self, proposal_id: u64, key: VerificationKey<SpendAuth>) {
-        self.put(state_key::proposal_withdrawal_key(proposal_id), key);
-    }
-
     /// Store the proposal deposit amount.
     async fn put_deposit_amount(&mut self, proposal_id: u64, amount: Amount) {
         self.put(state_key::proposal_deposit_amount(proposal_id), amount);
-    }
-
-    /// Mark a proposal as to-be-refunded in this block.
-    async fn add_proposal_refund(&mut self, block_height: u64, proposal_id: u64) -> Result<()> {
-        let mut refunded_in_this_block = self
-            .get::<proposal::ProposalList, _>(&state_key::proposal_refunds(block_height))
-            .await?
-            .unwrap_or_default();
-        refunded_in_this_block.proposals.insert(proposal_id);
-        self.put(
-            state_key::proposal_refunds(block_height),
-            refunded_in_this_block,
-        );
-        Ok(())
     }
 
     /// Set all the unfinished proposal ids.
@@ -248,8 +180,8 @@ pub trait StateWriteExt: StateWrite {
                 // proposals that are not finished
                 unfinished_proposals.proposals.insert(proposal_id);
             }
-            proposal::State::Finished { .. } => {
-                // If we're setting the proposal to a finished state, remove it from our list of
+            proposal::State::Finished { .. } | proposal::State::Claimed { .. } => {
+                // If we're setting the proposal to a finished or claimed state, remove it from our list of
                 // proposals that are not finished
                 unfinished_proposals.proposals.remove(&proposal_id);
             }

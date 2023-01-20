@@ -10,7 +10,7 @@ mod delegate;
 mod ibc;
 pub mod output;
 mod position;
-pub mod propose;
+pub mod proposal;
 pub mod spend;
 pub mod swap;
 pub mod swap_claim;
@@ -24,7 +24,7 @@ pub use self::ibc::Ics20Withdrawal;
 pub use delegate::Delegate;
 pub use output::Output;
 pub use position::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw};
-pub use propose::{
+pub use proposal::{
     Proposal, ProposalDepositClaim, ProposalKind, ProposalPayload, ProposalSubmit, ProposalWithdraw,
 };
 pub use spend::Spend;

@@ -12,7 +12,7 @@ pub mod dex;
 pub mod eddy;
 mod encrypted_note;
 mod flow;
-mod governance_key;
+mod governance;
 pub mod keys;
 pub mod memo;
 pub mod note;
@@ -31,7 +31,10 @@ pub use asset::Asset;
 pub use balance::Balance;
 pub use encrypted_note::EncryptedNote;
 pub use flow::{MockFlowCiphertext, SwapFlow};
-pub use governance_key::GovernanceKey;
+pub use governance::{
+    key::GovernanceKey,
+    proposal_nft::{self, ProposalNft},
+};
 pub use keys::FullViewingKey;
 pub use note::Note;
 pub use nullifier::Nullifier;

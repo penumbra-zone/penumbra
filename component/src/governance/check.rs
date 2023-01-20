@@ -7,19 +7,18 @@ use penumbra_transaction::action::{
 
 pub mod stateless {
     use penumbra_proto::Protobuf;
-    use penumbra_transaction::action::Proposal;
+    use penumbra_transaction::action::{Proposal, ProposalDepositClaim};
 
     use super::*;
 
     pub fn proposal_submit(
         ProposalSubmit {
             proposal,
-            deposit_refund_address: _, // the refund address can be any valid address
             deposit_amount: _, // we don't check the deposit amount because it's defined by state
-            withdraw_proposal_key: _, // the withdraw proposal key can be any valid key
         }: &ProposalSubmit,
     ) -> Result<()> {
         let Proposal {
+            id: _, // we can't check the ID statelessly because it's defined by state
             title,
             description: _, // the description can be anything
             payload,
@@ -61,8 +60,16 @@ pub mod stateless {
         Ok(())
     }
 
-    pub fn proposal_withdraw(_proposal_withdraw: &ProposalWithdraw) -> Result<()> {
-        // All the checks are stateful.
+    pub fn proposal_withdraw(proposal_withdraw: &ProposalWithdraw) -> Result<()> {
+        // Enforce a maximum length on proposal withdrawal reasons; 80 characters seems reasonable.
+        const PROPOSAL_WITHDRAWAL_REASON_LIMIT: usize = 80;
+
+        if proposal_withdraw.reason.len() > PROPOSAL_WITHDRAWAL_REASON_LIMIT {
+            return Err(anyhow::anyhow!(
+                "proposal withdrawal reason must fit within {PROPOSAL_WITHDRAWAL_REASON_LIMIT} characters"
+            ));
+        }
+
         Ok(())
     }
 
@@ -79,25 +86,34 @@ pub mod stateless {
 
         Ok(())
     }
+
+    pub fn proposal_deposit_claim(
+        ProposalDepositClaim {
+            // None of these fields can be meaningfully checked without reference to the state
+            proposal: _,
+            deposit_amount: _,
+            outcome: _,
+        }: &ProposalDepositClaim,
+    ) -> Result<()> {
+        // All the checks for this are stateful.
+        Ok(())
+    }
 }
 
 pub mod stateful {
-
     use super::super::StateReadExt as _;
     use super::*;
     use crate::stake::StateReadExt as _;
     use penumbra_chain::StateReadExt as _;
-    use penumbra_crypto::{stake::IdentityKey, GovernanceKey, STAKING_TOKEN_DENOM};
+    use penumbra_crypto::{stake::IdentityKey, Amount, GovernanceKey, STAKING_TOKEN_DENOM};
     use penumbra_storage::State;
-    use penumbra_transaction::action::ProposalPayload;
+    use penumbra_transaction::action::{ProposalDepositClaim, ProposalPayload};
 
     pub async fn proposal_submit(
         state: &State,
         ProposalSubmit {
             deposit_amount,
-            proposal,                  // statelessly verified
-            deposit_refund_address: _, // can be anything
-            withdraw_proposal_key: _,  // can be any valid key
+            proposal, // statelessly verified
         }: &ProposalSubmit,
     ) -> Result<()> {
         // Check that the deposit amount agrees with the chain parameters
@@ -109,6 +125,16 @@ pub mod stateful {
                 *STAKING_TOKEN_DENOM,
                 chain_parameters.proposal_deposit_amount,
                 *STAKING_TOKEN_DENOM,
+            );
+        }
+
+        // Check that the proposal ID is the correct next proposal ID
+        let next_proposal_id = state.next_proposal_id().await?;
+        if proposal.id != next_proposal_id {
+            anyhow::bail!(
+                "submitted proposal ID {} does not match expected proposal ID {}",
+                proposal.id,
+                next_proposal_id,
             );
         }
 
@@ -160,62 +186,6 @@ pub mod stateful {
         Ok(())
     }
 
-    /*
-    pub async fn proposal_withdraw(
-        state: &State,
-        effect_hash: &EffectHash,
-        proposal_withdraw @ ProposalWithdraw {
-            body:
-                ProposalWithdrawBody {
-                    proposal,
-                    reason: _, // Nothing is done here
-                },
-            auth_sig: _, // We already checked this in stateless verification
-        }: &ProposalWithdraw,
-    ) -> Result<()> {
-        proposal_withdrawable(state, *proposal).await?;
-        proposal_withdraw_key_verifies(state, effect_hash, proposal_withdraw).await?;
-        Ok(())
-    }
-
-    async fn proposal_withdrawable(state: &State, proposal_id: u64) -> Result<()> {
-        if let Some(proposal_state) = state.proposal_state(proposal_id).await? {
-            use proposal::State::*;
-            match proposal_state {
-                Voting => {
-                    // You can withdraw a proposal that is currently voting
-                }
-                Withdrawn { .. } => {
-                    anyhow::bail!("proposal {} has already been withdrawn", proposal_id)
-                }
-                Finished { .. } => {
-                    anyhow::bail!("voting on proposal {} has already concluded", proposal_id)
-                }
-            }
-        } else {
-            anyhow::bail!("proposal {} does not exist", proposal_id);
-        }
-
-        Ok(())
-    }
-
-    async fn proposal_withdraw_key_verifies(
-        state: &State,
-        effect_hash: &EffectHash,
-        ProposalWithdraw { body, auth_sig }: &ProposalWithdraw,
-    ) -> Result<()> {
-        if let Some(withdraw_proposal_key) = state.proposal_withdrawal_key(body.proposal).await? {
-            withdraw_proposal_key
-                .verify(effect_hash.as_ref(), auth_sig)
-                .context("proposal withdraw signature failed to verify")?;
-        } else {
-            anyhow::bail!("proposal {} does not exist", body.proposal);
-        }
-
-        Ok(())
-    }
-    */
-
     pub async fn validator_vote(
         state: &State,
         ValidatorVote {
@@ -245,7 +215,7 @@ pub mod stateful {
                 Withdrawn { .. } => {
                     anyhow::bail!("proposal {} has already been withdrawn", proposal_id)
                 }
-                Finished { .. } => {
+                Finished { .. } | Claimed { .. } => {
                     anyhow::bail!("voting on proposal {} has already concluded", proposal_id)
                 }
             }
@@ -287,6 +257,83 @@ pub mod stateful {
             }
         } else {
             anyhow::bail!("validator {} does not exist", identity_key);
+        }
+
+        Ok(())
+    }
+
+    pub async fn proposal_withdraw(
+        state: &State,
+        proposal_withdraw: &ProposalWithdraw,
+    ) -> Result<()> {
+        // Any voteable proposal can be withdrawn
+        proposal_voteable(state, proposal_withdraw.proposal).await?;
+        Ok(())
+    }
+
+    pub async fn proposal_deposit_claim(
+        state: &State,
+        proposal_deposit_claim: &ProposalDepositClaim,
+    ) -> Result<()> {
+        // Any finished proposal can have its deposit claimed
+        proposal_claimable(state, proposal_deposit_claim.proposal).await?;
+        // Check that the deposit amount matches the proposal being claimed
+        proposal_claim_valid_deposit(
+            state,
+            proposal_deposit_claim.proposal,
+            proposal_deposit_claim.deposit_amount,
+        )
+        .await?;
+        Ok(())
+    }
+
+    async fn proposal_claimable(state: &State, proposal_id: u64) -> Result<()> {
+        if let Some(proposal_state) = state.proposal_state(proposal_id).await? {
+            use proposal::State::*;
+            match proposal_state {
+                Voting => {
+                    anyhow::bail!("proposal {} is still voting", proposal_id)
+                }
+                Withdrawn { .. } => {
+                    anyhow::bail!(
+                        "proposal {} has been withdrawn but voting has not concluded",
+                        proposal_id
+                    )
+                }
+                Finished { .. } => {
+                    // This is when you can claim a proposal
+                }
+                Claimed { .. } => {
+                    anyhow::bail!(
+                        "the deposit for proposal {} has already been claimed",
+                        proposal_id
+                    )
+                }
+            }
+        } else {
+            anyhow::bail!("proposal {} does not exist", proposal_id);
+        }
+
+        Ok(())
+    }
+
+    async fn proposal_claim_valid_deposit(
+        state: &State,
+        proposal_id: u64,
+        claim_deposit_amount: Amount,
+    ) -> Result<()> {
+        if let Some(proposal_deposit_amount) = state.proposal_deposit_amount(proposal_id).await? {
+            if claim_deposit_amount != proposal_deposit_amount {
+                anyhow::bail!(
+                    "proposal deposit claim for {}{} does not match proposal deposit of {}{}",
+                    claim_deposit_amount,
+                    *STAKING_TOKEN_DENOM,
+                    proposal_deposit_amount,
+                    *STAKING_TOKEN_DENOM,
+                );
+            }
+        } else {
+            anyhow::bail!("proposal {} does not exist", proposal_id);
         }
 
         Ok(())

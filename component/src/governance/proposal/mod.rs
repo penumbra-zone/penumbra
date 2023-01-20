@@ -1,6 +1,5 @@
 pub mod chain_params;
 mod list;
-mod state;
 
 pub use list::ProposalList;
-pub use state::{Outcome, State, Withdrawn};
+pub use penumbra_transaction::action::proposal::*;

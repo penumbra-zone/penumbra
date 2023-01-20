@@ -307,13 +307,12 @@ where
     V: ViewClient,
     R: RngCore + CryptoRng,
 {
-    todo!("Proposal submit is not implemented yet.")
-    // Planner::new(rng)
-    //     .fee(fee)
-    //     .proposal_submit(proposal)
-    //     .plan(view, fvk, source_address.map(Into::into))
-    //     .await
-    //     .context("can't build proposal submit transaction")
+    Planner::new(rng)
+        .fee(fee)
+        .proposal_submit(proposal, view.chain_params().await?.proposal_deposit_amount)
+        .plan(view, fvk, source_address.map(Into::into))
+        .await
+        .context("can't build proposal submit transaction")
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -323,7 +322,6 @@ pub async fn proposal_withdraw<V, R>(
     view: &mut V,
     rng: R,
     proposal_id: u64,
-    deposit_refund_address: Address,
     reason: String,
     fee: Fee,
     source_address: Option<u64>,
@@ -332,11 +330,36 @@ where
     V: ViewClient,
     R: RngCore + CryptoRng,
 {
-    todo!("Proposal withdraw is not implemented yet.")
-    // Planner::new(rng)
-    //     .fee(fee)
-    //     .proposal_withdraw(proposal_id, deposit_refund_address, reason)
-    //     .plan(view, fvk, source_address.map(Into::into))
-    //     .await
-    //     .context("can't build proposal withdraw transaction")
+    Planner::new(rng)
+        .fee(fee)
+        .proposal_withdraw(proposal_id, reason)
+        .plan(view, fvk, source_address.map(Into::into))
+        .await
+        .context("can't build proposal withdraw transaction")
+}
+
+#[allow(clippy::too_many_arguments)]
+#[instrument(skip(fvk, view, rng))]
+pub async fn proposal_deposit_claim<V, R>(
+    fvk: &FullViewingKey,
+    view: &mut V,
+    rng: R,
+    proposal_id: u64,
+    reason: String,
+    fee: Fee,
+    source_address: Option<u64>,
+) -> Result<TransactionPlan>
+where
+    V: ViewClient,
+    R: RngCore + CryptoRng,
+{
+    let deposit_amount = todo!("get the deposit amount for the proposal");
+    let outcome = todo!("get the outcome of the proposal");
+
+    Planner::new(rng)
+        .fee(fee)
+        .proposal_deposit_claim(proposal_id, deposit_amount, outcome)
+        .plan(view, fvk, source_address.map(Into::into))
+        .await
+        .context("can't build proposal withdraw transaction")
 }

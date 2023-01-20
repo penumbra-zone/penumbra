@@ -13,7 +13,7 @@ use anyhow::{Context, Result};
 use penumbra_chain::{StateReadExt as _, StateWriteExt};
 use penumbra_storage::StateTransaction;
 use penumbra_transaction::action::{
-    ProposalPayload, ProposalSubmit, ProposalWithdraw, ProposalWithdraw, ValidatorVote,
+    ProposalDepositClaim, ProposalPayload, ProposalSubmit, ProposalWithdraw, ValidatorVote,
     ValidatorVoteBody,
 };
 use tracing::instrument;
@@ -24,8 +24,6 @@ pub async fn proposal_submit(
     ProposalSubmit {
         proposal,
         deposit_amount,
-        deposit_refund_address,
-        withdraw_proposal_key,
     }: &ProposalSubmit,
 ) -> Result<()> {
     // Store the contents of the proposal and generate a fresh proposal id for it
@@ -34,18 +32,8 @@ pub async fn proposal_submit(
         .await
         .context("can create proposal")?;
 
-    // Set the refund address for the proposal
-    state
-        .put_refund_address(proposal_id, *deposit_refund_address)
-        .await;
-
     // Set the deposit amount for the proposal
     state.put_deposit_amount(proposal_id, *deposit_amount).await;
-
-    // Set the withdrawal key for the proposal
-    state
-        .put_withdrawal_key(proposal_id, *withdraw_proposal_key)
-        .await;
 
     // Set the proposal state to voting (votes start immediately)
     state
@@ -123,6 +111,40 @@ pub async fn validator_vote(
     Ok(())
 }
 
+#[instrument(skip(state))]
+pub async fn proposal_deposit_claim(
+    state: &mut StateTransaction<'_>,
+    ProposalDepositClaim {
+        proposal,
+        deposit_amount: _, // not needed to transition state; deposit is self-minted in tx
+        outcome: resupplied_outcome,
+    }: &ProposalDepositClaim,
+) -> Result<()> {
+    // The only effect of doing a deposit claim is to state transition the proposal to claimed so it
+    // cannot be claimed again. The deposit amount is self-minted in the transaction (proof of
+    // deserving-ness is the supplied proposal NFT, which is burned in the transaction), so we don't
+    // need to distribute it here.
+
+    if let Some(proposal::State::Finished { outcome }) = state.proposal_state(*proposal).await? {
+        // This should be prevented by earlier checks, but replicating here JUST IN CASE!
+        if *resupplied_outcome != outcome.as_ref().map(|_| ()) {
+            anyhow::bail!(
+                "proposal {} has outcome {:?}, but deposit claim has outcome {:?}",
+                proposal,
+                outcome,
+                resupplied_outcome
+            );
+        }
+
+        state
+            .put_proposal_state(*proposal, proposal::State::Claimed { outcome })
+            .await?;
+    } else {
+        anyhow::bail!("proposal {} is not in finished state", proposal);
+    }
+    Ok(())
+}
+
 // TODO: fill in when delegator votes happen
 // pub async fn delegator_vote(state: &State, delegator_vote: &DelegatorVote) {}
 
@@ -131,11 +153,6 @@ pub async fn enact_all_passed_proposals(state: &mut StateTransaction<'_>) -> Res
     let parameters = tally::Parameters::new(&*state)
         .await
         .context("can generate tally parameters")?;
-
-    let height = state
-        .get_block_height()
-        .await
-        .context("can get block height")?;
 
     let circumstance = tally::Circumstance::new(&*state)
         .await
@@ -154,18 +171,6 @@ pub async fn enact_all_passed_proposals(state: &mut StateTransaction<'_>) -> Res
             .context("can tally proposal")?
         {
             tracing::debug!(proposal = %proposal_id, outcome = ?outcome, "proposal voting finished");
-
-            // If the outcome was not vetoed, issue a refund of the proposal deposit --
-            // otherwise, the deposit will never be refunded, and therefore is burned
-            if outcome.should_be_refunded() {
-                tracing::debug!(proposal = %proposal_id, "issuing proposal deposit refund");
-                state
-                    .add_proposal_refund(height, proposal_id)
-                    .await
-                    .context("can add proposal refund")?;
-            } else {
-                tracing::debug!(proposal = %proposal_id, "burning proposal deposit for vetoed proposal");
-            }
 
             // If the proposal passes, enact it now
             if outcome.is_passed() {
@@ -281,29 +286,5 @@ async fn enact_proposal(state: &mut StateTransaction<'_>, proposal_id: u64) -> R
 pub async fn enact_pending_parameter_changes(_state: &mut StateTransaction<'_>) -> Result<()> {
     // TODO: read the new parameters for this block, if any, and change the chain params to reflect
     // them. Parameters should be stored in the state as a map from name to value string.
-    Ok(())
-}
-
-pub async fn apply_proposal_refunds(state: &mut StateTransaction<'_>) -> Result<()> {
-    use crate::shielded_pool::NoteManager;
-    use penumbra_chain::NoteSource;
-
-    let height = state.get_block_height().await.unwrap();
-
-    for (proposal_id, address, value) in state
-        .proposal_refunds(height)
-        .await
-        .context("proposal refunds can be fetched")?
-    {
-        state
-            .mint_note(
-                value,
-                &address,
-                NoteSource::ProposalDepositRefund { proposal_id },
-            )
-            .await
-            .context("can mint proposal deposit refund")?;
-    }
-
     Ok(())
 }

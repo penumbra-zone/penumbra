@@ -18,17 +18,9 @@ impl ActionHandler for ProposalWithdraw {
         check::stateless::proposal_withdraw(self)
     }
 
-    #[instrument(name = "proposal_withdraw", skip(self, _state))]
-    async fn check_stateful(&self, _state: Arc<State>) -> Result<()> {
-        // Disabled since this doesn't fit the shape of the new trait,
-        // but not fixed because we want to change the proposal withdrawal
-        // mechanism anyways.
-        /*
-        let effect_hash = context.transaction_body().effect_hash();
-
-        check::stateful::proposal_withdraw(&state, &effect_hash, self).await
-        */
-        Ok(())
+    #[instrument(name = "proposal_withdraw", skip(self, state))]
+    async fn check_stateful(&self, state: Arc<State>) -> Result<()> {
+        check::stateful::proposal_withdraw(&state, self).await
     }
 
     #[instrument(name = "proposal_withdraw", skip(self, state))]

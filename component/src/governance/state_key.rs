@@ -40,14 +40,6 @@ pub fn unfinished_proposals() -> &'static str {
     "governance/unfinished_proposals"
 }
 
-pub fn proposal_refunds(block_height: u64) -> String {
-    format!("governance/proposal_refunds/{}", block_height)
-}
-
-pub fn proposal_withdrawal_key(proposal_id: u64) -> String {
-    format!("governance/proposal/{}/withdraw_key", proposal_id)
-}
-
 pub fn voting_validators_list(proposal_id: u64) -> String {
     format!("governance/proposal/{}/validator_vote/", proposal_id)
 }
