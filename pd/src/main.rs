@@ -30,6 +30,8 @@ use tokio::runtime;
 use tonic::transport::Server;
 use tracing_subscriber::{prelude::*, EnvFilter};
 
+use tendermint_config::net::Address as TendermintAddress;
+
 #[derive(Debug, Parser)]
 #[clap(
     name = "pd",
@@ -116,8 +118,15 @@ enum TestnetCommand {
         #[clap(default_value = "testnet.penumbra.zone")]
         node: String,
         // Default: node-#
+        /// Human-readable name to identify node on network
+        // Default: 'node-#'
         #[clap(long)]
         moniker: Option<String>,
+        /// Public IP address to advertise for this node's Tendermint P2P service.
+        /// Setting this option will instruct other nodes on the network to connect
+        /// to yours.
+        #[clap(long)]
+        external_address: Option<String>,
     },
 
     /// Reset all `pd` testnet state.
@@ -277,7 +286,12 @@ async fn main() -> anyhow::Result<()> {
         }
 
         RootCommand::Testnet {
-            tn_cmd: TestnetCommand::Join { node, moniker },
+            tn_cmd:
+                TestnetCommand::Join {
+                    node,
+                    moniker,
+                    external_address,
+                },
             testnet_dir,
         } => {
             // By default output directory will be in `~/.penumbra/testnet_data/`
@@ -295,6 +309,12 @@ async fn main() -> anyhow::Result<()> {
             }
             let mut node_dir = output_dir;
             node_dir.push("node0");
+
+            // Check whether an external address was set, and parse as TendermintAddress.
+            let external_address: Option<TendermintAddress> = match external_address {
+                Some(a) => parse_tm_address(None, &a).ok(),
+                None => None,
+            };
 
             let vk = ValidatorKeys::generate();
 
@@ -327,8 +347,8 @@ async fn main() -> anyhow::Result<()> {
                 .ok_or_else(|| anyhow::anyhow!("could not parse JSON from response"))?
                 .take();
             let node_id: tendermint::node::Id = serde_json::value::from_value(node_id)?;
-            let node_tm_address = parse_tm_address(&node_id, &node)?;
             tracing::info!(?node_id, "fetched node id");
+            let node_tm_address = parse_tm_address(Some(&node_id), &node)?;
 
             // Look up more peers from the target node, so that generated tendermint config
             // contains multiple addresses, making peering easier.
@@ -343,7 +363,7 @@ async fn main() -> anyhow::Result<()> {
                 Some(m) => m,
                 None => format!("node-{}", hex::encode(OsRng.gen::<u32>().to_le_bytes())),
             };
-            let tm_config = generate_tm_config(&node_name, peers)?;
+            let tm_config = generate_tm_config(&node_name, peers, external_address)?;
 
             write_configs(node_dir, &vk, &genesis, tm_config)?;
         }
@@ -617,9 +637,9 @@ async fn main() -> anyhow::Result<()> {
                             format!("{}:26656", ip),
                         )
                     })
-                    .filter_map(|(id, ip)| parse_tm_address(&id, &ip).ok())
+                    .filter_map(|(id, ip)| parse_tm_address(Some(&id), &ip).ok())
                     .collect::<Vec<_>>();
-                let tm_config = generate_tm_config(&node_name, ips_minus_mine)?;
+                let tm_config = generate_tm_config(&node_name, ips_minus_mine, None)?;
 
                 write_configs(node_dir, vk, &validator_genesis, tm_config)?;
             }
