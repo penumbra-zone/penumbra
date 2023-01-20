@@ -53,11 +53,6 @@ pub fn spent_nullifier_lookup(nullifier: Nullifier) -> String {
     format!("shielded_pool/spent_nullifiers/{}", nullifier)
 }
 
-// TODO: why is this here?
-pub fn claimed_swap_outputs(height: u64) -> String {
-    format!("dex/claimed_swap_outputs/{}", height)
-}
-
 // TODO: refactor this out (shielded pool should use an extension trait, not re-export other components' internals)
 // pub use crate::stake::state_key::slashed_validators;
 
