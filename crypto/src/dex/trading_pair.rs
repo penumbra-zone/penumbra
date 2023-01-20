@@ -1,7 +1,7 @@
 use anyhow::anyhow;
 use decaf377::FieldExt;
 use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
-use std::str::FromStr;
+use std::{fmt, str::FromStr};
 
 use crate::asset::{self, REGISTRY};
 
@@ -119,5 +119,15 @@ impl FromStr for TradingPair {
             let denom_2 = REGISTRY.parse_unit(parts[1]);
             Ok(Self::new(denom_1.id(), denom_2.id()))
         }
+    }
+}
+
+/// Produce an output string of the form ASSET_ID1:ASSET_ID2
+/// TODO: this mismatches the `FromStr` impl which uses denominations.
+/// The asset ID is more canonical than a base denom so I think that's okay,
+/// but the `FromStr` impl should probably be able to handle asset IDs as well.
+impl fmt::Display for TradingPair {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}:{}", self.asset_1, self.asset_2)
     }
 }

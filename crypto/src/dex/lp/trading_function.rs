@@ -92,7 +92,7 @@ impl BareTradingFunction {
     /// Returns the fee of the trading function, expressed as a percentage (`gamma`).
     /// Note: the float math is a placehodler
     pub fn gamma(&self) -> f64 {
-        (10_000.0 + self.fee as f64) / 10_000.0
+        (10_000.0 - self.fee as f64) / 10_000.0
     }
 }
 
