@@ -11,7 +11,7 @@ use once_cell::sync::Lazy;
 
 use crate::{
     asset::VALUE_GENERATOR_DOMAIN_SEP, balance::commitment::VALUE_BLINDING_GENERATOR,
-    keys::IVK_DOMAIN_SEP, nullifier::NULLIFIER_DOMAIN_SEP,
+    keys::IVK_DOMAIN_SEP,
 };
 
 pub(crate) static SPENDAUTH_BASEPOINT: Lazy<Element> = Lazy::new(decaf377::basepoint);
@@ -36,26 +36,6 @@ pub(crate) fn value_commitment_integrity(
         + value_blinding_generator.scalar_mul_le(value_blinding.to_bits_le()?.iter())?;
 
     commitment.conditional_enforce_equal(&test_commitment, enforce)?;
-    Ok(())
-}
-
-/// Check integrity of nullifier derivation.
-pub(crate) fn nullifier_integrity(
-    cs: ConstraintSystemRef<Fq>,
-    enforce: &Boolean<Fq>,
-    // Witnesses
-    note_commitment: FqVar,
-    nk: FqVar,
-    position: FqVar,
-    // Public input
-    nullifier: FqVar,
-) -> Result<(), SynthesisError> {
-    let nullifier_constant = FqVar::new_constant(cs.clone(), *NULLIFIER_DOMAIN_SEP)?;
-
-    let computed_nullifier =
-        poseidon377::r1cs::hash_3(cs, &nullifier_constant, (nk, note_commitment, position))?;
-
-    nullifier.conditional_enforce_equal(&computed_nullifier, enforce)?;
     Ok(())
 }
 

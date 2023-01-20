@@ -27,6 +27,8 @@ use crate::{
     Note, Nullifier, Rseed, Value,
 };
 
+use super::gadgets2::{NullifierKeyVar, NullifierVar, PositionVar};
+
 /// Groth16 proof for spending existing notes.
 #[derive(Clone, Debug)]
 pub struct SpendCircuit {
@@ -63,8 +65,8 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
             Ok(self.note_commitment_proof.commitment())
         })?;
 
-        let position_fq: Fq = Fq::from(u64::from(self.note_commitment_proof.position()));
-        let position_var = FqVar::new_witness(cs.clone(), || Ok(position_fq))?;
+        let position_var =
+            PositionVar::new_witness(cs.clone(), || Ok(self.note_commitment_proof.position()))?;
         let merkle_path_var =
             tct::r1cs::MerkleAuthPathVar::new(cs.clone(), self.note_commitment_proof)?;
 
@@ -75,6 +77,7 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         let spend_auth_randomizer_arr: [u8; 32] = self.spend_auth_randomizer.to_bytes();
         let spend_auth_randomizer_var: Vec<UInt8<Fq>> =
             UInt8::new_witness_vec(cs.clone(), &spend_auth_randomizer_arr)?;
+
         let ak_bytes = Fq::from_bytes(*self.ak.as_ref())
             .expect("verification key is valid, so its byte encoding is a decaf377 s value");
         let ak_var = FqVar::new_witness(cs.clone(), || Ok(ak_bytes))?;
@@ -83,13 +86,15 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
             .unwrap();
         let ak_element_var: ElementVar =
             AllocVar::<Element, Fq>::new_witness(cs.clone(), || Ok(ak_point))?;
-        let nk_var = FqVar::new_witness(cs.clone(), || Ok(self.nk.0))?;
+
+        let nk_var = NullifierKeyVar::new_witness(cs.clone(), || Ok(self.nk))?;
 
         // Public inputs
         let anchor_var = FqVar::new_input(cs.clone(), || Ok(Fq::from(self.anchor)))?;
         let balance_commitment_var =
             ElementVar::new_input(cs.clone(), || Ok(self.balance_commitment.0))?;
-        let nullifier_var = FqVar::new_input(cs.clone(), || Ok(self.nullifier.0))?;
+
+        let claimed_nullifier_var = NullifierVar::new_input(cs.clone(), || Ok(self.nullifier))?;
         let rk_var = ElementVar::new_input(cs.clone(), || Ok(self.rk))?;
 
         let rk_fq_var = rk_var.compress_to_field()?;
@@ -104,10 +109,14 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         let note_commitment_var = note_var.commit()?;
         note_commitment_var.conditional_enforce_equal(&claimed_note_commitment, &is_not_dummy)?;
 
+        // Nullifier integrity
+        let nullifier_var = nk_var.derive_nullifier(&position_var, &claimed_note_commitment)?;
+        nullifier_var.conditional_enforce_equal(&claimed_nullifier_var, &is_not_dummy)?;
+
         merkle_path_var.verify(
             cs.clone(),
             &is_not_dummy,
-            position_var.clone(),
+            position_var.inner.clone(),
             anchor_var,
             claimed_note_commitment.inner(),
         )?;
@@ -122,7 +131,7 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
             cs.clone(),
             &is_not_dummy,
             ak_var,
-            nk_var.clone(),
+            nk_var.inner.clone(),
             note_var.transmission_key(),
             note_var.diversified_generator(),
         )?;
@@ -139,14 +148,6 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
             note_var.asset_id(),
             v_blinding_vars,
             balance_commitment_var,
-        )?;
-        gadgets::nullifier_integrity(
-            cs,
-            &is_not_dummy,
-            claimed_note_commitment.inner(),
-            nk_var,
-            position_var,
-            nullifier_var,
         )?;
 
         Ok(())
