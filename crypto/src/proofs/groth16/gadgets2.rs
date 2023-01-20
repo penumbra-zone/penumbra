@@ -1,8 +1,11 @@
 use crate::{
     asset,
+    keys::NullifierKey,
     note::{self, NOTECOMMIT_DOMAIN_SEP},
-    Address, Amount, Note, Value,
+    nullifier::NULLIFIER_DOMAIN_SEP,
+    Address, Amount, Note, Nullifier, Value,
 };
+use penumbra_tct as tct;
 
 use ark_ff::PrimeField;
 use ark_r1cs_std::prelude::*;
@@ -319,8 +322,6 @@ impl AllocVar<note::Commitment, Fq> for NoteCommitmentVar {
 impl NoteVar {
     pub fn commit(&self) -> Result<NoteCommitmentVar, SynthesisError> {
         let domain_sep = FqVar::new_constant(self.cs.clone(), *NOTECOMMIT_DOMAIN_SEP)?;
-        // TODO: should we do this as part of allocating AddressVar? Should only be done
-        // if needed as it is expensive. See the comment in the struct def for AddressVar
         let compressed_g_d = self.address.diversified_generator().compress_to_field()?;
 
         let commitment = poseidon377::r1cs::hash_6(
@@ -344,6 +345,114 @@ impl NoteVar {
 }
 
 impl EqGadget<Fq> for NoteCommitmentVar {
+    fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
+        self.inner.is_eq(&other.inner)
+    }
+}
+
+pub struct PositionVar {
+    cs: ConstraintSystemRef<Fq>,
+    pub inner: FqVar,
+}
+
+impl AllocVar<tct::Position, Fq> for PositionVar {
+    fn new_variable<T: std::borrow::Borrow<tct::Position>>(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: ark_r1cs_std::prelude::AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        let inner1 = f()?;
+        let inner: tct::Position = *inner1.borrow();
+        match mode {
+            AllocationMode::Constant => unimplemented!(),
+            AllocationMode::Input => unimplemented!(),
+            AllocationMode::Witness => Ok(Self {
+                cs: cs.clone(),
+                inner: FqVar::new_witness(cs.clone(), || Ok(Fq::from(u64::from(inner))))?,
+            }),
+        }
+    }
+}
+
+pub struct NullifierKeyVar {
+    cs: ConstraintSystemRef<Fq>,
+    pub inner: FqVar,
+}
+
+impl AllocVar<NullifierKey, Fq> for NullifierKeyVar {
+    fn new_variable<T: std::borrow::Borrow<NullifierKey>>(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: ark_r1cs_std::prelude::AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        let inner1 = f()?;
+        let inner: NullifierKey = *inner1.borrow();
+        match mode {
+            AllocationMode::Constant => unimplemented!(),
+            AllocationMode::Input => unimplemented!(),
+            AllocationMode::Witness => Ok(Self {
+                cs: cs.clone(),
+                inner: FqVar::new_witness(cs, || Ok(inner.0))?,
+            }),
+        }
+    }
+}
+
+impl NullifierKeyVar {
+    pub fn derive_nullifier(
+        &self,
+        position: &PositionVar,
+        note_commitment: &NoteCommitmentVar,
+    ) -> Result<NullifierVar, SynthesisError> {
+        let domain_sep = FqVar::new_constant(self.cs.clone(), *NULLIFIER_DOMAIN_SEP)?;
+        let nullifier = poseidon377::r1cs::hash_3(
+            self.cs.clone(),
+            &domain_sep,
+            (
+                self.inner.clone(),
+                note_commitment.inner.clone(),
+                position.inner.clone(),
+            ),
+        )?;
+
+        Ok(NullifierVar {
+            cs: self.cs.clone(),
+            inner: nullifier,
+        })
+    }
+}
+
+pub struct NullifierVar {
+    cs: ConstraintSystemRef<Fq>,
+    inner: FqVar,
+}
+
+impl AllocVar<Nullifier, Fq> for NullifierVar {
+    fn new_variable<T: std::borrow::Borrow<Nullifier>>(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: ark_r1cs_std::prelude::AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        let nullifier1 = f()?;
+        let nullifier: Nullifier = *nullifier1.borrow();
+        match mode {
+            AllocationMode::Constant => unimplemented!(),
+            AllocationMode::Input => Ok(Self {
+                cs: cs.clone(),
+                inner: FqVar::new_input(cs.clone(), || Ok(nullifier.0))?,
+            }),
+            AllocationMode::Witness => unimplemented!(),
+        }
+    }
+}
+
+impl EqGadget<Fq> for NullifierVar {
     fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
         self.inner.is_eq(&other.inner)
     }
