@@ -1,11 +1,8 @@
-use anyhow::anyhow;
 use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    dex::{fixed_encoding::FixedEncoding, TradingPair},
-    Amount,
-};
+use crate::dex::{fixed_encoding::FixedEncoding, TradingPair};
+use crate::Amount;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::TradingFunction", into = "pb::TradingFunction")]
@@ -29,15 +26,15 @@ impl TradingFunction {
         psi: TradingFunction,
         pair: TradingPair,
     ) -> anyhow::Result<TradingFunction> {
-        // TODO: * insert scaling code here
-        //       * overflow handling
+        // TODO(erwan): we should fail to compose trading functions with non-overlapping assets.
+        //  however, since we're not using `DirectedTradingPair` here, the logic to check what
+        //  should be the resulting pair is tedious. I will re-insert it later.
+        // TODO: overflow handling
         let fee = self.component.fee * psi.component.fee;
+        // TODO: insert scaling code here
         let r1 = self.component.p * psi.component.p;
         let r2 = self.component.q * psi.component.q;
         Ok(TradingFunction::new(pair, fee, r1, r2))
-        //        Err(anyhow!(
-        //            "composing two trading functions require that their trading pairs overlap"
-        //        ))
     }
 }
 
