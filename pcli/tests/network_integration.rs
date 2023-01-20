@@ -286,61 +286,60 @@ fn swap() {
     thread::sleep(block_time);
 }
 
-// FIXME: Re-enable this test once proposal submission works again (see #1845).
-// #[ignore]
-// #[test]
-// fn governance_submit_proposal() {
-//     let tmpdir = load_wallet_into_tmpdir();
+#[ignore]
+#[test]
+fn governance_submit_proposal() {
+    let tmpdir = load_wallet_into_tmpdir();
 
-//     // Get template for signaling proposal.
-//     let mut template_cmd = Command::cargo_bin("pcli").unwrap();
-//     template_cmd
-//         .args([
-//             "--data-path",
-//             tmpdir.path().to_str().unwrap(),
-//             "tx",
-//             "proposal",
-//             "template",
-//             "--kind",
-//             "signaling",
-//             "--file",
-//             "proposal.json",
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     template_cmd.assert().success();
+    // Get template for signaling proposal.
+    let mut template_cmd = Command::cargo_bin("pcli").unwrap();
+    template_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "proposal",
+            "template",
+            "--kind",
+            "signaling",
+            "--file",
+            "proposal.json",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    template_cmd.assert().success();
 
-//     // Submit signaling proposal.
-//     let mut submit_cmd = Command::cargo_bin("pcli").unwrap();
-//     submit_cmd
-//         .args([
-//             "--data-path",
-//             tmpdir.path().to_str().unwrap(),
-//             "tx",
-//             "proposal",
-//             "submit",
-//             "--file",
-//             "proposal.json",
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     submit_cmd.assert().success();
+    // Submit signaling proposal.
+    let mut submit_cmd = Command::cargo_bin("pcli").unwrap();
+    submit_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "proposal",
+            "submit",
+            "--file",
+            "proposal.json",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    submit_cmd.assert().success();
 
-//     // Wait for a couple blocks for the transaction to be confirmed.
-//     let block_time = time::Duration::from_secs(2 * BLOCK_TIME_SECONDS);
-//     thread::sleep(block_time);
+    // Wait for a couple blocks for the transaction to be confirmed.
+    let block_time = time::Duration::from_secs(2 * BLOCK_TIME_SECONDS);
+    thread::sleep(block_time);
 
-//     // Now list the proposals.
-//     let mut proposals_cmd = Command::cargo_bin("pcli").unwrap();
-//     proposals_cmd
-//         .args([
-//             "--data-path",
-//             tmpdir.path().to_str().unwrap(),
-//             "query",
-//             "governance",
-//             "list-proposals",
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     proposals_cmd.assert().success();
-// }
+    // Now list the proposals.
+    let mut proposals_cmd = Command::cargo_bin("pcli").unwrap();
+    proposals_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "query",
+            "governance",
+            "list-proposals",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    proposals_cmd.assert().success();
+}
 
 #[ignore]
 #[test]
