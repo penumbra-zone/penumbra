@@ -27,8 +27,7 @@ impl TradingFunction {
         pair: TradingPair,
     ) -> anyhow::Result<TradingFunction> {
         // TODO(erwan): we should fail to compose trading functions with non-overlapping assets.
-        //  however, since we're not using `DirectedTradingPair` here, the logic to check what
-        //  should be the resulting pair is tedious. I will re-insert it later.
+        // but the logic to do this is tedious, so I'll re-insert it in the `Path` PR.
         // TODO: overflow handling
         let fee = self.component.fee * psi.component.fee;
         // TODO: insert scaling code here
