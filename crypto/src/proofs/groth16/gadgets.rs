@@ -16,30 +16,6 @@ use crate::{
 
 pub(crate) static SPENDAUTH_BASEPOINT: Lazy<Element> = Lazy::new(decaf377::basepoint);
 
-/// Check the diversified basepoint is not identity.
-pub(crate) fn diversified_basepoint_not_identity(
-    cs: ConstraintSystemRef<Fq>,
-    enforce: &Boolean<Fq>,
-    // Witness
-    g_d: ElementVar,
-) -> Result<(), SynthesisError> {
-    let identity = ElementVar::new_constant(cs, decaf377::Element::default())?;
-    identity.conditional_enforce_not_equal(&g_d, enforce)?;
-    Ok(())
-}
-
-/// Check the spend auth key is not identity.
-pub(crate) fn ak_not_identity(
-    cs: ConstraintSystemRef<Fq>,
-    enforce: &Boolean<Fq>,
-    // Witness
-    ak: ElementVar,
-) -> Result<(), SynthesisError> {
-    let identity = ElementVar::new_constant(cs, decaf377::Element::default())?;
-    identity.conditional_enforce_not_equal(&ak, enforce)?;
-    Ok(())
-}
-
 /// Check the integrity of the value commitment.
 pub(crate) fn value_commitment_integrity(
     cs: ConstraintSystemRef<Fq>,

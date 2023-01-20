@@ -13,7 +13,7 @@ use decaf377::{Element, FieldExt};
 use ark_ff::ToConstraintField;
 use ark_groth16::{Groth16, Proof, ProvingKey, VerifyingKey};
 use ark_r1cs_std::prelude::AllocVar;
-use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef, SynthesisError};
+use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
 use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_tct as tct;
@@ -67,12 +67,6 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         let position_var = FqVar::new_witness(cs.clone(), || Ok(position_fq))?;
         let merkle_path_var =
             tct::r1cs::MerkleAuthPathVar::new(cs.clone(), self.note_commitment_proof)?;
-
-        let element_transmission_key = decaf377::Encoding(self.note.transmission_key().0)
-            .vartime_decompress()
-            .map_err(|_| SynthesisError::AssignmentMissing)?;
-        let transmission_key_var: ElementVar =
-            AllocVar::<Element, Fq>::new_witness(cs.clone(), || Ok(element_transmission_key))?;
 
         let v_blinding_arr: [u8; 32] = self.v_blinding.to_bytes();
         let v_blinding_vars = UInt8::new_witness_vec(cs.clone(), &v_blinding_arr)?;
@@ -129,15 +123,15 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
             &is_not_dummy,
             ak_var,
             nk_var.clone(),
-            transmission_key_var,
+            note_var.transmission_key(),
             note_var.diversified_generator(),
         )?;
-        gadgets::diversified_basepoint_not_identity(
+        gadgets2::element_not_identity(
             cs.clone(),
             &is_not_dummy,
             note_var.diversified_generator(),
         )?;
-        gadgets::ak_not_identity(cs.clone(), &is_not_dummy, ak_element_var)?;
+        gadgets2::element_not_identity(cs.clone(), &is_not_dummy, ak_element_var)?;
         gadgets::value_commitment_integrity(
             cs.clone(),
             &is_not_dummy,

@@ -57,7 +57,7 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
         let claimed_balance_commitment =
             ElementVar::new_input(cs.clone(), || Ok(self.balance_commitment.0))?;
 
-        gadgets::diversified_basepoint_not_identity(
+        gadgets2::element_not_identity(
             cs.clone(),
             &Boolean::TRUE,
             note_var.diversified_generator(),
@@ -83,7 +83,7 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
 impl ParameterSetup for OutputCircuit {
     fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
         let diversifier_bytes = [1u8; 16];
-        let pk_d_bytes = [1u8; 32];
+        let pk_d_bytes = decaf377::basepoint().vartime_compress().0;
         let clue_key_bytes = [1; 32];
         let diversifier = Diversifier(diversifier_bytes);
         let address = Address::from_components(
