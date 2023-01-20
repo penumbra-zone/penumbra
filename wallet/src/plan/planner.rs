@@ -12,17 +12,16 @@ use penumbra_crypto::{
     asset::Denom,
     dex::{swap::SwapPlaintext, TradingPair},
     keys::AddressIndex,
-    rdsa::{SpendAuth, VerificationKey},
     transaction::Fee,
-    Address, FieldExt, Fr, FullViewingKey, Note, Value,
+    Address, FullViewingKey, Note, Value,
 };
 use penumbra_proto::view::v1alpha1::NotesRequest;
 use penumbra_tct as tct;
 use penumbra_transaction::{
-    action::{Proposal, ProposalSubmit, ProposalWithdrawBody, ValidatorVote},
+    action::ValidatorVote,
     plan::{
-        ActionPlan, MemoPlan, OutputPlan, ProposalWithdrawPlan, SpendPlan, SwapClaimPlan, SwapPlan,
-        TransactionPlan, UndelegateClaimPlan,
+        ActionPlan, MemoPlan, OutputPlan, SpendPlan, SwapClaimPlan, SwapPlan, TransactionPlan,
+        UndelegateClaimPlan,
     },
 };
 use penumbra_view::{SpendableNoteRecord, ViewClient};
@@ -267,7 +266,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         // Plan the transaction using the gathered information
         self.plan_with_spendable_notes(&chain_params, &fmd_params, fvk, source, spendable_notes)
-            .await
     }
 
     /// Add spends and change outputs as required to balance the transaction, using the spendable
@@ -277,7 +275,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     ///
     /// Clears the contents of the planner, which can be re-used.
     #[instrument(skip(self, chain_params, fmd_params, fvk, spendable_notes))]
-    pub async fn plan_with_spendable_notes(
+    pub fn plan_with_spendable_notes(
         &mut self,
         chain_params: &ChainParameters,
         fmd_params: &FmdParameters,
@@ -333,66 +331,5 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         let plan = mem::take(&mut self.plan);
 
         Ok(plan)
-    }
-
-    /// Get a random address/withdraw key pair for proposals.
-    fn proposal_address_and_withdraw_key(
-        &mut self,
-        fvk: &FullViewingKey,
-    ) -> (Address, VerificationKey<SpendAuth>) {
-        // The deposit refund address should be an ephemeral address
-        let deposit_refund_address = fvk.incoming().ephemeral_address(&mut self.rng).0;
-
-        // The proposal withdraw verification key is the spend auth verification key randomized by the
-        // deposit refund address's address index
-        let withdraw_proposal_key = {
-            // Use the fvk to get the original address index of the diversifier
-            let deposit_refund_address_index = fvk
-                .incoming()
-                .index_for_diversifier(deposit_refund_address.diversifier());
-
-            // Convert this to a vector
-            let mut deposit_refund_address_index_bytes =
-                deposit_refund_address_index.to_bytes().to_vec();
-
-            // Pad it with zeros to be 32 bytes long (the size expected by a randomizer)
-            deposit_refund_address_index_bytes.extend([0; 16]);
-
-            // Convert it back to exactly 32 bytes
-            let deposit_refund_address_index_bytes = deposit_refund_address_index_bytes
-                .try_into()
-                .expect("exactly 32 bytes");
-
-            // Get the scalar `Fr` element derived from these bytes
-            let withdraw_proposal_key_randomizer =
-                Fr::from_bytes(deposit_refund_address_index_bytes)
-                    .expect("bytes are within range for `Fr`");
-
-            // Randomize the spend verification key for the fvk using this randomizer
-            fvk.spend_verification_key()
-                .randomize(&withdraw_proposal_key_randomizer)
-        };
-
-        (deposit_refund_address, withdraw_proposal_key)
-    }
-
-    /// Get the randomizer from an address using the FVK.
-    fn proposal_withdraw_randomizer(&self, fvk: &FullViewingKey, address: &Address) -> Fr {
-        // Use the fvk to get the original address index of the diversifier
-        let deposit_refund_address_index =
-            fvk.incoming().index_for_diversifier(address.diversifier());
-
-        // Convert this to a vector
-        let mut deposit_refund_address_index_bytes =
-            deposit_refund_address_index.to_bytes().to_vec();
-        // Pad it with zeros to be 32 bytes long (the size expected by a randomizer)
-        deposit_refund_address_index_bytes.extend([0; 16]);
-        // Convert it back to exactly 32 bytes
-        let deposit_refund_address_index_bytes = deposit_refund_address_index_bytes
-            .try_into()
-            .expect("exactly 32 bytes");
-
-        // Get the scalar `Fr` element derived from these bytes
-        Fr::from_bytes(deposit_refund_address_index_bytes).expect("bytes are within range for `Fr`")
     }
 }
