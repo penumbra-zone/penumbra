@@ -79,6 +79,11 @@ impl BareTradingFunction {
     }
 
     /// Returns the effective price of the trading function.
+    ///
+    /// The effective price is the price of asset 1 in terms of asset 2 according
+    /// to the trading function.
+    ///
+    /// This means that if there's a greater fee, the effective price is lower.
     /// Note: the float math is a placehodler
     pub fn effective_price(&self) -> f64 {
         self.gamma() * self.p.inner as f64 / self.q.inner as f64
