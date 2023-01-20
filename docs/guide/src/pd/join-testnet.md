@@ -31,24 +31,21 @@ This will delete the entire testnet data directory.
 Next, generate a set of configs for the current testnet:
 
 ```shell
-cargo run --bin pd --release -- testnet join
+cargo run --bin pd --release -- testnet join --external-address IP_ADDRESS --moniker MY_NODE_NAME
 ```
+
+where `IP_ADDRESS` (like `1.2.3.4`) is the public IP address of the node you're running,
+and `MY_NODE_NAME` is a moniker identifying your node. Other peers will try to connect
+to your node over port 26656/TCP.
+
+If your node is behind a firewall or not publicly routable for some other reason,
+skip the `--external-address` flag, so that other peers won't try to connect to it.
+You can also skip the `--moniker` flag to use a randomized moniker instead of selecting one.
 
 This command fetches the genesis file for the current testnet, and writes
 configs to a testnet data directory (by default, `~/.penumbra/testnet_data`).
 If any data exists in the testnet data directory, this command will fail.  See
 the section above on resetting node state.
-
-If you want your node to accept inbound connections from other peers,
-you can set an external IP address during the join operation:
-
-```shell
-cargo run --bin pd --release -- testnet join --external-address 1.2.3.4
-```
-
-where `1.2.3.4` is the public IP address of the node you're running.
-Other peers will try to connect to your node over port 26656/TCP,
-so make sure your firewall allows that traffic in.
 
 ### Running `pd` and `tendermint`
 
