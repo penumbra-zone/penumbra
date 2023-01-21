@@ -22,7 +22,7 @@ pub const SPENDKEY_LEN_BYTES: usize = 32;
 /// TODO(hdevalence): In the future, we should hide the SpendKeyBytes
 /// and force everything to use the proto format / bech32 serialization.
 /// But we can't do this now, because we need it to support existing wallets.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct SpendKeyBytes(pub [u8; SPENDKEY_LEN_BYTES]);
 
 /// A key representing a single spending authority.
@@ -33,6 +33,14 @@ pub struct SpendKey {
     ask: SigningKey<SpendAuth>,
     fvk: FullViewingKey,
 }
+
+impl PartialEq for SpendKey {
+    fn eq(&self, other: &Self) -> bool {
+        self.seed == other.seed
+    }
+}
+
+impl Eq for SpendKey {}
 
 impl Protobuf<pb::SpendKey> for SpendKey {}
 
