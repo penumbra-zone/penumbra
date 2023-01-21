@@ -5,15 +5,16 @@ use decaf377::FieldExt;
 use once_cell::sync::Lazy;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, serializers::bech32str, Protobuf};
 use poseidon377::hash_2;
+use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
-use super::{DiversifierKey, IncomingViewingKey, NullifierKey, OutgoingViewingKey};
+use super::{AddressIndex, DiversifierKey, IncomingViewingKey, NullifierKey, OutgoingViewingKey};
 use crate::{
-    ka,
+    fmd, ka,
     note::Commitment,
     prf,
     rdsa::{SpendAuth, VerificationKey},
-    Fq, Fr, Note, Nullifier,
+    Address, Fq, Fr, Note, Nullifier,
 };
 
 pub(crate) static IVK_DOMAIN_SEP: Lazy<Fq> =
@@ -43,6 +44,25 @@ impl FullViewingKey {
             == self
                 .incoming()
                 .diversified_public(&note.diversified_generator())
+    }
+
+    /// Derive a shielded payment address with the given [`AddressIndex`].
+    pub fn payment_address(&self, index: AddressIndex) -> (Address, fmd::DetectionKey) {
+        self.incoming().payment_address(index)
+    }
+
+    /// Derive a random ephemeral address.
+    pub fn ephemeral_address<R: RngCore + CryptoRng>(
+        &self,
+        rng: R,
+    ) -> (Address, fmd::DetectionKey) {
+        self.incoming().ephemeral_address(rng)
+    }
+
+    /// Returns the index of the given address, if the address is viewed by this
+    /// viewing key; otherwise, returns `None`.
+    pub fn address_index(&self, address: &Address) -> Option<AddressIndex> {
+        self.incoming().address_index(address)
     }
 
     /// Construct a full viewing key from its components.
