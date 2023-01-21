@@ -88,7 +88,8 @@ async fn main() -> Result<()> {
 
             tokio::spawn(
                 Server::builder()
-                    .add_service(ViewProtocolServiceServer::new(service))
+                    .accept_http1(true)
+                    .add_service(tonic_web::enable(ViewProtocolServiceServer::new(service)))
                     .serve(
                         format!("{}:{}", host, view_port)
                             .parse()
