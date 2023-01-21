@@ -45,11 +45,21 @@ service ViewProtocolService {
   // Query for the current FMD parameters.
   rpc FMDParameters(FMDParametersRequest) returns (FMDParametersResponse);
 
+  // Query for an address given an address index
+  rpc AddressByIndex(AddressByIndexRequest) returns (AddressByIndexResponse);
+
+    // Query for an address given an address index
+  rpc IndexByAddress(IndexByAddressRequest) returns (IndexByAddressResponse);
+
+  // Query for an ephemeral address
+  rpc EphemeralAddress(EphemeralAddressRequest) returns (EphemeralAddressResponse);
+
   // Query for balance of a given address
   rpc BalanceByAddress(BalanceByAddressRequest) returns (stream BalanceByAddressResponse);
 
   // Query for a note by its note commitment, optionally waiting until the note is detected.
   rpc NoteByCommitment(NoteByCommitmentRequest) returns (NoteByCommitmentResponse);
+
   // Query for a swap by its swap commitment, optionally waiting until the swap is detected.
   rpc SwapByCommitment(SwapByCommitmentRequest) returns (SwapByCommitmentResponse);
 
@@ -58,10 +68,13 @@ service ViewProtocolService {
 
   // Query for the transaction hashes in the given range of blocks.
   rpc TransactionHashes(TransactionHashesRequest) returns (stream TransactionHashesResponse);
+
   // Query for a given transaction hash.
   rpc TransactionByHash(TransactionByHashRequest) returns (TransactionByHashResponse);
+
   // Query for the full transactions in the given range of blocks.
   rpc Transactions(TransactionsRequest) returns (stream TransactionsResponse);
+
   // Query for the transaction perspective of the given transaction
   rpc TransactionPerspective(TransactionPerspectiveRequest) returns (TransactionPerspectiveResponse);
 }
@@ -111,9 +124,31 @@ message PlannerResponse {
   core.transaction.v1alpha1.TransactionPlan plan = 1;
 }
 
+message AddressByIndexRequest {
+  core.crypto.v1alpha1.AddressIndex address_index = 1;
+}
+
+message AddressByIndexResponse {
+  core.crypto.v1alpha1.Address address = 1;
+}
+
+message IndexByAddressRequest {
+  core.crypto.v1alpha1.Address address = 1;
+}
+
+message IndexByAddressResponse {
+  // Will be absent if given an address not viewable by this viewing service
+  optional core.crypto.v1alpha1.AddressIndex address_index = 1;
+}
+
+message EphemeralAddressRequest {}
+
+message EphemeralAddressResponse {
+  core.crypto.v1alpha1.Address address = 1;
+}
+
 message BalanceByAddressRequest {
   core.crypto.v1alpha1.Address address = 1;
-
 }
 
 message BalanceByAddressResponse {

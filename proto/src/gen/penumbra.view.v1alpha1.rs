@@ -90,6 +90,44 @@ pub struct PlannerResponse {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AddressByIndexRequest {
+    #[prost(message, optional, tag = "1")]
+    pub address_index: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AddressIndex,
+    >,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AddressByIndexResponse {
+    #[prost(message, optional, tag = "1")]
+    pub address: ::core::option::Option<super::super::core::crypto::v1alpha1::Address>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct IndexByAddressRequest {
+    #[prost(message, optional, tag = "1")]
+    pub address: ::core::option::Option<super::super::core::crypto::v1alpha1::Address>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct IndexByAddressResponse {
+    /// Will be absent if given an address not viewable by this viewing service
+    #[prost(message, optional, tag = "1")]
+    pub address_index: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AddressIndex,
+    >,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EphemeralAddressRequest {}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EphemeralAddressResponse {
+    #[prost(message, optional, tag = "1")]
+    pub address: ::core::option::Option<super::super::core::crypto::v1alpha1::Address>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BalanceByAddressRequest {
     #[prost(message, optional, tag = "1")]
     pub address: ::core::option::Option<super::super::core::crypto::v1alpha1::Address>,
@@ -717,6 +755,66 @@ pub mod view_protocol_service_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
+        /// Query for an address given an address index
+        pub async fn address_by_index(
+            &mut self,
+            request: impl tonic::IntoRequest<super::AddressByIndexRequest>,
+        ) -> Result<tonic::Response<super::AddressByIndexResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1alpha1.ViewProtocolService/AddressByIndex",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// Query for an address given an address index
+        pub async fn index_by_address(
+            &mut self,
+            request: impl tonic::IntoRequest<super::IndexByAddressRequest>,
+        ) -> Result<tonic::Response<super::IndexByAddressResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1alpha1.ViewProtocolService/IndexByAddress",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// Query for an ephemeral address
+        pub async fn ephemeral_address(
+            &mut self,
+            request: impl tonic::IntoRequest<super::EphemeralAddressRequest>,
+        ) -> Result<tonic::Response<super::EphemeralAddressResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1alpha1.ViewProtocolService/EphemeralAddress",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
         /// Query for balance of a given address
         pub async fn balance_by_address(
             &mut self,
@@ -1139,6 +1237,21 @@ pub mod view_protocol_service_server {
             &self,
             request: tonic::Request<super::FmdParametersRequest>,
         ) -> Result<tonic::Response<super::FmdParametersResponse>, tonic::Status>;
+        /// Query for an address given an address index
+        async fn address_by_index(
+            &self,
+            request: tonic::Request<super::AddressByIndexRequest>,
+        ) -> Result<tonic::Response<super::AddressByIndexResponse>, tonic::Status>;
+        /// Query for an address given an address index
+        async fn index_by_address(
+            &self,
+            request: tonic::Request<super::IndexByAddressRequest>,
+        ) -> Result<tonic::Response<super::IndexByAddressResponse>, tonic::Status>;
+        /// Query for an ephemeral address
+        async fn ephemeral_address(
+            &self,
+            request: tonic::Request<super::EphemeralAddressRequest>,
+        ) -> Result<tonic::Response<super::EphemeralAddressResponse>, tonic::Status>;
         ///Server streaming response type for the BalanceByAddress method.
         type BalanceByAddressStream: futures_core::Stream<
                 Item = Result<super::BalanceByAddressResponse, tonic::Status>,
@@ -1533,6 +1646,126 @@ pub mod view_protocol_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = FMDParametersSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1alpha1.ViewProtocolService/AddressByIndex" => {
+                    #[allow(non_camel_case_types)]
+                    struct AddressByIndexSvc<T: ViewProtocolService>(pub Arc<T>);
+                    impl<
+                        T: ViewProtocolService,
+                    > tonic::server::UnaryService<super::AddressByIndexRequest>
+                    for AddressByIndexSvc<T> {
+                        type Response = super::AddressByIndexResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::AddressByIndexRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).address_by_index(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = AddressByIndexSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1alpha1.ViewProtocolService/IndexByAddress" => {
+                    #[allow(non_camel_case_types)]
+                    struct IndexByAddressSvc<T: ViewProtocolService>(pub Arc<T>);
+                    impl<
+                        T: ViewProtocolService,
+                    > tonic::server::UnaryService<super::IndexByAddressRequest>
+                    for IndexByAddressSvc<T> {
+                        type Response = super::IndexByAddressResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::IndexByAddressRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).index_by_address(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = IndexByAddressSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1alpha1.ViewProtocolService/EphemeralAddress" => {
+                    #[allow(non_camel_case_types)]
+                    struct EphemeralAddressSvc<T: ViewProtocolService>(pub Arc<T>);
+                    impl<
+                        T: ViewProtocolService,
+                    > tonic::server::UnaryService<super::EphemeralAddressRequest>
+                    for EphemeralAddressSvc<T> {
+                        type Response = super::EphemeralAddressResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::EphemeralAddressRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).ephemeral_address(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = EphemeralAddressSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
