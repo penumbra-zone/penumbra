@@ -1579,9 +1579,9 @@ dependencies = [
 
 [[package]]
 name = "ed25519-consensus"
-version = "2.0.1"
+version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1dd91246c940272326f665724138660a183577ffb77b384a5e10d67d2d5075a"
+checksum = "3c8465edc8ee7436ffea81d21a019b16676ee3db267aa8d5a8d729581ecf998b"
 dependencies = [
  "curve25519-dalek-ng",
  "hex",
@@ -3512,6 +3512,7 @@ name = "penumbra-custody"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "base64 0.13.1",
  "bincode",
  "bytes",
  "ed25519-consensus",
@@ -3527,6 +3528,7 @@ dependencies = [
  "serde_json",
  "serde_with",
  "tokio",
+ "toml",
  "tonic",
  "tracing",
  "vergen",

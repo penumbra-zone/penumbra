@@ -1,41 +1,39 @@
-use std::collections::BTreeMap;
+//! A basic software key management system that stores keys in memory but
+//! presents as an asynchronous signer.
 
-use penumbra_crypto::keys::{AccountID, SpendKey};
 use penumbra_proto::custody::v1alpha1::{self as pb, AuthorizeResponse};
 use penumbra_transaction::AuthorizationData;
 use rand_core::OsRng;
 use tonic::{async_trait, Request, Response, Status};
 
-use crate::AuthorizeRequest;
+use crate::{policy::Policy, AuthorizeRequest};
+
+mod config;
+
+pub use config::Config;
 
 /// A basic software key management system that stores keys in memory but
 /// presents as an asynchronous signer.
 pub struct SoftKms {
-    /// Store keys in a BTreeMap so we can identify them by account ID.
-    keys: BTreeMap<AccountID, SpendKey>,
+    config: Config,
 }
 
 impl SoftKms {
-    /// Initialize with the given keys.
-    pub fn new(keys: Vec<SpendKey>) -> Self {
-        Self {
-            keys: keys
-                .into_iter()
-                .map(|sk| (sk.full_viewing_key().hash(), sk))
-                .collect(),
-        }
+    /// Initialize with the given [`Config`].
+    pub fn new(config: Config) -> Self {
+        Self { config }
     }
 
-    /// Attempt to authorize the requested [`TransactionPlan`].
+    /// Attempt to authorize the requested [`TransactionPlan`](penumbra_transaction::plan::TransactionPlan).
     #[tracing::instrument(skip(self, request), name = "softhsm_sign")]
     pub fn sign(&self, request: &AuthorizeRequest) -> anyhow::Result<AuthorizationData> {
-        let sk = self.keys.get(&request.account_id).ok_or_else(|| {
-            anyhow::anyhow!("Missing signing key for account ID {}", request.account_id)
-        })?;
-
         tracing::debug!(?request.plan);
 
-        Ok(request.plan.authorize(OsRng, sk))
+        for policy in &self.config.auth_policy {
+            policy.check(request)?;
+        }
+
+        Ok(request.plan.authorize(OsRng, &self.config.spend_key))
     }
 }
 
@@ -52,7 +50,7 @@ impl pb::custody_protocol_service_server::CustodyProtocolService for SoftKms {
 
         let authorization_data = self
             .sign(&request)
-            .map_err(|e| Status::invalid_argument(e.to_string()))?;
+            .map_err(|e| Status::unauthenticated(format!("{:#}", e)))?;
 
         let authorization_response = AuthorizeResponse {
             data: Some(authorization_data.into()),

@@ -7,6 +7,8 @@ use tonic::codegen::Bytes;
 
 use crate::AuthorizeRequest;
 
+/// A well-typed wrapper around the GRPC custody protocol that uses Rust domain types rather than proto types.
+///
 /// The custody protocol is used by a wallet client to request authorization for
 /// a transaction they’ve constructed.
 ///
