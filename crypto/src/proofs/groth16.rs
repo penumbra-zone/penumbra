@@ -1,4 +1,4 @@
-pub(crate) mod gadgets2;
+mod gadgets;
 mod output;
 mod spend;
 mod traits;
