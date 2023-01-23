@@ -531,7 +531,7 @@ pub mod service_client {
 pub mod service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    ///Generated trait containing gRPC methods that should be implemented for use with ServiceServer.
+    /// Generated trait containing gRPC methods that should be implemented for use with ServiceServer.
     #[async_trait]
     pub trait Service: Send + Sync + 'static {
         /// GetNodeInfo queries the current node info.

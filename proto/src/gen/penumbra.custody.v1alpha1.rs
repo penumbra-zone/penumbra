@@ -174,7 +174,7 @@ pub mod custody_protocol_service_client {
 pub mod custody_protocol_service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    ///Generated trait containing gRPC methods that should be implemented for use with CustodyProtocolServiceServer.
+    /// Generated trait containing gRPC methods that should be implemented for use with CustodyProtocolServiceServer.
     #[async_trait]
     pub trait CustodyProtocolService: Send + Sync + 'static {
         /// Requests authorization of the transaction with the given description.

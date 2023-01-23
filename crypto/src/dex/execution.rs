@@ -57,7 +57,11 @@ impl TryFrom<pb::Path> for Path {
                 .pair
                 .ok_or_else(|| anyhow::anyhow!("missing path pair"))?
                 .try_into()?,
-            route: path.route.into_iter().map(TryInto::try_into).collect()?,
+            route: path
+                .route
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<Vec<_>>>()?,
             phi: path
                 .phi
                 .ok_or_else(|| anyhow::anyhow!("missing path phi"))?
