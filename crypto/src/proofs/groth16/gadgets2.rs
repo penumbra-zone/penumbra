@@ -1,21 +1,22 @@
 use crate::{
     asset,
     keys::NullifierKey,
+    keys::IVK_DOMAIN_SEP,
     note::{self, NOTECOMMIT_DOMAIN_SEP},
     nullifier::NULLIFIER_DOMAIN_SEP,
     Address, Amount, Note, Nullifier, Value,
 };
-use decaf377_rdsa::{SpendAuth, VerificationKey};
-use once_cell::sync::Lazy;
-use penumbra_tct as tct;
-
 use ark_ff::PrimeField;
+use ark_nonnative_field::NonNativeFieldVar;
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use decaf377::{
     r1cs::{ElementVar, FqVar},
     Element, FieldExt, Fq, Fr,
 };
+use decaf377_rdsa::{SpendAuth, VerificationKey};
+use once_cell::sync::Lazy;
+use penumbra_tct as tct;
 
 pub(crate) static SPENDAUTH_BASEPOINT: Lazy<Element> = Lazy::new(decaf377::basepoint);
 
@@ -133,23 +134,9 @@ impl ValueVar {
 
 struct AddressVar {
     cs: ConstraintSystemRef<Fq>,
-    // TODO: in some places, we'll want the diversified generator (and
-    // transmission key) as a validated
-    // curve point, in others we'll want it as the encoding.  which should we
-    // pick as the "default" internal representation? for now, use both, and
-    // over-constrain, then we can optimize later we could, e.g. have an enum {
-    // Encoding, Element, EncodingAndElement } that does lazy
-    // eval of constraints internal mutability on enum, and then have the
-    // accessors take &mut self, and then either fetch the already-allocated
-    // variable, or allocate it and mutate the internal state to do constraint
-    // on demand ?
     diversified_generator: ElementVar,
     transmission_key: ElementVar,
     transmission_key_s: FqVar,
-    // Output proof needs: diversified generator as element and does the elligator
-    // map to get an Fq, transmission key as Fq
-    // Spend proof needs: diversified generator as element and does the elligator
-    // map to get an Fq, transmission key as Fq and element
     clue_key: FqVar,
 }
 
@@ -484,7 +471,7 @@ impl AllocVar<VerificationKey<SpendAuth>, Fq> for RandomizedVerificationKey {
                     .vartime_decompress()
                     .unwrap();
                 let element_var: ElementVar =
-                    AllocVar::<Element, Fq>::new_witness(cs.clone(), || Ok(point))?;
+                    AllocVar::<Element, Fq>::new_input(cs.clone(), || Ok(point))?;
                 Ok(Self {
                     cs: cs.clone(),
                     inner: element_var,
@@ -504,7 +491,7 @@ impl RandomizedVerificationKey {
 impl EqGadget<Fq> for RandomizedVerificationKey {
     fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
         let self_fq = self.inner.compress_to_field()?;
-        let other_fq = self.inner.compress_to_field()?;
+        let other_fq = other.compress_to_field()?;
         self_fq.is_eq(&other_fq)
     }
 }
@@ -589,5 +576,45 @@ impl AllocVar<Fr, Fq> for SpendAuthRandomizerVar {
                 })
             }
         }
+    }
+}
+
+pub struct IncomingViewingKeyVar {
+    cs: ConstraintSystemRef<Fq>,
+    inner: NonNativeFieldVar<Fr, Fq>,
+}
+
+impl IncomingViewingKeyVar {
+    /// Derive the incoming viewing key from the nk and the ak.
+    pub fn derive(nk: &NullifierKeyVar, ak: &AuthorizationKeyVar) -> Result<Self, SynthesisError> {
+        let cs = nk.cs.clone();
+        let ivk_domain_sep = FqVar::new_constant(cs.clone(), *IVK_DOMAIN_SEP)?;
+        let ivk_mod_q = poseidon377::r1cs::hash_2(
+            cs.clone(),
+            &ivk_domain_sep,
+            (nk.inner.clone(), ak.inner.compress_to_field()?),
+        )?;
+
+        // Reduce `ivk_mod_q` modulo r
+        let inner_ivk_mod_q: Fq = ivk_mod_q.value().unwrap_or_default();
+        let ivk_mod_r = Fr::from_le_bytes_mod_order(&inner_ivk_mod_q.to_bytes());
+        let ivk = NonNativeFieldVar::<Fr, Fq>::new_variable(
+            cs.clone(),
+            || Ok(ivk_mod_r),
+            AllocationMode::Witness,
+        )?;
+        Ok(IncomingViewingKeyVar {
+            cs: cs.clone(),
+            inner: ivk,
+        })
+    }
+
+    /// Derive a transmission key from the given diversified base.
+    pub fn diversified_public(
+        &self,
+        diversified_generator: &ElementVar,
+    ) -> Result<ElementVar, SynthesisError> {
+        let ivk_vars = self.inner.to_bits_le()?;
+        diversified_generator.scalar_mul_le(ivk_vars.to_bits_le()?.iter())
     }
 }

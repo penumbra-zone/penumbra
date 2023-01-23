@@ -1,17 +1,12 @@
 #![allow(clippy::too_many_arguments)]
-use ark_ff::PrimeField;
-use ark_nonnative_field::NonNativeFieldVar;
 use ark_r1cs_std::{prelude::*, ToBitsGadget};
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use decaf377::{
     r1cs::{ElementVar, FqVar},
-    FieldExt, Fq, Fr,
+    Fq,
 };
 
-use crate::{
-    asset::VALUE_GENERATOR_DOMAIN_SEP, balance::commitment::VALUE_BLINDING_GENERATOR,
-    keys::IVK_DOMAIN_SEP,
-};
+use crate::{asset::VALUE_GENERATOR_DOMAIN_SEP, balance::commitment::VALUE_BLINDING_GENERATOR};
 
 /// Check the integrity of the value commitment.
 pub(crate) fn value_commitment_integrity(
@@ -33,32 +28,5 @@ pub(crate) fn value_commitment_integrity(
         + value_blinding_generator.scalar_mul_le(value_blinding.to_bits_le()?.iter())?;
 
     commitment.conditional_enforce_equal(&test_commitment, enforce)?;
-    Ok(())
-}
-
-/// Check integrity of the diversified address.
-pub(crate) fn diversified_address_integrity(
-    cs: ConstraintSystemRef<Fq>,
-    enforce: &Boolean<Fq>,
-    // Witnesses
-    ak: FqVar,
-    nk: FqVar,
-    transmission_key: ElementVar,
-    diversified_generator: ElementVar,
-) -> Result<(), SynthesisError> {
-    let ivk_domain_sep = FqVar::new_constant(cs.clone(), *IVK_DOMAIN_SEP)?;
-    let ivk_mod_q = poseidon377::r1cs::hash_2(cs.clone(), &ivk_domain_sep, (nk, ak))?;
-
-    // Reduce `ivk_mod_q` modulo r
-    let inner_ivk_mod_q: Fq = ivk_mod_q.value().unwrap_or_default();
-    let ivk_mod_r = Fr::from_le_bytes_mod_order(&inner_ivk_mod_q.to_bytes());
-    let ivk =
-        NonNativeFieldVar::<Fr, Fq>::new_variable(cs, || Ok(ivk_mod_r), AllocationMode::Witness)?;
-
-    // Now add constraints to demonstrate the transmission key = [ivk] g_d
-    let ivk_vars = ivk.to_bits_le()?;
-    let test_transmission_key =
-        diversified_generator.scalar_mul_le(ivk_vars.to_bits_le()?.iter())?;
-    transmission_key.conditional_enforce_equal(&test_transmission_key, enforce)?;
     Ok(())
 }
