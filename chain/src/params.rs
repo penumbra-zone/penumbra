@@ -207,7 +207,7 @@ impl Default for ChainParameters {
             inbound_ics20_transfers_enabled: false,
             outbound_ics20_transfers_enabled: false,
             // governance
-            proposal_voting_blocks: 720,
+            proposal_voting_blocks: 72, // FIXME: revert this to 720 after testing
             proposal_deposit_amount: 10_000_000u64.into(), // 10,000,000 upenumbra = 10 penumbra
             // governance parameters copied from cosmos hub
             proposal_valid_quorum: Ratio::new(2, 5),
