@@ -4,11 +4,11 @@ use ark_r1cs_std::{
     prelude::{EqGadget, FieldVar},
     uint8::UInt8,
 };
+use decaf377::FieldExt;
 use decaf377::{
     r1cs::{ElementVar, FqVar},
     Bls12_377, Fq, Fr,
 };
-use decaf377::{Element, FieldExt};
 
 use ark_ff::ToConstraintField;
 use ark_groth16::{Groth16, Proof, ProvingKey, VerifyingKey};
@@ -27,7 +27,10 @@ use crate::{
     Note, Nullifier, Rseed, Value,
 };
 
-use super::gadgets2::{NullifierKeyVar, NullifierVar, PositionVar};
+use super::gadgets2::{
+    AuthorizationKeyVar, NullifierKeyVar, NullifierVar, PositionVar, RandomizedVerificationKey,
+    SpendAuthRandomizerVar,
+};
 
 /// Groth16 proof for spending existing notes.
 #[derive(Clone, Debug)]
@@ -54,7 +57,7 @@ pub struct SpendCircuit {
     /// nullifier of the note to be spent.
     pub nullifier: Nullifier,
     /// the randomized verification spend key.
-    pub rk: Element,
+    pub rk: VerificationKey<SpendAuth>,
 }
 
 impl ConstraintSynthesizer<Fq> for SpendCircuit {
@@ -74,18 +77,12 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         let v_blinding_vars = UInt8::new_witness_vec(cs.clone(), &v_blinding_arr)?;
         let value_amount_arr = self.note.value().amount.to_le_bytes();
         let value_vars = UInt8::new_witness_vec(cs.clone(), &value_amount_arr)?;
-        let spend_auth_randomizer_arr: [u8; 32] = self.spend_auth_randomizer.to_bytes();
-        let spend_auth_randomizer_var: Vec<UInt8<Fq>> =
-            UInt8::new_witness_vec(cs.clone(), &spend_auth_randomizer_arr)?;
 
-        let ak_bytes = Fq::from_bytes(*self.ak.as_ref())
-            .expect("verification key is valid, so its byte encoding is a decaf377 s value");
-        let ak_var = FqVar::new_witness(cs.clone(), || Ok(ak_bytes))?;
-        let ak_point = decaf377::Encoding(*self.ak.as_ref())
-            .vartime_decompress()
-            .unwrap();
-        let ak_element_var: ElementVar =
-            AllocVar::<Element, Fq>::new_witness(cs.clone(), || Ok(ak_point))?;
+        let spend_auth_randomizer_var =
+            SpendAuthRandomizerVar::new_witness(cs.clone(), || Ok(self.spend_auth_randomizer))?;
+        let ak_element_var: AuthorizationKeyVar =
+            AuthorizationKeyVar::new_witness(cs.clone(), || Ok(self.ak))?;
+        let ak_var = ak_element_var.compress_to_field()?;
 
         let nk_var = NullifierKeyVar::new_witness(cs.clone(), || Ok(self.nk))?;
 
@@ -93,11 +90,8 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         let anchor_var = FqVar::new_input(cs.clone(), || Ok(Fq::from(self.anchor)))?;
         let balance_commitment_var =
             ElementVar::new_input(cs.clone(), || Ok(self.balance_commitment.0))?;
-
         let claimed_nullifier_var = NullifierVar::new_input(cs.clone(), || Ok(self.nullifier))?;
-        let rk_var = ElementVar::new_input(cs.clone(), || Ok(self.rk))?;
-
-        let rk_fq_var = rk_var.compress_to_field()?;
+        let rk_var = RandomizedVerificationKey::new_input(cs.clone(), || Ok(self.rk.clone()))?;
 
         // We short circuit to true if value released is 0. That means this is a _dummy_ spend.
         let is_dummy = note_var.amount().is_eq(&FqVar::zero())?;
@@ -105,14 +99,15 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         // dummy spend.
         let is_not_dummy = is_dummy.not();
 
-        // Note commitment integrity
+        // Note commitment integrity.
         let note_commitment_var = note_var.commit()?;
         note_commitment_var.conditional_enforce_equal(&claimed_note_commitment, &is_not_dummy)?;
 
-        // Nullifier integrity
+        // Nullifier integrity.
         let nullifier_var = nk_var.derive_nullifier(&position_var, &claimed_note_commitment)?;
         nullifier_var.conditional_enforce_equal(&claimed_nullifier_var, &is_not_dummy)?;
 
+        // Merkle auth path verification against the provided anchor.
         merkle_path_var.verify(
             cs.clone(),
             &is_not_dummy,
@@ -120,13 +115,12 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
             anchor_var,
             claimed_note_commitment.inner(),
         )?;
-        gadgets::rk_integrity(
-            cs.clone(),
-            &is_not_dummy,
-            ak_element_var.clone(),
-            spend_auth_randomizer_var,
-            rk_fq_var,
-        )?;
+
+        // Check integrity of randomized verification key.
+        let computed_rk_var = ak_element_var.randomize(&spend_auth_randomizer_var)?;
+        computed_rk_var.conditional_enforce_equal(&rk_var, &is_not_dummy)?;
+
+        // Check integrity of diversified address.
         gadgets::diversified_address_integrity(
             cs.clone(),
             &is_not_dummy,
@@ -135,12 +129,8 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
             note_var.transmission_key(),
             note_var.diversified_generator(),
         )?;
-        gadgets2::element_not_identity(
-            cs.clone(),
-            &is_not_dummy,
-            note_var.diversified_generator(),
-        )?;
-        gadgets2::element_not_identity(cs.clone(), &is_not_dummy, ak_element_var)?;
+
+        // Check integrity of balance commitment.
         gadgets::value_commitment_integrity(
             cs.clone(),
             &is_not_dummy,
@@ -150,6 +140,13 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
             balance_commitment_var,
         )?;
 
+        // Check elements were not identity.
+        gadgets2::element_not_identity(
+            cs.clone(),
+            &is_not_dummy,
+            note_var.diversified_generator(),
+        )?;
+        gadgets2::element_not_identity(cs.clone(), &is_not_dummy, ak_element_var.inner)?;
         Ok(())
     }
 }
@@ -174,9 +171,6 @@ impl ParameterSetup for SpendCircuit {
         .expect("can make a note");
         let v_blinding = Fr::from(1);
         let rk: VerificationKey<SpendAuth> = rsk.into();
-        let element_rk = decaf377::Encoding(rk.to_bytes())
-            .vartime_decompress()
-            .expect("expect only valid element points");
         let nullifier = Nullifier(Fq::from(1));
         let mut nct = tct::Tree::new();
         let note_commitment = note.commit();
@@ -194,7 +188,7 @@ impl ParameterSetup for SpendCircuit {
             anchor,
             balance_commitment: balance::Commitment(decaf377::basepoint()),
             nullifier,
-            rk: element_rk,
+            rk,
         };
         let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
             .expect("can perform circuit specific setup");
@@ -220,9 +214,6 @@ impl SpendProof {
         nullifier: Nullifier,
         rk: VerificationKey<SpendAuth>,
     ) -> anyhow::Result<Self> {
-        let element_rk = decaf377::Encoding(rk.to_bytes())
-            .vartime_decompress()
-            .expect("expect only valid element points");
         let circuit = SpendCircuit {
             note_commitment_proof,
             note,
@@ -233,7 +224,7 @@ impl SpendProof {
             anchor,
             balance_commitment,
             nullifier,
-            rk: element_rk,
+            rk,
         };
         let proof = Groth16::prove(pk, circuit, rng).map_err(|err| anyhow::anyhow!(err))?;
         Ok(Self(proof))
