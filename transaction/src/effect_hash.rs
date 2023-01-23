@@ -188,6 +188,9 @@ impl TransactionPlan {
         for _delegator_vote in self.delegator_vote_plans() {
             // TODO: get the effecthash of the delegator vote body for each plan
         }
+        for proposal_deposit_claim in self.proposal_deposit_claims() {
+            state.update(proposal_deposit_claim.effect_hash().as_bytes());
+        }
         // These are data payloads, so just hash them directly,
         // since they are effecting data.
         for payload in self.validator_definitions() {
