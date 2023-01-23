@@ -133,6 +133,9 @@ impl TransactionPlan {
             actions.push(Action::ValidatorVote(validator_vote))
         }
         // TODO: delegator vote
+        for proposal_deposit_claim in self.proposal_deposit_claims().cloned() {
+            actions.push(Action::ProposalDepositClaim(proposal_deposit_claim))
+        }
         for vd in self.validator_definitions().cloned() {
             actions.push(Action::ValidatorDefinition(vd))
         }
