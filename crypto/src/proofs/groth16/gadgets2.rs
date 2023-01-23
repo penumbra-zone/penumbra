@@ -1,5 +1,8 @@
 use crate::{
     asset,
+    asset::VALUE_GENERATOR_DOMAIN_SEP,
+    balance,
+    balance::commitment::VALUE_BLINDING_GENERATOR,
     keys::NullifierKey,
     keys::IVK_DOMAIN_SEP,
     note::{self, NOTECOMMIT_DOMAIN_SEP},
@@ -32,6 +35,7 @@ pub(crate) fn element_not_identity(
     Ok(())
 }
 
+#[derive(Clone)]
 pub struct AmountVar {
     cs: ConstraintSystemRef<Fq>,
     amount: FqVar,
@@ -61,6 +65,7 @@ impl AllocVar<Amount, Fq> for AmountVar {
     }
 }
 
+#[derive(Clone)]
 pub struct AssetIdVar {
     cs: ConstraintSystemRef<Fq>,
     asset_id: FqVar,
@@ -90,6 +95,7 @@ impl AllocVar<asset::Id, Fq> for AssetIdVar {
     }
 }
 
+#[derive(Clone)]
 pub struct ValueVar {
     cs: ConstraintSystemRef<Fq>,
     amount: AmountVar,
@@ -129,6 +135,28 @@ impl ValueVar {
 
     pub fn asset_id(&self) -> FqVar {
         self.asset_id.asset_id.clone()
+    }
+
+    pub fn commit(
+        &self,
+        value_blinding: Vec<UInt8<Fq>>,
+    ) -> Result<BalanceCommitmentVar, SynthesisError> {
+        let cs = self.amount.amount.cs();
+        let value_generator = FqVar::new_constant(cs.clone(), *VALUE_GENERATOR_DOMAIN_SEP)?;
+        let value_blinding_generator =
+            ElementVar::new_constant(cs.clone(), *VALUE_BLINDING_GENERATOR)?;
+
+        let hashed_asset_id =
+            poseidon377::r1cs::hash_1(cs.clone(), &value_generator, self.asset_id())?;
+        let asset_generator = ElementVar::encode_to_curve(&hashed_asset_id)?;
+        let value_amount = self.amount();
+        let commitment = asset_generator.scalar_mul_le(value_amount.to_bits_le()?.iter())?
+            + value_blinding_generator.scalar_mul_le(value_blinding.to_bits_le()?.iter())?;
+
+        Ok(BalanceCommitmentVar {
+            cs: cs.clone(),
+            inner: commitment,
+        })
     }
 }
 
@@ -212,6 +240,10 @@ pub struct NoteVar {
 impl NoteVar {
     pub fn amount(&self) -> FqVar {
         self.value.amount()
+    }
+
+    pub fn value(&self) -> ValueVar {
+        self.value.clone()
     }
 
     pub fn asset_id(&self) -> FqVar {
@@ -479,6 +511,42 @@ impl AllocVar<VerificationKey<SpendAuth>, Fq> for RandomizedVerificationKey {
             }
             AllocationMode::Witness => unimplemented!(),
         }
+    }
+}
+
+pub struct BalanceCommitmentVar {
+    cs: ConstraintSystemRef<Fq>,
+    pub inner: ElementVar,
+}
+
+impl AllocVar<balance::Commitment, Fq> for BalanceCommitmentVar {
+    fn new_variable<T: std::borrow::Borrow<balance::Commitment>>(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: ark_r1cs_std::prelude::AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        let inner1 = f()?;
+        let inner: balance::Commitment = *inner1.borrow();
+        match mode {
+            AllocationMode::Constant => unimplemented!(),
+            AllocationMode::Input => {
+                let element_var: ElementVar =
+                    AllocVar::<Element, Fq>::new_input(cs.clone(), || Ok(inner.0))?;
+                Ok(Self {
+                    cs: cs.clone(),
+                    inner: element_var,
+                })
+            }
+            AllocationMode::Witness => unimplemented!(),
+        }
+    }
+}
+
+impl EqGadget<Fq> for BalanceCommitmentVar {
+    fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
+        self.inner.is_eq(&other.inner)
     }
 }
 
