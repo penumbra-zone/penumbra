@@ -17,14 +17,14 @@ use penumbra_tct as tct;
 use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
-use crate::proofs::groth16::{gadgets2, ParameterSetup};
+use crate::proofs::groth16::{gadgets, ParameterSetup};
 use crate::{
     balance,
     keys::{NullifierKey, SeedPhrase, SpendKey},
     Note, Nullifier, Rseed, Value,
 };
 
-use super::gadgets2::{
+use super::gadgets::{
     AuthorizationKeyVar, BalanceCommitmentVar, IncomingViewingKeyVar, NullifierKeyVar,
     NullifierVar, PositionVar, RandomizedVerificationKey, SpendAuthRandomizerVar,
 };
@@ -60,8 +60,8 @@ pub struct SpendCircuit {
 impl ConstraintSynthesizer<Fq> for SpendCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
-        let note_var = gadgets2::NoteVar::new_witness(cs.clone(), || Ok(self.note.clone()))?;
-        let claimed_note_commitment = gadgets2::NoteCommitmentVar::new_witness(cs.clone(), || {
+        let note_var = gadgets::NoteVar::new_witness(cs.clone(), || Ok(self.note.clone()))?;
+        let claimed_note_commitment = gadgets::NoteCommitmentVar::new_witness(cs.clone(), || {
             Ok(self.note_commitment_proof.commitment())
         })?;
 
@@ -126,12 +126,8 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
             .conditional_enforce_equal(&claimed_balance_commitment_var, &is_not_dummy)?;
 
         // Check elements were not identity.
-        gadgets2::element_not_identity(
-            cs.clone(),
-            &is_not_dummy,
-            note_var.diversified_generator(),
-        )?;
-        gadgets2::element_not_identity(cs.clone(), &is_not_dummy, ak_element_var.inner)?;
+        gadgets::element_not_identity(cs.clone(), &is_not_dummy, note_var.diversified_generator())?;
+        gadgets::element_not_identity(cs.clone(), &is_not_dummy, ak_element_var.inner)?;
         Ok(())
     }
 }

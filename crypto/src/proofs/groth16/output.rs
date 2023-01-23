@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use ark_r1cs_std::uint8::UInt8;
 use decaf377::FieldExt;
-use decaf377::{r1cs::ElementVar, Bls12_377, Fq, Fr};
+use decaf377::{Bls12_377, Fq, Fr};
 use decaf377_fmd as fmd;
 use decaf377_ka as ka;
 
@@ -14,7 +14,7 @@ use ark_snark::SNARK;
 use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
-use crate::proofs::groth16::{gadgets2, ParameterSetup};
+use crate::proofs::groth16::{gadgets, ParameterSetup};
 use crate::{balance, keys::Diversifier, note, Address, Note, Rseed, Value};
 
 // Public:
@@ -45,17 +45,17 @@ pub struct OutputCircuit {
 impl ConstraintSynthesizer<Fq> for OutputCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
-        let note_var = gadgets2::NoteVar::new_witness(cs.clone(), || Ok(self.note.clone()))?;
+        let note_var = gadgets::NoteVar::new_witness(cs.clone(), || Ok(self.note.clone()))?;
         let v_blinding_arr: [u8; 32] = self.v_blinding.to_bytes();
         let v_blinding_vars = UInt8::new_witness_vec(cs.clone(), &v_blinding_arr)?;
 
         // Public inputs
         let claimed_note_commitment =
-            gadgets2::NoteCommitmentVar::new_input(cs.clone(), || Ok(self.note_commitment))?;
+            gadgets::NoteCommitmentVar::new_input(cs.clone(), || Ok(self.note_commitment))?;
         let claimed_balance_commitment =
-            gadgets2::BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.balance_commitment))?;
+            gadgets::BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.balance_commitment))?;
 
-        gadgets2::element_not_identity(
+        gadgets::element_not_identity(
             cs.clone(),
             &Boolean::TRUE,
             note_var.diversified_generator(),
