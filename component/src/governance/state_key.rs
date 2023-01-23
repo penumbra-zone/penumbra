@@ -1,7 +1,7 @@
 use penumbra_crypto::stake::IdentityKey;
 
-pub fn latest_proposal_id() -> &'static str {
-    "governance/latest_proposal_id"
+pub fn next_proposal_id() -> &'static str {
+    "governance/next_proposal_id"
 }
 
 pub fn proposal_title(proposal_id: u64) -> String {

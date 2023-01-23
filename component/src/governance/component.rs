@@ -20,6 +20,8 @@ impl Component for Governance {
         state
             .put_unfinished_proposals(ProposalList::default())
             .await;
+        // Initialize the proposal counter to zero
+        state.init_proposal_counter().await;
     }
 
     #[instrument(name = "governance", skip(_state, _begin_block))]

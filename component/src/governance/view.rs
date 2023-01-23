@@ -18,10 +18,9 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
     /// Get the id of the next proposal in the sequence of ids.
     async fn next_proposal_id(&self) -> Result<u64> {
         Ok(self
-            .get_proto::<u64>(state_key::latest_proposal_id())
+            .get_proto::<u64>(state_key::next_proposal_id())
             .await?
-            .map(|i| i + 1)
-            .unwrap_or(0))
+            .expect("counter is initialized"))
     }
 
     /// Get the proposal payload for a proposal.
@@ -115,6 +114,11 @@ impl<T: StateRead + crate::stake::StateReadExt + ?Sized> StateReadExt for T {}
 
 #[async_trait]
 pub trait StateWriteExt: StateWrite {
+    /// Initialize the proposal counter at zero.
+    async fn init_proposal_counter(&mut self) {
+        self.put_proto(state_key::next_proposal_id().to_owned(), 0);
+    }
+
     /// Store a new proposal with a new proposal id.
     async fn new_proposal(&mut self, proposal: &Proposal) -> Result<u64> {
         let proposal_id = self.next_proposal_id().await?;
@@ -127,7 +131,7 @@ pub trait StateWriteExt: StateWrite {
         }
 
         // Record this proposal id, so we won't re-use it
-        self.put_proto(state_key::latest_proposal_id().to_owned(), proposal_id);
+        self.put_proto(state_key::next_proposal_id().to_owned(), proposal_id + 1);
 
         // Store the proposal title
         self.put_proto(
