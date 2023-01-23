@@ -509,12 +509,11 @@ impl TxCmd {
 
                 // Find out what the latest proposal ID is so we can include the next ID in the template:
                 let mut client = app.specific_client().await?;
-                let latest_proposal_id: u64 = client
-                    .key_proto(penumbra_component::governance::state_key::latest_proposal_id())
+                let next_proposal_id: u64 = client
+                    .key_proto(penumbra_component::governance::state_key::next_proposal_id())
                     .await?;
-                let proposal_id = 1 + latest_proposal_id;
 
-                let template = kind.template_proposal(chain_id, proposal_id);
+                let template = kind.template_proposal(chain_id, next_proposal_id);
 
                 if let Some(file) = file {
                     File::create(file)

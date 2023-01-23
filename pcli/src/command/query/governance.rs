@@ -81,8 +81,8 @@ impl GovernanceCmd {
             }
             GovernanceCmd::ListProposals { inactive } => {
                 let proposal_id_list: Vec<u64> = if *inactive {
-                    let latest: u64 = client.key_proto(latest_proposal_id()).await?;
-                    (0..=latest).collect()
+                    let next: u64 = client.key_proto(next_proposal_id()).await?;
+                    (0..next).collect()
                 } else {
                     let unfinished: ProposalList =
                         client.key_domain(unfinished_proposals()).await?;
