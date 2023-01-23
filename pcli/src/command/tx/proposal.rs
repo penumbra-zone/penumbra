@@ -64,7 +64,6 @@ pub enum ProposalCmd {
         #[clap(long, default_value = "0")]
         fee: u64,
         /// The proposal id to claim the deposit for.
-        #[clap(long = "on")]
         proposal_id: u64,
         /// Optional. Only spend funds originally received by the given address index.
         #[clap(long)]
