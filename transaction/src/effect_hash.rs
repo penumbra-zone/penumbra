@@ -508,7 +508,7 @@ where
 impl EffectingData for proposal::Withdrawn<String> {
     fn effect_hash(&self) -> EffectHash {
         let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:prop_withdrawn")
+            .personal(b"PAH:withdrawn")
             .to_state();
 
         match self {
@@ -529,7 +529,7 @@ impl EffectingData for proposal::Withdrawn<String> {
 impl EffectingData for proposal::Withdrawn<()> {
     fn effect_hash(&self) -> EffectHash {
         let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:prop_wthdrw_yn")
+            .personal(b"PAH:withdrawn_yn")
             .to_state();
 
         match self {
