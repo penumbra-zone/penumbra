@@ -5,10 +5,7 @@ use ark_r1cs_std::{
     uint8::UInt8,
 };
 use decaf377::FieldExt;
-use decaf377::{
-    r1cs::{ElementVar, FqVar},
-    Bls12_377, Fq, Fr,
-};
+use decaf377::{r1cs::FqVar, Bls12_377, Fq, Fr};
 
 use ark_ff::ToConstraintField;
 use ark_groth16::{Groth16, Proof, ProvingKey, VerifyingKey};
@@ -20,7 +17,7 @@ use penumbra_tct as tct;
 use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
-use crate::proofs::groth16::{gadgets, gadgets2, ParameterSetup};
+use crate::proofs::groth16::{gadgets2, ParameterSetup};
 use crate::{
     balance,
     keys::{NullifierKey, SeedPhrase, SpendKey},
@@ -28,8 +25,8 @@ use crate::{
 };
 
 use super::gadgets2::{
-    AuthorizationKeyVar, IncomingViewingKeyVar, NullifierKeyVar, NullifierVar, PositionVar,
-    RandomizedVerificationKey, SpendAuthRandomizerVar,
+    AuthorizationKeyVar, BalanceCommitmentVar, IncomingViewingKeyVar, NullifierKeyVar,
+    NullifierVar, PositionVar, RandomizedVerificationKey, SpendAuthRandomizerVar,
 };
 
 /// Groth16 proof for spending existing notes.
@@ -75,8 +72,6 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
 
         let v_blinding_arr: [u8; 32] = self.v_blinding.to_bytes();
         let v_blinding_vars = UInt8::new_witness_vec(cs.clone(), &v_blinding_arr)?;
-        let value_amount_arr = self.note.value().amount.to_le_bytes();
-        let value_vars = UInt8::new_witness_vec(cs.clone(), &value_amount_arr)?;
 
         let spend_auth_randomizer_var =
             SpendAuthRandomizerVar::new_witness(cs.clone(), || Ok(self.spend_auth_randomizer))?;
@@ -86,8 +81,8 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
 
         // Public inputs
         let anchor_var = FqVar::new_input(cs.clone(), || Ok(Fq::from(self.anchor)))?;
-        let balance_commitment_var =
-            ElementVar::new_input(cs.clone(), || Ok(self.balance_commitment.0))?;
+        let claimed_balance_commitment_var =
+            BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.balance_commitment))?;
         let claimed_nullifier_var = NullifierVar::new_input(cs.clone(), || Ok(self.nullifier))?;
         let rk_var = RandomizedVerificationKey::new_input(cs.clone(), || Ok(self.rk.clone()))?;
 
@@ -126,14 +121,9 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
             .conditional_enforce_equal(&note_var.transmission_key(), &is_not_dummy)?;
 
         // Check integrity of balance commitment.
-        gadgets::value_commitment_integrity(
-            cs.clone(),
-            &is_not_dummy,
-            value_vars,
-            note_var.asset_id(),
-            v_blinding_vars,
-            balance_commitment_var,
-        )?;
+        let balance_commitment = note_var.value().commit(v_blinding_vars)?;
+        balance_commitment
+            .conditional_enforce_equal(&claimed_balance_commitment_var, &is_not_dummy)?;
 
         // Check elements were not identity.
         gadgets2::element_not_identity(

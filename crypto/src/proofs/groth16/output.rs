@@ -14,7 +14,7 @@ use ark_snark::SNARK;
 use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
-use crate::proofs::groth16::{gadgets, gadgets2, ParameterSetup};
+use crate::proofs::groth16::{gadgets2, ParameterSetup};
 use crate::{balance, keys::Diversifier, note, Address, Note, Rseed, Value};
 
 // Public:
@@ -48,29 +48,21 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
         let note_var = gadgets2::NoteVar::new_witness(cs.clone(), || Ok(self.note.clone()))?;
         let v_blinding_arr: [u8; 32] = self.v_blinding.to_bytes();
         let v_blinding_vars = UInt8::new_witness_vec(cs.clone(), &v_blinding_arr)?;
-        let value_amount_arr = self.note.value().amount.to_le_bytes();
-        let value_vars = UInt8::new_witness_vec(cs.clone(), &value_amount_arr)?;
 
         // Public inputs
         let claimed_note_commitment =
             gadgets2::NoteCommitmentVar::new_input(cs.clone(), || Ok(self.note_commitment))?;
         let claimed_balance_commitment =
-            ElementVar::new_input(cs.clone(), || Ok(self.balance_commitment.0))?;
+            gadgets2::BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.balance_commitment))?;
 
         gadgets2::element_not_identity(
             cs.clone(),
             &Boolean::TRUE,
             note_var.diversified_generator(),
         )?;
-        // Value commitment integrity
-        gadgets::value_commitment_integrity(
-            cs,
-            &Boolean::TRUE,
-            value_vars,
-            note_var.asset_id(),
-            v_blinding_vars,
-            claimed_balance_commitment,
-        )?;
+        // Check integrity of balance commitment.
+        let balance_commitment = note_var.value().commit(v_blinding_vars)?;
+        balance_commitment.enforce_equal(&claimed_balance_commitment)?;
 
         // Note commitment integrity
         let note_commitment = note_var.commit()?;

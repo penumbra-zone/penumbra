@@ -1,4 +1,3 @@
-pub(crate) mod gadgets;
 pub(crate) mod gadgets2;
 mod output;
 mod spend;
