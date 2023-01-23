@@ -1,6 +1,6 @@
 use crate::{
     governance::proposal::Outcome,
-    shielded_pool::{StateReadExt as _, StateWriteExt as _},
+    shielded_pool::{StateReadExt as _, StateWriteExt as _, SupplyWrite},
 };
 
 use super::{
@@ -11,6 +11,7 @@ use super::{
 };
 use anyhow::{Context, Result};
 use penumbra_chain::{StateReadExt as _, StateWriteExt};
+use penumbra_crypto::ProposalNft;
 use penumbra_storage::StateTransaction;
 use penumbra_transaction::action::{
     ProposalDepositClaim, ProposalPayload, ProposalSubmit, ProposalWithdraw, ValidatorVote,
@@ -34,6 +35,11 @@ pub async fn proposal_submit(
 
     // Set the deposit amount for the proposal
     state.put_deposit_amount(proposal_id, *deposit_amount).await;
+
+    // Register the denom for the voting proposal NFT
+    state
+        .register_denom(&ProposalNft::voting(proposal_id).denom())
+        .await?;
 
     // Set the proposal state to voting (votes start immediately)
     state
@@ -82,6 +88,11 @@ pub async fn proposal_withdraw(
         )
         .await
         .context("proposal withdraw succeeds")?;
+
+    // Register the denom for the withdrawn proposal NFT
+    state
+        .register_denom(&ProposalNft::withdrawn(*proposal).denom())
+        .await?;
 
     tracing::debug!(proposal = %proposal, "withdrew proposal");
 
@@ -136,6 +147,19 @@ pub async fn proposal_deposit_claim(
             );
         }
 
+        // Register the denom for the claimed proposal NFT
+        state
+            .register_denom(
+                &match &outcome {
+                    Outcome::Passed => ProposalNft::passed(*proposal),
+                    Outcome::Failed { .. } => ProposalNft::failed(*proposal),
+                    Outcome::Vetoed { .. } => ProposalNft::vetoed(*proposal),
+                }
+                .denom(),
+            )
+            .await?;
+
+        // Set the proposal state to claimed
         state
             .put_proposal_state(*proposal, proposal::State::Claimed { outcome })
             .await?;
