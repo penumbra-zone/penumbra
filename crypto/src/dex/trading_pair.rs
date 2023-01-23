@@ -1,11 +1,13 @@
 use anyhow::anyhow;
 use decaf377::FieldExt;
 use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
+use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
 
 use crate::asset::{self, REGISTRY};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
+#[serde(try_from = "pb::DirectedTradingPair", into = "pb::DirectedTradingPair")]
 pub struct DirectedTradingPair {
     pub start: asset::Id,
     pub end: asset::Id,
@@ -21,6 +23,33 @@ impl DirectedTradingPair {
     }
 }
 
+impl Protobuf<pb::DirectedTradingPair> for DirectedTradingPair {}
+
+impl From<DirectedTradingPair> for pb::DirectedTradingPair {
+    fn from(tp: DirectedTradingPair) -> Self {
+        Self {
+            start: Some(tp.start.into()),
+            end: Some(tp.end.into()),
+        }
+    }
+}
+
+impl TryFrom<pb::DirectedTradingPair> for DirectedTradingPair {
+    type Error = anyhow::Error;
+    fn try_from(tp: pb::DirectedTradingPair) -> anyhow::Result<Self> {
+        Ok(Self {
+            start: tp
+                .start
+                .ok_or_else(|| anyhow::anyhow!("missing directed trading pair start"))?
+                .try_into()?,
+            end: tp
+                .end
+                .ok_or_else(|| anyhow::anyhow!("missing directed trading pair end"))?
+                .try_into()?,
+        })
+    }
+}
+
 impl From<DirectedTradingPair> for TradingPair {
     fn from(pair: DirectedTradingPair) -> Self {
         pair.to_canonical()
@@ -28,7 +57,8 @@ impl From<DirectedTradingPair> for TradingPair {
 }
 
 /// The canonical representation of a tuple of asset [`Id`]s.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
+#[serde(try_from = "pb::TradingPair", into = "pb::TradingPair")]
 pub struct TradingPair {
     pub(crate) asset_1: asset::Id,
     pub(crate) asset_2: asset::Id,
@@ -84,6 +114,15 @@ impl TryFrom<[u8; 64]> for TradingPair {
 
 impl Protobuf<pb::TradingPair> for TradingPair {}
 
+impl From<TradingPair> for pb::TradingPair {
+    fn from(tp: TradingPair) -> Self {
+        Self {
+            asset_1: Some(tp.asset_1.into()),
+            asset_2: Some(tp.asset_2.into()),
+        }
+    }
+}
+
 impl TryFrom<pb::TradingPair> for TradingPair {
     type Error = anyhow::Error;
     fn try_from(tp: pb::TradingPair) -> anyhow::Result<Self> {
@@ -97,15 +136,6 @@ impl TryFrom<pb::TradingPair> for TradingPair {
                 .ok_or_else(|| anyhow::anyhow!("missing trading pair asset2"))?
                 .try_into()?,
         })
-    }
-}
-
-impl From<TradingPair> for pb::TradingPair {
-    fn from(tp: TradingPair) -> Self {
-        Self {
-            asset_1: Some(tp.asset_1.into()),
-            asset_2: Some(tp.asset_2.into()),
-        }
     }
 }
 

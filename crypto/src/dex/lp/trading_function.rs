@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::dex::{fixed_encoding::FixedEncoding, TradingPair};
 use crate::Amount;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::TradingFunction", into = "pb::TradingFunction")]
 pub struct TradingFunction {
     pub component: BareTradingFunction,
@@ -76,7 +76,7 @@ impl Protobuf<pb::TradingFunction> for TradingFunction {}
 ///
 /// NOTE: the use of floats here is a placeholder ONLY, so we can stub out the implementation,
 /// and then decide what type of fixed-point, deterministic arithmetic should be used.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::BareTradingFunction", into = "pb::BareTradingFunction")]
 pub struct BareTradingFunction {
     /// The fee, expressed in basis points.
