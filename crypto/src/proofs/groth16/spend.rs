@@ -28,8 +28,8 @@ use crate::{
 };
 
 use super::gadgets2::{
-    AuthorizationKeyVar, NullifierKeyVar, NullifierVar, PositionVar, RandomizedVerificationKey,
-    SpendAuthRandomizerVar,
+    AuthorizationKeyVar, IncomingViewingKeyVar, NullifierKeyVar, NullifierVar, PositionVar,
+    RandomizedVerificationKey, SpendAuthRandomizerVar,
 };
 
 /// Groth16 proof for spending existing notes.
@@ -82,8 +82,6 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
             SpendAuthRandomizerVar::new_witness(cs.clone(), || Ok(self.spend_auth_randomizer))?;
         let ak_element_var: AuthorizationKeyVar =
             AuthorizationKeyVar::new_witness(cs.clone(), || Ok(self.ak))?;
-        let ak_var = ak_element_var.compress_to_field()?;
-
         let nk_var = NullifierKeyVar::new_witness(cs.clone(), || Ok(self.nk))?;
 
         // Public inputs
@@ -121,14 +119,11 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         computed_rk_var.conditional_enforce_equal(&rk_var, &is_not_dummy)?;
 
         // Check integrity of diversified address.
-        gadgets::diversified_address_integrity(
-            cs.clone(),
-            &is_not_dummy,
-            ak_var,
-            nk_var.inner.clone(),
-            note_var.transmission_key(),
-            note_var.diversified_generator(),
-        )?;
+        let ivk = IncomingViewingKeyVar::derive(&nk_var, &ak_element_var)?;
+        let computed_transmission_key =
+            ivk.diversified_public(&note_var.diversified_generator())?;
+        computed_transmission_key
+            .conditional_enforce_equal(&note_var.transmission_key(), &is_not_dummy)?;
 
         // Check integrity of balance commitment.
         gadgets::value_commitment_integrity(
