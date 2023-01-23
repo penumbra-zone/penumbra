@@ -569,6 +569,23 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         "penumbra.core.governance.v1alpha1.ProposalOutcome.Vetoed.withdrawn_with_reason",
         SERDE_SKIP_NONE,
     ),
+    // Kinds of proposals: all but one are empty, so skip them if none:
+    (
+        "penumbra.core.governance.v1alpha1.Proposal.signaling",
+        SERDE_SKIP_NONE,
+    ),
+    (
+        "penumbra.core.governance.v1alpha1.Proposal.emergency",
+        SERDE_SKIP_NONE,
+    ),
+    (
+        "penumbra.core.governance.v1alpha1.Proposal.parameter_change",
+        SERDE_SKIP_NONE,
+    ),
+    (
+        "penumbra.core.governance.v1alpha1.Proposal.dao_spend",
+        SERDE_SKIP_NONE,
+    ),
     // see above re: prost issue #504
     ("penumbra.core.governance.v1alpha1.Vote.vote", AS_VOTE),
     (

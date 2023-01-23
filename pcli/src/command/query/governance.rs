@@ -12,7 +12,7 @@ use penumbra_component::governance::{
 };
 use penumbra_crypto::stake::IdentityKey;
 use penumbra_proto::client::v1alpha1::MutableParametersRequest;
-use penumbra_transaction::action::{Proposal, ProposalPayload, Vote};
+use penumbra_transaction::action::{Proposal, Vote};
 use penumbra_view::ViewClient;
 use serde::Serialize;
 use serde_json::json;
@@ -91,8 +91,9 @@ impl GovernanceCmd {
 
                 let mut writer = stdout();
                 for proposal_id in proposal_id_list {
-                    let proposal_title: String =
-                        client.key_proto(proposal_title(proposal_id)).await?;
+                    let proposal: Proposal =
+                        client.key_domain(proposal_definition(proposal_id)).await?;
+                    let proposal_title = proposal.title;
                     let proposal_state: proposal::State =
                         client.key_domain(proposal_state(proposal_id)).await?;
 
@@ -105,17 +106,8 @@ impl GovernanceCmd {
             }
             GovernanceCmd::Proposal { proposal_id, query } => match query {
                 Definition => {
-                    let title: String = client.key_proto(proposal_title(*proposal_id)).await?;
-                    let description: String =
-                        client.key_proto(proposal_description(*proposal_id)).await?;
-                    let payload: ProposalPayload =
-                        client.key_domain(proposal_payload(*proposal_id)).await?;
-                    let proposal = Proposal {
-                        id: *proposal_id,
-                        title,
-                        description,
-                        payload,
-                    };
+                    let proposal: Proposal =
+                        client.key_domain(proposal_definition(*proposal_id)).await?;
                     json(&proposal)?;
                 }
                 State => {
