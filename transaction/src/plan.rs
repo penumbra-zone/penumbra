@@ -10,7 +10,9 @@ use penumbra_proto::{
 use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 
-use crate::action::{Delegate, ProposalSubmit, ProposalWithdraw, Undelegate, ValidatorVote};
+use crate::action::{
+    Delegate, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, Undelegate, ValidatorVote,
+};
 
 mod action;
 mod auth;
@@ -148,6 +150,16 @@ impl TransactionPlan {
         self.actions.iter().filter_map(|action| {
             if let ActionPlan::ValidatorVote(v) = action {
                 Some(v)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn proposal_deposit_claims(&self) -> impl Iterator<Item = &ProposalDepositClaim> {
+        self.actions.iter().filter_map(|action| {
+            if let ActionPlan::ProposalDepositClaim(p) = action {
+                Some(p)
             } else {
                 None
             }
