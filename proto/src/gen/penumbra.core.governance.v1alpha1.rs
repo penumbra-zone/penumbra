@@ -335,40 +335,25 @@ pub struct Proposal {
     /// A natural-language description of the effect of the proposal and its justification.
     #[prost(string, tag = "2")]
     pub description: ::prost::alloc::string::String,
-    /// The payload of the proposal.
-    #[prost(message, optional, tag = "3")]
-    pub payload: ::core::option::Option<proposal::Payload>,
+    /// The different kinds of proposal. Only one of these should be set.
+    #[prost(message, optional, tag = "5")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub signaling: ::core::option::Option<proposal::Signaling>,
+    #[prost(message, optional, tag = "6")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub emergency: ::core::option::Option<proposal::Emergency>,
+    #[prost(message, optional, tag = "7")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub parameter_change: ::core::option::Option<proposal::ParameterChange>,
+    #[prost(message, optional, tag = "8")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub dao_spend: ::core::option::Option<proposal::DaoSpend>,
 }
 /// Nested message and enum types in `Proposal`.
 pub mod proposal {
-    /// The kind of the proposal and details relevant only to that kind of proposal.
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
-    #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Message)]
-    pub struct Payload {
-        #[prost(oneof = "payload::Payload", tags = "2, 3, 4, 5")]
-        pub payload: ::core::option::Option<payload::Payload>,
-    }
-    /// Nested message and enum types in `Payload`.
-    pub mod payload {
-        #[derive(::serde::Deserialize, ::serde::Serialize)]
-        #[allow(clippy::derive_partial_eq_without_eq)]
-        #[derive(Clone, PartialEq, ::prost::Oneof)]
-        pub enum Payload {
-            /// A signaling proposal.
-            #[prost(message, tag = "2")]
-            Signaling(super::Signaling),
-            /// An emergency proposal.
-            #[prost(message, tag = "3")]
-            Emergency(super::Emergency),
-            /// A parameter change proposal.
-            #[prost(message, tag = "4")]
-            ParameterChange(super::ParameterChange),
-            /// A DAO spend proposal.
-            #[prost(message, tag = "5")]
-            DaoSpend(super::DaoSpend),
-        }
-    }
+    /// A signaling proposal is meant to register a vote on-chain, but does not have an automatic
+    /// effect when passed.
+    ///
     /// It optionally contains a reference to a commit which contains code to upgrade the chain.
     #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]

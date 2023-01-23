@@ -3,7 +3,7 @@ use std::{collections::BTreeSet, pin::Pin, str::FromStr};
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use futures::{Stream, StreamExt};
-use penumbra_crypto::{asset::Amount, stake::IdentityKey, Address};
+use penumbra_crypto::{asset::Amount, stake::IdentityKey};
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::action::{Proposal, ProposalPayload, Vote};
@@ -25,13 +25,10 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
 
     /// Get the proposal payload for a proposal.
     async fn proposal_payload(&self, proposal_id: u64) -> Result<Option<ProposalPayload>> {
-        self.get(&state_key::proposal_payload(proposal_id)).await
-    }
-
-    /// Get the proposal deposit refund address for a proposal.
-    async fn proposal_deposit_refund_address(&self, proposal_id: u64) -> Result<Option<Address>> {
-        self.get(&state_key::proposal_deposit_refund_address(proposal_id))
-            .await
+        Ok(self
+            .get(&state_key::proposal_definition(proposal_id))
+            .await?
+            .map(|p: Proposal| p.payload))
     }
 
     /// Get the proposal deposit amount for a proposal.
@@ -133,22 +130,10 @@ pub trait StateWriteExt: StateWrite {
         // Record this proposal id, so we won't re-use it
         self.put_proto(state_key::next_proposal_id().to_owned(), proposal_id + 1);
 
-        // Store the proposal title
-        self.put_proto(
-            state_key::proposal_title(proposal_id),
-            proposal.title.clone(),
-        );
-
-        // Store the proposal description
-        self.put_proto(
-            state_key::proposal_description(proposal_id),
-            proposal.description.clone(),
-        );
-
-        // Store the proposal payload
+        // Store the proposal data
         self.put(
-            state_key::proposal_payload(proposal_id),
-            proposal.payload.clone(),
+            state_key::proposal_definition(proposal_id),
+            proposal.clone(),
         );
 
         // Return the new proposal id

@@ -187,26 +187,15 @@ message Proposal {
   // A natural-language description of the effect of the proposal and its justification.
   string description = 2;
 
-  // The kind of the proposal and details relevant only to that kind of proposal.
-  message Payload {
-    oneof payload {
-      // A signaling proposal.
-      Signaling signaling = 2;
-      // An emergency proposal.
-      Emergency emergency = 3;
-      // A parameter change proposal.
-      ParameterChange parameter_change = 4;
-      // A DAO spend proposal.
-      DaoSpend dao_spend = 5;
-    }
-  }
-
-  // The payload of the proposal.
-  Payload payload = 3;
+  // The different kinds of proposal. Only one of these should be set.
+  Signaling signaling = 5;
+  Emergency emergency = 6;
+  ParameterChange parameter_change = 7;
+  DaoSpend dao_spend = 8;
 
   // A signaling proposal is meant to register a vote on-chain, but does not have an automatic
   // effect when passed.
-
+  //
   // It optionally contains a reference to a commit which contains code to upgrade the chain.
   message Signaling {
     // The commit to be voted upon, if any is relevant.
