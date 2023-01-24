@@ -10,7 +10,6 @@ use decaf377::{
 pub struct AddressVar {
     pub diversified_generator: ElementVar,
     pub transmission_key: ElementVar,
-    pub transmission_key_s: FqVar,
     pub clue_key: FqVar,
 }
 
@@ -19,13 +18,8 @@ impl AddressVar {
         self.diversified_generator.clone()
     }
 
-    #[allow(dead_code)]
     pub fn transmission_key(&self) -> ElementVar {
         self.transmission_key.clone()
-    }
-
-    pub fn transmission_key_s(&self) -> FqVar {
-        self.transmission_key_s.clone()
     }
 
     pub fn clue_key(&self) -> FqVar {
@@ -51,8 +45,6 @@ impl AllocVar<Address, Fq> for AddressVar {
                     AllocVar::<Element, Fq>::new_witness(cs.clone(), || {
                         Ok(address.diversified_generator().clone())
                     })?;
-                let transmission_key_s =
-                    FqVar::new_witness(cs.clone(), || Ok(address.transmission_key_s().clone()))?;
                 let element_transmission_key = decaf377::Encoding(address.transmission_key().0)
                     .vartime_decompress()
                     .map_err(|_| SynthesisError::AssignmentMissing)?;
@@ -60,13 +52,12 @@ impl AllocVar<Address, Fq> for AddressVar {
                     AllocVar::<Element, Fq>::new_witness(cs.clone(), || {
                         Ok(element_transmission_key)
                     })?;
-                let clue_key = FqVar::new_witness(cs.clone(), || {
+                let clue_key = FqVar::new_witness(cs, || {
                     Ok(Fq::from_le_bytes_mod_order(&address.clue_key().0[..]))
                 })?;
 
                 Ok(Self {
                     diversified_generator,
-                    transmission_key_s,
                     transmission_key,
                     clue_key,
                 })
