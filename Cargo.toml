@@ -2,6 +2,7 @@
 
 exclude = [
     "tools/proto-compiler",
+    "tools/parameter-setup",
 ]
 
 # Also remember to add to scripts/rust-docs
