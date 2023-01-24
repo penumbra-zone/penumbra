@@ -10,3 +10,6 @@ form in the `proof-params/src/gen` folder. Those should be tracked using git lfs
 
 Each time you regenerate the parameters, increment the version of the
 `penumbra-proof-params` crate.
+
+To add a _new_ circuit to the parameter setup, you should modify `src/main.rs`
+before running `cargo run`.
