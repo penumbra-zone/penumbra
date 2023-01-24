@@ -35,8 +35,7 @@ impl AllocVar<Address, Fq> for AddressVar {
     ) -> Result<Self, SynthesisError> {
         let ns = cs.into();
         let cs = ns.cs();
-        let value1 = f()?;
-        let address: Address = *value1.borrow();
+        let address: Address = *f()?.borrow();
         match mode {
             AllocationMode::Constant => unimplemented!(),
             AllocationMode::Input => unimplemented!(),

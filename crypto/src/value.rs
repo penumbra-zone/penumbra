@@ -83,15 +83,13 @@ impl AllocVar<Value, Fq> for ValueVar {
     ) -> Result<Self, SynthesisError> {
         let ns = cs.into();
         let cs = ns.cs();
-        let value1 = f()?;
-        let value: Value = *value1.borrow();
+        let inner: Value = *f()?.borrow();
         match mode {
             AllocationMode::Constant => unimplemented!(),
             AllocationMode::Input => unimplemented!(),
             AllocationMode::Witness => {
-                let amount_var = asset::AmountVar::new_witness(cs.clone(), || Ok(value.amount))?;
-                let asset_id_var =
-                    asset::AssetIdVar::new_witness(cs.clone(), || Ok(value.asset_id))?;
+                let amount_var = asset::AmountVar::new_witness(cs.clone(), || Ok(inner.amount))?;
+                let asset_id_var = asset::AssetIdVar::new_witness(cs, || Ok(inner.asset_id))?;
                 Ok(Self {
                     amount: amount_var,
                     asset_id: asset_id_var,

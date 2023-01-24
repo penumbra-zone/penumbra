@@ -47,13 +47,12 @@ impl AllocVar<Amount, Fq> for AmountVar {
     ) -> Result<Self, SynthesisError> {
         let ns = cs.into();
         let cs = ns.cs();
-        let amount1 = f()?;
-        let amount: Amount = *amount1.borrow();
+        let amount: Amount = *f()?.borrow();
         match mode {
             AllocationMode::Constant => unimplemented!(),
             AllocationMode::Input => unimplemented!(),
             AllocationMode::Witness => {
-                let inner_amount_var = FqVar::new_witness(cs.clone(), || Ok(Fq::from(amount)))?;
+                let inner_amount_var = FqVar::new_witness(cs, || Ok(Fq::from(amount)))?;
                 Ok(Self {
                     amount: inner_amount_var,
                 })

@@ -66,7 +66,7 @@ impl AllocVar<Note, Fq> for NoteVar {
                 let note_blinding =
                     FqVar::new_witness(cs.clone(), || Ok(note.note_blinding().clone()))?;
                 let value = ValueVar::new_witness(cs.clone(), || Ok(note.value().clone()))?;
-                let address = AddressVar::new_witness(cs.clone(), || Ok(note.address().clone()))?;
+                let address = AddressVar::new_witness(cs, || Ok(note.address().clone()))?;
 
                 Ok(Self {
                     note_blinding,
@@ -101,14 +101,14 @@ impl AllocVar<note::Commitment, Fq> for NoteCommitmentVar {
             AllocationMode::Input => {
                 let note_commitment1 = f()?;
                 let note_commitment: note::Commitment = *note_commitment1.borrow();
-                let inner = FqVar::new_input(cs.clone(), || Ok(note_commitment.0))?;
+                let inner = FqVar::new_input(cs, || Ok(note_commitment.0))?;
 
                 Ok(Self { inner })
             }
             AllocationMode::Witness => {
                 let note_commitment1 = f()?;
                 let note_commitment: note::Commitment = *note_commitment1.borrow();
-                let inner = FqVar::new_witness(cs.clone(), || Ok(note_commitment.0))?;
+                let inner = FqVar::new_witness(cs, || Ok(note_commitment.0))?;
 
                 Ok(Self { inner })
             }
@@ -123,7 +123,7 @@ impl NoteVar {
         let compressed_g_d = self.address.diversified_generator().compress_to_field()?;
 
         let commitment = poseidon377::r1cs::hash_6(
-            cs.clone(),
+            cs,
             &domain_sep,
             (
                 self.note_blinding.clone(),

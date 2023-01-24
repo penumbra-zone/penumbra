@@ -39,8 +39,7 @@ impl ValueVar {
         let value_blinding_generator =
             ElementVar::new_constant(cs.clone(), *VALUE_BLINDING_GENERATOR)?;
 
-        let hashed_asset_id =
-            poseidon377::r1cs::hash_1(cs.clone(), &value_generator, self.asset_id())?;
+        let hashed_asset_id = poseidon377::r1cs::hash_1(cs, &value_generator, self.asset_id())?;
         let asset_generator = ElementVar::encode_to_curve(&hashed_asset_id)?;
         let value_amount = self.amount();
         let commitment = asset_generator.scalar_mul_le(value_amount.to_bits_le()?.iter())?
@@ -76,12 +75,11 @@ impl AllocVar<Commitment, Fq> for BalanceCommitmentVar {
     ) -> Result<Self, SynthesisError> {
         let ns = cs.into();
         let cs = ns.cs();
-        let inner1 = f()?;
-        let inner: Commitment = *inner1.borrow();
+        let inner: Commitment = *f()?.borrow();
         match mode {
             AllocationMode::Constant => unimplemented!(),
             AllocationMode::Input => {
-                let element_var: ElementVar = AllocVar::new_input(cs.clone(), || Ok(inner.0))?;
+                let element_var: ElementVar = AllocVar::new_input(cs, || Ok(inner.0))?;
                 Ok(Self { inner: element_var })
             }
             AllocationMode::Witness => unimplemented!(),

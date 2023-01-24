@@ -96,12 +96,11 @@ impl AllocVar<Nullifier, Fq> for NullifierVar {
     ) -> Result<Self, SynthesisError> {
         let ns = cs.into();
         let cs = ns.cs();
-        let nullifier1 = f()?;
-        let nullifier: Nullifier = *nullifier1.borrow();
+        let inner: Nullifier = *f()?.borrow();
         match mode {
             AllocationMode::Constant => unimplemented!(),
             AllocationMode::Input => Ok(Self {
-                inner: FqVar::new_input(cs.clone(), || Ok(nullifier.0))?,
+                inner: FqVar::new_input(cs, || Ok(inner.0))?,
             }),
             AllocationMode::Witness => unimplemented!(),
         }

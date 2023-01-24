@@ -15,13 +15,12 @@ impl AllocVar<crate::asset::Id, Fq> for AssetIdVar {
     ) -> Result<Self, SynthesisError> {
         let ns = cs.into();
         let cs = ns.cs();
-        let asset_id1 = f()?;
-        let asset_id: crate::asset::Id = *asset_id1.borrow();
+        let asset_id: crate::asset::Id = *f()?.borrow();
         match mode {
             AllocationMode::Constant => unimplemented!(),
             AllocationMode::Input => unimplemented!(),
             AllocationMode::Witness => {
-                let inner_asset_id_var = FqVar::new_witness(cs.clone(), || Ok(asset_id.0))?;
+                let inner_asset_id_var = FqVar::new_witness(cs, || Ok(asset_id.0))?;
                 Ok(Self {
                     asset_id: inner_asset_id_var,
                 })

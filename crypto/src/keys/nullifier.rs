@@ -43,8 +43,7 @@ impl AllocVar<NullifierKey, Fq> for NullifierKeyVar {
     ) -> Result<Self, SynthesisError> {
         let ns = cs.into();
         let cs = ns.cs();
-        let inner1 = f()?;
-        let inner: NullifierKey = *inner1.borrow();
+        let inner: NullifierKey = *f()?.borrow();
         match mode {
             AllocationMode::Constant => unimplemented!(),
             AllocationMode::Input => unimplemented!(),
@@ -64,7 +63,7 @@ impl NullifierKeyVar {
         let cs = note_commitment.inner.cs();
         let domain_sep = FqVar::new_constant(cs.clone(), *NULLIFIER_DOMAIN_SEP)?;
         let nullifier = poseidon377::r1cs::hash_3(
-            cs.clone(),
+            cs,
             &domain_sep,
             (
                 self.inner.clone(),
