@@ -8,8 +8,34 @@ use decaf377::{r1cs::FqVar, Fq};
 
 use crate::{
     internal::{hash::DOMAIN_SEPARATOR, path::WhichWay},
-    Proof,
+    Position, Proof,
 };
+
+/// Represents the position of a leaf in the TCT represented in R1CS.
+pub struct PositionVar {
+    /// The FqVar representing the leaf.
+    pub inner: FqVar,
+}
+
+impl AllocVar<Position, Fq> for PositionVar {
+    fn new_variable<T: std::borrow::Borrow<Position>>(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: ark_r1cs_std::prelude::AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        let inner1 = f()?;
+        let inner: Position = *inner1.borrow();
+        match mode {
+            AllocationMode::Constant => unimplemented!(),
+            AllocationMode::Input => unimplemented!(),
+            AllocationMode::Witness => Ok(Self {
+                inner: FqVar::new_witness(cs.clone(), || Ok(Fq::from(u64::from(inner))))?,
+            }),
+        }
+    }
+}
 
 /// This represents the TCT's auth path in R1CS.
 pub struct MerkleAuthPathVar {

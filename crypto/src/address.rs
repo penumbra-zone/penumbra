@@ -6,6 +6,9 @@ use penumbra_proto::{core::crypto::v1alpha1 as pb, serializers::bech32str, Proto
 use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 
+mod r1cs;
+pub use r1cs::AddressVar;
+
 use crate::{fmd, ka, keys::Diversifier, Fq};
 
 pub const ADDRESS_LEN_BYTES: usize = 80;

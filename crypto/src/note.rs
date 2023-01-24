@@ -9,6 +9,9 @@ use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 use thiserror;
 
+mod r1cs;
+pub use r1cs::{NoteCommitmentVar, NoteVar};
+
 pub use penumbra_tct::Commitment;
 
 use crate::{

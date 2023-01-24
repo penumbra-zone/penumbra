@@ -1,8 +1,20 @@
 use ark_ff::PrimeField;
 use rand_core::{CryptoRng, RngCore};
 
+use ark_nonnative_field::NonNativeFieldVar;
+use ark_r1cs_std::prelude::*;
+use ark_relations::r1cs::SynthesisError;
+use decaf377::{
+    r1cs::{ElementVar, FqVar},
+    FieldExt, Fq,
+};
+
 use super::{AddressIndex, Diversifier, DiversifierKey};
-use crate::{fmd, ka, prf, Address, Fr};
+use crate::{
+    fmd, ka,
+    keys::{AuthorizationKeyVar, NullifierKeyVar, IVK_DOMAIN_SEP},
+    prf, Address, Fr,
+};
 
 pub const IVK_LEN_BYTES: usize = 64;
 
@@ -75,6 +87,42 @@ impl IncomingViewingKey {
         } else {
             None
         }
+    }
+}
+
+pub struct IncomingViewingKeyVar {
+    inner: NonNativeFieldVar<Fr, Fq>,
+}
+
+impl IncomingViewingKeyVar {
+    /// Derive the incoming viewing key from the nk and the ak.
+    pub fn derive(nk: &NullifierKeyVar, ak: &AuthorizationKeyVar) -> Result<Self, SynthesisError> {
+        let cs = nk.inner.cs().clone();
+        let ivk_domain_sep = FqVar::new_constant(cs.clone(), *IVK_DOMAIN_SEP)?;
+        let ivk_mod_q = poseidon377::r1cs::hash_2(
+            cs.clone(),
+            &ivk_domain_sep,
+            (nk.inner.clone(), ak.inner.compress_to_field()?),
+        )?;
+
+        // Reduce `ivk_mod_q` modulo r
+        let inner_ivk_mod_q: Fq = ivk_mod_q.value().unwrap_or_default();
+        let ivk_mod_r = Fr::from_le_bytes_mod_order(&inner_ivk_mod_q.to_bytes());
+        let ivk = NonNativeFieldVar::<Fr, Fq>::new_variable(
+            cs.clone(),
+            || Ok(ivk_mod_r),
+            AllocationMode::Witness,
+        )?;
+        Ok(IncomingViewingKeyVar { inner: ivk })
+    }
+
+    /// Derive a transmission key from the given diversified base.
+    pub fn diversified_public(
+        &self,
+        diversified_generator: &ElementVar,
+    ) -> Result<ElementVar, SynthesisError> {
+        let ivk_vars = self.inner.to_bits_le()?;
+        diversified_generator.scalar_mul_le(ivk_vars.to_bits_le()?.iter())
     }
 }
 

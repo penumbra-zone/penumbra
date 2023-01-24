@@ -1,5 +1,9 @@
 //! Values (?)
 
+use ark_r1cs_std::prelude::*;
+use ark_relations::r1cs::SynthesisError;
+use decaf377::{r1cs::FqVar, Fq};
+
 use std::{
     convert::{TryFrom, TryInto},
     str::FromStr,
@@ -62,6 +66,48 @@ impl Value {
                 )
             })
             .unwrap_or_else(|| format!("{}{}", self.amount, self.asset_id))
+    }
+}
+
+#[derive(Clone)]
+pub struct ValueVar {
+    amount: asset::AmountVar,
+    asset_id: asset::AssetIdVar,
+}
+
+impl AllocVar<Value, Fq> for ValueVar {
+    fn new_variable<T: std::borrow::Borrow<Value>>(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: ark_r1cs_std::prelude::AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        let value1 = f()?;
+        let value: Value = *value1.borrow();
+        match mode {
+            AllocationMode::Constant => unimplemented!(),
+            AllocationMode::Input => unimplemented!(),
+            AllocationMode::Witness => {
+                let amount_var = asset::AmountVar::new_witness(cs.clone(), || Ok(value.amount))?;
+                let asset_id_var =
+                    asset::AssetIdVar::new_witness(cs.clone(), || Ok(value.asset_id))?;
+                Ok(Self {
+                    amount: amount_var,
+                    asset_id: asset_id_var,
+                })
+            }
+        }
+    }
+}
+
+impl ValueVar {
+    pub fn amount(&self) -> FqVar {
+        self.amount.amount.clone()
+    }
+
+    pub fn asset_id(&self) -> FqVar {
+        self.asset_id.asset_id.clone()
     }
 }
 
