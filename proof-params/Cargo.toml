@@ -29,6 +29,3 @@ ark-snark = "0.3"
 ark-r1cs-std = "0.3"
 ark-relations = "0.3"
 ark-nonnative-field = "0.3"
-
-[build-dependencies]
-penumbra-crypto = { path = "../crypto/" }

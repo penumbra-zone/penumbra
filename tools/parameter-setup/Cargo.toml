@@ -1,0 +1,11 @@
+[package]
+name = "penumbra-parameter-setup"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+penumbra-crypto = { path = "../../crypto/" }
+ark-groth16 = "0.3"
+ark-serialize = "0.3"
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377", features = ["r1cs"] }
