@@ -42,6 +42,7 @@ cargo $nightly_opt doc --no-deps \
   -p decaf377-fmd \
   -p decaf377-ka \
   -p penumbra-proto \
+  -p penumbra-proof-params \
   -p penumbra-chain \
   -p penumbra-component \
   -p penumbra-crypto \
