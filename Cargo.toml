@@ -4,7 +4,7 @@ exclude = [
     "tools/proto-compiler",
 ]
 
-# Also remember to add to .github/workflows/notes.yml
+# Also remember to add to scripts/rust-docs
 members = [
   "decaf377-fmd",
   "decaf377-ka",
@@ -24,4 +24,5 @@ members = [
   "view",
   "pd",
   "pcli",
+  "proof-params",
 ]
