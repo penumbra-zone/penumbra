@@ -25,6 +25,6 @@ FROM debian:bullseye-slim as runtime
 ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL
 WORKDIR /penumbra
-COPY --from=build /out/pd /usr/bin/pd
+COPY --from=build /out/pd /bin/pd
 ENV RUST_LOG=warn,pd=info,penumbra=info
-CMD [ "/usr/bin/pd" ]
+CMD [ "/bin/pd" ]
