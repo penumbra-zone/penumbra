@@ -20,13 +20,13 @@ fn main() -> Result<()> {
         .join("gen");
     println!("{}", target_dir.display());
 
-    // Generate the parameters for the current proofs.
+    // Generate the parameters for the current proofs and serialize them
+    // to files in the target directory.
     let (spend_pk, spend_vk) = SpendCircuit::generate_test_parameters();
-    let (output_pk, output_vk) = OutputCircuit::generate_test_parameters();
-
-    // Serialize the parameters to files in the target directory.
     write_params(&target_dir, "spend", &spend_pk, &spend_vk)?;
+    let (output_pk, output_vk) = OutputCircuit::generate_test_parameters();
     write_params(&target_dir, "output", &output_pk, &output_vk)?;
+    // NOTE: New proofs go here following the approach above.
 
     Ok(())
 }
