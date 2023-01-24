@@ -25,13 +25,12 @@ impl AllocVar<Position, Fq> for PositionVar {
     ) -> Result<Self, SynthesisError> {
         let ns = cs.into();
         let cs = ns.cs();
-        let inner1 = f()?;
-        let inner: Position = *inner1.borrow();
+        let inner: Position = *f()?.borrow();
         match mode {
             AllocationMode::Constant => unimplemented!(),
             AllocationMode::Input => unimplemented!(),
             AllocationMode::Witness => Ok(Self {
-                inner: FqVar::new_witness(cs.clone(), || Ok(Fq::from(u64::from(inner))))?,
+                inner: FqVar::new_witness(cs, || Ok(Fq::from(u64::from(inner))))?,
             }),
         }
     }

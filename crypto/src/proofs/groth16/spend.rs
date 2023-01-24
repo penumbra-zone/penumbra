@@ -106,7 +106,7 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         merkle_path_var.verify(
             cs.clone(),
             &is_not_dummy,
-            position_var.inner.clone(),
+            position_var.inner,
             anchor_var,
             claimed_note_commitment.inner(),
         )?;
@@ -129,7 +129,7 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
 
         // Check elements were not identity.
         gadgets::element_not_identity(cs.clone(), &is_not_dummy, note_var.diversified_generator())?;
-        gadgets::element_not_identity(cs.clone(), &is_not_dummy, ak_element_var.inner)?;
+        gadgets::element_not_identity(cs, &is_not_dummy, ak_element_var.inner)?;
         Ok(())
     }
 }

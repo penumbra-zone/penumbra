@@ -21,16 +21,14 @@ impl AllocVar<VerificationKey<SpendAuth>, Fq> for RandomizedVerificationKey {
     ) -> Result<Self, SynthesisError> {
         let ns = cs.into();
         let cs = ns.cs();
-        let inner1 = f()?;
-        let inner: VerificationKey<SpendAuth> = *inner1.borrow();
+        let inner: VerificationKey<SpendAuth> = *f()?.borrow();
         match mode {
             AllocationMode::Constant => unimplemented!(),
             AllocationMode::Input => {
                 let point = decaf377::Encoding(*inner.as_ref())
                     .vartime_decompress()
                     .unwrap();
-                let element_var: ElementVar =
-                    AllocVar::<Element, Fq>::new_input(cs.clone(), || Ok(point))?;
+                let element_var: ElementVar = AllocVar::<Element, Fq>::new_input(cs, || Ok(point))?;
                 Ok(Self { inner: element_var })
             }
             AllocationMode::Witness => unimplemented!(),
@@ -64,8 +62,7 @@ impl AllocVar<VerificationKey<SpendAuth>, Fq> for AuthorizationKeyVar {
     ) -> Result<Self, SynthesisError> {
         let ns = cs.into();
         let cs = ns.cs();
-        let inner1 = f()?;
-        let inner: VerificationKey<SpendAuth> = *inner1.borrow();
+        let inner: VerificationKey<SpendAuth> = *f()?.borrow();
         match mode {
             AllocationMode::Constant => unimplemented!(),
             AllocationMode::Input => unimplemented!(),
@@ -74,7 +71,7 @@ impl AllocVar<VerificationKey<SpendAuth>, Fq> for AuthorizationKeyVar {
                     .vartime_decompress()
                     .unwrap();
                 let ak_element_var: ElementVar =
-                    AllocVar::<Element, Fq>::new_witness(cs.clone(), || Ok(ak_point))?;
+                    AllocVar::<Element, Fq>::new_witness(cs, || Ok(ak_point))?;
                 Ok(Self {
                     inner: ak_element_var,
                 })
@@ -89,7 +86,7 @@ impl AuthorizationKeyVar {
         spend_auth_randomizer: &SpendAuthRandomizerVar,
     ) -> Result<RandomizedVerificationKey, SynthesisError> {
         let cs = self.inner.cs();
-        let spend_auth_basepoint_var = ElementVar::new_constant(cs.clone(), *SPENDAUTH_BASEPOINT)?;
+        let spend_auth_basepoint_var = ElementVar::new_constant(cs, *SPENDAUTH_BASEPOINT)?;
         let point = self.inner.clone()
             + spend_auth_basepoint_var
                 .scalar_mul_le(spend_auth_randomizer.inner.to_bits_le()?.iter())?;
@@ -109,15 +106,14 @@ impl AllocVar<Fr, Fq> for SpendAuthRandomizerVar {
     ) -> Result<Self, SynthesisError> {
         let ns = cs.into();
         let cs = ns.cs();
-        let inner1 = f()?;
-        let inner: Fr = *inner1.borrow();
+        let inner: Fr = *f()?.borrow();
         match mode {
             AllocationMode::Constant => unimplemented!(),
             AllocationMode::Input => unimplemented!(),
             AllocationMode::Witness => {
                 let spend_auth_randomizer_arr: [u8; 32] = inner.to_bytes();
                 Ok(Self {
-                    inner: UInt8::new_witness_vec(cs.clone(), &spend_auth_randomizer_arr)?,
+                    inner: UInt8::new_witness_vec(cs, &spend_auth_randomizer_arr)?,
                 })
             }
         }
