@@ -1,12 +1,11 @@
-use std::convert::{TryFrom, TryInto};
-
 use ark_ff::PrimeField;
-use decaf377::FieldExt;
+use ark_r1cs_std::prelude::*;
+use ark_relations::r1cs::SynthesisError;
+use decaf377::{r1cs::FqVar, FieldExt, Fq};
+
 use once_cell::sync::Lazy;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
-
-use crate::Fq;
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(try_from = "pb::Nullifier", into = "pb::Nullifier")]
@@ -82,5 +81,35 @@ impl TryFrom<Vec<u8>> for Nullifier {
 
     fn try_from(vec: Vec<u8>) -> Result<Nullifier, Self::Error> {
         Self::try_from(&vec[..])
+    }
+}
+
+pub struct NullifierVar {
+    pub inner: FqVar,
+}
+
+impl AllocVar<Nullifier, Fq> for NullifierVar {
+    fn new_variable<T: std::borrow::Borrow<Nullifier>>(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: ark_r1cs_std::prelude::AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        let nullifier1 = f()?;
+        let nullifier: Nullifier = *nullifier1.borrow();
+        match mode {
+            AllocationMode::Constant => unimplemented!(),
+            AllocationMode::Input => Ok(Self {
+                inner: FqVar::new_input(cs.clone(), || Ok(nullifier.0))?,
+            }),
+            AllocationMode::Witness => unimplemented!(),
+        }
+    }
+}
+
+impl EqGadget<Fq> for NullifierVar {
+    fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
+        self.inner.is_eq(&other.inner)
     }
 }

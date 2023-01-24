@@ -7,12 +7,14 @@ mod amount;
 mod cache;
 mod denom;
 mod id;
+mod r1cs;
 mod registry;
 
-pub use amount::Amount;
+pub use amount::{Amount, AmountVar};
 pub use cache::Cache;
 pub use denom::{Denom, Unit};
 pub use id::{Id, VALUE_GENERATOR_DOMAIN_SEP};
+pub use r1cs::AssetIdVar;
 pub use registry::{Registry, REGISTRY};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

@@ -15,7 +15,10 @@ use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
 use crate::proofs::groth16::{gadgets, ParameterSetup};
-use crate::{balance, keys::Diversifier, note, Address, Note, Rseed, Value};
+use crate::{
+    balance, balance::commitment::BalanceCommitmentVar, keys::Diversifier, note, Address, Note,
+    Rseed, Value,
+};
 
 // Public:
 // * vcm (value commitment)
@@ -45,15 +48,15 @@ pub struct OutputCircuit {
 impl ConstraintSynthesizer<Fq> for OutputCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
-        let note_var = gadgets::NoteVar::new_witness(cs.clone(), || Ok(self.note.clone()))?;
+        let note_var = note::NoteVar::new_witness(cs.clone(), || Ok(self.note.clone()))?;
         let v_blinding_arr: [u8; 32] = self.v_blinding.to_bytes();
         let v_blinding_vars = UInt8::new_witness_vec(cs.clone(), &v_blinding_arr)?;
 
         // Public inputs
         let claimed_note_commitment =
-            gadgets::NoteCommitmentVar::new_input(cs.clone(), || Ok(self.note_commitment))?;
+            note::NoteCommitmentVar::new_input(cs.clone(), || Ok(self.note_commitment))?;
         let claimed_balance_commitment =
-            gadgets::BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.balance_commitment))?;
+            BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.balance_commitment))?;
 
         gadgets::element_not_identity(
             cs.clone(),

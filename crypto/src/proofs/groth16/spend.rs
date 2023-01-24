@@ -20,13 +20,14 @@ use rand_core::OsRng;
 use crate::proofs::groth16::{gadgets, ParameterSetup};
 use crate::{
     balance,
-    keys::{NullifierKey, SeedPhrase, SpendKey},
+    balance::commitment::BalanceCommitmentVar,
+    keys::{
+        AuthorizationKeyVar, IncomingViewingKeyVar, NullifierKey, NullifierKeyVar,
+        RandomizedVerificationKey, SeedPhrase, SpendAuthRandomizerVar, SpendKey,
+    },
+    note,
+    nullifier::NullifierVar,
     Note, Nullifier, Rseed, Value,
-};
-
-use super::gadgets::{
-    AuthorizationKeyVar, BalanceCommitmentVar, IncomingViewingKeyVar, NullifierKeyVar,
-    NullifierVar, PositionVar, RandomizedVerificationKey, SpendAuthRandomizerVar,
 };
 
 /// Groth16 proof for spending existing notes.
@@ -60,13 +61,14 @@ pub struct SpendCircuit {
 impl ConstraintSynthesizer<Fq> for SpendCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
-        let note_var = gadgets::NoteVar::new_witness(cs.clone(), || Ok(self.note.clone()))?;
-        let claimed_note_commitment = gadgets::NoteCommitmentVar::new_witness(cs.clone(), || {
+        let note_var = note::NoteVar::new_witness(cs.clone(), || Ok(self.note.clone()))?;
+        let claimed_note_commitment = note::NoteCommitmentVar::new_witness(cs.clone(), || {
             Ok(self.note_commitment_proof.commitment())
         })?;
 
-        let position_var =
-            PositionVar::new_witness(cs.clone(), || Ok(self.note_commitment_proof.position()))?;
+        let position_var = tct::r1cs::PositionVar::new_witness(cs.clone(), || {
+            Ok(self.note_commitment_proof.position())
+        })?;
         let merkle_path_var =
             tct::r1cs::MerkleAuthPathVar::new(cs.clone(), self.note_commitment_proof)?;
 
