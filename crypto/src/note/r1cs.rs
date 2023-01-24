@@ -42,11 +42,6 @@ impl NoteVar {
     }
 
     #[allow(dead_code)]
-    pub fn transmission_key_s(&self) -> FqVar {
-        self.address.transmission_key_s.clone()
-    }
-
-    #[allow(dead_code)]
     pub fn clue_key(&self) -> FqVar {
         self.address.clue_key.clone()
     }
@@ -135,7 +130,7 @@ impl NoteVar {
                 self.value.amount(),
                 self.value.asset_id(),
                 compressed_g_d,
-                self.address.transmission_key_s(),
+                self.address.transmission_key().compress_to_field()?,
                 self.address.clue_key(),
             ),
         )?;
