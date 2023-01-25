@@ -4,6 +4,7 @@ use std::{
     task::{Context, Poll},
 };
 
+use anyhow::Context as _;
 use futures::FutureExt;
 use penumbra_storage::Storage;
 use tendermint::abci::{ConsensusRequest, ConsensusResponse};

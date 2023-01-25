@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use ark_ff::UniformRand;
 
 use penumbra_crypto::dex::swap::SwapPlaintext;
@@ -108,15 +108,15 @@ impl TryFrom<pb::SwapPlan> for SwapPlan {
     fn try_from(msg: pb::SwapPlan) -> Result<Self, Self::Error> {
         let fee_blinding_bytes: [u8; 32] = msg.fee_blinding[..]
             .try_into()
-            .map_err(|_| anyhow!("proto malformed"))?;
+            .map_err(|_| anyhow!("expected 32 byte fee blinding"))?;
         Ok(Self {
-            fee_blinding: Fr::from_bytes(fee_blinding_bytes)
-                .map_err(|_| anyhow!("proto malformed"))?,
+            fee_blinding: Fr::from_bytes(fee_blinding_bytes).context("fee blinding malformed")?,
             swap_plaintext: msg
                 .swap_plaintext
                 .ok_or_else(|| anyhow!("missing swap_plaintext"))?
-                .try_into()?,
-            esk: msg.esk.as_slice().try_into()?,
+                .try_into()
+                .context("swap plaintext malformed")?,
+            esk: msg.esk.as_slice().try_into().context("esk malformed")?,
         })
     }
 }

@@ -3,7 +3,7 @@ use std::{
     convert::{TryFrom, TryInto},
 };
 
-use anyhow::Error;
+use anyhow::{Context, Error};
 use ark_ff::Zero;
 use bytes::Bytes;
 use decaf377_fmd::Clue;
@@ -346,7 +346,7 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
             actions.push(
                 action
                     .try_into()
-                    .map_err(|_| anyhow::anyhow!("transaction body malformed"))?,
+                    .context("action malformed while parsing transaction body")?,
             );
         }
 
@@ -356,16 +356,16 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
 
         let fee: Fee = proto
             .fee
-            .ok_or_else(|| anyhow::anyhow!("transaction body malformed"))?
+            .ok_or_else(|| anyhow::anyhow!("transaction body missing fee"))?
             .try_into()
-            .map_err(|_| anyhow::anyhow!("clue malformed"))?;
+            .context("fee malformed")?;
 
         let mut fmd_clues = Vec::<Clue>::new();
         for fmd_clue in proto.fmd_clues {
             fmd_clues.push(
                 fmd_clue
                     .try_into()
-                    .map_err(|_| anyhow::anyhow!("clue malformed"))?,
+                    .context("fmd clue malformed while parsing transaction body")?,
             );
         }
 
@@ -373,7 +373,7 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
             Some(bytes) => Some(
                 bytes[..]
                     .try_into()
-                    .map_err(|_| anyhow::anyhow!("memo malformed"))?,
+                    .context("encrypted memo malformed while parsing transaction body")?,
             ),
             None => None,
         };
@@ -413,19 +413,19 @@ impl TryFrom<pbt::Transaction> for Transaction {
     fn try_from(proto: pbt::Transaction) -> anyhow::Result<Self, Self::Error> {
         let transaction_body = proto
             .body
-            .ok_or_else(|| anyhow::anyhow!("transaction malformed"))?
+            .ok_or_else(|| anyhow::anyhow!("transaction missing body"))?
             .try_into()
-            .map_err(|_| anyhow::anyhow!("transaction body malformed"))?;
+            .context("transaction body malformed")?;
 
         let sig_bytes: [u8; 64] = proto.binding_sig[..]
             .try_into()
-            .map_err(|_| anyhow::anyhow!("transaction malformed"))?;
+            .context("transaction binding signature malformed")?;
 
         let anchor = proto
             .anchor
-            .ok_or_else(|| anyhow::anyhow!("transaction malformed"))?
+            .ok_or_else(|| anyhow::anyhow!("transaction missing anchor"))?
             .try_into()
-            .map_err(|_| anyhow::anyhow!("transaction malformed"))?;
+            .context("transaction anchor malformed")?;
 
         Ok(Transaction {
             transaction_body,
@@ -439,11 +439,7 @@ impl TryFrom<&[u8]> for Transaction {
     type Error = Error;
 
     fn try_from(bytes: &[u8]) -> Result<Transaction, Self::Error> {
-        let protobuf_serialized_proof = pbt::Transaction::decode(bytes)
-            .map_err(|_| anyhow::anyhow!("transaction malformed"))?;
-        protobuf_serialized_proof
-            .try_into()
-            .map_err(|_| anyhow::anyhow!("transaction malformed"))
+        pbt::Transaction::decode(bytes)?.try_into()
     }
 }
 

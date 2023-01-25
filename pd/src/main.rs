@@ -537,21 +537,15 @@ async fn main() -> anyhow::Result<()> {
                                 .iter()
                                 .map(|fs| {
                                     Ok(FundingStream {
-                                        address: Address::from_str(&fs.address).map_err(|_| {
-                                            anyhow::anyhow!(
-                                                "invalid funding stream address in validators.json"
-                                            )
-                                        })?,
+                                        address: Address::from_str(&fs.address).context(
+                                            "invalid funding stream address in validators.json",
+                                        )?,
                                         rate_bps: fs.rate_bps,
                                     })
                                 })
                                 .collect::<Result<Vec<FundingStream>, anyhow::Error>>()?,
                         )
-                        .map_err(|_| {
-                            anyhow::anyhow!(
-                                "unable to construct funding streams from validators.json"
-                            )
-                        })?,
+                        .context("unable to construct funding streams from validators.json")?,
                         sequence_number: v.sequence_number,
                     })
                 })

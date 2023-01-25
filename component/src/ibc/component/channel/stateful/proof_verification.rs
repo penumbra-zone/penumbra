@@ -18,10 +18,10 @@ use ibc::core::ics24_host::path::ReceiptsPath;
 use ibc::core::ics24_host::path::SeqRecvsPath;
 use ibc::core::ics24_host::Path;
 
+use anyhow::Context;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
-use prost::Message;
-
 use penumbra_chain::StateReadExt as _;
+use prost::Message;
 use sha2::{Digest, Sha256};
 
 // NOTE: this is underspecified.
@@ -58,7 +58,7 @@ fn verify_merkle_absence_proof(
 ) -> anyhow::Result<()> {
     let merkle_path = apply_prefix(prefix, vec![path.into().to_string()]);
     let merkle_proof: MerkleProof = RawMerkleProof::try_from(proof.clone())
-        .map_err(|_| anyhow::anyhow!("invalid merkle proof"))?
+        .context("invalid merkle proof")?
         .into();
 
     merkle_proof.verify_non_membership(proof_specs, root.clone().into(), merkle_path)?;
@@ -76,7 +76,7 @@ fn verify_merkle_proof(
 ) -> anyhow::Result<()> {
     let merkle_path = apply_prefix(prefix, vec![path.into().to_string()]);
     let merkle_proof: MerkleProof = RawMerkleProof::try_from(proof.clone())
-        .map_err(|_| anyhow::anyhow!("invalid merkle proof"))?
+        .context("invalid merkle proof")?
         .into();
 
     merkle_proof.verify_membership(proof_specs, root.clone().into(), merkle_path, value, 0)?;

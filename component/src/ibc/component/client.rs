@@ -1,6 +1,6 @@
 use crate::ibc::client::ics02_validation;
 use crate::Component;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_trait::async_trait;
 use ibc::clients::ics07_tendermint;
 
@@ -427,7 +427,7 @@ pub trait StateReadExt: StateRead {
             .ok_or_else(|| anyhow::anyhow!("client update time not found"))?;
 
         ibc::timestamp::Timestamp::from_nanoseconds(timestamp_nanos)
-            .map_err(|_| anyhow::anyhow!("invalid client update time"))
+            .context("invalid client update time")
     }
 
     // returns the lowest verified consensus state that is higher than the given height, if it
