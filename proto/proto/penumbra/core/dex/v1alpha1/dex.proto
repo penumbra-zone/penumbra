@@ -331,3 +331,18 @@ message Path {
     repeated crypto.v1alpha1.AssetId route = 2;
     TradingFunction phi = 3;
 }
+
+// A path and the amount of the assets on either side that were traded.
+message Trade {
+  // The path taken by the trade.
+  Path path = 1;
+  // The amount of the start asset being traded.
+  crypto.v1alpha1.Amount start_amount = 2;
+  // The amount of end asset being received.
+  crypto.v1alpha1.Amount end_amount = 3;
+}
+
+// Contains the entire execution of a particular swap.
+message SwapExecution {
+  repeated Trade trades = 1;
+}
