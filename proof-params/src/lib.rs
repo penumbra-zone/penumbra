@@ -55,11 +55,13 @@ mod tests {
     use rand_core::OsRng;
 
     #[test]
-    fn test_spend_proof() {
-        let pk = SPEND_PROOF_PROVING_KEY.clone();
-        let vk = SPEND_PROOF_VERIFICATION_KEY.clone();
+    /// This test guards against drift in the current constraints versus the provided
+    /// proving/verification key.
+    fn spend_proof_parameters_vs_current_spend_circuit() {
+        let pk = &*SPEND_PROOF_PROVING_KEY;
+        let vk = &*SPEND_PROOF_VERIFICATION_KEY;
 
-        let seed_phrase = SeedPhrase::generate(&mut OsRng);
+        let seed_phrase = SeedPhrase::generate(OsRng);
         let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
@@ -87,7 +89,7 @@ mod tests {
 
         let proof = SpendProof::prove(
             &mut OsRng,
-            &pk,
+            pk,
             note_commitment_proof,
             note,
             v_blinding,
@@ -101,7 +103,7 @@ mod tests {
         )
         .expect("can create proof");
 
-        let proof_result = proof.verify(&vk, anchor, balance_commitment, nf, rk);
+        let proof_result = proof.verify(vk, anchor, balance_commitment, nf, rk);
         assert!(proof_result.is_ok());
     }
 }
