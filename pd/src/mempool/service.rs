@@ -100,7 +100,8 @@ impl tower_service::Service<MempoolRequest> for Mempool {
                     );
                     Ok(MempoolResponse::CheckTx(CheckTxRsp {
                         code: 1,
-                        log: e.to_string(),
+                        // Use the alternate format specifier to include the chain of error causes.
+                        log: format!("{:#}", e),
                         ..Default::default()
                     }))
                 }

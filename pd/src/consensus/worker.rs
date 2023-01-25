@@ -142,7 +142,8 @@ impl Worker {
                 tracing::info!(?e, "deliver_tx failed");
                 abci::response::DeliverTx {
                     code: 1,
-                    log: e.to_string(),
+                    // Use the alternate format specifier to include the chain of error causes.
+                    log: format!("{:#}", e),
                     ..Default::default()
                 }
             }
