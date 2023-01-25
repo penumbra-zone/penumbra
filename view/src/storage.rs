@@ -20,6 +20,7 @@ use sqlx::{migrate::MigrateDatabase, query, Pool, Row, Sqlite};
 use std::{collections::BTreeMap, num::NonZeroU64, sync::Arc};
 use tct::Commitment;
 use tokio::sync::broadcast::{self, error::RecvError};
+use url::Url;
 
 use crate::{sync::FilteredBlock, SpendableNoteRecord, SwapRecord};
 
@@ -48,16 +49,13 @@ impl Storage {
     pub async fn load_or_initialize(
         storage_path: impl AsRef<Utf8Path>,
         fvk: &FullViewingKey,
-        node: String,
-        pd_port: u16,
+        node: Url,
     ) -> anyhow::Result<Self> {
         let storage_path = storage_path.as_ref();
         if storage_path.exists() {
             Self::load(storage_path.as_str()).await
         } else {
-            let mut client =
-                ObliviousQueryServiceClient::connect(format!("http://{}:{}", node, pd_port))
-                    .await?;
+            let mut client = ObliviousQueryServiceClient::connect(node.to_string()).await?;
             let params = client
                 .chain_parameters(tonic::Request::new(ChainParametersRequest {
                     chain_id: String::new(),

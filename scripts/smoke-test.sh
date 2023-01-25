@@ -26,7 +26,7 @@ smoke_test_pid="$!"
 sleep "$TESTNET_BOOTTIME"
 
 echo "Running integration tests against network"
-PENUMBRA_NODE_HOSTNAME="127.0.0.1" \
+PENUMBRA_NODE_URL="http://127.0.0.1:8080" \
     PCLI_UNLEASH_DANGER="yes" \
     RUST_LOG="pcli=debug,penumbra=debug" \
     cargo test --features sct-divergence-check --package pcli -- --ignored --test-threads 1 --nocapture
