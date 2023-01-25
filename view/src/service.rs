@@ -37,6 +37,7 @@ use tokio::sync::{watch, RwLock};
 use tokio_stream::wrappers::WatchStream;
 use tonic::async_trait;
 use tracing::instrument;
+use url::Url;
 
 use crate::{Storage, Worker};
 
@@ -58,24 +59,23 @@ pub struct ViewService {
     // A copy of the SCT used by the worker task.
     state_commitment_tree: Arc<RwLock<penumbra_tct::Tree>>,
     // The address of the pd+tendermint node.
-    node: String,
-    /// The port to talk to tendermint on.
-    pd_port: u16,
+    node: Url,
     /// Used to watch for changes to the sync height.
     sync_height_rx: watch::Receiver<u64>,
 }
 
 impl ViewService {
+    #[instrument(skip(fvk, storage_path))]
     /// Convenience method that calls [`Storage::load_or_initialize`] and then [`Self::new`].
     pub async fn load_or_initialize(
         storage_path: impl AsRef<Utf8Path>,
         fvk: &FullViewingKey,
-        node: String,
-        pd_port: u16,
+        node: Url,
     ) -> anyhow::Result<Self> {
-        let storage = Storage::load_or_initialize(storage_path, fvk, node.clone(), pd_port).await?;
+        tracing::debug!("Connecting to URL");
+        let storage = Storage::load_or_initialize(storage_path, fvk, node.clone()).await?;
 
-        Self::new(storage, node, pd_port).await
+        Self::new(storage, node).await
     }
 
     /// Constructs a new [`ViewService`], spawning a sync task internally.
@@ -85,9 +85,9 @@ impl ViewService {
     /// To create multiple [`ViewService`]s, clone the [`ViewService`] returned
     /// by this method, rather than calling it multiple times.  That way, each clone
     /// will be backed by the same scanning task, rather than each spawning its own.
-    pub async fn new(storage: Storage, node: String, pd_port: u16) -> Result<Self, anyhow::Error> {
+    pub async fn new(storage: Storage, node: Url) -> Result<Self, anyhow::Error> {
         let (worker, sct, error_slot, sync_height_rx) =
-            Worker::new(storage.clone(), node.clone(), pd_port).await?;
+            Worker::new(storage.clone(), node.clone()).await?;
 
         tokio::spawn(worker.run());
 
@@ -101,7 +101,6 @@ impl ViewService {
             sync_height_rx,
             state_commitment_tree: sct,
             node,
-            pd_port,
         })
     }
 
@@ -149,10 +148,10 @@ impl ViewService {
     /// well as whether the fullnode is caught up with that height.
     #[instrument(skip(self))]
     pub async fn latest_known_block_height(&self) -> Result<(u64, bool), anyhow::Error> {
-        let mut client =
-            TendermintProxyServiceClient::connect(format!("http://{}:{}", self.node, self.pd_port))
-                .await?;
+        tracing::debug!("Checking latest_known_block_height...");
+        let mut client = TendermintProxyServiceClient::connect(self.node.to_string()).await?;
 
+        tracing::trace!("Getting status...");
         let rsp = client.get_status(GetStatusRequest {}).await?.into_inner();
 
         //tracing::debug!("{:#?}", rsp);
