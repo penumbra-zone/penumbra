@@ -106,7 +106,7 @@ impl TryFrom<ProtoClue> for Clue {
     fn try_from(proto: ProtoClue) -> anyhow::Result<Self, Self::Error> {
         let clue: [u8; 68] = proto.inner[..]
             .try_into()
-            .map_err(|_| anyhow::anyhow!("clue malformed"))?;
+            .map_err(|_| anyhow::anyhow!("expected 68-byte clue"))?;
 
         Ok(Clue(clue))
     }

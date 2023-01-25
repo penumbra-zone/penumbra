@@ -1,6 +1,6 @@
 use std::convert::{TryFrom, TryInto};
 
-use anyhow::Error;
+use anyhow::{Context, Error};
 use bytes::Bytes;
 use penumbra_crypto::{
     balance,
@@ -95,7 +95,7 @@ impl TryFrom<pb::Output> for Output {
                 .try_into()?,
             proof: proto.proof[..]
                 .try_into()
-                .map_err(|_| anyhow::anyhow!("output body malformed"))?,
+                .context("output proof malformed")?,
         })
     }
 }
@@ -121,20 +121,21 @@ impl TryFrom<pb::OutputBody> for Body {
             .note_payload
             .ok_or_else(|| anyhow::anyhow!("missing note payload"))?
             .try_into()
-            .map_err(|e: Error| e.context("output body malformed"))?;
+            .context("malformed note payload")?;
 
         let wrapped_memo_key = proto.wrapped_memo_key[..]
             .try_into()
-            .map_err(|_| anyhow::anyhow!("output malformed"))?;
+            .context("malformed wrapped memo key")?;
 
         let ovk_wrapped_key: OvkWrappedKey = proto.ovk_wrapped_key[..]
             .try_into()
-            .map_err(|_| anyhow::anyhow!("output malformed"))?;
+            .context("malformed ovk wrapped key")?;
 
         let balance_commitment = proto
             .balance_commitment
             .ok_or_else(|| anyhow::anyhow!("missing value commitment"))?
-            .try_into()?;
+            .try_into()
+            .context("malformed balance commitment")?;
 
         Ok(Body {
             note_payload,

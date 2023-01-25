@@ -76,7 +76,12 @@ impl TryFrom<pb::NoteSource> for NoteSource {
     type Error = anyhow::Error;
     fn try_from(note_source: pb::NoteSource) -> Result<Self> {
         <[u8; 32]>::try_from(note_source.inner)
-            .map_err(|_| anyhow!("expected 32 bytes"))?
+            .map_err(|bytes| {
+                anyhow!(format!(
+                    "expected 32 byte note source, found {} bytes",
+                    bytes.len()
+                ))
+            })?
             .try_into()
     }
 }

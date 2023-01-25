@@ -1,5 +1,6 @@
 use crate::view::action_view::SwapClaimView;
 use crate::{ActionView, IsAction, TransactionPerspective};
+use anyhow::Context;
 use ark_ff::Zero;
 use penumbra_crypto::dex::BatchSwapOutputData;
 use penumbra_crypto::transaction::Fee;
@@ -70,11 +71,12 @@ impl TryFrom<pb::SwapClaim> for SwapClaim {
         Ok(Self {
             proof: sc.proof[..]
                 .try_into()
-                .map_err(|_| anyhow::anyhow!("SwapClaim proof malformed"))?,
+                .context("swap claim proof malformed")?,
             body: sc
                 .body
-                .ok_or_else(|| anyhow::anyhow!("missing nullifier"))?
-                .try_into()?,
+                .ok_or_else(|| anyhow::anyhow!("missing swap claim body"))?
+                .try_into()
+                .context("swap claim body malformed")?,
             epoch_duration: sc.epoch_duration,
         })
     }

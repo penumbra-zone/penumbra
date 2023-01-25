@@ -64,7 +64,7 @@ pub mod update_client {
             let trusted_height = trusted_height
                 .revision_height()
                 .try_into()
-                .map_err(|_| anyhow::anyhow!("invalid header height"))?;
+                .context("invalid header height")?;
 
             let trusted_validator_set =
                 verify_header_validator_set(&untrusted_header, &last_trusted_consensus_state)?;

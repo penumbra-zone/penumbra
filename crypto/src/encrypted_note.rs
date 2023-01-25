@@ -1,4 +1,4 @@
-use anyhow::Error;
+use anyhow::{Context, Error};
 
 use bytes::Bytes;
 
@@ -94,10 +94,10 @@ impl TryFrom<pb::EncryptedNote> for EncryptedNote {
                 .ok_or_else(|| anyhow::anyhow!("missing note commitment"))?
                 .try_into()?,
             ephemeral_key: ka::Public::try_from(&proto.ephemeral_key[..])
-                .map_err(|_| anyhow::anyhow!("output body malformed"))?,
+                .context("ephemeral key malformed")?,
             encrypted_note: proto.encrypted_note[..]
                 .try_into()
-                .map_err(|_| anyhow::anyhow!("output body malformed"))?,
+                .context("encrypted note malformed")?,
         })
     }
 }

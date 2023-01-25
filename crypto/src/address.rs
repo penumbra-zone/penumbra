@@ -1,5 +1,6 @@
 use std::io::{Cursor, Read, Write};
 
+use anyhow::Context;
 use ark_serialize::CanonicalDeserialize;
 use f4jumble::{f4jumble, f4jumble_inv};
 use penumbra_proto::{core::crypto::v1alpha1 as pb, serializers::bech32str, Protobuf};
@@ -198,31 +199,26 @@ impl TryFrom<&[u8]> for Address {
         let mut diversifier_bytes = [0u8; 16];
         bytes
             .read_exact(&mut diversifier_bytes)
-            .map_err(|_| anyhow::anyhow!("address malformed"))?;
+            .context("could not read diversifier bytes")?;
 
         let mut pk_d_bytes = [0u8; 32];
         bytes
             .read_exact(&mut pk_d_bytes)
-            .map_err(|_| anyhow::anyhow!("address malformed"))?;
+            .context("could not read transmission key bytes")?;
 
         let mut clue_key_bytes = [0; 32];
         bytes
             .read_exact(&mut clue_key_bytes)
-            .map_err(|_| anyhow::anyhow!("address malformed"))?;
+            .context("could not read clue key bytes")?;
 
         let diversifier = Diversifier(diversifier_bytes);
 
-        let address = Address::from_components(
+        Address::from_components(
             diversifier,
             ka::Public(pk_d_bytes),
             fmd::ClueKey(clue_key_bytes),
-        );
-
-        if address.is_none() {
-            return Err(anyhow::anyhow!("address malformed"));
-        }
-
-        Ok(address.unwrap())
+        )
+        .ok_or_else(|| anyhow::anyhow!("could not create address from components"))
     }
 }
 
