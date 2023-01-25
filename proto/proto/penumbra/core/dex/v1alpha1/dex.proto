@@ -151,6 +151,15 @@ message TradingPair {
   crypto.v1alpha1.AssetId asset_2 = 2;
 }
 
+// Encodes a trading pair starting from asset `start`
+// and ending on asset `end`.
+message DirectedTradingPair {
+  // The start asset of the pair.
+  crypto.v1alpha1.AssetId start = 1;
+  // The end asset of the pair.
+  crypto.v1alpha1.AssetId end = 2;
+}
+
 // Records the result of a batch swap on-chain.
 //
 // Used as a public input to a swap claim proof, as it implies the effective
@@ -313,4 +322,12 @@ message PositionRewardClaim {
   //
   // The chain will check this commitment by recomputing it with the on-chain state.
   crypto.v1alpha1.BalanceCommitment rewards_commitment = 2;
+}
+
+// Contains a path for a trade, including the trading pair (with direction), the trading
+// function defining their relationship, and the route taken between the two assets.
+message Path {
+    DirectedTradingPair pair = 1;
+    repeated crypto.v1alpha1.AssetId route = 2;
+    TradingFunction phi = 3;
 }

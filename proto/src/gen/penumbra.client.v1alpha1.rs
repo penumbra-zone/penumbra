@@ -1093,10 +1093,10 @@ pub mod tendermint_proxy_service_client {
 pub mod oblivious_query_service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    ///Generated trait containing gRPC methods that should be implemented for use with ObliviousQueryServiceServer.
+    /// Generated trait containing gRPC methods that should be implemented for use with ObliviousQueryServiceServer.
     #[async_trait]
     pub trait ObliviousQueryService: Send + Sync + 'static {
-        ///Server streaming response type for the CompactBlockRange method.
+        /// Server streaming response type for the CompactBlockRange method.
         type CompactBlockRangeStream: futures_core::Stream<
                 Item = Result<super::CompactBlockRangeResponse, tonic::Status>,
             >
@@ -1110,7 +1110,7 @@ pub mod oblivious_query_service_server {
             &self,
             request: tonic::Request<super::ChainParametersRequest>,
         ) -> Result<tonic::Response<super::ChainParametersResponse>, tonic::Status>;
-        ///Server streaming response type for the MutableParameters method.
+        /// Server streaming response type for the MutableParameters method.
         type MutableParametersStream: futures_core::Stream<
                 Item = Result<super::MutableParametersResponse, tonic::Status>,
             >
@@ -1120,7 +1120,7 @@ pub mod oblivious_query_service_server {
             &self,
             request: tonic::Request<super::MutableParametersRequest>,
         ) -> Result<tonic::Response<Self::MutableParametersStream>, tonic::Status>;
-        ///Server streaming response type for the ValidatorInfo method.
+        /// Server streaming response type for the ValidatorInfo method.
         type ValidatorInfoStream: futures_core::Stream<
                 Item = Result<super::ValidatorInfoResponse, tonic::Status>,
             >
@@ -1448,7 +1448,7 @@ pub mod oblivious_query_service_server {
 pub mod specific_query_service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    ///Generated trait containing gRPC methods that should be implemented for use with SpecificQueryServiceServer.
+    /// Generated trait containing gRPC methods that should be implemented for use with SpecificQueryServiceServer.
     #[async_trait]
     pub trait SpecificQueryService: Send + Sync + 'static {
         async fn transaction_by_note(
@@ -1485,7 +1485,7 @@ pub mod specific_query_service_server {
             &self,
             request: tonic::Request<super::KeyValueRequest>,
         ) -> Result<tonic::Response<super::KeyValueResponse>, tonic::Status>;
-        ///Server streaming response type for the PrefixValue method.
+        /// Server streaming response type for the PrefixValue method.
         type PrefixValueStream: futures_core::Stream<
                 Item = Result<super::PrefixValueResponse, tonic::Status>,
             >
@@ -1965,7 +1965,7 @@ pub mod specific_query_service_server {
 pub mod tendermint_proxy_service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    ///Generated trait containing gRPC methods that should be implemented for use with TendermintProxyServiceServer.
+    /// Generated trait containing gRPC methods that should be implemented for use with TendermintProxyServiceServer.
     #[async_trait]
     pub trait TendermintProxyService: Send + Sync + 'static {
         /// Status queries the current status.

@@ -1,16 +1,40 @@
 use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    dex::{fixed_encoding::FixedEncoding, TradingPair},
-    Amount,
-};
+use crate::dex::{fixed_encoding::FixedEncoding, TradingPair};
+use crate::Amount;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::TradingFunction", into = "pb::TradingFunction")]
 pub struct TradingFunction {
     pub component: BareTradingFunction,
     pub pair: TradingPair,
+}
+
+impl TradingFunction {
+    pub fn new(pair: TradingPair, fee: u32, p: Amount, q: Amount) -> Self {
+        Self {
+            component: BareTradingFunction::new(fee, p, q),
+            pair,
+        }
+    }
+
+    /// Compose two trading functions together.
+    /// TODO(erwan): doc.
+    pub fn compose(
+        &self,
+        psi: TradingFunction,
+        pair: TradingPair,
+    ) -> anyhow::Result<TradingFunction> {
+        // TODO(erwan): we should fail to compose trading functions with non-overlapping assets.
+        // but the logic to do this is tedious, so I'll re-insert it in the `Path` PR.
+        // TODO: overflow handling
+        let fee = self.component.fee * psi.component.fee;
+        // TODO: insert scaling code here
+        let r1 = self.component.p * psi.component.p;
+        let r2 = self.component.q * psi.component.q;
+        Ok(TradingFunction::new(pair, fee, r1, r2))
+    }
 }
 
 impl TryFrom<pb::TradingFunction> for TradingFunction {
@@ -52,7 +76,7 @@ impl Protobuf<pb::TradingFunction> for TradingFunction {}
 ///
 /// NOTE: the use of floats here is a placeholder ONLY, so we can stub out the implementation,
 /// and then decide what type of fixed-point, deterministic arithmetic should be used.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::BareTradingFunction", into = "pb::BareTradingFunction")]
 pub struct BareTradingFunction {
     /// The fee, expressed in basis points.
@@ -65,6 +89,10 @@ pub struct BareTradingFunction {
 }
 
 impl BareTradingFunction {
+    pub fn new(fee: u32, p: Amount, q: Amount) -> Self {
+        Self { fee, p, q }
+    }
+
     /// Represent the trading function as a big-endian fixed point encoding
     /// with 128 bits to the right of the decimal.
     ///

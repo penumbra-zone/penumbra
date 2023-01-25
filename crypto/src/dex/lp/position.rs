@@ -26,8 +26,8 @@ impl Position {
             .to_state();
 
         state.update(&self.nonce);
-        state.update(&self.phi.pair.asset_1.to_bytes());
-        state.update(&self.phi.pair.asset_2.to_bytes());
+        state.update(&self.phi.pair.asset_1().to_bytes());
+        state.update(&self.phi.pair.asset_2().to_bytes());
         state.update(&self.phi.component.fee.to_le_bytes());
         state.update(&self.phi.component.p.to_le_bytes());
         state.update(&self.phi.component.q.to_le_bytes());

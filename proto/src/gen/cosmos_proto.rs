@@ -61,4 +61,13 @@ impl ScalarType {
             ScalarType::Bytes => "SCALAR_TYPE_BYTES",
         }
     }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "SCALAR_TYPE_UNSPECIFIED" => Some(Self::Unspecified),
+            "SCALAR_TYPE_STRING" => Some(Self::String),
+            "SCALAR_TYPE_BYTES" => Some(Self::Bytes),
+            _ => None,
+        }
+    }
 }

@@ -253,6 +253,19 @@ pub struct TradingPair {
     #[prost(message, optional, tag = "2")]
     pub asset_2: ::core::option::Option<super::super::crypto::v1alpha1::AssetId>,
 }
+/// Encodes a trading pair starting from asset `start`
+/// and ending on asset `end`.
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DirectedTradingPair {
+    /// The start asset of the pair.
+    #[prost(message, optional, tag = "1")]
+    pub start: ::core::option::Option<super::super::crypto::v1alpha1::AssetId>,
+    /// The end asset of the pair.
+    #[prost(message, optional, tag = "2")]
+    pub end: ::core::option::Option<super::super::crypto::v1alpha1::AssetId>,
+}
 /// Records the result of a batch swap on-chain.
 ///
 /// Used as a public input to a swap claim proof, as it implies the effective
@@ -407,6 +420,17 @@ pub mod position_state {
                 PositionStateEnum::Claimed => "POSITION_STATE_ENUM_CLAIMED",
             }
         }
+        /// Creates an enum from field names used in the ProtoBuf definition.
+        pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+            match value {
+                "POSITION_STATE_ENUM_UNSPECIFIED" => Some(Self::Unspecified),
+                "POSITION_STATE_ENUM_OPENED" => Some(Self::Opened),
+                "POSITION_STATE_ENUM_CLOSED" => Some(Self::Closed),
+                "POSITION_STATE_ENUM_WITHDRAWN" => Some(Self::Withdrawn),
+                "POSITION_STATE_ENUM_CLAIMED" => Some(Self::Claimed),
+                _ => None,
+            }
+        }
     }
 }
 /// An LPNFT tracking both ownership and state of a position.
@@ -504,4 +528,17 @@ pub struct PositionRewardClaim {
     pub rewards_commitment: ::core::option::Option<
         super::super::crypto::v1alpha1::BalanceCommitment,
     >,
+}
+/// Contains a path for a trade, including the trading pair (with direction), the trading
+/// function defining their relationship, and the route taken between the two assets.
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Path {
+    #[prost(message, optional, tag = "1")]
+    pub pair: ::core::option::Option<DirectedTradingPair>,
+    #[prost(message, repeated, tag = "2")]
+    pub route: ::prost::alloc::vec::Vec<super::super::crypto::v1alpha1::AssetId>,
+    #[prost(message, optional, tag = "3")]
+    pub phi: ::core::option::Option<TradingFunction>,
 }

@@ -1176,7 +1176,7 @@ pub mod view_auth_service_client {
 pub mod view_protocol_service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    ///Generated trait containing gRPC methods that should be implemented for use with ViewProtocolServiceServer.
+    /// Generated trait containing gRPC methods that should be implemented for use with ViewProtocolServiceServer.
     #[async_trait]
     pub trait ViewProtocolService: Send + Sync + 'static {
         /// Get current status of chain sync
@@ -1184,7 +1184,7 @@ pub mod view_protocol_service_server {
             &self,
             request: tonic::Request<super::StatusRequest>,
         ) -> Result<tonic::Response<super::StatusResponse>, tonic::Status>;
-        ///Server streaming response type for the StatusStream method.
+        /// Server streaming response type for the StatusStream method.
         type StatusStreamStream: futures_core::Stream<
                 Item = Result<super::StatusStreamResponse, tonic::Status>,
             >
@@ -1195,7 +1195,7 @@ pub mod view_protocol_service_server {
             &self,
             request: tonic::Request<super::StatusStreamRequest>,
         ) -> Result<tonic::Response<Self::StatusStreamStream>, tonic::Status>;
-        ///Server streaming response type for the Notes method.
+        /// Server streaming response type for the Notes method.
         type NotesStream: futures_core::Stream<
                 Item = Result<super::NotesResponse, tonic::Status>,
             >
@@ -1216,7 +1216,7 @@ pub mod view_protocol_service_server {
             &self,
             request: tonic::Request<super::WitnessRequest>,
         ) -> Result<tonic::Response<super::WitnessResponse>, tonic::Status>;
-        ///Server streaming response type for the Assets method.
+        /// Server streaming response type for the Assets method.
         type AssetsStream: futures_core::Stream<
                 Item = Result<super::AssetsResponse, tonic::Status>,
             >
@@ -1252,7 +1252,7 @@ pub mod view_protocol_service_server {
             &self,
             request: tonic::Request<super::EphemeralAddressRequest>,
         ) -> Result<tonic::Response<super::EphemeralAddressResponse>, tonic::Status>;
-        ///Server streaming response type for the BalanceByAddress method.
+        /// Server streaming response type for the BalanceByAddress method.
         type BalanceByAddressStream: futures_core::Stream<
                 Item = Result<super::BalanceByAddressResponse, tonic::Status>,
             >
@@ -1278,7 +1278,7 @@ pub mod view_protocol_service_server {
             &self,
             request: tonic::Request<super::NullifierStatusRequest>,
         ) -> Result<tonic::Response<super::NullifierStatusResponse>, tonic::Status>;
-        ///Server streaming response type for the TransactionHashes method.
+        /// Server streaming response type for the TransactionHashes method.
         type TransactionHashesStream: futures_core::Stream<
                 Item = Result<super::TransactionHashesResponse, tonic::Status>,
             >
@@ -1294,7 +1294,7 @@ pub mod view_protocol_service_server {
             &self,
             request: tonic::Request<super::TransactionByHashRequest>,
         ) -> Result<tonic::Response<super::TransactionByHashResponse>, tonic::Status>;
-        ///Server streaming response type for the Transactions method.
+        /// Server streaming response type for the Transactions method.
         type TransactionsStream: futures_core::Stream<
                 Item = Result<super::TransactionsResponse, tonic::Status>,
             >
@@ -2147,7 +2147,7 @@ pub mod view_protocol_service_server {
 pub mod planner_service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    ///Generated trait containing gRPC methods that should be implemented for use with PlannerServiceServer.
+    /// Generated trait containing gRPC methods that should be implemented for use with PlannerServiceServer.
     #[async_trait]
     pub trait PlannerService: Send + Sync + 'static {
         async fn planner(
@@ -2296,7 +2296,7 @@ pub mod planner_service_server {
 pub mod view_auth_service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    ///Generated trait containing gRPC methods that should be implemented for use with ViewAuthServiceServer.
+    /// Generated trait containing gRPC methods that should be implemented for use with ViewAuthServiceServer.
     #[async_trait]
     pub trait ViewAuthService: Send + Sync + 'static {
         async fn view_auth(

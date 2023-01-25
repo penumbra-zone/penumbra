@@ -193,6 +193,17 @@ pub mod vote {
                 Vote::NoWithVeto => "VOTE_NO_WITH_VETO",
             }
         }
+        /// Creates an enum from field names used in the ProtoBuf definition.
+        pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+            match value {
+                "VOTE_UNSPECIFIED" => Some(Self::Unspecified),
+                "VOTE_ABSTAIN" => Some(Self::Abstain),
+                "VOTE_YES" => Some(Self::Yes),
+                "VOTE_NO" => Some(Self::No),
+                "VOTE_NO_WITH_VETO" => Some(Self::NoWithVeto),
+                _ => None,
+            }
+        }
     }
 }
 /// A chain parameter that can be modified by governance.

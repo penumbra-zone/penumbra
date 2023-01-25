@@ -151,6 +151,16 @@ pub mod bonding_state {
                 BondingStateEnum::Unbonded => "BONDING_STATE_ENUM_UNBONDED",
             }
         }
+        /// Creates an enum from field names used in the ProtoBuf definition.
+        pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+            match value {
+                "BONDING_STATE_ENUM_UNSPECIFIED" => Some(Self::Unspecified),
+                "BONDING_STATE_ENUM_BONDED" => Some(Self::Bonded),
+                "BONDING_STATE_ENUM_UNBONDING" => Some(Self::Unbonding),
+                "BONDING_STATE_ENUM_UNBONDED" => Some(Self::Unbonded),
+                _ => None,
+            }
+        }
     }
 }
 /// Describes the state of a validator
@@ -197,6 +207,18 @@ pub mod validator_state {
                 ValidatorStateEnum::Jailed => "VALIDATOR_STATE_ENUM_JAILED",
                 ValidatorStateEnum::Tombstoned => "VALIDATOR_STATE_ENUM_TOMBSTONED",
                 ValidatorStateEnum::Disabled => "VALIDATOR_STATE_ENUM_DISABLED",
+            }
+        }
+        /// Creates an enum from field names used in the ProtoBuf definition.
+        pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+            match value {
+                "VALIDATOR_STATE_ENUM_UNSPECIFIED" => Some(Self::Unspecified),
+                "VALIDATOR_STATE_ENUM_INACTIVE" => Some(Self::Inactive),
+                "VALIDATOR_STATE_ENUM_ACTIVE" => Some(Self::Active),
+                "VALIDATOR_STATE_ENUM_JAILED" => Some(Self::Jailed),
+                "VALIDATOR_STATE_ENUM_TOMBSTONED" => Some(Self::Tombstoned),
+                "VALIDATOR_STATE_ENUM_DISABLED" => Some(Self::Disabled),
+                _ => None,
             }
         }
     }

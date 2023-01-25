@@ -245,6 +245,16 @@ impl BlockIdFlag {
             BlockIdFlag::Nil => "BLOCK_ID_FLAG_NIL",
         }
     }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "BLOCK_ID_FLAG_UNKNOWN" => Some(Self::Unknown),
+            "BLOCK_ID_FLAG_ABSENT" => Some(Self::Absent),
+            "BLOCK_ID_FLAG_COMMIT" => Some(Self::Commit),
+            "BLOCK_ID_FLAG_NIL" => Some(Self::Nil),
+            _ => None,
+        }
+    }
 }
 /// SignedMsgType is a type of signed message in the consensus.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
@@ -268,6 +278,16 @@ impl SignedMsgType {
             SignedMsgType::Prevote => "SIGNED_MSG_TYPE_PREVOTE",
             SignedMsgType::Precommit => "SIGNED_MSG_TYPE_PRECOMMIT",
             SignedMsgType::Proposal => "SIGNED_MSG_TYPE_PROPOSAL",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "SIGNED_MSG_TYPE_UNKNOWN" => Some(Self::Unknown),
+            "SIGNED_MSG_TYPE_PREVOTE" => Some(Self::Prevote),
+            "SIGNED_MSG_TYPE_PRECOMMIT" => Some(Self::Precommit),
+            "SIGNED_MSG_TYPE_PROPOSAL" => Some(Self::Proposal),
+            _ => None,
         }
     }
 }
