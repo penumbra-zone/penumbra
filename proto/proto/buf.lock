@@ -2,22 +2,6 @@
 version: v1
 deps:
   - remote: buf.build
-    owner: cosmos
-    repository: cosmos-proto
-    commit: 1935555c206d4afb9e94615dfd0fad31
-  - remote: buf.build
-    owner: cosmos
-    repository: cosmos-sdk
-    commit: 8cb30a2c4de74dc9bd8d260b1e75e176
-  - remote: buf.build
-    owner: cosmos
-    repository: gogo-proto
-    commit: bee5511075b7499da6178d9e4aaa628b
-  - remote: buf.build
-    owner: cosmos
-    repository: ibc
-    commit: a930cbf9d19a41b1bde5a51c78d5e4cd
-  - remote: buf.build
-    owner: googleapis
-    repository: googleapis
-    commit: 783e4b5374fa488ab068d08af9658438
+    owner: penumbra-zone
+    repository: ibc-go-vendor
+    commit: 341b9507648a42be96225203cd4a08d6
