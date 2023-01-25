@@ -10,6 +10,10 @@ of the Rust compiler, installation instructions for which you can find
 `pcli` requires `rustfmt` as part of the build process --- depending on your
 OS/install method for Rust, you may have to install that separately.
 
+### Installing Git LFS
+
+You'll also need to install [Git LFS following these instructions](https://docs.github.com/en/repositories/working-with-files/managing-large-files/installing-git-large-file-storage).
+
 ### Installing build prerequisites
 
 #### Linux
