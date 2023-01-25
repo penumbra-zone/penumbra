@@ -63,11 +63,11 @@ Spend authorization signatures support randomization:
 
 ###### `Randomize.SigningKey`
 
-Given a randomizer $r \xleftarrow{\\$} \mathbb F_r$, the randomized signing key is $ra$.
+Given a randomizer $r \xleftarrow{\$} \mathbb F_r$, the randomized signing key is $ra$.
 
 ###### `Randomize.VerificationKey`
 
-Given a randomizer $r \xleftarrow{\\$} \mathbb F_r$, the randomized verification key is $[r]A$.
+Given a randomizer $r \xleftarrow{\$} \mathbb F_r$, the randomized verification key is $[r]A$.
 
 Randomizing a signing key and then deriving the verification key associated to the randomized signing key gives the same result as randomizing the original verification key (with the same randomizer).
 

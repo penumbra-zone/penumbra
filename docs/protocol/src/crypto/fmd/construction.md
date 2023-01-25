@@ -40,8 +40,8 @@ functions.
 
 ###### `R-FMD2/KeyGen`
 
-Choose a generator $B \xleftarrow \\$ \mathbb G$.  For $i = 1,\ldots,\gamma$,
-choose $x_i \xleftarrow \\$ \Z_q$ and compute $X_i = [x_i]B$.  Return the *root
+Choose a generator $B \xleftarrow{\$} \mathbb G$.  For $i = 1,\ldots,\gamma$,
+choose $x_i \xleftarrow{\$} \Z_q$ and compute $X_i = [x_i]B$.  Return the *root
 key* $rk \gets (x_1, \ldots, x_\gamma)$ and the *clue key* $ck \gets (B, X_1,
 \ldots, X_\gamma)$.
 
@@ -55,8 +55,8 @@ On input $p = 2^{-n}$ and root key $rk$, parse $(x_1, \ldots, x_\gamma)
 On input $ck$, first parse $(B, X_1, \ldots, X_n) \gets ck$, then proceed as
 follows:
 
-1. Choose $r \xleftarrow \\$ \Z_q$ and compute $P \gets [r]B$.
-2. Choose $z \xleftarrow \\$ \Z_q$ and compute $Q \gets [z]B$.
+1. Choose $r \xleftarrow{\$} \Z_q$ and compute $P \gets [r]B$.
+2. Choose $z \xleftarrow{\$} \Z_q$ and compute $Q \gets [z]B$.
 3. For each $i = 1,\ldots,\gamma$, compute 
     1. a key bit $k_i \gets H_1(P || [r]X_i || Q)$;
     2. a ciphertext bit $c_i \gets k_i \oplus 1$.
@@ -129,7 +129,7 @@ The S-FMD2 construction then works as follows:
 
 ###### `S-FMD2/KeyGen`
 
-For $i = 1,\ldots,\gamma$, choose $x_i \xleftarrow \\$ \Z_q$ and compute $X_i =
+For $i = 1,\ldots,\gamma$, choose $x_i \xleftarrow{\$} \Z_q$ and compute $X_i =
 [x_i]B$.  Return the *detection key* $dk \gets (x_1, \ldots, x_\gamma)$ and the
 *clue key* $ck \gets (X_1, \ldots, X_\gamma)$.
 
@@ -138,8 +138,8 @@ For $i = 1,\ldots,\gamma$, choose $x_i \xleftarrow \\$ \Z_q$ and compute $X_i =
 On input clue key $ck$, first parse $(X_1, \ldots, X_n) \gets ck$, then proceed
 as follows:
 
-1. Choose $r \xleftarrow \\$ \Z_q$ and compute $P \gets [r]B$.
-2. Choose $z \xleftarrow \\$ \Z_q$ and compute $Q \gets [z]B$.
+1. Choose $r \xleftarrow{\$} \Z_q$ and compute $P \gets [r]B$.
+2. Choose $z \xleftarrow{\$} \Z_q$ and compute $Q \gets [z]B$.
 3. For each $i = 1,\ldots,n$, compute 
     1. a key bit $k_i \gets H_1(P || [r]X_i || Q)$;
     2. a ciphertext bit $c_i \gets k_i \oplus 1$.
@@ -286,7 +286,7 @@ keys (diversifier-dependent) from generation of detection keys:
 
 ###### `S-FMD2-d/KeyGen`
 
-For $i = 1,\ldots,\gamma$, choose $x_i \xleftarrow \\$ \Z_q$, and
+For $i = 1,\ldots,\gamma$, choose $x_i \xleftarrow{\$} \Z_q$, and
 return the *detection key* $dk \gets (x_1, \ldots, x_\gamma)$.
 
 ###### `S-FMD2-d/Diversify`
@@ -302,9 +302,9 @@ On input diversified clue key $ck_d$ and diversifier $d$, first parse $(X_1, \ld
 \gets ck_d$, then proceed as follows:
 
 1. Compute the diversified base $B_d \gets H_3(d)$.
-1. Choose $r_1 \xleftarrow \\$ \Z_q$ and compute $P_1 \gets [r]B_d$.
-1. Choose $r_2 \xleftarrow \\$ \Z_q$ and compute $P_2 \gets [r]B_d$.
-2. Choose $z \xleftarrow \\$ \Z_q$ and compute $Q \gets [z]P_2$.
+1. Choose $r_1 \xleftarrow{\$} \Z_q$ and compute $P_1 \gets [r]B_d$.
+1. Choose $r_2 \xleftarrow{\$} \Z_q$ and compute $P_2 \gets [r]B_d$.
+2. Choose $z \xleftarrow{\$} \Z_q$ and compute $Q \gets [z]P_2$.
 3. For each $i = 1,\ldots,n$, compute 
     1. a key bit $k_i \gets H_1(P_1 || P_2 || [r]X_i || Q)$;
     2. a ciphertext bit $c_i \gets k_i \oplus 1$.
