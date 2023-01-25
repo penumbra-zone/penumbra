@@ -136,6 +136,12 @@ async fn main() -> Result<()> {
         }
         Command::Validator(cmd) => cmd.exec(&mut app).await?,
         Command::Query(cmd) => cmd.exec(&mut app).await?,
+        Command::TxDecode { hex } => {
+            let bytes = hex::decode(hex)?;
+            use penumbra_proto::Protobuf;
+            let tx = penumbra_transaction::Transaction::decode(&bytes[..])?;
+            println!("{:?}", tx);
+        }
     }
 
     Ok(())

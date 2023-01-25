@@ -45,6 +45,8 @@ pub enum Command {
     /// Manage a validator.
     #[clap(subcommand, display_order = 998)]
     Validator(ValidatorCmd),
+    /// test
+    TxDecode { hex: String },
 }
 
 impl Command {
@@ -56,6 +58,7 @@ impl Command {
             Command::Keys(cmd) => cmd.offline(),
             Command::Validator(cmd) => cmd.offline(),
             Command::Query(_) => false,
+            Command::TxDecode { .. } => false,
         }
     }
 }

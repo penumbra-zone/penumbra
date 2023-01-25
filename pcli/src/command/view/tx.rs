@@ -6,6 +6,7 @@ use penumbra_crypto::{
     keys::{AddressIndex, IncomingViewingKey},
     Address, FullViewingKey, Note, Value,
 };
+use penumbra_proto::Protobuf;
 use penumbra_transaction::{
     action::{Swap, SwapClaim},
     view::action_view::{OutputView, SpendView, SwapClaimView, SwapView},
@@ -20,6 +21,9 @@ pub struct TxCmd {
     /// If set, print the raw transaction view rather than a formatted table.
     #[clap(long)]
     raw: bool,
+    /// test
+    #[clap(long)]
+    raw_hex: bool,
 }
 
 fn format_visible_swap_row(asset_cache: &Cache, swap: &SwapPlaintext) -> String {
@@ -193,6 +197,10 @@ impl TxCmd {
             .ok_or_else(|| {
                 anyhow::anyhow!("transaction {} not found in view service", self.hash,)
             })?;
+        if self.raw_hex {
+            println!("{}", hex::encode(&tx.encode_to_vec()));
+            return Ok(());
+        }
         // Retrieve full TxP
         let txp = view.transaction_perspective(self.hash.parse()?).await?;
         // Generate TxV using TxP
