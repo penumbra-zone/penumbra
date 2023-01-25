@@ -246,6 +246,13 @@ message PositionState {
   PositionStateEnum state = 1;
 }
 
+// The data recorded about a position on-chain.
+message PositionMetadata {
+  Position position = 1;
+  PositionState state = 2;
+  Reserves reserves = 3;
+}
+
 // An LPNFT tracking both ownership and state of a position.
 //
 // Tracking the state as part of the LPNFT means that all LP-related actions can

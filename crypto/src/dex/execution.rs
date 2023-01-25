@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 pub struct Path {
     pair: DirectedTradingPair,
     route: Vec<asset::Id>,
+    // TODO: replace with BareTradingFunction so as not to duplicate the trading pair?
     phi: TradingFunction,
 }
 
