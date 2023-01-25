@@ -542,3 +542,24 @@ pub struct Path {
     #[prost(message, optional, tag = "3")]
     pub phi: ::core::option::Option<TradingFunction>,
 }
+/// A path and the amount of the assets on either side that were traded.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Trade {
+    /// The path taken by the trade.
+    #[prost(message, optional, tag = "1")]
+    pub path: ::core::option::Option<Path>,
+    /// The amount of the start asset being traded.
+    #[prost(message, optional, tag = "2")]
+    pub start_amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
+    /// The amount of end asset being received.
+    #[prost(message, optional, tag = "3")]
+    pub end_amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
+}
+/// Contains the entire execution of a particular swap.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SwapExecution {
+    #[prost(message, repeated, tag = "1")]
+    pub trades: ::prost::alloc::vec::Vec<Trade>,
+}

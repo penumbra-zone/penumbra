@@ -77,10 +77,8 @@ service ViewProtocolService {
 
   // Query for the transaction perspective of the given transaction
   rpc TransactionPerspective(TransactionPerspectiveRequest) returns (TransactionPerspectiveResponse);
-}
 
-service PlannerService {
-  rpc Planner(PlannerRequest) returns (PlannerResponse);
+  rpc TransactionPlanner(PlannerRequest) returns (PlannerResponse);
 }
 
 message PlannerRequest {
