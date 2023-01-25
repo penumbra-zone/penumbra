@@ -12,4 +12,5 @@ Each time you regenerate the parameters, increment the version of the
 `penumbra-proof-params` crate.
 
 To add a _new_ circuit to the parameter setup, you should modify `src/main.rs`
-before running `cargo run`.
+before running `cargo run`. Then edit `penumbra-proof-params` to reference
+the new paramters.
