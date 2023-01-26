@@ -1,22 +1,21 @@
-use anyhow::{Context, Result};
+//! Methods and types used for generating testnet configurations.
+//! Mostly relevant until Penumbra reaches mainnet.
+use anyhow::Context;
 use directories::UserDirs;
-use penumbra_chain::genesis::{self, AppState};
+use penumbra_chain::genesis::AppState;
 use penumbra_crypto::{
     keys::{SpendKey, SpendKeyBytes},
     rdsa::{SigningKey, SpendAuth, VerificationKey},
-    Address,
 };
 use penumbra_wallet::KeyStore;
 use rand::Rng;
 use rand_core::OsRng;
 use regex::{Captures, Regex};
-use serde::{de, Deserialize};
+use serde::Deserialize;
 use std::{
     env::current_dir,
-    fmt,
     fs::{self, File},
-    io::{Read, Write},
-    net::{IpAddr, SocketAddr},
+    io::Write,
     path::PathBuf,
     str::FromStr,
 };
@@ -25,25 +24,8 @@ use tendermint_config::{
     net::Address as TendermintAddress, NodeKey, PrivValidatorKey, TendermintConfig,
 };
 
-/// Methods and types used for generating testnet configurations.
-
-pub fn parse_allocations(input: impl Read) -> Result<Vec<genesis::Allocation>> {
-    let mut rdr = csv::Reader::from_reader(input);
-    let mut res = vec![];
-    for (line, result) in rdr.deserialize().enumerate() {
-        let record: TestnetAllocation = result?;
-        let record: genesis::Allocation = record
-            .try_into()
-            .with_context(|| format!("invalid address in entry {} of allocations file", line))?;
-        res.push(record);
-    }
-
-    Ok(res)
-}
-
-pub fn parse_validators(input: impl Read) -> Result<Vec<TestnetValidator>> {
-    Ok(serde_json::from_reader(input)?)
-}
+pub mod generate;
+pub mod join;
 
 /// Use a hard-coded Tendermint config as a base template, substitute
 /// values via a typed interface, and rerender as TOML.
@@ -64,7 +46,7 @@ pub fn generate_tm_config(
     Ok(toml::to_string(&tm_config)?)
 }
 
-/// Construct a [tendermint_config::net::Address] from a `node_id` and `node_address`.
+/// Construct a [`tendermint_config::net::Address`] from an optional node [`Id`] and `node_address`.
 /// The `node_address` can be an IP address or a hostname. Supports custom ports, defaulting
 /// to 26656 if not specified.
 pub fn parse_tm_address(
@@ -79,73 +61,6 @@ pub fn parse_tm_address(
     match node_id {
         Some(id) => Ok(format!("{}@{}", id, node).parse()?),
         None => Ok(node.to_string().parse()?),
-    }
-}
-
-/// Query the Tendermint node's RPC endpoint and return a list of all known peers
-/// by their `external_address`es. Omits private/special addresses like `localhost`
-/// or `0.0.0.0`.
-pub async fn fetch_peers(
-    node_address: &TendermintAddress,
-) -> anyhow::Result<Vec<TendermintAddress>> {
-    let hostname = match node_address {
-        TendermintAddress::Tcp { host, .. } => host,
-        _ => {
-            return Err(anyhow::anyhow!(
-                "Only TCP addresses are supported for Tendermint nodes in Penumbra"
-            ))
-        }
-    };
-    let client = reqwest::Client::new();
-    let net_info_peers = client
-        .get(format!("http://{}:26657/net_info", hostname))
-        .send()
-        .await?
-        .json::<serde_json::Value>()
-        .await?
-        .get("result")
-        .and_then(|v| v.get("peers"))
-        .and_then(|v| v.as_array())
-        .cloned()
-        .unwrap_or_default();
-
-    let mut peers = Vec::new();
-    for raw_peer in net_info_peers {
-        let node_id: tendermint::node::Id = raw_peer
-            .get("node_info")
-            .and_then(|v| v.get("id"))
-            .and_then(|v| serde_json::value::from_value(v.clone()).ok())
-            .ok_or_else(|| anyhow::anyhow!("Could not parse node_info.id from JSON response"))?;
-
-        let listen_addr = raw_peer
-            .get("node_info")
-            .and_then(|v| v.get("listen_addr"))
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| {
-                anyhow::anyhow!("Could not parse node_info.listen_addr from JSON response")
-            })?;
-
-        // Filter out addresses that are obviously not external addresses.
-        if !address_could_be_external(listen_addr) {
-            continue;
-        }
-
-        let peer_tm_address = parse_tm_address(Some(&node_id), listen_addr)?;
-        peers.push(peer_tm_address);
-    }
-    Ok(peers)
-}
-
-/// Check whether IP address spec is likely to be externally-accessible.
-/// Filters out RFC1918 and loopback addresses.
-fn address_could_be_external(address: &str) -> bool {
-    let addr = address.parse::<SocketAddr>().ok();
-    match addr {
-        Some(a) => match a.ip() {
-            IpAddr::V4(ip) => !(ip.is_private() || ip.is_loopback() || ip.is_unspecified()),
-            IpAddr::V6(ip) => !(ip.is_loopback() || ip.is_unspecified()),
-        },
-        _ => false,
     }
 }
 
@@ -223,77 +138,6 @@ impl ValidatorKeys {
     }
 }
 
-fn string_u64<'de, D>(deserializer: D) -> Result<u64, D::Error>
-where
-    D: de::Deserializer<'de>,
-{
-    struct U64StringVisitor;
-
-    impl<'de> de::Visitor<'de> for U64StringVisitor {
-        type Value = u64;
-
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("a string containing a u64 with optional underscores")
-        }
-
-        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-        where
-            E: de::Error,
-        {
-            let r = v.replace('_', "");
-            r.parse::<u64>().map_err(E::custom)
-        }
-
-        fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
-        where
-            E: de::Error,
-        {
-            Ok(v)
-        }
-    }
-
-    deserializer.deserialize_any(U64StringVisitor)
-}
-
-/// Represents initial allocations to the testnet.
-#[derive(Debug, Deserialize)]
-pub struct TestnetAllocation {
-    #[serde(deserialize_with = "string_u64")]
-    pub amount: u64,
-    pub denom: String,
-    pub address: String,
-}
-
-/// Represents a funding stream within a testnet configuration file.
-#[derive(Debug, Deserialize)]
-pub struct TestnetFundingStream {
-    pub rate_bps: u16,
-    pub address: String,
-}
-
-/// Represents testnet validators in configuration files.
-#[derive(Debug, Deserialize)]
-pub struct TestnetValidator {
-    pub name: String,
-    pub website: String,
-    pub description: String,
-    pub funding_streams: Vec<TestnetFundingStream>,
-    pub sequence_number: u32,
-}
-
-impl TryFrom<TestnetAllocation> for genesis::Allocation {
-    type Error = anyhow::Error;
-
-    fn try_from(a: TestnetAllocation) -> anyhow::Result<genesis::Allocation> {
-        Ok(genesis::Allocation {
-            amount: a.amount,
-            denom: a.denom.clone(),
-            address: Address::from_str(&a.address)
-                .context("invalid address format in genesis allocations")?,
-        })
-    }
-}
-
 #[derive(Deserialize)]
 pub struct TendermintNodeKey {
     pub id: String,
@@ -305,17 +149,6 @@ pub struct TendermintPrivKey {
     #[serde(rename(serialize = "type"))]
     pub key_type: String,
     pub value: PrivateKey,
-}
-
-// Easiest to hardcode since we never change these.
-pub fn get_validator_state() -> String {
-    r#"{
-    "height": "0",
-    "round": 0,
-    "step": 0
-}
-"#
-    .to_string()
 }
 
 /// Expand tildes in a path.
@@ -340,6 +173,7 @@ pub fn canonicalize_path(input: &str) -> PathBuf {
     }
 }
 
+/// Create local config files for `pd` and `tendermint`.
 pub fn write_configs(
     node_dir: PathBuf,
     vk: &ValidatorKeys,
@@ -432,4 +266,25 @@ pub fn write_configs(
         .write_all(serde_json::to_string_pretty(&validator_wallet)?.as_bytes())?;
 
     Ok(())
+}
+
+// Easiest to hardcode since we never change these.
+pub fn get_validator_state() -> String {
+    r#"{
+    "height": "0",
+    "round": 0,
+    "step": 0
+}
+"#
+    .to_string()
+}
+
+/// Convert an optional CLI arg into a [`PathBuf`], defaulting to
+/// `~/.penumbra/testnet_data`.
+pub fn get_testnet_dir(testnet_dir: Option<PathBuf>) -> PathBuf {
+    // By default output directory will be in `~/.penumbra/testnet_data/`
+    match testnet_dir {
+        Some(o) => o,
+        None => canonicalize_path("~/.penumbra/testnet_data"),
+    }
 }
