@@ -10,8 +10,10 @@ use camino::Utf8Path;
 use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_crypto::{
     asset,
+    dex::{swap::SwapPlaintext, TradingPair},
     keys::{AccountID, AddressIndex, FullViewingKey},
-    Amount,
+    transaction::Fee,
+    Address, Amount, Value,
 };
 use penumbra_proto::{
     client::v1alpha1::{
@@ -21,11 +23,15 @@ use penumbra_proto::{
     view::v1alpha1::{
         self as pb, view_protocol_service_server::ViewProtocolService, ChainParametersResponse,
         FmdParametersResponse, NoteByCommitmentResponse, StatusResponse, SwapByCommitmentResponse,
-        TransactionHashesResponse, TransactionsResponse, WitnessResponse,
+        TransactionHashesResponse, TransactionPlannerResponse, TransactionsResponse,
+        WitnessResponse,
     },
 };
 use penumbra_tct::{Commitment, Proof};
-use penumbra_transaction::{plan::TransactionPlan, TransactionPerspective, WitnessData};
+use penumbra_transaction::{
+    plan::{OutputPlan, SwapPlan, TransactionPlan},
+    TransactionPerspective, WitnessData,
+};
 use rand_core::OsRng;
 use tokio::sync::{watch, RwLock};
 use tokio_stream::wrappers::WatchStream;
@@ -223,6 +229,186 @@ impl ViewProtocolService for ViewService {
     type BalanceByAddressStream = Pin<
         Box<dyn futures::Stream<Item = Result<pb::BalanceByAddressResponse, tonic::Status>> + Send>,
     >;
+
+    async fn transaction_planner(
+        &self,
+        request: tonic::Request<pb::TransactionPlannerRequest>,
+    ) -> Result<tonic::Response<pb::TransactionPlannerResponse>, tonic::Status> {
+        let prq = request.into_inner();
+
+        let chain_params = self.storage.chain_params().await.map_err(|e| {
+            tonic::Status::unavailable(format!("Could not retrieve chain id: {:#}", e))
+        })?;
+
+        let fee = match prq.fee {
+            Some(x) => x,
+            None => Fee::default().into(),
+        }
+        .try_into()
+        .map_err(|e| tonic::Status::invalid_argument(format!("Could not parse fee: {:#}", e)))?;
+
+        let mut plan = TransactionPlan {
+            actions: Vec::new(),
+            expiry_height: prq.expiry_height,
+            chain_id: chain_params.chain_id,
+            fee,
+            clue_plans: Vec::new(),
+            memo_plan: None,
+        };
+
+        for output in prq.outputs {
+            let address: penumbra_crypto::Address = output
+                .address
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing address"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse address: {:#}", e))
+                })?;
+
+            let value: penumbra_crypto::Value = output
+                .value
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing value"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse value: {:#}", e))
+                })?;
+
+            let output = OutputPlan::new(&mut OsRng, value, address).into();
+
+            plan.actions.push(output);
+        }
+
+        for swap in prq.swaps {
+            let fee: Fee = match swap.fee {
+                Some(x) => x,
+                None => Fee::default().into(),
+            }
+            .try_into()
+            .map_err(|e| {
+                tonic::Status::invalid_argument(format!("Could not parse swap fee: {:#}", e))
+            })?;
+
+            let target_asset: asset::Id = swap
+                .target_asset
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing swap asset"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse swap asset: {:#}", e))
+                })?;
+
+            let value: Value = swap
+                .value
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing swap value"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse swap value: {:#}", e))
+                })?;
+
+            // Determine the canonical order for the assets being swapped.
+            // This will determine whether the input amount is assigned to delta_1 or delta_2.
+            let trading_pair = TradingPair::new(value.asset_id.into(), target_asset);
+
+            // If `trading_pair.asset_1` is the input asset, then `delta_1` is the input amount,
+            // and `delta_2` is 0.
+            //
+            // Otherwise, `delta_1` is 0, and `delta_2` is the input amount.
+            let (delta_1, delta_2) = if trading_pair.asset_1() == value.asset_id {
+                (value.amount, 0u64.into())
+            } else {
+                (0u64.into(), value.amount)
+            };
+
+            // If there is no input, then there is no swap.
+            if delta_1 == Amount::zero() && delta_2 == Amount::zero() {
+                return Err(tonic::Status::invalid_argument("Missing swap value"));
+            }
+
+            let claim_address = Address::dummy(&mut OsRng); // TODO: where to source this for real?
+
+            // Create the `SwapPlaintext` representing the swap to be performed:
+            let swap_plaintext = SwapPlaintext::new(
+                &mut OsRng,
+                trading_pair,
+                delta_1,
+                delta_2,
+                fee,
+                claim_address,
+            );
+
+            let swap = SwapPlan::new(&mut OsRng, swap_plaintext).into();
+
+            plan.actions.push(swap);
+        }
+
+        for _delegation in prq.delegations {
+            // let amount = delegation
+            //     .amount
+            //     .ok_or_else(|| tonic::Status::invalid_argument("Missing delegation amount"))?
+            //     .try_into()
+            //     .map_err(|e| {
+            //         tonic::Status::invalid_argument(format!(
+            //             "Could not parse delegation amount: {:#}",
+            //             e
+            //         ))
+            //     })?;
+
+            // let idk = delegation
+            //     .identity_key
+            //     .ok_or_else(|| tonic::Status::invalid_argument("Missing identity key"))?
+            //     .try_into()
+            //     .map_err(|e| {
+            //         tonic::Status::invalid_argument(format!(
+            //             "Could not parse delegation amount: {:#}",
+            //             e
+            //         ))
+            //     })?;
+
+            // let delegation = Delegate {
+            //     delegation_amount: amount.into(),
+            //     epoch_index,     //TODO: where to source?
+            //     unbonded_amount, //TODO: where to source?
+            //     validator_identity: idk,
+            // };
+
+            // plan.actions.push(delegation.into());
+
+            return Err(tonic::Status::unimplemented(
+                "Delegations are not yet implemented, sorry!",
+            ));
+        }
+
+        for _undelegation in prq.undelegations {
+            // let value: Value = undelegation
+            //     .value
+            //     .ok_or_else(|| tonic::Status::invalid_argument("Missing undelegation value"))?
+            //     .try_into()
+            //     .map_err(|e| {
+            //         tonic::Status::invalid_argument(format!(
+            //             "Could not parse undelegation value: {:#}",
+            //             e
+            //         ))
+            //     })?;
+
+            //TODO: does the undelegate need additiopnal fields to accomplish this?
+            // let undelegation = Undelegate {
+            //     validator_identity,
+            //     start_epoch_index,
+            //     end_epoch_index,
+            //     unbonded_amount,
+            //     delegation_amount,
+            // };
+
+            // plan.actions.push(undelegation.into());
+
+            return Err(tonic::Status::unimplemented(
+                "Undelegations are not yet implemented, sorry!",
+            ));
+        }
+
+        Ok(tonic::Response::new(TransactionPlannerResponse {
+            plan: Some(plan.into()),
+        }))
+    }
 
     async fn address_by_index(
         &self,
