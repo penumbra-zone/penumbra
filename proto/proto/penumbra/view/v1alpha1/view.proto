@@ -77,13 +77,13 @@ service ViewProtocolService {
 
   // Query for the transaction perspective of the given transaction
   rpc TransactionPerspective(TransactionPerspectiveRequest) returns (TransactionPerspectiveResponse);
+  
+  // Query for a transaction plan
+  rpc TransactionPlanner(TransactionPlannerRequest) returns (TransactionPlannerResponse);
 }
 
-service PlannerService {
-  rpc Planner(PlannerRequest) returns (PlannerResponse);
-}
 
-message PlannerRequest {
+message TransactionPlannerRequest {
     // The expiry height for the requested TransactionPlan
     uint64 expiry_height = 1;
     // The fee for the requested TransactionPlan, if any.
@@ -120,7 +120,7 @@ message PlannerRequest {
   }
 }
 
-message PlannerResponse {
+message TransactionPlannerResponse {
   core.transaction.v1alpha1.TransactionPlan plan = 1;
 }
 
