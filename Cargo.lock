@@ -3409,7 +3409,6 @@ dependencies = [
  "serde",
  "sha2 0.9.9",
  "tendermint",
- "tonic",
  "tracing",
 ]
 

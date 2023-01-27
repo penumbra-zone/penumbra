@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
@@ -77,18 +77,19 @@ pub trait StateReadExt: StateRead {
     ///
     /// Passes through if the provided chain_id is empty or matches, and
     /// otherwise errors.
-    async fn check_chain_id(&self, provided: &str) -> Result<(), tonic::Status> {
+    async fn check_chain_id(&self, provided: &str) -> Result<()> {
         let chain_id = self
             .get_chain_id()
             .await
-            .map_err(|e| tonic::Status::unavailable(format!("error getting chain id: {}", e)))?;
+            .context(format!("error getting chain id: {}", provided))?;
         if provided.is_empty() || provided == chain_id {
             Ok(())
         } else {
-            Err(tonic::Status::failed_precondition(format!(
+            Err(anyhow::anyhow!(
                 "provided chain_id {} does not match chain_id {}",
-                provided, chain_id
-            )))
+                provided,
+                chain_id
+            ))
         }
     }
 
