@@ -52,7 +52,12 @@ impl SpecificQueryService for Info {
         request: tonic::Request<KeyValueRequest>,
     ) -> Result<tonic::Response<KeyValueResponse>, Status> {
         let state = self.storage.latest_state();
-        state.check_chain_id(&request.get_ref().chain_id).await?;
+        // We map the error here to avoid including `tonic` as a dependency
+        // in the `chain` crate, to support its compilation to wasm.
+        state
+            .check_chain_id(&request.get_ref().chain_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {}", e)))?;
 
         let request = request.into_inner();
         tracing::debug!(?request);
@@ -92,8 +97,10 @@ impl SpecificQueryService for Info {
         request: tonic::Request<PrefixValueRequest>,
     ) -> Result<tonic::Response<Self::PrefixValueStream>, Status> {
         let state = self.storage.latest_state();
-        state.check_chain_id(&request.get_ref().chain_id).await?;
-
+        state
+            .check_chain_id(&request.get_ref().chain_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {}", e)))?;
         let request = request.into_inner();
         tracing::debug!(?request);
 
@@ -132,7 +139,10 @@ impl SpecificQueryService for Info {
         request: tonic::Request<AssetInfoRequest>,
     ) -> Result<tonic::Response<AssetInfoResponse>, Status> {
         let state = self.storage.latest_state();
-        state.check_chain_id(&request.get_ref().chain_id).await?;
+        state
+            .check_chain_id(&request.get_ref().chain_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {}", e)))?;
 
         let request = request.into_inner();
         let id: asset::Id = request
@@ -192,7 +202,10 @@ impl SpecificQueryService for Info {
         request: tonic::Request<ValidatorStatusRequest>,
     ) -> Result<tonic::Response<ValidatorStatusResponse>, Status> {
         let state = self.storage.latest_state();
-        state.check_chain_id(&request.get_ref().chain_id).await?;
+        state
+            .check_chain_id(&request.get_ref().chain_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {}", e)))?;
 
         let id = request
             .into_inner()
@@ -218,7 +231,10 @@ impl SpecificQueryService for Info {
         request: tonic::Request<ValidatorPenaltyRequest>,
     ) -> Result<tonic::Response<ValidatorPenaltyResponse>, Status> {
         let state = self.storage.latest_state();
-        state.check_chain_id(&request.get_ref().chain_id).await?;
+        state
+            .check_chain_id(&request.get_ref().chain_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {}", e)))?;
 
         let request = request.into_inner();
         let id = request

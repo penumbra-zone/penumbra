@@ -71,7 +71,12 @@ impl ObliviousQueryService for Info {
         request: tonic::Request<ChainParametersRequest>,
     ) -> Result<tonic::Response<ChainParametersResponse>, Status> {
         let state = self.storage.latest_state();
-        state.check_chain_id(&request.get_ref().chain_id).await?;
+        // We map the error here to avoid including `tonic` as a dependency
+        // in the `chain` crate, to support its compilation to wasm.
+        state
+            .check_chain_id(&request.get_ref().chain_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {}", e)))?;
 
         let chain_params = state.get_chain_params().await.map_err(|e| {
             tonic::Status::unavailable(format!("error getting chain parameters: {}", e))
@@ -88,7 +93,10 @@ impl ObliviousQueryService for Info {
         request: tonic::Request<MutableParametersRequest>,
     ) -> Result<tonic::Response<Self::MutableParametersStream>, Status> {
         let state = self.storage.latest_state();
-        state.check_chain_id(&request.get_ref().chain_id).await?;
+        state
+            .check_chain_id(&request.get_ref().chain_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {}", e)))?;
 
         let mutable_params = MutableParam::iter();
 
@@ -119,7 +127,10 @@ impl ObliviousQueryService for Info {
         request: tonic::Request<AssetListRequest>,
     ) -> Result<tonic::Response<AssetListResponse>, Status> {
         let state = self.storage.latest_state();
-        state.check_chain_id(&request.get_ref().chain_id).await?;
+        state
+            .check_chain_id(&request.get_ref().chain_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {}", e)))?;
 
         let known_assets = state.known_assets().await.map_err(|e| {
             tonic::Status::unavailable(format!("error getting known assets: {}", e))
@@ -135,7 +146,10 @@ impl ObliviousQueryService for Info {
         request: tonic::Request<ValidatorInfoRequest>,
     ) -> Result<tonic::Response<Self::ValidatorInfoStream>, Status> {
         let state = self.storage.latest_state();
-        state.check_chain_id(&request.get_ref().chain_id).await?;
+        state
+            .check_chain_id(&request.get_ref().chain_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {}", e)))?;
 
         let validators = state
             .validator_list()
@@ -182,7 +196,10 @@ impl ObliviousQueryService for Info {
         request: tonic::Request<CompactBlockRangeRequest>,
     ) -> Result<tonic::Response<Self::CompactBlockRangeStream>, Status> {
         let state = self.storage.latest_state();
-        state.check_chain_id(&request.get_ref().chain_id).await?;
+        state
+            .check_chain_id(&request.get_ref().chain_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {}", e)))?;
 
         let CompactBlockRangeRequest {
             start_height,
