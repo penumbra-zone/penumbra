@@ -4,6 +4,9 @@
 //! software key management system that can perform basic policy-based
 //! authorization or blind signing.
 
+#[macro_use]
+extern crate serde_with;
+
 mod client;
 mod pre_auth;
 mod request;
