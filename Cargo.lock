@@ -3308,6 +3308,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tokio-util 0.6.10",
+ "toml 0.4.10",
  "tonic",
  "tower",
  "tracing",
@@ -3377,7 +3378,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tokio-util 0.7.4",
- "toml",
+ "toml 0.5.11",
  "tonic",
  "tonic-web",
  "tower",
@@ -3483,6 +3484,7 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
+ "serde_with 2.2.0",
  "sha2 0.9.9",
  "tempfile",
  "tendermint",
@@ -3563,7 +3565,7 @@ dependencies = [
  "serde_json",
  "serde_with 2.2.0",
  "tokio",
- "toml",
+ "toml 0.5.11",
  "tonic",
  "tracing",
  "vergen",
@@ -5317,7 +5319,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tendermint",
- "toml",
+ "toml 0.5.11",
  "url",
 ]
 
@@ -5626,6 +5628,15 @@ dependencies = [
  "slab",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "toml"
+version = "0.4.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "758664fc71a3a69038656bee8b6be6477d2a6c315a6b81f7081f591bffa4111f"
+dependencies = [
+ "serde",
 ]
 
 [[package]]

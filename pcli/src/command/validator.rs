@@ -1,7 +1,14 @@
-use std::{fs::File, io::Write};
+use std::{
+    fs::File,
+    io::{Read, Write},
+};
 
 use anyhow::{Context, Result};
-use penumbra_component::stake::{validator, validator::Validator, FundingStream, FundingStreams};
+use penumbra_component::stake::{
+    validator,
+    validator::{Validator, ValidatorToml},
+    FundingStream, FundingStreams,
+};
 use penumbra_crypto::{stake::IdentityKey, transaction::Fee, GovernanceKey};
 use penumbra_proto::{core::stake::v1alpha1::Validator as ProtoValidator, Message, Protobuf};
 use penumbra_transaction::action::{ValidatorVote, ValidatorVoteBody, Vote};
@@ -99,10 +106,17 @@ impl ValidatorCmd {
                 //
                 // We could also support defining multiple validators in a single
                 // file.
-                let definition_file =
+                let mut definition_file =
                     File::open(file).with_context(|| format!("cannot open file {:?}", file))?;
-                let new_validator: Validator = serde_json::from_reader(definition_file)
-                    .map_err(|_| anyhow::anyhow!("Unable to parse validator definition"))?;
+                let mut definition: String = String::new();
+                definition_file
+                    .read_to_string(&mut definition)
+                    .with_context(|| format!("failed to read file {:?}", file))?;
+                let new_validator: ValidatorToml =
+                    toml::from_str(&definition).context("Unable to parse validator definition")?;
+                let new_validator: Validator = new_validator
+                    .try_into()
+                    .context("Unable to parse validator definition")?;
                 let fee = Fee::from_staking_token_amount((*fee).into());
 
                 // Sign the validator definition with the wallet's spend key.
@@ -196,7 +210,7 @@ impl ValidatorCmd {
 
                 let consensus_key = tendermint::PrivateKey::Ed25519(consensus_key).public_key();
 
-                let template = Validator {
+                let template: ValidatorToml = Validator {
                     identity_key,
                     governance_key,
                     consensus_key,
@@ -211,15 +225,16 @@ impl ValidatorCmd {
                         rate_bps: 100,
                     }])?,
                     sequence_number: 0,
-                };
+                }
+                .into();
 
                 if let Some(file) = file {
                     File::create(file)
                         .with_context(|| format!("cannot create file {:?}", file))?
-                        .write_all(&serde_json::to_vec_pretty(&template)?)
+                        .write_all(toml::to_string_pretty(&template)?.as_bytes())
                         .context("could not write file")?;
                 } else {
-                    println!("{}", serde_json::to_string_pretty(&template)?);
+                    println!("{}", toml::to_string_pretty(&template)?);
                 }
             }
             ValidatorCmd::Definition(DefinitionCmd::Fetch { file }) => {

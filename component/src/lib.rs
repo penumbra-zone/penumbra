@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate serde_with;
+
 use async_trait::async_trait;
 use penumbra_chain::genesis;
 use penumbra_storage::StateTransaction;
