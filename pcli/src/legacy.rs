@@ -44,8 +44,8 @@ pub struct ClientState {
 
 /// A legacy wallet file.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(from = "serde_helpers::WalletHelper")]
-#[serde(into = "serde_helpers::WalletHelper")]
+#[serde(from = "serde_helpers::WalletHelper")] // Deserialize from legacy format
+#[serde(into = "penumbra_custody::soft_kms::Config")] // Serialize into non-legacy format
 pub struct LegacyWallet {
     pub spend_key: SpendKey,
 }
@@ -71,10 +71,11 @@ mod serde_helpers {
         }
     }
 
-    impl From<LegacyWallet> for WalletHelper {
+    impl From<LegacyWallet> for penumbra_custody::soft_kms::Config {
         fn from(w: LegacyWallet) -> Self {
-            Self {
-                spend_seed: w.spend_key.to_bytes().0,
+            penumbra_custody::soft_kms::Config {
+                spend_key: w.spend_key,
+                auth_policy: Default::default(),
             }
         }
     }
