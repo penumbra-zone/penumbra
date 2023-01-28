@@ -29,21 +29,25 @@ pub enum Vote {
 impl FromStr for Vote {
     type Err = anyhow::Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let pb_vote = pb::vote::Vote::from_str(s)?;
-        let vote = pb::Vote {
-            vote: pb_vote as i32,
+    fn from_str(s: &str) -> anyhow::Result<Vote> {
+        match s.replace(['-', '_', ' '], "").to_lowercase().as_str() {
+            "yes" | "y" => Ok(Vote::Yes),
+            "no" | "n" => Ok(Vote::No),
+            "abstain" | "a" => Ok(Vote::Abstain),
+            "veto" | "noveto" | "nowithveto" | "v" => Ok(Vote::NoWithVeto),
+            _ => Err(anyhow::anyhow!("invalid vote: {}", s)),
         }
-        .try_into()?;
-        Ok(vote)
     }
 }
 
 impl Display for Vote {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        pb::vote::Vote::from_i32(pb::Vote::from(*self).vote)
-            .unwrap()
-            .fmt(f)
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), fmt::Error> {
+        match self {
+            Vote::Yes => write!(f, "yes"),
+            Vote::No => write!(f, "no"),
+            Vote::Abstain => write!(f, "abstain"),
+            Vote::NoWithVeto => write!(f, "no_with_veto"),
+        }
     }
 }
 

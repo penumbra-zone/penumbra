@@ -5,5 +5,3 @@
 //! the serializers are adapted from that code.
 
 pub mod bech32str;
-
-pub mod vote;
