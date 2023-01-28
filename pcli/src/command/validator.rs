@@ -228,13 +228,36 @@ impl ValidatorCmd {
                 }
                 .into();
 
+                let template_str = format!(
+                    "# This is a template for a validator definition.
+#
+# The identity_key and governance_key fields are auto-filled with values derived
+# from this wallet's account.
+#
+# The consensus_key field is random, and needs to be replaced with your
+# tendermint instance's public key, which can be found in
+# `priv_validator_key.json`.
+#
+# You should fill in the name, website, and description fields.
+#
+# By default, validators are disabled, and cannot be delegated to. To change
+# this, set `enabled = true`.
+#
+# Every time you upload a new validator config, you'll need to increment the
+# `sequence_number`.
+
+{}
+",
+                    toml::to_string_pretty(&template)?
+                );
+
                 if let Some(file) = file {
                     File::create(file)
                         .with_context(|| format!("cannot create file {:?}", file))?
-                        .write_all(toml::to_string_pretty(&template)?.as_bytes())
+                        .write_all(template_str.as_bytes())
                         .context("could not write file")?;
                 } else {
-                    println!("{}", toml::to_string_pretty(&template)?);
+                    println!("{}", &template_str);
                 }
             }
             ValidatorCmd::Definition(DefinitionCmd::Fetch { file }) => {
