@@ -1,9 +1,12 @@
 use penumbra_crypto::keys::{SeedPhrase, SpendKey};
 use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, DisplayFromStr};
 
 /// A wallet file storing a single spend authority.
+#[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KeyStore {
+    #[serde_as(as = "DisplayFromStr")]
     pub spend_key: SpendKey,
 }
 
