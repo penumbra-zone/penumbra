@@ -14,7 +14,7 @@ pub struct Plan {
     /// The time after which the upgrade must be performed.
     /// Leave set to its zero value to use a pre-defined Height instead.
     #[prost(message, optional, tag = "2")]
-    pub time: ::core::option::Option<::prost_types::Timestamp>,
+    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
     /// The height at which the upgrade must be performed.
     /// Only used if Time is not set.
     #[prost(int64, tag = "3")]

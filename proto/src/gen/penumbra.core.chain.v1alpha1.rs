@@ -1,5 +1,4 @@
 /// Global chain configuration data, such as chain ID, epoch duration, etc.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ChainParameters {
@@ -64,7 +63,6 @@ pub struct ChainParameters {
     pub proposal_veto_threshold: ::core::option::Option<Ratio>,
 }
 /// The ratio between two numbers, used in governance to describe vote thresholds and quorums.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Ratio {
@@ -76,7 +74,6 @@ pub struct Ratio {
     pub denominator: u64,
 }
 /// Parameters for Fuzzy Message Detection
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FmdParameters {
@@ -101,7 +98,6 @@ pub struct AssetInfo {
     pub total_supply: u64,
 }
 /// Contains the minimum data needed to update client state.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CompactBlock {
@@ -131,7 +127,6 @@ pub struct CompactBlock {
         super::super::dex::v1alpha1::BatchSwapOutputData,
     >,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatePayload {
@@ -140,7 +135,6 @@ pub struct StatePayload {
 }
 /// Nested message and enum types in `StatePayload`.
 pub mod state_payload {
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct RolledUp {
@@ -149,7 +143,6 @@ pub mod state_payload {
             super::super::super::crypto::v1alpha1::StateCommitment,
         >,
     }
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Note {
@@ -160,7 +153,6 @@ pub mod state_payload {
             super::super::super::crypto::v1alpha1::EncryptedNote,
         >,
     }
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Swap {
@@ -171,7 +163,6 @@ pub mod state_payload {
             super::super::super::dex::v1alpha1::SwapPayload,
         >,
     }
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum StatePayload {
@@ -183,8 +174,6 @@ pub mod state_payload {
         Swap(Swap),
     }
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(transparent)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct KnownAssets {
@@ -192,16 +181,12 @@ pub struct KnownAssets {
     pub assets: ::prost::alloc::vec::Vec<super::super::crypto::v1alpha1::Asset>,
 }
 /// A spicy transaction ID
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(transparent)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NoteSource {
     #[prost(bytes = "vec", tag = "1")]
-    #[serde(with = "crate::serializers::hexstr")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisAppState {
@@ -214,7 +199,6 @@ pub struct GenesisAppState {
 }
 /// Nested message and enum types in `GenesisAppState`.
 pub mod genesis_app_state {
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Allocation {

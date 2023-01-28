@@ -1,5 +1,4 @@
 /// Specifies fees paid by a transaction.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Fee {
@@ -11,22 +10,16 @@ pub struct Fee {
     #[prost(message, optional, tag = "2")]
     pub asset_id: ::core::option::Option<AssetId>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(transparent)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Address {
     #[prost(bytes = "vec", tag = "1")]
-    #[serde(with = "crate::serializers::bech32str::address")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(transparent)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SpendKey {
     #[prost(bytes = "vec", tag = "1")]
-    #[serde(with = "crate::serializers::bech32str::spend_key")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -35,70 +28,48 @@ pub struct SpendVerificationKey {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(transparent)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FullViewingKey {
     #[prost(bytes = "vec", tag = "1")]
-    #[serde(with = "crate::serializers::bech32str::full_viewing_key")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(transparent)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AccountId {
     #[prost(bytes = "vec", tag = "1")]
-    #[serde(with = "crate::serializers::hexstr")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(transparent)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Diversifier {
     #[prost(bytes = "vec", tag = "1")]
-    #[serde(with = "crate::serializers::hexstr")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(transparent)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AddressIndex {
     #[prost(bytes = "vec", tag = "1")]
-    #[serde(with = "crate::serializers::hexstr")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(transparent)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StateCommitment {
     #[prost(bytes = "vec", tag = "1")]
-    #[serde(with = "crate::serializers::hexstr")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(transparent)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BalanceCommitment {
     #[prost(bytes = "vec", tag = "1")]
-    #[serde(with = "crate::serializers::hexstr")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(transparent)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AssetId {
     #[prost(bytes = "vec", tag = "1")]
-    #[serde(with = "crate::serializers::bech32str::asset_id")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Amount {
@@ -107,15 +78,12 @@ pub struct Amount {
     #[prost(uint64, tag = "2")]
     pub hi: u64,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(transparent)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Denom {
     #[prost(string, tag = "1")]
     pub denom: ::prost::alloc::string::String,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Value {
@@ -124,16 +92,12 @@ pub struct Value {
     #[prost(message, optional, tag = "2")]
     pub asset_id: ::core::option::Option<AssetId>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(transparent)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MerkleRoot {
     #[prost(bytes = "vec", tag = "1")]
-    #[serde(with = "crate::serializers::hexstr")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Asset {
@@ -143,35 +107,25 @@ pub struct Asset {
     pub denom: ::core::option::Option<Denom>,
 }
 /// A validator's identity key (decaf377-rdsa spendauth verification key).
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(transparent)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct IdentityKey {
     #[prost(bytes = "vec", tag = "1")]
-    #[serde(with = "crate::serializers::bech32str::validator_identity_key")]
     pub ik: ::prost::alloc::vec::Vec<u8>,
 }
 /// A validator's governance key (decaf377-rdsa spendauth verification key).
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(transparent)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GovernanceKey {
     #[prost(bytes = "vec", tag = "1")]
-    #[serde(with = "crate::serializers::bech32str::validator_governance_key")]
     pub gk: ::prost::alloc::vec::Vec<u8>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(transparent)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConsensusKey {
     #[prost(bytes = "vec", tag = "1")]
-    #[serde(with = "crate::serializers::base64str")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Note {
@@ -182,22 +136,16 @@ pub struct Note {
     #[prost(message, optional, tag = "3")]
     pub address: ::core::option::Option<Address>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(transparent)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Nullifier {
     #[prost(bytes = "vec", tag = "1")]
-    #[serde(with = "crate::serializers::hexstr")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(transparent)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SpendAuthSignature {
     #[prost(bytes = "vec", tag = "1")]
-    #[serde(with = "crate::serializers::hexstr")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -208,7 +156,6 @@ pub struct BindingSignature {
 }
 /// The body of an output description, including only the minimal
 /// data required to scan and process the output.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EncryptedNote {
@@ -217,12 +164,10 @@ pub struct EncryptedNote {
     pub note_commitment: ::core::option::Option<StateCommitment>,
     /// The encoding of an ephemeral public key. 32 bytes.
     #[prost(bytes = "bytes", tag = "2")]
-    #[serde(with = "crate::serializers::hexstr_bytes")]
     pub ephemeral_key: ::prost::bytes::Bytes,
     /// An encryption of the newly created note.
     /// 132 = 1(type) + 11(d) + 8(amount) + 32(asset_id) + 32(rcm) + 32(pk_d) + 16(MAC) bytes.
     #[prost(bytes = "bytes", tag = "3")]
-    #[serde(with = "crate::serializers::hexstr_bytes")]
     pub encrypted_note: ::prost::bytes::Bytes,
 }
 /// An authentication path from a note commitment to the root of the note commitment tree.
@@ -249,17 +194,13 @@ pub struct MerklePathChunk {
     pub sibling_3: ::prost::alloc::vec::Vec<u8>,
 }
 /// A clue for use with Fuzzy Message Detection.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(transparent)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Clue {
     #[prost(bytes = "vec", tag = "1")]
-    #[serde(with = "crate::serializers::hexstr")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
 /// An authorization hash for a Penumbra transaction.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EffectHash {

@@ -1,5 +1,4 @@
 /// A Penumbra transaction.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Transaction {
@@ -7,7 +6,6 @@ pub struct Transaction {
     pub body: ::core::option::Option<TransactionBody>,
     /// The binding signature is stored separately from the transaction body that it signs.
     #[prost(bytes = "bytes", tag = "2")]
-    #[serde(with = "crate::serializers::hexstr_bytes")]
     pub binding_sig: ::prost::bytes::Bytes,
     /// The root of some previous state of the note commitment tree, used as an anchor for all
     /// ZK state transition proofs.
@@ -15,7 +13,6 @@ pub struct Transaction {
     pub anchor: ::core::option::Option<super::super::crypto::v1alpha1::MerkleRoot>,
 }
 /// The body of a transaction.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionBody {
@@ -43,7 +40,6 @@ pub struct TransactionBody {
     pub encrypted_memo: ::core::option::Option<::prost::bytes::Bytes>,
 }
 /// A state change performed by a transaction.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Action {
@@ -55,7 +51,6 @@ pub struct Action {
 }
 /// Nested message and enum types in `Action`.
 pub mod action {
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Action {
@@ -132,7 +127,6 @@ pub struct NullifierWithNote {
     #[prost(message, optional, tag = "2")]
     pub note: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionView {
@@ -160,7 +154,6 @@ pub struct TransactionView {
     pub memo: ::core::option::Option<::prost::alloc::string::String>,
 }
 /// A view of a specific state change action performed by a transaction.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ActionView {
@@ -172,7 +165,6 @@ pub struct ActionView {
 }
 /// Nested message and enum types in `ActionView`.
 pub mod action_view {
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum ActionView {
@@ -223,7 +215,6 @@ pub mod action_view {
         Ics20Withdrawal(super::super::super::ibc::v1alpha1::Ics20Withdrawal),
     }
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SpendView {
@@ -232,7 +223,6 @@ pub struct SpendView {
 }
 /// Nested message and enum types in `SpendView`.
 pub mod spend_view {
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Visible {
@@ -241,14 +231,12 @@ pub mod spend_view {
         #[prost(message, optional, tag = "2")]
         pub note: ::core::option::Option<super::super::super::crypto::v1alpha1::Note>,
     }
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Opaque {
         #[prost(message, optional, tag = "1")]
         pub spend: ::core::option::Option<super::Spend>,
     }
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum SpendView {
@@ -258,7 +246,6 @@ pub mod spend_view {
         Opaque(Opaque),
     }
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct OutputView {
@@ -267,7 +254,6 @@ pub struct OutputView {
 }
 /// Nested message and enum types in `OutputView`.
 pub mod output_view {
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Visible {
@@ -278,14 +264,12 @@ pub mod output_view {
         #[prost(bytes = "bytes", tag = "3")]
         pub payload_key: ::prost::bytes::Bytes,
     }
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Opaque {
         #[prost(message, optional, tag = "1")]
         pub output: ::core::option::Option<super::Output>,
     }
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum OutputView {
@@ -296,7 +280,6 @@ pub mod output_view {
     }
 }
 /// Spends a shielded note.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Spend {
@@ -310,13 +293,11 @@ pub struct Spend {
     >,
     /// The proof that the spend is well-formed is authorizing data.
     #[prost(bytes = "bytes", tag = "3")]
-    #[serde(with = "crate::serializers::base64str_bytes")]
     pub proof: ::prost::bytes::Bytes,
 }
 /// The body of a spend description, containing only the effecting data
 /// describing changes to the ledger, and not the authorizing data that allows
 /// those changes to be performed.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SpendBody {
@@ -327,15 +308,12 @@ pub struct SpendBody {
     >,
     /// The nullifier of the input note.
     #[prost(bytes = "bytes", tag = "3")]
-    #[serde(with = "crate::serializers::hexstr_bytes")]
     pub nullifier: ::prost::bytes::Bytes,
     /// The randomized validating key for the spend authorization signature.
     #[prost(bytes = "bytes", tag = "4")]
-    #[serde(with = "crate::serializers::hexstr_bytes")]
     pub rk: ::prost::bytes::Bytes,
 }
 /// Creates a new shielded note.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Output {
@@ -344,13 +322,11 @@ pub struct Output {
     pub body: ::core::option::Option<OutputBody>,
     /// The output proof is authorizing data.
     #[prost(bytes = "bytes", tag = "2")]
-    #[serde(with = "crate::serializers::base64str_bytes")]
     pub proof: ::prost::bytes::Bytes,
 }
 /// The body of an output description, containing only the effecting data
 /// describing changes to the ledger, and not the authorizing data that allows
 /// those changes to be performed.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct OutputBody {
@@ -366,16 +342,13 @@ pub struct OutputBody {
     >,
     /// An encrypted key for decrypting the memo.
     #[prost(bytes = "bytes", tag = "3")]
-    #[serde(with = "crate::serializers::base64str_bytes")]
     pub wrapped_memo_key: ::prost::bytes::Bytes,
     /// The key material used for note encryption, wrapped in encryption to the
     /// sender's outgoing viewing key. 80 bytes.
     #[prost(bytes = "bytes", tag = "4")]
-    #[serde(with = "crate::serializers::base64str_bytes")]
     pub ovk_wrapped_key: ::prost::bytes::Bytes,
 }
 /// The data required to authorize a transaction plan.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuthorizationData {
@@ -404,7 +377,6 @@ pub struct WitnessData {
     >,
 }
 /// Describes a planned transaction.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionPlan {
@@ -425,7 +397,6 @@ pub struct TransactionPlan {
 ///
 /// Some transaction Actions don't have any private data and are treated as being plans
 /// themselves.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ActionPlan {
@@ -437,7 +408,6 @@ pub struct ActionPlan {
 }
 /// Nested message and enum types in `ActionPlan`.
 pub mod action_plan {
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Action {
@@ -489,7 +459,6 @@ pub mod action_plan {
     }
 }
 /// Describes a plan for forming a `Clue`.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CluePlan {
@@ -504,7 +473,6 @@ pub struct CluePlan {
     pub precision_bits: u64,
 }
 /// Describes a plan for forming a `Memo`.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MemoPlan {
@@ -515,7 +483,6 @@ pub struct MemoPlan {
     #[prost(bytes = "bytes", tag = "2")]
     pub key: ::prost::bytes::Bytes,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SpendPlan {
@@ -527,14 +494,11 @@ pub struct SpendPlan {
     pub position: u64,
     /// The randomizer to use for the spend.
     #[prost(bytes = "bytes", tag = "3")]
-    #[serde(with = "crate::serializers::hexstr_bytes")]
     pub randomizer: ::prost::bytes::Bytes,
     /// The blinding factor to use for the value commitment.
     #[prost(bytes = "bytes", tag = "4")]
-    #[serde(with = "crate::serializers::hexstr_bytes")]
     pub value_blinding: ::prost::bytes::Bytes,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct OutputPlan {
@@ -549,6 +513,5 @@ pub struct OutputPlan {
     pub rseed: ::prost::bytes::Bytes,
     /// The blinding factor to use for the value commitment.
     #[prost(bytes = "bytes", tag = "4")]
-    #[serde(with = "crate::serializers::hexstr_bytes")]
     pub value_blinding: ::prost::bytes::Bytes,
 }

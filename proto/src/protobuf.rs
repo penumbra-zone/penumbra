@@ -179,9 +179,9 @@ where
     T: ibc::tx_msg::Msg,
 {
     fn from(v: T) -> Self {
-        let any = prost_types::Any {
+        let any = pbjson_types::Any {
             type_url: v.type_url(),
-            value: v.to_any().value,
+            value: v.to_any().value.into(),
         };
 
         Self {

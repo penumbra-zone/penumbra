@@ -41,6 +41,9 @@ mod test_serde {
         assert_eq!(commitment, deserialized);
     }
 
+    /*
+    Disabled; pbjson_build derived implementations don't play well with bincode,
+    because of the issue described here: https://github.com/bincode-org/bincode/issues/276
     #[test]
     fn roundtrip_bincode_zero() {
         let commitment = Commitment::try_from([0; 32]).unwrap();
@@ -49,6 +52,7 @@ mod test_serde {
         let deserialized: Commitment = bincode::deserialize(&bytes).unwrap();
         assert_eq!(commitment, deserialized);
     }
+     */
 }
 
 impl From<Commitment> for pb::StateCommitment {

@@ -462,7 +462,6 @@ pub struct NotesResponse {
     pub note_record: ::core::option::Option<SpendableNoteRecord>,
 }
 /// A note plaintext with associated metadata about its status.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SpendableNoteRecord {
@@ -497,7 +496,6 @@ pub struct SpendableNoteRecord {
     #[prost(message, optional, tag = "8")]
     pub source: ::core::option::Option<super::super::core::chain::v1alpha1::NoteSource>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapRecord {

@@ -217,13 +217,14 @@ impl ProposalKind {
             ProposalKind::DaoSpend => ProposalPayload::DaoSpend {
                 schedule_transactions: vec![(
                     0,
-                    prost_types::Any {
+                    pbjson_types::Any {
                         type_url: TRANSACTION_PLAN_TYPE_URL.to_string(),
                         value: TransactionPlan {
                             chain_id,
                             ..Default::default()
                         }
-                        .encode_to_vec(),
+                        .encode_to_vec()
+                        .into(),
                     },
                 )],
                 cancel_transactions: vec![(0, EffectHash::default())],
@@ -265,7 +266,7 @@ pub enum ProposalPayload {
     /// specific heights, with the spend authority of the DAO.
     DaoSpend {
         /// Schedule these new transactions at the given heights.
-        schedule_transactions: Vec<(u64, prost_types::Any)>,
+        schedule_transactions: Vec<(u64, pbjson_types::Any)>,
         /// Cancel these previously-scheduled transactions at the given heights.
         cancel_transactions: Vec<(u64, EffectHash)>,
     },

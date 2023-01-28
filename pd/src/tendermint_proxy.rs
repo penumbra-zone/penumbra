@@ -190,7 +190,7 @@ impl TendermintProxyService for TendermintProxy {
                     .as_bytes()
                     .to_vec(),
                 latest_block_height: res.sync_info.latest_block_height.value(),
-                latest_block_time: Some(prost_types::Timestamp {
+                latest_block_time: Some(pbjson_types::Timestamp {
                     seconds: latest_block_time.timestamp(),
                     nanos: latest_block_time.timestamp_nanos() as i32,
                 }),
@@ -198,7 +198,7 @@ impl TendermintProxyService for TendermintProxy {
                 // earliest_app_hash: res.sync_info.earliest_app_hash.to_string().as_bytes().to_vec(),
                 // earliest_block_hash: res.sync_info.earliest_block_hash.to_string().as_bytes().to_vec(),
                 // earliest_block_height: res.sync_info.earliest_block_height.value(),
-                // earliest_block_time: Some(prost_types::Timestamp{
+                // earliest_block_time: Some(pbjson_types::Timestamp{
                 //     seconds: earliest_block_time.timestamp(),
                 //     nanos: earliest_block_time.timestamp_nanos() as i32,
                 // }),
@@ -311,7 +311,7 @@ impl TendermintProxyService for TendermintProxy {
                     }),
                     chain_id: res.block.header.chain_id.into(),
                     height: res.block.header.height.into(),
-                    time: Some(prost_types::Timestamp {
+                    time: Some(pbjson_types::Timestamp {
                         seconds: header_time.timestamp(),
                         nanos: header_time.timestamp_nanos() as i32,
                     }),
@@ -384,7 +384,7 @@ impl TendermintProxyService for TendermintProxy {
                                                 hash: e.votes().0.block_id.expect("block id").part_set_header.hash.into(),
                                             }),
                                         }),
-                                        timestamp: Some(prost_types::Timestamp{
+                                        timestamp: Some(pbjson_types::Timestamp{
                                             seconds: DateTime::parse_from_rfc3339(&e.votes().0.timestamp.expect("timestamp").to_rfc3339()).expect("timestamp should roundtrip to string").timestamp(),
                                             nanos: DateTime::parse_from_rfc3339(&e.votes().0.timestamp.expect("timestamp").to_rfc3339()).expect("timestamp should roundtrip to string").timestamp_nanos() as i32,
                                         }),
@@ -406,7 +406,7 @@ impl TendermintProxyService for TendermintProxy {
                                                 hash: e.votes().1.block_id.expect("block id").part_set_header.hash.into(),
                                             }),
                                         }),
-                                        timestamp: Some(prost_types::Timestamp{
+                                        timestamp: Some(pbjson_types::Timestamp{
                                             seconds: DateTime::parse_from_rfc3339(&e.votes().1.timestamp.expect("timestamp").to_rfc3339()).expect("timestamp should roundtrip to string").timestamp(),
                                             nanos: DateTime::parse_from_rfc3339(&e.votes().1.timestamp.expect("timestamp").to_rfc3339()).expect("timestamp should roundtrip to string").timestamp_nanos() as i32,
                                         }),
@@ -416,7 +416,7 @@ impl TendermintProxyService for TendermintProxy {
                                     }),
                                     total_voting_power: e2.total_voting_power,
                                     validator_power: e2.validator_power,
-                                    timestamp: e2.timestamp.map(|t| prost_types::Timestamp{seconds: t.seconds, nanos: t.nanos}),
+                                    timestamp: e2.timestamp.map(|t| pbjson_types::Timestamp{seconds: t.seconds, nanos: t.nanos}),
                                 })
                             },
                                 // This variant is currently unimplemented in tendermint-rs, so we can't supply
@@ -461,7 +461,7 @@ impl TendermintProxyService for TendermintProxy {
                                     tendermint::block::CommitSig::BlockIdFlagCommit { validator_address, timestamp, signature } => proto::tendermint::types::CommitSig {
                                         block_id_flag: proto::tendermint::types::BlockIdFlag::Commit as i32,
                                         validator_address: validator_address.into(),
-                                        timestamp: Some(prost_types::Timestamp{
+                                        timestamp: Some(pbjson_types::Timestamp{
                                             seconds: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339()).expect("timestamp should roundtrip to string").timestamp(),
                                             nanos: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339()).expect("timestamp should roundtrip to string").timestamp_nanos() as i32,
                                         }),
@@ -470,7 +470,7 @@ impl TendermintProxyService for TendermintProxy {
                                     tendermint::block::CommitSig::BlockIdFlagNil { validator_address, timestamp, signature } => proto::tendermint::types::CommitSig {
                                         block_id_flag: proto::tendermint::types::BlockIdFlag::Nil as i32,
                                         validator_address: validator_address.into(),
-                                        timestamp: Some(prost_types::Timestamp{
+                                        timestamp: Some(pbjson_types::Timestamp{
                                             seconds: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339()).expect("timestamp should roundtrip to string").timestamp(),
                                             nanos: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339()).expect("timestamp should roundtrip to string").timestamp_nanos() as i32,
                                         }),

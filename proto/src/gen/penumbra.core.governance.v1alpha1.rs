@@ -1,4 +1,3 @@
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProposalSubmit {
@@ -9,7 +8,6 @@ pub struct ProposalSubmit {
     #[prost(message, optional, tag = "3")]
     pub deposit_amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProposalWithdraw {
@@ -20,7 +18,6 @@ pub struct ProposalWithdraw {
     #[prost(string, tag = "2")]
     pub reason: ::prost::alloc::string::String,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorVote {
@@ -33,7 +30,6 @@ pub struct ValidatorVote {
         super::super::crypto::v1alpha1::SpendAuthSignature,
     >,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorVoteBody {
@@ -54,7 +50,6 @@ pub struct ValidatorVoteBody {
         super::super::crypto::v1alpha1::GovernanceKey,
     >,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DelegatorVote {
@@ -70,7 +65,6 @@ pub struct DelegatorVote {
     #[prost(bytes = "vec", tag = "3")]
     pub proof: ::prost::alloc::vec::Vec<u8>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DelegatorVoteBody {
@@ -112,7 +106,6 @@ pub struct DelegatorVoteBody {
         super::super::crypto::v1alpha1::BalanceCommitment,
     >,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProposalDepositClaim {
@@ -126,7 +119,6 @@ pub struct ProposalDepositClaim {
     #[prost(message, optional, tag = "3")]
     pub outcome: ::core::option::Option<ProposalOutcome>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DelegatorVotePlan {
@@ -147,14 +139,11 @@ pub struct DelegatorVotePlan {
     pub randomizer: ::prost::alloc::vec::Vec<u8>,
 }
 /// A vote on a proposal.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(transparent)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Vote {
     /// The vote.
     #[prost(enumeration = "vote::Vote", tag = "1")]
-    #[serde(with = "crate::serializers::vote")]
     pub vote: i32,
 }
 /// Nested message and enum types in `Vote`.
@@ -207,7 +196,6 @@ pub mod vote {
     }
 }
 /// A chain parameter that can be modified by governance.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MutableChainParameter {
@@ -219,7 +207,6 @@ pub struct MutableChainParameter {
     pub description: ::prost::alloc::string::String,
 }
 /// The current state of a proposal.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProposalState {
@@ -230,12 +217,10 @@ pub struct ProposalState {
 /// Nested message and enum types in `ProposalState`.
 pub mod proposal_state {
     /// Voting is in progress and the proposal has not yet concluded voting or been withdrawn.
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Voting {}
     /// The proposal has been withdrawn but the voting period is not yet concluded.
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Withdrawn {
@@ -244,7 +229,6 @@ pub mod proposal_state {
         pub reason: ::prost::alloc::string::String,
     }
     /// The voting period has ended, and the proposal has been assigned an outcome.
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Finished {
@@ -252,7 +236,6 @@ pub mod proposal_state {
         pub outcome: ::core::option::Option<super::ProposalOutcome>,
     }
     /// The voting period has ended, and the original proposer has claimed their deposit.
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Claimed {
@@ -260,7 +243,6 @@ pub mod proposal_state {
         pub outcome: ::core::option::Option<super::ProposalOutcome>,
     }
     /// The state of the proposal.
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum State {
@@ -275,7 +257,6 @@ pub mod proposal_state {
     }
 }
 /// The outcome of a concluded proposal.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProposalOutcome {
@@ -285,35 +266,29 @@ pub struct ProposalOutcome {
 /// Nested message and enum types in `ProposalOutcome`.
 pub mod proposal_outcome {
     /// The proposal was passed.
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Passed {}
     /// The proposal did not pass.
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Failed {
         /// The proposal was withdrawn during the voting period.
         #[prost(string, optional, tag = "1")]
-        #[serde(skip_serializing_if = "Option::is_none", default)]
         pub withdrawn_with_reason: ::core::option::Option<
             ::prost::alloc::string::String,
         >,
     }
     /// The proposal did not pass, and was vetoed.
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Vetoed {
         /// The proposal was withdrawn during the voting period.
         #[prost(string, optional, tag = "1")]
-        #[serde(skip_serializing_if = "Option::is_none", default)]
         pub withdrawn_with_reason: ::core::option::Option<
             ::prost::alloc::string::String,
         >,
     }
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Outcome {
@@ -333,7 +308,6 @@ pub struct ProposalList {
     pub proposals: ::prost::alloc::vec::Vec<u64>,
 }
 /// A proposal to be voted upon.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Proposal {
@@ -348,16 +322,12 @@ pub struct Proposal {
     pub description: ::prost::alloc::string::String,
     /// The different kinds of proposal. Only one of these should be set.
     #[prost(message, optional, tag = "5")]
-    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub signaling: ::core::option::Option<proposal::Signaling>,
     #[prost(message, optional, tag = "6")]
-    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub emergency: ::core::option::Option<proposal::Emergency>,
     #[prost(message, optional, tag = "7")]
-    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub parameter_change: ::core::option::Option<proposal::ParameterChange>,
     #[prost(message, optional, tag = "8")]
-    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub dao_spend: ::core::option::Option<proposal::DaoSpend>,
 }
 /// Nested message and enum types in `Proposal`.
@@ -366,7 +336,6 @@ pub mod proposal {
     /// effect when passed.
     ///
     /// It optionally contains a reference to a commit which contains code to upgrade the chain.
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Signaling {
@@ -379,7 +348,6 @@ pub mod proposal {
     ///
     /// If the boolean `halt_chain` is set to `true`, then the chain will halt immediately when the
     /// proposal is passed.
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Emergency {
@@ -390,7 +358,6 @@ pub mod proposal {
     /// A parameter change proposal describes an alteration to one or more chain parameters, which
     /// should take effect at a particular block height `effective_height` (which should be at least
     /// the height when the proposal would be passed).
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct ParameterChange {
@@ -404,7 +371,6 @@ pub mod proposal {
     /// Nested message and enum types in `ParameterChange`.
     pub mod parameter_change {
         /// A single change to an individual chain parameter.
-        #[derive(::serde::Deserialize, ::serde::Serialize)]
         #[allow(clippy::derive_partial_eq_without_eq)]
         #[derive(Clone, PartialEq, ::prost::Message)]
         pub struct SetParameter {
@@ -419,7 +385,6 @@ pub mod proposal {
     /// A DAO spend proposal describes zero or more transactions to execute on behalf of the DAO, with
     /// access to its funds, and zero or more scheduled transactions from previous passed proposals to
     /// cancel.
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct DaoSpend {
@@ -438,7 +403,6 @@ pub mod proposal {
         ///
         /// It is permissible for there to be duplicate transactions scheduled for a given height; they
         /// will both be executed.
-        #[derive(::serde::Deserialize, ::serde::Serialize)]
         #[allow(clippy::derive_partial_eq_without_eq)]
         #[derive(Clone, PartialEq, ::prost::Message)]
         pub struct ScheduleTransaction {
@@ -447,14 +411,12 @@ pub mod proposal {
             pub execute_at_height: u64,
             /// The transaction to be executed.
             #[prost(message, optional, tag = "2")]
-            #[serde(with = "crate::serializers::prost_any")]
-            pub transaction: ::core::option::Option<::prost_types::Any>,
+            pub transaction: ::core::option::Option<::pbjson_types::Any>,
         }
         /// A transaction to be canceled as a consequence of this proposal.
         ///
         /// If there are multiple duplicate transactions at the height, this cancels only the first.
         /// To cancel more of them, specify duplicate cancellations.
-        #[derive(::serde::Deserialize, ::serde::Serialize)]
         #[allow(clippy::derive_partial_eq_without_eq)]
         #[derive(Clone, PartialEq, ::prost::Message)]
         pub struct CancelTransaction {

@@ -1,4 +1,3 @@
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuthorizeRequest {
@@ -19,7 +18,6 @@ pub struct AuthorizeRequest {
     #[prost(message, repeated, tag = "3")]
     pub pre_authorizations: ::prost::alloc::vec::Vec<PreAuthorization>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuthorizeResponse {
@@ -32,7 +30,6 @@ pub struct AuthorizeResponse {
 /// signing authority to other authorization mechanisms.  Details of how a
 /// custodian manages those keys are out-of-scope for the custody protocol and
 /// are custodian-specific.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PreAuthorization {
@@ -43,20 +40,16 @@ pub struct PreAuthorization {
 pub mod pre_authorization {
     /// An Ed25519-based preauthorization, containing an Ed25519 signature over the
     /// `TransactionPlan`.
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Ed25519 {
         /// The Ed25519 verification key used to verify the signature.
         #[prost(bytes = "vec", tag = "1")]
-        #[serde(with = "crate::serializers::base64str")]
         pub vk: ::prost::alloc::vec::Vec<u8>,
         /// The Ed25519 signature over the `TransactionPlan`.
         #[prost(bytes = "vec", tag = "2")]
-        #[serde(with = "crate::serializers::base64str")]
         pub sig: ::prost::alloc::vec::Vec<u8>,
     }
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum PreAuthorization {
