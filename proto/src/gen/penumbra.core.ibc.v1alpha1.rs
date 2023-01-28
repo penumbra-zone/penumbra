@@ -1,4 +1,3 @@
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct IbcAction {
@@ -26,8 +25,7 @@ pub struct IbcAction {
     /// .ibc.core.client.v1.MsgSubmitMisbehaviour submit_misbehaviour = 17;
     /// }
     #[prost(message, optional, tag = "1")]
-    #[serde(with = "crate::serializers::prost_any")]
-    pub raw_action: ::core::option::Option<::prost_types::Any>,
+    pub raw_action: ::core::option::Option<::pbjson_types::Any>,
 }
 /// FungibleTokenPacketData defines a struct for the packet payload
 /// See FungibleTokenPacketData spec:
@@ -48,7 +46,6 @@ pub struct FungibleTokenPacketData {
     #[prost(string, tag = "4")]
     pub receiver: ::prost::alloc::string::String,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Ics20Withdrawal {
@@ -90,7 +87,7 @@ pub struct ClientData {
     pub client_id: ::prost::alloc::string::String,
     /// NOTE: left as Any to allow us to add more client types later
     #[prost(message, optional, tag = "2")]
-    pub client_state: ::core::option::Option<::prost_types::Any>,
+    pub client_state: ::core::option::Option<::pbjson_types::Any>,
     #[prost(string, tag = "3")]
     pub processed_time: ::prost::alloc::string::String,
     #[prost(uint64, tag = "4")]
@@ -106,7 +103,7 @@ pub struct ClientCounter {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConsensusState {
     #[prost(message, optional, tag = "1")]
-    pub consensus_state: ::core::option::Option<::prost_types::Any>,
+    pub consensus_state: ::core::option::Option<::pbjson_types::Any>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

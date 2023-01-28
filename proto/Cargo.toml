@@ -22,6 +22,8 @@ async-trait = "0.1.52"
 async-stream = "0.2.0"
 tracing = "0.1"
 futures = "0.3"
+pbjson = "0.5"
+pbjson-types = "0.5"
 
 ibc-proto = { version = "0.22.0", default-features = false, features = ["std"] }
 ibc = "0.23.0"

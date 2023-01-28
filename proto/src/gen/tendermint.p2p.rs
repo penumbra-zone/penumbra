@@ -8,7 +8,6 @@ pub struct NetAddress {
     #[prost(uint32, tag = "3")]
     pub port: u32,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProtocolVersion {
@@ -19,7 +18,6 @@ pub struct ProtocolVersion {
     #[prost(uint64, tag = "3")]
     pub app: u64,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DefaultNodeInfo {
@@ -40,7 +38,6 @@ pub struct DefaultNodeInfo {
     #[prost(message, optional, tag = "8")]
     pub other: ::core::option::Option<DefaultNodeInfoOther>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DefaultNodeInfoOther {

@@ -384,7 +384,7 @@ pub struct SyncInfo {
     #[prost(uint64, tag = "3")]
     pub latest_block_height: u64,
     #[prost(message, optional, tag = "4")]
-    pub latest_block_time: ::core::option::Option<::prost_types::Timestamp>,
+    pub latest_block_time: ::core::option::Option<::pbjson_types::Timestamp>,
     /// These are implemented in tendermint, but not
     /// in tendermint-rpc.
     /// bytes earliest_block_hash = 5;

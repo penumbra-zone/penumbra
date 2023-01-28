@@ -1,11 +1,9 @@
 /// A transaction action that submits a swap to the dex.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Swap {
     /// Contains the Swap proof.
     #[prost(bytes = "vec", tag = "1")]
-    #[serde(with = "crate::serializers::base64str")]
     pub proof: ::prost::alloc::vec::Vec<u8>,
     /// MockFlowCiphertext dropped until flow encryption/ABCI++ available
     /// // Encrypted amount of asset 1 of the trading pair.
@@ -20,13 +18,11 @@ pub struct Swap {
 /// via a Swap transaction. Does not include a spend authorization
 /// signature, as it is only capable of consuming the NFT from a
 /// Swap transaction.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapClaim {
     /// Contains the SwapClaim proof.
     #[prost(bytes = "vec", tag = "1")]
-    #[serde(with = "crate::serializers::base64str")]
     pub proof: ::prost::alloc::vec::Vec<u8>,
     /// Encapsulates the authorized fields of the SwapClaim action, used in signing.
     #[prost(message, optional, tag = "2")]
@@ -36,7 +32,6 @@ pub struct SwapClaim {
     pub epoch_duration: u64,
 }
 /// Encapsulates the authorized fields of the SwapClaim action, used in signing.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapClaimBody {
@@ -61,7 +56,6 @@ pub struct SwapClaimBody {
     pub output_data: ::core::option::Option<BatchSwapOutputData>,
 }
 /// The authorized data of a Swap transaction.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapBody {
@@ -84,7 +78,6 @@ pub struct SwapBody {
     #[prost(message, optional, tag = "5")]
     pub payload: ::core::option::Option<SwapPayload>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapPayload {
@@ -98,7 +91,6 @@ pub struct SwapPayload {
     #[prost(bytes = "vec", tag = "3")]
     pub encrypted_swap: ::prost::alloc::vec::Vec<u8>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapPlaintext {
@@ -121,8 +113,6 @@ pub struct SwapPlaintext {
     #[prost(bytes = "vec", tag = "6")]
     pub rseed: ::prost::alloc::vec::Vec<u8>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(transparent)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MockFlowCiphertext {
@@ -130,7 +120,6 @@ pub struct MockFlowCiphertext {
     #[prost(uint64, tag = "1")]
     pub value: u64,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapPlan {
@@ -139,14 +128,11 @@ pub struct SwapPlan {
     pub swap_plaintext: ::core::option::Option<SwapPlaintext>,
     /// The blinding factor for the fee commitment. The fee in the SwapPlan is private to prevent linkability with the SwapClaim.
     #[prost(bytes = "vec", tag = "2")]
-    #[serde(with = "crate::serializers::hexstr")]
     pub fee_blinding: ::prost::alloc::vec::Vec<u8>,
     /// The ephemeral secret used to encrypt the swap payload.
     #[prost(bytes = "vec", tag = "3")]
-    #[serde(with = "crate::serializers::hexstr")]
     pub esk: ::prost::alloc::vec::Vec<u8>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapClaimPlan {
@@ -163,7 +149,6 @@ pub struct SwapClaimPlan {
     #[prost(uint64, tag = "4")]
     pub epoch_duration: u64,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapView {
@@ -172,7 +157,6 @@ pub struct SwapView {
 }
 /// Nested message and enum types in `SwapView`.
 pub mod swap_view {
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Visible {
@@ -181,14 +165,12 @@ pub mod swap_view {
         #[prost(message, optional, tag = "3")]
         pub swap_plaintext: ::core::option::Option<super::SwapPlaintext>,
     }
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Opaque {
         #[prost(message, optional, tag = "1")]
         pub swap: ::core::option::Option<super::Swap>,
     }
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum SwapView {
@@ -198,7 +180,6 @@ pub mod swap_view {
         Opaque(Opaque),
     }
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapClaimView {
@@ -207,7 +188,6 @@ pub struct SwapClaimView {
 }
 /// Nested message and enum types in `SwapClaimView`.
 pub mod swap_claim_view {
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Visible {
@@ -222,14 +202,12 @@ pub mod swap_claim_view {
             super::super::super::crypto::v1alpha1::Note,
         >,
     }
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Opaque {
         #[prost(message, optional, tag = "1")]
         pub swap_claim: ::core::option::Option<super::SwapClaim>,
     }
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum SwapClaimView {
@@ -242,7 +220,6 @@ pub mod swap_claim_view {
 /// Holds two asset IDs. Ordering doesn't reflect trading direction. Instead, we
 /// require `asset_1 < asset_2` as field elements, to ensure a canonical
 /// representation of an unordered pair.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TradingPair {
@@ -255,7 +232,6 @@ pub struct TradingPair {
 }
 /// Encodes a trading pair starting from asset `start`
 /// and ending on asset `end`.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DirectedTradingPair {
@@ -270,7 +246,6 @@ pub struct DirectedTradingPair {
 ///
 /// Used as a public input to a swap claim proof, as it implies the effective
 /// clearing price for the batch.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BatchSwapOutputData {
@@ -300,7 +275,6 @@ pub struct BatchSwapOutputData {
 /// For a pair (asset_1, asset_2), a trading function is defined by:
 /// `phi(R) = p*R_1 + q*R_2` and `gamma = 1 - fee`.
 /// The trading function is frequently referred to as "phi".
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TradingFunction {
@@ -314,7 +288,6 @@ pub struct TradingFunction {
 /// This implicitly treats the trading function as being between assets 1 and 2,
 /// without specifying what those assets are, to avoid duplicating data (each
 /// asset ID alone is twice the size of the trading function).
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BareTradingFunction {
@@ -333,7 +306,6 @@ pub struct BareTradingFunction {
 /// between assets 1 and 2, without specifying what those assets are, to avoid
 /// duplicating data (each asset ID alone is four times the size of the
 /// reserves).
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Reserves {
@@ -343,7 +315,6 @@ pub struct Reserves {
     pub r2: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
 }
 /// Data identifying a position.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Position {
@@ -355,21 +326,16 @@ pub struct Position {
     /// be unique, and allows us to track position ownership with a
     /// sequence of stateful NFTs based on the `PositionId`.
     #[prost(bytes = "vec", tag = "2")]
-    #[serde(with = "crate::serializers::hexstr")]
     pub nonce: ::prost::alloc::vec::Vec<u8>,
 }
 /// A hash of a `Position`.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(transparent)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PositionId {
     #[prost(bytes = "vec", tag = "1")]
-    #[serde(with = "crate::serializers::bech32str::lp_id")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
 /// The state of a position.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PositionState {
@@ -378,7 +344,6 @@ pub struct PositionState {
 }
 /// Nested message and enum types in `PositionState`.
 pub mod position_state {
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[derive(
         Clone,
         Copy,
@@ -460,7 +425,6 @@ pub struct LpNft {
 ///
 /// This action's contribution to the transaction's value balance is to consume
 /// the initial reserves and contribute an opened position NFT.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PositionOpen {
@@ -484,7 +448,6 @@ pub struct PositionOpen {
 /// transactions (like any ZK transaction model) are early-binding: the prover
 /// must know the state transition they prove knowledge of, and they cannot know
 /// the final reserves with certainty until after the position has been deactivated.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PositionClose {
@@ -496,7 +459,6 @@ pub struct PositionClose {
 /// This action's contribution to the transaction's value balance is to consume a
 /// closed position NFT and contribute a withdrawn position NFT, as well as all
 /// of the funds that were in the position at the time of closing.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PositionWithdraw {
@@ -515,7 +477,6 @@ pub struct PositionWithdraw {
 ///
 /// This action's contribution to the transaction's value balance is to consume a
 /// withdrawn position NFT and contribute its reward balance.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PositionRewardClaim {
@@ -531,7 +492,6 @@ pub struct PositionRewardClaim {
 }
 /// Contains a path for a trade, including the trading pair (with direction), the trading
 /// function defining their relationship, and the route taken between the two assets.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Path {

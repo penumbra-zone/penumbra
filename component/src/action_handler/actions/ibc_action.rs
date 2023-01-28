@@ -62,81 +62,81 @@ impl ActionHandler for IbcAction {
             .ok_or_else(|| anyhow::anyhow!("empty IBC transaction is not allowed"))?;
 
         let action_type = raw_action.type_url.as_str();
-        let raw_action_bytes = &raw_action.value;
+        let raw_action_bytes = raw_action.value.clone();
 
         match action_type {
             CREATE_CLIENT => {
-                let msg = MsgCreateClient::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgCreateClient::decode(raw_action_bytes)?;
 
                 msg.check_stateless(context).await?;
             }
             UPDATE_CLIENT => {
-                let msg = MsgUpdateClient::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgUpdateClient::decode(raw_action_bytes)?;
 
                 msg.check_stateless(context).await?;
             }
             CONNECTION_OPEN_INIT => {
-                let msg = MsgConnectionOpenInit::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgConnectionOpenInit::decode(raw_action_bytes)?;
 
                 msg.check_stateless(context).await?;
             }
             CONNECTION_OPEN_TRY => {
-                let msg = MsgConnectionOpenTry::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgConnectionOpenTry::decode(raw_action_bytes)?;
 
                 msg.check_stateless(context).await?;
             }
             CONNECTION_OPEN_ACK => {
-                let msg = MsgConnectionOpenAck::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgConnectionOpenAck::decode(raw_action_bytes)?;
 
                 msg.check_stateless(context).await?;
             }
             CONNECTION_OPEN_CONFIRM => {
-                let msg = MsgConnectionOpenConfirm::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgConnectionOpenConfirm::decode(raw_action_bytes)?;
 
                 msg.check_stateless(context).await?;
             }
             ACKNOWLEDGEMENT => {
-                let msg = MsgAcknowledgement::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgAcknowledgement::decode(raw_action_bytes)?;
 
                 msg.check_stateless(context).await?;
             }
             CHANNEL_OPEN_INIT => {
-                let msg = MsgChannelOpenInit::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgChannelOpenInit::decode(raw_action_bytes)?;
 
                 msg.check_stateless(context).await?;
             }
             CHANNEL_OPEN_TRY => {
-                let msg = MsgChannelOpenTry::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgChannelOpenTry::decode(raw_action_bytes)?;
 
                 msg.check_stateless(context).await?;
             }
             CHANNEL_OPEN_ACK => {
-                let msg = MsgChannelOpenAck::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgChannelOpenAck::decode(raw_action_bytes)?;
 
                 msg.check_stateless(context).await?;
             }
             CHANNEL_OPEN_CONFIRM => {
-                let msg = MsgChannelOpenConfirm::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgChannelOpenConfirm::decode(raw_action_bytes)?;
 
                 msg.check_stateless(context).await?;
             }
             CHANNEL_CLOSE_INIT => {
-                let msg = MsgChannelCloseInit::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgChannelCloseInit::decode(raw_action_bytes)?;
 
                 msg.check_stateless(context).await?;
             }
             CHANNEL_CLOSE_CONFIRM => {
-                let msg = MsgChannelCloseConfirm::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgChannelCloseConfirm::decode(raw_action_bytes)?;
 
                 msg.check_stateless(context).await?;
             }
             RECV_PACKET => {
-                let msg = MsgRecvPacket::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgRecvPacket::decode(raw_action_bytes)?;
 
                 msg.check_stateless(context).await?;
             }
             TIMEOUT => {
-                let msg = MsgTimeout::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgTimeout::decode(raw_action_bytes)?;
 
                 msg.check_stateless(context).await?;
             }
@@ -156,81 +156,81 @@ impl ActionHandler for IbcAction {
             .ok_or_else(|| anyhow::anyhow!("empty IBC transaction is not allowed"))?;
 
         let action_type = raw_action.type_url.as_str();
-        let raw_action_bytes = &raw_action.value;
+        let raw_action_bytes = raw_action.value.clone();
 
         match action_type {
             CREATE_CLIENT => {
-                let msg = MsgCreateClient::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgCreateClient::decode(raw_action_bytes)?;
 
                 msg.check_stateful(state).await?;
             }
             UPDATE_CLIENT => {
-                let msg = MsgUpdateClient::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgUpdateClient::decode(raw_action_bytes)?;
 
                 msg.check_stateful(state).await?;
             }
             CONNECTION_OPEN_INIT => {
-                let msg = MsgConnectionOpenInit::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgConnectionOpenInit::decode(raw_action_bytes)?;
 
                 msg.check_stateful(state).await?;
             }
             CONNECTION_OPEN_TRY => {
-                let msg = MsgConnectionOpenTry::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgConnectionOpenTry::decode(raw_action_bytes)?;
 
                 msg.check_stateful(state).await?;
             }
             CONNECTION_OPEN_ACK => {
-                let msg = MsgConnectionOpenAck::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgConnectionOpenAck::decode(raw_action_bytes)?;
 
                 msg.check_stateful(state).await?;
             }
             CONNECTION_OPEN_CONFIRM => {
-                let msg = MsgConnectionOpenConfirm::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgConnectionOpenConfirm::decode(raw_action_bytes)?;
 
                 msg.check_stateful(state).await?;
             }
             ACKNOWLEDGEMENT => {
-                let msg = MsgAcknowledgement::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgAcknowledgement::decode(raw_action_bytes)?;
 
                 msg.check_stateful(state).await?;
             }
             CHANNEL_OPEN_INIT => {
-                let msg = MsgChannelOpenInit::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgChannelOpenInit::decode(raw_action_bytes)?;
 
                 msg.check_stateful(state).await?;
             }
             CHANNEL_OPEN_TRY => {
-                let msg = MsgChannelOpenTry::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgChannelOpenTry::decode(raw_action_bytes)?;
 
                 msg.check_stateful(state).await?;
             }
             CHANNEL_OPEN_ACK => {
-                let msg = MsgChannelOpenAck::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgChannelOpenAck::decode(raw_action_bytes)?;
 
                 msg.check_stateful(state).await?;
             }
             CHANNEL_OPEN_CONFIRM => {
-                let msg = MsgChannelOpenConfirm::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgChannelOpenConfirm::decode(raw_action_bytes)?;
 
                 msg.check_stateful(state).await?;
             }
             CHANNEL_CLOSE_INIT => {
-                let msg = MsgChannelCloseInit::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgChannelCloseInit::decode(raw_action_bytes)?;
 
                 msg.check_stateful(state).await?;
             }
             CHANNEL_CLOSE_CONFIRM => {
-                let msg = MsgChannelCloseConfirm::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgChannelCloseConfirm::decode(raw_action_bytes)?;
 
                 msg.check_stateful(state).await?;
             }
             RECV_PACKET => {
-                let msg = MsgRecvPacket::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgRecvPacket::decode(raw_action_bytes)?;
 
                 msg.check_stateful(state).await?;
             }
             TIMEOUT => {
-                let msg = MsgTimeout::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgTimeout::decode(raw_action_bytes)?;
 
                 msg.check_stateful(state).await?;
             }
@@ -250,82 +250,82 @@ impl ActionHandler for IbcAction {
             .ok_or_else(|| anyhow::anyhow!("empty IBC transaction is not allowed"))?;
 
         let action_type = raw_action.type_url.as_str();
-        let raw_action_bytes = &raw_action.value;
+        let raw_action_bytes = raw_action.value.clone();
 
         // Handle the message type of this IBC action.
         match action_type {
             CREATE_CLIENT => {
-                let msg = MsgCreateClient::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgCreateClient::decode(raw_action_bytes)?;
 
                 msg.execute(state).await?;
             }
             UPDATE_CLIENT => {
-                let msg = MsgUpdateClient::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgUpdateClient::decode(raw_action_bytes)?;
 
                 msg.execute(state).await?;
             }
             CONNECTION_OPEN_INIT => {
-                let msg = MsgConnectionOpenInit::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgConnectionOpenInit::decode(raw_action_bytes)?;
 
                 msg.execute(state).await?;
             }
             CONNECTION_OPEN_TRY => {
-                let msg = MsgConnectionOpenTry::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgConnectionOpenTry::decode(raw_action_bytes)?;
 
                 msg.execute(state).await?;
             }
             CONNECTION_OPEN_ACK => {
-                let msg = MsgConnectionOpenAck::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgConnectionOpenAck::decode(raw_action_bytes)?;
 
                 msg.execute(state).await?;
             }
             CONNECTION_OPEN_CONFIRM => {
-                let msg = MsgConnectionOpenConfirm::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgConnectionOpenConfirm::decode(raw_action_bytes)?;
 
                 msg.execute(state).await?;
             }
             ACKNOWLEDGEMENT => {
-                let msg = MsgAcknowledgement::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgAcknowledgement::decode(raw_action_bytes)?;
 
                 msg.execute(state).await?;
             }
             CHANNEL_OPEN_INIT => {
-                let msg = MsgChannelOpenInit::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgChannelOpenInit::decode(raw_action_bytes)?;
 
                 msg.execute(state).await?;
             }
             CHANNEL_OPEN_TRY => {
-                let msg = MsgChannelOpenTry::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgChannelOpenTry::decode(raw_action_bytes)?;
 
                 msg.execute(state).await?;
             }
             CHANNEL_OPEN_ACK => {
-                let msg = MsgChannelOpenAck::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgChannelOpenAck::decode(raw_action_bytes)?;
 
                 msg.execute(state).await?;
             }
             CHANNEL_OPEN_CONFIRM => {
-                let msg = MsgChannelOpenConfirm::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgChannelOpenConfirm::decode(raw_action_bytes)?;
 
                 msg.execute(state).await?;
             }
             CHANNEL_CLOSE_INIT => {
-                let msg = MsgChannelCloseInit::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgChannelCloseInit::decode(raw_action_bytes)?;
 
                 msg.execute(state).await?;
             }
             CHANNEL_CLOSE_CONFIRM => {
-                let msg = MsgChannelCloseConfirm::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgChannelCloseConfirm::decode(raw_action_bytes)?;
 
                 msg.execute(state).await?;
             }
             RECV_PACKET => {
-                let msg = MsgRecvPacket::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgRecvPacket::decode(raw_action_bytes)?;
 
                 msg.execute(state).await?;
             }
             TIMEOUT => {
-                let msg = MsgTimeout::decode(raw_action_bytes.as_slice())?;
+                let msg = MsgTimeout::decode(raw_action_bytes)?;
 
                 msg.execute(state).await?;
             }
