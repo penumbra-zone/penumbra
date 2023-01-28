@@ -3682,6 +3682,7 @@ dependencies = [
  "prost",
  "prost-types",
  "serde",
+ "sqlx",
  "subtle-encoding",
  "tendermint",
  "tonic",

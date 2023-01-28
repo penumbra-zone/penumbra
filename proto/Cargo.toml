@@ -24,6 +24,7 @@ tracing = "0.1"
 futures = "0.3"
 pbjson = "0.5"
 pbjson-types = "0.5"
+sqlx = { version = "0.5", features = ["runtime-tokio-rustls"], optional = true }
 
 ibc-proto = { version = "0.22.0", default-features = false, features = ["std"] }
 ibc = "0.23.0"

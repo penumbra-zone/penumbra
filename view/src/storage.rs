@@ -11,6 +11,7 @@ use penumbra_proto::{
     client::v1alpha1::{
         oblivious_query_service_client::ObliviousQueryServiceClient, ChainParametersRequest,
     },
+    sqlx::S,
     DomainType,
 };
 use penumbra_tct as tct;
@@ -367,17 +368,12 @@ impl Storage {
     }
 
     pub async fn chain_params(&self) -> anyhow::Result<ChainParameters> {
-        let result = query!(
-            r#"
-            SELECT bytes
-            FROM chain_params
-            LIMIT 1
-        "#
-        )
-        .fetch_one(&self.pool)
-        .await?;
+        let result =
+            sqlx::query_as::<_, (S<ChainParameters>,)>("SELECT bytes FROM chain_params LIMIT 1")
+                .fetch_one(&self.pool)
+                .await?;
 
-        ChainParameters::decode(result.bytes.as_slice())
+        Ok(result.0.into_inner())
     }
 
     pub async fn fmd_parameters(&self) -> anyhow::Result<FmdParameters> {
