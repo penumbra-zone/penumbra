@@ -1,8 +1,9 @@
 //! Penumbra validators and related structures.
 
-use penumbra_crypto::GovernanceKey;
+use penumbra_crypto::{Address, GovernanceKey};
 use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
 use serde::{Deserialize, Serialize};
+use serde_with::DisplayFromStr;
 
 use crate::stake::{FundingStream, FundingStreams, IdentityKey};
 
@@ -63,6 +64,119 @@ pub struct Validator {
     /// third party from replaying previously valid but stale configuration data
     /// as an update.
     pub sequence_number: u32,
+}
+
+#[serde_as]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+pub struct ValidatorToml {
+    /// The sequence number determines which validator data takes priority, and
+    /// prevents replay attacks.  The chain only accepts new
+    /// [`ValidatorDefinition`]s with increasing sequence numbers, preventing a
+    /// third party from replaying previously valid but stale configuration data
+    /// as an update.
+    pub sequence_number: u32,
+
+    /// Whether the validator is enabled or not.
+    ///
+    /// Disabled validators cannot be delegated to, and immediately begin unbonding.
+    pub enabled: bool,
+
+    /// The validator's (human-readable) name.
+    pub name: String,
+
+    /// The validator's website URL.
+    pub website: String,
+
+    /// The validator's description.
+    pub description: String,
+
+    /// The validator's identity verification key.
+    #[serde_as(as = "DisplayFromStr")]
+    pub identity_key: IdentityKey,
+
+    /// The validator's governance verification key.
+    #[serde_as(as = "DisplayFromStr")]
+    pub governance_key: GovernanceKey,
+
+    /// The validator's consensus key, used by Tendermint for signing blocks and
+    /// other consensus operations.
+    pub consensus_key: tendermint::PublicKey,
+
+    /// The destinations for the validator's staking reward. The commission is implicitly defined
+    /// by the configuration of funding_streams, the sum of FundingStream.rate_bps.
+    ///
+    // NOTE: unclaimed rewards are tracked by inserting reward notes for the last epoch into the
+    // NCT at the beginning of each epoch
+    #[serde(rename = "funding_stream")]
+    pub funding_streams: Vec<FundingStreamToml>,
+}
+
+impl From<Validator> for ValidatorToml {
+    fn from(v: Validator) -> Self {
+        ValidatorToml {
+            identity_key: v.identity_key,
+            governance_key: v.governance_key,
+            consensus_key: v.consensus_key,
+            name: v.name,
+            website: v.website,
+            description: v.description,
+            enabled: v.enabled,
+            funding_streams: v.funding_streams.into_iter().map(Into::into).collect(),
+            sequence_number: v.sequence_number,
+        }
+    }
+}
+
+impl TryFrom<ValidatorToml> for Validator {
+    type Error = anyhow::Error;
+
+    fn try_from(v: ValidatorToml) -> anyhow::Result<Self> {
+        Ok(Validator {
+            identity_key: v.identity_key,
+            governance_key: v.governance_key,
+            consensus_key: v.consensus_key,
+            name: v.name,
+            website: v.website,
+            description: v.description,
+            enabled: v.enabled,
+            funding_streams: FundingStreams::try_from(
+                v.funding_streams
+                    .into_iter()
+                    .map(Into::into)
+                    .collect::<Vec<_>>(),
+            )?,
+            sequence_number: v.sequence_number,
+        })
+    }
+}
+
+/// Human-readable TOML-optimized version of a [`FundingStream`].
+#[serde_as]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+pub struct FundingStreamToml {
+    #[serde_as(as = "DisplayFromStr")]
+    /// The address of the funding stream.
+    address: Address,
+    /// The rate of the funding stream, in basis points.
+    rate_bps: u16,
+}
+
+impl From<FundingStream> for FundingStreamToml {
+    fn from(f: FundingStream) -> Self {
+        FundingStreamToml {
+            address: f.address,
+            rate_bps: f.rate_bps,
+        }
+    }
+}
+
+impl From<FundingStreamToml> for FundingStream {
+    fn from(f: FundingStreamToml) -> Self {
+        FundingStream {
+            address: f.address,
+            rate_bps: f.rate_bps,
+        }
+    }
 }
 
 impl Protobuf<pb::Validator> for Validator {}

@@ -1,13 +1,16 @@
 use crate::policy::AuthPolicy;
 use penumbra_crypto::keys::SpendKey;
 use serde::{Deserialize, Serialize};
+use serde_with::DisplayFromStr;
 
 /// Configuration data for the [`SoftKms`](super::SoftKms).
 ///
 /// Only the `spend_key` field is required; leaving the other fields
 /// empty/default provides blind signing.
+#[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 pub struct Config {
+    #[serde_as(as = "DisplayFromStr")]
     pub spend_key: SpendKey,
     #[serde(default, skip_serializing_if = "is_default")]
     pub auth_policy: Vec<AuthPolicy>,
