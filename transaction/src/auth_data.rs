@@ -1,5 +1,5 @@
 use penumbra_crypto::rdsa::{Signature, SpendAuth};
-use penumbra_proto::{core::transaction::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
 
 use crate::EffectHash;
 
@@ -14,7 +14,7 @@ pub struct AuthorizationData {
     pub spend_auths: Vec<Signature<SpendAuth>>,
 }
 
-impl Protobuf for AuthorizationData {
+impl DomainType for AuthorizationData {
     type Proto = pb::AuthorizationData;
 }
 

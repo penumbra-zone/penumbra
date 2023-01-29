@@ -1,5 +1,5 @@
 use penumbra_crypto::rdsa::{Signature, SpendAuth};
-use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::stake::validator::Validator;
@@ -12,7 +12,7 @@ pub struct Definition {
     pub auth_sig: Signature<SpendAuth>,
 }
 
-impl Protobuf for Definition {
+impl DomainType for Definition {
     type Proto = pb::ValidatorDefinition;
 }
 

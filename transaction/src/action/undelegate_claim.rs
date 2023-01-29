@@ -3,7 +3,7 @@ use penumbra_crypto::{
     proofs::transparent::UndelegateClaimProof,
     stake::{IdentityKey, Penalty},
 };
-use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::{ActionView, IsAction, TransactionPerspective};
@@ -40,7 +40,7 @@ impl IsAction for UndelegateClaim {
     }
 }
 
-impl Protobuf for UndelegateClaimBody {
+impl DomainType for UndelegateClaimBody {
     type Proto = pb::UndelegateClaimBody;
 }
 
@@ -78,7 +78,7 @@ impl TryFrom<pb::UndelegateClaimBody> for UndelegateClaimBody {
     }
 }
 
-impl Protobuf for UndelegateClaim {
+impl DomainType for UndelegateClaim {
     type Proto = pb::UndelegateClaim;
 }
 

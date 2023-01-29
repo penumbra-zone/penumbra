@@ -17,7 +17,7 @@ use proto::client::v1alpha1::GetStatusRequest;
 use proto::client::v1alpha1::GetStatusResponse;
 use proto::client::v1alpha1::GetTxRequest;
 use proto::client::v1alpha1::GetTxResponse;
-use proto::Protobuf;
+use proto::DomainType;
 use tendermint::block::Height;
 use tendermint_rpc::abci;
 use tendermint_rpc::abci::Path;

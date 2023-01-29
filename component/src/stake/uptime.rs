@@ -1,6 +1,6 @@
 use bitvec::prelude::*;
 
-use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 /// Records information on a validator's uptime.
@@ -83,7 +83,7 @@ impl Uptime {
     }
 }
 
-impl Protobuf for Uptime {
+impl DomainType for Uptime {
     type Proto = pb::Uptime;
 }
 

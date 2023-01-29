@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use penumbra_chain::params::FmdParameters;
 use penumbra_chain::{genesis, AppHash, StateWriteExt as _};
-use penumbra_proto::{Protobuf, StateWriteProto};
+use penumbra_proto::{DomainType, StateWriteProto};
 use penumbra_storage::{ArcStateExt, State, Storage};
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, types::ValidatorUpdate};

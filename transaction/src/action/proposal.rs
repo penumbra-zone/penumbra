@@ -6,7 +6,7 @@ use penumbra_crypto::{
     asset::{self, Amount, Denom},
     balance, Balance, Fr, ProposalNft, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_proto::{core::governance::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType};
 
 use crate::{plan::TransactionPlan, ActionView, EffectHash, IsAction, TransactionPerspective};
 
@@ -154,7 +154,7 @@ impl TryFrom<pb::Proposal> for Proposal {
     }
 }
 
-impl Protobuf for Proposal {
+impl DomainType for Proposal {
     type Proto = pb::Proposal;
 }
 
@@ -360,7 +360,7 @@ impl TryFrom<pb::ProposalSubmit> for ProposalSubmit {
     }
 }
 
-impl Protobuf for ProposalSubmit {
+impl DomainType for ProposalSubmit {
     type Proto = pb::ProposalSubmit;
 }
 
@@ -421,7 +421,7 @@ impl TryFrom<pb::ProposalWithdraw> for ProposalWithdraw {
     }
 }
 
-impl Protobuf for ProposalWithdraw {
+impl DomainType for ProposalWithdraw {
     type Proto = pb::ProposalWithdraw;
 }
 
@@ -570,7 +570,7 @@ impl State {
     }
 }
 
-impl Protobuf for State {
+impl DomainType for State {
     type Proto = pb::ProposalState;
 }
 
@@ -739,7 +739,7 @@ impl TryFrom<Withdrawn<String>> for Withdrawn<()> {
     }
 }
 
-impl Protobuf for Outcome<String> {
+impl DomainType for Outcome<String> {
     type Proto = pb::ProposalOutcome;
 }
 
@@ -793,7 +793,7 @@ impl TryFrom<pb::ProposalOutcome> for Outcome<String> {
     }
 }
 
-impl Protobuf for Outcome<()> {
+impl DomainType for Outcome<()> {
     type Proto = pb::ProposalOutcome;
 }
 

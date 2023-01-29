@@ -4,7 +4,7 @@ use penumbra_crypto::{
     proofs::transparent::SpendProof, Address, FieldExt, Fr, FullViewingKey, Note, Rseed, Value,
     STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_proto::{core::transaction::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
 use penumbra_tct as tct;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
@@ -101,7 +101,7 @@ impl SpendPlan {
     }
 }
 
-impl Protobuf for SpendPlan {
+impl DomainType for SpendPlan {
     type Proto = pb::SpendPlan;
 }
 

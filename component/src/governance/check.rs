@@ -6,7 +6,7 @@ use penumbra_transaction::action::{
 };
 
 pub mod stateless {
-    use penumbra_proto::Protobuf;
+    use penumbra_proto::DomainType;
     use penumbra_transaction::action::{Proposal, ProposalDepositClaim};
 
     use super::*;

@@ -10,7 +10,7 @@ use penumbra_component::stake::{
     FundingStream, FundingStreams,
 };
 use penumbra_crypto::{stake::IdentityKey, transaction::Fee, GovernanceKey};
-use penumbra_proto::{core::stake::v1alpha1::Validator as ProtoValidator, Message, Protobuf};
+use penumbra_proto::{core::stake::v1alpha1::Validator as ProtoValidator, DomainType, Message};
 use penumbra_transaction::action::{ValidatorVote, ValidatorVoteBody, Vote};
 use penumbra_wallet::plan;
 use rand_core::OsRng;

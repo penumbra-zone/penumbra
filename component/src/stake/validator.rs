@@ -1,7 +1,7 @@
 //! Penumbra validators and related structures.
 
 use penumbra_crypto::{Address, GovernanceKey};
-use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 use serde_with::DisplayFromStr;
 
@@ -179,7 +179,7 @@ impl From<FundingStreamToml> for FundingStream {
     }
 }
 
-impl Protobuf for Validator {
+impl DomainType for Validator {
     type Proto = pb::Validator;
 }
 

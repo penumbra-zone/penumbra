@@ -6,7 +6,9 @@ use std::convert::{TryFrom, TryInto};
 
 use decaf377::FieldExt;
 use decaf377_rdsa::{SpendAuth, VerificationKey};
-use penumbra_proto::{core::transparent_proofs::v1alpha1 as transparent_proofs, Message, Protobuf};
+use penumbra_proto::{
+    core::transparent_proofs::v1alpha1 as transparent_proofs, DomainType, Message,
+};
 use penumbra_tct as tct;
 
 use super::transparent_gadgets as gadgets;
@@ -134,7 +136,7 @@ impl OutputProof {
 
 // Conversions
 
-impl Protobuf for SpendProof {
+impl DomainType for SpendProof {
     type Proto = transparent_proofs::SpendProof;
 }
 
@@ -199,7 +201,7 @@ impl TryFrom<transparent_proofs::SpendProof> for SpendProof {
     }
 }
 
-impl Protobuf for OutputProof {
+impl DomainType for OutputProof {
     type Proto = transparent_proofs::OutputProof;
 }
 
@@ -404,7 +406,7 @@ impl TryFrom<&[u8]> for SwapClaimProof {
     }
 }
 
-impl Protobuf for SwapClaimProof {
+impl DomainType for SwapClaimProof {
     type Proto = transparent_proofs::SwapClaimProof;
 }
 
@@ -504,7 +506,7 @@ impl SwapProof {
     }
 }
 
-impl Protobuf for SwapProof {
+impl DomainType for SwapProof {
     type Proto = transparent_proofs::SwapProof;
 }
 
@@ -589,7 +591,7 @@ impl UndelegateClaimProof {
     }
 }
 
-impl Protobuf for UndelegateClaimProof {
+impl DomainType for UndelegateClaimProof {
     type Proto = transparent_proofs::UndelegateClaimProof;
 }
 

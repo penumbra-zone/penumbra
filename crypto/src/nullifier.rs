@@ -4,7 +4,7 @@ use ark_relations::r1cs::SynthesisError;
 use decaf377::{r1cs::FqVar, FieldExt, Fq};
 
 use once_cell::sync::Lazy;
-use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord, Serialize, Deserialize)]
@@ -18,7 +18,7 @@ impl Nullifier {
     }
 }
 
-impl Protobuf for Nullifier {
+impl DomainType for Nullifier {
     type Proto = pb::Nullifier;
 }
 

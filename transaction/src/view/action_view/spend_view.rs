@@ -1,5 +1,5 @@
 use penumbra_crypto::Note;
-use penumbra_proto::{core::transaction::v1alpha1 as pbt, Protobuf};
+use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::action::Spend;
@@ -12,7 +12,7 @@ pub enum SpendView {
     Opaque { spend: Spend },
 }
 
-impl Protobuf for SpendView {
+impl DomainType for SpendView {
     type Proto = pbt::SpendView;
 }
 

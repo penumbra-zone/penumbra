@@ -7,7 +7,7 @@ use aes::Aes128;
 use anyhow::anyhow;
 use ark_ff::PrimeField;
 use derivative::Derivative;
-use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::Fq;
@@ -55,7 +55,7 @@ impl TryFrom<&[u8]> for Diversifier {
     }
 }
 
-impl Protobuf for Diversifier {
+impl DomainType for Diversifier {
     type Proto = pb::Diversifier;
 }
 
@@ -232,7 +232,7 @@ impl TryFrom<&[u8]> for AddressIndex {
     }
 }
 
-impl Protobuf for AddressIndex {
+impl DomainType for AddressIndex {
     type Proto = pb::AddressIndex;
 }
 

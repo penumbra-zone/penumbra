@@ -1,5 +1,5 @@
 use decaf377::FieldExt;
-use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
 use poseidon377::Fq;
 
 /// A commitment to a note or swap.
@@ -26,7 +26,7 @@ impl Commitment {
     }
 }
 
-impl Protobuf for Commitment {
+impl DomainType for Commitment {
     type Proto = pb::StateCommitment;
 }
 

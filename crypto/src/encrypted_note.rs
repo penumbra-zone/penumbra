@@ -2,7 +2,7 @@ use anyhow::{Context, Error};
 
 use bytes::Bytes;
 
-use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::{asset::Amount, ka, note, FullViewingKey, Note};
@@ -72,7 +72,7 @@ impl std::fmt::Debug for EncryptedNote {
     }
 }
 
-impl Protobuf for EncryptedNote {
+impl DomainType for EncryptedNote {
     type Proto = pb::EncryptedNote;
 }
 

@@ -2,7 +2,7 @@ use penumbra_proto::{
     client::v1alpha1::NextValidatorRateRequest,
     core::crypto::v1alpha1 as pb,
     serializers::bech32str::{self, validator_identity_key::BECH32_PREFIX},
-    Protobuf,
+    DomainType,
 };
 use serde::{Deserialize, Serialize};
 
@@ -47,7 +47,7 @@ impl std::fmt::Debug for IdentityKey {
     }
 }
 
-impl Protobuf for IdentityKey {
+impl DomainType for IdentityKey {
     type Proto = pb::IdentityKey;
 }
 

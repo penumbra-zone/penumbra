@@ -1,6 +1,6 @@
 use crate::asset::Amount;
 use penumbra_proto::{
-    client::v1alpha1::StubCpmmReservesResponse, core::dex::v1alpha1 as pb, Protobuf,
+    client::v1alpha1::StubCpmmReservesResponse, core::dex::v1alpha1 as pb, DomainType,
 };
 
 /// The reserves of a position.
@@ -15,7 +15,7 @@ pub struct Reserves {
     pub r2: Amount,
 }
 
-impl Protobuf for Reserves {
+impl DomainType for Reserves {
     type Proto = pb::Reserves;
 }
 

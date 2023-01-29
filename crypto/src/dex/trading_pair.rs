@@ -1,6 +1,6 @@
 use anyhow::anyhow;
 use decaf377::FieldExt;
-use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
 
@@ -23,7 +23,7 @@ impl DirectedTradingPair {
     }
 }
 
-impl Protobuf for DirectedTradingPair {
+impl DomainType for DirectedTradingPair {
     type Proto = pb::DirectedTradingPair;
 }
 
@@ -114,7 +114,7 @@ impl TryFrom<[u8; 64]> for TradingPair {
     }
 }
 
-impl Protobuf for TradingPair {
+impl DomainType for TradingPair {
     type Proto = pb::TradingPair;
 }
 

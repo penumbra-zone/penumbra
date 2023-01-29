@@ -1,5 +1,5 @@
 use penumbra_proto::core::{ibc::v1alpha1::IbcAction, stake::v1alpha1::ValidatorDefinition};
-use penumbra_proto::{core::transaction::v1alpha1 as pbt, Protobuf};
+use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType};
 use serde::{Deserialize, Serialize};
 
 pub mod output_view;
@@ -44,7 +44,7 @@ pub enum ActionView {
     Ics20Withdrawal(Ics20Withdrawal),
 }
 
-impl Protobuf for ActionView {
+impl DomainType for ActionView {
     type Proto = pbt::ActionView;
 }
 

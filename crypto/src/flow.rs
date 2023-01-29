@@ -1,6 +1,6 @@
 use std::ops::{Add, AddAssign, Deref, DerefMut};
 
-use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -41,7 +41,7 @@ impl AddAssign for MockFlowCiphertext {
     }
 }
 
-impl Protobuf for MockFlowCiphertext {
+impl DomainType for MockFlowCiphertext {
     type Proto = pb::MockFlowCiphertext;
 }
 

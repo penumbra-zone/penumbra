@@ -1,4 +1,4 @@
-use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
 
 use crate::{asset, balance, Balance, Fr, Value, STAKING_TOKEN_ASSET_ID};
 
@@ -40,7 +40,7 @@ impl Fee {
     }
 }
 
-impl Protobuf for Fee {
+impl DomainType for Fee {
     type Proto = pb::Fee;
 }
 

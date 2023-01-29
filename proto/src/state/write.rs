@@ -1,4 +1,4 @@
-use crate::{Message, Protobuf};
+use crate::{DomainType, Message};
 
 use std::fmt::Debug;
 
@@ -8,7 +8,7 @@ pub trait StateWriteProto: StateWrite + Send + Sync {
     /// Puts a domain type into the verifiable key-value store with the given key.
     fn put<D>(&mut self, key: String, value: D)
     where
-        D: Protobuf,
+        D: DomainType,
         <D as TryFrom<D::Proto>>::Error: Into<anyhow::Error> + Send + Sync + 'static,
     {
         self.put_proto(key, D::Proto::from(value));

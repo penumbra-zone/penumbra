@@ -4,7 +4,7 @@ use std::{collections::BTreeMap, str::FromStr};
 use anyhow::{Context as _, Result};
 use penumbra_chain::params::ChainParameters;
 use penumbra_proto::{
-    client::v1alpha1::MutableParametersResponse, core::governance::v1alpha1 as pb, Protobuf,
+    client::v1alpha1::MutableParametersResponse, core::governance::v1alpha1 as pb, DomainType,
 };
 use serde::{Deserialize, Serialize};
 
@@ -23,7 +23,7 @@ pub enum MutableParam {
     MissedBlocksMaximum,
 }
 
-impl Protobuf for MutableParam {
+impl DomainType for MutableParam {
     type Proto = pb::MutableChainParameter;
 }
 

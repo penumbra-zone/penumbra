@@ -1,5 +1,5 @@
 use penumbra_crypto::{Note, PayloadKey};
-use penumbra_proto::{core::transaction::v1alpha1 as pbt, Protobuf};
+use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::action::Output;
@@ -18,7 +18,7 @@ pub enum OutputView {
     },
 }
 
-impl Protobuf for OutputView {
+impl DomainType for OutputView {
     type Proto = pbt::OutputView;
 }
 

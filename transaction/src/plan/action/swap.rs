@@ -4,7 +4,7 @@ use ark_ff::UniformRand;
 use penumbra_crypto::dex::swap::SwapPlaintext;
 use penumbra_crypto::Balance;
 use penumbra_crypto::{ka, proofs::transparent::SwapProof, FieldExt, Fr, FullViewingKey, Value};
-use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
@@ -91,7 +91,7 @@ impl SwapPlan {
     }
 }
 
-impl Protobuf for SwapPlan {
+impl DomainType for SwapPlan {
     type Proto = pb::SwapPlan;
 }
 

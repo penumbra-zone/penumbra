@@ -1,4 +1,4 @@
-use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
 use regex::Regex;
 
 use super::position::{Id, State};
@@ -117,7 +117,7 @@ impl std::cmp::PartialEq for LpNft {
 
 impl std::cmp::Eq for LpNft {}
 
-impl Protobuf for LpNft {
+impl DomainType for LpNft {
     type Proto = pb::LpNft;
 }
 

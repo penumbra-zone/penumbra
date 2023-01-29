@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
-use penumbra_proto::{core::governance::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType};
 
 /// A protobuf-represented duplicate-free set of proposal ids.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -9,7 +9,7 @@ pub struct ProposalList {
     pub proposals: BTreeSet<u64>,
 }
 
-impl Protobuf for ProposalList {
+impl DomainType for ProposalList {
     type Proto = pb::ProposalList;
 }
 

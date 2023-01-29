@@ -10,7 +10,7 @@ use decaf377::Fq;
 use decaf377::Fr;
 use once_cell::sync::Lazy;
 use penumbra_proto::core::crypto::v1alpha1 as pb;
-use penumbra_proto::Protobuf;
+use penumbra_proto::DomainType;
 
 use crate::asset::VALUE_GENERATOR_DOMAIN_SEP;
 use crate::value::ValueVar;
@@ -154,7 +154,7 @@ impl TryFrom<&[u8]> for Commitment {
     }
 }
 
-impl Protobuf for Commitment {
+impl DomainType for Commitment {
     type Proto = pb::BalanceCommitment;
 }
 

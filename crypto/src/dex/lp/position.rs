@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Context};
-use penumbra_proto::{core::dex::v1alpha1 as pb, serializers::bech32str, Protobuf};
+use penumbra_proto::{core::dex::v1alpha1 as pb, serializers::bech32str, DomainType};
 use serde::{Deserialize, Serialize};
 
 use super::trading_function::TradingFunction;
@@ -118,7 +118,7 @@ impl std::str::FromStr for State {
 
 // ==== Protobuf impls
 
-impl Protobuf for Position {
+impl DomainType for Position {
     type Proto = pb::Position;
 }
 
@@ -149,7 +149,7 @@ impl From<Position> for pb::Position {
     }
 }
 
-impl Protobuf for Id {
+impl DomainType for Id {
     type Proto = pb::PositionId;
 }
 
@@ -175,7 +175,7 @@ impl From<Id> for pb::PositionId {
     }
 }
 
-impl Protobuf for State {
+impl DomainType for State {
     type Proto = pb::PositionState;
 }
 

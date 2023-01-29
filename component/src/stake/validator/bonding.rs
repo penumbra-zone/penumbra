@@ -1,4 +1,4 @@
-use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
@@ -34,7 +34,7 @@ impl std::fmt::Display for State {
     }
 }
 
-impl Protobuf for State {
+impl DomainType for State {
     type Proto = pb::BondingState;
 }
 

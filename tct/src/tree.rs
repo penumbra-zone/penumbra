@@ -4,7 +4,7 @@ use std::{
 };
 
 use decaf377::{FieldExt, Fq};
-use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
 
 use crate::error::*;
 use crate::prelude::{Witness as _, *};
@@ -83,7 +83,7 @@ impl From<Root> for pb::MerkleRoot {
     }
 }
 
-impl Protobuf for Root {
+impl DomainType for Root {
     type Proto = pb::MerkleRoot;
 }
 

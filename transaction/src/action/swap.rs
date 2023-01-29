@@ -7,7 +7,7 @@ use penumbra_crypto::dex::TradingPair;
 use penumbra_crypto::proofs::transparent::SwapProof;
 use penumbra_crypto::Value;
 use penumbra_crypto::{balance, dex::swap::SwapCiphertext, Balance};
-use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
 
 use crate::view::action_view::SwapView;
 use crate::{ActionView, IsAction, TransactionPerspective};
@@ -59,7 +59,7 @@ impl IsAction for Swap {
     }
 }
 
-impl Protobuf for Swap {
+impl DomainType for Swap {
     type Proto = pb::Swap;
 }
 
@@ -95,7 +95,7 @@ pub struct Body {
     pub payload: SwapPayload,
 }
 
-impl Protobuf for Body {
+impl DomainType for Body {
     type Proto = pb::SwapBody;
 }
 

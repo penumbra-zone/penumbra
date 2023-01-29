@@ -1,6 +1,6 @@
 use decaf377_fmd::{Clue, ExpandedClueKey};
 use penumbra_crypto::Address;
-use penumbra_proto::{core::transaction::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
 
 use rand::{CryptoRng, RngCore};
 
@@ -37,7 +37,7 @@ impl CluePlan {
     }
 }
 
-impl Protobuf for CluePlan {
+impl DomainType for CluePlan {
     type Proto = pb::CluePlan;
 }
 
