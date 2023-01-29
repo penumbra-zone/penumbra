@@ -18,7 +18,7 @@ use penumbra_proto::{
         CompactBlockRangeResponse, MutableParametersRequest, MutableParametersResponse,
         ValidatorInfoRequest, ValidatorInfoResponse,
     },
-    Protobuf,
+    DomainType,
 };
 use tokio::sync::mpsc;
 use tonic::Status;

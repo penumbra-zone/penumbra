@@ -7,12 +7,12 @@ use ibc::core::ics02_client::trust_threshold::TrustThreshold;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::core::ics24_host::identifier::ConnectionId;
 use ibc_proto::google::protobuf::Any;
-use penumbra_proto::{core::ibc::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::ibc::v1alpha1 as pb, DomainType};
 
 #[derive(Clone, Debug)]
 pub struct ClientCounter(pub u64);
 
-impl Protobuf for ClientCounter {
+impl DomainType for ClientCounter {
     type Proto = pb::ClientCounter;
 }
 
@@ -35,7 +35,7 @@ pub struct VerifiedHeights {
     pub heights: Vec<Height>,
 }
 
-impl Protobuf for VerifiedHeights {
+impl DomainType for VerifiedHeights {
     type Proto = pb::VerifiedHeights;
 }
 
@@ -64,7 +64,7 @@ pub struct ClientConnections {
     pub connection_ids: Vec<ConnectionId>,
 }
 
-impl Protobuf for ClientConnections {
+impl DomainType for ClientConnections {
     type Proto = pb::ClientConnections;
 }
 

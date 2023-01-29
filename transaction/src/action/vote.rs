@@ -6,7 +6,7 @@ use std::{
 use anyhow::anyhow;
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_crypto::{stake::IdentityKey, GovernanceKey};
-use penumbra_proto::{core::governance::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::{ActionView, IsAction, TransactionPerspective};
@@ -106,7 +106,7 @@ mod test {
     }
 }
 
-impl Protobuf for Vote {
+impl DomainType for Vote {
     type Proto = pb::Vote;
 }
 
@@ -205,7 +205,7 @@ impl TryFrom<pb::ValidatorVoteBody> for ValidatorVoteBody {
     }
 }
 
-impl Protobuf for ValidatorVoteBody {
+impl DomainType for ValidatorVoteBody {
     type Proto = pb::ValidatorVoteBody;
 }
 

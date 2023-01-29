@@ -1,6 +1,6 @@
 use decaf377::{FieldExt, Fr};
 use penumbra_crypto::Note;
-use penumbra_proto::{core::governance::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType};
 use penumbra_tct as tct;
 use serde::{Deserialize, Serialize};
 
@@ -57,6 +57,6 @@ impl TryFrom<pb::DelegatorVotePlan> for DelegatorVotePlan {
     }
 }
 
-impl Protobuf for DelegatorVotePlan {
+impl DomainType for DelegatorVotePlan {
     type Proto = pb::DelegatorVotePlan;
 }

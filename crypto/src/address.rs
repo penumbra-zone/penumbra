@@ -3,7 +3,7 @@ use std::io::{Cursor, Read, Write};
 use anyhow::Context;
 use ark_serialize::CanonicalDeserialize;
 use f4jumble::{f4jumble, f4jumble_inv};
-use penumbra_proto::{core::crypto::v1alpha1 as pb, serializers::bech32str, Protobuf};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, serializers::bech32str, DomainType};
 use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 
@@ -127,7 +127,7 @@ impl Address {
     }
 }
 
-impl Protobuf for Address {
+impl DomainType for Address {
     type Proto = pb::Address;
 }
 

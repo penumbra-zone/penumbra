@@ -2,7 +2,7 @@
 
 use penumbra_crypto::{stake::Penalty, Amount};
 use penumbra_proto::{
-    client::v1alpha1::NextValidatorRateResponse, core::stake::v1alpha1 as pb, Protobuf,
+    client::v1alpha1::NextValidatorRateResponse, core::stake::v1alpha1 as pb, DomainType,
 };
 use penumbra_transaction::action::{Delegate, Undelegate};
 use serde::{Deserialize, Serialize};
@@ -194,7 +194,7 @@ impl BaseRateData {
     }
 }
 
-impl Protobuf for RateData {
+impl DomainType for RateData {
     type Proto = pb::RateData;
 }
 
@@ -224,7 +224,7 @@ impl TryFrom<pb::RateData> for RateData {
     }
 }
 
-impl Protobuf for BaseRateData {
+impl DomainType for BaseRateData {
     type Proto = pb::BaseRateData;
 }
 

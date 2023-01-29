@@ -6,7 +6,7 @@ use penumbra_crypto::{
     Nullifier,
 };
 use penumbra_proto::{
-    client::v1alpha1::CompactBlockRangeResponse, core::chain::v1alpha1 as pb, Protobuf,
+    client::v1alpha1::CompactBlockRangeResponse, core::chain::v1alpha1 as pb, DomainType,
 };
 use penumbra_tct::builder::{block, epoch};
 use serde::{Deserialize, Serialize};
@@ -66,7 +66,7 @@ impl CompactBlock {
     }
 }
 
-impl Protobuf for CompactBlock {
+impl DomainType for CompactBlock {
     type Proto = pb::CompactBlock;
 }
 

@@ -3,7 +3,7 @@ use penumbra_crypto::{
     dex::{swap::SwapPlaintext, BatchSwapOutputData},
     Nullifier,
 };
-use penumbra_proto::{view::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{view::v1alpha1 as pb, DomainType};
 use penumbra_tct as tct;
 
 use serde::{Deserialize, Serialize};
@@ -21,7 +21,7 @@ pub struct SwapRecord {
     pub source: NoteSource,
 }
 
-impl Protobuf for SwapRecord {
+impl DomainType for SwapRecord {
     type Proto = pb::SwapRecord;
 }
 impl From<SwapRecord> for pb::SwapRecord {

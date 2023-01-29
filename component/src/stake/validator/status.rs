@@ -1,4 +1,4 @@
-use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::stake::{validator::BondingState, validator::State, IdentityKey};
@@ -22,7 +22,7 @@ pub struct Status {
     pub bonding_state: BondingState,
 }
 
-impl Protobuf for Status {
+impl DomainType for Status {
     type Proto = pb::ValidatorStatus;
 }
 

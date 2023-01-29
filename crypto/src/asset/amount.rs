@@ -1,6 +1,6 @@
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
-use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, iter::Sum, num::NonZeroU128, ops};
 
@@ -103,7 +103,7 @@ impl TryFrom<std::string::String> for Amount {
     }
 }
 
-impl Protobuf for Amount {
+impl DomainType for Amount {
     type Proto = pb::Amount;
 }
 

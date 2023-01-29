@@ -8,7 +8,7 @@ use penumbra_crypto::{
     rdsa::{Signature, SpendAuth, VerificationKey},
     Nullifier,
 };
-use penumbra_proto::{core::transaction::v1alpha1 as transaction, Protobuf};
+use penumbra_proto::{core::transaction::v1alpha1 as transaction, DomainType};
 
 use crate::{view::action_view::SpendView, ActionView, TransactionPerspective};
 
@@ -41,7 +41,7 @@ impl IsAction for Spend {
     }
 }
 
-impl Protobuf for Spend {
+impl DomainType for Spend {
     type Proto = transaction::Spend;
 }
 
@@ -90,7 +90,7 @@ pub struct Body {
     pub rk: VerificationKey<SpendAuth>,
 }
 
-impl Protobuf for Body {
+impl DomainType for Body {
     type Proto = transaction::SpendBody;
 }
 

@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 /// The state of a validator in the validator state machine.
@@ -34,7 +34,7 @@ impl std::fmt::Display for State {
     }
 }
 
-impl Protobuf for State {
+impl DomainType for State {
     type Proto = pb::ValidatorState;
 }
 

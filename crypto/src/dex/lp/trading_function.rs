@@ -1,4 +1,4 @@
-use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::dex::{fixed_encoding::FixedEncoding, TradingPair};
@@ -65,7 +65,7 @@ impl From<TradingFunction> for pb::TradingFunction {
     }
 }
 
-impl Protobuf for TradingFunction {
+impl DomainType for TradingFunction {
     type Proto = pb::TradingFunction;
 }
 
@@ -128,7 +128,7 @@ impl BareTradingFunction {
     }
 }
 
-impl Protobuf for BareTradingFunction {
+impl DomainType for BareTradingFunction {
     type Proto = pb::BareTradingFunction;
 }
 

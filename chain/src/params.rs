@@ -4,7 +4,7 @@ use penumbra_proto::client::v1alpha1 as pb_client;
 use penumbra_proto::core::chain::v1alpha1 as pb_chain;
 use penumbra_proto::core::crypto::v1alpha1 as pb_crypto;
 use penumbra_proto::view::v1alpha1 as pb_view;
-use penumbra_proto::Protobuf;
+use penumbra_proto::DomainType;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug)]
@@ -15,7 +15,7 @@ pub struct AssetInfo {
     pub total_supply: u64,
 }
 
-impl Protobuf for AssetInfo {
+impl DomainType for AssetInfo {
     type Proto = pb_chain::AssetInfo;
 }
 
@@ -87,7 +87,7 @@ pub struct ChainParameters {
     pub proposal_veto_threshold: Ratio<u64>,
 }
 
-impl Protobuf for ChainParameters {
+impl DomainType for ChainParameters {
     type Proto = pb_chain::ChainParameters;
 }
 
@@ -230,7 +230,7 @@ pub struct FmdParameters {
     pub as_of_block_height: u64,
 }
 
-impl Protobuf for FmdParameters {
+impl DomainType for FmdParameters {
     type Proto = pb_chain::FmdParameters;
 }
 

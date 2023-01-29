@@ -3,7 +3,7 @@ use std::convert::{TryFrom, TryInto};
 use penumbra_crypto::balance;
 use penumbra_proto::{
     core::ibc::v1alpha1 as pb_ibc, core::stake::v1alpha1 as pbs, core::transaction::v1alpha1 as pb,
-    Protobuf,
+    DomainType,
 };
 
 mod delegate;
@@ -120,7 +120,7 @@ impl IsAction for Action {
     }
 }
 
-impl Protobuf for Action {
+impl DomainType for Action {
     type Proto = pb::Action;
 }
 

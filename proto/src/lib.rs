@@ -12,7 +12,7 @@
 //! └───────┘  format  └──────────────┘   boundary    └──────────────┘
 //! ```
 //!
-//! The [`Protobuf`] marker trait can be implemented on a domain type to ensure
+//! The [`DomainType`] marker trait can be implemented on a domain type to ensure
 //! these conversions exist.
 
 // The autogen code is not clippy-clean, so we disable some clippy warnings for this crate.
@@ -24,7 +24,7 @@ pub use prost::Message;
 pub mod serializers;
 
 mod protobuf;
-pub use protobuf::Protobuf;
+pub use protobuf::DomainType;
 
 #[cfg(feature = "penumbra-storage")]
 mod state;
@@ -161,7 +161,7 @@ pub mod penumbra {
                 /// Get the typed domain value corresponding to a state key.
                 pub async fn key_domain<T>(&mut self, key: impl AsRef<str>) -> anyhow::Result<T>
                 where
-                    T: crate::Protobuf,
+                    T: crate::DomainType,
                     <T as TryFrom<T::Proto>>::Error: Into<anyhow::Error> + Send + Sync + 'static,
                     C: tonic::client::GrpcService<BoxBody> + 'static,
                     C::ResponseBody: Send,
@@ -188,7 +188,7 @@ pub mod penumbra {
                     Pin<Box<dyn Stream<Item = anyhow::Result<(String, T)>> + Send + 'static>>,
                 >
                 where
-                    T: crate::Protobuf + Send + 'static + Unpin,
+                    T: crate::DomainType + Send + 'static + Unpin,
                     <T as TryFrom<T::Proto>>::Error: Into<anyhow::Error> + Send + Sync + 'static,
                     C: tonic::client::GrpcService<BoxBody> + 'static,
                     C::ResponseBody: Send,

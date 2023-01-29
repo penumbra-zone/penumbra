@@ -1,7 +1,7 @@
 use penumbra_proto::{
     core::crypto::v1alpha1 as pb,
     serializers::bech32str::{self, validator_governance_key::BECH32_PREFIX},
-    Protobuf,
+    DomainType,
 };
 use serde::{Deserialize, Serialize};
 
@@ -46,7 +46,7 @@ impl std::fmt::Debug for GovernanceKey {
     }
 }
 
-impl Protobuf for GovernanceKey {
+impl DomainType for GovernanceKey {
     type Proto = pb::GovernanceKey;
 }
 

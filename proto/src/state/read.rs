@@ -1,4 +1,4 @@
-use crate::{Message, Protobuf};
+use crate::{DomainType, Message};
 
 use anyhow::Result;
 use std::fmt::Debug;
@@ -19,7 +19,7 @@ pub trait StateReadProto: StateRead + Send + Sync {
     /// * `Err(_)` if the value is present but not parseable as a domain type `D`, or if an underlying storage error occurred.
     async fn get<D>(&self, key: &str) -> Result<Option<D>>
     where
-        D: Protobuf + std::fmt::Debug,
+        D: DomainType + std::fmt::Debug,
         <D as TryFrom<D::Proto>>::Error: Into<anyhow::Error> + Send + Sync + 'static,
     {
         match self.get_proto(key).await {
@@ -66,7 +66,7 @@ pub trait StateReadProto: StateRead + Send + Sync {
         prefix: &'a str,
     ) -> Pin<Box<dyn Stream<Item = Result<(String, D)>> + Send + 'a>>
     where
-        D: Protobuf,
+        D: DomainType,
         <D as TryFrom<D::Proto>>::Error: Into<anyhow::Error> + Send + Sync + 'static,
     {
         Box::pin(self.prefix_proto(prefix).map(|p| match p {

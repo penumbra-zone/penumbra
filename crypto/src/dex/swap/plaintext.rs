@@ -4,7 +4,7 @@ use anyhow::{anyhow, Error, Result};
 use ark_ff::PrimeField;
 use decaf377::{FieldExt, Fq};
 use once_cell::sync::Lazy;
-use penumbra_proto::{core::crypto::v1alpha1 as pb_crypto, core::dex::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::crypto::v1alpha1 as pb_crypto, core::dex::v1alpha1 as pb, DomainType};
 use penumbra_tct::Commitment;
 use poseidon377::{hash_1, hash_4, hash_7};
 use rand::{CryptoRng, RngCore};
@@ -167,7 +167,7 @@ impl SwapPlaintext {
     }
 }
 
-impl Protobuf for SwapPlaintext {
+impl DomainType for SwapPlaintext {
     type Proto = pb::SwapPlaintext;
 }
 

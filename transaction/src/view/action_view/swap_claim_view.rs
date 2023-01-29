@@ -1,5 +1,5 @@
 use penumbra_crypto::Note;
-use penumbra_proto::{core::dex::v1alpha1 as pbd, Protobuf};
+use penumbra_proto::{core::dex::v1alpha1 as pbd, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::action::SwapClaim;
@@ -18,7 +18,7 @@ pub enum SwapClaimView {
     },
 }
 
-impl Protobuf for SwapClaimView {
+impl DomainType for SwapClaimView {
     type Proto = pbd::SwapClaimView;
 }
 

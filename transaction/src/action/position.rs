@@ -8,7 +8,7 @@ use penumbra_crypto::{
     },
     Balance, Fr, Value, Zero,
 };
-use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
 
 use crate::{ActionView, TransactionPerspective};
 
@@ -173,7 +173,7 @@ impl IsAction for PositionRewardClaim {
     }
 }
 
-impl Protobuf for PositionOpen {
+impl DomainType for PositionOpen {
     type Proto = pb::PositionOpen;
 }
 
@@ -203,7 +203,7 @@ impl TryFrom<pb::PositionOpen> for PositionOpen {
     }
 }
 
-impl Protobuf for PositionClose {
+impl DomainType for PositionClose {
     type Proto = pb::PositionClose;
 }
 
@@ -228,7 +228,7 @@ impl TryFrom<pb::PositionClose> for PositionClose {
     }
 }
 
-impl Protobuf for PositionWithdraw {
+impl DomainType for PositionWithdraw {
     type Proto = pb::PositionWithdraw;
 }
 
@@ -258,7 +258,7 @@ impl TryFrom<pb::PositionWithdraw> for PositionWithdraw {
     }
 }
 
-impl Protobuf for PositionRewardClaim {
+impl DomainType for PositionRewardClaim {
     type Proto = pb::PositionRewardClaim;
 }
 

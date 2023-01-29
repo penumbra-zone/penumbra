@@ -1,7 +1,7 @@
 use std::convert::{From, TryFrom};
 
 /// A marker type that captures the relationships between a domain type (`Self`) and a protobuf type (`Self::Proto`).
-pub trait Protobuf
+pub trait DomainType
 where
     Self: Clone + Sized + TryFrom<Self::Proto>,
     Self::Proto: prost::Message + Default + From<Self> + Send + Sync + 'static,
@@ -41,13 +41,13 @@ use crate::core::ibc::v1alpha1::IbcAction;
 use decaf377_rdsa::{Binding, Signature, SpendAuth, VerificationKey};
 use ibc_rs::clients::ics07_tendermint;
 
-impl Protobuf for Signature<SpendAuth> {
+impl DomainType for Signature<SpendAuth> {
     type Proto = SpendAuthSignature;
 }
-impl Protobuf for Signature<Binding> {
+impl DomainType for Signature<Binding> {
     type Proto = BindingSignature;
 }
-impl Protobuf for VerificationKey<SpendAuth> {
+impl DomainType for VerificationKey<SpendAuth> {
     type Proto = SpendVerificationKey;
 }
 
@@ -100,7 +100,7 @@ impl TryFrom<SpendVerificationKey> for VerificationKey<SpendAuth> {
 use crate::core::crypto::v1alpha1::Clue as ProtoClue;
 use decaf377_fmd::Clue;
 
-impl Protobuf for Clue {
+impl DomainType for Clue {
     type Proto = ProtoClue;
 }
 
@@ -130,7 +130,7 @@ impl TryFrom<ProtoClue> for Clue {
 // this redefines its proto, because the encodings are consensus-critical
 // and we don't vendor all of the tendermint protos.
 
-impl Protobuf for tendermint::PublicKey {
+impl DomainType for tendermint::PublicKey {
     type Proto = crate::core::crypto::v1alpha1::ConsensusKey;
 }
 
@@ -150,7 +150,7 @@ impl TryFrom<crate::core::crypto::v1alpha1::ConsensusKey> for tendermint::Public
     }
 }
 
-impl Protobuf for num_rational::Ratio<u64> {
+impl DomainType for num_rational::Ratio<u64> {
     type Proto = crate::core::chain::v1alpha1::Ratio;
 }
 
@@ -182,21 +182,21 @@ use ibc_rs::core::ics03_connection::connection::ConnectionEnd;
 use ibc_rs::core::ics04_channel::channel::ChannelEnd;
 use ibc_rs::Height;
 
-impl Protobuf for ConnectionEnd {
+impl DomainType for ConnectionEnd {
     type Proto = RawConnectionEnd;
 }
-impl Protobuf for ChannelEnd {
+impl DomainType for ChannelEnd {
     type Proto = RawChannel;
 }
-impl Protobuf for Height {
+impl DomainType for Height {
     type Proto = RawHeight;
 }
 
 // TODO(erwan): create ticket to switch to a trait object based approach
-impl Protobuf for ics07_tendermint::client_state::ClientState {
+impl DomainType for ics07_tendermint::client_state::ClientState {
     type Proto = Any;
 }
-impl Protobuf for ics07_tendermint::consensus_state::ConsensusState {
+impl DomainType for ics07_tendermint::consensus_state::ConsensusState {
     type Proto = Any;
 }
 

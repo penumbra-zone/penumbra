@@ -6,7 +6,7 @@ use penumbra_transaction::Transaction;
 use std::sync::Arc;
 use tracing::instrument;
 
-use penumbra_proto::{core::stake::v1alpha1::ValidatorDefinition, Protobuf};
+use penumbra_proto::{core::stake::v1alpha1::ValidatorDefinition, DomainType};
 
 use crate::{
     action_handler::ActionHandler,

@@ -4,7 +4,7 @@ use ark_ff::PrimeField;
 use decaf377::Fq;
 use once_cell::sync::Lazy;
 use penumbra_proto::{
-    client::v1alpha1::BatchSwapOutputDataResponse, core::dex::v1alpha1 as pb, Protobuf,
+    client::v1alpha1::BatchSwapOutputDataResponse, core::dex::v1alpha1 as pb, DomainType,
 };
 
 use super::TradingPair;
@@ -66,7 +66,7 @@ impl BatchSwapOutputData {
     }
 }
 
-impl Protobuf for BatchSwapOutputData {
+impl DomainType for BatchSwapOutputData {
     type Proto = pb::BatchSwapOutputData;
 }
 

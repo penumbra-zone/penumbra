@@ -8,7 +8,7 @@ use penumbra_crypto::{
     symmetric::{OvkWrappedKey, WrappedMemoKey},
     EncryptedNote, Note,
 };
-use penumbra_proto::{core::transaction::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
 
 use crate::{view::action_view::OutputView, ActionView, TransactionPerspective};
 
@@ -72,7 +72,7 @@ pub struct Body {
     pub wrapped_memo_key: WrappedMemoKey,
 }
 
-impl Protobuf for Output {
+impl DomainType for Output {
     type Proto = pb::Output;
 }
 
@@ -102,7 +102,7 @@ impl TryFrom<pb::Output> for Output {
     }
 }
 
-impl Protobuf for Body {
+impl DomainType for Body {
     type Proto = pb::OutputBody;
 }
 

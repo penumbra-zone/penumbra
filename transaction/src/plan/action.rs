@@ -1,7 +1,7 @@
 use penumbra_crypto::Balance;
 use penumbra_proto::{
     core::ibc::v1alpha1 as pb_ibc, core::stake::v1alpha1 as pb_stake,
-    core::transaction::v1alpha1 as pb_t, Protobuf,
+    core::transaction::v1alpha1 as pb_t, DomainType,
 };
 use serde::{Deserialize, Serialize};
 
@@ -188,7 +188,7 @@ impl From<PositionRewardClaim> for ActionPlan {
     }
 }
 
-impl Protobuf for ActionPlan {
+impl DomainType for ActionPlan {
     type Proto = pb_t::ActionPlan;
 }
 

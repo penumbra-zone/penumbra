@@ -1,6 +1,6 @@
 use bytes::Bytes;
 use penumbra_crypto::{memo::MemoCiphertext, symmetric::PayloadKey};
-use penumbra_proto::{core::transaction::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
 
 use rand::{CryptoRng, RngCore};
 
@@ -26,7 +26,7 @@ impl MemoPlan {
     }
 }
 
-impl Protobuf for MemoPlan {
+impl DomainType for MemoPlan {
     type Proto = pb::MemoPlan;
 }
 

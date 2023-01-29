@@ -4,7 +4,7 @@ use decaf377_fmd::Clue;
 use penumbra_crypto::{
     dex::TradingPair, transaction::Fee, EncryptedNote, FullViewingKey, PayloadKey,
 };
-use penumbra_proto::{core::crypto::v1alpha1 as pb_crypto, Message, Protobuf};
+use penumbra_proto::{core::crypto::v1alpha1 as pb_crypto, DomainType, Message};
 
 use crate::{
     action::{
@@ -44,7 +44,7 @@ impl std::fmt::Debug for EffectHash {
     }
 }
 
-impl Protobuf for EffectHash {
+impl DomainType for EffectHash {
     type Proto = pb_crypto::EffectHash;
 }
 

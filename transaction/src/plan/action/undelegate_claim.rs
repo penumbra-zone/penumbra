@@ -3,7 +3,7 @@ use penumbra_crypto::{
     stake::{IdentityKey, Penalty, UnbondingToken},
     Amount, FieldExt, Fr,
 };
-use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
 
 use serde::{Deserialize, Serialize};
 
@@ -64,7 +64,7 @@ impl UndelegateClaimPlan {
     }
 }
 
-impl Protobuf for UndelegateClaimPlan {
+impl DomainType for UndelegateClaimPlan {
     type Proto = pb::UndelegateClaimPlan;
 }
 

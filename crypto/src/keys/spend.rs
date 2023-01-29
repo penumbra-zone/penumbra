@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 
 use hmac::Hmac;
 use pbkdf2::pbkdf2;
-use penumbra_proto::{core::crypto::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -42,7 +42,7 @@ impl PartialEq for SpendKey {
 
 impl Eq for SpendKey {}
 
-impl Protobuf for SpendKey {
+impl DomainType for SpendKey {
     type Proto = pb::SpendKey;
 }
 

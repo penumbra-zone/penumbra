@@ -6,7 +6,7 @@ use penumbra_crypto::{
     symmetric::WrappedMemoKey,
     Address, EncryptedNote, FieldExt, Fr, Note, PayloadKey, Rseed, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_proto::{core::transaction::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
@@ -120,7 +120,7 @@ impl OutputPlan {
     }
 }
 
-impl Protobuf for OutputPlan {
+impl DomainType for OutputPlan {
     type Proto = pb::OutputPlan;
 }
 

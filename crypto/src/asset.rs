@@ -1,6 +1,6 @@
 //! Asset types and identifiers.
 
-use penumbra_proto::{core::crypto::v1alpha1 as pb, view::v1alpha1::AssetsResponse, Protobuf};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, view::v1alpha1::AssetsResponse, DomainType};
 use serde::{Deserialize, Serialize};
 
 mod amount;
@@ -24,7 +24,7 @@ pub struct Asset {
     pub denom: Denom,
 }
 
-impl Protobuf for Asset {
+impl DomainType for Asset {
     type Proto = pb::Asset;
 }
 

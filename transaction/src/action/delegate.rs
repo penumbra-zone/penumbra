@@ -4,7 +4,7 @@ use penumbra_crypto::{
     stake::{DelegationToken, IdentityKey},
     Balance, Fr, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_proto::{core::stake::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::{ActionView, TransactionPerspective};
@@ -60,7 +60,7 @@ impl Delegate {
     }
 }
 
-impl Protobuf for Delegate {
+impl DomainType for Delegate {
     type Proto = pb::Delegate;
 }
 

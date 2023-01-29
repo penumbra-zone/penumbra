@@ -1,6 +1,6 @@
 use anyhow::Result;
 use colored_json::prelude::*;
-use penumbra_proto::{client::v1alpha1::GetTxRequest, Protobuf};
+use penumbra_proto::{client::v1alpha1::GetTxRequest, DomainType};
 use penumbra_transaction::Transaction;
 
 use crate::App;

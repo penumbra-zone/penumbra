@@ -6,7 +6,7 @@ use penumbra_crypto::dex::BatchSwapOutputData;
 use penumbra_crypto::transaction::Fee;
 use penumbra_crypto::{proofs::transparent::SwapClaimProof, Fr};
 use penumbra_crypto::{Balance, Nullifier};
-use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
 use penumbra_tct as tct;
 
 #[derive(Debug, Clone)]
@@ -53,7 +53,7 @@ impl SwapClaim {
     }
 }
 
-impl Protobuf for SwapClaim {
+impl DomainType for SwapClaim {
     type Proto = pb::SwapClaim;
 }
 
@@ -93,7 +93,7 @@ pub struct Body {
     pub output_data: BatchSwapOutputData,
 }
 
-impl Protobuf for Body {
+impl DomainType for Body {
     type Proto = pb::SwapClaimBody;
 }
 

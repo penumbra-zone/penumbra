@@ -2,7 +2,7 @@ use crate::asset;
 use crate::dex::lp::TradingFunction;
 use crate::dex::trading_pair::DirectedTradingPair;
 use anyhow::Result;
-use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 /// Contains a path for a trade, including the trading pair (with direction), the trading
@@ -47,7 +47,7 @@ impl Path {
     }
 }
 
-impl Protobuf for Path {
+impl DomainType for Path {
     type Proto = pb::Path;
 }
 

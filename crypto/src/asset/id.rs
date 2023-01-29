@@ -3,7 +3,7 @@ use ark_ff::fields::PrimeField;
 use ark_serialize::CanonicalDeserialize;
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
-use penumbra_proto::{core::crypto::v1alpha1 as pb, serializers::bech32str, Protobuf};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, serializers::bech32str, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::{Fq, Value};
@@ -49,7 +49,7 @@ impl TryFrom<pb::AssetId> for Id {
     }
 }
 
-impl Protobuf for Id {
+impl DomainType for Id {
     type Proto = pb::AssetId;
 }
 

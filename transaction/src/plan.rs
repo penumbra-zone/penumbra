@@ -5,7 +5,7 @@ use anyhow::Result;
 use penumbra_crypto::{transaction::Fee, Address};
 use penumbra_proto::{
     core::ibc::v1alpha1 as pb_ibc, core::stake::v1alpha1 as pb_stake,
-    core::transaction::v1alpha1 as pb, Protobuf,
+    core::transaction::v1alpha1 as pb, DomainType,
 };
 use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
@@ -218,7 +218,7 @@ impl TransactionPlan {
     }
 }
 
-impl Protobuf for TransactionPlan {
+impl DomainType for TransactionPlan {
     type Proto = pb::TransactionPlan;
 }
 

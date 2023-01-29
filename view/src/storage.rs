@@ -11,7 +11,7 @@ use penumbra_proto::{
     client::v1alpha1::{
         oblivious_query_service_client::ObliviousQueryServiceClient, ChainParametersRequest,
     },
-    Protobuf,
+    DomainType,
 };
 use penumbra_tct as tct;
 use penumbra_transaction::Transaction;

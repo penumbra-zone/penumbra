@@ -12,7 +12,7 @@ use penumbra_proto::{
         tendermint_proxy_service_client::TendermintProxyServiceClient, AssetListRequest,
         CompactBlockRangeRequest, GetBlockByHeightRequest,
     },
-    Protobuf,
+    DomainType,
 };
 use penumbra_transaction::Transaction;
 use sha2::Digest;

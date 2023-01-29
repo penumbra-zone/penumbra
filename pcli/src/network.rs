@@ -8,7 +8,7 @@ use penumbra_proto::{
         tendermint_proxy_service_client::TendermintProxyServiceClient, BroadcastTxAsyncRequest,
         BroadcastTxSyncRequest,
     },
-    Protobuf,
+    DomainType,
 };
 use penumbra_transaction::{plan::TransactionPlan, Transaction};
 use penumbra_view::ViewClient;

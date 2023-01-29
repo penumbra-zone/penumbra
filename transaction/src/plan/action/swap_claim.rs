@@ -4,7 +4,7 @@ use penumbra_crypto::{
     proofs::transparent::SwapClaimProof,
     FullViewingKey, Value,
 };
-use penumbra_proto::{core::dex::v1alpha1 as pb, Protobuf};
+use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
 use penumbra_tct as tct;
 
 use serde::{Deserialize, Serialize};
@@ -95,7 +95,7 @@ impl SwapClaimPlan {
     }
 }
 
-impl Protobuf for SwapClaimPlan {
+impl DomainType for SwapClaimPlan {
     type Proto = pb::SwapClaimPlan;
 }
 

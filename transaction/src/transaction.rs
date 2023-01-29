@@ -16,7 +16,7 @@ use penumbra_crypto::{
 };
 use penumbra_proto::{
     core::ibc::v1alpha1 as pb_ibc, core::stake::v1alpha1 as pbs,
-    core::transaction::v1alpha1 as pbt, Message, Protobuf,
+    core::transaction::v1alpha1 as pbt, DomainType, Message,
 };
 use penumbra_tct as tct;
 use serde::{Deserialize, Serialize};
@@ -322,7 +322,7 @@ impl From<TransactionBody> for Vec<u8> {
     }
 }
 
-impl Protobuf for TransactionBody {
+impl DomainType for TransactionBody {
     type Proto = pbt::TransactionBody;
 }
 
@@ -390,7 +390,7 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
         })
     }
 }
-impl Protobuf for Transaction {
+impl DomainType for Transaction {
     type Proto = pbt::Transaction;
 }
 
