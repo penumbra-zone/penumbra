@@ -23,7 +23,9 @@ impl DirectedTradingPair {
     }
 }
 
-impl Protobuf<pb::DirectedTradingPair> for DirectedTradingPair {}
+impl Protobuf for DirectedTradingPair {
+    type Proto = pb::DirectedTradingPair;
+}
 
 impl From<DirectedTradingPair> for pb::DirectedTradingPair {
     fn from(tp: DirectedTradingPair) -> Self {
@@ -112,7 +114,9 @@ impl TryFrom<[u8; 64]> for TradingPair {
     }
 }
 
-impl Protobuf<pb::TradingPair> for TradingPair {}
+impl Protobuf for TradingPair {
+    type Proto = pb::TradingPair;
+}
 
 impl From<TradingPair> for pb::TradingPair {
     fn from(tp: TradingPair) -> Self {

@@ -59,7 +59,9 @@ impl IsAction for Swap {
     }
 }
 
-impl Protobuf<pb::Swap> for Swap {}
+impl Protobuf for Swap {
+    type Proto = pb::Swap;
+}
 
 impl From<Swap> for pb::Swap {
     fn from(s: Swap) -> Self {
@@ -93,7 +95,9 @@ pub struct Body {
     pub payload: SwapPayload,
 }
 
-impl Protobuf<pb::SwapBody> for Body {}
+impl Protobuf for Body {
+    type Proto = pb::SwapBody;
+}
 
 impl From<Body> for pb::SwapBody {
     fn from(s: Body) -> Self {

@@ -66,7 +66,9 @@ impl BatchSwapOutputData {
     }
 }
 
-impl Protobuf<pb::BatchSwapOutputData> for BatchSwapOutputData {}
+impl Protobuf for BatchSwapOutputData {
+    type Proto = pb::BatchSwapOutputData;
+}
 
 impl From<BatchSwapOutputData> for pb::BatchSwapOutputData {
     fn from(s: BatchSwapOutputData) -> Self {

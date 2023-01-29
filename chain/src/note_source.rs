@@ -70,7 +70,9 @@ impl TryFrom<&[u8]> for NoteSource {
     }
 }
 
-impl Protobuf<pb::NoteSource> for NoteSource {}
+impl Protobuf for NoteSource {
+    type Proto = pb::NoteSource;
+}
 
 impl TryFrom<pb::NoteSource> for NoteSource {
     type Error = anyhow::Error;

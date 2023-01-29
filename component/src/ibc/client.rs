@@ -12,7 +12,9 @@ use penumbra_proto::{core::ibc::v1alpha1 as pb, Protobuf};
 #[derive(Clone, Debug)]
 pub struct ClientCounter(pub u64);
 
-impl Protobuf<pb::ClientCounter> for ClientCounter {}
+impl Protobuf for ClientCounter {
+    type Proto = pb::ClientCounter;
+}
 
 impl TryFrom<pb::ClientCounter> for ClientCounter {
     type Error = anyhow::Error;
@@ -33,7 +35,9 @@ pub struct VerifiedHeights {
     pub heights: Vec<Height>,
 }
 
-impl Protobuf<pb::VerifiedHeights> for VerifiedHeights {}
+impl Protobuf for VerifiedHeights {
+    type Proto = pb::VerifiedHeights;
+}
 
 impl TryFrom<pb::VerifiedHeights> for VerifiedHeights {
     type Error = anyhow::Error;
@@ -60,7 +64,9 @@ pub struct ClientConnections {
     pub connection_ids: Vec<ConnectionId>,
 }
 
-impl Protobuf<pb::ClientConnections> for ClientConnections {}
+impl Protobuf for ClientConnections {
+    type Proto = pb::ClientConnections;
+}
 
 impl TryFrom<pb::ClientConnections> for ClientConnections {
     type Error = anyhow::Error;

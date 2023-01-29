@@ -17,7 +17,9 @@ impl WitnessData {
     }
 }
 
-impl Protobuf<pb::WitnessData> for WitnessData {}
+impl Protobuf for WitnessData {
+    type Proto = pb::WitnessData;
+}
 
 impl From<WitnessData> for pb::WitnessData {
     fn from(msg: WitnessData) -> Self {

@@ -142,7 +142,9 @@ impl FullViewingKey {
     }
 }
 
-impl Protobuf<pb::FullViewingKey> for FullViewingKey {}
+impl Protobuf for FullViewingKey {
+    type Proto = pb::FullViewingKey;
+}
 
 impl TryFrom<pb::FullViewingKey> for FullViewingKey {
     type Error = anyhow::Error;

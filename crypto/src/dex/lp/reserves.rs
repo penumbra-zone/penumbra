@@ -15,7 +15,9 @@ pub struct Reserves {
     pub r2: Amount,
 }
 
-impl Protobuf<pb::Reserves> for Reserves {}
+impl Protobuf for Reserves {
+    type Proto = pb::Reserves;
+}
 
 impl TryFrom<pb::Reserves> for Reserves {
     type Error = anyhow::Error;

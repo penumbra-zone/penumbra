@@ -173,7 +173,9 @@ impl IsAction for PositionRewardClaim {
     }
 }
 
-impl Protobuf<pb::PositionOpen> for PositionOpen {}
+impl Protobuf for PositionOpen {
+    type Proto = pb::PositionOpen;
+}
 
 impl From<PositionOpen> for pb::PositionOpen {
     fn from(value: PositionOpen) -> Self {
@@ -201,7 +203,9 @@ impl TryFrom<pb::PositionOpen> for PositionOpen {
     }
 }
 
-impl Protobuf<pb::PositionClose> for PositionClose {}
+impl Protobuf for PositionClose {
+    type Proto = pb::PositionClose;
+}
 
 impl From<PositionClose> for pb::PositionClose {
     fn from(value: PositionClose) -> Self {
@@ -224,7 +228,9 @@ impl TryFrom<pb::PositionClose> for PositionClose {
     }
 }
 
-impl Protobuf<pb::PositionWithdraw> for PositionWithdraw {}
+impl Protobuf for PositionWithdraw {
+    type Proto = pb::PositionWithdraw;
+}
 
 impl From<PositionWithdraw> for pb::PositionWithdraw {
     fn from(value: PositionWithdraw) -> Self {
@@ -252,7 +258,9 @@ impl TryFrom<pb::PositionWithdraw> for PositionWithdraw {
     }
 }
 
-impl Protobuf<pb::PositionRewardClaim> for PositionRewardClaim {}
+impl Protobuf for PositionRewardClaim {
+    type Proto = pb::PositionRewardClaim;
+}
 
 impl From<PositionRewardClaim> for pb::PositionRewardClaim {
     fn from(value: PositionRewardClaim) -> Self {

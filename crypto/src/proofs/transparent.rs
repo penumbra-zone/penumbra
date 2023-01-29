@@ -134,7 +134,9 @@ impl OutputProof {
 
 // Conversions
 
-impl Protobuf<transparent_proofs::SpendProof> for SpendProof {}
+impl Protobuf for SpendProof {
+    type Proto = transparent_proofs::SpendProof;
+}
 
 impl From<SpendProof> for transparent_proofs::SpendProof {
     fn from(msg: SpendProof) -> Self {
@@ -197,7 +199,9 @@ impl TryFrom<transparent_proofs::SpendProof> for SpendProof {
     }
 }
 
-impl Protobuf<transparent_proofs::OutputProof> for OutputProof {}
+impl Protobuf for OutputProof {
+    type Proto = transparent_proofs::OutputProof;
+}
 
 impl From<OutputProof> for transparent_proofs::OutputProof {
     fn from(msg: OutputProof) -> Self {
@@ -400,7 +404,9 @@ impl TryFrom<&[u8]> for SwapClaimProof {
     }
 }
 
-impl Protobuf<transparent_proofs::SwapClaimProof> for SwapClaimProof {}
+impl Protobuf for SwapClaimProof {
+    type Proto = transparent_proofs::SwapClaimProof;
+}
 
 impl From<SwapClaimProof> for transparent_proofs::SwapClaimProof {
     fn from(msg: SwapClaimProof) -> Self {
@@ -498,7 +504,9 @@ impl SwapProof {
     }
 }
 
-impl Protobuf<transparent_proofs::SwapProof> for SwapProof {}
+impl Protobuf for SwapProof {
+    type Proto = transparent_proofs::SwapProof;
+}
 
 impl From<SwapProof> for transparent_proofs::SwapProof {
     fn from(msg: SwapProof) -> Self {
@@ -581,7 +589,9 @@ impl UndelegateClaimProof {
     }
 }
 
-impl Protobuf<transparent_proofs::UndelegateClaimProof> for UndelegateClaimProof {}
+impl Protobuf for UndelegateClaimProof {
+    type Proto = transparent_proofs::UndelegateClaimProof;
+}
 
 impl From<UndelegateClaimProof> for transparent_proofs::UndelegateClaimProof {
     fn from(claim_proof: UndelegateClaimProof) -> Self {

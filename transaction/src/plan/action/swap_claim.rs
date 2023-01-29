@@ -95,7 +95,9 @@ impl SwapClaimPlan {
     }
 }
 
-impl Protobuf<pb::SwapClaimPlan> for SwapClaimPlan {}
+impl Protobuf for SwapClaimPlan {
+    type Proto = pb::SwapClaimPlan;
+}
 
 impl From<SwapClaimPlan> for pb::SwapClaimPlan {
     fn from(msg: SwapClaimPlan) -> Self {

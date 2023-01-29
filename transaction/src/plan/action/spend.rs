@@ -101,7 +101,9 @@ impl SpendPlan {
     }
 }
 
-impl Protobuf<pb::SpendPlan> for SpendPlan {}
+impl Protobuf for SpendPlan {
+    type Proto = pb::SpendPlan;
+}
 
 impl From<SpendPlan> for pb::SpendPlan {
     fn from(msg: SpendPlan) -> Self {

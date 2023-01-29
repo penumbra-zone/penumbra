@@ -42,7 +42,9 @@ impl PartialEq for SpendKey {
 
 impl Eq for SpendKey {}
 
-impl Protobuf<pb::SpendKey> for SpendKey {}
+impl Protobuf for SpendKey {
+    type Proto = pb::SpendKey;
+}
 
 impl TryFrom<pb::SpendKey> for SpendKey {
     type Error = anyhow::Error;

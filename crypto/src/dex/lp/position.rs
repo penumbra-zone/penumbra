@@ -118,7 +118,9 @@ impl std::str::FromStr for State {
 
 // ==== Protobuf impls
 
-impl Protobuf<pb::Position> for Position {}
+impl Protobuf for Position {
+    type Proto = pb::Position;
+}
 
 impl TryFrom<pb::Position> for Position {
     type Error = anyhow::Error;
@@ -147,7 +149,9 @@ impl From<Position> for pb::Position {
     }
 }
 
-impl Protobuf<pb::PositionId> for Id {}
+impl Protobuf for Id {
+    type Proto = pb::PositionId;
+}
 
 impl TryFrom<pb::PositionId> for Id {
     type Error = anyhow::Error;
@@ -171,7 +175,9 @@ impl From<Id> for pb::PositionId {
     }
 }
 
-impl Protobuf<pb::PositionState> for State {}
+impl Protobuf for State {
+    type Proto = pb::PositionState;
+}
 
 impl From<State> for pb::PositionState {
     fn from(v: State) -> Self {

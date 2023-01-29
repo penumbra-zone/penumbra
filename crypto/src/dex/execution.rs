@@ -47,7 +47,9 @@ impl Path {
     }
 }
 
-impl Protobuf<pb::Path> for Path {}
+impl Protobuf for Path {
+    type Proto = pb::Path;
+}
 
 impl TryFrom<pb::Path> for Path {
     type Error = anyhow::Error;

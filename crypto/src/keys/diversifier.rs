@@ -55,7 +55,9 @@ impl TryFrom<&[u8]> for Diversifier {
     }
 }
 
-impl Protobuf<pb::Diversifier> for Diversifier {}
+impl Protobuf for Diversifier {
+    type Proto = pb::Diversifier;
+}
 
 impl From<Diversifier> for pb::Diversifier {
     fn from(d: Diversifier) -> pb::Diversifier {
@@ -230,7 +232,9 @@ impl TryFrom<&[u8]> for AddressIndex {
     }
 }
 
-impl Protobuf<pb::AddressIndex> for AddressIndex {}
+impl Protobuf for AddressIndex {
+    type Proto = pb::AddressIndex;
+}
 
 impl From<AddressIndex> for pb::AddressIndex {
     fn from(d: AddressIndex) -> pb::AddressIndex {

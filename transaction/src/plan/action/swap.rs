@@ -91,7 +91,9 @@ impl SwapPlan {
     }
 }
 
-impl Protobuf<pb::SwapPlan> for SwapPlan {}
+impl Protobuf for SwapPlan {
+    type Proto = pb::SwapPlan;
+}
 
 impl From<SwapPlan> for pb::SwapPlan {
     fn from(msg: SwapPlan) -> Self {

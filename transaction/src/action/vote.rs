@@ -106,7 +106,9 @@ mod test {
     }
 }
 
-impl Protobuf<pb::Vote> for Vote {}
+impl Protobuf for Vote {
+    type Proto = pb::Vote;
+}
 
 /// A vote by a validator.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -203,7 +205,9 @@ impl TryFrom<pb::ValidatorVoteBody> for ValidatorVoteBody {
     }
 }
 
-impl Protobuf<pb::ValidatorVoteBody> for ValidatorVoteBody {}
+impl Protobuf for ValidatorVoteBody {
+    type Proto = pb::ValidatorVoteBody;
+}
 
 #[derive(Debug, Clone)]
 pub struct DelegatorVote {

@@ -167,7 +167,9 @@ impl SwapPlaintext {
     }
 }
 
-impl Protobuf<pb::SwapPlaintext> for SwapPlaintext {}
+impl Protobuf for SwapPlaintext {
+    type Proto = pb::SwapPlaintext;
+}
 
 impl TryFrom<pb::SwapPlaintext> for SwapPlaintext {
     type Error = anyhow::Error;

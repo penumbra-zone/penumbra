@@ -34,7 +34,9 @@ impl std::fmt::Display for State {
     }
 }
 
-impl Protobuf<pb::BondingState> for State {}
+impl Protobuf for State {
+    type Proto = pb::BondingState;
+}
 
 impl From<State> for pb::BondingState {
     fn from(v: State) -> Self {

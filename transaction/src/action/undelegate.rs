@@ -70,7 +70,9 @@ impl Undelegate {
     }
 }
 
-impl Protobuf<pb::Undelegate> for Undelegate {}
+impl Protobuf for Undelegate {
+    type Proto = pb::Undelegate;
+}
 
 impl From<Undelegate> for pb::Undelegate {
     fn from(d: Undelegate) -> Self {

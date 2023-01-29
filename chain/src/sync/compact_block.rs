@@ -66,7 +66,9 @@ impl CompactBlock {
     }
 }
 
-impl Protobuf<pb::CompactBlock> for CompactBlock {}
+impl Protobuf for CompactBlock {
+    type Proto = pb::CompactBlock;
+}
 
 impl From<CompactBlock> for pb::CompactBlock {
     fn from(cb: CompactBlock) -> Self {

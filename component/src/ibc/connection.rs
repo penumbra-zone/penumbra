@@ -5,7 +5,9 @@ use penumbra_proto::{core::ibc::v1alpha1 as pb, Protobuf};
 #[derive(Debug, Clone)]
 pub struct ConnectionCounter(pub u64);
 
-impl Protobuf<pb::ConnectionCounter> for ConnectionCounter {}
+impl Protobuf for ConnectionCounter {
+    type Proto = pb::ConnectionCounter;
+}
 
 impl TryFrom<pb::ConnectionCounter> for ConnectionCounter {
     type Error = anyhow::Error;

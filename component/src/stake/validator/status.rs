@@ -22,7 +22,9 @@ pub struct Status {
     pub bonding_state: BondingState,
 }
 
-impl Protobuf<pb::ValidatorStatus> for Status {}
+impl Protobuf for Status {
+    type Proto = pb::ValidatorStatus;
+}
 
 impl From<Status> for pb::ValidatorStatus {
     fn from(v: Status) -> Self {

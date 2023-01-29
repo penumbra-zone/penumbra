@@ -6,7 +6,9 @@ pub struct StatusStreamResponse {
     pub sync_height: u64,
 }
 
-impl Protobuf<pb::StatusStreamResponse> for StatusStreamResponse {}
+impl Protobuf for StatusStreamResponse {
+    type Proto = pb::StatusStreamResponse;
+}
 
 impl TryFrom<pb::StatusStreamResponse> for StatusStreamResponse {
     type Error = anyhow::Error;

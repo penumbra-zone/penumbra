@@ -72,7 +72,9 @@ impl std::fmt::Debug for EncryptedNote {
     }
 }
 
-impl Protobuf<pb::EncryptedNote> for EncryptedNote {}
+impl Protobuf for EncryptedNote {
+    type Proto = pb::EncryptedNote;
+}
 
 impl From<EncryptedNote> for pb::EncryptedNote {
     fn from(msg: EncryptedNote) -> Self {

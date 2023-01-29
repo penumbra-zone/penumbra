@@ -72,7 +72,9 @@ pub struct Body {
     pub wrapped_memo_key: WrappedMemoKey,
 }
 
-impl Protobuf<pb::Output> for Output {}
+impl Protobuf for Output {
+    type Proto = pb::Output;
+}
 
 impl From<Output> for pb::Output {
     fn from(output: Output) -> Self {
@@ -100,7 +102,9 @@ impl TryFrom<pb::Output> for Output {
     }
 }
 
-impl Protobuf<pb::OutputBody> for Body {}
+impl Protobuf for Body {
+    type Proto = pb::OutputBody;
+}
 
 impl From<Body> for pb::OutputBody {
     fn from(output: Body) -> Self {

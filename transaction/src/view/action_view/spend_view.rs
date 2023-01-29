@@ -12,7 +12,9 @@ pub enum SpendView {
     Opaque { spend: Spend },
 }
 
-impl Protobuf<pbt::SpendView> for SpendView {}
+impl Protobuf for SpendView {
+    type Proto = pbt::SpendView;
+}
 
 impl TryFrom<pbt::SpendView> for SpendView {
     type Error = anyhow::Error;

@@ -14,7 +14,9 @@ pub struct CurrentConsensusKeys {
     pub consensus_keys: Vec<PublicKey>,
 }
 
-impl Protobuf<pb::CurrentConsensusKeys> for CurrentConsensusKeys {}
+impl Protobuf for CurrentConsensusKeys {
+    type Proto = pb::CurrentConsensusKeys;
+}
 
 impl From<CurrentConsensusKeys> for pb::CurrentConsensusKeys {
     fn from(value: CurrentConsensusKeys) -> pb::CurrentConsensusKeys {

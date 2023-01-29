@@ -65,7 +65,9 @@ impl From<TradingFunction> for pb::TradingFunction {
     }
 }
 
-impl Protobuf<pb::TradingFunction> for TradingFunction {}
+impl Protobuf for TradingFunction {
+    type Proto = pb::TradingFunction;
+}
 
 /// The data describing a trading function.
 ///
@@ -126,7 +128,9 @@ impl BareTradingFunction {
     }
 }
 
-impl Protobuf<pb::BareTradingFunction> for BareTradingFunction {}
+impl Protobuf for BareTradingFunction {
+    type Proto = pb::BareTradingFunction;
+}
 
 impl TryFrom<pb::BareTradingFunction> for BareTradingFunction {
     type Error = anyhow::Error;

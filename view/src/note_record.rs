@@ -22,7 +22,9 @@ pub struct SpendableNoteRecord {
     pub source: NoteSource,
 }
 
-impl Protobuf<pb::SpendableNoteRecord> for SpendableNoteRecord {}
+impl Protobuf for SpendableNoteRecord {
+    type Proto = pb::SpendableNoteRecord;
+}
 impl From<SpendableNoteRecord> for pb::SpendableNoteRecord {
     fn from(v: SpendableNoteRecord) -> Self {
         pb::SpendableNoteRecord {

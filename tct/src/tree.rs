@@ -83,7 +83,9 @@ impl From<Root> for pb::MerkleRoot {
     }
 }
 
-impl Protobuf<pb::MerkleRoot> for Root {}
+impl Protobuf for Root {
+    type Proto = pb::MerkleRoot;
+}
 
 impl Display for Root {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {

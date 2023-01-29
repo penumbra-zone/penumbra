@@ -40,7 +40,9 @@ impl IsAction for UndelegateClaim {
     }
 }
 
-impl Protobuf<pb::UndelegateClaimBody> for UndelegateClaimBody {}
+impl Protobuf for UndelegateClaimBody {
+    type Proto = pb::UndelegateClaimBody;
+}
 
 impl From<UndelegateClaimBody> for pb::UndelegateClaimBody {
     fn from(d: UndelegateClaimBody) -> Self {
@@ -76,7 +78,9 @@ impl TryFrom<pb::UndelegateClaimBody> for UndelegateClaimBody {
     }
 }
 
-impl Protobuf<pb::UndelegateClaim> for UndelegateClaim {}
+impl Protobuf for UndelegateClaim {
+    type Proto = pb::UndelegateClaim;
+}
 
 impl From<UndelegateClaim> for pb::UndelegateClaim {
     fn from(d: UndelegateClaim) -> Self {

@@ -127,7 +127,9 @@ impl Address {
     }
 }
 
-impl Protobuf<pb::Address> for Address {}
+impl Protobuf for Address {
+    type Proto = pb::Address;
+}
 
 impl From<Address> for pb::Address {
     fn from(a: Address) -> Self {

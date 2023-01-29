@@ -194,7 +194,9 @@ impl BaseRateData {
     }
 }
 
-impl Protobuf<pb::RateData> for RateData {}
+impl Protobuf for RateData {
+    type Proto = pb::RateData;
+}
 
 impl From<RateData> for pb::RateData {
     fn from(v: RateData) -> Self {
@@ -222,7 +224,9 @@ impl TryFrom<pb::RateData> for RateData {
     }
 }
 
-impl Protobuf<pb::BaseRateData> for BaseRateData {}
+impl Protobuf for BaseRateData {
+    type Proto = pb::BaseRateData;
+}
 
 impl From<BaseRateData> for pb::BaseRateData {
     fn from(v: BaseRateData) -> Self {

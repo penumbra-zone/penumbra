@@ -83,7 +83,9 @@ impl Uptime {
     }
 }
 
-impl Protobuf<pb::Uptime> for Uptime {}
+impl Protobuf for Uptime {
+    type Proto = pb::Uptime;
+}
 
 impl From<Uptime> for pb::Uptime {
     fn from(mut val: Uptime) -> pb::Uptime {

@@ -15,7 +15,9 @@ pub struct AssetInfo {
     pub total_supply: u64,
 }
 
-impl Protobuf<pb_chain::AssetInfo> for AssetInfo {}
+impl Protobuf for AssetInfo {
+    type Proto = pb_chain::AssetInfo;
+}
 
 impl TryFrom<pb_chain::AssetInfo> for AssetInfo {
     type Error = anyhow::Error;
@@ -85,7 +87,9 @@ pub struct ChainParameters {
     pub proposal_veto_threshold: Ratio<u64>,
 }
 
-impl Protobuf<pb_chain::ChainParameters> for ChainParameters {}
+impl Protobuf for ChainParameters {
+    type Proto = pb_chain::ChainParameters;
+}
 
 impl TryFrom<pb_chain::ChainParameters> for ChainParameters {
     type Error = anyhow::Error;
@@ -226,7 +230,9 @@ pub struct FmdParameters {
     pub as_of_block_height: u64,
 }
 
-impl Protobuf<pb_chain::FmdParameters> for FmdParameters {}
+impl Protobuf for FmdParameters {
+    type Proto = pb_chain::FmdParameters;
+}
 
 impl TryFrom<pb_chain::FmdParameters> for FmdParameters {
     type Error = anyhow::Error;

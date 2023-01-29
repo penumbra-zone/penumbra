@@ -26,7 +26,9 @@ impl MemoPlan {
     }
 }
 
-impl Protobuf<pb::MemoPlan> for MemoPlan {}
+impl Protobuf for MemoPlan {
+    type Proto = pb::MemoPlan;
+}
 
 impl From<MemoPlan> for pb::MemoPlan {
     fn from(msg: MemoPlan) -> Self {

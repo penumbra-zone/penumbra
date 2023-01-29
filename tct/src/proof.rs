@@ -130,4 +130,6 @@ impl TryFrom<pb::NoteCommitmentProof> for Proof {
     }
 }
 
-impl penumbra_proto::Protobuf<pb::NoteCommitmentProof> for Proof {}
+impl penumbra_proto::Protobuf for Proof {
+    type Proto = pb::NoteCommitmentProof;
+}

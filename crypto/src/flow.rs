@@ -41,7 +41,9 @@ impl AddAssign for MockFlowCiphertext {
     }
 }
 
-impl Protobuf<pb::MockFlowCiphertext> for MockFlowCiphertext {}
+impl Protobuf for MockFlowCiphertext {
+    type Proto = pb::MockFlowCiphertext;
+}
 
 impl From<MockFlowCiphertext> for pb::MockFlowCiphertext {
     fn from(ik: MockFlowCiphertext) -> Self {

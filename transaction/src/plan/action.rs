@@ -188,7 +188,9 @@ impl From<PositionRewardClaim> for ActionPlan {
     }
 }
 
-impl Protobuf<pb_t::ActionPlan> for ActionPlan {}
+impl Protobuf for ActionPlan {
+    type Proto = pb_t::ActionPlan;
+}
 
 impl From<ActionPlan> for pb_t::ActionPlan {
     fn from(msg: ActionPlan) -> Self {

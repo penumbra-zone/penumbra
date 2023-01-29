@@ -14,7 +14,9 @@ pub struct AuthorizationData {
     pub spend_auths: Vec<Signature<SpendAuth>>,
 }
 
-impl Protobuf<pb::AuthorizationData> for AuthorizationData {}
+impl Protobuf for AuthorizationData {
+    type Proto = pb::AuthorizationData;
+}
 
 impl From<AuthorizationData> for pb::AuthorizationData {
     fn from(msg: AuthorizationData) -> Self {

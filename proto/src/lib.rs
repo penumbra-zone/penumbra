@@ -159,11 +159,10 @@ pub mod penumbra {
                 }
 
                 /// Get the typed domain value corresponding to a state key.
-                pub async fn key_domain<T, P>(&mut self, key: impl AsRef<str>) -> anyhow::Result<T>
+                pub async fn key_domain<T>(&mut self, key: impl AsRef<str>) -> anyhow::Result<T>
                 where
-                    T: crate::Protobuf<P> + TryFrom<P>,
-                    T::Error: Into<anyhow::Error> + Send + Sync + 'static,
-                    P: prost::Message + Default + From<T>,
+                    T: crate::Protobuf,
+                    <T as TryFrom<T::Proto>>::Error: Into<anyhow::Error> + Send + Sync + 'static,
                     C: tonic::client::GrpcService<BoxBody> + 'static,
                     C::ResponseBody: Send,
                     <C as tonic::client::GrpcService<BoxBody>>::ResponseBody:
@@ -182,16 +181,15 @@ pub mod penumbra {
                 }
 
                 /// Get the typed domain value corresponding to prefixes of a state key.
-                pub async fn prefix_domain<T, P>(
+                pub async fn prefix_domain<T>(
                     &mut self,
                     prefix: impl AsRef<str>,
                 ) -> anyhow::Result<
                     Pin<Box<dyn Stream<Item = anyhow::Result<(String, T)>> + Send + 'static>>,
                 >
                 where
-                    T: crate::Protobuf<P> + TryFrom<P> + Send + Sync + 'static + Unpin,
-                    T::Error: Into<anyhow::Error> + Send + Sync + 'static,
-                    P: prost::Message + Default + From<T>,
+                    T: crate::Protobuf + Send + 'static + Unpin,
+                    <T as TryFrom<T::Proto>>::Error: Into<anyhow::Error> + Send + Sync + 'static,
                     C: tonic::client::GrpcService<BoxBody> + 'static,
                     C::ResponseBody: Send,
                     <C as tonic::client::GrpcService<BoxBody>>::ResponseBody:

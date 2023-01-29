@@ -942,7 +942,7 @@ pub trait StateReadExt: StateRead {
     ) -> Result<Penalty> {
         let prefix = state_key::penalty_in_epoch_prefix(id);
         let all_penalties = self
-            .prefix::<Penalty, _>(&prefix)
+            .prefix::<Penalty>(&prefix)
             .try_collect::<BTreeMap<String, Penalty>>()
             .await?;
 

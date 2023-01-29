@@ -44,7 +44,9 @@ pub enum ActionView {
     Ics20Withdrawal(Ics20Withdrawal),
 }
 
-impl Protobuf<pbt::ActionView> for ActionView {}
+impl Protobuf for ActionView {
+    type Proto = pbt::ActionView;
+}
 
 impl TryFrom<pbt::ActionView> for ActionView {
     type Error = anyhow::Error;

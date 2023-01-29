@@ -26,7 +26,9 @@ impl Commitment {
     }
 }
 
-impl Protobuf<pb::StateCommitment> for Commitment {}
+impl Protobuf for Commitment {
+    type Proto = pb::StateCommitment;
+}
 
 #[cfg(test)]
 mod test_serde {

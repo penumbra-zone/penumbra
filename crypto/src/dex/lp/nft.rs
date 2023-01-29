@@ -117,7 +117,9 @@ impl std::cmp::PartialEq for LpNft {
 
 impl std::cmp::Eq for LpNft {}
 
-impl Protobuf<pb::LpNft> for LpNft {}
+impl Protobuf for LpNft {
+    type Proto = pb::LpNft;
+}
 
 impl TryFrom<pb::LpNft> for LpNft {
     type Error = anyhow::Error;

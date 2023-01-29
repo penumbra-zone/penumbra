@@ -44,7 +44,9 @@ impl std::fmt::Debug for EffectHash {
     }
 }
 
-impl Protobuf<pb_crypto::EffectHash> for EffectHash {}
+impl Protobuf for EffectHash {
+    type Proto = pb_crypto::EffectHash;
+}
 
 impl From<EffectHash> for pb_crypto::EffectHash {
     fn from(msg: EffectHash) -> Self {

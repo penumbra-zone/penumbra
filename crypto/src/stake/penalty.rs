@@ -79,7 +79,9 @@ impl std::fmt::Display for Penalty {
     }
 }
 
-impl Protobuf<pbs::Penalty> for Penalty {}
+impl Protobuf for Penalty {
+    type Proto = pbs::Penalty;
+}
 
 impl From<Penalty> for pbs::Penalty {
     fn from(v: Penalty) -> Self {
