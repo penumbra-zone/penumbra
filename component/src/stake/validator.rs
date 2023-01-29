@@ -179,7 +179,9 @@ impl From<FundingStreamToml> for FundingStream {
     }
 }
 
-impl Protobuf<pb::Validator> for Validator {}
+impl Protobuf for Validator {
+    type Proto = pb::Validator;
+}
 
 impl From<Validator> for pb::Validator {
     fn from(v: Validator) -> Self {

@@ -120,7 +120,9 @@ impl OutputPlan {
     }
 }
 
-impl Protobuf<pb::OutputPlan> for OutputPlan {}
+impl Protobuf for OutputPlan {
+    type Proto = pb::OutputPlan;
+}
 
 impl From<OutputPlan> for pb::OutputPlan {
     fn from(msg: OutputPlan) -> Self {

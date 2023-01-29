@@ -14,7 +14,9 @@ pub struct Info {
     pub rate_data: RateData,
 }
 
-impl Protobuf<pb::ValidatorInfo> for Info {}
+impl Protobuf for Info {
+    type Proto = pb::ValidatorInfo;
+}
 
 impl From<Info> for pb::ValidatorInfo {
     fn from(v: Info) -> Self {

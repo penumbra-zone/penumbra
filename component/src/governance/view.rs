@@ -40,14 +40,14 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
     /// Get the state of a proposal.
     async fn proposal_state(&self, proposal_id: u64) -> Result<Option<proposal::State>> {
         Ok(self
-            .get::<proposal::State, _>(&state_key::proposal_state(proposal_id))
+            .get::<proposal::State>(&state_key::proposal_state(proposal_id))
             .await?)
     }
 
     /// Get all the unfinished proposal ids.
     async fn unfinished_proposals(&self) -> Result<BTreeSet<u64>> {
         Ok(self
-            .get::<proposal::ProposalList, _>(state_key::unfinished_proposals())
+            .get::<proposal::ProposalList>(state_key::unfinished_proposals())
             .await?
             .unwrap_or_default()
             .proposals)
@@ -74,7 +74,7 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
         identity_key: IdentityKey,
     ) -> Result<Option<Vote>> {
         Ok(self
-            .get::<Vote, _>(&state_key::validator_vote(proposal_id, identity_key))
+            .get::<Vote>(&state_key::validator_vote(proposal_id, identity_key))
             .await?)
     }
 
@@ -160,7 +160,7 @@ pub trait StateWriteExt: StateWrite {
 
         // Track the index
         let mut unfinished_proposals = self
-            .get::<proposal::ProposalList, _>(state_key::unfinished_proposals())
+            .get::<proposal::ProposalList>(state_key::unfinished_proposals())
             .await?
             .unwrap_or_default();
         match &state {

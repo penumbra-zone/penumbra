@@ -37,7 +37,9 @@ impl FundingStream {
     }
 }
 
-impl Protobuf<pb::FundingStream> for FundingStream {}
+impl Protobuf for FundingStream {
+    type Proto = pb::FundingStream;
+}
 
 impl From<FundingStream> for pb::FundingStream {
     fn from(fs: FundingStream) -> Self {

@@ -57,4 +57,6 @@ impl TryFrom<pb::DelegatorVotePlan> for DelegatorVotePlan {
     }
 }
 
-impl Protobuf<pb::DelegatorVotePlan> for DelegatorVotePlan {}
+impl Protobuf for DelegatorVotePlan {
+    type Proto = pb::DelegatorVotePlan;
+}

@@ -12,7 +12,9 @@ pub struct Definition {
     pub auth_sig: Signature<SpendAuth>,
 }
 
-impl Protobuf<pb::ValidatorDefinition> for Definition {}
+impl Protobuf for Definition {
+    type Proto = pb::ValidatorDefinition;
+}
 
 impl From<Definition> for pb::ValidatorDefinition {
     fn from(v: Definition) -> Self {

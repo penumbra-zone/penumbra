@@ -12,7 +12,9 @@ pub struct DelegationChanges {
     pub undelegations: Vec<Undelegate>,
 }
 
-impl Protobuf<pb::DelegationChanges> for DelegationChanges {}
+impl Protobuf for DelegationChanges {
+    type Proto = pb::DelegationChanges;
+}
 
 impl From<DelegationChanges> for pb::DelegationChanges {
     fn from(changes: DelegationChanges) -> pb::DelegationChanges {

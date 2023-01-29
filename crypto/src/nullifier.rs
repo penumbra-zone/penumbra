@@ -18,7 +18,9 @@ impl Nullifier {
     }
 }
 
-impl Protobuf<pb::Nullifier> for Nullifier {}
+impl Protobuf for Nullifier {
+    type Proto = pb::Nullifier;
+}
 
 impl From<Nullifier> for pb::Nullifier {
     fn from(n: Nullifier) -> Self {

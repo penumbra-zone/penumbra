@@ -72,4 +72,6 @@ impl Allocation {
     }
 }
 
-impl Protobuf<pb::genesis_app_state::Allocation> for Allocation {}
+impl Protobuf for Allocation {
+    type Proto = pb::genesis_app_state::Allocation;
+}

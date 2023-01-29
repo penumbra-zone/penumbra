@@ -49,7 +49,9 @@ impl TryFrom<pb::AssetId> for Id {
     }
 }
 
-impl Protobuf<pb::AssetId> for Id {}
+impl Protobuf for Id {
+    type Proto = pb::AssetId;
+}
 
 impl TryFrom<&[u8]> for Id {
     type Error = anyhow::Error;

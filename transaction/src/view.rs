@@ -20,7 +20,9 @@ pub struct TransactionView {
     pub memo: Option<String>,
 }
 
-impl Protobuf<pbt::TransactionView> for TransactionView {}
+impl Protobuf for TransactionView {
+    type Proto = pbt::TransactionView;
+}
 
 impl TryFrom<pbt::TransactionView> for TransactionView {
     type Error = anyhow::Error;

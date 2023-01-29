@@ -34,7 +34,9 @@ impl std::fmt::Display for State {
     }
 }
 
-impl Protobuf<pb::ValidatorState> for State {}
+impl Protobuf for State {
+    type Proto = pb::ValidatorState;
+}
 
 impl From<State> for pb::ValidatorState {
     fn from(v: State) -> Self {

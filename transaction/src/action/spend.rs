@@ -41,7 +41,9 @@ impl IsAction for Spend {
     }
 }
 
-impl Protobuf<transaction::Spend> for Spend {}
+impl Protobuf for Spend {
+    type Proto = transaction::Spend;
+}
 
 impl From<Spend> for transaction::Spend {
     fn from(msg: Spend) -> Self {
@@ -88,7 +90,9 @@ pub struct Body {
     pub rk: VerificationKey<SpendAuth>,
 }
 
-impl Protobuf<transaction::SpendBody> for Body {}
+impl Protobuf for Body {
+    type Proto = transaction::SpendBody;
+}
 
 impl From<Body> for transaction::SpendBody {
     fn from(msg: Body) -> Self {

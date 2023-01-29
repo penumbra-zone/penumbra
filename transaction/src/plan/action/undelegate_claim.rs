@@ -64,7 +64,9 @@ impl UndelegateClaimPlan {
     }
 }
 
-impl Protobuf<pb::UndelegateClaimPlan> for UndelegateClaimPlan {}
+impl Protobuf for UndelegateClaimPlan {
+    type Proto = pb::UndelegateClaimPlan;
+}
 
 impl From<UndelegateClaimPlan> for pb::UndelegateClaimPlan {
     fn from(msg: UndelegateClaimPlan) -> Self {

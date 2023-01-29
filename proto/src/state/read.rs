@@ -17,14 +17,10 @@ pub trait StateReadProto: StateRead + Send + Sync {
     /// * `Ok(Some(v))` if the value is present and parseable as a domain type `D`;
     /// * `Ok(None)` if the value is missing;
     /// * `Err(_)` if the value is present but not parseable as a domain type `D`, or if an underlying storage error occurred.
-    async fn get<D, P>(&self, key: &str) -> Result<Option<D>>
+    async fn get<D>(&self, key: &str) -> Result<Option<D>>
     where
-        D: Protobuf<P>,
-        // TODO: does this get less awful if P is an associated type of D?
-        P: Message + Default,
-        P: From<D>,
-        D: TryFrom<P> + Clone + Debug,
-        <D as TryFrom<P>>::Error: Into<anyhow::Error>,
+        D: Protobuf + std::fmt::Debug,
+        <D as TryFrom<D::Proto>>::Error: Into<anyhow::Error> + Send + Sync + 'static,
     {
         match self.get_proto(key).await {
             Ok(Some(p)) => match D::try_from(p) {
@@ -65,16 +61,13 @@ pub trait StateReadProto: StateRead + Send + Sync {
 
     /// Retrieve all values for keys matching a prefix from consensus-critical state, as domain types.
     #[allow(clippy::type_complexity)]
-    fn prefix<'a, D, P>(
+    fn prefix<'a, D>(
         &'a self,
         prefix: &'a str,
     ) -> Pin<Box<dyn Stream<Item = Result<(String, D)>> + Send + 'a>>
     where
-        D: Protobuf<P>,
-        P: Message + Default + 'static,
-        P: From<D>,
-        D: TryFrom<P> + Clone + Debug,
-        <D as TryFrom<P>>::Error: Into<anyhow::Error>,
+        D: Protobuf,
+        <D as TryFrom<D::Proto>>::Error: Into<anyhow::Error> + Send + Sync + 'static,
     {
         Box::pin(self.prefix_proto(prefix).map(|p| match p {
             Ok(p) => match D::try_from(p.1) {
@@ -87,16 +80,12 @@ pub trait StateReadProto: StateRead + Send + Sync {
 
     /// Retrieve all values for keys matching a prefix from the verifiable key-value store, as proto types.
     #[allow(clippy::type_complexity)]
-    fn prefix_proto<'a, D, P>(
+    fn prefix_proto<'a, P>(
         &'a self,
         prefix: &'a str,
     ) -> Pin<Box<dyn Stream<Item = Result<(String, P)>> + Send + 'a>>
     where
-        D: Protobuf<P>,
         P: Message + Default,
-        P: From<D>,
-        D: TryFrom<P> + Clone + Debug,
-        <D as TryFrom<P>>::Error: Into<anyhow::Error>,
     {
         let o = self.prefix_raw(prefix).map(|r| {
             r.and_then(|(key, bytes)| {

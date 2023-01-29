@@ -23,7 +23,9 @@ pub enum MutableParam {
     MissedBlocksMaximum,
 }
 
-impl Protobuf<pb::MutableChainParameter> for MutableParam {}
+impl Protobuf for MutableParam {
+    type Proto = pb::MutableChainParameter;
+}
 
 impl TryFrom<pb::MutableChainParameter> for MutableParam {
     type Error = anyhow::Error;

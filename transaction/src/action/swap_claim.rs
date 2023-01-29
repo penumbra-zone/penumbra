@@ -53,7 +53,9 @@ impl SwapClaim {
     }
 }
 
-impl Protobuf<pb::SwapClaim> for SwapClaim {}
+impl Protobuf for SwapClaim {
+    type Proto = pb::SwapClaim;
+}
 
 impl From<SwapClaim> for pb::SwapClaim {
     fn from(sc: SwapClaim) -> Self {
@@ -91,7 +93,9 @@ pub struct Body {
     pub output_data: BatchSwapOutputData,
 }
 
-impl Protobuf<pb::SwapClaimBody> for Body {}
+impl Protobuf for Body {
+    type Proto = pb::SwapClaimBody;
+}
 
 impl From<Body> for pb::SwapClaimBody {
     fn from(s: Body) -> Self {

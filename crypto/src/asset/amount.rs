@@ -103,7 +103,9 @@ impl TryFrom<std::string::String> for Amount {
     }
 }
 
-impl Protobuf<pb::Amount> for Amount {}
+impl Protobuf for Amount {
+    type Proto = pb::Amount;
+}
 
 impl From<u64> for Amount {
     fn from(amount: u64) -> Amount {

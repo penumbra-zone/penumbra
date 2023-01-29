@@ -18,7 +18,9 @@ pub enum OutputView {
     },
 }
 
-impl Protobuf<pbt::OutputView> for OutputView {}
+impl Protobuf for OutputView {
+    type Proto = pbt::OutputView;
+}
 
 impl TryFrom<pbt::OutputView> for OutputView {
     type Error = anyhow::Error;

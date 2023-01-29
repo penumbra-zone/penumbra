@@ -129,7 +129,7 @@ impl GovernanceCmd {
                 ValidatorVotes => {
                     let mut votes: BTreeMap<IdentityKey, Vote> = BTreeMap::new();
                     client
-                        .prefix_domain::<Vote, _>(voting_validators_list(*proposal_id))
+                        .prefix_domain::<Vote>(voting_validators_list(*proposal_id))
                         .await?
                         .next()
                         .await

@@ -24,7 +24,9 @@ pub struct Asset {
     pub denom: Denom,
 }
 
-impl Protobuf<pb::Asset> for Asset {}
+impl Protobuf for Asset {
+    type Proto = pb::Asset;
+}
 
 impl TryFrom<pb::Asset> for Asset {
     type Error = anyhow::Error;

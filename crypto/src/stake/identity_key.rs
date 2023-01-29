@@ -47,7 +47,9 @@ impl std::fmt::Debug for IdentityKey {
     }
 }
 
-impl Protobuf<pb::IdentityKey> for IdentityKey {}
+impl Protobuf for IdentityKey {
+    type Proto = pb::IdentityKey;
+}
 
 impl From<IdentityKey> for pb::IdentityKey {
     fn from(ik: IdentityKey) -> Self {

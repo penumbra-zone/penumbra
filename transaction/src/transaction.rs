@@ -322,7 +322,9 @@ impl From<TransactionBody> for Vec<u8> {
     }
 }
 
-impl Protobuf<pbt::TransactionBody> for TransactionBody {}
+impl Protobuf for TransactionBody {
+    type Proto = pbt::TransactionBody;
+}
 
 impl From<TransactionBody> for pbt::TransactionBody {
     fn from(msg: TransactionBody) -> Self {
@@ -388,7 +390,9 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
         })
     }
 }
-impl Protobuf<pbt::Transaction> for Transaction {}
+impl Protobuf for Transaction {
+    type Proto = pbt::Transaction;
+}
 
 impl From<Transaction> for pbt::Transaction {
     fn from(msg: Transaction) -> Self {

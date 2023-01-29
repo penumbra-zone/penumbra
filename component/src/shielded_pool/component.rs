@@ -126,7 +126,7 @@ pub trait StateReadExt: StateRead {
     // #[instrument(skip(self))]
     async fn check_nullifier_unspent(&self, nullifier: Nullifier) -> Result<()> {
         if let Some(source) = self
-            .get::<NoteSource, _>(&state_key::spent_nullifier_lookup(nullifier))
+            .get::<NoteSource>(&state_key::spent_nullifier_lookup(nullifier))
             .await?
         {
             return Err(anyhow!(

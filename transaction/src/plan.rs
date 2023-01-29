@@ -218,7 +218,9 @@ impl TransactionPlan {
     }
 }
 
-impl Protobuf<pb::TransactionPlan> for TransactionPlan {}
+impl Protobuf for TransactionPlan {
+    type Proto = pb::TransactionPlan;
+}
 
 impl From<TransactionPlan> for pb::TransactionPlan {
     fn from(msg: TransactionPlan) -> Self {

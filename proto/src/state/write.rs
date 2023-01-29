@@ -6,16 +6,12 @@ use penumbra_storage::StateWrite;
 
 pub trait StateWriteProto: StateWrite + Send + Sync {
     /// Puts a domain type into the verifiable key-value store with the given key.
-    fn put<D, P>(&mut self, key: String, value: D)
+    fn put<D>(&mut self, key: String, value: D)
     where
-        D: Protobuf<P>,
-        // TODO: does this get less awful if P is an associated type of D?
-        P: Message + Default,
-        P: From<D>,
-        D: TryFrom<P> + Clone + Debug,
-        <D as TryFrom<P>>::Error: Into<anyhow::Error>,
+        D: Protobuf,
+        <D as TryFrom<D::Proto>>::Error: Into<anyhow::Error> + Send + Sync + 'static,
     {
-        self.put_proto(key, P::from(value));
+        self.put_proto(key, D::Proto::from(value));
     }
 
     /// Puts a proto type into the verifiable key-value store with the given key.

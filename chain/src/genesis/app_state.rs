@@ -74,4 +74,6 @@ impl TryFrom<pb::GenesisAppState> for AppState {
     }
 }
 
-impl Protobuf<pb::GenesisAppState> for AppState {}
+impl Protobuf for AppState {
+    type Proto = pb::GenesisAppState;
+}

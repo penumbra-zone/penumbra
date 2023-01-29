@@ -34,7 +34,9 @@ impl Ed25519 {
     }
 }
 
-impl Protobuf<pb::PreAuthorization> for PreAuthorization {}
+impl Protobuf for PreAuthorization {
+    type Proto = pb::PreAuthorization;
+}
 
 impl TryFrom<pb::PreAuthorization> for PreAuthorization {
     type Error = anyhow::Error;
@@ -62,7 +64,9 @@ impl From<PreAuthorization> for pb::PreAuthorization {
     }
 }
 
-impl Protobuf<pb::pre_authorization::Ed25519> for Ed25519 {}
+impl Protobuf for Ed25519 {
+    type Proto = pb::pre_authorization::Ed25519;
+}
 
 impl TryFrom<pb::pre_authorization::Ed25519> for Ed25519 {
     type Error = anyhow::Error;

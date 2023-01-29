@@ -15,7 +15,9 @@ pub struct AuthorizeRequest {
     pub pre_authorizations: Vec<PreAuthorization>,
 }
 
-impl Protobuf<pb::AuthorizeRequest> for AuthorizeRequest {}
+impl Protobuf for AuthorizeRequest {
+    type Proto = pb::AuthorizeRequest;
+}
 
 impl TryFrom<pb::AuthorizeRequest> for AuthorizeRequest {
     type Error = anyhow::Error;

@@ -6,7 +6,9 @@ use serde::{Deserialize, Serialize};
 #[serde(try_from = "pb::KnownAssets", into = "pb::KnownAssets")]
 pub struct KnownAssets(pub Vec<Asset>);
 
-impl Protobuf<pb::KnownAssets> for KnownAssets {}
+impl Protobuf for KnownAssets {
+    type Proto = pb::KnownAssets;
+}
 
 impl TryFrom<pb::KnownAssets> for KnownAssets {
     type Error = anyhow::Error;

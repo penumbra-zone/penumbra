@@ -40,7 +40,9 @@ impl Fee {
     }
 }
 
-impl Protobuf<pb::Fee> for Fee {}
+impl Protobuf for Fee {
+    type Proto = pb::Fee;
+}
 
 impl From<Fee> for pb::Fee {
     fn from(fee: Fee) -> Self {

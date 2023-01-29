@@ -17,7 +17,9 @@ pub enum SwapView {
     },
 }
 
-impl Protobuf<pb::SwapView> for SwapView {}
+impl Protobuf for SwapView {
+    type Proto = pb::SwapView;
+}
 
 impl TryFrom<pb::SwapView> for SwapView {
     type Error = anyhow::Error;

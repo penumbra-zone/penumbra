@@ -154,7 +154,9 @@ impl TryFrom<pb::Proposal> for Proposal {
     }
 }
 
-impl Protobuf<pb::Proposal> for Proposal {}
+impl Protobuf for Proposal {
+    type Proto = pb::Proposal;
+}
 
 /// The specific kind of a proposal.
 #[derive(Debug, Clone)]
@@ -358,7 +360,9 @@ impl TryFrom<pb::ProposalSubmit> for ProposalSubmit {
     }
 }
 
-impl Protobuf<pb::ProposalSubmit> for ProposalSubmit {}
+impl Protobuf for ProposalSubmit {
+    type Proto = pb::ProposalSubmit;
+}
 
 impl IsAction for ProposalWithdraw {
     fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
@@ -417,7 +421,9 @@ impl TryFrom<pb::ProposalWithdraw> for ProposalWithdraw {
     }
 }
 
-impl Protobuf<pb::ProposalWithdraw> for ProposalWithdraw {}
+impl Protobuf for ProposalWithdraw {
+    type Proto = pb::ProposalWithdraw;
+}
 
 /// A claim for the initial submission deposit for a proposal.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -564,7 +570,9 @@ impl State {
     }
 }
 
-impl Protobuf<pb::ProposalState> for State {}
+impl Protobuf for State {
+    type Proto = pb::ProposalState;
+}
 
 impl From<State> for pb::ProposalState {
     fn from(s: State) -> Self {
@@ -731,7 +739,9 @@ impl TryFrom<Withdrawn<String>> for Withdrawn<()> {
     }
 }
 
-impl Protobuf<pb::ProposalOutcome> for Outcome<String> {}
+impl Protobuf for Outcome<String> {
+    type Proto = pb::ProposalOutcome;
+}
 
 impl From<Outcome<String>> for pb::ProposalOutcome {
     fn from(o: Outcome<String>) -> Self {
@@ -783,7 +793,9 @@ impl TryFrom<pb::ProposalOutcome> for Outcome<String> {
     }
 }
 
-impl Protobuf<pb::ProposalOutcome> for Outcome<()> {}
+impl Protobuf for Outcome<()> {
+    type Proto = pb::ProposalOutcome;
+}
 
 impl From<Outcome<()>> for pb::ProposalOutcome {
     fn from(o: Outcome<()>) -> Self {

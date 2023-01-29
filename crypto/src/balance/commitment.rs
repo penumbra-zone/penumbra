@@ -154,7 +154,9 @@ impl TryFrom<&[u8]> for Commitment {
     }
 }
 
-impl Protobuf<pb::BalanceCommitment> for Commitment {}
+impl Protobuf for Commitment {
+    type Proto = pb::BalanceCommitment;
+}
 
 impl From<Commitment> for pb::BalanceCommitment {
     fn from(cv: Commitment) -> Self {

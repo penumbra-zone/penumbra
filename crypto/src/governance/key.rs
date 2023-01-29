@@ -46,7 +46,9 @@ impl std::fmt::Debug for GovernanceKey {
     }
 }
 
-impl Protobuf<pb::GovernanceKey> for GovernanceKey {}
+impl Protobuf for GovernanceKey {
+    type Proto = pb::GovernanceKey;
+}
 
 impl From<GovernanceKey> for pb::GovernanceKey {
     fn from(gk: GovernanceKey) -> Self {

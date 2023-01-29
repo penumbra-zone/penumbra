@@ -37,7 +37,9 @@ impl CluePlan {
     }
 }
 
-impl Protobuf<pb::CluePlan> for CluePlan {}
+impl Protobuf for CluePlan {
+    type Proto = pb::CluePlan;
+}
 
 impl From<CluePlan> for pb::CluePlan {
     fn from(msg: CluePlan) -> Self {

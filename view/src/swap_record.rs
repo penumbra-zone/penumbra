@@ -21,7 +21,9 @@ pub struct SwapRecord {
     pub source: NoteSource,
 }
 
-impl Protobuf<pb::SwapRecord> for SwapRecord {}
+impl Protobuf for SwapRecord {
+    type Proto = pb::SwapRecord;
+}
 impl From<SwapRecord> for pb::SwapRecord {
     fn from(msg: SwapRecord) -> Self {
         pb::SwapRecord {

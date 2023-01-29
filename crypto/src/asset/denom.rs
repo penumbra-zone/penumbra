@@ -20,7 +20,9 @@ pub struct Denom {
     pub(super) inner: Arc<Inner>,
 }
 
-impl Protobuf<pb::Denom> for Denom {}
+impl Protobuf for Denom {
+    type Proto = pb::Denom;
+}
 
 impl From<Denom> for pb::Denom {
     fn from(dn: Denom) -> Self {
