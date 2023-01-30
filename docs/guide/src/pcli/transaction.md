@@ -3,7 +3,7 @@
 Now, for the fun part: sending transactions. If you have someone else's testnet address, you can
 send them any amount of any asset you have.
 
-First, use balance to find the amount of assets you have.
+First, use balance to find the amount of assets you have:
 
 ```bash
 cargo run --release --bin pcli view balance
@@ -17,9 +17,7 @@ cargo run --quiet --release --bin pcli tx send 10penumbra --to penumbrav2t...
 ```
 
 Notice that asset amounts are typed amounts, specified without a space between the amount (`10`)
-and the asset name (`penumbra`).
-
-If you have the asset in your wallet to send, then so it shall be done!
+and the asset name (`penumbra`). If you have the asset in your wallet to send, then so it shall be done!
 
 ## Staking
 
@@ -38,7 +36,15 @@ cargo run --release --bin pcli tx delegate 10penumbra --to penumbravalid...
 ```
 
 To undelegate from a validator, use the `pcli tx undelegate` command, passing it the typed amount of
-delegation tokens you wish to undelegate.
+delegation tokens you wish to undelegate. Wait a moment for the network to process the undelegation,
+then reclaim your funds:
+
+```bash
+cargo run --release --bin pcli tx undelegate-claim
+```
+
+Inspect the output; a message may instruct you to wait longer, for a new epoch. Check back and rerun the command
+later to add the previously delegated funds to your wallet.
 
 ## Governance
 

@@ -1,12 +1,12 @@
 ## Updating `pcli`
 
-Follow the [same steps](https://guide.penumbra.zone/main/pcli/install.html#cloning-the-repository) to update to the latest testnet [release](https://github.com/penumbra-zone/penumbra/releases)
+Make sure you've followed the [installation steps](https://guide.penumbra.zone/main/pcli/install.html#cloning-the-repository). Then, to update to the latest testnet [release](https://github.com/penumbra-zone/penumbra/releases):
 
 ```
 cd penumbra && git fetch && git checkout 041-callirrhoe
 ```
 
-Once again, build `pcli` with cargo
+Once again, build `pcli` with cargo:
 
 ```
 cargo build --release --bin pcli

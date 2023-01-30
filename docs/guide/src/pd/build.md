@@ -2,22 +2,13 @@
 
 The node software `pd` is part of the same repository as `pcli`, so follow
 [those instructions](../pcli/install.md) to clone the repo and install dependencies.
-
-You may need to install some additional packages in order to build `pd`,
-depending on your distribution. For a bare-bones Ubuntu installation, you can
-run
-
-```bash
-sudo apt-get install clang
-```
-
 To build `pd`, run
 
 ```bash
 cargo build --release --bin pd
 ```
 
-Because you are building a work-in-progress version of the node, you may see compilation warnings,
+Because you are building a work-in-progress version of the node software, you may see compilation warnings,
 which you can safely ignore.
 
 ### Installing Tendermint
