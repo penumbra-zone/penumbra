@@ -9,6 +9,7 @@ use tracing::instrument;
 use crate::action_handler::ActionHandler;
 
 #[async_trait]
+/// Debits a withdrawn position NFT and credits a claimed position NFT and any liquidity incentives.
 impl ActionHandler for PositionRewardClaim {
     #[instrument(name = "position_reward_claim", skip(self, _context))]
     async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {

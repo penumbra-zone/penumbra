@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use penumbra_crypto::dex::{
     lp::{
         position::{self, Position},
-        Reserves,
+        LpNft, Reserves,
     },
     DirectedTradingPair,
 };
@@ -35,11 +35,12 @@ impl<T: StateRead + ?Sized> PositionRead for T {}
 /// Manages liquidity positions within the chain state.
 #[async_trait]
 pub trait PositionManager: StateWrite + PositionRead {
+    /// Validates position arguments and records the new position in the chain state.
     async fn position_open(
         &mut self,
         position: Position,
         initial_reserves: Reserves,
-    ) -> Result<()> {
+    ) -> Result<LpNft> {
         self.check_nonce_unused(&position).await?;
         let id = position.id();
         self.record_position_nonce(position.nonce);
@@ -50,11 +51,11 @@ pub trait PositionManager: StateWrite + PositionRead {
             reserves: initial_reserves,
         };
         self.index_position(&metadata);
-        self.put_position(&id, metadata);
 
-        todo!()
+        Ok(self.put_position(&id, metadata))
     }
 
+    /// Marks an existing position as closed in the chain state.
     async fn position_close(&mut self, id: &position::Id) -> Result<()> {
         let mut metadata = self
             .position_by_id(id)
@@ -75,9 +76,12 @@ pub trait PositionManager: StateWrite + PositionRead {
         Ok(())
     }
 
+    /// Marks an existing closed position as withdrawn in the chain state.
     async fn position_withdraw(&mut self, _id: &position::Id) {
         todo!()
     }
+
+    /// Marks an existing withdrawn position as claimed in the chain state.
     async fn position_reward_claim(&mut self, _id: &position::Id) {
         todo!()
     }
@@ -87,8 +91,10 @@ impl<T: StateWrite + ?Sized> PositionManager for T {}
 
 #[async_trait]
 trait Inner: StateWrite {
-    fn put_position(&mut self, id: &position::Id, metadata: position::Metadata) {
-        self.put(state_key::position_by_id(id), metadata)
+    fn put_position(&mut self, id: &position::Id, metadata: position::Metadata) -> LpNft {
+        self.put(state_key::position_by_id(id), metadata);
+
+        LpNft::new(*id, position::State::Opened)
     }
 
     fn record_position_nonce(&mut self, nonce: [u8; 32]) {

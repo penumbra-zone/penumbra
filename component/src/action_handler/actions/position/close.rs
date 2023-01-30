@@ -9,6 +9,7 @@ use tracing::instrument;
 use crate::action_handler::ActionHandler;
 
 #[async_trait]
+/// Debits an opened position NFT and credits a closed position NFT.
 impl ActionHandler for PositionClose {
     #[instrument(name = "position_close", skip(self, _context))]
     async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
