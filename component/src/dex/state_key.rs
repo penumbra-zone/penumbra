@@ -13,7 +13,7 @@ pub fn positions(trading_pair: &TradingPair, position_id: &str) -> String {
 pub(crate) mod internal {
     use penumbra_crypto::dex::lp::BareTradingFunction;
 
-    pub fn prices(btf: &BareTradingFunction) -> [u8; 43] {
+    pub fn _prices(btf: &BareTradingFunction) -> [u8; 43] {
         let mut result: [u8; 43] = [0; 43];
         result[0..11].copy_from_slice("dex/prices/".as_bytes());
         result[11..43].copy_from_slice(&btf.to_bytes());
