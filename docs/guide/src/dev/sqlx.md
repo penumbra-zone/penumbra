@@ -16,7 +16,7 @@ with a development database:
    For instance,
 
     ```shell
-    export DATABASE_URL="sqlite:///tmp/pviewd-dev-db.sqlite"
+    export DATABASE_URL="sqlite:///tmp/pclientd-dev-db.sqlite"
     ```
 
     will set the shell environment variable to the same one set in the project's

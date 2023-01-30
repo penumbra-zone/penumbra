@@ -11,9 +11,9 @@ This section describes how to use `pcli`, the command line client for Penumbra:
 Penumbra is a private blockchain, so the public chain state does not reveal any
 private user data.  By default, `pcli` includes a _view service_ that
 synchronizes with the chain and scans with a viewing key.  However, it's also
-possible to run the view service as a standalone `pviewd` daemon:
+possible to run the view service as a standalone `pclientd` daemon:
 
-- [Using `pcli` with `pviewd`](./pcli/pviewd.md) describes how to use `pcli` with `pviewd`.
+- [Using `pcli` with `pclientd`](./pcli/pclientd.md) describes how to use `pcli` with `pclientd`.
 
 ### Please submit any feedback and bug reports
 

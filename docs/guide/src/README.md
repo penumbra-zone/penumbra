@@ -17,7 +17,7 @@ testnets to allow community participation, engagement, and feedback.
 
 Currently, Penumbra only has a command line client, `pcli` (pronounced
 "pickle-y"), which bundles all of the client components in one binary, and a
-chain-scanning daemon, `pviewd`, which runs just the view service, without spend
+chain-scanning daemon, `pclientd`, which runs just the view service, without spend
 capability.  To get started with the Penumbra test network, all that's required
 is to download and build `pcli`, as described in
 [Installation](./pcli/install.md).
@@ -86,7 +86,7 @@ transparent chain, because user data such as account balances, transaction
 activity, etc., is not part of the public chain state.  This means that clients
 need to synchronize with the chain to build a copy of the private user data they
 have access to.  This logic is provided by the *view service*, which is bundled
-into `pcli`, but can also be run as a standalone `pviewd` daemon.
+into `pcli`, but can also be run as a standalone `pclientd` daemon.
 
 Modeling authorization as an (asynchronous) RPC to a custody service means that
 the client software is compatible with many different custody flows by default

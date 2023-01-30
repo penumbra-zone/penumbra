@@ -5,7 +5,7 @@
   - [Updating to the latest testnet](./pcli/update.md)
   - [Viewing Balances](./pcli/balance.md)
   - [Sending Transactions](./pcli/transaction.md)
-  - [Using `pcli` with `pviewd`](./pcli/pviewd.md)
+  - [Using `pcli` with `pclientd`](./pcli/pclientd.md)
 - [Using `pd`](./pd.md)
   - [Building `pd`](./pd/build.md)
   - [Joining a Testnet](./pd/join-testnet.md)
