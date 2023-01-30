@@ -6,7 +6,7 @@
     // data in sqlx-data.json.
     // We disable it by default, to avoid errors when not working with the view service.
     "rust-analyzer.server.extraEnv": {
-        "DATABASE_URL": "sqlite:///tmp/pviewd-dev-db.sqlite"
+        "DATABASE_URL": "sqlite:///tmp/pclientd-dev-db.sqlite"
     },
     */
 }

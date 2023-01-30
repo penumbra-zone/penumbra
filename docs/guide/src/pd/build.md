@@ -21,7 +21,7 @@ If you haven't already done so, consider creating symlinks for the other Penumbr
 
 ```bash
 sudo ln -s "\$PWD/target/release/pcli" /usr/local/bin/pcli
-sudo ln -s "\$PWD/target/release/pviewd" /usr/local/bin/pviewd
+sudo ln -s "\$PWD/target/release/pclientd" /usr/local/bin/pclientd
 ```
 
 ### Installing Tendermint

@@ -1,4 +1,4 @@
-# Using `pcli` with `pviewd`
+# Using `pcli` with `pclientd`
 
 First, export a viewing key from `pcli`:
 
@@ -6,17 +6,17 @@ First, export a viewing key from `pcli`:
 pcli keys export full-viewing-key
 ```
 
-Next, use the FVK it prints to initialize the `pviewd` state:
+Next, use the FVK it prints to initialize the `pclientd` state:
 
 ```shell
-pviewd init FVK_STRING
+pclientd init FVK_STRING
 ```
 
-The location of the `pviewd` state can be changed with the `-s` parameter.
+The location of the `pclientd` state can be changed with the `-s` parameter.
 Finally, run
 
 ```shell
-pviewd start
+pclientd start
 ```
 
 to start the view server, and invoke `pcli` with
