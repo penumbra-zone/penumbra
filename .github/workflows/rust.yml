@@ -8,6 +8,8 @@ jobs:
     runs-on: buildjet-16vcpu-ubuntu-2004
     steps:
       - uses: actions/checkout@v2
+        with:
+          lfs: true
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
