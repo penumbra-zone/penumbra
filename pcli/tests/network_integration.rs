@@ -14,7 +14,7 @@ use std::{thread, time};
 
 use assert_cmd::Command;
 use directories::UserDirs;
-use penumbra_component::stake::validator::{Validator, ValidatorToml};
+use penumbra_component::stake::validator::ValidatorToml;
 use predicates::prelude::*;
 use regex::Regex;
 use serde_json::Value;
@@ -349,7 +349,6 @@ fn duplicate_consensus_key_forbidden() {
     let validator = get_validator();
     let tmpdir = load_wallet_into_tmpdir();
     let mut query_cmd = Command::cargo_bin("pcli").unwrap();
-    let validator_list_filepath = NamedTempFile::new().unwrap();
     query_cmd
         .args([
             "--data-path",
@@ -362,9 +361,8 @@ fn duplicate_consensus_key_forbidden() {
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     query_cmd.assert().success();
     let validator_def_vec = query_cmd.unwrap().stdout;
-    let query_result = std::str::from_utf8(&validator_def_vec).unwrap();
-    let original_validator_def: Validator = serde_json::from_str(&query_result)
-        .expect("must be able to deserialize the output of pcli query");
+    let original_validator_def: ValidatorToml =
+        toml::from_slice(&validator_def_vec).expect("can parse validator template as TOML");
 
     // Get template for promoting our node to validator.
     let mut template_cmd = Command::cargo_bin("pcli").unwrap();
@@ -379,8 +377,6 @@ fn duplicate_consensus_key_forbidden() {
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     template_cmd.assert().success();
     let template_vec = template_cmd.unwrap().stdout;
-    let template_content =
-        std::str::from_utf8(&template_vec).expect("Could not read validator template output");
     let mut new_validator_def: ValidatorToml =
         toml::from_slice(&template_vec).expect("can parse validator template as TOML");
 
