@@ -3,7 +3,7 @@ use std::{fs::File, io::Write};
 use anyhow::{Context, Result};
 use comfy_table::{presets, Table};
 use futures::TryStreamExt;
-use penumbra_component::stake::validator;
+use penumbra_component::stake::validator::{self, ValidatorToml};
 use penumbra_crypto::stake::IdentityKey;
 use penumbra_proto::client::v1alpha1::ValidatorInfoRequest;
 
@@ -186,20 +186,21 @@ impl ValidatorCmd {
                     .map(TryInto::try_into)
                     .collect::<Result<Vec<validator::Info>, _>>()?;
 
-                let validator = validators
+                let validator: ValidatorToml = validators
                     .iter()
                     .map(|info| &info.validator)
                     .find(|v| v.identity_key == identity_key)
                     .cloned()
-                    .ok_or_else(|| anyhow::anyhow!("Could not find validator {}", identity_key))?;
+                    .ok_or_else(|| anyhow::anyhow!("Could not find validator {}", identity_key))?
+                    .into();
 
                 if let Some(file) = file {
                     File::create(file)
                         .with_context(|| format!("cannot create file {:?}", file))?
-                        .write_all(&serde_json::to_vec_pretty(&validator)?)
+                        .write_all(toml::to_string_pretty(&validator)?.as_bytes())
                         .context("could not write file")?;
                 } else {
-                    println!("{}", serde_json::to_string_pretty(&validator)?);
+                    println!("{}", toml::to_string_pretty(&validator)?);
                 }
             }
         }
