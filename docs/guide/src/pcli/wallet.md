@@ -5,8 +5,11 @@ should see something like this:
 
 ```bash
 \$ cargo run --quiet --release --bin pcli keys generate
-Saving wallet to /home/\$USER/.local/share/pcli/penumbra_wallet.json
-Saving backup wallet to /home/\$USER/.local/share/penumbra-testnet-archive/penumbra-euporie/.../penumbra_wallet.json
+
+
+YOUR PRIVATE SEED PHRASE: [...]
+DO NOT SHARE WITH ANYONE!
+Saving backup wallet to /home/\$USER/.local/share/penumbra-testnet-archive/.../custody.json
 ```
 
 Penumbra's design automatically creates many (`u64::MAX`) publicly unlinkable addresses which all
@@ -15,8 +18,7 @@ of your wallet addresses, which you can view like this:
 
 ```bash
 \$ cargo run --quiet --release --bin pcli view address 0
- Index  Address
- 0      penumbrav2t1...
+penumbrav2t1...
 ```
 
 ### Getting testnet tokens on the [Discord] in the `#testnet-faucet` channel

@@ -95,23 +95,40 @@ update the configuration for a validator.
 To create a template configuration, use `pcli validator template-definition`:
 
 ```console
-\$ cargo run --release --bin pcli -- validator definition template --file validator.json
-\$ cat validator.json
-{
-  "identity_key": "penumbravalid1g2huds8klwypzczfgx67j7zp6ntq2m5fxmctkf7ja96zn49d6s9qz72hu3",
-  "consensus_key": "Fodjg0m1kF/6uzcAZpRcLJswGf3EeNShLP2A+UCz8lw=",
-  "name": "",
-  "website": "",
-  "description": "",
-  "enabled": false,
-  "funding_streams": [
-    {
-      "address": "penumbrav1t1mw8270qtpgjy628fg97p2px45e860jtlw0nl3w5y7vq67qx697py9t8ppp3mhwfxv8kegg8wuny64nf60z966krx85cqznjpshqtngffpwnywtzqjklkg3qh7anxk368ywac9l",
-      "rate_bps": 100
-    }
-  ],
-  "sequence_number": 0
-}
+\$ cargo run --release --bin pcli -- validator definition template --file validator.toml
+\$ cat validator.toml
+# This is a template for a validator definition.
+#
+# The identity_key and governance_key fields are auto-filled with values derived
+# from this wallet's account.
+#
+# The consensus_key field is random, and needs to be replaced with your
+# tendermint instance's public key, which can be found in
+# `priv_validator_key.json`.
+#
+# You should fill in the name, website, and description fields.
+#
+# By default, validators are disabled, and cannot be delegated to. To change
+# this, set `enabled = true`.
+#
+# Every time you upload a new validator config, you'll need to increment the
+# `sequence_number`.
+
+sequence_number = 0
+enabled = false
+name = ''
+website = ''
+description = ''
+identity_key = 'penumbravalid1kqrecmvwcc75rvg9arhl0apsggtuannqphxhlzl34vfamp4ukg9q87ejej'
+governance_key = 'penumbragovern1kqrecmvwcc75rvg9arhl0apsggtuannqphxhlzl34vfamp4ukg9qus84v5'
+
+[consensus_key]
+type = 'tendermint/PubKeyEd25519'
+value = 'HDmm2FmJhLHxaKPnP5Fw3tC1DtlBx8ETgTL35UF+p6w='
+
+[[funding_stream]]
+address = 'penumbrav2t1cntf73e36y3um4zmqm4j0zar3jyxvyfqxywwg5q6fjxzhe28qttppmcww2kunetdp3q2zywcakwv6tzxdnaa3sqymll2gzq6zqhr5p0v7fnfdaghrr2ru2uw78nkeyt49uf49q'
+rate_bps = 100
 ```
 
 and adjust the data like the name, website, description, etc as desired.
@@ -140,9 +157,8 @@ By default `template-definition` will use a random consensus key that you won't 
   },
 ```
 
-Note: if you can't find `priv_validator_key.json`, assure that you have set
-`mode = "validator"` in the Tendermint `config.toml`, as described above, and
-restarted Tendermint after doing so.
+Copy the string in the `value` field and paste that into your `validator.toml`,
+as the `value` field under the `[consensus_key]` heading.
 
 #### Configuring funding streams
 
@@ -156,10 +172,10 @@ that would be sent to an address controlled by a DAO.
 ## Uploading a definition
 
 After setting up metadata, funding streams, and the correct consensus key in
-your `validator.json`, you can upload it to the chain:
+your `validator.toml`, you can upload it to the chain:
 
 ```console
-cargo run --release --bin pcli -- validator definition upload --file validator.json
+cargo run --release --bin pcli -- validator definition upload --file validator.toml
 ```
 
 And verify that it's known to the chain:
@@ -205,7 +221,7 @@ deployment.  You can find the values in use for the current chain in its
 First fetch your existing validator definition from the chain:
 
 ```console
-cargo run --release --bin pcli -- validator definition fetch --file validator.json
+cargo run --release --bin pcli -- validator definition fetch --file validator.toml
 ```
 
 Then make any changes desired and **make sure to increase by `sequence_number` by at least 1!**
@@ -214,5 +230,5 @@ The `sequence_number` is a unique, increasing identifier for the version of the 
 After updating the validator definition you can upload it again to update your validator metadata on-chain:
 
 ```console
-cargo run --release --bin pcli -- validator definition upload --file validator.json
+cargo run --release --bin pcli -- validator definition upload --file validator.toml
 ```
