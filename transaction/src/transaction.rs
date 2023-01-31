@@ -65,10 +65,8 @@ impl Transaction {
         for action in self.actions() {
             match action {
                 Action::Swap(swap) => {
-                    let epk = &swap.body.payload.ephemeral_key;
-                    let shared_secret = fvk.incoming().key_agreement_with(epk)?;
-                    let payload_key = PayloadKey::derive(&shared_secret, epk);
                     let commitment = swap.body.payload.commitment;
+                    let payload_key = PayloadKey::derive_swap(&fvk.outgoing(), commitment);
 
                     result.insert(commitment, payload_key);
                 }

@@ -3,6 +3,7 @@ use chacha20poly1305::{
     aead::{Aead, NewAead},
     ChaCha20Poly1305, Key, Nonce,
 };
+use decaf377::FieldExt;
 use rand::{CryptoRng, RngCore};
 
 use crate::{
@@ -23,21 +24,33 @@ pub enum PayloadKind {
     MemoKey,
     /// Memo is transaction-scoped.
     Memo,
+    /// Swap is action-scoped.
+    Swap,
 }
 
 impl PayloadKind {
-    pub(crate) fn nonce(&self) -> [u8; 12] {
+    pub(crate) fn nonce(&self, commitment: Option<note::Commitment>) -> [u8; 12] {
         match self {
             Self::Note => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             Self::MemoKey => [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             Self::Memo => [3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            Self::Swap => {
+                let mut nonce = [0u8; 12];
+                nonce[0..12].copy_from_slice(
+                    &commitment
+                        .expect("swaps use the prefix bytes of the swap commitment as a nonce")
+                        .0
+                        .to_bytes()[0..12],
+                );
+                nonce
+            }
         }
     }
 }
 
 /// Represents a symmetric `ChaCha20Poly1305` key.
 ///
-/// Used for encrypting and decrypting notes, memos, and memo keys.
+/// Used for encrypting and decrypting notes, swaps, memos, and memo keys.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PayloadKey(Key);
 
@@ -68,7 +81,7 @@ impl PayloadKey {
     /// Encrypt a note, memo, or memo key using the `PayloadKey`.
     pub fn encrypt(&self, plaintext: Vec<u8>, kind: PayloadKind) -> Vec<u8> {
         let cipher = ChaCha20Poly1305::new(&self.0);
-        let nonce_bytes = kind.nonce();
+        let nonce_bytes = kind.nonce(None);
         let nonce = Nonce::from_slice(&nonce_bytes);
 
         cipher
@@ -79,7 +92,49 @@ impl PayloadKey {
     /// Decrypt a note, memo, or memo key using the `PayloadKey`.
     pub fn decrypt(&self, ciphertext: Vec<u8>, kind: PayloadKind) -> Result<Vec<u8>> {
         let cipher = ChaCha20Poly1305::new(&self.0);
-        let nonce_bytes = kind.nonce();
+
+        let nonce_bytes = kind.nonce(None);
+        let nonce = Nonce::from_slice(&nonce_bytes);
+
+        cipher
+            .decrypt(nonce, ciphertext.as_ref())
+            .map_err(|_| anyhow::anyhow!("decryption error"))
+    }
+
+    /// Use Blake2b-256 to derive an encryption key from the OVK and public fields for swaps.
+    pub fn derive_swap(ovk: &OutgoingViewingKey, cm: note::Commitment) -> Self {
+        let cm_bytes: [u8; 32] = cm.into();
+
+        let mut kdf_params = blake2b_simd::Params::new();
+        kdf_params.hash_length(32);
+        let mut kdf = kdf_params.to_state();
+        kdf.update(&ovk.0);
+        kdf.update(&cm_bytes);
+
+        let key = kdf.finalize();
+        Self(*Key::from_slice(key.as_bytes()))
+    }
+
+    /// Encrypt a swap using the `PayloadKey`.
+    pub fn encrypt_swap(&self, plaintext: Vec<u8>, commitment: note::Commitment) -> Vec<u8> {
+        let cipher = ChaCha20Poly1305::new(&self.0);
+        let nonce_bytes = PayloadKind::Swap.nonce(Some(commitment));
+        let nonce = Nonce::from_slice(&nonce_bytes);
+
+        cipher
+            .encrypt(nonce, plaintext.as_ref())
+            .expect("encryption succeeded")
+    }
+
+    /// Decrypt a swap using the `PayloadKey`.
+    pub fn decrypt_swap(
+        &self,
+        ciphertext: Vec<u8>,
+        commitment: note::Commitment,
+    ) -> Result<Vec<u8>> {
+        let cipher = ChaCha20Poly1305::new(&self.0);
+
+        let nonce_bytes = PayloadKind::Swap.nonce(Some(commitment));
         let nonce = Nonce::from_slice(&nonce_bytes);
 
         cipher
@@ -156,7 +211,7 @@ impl OutgoingCipherKey {
         // References:
         // * Section 5.4.3 of the ZCash protocol spec
         // * Section 2.3 RFC 7539
-        let nonce_bytes = kind.nonce();
+        let nonce_bytes = kind.nonce(None);
         let nonce = Nonce::from_slice(&nonce_bytes);
 
         cipher
@@ -167,7 +222,7 @@ impl OutgoingCipherKey {
     /// Decrypt key material using the `OutgoingCipherKey`.
     pub fn decrypt(&self, ciphertext: Vec<u8>, kind: PayloadKind) -> Result<Vec<u8>> {
         let cipher = ChaCha20Poly1305::new(&self.0);
-        let nonce_bytes = kind.nonce();
+        let nonce_bytes = kind.nonce(None);
         let nonce = Nonce::from_slice(&nonce_bytes);
 
         cipher
