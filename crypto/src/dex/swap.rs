@@ -15,7 +15,7 @@ mod plaintext;
 
 pub use ciphertext::SwapCiphertext;
 pub use payload::SwapPayload;
-pub use plaintext::SwapPlaintext;
+pub use plaintext::{SwapKey, SwapPlaintext};
 
 // Swap ciphertext byte length.
 pub const SWAP_CIPHERTEXT_BYTES: usize = 272;

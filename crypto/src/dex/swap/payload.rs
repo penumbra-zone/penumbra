@@ -3,7 +3,7 @@ use penumbra_proto::core::dex::v1alpha1 as pb;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{ka, FullViewingKey};
+use crate::FullViewingKey;
 
 use super::{SwapCiphertext, SwapPlaintext};
 
@@ -11,7 +11,6 @@ use super::{SwapCiphertext, SwapPlaintext};
 #[serde(try_from = "pb::SwapPayload", into = "pb::SwapPayload")]
 pub struct SwapPayload {
     pub commitment: penumbra_tct::Commitment,
-    pub ephemeral_key: ka::Public,
     pub encrypted_swap: SwapCiphertext,
 }
 
@@ -20,7 +19,7 @@ impl SwapPayload {
         // Try to decrypt the swap ciphertext. If it doesn't decrypt, it wasn't meant for us.
         let swap = self
             .encrypted_swap
-            .decrypt2(fvk.incoming(), &self.ephemeral_key)
+            .decrypt(fvk.outgoing(), self.commitment)
             .ok()?;
         tracing::debug!(swap_commitment = ?self.commitment, ?swap, "found swap while scanning");
 
@@ -55,7 +54,6 @@ impl From<SwapPayload> for pb::SwapPayload {
     fn from(msg: SwapPayload) -> Self {
         pb::SwapPayload {
             commitment: Some(msg.commitment.into()),
-            ephemeral_key: msg.ephemeral_key.0.into(),
             encrypted_swap: msg.encrypted_swap.0.to_vec(),
         }
     }
@@ -69,11 +67,6 @@ impl TryFrom<pb::SwapPayload> for SwapPayload {
             .commitment
             .ok_or_else(|| anyhow!("missing commitment"))?
             .try_into()?;
-        let ephemeral_key = ka::Public(
-            msg.ephemeral_key
-                .try_into()
-                .map_err(|_| anyhow!("expected 32 byte ephemeral key"))?,
-        );
         let encrypted_swap = SwapCiphertext(
             msg.encrypted_swap
                 .try_into()
@@ -81,7 +74,6 @@ impl TryFrom<pb::SwapPayload> for SwapPayload {
         );
         Ok(Self {
             commitment,
-            ephemeral_key,
             encrypted_swap,
         })
     }

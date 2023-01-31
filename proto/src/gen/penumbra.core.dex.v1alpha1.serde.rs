@@ -2822,18 +2822,12 @@ impl serde::Serialize for SwapPayload {
         if self.commitment.is_some() {
             len += 1;
         }
-        if !self.ephemeral_key.is_empty() {
-            len += 1;
-        }
         if !self.encrypted_swap.is_empty() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.dex.v1alpha1.SwapPayload", len)?;
         if let Some(v) = self.commitment.as_ref() {
             struct_ser.serialize_field("commitment", v)?;
-        }
-        if !self.ephemeral_key.is_empty() {
-            struct_ser.serialize_field("ephemeralKey", pbjson::private::base64::encode(&self.ephemeral_key).as_str())?;
         }
         if !self.encrypted_swap.is_empty() {
             struct_ser.serialize_field("encryptedSwap", pbjson::private::base64::encode(&self.encrypted_swap).as_str())?;
@@ -2849,8 +2843,6 @@ impl<'de> serde::Deserialize<'de> for SwapPayload {
     {
         const FIELDS: &[&str] = &[
             "commitment",
-            "ephemeral_key",
-            "ephemeralKey",
             "encrypted_swap",
             "encryptedSwap",
         ];
@@ -2858,7 +2850,6 @@ impl<'de> serde::Deserialize<'de> for SwapPayload {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Commitment,
-            EphemeralKey,
             EncryptedSwap,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -2882,7 +2873,6 @@ impl<'de> serde::Deserialize<'de> for SwapPayload {
                     {
                         match value {
                             "commitment" => Ok(GeneratedField::Commitment),
-                            "ephemeralKey" | "ephemeral_key" => Ok(GeneratedField::EphemeralKey),
                             "encryptedSwap" | "encrypted_swap" => Ok(GeneratedField::EncryptedSwap),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
@@ -2904,7 +2894,6 @@ impl<'de> serde::Deserialize<'de> for SwapPayload {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut commitment__ = None;
-                let mut ephemeral_key__ = None;
                 let mut encrypted_swap__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
@@ -2913,14 +2902,6 @@ impl<'de> serde::Deserialize<'de> for SwapPayload {
                                 return Err(serde::de::Error::duplicate_field("commitment"));
                             }
                             commitment__ = map.next_value()?;
-                        }
-                        GeneratedField::EphemeralKey => {
-                            if ephemeral_key__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("ephemeralKey"));
-                            }
-                            ephemeral_key__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
                         }
                         GeneratedField::EncryptedSwap => {
                             if encrypted_swap__.is_some() {
@@ -2934,7 +2915,6 @@ impl<'de> serde::Deserialize<'de> for SwapPayload {
                 }
                 Ok(SwapPayload {
                     commitment: commitment__,
-                    ephemeral_key: ephemeral_key__.unwrap_or_default(),
                     encrypted_swap: encrypted_swap__.unwrap_or_default(),
                 })
             }

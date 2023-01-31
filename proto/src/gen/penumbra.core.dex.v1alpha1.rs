@@ -85,10 +85,7 @@ pub struct SwapPayload {
     pub commitment: ::core::option::Option<
         super::super::crypto::v1alpha1::StateCommitment,
     >,
-    /// TODO: replace with ovk-based encryption
     #[prost(bytes = "vec", tag = "2")]
-    pub ephemeral_key: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bytes = "vec", tag = "3")]
     pub encrypted_swap: ::prost::alloc::vec::Vec<u8>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
