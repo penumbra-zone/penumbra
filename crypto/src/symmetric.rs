@@ -58,6 +58,7 @@ impl PayloadKey {
     /// Use Blake2b-256 to derive a `PayloadKey`.
     pub fn derive(shared_secret: &ka::SharedSecret, epk: &ka::Public) -> Self {
         let mut kdf_params = blake2b_simd::Params::new();
+        kdf_params.personal(b"Penumbra_Payload");
         kdf_params.hash_length(32);
         let mut kdf = kdf_params.to_state();
         kdf.update(&shared_secret.0);
@@ -106,6 +107,7 @@ impl PayloadKey {
         let cm_bytes: [u8; 32] = cm.into();
 
         let mut kdf_params = blake2b_simd::Params::new();
+        kdf_params.personal(b"Penumbra_Payswap");
         kdf_params.hash_length(32);
         let mut kdf = kdf_params.to_state();
         kdf.update(&ovk.0);
@@ -188,6 +190,7 @@ impl OutgoingCipherKey {
 
         let mut kdf_params = blake2b_simd::Params::new();
         kdf_params.hash_length(32);
+        kdf_params.personal(b"Penumbra_OutCiph");
         let mut kdf = kdf_params.to_state();
         kdf.update(&ovk.0);
         kdf.update(&cv_bytes);
