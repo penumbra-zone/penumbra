@@ -148,3 +148,8 @@ message Clue {
 message EffectHash {
   bytes inner = 1;
 }
+
+// A Penumbra ZK output proof.
+message ZKOutputProof {
+  bytes inner = 1;
+}
