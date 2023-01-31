@@ -229,7 +229,7 @@ message Output {
   // The effecting data for the output.
   OutputBody body = 1;
   // The output proof is authorizing data.
-  bytes proof = 2;
+  crypto.v1alpha1.ZKOutputProof proof = 2;
 }
 
 // The body of an output description, containing only the effecting data
