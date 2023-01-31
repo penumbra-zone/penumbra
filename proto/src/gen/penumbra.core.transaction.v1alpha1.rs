@@ -395,8 +395,8 @@ pub struct Output {
     #[prost(message, optional, tag = "1")]
     pub body: ::core::option::Option<OutputBody>,
     /// The output proof is authorizing data.
-    #[prost(bytes = "bytes", tag = "2")]
-    pub proof: ::prost::bytes::Bytes,
+    #[prost(message, optional, tag = "2")]
+    pub proof: ::core::option::Option<super::super::crypto::v1alpha1::ZkOutputProof>,
 }
 /// The body of an output description, containing only the effecting data
 /// describing changes to the ledger, and not the authorizing data that allows
