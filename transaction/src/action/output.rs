@@ -4,7 +4,7 @@ use anyhow::{Context, Error};
 use bytes::Bytes;
 use penumbra_crypto::{
     balance,
-    proofs::transparent::OutputProof,
+    proofs::groth16::ZKOutputProof,
     symmetric::{OvkWrappedKey, WrappedMemoKey},
     EncryptedNote, Note,
 };
@@ -17,7 +17,7 @@ use super::IsAction;
 #[derive(Clone, Debug)]
 pub struct Output {
     pub body: Body,
-    pub proof: OutputProof,
+    pub proof: ZKOutputProof,
 }
 
 impl IsAction for Output {
