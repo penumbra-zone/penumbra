@@ -4,9 +4,12 @@ This section describes the transaction-level cryptography that is used in Penumb
 actions to symmetrically encrypt and decrypt swaps, notes, and memos.
 
 For the symmetric encryption described in this section, we use ChaCha20-Poly1305 ([RFC-8439]).
-It is security-critical that `(key, nonce)` pairs are not reused. We do this by
-deriving per-action keys from ephemeral shared secrets, and using each key at maximum once
-with a given nonce. We describe the nonces and keys below.
+It is security-critical that `(key, nonce)` pairs are not reused. We do this by either:
+
+* deriving per-action keys from ephemeral shared secrets using a fixed nonce (used for notes and memo keys),
+* deriving per-action keys from the outgoing viewing key using a nonce derived from a commitment.
+
+We use each key at maximum once with a given nonce. We describe the nonces and keys below.
 
 ## Nonces
 
@@ -14,18 +17,16 @@ We use a different nonce to encrypt each type of item using the following `[u8; 
 
 * Notes: `[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]`
 * Memos: `[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]`
-* Swaps: `[2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]`
+* Swaps: we use the first 12 bytes of the swap commitment
 * Memo keys: `[3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]`
-
-This enables the same key to be used in the
-case of e.g. a swap with an associated note.
 
 ## Keys
 
 We have several keys involved in transaction-level symmetric cryptography:
 * A *shared secret* derived between sender and recipient,
-* A *per-action payload key* used to encrypt a single swap, note, or memo key (one of each type). 
+* A *per-action payload key* used to encrypt a single note, or memo key (one of each type).
 It is derived from the shared secret. It is used for a single action.
+* A *per-action swap payload key* used to encrypt a single swap. It is derived from the outgoing viewing key. It is used for a single action.
 * A *random payload key* used to encrypt a memo. It is generated randomly and is shared between all
 actions in a given transaction.
 * An *outgoing cipher key* used to encrypt key material (the shared secret) to enable the sender to 
@@ -48,7 +49,7 @@ key exchange between:
 
 This allows both sender and recipient to generate the shared secret based on the keys they posess.
 
-### Per-action Payload Key
+### Per-action Payload Key: Notes and Memo Keys
 
 The symmetric per-action payload key is a 32-byte key derived from the `shared_secret` and the $epk$:
 
@@ -56,10 +57,23 @@ The symmetric per-action payload key is a 32-byte key derived from the `shared_s
 action_payload_key = BLAKE2b-512(shared_secret, epk)
 ```
 
-This symmetric key is then used with the nonces specified above to encrypt a memo key,
-note, or swap. It should not be used to encrypt two items of the same type.
+This symmetric key is then used with the nonces specified above to encrypt a memo key or note.
+It should not be used to encrypt two items of the same type.
 
-### Random Payload Key
+### Per-action Payload Key: Swaps
+
+The symmetric per-action payload key is a 32-byte key derived from the outgoing viewing
+key `ovk` and the swap commitment `cm`:
+
+```
+action_payload_key = BLAKE2b-512(ovk, cm)
+```
+
+This symmetric key is used with the nonces specified above to encrypt a swap only.
+We use the outgoing viewing key for swaps since third parties cannot create
+swaps for a given recipient, i.e. the user only sends swaps to themselves.
+
+### Random Payload Key: Memos
 
 The random payload key is a 32-byte key generated randomly. This
 symmetric key is used with the nonces specified above to encrypt memos only.
@@ -83,7 +97,7 @@ they will need to later reconstruct any outgoing transaction details.
 
 ### OVK Wrapped Key
 
-To decrypt outgoing notes, memo keys, or swaps, the sender needs to store the shared secret encrypted
+To decrypt outgoing notes or memo keys, the sender needs to store the shared secret encrypted
 using the outgoing cipher key described above. This encrypted data,
 48-bytes in length (32 bytes plus 16 bytes for
 authentication) we call the OVK wrapped key and is saved on `OutputBody`.
@@ -93,7 +107,7 @@ The sender later scanning the chain can:
 1. Derive the outgoing cipher key as described above using their outgoing viewing
 key and public fields.
 2. Decrypt the OVK wrapped key.
-3. Derive the per-action payload key and use it to decrypt the corresponding memo, note, or swap.
+3. Derive the per-action payload key and use it to decrypt the corresponding memo or note.
 
 ### Wrapped Memo Key
 
