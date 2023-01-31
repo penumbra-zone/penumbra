@@ -1,8 +1,8 @@
 use anyhow::Result;
 
-use crate::{keys::OutgoingViewingKey, note};
+use crate::{keys::OutgoingViewingKey, note, PayloadKey};
 
-use super::{SwapKey, SwapPlaintext, SWAP_CIPHERTEXT_BYTES, SWAP_LEN_BYTES};
+use super::{SwapPlaintext, SWAP_CIPHERTEXT_BYTES, SWAP_LEN_BYTES};
 
 #[derive(Debug, Clone)]
 pub struct SwapCiphertext(pub [u8; SWAP_CIPHERTEXT_BYTES]);
@@ -13,18 +13,18 @@ impl SwapCiphertext {
         ovk: &OutgoingViewingKey,
         commitment: note::Commitment,
     ) -> Result<SwapPlaintext> {
-        let swap_key = SwapKey::derive(ovk, commitment);
-        self.decrypt_with_swap_key(&swap_key, commitment)
+        let payload_key = PayloadKey::derive_swap(ovk, commitment);
+        self.decrypt_with_payload_key(&payload_key, commitment)
     }
 
-    pub fn decrypt_with_swap_key(
+    pub fn decrypt_with_payload_key(
         &self,
-        swap_key: &SwapKey,
+        payload_key: &PayloadKey,
         commitment: note::Commitment,
     ) -> Result<SwapPlaintext> {
         let swap_ciphertext = self.0;
-        let decryption_result = swap_key
-            .decrypt(swap_ciphertext.to_vec(), commitment)
+        let decryption_result = payload_key
+            .decrypt_swap(swap_ciphertext.to_vec(), commitment)
             .map_err(|_| anyhow::anyhow!("unable to decrypt swap ciphertext"))?;
 
         // TODO: encapsulate plaintext encoding by making this a
