@@ -22,10 +22,16 @@ run:
 sudo apt-get install build-essential pkg-config libssl-dev clang
 ```
 
-For a minimal Fedora image, you can run:
+For a minimal Fedora/Centos/Rhel image, you can run:
 
+This one to keep/update your system, this step is optional but recommended (this is important to keep system up to date)
 ```bash
-sudo dnf install openssl-dev clang
+sudo yum update -y ; sudo yum upgrade -y
+```
+
+This one to install required dependencies
+```bash
+sudo yum install openssl-devel clang git cargo rustfmt -y
 ```
 
 #### macOS
