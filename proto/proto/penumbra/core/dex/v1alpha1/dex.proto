@@ -65,9 +65,7 @@ message SwapBody {
 
 message SwapPayload {
   crypto.v1alpha1.StateCommitment commitment = 1;
-  // TODO: replace with ovk-based encryption
-  bytes ephemeral_key = 2;
-  bytes encrypted_swap = 3;
+  bytes encrypted_swap = 2;
 }
 
 message SwapPlaintext {

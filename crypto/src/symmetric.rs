@@ -21,8 +21,6 @@ pub enum PayloadKind {
     Note,
     /// MemoKey is action-scoped.
     MemoKey,
-    /// Swap is action-scoped.
-    Swap,
     /// Memo is transaction-scoped.
     Memo,
 }
@@ -32,7 +30,6 @@ impl PayloadKind {
         match self {
             Self::Note => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             Self::MemoKey => [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            Self::Swap => [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             Self::Memo => [3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         }
     }
@@ -40,7 +37,7 @@ impl PayloadKind {
 
 /// Represents a symmetric `ChaCha20Poly1305` key.
 ///
-/// Used for encrypting and decrypting notes, memos, memo keys, and swaps.
+/// Used for encrypting and decrypting notes, memos, and memo keys.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PayloadKey(Key);
 
@@ -68,7 +65,7 @@ impl PayloadKey {
         self.0.to_vec()
     }
 
-    /// Encrypt a note, swap, memo, or memo key using the `PayloadKey`.
+    /// Encrypt a note, memo, or memo key using the `PayloadKey`.
     pub fn encrypt(&self, plaintext: Vec<u8>, kind: PayloadKind) -> Vec<u8> {
         let cipher = ChaCha20Poly1305::new(&self.0);
         let nonce_bytes = kind.nonce();
@@ -79,7 +76,7 @@ impl PayloadKey {
             .expect("encryption succeeded")
     }
 
-    /// Decrypt a note, swap, memo, or memo key using the `PayloadKey`.
+    /// Decrypt a note, memo, or memo key using the `PayloadKey`.
     pub fn decrypt(&self, ciphertext: Vec<u8>, kind: PayloadKind) -> Result<Vec<u8>> {
         let cipher = ChaCha20Poly1305::new(&self.0);
         let nonce_bytes = kind.nonce();
@@ -120,7 +117,7 @@ impl From<[u8; 32]> for PayloadKey {
 /// Represents a symmetric `ChaCha20Poly1305` key.
 ///
 /// Used for encrypting and decrypting [`OvkWrappedKey`] material used to decrypt
-/// outgoing swaps, notes, and memos.
+/// outgoing notes, and memos.
 pub struct OutgoingCipherKey(Key);
 
 impl OutgoingCipherKey {

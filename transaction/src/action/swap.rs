@@ -43,7 +43,7 @@ impl IsAction for Swap {
 
         let plaintext = txp.payload_keys.get(&commitment).and_then(|payload_key| {
             // Decrypt swap ciphertext
-            SwapCiphertext::decrypt_with_payload_key(&self.body.payload.encrypted_swap, payload_key)
+            SwapCiphertext::decrypt_with_swap_key(&self.body.payload.encrypted_swap, payload_key)
                 .ok()
         });
 

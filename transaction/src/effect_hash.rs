@@ -310,7 +310,6 @@ impl EffectingData for swap::Body {
         state.update(&self.delta_2_i.to_le_bytes());
         state.update(&self.fee_commitment.to_bytes());
         state.update(&self.payload.commitment.0.to_bytes());
-        state.update(&self.payload.ephemeral_key.0);
         state.update(&self.payload.encrypted_swap.0);
 
         EffectHash(state.finalize().as_array().clone())

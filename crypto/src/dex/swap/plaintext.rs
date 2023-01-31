@@ -1,7 +1,12 @@
+use crate::keys::OutgoingViewingKey;
 use crate::transaction::Fee;
 use crate::{asset, ka, Address, Amount, Note, Rseed, Value};
 use anyhow::{anyhow, Error, Result};
 use ark_ff::PrimeField;
+use chacha20poly1305::{
+    aead::{Aead, NewAead},
+    ChaCha20Poly1305, Key, Nonce,
+};
 use decaf377::{FieldExt, Fq};
 use once_cell::sync::Lazy;
 use penumbra_proto::{core::crypto::v1alpha1 as pb_crypto, core::dex::v1alpha1 as pb, DomainType};
@@ -10,7 +15,7 @@ use poseidon377::{hash_1, hash_4, hash_7};
 use rand::{CryptoRng, RngCore};
 
 use crate::dex::TradingPair;
-use crate::symmetric::{PayloadKey, PayloadKind};
+use crate::note;
 
 use super::{
     BatchSwapOutputData, SwapCiphertext, SwapPayload, DOMAIN_SEPARATOR, SWAP_CIPHERTEXT_BYTES,
@@ -125,15 +130,11 @@ impl SwapPlaintext {
         self.claim_address.transmission_key()
     }
 
-    pub fn encrypt(&self, esk: &ka::Secret) -> SwapPayload {
-        let epk = esk.diversified_public(self.diversified_generator());
-        let shared_secret = esk
-            .key_agreement_with(self.transmission_key())
-            .expect("key agreement succeeds");
-
-        let key = PayloadKey::derive(&shared_secret, &epk);
+    pub fn encrypt(&self, ovk: &OutgoingViewingKey) -> SwapPayload {
+        let commitment = self.swap_commitment();
+        let key = SwapKey::derive(ovk, commitment);
         let swap_plaintext: [u8; SWAP_LEN_BYTES] = self.into();
-        let encryption_result = key.encrypt(swap_plaintext.to_vec(), PayloadKind::Swap);
+        let encryption_result = key.encrypt(swap_plaintext.to_vec(), commitment);
 
         let ciphertext: [u8; SWAP_CIPHERTEXT_BYTES] = encryption_result
             .try_into()
@@ -141,8 +142,7 @@ impl SwapPlaintext {
 
         SwapPayload {
             encrypted_swap: SwapCiphertext(ciphertext),
-            ephemeral_key: epk,
-            commitment: self.swap_commitment(),
+            commitment,
         }
     }
 
@@ -164,6 +164,54 @@ impl SwapPlaintext {
             claim_address,
             rseed,
         }
+    }
+}
+
+pub struct SwapKey(Key);
+
+impl SwapKey {
+    /// Use Blake2b-256 to derive an encryption key from the OVK and public fields.
+    pub fn derive(ovk: &OutgoingViewingKey, cm: note::Commitment) -> Self {
+        let cm_bytes: [u8; 32] = cm.into();
+
+        let mut kdf_params = blake2b_simd::Params::new();
+        kdf_params.hash_length(32);
+        let mut kdf = kdf_params.to_state();
+        kdf.update(&ovk.0);
+        kdf.update(&cm_bytes);
+
+        let key = kdf.finalize();
+        Self(*Key::from_slice(key.as_bytes()))
+    }
+
+    /// Encrypt key material using the `OutgoingCipherKey`.
+    pub fn encrypt(&self, plaintext: Vec<u8>, swap_commitment: note::Commitment) -> Vec<u8> {
+        let cipher = ChaCha20Poly1305::new(&self.0);
+
+        // We use the first 16 bytes of the swap commitment as the nonce for the key material.
+        let nonce_bytes = &swap_commitment.0.to_bytes()[0..16];
+        let nonce = Nonce::from_slice(nonce_bytes);
+
+        cipher
+            .encrypt(nonce, plaintext.as_ref())
+            .expect("encryption succeeded")
+    }
+
+    /// Decrypt key material using the `OutgoingCipherKey`.
+    pub fn decrypt(
+        &self,
+        ciphertext: Vec<u8>,
+        swap_commitment: note::Commitment,
+    ) -> Result<Vec<u8>> {
+        let cipher = ChaCha20Poly1305::new(&self.0);
+
+        // We use the first 16 bytes of the swap commitment as the nonce for the key material.
+        let nonce_bytes = &swap_commitment.0.to_bytes()[0..16];
+        let nonce = Nonce::from_slice(nonce_bytes);
+
+        cipher
+            .decrypt(nonce, ciphertext.as_ref())
+            .map_err(|_| anyhow::anyhow!("decryption error"))
     }
 }
 
@@ -305,6 +353,7 @@ mod tests {
     };
 
     #[test]
+    /// Check the swap plaintext can be encrypted and decrypted with the OVK.
     fn swap_encryption_and_decryption() {
         let mut rng = OsRng;
 
@@ -312,6 +361,7 @@ mod tests {
         let sk = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk = sk.full_viewing_key();
         let ivk = fvk.incoming();
+        let ovk = fvk.outgoing();
         let (dest, _dtk_d) = ivk.payment_address(0u64.into());
         let trading_pair = TradingPair {
             asset_1: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
@@ -330,14 +380,9 @@ mod tests {
             dest,
         );
 
-        let esk = ka::Secret::new(&mut rng);
-
-        let ciphertext = swap.encrypt(&esk).encrypted_swap;
-        let diversified_basepoint = dest.diversified_generator();
-        let transmission_key = swap.transmission_key();
-        let plaintext =
-            SwapCiphertext::decrypt(&ciphertext, &esk, transmission_key, diversified_basepoint)
-                .expect("can decrypt swap");
+        let ciphertext = swap.encrypt(&ovk).encrypted_swap;
+        let plaintext = SwapCiphertext::decrypt(&ciphertext, &ovk, swap.swap_commitment())
+            .expect("can decrypt swap");
 
         assert_eq!(plaintext, swap);
     }

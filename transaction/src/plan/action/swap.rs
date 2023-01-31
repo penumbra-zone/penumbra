@@ -41,7 +41,7 @@ impl SwapPlan {
     }
 
     /// Construct the [`swap::Body`] described by this [`SwapPlan`].
-    pub fn swap_body(&self, _fvk: &FullViewingKey) -> swap::Body {
+    pub fn swap_body(&self, fvk: &FullViewingKey) -> swap::Body {
         let fee_commitment = self
             .swap_plaintext
             .claim_fee
@@ -53,7 +53,7 @@ impl SwapPlan {
             delta_1_i: self.swap_plaintext.delta_1_i,
             delta_2_i: self.swap_plaintext.delta_2_i,
             fee_commitment,
-            payload: self.swap_plaintext.encrypt(&self.esk),
+            payload: self.swap_plaintext.encrypt(&fvk.outgoing()),
         }
     }
 
