@@ -126,9 +126,6 @@ pub struct SwapPlan {
     /// The blinding factor for the fee commitment. The fee in the SwapPlan is private to prevent linkability with the SwapClaim.
     #[prost(bytes = "vec", tag = "2")]
     pub fee_blinding: ::prost::alloc::vec::Vec<u8>,
-    /// The ephemeral secret used to encrypt the swap payload.
-    #[prost(bytes = "vec", tag = "3")]
-    pub esk: ::prost::alloc::vec::Vec<u8>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

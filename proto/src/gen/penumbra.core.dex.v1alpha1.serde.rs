@@ -3119,18 +3119,12 @@ impl serde::Serialize for SwapPlan {
         if !self.fee_blinding.is_empty() {
             len += 1;
         }
-        if !self.esk.is_empty() {
-            len += 1;
-        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.dex.v1alpha1.SwapPlan", len)?;
         if let Some(v) = self.swap_plaintext.as_ref() {
             struct_ser.serialize_field("swapPlaintext", v)?;
         }
         if !self.fee_blinding.is_empty() {
             struct_ser.serialize_field("feeBlinding", pbjson::private::base64::encode(&self.fee_blinding).as_str())?;
-        }
-        if !self.esk.is_empty() {
-            struct_ser.serialize_field("esk", pbjson::private::base64::encode(&self.esk).as_str())?;
         }
         struct_ser.end()
     }
@@ -3146,14 +3140,12 @@ impl<'de> serde::Deserialize<'de> for SwapPlan {
             "swapPlaintext",
             "fee_blinding",
             "feeBlinding",
-            "esk",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             SwapPlaintext,
             FeeBlinding,
-            Esk,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -3177,7 +3169,6 @@ impl<'de> serde::Deserialize<'de> for SwapPlan {
                         match value {
                             "swapPlaintext" | "swap_plaintext" => Ok(GeneratedField::SwapPlaintext),
                             "feeBlinding" | "fee_blinding" => Ok(GeneratedField::FeeBlinding),
-                            "esk" => Ok(GeneratedField::Esk),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -3199,7 +3190,6 @@ impl<'de> serde::Deserialize<'de> for SwapPlan {
             {
                 let mut swap_plaintext__ = None;
                 let mut fee_blinding__ = None;
-                let mut esk__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::SwapPlaintext => {
@@ -3216,20 +3206,11 @@ impl<'de> serde::Deserialize<'de> for SwapPlan {
                                 Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
-                        GeneratedField::Esk => {
-                            if esk__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("esk"));
-                            }
-                            esk__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
-                        }
                     }
                 }
                 Ok(SwapPlan {
                     swap_plaintext: swap_plaintext__,
                     fee_blinding: fee_blinding__.unwrap_or_default(),
-                    esk: esk__.unwrap_or_default(),
                 })
             }
         }

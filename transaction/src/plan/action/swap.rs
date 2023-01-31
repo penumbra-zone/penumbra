@@ -3,7 +3,7 @@ use ark_ff::UniformRand;
 
 use penumbra_crypto::dex::swap::SwapPlaintext;
 use penumbra_crypto::Balance;
-use penumbra_crypto::{ka, proofs::transparent::SwapProof, FieldExt, Fr, FullViewingKey, Value};
+use penumbra_crypto::{proofs::transparent::SwapProof, FieldExt, Fr, FullViewingKey, Value};
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
@@ -16,19 +16,16 @@ use crate::action::{swap, Swap};
 pub struct SwapPlan {
     pub swap_plaintext: SwapPlaintext,
     pub fee_blinding: Fr,
-    pub esk: ka::Secret,
 }
 
 impl SwapPlan {
     /// Create a new [`SwapPlan`] that requests a swap between the given assets and input amounts.
     pub fn new<R: CryptoRng + RngCore>(rng: &mut R, swap_plaintext: SwapPlaintext) -> SwapPlan {
         let fee_blinding = Fr::rand(rng);
-        let esk = ka::Secret::new(rng);
 
         SwapPlan {
             fee_blinding,
             swap_plaintext,
-            esk,
         }
     }
 
@@ -53,7 +50,7 @@ impl SwapPlan {
             delta_1_i: self.swap_plaintext.delta_1_i,
             delta_2_i: self.swap_plaintext.delta_2_i,
             fee_commitment,
-            payload: self.swap_plaintext.encrypt(&fvk.outgoing()),
+            payload: self.swap_plaintext.encrypt(fvk.outgoing()),
         }
     }
 
@@ -99,8 +96,7 @@ impl From<SwapPlan> for pb::SwapPlan {
     fn from(msg: SwapPlan) -> Self {
         Self {
             swap_plaintext: Some(msg.swap_plaintext.into()),
-            fee_blinding: msg.fee_blinding.to_bytes().to_vec().into(),
-            esk: msg.esk.to_bytes().to_vec().into(),
+            fee_blinding: msg.fee_blinding.to_bytes().to_vec(),
         }
     }
 }
@@ -118,7 +114,6 @@ impl TryFrom<pb::SwapPlan> for SwapPlan {
                 .ok_or_else(|| anyhow!("missing swap_plaintext"))?
                 .try_into()
                 .context("swap plaintext malformed")?,
-            esk: msg.esk.as_slice().try_into().context("esk malformed")?,
         })
     }
 }
