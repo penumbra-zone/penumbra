@@ -51,10 +51,11 @@ This allows both sender and recipient to generate the shared secret based on the
 
 ### Per-action Payload Key: Notes and Memo Keys
 
-The symmetric per-action payload key is a 32-byte key derived from the `shared_secret` and the $epk$:
+The symmetric per-action payload key is a 32-byte key derived from the `shared_secret`, the $epk$ and
+personalization string "Penumbra_Payload":
 
 ```
-action_payload_key = BLAKE2b-512(shared_secret, epk)
+action_payload_key = BLAKE2b-512("Penumbra_Payload", shared_secret, epk)
 ```
 
 This symmetric key is then used with the nonces specified above to encrypt a memo key or note.
@@ -63,10 +64,10 @@ It should not be used to encrypt two items of the same type.
 ### Per-action Payload Key: Swaps
 
 The symmetric per-action payload key is a 32-byte key derived from the outgoing viewing
-key `ovk` and the swap commitment `cm`:
+key `ovk`, the swap commitment `cm`, and personalization string "Penumbra_Payswap":
 
 ```
-action_payload_key = BLAKE2b-512(ovk, cm)
+action_payload_key = BLAKE2b-512("Penumbra_Payswap", ovk, cm)
 ```
 
 This symmetric key is used with the nonces specified above to encrypt a swap only.
@@ -83,11 +84,11 @@ should be able to decrypt the per-transaction memo.
 ### Outgoing Cipher Key
 
 The symmetric outgoing cipher key is a 32-byte key derived from the sender's outgoing viewing key
-$ovk$, the value commitment $cv$, the note commitment $cm$, and the ephemeral 
-public key $epk$:
+$ovk$, the value commitment $cv$, the note commitment $cm$, the ephemeral 
+public key $epk$, and personalization string "Penumbra_OutCiph":
 
 ```
-outgoing_cipher_key = BLAKE2b-512(ovk, cv, cm, epk)
+outgoing_cipher_key = BLAKE2b-512("Penumbra_OutCiph", ovk, cv, cm, epk)
 ```
 
 All inputs except the outgoing viewing key are public. The intention of the
