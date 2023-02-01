@@ -55,7 +55,7 @@ impl TransactionPlan {
         for (spend_plan, auth_sig) in self.spend_plans().zip(auth_data.spend_auths.into_iter()) {
             let note_commitment = spend_plan.note.commit();
             let auth_path = witness_data
-                .note_commitment_proofs
+                .state_commitment_proofs
                 .get(&note_commitment)
                 .context(format!("could not get proof for {:?}", note_commitment))?;
 
@@ -90,7 +90,7 @@ impl TransactionPlan {
         for swap_claim_plan in self.swap_claim_plans().cloned() {
             let note_commitment = swap_claim_plan.swap_plaintext.swap_commitment();
             let auth_path = witness_data
-                .note_commitment_proofs
+                .state_commitment_proofs
                 .get(&note_commitment)
                 .context(format!("could not get proof for {:?}", note_commitment))?;
 

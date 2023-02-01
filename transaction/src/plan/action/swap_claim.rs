@@ -28,11 +28,11 @@ impl SwapClaimPlan {
     pub fn swap_claim(
         &self,
         fvk: &FullViewingKey,
-        note_commitment_proof: &tct::Proof,
+        state_commitment_proof: &tct::Proof,
     ) -> SwapClaim {
         SwapClaim {
             body: self.swap_claim_body(fvk),
-            proof: self.swap_claim_proof(note_commitment_proof, fvk.nullifier_key()),
+            proof: self.swap_claim_proof(state_commitment_proof, fvk.nullifier_key()),
             epoch_duration: self.epoch_duration,
         }
     }
@@ -41,7 +41,7 @@ impl SwapClaimPlan {
     /// by this plan.
     pub fn swap_claim_proof(
         &self,
-        note_commitment_proof: &tct::Proof,
+        state_commitment_proof: &tct::Proof,
         nk: &NullifierKey,
     ) -> SwapClaimProof {
         let (lambda_1_i, lambda_2_i) = self.output_data.pro_rata_outputs((
@@ -54,7 +54,7 @@ impl SwapClaimPlan {
             lambda_1_i,
             lambda_2_i,
             nk: nk.clone(),
-            swap_commitment_proof: note_commitment_proof.clone(),
+            swap_commitment_proof: state_commitment_proof.clone(),
         }
     }
 

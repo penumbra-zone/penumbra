@@ -80,10 +80,10 @@ impl SpendPlan {
     pub fn spend_proof(
         &self,
         fvk: &FullViewingKey,
-        note_commitment_proof: tct::Proof,
+        state_commitment_proof: tct::Proof,
     ) -> SpendProof {
         SpendProof {
-            note_commitment_proof,
+            state_commitment_proof,
             note: self.note.clone(),
             v_blinding: self.value_blinding,
             spend_auth_randomizer: self.randomizer,
