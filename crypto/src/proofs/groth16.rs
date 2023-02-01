@@ -186,10 +186,10 @@ mod tests {
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
         let nk = *sk_sender.nullifier_key();
         let ak: VerificationKey<SpendAuth> = sk_sender.spend_auth_key().into();
-        let mut nct = tct::Tree::new();
-        nct.insert(tct::Witness::Keep, note_commitment).unwrap();
-        let anchor = nct.root();
-        let note_commitment_proof = nct.witness(note_commitment).unwrap();
+        let mut sct = tct::Tree::new();
+        sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+        let anchor = sct.root();
+        let state_commitment_proof = sct.witness(note_commitment).unwrap();
         let balance_commitment = value_to_send.commit(v_blinding);
         let rk: VerificationKey<SpendAuth> = rsk.into();
         let nf = nk.derive_nullifier(0.into(), &note_commitment);
@@ -197,7 +197,7 @@ mod tests {
         let proof = SpendProof::prove(
             &mut rng,
             &pk,
-            note_commitment_proof,
+            state_commitment_proof,
             note,
             v_blinding,
             spend_auth_randomizer,
@@ -219,7 +219,7 @@ mod tests {
         #![proptest_config(ProptestConfig::with_cases(2))]
     #[test]
     /// Check that the `SpendProof` verification fails when using an incorrect
-    /// NCT root (`anchor`).
+    /// TCT root (`anchor`).
     fn spend_proof_verification_merkle_path_integrity_failure(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 2..200u64, v_blinding in fr_strategy()) {
         let (pk, vk) = SpendCircuit::generate_test_parameters();
         let mut rng = OsRng;
@@ -240,11 +240,11 @@ mod tests {
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
         let nk = *sk_sender.nullifier_key();
         let ak: VerificationKey<SpendAuth> = sk_sender.spend_auth_key().into();
-        let mut nct = tct::Tree::new();
-        let incorrect_anchor = nct.root();
-        nct.insert(tct::Witness::Keep, note_commitment).unwrap();
-        let anchor = nct.root();
-        let note_commitment_proof = nct.witness(note_commitment).unwrap();
+        let mut sct = tct::Tree::new();
+        let incorrect_anchor = sct.root();
+        sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+        let anchor = sct.root();
+        let state_commitment_proof = sct.witness(note_commitment).unwrap();
         let balance_commitment = value_to_send.commit(v_blinding);
         let rk: VerificationKey<SpendAuth> = rsk.into();
         let nf = nk.derive_nullifier(0.into(), &note_commitment);
@@ -252,7 +252,7 @@ mod tests {
         let proof = SpendProof::prove(
             &mut rng,
             &pk,
-            note_commitment_proof,
+            state_commitment_proof,
             note,
             v_blinding,
             spend_auth_randomizer,
@@ -299,10 +299,10 @@ mod tests {
             let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
             let nk = *sk_sender.nullifier_key();
             let ak = sk_sender.spend_auth_key().into();
-            let mut nct = tct::Tree::new();
-            nct.insert(tct::Witness::Keep, note_commitment).unwrap();
-            let anchor = nct.root();
-            let note_commitment_proof = nct.witness(note_commitment).unwrap();
+            let mut sct = tct::Tree::new();
+            sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+            let anchor = sct.root();
+            let state_commitment_proof = sct.witness(note_commitment).unwrap();
             let balance_commitment = value_to_send.commit(v_blinding);
             let rk: VerificationKey<SpendAuth> = rsk.into();
             let nf = nk.derive_nullifier(0.into(), &note_commitment);
@@ -313,7 +313,7 @@ mod tests {
             let proof = SpendProof::prove(
                 &mut rng,
                 &pk,
-                note_commitment_proof,
+                state_commitment_proof,
                 note,
                 v_blinding,
                 spend_auth_randomizer,
@@ -354,10 +354,10 @@ mod tests {
             let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
             let nk = *sk_sender.nullifier_key();
             let ak = sk_sender.spend_auth_key().into();
-            let mut nct = tct::Tree::new();
-            nct.insert(tct::Witness::Keep, note_commitment).unwrap();
-            let anchor = nct.root();
-            let note_commitment_proof = nct.witness(note_commitment).unwrap();
+            let mut sct = tct::Tree::new();
+            sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+            let anchor = sct.root();
+            let state_commitment_proof = sct.witness(note_commitment).unwrap();
             let balance_commitment = value_to_send.commit(v_blinding);
             let rk: VerificationKey<SpendAuth> = rsk.into();
             let nf = nk.derive_nullifier(0.into(), &note_commitment);
@@ -367,7 +367,7 @@ mod tests {
             let proof = SpendProof::prove(
                 &mut rng,
                 &pk,
-                note_commitment_proof,
+                state_commitment_proof,
                 note,
                 v_blinding,
                 spend_auth_randomizer,
@@ -410,10 +410,10 @@ mod tests {
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
         let nk = *sk_sender.nullifier_key();
         let ak = sk_sender.spend_auth_key().into();
-        let mut nct = tct::Tree::new();
-        nct.insert(tct::Witness::Keep, note_commitment).unwrap();
-        let anchor = nct.root();
-        let note_commitment_proof = nct.witness(note_commitment).unwrap();
+        let mut sct = tct::Tree::new();
+        sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+        let anchor = sct.root();
+        let state_commitment_proof = sct.witness(note_commitment).unwrap();
         let balance_commitment = value_to_send.commit(v_blinding);
         let rk: VerificationKey<SpendAuth> = rsk.into();
         let nf = nk.derive_nullifier(0.into(), &note_commitment);
@@ -421,7 +421,7 @@ mod tests {
         let proof = SpendProof::prove(
             &mut rng,
             &pk,
-            note_commitment_proof,
+            state_commitment_proof,
             note,
             v_blinding,
             spend_auth_randomizer,
@@ -465,10 +465,10 @@ mod tests {
             let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
             let nk = *sk_sender.nullifier_key();
             let ak = sk_sender.spend_auth_key().into();
-            let mut nct = tct::Tree::new();
-            nct.insert(tct::Witness::Keep, note_commitment).unwrap();
-            let anchor = nct.root();
-            let note_commitment_proof = nct.witness(note_commitment).unwrap();
+            let mut sct = tct::Tree::new();
+            sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+            let anchor = sct.root();
+            let state_commitment_proof = sct.witness(note_commitment).unwrap();
             let balance_commitment = value_to_send.commit(v_blinding);
             let rk: VerificationKey<SpendAuth> = rsk.into();
             let nf = nk.derive_nullifier(0.into(), &note_commitment);
@@ -481,7 +481,7 @@ mod tests {
             let proof = SpendProof::prove(
                 &mut rng,
                 &pk,
-                note_commitment_proof,
+                state_commitment_proof,
                 note,
                 v_blinding,
                 spend_auth_randomizer,
@@ -523,10 +523,10 @@ mod tests {
             let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
             let nk = *sk_sender.nullifier_key();
             let ak = sk_sender.spend_auth_key().into();
-            let mut nct = tct::Tree::new();
-            nct.insert(tct::Witness::Keep, note_commitment).unwrap();
-            let anchor = nct.root();
-            let note_commitment_proof = nct.witness(note_commitment).unwrap();
+            let mut sct = tct::Tree::new();
+            sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+            let anchor = sct.root();
+            let state_commitment_proof = sct.witness(note_commitment).unwrap();
             // Using a random blinding factor here, but the proof will verify
             // since for dummies we only check if the value is zero, and choose
             // not to enforce the other equality constraint.
@@ -537,7 +537,7 @@ mod tests {
             let proof = SpendProof::prove(
                 &mut rng,
                 &pk,
-                note_commitment_proof,
+                state_commitment_proof,
                 note,
                 v_blinding,
                 spend_auth_randomizer,

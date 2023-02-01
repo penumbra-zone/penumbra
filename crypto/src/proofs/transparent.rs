@@ -28,7 +28,7 @@ use crate::{
 #[derive(Clone, Debug)]
 pub struct SpendProof {
     // Inclusion proof for the note commitment.
-    pub note_commitment_proof: tct::Proof,
+    pub state_commitment_proof: tct::Proof,
     // The note being spent.
     pub note: Note,
     // The blinding factor used for generating the value commitment.
@@ -63,11 +63,11 @@ impl SpendProof {
 
         gadgets::note_commitment_integrity(
             self.note.clone(),
-            self.note_commitment_proof.commitment(),
+            self.state_commitment_proof.commitment(),
         )?;
 
         // Merkle path integrity.
-        self.note_commitment_proof
+        self.state_commitment_proof
             .verify(anchor)
             .map_err(|_| anyhow!("merkle root mismatch"))?;
 
@@ -83,8 +83,8 @@ impl SpendProof {
         gadgets::nullifier_integrity(
             nullifier,
             self.nk,
-            self.note_commitment_proof.position(),
-            self.note_commitment_proof.commitment(),
+            self.state_commitment_proof.position(),
+            self.state_commitment_proof.commitment(),
         )?;
 
         gadgets::rk_integrity(self.spend_auth_randomizer, rk, self.ak)?;
@@ -145,7 +145,7 @@ impl From<SpendProof> for transparent_proofs::SpendProof {
         let ak_bytes: [u8; 32] = msg.ak.into();
         let nk_bytes: [u8; 32] = msg.nk.0.to_bytes();
         transparent_proofs::SpendProof {
-            note_commitment_proof: Some(msg.note_commitment_proof.into()),
+            state_commitment_proof: Some(msg.state_commitment_proof.into()),
             note: Some(msg.note.into()),
             v_blinding: msg.v_blinding.to_bytes().to_vec(),
             spend_auth_randomizer: msg.spend_auth_randomizer.to_bytes().to_vec(),
@@ -171,8 +171,8 @@ impl TryFrom<transparent_proofs::SpendProof> for SpendProof {
             .map_err(|_| anyhow!("proto malformed"))?;
 
         Ok(SpendProof {
-            note_commitment_proof: proto
-                .note_commitment_proof
+            state_commitment_proof: proto
+                .state_commitment_proof
                 .ok_or_else(|| anyhow!("proto malformed"))?
                 .try_into()
                 .map_err(|_| anyhow!("proto malformed"))?,
@@ -766,13 +766,13 @@ mod tests {
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
         let nk = *sk_sender.nullifier_key();
         let ak = sk_sender.spend_auth_key().into();
-        let mut nct = tct::Tree::new();
-        nct.insert(tct::Witness::Keep, note_commitment).unwrap();
-        let anchor = nct.root();
-        let note_commitment_proof = nct.witness(note_commitment).unwrap();
+        let mut sct = tct::Tree::new();
+        sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+        let anchor = sct.root();
+        let state_commitment_proof = sct.witness(note_commitment).unwrap();
 
         let proof = SpendProof {
-            note_commitment_proof,
+            state_commitment_proof,
             note,
             v_blinding,
             spend_auth_randomizer,
@@ -789,7 +789,7 @@ mod tests {
 
     #[test]
     // Check that the `SpendProof` verification fails when using an incorrect
-    // NCT root (`anchor`).
+    // TCT root (`anchor`).
     fn test_spend_proof_verification_merkle_path_integrity_failure() {
         let mut rng = OsRng;
         let seed_phrase = SeedPhrase::generate(rng);
@@ -810,13 +810,13 @@ mod tests {
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
         let nk = *sk_sender.nullifier_key();
         let ak = sk_sender.spend_auth_key().into();
-        let mut nct = tct::Tree::new();
-        let incorrect_anchor = nct.root();
-        nct.insert(tct::Witness::Keep, note_commitment).unwrap();
-        let note_commitment_proof = nct.witness(note_commitment).unwrap();
+        let mut sct = tct::Tree::new();
+        let incorrect_anchor = sct.root();
+        sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+        let state_commitment_proof = sct.witness(note_commitment).unwrap();
 
         let proof = SpendProof {
-            note_commitment_proof,
+            state_commitment_proof,
             note,
             v_blinding,
             spend_auth_randomizer,
@@ -858,13 +858,13 @@ mod tests {
         let nk = *sk_sender.nullifier_key();
         let ak = sk_sender.spend_auth_key().into();
 
-        let mut nct = tct::Tree::new();
-        nct.insert(tct::Witness::Keep, note_commitment).unwrap();
-        let anchor = nct.root();
-        let note_commitment_proof = nct.witness(note_commitment).unwrap();
+        let mut sct = tct::Tree::new();
+        sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+        let anchor = sct.root();
+        let state_commitment_proof = sct.witness(note_commitment).unwrap();
 
         let proof = SpendProof {
-            note_commitment_proof,
+            state_commitment_proof,
             note,
             v_blinding,
             spend_auth_randomizer,
@@ -904,13 +904,13 @@ mod tests {
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
         let nk = *sk_sender.nullifier_key();
         let ak = sk_sender.spend_auth_key().into();
-        let mut nct = tct::Tree::new();
-        nct.insert(tct::Witness::Keep, note_commitment).unwrap();
-        let anchor = nct.root();
-        let note_commitment_proof = nct.witness(note_commitment).unwrap();
+        let mut sct = tct::Tree::new();
+        sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+        let anchor = sct.root();
+        let state_commitment_proof = sct.witness(note_commitment).unwrap();
 
         let proof = SpendProof {
-            note_commitment_proof,
+            state_commitment_proof,
             note,
             v_blinding,
             spend_auth_randomizer,
