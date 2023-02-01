@@ -14,7 +14,7 @@ message Transaction {
   TransactionBody body = 1;
   // The binding signature is stored separately from the transaction body that it signs.
   bytes binding_sig = 2;
-  // The root of some previous state of the note commitment tree, used as an anchor for all
+  // The root of some previous state of the state commitment tree, used as an anchor for all
   // ZK state transition proofs.
   crypto.v1alpha1.MerkleRoot anchor = 3;
 }
@@ -233,7 +233,7 @@ message WitnessData {
   crypto.v1alpha1.MerkleRoot anchor = 1;
   // The auth paths for the notes the transaction spends, in the
   // same order as the spends in the transaction plan.
-  repeated crypto.v1alpha1.NoteCommitmentProof note_commitment_proofs = 2;
+  repeated crypto.v1alpha1.StateCommitmentProof state_commitment_proofs = 2;
 }
 
 // Describes a planned transaction.

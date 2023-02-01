@@ -120,7 +120,7 @@ message EncryptedNote {
 }
 
 // An authentication path from a note commitment to the root of the note commitment tree.
-message NoteCommitmentProof {
+message StateCommitmentProof {
   StateCommitment note_commitment = 1;
   uint64 position = 2;
   repeated MerklePathChunk auth_path = 3; // always length 24

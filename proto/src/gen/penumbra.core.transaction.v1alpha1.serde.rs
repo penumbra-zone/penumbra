@@ -3825,15 +3825,15 @@ impl serde::Serialize for WitnessData {
         if self.anchor.is_some() {
             len += 1;
         }
-        if !self.note_commitment_proofs.is_empty() {
+        if !self.state_commitment_proofs.is_empty() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1alpha1.WitnessData", len)?;
         if let Some(v) = self.anchor.as_ref() {
             struct_ser.serialize_field("anchor", v)?;
         }
-        if !self.note_commitment_proofs.is_empty() {
-            struct_ser.serialize_field("noteCommitmentProofs", &self.note_commitment_proofs)?;
+        if !self.state_commitment_proofs.is_empty() {
+            struct_ser.serialize_field("stateCommitmentProofs", &self.state_commitment_proofs)?;
         }
         struct_ser.end()
     }
@@ -3846,14 +3846,14 @@ impl<'de> serde::Deserialize<'de> for WitnessData {
     {
         const FIELDS: &[&str] = &[
             "anchor",
-            "note_commitment_proofs",
-            "noteCommitmentProofs",
+            "state_commitment_proofs",
+            "stateCommitmentProofs",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Anchor,
-            NoteCommitmentProofs,
+            StateCommitmentProofs,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -3876,7 +3876,7 @@ impl<'de> serde::Deserialize<'de> for WitnessData {
                     {
                         match value {
                             "anchor" => Ok(GeneratedField::Anchor),
-                            "noteCommitmentProofs" | "note_commitment_proofs" => Ok(GeneratedField::NoteCommitmentProofs),
+                            "stateCommitmentProofs" | "state_commitment_proofs" => Ok(GeneratedField::StateCommitmentProofs),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -3897,7 +3897,7 @@ impl<'de> serde::Deserialize<'de> for WitnessData {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut anchor__ = None;
-                let mut note_commitment_proofs__ = None;
+                let mut state_commitment_proofs__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::Anchor => {
@@ -3906,17 +3906,17 @@ impl<'de> serde::Deserialize<'de> for WitnessData {
                             }
                             anchor__ = map.next_value()?;
                         }
-                        GeneratedField::NoteCommitmentProofs => {
-                            if note_commitment_proofs__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("noteCommitmentProofs"));
+                        GeneratedField::StateCommitmentProofs => {
+                            if state_commitment_proofs__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("stateCommitmentProofs"));
                             }
-                            note_commitment_proofs__ = Some(map.next_value()?);
+                            state_commitment_proofs__ = Some(map.next_value()?);
                         }
                     }
                 }
                 Ok(WitnessData {
                     anchor: anchor__,
-                    note_commitment_proofs: note_commitment_proofs__.unwrap_or_default(),
+                    state_commitment_proofs: state_commitment_proofs__.unwrap_or_default(),
                 })
             }
         }

@@ -4,8 +4,8 @@
 pub struct SpendProof {
     /// Auxiliary inputs
     #[prost(message, optional, tag = "1")]
-    pub note_commitment_proof: ::core::option::Option<
-        super::super::crypto::v1alpha1::NoteCommitmentProof,
+    pub state_commitment_proof: ::core::option::Option<
+        super::super::crypto::v1alpha1::StateCommitmentProof,
     >,
     /// *
     /// @exclude
@@ -43,7 +43,7 @@ pub struct SwapClaimProof {
     /// Inclusion proof for the swap commitment
     #[prost(message, optional, tag = "4")]
     pub swap_commitment_proof: ::core::option::Option<
-        super::super::crypto::v1alpha1::NoteCommitmentProof,
+        super::super::crypto::v1alpha1::StateCommitmentProof,
     >,
     /// The nullifier key used to derive the swap nullifier
     #[prost(bytes = "vec", tag = "6")]

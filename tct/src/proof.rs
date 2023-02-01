@@ -116,20 +116,20 @@ impl Proof {
 use penumbra_proto::core::crypto::v1alpha1 as pb;
 use rand::Rng;
 
-impl From<Proof> for pb::NoteCommitmentProof {
+impl From<Proof> for pb::StateCommitmentProof {
     fn from(proof: Proof) -> Self {
         proof.0.into()
     }
 }
 
-impl TryFrom<pb::NoteCommitmentProof> for Proof {
+impl TryFrom<pb::StateCommitmentProof> for Proof {
     type Error = crate::error::proof::DecodeError;
 
-    fn try_from(value: pb::NoteCommitmentProof) -> Result<Self, Self::Error> {
+    fn try_from(value: pb::StateCommitmentProof) -> Result<Self, Self::Error> {
         Ok(Proof(crate::internal::proof::Proof::try_from(value)?))
     }
 }
 
 impl penumbra_proto::DomainType for Proof {
-    type Proto = pb::NoteCommitmentProof;
+    type Proto = pb::StateCommitmentProof;
 }
