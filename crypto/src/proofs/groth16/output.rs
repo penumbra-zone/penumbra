@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use ark_r1cs_std::uint8::UInt8;
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use decaf377::FieldExt;
 use decaf377::{Bls12_377, Fq, Fr};
 use decaf377_fmd as fmd;
@@ -11,6 +12,7 @@ use ark_groth16::{Groth16, Proof, ProvingKey, VerifyingKey};
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
+use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
 use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
@@ -58,11 +60,7 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
         let claimed_balance_commitment =
             BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.balance_commitment))?;
 
-        gadgets::element_not_identity(
-            cs.clone(),
-            &Boolean::TRUE,
-            note_var.diversified_generator(),
-        )?;
+        gadgets::element_not_identity(cs, &Boolean::TRUE, note_var.diversified_generator())?;
         // Check integrity of balance commitment.
         let balance_commitment = note_var.value().commit(v_blinding_vars)?;
         balance_commitment.enforce_equal(&claimed_balance_commitment)?;
@@ -106,6 +104,7 @@ impl ParameterSetup for OutputCircuit {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct OutputProof(Proof<Bls12_377>);
 
 impl OutputProof {
@@ -150,5 +149,27 @@ impl OutputProof {
         proof_result
             .then_some(())
             .ok_or_else(|| anyhow::anyhow!("proof did not verify"))
+    }
+}
+
+impl DomainType for OutputProof {
+    type Proto = pb::ZkOutputProof;
+}
+
+impl From<OutputProof> for pb::ZkOutputProof {
+    fn from(proof: OutputProof) -> Self {
+        let mut proof_bytes = Vec::new();
+        Proof::serialize(&proof.0, &mut proof_bytes[..]).expect("can serialize Proof");
+        pb::ZkOutputProof { inner: proof_bytes }
+    }
+}
+
+impl TryFrom<pb::ZkOutputProof> for OutputProof {
+    type Error = anyhow::Error;
+
+    fn try_from(proto: pb::ZkOutputProof) -> Result<Self, Self::Error> {
+        Ok(OutputProof(
+            Proof::deserialize(&proto.inner[..]).map_err(|e| anyhow::anyhow!(e))?,
+        ))
     }
 }
