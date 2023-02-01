@@ -102,7 +102,6 @@ pub mod penumbra {
         pub mod transparent_proofs {
             pub mod v1alpha1 {
                 include!("gen/penumbra.core.transparent_proofs.v1alpha1.rs");
-                include!("gen/penumbra.core.transparent_proofs.v1alpha1.serde.rs");
             }
         }
     }
