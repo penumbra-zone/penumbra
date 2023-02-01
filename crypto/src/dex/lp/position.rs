@@ -221,8 +221,6 @@ impl TryFrom<pb::PositionState> for State {
     }
 }
 
-impl Protobuf<pb::PositionMetadata> for Metadata {}
-
 impl From<Metadata> for pb::PositionMetadata {
     fn from(_: Metadata) -> Self {
         todo!()

@@ -7,7 +7,7 @@ use penumbra_crypto::dex::{
     },
     DirectedTradingPair,
 };
-use penumbra_proto::{Protobuf, StateReadProto, StateWriteProto};
+use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 
 use super::state_key;
