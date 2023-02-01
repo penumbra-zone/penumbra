@@ -7,7 +7,7 @@ pub struct Transaction {
     /// The binding signature is stored separately from the transaction body that it signs.
     #[prost(bytes = "bytes", tag = "2")]
     pub binding_sig: ::prost::bytes::Bytes,
-    /// The root of some previous state of the note commitment tree, used as an anchor for all
+    /// The root of some previous state of the state commitment tree, used as an anchor for all
     /// ZK state transition proofs.
     #[prost(message, optional, tag = "3")]
     pub anchor: ::core::option::Option<super::super::crypto::v1alpha1::MerkleRoot>,
@@ -372,8 +372,8 @@ pub struct WitnessData {
     /// The auth paths for the notes the transaction spends, in the
     /// same order as the spends in the transaction plan.
     #[prost(message, repeated, tag = "2")]
-    pub note_commitment_proofs: ::prost::alloc::vec::Vec<
-        super::super::crypto::v1alpha1::NoteCommitmentProof,
+    pub state_commitment_proofs: ::prost::alloc::vec::Vec<
+        super::super::crypto::v1alpha1::StateCommitmentProof,
     >,
 }
 /// Describes a planned transaction.

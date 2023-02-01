@@ -17,7 +17,7 @@ Penumbra users can propose votes by escrowing a minimum amount of `PEN`.  They
 do this by creating a transaction with a `CreateProposal` description, which
 consumes some amount of `PEN` from the transaction's balance, and creates a new
 escrow note with the same amount.  The note is escrowed in the sense that it is
-recorded seperately and is not included in the note commitment tree until voting
+recorded seperately and is not included in the state commitment tree until voting
 completes. 
 
 Proposals can either be normal or emergency proposals.  In either case, the
@@ -58,7 +58,7 @@ of the vote weights to the validators' decryption key.
 The proof statements in a `Vote` description establishing spend authority over
 the note are almost identical to those in a `Spend` description.  However, there
 are two key differences.  First, rather than proving that the note was included
-in a recent note commitment tree state, it always uses the root of the note
+in a recent state commitment tree state, it always uses the root of the note
 commitment tree at the time that voting began, establishing that the note was
 not created after voting began.  Second, rather than checking the note's
 nullifier against the global nullifier set and marking it as spent, the
@@ -99,7 +99,7 @@ multiplied by the [voting power adjustment function](../stake/voting-power.md)
 $\theta_v(e)$ to obtain the final vote totals.
 
 If the vote was not vetoed, the escrowed note from the `Proposal` description
-is included in the note commitment tree, so that it can be spent by the
+is included in the state commitment tree, so that it can be spent by the
 proposer.  Otherwise, it is not, and the funds are burned.
 
 [^1]: If withdrawing a proposal halted on-chain voting immediately, the escrow

@@ -69,14 +69,14 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
     let mut state_tx = state.try_begin_transaction().unwrap();
     // Execute EndBlock for the Dex, to actually execute the swaps...
     StubDex::end_block(&mut state_tx, &end_block).await;
-    // ... and for the ShieldedPool, to correctly write out the NCT with the data we'll use next.
+    // ... and for the ShieldedPool, to correctly write out the SCT with the data we'll use next.
     ShieldedPool::end_block(&mut state_tx, &end_block).await;
     state_tx.apply();
 
     // 6. Create a SwapClaim action
 
     // To do this, we need to have an auth path for the swap nft note, which
-    // means we have to synchronize a client's view of the test chain's NCT
+    // means we have to synchronize a client's view of the test chain's SCT
     // state.
 
     let epoch_duration = state.get_epoch_duration().await?;
@@ -103,7 +103,7 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
 
     // The SwapClaim ActionHandler uses the transaction's anchor to check proofs:
     let context = Arc::new(Transaction {
-        anchor: client.latest_height_and_nct_root().1,
+        anchor: client.latest_height_and_sct_root().1,
         ..Default::default()
     });
 

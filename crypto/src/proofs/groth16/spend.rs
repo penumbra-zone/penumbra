@@ -35,7 +35,7 @@ use crate::{
 pub struct SpendCircuit {
     // Witnesses
     /// Inclusion proof for the note commitment.
-    note_commitment_proof: tct::Proof,
+    state_commitment_proof: tct::Proof,
     /// The note being spent.
     note: Note,
     /// The blinding factor used for generating the value commitment.
@@ -48,7 +48,7 @@ pub struct SpendCircuit {
     nk: NullifierKey,
 
     // Public inputs
-    /// the merkle root of the note commitment tree.
+    /// the merkle root of the state commitment tree.
     pub anchor: tct::Root,
     /// value commitment of the note to be spent.
     pub balance_commitment: balance::Commitment,
@@ -63,14 +63,14 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         // Witnesses
         let note_var = note::NoteVar::new_witness(cs.clone(), || Ok(self.note.clone()))?;
         let claimed_note_commitment = note::NoteCommitmentVar::new_witness(cs.clone(), || {
-            Ok(self.note_commitment_proof.commitment())
+            Ok(self.state_commitment_proof.commitment())
         })?;
 
         let position_var = tct::r1cs::PositionVar::new_witness(cs.clone(), || {
-            Ok(self.note_commitment_proof.position())
+            Ok(self.state_commitment_proof.position())
         })?;
         let merkle_path_var =
-            tct::r1cs::MerkleAuthPathVar::new(cs.clone(), self.note_commitment_proof)?;
+            tct::r1cs::MerkleAuthPathVar::new(cs.clone(), self.state_commitment_proof)?;
 
         let v_blinding_arr: [u8; 32] = self.v_blinding.to_bytes();
         let v_blinding_vars = UInt8::new_witness_vec(cs.clone(), &v_blinding_arr)?;
@@ -155,14 +155,14 @@ impl ParameterSetup for SpendCircuit {
         let v_blinding = Fr::from(1);
         let rk: VerificationKey<SpendAuth> = rsk.into();
         let nullifier = Nullifier(Fq::from(1));
-        let mut nct = tct::Tree::new();
+        let mut sct = tct::Tree::new();
         let note_commitment = note.commit();
-        nct.insert(tct::Witness::Keep, note_commitment).unwrap();
-        let anchor = nct.root();
-        let note_commitment_proof = nct.witness(note_commitment).unwrap();
+        sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+        let anchor = sct.root();
+        let state_commitment_proof = sct.witness(note_commitment).unwrap();
 
         let circuit = SpendCircuit {
-            note_commitment_proof,
+            state_commitment_proof,
             note,
             v_blinding,
             spend_auth_randomizer,
@@ -186,7 +186,7 @@ impl SpendProof {
     pub fn prove<R: CryptoRng + Rng>(
         rng: &mut R,
         pk: &ProvingKey<Bls12_377>,
-        note_commitment_proof: tct::Proof,
+        state_commitment_proof: tct::Proof,
         note: Note,
         v_blinding: Fr,
         spend_auth_randomizer: Fr,
@@ -198,7 +198,7 @@ impl SpendProof {
         rk: VerificationKey<SpendAuth>,
     ) -> anyhow::Result<Self> {
         let circuit = SpendCircuit {
-            note_commitment_proof,
+            state_commitment_proof,
             note,
             v_blinding,
             spend_auth_randomizer,

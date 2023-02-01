@@ -40,7 +40,7 @@ pub trait ActionHandler {
     /// easily spawn tasks internally.
     ///
     /// Supplying the `context` means that stateless checks can use
-    /// transaction-wide data like the NCT anchor.  Supplying it as an
+    /// transaction-wide data like the SCT anchor.  Supplying it as an
     /// `Arc<Transaction>` makes it easy to share the context with internally
     /// spawned tasks.
     ///

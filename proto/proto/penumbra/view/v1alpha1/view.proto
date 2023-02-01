@@ -33,7 +33,7 @@ service ViewProtocolService {
   // This method takes a batch of input commitments, rather than just one, so
   // that the client can get a consistent set of authentication paths to a
   // common root.  (Otherwise, if a client made multiple requests, the wallet
-  // service could have advanced the note commitment tree state between queries).
+  // service could have advanced the state commitment tree state between queries).
   rpc Witness(WitnessRequest) returns (WitnessResponse);
 
   // Queries for assets.

@@ -29,7 +29,7 @@ echo "Running integration tests against network"
 PENUMBRA_NODE_HOSTNAME="127.0.0.1" \
     PCLI_UNLEASH_DANGER="yes" \
     RUST_LOG="pcli=debug,penumbra=debug" \
-    cargo test --features nct-divergence-check --package pcli -- --ignored --test-threads 1 --nocapture
+    cargo test --features sct-divergence-check --package pcli -- --ignored --test-threads 1 --nocapture
 
 echo "Waiting another $TESTNET_RUNTIME while network runs..."
 sleep "$TESTNET_RUNTIME"

@@ -170,10 +170,10 @@ pub struct EncryptedNote {
     #[prost(bytes = "bytes", tag = "3")]
     pub encrypted_note: ::prost::bytes::Bytes,
 }
-/// An authentication path from a note commitment to the root of the note commitment tree.
+/// An authentication path from a state commitment to the root of the state commitment tree.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct NoteCommitmentProof {
+pub struct StateCommitmentProof {
     #[prost(message, optional, tag = "1")]
     pub note_commitment: ::core::option::Option<StateCommitment>,
     #[prost(uint64, tag = "2")]

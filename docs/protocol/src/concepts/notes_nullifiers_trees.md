@@ -24,11 +24,11 @@ Each note specifies (either directly or indirectly) a *type* of value, an
 note's value, and a unique *nullifier* derived from the note's contents.
 
 However, unlike UTXOs, notes are not recorded as part of the public chain state.
-Instead, the chain contains a *note commitment tree*, an incremental Merkle tree
+Instead, the chain contains a *state commitment tree*, an incremental Merkle tree
 containing (public) commitments to (private) notes.  Creating a note involves
 creating a new note commitment, and proving that it commits to a valid note.
 Spending a note involves proving that the spent note was previously included in
-the note commitment tree, using the spending key to demonstrate spend
+the state commitment tree, using the spending key to demonstrate spend
 authorization, and revealing the nullifier, which prevents the same note from
 being spent twice.
 

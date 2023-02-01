@@ -33,15 +33,15 @@ pub trait NoteManager: StateWrite {
         // contents, we need to have unique (deterministic) blinding factors for
         // each note, so they cannot collide.
         //
-        // Hashing the current NCT root would be sufficient, since it will
-        // change every time we insert a new note.  But computing the NCT root
+        // Hashing the current SCT root would be sufficient, since it will
+        // change every time we insert a new note.  But computing the SCT root
         // is very slow, so instead we hash the current position.
 
         let position: u64 = self
-            .stub_note_commitment_tree()
+            .stub_state_commitment_tree()
             .await
             .position()
-            .expect("note commitment tree is not full")
+            .expect("state commitment tree is not full")
             .into();
 
         let rseed_bytes: [u8; 32] = blake2b_simd::Params::default()
@@ -81,12 +81,12 @@ pub trait NoteManager: StateWrite {
     async fn add_state_payload(&mut self, payload: StatePayload) {
         tracing::debug!(?payload);
 
-        // 1. Insert it into the NCT
-        let mut nct = self.stub_note_commitment_tree().await;
-        nct.insert(tct::Witness::Forget, *payload.commitment())
-            // TODO: why? can't we exceed the number of note commitments in a block?
-            .expect("inserting into the note commitment tree never fails");
-        self.stub_put_note_commitment_tree(&nct);
+        // 1. Insert it into the SCT
+        let mut sct = self.stub_state_commitment_tree().await;
+        sct.insert(tct::Witness::Forget, *payload.commitment())
+            // TODO: why? can't we exceed the number of state commitments in a block?
+            .expect("inserting into the state commitment tree never fails");
+        self.stub_put_state_commitment_tree(&sct);
 
         // 2. Record its source in the JMT, if present
         if let Some(source) = payload.source() {

@@ -19,7 +19,7 @@ use sha2::Digest;
 use tokio::sync::{watch, RwLock};
 use tonic::transport::Channel;
 
-#[cfg(feature = "nct-divergence-check")]
+#[cfg(feature = "sct-divergence-check")]
 use penumbra_proto::client::v1alpha1::specific_query_service_client::SpecificQueryServiceClient;
 
 use crate::{
@@ -30,12 +30,12 @@ use crate::{
 pub struct Worker {
     storage: Storage,
     client: ObliviousQueryServiceClient<Channel>,
-    nct: Arc<RwLock<penumbra_tct::Tree>>,
+    sct: Arc<RwLock<penumbra_tct::Tree>>,
     fvk: FullViewingKey, // TODO: notifications (see TODOs on ViewService)
     error_slot: Arc<Mutex<Option<anyhow::Error>>>,
     sync_height_tx: watch::Sender<u64>,
     tm_client: TendermintProxyServiceClient<Channel>,
-    #[cfg(feature = "nct-divergence-check")]
+    #[cfg(feature = "sct-divergence-check")]
     specific_client: SpecificQueryServiceClient<Channel>,
 }
 
@@ -43,7 +43,7 @@ impl Worker {
     /// Creates a new worker, returning:
     ///
     /// - the worker itself;
-    /// - a shared, in-memory NCT instance;
+    /// - a shared, in-memory SCT instance;
     /// - a shared error slot;
     /// - a channel for notifying the client of sync progress.
     pub async fn new(
@@ -61,8 +61,8 @@ impl Worker {
     > {
         let fvk = storage.full_viewing_key().await?;
 
-        // Create a shared, in-memory NCT.
-        let nct = Arc::new(RwLock::new(storage.note_commitment_tree().await?));
+        // Create a shared, in-memory SCT.
+        let sct = Arc::new(RwLock::new(storage.state_commitment_tree().await?));
         // Create a shared error slot
         let error_slot = Arc::new(Mutex::new(None));
         // Create a channel for the worker to notify of sync height changes.
@@ -73,7 +73,7 @@ impl Worker {
 
         let client =
             ObliviousQueryServiceClient::connect(format!("http://{}:{}", node, pd_port)).await?;
-        #[cfg(feature = "nct-divergence-check")]
+        #[cfg(feature = "sct-divergence-check")]
         let specific_client =
             SpecificQueryServiceClient::connect(format!("http://{}:{}", node, pd_port)).await?;
 
@@ -84,15 +84,15 @@ impl Worker {
             Self {
                 storage,
                 client,
-                nct: nct.clone(),
+                sct: sct.clone(),
                 fvk,
                 error_slot: error_slot.clone(),
                 sync_height_tx,
                 tm_client,
-                #[cfg(feature = "nct-divergence-check")]
+                #[cfg(feature = "sct-divergence-check")]
                 specific_client,
             },
-            nct,
+            sct,
             error_slot,
             sync_height_rx,
         ))
@@ -232,17 +232,17 @@ impl Worker {
 
             let height = block.height;
 
-            // Lock the NCT only while processing this block.
-            let mut nct_guard = self.nct.write().await;
+            // Lock the SCT only while processing this block.
+            let mut sct_guard = self.sct.write().await;
 
             if !block.requires_scanning() {
-                // Optimization: if the block is empty, seal the in-memory NCT,
+                // Optimization: if the block is empty, seal the in-memory SCT,
                 // and skip touching the database:
-                nct_guard.end_block().unwrap();
+                sct_guard.end_block().unwrap();
                 // We also need to end the epoch, since if there are no funding streams, then an
                 // epoch boundary won't necessarily require scanning:
                 if Epoch::from_height(height, epoch_duration).is_epoch_end(height) {
-                    nct_guard
+                    sct_guard
                         .end_epoch()
                         .expect("ending the epoch must succeed");
                 }
@@ -253,7 +253,7 @@ impl Worker {
                 // Otherwise, scan the block and commit its changes:
                 let filtered_block = scan_block(
                     &self.fvk,
-                    &mut nct_guard,
+                    &mut sct_guard,
                     block,
                     epoch_duration,
                     &self.storage,
@@ -264,16 +264,16 @@ impl Worker {
                 let transactions = self.fetch_transactions(&filtered_block).await?;
 
                 self.storage
-                    .record_block(filtered_block.clone(), transactions, &mut nct_guard)
+                    .record_block(filtered_block.clone(), transactions, &mut sct_guard)
                     .await?;
                 // Notify all watchers of the new height we just recorded.
                 self.sync_height_tx.send(filtered_block.height)?;
             }
-            #[cfg(feature = "nct-divergence-check")]
-            nct_divergence_check(&mut self.specific_client, height, nct_guard.root()).await?;
+            #[cfg(feature = "sct-divergence-check")]
+            sct_divergence_check(&mut self.specific_client, height, sct_guard.root()).await?;
 
-            // Release the NCT RwLock
-            drop(nct_guard);
+            // Release the SCT RwLock
+            drop(sct_guard);
 
             // Check if we should stop waiting for blocks to arrive, because the view
             // services are dropped and we're supposed to shut down.
@@ -315,8 +315,8 @@ async fn fetch_block(
         .expect("block not found"))
 }
 
-#[cfg(feature = "nct-divergence-check")]
-async fn nct_divergence_check(
+#[cfg(feature = "sct-divergence-check")]
+async fn sct_divergence_check(
     client: &mut SpecificQueryServiceClient<Channel>,
     height: u64,
     actual_root: penumbra_tct::Root,
@@ -333,11 +333,11 @@ async fn nct_divergence_check(
     let expected_root = penumbra_tct::Root::decode(value.as_slice())?;
 
     if actual_root == expected_root {
-        tracing::info!(?height, ?actual_root, ?expected_root, "nct roots match");
+        tracing::info!(?height, ?actual_root, ?expected_root, "sct roots match");
         Ok(())
     } else {
         let e = anyhow::anyhow!(
-            "NCT divergence detected at height {}: expected {}, got {}",
+            "SCT divergence detected at height {}: expected {}, got {}",
             height,
             expected_root,
             actual_root

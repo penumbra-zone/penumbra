@@ -67,7 +67,7 @@ pub struct ProofDecodeError;
 use decaf377::{FieldExt, Fq};
 use penumbra_proto::core::crypto::v1alpha1 as pb;
 
-impl<Tree: Height> From<Proof<Tree>> for pb::NoteCommitmentProof
+impl<Tree: Height> From<Proof<Tree>> for pb::StateCommitmentProof
 where
     Vec<pb::MerklePathChunk>: From<AuthPath<Tree>>,
 {
@@ -80,13 +80,13 @@ where
     }
 }
 
-impl<Tree: Height> TryFrom<pb::NoteCommitmentProof> for Proof<Tree>
+impl<Tree: Height> TryFrom<pb::StateCommitmentProof> for Proof<Tree>
 where
     AuthPath<Tree>: TryFrom<Vec<pb::MerklePathChunk>>,
 {
     type Error = ProofDecodeError;
 
-    fn try_from(proof: pb::NoteCommitmentProof) -> Result<Self, Self::Error> {
+    fn try_from(proof: pb::StateCommitmentProof) -> Result<Self, Self::Error> {
         let position = proof.position;
         let auth_path = proof.auth_path.try_into().map_err(|_| ProofDecodeError)?;
         let leaf = Commitment(

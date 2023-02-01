@@ -20,7 +20,7 @@ $y$ `dPEN`, reveals $y$, and produces $y \psi_v(e)$ `PEN` for the transaction's
 balance, where $e$ is the index of the current epoch.  However, the nullifiers
 revealed by undelegate descriptions are not immediately included in the
 nullifier set, and new notes created by a transaction containing an undelegate
-description are not immediately included in the note commitment tree. Instead,
+description are not immediately included in the state commitment tree. Instead,
 the transaction is placed into the unbonding queue to be applied later. In the
 first block of each epoch, transactions are applied if the corresponding
 validator remains unslashed, until the unbonding limit is reached.

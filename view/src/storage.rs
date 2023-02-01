@@ -23,8 +23,8 @@ use tokio::sync::broadcast::{self, error::RecvError};
 
 use crate::{sync::FilteredBlock, SpendableNoteRecord, SwapRecord};
 
-mod nct;
-use nct::TreeStore;
+mod sct;
+use sct::TreeStore;
 
 #[derive(Clone)]
 pub struct Storage {
@@ -127,7 +127,7 @@ impl Storage {
         // Run migrations
         sqlx::migrate!().run(&pool).await?;
 
-        // Initialize the database state with: empty NCT, chain params, FVK
+        // Initialize the database state with: empty SCT, chain params, FVK
         let mut tx = pool.begin().await?;
 
         let chain_params_bytes = &ChainParameters::encode_to_vec(&params)[..];
@@ -408,7 +408,7 @@ impl Storage {
         FullViewingKey::decode(result.bytes.as_slice())
     }
 
-    pub async fn note_commitment_tree(&self) -> anyhow::Result<tct::Tree> {
+    pub async fn state_commitment_tree(&self) -> anyhow::Result<tct::Tree> {
         let mut tx = self.pool.begin().await?;
         let tree = tct::Tree::from_async_reader(&mut TreeStore(&mut tx)).await?;
         tx.commit().await?;
@@ -854,7 +854,7 @@ impl Storage {
         &self,
         filtered_block: FilteredBlock,
         transactions: Vec<Transaction>,
-        nct: &mut tct::Tree,
+        sct: &mut tct::Tree,
     ) -> anyhow::Result<()> {
         //Check that the incoming block height follows the latest recorded height
         let last_sync_height = self.last_sync_height().await?;
@@ -981,14 +981,14 @@ impl Storage {
             // TODO: mark spent swaps as spent
 
             if let Some(bytes) = spent_commitment_bytes {
-                // Forget spent note commitments from the NCT
+                // Forget spent note commitments from the SCT
                 let spent_commitment = Commitment::try_from(bytes.note_commitment.as_slice())?;
-                nct.forget(spent_commitment);
+                sct.forget(spent_commitment);
             }
         }
 
-        // Update NCT table with current NCT state
-        nct.to_async_writer(&mut TreeStore(&mut dbtx)).await?;
+        // Update SCT table with current SCT state
+        sct.to_async_writer(&mut TreeStore(&mut dbtx)).await?;
 
         // Record all transactions
         for transaction in transactions {

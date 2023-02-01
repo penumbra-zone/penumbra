@@ -12,12 +12,16 @@ impl serde::Serialize for OutputProof {
         if !self.v_blinding.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.transparent_proofs.v1alpha1.OutputProof", len)?;
+        let mut struct_ser = serializer
+            .serialize_struct("penumbra.core.transparent_proofs.v1alpha1.OutputProof", len)?;
         if let Some(v) = self.note.as_ref() {
             struct_ser.serialize_field("note", v)?;
         }
         if !self.v_blinding.is_empty() {
-            struct_ser.serialize_field("vBlinding", pbjson::private::base64::encode(&self.v_blinding).as_str())?;
+            struct_ser.serialize_field(
+                "vBlinding",
+                pbjson::private::base64::encode(&self.v_blinding).as_str(),
+            )?;
         }
         struct_ser.end()
     }
@@ -28,11 +32,7 @@ impl<'de> serde::Deserialize<'de> for OutputProof {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "note",
-            "v_blinding",
-            "vBlinding",
-        ];
+        const FIELDS: &[&str] = &["note", "v_blinding", "vBlinding"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -49,7 +49,10 @@ impl<'de> serde::Deserialize<'de> for OutputProof {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -77,8 +80,8 @@ impl<'de> serde::Deserialize<'de> for OutputProof {
             }
 
             fn visit_map<V>(self, mut map: V) -> std::result::Result<OutputProof, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut note__ = None;
                 let mut v_blinding__ = None;
@@ -94,9 +97,10 @@ impl<'de> serde::Deserialize<'de> for OutputProof {
                             if v_blinding__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("vBlinding"));
                             }
-                            v_blinding__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            v_blinding__ = Some(
+                                map.next_value::<::pbjson::private::BytesDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                     }
                 }
@@ -106,7 +110,11 @@ impl<'de> serde::Deserialize<'de> for OutputProof {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.transparent_proofs.v1alpha1.OutputProof", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.transparent_proofs.v1alpha1.OutputProof",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for SpendProof {
@@ -117,7 +125,7 @@ impl serde::Serialize for SpendProof {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.note_commitment_proof.is_some() {
+        if self.state_commitment_proof.is_some() {
             len += 1;
         }
         if self.note.is_some() {
@@ -135,18 +143,25 @@ impl serde::Serialize for SpendProof {
         if !self.nk.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.transparent_proofs.v1alpha1.SpendProof", len)?;
-        if let Some(v) = self.note_commitment_proof.as_ref() {
+        let mut struct_ser = serializer
+            .serialize_struct("penumbra.core.transparent_proofs.v1alpha1.SpendProof", len)?;
+        if let Some(v) = self.state_commitment_proof.as_ref() {
             struct_ser.serialize_field("noteCommitmentProof", v)?;
         }
         if let Some(v) = self.note.as_ref() {
             struct_ser.serialize_field("note", v)?;
         }
         if !self.v_blinding.is_empty() {
-            struct_ser.serialize_field("vBlinding", pbjson::private::base64::encode(&self.v_blinding).as_str())?;
+            struct_ser.serialize_field(
+                "vBlinding",
+                pbjson::private::base64::encode(&self.v_blinding).as_str(),
+            )?;
         }
         if !self.spend_auth_randomizer.is_empty() {
-            struct_ser.serialize_field("spendAuthRandomizer", pbjson::private::base64::encode(&self.spend_auth_randomizer).as_str())?;
+            struct_ser.serialize_field(
+                "spendAuthRandomizer",
+                pbjson::private::base64::encode(&self.spend_auth_randomizer).as_str(),
+            )?;
         }
         if !self.ak.is_empty() {
             struct_ser.serialize_field("ak", pbjson::private::base64::encode(&self.ak).as_str())?;
@@ -164,7 +179,7 @@ impl<'de> serde::Deserialize<'de> for SpendProof {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "note_commitment_proof",
+            "state_commitment_proof",
             "noteCommitmentProof",
             "note",
             "v_blinding",
@@ -177,7 +192,7 @@ impl<'de> serde::Deserialize<'de> for SpendProof {
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            NoteCommitmentProof,
+            StateCommitmentProof,
             Note,
             VBlinding,
             SpendAuthRandomizer,
@@ -194,7 +209,10 @@ impl<'de> serde::Deserialize<'de> for SpendProof {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -204,10 +222,14 @@ impl<'de> serde::Deserialize<'de> for SpendProof {
                         E: serde::de::Error,
                     {
                         match value {
-                            "noteCommitmentProof" | "note_commitment_proof" => Ok(GeneratedField::NoteCommitmentProof),
+                            "noteCommitmentProof" | "state_commitment_proof" => {
+                                Ok(GeneratedField::StateCommitmentProof)
+                            }
                             "note" => Ok(GeneratedField::Note),
                             "vBlinding" | "v_blinding" => Ok(GeneratedField::VBlinding),
-                            "spendAuthRandomizer" | "spend_auth_randomizer" => Ok(GeneratedField::SpendAuthRandomizer),
+                            "spendAuthRandomizer" | "spend_auth_randomizer" => {
+                                Ok(GeneratedField::SpendAuthRandomizer)
+                            }
                             "ak" => Ok(GeneratedField::Ak),
                             "nk" => Ok(GeneratedField::Nk),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
@@ -226,10 +248,10 @@ impl<'de> serde::Deserialize<'de> for SpendProof {
             }
 
             fn visit_map<V>(self, mut map: V) -> std::result::Result<SpendProof, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
-                let mut note_commitment_proof__ = None;
+                let mut state_commitment_proof__ = None;
                 let mut note__ = None;
                 let mut v_blinding__ = None;
                 let mut spend_auth_randomizer__ = None;
@@ -237,11 +259,13 @@ impl<'de> serde::Deserialize<'de> for SpendProof {
                 let mut nk__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
-                        GeneratedField::NoteCommitmentProof => {
-                            if note_commitment_proof__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("noteCommitmentProof"));
+                        GeneratedField::StateCommitmentProof => {
+                            if state_commitment_proof__.is_some() {
+                                return Err(serde::de::Error::duplicate_field(
+                                    "noteCommitmentProof",
+                                ));
                             }
-                            note_commitment_proof__ = map.next_value()?;
+                            state_commitment_proof__ = map.next_value()?;
                         }
                         GeneratedField::Note => {
                             if note__.is_some() {
@@ -253,38 +277,44 @@ impl<'de> serde::Deserialize<'de> for SpendProof {
                             if v_blinding__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("vBlinding"));
                             }
-                            v_blinding__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            v_blinding__ = Some(
+                                map.next_value::<::pbjson::private::BytesDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::SpendAuthRandomizer => {
                             if spend_auth_randomizer__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("spendAuthRandomizer"));
+                                return Err(serde::de::Error::duplicate_field(
+                                    "spendAuthRandomizer",
+                                ));
                             }
-                            spend_auth_randomizer__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            spend_auth_randomizer__ = Some(
+                                map.next_value::<::pbjson::private::BytesDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::Ak => {
                             if ak__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("ak"));
                             }
-                            ak__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            ak__ = Some(
+                                map.next_value::<::pbjson::private::BytesDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::Nk => {
                             if nk__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("nk"));
                             }
-                            nk__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            nk__ = Some(
+                                map.next_value::<::pbjson::private::BytesDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                     }
                 }
                 Ok(SpendProof {
-                    note_commitment_proof: note_commitment_proof__,
+                    state_commitment_proof: state_commitment_proof__,
                     note: note__,
                     v_blinding: v_blinding__.unwrap_or_default(),
                     spend_auth_randomizer: spend_auth_randomizer__.unwrap_or_default(),
@@ -293,7 +323,11 @@ impl<'de> serde::Deserialize<'de> for SpendProof {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.transparent_proofs.v1alpha1.SpendProof", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.transparent_proofs.v1alpha1.SpendProof",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for SwapClaimProof {
@@ -319,7 +353,10 @@ impl serde::Serialize for SwapClaimProof {
         if self.lambda_2_i != 0 {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.transparent_proofs.v1alpha1.SwapClaimProof", len)?;
+        let mut struct_ser = serializer.serialize_struct(
+            "penumbra.core.transparent_proofs.v1alpha1.SwapClaimProof",
+            len,
+        )?;
         if let Some(v) = self.swap_plaintext.as_ref() {
             struct_ser.serialize_field("swapPlaintext", v)?;
         }
@@ -330,10 +367,12 @@ impl serde::Serialize for SwapClaimProof {
             struct_ser.serialize_field("nk", pbjson::private::base64::encode(&self.nk).as_str())?;
         }
         if self.lambda_1_i != 0 {
-            struct_ser.serialize_field("lambda1I", ToString::to_string(&self.lambda_1_i).as_str())?;
+            struct_ser
+                .serialize_field("lambda1I", ToString::to_string(&self.lambda_1_i).as_str())?;
         }
         if self.lambda_2_i != 0 {
-            struct_ser.serialize_field("lambda2I", ToString::to_string(&self.lambda_2_i).as_str())?;
+            struct_ser
+                .serialize_field("lambda2I", ToString::to_string(&self.lambda_2_i).as_str())?;
         }
         struct_ser.end()
     }
@@ -374,7 +413,10 @@ impl<'de> serde::Deserialize<'de> for SwapClaimProof {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -385,7 +427,9 @@ impl<'de> serde::Deserialize<'de> for SwapClaimProof {
                     {
                         match value {
                             "swapPlaintext" | "swap_plaintext" => Ok(GeneratedField::SwapPlaintext),
-                            "swapCommitmentProof" | "swap_commitment_proof" => Ok(GeneratedField::SwapCommitmentProof),
+                            "swapCommitmentProof" | "swap_commitment_proof" => {
+                                Ok(GeneratedField::SwapCommitmentProof)
+                            }
                             "nk" => Ok(GeneratedField::Nk),
                             "lambda1I" | "lambda_1_i" => Ok(GeneratedField::Lambda1I),
                             "lambda2I" | "lambda_2_i" => Ok(GeneratedField::Lambda2I),
@@ -401,12 +445,13 @@ impl<'de> serde::Deserialize<'de> for SwapClaimProof {
             type Value = SwapClaimProof;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.transparent_proofs.v1alpha1.SwapClaimProof")
+                formatter
+                    .write_str("struct penumbra.core.transparent_proofs.v1alpha1.SwapClaimProof")
             }
 
             fn visit_map<V>(self, mut map: V) -> std::result::Result<SwapClaimProof, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut swap_plaintext__ = None;
                 let mut swap_commitment_proof__ = None;
@@ -423,7 +468,9 @@ impl<'de> serde::Deserialize<'de> for SwapClaimProof {
                         }
                         GeneratedField::SwapCommitmentProof => {
                             if swap_commitment_proof__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("swapCommitmentProof"));
+                                return Err(serde::de::Error::duplicate_field(
+                                    "swapCommitmentProof",
+                                ));
                             }
                             swap_commitment_proof__ = map.next_value()?;
                         }
@@ -431,25 +478,28 @@ impl<'de> serde::Deserialize<'de> for SwapClaimProof {
                             if nk__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("nk"));
                             }
-                            nk__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            nk__ = Some(
+                                map.next_value::<::pbjson::private::BytesDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::Lambda1I => {
                             if lambda_1_i__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("lambda1I"));
                             }
-                            lambda_1_i__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
+                            lambda_1_i__ = Some(
+                                map.next_value::<::pbjson::private::NumberDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::Lambda2I => {
                             if lambda_2_i__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("lambda2I"));
                             }
-                            lambda_2_i__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
+                            lambda_2_i__ = Some(
+                                map.next_value::<::pbjson::private::NumberDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                     }
                 }
@@ -462,7 +512,11 @@ impl<'de> serde::Deserialize<'de> for SwapClaimProof {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.transparent_proofs.v1alpha1.SwapClaimProof", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.transparent_proofs.v1alpha1.SwapClaimProof",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for SwapProof {
@@ -479,12 +533,16 @@ impl serde::Serialize for SwapProof {
         if !self.fee_blinding.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.transparent_proofs.v1alpha1.SwapProof", len)?;
+        let mut struct_ser = serializer
+            .serialize_struct("penumbra.core.transparent_proofs.v1alpha1.SwapProof", len)?;
         if let Some(v) = self.swap_plaintext.as_ref() {
             struct_ser.serialize_field("swapPlaintext", v)?;
         }
         if !self.fee_blinding.is_empty() {
-            struct_ser.serialize_field("feeBlinding", pbjson::private::base64::encode(&self.fee_blinding).as_str())?;
+            struct_ser.serialize_field(
+                "feeBlinding",
+                pbjson::private::base64::encode(&self.fee_blinding).as_str(),
+            )?;
         }
         struct_ser.end()
     }
@@ -517,7 +575,10 @@ impl<'de> serde::Deserialize<'de> for SwapProof {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -545,8 +606,8 @@ impl<'de> serde::Deserialize<'de> for SwapProof {
             }
 
             fn visit_map<V>(self, mut map: V) -> std::result::Result<SwapProof, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut swap_plaintext__ = None;
                 let mut fee_blinding__ = None;
@@ -562,9 +623,10 @@ impl<'de> serde::Deserialize<'de> for SwapProof {
                             if fee_blinding__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("feeBlinding"));
                             }
-                            fee_blinding__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            fee_blinding__ = Some(
+                                map.next_value::<::pbjson::private::BytesDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                     }
                 }
@@ -574,7 +636,11 @@ impl<'de> serde::Deserialize<'de> for SwapProof {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.transparent_proofs.v1alpha1.SwapProof", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.transparent_proofs.v1alpha1.SwapProof",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for UndelegateClaimProof {
@@ -591,12 +657,18 @@ impl serde::Serialize for UndelegateClaimProof {
         if !self.balance_blinding.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.transparent_proofs.v1alpha1.UndelegateClaimProof", len)?;
+        let mut struct_ser = serializer.serialize_struct(
+            "penumbra.core.transparent_proofs.v1alpha1.UndelegateClaimProof",
+            len,
+        )?;
         if let Some(v) = self.unbonding_amount.as_ref() {
             struct_ser.serialize_field("unbondingAmount", v)?;
         }
         if !self.balance_blinding.is_empty() {
-            struct_ser.serialize_field("balanceBlinding", pbjson::private::base64::encode(&self.balance_blinding).as_str())?;
+            struct_ser.serialize_field(
+                "balanceBlinding",
+                pbjson::private::base64::encode(&self.balance_blinding).as_str(),
+            )?;
         }
         struct_ser.end()
     }
@@ -629,7 +701,10 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimProof {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -639,8 +714,12 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimProof {
                         E: serde::de::Error,
                     {
                         match value {
-                            "unbondingAmount" | "unbonding_amount" => Ok(GeneratedField::UnbondingAmount),
-                            "balanceBlinding" | "balance_blinding" => Ok(GeneratedField::BalanceBlinding),
+                            "unbondingAmount" | "unbonding_amount" => {
+                                Ok(GeneratedField::UnbondingAmount)
+                            }
+                            "balanceBlinding" | "balance_blinding" => {
+                                Ok(GeneratedField::BalanceBlinding)
+                            }
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -653,12 +732,14 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimProof {
             type Value = UndelegateClaimProof;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.transparent_proofs.v1alpha1.UndelegateClaimProof")
+                formatter.write_str(
+                    "struct penumbra.core.transparent_proofs.v1alpha1.UndelegateClaimProof",
+                )
             }
 
             fn visit_map<V>(self, mut map: V) -> std::result::Result<UndelegateClaimProof, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut unbonding_amount__ = None;
                 let mut balance_blinding__ = None;
@@ -674,9 +755,10 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimProof {
                             if balance_blinding__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("balanceBlinding"));
                             }
-                            balance_blinding__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            balance_blinding__ = Some(
+                                map.next_value::<::pbjson::private::BytesDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                     }
                 }
@@ -686,6 +768,10 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimProof {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.transparent_proofs.v1alpha1.UndelegateClaimProof", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.transparent_proofs.v1alpha1.UndelegateClaimProof",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }

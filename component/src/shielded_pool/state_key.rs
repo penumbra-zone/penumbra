@@ -57,8 +57,8 @@ pub fn spent_nullifier_lookup(nullifier: Nullifier) -> String {
 // pub use crate::stake::state_key::slashed_validators;
 
 pub(crate) mod internal {
-    pub fn stub_note_commitment_tree() -> &'static str {
-        "shielded_pool/stub/note_commitment_tree"
+    pub fn stub_state_commitment_tree() -> &'static str {
+        "shielded_pool/stub/state_commitment_tree"
     }
     pub fn stub_compact_block() -> &'static str {
         "shielded_pool/stub/compact_block"

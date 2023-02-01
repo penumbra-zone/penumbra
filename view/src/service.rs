@@ -55,8 +55,8 @@ pub struct ViewService {
     // rather than a Tokio Mutex because it should be uncontended.
     error_slot: Arc<Mutex<Option<anyhow::Error>>>,
     account_id: AccountID,
-    // A copy of the NCT used by the worker task.
-    note_commitment_tree: Arc<RwLock<penumbra_tct::Tree>>,
+    // A copy of the SCT used by the worker task.
+    state_commitment_tree: Arc<RwLock<penumbra_tct::Tree>>,
     // The address of the pd+tendermint node.
     node: String,
     /// The port to talk to tendermint on.
@@ -86,7 +86,7 @@ impl ViewService {
     /// by this method, rather than calling it multiple times.  That way, each clone
     /// will be backed by the same scanning task, rather than each spawning its own.
     pub async fn new(storage: Storage, node: String, pd_port: u16) -> Result<Self, anyhow::Error> {
-        let (worker, nct, error_slot, sync_height_rx) =
+        let (worker, sct, error_slot, sync_height_rx) =
             Worker::new(storage.clone(), node.clone(), pd_port).await?;
 
         tokio::spawn(worker.run());
@@ -99,7 +99,7 @@ impl ViewService {
             account_id,
             error_slot,
             sync_height_rx,
-            note_commitment_tree: nct,
+            state_commitment_tree: sct,
             node,
             pd_port,
         })
@@ -879,12 +879,12 @@ impl ViewProtocolService for ViewService {
         self.check_fvk(request.get_ref().account_id.as_ref())
             .await?;
 
-        // Acquire a read lock for the NCT that will live for the entire request,
-        // so that all auth paths are relative to the same NCT root.
-        let nct = self.note_commitment_tree.read().await;
+        // Acquire a read lock for the SCT that will live for the entire request,
+        // so that all auth paths are relative to the same SCT root.
+        let sct = self.state_commitment_tree.read().await;
 
-        // Read the NCT root
-        let anchor = nct.root();
+        // Read the SCT root
+        let anchor = sct.root();
 
         // Obtain an auth path for each requested note commitment
         let requested_note_commitments = request
@@ -905,18 +905,18 @@ impl ViewProtocolService for ViewService {
         let auth_paths: Vec<Proof> = requested_note_commitments
             .iter()
             .map(|nc| {
-                nct.witness(*nc).ok_or_else(|| {
+                sct.witness(*nc).ok_or_else(|| {
                     tonic::Status::new(tonic::Code::InvalidArgument, "Note commitment missing")
                 })
             })
             .collect::<Result<Vec<Proof>, tonic::Status>>()?;
 
-        // Release the read lock on the NCT
-        drop(nct);
+        // Release the read lock on the SCT
+        drop(sct);
 
         let mut witness_data = WitnessData {
             anchor,
-            note_commitment_proofs: auth_paths
+            state_commitment_proofs: auth_paths
                 .into_iter()
                 .map(|proof| (proof.commitment(), proof))
                 .collect(),

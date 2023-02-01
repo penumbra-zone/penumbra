@@ -13,7 +13,7 @@ publish = false
 
 [features]
 default = []
-nct-divergence-check = ["penumbra-view/nct-divergence-check"]
+sct-divergence-check = ["penumbra-view/sct-divergence-check"]
 
 [dependencies]
 # Workspace dependencies

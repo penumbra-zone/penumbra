@@ -44,7 +44,7 @@ impl Component for ShieldedPool {
         }
 
         let mut compact_block = state.stub_compact_block();
-        let mut note_commitment_tree = state.stub_note_commitment_tree().await;
+        let mut state_commitment_tree = state.stub_state_commitment_tree().await;
 
         // Hard-coded to zero because we are in the genesis block
         // Tendermint starts blocks at 1, so this is a "phantom" compact block
@@ -55,13 +55,13 @@ impl Component for ShieldedPool {
 
         // Close the genesis block
         state
-            .finish_nct_block(&mut compact_block, &mut note_commitment_tree)
+            .finish_sct_block(&mut compact_block, &mut state_commitment_tree)
             .await;
 
         state
-            .write_compactblock_and_nct(compact_block, note_commitment_tree)
+            .write_compactblock_and_sct(compact_block, state_commitment_tree)
             .await
-            .expect("unable to write compactblock and nct");
+            .expect("unable to write compactblock and sct");
     }
 
     // #[instrument(name = "shielded_pool", skip(_state, _begin_block))]
@@ -82,25 +82,25 @@ impl Component for ShieldedPool {
         // We need to reload the compact block here, in case it was
         // edited during the preceding method calls.
         let mut compact_block = state.stub_compact_block();
-        // Close the block in the NCT
-        let mut note_commitment_tree = state.stub_note_commitment_tree().await;
+        // Close the block in the SCT
+        let mut state_commitment_tree = state.stub_state_commitment_tree().await;
         state
-            .finish_nct_block(&mut compact_block, &mut note_commitment_tree)
+            .finish_sct_block(&mut compact_block, &mut state_commitment_tree)
             .await;
 
         state
-            .write_compactblock_and_nct(compact_block, note_commitment_tree)
+            .write_compactblock_and_sct(compact_block, state_commitment_tree)
             .await
-            .expect("unable to write compactblock and nct");
+            .expect("unable to write compactblock and sct");
     }
 }
 
 // TODO: split into different extension traits
 #[async_trait]
 pub trait StateReadExt: StateRead {
-    async fn stub_note_commitment_tree(&self) -> tct::Tree {
+    async fn stub_state_commitment_tree(&self) -> tct::Tree {
         match self
-            .nonconsensus_get_raw(state_key::internal::stub_note_commitment_tree().as_bytes())
+            .nonconsensus_get_raw(state_key::internal::stub_state_commitment_tree().as_bytes())
             .await
             .unwrap()
         {
@@ -138,12 +138,12 @@ pub trait StateReadExt: StateRead {
         Ok(())
     }
 
-    /// Returns the NCT anchor for the given height.
+    /// Returns the SCT anchor for the given height.
     async fn anchor_by_height(&self, height: u64) -> Result<Option<tct::Root>> {
         self.get(&state_key::anchor_by_height(height)).await
     }
 
-    /// Checks whether a claimed NCT anchor is a previous valid state root.
+    /// Checks whether a claimed SCT anchor is a previous valid state root.
     async fn check_claimed_anchor(&self, anchor: tct::Root) -> Result<()> {
         if let Some(anchor_height) = self
             .get_proto::<u64>(&state_key::anchor_lookup(anchor))
@@ -153,29 +153,29 @@ pub trait StateReadExt: StateRead {
             Ok(())
         } else {
             Err(anyhow!(
-                "provided anchor {} is not a valid NCT root",
+                "provided anchor {} is not a valid SCT root",
                 anchor
             ))
         }
     }
 
-    /// Finish the block in the NCT.
+    /// Finish the block in the SCT.
     ///
     /// TODO: where should this live
     /// re-evaluate
     // #[instrument(skip(self))]
-    async fn finish_nct_block(
+    async fn finish_sct_block(
         &self,
         compact_block: &mut CompactBlock,
-        note_commitment_tree: &mut Tree,
+        state_commitment_tree: &mut Tree,
     ) {
         // Get the current block height
         let height = compact_block.height;
 
         // Close the block in the TCT
-        let block_root = note_commitment_tree
+        let block_root = state_commitment_tree
             .end_block()
-            .expect("ending a block in the note commitment tree can never fail");
+            .expect("ending a block in the state commitment tree can never fail");
 
         // Put the block root in the compact block
         compact_block.block_root = block_root;
@@ -194,9 +194,9 @@ pub trait StateReadExt: StateRead {
 
             // TODO: Put updated FMD parameters in the compact block
 
-            let epoch_root = note_commitment_tree
+            let epoch_root = state_commitment_tree
                 .end_epoch()
-                .expect("ending an epoch in the note commitment tree can never fail");
+                .expect("ending an epoch in the state commitment tree can never fail");
 
             // Put the epoch root in the compact block
             compact_block.epoch_root = Some(epoch_root);
@@ -213,11 +213,11 @@ pub(crate) trait StateWriteExt: StateWrite {
     //
     // Instead, replace with a mechanism that builds up queued note payloads
     // and builds the compact block only at the end of the block, so we don't need
-    // the NCT at all until end_block, and then serialization round trip doesn't matter.
-    fn stub_put_note_commitment_tree(&mut self, tree: &tct::Tree) {
+    // the SCT at all until end_block, and then serialization round trip doesn't matter.
+    fn stub_put_state_commitment_tree(&mut self, tree: &tct::Tree) {
         let bytes = bincode::serialize(&tree).unwrap();
         self.nonconsensus_put_raw(
-            state_key::internal::stub_note_commitment_tree()
+            state_key::internal::stub_state_commitment_tree()
                 .as_bytes()
                 .to_vec(),
             bytes,
@@ -228,7 +228,7 @@ pub(crate) trait StateWriteExt: StateWrite {
     // a drop-in replacement so we can avoid really major code changes.
     //
     // Instead, replace with a mechanism that builds up the parts and builds the
-    // compact block only at the end of the block, so we don't need the NCT at
+    // compact block only at the end of the block, so we don't need the SCT at
     // all until end_block, and then serialization round trip doesn't matter.
     fn stub_put_compact_block(&mut self, compact_block: CompactBlock) {
         self.object_put(state_key::internal::stub_compact_block(), compact_block);
@@ -240,42 +240,42 @@ pub(crate) trait StateWriteExt: StateWrite {
         self.put(state_key::compact_block(height), compact_block);
     }
 
-    fn set_nct_anchor(&mut self, height: u64, nct_anchor: tct::Root) {
-        tracing::debug!(?height, ?nct_anchor, "writing anchor");
+    fn set_sct_anchor(&mut self, height: u64, sct_anchor: tct::Root) {
+        tracing::debug!(?height, ?sct_anchor, "writing anchor");
 
-        // Write the NCT anchor both as a value, so we can look it up,
-        self.put(state_key::anchor_by_height(height), nct_anchor);
+        // Write the SCT anchor both as a value, so we can look it up,
+        self.put(state_key::anchor_by_height(height), sct_anchor);
         // and as a key, so we can query for it.
         self.put_proto(
-            state_key::anchor_lookup(nct_anchor),
+            state_key::anchor_lookup(sct_anchor),
             // We don't use the value for validity checks, but writing the height
             // here lets us find out what height the anchor was for.
             height,
         );
     }
 
-    fn set_nct_block_anchor(&mut self, height: u64, nct_block_anchor: tct::builder::block::Root) {
-        tracing::debug!(?height, ?nct_block_anchor, "writing block anchor");
+    fn set_sct_block_anchor(&mut self, height: u64, sct_block_anchor: tct::builder::block::Root) {
+        tracing::debug!(?height, ?sct_block_anchor, "writing block anchor");
 
-        // Write the NCT block anchor both as a value, so we can look it up,
-        self.put(state_key::block_anchor_by_height(height), nct_block_anchor);
+        // Write the SCT block anchor both as a value, so we can look it up,
+        self.put(state_key::block_anchor_by_height(height), sct_block_anchor);
         // and as a key, so we can query for it.
         self.put_proto(
-            state_key::block_anchor_lookup(nct_block_anchor),
+            state_key::block_anchor_lookup(sct_block_anchor),
             // We don't use the value for validity checks, but writing the height
             // here lets us find out what height the anchor was for.
             height,
         );
     }
 
-    fn set_nct_epoch_anchor(&mut self, index: u64, nct_block_anchor: tct::builder::epoch::Root) {
-        tracing::debug!(?index, ?nct_block_anchor, "writing epoch anchor");
+    fn set_sct_epoch_anchor(&mut self, index: u64, sct_block_anchor: tct::builder::epoch::Root) {
+        tracing::debug!(?index, ?sct_block_anchor, "writing epoch anchor");
 
-        // Write the NCT epoch anchor both as a value, so we can look it up,
-        self.put(state_key::epoch_anchor_by_index(index), nct_block_anchor);
+        // Write the SCT epoch anchor both as a value, so we can look it up,
+        self.put(state_key::epoch_anchor_by_index(index), sct_block_anchor);
         // and as a key, so we can query for it.
         self.put_proto(
-            state_key::epoch_anchor_lookup(nct_block_anchor),
+            state_key::epoch_anchor_lookup(sct_block_anchor),
             // We don't use the value for validity checks, but writing the height
             // here lets us find out what height the anchor was for.
             index,
@@ -283,29 +283,29 @@ pub(crate) trait StateWriteExt: StateWrite {
     }
 
     // #[instrument(skip(self))]
-    async fn write_compactblock_and_nct(
+    async fn write_compactblock_and_sct(
         &mut self,
         compact_block: CompactBlock,
-        nct: tct::Tree,
+        sct: tct::Tree,
     ) -> Result<()> {
         let height = compact_block.height;
 
-        // Write the note commitment tree anchor:
-        self.set_nct_anchor(height, nct.root());
+        // Write the state commitment tree anchor:
+        self.set_sct_anchor(height, sct.root());
         // Write the current block anchor:
-        self.set_nct_block_anchor(height, compact_block.block_root);
+        self.set_sct_block_anchor(height, compact_block.block_root);
         // Write the current epoch anchor, if on an epoch boundary:
         if let Some(epoch_root) = compact_block.epoch_root {
             let epoch_duration = self.get_epoch_duration().await?;
             let index = Epoch::from_height(height, epoch_duration).index;
-            self.set_nct_epoch_anchor(index, epoch_root);
+            self.set_sct_epoch_anchor(index, epoch_root);
         }
 
         // Write the CompactBlock:
         self.set_compact_block(compact_block);
 
-        // Write the note commitment tree:
-        self.stub_put_note_commitment_tree(&nct);
+        // Write the state commitment tree:
+        self.stub_put_state_commitment_tree(&sct);
 
         Ok(())
     }
