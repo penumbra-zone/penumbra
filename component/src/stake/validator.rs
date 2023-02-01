@@ -55,7 +55,7 @@ pub struct Validator {
     /// by the configuration of funding_streams, the sum of FundingStream.rate_bps.
     ///
     // NOTE: unclaimed rewards are tracked by inserting reward notes for the last epoch into the
-    // NCT at the beginning of each epoch
+    // SCT at the beginning of each epoch
     pub funding_streams: FundingStreams,
 
     /// The sequence number determines which validator data takes priority, and
@@ -106,7 +106,7 @@ pub struct ValidatorToml {
     /// by the configuration of funding_streams, the sum of FundingStream.rate_bps.
     ///
     // NOTE: unclaimed rewards are tracked by inserting reward notes for the last epoch into the
-    // NCT at the beginning of each epoch
+    // SCT at the beginning of each epoch
     #[serde(rename = "funding_stream")]
     pub funding_streams: Vec<FundingStreamToml>,
 }

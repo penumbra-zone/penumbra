@@ -14,7 +14,7 @@ pub struct MockClient {
     fvk: FullViewingKey,
     notes: BTreeMap<note::Commitment, Note>,
     swaps: BTreeMap<tct::Commitment, SwapPlaintext>,
-    nct: penumbra_tct::Tree,
+    sct: penumbra_tct::Tree,
 }
 
 impl MockClient {
@@ -24,7 +24,7 @@ impl MockClient {
             fvk,
             epoch_duration,
             notes: Default::default(),
-            nct: Default::default(),
+            sct: Default::default(),
             swaps: Default::default(),
         }
     }
@@ -40,15 +40,15 @@ impl MockClient {
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("missing compact block for height {}", height))?;
             self.scan_block(compact_block)?;
-            let (latest_height, root) = self.latest_height_and_nct_root();
+            let (latest_height, root) = self.latest_height_and_sct_root();
             anyhow::ensure!(latest_height == height, "latest height should be updated");
             let expected_root = state
                 .anchor_by_height(height)
                 .await?
-                .ok_or_else(|| anyhow::anyhow!("missing nct anchor for height {}", height))?;
+                .ok_or_else(|| anyhow::anyhow!("missing sct anchor for height {}", height))?;
             anyhow::ensure!(
                 root == expected_root,
-                "client nct root should match chain state"
+                "client sct root should match chain state"
             );
         }
         Ok(())
@@ -71,17 +71,17 @@ impl MockClient {
                     match payload.trial_decrypt(&self.fvk) {
                         Some(note) => {
                             self.notes.insert(payload.note_commitment, note.clone());
-                            self.nct.insert(Keep, payload.note_commitment)?;
+                            self.sct.insert(Keep, payload.note_commitment)?;
                         }
                         None => {
-                            self.nct.insert(Forget, payload.note_commitment)?;
+                            self.sct.insert(Forget, payload.note_commitment)?;
                         }
                     }
                 }
                 StatePayload::Swap { swap: payload, .. } => {
                     match payload.trial_decrypt(&self.fvk) {
                         Some(swap) => {
-                            self.nct.insert(Keep, payload.commitment)?;
+                            self.sct.insert(Keep, payload.commitment)?;
                             // At this point, we need to retain the swap plaintext,
                             // and also derive the expected output notes so we can
                             // notice them while scanning later blocks.
@@ -99,24 +99,24 @@ impl MockClient {
                             self.notes.insert(output_2.commit(), output_2);
                         }
                         None => {
-                            self.nct.insert(Forget, payload.commitment)?;
+                            self.sct.insert(Forget, payload.commitment)?;
                         }
                     }
                 }
                 StatePayload::RolledUp(commitment) => {
                     if self.notes.contains_key(&commitment) {
                         // This is a note we anticipated, so retain its auth path.
-                        self.nct.insert(Keep, commitment)?;
+                        self.sct.insert(Keep, commitment)?;
                     } else {
                         // This is someone else's note.
-                        self.nct.insert(Forget, commitment)?;
+                        self.sct.insert(Forget, commitment)?;
                     }
                 }
             }
         }
-        self.nct.end_block()?;
+        self.sct.end_block()?;
         if Epoch::from_height(block.height, self.epoch_duration).is_epoch_end(block.height) {
-            self.nct.end_epoch()?;
+            self.sct.end_epoch()?;
         }
 
         self.latest_height = block.height;
@@ -124,8 +124,8 @@ impl MockClient {
         Ok(())
     }
 
-    pub fn latest_height_and_nct_root(&self) -> (u64, penumbra_tct::Root) {
-        (self.latest_height, self.nct.root())
+    pub fn latest_height_and_sct_root(&self) -> (u64, penumbra_tct::Root) {
+        (self.latest_height, self.sct.root())
     }
 
     pub fn note_by_commitment(&self, commitment: &note::Commitment) -> Option<Note> {
@@ -137,6 +137,6 @@ impl MockClient {
     }
 
     pub fn witness(&self, commitment: note::Commitment) -> Option<penumbra_tct::Proof> {
-        self.nct.witness(commitment)
+        self.sct.witness(commitment)
     }
 }
