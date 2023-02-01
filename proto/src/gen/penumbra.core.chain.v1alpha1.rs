@@ -173,7 +173,6 @@ pub mod state_payload {
             super::super::super::crypto::v1alpha1::StateCommitment,
         >,
     }
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum StatePayload {

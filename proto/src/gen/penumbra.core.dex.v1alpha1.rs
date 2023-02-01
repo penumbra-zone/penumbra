@@ -393,7 +393,6 @@ pub mod position_state {
     }
 }
 /// The data recorded about a position on-chain.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PositionMetadata {
@@ -419,7 +418,6 @@ pub struct PositionMetadata {
 /// require any cryptographic implementation (proofs, signatures, etc), other
 /// than hooking into the value commitment mechanism used for transaction
 /// balances.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LpNft {
