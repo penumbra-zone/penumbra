@@ -10,6 +10,7 @@ decaf377-fmd = { path = "../decaf377-fmd/" }
 penumbra-proto = { path = "../proto/" }
 penumbra-crypto = { path = "../crypto/" }
 penumbra-tct = { path = "../tct" }
+penumbra-proof-params = { path = "../proof-params/" }
 
 # Git deps
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
