@@ -17,7 +17,7 @@ impl AsyncRead for TreeStore<'_, '_> {
     type Error = anyhow::Error;
 
     async fn position(&mut self) -> Result<StoredPosition, Self::Error> {
-        Ok(sqlx::query!("SELECT position FROM nct_position LIMIT 1")
+        Ok(sqlx::query!("SELECT position FROM sct_position LIMIT 1")
             .fetch_one(&mut *self.0)
             .await?
             .position
@@ -26,7 +26,7 @@ impl AsyncRead for TreeStore<'_, '_> {
     }
 
     async fn forgotten(&mut self) -> Result<Forgotten, Self::Error> {
-        Ok((sqlx::query!("SELECT forgotten FROM nct_forgotten LIMIT 1")
+        Ok((sqlx::query!("SELECT forgotten FROM sct_forgotten LIMIT 1")
             .fetch_one(&mut *self.0)
             .await?
             .forgotten as u64)
@@ -37,7 +37,7 @@ impl AsyncRead for TreeStore<'_, '_> {
         let position = u64::from(position) as i64;
 
         let bytes = sqlx::query!(
-            "SELECT hash FROM nct_hashes WHERE position = ? AND height = ? LIMIT 1",
+            "SELECT hash FROM sct_hashes WHERE position = ? AND height = ? LIMIT 1",
             position,
             height
         )
@@ -58,7 +58,7 @@ impl AsyncRead for TreeStore<'_, '_> {
         &mut self,
     ) -> Pin<Box<dyn Stream<Item = Result<(Position, u8, Hash), Self::Error>> + Send + '_>> {
         Box::pin(
-            sqlx::query!("SELECT position, height, hash FROM nct_hashes")
+            sqlx::query!("SELECT position, height, hash FROM sct_hashes")
                 .fetch_many(&mut *self.0)
                 .map(|row| {
                     let row = row?;
@@ -85,7 +85,7 @@ impl AsyncRead for TreeStore<'_, '_> {
         let position = u64::from(position) as i64;
 
         let bytes: Option<Vec<u8>> = sqlx::query!(
-            "SELECT commitment FROM nct_commitments WHERE position = ? LIMIT 1",
+            "SELECT commitment FROM sct_commitments WHERE position = ? LIMIT 1",
             position,
         )
         .fetch_optional(&mut *self.0)
@@ -105,7 +105,7 @@ impl AsyncRead for TreeStore<'_, '_> {
         &mut self,
     ) -> Pin<Box<dyn Stream<Item = Result<(Position, Commitment), Self::Error>> + Send + '_>> {
         Box::pin(
-            sqlx::query!("SELECT position, commitment FROM nct_commitments")
+            sqlx::query!("SELECT position, commitment FROM sct_commitments")
                 .fetch_many(&mut *self.0)
                 .map(|row| {
                     let row = row?;
@@ -130,7 +130,7 @@ impl AsyncRead for TreeStore<'_, '_> {
 impl AsyncWrite for TreeStore<'_, '_> {
     async fn set_position(&mut self, position: StoredPosition) -> Result<(), Self::Error> {
         let position = Option::from(position).map(|p: Position| u64::from(p) as i64);
-        sqlx::query!("UPDATE nct_position SET position = ?", position)
+        sqlx::query!("UPDATE sct_position SET position = ?", position)
             .execute(&mut *self.0)
             .await?;
         Ok(())
@@ -138,7 +138,7 @@ impl AsyncWrite for TreeStore<'_, '_> {
 
     async fn set_forgotten(&mut self, forgotten: Forgotten) -> Result<(), Self::Error> {
         let forgotten = u64::from(forgotten) as i64;
-        sqlx::query!("UPDATE nct_forgotten SET forgotten = ?", forgotten)
+        sqlx::query!("UPDATE sct_forgotten SET forgotten = ?", forgotten)
             .execute(&mut *self.0)
             .await?;
         Ok(())
@@ -155,7 +155,7 @@ impl AsyncWrite for TreeStore<'_, '_> {
         let hash = hash.to_bytes().to_vec();
 
         sqlx::query!(
-            "INSERT INTO nct_hashes (position, height, hash) VALUES (?, ?, ?) ON CONFLICT DO NOTHING",
+            "INSERT INTO sct_hashes (position, height, hash) VALUES (?, ?, ?) ON CONFLICT DO NOTHING",
             position,
             height,
             hash
@@ -172,7 +172,7 @@ impl AsyncWrite for TreeStore<'_, '_> {
         let position = u64::from(position) as i64;
         let commitment = <[u8; 32]>::from(commitment).to_vec();
         sqlx::query!(
-            "INSERT INTO nct_commitments (position, commitment) VALUES (?, ?) ON CONFLICT DO NOTHING",
+            "INSERT INTO sct_commitments (position, commitment) VALUES (?, ?) ON CONFLICT DO NOTHING",
             position,
             commitment
         )
@@ -189,7 +189,7 @@ impl AsyncWrite for TreeStore<'_, '_> {
         let start = u64::from(positions.start) as i64;
         let end = u64::from(positions.end) as i64;
         sqlx::query!(
-            "DELETE FROM nct_hashes WHERE position >= ? AND position < ? AND height < ?",
+            "DELETE FROM sct_hashes WHERE position >= ? AND position < ? AND height < ?",
             start,
             end,
             below_height

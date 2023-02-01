@@ -32,10 +32,10 @@ impl FilteredBlock {
     }
 }
 
-#[tracing::instrument(skip(fvk, note_commitment_tree, state_payloads, nullifiers, storage))]
+#[tracing::instrument(skip(fvk, state_commitment_tree, state_payloads, nullifiers, storage))]
 pub async fn scan_block(
     fvk: &FullViewingKey,
-    note_commitment_tree: &mut tct::Tree,
+    state_commitment_tree: &mut tct::Tree,
     CompactBlock {
         height,
         state_payloads,
@@ -107,12 +107,12 @@ pub async fn scan_block(
     if note_advice.is_empty() && swap_advice.is_empty() {
         // If there are no notes we care about in this block, just insert the block root into the
         // tree instead of processing each commitment individually
-        note_commitment_tree
+        state_commitment_tree
             .insert_block(block_root)
             .expect("inserting a block root must succeed");
     } else {
         // If we found at least one note for us in this block, we have to explicitly construct the
-        // whole block in the NCT by inserting each commitment one at a time
+        // whole block in the SCT by inserting each commitment one at a time
         for payload in state_payloads.into_iter() {
             // We need to insert each commitment, so use a match statement to ensure we
             // exhaustively cover all possible cases.
@@ -122,7 +122,7 @@ pub async fn scan_block(
             ) {
                 (Some(note), None) => {
                     // Keep track of this commitment for later witnessing
-                    let position = note_commitment_tree
+                    let position = state_commitment_tree
                         .insert(tct::Witness::Keep, payload.commitment().clone())
                         .expect("inserting a commitment must succeed");
 
@@ -143,7 +143,7 @@ pub async fn scan_block(
                 }
                 (None, Some(swap)) => {
                     // Keep track of this commitment for later witnessing
-                    let position = note_commitment_tree
+                    let position = state_commitment_tree
                         .insert(tct::Witness::Keep, payload.commitment().clone())
                         .expect("inserting a commitment must succeed");
 
@@ -179,7 +179,7 @@ pub async fn scan_block(
                 }
                 (None, None) => {
                     // Don't remember this commitment; it wasn't ours
-                    note_commitment_tree
+                    state_commitment_tree
                         .insert(tct::Witness::Forget, payload.commitment().clone())
                         .expect("inserting a commitment must succeed");
                 }
@@ -188,7 +188,7 @@ pub async fn scan_block(
         }
 
         // End the block in the commitment tree
-        note_commitment_tree
+        state_commitment_tree
             .end_block()
             .expect("ending the block must succed");
     }
@@ -196,13 +196,13 @@ pub async fn scan_block(
     // If we've also reached the end of the epoch, end the epoch in the commitment tree
     if Epoch::from_height(height, epoch_duration).is_epoch_end(height) {
         tracing::debug!(?height, "end of epoch");
-        note_commitment_tree
+        state_commitment_tree
             .end_epoch()
             .expect("ending the epoch must succeed");
     }
 
     // Print the TCT root for debugging
-    tracing::debug!(tct_root = %note_commitment_tree.root(), "tct root");
+    tracing::debug!(tct_root = %state_commitment_tree.root(), "tct root");
 
     //Filter nullifiers to remove any without matching note commitments
 

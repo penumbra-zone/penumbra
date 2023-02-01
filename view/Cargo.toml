@@ -14,8 +14,8 @@ publish = false
 [features]
 default = []
 # When this feature is enabled, the view worker will request every single
-# NCT root, to pinpoint exactly where any NCT root divergence occurs.
-nct-divergence-check = []
+# SCT root, to pinpoint exactly where any SCT root divergence occurs.
+sct-divergence-check = []
 
 [dependencies]
 # Workspace dependencies
