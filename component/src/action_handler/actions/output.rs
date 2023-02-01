@@ -3,7 +3,9 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::sync::StatePayload;
+use penumbra_proof_params::OUTPUT_PROOF_VERIFICATION_KEY;
 use penumbra_storage::{StateRead, StateWrite};
+
 use penumbra_transaction::{action::Output, Transaction};
 use tracing::instrument;
 
@@ -16,6 +18,7 @@ impl ActionHandler for Output {
         let output = self;
 
         output.proof.verify(
+            &OUTPUT_PROOF_VERIFICATION_KEY,
             output.body.balance_commitment,
             output.body.note_payload.note_commitment,
         )?;

@@ -4,11 +4,13 @@ use anyhow::{Context, Error};
 use bytes::Bytes;
 use penumbra_crypto::{
     balance,
-    proofs::groth16::ZKOutputProof,
+    proofs::groth16::OutputProof,
     symmetric::{OvkWrappedKey, WrappedMemoKey},
     EncryptedNote, Note,
 };
-use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
+use penumbra_proto::{
+    core::crypto::v1alpha1 as pbc, core::transaction::v1alpha1 as pb, DomainType,
+};
 
 use crate::{view::action_view::OutputView, ActionView, TransactionPerspective};
 
@@ -17,7 +19,7 @@ use super::IsAction;
 #[derive(Clone, Debug)]
 pub struct Output {
     pub body: Body,
-    pub proof: ZKOutputProof,
+    pub proof: OutputProof,
 }
 
 impl IsAction for Output {
@@ -78,10 +80,10 @@ impl DomainType for Output {
 
 impl From<Output> for pb::Output {
     fn from(output: Output) -> Self {
-        let proof: Vec<u8> = output.proof.into();
+        let proof: pbc::ZkOutputProof = output.proof.into();
         pb::Output {
             body: Some(output.body.into()),
-            proof: proof.into(),
+            proof: Some(proof),
         }
     }
 }
@@ -95,7 +97,9 @@ impl TryFrom<pb::Output> for Output {
                 .body
                 .ok_or_else(|| anyhow::anyhow!("missing output body"))?
                 .try_into()?,
-            proof: proto.proof[..]
+            proof: proto
+                .proof
+                .ok_or_else(|| anyhow::anyhow!("missing output proof"))?
                 .try_into()
                 .context("output proof malformed")?,
         })

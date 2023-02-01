@@ -2,12 +2,13 @@ use ark_ff::UniformRand;
 use penumbra_crypto::{
     ka,
     keys::{IncomingViewingKey, OutgoingViewingKey},
-    proofs::transparent::OutputProof,
+    proofs::groth16::OutputProof,
     symmetric::WrappedMemoKey,
     Address, EncryptedNote, FieldExt, Fr, Note, PayloadKey, Rseed, Value, STAKING_TOKEN_ASSET_ID,
 };
+use penumbra_proof_params::OUTPUT_PROOF_PROVING_KEY;
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
-use rand_core::{CryptoRng, RngCore};
+use rand_core::{CryptoRng, OsRng, RngCore};
 use serde::{Deserialize, Serialize};
 
 use crate::action::{output, Output};
@@ -69,10 +70,17 @@ impl OutputPlan {
     /// Construct the [`OutputProof`] required by the [`output::Body`] described
     /// by this plan.
     pub fn output_proof(&self) -> OutputProof {
-        OutputProof {
-            note: self.output_note(),
-            v_blinding: self.value_blinding,
-        }
+        // TODO: should be deterministic? ark-snark Groth16 trait requires an RNG at proving time
+        let note = self.output_note();
+        OutputProof::prove(
+            &mut OsRng,
+            &OUTPUT_PROOF_PROVING_KEY,
+            note.clone(),
+            self.value_blinding,
+            self.balance().commit(self.value_blinding),
+            note.commit(),
+        )
+        .expect("can generate ZKOutputProof")
     }
 
     /// Construct the [`output::Body`] described by this plan.
@@ -158,6 +166,7 @@ mod test {
     use super::OutputPlan;
     use penumbra_crypto::keys::{SeedPhrase, SpendKey};
     use penumbra_crypto::{PayloadKey, Value};
+    use penumbra_proof_params::OUTPUT_PROOF_VERIFICATION_KEY;
     use rand_core::OsRng;
 
     #[test]
@@ -184,7 +193,11 @@ mod test {
         let output_proof = output_plan.output_proof();
 
         output_proof
-            .verify(balance_commitment, note_commitment)
+            .verify(
+                &OUTPUT_PROOF_VERIFICATION_KEY,
+                balance_commitment,
+                note_commitment,
+            )
             .unwrap();
     }
 }
