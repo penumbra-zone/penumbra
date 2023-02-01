@@ -670,7 +670,7 @@ pub mod view_protocol_service_client {
         /// This method takes a batch of input commitments, rather than just one, so
         /// that the client can get a consistent set of authentication paths to a
         /// common root.  (Otherwise, if a client made multiple requests, the wallet
-        /// service could have advanced the note commitment tree state between queries).
+        /// service could have advanced the state commitment tree state between queries).
         pub async fn witness(
             &mut self,
             request: impl tonic::IntoRequest<super::WitnessRequest>,
@@ -1138,7 +1138,7 @@ pub mod view_protocol_service_server {
         /// This method takes a batch of input commitments, rather than just one, so
         /// that the client can get a consistent set of authentication paths to a
         /// common root.  (Otherwise, if a client made multiple requests, the wallet
-        /// service could have advanced the note commitment tree state between queries).
+        /// service could have advanced the state commitment tree state between queries).
         async fn witness(
             &self,
             request: tonic::Request<super::WitnessRequest>,

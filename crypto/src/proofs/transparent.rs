@@ -45,7 +45,7 @@ impl SpendProof {
     /// Called to verify the proof using the provided public inputs.
     ///
     /// The public inputs are:
-    /// * the merkle root of the note commitment tree,
+    /// * the merkle root of the state commitment tree,
     /// * value commitment of the note to be spent,
     /// * nullifier of the note to be spent,
     /// * the randomized verification spend key,

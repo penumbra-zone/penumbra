@@ -48,7 +48,7 @@ pub struct SpendCircuit {
     nk: NullifierKey,
 
     // Public inputs
-    /// the merkle root of the note commitment tree.
+    /// the merkle root of the state commitment tree.
     pub anchor: tct::Root,
     /// value commitment of the note to be spent.
     pub balance_commitment: balance::Commitment,

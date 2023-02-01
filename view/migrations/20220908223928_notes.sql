@@ -22,7 +22,7 @@ CREATE TABLE spendable_notes (
     note_commitment         BLOB PRIMARY KEY NOT NULL,
     -- the nullifier for this note, used to detect when it is spent
     nullifier               BLOB NOT NULL,
-    -- the position of the note in the note commitment tree
+    -- the position of the note in the state commitment tree
     position                BIGINT NOT NULL,
     -- the height at which the note was created
     height_created          BIGINT NOT NULL,

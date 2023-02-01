@@ -119,7 +119,7 @@ message EncryptedNote {
   bytes encrypted_note = 3;
 }
 
-// An authentication path from a note commitment to the root of the note commitment tree.
+// An authentication path from a state commitment to the root of the state commitment tree.
 message StateCommitmentProof {
   StateCommitment note_commitment = 1;
   uint64 position = 2;
