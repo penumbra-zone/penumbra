@@ -72,6 +72,7 @@ camino = "1"
 url = "2"
 colored_json = "2.1"
 toml = "0.4"
+walkdir = "2"
 
 [build-dependencies]
 vergen = "5"
