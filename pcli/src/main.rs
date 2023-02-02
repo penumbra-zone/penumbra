@@ -113,6 +113,12 @@ async fn main() -> Result<()> {
         reset.exec(opt.data_path.as_path())?;
         return Ok(());
     }
+    // The debug command takes the data_path directly
+    if let Command::Debug(debug_cmd) = &opt.cmd {
+        let dd = opt.data_path.into_std_path_buf();
+        debug_cmd.exec(dd)?;
+        return Ok(());
+    }
 
     let (mut app, cmd) = opt.into_app().await?;
 
@@ -126,6 +132,7 @@ async fn main() -> Result<()> {
 
     match &cmd {
         Command::Keys(_) => unreachable!("wallet command already executed"),
+        Command::Debug(_) => unreachable!("debug command already executed"),
         Command::Transaction(tx_cmd) => tx_cmd.exec(&mut app).await?,
         Command::View(view_cmd) => {
             let mut oblivious_client = app.oblivious_client().await?;

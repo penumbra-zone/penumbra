@@ -1,9 +1,11 @@
+mod debug;
 mod keys;
 mod query;
 mod tx;
 mod validator;
 mod view;
 
+pub use debug::DebugCmd;
 pub use keys::KeysCmd;
 pub use query::QueryCmd;
 pub use tx::TxCmd;
@@ -45,6 +47,9 @@ pub enum Command {
     /// Manage a validator.
     #[clap(subcommand, display_order = 998)]
     Validator(ValidatorCmd),
+    /// Display information related to diagnosing problems running Penumbra
+    #[clap(subcommand, display_order = 999)]
+    Debug(DebugCmd),
 }
 
 impl Command {
@@ -56,6 +61,7 @@ impl Command {
             Command::Keys(cmd) => cmd.offline(),
             Command::Validator(cmd) => cmd.offline(),
             Command::Query(_) => false,
+            Command::Debug(cmd) => cmd.offline(),
         }
     }
 }

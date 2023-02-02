@@ -3364,6 +3364,7 @@ dependencies = [
  "tracing-subscriber 0.3.16",
  "url",
  "vergen",
+ "walkdir",
 ]
 
 [[package]]
@@ -3679,7 +3680,7 @@ dependencies = [
  "rand 0.8.5",
  "rand_core 0.6.4",
  "serde",
- "serde_with",
+ "serde_with 1.14.0",
  "tracing",
 ]
 
