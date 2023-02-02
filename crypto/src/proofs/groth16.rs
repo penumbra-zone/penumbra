@@ -13,6 +13,7 @@ mod tests {
     use crate::{
         asset,
         keys::{SeedPhrase, SpendKey},
+        Balance,
     };
     use decaf377::{Fq, Fr};
     use proptest::prelude::*;
@@ -58,7 +59,7 @@ mod tests {
 
             let note = Note::generate(&mut rng, &dest, value_to_send);
             let note_commitment = note.commit();
-            let balance_commitment = value_to_send.commit(v_blinding);
+            let balance_commitment = (-Balance::from(value_to_send)).commit(v_blinding);
 
             let proof = OutputProof::prove(
                 &mut rng,
@@ -96,7 +97,7 @@ mod tests {
 
         let note = Note::generate(&mut rng, &dest, value_to_send);
         let note_commitment = note.commit();
-        let balance_commitment = value_to_send.commit(v_blinding);
+        let balance_commitment = (-Balance::from(value_to_send)).commit(v_blinding);
 
         let proof = OutputProof::prove(
             &mut rng,
@@ -142,7 +143,7 @@ mod tests {
 
         let note = Note::generate(&mut rng, &dest, value_to_send);
         let note_commitment = note.commit();
-        let balance_commitment = value_to_send.commit(v_blinding);
+        let balance_commitment = (-Balance::from(value_to_send)).commit(v_blinding);
 
         let proof = OutputProof::prove(
             &mut rng,
@@ -154,7 +155,7 @@ mod tests {
         )
         .expect("can create proof");
 
-        let incorrect_balance_commitment = value_to_send.commit(incorrect_v_blinding);
+        let incorrect_balance_commitment = (-Balance::from(value_to_send)).commit(incorrect_v_blinding);
 
         let proof_result = proof.verify(&vk, incorrect_balance_commitment, note_commitment);
 

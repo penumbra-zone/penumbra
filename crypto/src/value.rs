@@ -71,8 +71,8 @@ impl Value {
 
 #[derive(Clone)]
 pub struct ValueVar {
-    amount: asset::AmountVar,
-    asset_id: asset::AssetIdVar,
+    pub amount: asset::AmountVar,
+    pub asset_id: asset::AssetIdVar,
 }
 
 impl AllocVar<Value, Fq> for ValueVar {
@@ -102,6 +102,13 @@ impl AllocVar<Value, Fq> for ValueVar {
 impl ValueVar {
     pub fn amount(&self) -> FqVar {
         self.amount.amount.clone()
+    }
+
+    pub fn negate(&self) -> Result<ValueVar, SynthesisError> {
+        Ok(ValueVar {
+            amount: self.amount.negate()?,
+            asset_id: self.asset_id.clone(),
+        })
     }
 
     pub fn asset_id(&self) -> FqVar {

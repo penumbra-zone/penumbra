@@ -1,3 +1,6 @@
+use ark_r1cs_std::prelude::*;
+use ark_r1cs_std::uint8::UInt8;
+use ark_relations::r1cs::SynthesisError;
 use std::{
     collections::{btree_map, BTreeMap},
     fmt::{self, Debug, Formatter},
@@ -7,7 +10,11 @@ use std::{
     ops::{Add, AddAssign, Deref, Neg, Sub, SubAssign},
 };
 
-use crate::{asset, Value};
+use crate::{
+    asset::{self, AmountVar, AssetIdVar},
+    value::ValueVar,
+    Amount, Value,
+};
 
 pub mod commitment;
 pub use commitment::Commitment;
@@ -15,8 +22,10 @@ pub use commitment::Commitment;
 mod imbalance;
 mod iter;
 use commitment::VALUE_BLINDING_GENERATOR;
-use decaf377::Fr;
+use decaf377::{r1cs::ElementVar, Element, Fq, Fr};
 use imbalance::Imbalance;
+
+use self::commitment::BalanceCommitmentVar;
 
 /// A `Balance` is a "vector of [`Value`]s", where some values may be required, while others may be
 /// provided. For a transaction to be valid, its balance must be zero.
@@ -242,6 +251,133 @@ impl From<Value> for Balance {
             negated: false,
             balance,
         }
+    }
+}
+
+/// Represents a balance in a rank 1 constraint system.
+///
+/// A balance consists of a number of assets (represented
+/// by their asset ID), the amount of each asset, as
+/// well as a boolean var that represents their contribution to the
+/// transaction's balance.
+///
+/// True values represent assets that are being provided (positive sign).
+/// False values represent assets that are required (negative sign).
+#[derive(Clone)]
+pub struct BalanceVar {
+    pub inner: Vec<(AssetIdVar, (Boolean<Fq>, AmountVar))>,
+}
+
+impl AllocVar<Balance, Fq> for BalanceVar {
+    fn new_variable<T: std::borrow::Borrow<Balance>>(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: ark_r1cs_std::prelude::AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        let inner1 = f()?;
+        let inner = inner1.borrow();
+        match mode {
+            AllocationMode::Constant => unimplemented!(),
+            AllocationMode::Input => unimplemented!(),
+            AllocationMode::Witness => {
+                if !inner.negated {
+                    unimplemented!();
+                }
+
+                let mut inner_balance_vars = Vec::new();
+                for (asset_id, imbalance) in inner.balance.iter() {
+                    let (sign, amount) = imbalance.into_inner();
+
+                    let asset_id_var = AssetIdVar::new_witness(cs.clone(), || Ok(asset_id))?;
+                    let amount_var = AmountVar::new_witness(cs.clone(), || {
+                        Ok(Amount::from(u128::from(amount)))
+                    })?;
+
+                    let boolean_var = match sign {
+                        imbalance::Sign::Required => Boolean::constant(false),
+                        imbalance::Sign::Provided => Boolean::constant(true),
+                    };
+
+                    inner_balance_vars.push((asset_id_var, (boolean_var, amount_var)));
+                }
+
+                Ok(BalanceVar {
+                    inner: inner_balance_vars,
+                })
+            }
+        }
+    }
+}
+
+impl From<ValueVar> for BalanceVar {
+    fn from(ValueVar { amount, asset_id }: ValueVar) -> Self {
+        let mut balance_vec = Vec::new();
+        let cs = amount.amount.cs();
+        let sign = Boolean::constant(true);
+        balance_vec.push((asset_id, (sign, amount)));
+
+        BalanceVar { inner: balance_vec }
+    }
+}
+
+impl BalanceVar {
+    /// Commit to a [`BalanceVar`] using a provided blinding factor.
+    ///
+    /// This is like a vectorized [`ValueVar::commit`].
+    #[allow(non_snake_case)]
+    pub fn commit(
+        &self,
+        blinding_factor: Vec<UInt8<Fq>>,
+    ) -> Result<BalanceCommitmentVar, SynthesisError> {
+        // Access constraint system ref from one of the balance contributions
+        let cs = self
+            .inner
+            .get(0)
+            .expect("at least one contribution to balance")
+            .0
+            .asset_id
+            .cs();
+
+        // Begin by adding the blinding factor only once
+        let value_blinding_generator = ElementVar::new_constant(cs, *VALUE_BLINDING_GENERATOR)?;
+        let mut commitment =
+            value_blinding_generator.scalar_mul_le(blinding_factor.to_bits_le()?.iter())?;
+
+        // Accumulate all the elements for the values
+        for (asset_id, (sign, amount)) in self.inner.iter() {
+            let G_v = asset_id.value_generator()?;
+            // Access the inner `FqVar` on `AmountVar` for scalar mul
+            let value_amount = amount.amount.clone();
+
+            // We scalar mul first with value (small), _then_ negate [v]G_v if needed
+            let commitment_plus_contribution =
+                commitment.clone() + G_v.scalar_mul_le(value_amount.to_bits_le()?.iter())?;
+            let commitment_minus_contribution =
+                commitment - G_v.scalar_mul_le(value_amount.to_bits_le()?.iter())?;
+            commitment = ElementVar::conditionally_select(
+                sign,
+                &commitment_plus_contribution,
+                &commitment_minus_contribution,
+            )?;
+        }
+        Ok(BalanceCommitmentVar { inner: commitment })
+    }
+
+    /// Create a balance from a positive [`ValueVar`].
+    pub fn from_positive_value_var(value: ValueVar) -> Self {
+        value.into()
+    }
+
+    /// Create a balance from a negated [`ValueVar`].
+    pub fn from_negative_value_var(value: ValueVar) -> Self {
+        let mut balance_vec = Vec::new();
+        let cs = value.amount.amount.cs();
+        let sign = Boolean::constant(false);
+        balance_vec.push((value.asset_id, (sign, value.amount)));
+
+        BalanceVar { inner: balance_vec }
     }
 }
 
