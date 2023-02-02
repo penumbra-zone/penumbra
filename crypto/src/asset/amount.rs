@@ -39,6 +39,14 @@ pub struct AmountVar {
     pub amount: FqVar,
 }
 
+impl AmountVar {
+    pub fn negate(&self) -> Result<Self, SynthesisError> {
+        Ok(Self {
+            amount: self.amount.negate()?,
+        })
+    }
+}
+
 impl AllocVar<Amount, Fq> for AmountVar {
     fn new_variable<T: std::borrow::Borrow<Amount>>(
         cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
