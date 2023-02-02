@@ -70,15 +70,16 @@ impl OutputPlan {
     /// Construct the [`OutputProof`] required by the [`output::Body`] described
     /// by this plan.
     pub fn output_proof(&self) -> OutputProof {
-        // TODO: should be deterministic? ark-snark Groth16 trait requires an RNG at proving time
         let note = self.output_note();
+        let balance_commitment = self.balance().commit(self.value_blinding);
+        let note_commitment = note.commit();
         OutputProof::prove(
             &mut OsRng,
             &OUTPUT_PROOF_PROVING_KEY,
             note.clone(),
             self.value_blinding,
-            self.balance().commit(self.value_blinding),
-            note.commit(),
+            balance_commitment,
+            note_commitment,
         )
         .expect("can generate ZKOutputProof")
     }

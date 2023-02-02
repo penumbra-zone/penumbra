@@ -4,8 +4,12 @@ use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::sync::StatePayload;
 use penumbra_proof_params::OUTPUT_PROOF_VERIFICATION_KEY;
+<<<<<<< HEAD
 use penumbra_storage::{StateRead, StateWrite};
 
+=======
+use penumbra_storage::{State, StateRead, StateTransaction};
+>>>>>>> be3ed18c (crypto(zk): `BalanceVar`)
 use penumbra_transaction::{action::Output, Transaction};
 use tracing::instrument;
 
