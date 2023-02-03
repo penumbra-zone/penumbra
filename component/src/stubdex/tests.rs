@@ -115,3 +115,59 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+async fn swap_with_nonzero_fee() -> anyhow::Result<()> {
+    let mut rng = rand_chacha::ChaChaRng::seed_from_u64(1312);
+
+    let storage = TempStorage::new().await?.apply_default_genesis().await?;
+    let mut state = Arc::new(storage.latest_state());
+
+    let height = 1;
+
+    // 1. Simulate BeginBlock
+
+    let mut state_tx = state.try_begin_transaction().unwrap();
+    state_tx.put_block_height(height);
+    state_tx.apply();
+
+    // 2. Create a Swap action
+
+    let gm = asset::REGISTRY.parse_unit("gm");
+    let gn = asset::REGISTRY.parse_unit("gn");
+    let trading_pair = TradingPair::new(gm.id(), gn.id());
+
+    let delta_1 = Amount::from(100_000u64);
+    let delta_2 = Amount::from(0u64);
+    let fee = Fee::from_staking_token_amount(Amount::from(1u64));
+    let claim_address: Address = *test_keys::ADDRESS_0;
+
+    let plaintext =
+        SwapPlaintext::new(&mut rng, trading_pair, delta_1, delta_2, fee, claim_address);
+
+    let swap_plan = SwapPlan::new(&mut rng, plaintext.clone());
+    let swap = swap_plan.swap(&test_keys::FULL_VIEWING_KEY);
+
+    // 3. Simulate execution of the Swap action
+
+    // We don't use the context in the Swap::check_stateless impl, so use a dummy one.
+    let dummy_context = Arc::new(Transaction::default());
+    swap.check_stateless(dummy_context.clone()).await?;
+    swap.check_stateful(state.clone()).await?;
+    let mut state_tx = state.try_begin_transaction().unwrap();
+    swap.execute(&mut state_tx).await?;
+    state_tx.apply();
+
+    // 4. Execute EndBlock (where the swap is actually executed)
+
+    let end_block = abci::request::EndBlock {
+        height: height.try_into().unwrap(),
+    };
+    let mut state_tx = state.try_begin_transaction().unwrap();
+    // Execute EndBlock for the Dex, to actually execute the swaps...
+    StubDex::end_block(&mut state_tx, &end_block).await;
+    ShieldedPool::end_block(&mut state_tx, &end_block).await;
+    state_tx.apply();
+
+    Ok(())
+}
