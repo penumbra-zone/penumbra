@@ -20,7 +20,7 @@ impl ActionHandler for PositionOpen {
         Err(anyhow::anyhow!("lp actions not supported yet"))
     }
 
-    #[instrument(name = "position_close", skip(self, _state))]
+    #[instrument(name = "position_open", skip(self, _state))]
     async fn check_stateful(&self, _state: Arc<State>) -> Result<()> {
         // It's important to reject all LP actions for now, to prevent
         // inflation / minting bugs until we implement all required checks
@@ -28,12 +28,12 @@ impl ActionHandler for PositionOpen {
         Err(anyhow::anyhow!("lp actions not supported yet"))
     }
 
-    #[instrument(name = "position_close", skip(self, state))]
+    #[instrument(name = "position_open", skip(self, state))]
     async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
-        let position = self.position;
-        let initial_reserves = self.initial_reserves;
-        let lpnft = state.position_open(position, initial_reserves).await?;
-        // TODO:
+        // let position = self.position;
+        // let initial_reserves = self.initial_reserves;
+        // let lpnft = state.position_open(position, initial_reserves).await?;
+        // TODO: implement
 
         Ok(())
     }
