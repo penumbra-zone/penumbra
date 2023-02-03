@@ -49,7 +49,7 @@ impl Worker {
                 change = self.state_rx.changed() => {
                     if let Ok(()) = change {
                         let state = self.state_rx.borrow().into_state();
-                        tracing::info!(height = ?state.version(), "resetting ephemeral mempool state");
+                        tracing::debug!(height = ?state.version(), "resetting ephemeral mempool state");
                         self.app = App::new(state);
                     } else {
                         // TODO: what triggers this, now that the channel is owned by the
