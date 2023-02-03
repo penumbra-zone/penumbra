@@ -126,6 +126,10 @@ pub struct Metadata {
 
 // ==== Protobuf impls
 
+impl DomainType for Metadata {
+    type Proto = pb::PositionMetadata;
+}
+
 impl DomainType for Position {
     type Proto = pb::Position;
 }
