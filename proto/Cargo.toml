@@ -10,7 +10,7 @@ decaf377-fmd = { path = "../decaf377-fmd" }
 decaf377-rdsa = { version = "0.5", git = "https://github.com/penumbra-zone/decaf377-rdsa" }
 bytes = { version = "1", features = ["serde"] }
 prost = "0.11"
-tonic = { version = "0.8.1", features = ["tls", "tls-roots"], optional = true }
+tonic = { version = "0.8.1", optional = true }
 serde = { version = "1", features = ["derive"] }
 hex = "0.4"
 anyhow = "1.0"

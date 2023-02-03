@@ -89,5 +89,5 @@ To run the smoke tests:
 1. Make sure you have a devnet running (see previous steps)
 2. Run integration tests:
 ```shell
-PENUMBRA_NODE_URL="http://127.0.0.1:8080" PCLI_UNLEASH_DANGER=yes cargo test --package pcli -- --ignored --test-threads 1
+PENUMBRA_NODE_HOSTNAME=127.0.0.1 PCLI_UNLEASH_DANGER=yes cargo test --package pcli -- --ignored --test-threads 1
 ```

@@ -18,7 +18,6 @@ use penumbra_transaction::Transaction;
 use sha2::Digest;
 use tokio::sync::{watch, RwLock};
 use tonic::transport::Channel;
-use url::Url;
 
 #[cfg(feature = "sct-divergence-check")]
 use penumbra_proto::client::v1alpha1::specific_query_service_client::SpecificQueryServiceClient;
@@ -49,7 +48,8 @@ impl Worker {
     /// - a channel for notifying the client of sync progress.
     pub async fn new(
         storage: Storage,
-        node: Url,
+        node: String,
+        pd_port: u16,
     ) -> Result<
         (
             Self,
@@ -71,11 +71,14 @@ impl Worker {
         // Mark the current height as seen, since it's not new.
         sync_height_rx.borrow_and_update();
 
-        let client = ObliviousQueryServiceClient::connect(node.to_string()).await?;
+        let client =
+            ObliviousQueryServiceClient::connect(format!("http://{}:{}", node, pd_port)).await?;
         #[cfg(feature = "sct-divergence-check")]
-        let specific_client = SpecificQueryServiceClient::connect(node.to_string()).await?;
+        let specific_client =
+            SpecificQueryServiceClient::connect(format!("http://{}:{}", node, pd_port)).await?;
 
-        let tm_client = TendermintProxyServiceClient::connect(node.to_string()).await?;
+        let tm_client =
+            TendermintProxyServiceClient::connect(format!("http://{}:{}", node, pd_port)).await?;
 
         Ok((
             Self {

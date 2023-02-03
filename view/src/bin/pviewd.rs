@@ -10,7 +10,6 @@ use penumbra_view::ViewService;
 use std::env;
 use std::str::FromStr;
 use tonic::transport::Server;
-use url::Url;
 
 #[derive(Debug, Parser)]
 #[clap(
@@ -27,7 +26,10 @@ struct Opt {
     sqlite_path: Utf8PathBuf,
     /// The address of the pd+tendermint node.
     #[clap(short, long, default_value = "testnet.penumbra.zone")]
-    node: Url,
+    node: String,
+    /// The port to use to speak to pd's gRPC server.
+    #[clap(long, default_value = "8080")]
+    pd_port: u16,
 }
 
 #[derive(Debug, Subcommand)]
@@ -54,7 +56,11 @@ async fn main() -> Result<()> {
 
     match opt.cmd {
         Command::Init { full_viewing_key } => {
-            let mut client = ObliviousQueryServiceClient::connect(opt.node.to_string()).await?;
+            let mut client = ObliviousQueryServiceClient::connect(format!(
+                "http://{}:{}",
+                opt.node, opt.pd_port
+            ))
+            .await?;
 
             let params = client
                 .chain_parameters(tonic::Request::new(ChainParametersRequest {
@@ -74,11 +80,11 @@ async fn main() -> Result<()> {
             Ok(())
         }
         Command::Start { host, view_port } => {
-            tracing::info!(?opt.sqlite_path, ?host, ?view_port, ?opt.node, "starting pviewd");
+            tracing::info!(?opt.sqlite_path, ?host, ?view_port, ?opt.node, ?opt.pd_port, "starting pviewd");
 
             let storage = penumbra_view::Storage::load(opt.sqlite_path).await?;
 
-            let service = ViewService::new(storage, opt.node).await?;
+            let service = ViewService::new(storage, opt.node, opt.pd_port).await?;
 
             tokio::spawn(
                 Server::builder()

@@ -3,7 +3,7 @@
 //! These tests are marked with `#[ignore]`, but can be run with:
 //! `cargo test --package pcli -- --ignored --test-threads 1`
 //!
-//! Tests against the network in the `PENUMBRA_NODE_URL` environment variable.
+//! Tests against the network in the `PENUMBRA_NODE_HOSTNAME` environment variable.
 //!
 //! Tests assume that the initial state of the test account is after genesis,
 //! where no tokens have been delegated, and the address with index 0

@@ -54,7 +54,6 @@ async-trait = "0.1"
 tendermint = "0.26.0"
 tendermint-rpc = { version = "0.26.0", features = ["http-client"] }
 sha2 = "0.10.1"
-url = "2"
 
 [build-dependencies]
 vergen = "5"

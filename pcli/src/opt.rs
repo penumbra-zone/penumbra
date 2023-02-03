@@ -2,7 +2,7 @@ use crate::{
     box_grpc_svc::{self, BoxGrpcService},
     legacy, App, Command,
 };
-use anyhow::Result;
+use anyhow::{Context, Result};
 use camino::Utf8PathBuf;
 use clap::Parser;
 use directories::ProjectDirs;
@@ -31,15 +31,18 @@ use url::Url;
     version = env!("VERGEN_GIT_SEMVER"),
 )]
 pub struct Opt {
-    /// The URL for the remote node's pd instanc.
+    /// The hostname of the pd+tendermint node.
     #[clap(
         short,
         long,
-        default_value = "https://grpc.testnet.penumbra.zone",
-        env = "PENUMBRA_NODE_URL",
-        parse(try_from_str = url::Url::parse)
+        default_value = "testnet.penumbra.zone",
+        env = "PENUMBRA_NODE_HOSTNAME",
+        parse(try_from_str = url::Host::parse)
     )]
-    node: Url,
+    node: url::Host,
+    /// The port to use to speak to pd's gRPC server.
+    #[clap(long, default_value_t = 8080, env = "PENUMBRA_PD_PORT")]
+    pd_port: u16,
     #[clap(subcommand)]
     pub cmd: Command,
     /// The directory to store the wallet and view data in.
@@ -87,7 +90,12 @@ impl Opt {
             None
         };
 
-        let pd_url = self.node;
+        let mut pd_url = format!("http://{}", self.node)
+            .parse::<Url>()
+            .with_context(|| format!("Invalid node URL: {}", self.node))?;
+        pd_url
+            .set_port(Some(self.pd_port))
+            .expect("pd URL will not be `file://`");
 
         let app = App {
             view,
@@ -114,7 +122,10 @@ impl Opt {
             // Use an in-memory view service.
             let path = self.data_path.join(crate::VIEW_FILE_NAME);
             tracing::info!(%path, "using local view service");
-            let svc = ViewService::load_or_initialize(path, fvk, self.node.clone()).await?;
+
+            let svc =
+                ViewService::load_or_initialize(path, fvk, self.node.to_string(), self.pd_port)
+                    .await?;
 
             // Now build the view and custody clients, doing gRPC with ourselves
             let svc = ViewProtocolServiceServer::new(svc);
