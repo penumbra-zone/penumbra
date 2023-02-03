@@ -33,3 +33,14 @@ output "testnet_preview_reserved_ip" {
   value = google_compute_global_address.testnet-preview-ingress.address
 }
 // END values for testnet-preview.penumbra.zone //
+
+// BEGIN values for devnet.penumbra.zone //
+resource "google_compute_global_address" "devnet-ingress" {
+  name    = "penumbra-devnet-ingress-ip"
+  project = "penumbra-sl-testnet"
+}
+
+output "devnet_reserved_ip" {
+  value = google_compute_global_address.devnet-ingress.address
+}
+// END values for devnet.penumbra.zone //
