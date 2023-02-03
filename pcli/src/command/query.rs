@@ -15,6 +15,18 @@ pub(super) use validator::ValidatorCmd;
 
 use crate::App;
 
+#[derive(Clone, clap::ValueEnum, Debug)]
+pub enum OutputFormat {
+    Json,
+    Base64,
+}
+
+impl Default for OutputFormat {
+    fn default() -> Self {
+        Self::Json
+    }
+}
+
 #[derive(Debug, clap::Subcommand)]
 pub enum QueryCmd {
     /// Queries an arbitrary key.

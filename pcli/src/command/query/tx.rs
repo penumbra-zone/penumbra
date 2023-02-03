@@ -5,9 +5,14 @@ use penumbra_transaction::Transaction;
 
 use crate::App;
 
+use super::OutputFormat;
+
 /// Queries the chain for a transaction by hash.
 #[derive(Debug, clap::Args)]
 pub struct Tx {
+    /// The format to output the transaction in.
+    #[clap(short, long, value_enum, default_value_t)]
+    output: OutputFormat,
     /// The hex-formatted transaction hash to query.
     hash: String,
 }
@@ -23,10 +28,18 @@ impl Tx {
             })
             .await?;
 
-        let tx = Transaction::decode(&*rsp.into_inner().tx)?;
-        let tx_json = serde_json::to_string_pretty(&tx)?;
+        let rsp = rsp.into_inner();
+        let tx = Transaction::decode(rsp.tx.as_slice())?;
 
-        println!("{}", tx_json.to_colored_json_auto()?);
+        match self.output {
+            OutputFormat::Json => {
+                let tx_json = serde_json::to_string_pretty(&tx)?;
+                println!("{}", tx_json.to_colored_json_auto()?);
+            }
+            OutputFormat::Base64 => {
+                println!("{}", base64::encode(&rsp.tx));
+            }
+        }
 
         Ok(())
     }
