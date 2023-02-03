@@ -3314,6 +3314,7 @@ dependencies = [
  "ark-ff",
  "assert_cmd",
  "async-stream 0.2.1",
+ "base64 0.13.1",
  "bincode",
  "blake2b_simd 0.5.11",
  "bytes",
