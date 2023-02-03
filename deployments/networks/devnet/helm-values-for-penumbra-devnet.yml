@@ -1,4 +1,9 @@
 ---
 # Values file for devnet deploys.
 ingress:
-  enabled: false
+  enabled: true
+  hosts:
+    # The Tendermint RPC port.
+    rpc: rpc.devnet.penumbra.zone
+    # The pd gRPC port.
+    grpc: grpc.devnet.penumbra.zone
