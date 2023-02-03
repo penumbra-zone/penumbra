@@ -30,7 +30,7 @@ pub struct App {
 
 impl App {
     pub fn new(state: State) -> Self {
-        tracing::info!("initializing App instance");
+        tracing::debug!("initializing App instance");
         Self {
             // We perform the `Arc` wrapping of `State` here to ensure
             // there should be no unexpected copies elsewhere.

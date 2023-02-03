@@ -118,6 +118,9 @@ impl Worker {
         &mut self,
         begin_block: abci::request::BeginBlock,
     ) -> Result<abci::response::BeginBlock> {
+        // We don't need to print the block height, because it will already be
+        // included in the span modeling the abci request handling.
+        tracing::info!(time = ?begin_block.header.time, "beginning block");
         let events = self.app.begin_block(&begin_block).await;
         Ok(abci::response::BeginBlock { events })
     }
@@ -175,10 +178,11 @@ impl Worker {
     }
 
     async fn commit(&mut self) -> Result<abci::response::Commit> {
-        let app_hash = self.app.commit(self.storage.clone()).await.0.to_vec();
+        let app_hash = self.app.commit(self.storage.clone()).await;
+        tracing::info!(?app_hash, "committed block");
 
         Ok(abci::response::Commit {
-            data: app_hash.into(),
+            data: app_hash.0.to_vec().into(),
             retain_height: 0u32.into(),
         })
     }
