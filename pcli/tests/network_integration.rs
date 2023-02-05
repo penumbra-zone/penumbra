@@ -287,6 +287,8 @@ fn swap() {
     thread::sleep(block_time);
 }
 
+// Temporarily disabled until #1938 is fixed.
+/*
 #[ignore]
 #[test]
 fn governance_submit_proposal() {
@@ -341,6 +343,7 @@ fn governance_submit_proposal() {
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     proposals_cmd.assert().success();
 }
+ */
 
 #[ignore]
 #[test]
