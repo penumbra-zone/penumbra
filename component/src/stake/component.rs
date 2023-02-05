@@ -1081,11 +1081,8 @@ pub trait StateReadExt: StateRead {
     }
 
     async fn validator_identity_list(&self) -> Result<Vec<IdentityKey>> {
-        self.prefix_raw(state_key::validators::list())
-            // The prefix stream returns keys and values, but we only want the keys.
-            // This is a little inefficient, since we're getting the validator definitions
-            // too, but we don't have to parse them, so we're just doing some extra byte copies.
-            .map_ok(|(key, _validator)| {
+        self.prefix_keys(state_key::validators::list())
+            .map_ok(|key| {
                 key.as_str()[state_key::validators::list().len()..]
                     .parse::<IdentityKey>()
                     .expect("state keys should only have valid identity keys")
