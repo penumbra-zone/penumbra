@@ -87,7 +87,9 @@ impl App {
         IBCComponent::begin_block(&mut state_tx, begin_block).await;
         StubDex::begin_block(&mut state_tx, begin_block).await;
         Dex::begin_block(&mut state_tx, begin_block).await;
-        Governance::begin_block(&mut state_tx, begin_block).await;
+        // Temporarily disabled until #1938 is resolved.
+        // Governance::begin_block(&mut state_tx, begin_block).await;
+
         // Shielded pool always executes last.
         ShieldedPool::begin_block(&mut state_tx, begin_block).await;
 
@@ -133,7 +135,9 @@ impl App {
         IBCComponent::end_block(&mut state_tx, end_block).await;
         StubDex::end_block(&mut state_tx, end_block).await;
         Dex::end_block(&mut state_tx, end_block).await;
-        Governance::end_block(&mut state_tx, end_block).await;
+        // Temporarily disabled until #1938 is resolved.
+        // Governance::end_block(&mut state_tx, end_block).await;
+
         // Shielded pool always executes last.
         ShieldedPool::end_block(&mut state_tx, end_block).await;
 
