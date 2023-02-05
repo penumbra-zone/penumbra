@@ -467,14 +467,14 @@ pub(crate) trait StakingImpl: StateWriteExt {
         // A list of validators with zero power, who must be inactive.
         let mut zero_power = Vec::new();
 
-        for v in self.validator_list().await? {
-            let state = self.validator_state(&v.identity_key).await?.unwrap();
-            let power = self.validator_power(&v.identity_key).await?.unwrap();
+        for v in self.validator_identity_list().await? {
+            let state = self.validator_state(&v).await?.unwrap();
+            let power = self.validator_power(&v).await?.unwrap();
             if matches!(state, validator::State::Active | validator::State::Inactive) {
                 if power == 0 {
-                    zero_power.push((v.identity_key, power));
+                    zero_power.push((v, power));
                 } else {
-                    validators_by_power.push((v.identity_key, power));
+                    validators_by_power.push((v, power));
                 }
             }
         }
@@ -508,21 +508,15 @@ pub(crate) trait StakingImpl: StateWriteExt {
     async fn process_validator_unbondings(&mut self) -> Result<()> {
         let current_epoch = self.get_current_epoch().await?;
 
-        for v in self.validator_list().await? {
-            let state = self
-                .validator_bonding_state(&v.identity_key)
-                .await?
-                .unwrap();
+        for v in self.validator_identity_list().await? {
+            let state = self.validator_bonding_state(&v).await?.unwrap();
             if let validator::BondingState::Unbonding { unbonding_epoch } = state {
                 if unbonding_epoch <= current_epoch.index {
-                    self.set_validator_bonding_state(
-                        &v.identity_key,
-                        validator::BondingState::Unbonded,
-                    )
-                    // Instrument the call with a span that includes the validator ID,
-                    // since our current span doesn't have any per-validator information.
-                    .instrument(tracing::debug_span!("unbonding", ?v.identity_key))
-                    .await;
+                    self.set_validator_bonding_state(&v, validator::BondingState::Unbonded)
+                        // Instrument the call with a span that includes the validator ID,
+                        // since our current span doesn't have any per-validator information.
+                        .instrument(tracing::debug_span!("unbonding", ?v))
+                        .await;
                 }
             }
         }
@@ -548,26 +542,28 @@ pub(crate) trait StakingImpl: StateWriteExt {
         let mut voting_power_by_consensus_key = BTreeMap::<PublicKey, u64>::new();
 
         // First, build a mapping of consensus key to voting power for all known validators.
-        for v in self.validator_list().await?.iter() {
-            let info = self
-                .validator_info(&v.identity_key)
+        for v in self.validator_identity_list().await?.iter() {
+            let state = self
+                .validator_state(&v)
                 .await?
-                .ok_or_else(|| anyhow::anyhow!("validator missing info"))?;
+                .expect("every known validator must have a recorded state");
 
             // Compute the effective power of this validator; this is the
             // validator power, clamped to zero for all non-Active validators.
-            let effective_power = if info.status.state == validator::State::Active {
-                let info = self
-                    .validator_info(&v.identity_key)
+            let effective_power = if state == validator::State::Active {
+                self.validator_power(&v)
                     .await?
-                    .expect("validator is in state");
-
-                info.status.voting_power
+                    .expect("every known validator must have a recorded power")
             } else {
                 0
             };
 
-            voting_power_by_consensus_key.insert(info.validator.consensus_key, effective_power);
+            let consensus_key = self
+                .validator_consensus_key(&v)
+                .await?
+                .expect("every known validator must have a recorded consensus key");
+
+            voting_power_by_consensus_key.insert(consensus_key, effective_power);
         }
 
         // Next, filter that mapping to exclude any zero-power validators, UNLESS they
@@ -989,6 +985,25 @@ pub trait StateReadExt: StateRead {
         self.get(&state_key::validators::by_id(identity_key)).await
     }
 
+    async fn validator_consensus_key(
+        &self,
+        identity_key: &IdentityKey,
+    ) -> Result<Option<PublicKey>> {
+        // TODO: this is pulling out the whole proto, but only parsing
+        // the consensus key.  Alternatively, we could store the consensus
+        // keys in a separate index.
+        self.get_proto::<penumbra_proto::penumbra::core::stake::v1alpha1::Validator>(
+            &state_key::validators::by_id(identity_key),
+        )
+        .await
+        .map(|opt| {
+            opt.map(|v| {
+                tendermint::PublicKey::from_raw_ed25519(v.consensus_key.as_slice())
+                    .expect("validator consensus key must be valid ed25519 key")
+            })
+        })
+    }
+
     // Tendermint validators are referenced to us by their Tendermint consensus key,
     // but we reference them by their Penumbra identity key.
     async fn validator_by_consensus_key(&self, ck: &PublicKey) -> Result<Option<Validator>> {
@@ -1063,6 +1078,20 @@ pub trait StateReadExt: StateRead {
             })),
             _ => Ok(None),
         }
+    }
+
+    async fn validator_identity_list(&self) -> Result<Vec<IdentityKey>> {
+        self.prefix_raw(state_key::validators::list())
+            // The prefix stream returns keys and values, but we only want the keys.
+            // This is a little inefficient, since we're getting the validator definitions
+            // too, but we don't have to parse them, so we're just doing some extra byte copies.
+            .map_ok(|(key, _validator)| {
+                key.as_str()[state_key::validators::list().len()..]
+                    .parse::<IdentityKey>()
+                    .expect("state keys should only have valid identity keys")
+            })
+            .try_collect()
+            .await
     }
 
     async fn validator_list(&self) -> Result<Vec<Validator>> {
