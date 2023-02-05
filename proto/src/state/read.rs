@@ -1,11 +1,10 @@
 use crate::{DomainType, Message};
 
-use anyhow::Result;
-use std::fmt::Debug;
-use std::pin::Pin;
+use anyhow::{Context, Result};
+use std::{fmt::Debug, future::Future, pin::Pin};
 
 use async_trait::async_trait;
-use futures::{Stream, StreamExt};
+use futures::{FutureExt, Stream, StreamExt, TryFutureExt};
 use penumbra_storage::StateRead;
 
 #[async_trait]
@@ -17,25 +16,22 @@ pub trait StateReadProto: StateRead + Send + Sync {
     /// * `Ok(Some(v))` if the value is present and parseable as a domain type `D`;
     /// * `Ok(None)` if the value is missing;
     /// * `Err(_)` if the value is present but not parseable as a domain type `D`, or if an underlying storage error occurred.
-    async fn get<D>(&self, key: &str) -> Result<Option<D>>
+    fn get<D>(&self, key: &str) -> Pin<Box<dyn Future<Output = Result<Option<D>>> + Send + 'static>>
     where
         D: DomainType + std::fmt::Debug,
         <D as TryFrom<D::Proto>>::Error: Into<anyhow::Error> + Send + Sync + 'static,
     {
-        match self.get_proto(key).await {
-            Ok(Some(p)) => match D::try_from(p) {
-                Ok(d) => {
-                    tracing::trace!(?key, value = ?d);
-                    Ok(Some(d))
-                }
-                Err(e) => Err(e.into()),
-            },
-            Ok(None) => {
-                tracing::trace!(?key, "no entry in tree");
-                Ok(None)
-            }
-            Err(e) => Err(e),
-        }
+        self.get_proto(key)
+            .and_then(|maybe_proto| async move {
+                maybe_proto
+                    .map(|proto| {
+                        D::try_from(proto)
+                            .map_err(Into::into)
+                            .context("could not parse domain type from proto")
+                    })
+                    .transpose()
+            })
+            .boxed()
     }
 
     /// Gets a value from the verifiable key-value store as a proto type.
@@ -45,18 +41,25 @@ pub trait StateReadProto: StateRead + Send + Sync {
     /// * `Ok(Some(v))` if the value is present and parseable as a proto type `P`;
     /// * `Ok(None)` if the value is missing;
     /// * `Err(_)` if the value is present but not parseable as a proto type `P`, or if an underlying storage error occurred.
-    async fn get_proto<P>(&self, key: &str) -> Result<Option<P>>
+    fn get_proto<P>(
+        &self,
+        key: &str,
+    ) -> Pin<Box<dyn Future<Output = Result<Option<P>>> + Send + 'static>>
     where
         P: Message + Default + Debug,
     {
-        let bytes = match self.get_raw(key).await? {
-            None => return Ok(None),
-            Some(bytes) => bytes,
-        };
-
-        Message::decode(bytes.as_slice())
-            .map_err(|e| anyhow::anyhow!(e))
-            .map(|v| Some(v))
+        self.get_raw(key)
+            .and_then(|maybe_bytes| async move {
+                match maybe_bytes {
+                    None => Ok(None),
+                    Some(bytes) => {
+                        let v = Message::decode(&*bytes)
+                            .context("could not decode proto from bytes")?;
+                        Ok(Some(v))
+                    }
+                }
+            })
+            .boxed()
     }
 
     /// Retrieve all values for keys matching a prefix from consensus-critical state, as domain types.

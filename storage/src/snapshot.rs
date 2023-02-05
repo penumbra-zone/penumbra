@@ -1,8 +1,8 @@
-use std::{any::Any, pin::Pin, sync::Arc};
+use std::{any::Any, future::Future, pin::Pin, sync::Arc};
 
 use anyhow::Result;
 use async_trait::async_trait;
-use futures::Stream;
+use futures::{FutureExt, Stream};
 use jmt::storage::{LeafNode, Node, NodeKey, TreeReader};
 use tokio::sync::mpsc;
 use tracing::Span;
@@ -87,14 +87,20 @@ impl Snapshot {
 #[async_trait]
 impl StateRead for Snapshot {
     /// Fetch a key from the JMT column family.
-    async fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>> {
+    fn get_raw(
+        &self,
+        key: &str,
+    ) -> Pin<Box<dyn Future<Output = Result<Option<Vec<u8>>>> + Send + 'static>> {
         let span = Span::current();
         let key_hash = jmt::KeyHash::from(key);
         let self2 = self.clone();
-        tokio::task::Builder::new()
-            .name("Snapshot::get_raw")
-            .spawn_blocking(move || span.in_scope(|| self2.get_jmt(key_hash)))?
-            .await?
+        async move {
+            tokio::task::Builder::new()
+                .name("Snapshot::get_raw")
+                .spawn_blocking(move || span.in_scope(|| self2.get_jmt(key_hash)))?
+                .await?
+        }
+        .boxed()
     }
 
     /// Fetch a key from the nonconsensus column family.

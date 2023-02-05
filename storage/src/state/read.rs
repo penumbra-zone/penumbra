@@ -1,4 +1,4 @@
-use std::{any::Any, cmp::Ordering, collections::BTreeMap, pin::Pin};
+use std::{any::Any, cmp::Ordering, collections::BTreeMap, future::Future, pin::Pin};
 
 use anyhow::Result;
 
@@ -12,7 +12,10 @@ pub trait StateRead: Send + Sync {
     /// Gets a value from the verifiable key-value store as raw bytes.
     ///
     /// Users should generally prefer to use `get` or `get_proto` from an extension trait.
-    async fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>>;
+    fn get_raw(
+        &self,
+        key: &str,
+    ) -> Pin<Box<dyn Future<Output = Result<Option<Vec<u8>>>> + Send + 'static>>;
 
     /// Retrieve all values for keys matching a prefix from the verifiable key-value store, as raw bytes.
     ///
@@ -213,8 +216,11 @@ pub(crate) fn nonconsensus_prefix_raw_with_cache<'a>(
 
 #[async_trait]
 impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
-    async fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>> {
-        (**self).get_raw(key).await
+    fn get_raw(
+        &self,
+        key: &str,
+    ) -> Pin<Box<dyn Future<Output = Result<Option<Vec<u8>>>> + Send + 'static>> {
+        (**self).get_raw(key)
     }
 
     fn prefix_raw<'b>(
@@ -249,8 +255,11 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
 
 #[async_trait]
 impl<'a, S: StateRead + Send + Sync> StateRead for &'a mut S {
-    async fn get_raw(&self, key: &str) -> Result<Option<Vec<u8>>> {
-        (**self).get_raw(key).await
+    fn get_raw(
+        &self,
+        key: &str,
+    ) -> Pin<Box<dyn Future<Output = Result<Option<Vec<u8>>>> + Send + 'static>> {
+        (**self).get_raw(key)
     }
 
     fn prefix_raw<'b>(
