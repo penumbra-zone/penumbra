@@ -15,7 +15,9 @@ pub use write::StateWrite;
 
 use crate::snapshot::Snapshot;
 
-use self::read::{nonconsensus_prefix_raw_with_cache, prefix_raw_with_cache};
+use self::read::{
+    nonconsensus_prefix_raw_with_cache, prefix_keys_with_cache, prefix_raw_with_cache,
+};
 
 /// A lightweight snapshot of a particular version of the chain state.
 ///
@@ -164,6 +166,13 @@ impl StateRead for State {
         prefix: &'a str,
     ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + Sync + 'a>> {
         prefix_raw_with_cache(&self.snapshot, &self.unwritten_changes, prefix)
+    }
+
+    fn prefix_keys<'a>(
+        &'a self,
+        prefix: &'a str,
+    ) -> Pin<Box<dyn Stream<Item = Result<String>> + Send + Sync + 'a>> {
+        prefix_keys_with_cache(&self.snapshot, &self.unwritten_changes, prefix)
     }
 
     fn object_get<T: Any + Send + Sync>(&self, key: &str) -> Option<&T> {

@@ -23,6 +23,12 @@ pub trait StateRead: Send + Sync {
         prefix: &'a str,
     ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Sync + Send + 'a>>;
 
+    /// Retrieve all keys (but not values) matching a prefix from the verifiable key-value store.
+    fn prefix_keys<'a>(
+        &'a self,
+        prefix: &'a str,
+    ) -> Pin<Box<dyn Stream<Item = Result<String>> + Sync + Send + 'a>>;
+
     /// Gets a byte value from the non-verifiable key-value store.
     ///
     /// This is intended for application-specific indexes of the verifiable
@@ -142,6 +148,41 @@ pub(crate) fn prefix_raw_with_cache<'a>(
     Box::pin(merged)
 }
 
+pub(crate) fn prefix_keys_with_cache<'a>(
+    sr: &'a impl StateRead,
+    cache: &'a BTreeMap<String, Option<Vec<u8>>>,
+    prefix: &'a str,
+) -> Pin<Box<dyn Stream<Item = Result<String>> + Send + Sync + 'a>> {
+    // The implementation is similar to prefix_raw_with_cache.  In order to
+    // reuse the merge_cache code, we use zero-size dummy values (), which lets
+    // us correctly handle uncommitted deletions (which will be represented as
+    // None rather than Some(())).
+
+    let state_stream = sr
+        .prefix_keys(prefix)
+        .map(move |r| r.map(move |k| (k, Some(()))));
+
+    // Range the unwritten_changes cache (sorted by key) starting with the keys matching the prefix,
+    // until we reach the keys that no longer match the prefix.
+    let unwritten_changes_iter = cache
+        .range(prefix.to_string()..)
+        .take_while(move |(k, _)| (**k).starts_with(prefix))
+        // Do a little dance to turn &Some(bytes) into Some(()), and &None into None,
+        // so we're only working with keys, not values, but we can reuse the merge_cache function.
+        .map(|(k, v)| (k.clone(), v.as_ref().map(|_| ())));
+
+    // Merge the unwritten_changes cache with the snapshot.
+    let merged = merge_cache(unwritten_changes_iter, state_stream);
+
+    // Filter out the keys that were deleted in the unwritten_changes cache.
+    let filtered = merged.filter_map(|r| async move {
+        r.map(|(k, v)| if v.is_some() { Some(k) } else { None })
+            .transpose()
+    });
+
+    Box::pin(filtered)
+}
+
 #[allow(clippy::type_complexity)]
 pub(crate) fn nonconsensus_prefix_raw_with_cache<'a>(
     sr: &'a impl StateRead,
@@ -183,6 +224,13 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
         (**self).prefix_raw(prefix)
     }
 
+    fn prefix_keys<'b>(
+        &'b self,
+        prefix: &'b str,
+    ) -> Pin<Box<dyn Stream<Item = Result<String>> + Sync + Send + 'b>> {
+        (**self).prefix_keys(prefix)
+    }
+
     fn nonconsensus_prefix_raw<'b>(
         &'b self,
         prefix: &'b [u8],
@@ -210,6 +258,13 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a mut S {
         prefix: &'b str,
     ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Sync + Send + 'b>> {
         (**self).prefix_raw(prefix)
+    }
+
+    fn prefix_keys<'b>(
+        &'b self,
+        prefix: &'b str,
+    ) -> Pin<Box<dyn Stream<Item = Result<String>> + Sync + Send + 'b>> {
+        (**self).prefix_keys(prefix)
     }
 
     fn nonconsensus_prefix_raw<'b>(

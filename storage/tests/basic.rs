@@ -141,24 +141,40 @@ async fn simple_flow() -> anyhow::Result<()> {
     //    This is missing in tx01 and in state_init
     assert_eq!(tx01.get_raw("a/c").await?, None);
     let mut range = tx01.prefix_raw("a/");
+    let mut range_keys = tx01.prefix_keys("a/");
     assert_eq!(
         range.next().await.transpose()?,
         Some(("a/aa".to_owned(), b"aa".to_vec()))
+    );
+    assert_eq!(
+        range_keys.next().await.transpose()?,
+        Some("a/aa".to_owned())
     );
     assert_eq!(
         range.next().await.transpose()?,
         Some(("a/aaa".to_owned(), b"aaa".to_vec()))
     );
     assert_eq!(
+        range_keys.next().await.transpose()?,
+        Some("a/aaa".to_owned())
+    );
+    assert_eq!(
         range.next().await.transpose()?,
         Some(("a/ab".to_owned(), b"ab".to_vec()))
+    );
+    assert_eq!(
+        range_keys.next().await.transpose()?,
+        Some("a/ab".to_owned())
     );
     assert_eq!(
         range.next().await.transpose()?,
         Some(("a/z".to_owned(), b"z".to_vec()))
     );
+    assert_eq!(range_keys.next().await.transpose()?, Some("a/z".to_owned()));
     assert_eq!(range.next().await.transpose()?, None);
+    assert_eq!(range_keys.next().await.transpose()?, None);
     std::mem::drop(range);
+    std::mem::drop(range_keys);
 
     // Now apply the transaction to state_init
     tx01.apply();
@@ -173,24 +189,40 @@ async fn simple_flow() -> anyhow::Result<()> {
     //    This is missing in state_init
     assert_eq!(state_init.get_raw("a/c").await?, None);
     let mut range = state_init.prefix_raw("a/");
+    let mut range_keys = state_init.prefix_keys("a/");
     assert_eq!(
         range.next().await.transpose()?,
         Some(("a/aa".to_owned(), b"aa".to_vec()))
+    );
+    assert_eq!(
+        range_keys.next().await.transpose()?,
+        Some("a/aa".to_owned())
     );
     assert_eq!(
         range.next().await.transpose()?,
         Some(("a/aaa".to_owned(), b"aaa".to_vec()))
     );
     assert_eq!(
+        range_keys.next().await.transpose()?,
+        Some("a/aaa".to_owned())
+    );
+    assert_eq!(
         range.next().await.transpose()?,
         Some(("a/ab".to_owned(), b"ab".to_vec()))
+    );
+    assert_eq!(
+        range_keys.next().await.transpose()?,
+        Some("a/ab".to_owned())
     );
     assert_eq!(
         range.next().await.transpose()?,
         Some(("a/z".to_owned(), b"z".to_vec()))
     );
+    assert_eq!(range_keys.next().await.transpose()?, Some("a/z".to_owned()));
     assert_eq!(range.next().await.transpose()?, None);
+    assert_eq!(range_keys.next().await.transpose()?, None);
     std::mem::drop(range);
+    std::mem::drop(range_keys);
 
     // Now commit state_init to storage
     storage.commit(state_init).await?;
