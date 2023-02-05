@@ -8,7 +8,7 @@ use tendermint::abci;
 use crate::State;
 
 use super::{
-    read::{nonconsensus_prefix_raw_with_cache, prefix_raw_with_cache},
+    read::{nonconsensus_prefix_raw_with_cache, prefix_keys_with_cache, prefix_raw_with_cache},
     StateRead, StateWrite,
 };
 
@@ -128,6 +128,13 @@ impl<'tx> StateRead for Transaction<'tx> {
         prefix: &'a str,
     ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Sync + Send + 'a>> {
         prefix_raw_with_cache(self.state, &self.unwritten_changes, prefix)
+    }
+
+    fn prefix_keys<'a>(
+        &'a self,
+        prefix: &'a str,
+    ) -> Pin<Box<dyn Stream<Item = Result<String>> + Sync + Send + 'a>> {
+        prefix_keys_with_cache(self.state, &self.unwritten_changes, prefix)
     }
 
     fn nonconsensus_prefix_raw<'a>(
