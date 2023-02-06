@@ -505,7 +505,7 @@ pub struct Path {
     #[prost(message, repeated, tag = "2")]
     pub route: ::prost::alloc::vec::Vec<super::super::crypto::v1alpha1::AssetId>,
     #[prost(message, optional, tag = "3")]
-    pub phi: ::core::option::Option<TradingFunction>,
+    pub phi: ::core::option::Option<BareTradingFunction>,
 }
 /// A path and the amount of the assets on either side that were traded.
 #[allow(clippy::derive_partial_eq_without_eq)]

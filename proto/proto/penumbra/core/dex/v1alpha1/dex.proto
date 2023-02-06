@@ -332,7 +332,7 @@ message PositionRewardClaim {
 message Path {
     DirectedTradingPair pair = 1;
     repeated crypto.v1alpha1.AssetId route = 2;
-    TradingFunction phi = 3;
+    BareTradingFunction phi = 3;
 }
 
 // A path and the amount of the assets on either side that were traded.
