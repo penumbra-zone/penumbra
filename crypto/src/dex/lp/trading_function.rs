@@ -18,25 +18,6 @@ impl TradingFunction {
             pair,
         }
     }
-
-    /// Compose two trading functions together.
-    /// TODO(erwan): doc.
-    pub fn compose(
-        &self,
-        psi: TradingFunction,
-        pair: TradingPair,
-    ) -> anyhow::Result<TradingFunction> {
-        // TODO(erwan): we should fail to compose trading functions with non-overlapping assets.
-        //  however, since we're not using `DirectedTradingPair` here, the logic to check what
-        // TODO: * insert scaling code here
-        //       * overflow handling
-        //  should be the resulting pair is tedious. I will re-insert it later.
-        let fee = self.component.fee * psi.component.fee;
-        // TODO: insert scaling code here
-        let r1 = self.component.p * psi.component.p;
-        let r2 = self.component.q * psi.component.q;
-        Ok(TradingFunction::new(pair, fee, r1, r2))
-    }
 }
 
 impl TryFrom<pb::TradingFunction> for TradingFunction {
@@ -136,6 +117,14 @@ impl BareTradingFunction {
     /// Note: the float math is a placehodler
     pub fn gamma(&self) -> f64 {
         (10_000.0 - self.fee as f64) / 10_000.0
+    }
+
+    /// Returns the composition of two trading functions.
+    pub fn compose(&self, phi: BareTradingFunction) -> BareTradingFunction {
+        let fee = self.fee * phi.fee;
+        let r1 = self.p * phi.p;
+        let r2 = self.q * phi.q;
+        BareTradingFunction::new(fee, r1, r2)
     }
 }
 

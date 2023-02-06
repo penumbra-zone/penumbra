@@ -1,5 +1,5 @@
 use crate::asset;
-use crate::dex::lp::TradingFunction;
+use crate::dex::lp::{BareTradingFunction, TradingFunction};
 use crate::dex::trading_pair::DirectedTradingPair;
 use anyhow::Result;
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
@@ -12,8 +12,7 @@ use serde::{Deserialize, Serialize};
 pub struct Path {
     pair: DirectedTradingPair,
     route: Vec<asset::Id>,
-    // TODO: replace with BareTradingFunction so as not to duplicate the trading pair?
-    phi: TradingFunction,
+    phi: BareTradingFunction,
 }
 
 impl Path {
@@ -21,22 +20,23 @@ impl Path {
         Ok(Self {
             pair: DirectedTradingPair::new(start, end),
             route: vec![start, end],
-            phi: amm,
+            phi: amm.component,
         })
     }
 
-    pub fn extend(&mut self, psi: TradingFunction) {
-        let end = if self.pair.end == psi.pair.asset_1() {
-            psi.pair.asset_2()
+    /// Extend the current path with the specified pool.
+    pub fn extend(&mut self, pool: TradingFunction) {
+        let end = if self.pair.end == pool.pair.asset_1() {
+            pool.pair.asset_2()
         } else {
-            psi.pair.asset_1()
+            pool.pair.asset_1()
         };
 
         let pair = DirectedTradingPair::new(self.start(), end.clone());
-        let amm = self.phi.compose(psi, pair.into()).unwrap();
+        let composed_amm = self.phi.compose(pool.component);
         self.route.push(end);
         self.pair = pair;
-        self.phi = amm;
+        self.phi = composed_amm;
     }
 
     pub fn start(&self) -> asset::Id {
