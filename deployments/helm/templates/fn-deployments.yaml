@@ -76,6 +76,10 @@ spec:
             - |
               set -eux
               CHAIN_DIR=/home/.tendermint
+              if [ -e $CHAIN_DIR/config/addrbook.json ] ; then
+                echo "Address book already exists, not initializing..."
+                exit 0
+              fi
               if [ ! -d $CHAIN_DIR ]; then
                 tendermint init full --home $CHAIN_DIR
               else
@@ -96,6 +100,10 @@ spec:
               MERGE_DIR=/tmp/configMerge
               OVERLAY_DIR=/config
               TMP_DIR=/home/tmpConfig
+              if [ -e $CONFIG_DIR/addrbook.json ] ; then
+                echo "Address book already exists, not merging configs..."
+                exit 0
+              fi
               if [ -d $TMP_DIR/config ]; then
                 mv $TMP_DIR/config/*.toml $CONFIG_DIR/
                 rm -rf $TMP_DIR
