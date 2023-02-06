@@ -2,7 +2,7 @@ use anyhow::{anyhow, Context};
 use penumbra_proto::{core::dex::v1alpha1 as pb, serializers::bech32str, DomainType};
 use serde::{Deserialize, Serialize};
 
-use super::trading_function::TradingFunction;
+use super::{trading_function::TradingFunction, Reserves};
 
 /// Data identifying a position.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -116,7 +116,19 @@ impl std::str::FromStr for State {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(try_from = "pb::PositionMetadata", into = "pb::PositionMetadata")]
+pub struct Metadata {
+    pub position: Position,
+    pub state: State,
+    pub reserves: Reserves,
+}
+
 // ==== Protobuf impls
+
+impl DomainType for Metadata {
+    type Proto = pb::PositionMetadata;
+}
 
 impl DomainType for Position {
     type Proto = pb::Position;
@@ -210,5 +222,18 @@ impl TryFrom<pb::PositionState> for State {
                 Err(anyhow!("unspecified position state!"))
             }
         }
+    }
+}
+
+impl From<Metadata> for pb::PositionMetadata {
+    fn from(_: Metadata) -> Self {
+        todo!()
+    }
+}
+
+impl TryFrom<pb::PositionMetadata> for Metadata {
+    type Error = anyhow::Error;
+    fn try_from(value: pb::PositionMetadata) -> Result<Self, Self::Error> {
+        todo!()
     }
 }

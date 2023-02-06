@@ -97,12 +97,23 @@ impl BareTradingFunction {
         Self { fee, p, q }
     }
 
-    /// Represent the trading function as a big-endian fixed point encoding
-    /// with 128 bits to the right of the decimal.
+    pub fn flip(&self) -> Self {
+        Self {
+            fee: self.fee,
+            p: self.q,
+            q: self.p,
+        }
+    }
+
+    /// Returns a byte key for this trading function with the property that the
+    /// lexicographic ordering on byte keys is the same as ordering the
+    /// corresponding trading functions by effective price.
+    ///
+    /// This allows trading functions to be indexed by price using a key-value store.
     ///
     /// Note: Currently this uses floating point to derive the encoding, which
     /// is a placeholder and should be replaced by width-expanding polynomial arithmetic.
-    pub fn to_bytes(&self) -> [u8; 32] {
+    pub fn effective_price_key_bytes(&self) -> [u8; 32] {
         let effective_price = self.effective_price();
         let integer = effective_price.trunc() as u128;
         let fractional = effective_price.fract() as u128;
@@ -174,7 +185,7 @@ mod tests {
 
         assert_eq!(btf.gamma(), 1.0);
         assert_eq!(btf.effective_price(), 0.5);
-        let bytes = btf.to_bytes();
+        let bytes = btf.effective_price_key_bytes();
         let integer = u128::from_be_bytes(bytes[..16].try_into().unwrap());
         let fractional = u128::from_be_bytes(bytes[16..].try_into().unwrap());
 
@@ -189,7 +200,7 @@ mod tests {
 
         assert_eq!(btf.gamma(), 0.99);
         assert_eq!(btf.effective_price(), 0.99);
-        let bytes = btf.to_bytes();
+        let bytes = btf.effective_price_key_bytes();
         let integer = u128::from_be_bytes(bytes[..16].try_into().unwrap());
         let fractional = u128::from_be_bytes(bytes[16..].try_into().unwrap());
 

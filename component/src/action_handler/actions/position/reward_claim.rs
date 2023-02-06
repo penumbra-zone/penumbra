@@ -9,6 +9,7 @@ use tracing::instrument;
 use crate::action_handler::ActionHandler;
 
 #[async_trait]
+/// Debits a withdrawn position NFT and credits a claimed position NFT and any liquidity incentives.
 impl ActionHandler for PositionRewardClaim {
     #[instrument(name = "position_reward_claim", skip(self, _context))]
     async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
@@ -18,7 +19,7 @@ impl ActionHandler for PositionRewardClaim {
         Err(anyhow::anyhow!("lp actions not supported yet"))
     }
 
-    #[instrument(name = "position_close", skip(self, _state))]
+    #[instrument(name = "position_reward_claim", skip(self, _state))]
     async fn check_stateful(&self, _state: Arc<State>) -> Result<()> {
         // It's important to reject all LP actions for now, to prevent
         // inflation / minting bugs until we implement all required checks
@@ -26,7 +27,7 @@ impl ActionHandler for PositionRewardClaim {
         Err(anyhow::anyhow!("lp actions not supported yet"))
     }
 
-    #[instrument(name = "position_close", skip(self, _state))]
+    #[instrument(name = "position_reward_claim", skip(self, _state))]
     async fn execute(&self, _state: &mut StateTransaction) -> Result<()> {
         // It's important to reject all LP actions for now, to prevent
         // inflation / minting bugs until we implement all required checks

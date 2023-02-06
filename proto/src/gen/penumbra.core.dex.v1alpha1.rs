@@ -392,6 +392,17 @@ pub mod position_state {
         }
     }
 }
+/// The data recorded about a position on-chain.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PositionMetadata {
+    #[prost(message, optional, tag = "1")]
+    pub position: ::core::option::Option<Position>,
+    #[prost(message, optional, tag = "2")]
+    pub state: ::core::option::Option<PositionState>,
+    #[prost(message, optional, tag = "3")]
+    pub reserves: ::core::option::Option<Reserves>,
+}
 /// An LPNFT tracking both ownership and state of a position.
 ///
 /// Tracking the state as part of the LPNFT means that all LP-related actions can
