@@ -1,5 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
+use futures::TryStreamExt;
 use penumbra_crypto::dex::{
     lp::{
         position::{self, Position},
@@ -16,6 +17,15 @@ use super::state_key;
 pub trait PositionRead: StateRead {
     async fn position_by_id(&self, id: &position::Id) -> Result<Option<position::Metadata>> {
         self.get(&state_key::position_by_id(id)).await
+    }
+
+    /// Return all trading positions.
+    async fn positions(&self) -> Result<Vec<position::Metadata>> {
+        self.prefix(state_key::positions_prefix())
+            // The prefix stream returns keys and values, but we only want the values.
+            .map_ok(|(_key, metadata)| metadata)
+            .try_collect()
+            .await
     }
 
     async fn check_nonce_unused(&self, position: &Position) -> Result<()> {

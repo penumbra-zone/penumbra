@@ -6,10 +6,12 @@ pub mod metrics;
 pub mod state_key;
 
 mod position_manager;
+mod router;
 
 pub use self::metrics::register_metrics;
 pub use component::{Dex, StateReadExt, StateWriteExt};
 pub use position_manager::PositionManager;
+pub use router::TradeRouter;
 
 #[cfg(test)]
 mod tests;

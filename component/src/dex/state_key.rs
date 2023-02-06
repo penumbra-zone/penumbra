@@ -14,6 +14,11 @@ pub fn position_by_id(id: &position::Id) -> String {
     format!("dex/position/{}", id)
 }
 
+/// Prefix for finding all positions
+pub fn positions_prefix() -> &'static str {
+    "dex/position/"
+}
+
 /// Encompasses non-consensus state keys.
 pub(crate) mod internal {
     use super::*;
