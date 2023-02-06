@@ -158,8 +158,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                         self.get_block_height().await?,
                         self.signed_blocks_window_len().await? as usize,
                     ),
-                )
-                .await;
+                );
 
                 // Inform tendermint that the validator is now active.
                 let power = self
@@ -635,16 +634,44 @@ pub(crate) trait StakingImpl: StateWriteExt {
 
         // Since we don't have a lookup from "addresses" to identity keys,
         // iterate over our app's validators, and match them up with the vote data.
-        for v in self.validator_list().await?.iter() {
-            let info = self
-                .validator_info(&v.identity_key)
-                .await?
-                .ok_or_else(|| anyhow::anyhow!("validator missing info"))?;
+        // We can fetch all the data required for processing each validator concurrently:
+        let mut js = JoinSet::new();
+        for v in self.validator_identity_list().await? {
+            let state = self.validator_state(&v);
+            let uptime = self.validator_uptime(&v);
+            let consensus_key = self.validator_consensus_key(&v);
+            js.spawn(async move {
+                let state = state
+                    .await?
+                    .expect("every known validator must have a recorded state");
 
-            if info.status.state == validator::State::Active {
+                match state {
+                    validator::State::Active => {
+                        // If the validator is active, we need its consensus key and current uptime data:
+                        Ok(Some((
+                            v,
+                            consensus_key
+                                .await?
+                                .expect("every known validator must have a recorded consensus key"),
+                            uptime
+                                .await?
+                                .expect("every known validator must have a recorded uptime"),
+                        )))
+                    }
+                    _ => {
+                        // Otherwise, we don't need to track its uptime, and there's no data to fetch.
+                        anyhow::Ok(None)
+                    }
+                }
+            });
+        }
+        // Now process the data we fetched concurrently.
+        // Note that this will process validator uptime changes in a random order, but because they are all
+        // independent, this doesn't introduce any nondeterminism into the complete state change.
+        while let Some(data) = js.join_next().await.transpose()? {
+            if let Some((identity_key, consensus_key, mut uptime)) = data? {
                 // for some reason last_commit_info has truncated sha256 hashes
-                let ck_bytes = info.validator.consensus_key.to_bytes();
-                let addr: [u8; 20] = Sha256::digest(&ck_bytes).as_slice()[0..20]
+                let addr: [u8; 20] = Sha256::digest(&consensus_key.to_bytes()).as_slice()[0..20]
                     .try_into()
                     .unwrap();
 
@@ -655,28 +682,22 @@ pub(crate) trait StakingImpl: StateWriteExt {
                     // which has no signers -- so we'll mark all validators as having signed.
                     // https://github.com/penumbra-zone/penumbra/issues/1050
                     .unwrap_or(height == 1);
-                let mut uptime =
-                    self.validator_uptime(&v.identity_key)
-                        .await?
-                        .ok_or_else(|| {
-                            anyhow!("missing uptime for active validator {}", v.identity_key)
-                        })?;
 
                 tracing::debug!(
                     ?voted,
                     num_missed_blocks = ?uptime.num_missed_blocks(),
-                    identity_key = ?v.identity_key,
+                    ?identity_key,
                     ?params.missed_blocks_maximum,
                     "recorded vote info"
                 );
-                gauge!(metrics::MISSED_BLOCKS, uptime.num_missed_blocks() as f64, "identity_key" => v.identity_key.to_string());
+                gauge!(metrics::MISSED_BLOCKS, uptime.num_missed_blocks() as f64, "identity_key" => identity_key.to_string());
 
                 uptime.mark_height_as_signed(height, voted).unwrap();
                 if uptime.num_missed_blocks() as u64 >= params.missed_blocks_maximum {
-                    self.set_validator_state(&v.identity_key, validator::State::Jailed)
+                    self.set_validator_state(&identity_key, validator::State::Jailed)
                         .await?;
                 } else {
-                    self.set_validator_uptime(&v.identity_key, uptime).await;
+                    self.set_validator_uptime(&identity_key, uptime);
                 }
             }
         }
@@ -737,8 +758,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
         self.set_validator_uptime(
             &validator.identity_key,
             Uptime::new(0, self.signed_blocks_window_len().await? as usize),
-        )
-        .await;
+        );
 
         Ok(())
     }
@@ -1122,9 +1142,11 @@ pub trait StateReadExt: StateRead {
             .ok_or_else(|| anyhow!("missing delegation changes for block {}", height))?)
     }
 
-    async fn validator_uptime(&self, identity_key: &IdentityKey) -> Result<Option<Uptime>> {
+    fn validator_uptime(
+        &self,
+        identity_key: &IdentityKey,
+    ) -> Pin<Box<dyn Future<Output = Result<Option<Uptime>>> + Send + 'static>> {
         self.get(&state_key::uptime_by_validator(identity_key))
-            .await
     }
 
     async fn signed_blocks_window_len(&self) -> Result<u64> {
@@ -1309,7 +1331,7 @@ pub trait StateWriteExt: StateWrite {
         );
     }
 
-    async fn set_validator_uptime(&mut self, identity_key: &IdentityKey, uptime: Uptime) {
+    fn set_validator_uptime(&mut self, identity_key: &IdentityKey, uptime: Uptime) {
         self.put(state_key::uptime_by_validator(identity_key), uptime);
     }
 
