@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-jmt = { git = "https://github.com/penumbra-zone/jmt", branch = "upstream-ics23" }
+jmt = { git = "https://github.com/penumbra-zone/jmt", branch = "main" }
 tokio = { version = "1.21.1", features = ["full", "tracing"] }
 tokio-stream = { version = "0.1.11" }
 sha2 = "0.9"
