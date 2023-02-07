@@ -98,13 +98,6 @@ pub struct DelegatorVoteBody {
     pub abstain_balance_commitment: ::core::option::Option<
         super::super::crypto::v1alpha1::BalanceCommitment,
     >,
-    /// A commitment to the value voted for "no with veto".
-    ///
-    /// A rational voter will place all their voting weight on one vote.
-    #[prost(message, optional, tag = "8")]
-    pub no_with_veto_balance_commitment: ::core::option::Option<
-        super::super::crypto::v1alpha1::BalanceCommitment,
-    >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -166,7 +159,6 @@ pub mod vote {
         Abstain = 1,
         Yes = 2,
         No = 3,
-        NoWithVeto = 4,
     }
     impl Vote {
         /// String value of the enum field names used in the ProtoBuf definition.
@@ -179,7 +171,6 @@ pub mod vote {
                 Vote::Abstain => "VOTE_ABSTAIN",
                 Vote::Yes => "VOTE_YES",
                 Vote::No => "VOTE_NO",
-                Vote::NoWithVeto => "VOTE_NO_WITH_VETO",
             }
         }
         /// Creates an enum from field names used in the ProtoBuf definition.
@@ -189,7 +180,6 @@ pub mod vote {
                 "VOTE_ABSTAIN" => Some(Self::Abstain),
                 "VOTE_YES" => Some(Self::Yes),
                 "VOTE_NO" => Some(Self::No),
-                "VOTE_NO_WITH_VETO" => Some(Self::NoWithVeto),
                 _ => None,
             }
         }

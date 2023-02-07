@@ -439,7 +439,6 @@ impl EffectingData for Vote {
             Vote::Yes => b"Y",
             Vote::No => b"N",
             Vote::Abstain => b"A",
-            Vote::NoWithVeto => b"V",
         });
 
         EffectHash(state.finalize().as_array().clone())

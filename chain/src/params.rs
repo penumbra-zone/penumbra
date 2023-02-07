@@ -82,8 +82,7 @@ pub struct ChainParameters {
     pub proposal_valid_quorum: Ratio<u64>,
     /// The threshold for a proposal to pass voting, as a ratio of "yes" votes over "no" votes.
     pub proposal_pass_threshold: Ratio<u64>,
-    /// The threshold for a proposal to be vetoed, regardless of whether the "yes" and "no" votes
-    /// would have passed it, as a ratio of "no with veto" votes over all total votes.
+    /// The threshold for a proposal to be vetoed, as a ratio of "no" votes over all total votes.
     pub proposal_veto_threshold: Ratio<u64>,
 }
 

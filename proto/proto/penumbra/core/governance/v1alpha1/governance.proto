@@ -65,10 +65,6 @@ message DelegatorVoteBody {
   //
   // A rational voter will place all their voting weight on one vote.
   crypto.v1alpha1.BalanceCommitment abstain_balance_commitment = 7;
-  // A commitment to the value voted for "no with veto".
-  //
-  // A rational voter will place all their voting weight on one vote.
-  crypto.v1alpha1.BalanceCommitment no_with_veto_balance_commitment = 8;
 }
 
 message ProposalDepositClaim {
@@ -101,7 +97,6 @@ message Vote {
     VOTE_ABSTAIN = 1;
     VOTE_YES = 2;
     VOTE_NO = 3;
-    VOTE_NO_WITH_VETO = 4;
   }
 
   // The vote.
