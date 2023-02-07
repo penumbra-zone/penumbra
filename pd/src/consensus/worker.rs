@@ -136,6 +136,14 @@ impl Worker {
         match rsp {
             Ok(events) => {
                 tracing::info!("deliver_tx succeeded");
+                for event in &events {
+                    let span = tracing::info_span!("event", kind = ?event.kind);
+                    span.in_scope(|| {
+                        for attr in &event.attributes {
+                            tracing::info!(k = ?attr.key, v=?attr.value);
+                        }
+                    })
+                }
                 abci::response::DeliverTx {
                     events,
                     ..Default::default()
