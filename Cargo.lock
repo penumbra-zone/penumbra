@@ -3853,6 +3853,7 @@ dependencies = [
  "serde_with 1.14.0",
  "sha2 0.9.9",
  "thiserror",
+ "tokio",
  "tracing",
 ]
 
