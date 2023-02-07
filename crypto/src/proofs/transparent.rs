@@ -495,7 +495,6 @@ impl SwapProof {
             };
         let transparent_balance_commitment = transparent_balance.commit(Fr::zero());
 
-        // XXX sign error here
         // XXX we want to avoid having to twiddle signs for synthetic blinding factor in binding sig
         ensure!(
             balance_commitment == transparent_balance_commitment + fee_commitment,
