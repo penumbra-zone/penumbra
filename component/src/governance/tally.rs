@@ -55,7 +55,6 @@ impl Circumstance {
 pub struct Tally {
     yes: u64,
     no: u64,
-    no_with_veto: u64,
     abstain: u64,
     // Constant during tallying:
     circumstance: Circumstance,
@@ -74,7 +73,6 @@ impl Tally {
         Self {
             yes: 0,
             no: 0,
-            no_with_veto: 0,
             abstain: 0,
             circumstance,
             ending_block,
@@ -87,17 +85,16 @@ impl Tally {
         *match vote {
             Vote::Yes => &mut self.yes,
             Vote::No => &mut self.no,
-            Vote::NoWithVeto => &mut self.no_with_veto,
             Vote::Abstain => &mut self.abstain,
         } += power;
     }
 
     pub fn total(&self) -> u64 {
-        self.yes + self.no + self.no_with_veto + self.abstain
+        self.yes + self.no + self.abstain
     }
 
     pub fn total_without_abstain(&self) -> u64 {
-        self.yes + self.no + self.no_with_veto
+        self.yes + self.no
     }
 
     pub fn evaluate(self, parameters: &Parameters) -> Option<Outcome<String>> {
@@ -119,7 +116,7 @@ impl Tally {
         }
 
         // Check to see if it has been vetoed
-        if Ratio::new(self.no_with_veto, self.total()) > parameters.veto_threshold {
+        if Ratio::new(self.no, self.total()) > parameters.veto_threshold {
             return Some(Outcome::Vetoed {
                 withdrawn: self.withdrawn,
             });

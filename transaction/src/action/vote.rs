@@ -22,8 +22,6 @@ pub enum Vote {
     No,
     /// The vote is to abstain from the proposal.
     Abstain,
-    /// The vote is to reject the proposal, and burn the deposit of the proposer.
-    NoWithVeto,
 }
 
 impl FromStr for Vote {
@@ -34,7 +32,6 @@ impl FromStr for Vote {
             "yes" | "y" => Ok(Vote::Yes),
             "no" | "n" => Ok(Vote::No),
             "abstain" | "a" => Ok(Vote::Abstain),
-            "veto" | "noveto" | "nowithveto" | "v" => Ok(Vote::NoWithVeto),
             _ => Err(anyhow::anyhow!("invalid vote: {}", s)),
         }
     }
@@ -46,7 +43,6 @@ impl Display for Vote {
             Vote::Yes => write!(f, "yes"),
             Vote::No => write!(f, "no"),
             Vote::Abstain => write!(f, "abstain"),
-            Vote::NoWithVeto => write!(f, "no_with_veto"),
         }
     }
 }
@@ -69,9 +65,6 @@ const fn pb_from_vote(vote: Vote) -> pb::Vote {
         Vote::Abstain => pb::Vote {
             vote: pb::vote::Vote::Abstain as i32,
         },
-        Vote::NoWithVeto => pb::Vote {
-            vote: pb::vote::Vote::NoWithVeto as i32,
-        },
     }
 }
 
@@ -86,7 +79,6 @@ impl TryFrom<pb::Vote> for Vote {
             pb::vote::Vote::Abstain => Ok(Vote::Abstain),
             pb::vote::Vote::Yes => Ok(Vote::Yes),
             pb::vote::Vote::No => Ok(Vote::No),
-            pb::vote::Vote::NoWithVeto => Ok(Vote::NoWithVeto),
             pb::vote::Vote::Unspecified => Err(anyhow!("unspecified vote state")),
         }
     }
