@@ -97,8 +97,12 @@ impl Worker {
         // set. See https://docs.tendermint.com/master/spec/abci/abci.html#initchain
         let validators = self.app.tendermint_validator_updates();
 
-        // Note: App::commit resets internal components, so we don't need to do that ourselves.
-        let app_hash = self.app.commit(self.storage.clone()).await;
+        // Note: we defer committing until the first EndBlock. Normally we'd generate an app_hash
+        // by committing, but we don't have state to preserve yet, so we'll return a default blank
+        // value to Tendermint in the InitChain Reponse.
+        let app_hash: Vec<u8> = vec![255u8; 32]
+            .try_into()
+            .expect("can initialize a default app_hash for initchain response");
 
         tracing::info!(
             consensus_params = ?init_chain.consensus_params,
@@ -110,7 +114,7 @@ impl Worker {
         Ok(abci::response::InitChain {
             consensus_params: Some(init_chain.consensus_params),
             validators,
-            app_hash: app_hash.0.to_vec().into(),
+            app_hash: app_hash.into(),
         })
     }
 
