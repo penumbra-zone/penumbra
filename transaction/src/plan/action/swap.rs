@@ -39,11 +39,7 @@ impl SwapPlan {
 
     /// Construct the [`swap::Body`] described by this [`SwapPlan`].
     pub fn swap_body(&self, fvk: &FullViewingKey) -> swap::Body {
-        let fee_commitment = self
-            .swap_plaintext
-            .claim_fee
-            .value()
-            .commit(self.fee_blinding);
+        let fee_commitment = self.swap_plaintext.claim_fee.commit(self.fee_blinding);
 
         swap::Body {
             trading_pair: self.swap_plaintext.trading_pair,
