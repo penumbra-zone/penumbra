@@ -16,7 +16,7 @@ penumbra-tct = { path = "../tct" }
 
 # Penumbra dependencies
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
-jmt = { git = "https://github.com/penumbra-zone/jmt", branch = "main" }
+jmt = "0.2.0"
 tokio = { version = "1.21.1", features = ["full", "tracing"] }
 async-trait = "0.1.52"
 tonic = "0.8.1"
