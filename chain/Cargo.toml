@@ -13,7 +13,7 @@ penumbra-tct = { path = "../tct" }
 
 # Penumbra dependencies
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
-jmt = { git = "https://github.com/penumbra-zone/jmt.git", branch = "main" }
+jmt = "0.2.0"
 
 tendermint = "0.26.0"
 ibc = "0.23.0"

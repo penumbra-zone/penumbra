@@ -366,17 +366,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "async-recursion"
-version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b015a331cc64ebd1774ba119538573603427eaace0a1950c423ab971f903796"
-dependencies = [
- "proc-macro2 1.0.50",
- "quote 1.0.23",
- "syn 1.0.107",
-]
-
-[[package]]
 name = "async-stream"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2561,14 +2550,13 @@ checksum = "fad582f4b9e86b6caa621cabeb0963332d92eea04729ab12892c2533951e6440"
 
 [[package]]
 name = "jmt"
-version = "0.1.0"
-source = "git+https://github.com/penumbra-zone/jmt?branch=main#452077586e4365b94001e32268eb11774552ad38"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bae31f4b3d6e8334847c67dd16070c4ed0f49a5ccb15aa43bc8d2eacd6cf41a7"
 dependencies = [
  "anyhow",
- "async-recursion",
  "bcs",
  "byteorder",
- "futures",
  "hex",
  "ics23",
  "itertools",
@@ -2582,7 +2570,6 @@ dependencies = [
  "serde",
  "sha2 0.10.6",
  "thiserror",
- "tokio",
  "tracing",
 ]
 
