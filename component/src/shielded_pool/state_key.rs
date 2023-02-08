@@ -49,7 +49,7 @@ pub fn block_anchor_lookup(anchor: block::Root) -> String {
     format!("shielded_pool/valid_block_anchors/{}", anchor)
 }
 
-pub fn spent_nullifier_lookup(nullifier: Nullifier) -> String {
+pub fn spent_nullifier_lookup(nullifier: &Nullifier) -> String {
     format!("shielded_pool/spent_nullifiers/{}", nullifier)
 }
 

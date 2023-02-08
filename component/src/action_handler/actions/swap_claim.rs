@@ -3,13 +3,13 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use penumbra_chain::{sync::StatePayload, StateReadExt as _};
-use penumbra_storage::{State, StateRead, StateTransaction, StateWrite};
+use penumbra_storage::{State, StateRead, StateTransaction};
 use penumbra_transaction::{action::SwapClaim, Transaction};
 use tracing::instrument;
 
 use crate::{
     action_handler::ActionHandler,
-    shielded_pool::{self, NoteManager, StateReadExt as _},
+    shielded_pool::{NoteManager, StateReadExt as _},
     stubdex::StateReadExt as _,
 };
 
@@ -87,9 +87,6 @@ impl ActionHandler for SwapClaim {
             .await;
 
         state.spend_nullifier(self.body.nullifier, source).await;
-        // TODO: why do we manage event emission separately up at the top level
-        // instead of integrated into state machine?
-        state.record(shielded_pool::event::spend(self.body.nullifier));
 
         Ok(())
     }
