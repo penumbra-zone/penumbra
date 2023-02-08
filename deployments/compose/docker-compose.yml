@@ -4,8 +4,8 @@ services:
   pd-node0:
     container_name: penumbra-node0
     build:
-      context: .
-      dockerfile: Dockerfile.old
+      context: ../../
+      dockerfile: deployments/containerfiles/Dockerfile.old
     environment:
       - RUST_LOG=${RUST_LOG:-warn,pd=debug,penumbra=debug,jmt=info}
     volumes:
@@ -41,6 +41,7 @@ services:
 networks:
   localnet:
     driver: bridge
+    name: penumbra_localnet
     ipam:
       driver: default
       config:

@@ -29,11 +29,12 @@ jobs:
 
       - name: Build the testnet.
         run: |
-          ./scripts/docker_compose_freshstart.sh
+          ./deployments/scripts/docker_compose_freshstart.sh
           chmod -R 777 ~/.penumbra/testnet_data
+          cd ./deployments/compose/
           docker-compose build
 
       - name: Run the smoke test suite
-        run: scripts/smoke-test.sh
+        run: ./deployments/scripts/smoke-test.sh
         env:
           TESTNET_RUNTIME: 5m

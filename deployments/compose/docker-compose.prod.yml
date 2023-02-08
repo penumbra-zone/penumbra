@@ -25,7 +25,7 @@ services:
     ports:
       - '9090:9090'
     volumes:
-      - "./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro"
+      - "../config/prometheus.yml:/etc/prometheus/prometheus.yml:ro"
       - "prometheus_data:/prometheus"
     networks:
       # prometheus needs to be on the local network for scraping metrics from
@@ -54,7 +54,7 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./config/Caddyfile:/etc/caddy/Caddyfile
+      - ../config/Caddyfile:/etc/caddy/Caddyfile
       - /root/caddy/data:/data
       - /root/caddy/config:/config
     networks:

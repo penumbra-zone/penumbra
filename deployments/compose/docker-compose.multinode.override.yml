@@ -13,7 +13,8 @@ services:
     build:
       # Use the dev Dockerfile which has better cacheing and doesn't use the release
       # target
-      dockerfile: Dockerfile.dev
+      dockerfile: deployments/containerfiles/Dockerfile.dev
+      context: ../../
     volumes:
       - ~/.penumbra/testnet_data/node0/pd:/pd
     command: pd start --host 0.0.0.0 --home /pd --tendermint-addr http://tendermint-node1:26657
@@ -26,8 +27,8 @@ services:
     build:
       # Use the dev Dockerfile which has better cacheing and doesn't use the release
       # target
-      dockerfile: Dockerfile.dev
-      context: .
+      dockerfile: deployments/containerfiles/Dockerfile.dev
+      context: ../../
     volumes:
       - ~/.penumbra/testnet_data/node1/pd:/pd
     command: pd start --host 0.0.0.0 --home /pd --tendermint-addr http://tendermint-node1:26657
@@ -67,7 +68,7 @@ services:
     ports:
       - '9090:9090'
     volumes:
-      - "./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro"
+      - "../config/prometheus.yml:/etc/prometheus/prometheus.yml:ro"
       - "prometheus_data:/prometheus"
     networks:
       # prometheus needs to be on the local network for scraping metrics from
@@ -83,11 +84,11 @@ services:
       # this grafana config is intended for local development and disables auth
       # etc. in production, users will generally want to configure a centralized
       # grafana instance...
-      - "./config/grafana/provisioning:/etc/grafana/provisioning:ro"
-      - "./config/grafana.ini:/etc/grafana/config.ini:ro"
+      - "../config/grafana/provisioning:/etc/grafana/provisioning:ro"
+      - "../config/grafana.ini:/etc/grafana/config.ini:ro"
       # mount the dashboards dir as read-write so we can add new dashboards
       # using the Grafana web UI.
-      - "./config/grafana/dashboards:/var/lib/grafana/dashboards:rw"
+      - "../config/grafana/dashboards:/var/lib/grafana/dashboards:rw"
     networks:
       - monitoring
     depends_on:
