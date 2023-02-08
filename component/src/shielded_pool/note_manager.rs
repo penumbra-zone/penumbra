@@ -1,6 +1,6 @@
 use super::{
     component::{StateReadExt, StateWriteExt},
-    state_key, SupplyWrite,
+    event, state_key, SupplyWrite,
 };
 use anyhow::Result;
 use async_trait::async_trait;
@@ -81,6 +81,9 @@ pub trait NoteManager: StateWrite {
     async fn add_state_payload(&mut self, payload: StatePayload) {
         tracing::debug!(?payload);
 
+        // 0. Record an ABCI event for transaction indexing.
+        self.record(event::state_payload(&payload));
+
         // 1. Insert it into the SCT
         let mut sct = self.stub_state_commitment_tree().await;
         sct.insert(tct::Witness::Forget, *payload.commitment())
@@ -107,11 +110,13 @@ pub trait NoteManager: StateWrite {
         // double spends), as well as in the CompactBlock (so that clients
         // can learn that their note was spent).
         self.put(
-            state_key::spent_nullifier_lookup(nullifier),
+            state_key::spent_nullifier_lookup(&nullifier),
             // We don't use the value for validity checks, but writing the source
             // here lets us find out what transaction spent the nullifier.
             source,
         );
+        // Also record an ABCI event for transaction indexing.
+        self.record(event::spend(&nullifier));
 
         let mut compact_block = self.stub_compact_block();
         compact_block.nullifiers.push(nullifier);

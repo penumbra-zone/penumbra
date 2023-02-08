@@ -15,6 +15,17 @@ pub struct Worker {
     app: App,
 }
 
+fn trace_events(events: &[abci::Event]) {
+    for event in events {
+        let span = tracing::info_span!("event", kind = ?event.kind);
+        span.in_scope(|| {
+            for attr in &event.attributes {
+                tracing::info!(k = ?attr.key, v=?attr.value);
+            }
+        })
+    }
+}
+
 impl Worker {
     #[instrument(skip(storage, queue), name = "consensus::Worker::new")]
     pub async fn new(storage: Storage, queue: mpsc::Receiver<Message>) -> Result<Self> {
@@ -135,15 +146,7 @@ impl Worker {
 
         match rsp {
             Ok(events) => {
-                tracing::info!("deliver_tx succeeded");
-                for event in &events {
-                    let span = tracing::info_span!("event", kind = ?event.kind);
-                    span.in_scope(|| {
-                        for attr in &event.attributes {
-                            tracing::info!(k = ?attr.key, v=?attr.value);
-                        }
-                    })
-                }
+                trace_events(&events);
                 abci::response::DeliverTx {
                     events,
                     ..Default::default()
@@ -166,6 +169,7 @@ impl Worker {
         end_block: abci::request::EndBlock,
     ) -> Result<abci::response::EndBlock> {
         let events = self.app.end_block(&end_block).await;
+        trace_events(&events);
 
         // Set `tm_validator_updates` to the complete set of
         // validators and voting power. This must be the last step performed,

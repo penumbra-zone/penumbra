@@ -40,7 +40,7 @@ use crate::stake::{
 
 use crate::shielded_pool::{NoteManager, SupplyRead, SupplyWrite};
 
-use super::CurrentConsensusKeys;
+use super::{event, CurrentConsensusKeys};
 
 // Max validator power is 1152921504606846975 (i64::MAX / 8)
 // https://github.com/tendermint/tendermint/blob/master/types/validator_set.go#L25
@@ -1170,12 +1170,14 @@ pub trait StateWriteExt: StateWrite {
     }
 
     fn stub_push_delegation(&mut self, delegation: Delegate) {
+        self.record(event::delegate(&delegation));
         let mut changes = self.stub_delegation_changes();
         changes.delegations.push(delegation);
         self.put_stub_delegation_changes(changes);
     }
 
     fn stub_push_undelegation(&mut self, undelegation: Undelegate) {
+        self.record(event::undelegate(&undelegation));
         let mut changes = self.stub_delegation_changes();
         changes.undelegations.push(undelegation);
         self.put_stub_delegation_changes(changes);

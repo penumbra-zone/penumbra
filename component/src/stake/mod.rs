@@ -4,6 +4,7 @@ use penumbra_crypto::stake::IdentityKey;
 
 mod changes;
 mod current_consensus_keys;
+mod event;
 mod funding_stream;
 mod metrics;
 mod uptime;
