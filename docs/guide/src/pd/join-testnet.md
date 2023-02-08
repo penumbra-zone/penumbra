@@ -70,6 +70,7 @@ tendermint start --home ~/.penumbra/testnet_data/node0/tendermint
 Alternatively, `pd` and `tendermint` can be orchestrated with `docker-compose`:
 
 ```shell
+cd deployments/compose/
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 

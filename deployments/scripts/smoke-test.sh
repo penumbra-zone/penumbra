@@ -18,6 +18,10 @@ TESTNET_RUNTIME="${TESTNET_RUNTIME:-5m}"
 # Duration that the network will run before integration tests are run.
 TESTNET_BOOTTIME="${TESTNET_BOOTTIME:-10s}"
 
+# change to subdir where compose files are stored
+compose_dir="$(git rev-parse --show-toplevel)/deployments/compose"
+cd "$compose_dir" || exit 1
+
 # Run the network via compose, and pause briefly before testing.
 # { sleep 5s; true ; } &
 echo "Starting smoketest network via compose..."
