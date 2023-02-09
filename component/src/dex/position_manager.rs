@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use penumbra_crypto::dex::{
     lp::{
@@ -32,6 +32,9 @@ pub trait PositionRead: StateRead {
 }
 impl<T: StateRead + ?Sized> PositionRead for T {}
 
+/// Reserve amounts can be at most 112 bits wide.
+const MAX_RESERVE_AMOUNT: u128 = (1 << 112) - 1;
+
 /// Manages liquidity positions within the chain state.
 #[async_trait]
 pub trait PositionManager: StateWrite + PositionRead {
@@ -41,6 +44,17 @@ pub trait PositionManager: StateWrite + PositionRead {
         position: Position,
         initial_reserves: Reserves,
     ) -> Result<LpNft> {
+        // We limit the sizes of reserve amounts to at most 112 bits. This is to give us extra
+        // headroom to perform intermediary calculations during composition.
+        // TODO: remove the extra casting once `Amount` gets full 128 bits support.
+        if initial_reserves.r1.value() as u128 > MAX_RESERVE_AMOUNT
+            || initial_reserves.r2.value() as u128 > MAX_RESERVE_AMOUNT
+        {
+            return Err(anyhow!(format!(
+                "reserves must be at most {MAX_RESERVE_AMOUNT}"
+            )));
+        }
+
         self.check_nonce_unused(&position).await?;
         let id = position.id();
         self.record_position_nonce(position.nonce);
