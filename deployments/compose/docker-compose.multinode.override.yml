@@ -77,18 +77,11 @@ services:
       - monitoring
 
   grafana:
-    image: "docker.io/grafana/grafana:latest"
+    build:
+      context: ../../
+      dockerfile: deployments/containerfiles/Dockerfile-grafana
     ports:
       - '3000'
-    volumes:
-      # this grafana config is intended for local development and disables auth
-      # etc. in production, users will generally want to configure a centralized
-      # grafana instance...
-      - "../config/grafana/provisioning:/etc/grafana/provisioning:ro"
-      - "../config/grafana.ini:/etc/grafana/config.ini:ro"
-      # mount the dashboards dir as read-write so we can add new dashboards
-      # using the Grafana web UI.
-      - "../config/grafana/dashboards:/var/lib/grafana/dashboards:rw"
     networks:
       - monitoring
     depends_on:

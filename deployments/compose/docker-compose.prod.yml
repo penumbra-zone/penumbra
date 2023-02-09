@@ -35,12 +35,11 @@ services:
       - monitoring
 
   grafana:
-    image: "docker.io/grafana/grafana:latest"
+    build:
+      context: ../../
+      dockerfile: deployments/containerfiles/Dockerfile-grafana
     ports:
       - '3000'
-    volumes:
-      - "grafana_configs:/etc/grafana"
-      - "grafana_data:/var/lib/grafana"
     networks:
       - monitoring
     depends_on:
