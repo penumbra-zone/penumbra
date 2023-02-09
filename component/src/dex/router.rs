@@ -41,6 +41,7 @@ impl<T: PositionRead> TradeRouter<T> {
 
         Ok(Self {
             optimal_paths: BTreeMap::new(),
+            predecessors: BTreeMap::new(),
             state,
             positions,
         })
@@ -55,12 +56,6 @@ impl<T: PositionRead> TradeRouter<T> {
         trading_pair: &DirectedTradingPair,
         amount: &Amount,
     ) -> Result<Path> {
-        // https://www.programiz.com/dsa/bellman-ford-algorithm
-        // First, construct a weighted graph based on the source asset.
-        // The weighted graph will contain every asset that can be traded with the source asset,
-        // including from multiple hops.
-        let weighted_graph = self.construct_weighted_graph(trading_pair).await?;
-
         // The distance from the source asset to itself is always 0.
         self.optimal_paths.entry(trading_pair.start).or_insert(0.0);
 
@@ -144,6 +139,7 @@ impl<T: PositionRead> TradeRouter<T> {
                         .optimal_paths
                         .get(&position.position.phi.pair.asset_1())
                         .unwrap()
+                        // TODO: this shouldn't be a simple addition, i think it needs to compose the two trading functions
                         + 
                             position.position.phi.component.effective_price()
                     );
@@ -205,85 +201,6 @@ impl<T: PositionRead> TradeRouter<T> {
     }
 }
 
-// This data structure could be more generic and non-reliant on dex types, but let's start with a special-purpose implementation
-// for the trade routing.
-//
-// Based on http://smallcultfollowing.com/babysteps/blog/2015/04/06/modeling-graphs-in-rust-using-vector-indices/
-pub struct WeightedGraph {
-    pub nodes: Vec<Node>,
-    pub edges: Vec<Edge>,
-}
-
-pub type NodeIndex = usize;
-pub type EdgeIndex = usize;
-
-pub struct Node {
-    first_edge: Option<EdgeIndex>,
-    asset_id: asset::Id,
-}
-
-pub struct Edge {
-    target: NodeIndex,
-    next_edge: Option<EdgeIndex>,
-    weight: f64,
-}
-
-impl WeightedGraph {
-    pub fn new() -> WeightedGraph {
-        WeightedGraph {
-            nodes: Vec::new(),
-            edges: Vec::new(),
-        }
-    }
-
-    pub fn add_node(&mut self, asset_id: asset::Id) -> NodeIndex {
-        let index = self.nodes.len();
-        self.nodes.push(Node {
-            first_edge: None,
-            asset_id,
-        });
-        index
-    }
-
-    pub fn add_edge(&mut self, source: NodeIndex, target: NodeIndex, weight: f64) {
-        let edge_index = self.edges.len();
-        let node_data = &mut self.nodes[source];
-        self.edges.push(Edge {
-            target: target,
-            next_edge: node_data.first_edge,
-            weight,
-        });
-        node_data.first_edge = Some(edge_index);
-    }
-
-    pub fn successors(&self, source: NodeIndex) -> Successors {
-        let first_edge = self.nodes[source].first_edge;
-        Successors {
-            graph: self,
-            current_edge_index: first_edge,
-        }
-    }
-}
-
-pub struct Successors<'graph> {
-    graph: &'graph WeightedGraph,
-    current_edge_index: Option<EdgeIndex>,
-}
-
-impl<'graph> Iterator for Successors<'graph> {
-    type Item = NodeIndex;
-
-    fn next(&mut self) -> Option<NodeIndex> {
-        match self.current_edge_index {
-            None => None,
-            Some(edge_num) => {
-                let edge = &self.graph.edges[edge_num];
-                self.current_edge_index = edge.next_edge;
-                Some(edge.target)
-            }
-        }
-    }
-}
 
 mod tests {
     use std::sync::Arc;
@@ -291,8 +208,6 @@ mod tests {
     use penumbra_storage::TempStorage;
 
     use crate::TempStorageExt;
-
-    use super::WeightedGraph;
 
     #[tokio::test]
     async fn test_simple() -> anyhow::Result<()> {
