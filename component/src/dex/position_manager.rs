@@ -9,6 +9,7 @@ use penumbra_crypto::dex::{
 };
 use penumbra_proto::{DomainType, StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
+use penumbra_crypto::dex::lp::position::MAX_RESERVE_AMOUNT;
 
 use super::state_key;
 
@@ -31,9 +32,6 @@ pub trait PositionRead: StateRead {
     }
 }
 impl<T: StateRead + ?Sized> PositionRead for T {}
-
-/// Reserve amounts can be at most 112 bits wide.
-const MAX_RESERVE_AMOUNT: u128 = (1 << 112) - 1;
 
 /// Manages liquidity positions within the chain state.
 #[async_trait]
