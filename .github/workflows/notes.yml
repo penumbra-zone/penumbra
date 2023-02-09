@@ -67,7 +67,7 @@ jobs:
       #    PROJECT_PATH: docs/protobuf
 
       - name: Build API docs
-        run: ./scripts/rust-docs
+        run: ./deployments/scripts/rust-docs
 
       - name: Move API docs to subdirectory
         run: |

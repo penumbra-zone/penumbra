@@ -6,12 +6,13 @@ The [protocol docs] and the [guide] (this document) are built using
 1. Install the requirements: `cargo install mdbook mdbook-katex mdbook-mermaid`
 2. Run `mdbook serve` from `docs/protocol` (for the protocol spec) or from `docs/guide` (for this document).
 
-The [Rust API docs][rustdoc] can be built with `./scripts/rust-docs`. The landing page, the top-level
-`index.html`, is handled as a special case. If you added new crates by appending a
-`-p <crate_name>` to the `rust-docs` script, then you must rebuild the index page via:
+The [Rust API docs][rustdoc] can be built with `./deployments/scripts/rust-docs`.
+The landing page, the top-level `index.html`, is handled as a special case.
+If you added new crates by appending a `-p <crate_name>` to the `rust-docs` script,
+then you must rebuild the index page via:
 
 ```
-REGENERATE_INDEX=1 ./scripts/rust-docs
+REGENERATE_INDEX=1 ./deployments/scripts/rust-docs
 ```
 
 CI will automatically rebuild all our docs on merges into main, except for the Rust doc index.html,

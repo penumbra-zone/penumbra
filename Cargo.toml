@@ -5,7 +5,7 @@ exclude = [
     "tools/parameter-setup",
 ]
 
-# Also remember to add to scripts/rust-docs
+# Also remember to add to deployments/scripts/rust-docs
 members = [
   "decaf377-fmd",
   "decaf377-ka",
