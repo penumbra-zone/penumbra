@@ -33,5 +33,6 @@ where
     let witness_data = view.witness(fvk.hash(), &plan).await?;
 
     // ... and then build the transaction:
-    plan.build(&mut rng, fvk, auth_data, witness_data)
+    plan.build_concurrent(&mut rng, fvk, auth_data, witness_data)
+        .await
 }
