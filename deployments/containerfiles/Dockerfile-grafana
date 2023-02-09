@@ -1,0 +1,4 @@
+FROM docker.io/grafana/grafana:latest
+COPY deployments/config/grafana/provisioning /etc/grafana/provisioning
+COPY deployments/config/grafana/grafana.ini /etc/grafana/grafana.ini
+COPY deployments/config/grafana/dashboards /var/lib/grafana/dashboards
