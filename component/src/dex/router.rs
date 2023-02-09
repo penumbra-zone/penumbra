@@ -107,6 +107,7 @@ impl<T: PositionRead> TradeRouter<T> {
 
         // Perform edge relaxation |V| - 1 times (where |V| is the number of unique assets present within positions).
         for _ in 0..known_assets.len() - 1 {
+            // TODO: account for MAX_HOPS
             // For each position...
             for position in self.state.positions().await?.iter() {
                 // Skip positions that are not opened.
