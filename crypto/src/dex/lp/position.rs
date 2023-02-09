@@ -7,7 +7,6 @@ use super::{trading_function::TradingFunction, Reserves};
 /// Reserve amounts for positions must be at most 112 bits wide.
 pub const MAX_RESERVE_AMOUNT: u128 = (1 << 112) - 1;
 
-
 /// Data identifying a position.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::Position", into = "pb::Position")]
