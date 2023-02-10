@@ -45,14 +45,8 @@ pub trait PositionManager: StateWrite + PositionRead {
         // We limit the sizes of reserve amounts to at most 112 bits. This is to give us extra
         // headroom to perform intermediary calculations during composition.
         // TODO: remove the extra casting once `Amount` gets full 128 bits support.
-        if initial_reserves.r1.value() as u128 > MAX_RESERVE_AMOUNT
-            || initial_reserves.r2.value() as u128 > MAX_RESERVE_AMOUNT
-        {
-            return Err(anyhow!(format!(
-                "reserves must be at most {MAX_RESERVE_AMOUNT}"
-            )));
-        }
-
+        initial_reserves.check_bounds()?;
+        position.check_bounds()?;
         self.check_nonce_unused(&position).await?;
         let id = position.id();
         self.record_position_nonce(position.nonce);

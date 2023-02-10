@@ -3,6 +3,8 @@ use penumbra_proto::{
     client::v1alpha1::StubCpmmReservesResponse, core::dex::v1alpha1 as pb, DomainType,
 };
 
+use super::position::MAX_RESERVE_AMOUNT;
+
 /// The reserves of a position.
 ///
 /// Like a position, this implicitly treats the trading function as being
@@ -13,6 +15,20 @@ use penumbra_proto::{
 pub struct Reserves {
     pub r1: Amount,
     pub r2: Amount,
+}
+
+impl Reserves {
+    pub fn check_bounds(&self) -> anyhow::Result<()> {
+        if self.r1.value() as u128 > MAX_RESERVE_AMOUNT
+            || self.r2.value() as u128 > MAX_RESERVE_AMOUNT
+        {
+            Err(anyhow::anyhow!(format!(
+                "Reserve amounts are out-of-bounds (limit: {MAX_RESERVE_AMOUNT})"
+            )))
+        } else {
+            Ok(())
+        }
+    }
 }
 
 impl DomainType for Reserves {
