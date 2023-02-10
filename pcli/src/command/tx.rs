@@ -162,6 +162,8 @@ pub enum TxCmd {
     /// Currently, only zero-fee sweep transactions are implemented.
     #[clap(display_order = 990)]
     Sweep,
+    #[clap(display_order = 991)]
+    Split,
 }
 
 /// Vote on a governance proposal.
@@ -206,6 +208,7 @@ impl TxCmd {
         match self {
             TxCmd::Send { .. } => false,
             TxCmd::Sweep { .. } => false,
+            TxCmd::Split { .. } => false,
             TxCmd::Swap { .. } => false,
             TxCmd::Delegate { .. } => false,
             TxCmd::Undelegate { .. } => false,
@@ -308,6 +311,41 @@ impl TxCmd {
                     tokio::time::sleep(std::time::Duration::from_secs(6)).await;
                 }
             },
+            TxCmd::Split => {
+                use penumbra_proto::view::v1alpha1::NotesRequest;
+                let fvk = app.fvk.clone();
+                let all_notes = app
+                    .view()
+                    .notes(NotesRequest {
+                        account_id: Some(fvk.hash().into()),
+                        ..Default::default()
+                    })
+                    .await?;
+                let expansion_factor = 8u128;
+                for record in all_notes {
+                    if u128::from(record.note.value().amount) <= expansion_factor {
+                        println!("skipping note too small to split: {:?}", record.note);
+                        continue;
+                    }
+                    let address = app.fvk.incoming().payment_address(record.address_index).0;
+                    let mut planner = Planner::new(OsRng);
+                    planner.spend(record.note.clone(), record.position);
+                    let split_value = Value {
+                        amount: (u128::from(record.note.value().amount) / expansion_factor).into(),
+                        asset_id: record.note.value().asset_id,
+                    };
+                    // Leaving one off the iteration lets the planner fill it in with an exact output amount.
+                    for _ in 0..(expansion_factor - 1) {
+                        planner.output(split_value.clone(), address);
+                    }
+                    let plan = planner
+                        .plan(app.view(), &fvk, Some(record.address_index))
+                        .await?;
+                    let tx = app.build_transaction(plan).await?;
+                    println!("built transaction splitting {:?}", record.note);
+                    app.submit_transaction_unconfirmed(&tx).await?;
+                }
+            }
             TxCmd::Swap {
                 input,
                 into,
