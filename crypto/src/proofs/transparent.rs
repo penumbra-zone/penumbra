@@ -7,7 +7,10 @@ use std::convert::{TryFrom, TryInto};
 use decaf377::FieldExt;
 use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_proto::{
-    core::transparent_proofs::v1alpha1 as transparent_proofs, DomainType, Message,
+    core::{
+        governance::v1alpha1::DelegatorVote, transparent_proofs::v1alpha1 as transparent_proofs,
+    },
+    DomainType, Message,
 };
 use penumbra_tct as tct;
 
@@ -95,6 +98,42 @@ impl SpendProof {
     }
 }
 
+/// Transparent proof for delegator voting.
+///
+/// Internally, this is the same data as a transparent spend proof, but with additional verification
+/// conditions.
+#[derive(Clone, Debug)]
+pub struct DelegatorVoteProof {
+    spend_proof: SpendProof,
+}
+
+impl DelegatorVoteProof {
+    pub fn verify(
+        &self,
+        anchor: tct::Root,
+        start_height: tct::Position,
+        value: Value,
+        nullifier: Nullifier,
+        rk: VerificationKey<SpendAuth>,
+    ) -> anyhow::Result<()> {
+        // Check that the spend proof is valid, for the public value committed with the zero
+        // blinding factor, since it's not blinded.
+        self.spend_proof
+            .verify(anchor, value.commit(Fr::zero()), nullifier, rk)?;
+
+        // Additionally, check that the position of the spend proof is before the start
+        // start_height, which ensures that the note being voted with was created before voting
+        // started.
+        if self.spend_proof.state_commitment_proof.position() < start_height {
+            return Err(anyhow!(
+                "vote proof position is not before start height of voting"
+            ));
+        }
+
+        Ok(())
+    }
+}
+
 /// Transparent proof for new note creation.
 ///
 /// This structure keeps track of the auxiliary (private) inputs.
@@ -140,6 +179,10 @@ impl DomainType for SpendProof {
     type Proto = transparent_proofs::SpendProof;
 }
 
+impl DomainType for DelegatorVoteProof {
+    type Proto = transparent_proofs::SpendProof;
+}
+
 impl From<SpendProof> for transparent_proofs::SpendProof {
     fn from(msg: SpendProof) -> Self {
         let ak_bytes: [u8; 32] = msg.ak.into();
@@ -152,6 +195,12 @@ impl From<SpendProof> for transparent_proofs::SpendProof {
             ak: ak_bytes.into(),
             nk: nk_bytes.into(),
         }
+    }
+}
+
+impl From<DelegatorVoteProof> for transparent_proofs::SpendProof {
+    fn from(msg: DelegatorVoteProof) -> Self {
+        msg.spend_proof.into()
     }
 }
 
@@ -197,6 +246,16 @@ impl TryFrom<transparent_proofs::SpendProof> for SpendProof {
                 )
                 .map_err(|_| anyhow!("proto malformed"))?,
             ),
+        })
+    }
+}
+
+impl TryFrom<transparent_proofs::SpendProof> for DelegatorVoteProof {
+    type Error = Error;
+
+    fn try_from(proto: transparent_proofs::SpendProof) -> anyhow::Result<Self, Self::Error> {
+        Ok(DelegatorVoteProof {
+            spend_proof: proto.try_into()?,
         })
     }
 }
