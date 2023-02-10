@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use penumbra_crypto::{
     balance,
     dex::lp::{
-        position::{self, Position, MAX_RESERVE_AMOUNT},
+        position::{self, Position},
         LpNft, Reserves,
     },
     Balance, Fr, Value, Zero,
@@ -42,22 +42,6 @@ impl IsAction for PositionOpen {
 }
 
 impl PositionOpen {
-    /// Create a new valid `PositionOpen`.
-    pub fn new(position: Position, initial_reserves: Reserves) -> anyhow::Result<Self> {
-        if initial_reserves.r1.value() as u128 > MAX_RESERVE_AMOUNT
-            || initial_reserves.r2.value() as u128 > MAX_RESERVE_AMOUNT
-        {
-            Err(anyhow::anyhow!(format!(
-                "position reserves too big (limit: {MAX_RESERVE_AMOUNT})"
-            )))
-        } else {
-            Ok(Self {
-                position,
-                initial_reserves,
-            })
-        }
-    }
-
     /// Compute a commitment to the value this action contributes to its transaction.
     pub fn balance(&self) -> Balance {
         let opened_position_nft = Value {

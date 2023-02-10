@@ -40,6 +40,16 @@ impl Position {
         bytes[0..32].copy_from_slice(&hash.as_bytes()[0..32]);
         Id(bytes)
     }
+
+    pub fn check_bounds(&self) -> anyhow::Result<()> {
+        if self.phi.component.p.value() as u128 > MAX_RESERVE_AMOUNT
+            || self.phi.component.q.value() as u128 > MAX_RESERVE_AMOUNT
+        {
+            Err(anyhow::anyhow!(format!("Position's trading function coefficients are out-of-bounds (limit: {MAX_RESERVE_AMOUNT})")))
+        } else {
+            Ok(())
+        }
+    }
 }
 
 /// A hash of a [`Position`].
