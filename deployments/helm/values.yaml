@@ -28,6 +28,12 @@ toolkit:
 health:
   image: ghcr.io/strangelove-ventures/ignite-health-check
   version: v0.0.1
+grafana:
+  image: ghcr.io/penumbra-zone/grafana
+  version:
+prometheus:
+  image: docker.io/prom/prometheus
+  version: latest
 
 # Configure FQDNs for use in routing external traffic.
 # Assumes DNS has been configured out of band.

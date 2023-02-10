@@ -148,6 +148,9 @@ spec:
             - containerPort: 26656
               protocol: TCP
               name: p2p
+            - containerPort: 26660
+              protocol: TCP
+              name: tm-metrics
           volumeMounts:
             - name: pv-{{ $tm_name }}
               mountPath: /home
@@ -164,7 +167,7 @@ spec:
               name: grpc
             - containerPort: 9000
               protocol: TCP
-              name: metrics
+              name: pd-metrics
           volumeMounts:
             - name: pv-{{ $pd_name }}
               mountPath: /home
@@ -173,6 +176,8 @@ spec:
             - start
             - --home
             - /home/pd
+            - --host
+            - 0.0.0.0
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler

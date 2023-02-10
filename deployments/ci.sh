@@ -123,6 +123,7 @@ function helm_install() {
         --set "numFullNodes=$NFULLNODES" \
         --set "penumbra.image=$IMAGE" \
         --set "penumbra.version=$PENUMBRA_VERSION" \
+        --set "grafana.version=$PENUMBRA_VERSION" \
         --set "penumbra.uidGid=$PENUMBRA_UID_GID" \
         --set "tendermint.version=$TENDERMINT_VERSION" \
         --values "$HELM_VARS_FILE"
