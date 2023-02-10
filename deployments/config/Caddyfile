@@ -8,6 +8,3 @@
 {$TESTNET_HOST:localhost} {
     reverse_proxy grafana:3000
 }
-www.{$TESTNET_HOST:localhost} {
-    redir https://{$TESTNET_HOST:localhost}{uri}
-}
