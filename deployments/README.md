@@ -30,6 +30,7 @@ by the automation in this repo. Each testnet should have:
 * `fullnode.<fqdn>` # suitable for `pd testnet join <node>`
 * `rpc.<fqdn>` # the tendermint rpc port
 * `grpc.<fqdn>` # the pd grpc port
+* `grafana.<fqdn>` # web interface for metrics dashboards
 
 To find the IPv4 address for `fullnode.<fqdn>`, run:
 

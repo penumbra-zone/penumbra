@@ -1,0 +1,54 @@
+{{ $depl_name := printf "%s-metrics" (include "penumbra.fullname" .) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-{{ $depl_name }}
+  labels:
+    {{- include "penumbra.labels" . | nindent 4 }}
+data:
+  grafana_datasources.yml: |
+    datasources:
+    - name: 'Prometheus'
+      type: 'prometheus'
+      access: 'browser'
+      url: 'http://localhost:9090'
+      is_default: true
+      editable: false
+  prometheus_scrape_configs: |
+    scrape_configs:
+{{ $count := (.Values.numFullNodes | int) }}
+{{ range $i,$e := until $count }}
+{{ $fn_name := printf "%s-fn-%d" (include "penumbra.fullname" $) $i }}
+      - job_name: 'Tendermint Fullnode {{ $i }}'
+        scrape_interval: 10s
+        scheme: http
+        metrics_path: metrics
+        static_configs:
+          - targets: ['{{ $fn_name }}-metrics:26660']
+{{/*
+N.B. `pd` doesn't actually expose metrics yet, so this doesn't actually do
+anything interesting...
+*/}}
+      - job_name: 'Penumbra Daemon Fullnode {{ $i }}'
+        scrape_interval: 10s
+        scheme: http
+        metrics_path: metrics
+        static_configs:
+          - targets: ['{{ $fn_name }}-metrics:9000']
+{{ end }}
+{{ $count := (.Values.numValidators | int) }}
+{{ range $i,$e := until $count }}
+{{ $val_name := printf "%s-val-%d" (include "penumbra.fullname" $) $i }}
+      - job_name: 'Tendermint Validator {{ $i }}'
+        scrape_interval: 10s
+        scheme: http
+        metrics_path: metrics
+        static_configs:
+          - targets: ['{{ $val_name }}-metrics:26660']
+      - job_name: 'Penumbra Daemon Validator {{ $i }}'
+        scrape_interval: 10s
+        scheme: http
+        metrics_path: metrics
+        static_configs:
+          - targets: ['{{ $val_name }}-metrics:9000']
+{{ end }}

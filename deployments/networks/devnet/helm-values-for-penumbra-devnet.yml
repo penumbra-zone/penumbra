@@ -7,3 +7,5 @@ ingress:
     rpc: rpc.devnet.penumbra.zone
     # The pd gRPC port.
     grpc: grpc.devnet.penumbra.zone
+    # The Grafana HTTP web interface, for viewing dashboards.
+    grafana: grafana.devnet.penumbra.zone

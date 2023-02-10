@@ -1,0 +1,72 @@
+{{ $metrics_svc := printf "%s-metrics" (include "penumbra.fullname" .) }}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ $metrics_svc }}-grafana
+  labels:
+    app: {{ $metrics_svc }}
+    {{- include "penumbra.labels" $ | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ $metrics_svc }}
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+      name: grafana-http
+
+{{ $count := (.Values.numFullNodes | int) }}
+{{ range $i,$e := until $count }}
+{{ $fn_name := printf "%s-fn-%d" (include "penumbra.fullname" $) $i }}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ $fn_name }}-metrics
+  labels:
+    app: {{ $fn_name }}-metrics
+    {{- include "penumbra.labels" $ | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ $fn_name }}
+  ports:
+    - protocol: TCP
+      port: 26660
+      targetPort: 26660
+      name: tm-metrics
+
+    - protocol: TCP
+      port: 9000
+      targetPort: 9000
+      name: pd-metrics
+{{ end }}
+
+{{ $count := (.Values.numValidators | int) }}
+{{ range $i,$e := until $count }}
+{{ $val_name := printf "%s-val-%d" (include "penumbra.fullname" $) $i }}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ $val_name }}-metrics
+  labels:
+    app: {{ $val_name }}-metrics
+    {{- include "penumbra.labels" $ | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ $val_name }}
+  ports:
+    - protocol: TCP
+      port: 26660
+      targetPort: 26660
+      name: tm-metrics
+
+    - protocol: TCP
+      port: 9000
+      targetPort: 9000
+      name: pd-metrics
+{{ end }}

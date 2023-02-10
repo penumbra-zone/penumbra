@@ -1,0 +1,76 @@
+{{ $depl_name := printf "%s-metrics" (include "penumbra.fullname" .) }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $depl_name }}
+  labels:
+    {{- include "penumbra.labels" $ | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ $depl_name }}
+  template:
+    metadata:
+      name: {{ $depl_name }}
+      labels:
+        app: {{ $depl_name }}
+        network: "{{ $.Values.network }}"
+        type: metrics
+        {{- include "penumbra.labels" $ | nindent 8 }}
+    spec:
+      volumes:
+        - name: grafana-datasources
+          configMap:
+            name: config-{{ $depl_name }}
+            items:
+              - key: "grafana_datasources.yml"
+                path: "all.yml"
+        - name: prometheus-scrape-configs
+          configMap:
+            name: config-{{ $depl_name }}
+            items:
+              - key: "prometheus_scrape_configs"
+                path: "prometheus.yml"
+      initContainers:
+        - name: prom-config
+          image: "docker.io/debian:stable"
+          command:
+            - cat
+            - /etc/prometheus/prometheus.yml
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: prometheus-scrape-configs
+              mountPath: "/etc/prometheus/"
+              readOnly: true
+      containers:
+        - name: grafana
+          image: "{{ $.Values.grafana.image }}:{{ $.Values.grafana.version | default $.Chart.AppVersion }}"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+              protocol: TCP
+              name: http
+          volumeMounts:
+            - name: grafana-datasources
+              mountPath: "/etc/grafana/provisioning/datasources/"
+              readOnly: true
+        - name: prometheus
+          image: "{{ $.Values.prometheus.image }}:{{ $.Values.prometheus.version }}"
+          args:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+            - "--log.level=debug"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 9090
+              protocol: TCP
+              name: http
+          volumeMounts:
+            - name: prometheus-scrape-configs
+              mountPath: "/etc/prometheus/"
+              readOnly: true
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 30

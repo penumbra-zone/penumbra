@@ -17,4 +17,5 @@ spec:
   domains:
     - {{ .Values.ingress.hosts.rpc }}
     - {{ .Values.ingress.hosts.grpc }}
+    - {{ .Values.ingress.hosts.grafana }}
 {{- end }}

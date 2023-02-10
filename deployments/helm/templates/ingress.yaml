@@ -33,4 +33,14 @@ spec:
                 name: {{ include "penumbra.fullname" . }}-p2p-fn-0
                 port:
                   number: 8080
+    - host: {{ .Values.ingress.hosts.grafana }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "penumbra.fullname" . }}-metrics-grafana
+                port:
+                  number: 80
 {{- end }}
