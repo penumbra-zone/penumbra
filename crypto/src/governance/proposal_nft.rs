@@ -203,7 +203,7 @@ mod tests {
         let token = ProposalNft::new(1, State::Voting);
 
         let denom = token.to_string();
-        println!("denom: {}", denom);
+        println!("denom: {denom}");
         let token2 = ProposalNft::from_str(&denom).unwrap();
         let denom2 = token2.to_string();
 

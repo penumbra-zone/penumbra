@@ -242,15 +242,15 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
             (|data: &str| {
                 assert!(!data.is_empty());
                 denom::Inner::new(
-                    format!("udelegation_{}", data),
+                    format!("udelegation_{data}"),
                     vec![
                         denom::UnitData {
                             exponent: 6,
-                            denom: format!("delegation_{}", data),
+                            denom: format!("delegation_{data}"),
                         },
                         denom::UnitData {
                             exponent: 3,
-                            denom: format!("mdelegation_{}", data),
+                            denom: format!("mdelegation_{data}"),
                         },
                     ],
                 )
@@ -268,15 +268,15 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
             (|data: &str| {
                 assert!(!data.is_empty());
                 denom::Inner::new(
-                    format!("uunbonding_{}", data),
+                    format!("uunbonding_{data}"),
                     vec![
                         denom::UnitData {
                             exponent: 6,
-                            denom: format!("unbonding_{}", data),
+                            denom: format!("unbonding_{data}"),
                         },
                         denom::UnitData {
                             exponent: 3,
-                            denom: format!("munbonding_{}", data),
+                            denom: format!("munbonding_{data}"),
                         },
                     ],
                 )
@@ -290,7 +290,7 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
             &[ /* no display units - nft, unit 1 */ ],
             (|data: &str| {
                 assert!(!data.is_empty());
-                denom::Inner::new(format!("lpnft_{}", data), vec![])
+                denom::Inner::new(format!("lpnft_{data}"), vec![])
             }) as for<'r> fn(&'r str) -> _,
         )
         .add_asset(
@@ -299,8 +299,27 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
             &[ /* no display units - nft, unit 1 */ ],
             (|data: &str| {
                 assert!(!data.is_empty());
-                denom::Inner::new(format!("proposal_{}", data), vec![])
+                denom::Inner::new(format!("proposal_{data}"), vec![])
             }) as for<'r> fn(&'r str) -> _,
         )
+        // Note: this regex must be in sync with VoteReceiptToken::try_from
+        .add_asset("^uvoted_on_(?P<data>(?P<proposal_id>[0-9]+))$",
+            &[
+                "^mvoted_on_(?P<data>(?P<proposal_id>[0-9]+))$",
+                "^voted_on_(?P<data>(?P<proposal_id>[0-9]+))$",
+            ],
+            (|data: &str| {
+                assert!(!data.is_empty());
+                denom::Inner::new(format!("uvoted_on_{data}"), vec![
+                    denom::UnitData {
+                        exponent: 6,
+                        denom: format!("mvoted_on_{data}"),
+                    },
+                    denom::UnitData {
+                        exponent: 3,
+                        denom: format!("voted_on_{data}"),
+                    },
+                ])
+            }) as for<'r> fn(&'r str) -> _)
         .build()
 });

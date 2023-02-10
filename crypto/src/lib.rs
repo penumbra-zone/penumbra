@@ -34,6 +34,7 @@ pub use flow::{MockFlowCiphertext, SwapFlow};
 pub use governance::{
     key::GovernanceKey,
     proposal_nft::{self, ProposalNft},
+    voting_receipt_token::{self, VotingReceiptToken},
 };
 pub use keys::FullViewingKey;
 pub use note::{Note, NoteCiphertext};
