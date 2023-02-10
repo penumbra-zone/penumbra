@@ -137,39 +137,39 @@ impl serde::Serialize for DelegatorVoteBody {
         if self.proposal != 0 {
             len += 1;
         }
+        if self.start_height != 0 {
+            len += 1;
+        }
+        if self.vote.is_some() {
+            len += 1;
+        }
+        if self.value.is_some() {
+            len += 1;
+        }
         if !self.nullifier.is_empty() {
             len += 1;
         }
         if !self.rk.is_empty() {
-            len += 1;
-        }
-        if self.yes_balance_commitment.is_some() {
-            len += 1;
-        }
-        if self.no_balance_commitment.is_some() {
-            len += 1;
-        }
-        if self.abstain_balance_commitment.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.governance.v1alpha1.DelegatorVoteBody", len)?;
         if self.proposal != 0 {
             struct_ser.serialize_field("proposal", ToString::to_string(&self.proposal).as_str())?;
         }
+        if self.start_height != 0 {
+            struct_ser.serialize_field("startHeight", ToString::to_string(&self.start_height).as_str())?;
+        }
+        if let Some(v) = self.vote.as_ref() {
+            struct_ser.serialize_field("vote", v)?;
+        }
+        if let Some(v) = self.value.as_ref() {
+            struct_ser.serialize_field("value", v)?;
+        }
         if !self.nullifier.is_empty() {
             struct_ser.serialize_field("nullifier", pbjson::private::base64::encode(&self.nullifier).as_str())?;
         }
         if !self.rk.is_empty() {
             struct_ser.serialize_field("rk", pbjson::private::base64::encode(&self.rk).as_str())?;
-        }
-        if let Some(v) = self.yes_balance_commitment.as_ref() {
-            struct_ser.serialize_field("yesBalanceCommitment", v)?;
-        }
-        if let Some(v) = self.no_balance_commitment.as_ref() {
-            struct_ser.serialize_field("noBalanceCommitment", v)?;
-        }
-        if let Some(v) = self.abstain_balance_commitment.as_ref() {
-            struct_ser.serialize_field("abstainBalanceCommitment", v)?;
         }
         struct_ser.end()
     }
@@ -182,24 +182,22 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
     {
         const FIELDS: &[&str] = &[
             "proposal",
+            "start_height",
+            "startHeight",
+            "vote",
+            "value",
             "nullifier",
             "rk",
-            "yes_balance_commitment",
-            "yesBalanceCommitment",
-            "no_balance_commitment",
-            "noBalanceCommitment",
-            "abstain_balance_commitment",
-            "abstainBalanceCommitment",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Proposal,
+            StartHeight,
+            Vote,
+            Value,
             Nullifier,
             Rk,
-            YesBalanceCommitment,
-            NoBalanceCommitment,
-            AbstainBalanceCommitment,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -222,11 +220,11 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
                     {
                         match value {
                             "proposal" => Ok(GeneratedField::Proposal),
+                            "startHeight" | "start_height" => Ok(GeneratedField::StartHeight),
+                            "vote" => Ok(GeneratedField::Vote),
+                            "value" => Ok(GeneratedField::Value),
                             "nullifier" => Ok(GeneratedField::Nullifier),
                             "rk" => Ok(GeneratedField::Rk),
-                            "yesBalanceCommitment" | "yes_balance_commitment" => Ok(GeneratedField::YesBalanceCommitment),
-                            "noBalanceCommitment" | "no_balance_commitment" => Ok(GeneratedField::NoBalanceCommitment),
-                            "abstainBalanceCommitment" | "abstain_balance_commitment" => Ok(GeneratedField::AbstainBalanceCommitment),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -247,11 +245,11 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut proposal__ = None;
+                let mut start_height__ = None;
+                let mut vote__ = None;
+                let mut value__ = None;
                 let mut nullifier__ = None;
                 let mut rk__ = None;
-                let mut yes_balance_commitment__ = None;
-                let mut no_balance_commitment__ = None;
-                let mut abstain_balance_commitment__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::Proposal => {
@@ -261,6 +259,26 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
                             proposal__ = 
                                 Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
+                        }
+                        GeneratedField::StartHeight => {
+                            if start_height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("startHeight"));
+                            }
+                            start_height__ = 
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::Vote => {
+                            if vote__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("vote"));
+                            }
+                            vote__ = map.next_value()?;
+                        }
+                        GeneratedField::Value => {
+                            if value__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("value"));
+                            }
+                            value__ = map.next_value()?;
                         }
                         GeneratedField::Nullifier => {
                             if nullifier__.is_some() {
@@ -278,33 +296,15 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
                                 Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
-                        GeneratedField::YesBalanceCommitment => {
-                            if yes_balance_commitment__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("yesBalanceCommitment"));
-                            }
-                            yes_balance_commitment__ = map.next_value()?;
-                        }
-                        GeneratedField::NoBalanceCommitment => {
-                            if no_balance_commitment__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("noBalanceCommitment"));
-                            }
-                            no_balance_commitment__ = map.next_value()?;
-                        }
-                        GeneratedField::AbstainBalanceCommitment => {
-                            if abstain_balance_commitment__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("abstainBalanceCommitment"));
-                            }
-                            abstain_balance_commitment__ = map.next_value()?;
-                        }
                     }
                 }
                 Ok(DelegatorVoteBody {
                     proposal: proposal__.unwrap_or_default(),
+                    start_height: start_height__.unwrap_or_default(),
+                    vote: vote__,
+                    value: value__,
                     nullifier: nullifier__.unwrap_or_default(),
                     rk: rk__.unwrap_or_default(),
-                    yes_balance_commitment: yes_balance_commitment__,
-                    no_balance_commitment: no_balance_commitment__,
-                    abstain_balance_commitment: abstain_balance_commitment__,
                 })
             }
         }

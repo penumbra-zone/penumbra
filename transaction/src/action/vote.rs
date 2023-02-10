@@ -4,9 +4,16 @@ use std::{
 };
 
 use anyhow::anyhow;
-use decaf377_rdsa::{Signature, SpendAuth};
-use penumbra_crypto::{stake::IdentityKey, GovernanceKey};
-use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType};
+use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
+use penumbra_crypto::{
+    proofs::transparent::DelegatorVoteProof, stake::IdentityKey, Amount, GovernanceKey, Nullifier,
+    Value,
+};
+use penumbra_proto::{
+    core::{crypto::v1alpha1::BalanceCommitment, governance::v1alpha1 as pb},
+    DomainType,
+};
+use penumbra_tct::Position;
 use serde::{Deserialize, Serialize};
 
 use crate::{ActionView, IsAction, TransactionPerspective};
@@ -203,11 +210,27 @@ impl DomainType for ValidatorVoteBody {
 
 #[derive(Debug, Clone)]
 pub struct DelegatorVote {
-    // TODO: fill this in
-    pub body: DelegatorVoteBody,
+    pub body: Body,
+    pub auth_sig: Signature<SpendAuth>,
+    pub proof: DelegatorVoteProof,
+}
+
+impl IsAction for DelegatorVote {
+    fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
+        todo!()
+    }
+
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        todo!()
+    }
 }
 
 #[derive(Debug, Clone)]
-pub struct DelegatorVoteBody {
-    // TODO: fill this in
+pub struct Body {
+    pub proposal: u64,
+    pub start_height: Position,
+    pub vote: Vote, // With flow encryption, this will be a triple of flow ciphertexts
+    pub value: Value, // With flow encryption, this will be a triple of balance commitments, and a public denomination
+    pub nullifier: Nullifier,
+    pub rk: VerificationKey<SpendAuth>,
 }

@@ -71,33 +71,21 @@ pub struct DelegatorVoteBody {
     /// The proposal being voted on.
     #[prost(uint64, tag = "1")]
     pub proposal: u64,
+    /// The start height of the proposal.
+    #[prost(uint64, tag = "2")]
+    pub start_height: u64,
+    /// The vote.
+    #[prost(message, optional, tag = "3")]
+    pub vote: ::core::option::Option<Vote>,
+    /// The value of the delegation note.
+    #[prost(message, optional, tag = "4")]
+    pub value: ::core::option::Option<super::super::crypto::v1alpha1::Value>,
     /// The nullifier of the input note.
-    #[prost(bytes = "vec", tag = "3")]
+    #[prost(bytes = "vec", tag = "5")]
     pub nullifier: ::prost::alloc::vec::Vec<u8>,
     /// The randomized validating key for the spend authorization signature.
-    #[prost(bytes = "vec", tag = "4")]
+    #[prost(bytes = "vec", tag = "6")]
     pub rk: ::prost::alloc::vec::Vec<u8>,
-    /// A commitment to the value voted for "yes".
-    ///
-    /// A rational voter will place all their voting weight on one vote.
-    #[prost(message, optional, tag = "5")]
-    pub yes_balance_commitment: ::core::option::Option<
-        super::super::crypto::v1alpha1::BalanceCommitment,
-    >,
-    /// A commitment to the value voted for "no".
-    ///
-    /// A rational voter will place all their voting weight on one vote.
-    #[prost(message, optional, tag = "6")]
-    pub no_balance_commitment: ::core::option::Option<
-        super::super::crypto::v1alpha1::BalanceCommitment,
-    >,
-    /// A commitment to the value voted for "abstain".
-    ///
-    /// A rational voter will place all their voting weight on one vote.
-    #[prost(message, optional, tag = "7")]
-    pub abstain_balance_commitment: ::core::option::Option<
-        super::super::crypto::v1alpha1::BalanceCommitment,
-    >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

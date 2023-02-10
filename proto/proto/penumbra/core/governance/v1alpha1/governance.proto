@@ -49,22 +49,16 @@ message DelegatorVote {
 message DelegatorVoteBody {
   // The proposal being voted on.
   uint64 proposal = 1;
+  // The start height of the proposal.
+  uint64 start_height = 2;
+  // The vote.
+  governance.v1alpha1.Vote vote = 3;
+  // The value of the delegation note.
+  crypto.v1alpha1.Value value = 4;
   // The nullifier of the input note.
-  bytes nullifier = 3;
+  bytes nullifier = 5;
   // The randomized validating key for the spend authorization signature.
-  bytes rk = 4;
-  // A commitment to the value voted for "yes".
-  //
-  // A rational voter will place all their voting weight on one vote.
-  crypto.v1alpha1.BalanceCommitment yes_balance_commitment = 5;
-  // A commitment to the value voted for "no".
-  //
-  // A rational voter will place all their voting weight on one vote.
-  crypto.v1alpha1.BalanceCommitment no_balance_commitment = 6;
-  // A commitment to the value voted for "abstain".
-  //
-  // A rational voter will place all their voting weight on one vote.
-  crypto.v1alpha1.BalanceCommitment abstain_balance_commitment = 7;
+  bytes rk = 6;
 }
 
 message ProposalDepositClaim {
