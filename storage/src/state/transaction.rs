@@ -10,10 +10,7 @@ use crate::{
     State,
 };
 
-use super::{
-    read::{nonconsensus_prefix_raw_with_cache, prefix_keys_with_cache, prefix_raw_with_cache},
-    Cache, StateRead, StateWrite,
-};
+use super::{Cache, StateRead, StateWrite};
 
 /// A set of pending changes to a [`State`] instance, supporting both writes and reads.
 pub struct Transaction<'a> {
@@ -98,21 +95,23 @@ impl<'tx> StateRead for Transaction<'tx> {
         &'a self,
         prefix: &'a str,
     ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + 'a>> {
-        prefix_raw_with_cache(self.state, &self.cache.unwritten_changes, prefix)
+        self.cache.prefix_raw(prefix, self.state.prefix_raw(prefix))
     }
 
     fn prefix_keys<'a>(
         &'a self,
         prefix: &'a str,
     ) -> Pin<Box<dyn Stream<Item = Result<String>> + Send + 'a>> {
-        prefix_keys_with_cache(self.state, &self.cache.unwritten_changes, prefix)
+        self.cache
+            .prefix_keys(prefix, self.state.prefix_keys(prefix))
     }
 
     fn nonconsensus_prefix_raw<'a>(
         &'a self,
         prefix: &'a [u8],
     ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + 'a>> {
-        nonconsensus_prefix_raw_with_cache(self.state, &self.cache.nonconsensus_changes, prefix)
+        self.cache
+            .nonconsensus_prefix_raw(prefix, self.state.nonconsensus_prefix_raw(prefix))
     }
 
     fn object_get<T: Any + Send + Sync>(&self, key: &'static str) -> Option<&T> {
