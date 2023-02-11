@@ -178,14 +178,14 @@ impl StateRead for State {
     fn prefix_raw<'a>(
         &'a self,
         prefix: &'a str,
-    ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + Sync + 'a>> {
+    ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + 'a>> {
         prefix_raw_with_cache(&self.snapshot, &self.cache.unwritten_changes, prefix)
     }
 
     fn prefix_keys<'a>(
         &'a self,
         prefix: &'a str,
-    ) -> Pin<Box<dyn Stream<Item = Result<String>> + Send + Sync + 'a>> {
+    ) -> Pin<Box<dyn Stream<Item = Result<String>> + Send + 'a>> {
         prefix_keys_with_cache(&self.snapshot, &self.cache.unwritten_changes, prefix)
     }
 
@@ -200,7 +200,7 @@ impl StateRead for State {
     fn nonconsensus_prefix_raw<'a>(
         &'a self,
         prefix: &'a [u8],
-    ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + Sync + 'a>> {
+    ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + 'a>> {
         nonconsensus_prefix_raw_with_cache(&self.snapshot, &self.cache.nonconsensus_changes, prefix)
     }
 }

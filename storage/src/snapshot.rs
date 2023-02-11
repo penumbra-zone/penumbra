@@ -133,7 +133,7 @@ impl StateRead for Snapshot {
     fn prefix_raw<'a>(
         &'a self,
         prefix: &'a str,
-    ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Sync + Send + 'a>> {
+    ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + 'a>> {
         let span = Span::current();
         let self2 = self.clone();
 
@@ -181,7 +181,7 @@ impl StateRead for Snapshot {
     fn prefix_keys<'a>(
         &'a self,
         prefix: &'a str,
-    ) -> Pin<Box<dyn Stream<Item = Result<String>> + Sync + Send + 'a>> {
+    ) -> Pin<Box<dyn Stream<Item = Result<String>> + Send + 'a>> {
         let span = Span::current();
         let self2 = self.clone();
 
@@ -219,7 +219,7 @@ impl StateRead for Snapshot {
     fn nonconsensus_prefix_raw<'a>(
         &'a self,
         prefix: &'a [u8],
-    ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Sync + Send + 'a>> {
+    ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + 'a>> {
         let span = Span::current();
         let self2 = self.clone();
 
