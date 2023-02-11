@@ -42,8 +42,11 @@ mod snapshot_cache;
 mod state;
 mod storage;
 
+use snapshot::Snapshot;
+
 pub use crate::metrics::register_metrics;
 pub use jmt::{ics23_spec, RootHash};
-pub use snapshot::Snapshot;
 pub use state::{ArcStateExt, State, StateRead, StateTransaction, StateWrite};
 pub use storage::{StateNotification, Storage, TempStorage};
+
+pub mod future;

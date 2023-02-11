@@ -19,6 +19,7 @@ futures = "0.3"
 hex = "0.4"
 metrics = "0.19.0"
 parking_lot = "0.12"
+pin-project = "1.0.12"
 
 # Tendermint/IBC crates 
 ics23 = "=0.8.1"

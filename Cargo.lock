@@ -3728,6 +3728,7 @@ dependencies = [
  "jmt",
  "metrics",
  "parking_lot 0.12.1",
+ "pin-project",
  "rocksdb",
  "tempfile",
  "tendermint",

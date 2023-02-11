@@ -7,16 +7,12 @@ use futures::{Stream, StreamExt};
 
 /// Read access to chain state.
 pub trait StateRead: Send + Sync {
-    //type GetRawFut: Future<Output = Result<Option<Vec<u8>>>> + Send + 'static;
-    //type NonConGetRawFut: Future<Output = Result<Option<Vec<u8>>>> + Send + 'static;
+    type GetRawFut: Future<Output = Result<Option<Vec<u8>>>> + Send + 'static;
 
     /// Gets a value from the verifiable key-value store as raw bytes.
     ///
     /// Users should generally prefer to use `get` or `get_proto` from an extension trait.
-    fn get_raw(
-        &self,
-        key: &str,
-    ) -> Pin<Box<dyn Future<Output = Result<Option<Vec<u8>>>> + Send + 'static>>;
+    fn get_raw(&self, key: &str) -> Self::GetRawFut;
 
     /// Retrieve all values for keys matching a prefix from the verifiable key-value store, as raw bytes.
     ///
@@ -37,10 +33,7 @@ pub trait StateRead: Send + Sync {
     ///
     /// This is intended for application-specific indexes of the verifiable
     /// consensus state, rather than for use as a primary data storage method.
-    fn nonconsensus_get_raw(
-        &self,
-        key: &[u8],
-    ) -> Pin<Box<dyn Future<Output = Result<Option<Vec<u8>>>> + Send + 'static>>;
+    fn nonconsensus_get_raw(&self, key: &[u8]) -> Self::GetRawFut;
 
     /// Retrieve all values for keys matching a prefix from the non-verifiable key-value store, as raw bytes.
     ///
@@ -219,10 +212,9 @@ pub(crate) fn nonconsensus_prefix_raw_with_cache<'a>(
 }
 
 impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
-    fn get_raw(
-        &self,
-        key: &str,
-    ) -> Pin<Box<dyn Future<Output = Result<Option<Vec<u8>>>> + Send + 'static>> {
+    type GetRawFut = S::GetRawFut;
+
+    fn get_raw(&self, key: &str) -> Self::GetRawFut {
         (**self).get_raw(key)
     }
 
@@ -247,10 +239,7 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
         (**self).nonconsensus_prefix_raw(prefix)
     }
 
-    fn nonconsensus_get_raw(
-        &self,
-        key: &[u8],
-    ) -> Pin<Box<dyn Future<Output = Result<Option<Vec<u8>>>> + Send + 'static>> {
+    fn nonconsensus_get_raw(&self, key: &[u8]) -> Self::GetRawFut {
         (**self).nonconsensus_get_raw(key)
     }
 
@@ -260,10 +249,9 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
 }
 
 impl<'a, S: StateRead + Send + Sync> StateRead for &'a mut S {
-    fn get_raw(
-        &self,
-        key: &str,
-    ) -> Pin<Box<dyn Future<Output = Result<Option<Vec<u8>>>> + Send + 'static>> {
+    type GetRawFut = S::GetRawFut;
+
+    fn get_raw(&self, key: &str) -> Self::GetRawFut {
         (**self).get_raw(key)
     }
 
@@ -288,10 +276,7 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a mut S {
         (**self).nonconsensus_prefix_raw(prefix)
     }
 
-    fn nonconsensus_get_raw(
-        &self,
-        key: &[u8],
-    ) -> Pin<Box<dyn Future<Output = Result<Option<Vec<u8>>>> + Send + 'static>> {
+    fn nonconsensus_get_raw(&self, key: &[u8]) -> Self::GetRawFut {
         (**self).nonconsensus_get_raw(key)
     }
 

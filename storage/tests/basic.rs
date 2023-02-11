@@ -1,4 +1,4 @@
-use futures::StreamExt;
+use ::futures::StreamExt;
 use penumbra_storage::*;
 
 #[tokio::test]
