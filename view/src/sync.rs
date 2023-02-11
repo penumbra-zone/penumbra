@@ -83,7 +83,10 @@ pub async fn scan_block(
                 swap_decryptions.push(trial_decrypt_swap(swap.clone()));
             }
             StatePayload::RolledUp(commitment) => unknown_commitments.push(commitment.clone()),
-            StatePayload::Position { lpnft, commitment } => todo!(),
+            StatePayload::Position {
+                lpnft: _,
+                commitment: _,
+            } => todo!(),
         }
     }
     // Having started trial decryption in the background, ask the Storage for scanning advice:

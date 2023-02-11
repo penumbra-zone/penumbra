@@ -4,14 +4,12 @@ use std::{
     task::{Context, Poll},
 };
 
-use anyhow::Context as _;
 use futures::FutureExt;
 use penumbra_storage::Storage;
 use tendermint::abci::{ConsensusRequest, ConsensusResponse};
 use tokio::sync::{mpsc, oneshot};
 use tokio_util::sync::PollSender;
 use tower_abci::BoxError;
-use tracing::error_span;
 
 use super::{Message, Worker};
 use crate::RequestExt;

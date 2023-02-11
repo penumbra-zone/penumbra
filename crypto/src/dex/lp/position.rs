@@ -233,7 +233,7 @@ impl From<Metadata> for pb::PositionMetadata {
 
 impl TryFrom<pb::PositionMetadata> for Metadata {
     type Error = anyhow::Error;
-    fn try_from(value: pb::PositionMetadata) -> Result<Self, Self::Error> {
+    fn try_from(_value: pb::PositionMetadata) -> Result<Self, Self::Error> {
         todo!()
     }
 }

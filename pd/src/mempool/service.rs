@@ -14,7 +14,7 @@ use tendermint::abci::{
 use tokio::sync::{mpsc, oneshot};
 use tokio_util::sync::PollSender;
 use tower_abci::BoxError;
-use tracing::{error_span, Instrument};
+use tracing::Instrument;
 
 use super::{Message, Worker};
 use crate::metrics;
