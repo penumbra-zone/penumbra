@@ -103,26 +103,31 @@ impl StateRead for Snapshot {
         .boxed()
     }
 
-    /// Fetch a key from the nonconsensus column family.
-    async fn nonconsensus_get_raw(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+    fn nonconsensus_get_raw(
+        &self,
+        key: &[u8],
+    ) -> Pin<Box<dyn Future<Output = Result<Option<Vec<u8>>>> + Send + 'static>> {
         let span = Span::current();
         let inner = self.0.clone();
         let key: Vec<u8> = key.to_vec();
-        tokio::task::Builder::new()
-            .name("Snapshot::nonconsensus_get_raw")
-            .spawn_blocking(move || {
-                span.in_scope(|| {
-                    let nonconsensus_cf = inner
-                        .db
-                        .cf_handle("nonconsensus")
-                        .expect("nonconsensus column family not found");
-                    inner
-                        .snapshot
-                        .get_cf(nonconsensus_cf, key)
-                        .map_err(Into::into)
-                })
-            })?
-            .await?
+        async move {
+            tokio::task::Builder::new()
+                .name("Snapshot::nonconsensus_get_raw")
+                .spawn_blocking(move || {
+                    span.in_scope(|| {
+                        let nonconsensus_cf = inner
+                            .db
+                            .cf_handle("nonconsensus")
+                            .expect("nonconsensus column family not found");
+                        inner
+                            .snapshot
+                            .get_cf(nonconsensus_cf, key)
+                            .map_err(Into::into)
+                    })
+                })?
+                .await?
+        }
+        .boxed()
     }
 
     fn prefix_raw<'a>(

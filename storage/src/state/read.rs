@@ -3,11 +3,9 @@ use std::{any::Any, cmp::Ordering, collections::BTreeMap, future::Future, pin::P
 use anyhow::Result;
 
 use async_stream::stream;
-use async_trait::async_trait;
 use futures::{Stream, StreamExt};
 
 /// Read access to chain state.
-#[async_trait]
 pub trait StateRead: Send + Sync {
     /// Gets a value from the verifiable key-value store as raw bytes.
     ///
@@ -36,7 +34,10 @@ pub trait StateRead: Send + Sync {
     ///
     /// This is intended for application-specific indexes of the verifiable
     /// consensus state, rather than for use as a primary data storage method.
-    async fn nonconsensus_get_raw(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
+    fn nonconsensus_get_raw(
+        &self,
+        key: &[u8],
+    ) -> Pin<Box<dyn Future<Output = Result<Option<Vec<u8>>>> + Send + 'static>>;
 
     /// Retrieve all values for keys matching a prefix from the non-verifiable key-value store, as raw bytes.
     ///
@@ -214,7 +215,6 @@ pub(crate) fn nonconsensus_prefix_raw_with_cache<'a>(
     Box::pin(merged)
 }
 
-#[async_trait]
 impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
     fn get_raw(
         &self,
@@ -244,8 +244,11 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
         (**self).nonconsensus_prefix_raw(prefix)
     }
 
-    async fn nonconsensus_get_raw(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        (**self).nonconsensus_get_raw(key).await
+    fn nonconsensus_get_raw(
+        &self,
+        key: &[u8],
+    ) -> Pin<Box<dyn Future<Output = Result<Option<Vec<u8>>>> + Send + 'static>> {
+        (**self).nonconsensus_get_raw(key)
     }
 
     fn object_get<T: Any + Send + Sync>(&self, key: &'static str) -> Option<&T> {
@@ -253,7 +256,6 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
     }
 }
 
-#[async_trait]
 impl<'a, S: StateRead + Send + Sync> StateRead for &'a mut S {
     fn get_raw(
         &self,
@@ -283,8 +285,11 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a mut S {
         (**self).nonconsensus_prefix_raw(prefix)
     }
 
-    async fn nonconsensus_get_raw(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        (**self).nonconsensus_get_raw(key).await
+    fn nonconsensus_get_raw(
+        &self,
+        key: &[u8],
+    ) -> Pin<Box<dyn Future<Output = Result<Option<Vec<u8>>>> + Send + 'static>> {
+        (**self).nonconsensus_get_raw(key)
     }
 
     fn object_get<T: Any + Send + Sync>(&self, key: &'static str) -> Option<&T> {

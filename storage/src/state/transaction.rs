@@ -104,14 +104,19 @@ impl<'tx> StateRead for Transaction<'tx> {
         .boxed()
     }
 
-    async fn nonconsensus_get_raw(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        // If the key is available in the nonconsensus cache, return it.
-        if let Some(v) = self.cache.nonconsensus_changes.get(key) {
-            return Ok(v.clone());
+    fn nonconsensus_get_raw(
+        &self,
+        key: &[u8],
+    ) -> Pin<Box<dyn Future<Output = Result<Option<Vec<u8>>>> + Send + 'static>> {
+        let cached_value = self.cache.nonconsensus_changes.get(key).cloned();
+        let state_value = self.state.nonconsensus_get_raw(key);
+        async move {
+            match cached_value {
+                Some(v) => Ok(v),
+                None => state_value.await,
+            }
         }
-
-        // Otherwise, if the key is available in the state, return it.
-        self.state.nonconsensus_get_raw(key).await
+        .boxed()
     }
 
     fn prefix_raw<'a>(
