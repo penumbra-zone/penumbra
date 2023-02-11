@@ -138,6 +138,7 @@ impl Storage {
                     let jmt = JellyfishMerkleTree::new(&snap);
 
                     let unwritten_changes: Vec<_> = state
+                        .cache
                         .unwritten_changes
                         .into_iter()
                         // Pre-calculate all KeyHashes for later storage in `jmt_keys`
@@ -171,7 +172,7 @@ impl Storage {
                     tracing::trace!(?root_hash, "wrote node batch to backing store");
 
                     // Write the unwritten changes from the nonconsensus to RocksDB.
-                    for (k, v) in state.nonconsensus_changes.into_iter() {
+                    for (k, v) in state.cache.nonconsensus_changes.into_iter() {
                         let nonconsensus_cf = inner
                             .db
                             .cf_handle("nonconsensus")

@@ -1,10 +1,11 @@
-use std::{any::Any, collections::BTreeMap, future::Future, pin::Pin, sync::Arc};
+use std::{any::Any, future::Future, pin::Pin, sync::Arc};
 
 use anyhow::Result;
 use async_trait::async_trait;
 use futures::{FutureExt, Stream};
 use tracing::Span;
 
+mod cache;
 mod read;
 mod transaction;
 mod write;
@@ -12,6 +13,8 @@ mod write;
 pub use read::StateRead;
 pub use transaction::Transaction as StateTransaction;
 pub use write::StateWrite;
+
+use cache::Cache;
 
 use crate::snapshot::Snapshot;
 
@@ -35,11 +38,7 @@ use self::read::{
 /// the [`State`] should be explicitly shared using an [`Arc`](std::sync::Arc).
 pub struct State {
     pub(crate) snapshot: Snapshot,
-    // A `None` value represents deletion.
-    pub(crate) unwritten_changes: BTreeMap<String, Option<Vec<u8>>>,
-    // A `None` value represents deletion.
-    pub(crate) nonconsensus_changes: BTreeMap<Vec<u8>, Option<Vec<u8>>>,
-    pub(crate) ephemeral_objects: BTreeMap<&'static str, Box<dyn Any + Send + Sync>>,
+    pub(crate) cache: Cache,
 }
 
 impl std::fmt::Debug for State {
@@ -55,9 +54,7 @@ impl State {
     pub(crate) fn new(snapshot: Snapshot) -> Self {
         Self {
             snapshot,
-            unwritten_changes: BTreeMap::new(),
-            nonconsensus_changes: BTreeMap::new(),
-            ephemeral_objects: BTreeMap::new(),
+            cache: Default::default(),
         }
     }
 
@@ -79,9 +76,7 @@ impl State {
 
     /// Returns `true` if there are cached writes on top of the snapshot, and `false` otherwise.
     pub fn is_dirty(&self) -> bool {
-        !(self.unwritten_changes.is_empty()
-            && self.nonconsensus_changes.is_empty()
-            && self.ephemeral_objects.is_empty())
+        self.cache.is_dirty()
     }
 
     /// Gets a value by key alongside an ICS23 existence proof of that value.
@@ -150,7 +145,7 @@ impl StateRead for State {
 
         // If the key is available in the unwritten_changes cache, extract it now,
         // so we can move it into the future we'll return.
-        let cached_value = self.unwritten_changes.get(key).cloned();
+        let cached_value = self.cache.unwritten_changes.get(key).cloned();
         // Prepare a query to the state; this won't start executing until we poll it.
         let snapshot_value = self.snapshot.get_raw(key);
 
@@ -167,7 +162,7 @@ impl StateRead for State {
 
     async fn nonconsensus_get_raw(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
         // If the key is available in the nonconsensus cache, return it.
-        if let Some(v) = self.nonconsensus_changes.get(key) {
+        if let Some(v) = self.cache.nonconsensus_changes.get(key) {
             return Ok(v.clone());
         }
 
@@ -179,19 +174,21 @@ impl StateRead for State {
         &'a self,
         prefix: &'a str,
     ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + Sync + 'a>> {
-        prefix_raw_with_cache(&self.snapshot, &self.unwritten_changes, prefix)
+        prefix_raw_with_cache(&self.snapshot, &self.cache.unwritten_changes, prefix)
     }
 
     fn prefix_keys<'a>(
         &'a self,
         prefix: &'a str,
     ) -> Pin<Box<dyn Stream<Item = Result<String>> + Send + Sync + 'a>> {
-        prefix_keys_with_cache(&self.snapshot, &self.unwritten_changes, prefix)
+        prefix_keys_with_cache(&self.snapshot, &self.cache.unwritten_changes, prefix)
     }
 
     fn object_get<T: Any + Send + Sync>(&self, key: &str) -> Option<&T> {
-        self.ephemeral_objects
+        self.cache
+            .ephemeral_objects
             .get(key)
+            .and_then(|maybe_object| maybe_object.as_ref())
             .and_then(|object| object.downcast_ref())
     }
 
@@ -199,7 +196,7 @@ impl StateRead for State {
         &'a self,
         prefix: &'a [u8],
     ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + Sync + 'a>> {
-        nonconsensus_prefix_raw_with_cache(&self.snapshot, &self.nonconsensus_changes, prefix)
+        nonconsensus_prefix_raw_with_cache(&self.snapshot, &self.cache.nonconsensus_changes, prefix)
     }
 }
 
