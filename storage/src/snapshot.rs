@@ -1,8 +1,8 @@
-use std::{any::Any, future::Future, pin::Pin, sync::Arc};
+use std::{any::Any, pin::Pin, sync::Arc};
 
 use anyhow::Result;
 use async_trait::async_trait;
-use futures::{FutureExt, Stream};
+use futures::Stream;
 use jmt::storage::{LeafNode, Node, NodeKey, TreeReader};
 use tokio::sync::mpsc;
 use tracing::Span;
@@ -86,31 +86,26 @@ impl Snapshot {
 
 #[async_trait]
 impl StateRead for Snapshot {
+    type GetRawFut = crate::future::SnapshotFuture;
+
     /// Fetch a key from the JMT column family.
-    fn get_raw(
-        &self,
-        key: &str,
-    ) -> Pin<Box<dyn Future<Output = Result<Option<Vec<u8>>>> + Send + 'static>> {
+    fn get_raw(&self, key: &str) -> Self::GetRawFut {
         let span = Span::current();
         let key_hash = jmt::KeyHash::from(key);
         let self2 = self.clone();
-        async move {
+        crate::future::SnapshotFuture(
             tokio::task::Builder::new()
                 .name("Snapshot::get_raw")
-                .spawn_blocking(move || span.in_scope(|| self2.get_jmt(key_hash)))?
-                .await?
-        }
-        .boxed()
+                .spawn_blocking(move || span.in_scope(|| self2.get_jmt(key_hash)))
+                .expect("spawning threads is possible"),
+        )
     }
 
-    fn nonconsensus_get_raw(
-        &self,
-        key: &[u8],
-    ) -> Pin<Box<dyn Future<Output = Result<Option<Vec<u8>>>> + Send + 'static>> {
+    fn nonconsensus_get_raw(&self, key: &[u8]) -> Self::GetRawFut {
         let span = Span::current();
         let inner = self.0.clone();
         let key: Vec<u8> = key.to_vec();
-        async move {
+        crate::future::SnapshotFuture(
             tokio::task::Builder::new()
                 .name("Snapshot::nonconsensus_get_raw")
                 .spawn_blocking(move || {
@@ -124,10 +119,9 @@ impl StateRead for Snapshot {
                             .get_cf(nonconsensus_cf, key)
                             .map_err(Into::into)
                     })
-                })?
-                .await?
-        }
-        .boxed()
+                })
+                .expect("spawning threads is possible"),
+        )
     }
 
     fn prefix_raw<'a>(
