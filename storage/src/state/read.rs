@@ -12,6 +12,26 @@ pub trait StateRead: Send + Sync {
     /// Users should generally prefer to use `get` or `get_proto` from an extension trait.
     fn get_raw(&self, key: &str) -> Self::GetRawFut;
 
+    /// Gets a byte value from the non-verifiable key-value store.
+    ///
+    /// This is intended for application-specific indexes of the verifiable
+    /// consensus state, rather than for use as a primary data storage method.
+    fn nonconsensus_get_raw(&self, key: &[u8]) -> Self::GetRawFut;
+
+    /// Gets an object from the ephemeral key-object store.
+    ///
+    /// This is intended to allow application components to build up batched
+    /// data transactionally, ensuring that a transaction's contributions to
+    /// some batched data are only included if the entire transaction executed
+    /// successfully.  This data is not persisted to the `Storage` during
+    /// `commit`.
+    ///
+    /// # Returns
+    ///
+    /// - `Some(&T)` if a value of type `T` was present at `key`.
+    /// - `None` if `key` was not present, or if `key` was present but the value was not of type `T`.
+    fn object_get<T: Any + Send + Sync>(&self, key: &'static str) -> Option<&T>;
+
     /// Retrieve all values for keys matching a prefix from the verifiable key-value store, as raw bytes.
     ///
     /// Users should generally prefer to use `prefix` or `prefix_proto` from an extension trait.
@@ -27,12 +47,6 @@ pub trait StateRead: Send + Sync {
         prefix: &'a str,
     ) -> Pin<Box<dyn Stream<Item = Result<String>> + Send + 'a>>;
 
-    /// Gets a byte value from the non-verifiable key-value store.
-    ///
-    /// This is intended for application-specific indexes of the verifiable
-    /// consensus state, rather than for use as a primary data storage method.
-    fn nonconsensus_get_raw(&self, key: &[u8]) -> Self::GetRawFut;
-
     /// Retrieve all values for keys matching a prefix from the non-verifiable key-value store, as raw bytes.
     ///
     /// Users should generally prefer to use wrapper methods in an extension trait.
@@ -41,20 +55,6 @@ pub trait StateRead: Send + Sync {
         &'a self,
         prefix: &'a [u8],
     ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + 'a>>;
-
-    /// Gets an object from the ephemeral key-object store.
-    ///
-    /// This is intended to allow application components to build up batched
-    /// data transactionally, ensuring that a transaction's contributions to
-    /// some batched data are only included if the entire transaction executed
-    /// successfully.  This data is not persisted to the `Storage` during
-    /// `commit`.
-    ///
-    /// # Returns
-    ///
-    /// - `Some(&T)` if a value of type `T` was present at `key`.
-    /// - `None` if `key` was not present, or if `key` was present but the value was not of type `T`.
-    fn object_get<T: Any + Send + Sync>(&self, key: &'static str) -> Option<&T>;
 }
 
 impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
