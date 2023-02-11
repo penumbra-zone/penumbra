@@ -7,6 +7,9 @@ use futures::{Stream, StreamExt};
 
 /// Read access to chain state.
 pub trait StateRead: Send + Sync {
+    //type GetRawFut: Future<Output = Result<Option<Vec<u8>>>> + Send + 'static;
+    //type NonConGetRawFut: Future<Output = Result<Option<Vec<u8>>>> + Send + 'static;
+
     /// Gets a value from the verifiable key-value store as raw bytes.
     ///
     /// Users should generally prefer to use `get` or `get_proto` from an extension trait.
@@ -22,13 +25,13 @@ pub trait StateRead: Send + Sync {
     fn prefix_raw<'a>(
         &'a self,
         prefix: &'a str,
-    ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Sync + Send + 'a>>;
+    ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + 'a>>;
 
     /// Retrieve all keys (but not values) matching a prefix from the verifiable key-value store.
     fn prefix_keys<'a>(
         &'a self,
         prefix: &'a str,
-    ) -> Pin<Box<dyn Stream<Item = Result<String>> + Sync + Send + 'a>>;
+    ) -> Pin<Box<dyn Stream<Item = Result<String>> + Send + 'a>>;
 
     /// Gets a byte value from the non-verifiable key-value store.
     ///
@@ -46,7 +49,7 @@ pub trait StateRead: Send + Sync {
     fn nonconsensus_prefix_raw<'a>(
         &'a self,
         prefix: &'a [u8],
-    ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Sync + Send + 'a>>;
+    ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + 'a>>;
 
     /// Gets an object from the ephemeral key-object store.
     ///
@@ -67,8 +70,8 @@ pub trait StateRead: Send + Sync {
 // preferring results from the cache when keys are equal.
 fn merge_cache<'a, K, V>(
     cache: impl Iterator<Item = (K, V)> + Send + Sync + Unpin + 'a,
-    storage: impl Stream<Item = Result<(K, V)>> + Send + Sync + Unpin + 'a,
-) -> impl Stream<Item = Result<(K, V)>> + Send + Sync + Unpin + 'a
+    storage: impl Stream<Item = Result<(K, V)>> + Send + Unpin + 'a,
+) -> impl Stream<Item = Result<(K, V)>> + Send + Unpin + 'a
 where
     V: Send + Clone + Sync + 'a,
     K: Send + Clone + Sync + 'a,
@@ -129,7 +132,7 @@ pub(crate) fn prefix_raw_with_cache<'a>(
     sr: &'a impl StateRead,
     cache: &'a BTreeMap<String, Option<Vec<u8>>>,
     prefix: &'a str,
-) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + Sync + 'a>> {
+) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + 'a>> {
     // Interleave the unwritten_changes cache with the snapshot.
     let state_stream = sr
         .prefix_raw(prefix)
@@ -156,7 +159,7 @@ pub(crate) fn prefix_keys_with_cache<'a>(
     sr: &'a impl StateRead,
     cache: &'a BTreeMap<String, Option<Vec<u8>>>,
     prefix: &'a str,
-) -> Pin<Box<dyn Stream<Item = Result<String>> + Send + Sync + 'a>> {
+) -> Pin<Box<dyn Stream<Item = Result<String>> + Send + 'a>> {
     // The implementation is similar to prefix_raw_with_cache.  In order to
     // reuse the merge_cache code, we use zero-size dummy values (), which lets
     // us correctly handle uncommitted deletions (which will be represented as
@@ -192,7 +195,7 @@ pub(crate) fn nonconsensus_prefix_raw_with_cache<'a>(
     sr: &'a impl StateRead,
     cache: &'a BTreeMap<Vec<u8>, Option<Vec<u8>>>,
     prefix: &'a [u8],
-) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + Sync + 'a>> {
+) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + 'a>> {
     // Interleave the unwritten_changes cache with the snapshot.
     let state_stream = sr
         .nonconsensus_prefix_raw(prefix)
@@ -226,21 +229,21 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
     fn prefix_raw<'b>(
         &'b self,
         prefix: &'b str,
-    ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Sync + Send + 'b>> {
+    ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + 'b>> {
         (**self).prefix_raw(prefix)
     }
 
     fn prefix_keys<'b>(
         &'b self,
         prefix: &'b str,
-    ) -> Pin<Box<dyn Stream<Item = Result<String>> + Sync + Send + 'b>> {
+    ) -> Pin<Box<dyn Stream<Item = Result<String>> + Send + 'b>> {
         (**self).prefix_keys(prefix)
     }
 
     fn nonconsensus_prefix_raw<'b>(
         &'b self,
         prefix: &'b [u8],
-    ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Sync + Send + 'b>> {
+    ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + 'b>> {
         (**self).nonconsensus_prefix_raw(prefix)
     }
 
@@ -267,21 +270,21 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a mut S {
     fn prefix_raw<'b>(
         &'b self,
         prefix: &'b str,
-    ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Sync + Send + 'b>> {
+    ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + 'b>> {
         (**self).prefix_raw(prefix)
     }
 
     fn prefix_keys<'b>(
         &'b self,
         prefix: &'b str,
-    ) -> Pin<Box<dyn Stream<Item = Result<String>> + Sync + Send + 'b>> {
+    ) -> Pin<Box<dyn Stream<Item = Result<String>> + Send + 'b>> {
         (**self).prefix_keys(prefix)
     }
 
     fn nonconsensus_prefix_raw<'b>(
         &'b self,
         prefix: &'b [u8],
-    ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Sync + Send + 'b>> {
+    ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + 'b>> {
         (**self).nonconsensus_prefix_raw(prefix)
     }
 
