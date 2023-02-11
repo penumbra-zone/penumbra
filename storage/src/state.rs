@@ -5,7 +5,6 @@ use async_trait::async_trait;
 use futures::Stream;
 use tracing::Span;
 
-mod cache;
 mod read;
 mod transaction;
 mod write;
@@ -14,15 +13,10 @@ pub use read::StateRead;
 pub use transaction::Transaction as StateTransaction;
 pub use write::StateWrite;
 
-use cache::Cache;
-
 use crate::{
     future::{CacheFuture, SnapshotFuture},
     snapshot::Snapshot,
-};
-
-use self::read::{
-    nonconsensus_prefix_raw_with_cache, prefix_keys_with_cache, prefix_raw_with_cache,
+    Cache,
 };
 
 /// A lightweight snapshot of a particular version of the chain state.
@@ -151,20 +145,6 @@ impl StateRead for State {
             .nonconsensus_get_raw_or_else(key, || self.snapshot.nonconsensus_get_raw(key))
     }
 
-    fn prefix_raw<'a>(
-        &'a self,
-        prefix: &'a str,
-    ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + 'a>> {
-        prefix_raw_with_cache(&self.snapshot, &self.cache.unwritten_changes, prefix)
-    }
-
-    fn prefix_keys<'a>(
-        &'a self,
-        prefix: &'a str,
-    ) -> Pin<Box<dyn Stream<Item = Result<String>> + Send + 'a>> {
-        prefix_keys_with_cache(&self.snapshot, &self.cache.unwritten_changes, prefix)
-    }
-
     fn object_get<T: Any + Send + Sync>(&self, key: &str) -> Option<&T> {
         self.cache
             .ephemeral_objects
@@ -173,11 +153,28 @@ impl StateRead for State {
             .and_then(|object| object.downcast_ref())
     }
 
+    fn prefix_raw<'a>(
+        &'a self,
+        prefix: &'a str,
+    ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + 'a>> {
+        self.cache
+            .prefix_raw(prefix, self.snapshot.prefix_raw(prefix))
+    }
+
+    fn prefix_keys<'a>(
+        &'a self,
+        prefix: &'a str,
+    ) -> Pin<Box<dyn Stream<Item = Result<String>> + Send + 'a>> {
+        self.cache
+            .prefix_keys(prefix, self.snapshot.prefix_keys(prefix))
+    }
+
     fn nonconsensus_prefix_raw<'a>(
         &'a self,
         prefix: &'a [u8],
     ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + 'a>> {
-        nonconsensus_prefix_raw_with_cache(&self.snapshot, &self.cache.nonconsensus_changes, prefix)
+        self.cache
+            .nonconsensus_prefix_raw(prefix, self.snapshot.nonconsensus_prefix_raw(prefix))
     }
 }
 
