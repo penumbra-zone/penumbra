@@ -7,7 +7,6 @@ use penumbra_transaction::{action::PositionOpen, Transaction};
 use tracing::instrument;
 
 use crate::action_handler::ActionHandler;
-use crate::dex::PositionManager;
 
 #[async_trait]
 /// Debits the initial reserves and credits an opened position NFT.
@@ -28,8 +27,8 @@ impl ActionHandler for PositionOpen {
         Err(anyhow::anyhow!("lp actions not supported yet"))
     }
 
-    #[instrument(name = "position_open", skip(self, state))]
-    async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
+    #[instrument(name = "position_open", skip(self, _state))]
+    async fn execute(&self, _state: &mut StateTransaction) -> Result<()> {
         // let position = self.position;
         // let initial_reserves = self.initial_reserves;
         // let lpnft = state.position_open(position, initial_reserves).await?;

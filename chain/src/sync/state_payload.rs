@@ -2,10 +2,7 @@ use std::convert::TryFrom;
 
 use anyhow::Result;
 use penumbra_crypto::{
-    dex::{
-        lp::{position, LpNft},
-        swap::SwapPayload,
-    },
+    dex::{lp::LpNft, swap::SwapPayload},
     note, EncryptedNote,
 };
 use penumbra_proto::core::chain::v1alpha1::{self as pb};

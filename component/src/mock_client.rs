@@ -112,7 +112,7 @@ impl MockClient {
                         self.sct.insert(Forget, commitment)?;
                     }
                 }
-                StatePayload::Position { lpnft, commitment } => todo!(),
+                StatePayload::Position { .. } => todo!(),
             }
         }
         self.sct.end_block()?;
