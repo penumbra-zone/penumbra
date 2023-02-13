@@ -81,6 +81,15 @@ impl<'a> StateWrite for Transaction<'a> {
 #[async_trait]
 impl<'tx> StateRead for Transaction<'tx> {
     type GetRawFut = CacheFuture<CacheFuture<SnapshotFuture>>;
+    type PrefixRawStream<'a> = Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + 'a>>
+    where
+        Self: 'a;
+    type PrefixKeysStream<'a> = Pin<Box<dyn Stream<Item = Result<String>> + Send + 'a>>
+    where
+        Self: 'a;
+    type NonconsensusPrefixRawStream<'a> = Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + 'a>>
+    where
+        Self: 'a;
 
     fn get_raw(&self, key: &str) -> Self::GetRawFut {
         self.cache.get_raw_or_else(key, || self.state.get_raw(key))
