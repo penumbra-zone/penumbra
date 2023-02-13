@@ -9,7 +9,7 @@ use crate::Component;
 use ::metrics::{decrement_gauge, gauge, increment_gauge};
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
-use futures::{FutureExt, TryFutureExt, TryStreamExt};
+use futures::{FutureExt, StreamExt, TryFutureExt, TryStreamExt};
 use penumbra_chain::{genesis, Epoch, NoteSource, StateReadExt as _};
 use penumbra_crypto::stake::Penalty;
 use penumbra_crypto::{
@@ -1117,14 +1117,19 @@ pub trait StateReadExt: StateRead {
     }
 
     async fn validator_identity_list(&self) -> Result<Vec<IdentityKey>> {
-        self.prefix_keys(state_key::validators::list())
-            .map_ok(|key| {
-                key.as_str()[state_key::validators::list().len()..]
-                    .parse::<IdentityKey>()
-                    .expect("state keys should only have valid identity keys")
-            })
-            .try_collect()
-            .await
+        let mut iks = Vec::new();
+        // TODO: boxing here is to avoid an Unpin problem.. should
+        // we bound the StateRead stream GATs as Unpin?
+        // TODO: why did the previous implementation of this method
+        // fail to compile with a Self does not live longe enough error?
+        let mut stream = self.prefix_keys(state_key::validators::list()).boxed();
+        while let Some(key) = stream.next().await {
+            let ik = key?.as_str()[state_key::validators::list().len()..]
+                .parse::<IdentityKey>()
+                .expect("state keys should only have valid identity keys");
+            iks.push(ik);
+        }
+        Ok(iks)
     }
 
     async fn validator_list(&self) -> Result<Vec<Validator>> {
