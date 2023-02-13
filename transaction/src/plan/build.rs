@@ -2,6 +2,7 @@ use anyhow::{Context, Result};
 use penumbra_crypto::{
     memo::MemoCiphertext, rdsa, symmetric::PayloadKey, Fr, FullViewingKey, Zero,
 };
+use penumbra_proto::DomainType;
 use rand_core::{CryptoRng, RngCore};
 
 use super::TransactionPlan;
@@ -143,22 +144,24 @@ impl TransactionPlan {
             actions.push(Action::IBCAction(ibc_action))
         }
 
+        let transaction_body = TransactionBody {
+            actions,
+            expiry_height: self.expiry_height,
+            chain_id: self.chain_id,
+            fee: self.fee,
+            fmd_clues,
+            memo,
+        };
+
         // Finally, compute the binding signature and assemble the transaction.
         let binding_signing_key = rdsa::SigningKey::from(synthetic_blinding_factor);
-        let binding_sig = binding_signing_key.sign(rng, auth_data.effect_hash.as_ref());
-        tracing::debug!(bvk = ?rdsa::VerificationKey::from(&binding_signing_key), effect_hash = ?auth_data.effect_hash);
+        let binding_sig = binding_signing_key.sign(rng, &transaction_body.encode_to_vec()[..]);
+        tracing::debug!(bvk = ?rdsa::VerificationKey::from(&binding_signing_key), tx_body = ?transaction_body.encode_to_vec());
 
         // TODO: add consistency checks?
 
         Ok(Transaction {
-            transaction_body: TransactionBody {
-                actions,
-                expiry_height: self.expiry_height,
-                chain_id: self.chain_id,
-                fee: self.fee,
-                fmd_clues,
-                memo,
-            },
+            transaction_body,
             anchor: witness_data.anchor,
             binding_sig,
         })
@@ -324,20 +327,22 @@ impl TransactionPlan {
             actions.push(Action::IBCAction(ibc_action))
         }
 
+        let transaction_body = TransactionBody {
+            actions,
+            expiry_height: self.expiry_height,
+            chain_id: self.chain_id,
+            fee: self.fee,
+            fmd_clues,
+            memo,
+        };
+
         // Finally, compute the binding signature and assemble the transaction.
         let binding_signing_key = rdsa::SigningKey::from(synthetic_blinding_factor);
-        let binding_sig = binding_signing_key.sign(rng, auth_data.effect_hash.as_ref());
-        tracing::debug!(bvk = ?rdsa::VerificationKey::from(&binding_signing_key), effect_hash = ?auth_data.effect_hash);
+        let binding_sig = binding_signing_key.sign(rng, &transaction_body.encode_to_vec()[..]);
+        tracing::debug!(bvk = ?rdsa::VerificationKey::from(&binding_signing_key), tx_body = ?transaction_body.encode_to_vec());
 
         Ok(Transaction {
-            transaction_body: TransactionBody {
-                actions,
-                expiry_height: self.expiry_height,
-                chain_id: self.chain_id.clone(),
-                fee: self.fee.clone(),
-                fmd_clues,
-                memo,
-            },
+            transaction_body,
             anchor: witness_data.anchor,
             binding_sig,
         })

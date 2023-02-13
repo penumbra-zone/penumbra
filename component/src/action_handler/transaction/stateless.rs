@@ -1,17 +1,18 @@
 use std::collections::BTreeSet;
 
 use anyhow::{Context, Result};
+use penumbra_proto::DomainType;
 use penumbra_transaction::Transaction;
 
 #[tracing::instrument(skip(tx))]
 pub(super) fn valid_binding_signature(tx: &Transaction) -> Result<()> {
-    let effect_hash = tx.transaction_body().effect_hash();
+    let tx_body = tx.transaction_body().encode_to_vec();
 
-    tracing::debug!(bvk = ?tx.binding_verification_key(), effect_hash = ?effect_hash);
+    tracing::debug!(bvk = ?tx.binding_verification_key(), tx_body = ?tx_body);
 
     // Check binding signature.
     tx.binding_verification_key()
-        .verify(effect_hash.as_ref(), tx.binding_sig())
+        .verify(&tx_body[..], tx.binding_sig())
         .context("binding signature failed to verify")
 }
 
