@@ -16,7 +16,10 @@ use penumbra_crypto::{
     stake::{DelegationToken, IdentityKey},
     Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_proto::{StateReadProto, StateWriteProto};
+use penumbra_proto::{
+    state::future::{DomainFuture, ProtoFuture},
+    StateReadProto, StateWriteProto,
+};
 use penumbra_storage::{StateRead, StateTransaction, StateWrite};
 use penumbra_transaction::action::{Delegate, Undelegate};
 use sha2::{Digest, Sha256};
@@ -1010,10 +1013,7 @@ pub trait StateReadExt: StateRead {
             .await
     }
 
-    fn validator_power(
-        &self,
-        identity_key: &IdentityKey,
-    ) -> Pin<Box<dyn Future<Output = Result<Option<u64>>> + Send + 'static>> {
+    fn validator_power(&self, identity_key: &IdentityKey) -> ProtoFuture<u64, Self::GetRawFut> {
         self.get_proto(&state_key::power_by_validator(identity_key))
     }
 
@@ -1084,7 +1084,7 @@ pub trait StateReadExt: StateRead {
     fn validator_state(
         &self,
         identity_key: &IdentityKey,
-    ) -> Pin<Box<dyn Future<Output = Result<Option<validator::State>>> + Send + 'static>> {
+    ) -> DomainFuture<validator::State, Self::GetRawFut> {
         self.get(&state_key::state_by_validator(identity_key))
     }
 
@@ -1150,7 +1150,7 @@ pub trait StateReadExt: StateRead {
     fn validator_uptime(
         &self,
         identity_key: &IdentityKey,
-    ) -> Pin<Box<dyn Future<Output = Result<Option<Uptime>>> + Send + 'static>> {
+    ) -> DomainFuture<Uptime, Self::GetRawFut> {
         self.get(&state_key::uptime_by_validator(identity_key))
     }
 

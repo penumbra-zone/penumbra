@@ -27,7 +27,7 @@ mod protobuf;
 pub use protobuf::DomainType;
 
 #[cfg(feature = "penumbra-storage")]
-mod state;
+pub mod state;
 #[cfg(feature = "penumbra-storage")]
 pub use state::StateReadProto;
 #[cfg(feature = "penumbra-storage")]
