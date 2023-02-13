@@ -4,7 +4,7 @@ On first installation of `pcli`, you will need to generate a fresh wallet to use
 should see something like this:
 
 ```bash
-\$ cargo run --quiet --release --bin pcli keys generate
+\$ pcli keys generate
 
 
 YOUR PRIVATE SEED PHRASE: [...]
@@ -17,7 +17,7 @@ correspond to your own wallet. When you first created your wallet above, `pcli` 
 of your wallet addresses, which you can view like this:
 
 ```bash
-\$ cargo run --quiet --release --bin pcli view address 0
+\$ pcli view address 0
 penumbrav2t1...
 ```
 
