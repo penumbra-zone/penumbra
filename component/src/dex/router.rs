@@ -25,8 +25,8 @@ type TradeDistance = f64;
 /// across dex trading pairs with available liquidity.
 pub struct TradeRouter<T: PositionRead> {
     // TODO: maybe these should be in non-consensus storage
-    /// Maintains a map of best distances between assets.
-    pub optimal_paths: BTreeMap<asset::Id, TradeDistance>,
+    /// Maintains a map of best prices between assets.
+    pub optimal_prices: BTreeMap<asset::Id, TradeDistance>,
     /// Maintains a map of the best predecessor (best priced position) for each asset.
     pub predecessors: BTreeMap<asset::Id, Option<asset::Id>>,
     /// The `TradeRouter` needs to be able to read trading positions from state.
@@ -40,7 +40,7 @@ impl<T: PositionRead> TradeRouter<T> {
         let positions = state.positions().await?;
 
         Ok(Self {
-            optimal_paths: BTreeMap::new(),
+            optimal_prices: BTreeMap::new(),
             predecessors: BTreeMap::new(),
             state,
             positions,
@@ -56,8 +56,9 @@ impl<T: PositionRead> TradeRouter<T> {
         trading_pair: &DirectedTradingPair,
         amount: &Amount,
     ) -> Result<Path> {
-        // The distance from the source asset to itself is always 0.
-        self.optimal_paths.entry(trading_pair.start).or_insert(0.0);
+        // The distance from the source asset to itself is always 0. TODO: isn't it actually 1??? but that doesn't work for bellman-ford.
+        // are all the optimal prices actually 1.0 - effective price?
+        self.optimal_prices.entry(trading_pair.start).or_insert(0.0);
 
         // Initialize predecessors for the source and target assets.
         self.predecessors.entry(trading_pair.start).or_default();
@@ -81,13 +82,13 @@ impl<T: PositionRead> TradeRouter<T> {
             // If there's not a distance from the source asset to either asset of the position's trading pair,
             // initialize it to infinite.
             if position_pair.asset_1() != trading_pair.start {
-                self.optimal_paths
+                self.optimal_prices
                     .entry(position_pair.asset_1())
                     .or_insert(f64::INFINITY);
             }
 
             if position_pair.asset_2() != trading_pair.start {
-                self.optimal_paths
+                self.optimal_prices
                     .entry(position_pair.asset_2())
                     .or_insert(f64::INFINITY);
             }
@@ -116,28 +117,30 @@ impl<T: PositionRead> TradeRouter<T> {
                 }
 
                 // If the distance to the destination can be shortened by taking the edge, update the optimal path.
-                if *self
-                    .optimal_paths
-                    .get(&position.position.phi.pair.asset_1())
-                    // Should be safe because all assets were initialized earlier
-                    .expect("all assets should be initialized")
-                    != f64::INFINITY
-                    && self
-                        .optimal_paths
+                
+                let composed_price= 
+                        self
+                        .optimal_prices
                         .get(&position.position.phi.pair.asset_1())
                         .unwrap()
                         // TODO: this shouldn't be a simple addition, i think it needs to compose the two trading functions
                         + 
-                            position.position.phi.component.effective_price()
-                        < *self
-                            .optimal_paths
+                            position.position.phi.component.effective_price();
+                if *self
+                    .optimal_prices
+                    .get(&position.position.phi.pair.asset_1())
+                    // Should be safe because all assets were initialized earlier
+                    .expect("all assets should be initialized")
+                    != f64::INFINITY
+                    && composed_price < *self
+                            .optimal_prices
                             .get(&position.position.phi.pair.asset_2())
                             .expect("all assets should be initialized")
                 {
-                    self.optimal_paths.insert(
+                    self.optimal_prices.insert(
                         position.position.phi.pair.asset_2(),
                     self
-                        .optimal_paths
+                        .optimal_prices
                         .get(&position.position.phi.pair.asset_1())
                         .unwrap()
                         // TODO: this shouldn't be a simple addition, i think it needs to compose the two trading functions
@@ -161,20 +164,20 @@ impl<T: PositionRead> TradeRouter<T> {
 
             // If the destination gets a better price by taking the position, update the optimal path.
             if *self
-                .optimal_paths
+                .optimal_prices
                 .get(&position.position.phi.pair.asset_1())
                 // Should be safe because all assets were initialized earlier
                 .expect("all assets should be initialized")
                 != f64::INFINITY
                 && self
-                    .optimal_paths
+                    .optimal_prices
                     .get(&position.position.phi.pair.asset_1())
                     .unwrap()
                 // TODO: should not be a simple addition, needs to compose the prices
                 + 
                     position.position.phi.component.effective_price()
                 < *self
-                    .optimal_paths
+                    .optimal_prices
                     .get(&position.position.phi.pair.asset_2())
                     .expect("all assets should be initialized")
             {
