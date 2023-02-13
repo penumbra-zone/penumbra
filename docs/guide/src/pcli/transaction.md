@@ -6,14 +6,14 @@ send them any amount of any asset you have.
 First, use balance to find the amount of assets you have:
 
 ```bash
-cargo run --release --bin pcli view balance
+pcli view balance
 ```
 
 Second, if I wanted to send 10 penumbra tokens
 to my friend, I could do that like this (filling in their full address at the end):
 
 ```bash
-cargo run --quiet --release --bin pcli tx send 10penumbra --to penumbrav2t...
+pcli tx send 10penumbra --to penumbrav2t...
 ```
 
 Notice that asset amounts are typed amounts, specified without a space between the amount (`10`)
@@ -26,13 +26,13 @@ In addition, to sending an asset, one may also stake penumbra tokens to validato
 Find a validator to stake to:
 
 ```bash
-cargo run --release --bin pcli query validator list
+pcli query validator list
 ```
 
 Copy and paste the identity key of one of the validators to stake to, then construct the staking tx:
 
 ```bash
-cargo run --release --bin pcli tx delegate 10penumbra --to penumbravalid...
+pcli tx delegate 10penumbra --to penumbravalid...
 ```
 
 To undelegate from a validator, use the `pcli tx undelegate` command, passing it the typed amount of
@@ -40,7 +40,7 @@ delegation tokens you wish to undelegate. Wait a moment for the network to proce
 then reclaim your funds:
 
 ```bash
-cargo run --release --bin pcli tx undelegate-claim
+pcli tx undelegate-claim
 ```
 
 Inspect the output; a message may instruct you to wait longer, for a new epoch. Check back and rerun the command
@@ -59,7 +59,7 @@ To submit a proposal, first generate a proposal template for the kind of proposa
 submit. For example, suppose we want to create a signaling proposal:
 
 ```bash
-cargo run --release --bin pcli tx proposal template --kind signaling --file proposal.json
+pcli tx proposal template --kind signaling --file proposal.json
 ```
 
 This outputs a JSON template for the proposal to the file `proposal.json`, where you can edit the
@@ -70,7 +70,7 @@ specify the proposal deposit in this action; it is determined automatically base
 parameters.
 
 ```bash
-cargo run --release --bin pcli tx proposal submit --file proposal.json
+pcli tx proposal submit --file proposal.json
 ```
 
 The proposal deposit will be immediately escrowed and the proposal voting period will start in the
@@ -85,13 +85,13 @@ proposal` subcommand.
 To list all the active proposals by their ID, use:
 
 ```bash
-cargo run --release --bin pcli query governance list-proposals
+pcli query governance list-proposals
 ```
 
 Other proposal query commands all follow the form:
 
 ```bash
-cargo run --release --bin pcli query governance proposal [PROPOSAL_ID] [QUERY]
+pcli query governance proposal [PROPOSAL_ID] [QUERY]
 ```
 
 These are the queries currently defined:
@@ -110,7 +110,7 @@ community consensus), you can do so before voting concludes. Note that this does
 to losing your deposit by veto, as withdrawn proposals can still be voted on and vetoed.
 
 ```bash
-cargo run --release --bin pcli tx proposal withdraw 0 --reason "some human-readable reason for withdrawal"
+pcli tx proposal withdraw 0 --reason "some human-readable reason for withdrawal"
 ```
 
 ### Voting On A Proposal
@@ -120,7 +120,7 @@ validator, you can vote on a proposal using the `validator vote` subcommand of `
 if you wanted to vote "yes" on proposal 1, you would do:
 
 ```bash
-cargo run --release --bin pcli validator vote yes --on 1
+pcli validator vote yes --on 1
 ```
 
 Validators, like delegators, cannot change their votes after they have voted.
@@ -140,13 +140,13 @@ on the volume of swaps occurring in each pair.
 You can check the current reserves for a trading pair using the `cpmm-reserves` dex query:
 
 ```bash
-cargo run --release --bin pcli -- q dex cpmm-reserves gm:penumbra
+pcli q dex cpmm-reserves gm:penumbra
 ```
 
 If you wanted to exchange 1 `penumbra` tokens for `gm` tokens, you could do so like so:
 
 ```bash
-cargo run --release --bin pcli -- tx swap --into gm 1penumbra
+pcli q tx swap --into gm 1penumbra
 ```
 
 This will handle generating the swap transaction and you'd soon have the market-rate equivalent of 1 `penumbra`

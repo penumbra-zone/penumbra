@@ -21,7 +21,7 @@ To join a testnet as a fullnode, check out the tag for the current testnet, run
 First, reset the testnet data from any prior testnet you may have joined:
 
 ```shell
-cargo run --bin pd --release -- testnet unsafe-reset-all
+pd testnet unsafe-reset-all
 ```
 
 This will delete the entire testnet data directory.
@@ -31,7 +31,7 @@ This will delete the entire testnet data directory.
 Next, generate a set of configs for the current testnet:
 
 ```shell
-cargo run --bin pd --release -- testnet join --external-address IP_ADDRESS --moniker MY_NODE_NAME
+pd testnet join --external-address IP_ADDRESS --moniker MY_NODE_NAME
 ```
 
 where `IP_ADDRESS` (like `1.2.3.4`) is the public IP address of the node you're running,
@@ -58,7 +58,7 @@ export RUST_LOG="warn,pd=debug,penumbra=debug" # or some other logging level
 ```
 
 ```shell
-cargo run --bin pd --release -- start --home ~/.penumbra/testnet_data/node0/pd
+pd start --home ~/.penumbra/testnet_data/node0/pd
 ```
 
 Then (perhaps in another terminal), run Tendermint, also specifying `--home`:
@@ -96,7 +96,7 @@ update the configuration for a validator.
 To create a template configuration, use `pcli validator template-definition`:
 
 ```console
-\$ cargo run --release --bin pcli -- validator definition template --file validator.toml
+\$ pcli validator definition template --file validator.toml
 \$ cat validator.toml
 # This is a template for a validator definition.
 #
@@ -176,13 +176,13 @@ After setting up metadata, funding streams, and the correct consensus key in
 your `validator.toml`, you can upload it to the chain:
 
 ```console
-cargo run --release --bin pcli -- validator definition upload --file validator.toml
+pcli validator definition upload --file validator.toml
 ```
 
 And verify that it's known to the chain:
 
 ```console
-cargo run --release --bin pcli -- query validator list -i
+pcli query validator list -i
 ```
 
 However your validator doesn't have anything delegated to it and will remain in
@@ -194,19 +194,19 @@ active set of validators.
 First find your validator's identity key:
 
 ```console
-cargo run --release --bin pcli -- validator identity
+pcli validator identity
 ```
 
 And then delegate some amount of `penumbra` to it:
 
 ```console
-cargo run --release --bin pcli -- tx delegate 1penumbra --to penumbravalid1g2huds8klwypzczfgx67j7zp6ntq2m5fxmctkf7ja96zn49d6s9qz72hu3
+pcli tx delegate 1penumbra --to penumbravalid1g2huds8klwypzczfgx67j7zp6ntq2m5fxmctkf7ja96zn49d6s9qz72hu3
 ```
 
 You should then see your balance of `penumbra` decreased and that you have received some amount of delegation tokens for your validator:
 
 ```console
-cargo run --release --bin pcli view balance
+pcli view balance
 ```
 
 Voting power will be calculated on the next epoch transition after your
@@ -222,7 +222,7 @@ deployment.  You can find the values in use for the current chain in its
 First fetch your existing validator definition from the chain:
 
 ```console
-cargo run --release --bin pcli -- validator definition fetch --file validator.toml
+pcli validator definition fetch --file validator.toml
 ```
 
 Then make any changes desired and **make sure to increase by `sequence_number` by at least 1!**
@@ -231,5 +231,5 @@ The `sequence_number` is a unique, increasing identifier for the version of the 
 After updating the validator definition you can upload it again to update your validator metadata on-chain:
 
 ```console
-cargo run --release --bin pcli -- validator definition upload --file validator.toml
+pcli validator definition upload --file validator.toml
 ```

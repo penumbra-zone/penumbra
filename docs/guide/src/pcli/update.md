@@ -9,11 +9,15 @@ cd penumbra && git fetch && git checkout 044-ananke
 Once again, build `pcli` with cargo:
 
 ```
-cargo build --release --bin pcli
+cargo build --release
 ```
 
 No wallet needs to be [generated](https://guide.penumbra.zone/main/pcli/wallet.html#generating-a-wallet). Instead, keep one's existing wallet and reset view data.
 
+
 ```
-cargo run --quiet --release --bin pcli view reset
+pcli view reset
 ```
+
+If you see an error containing `pcli: command not found`, make sure you have created a symlink for `pcli`,
+as described in the [install guide](https://guide.penumbra.zone/main/pcli/install.html).
