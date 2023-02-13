@@ -5,7 +5,7 @@ use async_stream::stream;
 use futures::{Stream, StreamExt};
 use tendermint::abci;
 
-use crate::future::CacheFuture;
+use crate::{future::CacheFuture, StateWrite};
 
 /// A cache of changes to the state of the blockchain.
 ///
@@ -25,10 +25,46 @@ pub struct Cache {
 impl Cache {
     /// Merge the given cache with this one, taking its writes in place of ours.
     pub fn merge(&mut self, other: Cache) {
+        // One might ask, why does this exist separately from `apply_to`?  The
+        // answer is that `apply_to` takes a `StateWrite`, so we'd have to have
+        // `Cache: StateWrite`, and that implies `Cache: StateRead`, but the
+        // `StateRead` trait assumes asynchronous access, and in any case, we
+        // probably don't want to be reading directly from a `Cache` (?)
         self.unwritten_changes.extend(other.unwritten_changes);
         self.nonconsensus_changes.extend(other.nonconsensus_changes);
         self.ephemeral_objects.extend(other.ephemeral_objects);
         self.events.extend(other.events);
+    }
+
+    /// Consume this cache, applying its writes to the given state.
+    pub fn apply_to<S: StateWrite>(self, mut state: S) {
+        for (key, value) in self.unwritten_changes {
+            if let Some(value) = value {
+                state.put_raw(key, value);
+            } else {
+                state.delete(key);
+            }
+        }
+
+        for (key, value) in self.nonconsensus_changes {
+            if let Some(value) = value {
+                state.nonconsensus_put_raw(key, value);
+            } else {
+                state.nonconsensus_delete(key);
+            }
+        }
+
+        for (key, value) in self.ephemeral_objects {
+            if let Some(value) = value {
+                state.object_put(key, value);
+            } else {
+                state.object_delete(key);
+            }
+        }
+
+        for event in self.events {
+            state.record(event);
+        }
     }
 
     /// Returns `true` if there are cached writes on top of the snapshot, and `false` otherwise.
