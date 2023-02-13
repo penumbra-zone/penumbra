@@ -1,4 +1,4 @@
-use std::{any::Any, future::Future, pin::Pin};
+use std::{any::Any, future::Future};
 
 use anyhow::Result;
 use futures::Stream;
@@ -6,6 +6,15 @@ use futures::Stream;
 /// Read access to chain state.
 pub trait StateRead: Send + Sync {
     type GetRawFut: Future<Output = Result<Option<Vec<u8>>>> + Send + 'static;
+    type PrefixRawStream<'a>: Stream<Item = Result<(String, Vec<u8>)>> + Send + 'a
+    where
+        Self: 'a;
+    type PrefixKeysStream<'a>: Stream<Item = Result<String>> + Send + 'a
+    where
+        Self: 'a;
+    type NonconsensusPrefixRawStream<'a>: Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + 'a
+    where
+        Self: 'a;
 
     /// Gets a value from the verifiable key-value store as raw bytes.
     ///
@@ -35,53 +44,48 @@ pub trait StateRead: Send + Sync {
     /// Retrieve all values for keys matching a prefix from the verifiable key-value store, as raw bytes.
     ///
     /// Users should generally prefer to use `prefix` or `prefix_proto` from an extension trait.
-    #[allow(clippy::type_complexity)]
-    fn prefix_raw<'a>(
-        &'a self,
-        prefix: &'a str,
-    ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + 'a>>;
+    fn prefix_raw<'a>(&'a self, prefix: &'a str) -> Self::PrefixRawStream<'a>;
 
     /// Retrieve all keys (but not values) matching a prefix from the verifiable key-value store.
-    fn prefix_keys<'a>(
-        &'a self,
-        prefix: &'a str,
-    ) -> Pin<Box<dyn Stream<Item = Result<String>> + Send + 'a>>;
+    fn prefix_keys<'a>(&'a self, prefix: &'a str) -> Self::PrefixKeysStream<'a>;
 
     /// Retrieve all values for keys matching a prefix from the non-verifiable key-value store, as raw bytes.
     ///
     /// Users should generally prefer to use wrapper methods in an extension trait.
-    #[allow(clippy::type_complexity)]
     fn nonconsensus_prefix_raw<'a>(
         &'a self,
         prefix: &'a [u8],
-    ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + 'a>>;
+    ) -> Self::NonconsensusPrefixRawStream<'a>;
 }
 
 impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
     type GetRawFut = S::GetRawFut;
+    type PrefixRawStream<'b> = S::PrefixRawStream<'b>
+    where
+        Self: 'b;
+    type PrefixKeysStream<'b> = S::PrefixKeysStream<'b>
+    where
+        Self: 'b;
+    type NonconsensusPrefixRawStream<'b> = S::NonconsensusPrefixRawStream<'b>
+    where
+        Self: 'b;
 
     fn get_raw(&self, key: &str) -> Self::GetRawFut {
         (**self).get_raw(key)
     }
 
-    fn prefix_raw<'b>(
-        &'b self,
-        prefix: &'b str,
-    ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + 'b>> {
+    fn prefix_raw<'b>(&'b self, prefix: &'b str) -> S::PrefixRawStream<'b> {
         (**self).prefix_raw(prefix)
     }
 
-    fn prefix_keys<'b>(
-        &'b self,
-        prefix: &'b str,
-    ) -> Pin<Box<dyn Stream<Item = Result<String>> + Send + 'b>> {
+    fn prefix_keys<'b>(&'b self, prefix: &'b str) -> S::PrefixKeysStream<'b> {
         (**self).prefix_keys(prefix)
     }
 
     fn nonconsensus_prefix_raw<'b>(
         &'b self,
         prefix: &'b [u8],
-    ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + 'b>> {
+    ) -> S::NonconsensusPrefixRawStream<'b> {
         (**self).nonconsensus_prefix_raw(prefix)
     }
 
@@ -96,29 +100,32 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
 
 impl<'a, S: StateRead + Send + Sync> StateRead for &'a mut S {
     type GetRawFut = S::GetRawFut;
+    type PrefixRawStream<'b> = S::PrefixRawStream<'b>
+    where
+        Self: 'b;
+    type PrefixKeysStream<'b> = S::PrefixKeysStream<'b>
+    where
+        Self: 'b;
+    type NonconsensusPrefixRawStream<'b> = S::NonconsensusPrefixRawStream<'b>
+    where
+        Self: 'b;
 
     fn get_raw(&self, key: &str) -> Self::GetRawFut {
         (**self).get_raw(key)
     }
 
-    fn prefix_raw<'b>(
-        &'b self,
-        prefix: &'b str,
-    ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + 'b>> {
+    fn prefix_raw<'b>(&'b self, prefix: &'b str) -> S::PrefixRawStream<'b> {
         (**self).prefix_raw(prefix)
     }
 
-    fn prefix_keys<'b>(
-        &'b self,
-        prefix: &'b str,
-    ) -> Pin<Box<dyn Stream<Item = Result<String>> + Send + 'b>> {
+    fn prefix_keys<'b>(&'b self, prefix: &'b str) -> S::PrefixKeysStream<'b> {
         (**self).prefix_keys(prefix)
     }
 
     fn nonconsensus_prefix_raw<'b>(
         &'b self,
         prefix: &'b [u8],
-    ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + 'b>> {
+    ) -> S::NonconsensusPrefixRawStream<'b> {
         (**self).nonconsensus_prefix_raw(prefix)
     }
 

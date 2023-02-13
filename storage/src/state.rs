@@ -134,6 +134,10 @@ impl State {
 #[async_trait]
 impl StateRead for State {
     type GetRawFut = CacheFuture<SnapshotFuture>;
+    type PrefixRawStream<'a> = Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + 'a>>;
+    type PrefixKeysStream<'a> = Pin<Box<dyn Stream<Item = Result<String>> + Send + 'a>>;
+    type NonconsensusPrefixRawStream<'a> =
+        Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + 'a>>;
 
     fn get_raw(&self, key: &str) -> Self::GetRawFut {
         self.cache

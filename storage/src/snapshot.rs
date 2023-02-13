@@ -1,8 +1,7 @@
-use std::{any::Any, pin::Pin, sync::Arc};
+use std::{any::Any, sync::Arc};
 
 use anyhow::Result;
 use async_trait::async_trait;
-use futures::Stream;
 use jmt::storage::{LeafNode, Node, NodeKey, TreeReader};
 use tokio::sync::mpsc;
 use tracing::Span;
@@ -87,6 +86,11 @@ impl Snapshot {
 #[async_trait]
 impl StateRead for Snapshot {
     type GetRawFut = crate::future::SnapshotFuture;
+    type PrefixRawStream<'a> =
+        tokio_stream::wrappers::ReceiverStream<anyhow::Result<(String, Vec<u8>)>>;
+    type PrefixKeysStream<'a> = tokio_stream::wrappers::ReceiverStream<anyhow::Result<String>>;
+    type NonconsensusPrefixRawStream<'a> =
+        tokio_stream::wrappers::ReceiverStream<anyhow::Result<(Vec<u8>, Vec<u8>)>>;
 
     /// Fetch a key from the JMT column family.
     fn get_raw(&self, key: &str) -> Self::GetRawFut {
@@ -124,10 +128,7 @@ impl StateRead for Snapshot {
         )
     }
 
-    fn prefix_raw<'a>(
-        &'a self,
-        prefix: &'a str,
-    ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + 'a>> {
+    fn prefix_raw<'a>(&'a self, prefix: &'a str) -> Self::PrefixRawStream<'a> {
         let span = Span::current();
         let self2 = self.clone();
 
@@ -166,16 +167,13 @@ impl StateRead for Snapshot {
             })
             .expect("should be able to spawn_blocking");
 
-        Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx))
+        tokio_stream::wrappers::ReceiverStream::new(rx)
     }
 
     // NOTE: this implementation is almost the same as the above, but without
     // fetching the values. not totally clear if this could be combined, or if that would
     // be better overall.
-    fn prefix_keys<'a>(
-        &'a self,
-        prefix: &'a str,
-    ) -> Pin<Box<dyn Stream<Item = Result<String>> + Send + 'a>> {
+    fn prefix_keys<'a>(&'a self, prefix: &'a str) -> Self::PrefixKeysStream<'a> {
         let span = Span::current();
         let self2 = self.clone();
 
@@ -207,13 +205,13 @@ impl StateRead for Snapshot {
             })
             .expect("should be able to spawn_blocking");
 
-        Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx))
+        tokio_stream::wrappers::ReceiverStream::new(rx)
     }
 
     fn nonconsensus_prefix_raw<'a>(
         &'a self,
         prefix: &'a [u8],
-    ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + 'a>> {
+    ) -> Self::NonconsensusPrefixRawStream<'a> {
         let span = Span::current();
         let self2 = self.clone();
 
@@ -244,7 +242,7 @@ impl StateRead for Snapshot {
             })
             .expect("should be able to spawn_blocking");
 
-        Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx))
+        tokio_stream::wrappers::ReceiverStream::new(rx)
     }
 
     fn object_get<T: Any + Send + Sync>(&self, _key: &str) -> Option<&T> {

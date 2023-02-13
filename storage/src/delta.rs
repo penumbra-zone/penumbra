@@ -1,5 +1,7 @@
-use std::{any::Any, sync::Arc};
+use std::{any::Any, pin::Pin, sync::Arc};
 
+use anyhow::Result;
+use futures::Stream;
 use parking_lot::RwLock;
 use tendermint::abci;
 
@@ -118,6 +120,16 @@ impl<S: StateRead + StateWrite> StateDelta<S> {
 
 impl<S: StateRead + StateWrite> StateRead for StateDelta<S> {
     type GetRawFut = CacheFuture<S::GetRawFut>;
+    type PrefixRawStream<'a> = Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + 'a>>
+    where
+        Self: 'a;
+    type PrefixKeysStream<'a> = Pin<Box<dyn Stream<Item = Result<String>> + Send + 'a>>
+    where
+        Self: 'a;
+    type NonconsensusPrefixRawStream<'a> =
+        Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + 'a>>
+    where
+        Self: 'a;
 
     fn get_raw(&self, key: &str) -> Self::GetRawFut {
         // Check if we have a cache hit in the leaf cache.
