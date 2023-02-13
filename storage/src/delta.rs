@@ -35,7 +35,7 @@ use crate::{future::CacheFuture, Cache, StateRead, StateWrite};
 /// after `apply()` has been called, but ideally this should not be a problem in
 /// practice: the API is intended to explore a tree of possible execution paths;
 /// once one has been selected, the others should be discarded.
-pub struct StateDelta<S: StateRead + StateWrite> {
+pub struct StateDelta<S: StateRead> {
     /// The underlying state instance.
     ///
     /// The Arc<_> allows it to be shared between different stacks of delta updates,
@@ -55,7 +55,7 @@ pub struct StateDelta<S: StateRead + StateWrite> {
     leaf_cache: Cache,
 }
 
-impl<S: StateRead + StateWrite> StateDelta<S> {
+impl<S: StateRead> StateDelta<S> {
     /// Create a new tree of possible updates to an underlying `state`.
     pub fn new(state: S) -> Self {
         Self {
@@ -84,7 +84,9 @@ impl<S: StateRead + StateWrite> StateDelta<S> {
             leaf_cache: Cache::default(),
         }
     }
+}
 
+impl<S: StateRead + StateWrite> StateDelta<S> {
     /// Apply all changes in this branch of the tree to the underlying state,
     /// releasing it back to the caller and invalidating all other branches of
     /// the tree.
