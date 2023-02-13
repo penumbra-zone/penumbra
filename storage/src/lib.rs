@@ -37,6 +37,7 @@
 //! or domain types, allowing its use as an object store.
 
 mod cache;
+mod delta;
 mod metrics;
 mod snapshot;
 mod snapshot_cache;
@@ -47,6 +48,7 @@ use cache::Cache;
 use snapshot::Snapshot;
 
 pub use crate::metrics::register_metrics;
+pub use delta::StateDelta;
 pub use jmt::{ics23_spec, RootHash};
 pub use state::{ArcStateExt, State, StateRead, StateTransaction, StateWrite};
 pub use storage::{StateNotification, Storage, TempStorage};
