@@ -1,11 +1,13 @@
 use crate::{DomainType, Message};
 
-use anyhow::{Context, Result};
-use std::{fmt::Debug, future::Future, pin::Pin};
+use anyhow::Result;
+use std::{fmt::Debug, pin::Pin};
 
 use async_trait::async_trait;
-use futures::{FutureExt, Stream, StreamExt, TryFutureExt};
+use futures::{Stream, StreamExt};
 use penumbra_storage::StateRead;
+
+use super::future::{DomainFuture, ProtoFuture};
 
 #[async_trait]
 pub trait StateReadProto: StateRead + Send + Sync {
@@ -16,22 +18,15 @@ pub trait StateReadProto: StateRead + Send + Sync {
     /// * `Ok(Some(v))` if the value is present and parseable as a domain type `D`;
     /// * `Ok(None)` if the value is missing;
     /// * `Err(_)` if the value is present but not parseable as a domain type `D`, or if an underlying storage error occurred.
-    fn get<D>(&self, key: &str) -> Pin<Box<dyn Future<Output = Result<Option<D>>> + Send + 'static>>
+    fn get<D>(&self, key: &str) -> DomainFuture<D, Self::GetRawFut>
     where
         D: DomainType + std::fmt::Debug,
         <D as TryFrom<D::Proto>>::Error: Into<anyhow::Error> + Send + Sync + 'static,
     {
-        self.get_proto(key)
-            .and_then(|maybe_proto| async move {
-                maybe_proto
-                    .map(|proto| {
-                        D::try_from(proto)
-                            .map_err(Into::into)
-                            .context("could not parse domain type from proto")
-                    })
-                    .transpose()
-            })
-            .boxed()
+        DomainFuture {
+            inner: self.get_raw(key),
+            _marker: std::marker::PhantomData,
+        }
     }
 
     /// Gets a value from the verifiable key-value store as a proto type.
@@ -41,25 +36,14 @@ pub trait StateReadProto: StateRead + Send + Sync {
     /// * `Ok(Some(v))` if the value is present and parseable as a proto type `P`;
     /// * `Ok(None)` if the value is missing;
     /// * `Err(_)` if the value is present but not parseable as a proto type `P`, or if an underlying storage error occurred.
-    fn get_proto<P>(
-        &self,
-        key: &str,
-    ) -> Pin<Box<dyn Future<Output = Result<Option<P>>> + Send + 'static>>
+    fn get_proto<P>(&self, key: &str) -> ProtoFuture<P, Self::GetRawFut>
     where
         P: Message + Default + Debug,
     {
-        self.get_raw(key)
-            .and_then(|maybe_bytes| async move {
-                match maybe_bytes {
-                    None => Ok(None),
-                    Some(bytes) => {
-                        let v = Message::decode(&*bytes)
-                            .context("could not decode proto from bytes")?;
-                        Ok(Some(v))
-                    }
-                }
-            })
-            .boxed()
+        ProtoFuture {
+            inner: self.get_raw(key),
+            _marker: std::marker::PhantomData,
+        }
     }
 
     /// Retrieve all values for keys matching a prefix from consensus-critical state, as domain types.

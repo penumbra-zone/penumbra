@@ -3706,6 +3706,7 @@ dependencies = [
  "pbjson",
  "pbjson-types",
  "penumbra-storage",
+ "pin-project",
  "prost",
  "prost-types",
  "serde",
