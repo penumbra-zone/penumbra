@@ -56,12 +56,9 @@ pub struct StateDelta<S: StateRead + StateWrite> {
 impl<S: StateRead + StateWrite> StateDelta<S> {
     /// Create a new tree of possible updates to an underlying `state`.
     pub fn new(state: S) -> Self {
-        // 8 seems like a reasonable bound on the number of layers we'd see in practice ?
-        let mut layers = Vec::with_capacity(8);
-        layers.push(Arc::new(RwLock::new(Some(Cache::default()))));
         Self {
             state: Arc::new(RwLock::new(Some(state))),
-            layers,
+            layers: Vec::default(),
             leaf_cache: Cache::default(),
         }
     }
@@ -86,6 +83,9 @@ impl<S: StateRead + StateWrite> StateDelta<S> {
         }
     }
 
+    /// Apply all changes in this branch of the tree to the underlying state,
+    /// releasing it back to the caller and invalidating all other branches of
+    /// the tree.
     pub fn apply(self) -> S {
         // Take ownership of the underlying state, immediately invalidating all
         // other delta stacks in the same family.
