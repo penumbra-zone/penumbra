@@ -23,6 +23,16 @@ pub struct Cache {
 }
 
 impl Cache {
+    // Temporary function for use in stream impls
+    pub(crate) fn clone_trees(&self) -> Cache {
+        Cache {
+            unwritten_changes: self.unwritten_changes.clone(),
+            nonconsensus_changes: self.nonconsensus_changes.clone(),
+            // can't clone objects because they can't be bounded as Clone
+            ..Default::default()
+        }
+    }
+
     /// Merge the given cache with this one, taking its writes in place of ours.
     pub fn merge(&mut self, other: Cache) {
         // One might ask, why does this exist separately from `apply_to`?  The
