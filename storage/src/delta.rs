@@ -1,11 +1,16 @@
-use std::{any::Any, pin::Pin, sync::Arc};
+use std::{any::Any, sync::Arc};
 
-use anyhow::Result;
-use futures::Stream;
+use futures::StreamExt;
 use parking_lot::RwLock;
 use tendermint::abci;
 
-use crate::{future::CacheFuture, Cache, StateRead, StateWrite};
+use crate::{
+    future::{
+        CacheFuture, StateDeltaNonconsensusPrefixRawStream, StateDeltaPrefixKeysStream,
+        StateDeltaPrefixRawStream,
+    },
+    Cache, StateRead, StateWrite,
+};
 
 /// An arbitrarily-deeply nested stack of delta updates to an underlying state.
 ///
@@ -124,12 +129,12 @@ impl<S: StateRead + StateWrite> StateDelta<S> {
     }
 }
 
-impl<S: StateRead + StateWrite> StateRead for StateDelta<S> {
+impl<S: StateRead> StateRead for StateDelta<S> {
     type GetRawFut = CacheFuture<S::GetRawFut>;
-    type PrefixRawStream = Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + 'static>>;
-    type PrefixKeysStream = Pin<Box<dyn Stream<Item = Result<String>> + Send + 'static>>;
+    type PrefixRawStream = StateDeltaPrefixRawStream<S::PrefixRawStream>;
+    type PrefixKeysStream = StateDeltaPrefixKeysStream<S::PrefixKeysStream>;
     type NonconsensusPrefixRawStream =
-        Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + 'static>>;
+        StateDeltaNonconsensusPrefixRawStream<S::NonconsensusPrefixRawStream>;
 
     fn get_raw(&self, key: &str) -> Self::GetRawFut {
         // Check if we have a cache hit in the leaf cache.
@@ -224,39 +229,59 @@ impl<S: StateRead + StateWrite> StateRead for StateDelta<S> {
             .object_get(key)
     }
 
-    fn prefix_raw(
-        &self,
-        _prefix: &str,
-    ) -> std::pin::Pin<
-        Box<dyn futures::Stream<Item = anyhow::Result<(String, Vec<u8>)>> + Send + 'static>,
-    > {
-        todo!()
+    fn prefix_raw(&self, prefix: &str) -> Self::PrefixRawStream {
+        let underlying = self
+            .state
+            .read()
+            .as_ref()
+            .expect("delta must not have been applied")
+            .prefix_raw(prefix)
+            .peekable();
+        StateDeltaPrefixRawStream {
+            underlying,
+            layers: self.layers.clone(),
+            leaf_cache: self.leaf_cache.clone(),
+            last_key: None,
+            prefix: prefix.to_owned(),
+        }
     }
 
-    fn prefix_keys(
-        &self,
-        _prefix: &str,
-    ) -> std::pin::Pin<Box<dyn futures::Stream<Item = anyhow::Result<String>> + Send + 'static>>
-    {
-        todo!()
+    fn prefix_keys(&self, prefix: &str) -> Self::PrefixKeysStream {
+        let underlying = self
+            .state
+            .read()
+            .as_ref()
+            .expect("delta must not have been applied")
+            .prefix_keys(prefix)
+            .peekable();
+        StateDeltaPrefixKeysStream {
+            underlying,
+            layers: self.layers.clone(),
+            leaf_cache: self.leaf_cache.clone(),
+            last_key: None,
+            prefix: prefix.to_owned(),
+        }
     }
 
-    fn nonconsensus_prefix_raw(
-        &self,
-        _prefix: &[u8],
-    ) -> std::pin::Pin<
-        Box<dyn futures::Stream<Item = anyhow::Result<(Vec<u8>, Vec<u8>)>> + Send + 'static>,
-    > {
-        // TODO: implementing this will require cloning the layer stack and moving the stack
-        // into the Stream implementation, so that it can reference all of the caches at all levels
-        // in order to read from them while interleaving them with the stream from the underlying state
-        // doing a non-recursive, "collapsed" implementation would be more efficient
-        // but probably quite baroque without good method factoring
-        todo!()
+    fn nonconsensus_prefix_raw(&self, prefix: &[u8]) -> Self::NonconsensusPrefixRawStream {
+        let underlying = self
+            .state
+            .read()
+            .as_ref()
+            .expect("delta must not have been applied")
+            .nonconsensus_prefix_raw(prefix)
+            .peekable();
+        StateDeltaNonconsensusPrefixRawStream {
+            underlying,
+            layers: self.layers.clone(),
+            leaf_cache: self.leaf_cache.clone(),
+            last_key: None,
+            prefix: prefix.to_vec(),
+        }
     }
 }
 
-impl<S: StateRead + StateWrite> StateWrite for StateDelta<S> {
+impl<S: StateRead> StateWrite for StateDelta<S> {
     fn put_raw(&mut self, key: String, value: jmt::OwnedValue) {
         self.leaf_cache
             .write()
