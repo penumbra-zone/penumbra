@@ -33,7 +33,7 @@ pub trait StateRead: Send + Sync {
     ///
     /// - `Some(&T)` if a value of type `T` was present at `key`.
     /// - `None` if `key` was not present, or if `key` was present but the value was not of type `T`.
-    fn object_get<T: Any + Send + Sync>(&self, key: &'static str) -> Option<&T>;
+    fn object_get<T: Any + Send + Sync + Clone>(&self, key: &'static str) -> Option<T>;
 
     /// Retrieve all values for keys matching a prefix from the verifiable key-value store, as raw bytes.
     ///
@@ -75,7 +75,7 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
         (**self).nonconsensus_get_raw(key)
     }
 
-    fn object_get<T: Any + Send + Sync>(&self, key: &'static str) -> Option<&T> {
+    fn object_get<T: Any + Send + Sync + Clone>(&self, key: &'static str) -> Option<T> {
         (**self).object_get(key)
     }
 }
@@ -106,7 +106,7 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a mut S {
         (**self).nonconsensus_get_raw(key)
     }
 
-    fn object_get<T: Any + Send + Sync>(&self, key: &'static str) -> Option<&T> {
+    fn object_get<T: Any + Send + Sync + Clone>(&self, key: &'static str) -> Option<T> {
         (**self).object_get(key)
     }
 }

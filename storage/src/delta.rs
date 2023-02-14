@@ -203,8 +203,7 @@ impl<S: StateRead + StateWrite> StateRead for StateDelta<S> {
         )
     }
 
-    fn object_get<T: std::any::Any + Send + Sync>(&self, _key: &'static str) -> Option<&T> {
-        /*
+    fn object_get<T: std::any::Any + Send + Sync + Clone>(&self, key: &'static str) -> Option<T> {
         // Iterate through the stack, top to bottom, to see if we have a cache hit.
         for layer in self.layers.iter().rev() {
             if let Some(entry) = layer
@@ -214,11 +213,15 @@ impl<S: StateRead + StateWrite> StateRead for StateDelta<S> {
                 .ephemeral_objects
                 .get(key)
             {
-                return entry.as_ref().and_then(|v| v.downcast_ref());
+                return entry.as_ref().and_then(|v| v.downcast_ref()).cloned();
             }
         }
-         */
-        unimplemented!("object_get method signature is incompatible with StateDelta -- returning a borrow requires holding a read lock")
+        // Fall through to the underlying store.
+        self.state
+            .read()
+            .as_ref()
+            .expect("delta must not have been applied")
+            .object_get(key)
     }
 
     fn prefix_raw(

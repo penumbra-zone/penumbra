@@ -73,7 +73,7 @@ impl ActionHandler for SwapClaim {
     #[instrument(name = "swap_claim", skip(self, state))]
     async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
         // Record the output notes in the state.
-        let source = state.object_get("source").cloned().unwrap_or_default();
+        let source = state.object_get("source").unwrap_or_default();
 
         state
             .add_state_payload(StatePayload::RolledUp(
