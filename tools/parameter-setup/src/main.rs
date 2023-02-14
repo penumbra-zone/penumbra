@@ -46,8 +46,8 @@ fn write_params(
     let pk_writer = BufWriter::new(pk_file);
     let vk_writer = BufWriter::new(vk_file);
 
-    ProvingKey::serialize(pk, pk_writer).expect("can serialize ProvingKey");
-    VerifyingKey::serialize(vk, vk_writer).expect("can serialize VerifyingKey");
+    ProvingKey::serialize_unchecked(pk, pk_writer).expect("can serialize ProvingKey");
+    VerifyingKey::serialize_unchecked(vk, vk_writer).expect("can serialize VerifyingKey");
 
     Ok(())
 }
