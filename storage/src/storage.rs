@@ -10,9 +10,9 @@ use rocksdb::{Options, DB};
 use tokio::sync::watch;
 use tracing::Span;
 
-use crate::snapshot::Snapshot;
-use crate::snapshot_cache::SnapshotCache;
-use crate::State;
+use crate::{cache::Cache, snapshot::Snapshot};
+use crate::{snapshot_cache::SnapshotCache, StateDelta};
+use crate::{State, StateRead};
 
 mod temp;
 pub use temp::TempStorage;
@@ -115,18 +115,11 @@ impl Storage {
         self.0.snapshots.read().get(version).map(State::new)
     }
 
-    /// Commits the provided [`State`] to persistent storage as the latest
-    /// version of the chain state.
-    pub async fn commit(&self, state: State) -> Result<crate::RootHash> {
-        // We use wrapping_add here so that we can write `new_version = 0` by
-        // overflowing `PRE_GENESIS_VERSION`.
-        let old_version = self.latest_version();
-        let new_version = old_version.wrapping_add(1);
-        tracing::trace!(old_version, new_version);
-        if old_version != state.version() {
-            return Err(anyhow::anyhow!("version mismatch in commit: expected state forked from version {} but found state forked from version {}", old_version, state.version()));
-        }
-
+    async fn commit_inner(
+        &self,
+        cache: Cache,
+        new_version: jmt::Version,
+    ) -> Result<crate::RootHash> {
         let span = Span::current();
         let inner = self.0.clone();
 
@@ -137,8 +130,7 @@ impl Storage {
                     let snap = inner.snapshots.read().latest();
                     let jmt = JellyfishMerkleTree::new(&snap);
 
-                    let unwritten_changes: Vec<_> = state
-                        .cache
+                    let unwritten_changes: Vec<_> = cache
                         .unwritten_changes
                         .into_iter()
                         // Pre-calculate all KeyHashes for later storage in `jmt_keys`
@@ -172,7 +164,7 @@ impl Storage {
                     tracing::trace!(?root_hash, "wrote node batch to backing store");
 
                     // Write the unwritten changes from the nonconsensus to RocksDB.
-                    for (k, v) in state.cache.nonconsensus_changes.into_iter() {
+                    for (k, v) in cache.nonconsensus_changes.into_iter() {
                         let nonconsensus_cf = inner
                             .db
                             .cf_handle("nonconsensus")
@@ -203,6 +195,40 @@ impl Storage {
                 })
             })?
             .await?
+    }
+
+    /// Commits the provided [`State`] to persistent storage as the latest
+    /// version of the chain state.
+    pub async fn commit(&self, state: State) -> Result<crate::RootHash> {
+        // We use wrapping_add here so that we can write `new_version = 0` by
+        // overflowing `PRE_GENESIS_VERSION`.
+        let old_version = self.latest_version();
+        let new_version = old_version.wrapping_add(1);
+        tracing::trace!(old_version, new_version);
+        if old_version != state.version() {
+            return Err(anyhow::anyhow!("version mismatch in commit: expected state forked from version {} but found state forked from version {}", old_version, state.version()));
+        }
+        self.commit_inner(state.cache, new_version).await
+    }
+
+    /// Commits the provided [`StateDelta`] to persistent storage as the latest
+    /// version of the chain state.
+    pub async fn commit_delta<S: StateRead>(
+        &self,
+        delta: StateDelta<S>,
+    ) -> Result<crate::RootHash> {
+        // We use wrapping_add here so that we can write `new_version = 0` by
+        // overflowing `PRE_GENESIS_VERSION`.
+        let old_version = self.latest_version();
+        let new_version = old_version.wrapping_add(1);
+        tracing::trace!(old_version, new_version);
+        /*
+        if old_version != state.version() {
+            return Err(anyhow::anyhow!("version mismatch in commit: expected state forked from version {} but found state forked from version {}", old_version, state.version()));
+        }
+         */
+        let (_state, changes) = delta.flatten();
+        self.commit_inner(changes, new_version).await
     }
 
     /// Returns the internal handle to RocksDB, this is useful to test adjacent storage crates.
