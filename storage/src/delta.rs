@@ -93,16 +93,11 @@ impl<S: StateRead> StateDelta<S> {
             leaf_cache: Arc::new(RwLock::new(Some(Cache::default()))),
         }
     }
-}
 
-impl<S: StateRead + StateWrite> StateDelta<S> {
-    /// Apply all changes in this branch of the tree to the underlying state,
-    /// releasing it back to the caller and invalidating all other branches of
-    /// the tree.
-    pub fn apply(self) -> S {
+    pub(crate) fn flatten(self) -> (S, Cache) {
         // Take ownership of the underlying state, immediately invalidating all
         // other delta stacks in the same family.
-        let mut state = self
+        let state = self
             .state
             .write()
             .take()
@@ -120,6 +115,17 @@ impl<S: StateRead + StateWrite> StateDelta<S> {
         }
         // Last, apply the changes in the leaf cache.
         changes.merge(self.leaf_cache.write().take().unwrap());
+
+        (state, changes)
+    }
+}
+
+impl<S: StateRead + StateWrite> StateDelta<S> {
+    /// Apply all changes in this branch of the tree to the underlying state,
+    /// releasing it back to the caller and invalidating all other branches of
+    /// the tree.
+    pub fn apply(self) -> S {
+        let (mut state, changes) = self.flatten();
 
         // Apply the flattened changes to the underlying state.
         changes.apply_to(&mut state);
