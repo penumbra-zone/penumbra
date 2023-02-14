@@ -51,7 +51,7 @@ impl ActionHandler for Swap {
         state.put_swap_flow(&swap.body.trading_pair, swap_flow);
 
         // Record the swap commitment in the state.
-        let source = state.object_get("source").cloned().unwrap_or_default();
+        let source = state.object_get("source").unwrap_or_default();
         state
             .add_state_payload(StatePayload::Swap {
                 source,

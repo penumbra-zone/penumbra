@@ -71,7 +71,6 @@ pub trait ValidatorUpdates: StateRead {
     /// Set during `end_block`.
     fn tendermint_validator_updates(&self) -> Option<Vec<ValidatorUpdate>> {
         self.object_get(state_key::internal::stub_tendermint_validator_updates())
-            .cloned()
             .unwrap_or(None)
     }
 }
@@ -954,7 +953,6 @@ pub trait StateReadExt: StateRead {
     /// epoch.
     fn stub_delegation_changes(&self) -> DelegationChanges {
         self.object_get(state_key::internal::stub_delegation_changes())
-            .cloned()
             .unwrap_or_default()
     }
 

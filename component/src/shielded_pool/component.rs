@@ -111,7 +111,6 @@ pub trait StateReadExt: StateRead {
 
     fn stub_compact_block(&self) -> CompactBlock {
         self.object_get(state_key::internal::stub_compact_block())
-            .cloned()
             .unwrap_or_default()
     }
 

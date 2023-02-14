@@ -49,7 +49,7 @@ impl ActionHandler for Spend {
 
     #[instrument(name = "spend", skip(self, state))]
     async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
-        let source = state.object_get("source").cloned().unwrap_or_default();
+        let source = state.object_get("source").unwrap_or_default();
 
         state.spend_nullifier(self.body.nullifier, source).await;
 

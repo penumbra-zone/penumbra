@@ -242,7 +242,7 @@ impl StateRead for Snapshot {
         tokio_stream::wrappers::ReceiverStream::new(rx)
     }
 
-    fn object_get<T: Any + Send + Sync>(&self, _key: &str) -> Option<&T> {
+    fn object_get<T: Any + Send + Sync + Clone>(&self, _key: &str) -> Option<T> {
         // No-op -- this will never be called internally, and `Snapshot` is not exposed in public API
         None
     }

@@ -149,9 +149,12 @@ impl<'tx> StateRead for Transaction<'tx> {
         stream.boxed()
     }
 
-    fn object_get<T: Any + Send + Sync>(&self, key: &'static str) -> Option<&T> {
+    fn object_get<T: Any + Send + Sync + Clone>(&self, key: &'static str) -> Option<T> {
         if let Some(v_or_deletion) = self.cache.ephemeral_objects.get(key) {
-            return v_or_deletion.as_ref().and_then(|v| v.downcast_ref());
+            return v_or_deletion
+                .as_ref()
+                .and_then(|v| v.downcast_ref())
+                .cloned();
         }
         self.state.object_get(key)
     }

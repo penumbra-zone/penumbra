@@ -149,12 +149,13 @@ impl StateRead for State {
             .nonconsensus_get_raw_or_else(key, || self.snapshot.nonconsensus_get_raw(key))
     }
 
-    fn object_get<T: Any + Send + Sync>(&self, key: &str) -> Option<&T> {
+    fn object_get<T: Any + Send + Sync + Clone>(&self, key: &str) -> Option<T> {
         self.cache
             .ephemeral_objects
             .get(key)
             .and_then(|maybe_object| maybe_object.as_ref())
             .and_then(|object| object.downcast_ref())
+            .cloned()
     }
 
     fn prefix_raw(

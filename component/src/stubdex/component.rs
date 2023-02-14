@@ -116,7 +116,6 @@ pub trait StateReadExt: StateRead {
 
     fn swap_flows(&self) -> BTreeMap<TradingPair, SwapFlow> {
         self.object_get::<BTreeMap<TradingPair, SwapFlow>>(state_key::swap_flows())
-            .cloned()
             .unwrap_or_default()
     }
 }
