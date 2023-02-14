@@ -45,9 +45,13 @@ pbjson-types = "0.5"
 num-bigint = "0.4"
 serde_json = "1"
 tracing = "0.1"
-tokio = { version = "1.21.1", features = ["full"]}
+tokio = { version = "1.21.1", features = ["full"], optional=true}
 
 [dev-dependencies]
 proptest = "1"
 proptest-derive = "0.3"
 serde_json = "1"
+
+[features]
+default = []
+fast-proofs = ["tokio"]
