@@ -36,6 +36,6 @@ Following Monday (release day):
 - [ ] Create new git tag e.g. `006-orthosie` on `main` (tags created on any other branches will not transfer when merged in) and push to shared remote: `git tag -a <tag_name>` - **must be annotated tag, i.e. `git tag -a`** for Vergen build. This will create a `Waiting` GitHub Action for deployment.
 - [ ] You must [manually review](https://docs.github.com/en/actions/managing-workflow-runs/reviewing-deployments) the `Waiting` deployment in the GitHub Action UI before the deployment will begin. Monitor the GitHub action to ensure it completes after it is approved.
 - [ ] Update the User Guide to mention the newly created git tag.
-- [ ] Delegate to the Penumbra Labs CI validator
+- [ ] Update Galileo deployment, [following docs](https://github.com/penumbra-zone/galileo).
 - [ ] Make GitHub release object and include the announcement
 - [ ] Make the announcement to Discord! 🎉🎉🎉
