@@ -86,10 +86,10 @@ impl Snapshot {
 #[async_trait]
 impl StateRead for Snapshot {
     type GetRawFut = crate::future::SnapshotFuture;
-    type PrefixRawStream<'a> =
+    type PrefixRawStream =
         tokio_stream::wrappers::ReceiverStream<anyhow::Result<(String, Vec<u8>)>>;
-    type PrefixKeysStream<'a> = tokio_stream::wrappers::ReceiverStream<anyhow::Result<String>>;
-    type NonconsensusPrefixRawStream<'a> =
+    type PrefixKeysStream = tokio_stream::wrappers::ReceiverStream<anyhow::Result<String>>;
+    type NonconsensusPrefixRawStream =
         tokio_stream::wrappers::ReceiverStream<anyhow::Result<(Vec<u8>, Vec<u8>)>>;
 
     /// Fetch a key from the JMT column family.
@@ -128,7 +128,7 @@ impl StateRead for Snapshot {
         )
     }
 
-    fn prefix_raw<'a>(&'a self, prefix: &'a str) -> Self::PrefixRawStream<'a> {
+    fn prefix_raw(&self, prefix: &str) -> Self::PrefixRawStream {
         let span = Span::current();
         let self2 = self.clone();
 
@@ -173,7 +173,7 @@ impl StateRead for Snapshot {
     // NOTE: this implementation is almost the same as the above, but without
     // fetching the values. not totally clear if this could be combined, or if that would
     // be better overall.
-    fn prefix_keys<'a>(&'a self, prefix: &'a str) -> Self::PrefixKeysStream<'a> {
+    fn prefix_keys(&self, prefix: &str) -> Self::PrefixKeysStream {
         let span = Span::current();
         let self2 = self.clone();
 
@@ -208,10 +208,7 @@ impl StateRead for Snapshot {
         tokio_stream::wrappers::ReceiverStream::new(rx)
     }
 
-    fn nonconsensus_prefix_raw<'a>(
-        &'a self,
-        prefix: &'a [u8],
-    ) -> Self::NonconsensusPrefixRawStream<'a> {
+    fn nonconsensus_prefix_raw(&self, prefix: &[u8]) -> Self::NonconsensusPrefixRawStream {
         let span = Span::current();
         let self2 = self.clone();
 

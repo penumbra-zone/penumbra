@@ -126,16 +126,10 @@ impl<S: StateRead + StateWrite> StateDelta<S> {
 
 impl<S: StateRead + StateWrite> StateRead for StateDelta<S> {
     type GetRawFut = CacheFuture<S::GetRawFut>;
-    type PrefixRawStream<'a> = Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + 'a>>
-    where
-        Self: 'a;
-    type PrefixKeysStream<'a> = Pin<Box<dyn Stream<Item = Result<String>> + Send + 'a>>
-    where
-        Self: 'a;
-    type NonconsensusPrefixRawStream<'a> =
-        Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + 'a>>
-    where
-        Self: 'a;
+    type PrefixRawStream = Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + 'static>>;
+    type PrefixKeysStream = Pin<Box<dyn Stream<Item = Result<String>> + Send + 'static>>;
+    type NonconsensusPrefixRawStream =
+        Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + 'static>>;
 
     fn get_raw(&self, key: &str) -> Self::GetRawFut {
         // Check if we have a cache hit in the leaf cache.
@@ -227,26 +221,28 @@ impl<S: StateRead + StateWrite> StateRead for StateDelta<S> {
         unimplemented!("object_get method signature is incompatible with StateDelta -- returning a borrow requires holding a read lock")
     }
 
-    fn prefix_raw<'a>(
-        &'a self,
-        _prefix: &'a str,
-    ) -> std::pin::Pin<Box<dyn futures::Stream<Item = anyhow::Result<(String, Vec<u8>)>> + Send + 'a>>
+    fn prefix_raw(
+        &self,
+        _prefix: &str,
+    ) -> std::pin::Pin<
+        Box<dyn futures::Stream<Item = anyhow::Result<(String, Vec<u8>)>> + Send + 'static>,
+    > {
+        todo!()
+    }
+
+    fn prefix_keys(
+        &self,
+        _prefix: &str,
+    ) -> std::pin::Pin<Box<dyn futures::Stream<Item = anyhow::Result<String>> + Send + 'static>>
     {
         todo!()
     }
 
-    fn prefix_keys<'a>(
-        &'a self,
-        _prefix: &'a str,
-    ) -> std::pin::Pin<Box<dyn futures::Stream<Item = anyhow::Result<String>> + Send + 'a>> {
-        todo!()
-    }
-
-    fn nonconsensus_prefix_raw<'a>(
-        &'a self,
-        _prefix: &'a [u8],
+    fn nonconsensus_prefix_raw(
+        &self,
+        _prefix: &[u8],
     ) -> std::pin::Pin<
-        Box<dyn futures::Stream<Item = anyhow::Result<(Vec<u8>, Vec<u8>)>> + Send + 'a>,
+        Box<dyn futures::Stream<Item = anyhow::Result<(Vec<u8>, Vec<u8>)>> + Send + 'static>,
     > {
         // TODO: implementing this will require cloning the layer stack and moving the stack
         // into the Stream implementation, so that it can reference all of the caches at all levels

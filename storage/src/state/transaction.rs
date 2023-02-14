@@ -2,7 +2,7 @@ use std::{any::Any, pin::Pin};
 
 use anyhow::Result;
 use async_trait::async_trait;
-use futures::Stream;
+use futures::{Stream, StreamExt};
 use tendermint::abci;
 
 use crate::{
@@ -81,15 +81,10 @@ impl<'a> StateWrite for Transaction<'a> {
 #[async_trait]
 impl<'tx> StateRead for Transaction<'tx> {
     type GetRawFut = CacheFuture<CacheFuture<SnapshotFuture>>;
-    type PrefixRawStream<'a> = Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + 'a>>
-    where
-        Self: 'a;
-    type PrefixKeysStream<'a> = Pin<Box<dyn Stream<Item = Result<String>> + Send + 'a>>
-    where
-        Self: 'a;
-    type NonconsensusPrefixRawStream<'a> = Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + 'a>>
-    where
-        Self: 'a;
+    type PrefixRawStream = Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + 'static>>;
+    type PrefixKeysStream = Pin<Box<dyn Stream<Item = Result<String>> + Send + 'static>>;
+    type NonconsensusPrefixRawStream =
+        Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + 'static>>;
 
     fn get_raw(&self, key: &str) -> Self::GetRawFut {
         self.cache.get_raw_or_else(key, || self.state.get_raw(key))
@@ -103,24 +98,55 @@ impl<'tx> StateRead for Transaction<'tx> {
     fn prefix_raw<'a>(
         &'a self,
         prefix: &'a str,
-    ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + 'a>> {
-        self.cache.prefix_raw(prefix, self.state.prefix_raw(prefix))
+    ) -> Pin<Box<dyn Stream<Item = Result<(String, Vec<u8>)>> + Send + 'static>> {
+        // Hack: this is very inefficient, but it should work as-is until replacing
+        // State, StateTransaction with StateDelta
+        let cache = self.cache.clone_trees();
+        let underlying = self.state.prefix_raw(prefix);
+        let prefix = prefix.to_owned();
+        let stream = async_stream::stream! {
+            let mut stream = cache.prefix_raw(&prefix, underlying);
+            while let Some(item) = stream.next().await {
+                yield item;
+            }
+        };
+        stream.boxed()
     }
 
     fn prefix_keys<'a>(
         &'a self,
         prefix: &'a str,
-    ) -> Pin<Box<dyn Stream<Item = Result<String>> + Send + 'a>> {
-        self.cache
-            .prefix_keys(prefix, self.state.prefix_keys(prefix))
+    ) -> Pin<Box<dyn Stream<Item = Result<String>> + Send + 'static>> {
+        // Hack: this is very inefficient, but it should work as-is until replacing
+        // State, StateTransaction with StateDelta
+        let cache = self.cache.clone_trees();
+        let underlying = self.state.prefix_keys(prefix);
+        let prefix = prefix.to_owned();
+        let stream = async_stream::stream! {
+            let mut stream = cache.prefix_keys(&prefix, underlying);
+            while let Some(item) = stream.next().await {
+                yield item;
+            }
+        };
+        stream.boxed()
     }
 
     fn nonconsensus_prefix_raw<'a>(
         &'a self,
         prefix: &'a [u8],
-    ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + 'a>> {
-        self.cache
-            .nonconsensus_prefix_raw(prefix, self.state.nonconsensus_prefix_raw(prefix))
+    ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + 'static>> {
+        // Hack: this is very inefficient, but it should work as-is until replacing
+        // State, StateTransaction with StateDelta
+        let cache = self.cache.clone_trees();
+        let underlying = self.state.nonconsensus_prefix_raw(prefix);
+        let prefix = prefix.to_owned();
+        let stream = async_stream::stream! {
+            let mut stream = cache.nonconsensus_prefix_raw(&prefix, underlying);
+            while let Some(item) = stream.next().await {
+                yield item;
+            }
+        };
+        stream.boxed()
     }
 
     fn object_get<T: Any + Send + Sync>(&self, key: &'static str) -> Option<&T> {
