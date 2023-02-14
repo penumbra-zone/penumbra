@@ -76,6 +76,13 @@ impl<'a> StateWrite for Transaction<'a> {
     fn record(&mut self, event: abci::Event) {
         self.cache.events.push(event)
     }
+
+    fn object_merge(
+        &mut self,
+        objects: std::collections::BTreeMap<&'static str, Option<Box<dyn Any + Send + Sync>>>,
+    ) {
+        self.cache.ephemeral_objects.extend(objects);
+    }
 }
 
 #[async_trait]

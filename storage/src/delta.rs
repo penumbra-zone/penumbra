@@ -215,6 +215,18 @@ impl<S: StateRead> StateRead for StateDelta<S> {
     }
 
     fn object_get<T: std::any::Any + Send + Sync + Clone>(&self, key: &'static str) -> Option<T> {
+        // Check if we have a cache hit in the leaf cache.
+        if let Some(entry) = self
+            .leaf_cache
+            .read()
+            .as_ref()
+            .expect("delta must not have been applied")
+            .ephemeral_objects
+            .get(key)
+        {
+            return entry.as_ref().and_then(|v| v.downcast_ref()).cloned();
+        }
+
         // Iterate through the stack, top to bottom, to see if we have a cache hit.
         for layer in self.layers.iter().rev() {
             if let Some(entry) = layer
@@ -227,6 +239,7 @@ impl<S: StateRead> StateRead for StateDelta<S> {
                 return entry.as_ref().and_then(|v| v.downcast_ref()).cloned();
             }
         }
+
         // Fall through to the underlying store.
         self.state
             .read()
@@ -340,6 +353,18 @@ impl<S: StateRead> StateWrite for StateDelta<S> {
             .unwrap()
             .ephemeral_objects
             .insert(key, None);
+    }
+
+    fn object_merge(
+        &mut self,
+        objects: std::collections::BTreeMap<&'static str, Option<Box<dyn Any + Send + Sync>>>,
+    ) {
+        self.leaf_cache
+            .write()
+            .as_mut()
+            .unwrap()
+            .ephemeral_objects
+            .extend(objects);
     }
 
     fn record(&mut self, event: abci::Event) {

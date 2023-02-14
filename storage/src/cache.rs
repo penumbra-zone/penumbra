@@ -64,13 +64,9 @@ impl Cache {
             }
         }
 
-        for (key, value) in self.ephemeral_objects {
-            if let Some(value) = value {
-                state.object_put(key, value);
-            } else {
-                state.object_delete(key);
-            }
-        }
+        // It's important to use object_merge here, so that we don't re-box all
+        // of the objects, causing downcasting to fail.
+        state.object_merge(self.ephemeral_objects);
 
         for event in self.events {
             state.record(event);
