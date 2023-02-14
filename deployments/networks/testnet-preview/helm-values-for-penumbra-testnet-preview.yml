@@ -8,3 +8,5 @@ ingress:
     rpc: rpc.testnet-preview.penumbra.zone
     # The pd gRPC port.
     grpc: grpc.testnet-preview.penumbra.zone
+    # The Grafana HTTP web interface, for viewing dashboards.
+    grafana: grafana.testnet-preview.penumbra.zone
