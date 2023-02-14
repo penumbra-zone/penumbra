@@ -3832,6 +3832,7 @@ dependencies = [
  "decaf377-rdsa",
  "derivative",
  "fpe",
+ "getrandom 0.2.8",
  "hex",
  "ibc",
  "ibc-proto",
