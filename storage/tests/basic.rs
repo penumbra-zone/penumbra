@@ -58,10 +58,10 @@ async fn simple_flow() -> anyhow::Result<()> {
     //     This is missing in tx00 and state_init and tree is empty
     assert_eq!(tx00.get_raw("a/aa").await?, None);
     //     Present in tx00 object store
-    assert_eq!(tx00.object_get("c/aa"), Some(&0u64));
-    assert_eq!(tx00.object_get("c/ab"), Some(&1u64));
-    assert_eq!(tx00.object_get("c/ac"), Some(&2u64));
-    assert_eq!(tx00.object_get("c/ad"), Some(&3u64));
+    assert_eq!(tx00.object_get("c/aa"), Some(0u64));
+    assert_eq!(tx00.object_get("c/ab"), Some(1u64));
+    assert_eq!(tx00.object_get("c/ac"), Some(2u64));
+    assert_eq!(tx00.object_get("c/ad"), Some(3u64));
     //     Present in tx00 object store but requested with wrong type
     assert_eq!(tx00.object_get::<bool>("c/aa"), None);
     //     Missing in tx00 object store
@@ -92,10 +92,10 @@ async fn simple_flow() -> anyhow::Result<()> {
     assert_eq!(state_init.get_raw("test").await?, Some(b"test".to_vec()));
     assert_eq!(state_init.get_raw("a/aa").await?, None);
     //     Present in state_init object store
-    assert_eq!(state_init.object_get("c/aa"), Some(&0u64));
-    assert_eq!(state_init.object_get("c/ab"), Some(&1u64));
-    assert_eq!(state_init.object_get("c/ac"), Some(&2u64));
-    assert_eq!(state_init.object_get("c/ad"), Some(&3u64));
+    assert_eq!(state_init.object_get("c/aa"), Some(0u64));
+    assert_eq!(state_init.object_get("c/ab"), Some(1u64));
+    assert_eq!(state_init.object_get("c/ac"), Some(2u64));
+    assert_eq!(state_init.object_get("c/ad"), Some(3u64));
     //     Present in state_init object store but requested with wrong type
     assert_eq!(state_init.object_get::<bool>("c/aa"), None);
     //     Missing in state_init object store
