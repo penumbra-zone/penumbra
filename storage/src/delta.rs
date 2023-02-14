@@ -49,10 +49,11 @@ pub struct StateDelta<S: StateRead> {
     /// duplicating the Arc<_>, so this should be cheap.
     layers: Vec<Arc<RwLock<Option<Cache>>>>,
     /// The final delta update in the stack, the one we're currently working on.
-    /// Storing this separately allows us to avoid locking the last layer during
-    /// writes.  It also means that we don't need to pay for locking during reads
-    /// if there are no intermediate layers.
-    leaf_cache: Cache,
+    /// Storing this separately allows us to avoid lock contention during writes.
+    /// In fact, this data shouldn't usually be shared at all; the only reason it's
+    /// wrapped this way is so that prefix streams can have 'static lifetimes.
+    /// We option-wrap it so it can be chained with the layers; it will never be None.
+    leaf_cache: Arc<RwLock<Option<Cache>>>,
 }
 
 impl<S: StateRead> StateDelta<S> {
@@ -61,7 +62,7 @@ impl<S: StateRead> StateDelta<S> {
         Self {
             state: Arc::new(RwLock::new(Some(state))),
             layers: Vec::default(),
-            leaf_cache: Cache::default(),
+            leaf_cache: Arc::new(RwLock::new(Some(Cache::default()))),
         }
     }
 
@@ -73,15 +74,18 @@ impl<S: StateRead> StateDelta<S> {
         //
         // Doing this only when the leaf cache is dirty means that we don't
         // add empty layers in repeated fork() calls without intervening writes.
-        if self.leaf_cache.is_dirty() {
-            let new_layer = std::mem::take(&mut self.leaf_cache);
-            self.layers.push(Arc::new(RwLock::new(Some(new_layer))));
+        if self.leaf_cache.read().as_ref().unwrap().is_dirty() {
+            let new_layer = std::mem::replace(
+                &mut self.leaf_cache,
+                Arc::new(RwLock::new(Some(Cache::default()))),
+            );
+            self.layers.push(new_layer);
         }
 
         Self {
             state: self.state.clone(),
             layers: self.layers.clone(),
-            leaf_cache: Cache::default(),
+            leaf_cache: Arc::new(RwLock::new(Some(Cache::default()))),
         }
     }
 }
@@ -110,7 +114,7 @@ impl<S: StateRead + StateWrite> StateDelta<S> {
             changes.merge(cache);
         }
         // Last, apply the changes in the leaf cache.
-        changes.merge(self.leaf_cache);
+        changes.merge(self.leaf_cache.write().take().unwrap());
 
         // Apply the flattened changes to the underlying state.
         changes.apply_to(&mut state);
@@ -135,7 +139,14 @@ impl<S: StateRead + StateWrite> StateRead for StateDelta<S> {
 
     fn get_raw(&self, key: &str) -> Self::GetRawFut {
         // Check if we have a cache hit in the leaf cache.
-        if let Some(entry) = self.leaf_cache.unwritten_changes.get(key) {
+        if let Some(entry) = self
+            .leaf_cache
+            .read()
+            .as_ref()
+            .unwrap()
+            .unwritten_changes
+            .get(key)
+        {
             return CacheFuture::hit(entry.clone());
         }
 
@@ -164,7 +175,14 @@ impl<S: StateRead + StateWrite> StateRead for StateDelta<S> {
 
     fn nonconsensus_get_raw(&self, key: &[u8]) -> Self::GetRawFut {
         // Check if we have a cache hit in the leaf cache.
-        if let Some(entry) = self.leaf_cache.nonconsensus_changes.get(key) {
+        if let Some(entry) = self
+            .leaf_cache
+            .read()
+            .as_ref()
+            .unwrap()
+            .nonconsensus_changes
+            .get(key)
+        {
             return CacheFuture::hit(entry.clone());
         }
 
@@ -241,34 +259,60 @@ impl<S: StateRead + StateWrite> StateRead for StateDelta<S> {
 
 impl<S: StateRead + StateWrite> StateWrite for StateDelta<S> {
     fn put_raw(&mut self, key: String, value: jmt::OwnedValue) {
-        self.leaf_cache.unwritten_changes.insert(key, Some(value));
+        self.leaf_cache
+            .write()
+            .as_mut()
+            .unwrap()
+            .unwritten_changes
+            .insert(key, Some(value));
     }
 
     fn delete(&mut self, key: String) {
-        self.leaf_cache.unwritten_changes.insert(key, None);
+        self.leaf_cache
+            .write()
+            .as_mut()
+            .unwrap()
+            .unwritten_changes
+            .insert(key, None);
     }
 
     fn nonconsensus_delete(&mut self, key: Vec<u8>) {
-        self.leaf_cache.nonconsensus_changes.insert(key, None);
+        self.leaf_cache
+            .write()
+            .as_mut()
+            .unwrap()
+            .nonconsensus_changes
+            .insert(key, None);
     }
 
     fn nonconsensus_put_raw(&mut self, key: Vec<u8>, value: Vec<u8>) {
         self.leaf_cache
+            .write()
+            .as_mut()
+            .unwrap()
             .nonconsensus_changes
             .insert(key, Some(value));
     }
 
     fn object_put<T: Any + Send + Sync>(&mut self, key: &'static str, value: T) {
         self.leaf_cache
+            .write()
+            .as_mut()
+            .unwrap()
             .ephemeral_objects
             .insert(key, Some(Box::new(value)));
     }
 
     fn object_delete(&mut self, key: &'static str) {
-        self.leaf_cache.ephemeral_objects.insert(key, None);
+        self.leaf_cache
+            .write()
+            .as_mut()
+            .unwrap()
+            .ephemeral_objects
+            .insert(key, None);
     }
 
     fn record(&mut self, event: abci::Event) {
-        self.leaf_cache.events.push(event)
+        self.leaf_cache.write().as_mut().unwrap().events.push(event)
     }
 }
