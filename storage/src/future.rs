@@ -93,21 +93,23 @@ where
         // checking whether the cached key represents a deletion requiring further
         // scanning.  This process is illustrated as follows:
         //
-        //         ░pick ───────────────▶ ░pick ─────────▶ █pick ─────────▶ █pick ──────────▶ █pick
+        //         ◇ skip                 ◇ skip           ▲ yield          ▲ yield           ▲ yield
         //         │                      │                │                │                 │
+        //         ░ pick ──────────────▶ ░ pick ────────▶ █ pick ────────▶ █ pick ─────────▶ █ pick
+        //         ▲                      ▲                ▲                ▲                 ▲
         //      ▲  │                 ▲    │          ▲     │         ▲      │        ▲        │
-        // write│  ▼                 │    ▼          │     ▼         │      ▼        │        ▼
-        // layer│      █             │      █        │      █        │      █        │      █
-        //      │    ░               │    ░          │    ░          │    ░          │    ░
-        //      │  ░                 │  ░            │  ░            │  ░            │  ░
-        //      │    █               │    █          │    █          │    █          │    █
-        //      │  █     █           │  █     █      │  █     █      │  █     █      │  █     █
+        // write│  │                 │    │          │     │         │      │        │        │
+        // layer│  │   █             │    │ █        │     │█        │      █        │      █ │
+        //      │  │ ░               │    ░          │    ░│         │    ░          │    ░   │
+        //      │  ░                 │  ░            │  ░  │         │  ░            │  ░     │
+        //      │    █               │    █          │    █│         │    █          │    █   │
+        //      │  █     █           │  █     █      │  █  │  █      │  █     █      │  █     █
         //      │     █              │     █         │     █         │     █         │     █
         //     ─┼(─────]────keys─▶  ─┼──(───]────▶  ─┼────(─]────▶  ─┼─────(]────▶  ─┼──────(──]─▶
         //      │   ▲  █  █          │      █  █     │      █  █     │      █  █     │      █  █
-        //      │   │                │               │               │               │
-        //          │search
-        //          │range
+        //          │
+        //          │search range of key-value pairs in cache layers that could
+        //          │affect whether to yield the next item in the underlying stream
 
         // Optimization: ensure we have a peekable item in the underlying stream before continuing.
         let mut this = self.project();
