@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::NoteSource;
-use penumbra_storage::{State, StateTransaction, StateWrite as _};
+use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Transaction;
 
 use crate::shielded_pool::consensus_rules;
@@ -37,7 +37,7 @@ impl ActionHandler for Transaction {
         Ok(())
     }
 
-    async fn check_stateful(&self, state: Arc<State>) -> Result<()> {
+    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
         claimed_anchor_is_valid(state.clone(), self).await?;
         fmd_parameters_valid(state.clone(), self).await?;
 
@@ -49,15 +49,18 @@ impl ActionHandler for Transaction {
         Ok(())
     }
 
-    async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
+    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         // While we have access to the full Transaction, hash it to
         // obtain a NoteSource we can cache for various actions.
         let source = NoteSource::Transaction { id: self.id() };
         state.object_put("source", source);
 
         for action in self.actions() {
-            action.execute(state).await?;
+            action.execute(&mut state).await?;
         }
+
+        // Delete the note source, in case someone else tries to read it.
+        state.object_delete("source");
 
         Ok(())
     }

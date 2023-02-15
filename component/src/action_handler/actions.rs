@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::StateReadExt as _;
-use penumbra_storage::{State, StateTransaction};
+use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{Action, Transaction};
 
 use super::ActionHandler;
@@ -48,7 +48,7 @@ impl ActionHandler for Action {
         .await
     }
 
-    async fn check_stateful(&self, state: Arc<State>) -> Result<()> {
+    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
         match self {
             Action::Delegate(action) => action.check_stateful(state).await,
             Action::Undelegate(action) => action.check_stateful(state).await,
@@ -79,7 +79,7 @@ impl ActionHandler for Action {
         }
     }
 
-    async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
+    async fn execute<S: StateWrite>(&self, state: S) -> Result<()> {
         match self {
             Action::Delegate(action) => action.execute(state).await,
             Action::Undelegate(action) => action.execute(state).await,

@@ -40,6 +40,7 @@ use crate::{
 /// after `apply()` has been called, but ideally this should not be a problem in
 /// practice: the API is intended to explore a tree of possible execution paths;
 /// once one has been selected, the others should be discarded.
+#[derive(Debug)]
 pub struct StateDelta<S: StateRead> {
     /// The underlying state instance.
     ///
@@ -124,14 +125,15 @@ impl<S: StateRead + StateWrite> StateDelta<S> {
     /// Apply all changes in this branch of the tree to the underlying state,
     /// releasing it back to the caller and invalidating all other branches of
     /// the tree.
-    pub fn apply(self) -> S {
-        let (mut state, changes) = self.flatten();
+    pub fn apply(self) -> (S, Vec<abci::Event>) {
+        let (mut state, mut changes) = self.flatten();
+        let events = std::mem::take(&mut changes.events);
 
         // Apply the flattened changes to the underlying state.
         changes.apply_to(&mut state);
 
         // Finally, return ownership of the state back to the caller.
-        state
+        (state, events)
     }
 }
 
@@ -369,5 +371,19 @@ impl<S: StateRead> StateWrite for StateDelta<S> {
 
     fn record(&mut self, event: abci::Event) {
         self.leaf_cache.write().as_mut().unwrap().events.push(event)
+    }
+}
+
+/// Extension trait providing `try_begin_transaction()` on `Arc<StateDelta<S>>`.
+pub trait ArcStateDeltaExt: Sized {
+    type S: StateRead;
+    /// Attempts to begin a transaction on this `Arc<State>`, returning `None` if the `Arc` is shared.
+    fn try_begin_transaction(&'_ mut self) -> Option<StateDelta<&'_ mut StateDelta<Self::S>>>;
+}
+
+impl<S: StateRead> ArcStateDeltaExt for Arc<StateDelta<S>> {
+    type S = S;
+    fn try_begin_transaction(&'_ mut self) -> Option<StateDelta<&'_ mut StateDelta<S>>> {
+        Arc::get_mut(self).map(|state| StateDelta::new(state))
     }
 }

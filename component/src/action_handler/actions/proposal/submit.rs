@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_storage::{State, StateTransaction};
+use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::ProposalSubmit, Transaction};
 use tracing::instrument;
 
@@ -17,12 +17,12 @@ impl ActionHandler for ProposalSubmit {
     }
 
     #[instrument(name = "proposal_submit", skip(self, state))]
-    async fn check_stateful(&self, state: Arc<State>) -> Result<()> {
+    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
         check::stateful::proposal_submit(&state, self).await
     }
 
     #[instrument(name = "proposal_submit", skip(self, state))]
-    async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
+    async fn execute<S: StateWrite>(&self, state: S) -> Result<()> {
         execute::proposal_submit(state, self).await?;
 
         Ok(())

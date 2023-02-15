@@ -37,7 +37,7 @@ impl Info {
     }
 
     async fn info(&self, info: abci::request::Info) -> Result<abci::response::Info, anyhow::Error> {
-        let state = self.storage.latest_state();
+        let state = self.storage.latest_snapshot();
         tracing::info!(?info, version = ?state.version());
 
         let last_block_height = match state.version() {
@@ -74,7 +74,7 @@ impl Info {
                 let _height: u64 = query.height.into();
                 let key = hex::decode(&query.data).unwrap_or_else(|_| query.data.to_vec());
 
-                let state = self.storage.latest_state();
+                let state = self.storage.latest_snapshot();
                 let height = state.version();
 
                 let (value, proof) = state.get_with_proof_to_apphash_tm(key).await?;

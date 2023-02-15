@@ -35,13 +35,13 @@ async fn simple_flow() -> anyhow::Result<()> {
     // tx11: a/ab => ab2
     // tx11: iD => [deleted] nonconsensus store]
 
-    let mut state_init = storage.latest_state();
+    let mut state_init = StateDelta::new(storage.latest_snapshot());
     // Check that reads on an empty state return Ok(None)
     assert_eq!(state_init.get_raw("test").await?, None);
     assert_eq!(state_init.get_raw("a/aa").await?, None);
 
     // Create tx00
-    let mut tx00 = state_init.begin_transaction();
+    let mut tx00 = StateDelta::new(&mut state_init);
     tx00.put_raw("test".to_owned(), b"test".to_vec());
     tx00.object_put("c/aa", 0u64);
     tx00.object_put("c/ab", 1u64);
@@ -122,7 +122,7 @@ async fn simple_flow() -> anyhow::Result<()> {
     std::mem::drop(range);
 
     // Create a transaction writing the other keys.
-    let mut tx01 = state_init.begin_transaction();
+    let mut tx01 = StateDelta::new(&mut state_init);
     tx01.put_raw("a/aa".to_owned(), b"aa".to_vec());
     tx01.put_raw("a/aaa".to_owned(), b"aaa".to_vec());
     tx01.put_raw("a/ab".to_owned(), b"ab".to_vec());
@@ -228,8 +228,10 @@ async fn simple_flow() -> anyhow::Result<()> {
     storage.commit(state_init).await?;
 
     // Now we have version 0.
-    let mut state0 = storage.latest_state();
+    let state0 = storage.latest_snapshot();
     assert_eq!(state0.version(), 0);
+    let mut state0 = StateDelta::new(state0);
+
     // Check reads against state0:
     //    This is missing in state0 and present in JMT
     assert_eq!(state0.get_raw("test").await?, Some(b"test".to_vec()));
@@ -280,7 +282,7 @@ async fn simple_flow() -> anyhow::Result<()> {
     std::mem::drop(range);
 
     // Start building a transaction
-    let mut tx10 = state0.begin_transaction();
+    let mut tx10 = StateDelta::new(&mut state0);
     tx10.delete("test".to_owned());
     tx10.delete("a/aaa".to_owned());
     tx10.put_raw("a/c".to_owned(), b"c".to_vec());
@@ -374,7 +376,7 @@ async fn simple_flow() -> anyhow::Result<()> {
     std::mem::drop(range);
 
     // Start building another transaction
-    let mut tx11 = state0.begin_transaction();
+    let mut tx11 = StateDelta::new(&mut state0);
     tx11.put_raw("a/ab".to_owned(), b"ab2".to_vec());
     tx11.nonconsensus_delete(b"iD".to_vec());
 
@@ -483,13 +485,13 @@ async fn simple_flow() -> anyhow::Result<()> {
     std::mem::drop(range);
 
     // Create another fork of state 0 while we've edited the first one but before we commit.
-    let state0a = storage.latest_state();
+    let state0a = storage.latest_snapshot();
     assert_eq!(state0a.version(), 0);
 
     // Commit state0 as state1.
     storage.commit(state0).await?;
 
-    let state1 = storage.latest_state();
+    let state1 = storage.latest_snapshot();
     assert_eq!(state1.version(), 1);
 
     // Check reads against state1
@@ -596,7 +598,7 @@ async fn simple_flow() -> anyhow::Result<()> {
 
     // Now reload the storage from the same directory...
     let storage_a = Storage::load(tmpdir.path().to_owned()).await?;
-    let state1a = storage_a.latest_state();
+    let state1a = storage_a.latest_snapshot();
 
     // Check that we reload at the correct version ...
     assert_eq!(state1a.version(), 1);

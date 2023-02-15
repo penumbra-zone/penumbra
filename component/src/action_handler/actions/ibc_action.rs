@@ -41,7 +41,7 @@ use ibc::core::ics04_channel::msgs::recv_packet::{MsgRecvPacket, TYPE_URL as REC
 use ibc::core::ics04_channel::msgs::timeout::{MsgTimeout, TYPE_URL as TIMEOUT};
 use ibc_proto::protobuf::Protobuf;
 use penumbra_proto::core::ibc::v1alpha1::IbcAction;
-use penumbra_storage::{State, StateTransaction};
+use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Transaction;
 use tracing::instrument;
 
@@ -149,7 +149,7 @@ impl ActionHandler for IbcAction {
     }
 
     #[instrument(name = "ibc_action", skip(self, state))]
-    async fn check_stateful(&self, state: Arc<State>) -> Result<()> {
+    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
         let raw_action = self
             .raw_action
             .as_ref()
@@ -243,7 +243,7 @@ impl ActionHandler for IbcAction {
     }
 
     #[instrument(name = "ibc_action", skip(self, state))]
-    async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
+    async fn execute<S: StateWrite>(&self, state: S) -> Result<()> {
         let raw_action = self
             .raw_action
             .as_ref()

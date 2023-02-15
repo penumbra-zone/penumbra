@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_storage::{State, StateTransaction};
+use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::PositionRewardClaim, Transaction};
 use tracing::instrument;
 
@@ -20,7 +20,7 @@ impl ActionHandler for PositionRewardClaim {
     }
 
     #[instrument(name = "position_reward_claim", skip(self, _state))]
-    async fn check_stateful(&self, _state: Arc<State>) -> Result<()> {
+    async fn check_stateful<S: StateRead>(&self, _state: Arc<S>) -> Result<()> {
         // It's important to reject all LP actions for now, to prevent
         // inflation / minting bugs until we implement all required checks
         // (e.g., minting tokens by withdrawing reserves we don't check)
@@ -28,7 +28,7 @@ impl ActionHandler for PositionRewardClaim {
     }
 
     #[instrument(name = "position_reward_claim", skip(self, _state))]
-    async fn execute(&self, _state: &mut StateTransaction) -> Result<()> {
+    async fn execute<S: StateWrite>(&self, _state: S) -> Result<()> {
         // It's important to reject all LP actions for now, to prevent
         // inflation / minting bugs until we implement all required checks
         // (e.g., minting tokens by withdrawing reserves we don't check)

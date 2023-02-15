@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use penumbra_chain::{genesis, sync::CompactBlock, Epoch, NoteSource, StateReadExt as _};
 use penumbra_crypto::{asset, note, Nullifier, Value};
 use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_storage::{StateRead, StateTransaction, StateWrite};
+use penumbra_storage::{StateRead, StateWrite};
 use penumbra_tct as tct;
 use tct::Tree;
 use tendermint::abci;
@@ -18,7 +18,7 @@ pub struct ShieldedPool {}
 #[async_trait]
 impl Component for ShieldedPool {
     // #[instrument(name = "shielded_pool", skip(state, app_state))]
-    async fn init_chain(state: &mut StateTransaction, app_state: &genesis::AppState) {
+    async fn init_chain<S: StateWrite>(mut state: S, app_state: &genesis::AppState) {
         for allocation in &app_state.allocations {
             tracing::info!(?allocation, "processing allocation");
 
@@ -65,10 +65,10 @@ impl Component for ShieldedPool {
     }
 
     // #[instrument(name = "shielded_pool", skip(_state, _begin_block))]
-    async fn begin_block(_state: &mut StateTransaction, _begin_block: &abci::request::BeginBlock) {}
+    async fn begin_block<S: StateWrite>(_state: S, _begin_block: &abci::request::BeginBlock) {}
 
     // #[instrument(name = "shielded_pool", skip(state, _end_block))]
-    async fn end_block(state: &mut StateTransaction, _end_block: &abci::request::EndBlock) {
+    async fn end_block<S: StateWrite>(mut state: S, _end_block: &abci::request::EndBlock) {
         // Get the current block height
         let height = state.height().await;
 

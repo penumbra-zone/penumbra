@@ -4,7 +4,7 @@ use anyhow::Result;
 use penumbra_chain::params::FmdParameters;
 use penumbra_chain::{genesis, AppHash, StateWriteExt as _};
 use penumbra_proto::{DomainType, StateWriteProto};
-use penumbra_storage::{ArcStateExt, State, Storage};
+use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, Storage};
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, types::ValidatorUpdate};
 use tracing::instrument;
@@ -25,25 +25,25 @@ pub mod state_key;
 /// it constructs the components and exposes a [`commit`](App::commit) that
 /// commits the changes to the persistent storage and resets its subcomponents.
 pub struct App {
-    state: Arc<State>,
+    state: Arc<StateDelta<Snapshot>>,
 }
 
 impl App {
-    pub fn new(state: State) -> Self {
+    pub fn new(snapshot: Snapshot) -> Self {
         tracing::debug!("initializing App instance");
         Self {
             // We perform the `Arc` wrapping of `State` here to ensure
             // there should be no unexpected copies elsewhere.
-            state: Arc::new(state),
+            state: Arc::new(StateDelta::new(snapshot)),
         }
     }
 
     #[instrument(skip(self, app_state))]
     pub async fn init_chain(&mut self, app_state: &genesis::AppState) {
-        let state =
-            Arc::get_mut(&mut self.state).expect("state Arc should not be referenced elsewhere");
-
-        let mut state_tx = state.begin_transaction();
+        let mut state_tx = self
+            .state
+            .try_begin_transaction()
+            .expect("state Arc should not be referenced elsewhere");
 
         state_tx.put_chain_params(app_state.chain_params.clone());
 
@@ -93,7 +93,7 @@ impl App {
         // Shielded pool always executes last.
         ShieldedPool::begin_block(&mut state_tx, begin_block).await;
 
-        state_tx.apply()
+        state_tx.apply().1
     }
 
     /// Wrapper function for [`Self::deliver_tx`]  that decodes from bytes.
@@ -121,7 +121,7 @@ impl App {
         // At this point, we've completed execution successfully with no errors,
         // so we can apply the transaction to the State. Otherwise, we'd have
         // bubbled up an error and dropped the StateTransaction.
-        Ok(state_tx.apply())
+        Ok(state_tx.apply().1)
     }
 
     #[instrument(skip(self, end_block))]
@@ -141,7 +141,7 @@ impl App {
         // Shielded pool always executes last.
         ShieldedPool::end_block(&mut state_tx, end_block).await;
 
-        state_tx.apply()
+        state_tx.apply().1
     }
 
     /// Commits the application state to persistent storage,
@@ -152,7 +152,7 @@ impl App {
     #[instrument(skip(self, storage))]
     pub async fn commit(&mut self, storage: Storage) -> AppHash {
         // We need to extract the State we've built up to commit it.  Fill in a dummy state.
-        let dummy_state = storage.latest_state();
+        let dummy_state = StateDelta::new(storage.latest_snapshot());
         let state = Arc::try_unwrap(std::mem::replace(&mut self.state, Arc::new(dummy_state)))
             .expect("we have exclusive ownership of the State at commit()");
 
@@ -166,7 +166,7 @@ impl App {
         tracing::debug!(?app_hash, "finished committing state");
 
         // Get the latest version of the state, now that we've committed it.
-        self.state = Arc::new(storage.latest_state());
+        self.state = Arc::new(StateDelta::new(storage.latest_snapshot()));
 
         app_hash
     }

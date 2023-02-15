@@ -21,10 +21,10 @@ use penumbra_crypto::asset::Denom;
 use penumbra_crypto::{asset, Amount};
 use penumbra_proto::core::ibc::v1alpha1::FungibleTokenPacketData;
 use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_storage::{State, StateRead, StateTransaction, StateWrite};
+use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::action::Ics20Withdrawal;
 use prost::Message;
-use std::sync::Arc;
+
 use tendermint::abci;
 use tracing::instrument;
 
@@ -64,7 +64,7 @@ impl<T: StateRead + ?Sized> Ics20TransferReadExt for T {}
 
 #[async_trait]
 pub trait Ics20TransferWriteExt: StateWrite {
-    async fn withdrawal_execute(state: &mut StateTransaction<'_>, withdrawal: &Ics20Withdrawal) {
+    async fn withdrawal_execute(&mut self, withdrawal: &Ics20Withdrawal) {
         // create packet, assume it's already checked since the component caller contract calls `check` before `execute`
         let checked_packet = IBCPacket::<Unchecked>::from(withdrawal.clone()).assume_checked();
 
@@ -74,7 +74,7 @@ pub trait Ics20TransferWriteExt: StateWrite {
             &withdrawal.denom,
         ) {
             // we are the source. add the value balance to the escrow channel.
-            let existing_value_balance: Amount = state
+            let existing_value_balance: Amount = self
                 .get(&state_key::ics20_value_balance(
                     &withdrawal.source_channel,
                     &withdrawal.denom.id(),
@@ -84,7 +84,7 @@ pub trait Ics20TransferWriteExt: StateWrite {
                 .unwrap_or_else(Amount::zero);
 
             let new_value_balance = existing_value_balance + withdrawal.amount;
-            state.put(
+            self.put(
                 state_key::ics20_value_balance(&withdrawal.source_channel, &withdrawal.denom.id()),
                 new_value_balance,
             );
@@ -96,18 +96,18 @@ pub trait Ics20TransferWriteExt: StateWrite {
         }
 
         use crate::ibc::packet::SendPacketWrite;
-        state.send_packet_execute(checked_packet).await;
+        self.send_packet_execute(checked_packet).await;
     }
 }
 
-impl<T: StateWrite> Ics20TransferWriteExt for T {}
+impl<T: StateWrite + ?Sized> Ics20TransferWriteExt for T {}
 
 // TODO: Ics20 implementation.
 // see: https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer
 // TODO (ava): add versioning to AppHandlers
 #[async_trait]
 impl AppHandlerCheck for Ics20Transfer {
-    async fn chan_open_init_check(_state: Arc<State>, msg: &MsgChannelOpenInit) -> Result<()> {
+    async fn chan_open_init_check<S: StateRead>(_state: S, msg: &MsgChannelOpenInit) -> Result<()> {
         if msg.chan_end_on_a.ordering != ChannelOrder::Unordered {
             return Err(anyhow::anyhow!(
                 "channel order must be unordered for Ics20 transfer"
@@ -123,7 +123,7 @@ impl AppHandlerCheck for Ics20Transfer {
         Ok(())
     }
 
-    async fn chan_open_try_check(_state: Arc<State>, msg: &MsgChannelOpenTry) -> Result<()> {
+    async fn chan_open_try_check<S: StateRead>(_state: S, msg: &MsgChannelOpenTry) -> Result<()> {
         if msg.chan_end_on_b.ordering != ChannelOrder::Unordered {
             return Err(anyhow::anyhow!(
                 "channel order must be unordered for Ics20 transfer"
@@ -139,7 +139,7 @@ impl AppHandlerCheck for Ics20Transfer {
         Ok(())
     }
 
-    async fn chan_open_ack_check(_state: Arc<State>, msg: &MsgChannelOpenAck) -> Result<()> {
+    async fn chan_open_ack_check<S: StateRead>(_state: S, msg: &MsgChannelOpenAck) -> Result<()> {
         if msg.version_on_b != Version::ics20() {
             return Err(anyhow::anyhow!(
                 "counterparty version must be ics20-1 for Ics20 transfer"
@@ -149,28 +149,31 @@ impl AppHandlerCheck for Ics20Transfer {
         Ok(())
     }
 
-    async fn chan_open_confirm_check(
-        _state: Arc<State>,
+    async fn chan_open_confirm_check<S: StateRead>(
+        _state: S,
         _msg: &MsgChannelOpenConfirm,
     ) -> Result<()> {
         // accept channel confirmations, port has already been validated, version has already been validated
         Ok(())
     }
 
-    async fn chan_close_confirm_check(
-        _state: Arc<State>,
+    async fn chan_close_confirm_check<S: StateRead>(
+        _state: S,
         _msg: &MsgChannelCloseConfirm,
     ) -> Result<()> {
         // no action necessary
         Ok(())
     }
 
-    async fn chan_close_init_check(_state: Arc<State>, _msg: &MsgChannelCloseInit) -> Result<()> {
+    async fn chan_close_init_check<S: StateRead>(
+        _state: S,
+        _msg: &MsgChannelCloseInit,
+    ) -> Result<()> {
         // always abort transaction
         return Err(anyhow::anyhow!("ics20 always aborts on close init"));
     }
 
-    async fn recv_packet_check(state: Arc<State>, msg: &MsgRecvPacket) -> Result<()> {
+    async fn recv_packet_check<S: StateRead>(state: S, msg: &MsgRecvPacket) -> Result<()> {
         // 1. parse a FungibleTokenPacketData from msg.packet.data
         let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
         let denom: asset::Denom = packet_data.denom.as_str().try_into()?;
@@ -197,7 +200,7 @@ impl AppHandlerCheck for Ics20Transfer {
         Ok(())
     }
 
-    async fn timeout_packet_check(state: Arc<State>, msg: &MsgTimeout) -> Result<()> {
+    async fn timeout_packet_check<S: StateRead>(state: S, msg: &MsgTimeout) -> Result<()> {
         let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
         let denom: asset::Denom = packet_data.denom.as_str().try_into()?;
 
@@ -222,32 +225,27 @@ impl AppHandlerCheck for Ics20Transfer {
         Ok(())
     }
 
-    async fn acknowledge_packet_check(_state: Arc<State>, _msg: &MsgAcknowledgement) -> Result<()> {
+    async fn acknowledge_packet_check<S: StateRead>(
+        _state: S,
+        _msg: &MsgAcknowledgement,
+    ) -> Result<()> {
         Ok(())
     }
 }
 
 #[async_trait]
 impl AppHandlerExecute for Ics20Transfer {
-    async fn chan_open_init_execute(_state: &mut StateTransaction, _msg: &MsgChannelOpenInit) {}
-    async fn chan_open_try_execute(_state: &mut StateTransaction, _msg: &MsgChannelOpenTry) {}
-    async fn chan_open_ack_execute(_state: &mut StateTransaction, _msg: &MsgChannelOpenAck) {}
-    async fn chan_open_confirm_execute(
-        _state: &mut StateTransaction,
-        _msg: &MsgChannelOpenConfirm,
-    ) {
-    }
-    async fn chan_close_confirm_execute(
-        _state: &mut StateTransaction,
-        _msg: &MsgChannelCloseConfirm,
-    ) {
-    }
-    async fn chan_close_init_execute(_state: &mut StateTransaction, _msg: &MsgChannelCloseInit) {}
-    async fn recv_packet_execute(_state: &mut StateTransaction, _msg: &MsgRecvPacket) {
+    async fn chan_open_init_execute<S: StateWrite>(_state: S, _msg: &MsgChannelOpenInit) {}
+    async fn chan_open_try_execute<S: StateWrite>(_state: S, _msg: &MsgChannelOpenTry) {}
+    async fn chan_open_ack_execute<S: StateWrite>(_state: S, _msg: &MsgChannelOpenAck) {}
+    async fn chan_open_confirm_execute<S: StateWrite>(_state: S, _msg: &MsgChannelOpenConfirm) {}
+    async fn chan_close_confirm_execute<S: StateWrite>(_state: S, _msg: &MsgChannelCloseConfirm) {}
+    async fn chan_close_init_execute<S: StateWrite>(_state: S, _msg: &MsgChannelCloseInit) {}
+    async fn recv_packet_execute<S: StateWrite>(_state: S, _msg: &MsgRecvPacket) {
         // parse if we are source or dest, and mint or burn accordingly
     }
-    async fn timeout_packet_execute(_state: &mut StateTransaction, _msg: &MsgTimeout) {}
-    async fn acknowledge_packet_execute(_state: &mut StateTransaction, _msg: &MsgAcknowledgement) {}
+    async fn timeout_packet_execute<S: StateWrite>(_state: S, _msg: &MsgTimeout) {}
+    async fn acknowledge_packet_execute<S: StateWrite>(_state: S, _msg: &MsgAcknowledgement) {}
 }
 
 impl AppHandler for Ics20Transfer {}
@@ -255,11 +253,11 @@ impl AppHandler for Ics20Transfer {}
 #[async_trait]
 impl Component for Ics20Transfer {
     #[instrument(name = "ics20_transfer", skip(_state, _app_state))]
-    async fn init_chain(_state: &mut StateTransaction, _app_state: &genesis::AppState) {}
+    async fn init_chain<S: StateWrite>(_state: S, _app_state: &genesis::AppState) {}
 
     #[instrument(name = "ics20_transfer", skip(_state, _begin_block))]
-    async fn begin_block(_state: &mut StateTransaction, _begin_block: &abci::request::BeginBlock) {}
+    async fn begin_block<S: StateWrite>(_state: S, _begin_block: &abci::request::BeginBlock) {}
 
     #[instrument(name = "ics20_channel", skip(_state, _end_block))]
-    async fn end_block(_state: &mut StateTransaction, _end_block: &abci::request::EndBlock) {}
+    async fn end_block<S: StateWrite>(_state: S, _end_block: &abci::request::EndBlock) {}
 }

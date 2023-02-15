@@ -20,7 +20,7 @@ use penumbra_proto::{
     state::future::{DomainFuture, ProtoFuture},
     StateReadProto, StateWriteProto,
 };
-use penumbra_storage::{StateRead, StateTransaction, StateWrite};
+use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::action::{Delegate, Undelegate};
 use sha2::{Digest, Sha256};
 use tendermint::{
@@ -851,7 +851,7 @@ impl<T: StateWrite + StateWriteExt + ?Sized> StakingImpl for T {}
 #[async_trait]
 impl Component for Staking {
     #[instrument(name = "staking", skip(state, app_state))]
-    async fn init_chain(state: &mut StateTransaction, app_state: &genesis::AppState) {
+    async fn init_chain<S: StateWrite>(mut state: S, app_state: &genesis::AppState) {
         let starting_height = state.get_block_height().await.unwrap();
         let starting_epoch =
             Epoch::from_height(starting_height, state.get_epoch_duration().await.unwrap());
@@ -910,7 +910,7 @@ impl Component for Staking {
     }
 
     #[instrument(name = "staking", skip(state, begin_block))]
-    async fn begin_block(state: &mut StateTransaction, begin_block: &abci::request::BeginBlock) {
+    async fn begin_block<S: StateWrite>(mut state: S, begin_block: &abci::request::BeginBlock) {
         // For each validator identified as byzantine by tendermint, update its
         // state to be slashed
         for evidence in begin_block.byzantine_validators.iter() {
@@ -924,7 +924,7 @@ impl Component for Staking {
     }
 
     #[instrument(name = "staking", skip(state, end_block))]
-    async fn end_block(state: &mut StateTransaction, end_block: &abci::request::EndBlock) {
+    async fn end_block<S: StateWrite>(mut state: S, end_block: &abci::request::EndBlock) {
         // Write the delegation changes for this block.
         state
             .set_delegation_changes(

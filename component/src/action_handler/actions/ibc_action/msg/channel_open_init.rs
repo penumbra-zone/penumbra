@@ -4,7 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use ibc::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc::core::ics24_host::identifier::PortId;
-use penumbra_storage::{State, StateTransaction};
+use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Transaction;
 use tracing::instrument;
 
@@ -25,7 +25,7 @@ impl ActionHandler for MsgChannelOpenInit {
     }
 
     #[instrument(name = "channel_open_init", skip(self, state))]
-    async fn check_stateful(&self, state: Arc<State>) -> Result<()> {
+    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
         state.validate(self).await?;
         let transfer = PortId::transfer();
         if self.port_id_on_a == transfer {
@@ -38,7 +38,7 @@ impl ActionHandler for MsgChannelOpenInit {
     }
 
     #[instrument(name = "channel_open_init", skip(self, state))]
-    async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
+    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         state.execute(self).await;
         let transfer = PortId::transfer();
         if self.port_id_on_a == transfer {

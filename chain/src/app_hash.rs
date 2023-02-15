@@ -3,7 +3,7 @@ use ibc::core::ics23_commitment::merkle::MerkleProof;
 use ibc::core::ics23_commitment::{commitment::CommitmentPrefix, specs::ProofSpecs};
 use once_cell::sync::Lazy;
 use penumbra_proto::Message;
-use penumbra_storage::{RootHash, State};
+use penumbra_storage::{RootHash, Snapshot};
 
 use sha2::{Digest, Sha256};
 
@@ -78,7 +78,7 @@ pub trait AppHashRead {
 }
 
 #[async_trait]
-impl AppHashRead for State {
+impl AppHashRead for Snapshot {
     async fn app_hash(&self) -> anyhow::Result<AppHash> {
         let root = self.root_hash().await?;
         Ok(AppHash::from(root))

@@ -17,7 +17,7 @@ use ibc::core::ics03_connection::version::{pick_version, Version};
 use ibc::core::ics24_host::identifier::ConnectionId;
 use ibc::Height as IBCHeight;
 use penumbra_chain::genesis;
-use penumbra_storage::{StateRead, StateTransaction, StateWrite};
+use penumbra_storage::{StateRead, StateWrite};
 use tendermint::abci;
 use tracing::instrument;
 
@@ -33,13 +33,13 @@ pub struct ConnectionComponent {}
 #[async_trait]
 impl Component for ConnectionComponent {
     #[instrument(name = "ibc_connection", skip(_state, _app_state))]
-    async fn init_chain(_state: &mut StateTransaction, _app_state: &genesis::AppState) {}
+    async fn init_chain<S: StateWrite>(_state: S, _app_state: &genesis::AppState) {}
 
     #[instrument(name = "ibc_connection", skip(_state, _begin_block))]
-    async fn begin_block(_state: &mut StateTransaction, _begin_block: &abci::request::BeginBlock) {}
+    async fn begin_block<S: StateWrite>(_state: S, _begin_block: &abci::request::BeginBlock) {}
 
     #[instrument(name = "ibc_connection", skip(_state, _end_block))]
-    async fn end_block(_state: &mut StateTransaction, _end_block: &abci::request::EndBlock) {}
+    async fn end_block<S: StateWrite>(_state: S, _end_block: &abci::request::EndBlock) {}
 }
 
 #[async_trait]

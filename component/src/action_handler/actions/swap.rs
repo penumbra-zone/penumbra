@@ -10,7 +10,7 @@ use async_trait::async_trait;
 
 use penumbra_chain::sync::StatePayload;
 use penumbra_crypto::MockFlowCiphertext;
-use penumbra_storage::{State, StateRead, StateTransaction};
+use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::Swap, IsAction, Transaction};
 use tracing::instrument;
 
@@ -30,12 +30,12 @@ impl ActionHandler for Swap {
     }
 
     #[instrument(name = "swap", skip(self, _state))]
-    async fn check_stateful(&self, _state: Arc<State>) -> Result<()> {
+    async fn check_stateful<S: StateRead>(&self, _state: Arc<S>) -> Result<()> {
         Ok(())
     }
 
     #[instrument(name = "swap", skip(self, state))]
-    async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
+    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let swap = self;
 
         // All swaps will be tallied for the block so the

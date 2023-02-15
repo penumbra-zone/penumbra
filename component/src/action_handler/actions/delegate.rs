@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_storage::{State, StateTransaction};
+use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::Delegate, Transaction};
 use tracing::instrument;
 
@@ -20,7 +20,7 @@ impl ActionHandler for Delegate {
     }
 
     #[instrument(name = "delegate", skip(self, state))]
-    async fn check_stateful(&self, state: Arc<State>) -> Result<()> {
+    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
         let d = self;
         let next_rate_data = state
             .next_validator_rate(&d.validator_identity)
@@ -92,7 +92,7 @@ impl ActionHandler for Delegate {
     }
 
     #[instrument(name = "delegate", skip(self, state))]
-    async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
+    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         tracing::debug!(?self, "queuing delegation for next epoch");
         state.stub_push_delegation(self.clone());
 

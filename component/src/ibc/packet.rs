@@ -172,7 +172,7 @@ pub trait SendPacketWrite: StateWrite {
     }
 }
 
-impl<T: StateWrite> SendPacketWrite for T {}
+impl<T: StateWrite + ?Sized> SendPacketWrite for T {}
 
 #[async_trait]
 pub trait WriteAcknowledgement: StateWrite {}

@@ -1,21 +1,19 @@
-use std::sync::Arc;
-
 use anyhow::Result;
 use penumbra_chain::StateReadExt as _;
-use penumbra_storage::State;
+use penumbra_storage::StateRead;
 use penumbra_transaction::Transaction;
 
 use crate::shielded_pool::{consensus_rules, StateReadExt as _};
 
-pub(super) async fn claimed_anchor_is_valid(
-    state: Arc<State>,
+pub(super) async fn claimed_anchor_is_valid<S: StateRead>(
+    state: S,
     transaction: &Transaction,
 ) -> Result<()> {
     state.check_claimed_anchor(transaction.anchor).await
 }
 
-pub(super) async fn fmd_parameters_valid(
-    state: Arc<State>,
+pub(super) async fn fmd_parameters_valid<S: StateRead>(
+    state: S,
     transaction: &Transaction,
 ) -> Result<()> {
     let previous_fmd_parameters = state

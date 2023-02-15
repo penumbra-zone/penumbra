@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
-use penumbra_storage::{State, StateTransaction};
+use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Transaction;
 use tracing::instrument;
 
@@ -22,14 +22,14 @@ impl ActionHandler for MsgConnectionOpenInit {
     }
 
     #[instrument(name = "connection_open_init", skip(self, state))]
-    async fn check_stateful(&self, state: Arc<State>) -> Result<()> {
+    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
         state.validate(self).await?;
 
         Ok(())
     }
 
     #[instrument(name = "connection_open_init", skip(self, state))]
-    async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
+    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         state.execute(self).await;
 
         Ok(())

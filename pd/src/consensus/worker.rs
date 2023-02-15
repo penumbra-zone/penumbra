@@ -29,7 +29,7 @@ fn trace_events(events: &[abci::Event]) {
 impl Worker {
     #[instrument(skip(storage, queue), name = "consensus::Worker::new")]
     pub async fn new(storage: Storage, queue: mpsc::Receiver<Message>) -> Result<Self> {
-        let app = App::new(storage.latest_state());
+        let app = App::new(storage.latest_snapshot());
 
         Ok(Self {
             queue,

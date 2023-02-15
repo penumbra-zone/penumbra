@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_storage::{State, StateTransaction};
+use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Transaction;
 
 mod actions;
@@ -63,7 +63,7 @@ pub trait ActionHandler {
     /// This method should only be called on data that has been checked
     /// with [`ActionHandler::check_stateless`].  This method can be called
     /// before [`Component::begin_block`](crate::Component::begin_block).
-    async fn check_stateful(&self, state: Arc<State>) -> Result<()>;
+    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()>;
 
     /// Attempts to execute this action against the provided `state`.
     ///
@@ -88,5 +88,5 @@ pub trait ActionHandler {
     /// This method should only be called immediately after an invocation of
     /// [`ActionHandler::check_stateful`] on the same transaction.  This method
     /// can be called before [`Component::begin_block`](crate::Component::begin_block).
-    async fn execute(&self, state: &mut StateTransaction) -> Result<()>;
+    async fn execute<S: StateWrite>(&self, state: S) -> Result<()>;
 }
