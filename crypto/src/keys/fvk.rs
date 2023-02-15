@@ -57,8 +57,9 @@ impl FullViewingKey {
     pub fn ephemeral_address<R: RngCore + CryptoRng>(
         &self,
         rng: R,
+        address_index: AddressIndex,
     ) -> (Address, fmd::DetectionKey) {
-        self.incoming().ephemeral_address(rng)
+        self.incoming().ephemeral_address(rng, address_index)
     }
 
     /// Returns the index of the given address, if the address is viewed by this

@@ -100,7 +100,7 @@ pub fn testnet_generate(
         let spend_key = SpendKey::from(vk.validator_spend_key.clone());
         let fvk = spend_key.full_viewing_key();
         let ivk = fvk.incoming();
-        let (dest, _dtk_d) = ivk.payment_address(0u64.into());
+        let (dest, _dtk_d) = ivk.payment_address(0u32.into());
 
         // Add a default 1 upenumbra allocation to the validator.
         let identity_key: IdentityKey = IdentityKey(fvk.spend_verification_key().clone());

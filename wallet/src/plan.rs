@@ -28,7 +28,7 @@ pub async fn validator_definition<V, R>(
     rng: R,
     new_validator: validator::Definition,
     fee: Fee,
-    source_address: Option<u64>,
+    source_address: AddressIndex,
 ) -> Result<TransactionPlan>
 where
     V: ViewClient,
@@ -37,7 +37,7 @@ where
     Planner::new(rng)
         .fee(fee)
         .validator_definition(new_validator)
-        .plan(view, fvk, source_address.map(Into::into))
+        .plan(view, fvk, source_address)
         .await
         .context("can't build validator definition plan")
 }
@@ -48,7 +48,7 @@ pub async fn validator_vote<V, R>(
     rng: R,
     vote: ValidatorVote,
     fee: Fee,
-    source_address: Option<u64>,
+    source_address: AddressIndex,
 ) -> Result<TransactionPlan>
 where
     V: ViewClient,
@@ -57,7 +57,7 @@ where
     Planner::new(rng)
         .fee(fee)
         .validator_vote(vote)
-        .plan(view, fvk, source_address.map(Into::into))
+        .plan(view, fvk, source_address)
         .await
         .context("can't build validator vote plan")
 }
@@ -71,7 +71,7 @@ pub async fn delegate<V, R>(
     rate_data: RateData,
     unbonded_amount: u64,
     fee: Fee,
-    source_address: Option<u64>,
+    source_address: AddressIndex,
 ) -> Result<TransactionPlan>
 where
     V: ViewClient,
@@ -80,7 +80,7 @@ where
     Planner::new(rng)
         .fee(fee)
         .delegate(unbonded_amount, rate_data)
-        .plan(view, fvk, source_address.map(Into::into))
+        .plan(view, fvk, source_address)
         .await
         .context("can't build delegate plan")
 }
@@ -94,7 +94,7 @@ pub async fn send<V, R>(
     values: &[Value],
     fee: Fee,
     dest_address: Address,
-    source_address: Option<u64>,
+    source_address: AddressIndex,
     tx_memo: Option<String>,
 ) -> Result<TransactionPlan, anyhow::Error>
 where
@@ -109,7 +109,7 @@ where
     }
     planner
         .memo(tx_memo.unwrap_or_default())?
-        .plan(view, fvk, source_address.map(Into::into))
+        .plan(view, fvk, source_address)
         .await
         .context("can't build send transaction")
 }
@@ -283,7 +283,7 @@ where
                 }
 
                 let plan = planner
-                    .plan(view, fvk, Some(index))
+                    .plan(view, fvk, index)
                     .await
                     .context("can't build sweep transaction")?;
 
@@ -303,7 +303,7 @@ pub async fn proposal_submit<V, R>(
     rng: R,
     proposal: Proposal,
     fee: Fee,
-    source_address: Option<u64>,
+    source_address: AddressIndex,
 ) -> anyhow::Result<TransactionPlan>
 where
     V: ViewClient,
@@ -312,7 +312,7 @@ where
     Planner::new(rng)
         .fee(fee)
         .proposal_submit(proposal, view.chain_params().await?.proposal_deposit_amount)
-        .plan(view, fvk, source_address.map(Into::into))
+        .plan(view, fvk, source_address)
         .await
         .context("can't build proposal submit transaction")
 }
@@ -326,7 +326,7 @@ pub async fn proposal_withdraw<V, R>(
     proposal_id: u64,
     reason: String,
     fee: Fee,
-    source_address: Option<u64>,
+    source_address: AddressIndex,
 ) -> Result<TransactionPlan>
 where
     V: ViewClient,
@@ -335,7 +335,7 @@ where
     Planner::new(rng)
         .fee(fee)
         .proposal_withdraw(proposal_id, reason)
-        .plan(view, fvk, source_address.map(Into::into))
+        .plan(view, fvk, source_address)
         .await
         .context("can't build proposal withdraw transaction")
 }
@@ -350,7 +350,7 @@ pub async fn proposal_deposit_claim<V, R>(
     deposit_amount: Amount,
     outcome: Outcome<()>,
     fee: Fee,
-    source_address: Option<u64>,
+    source_address: AddressIndex,
 ) -> Result<TransactionPlan>
 where
     V: ViewClient,
@@ -359,7 +359,7 @@ where
     Planner::new(rng)
         .fee(fee)
         .proposal_deposit_claim(proposal_id, deposit_amount, outcome)
-        .plan(view, fvk, source_address.map(Into::into))
+        .plan(view, fvk, source_address)
         .await
         .context("can't build proposal withdraw transaction")
 }

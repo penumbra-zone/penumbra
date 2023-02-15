@@ -19,9 +19,9 @@ pub enum ProposalCmd {
         /// The transaction fee (paid in upenumbra).
         #[clap(long, default_value = "0")]
         fee: u64,
-        /// Optional. Only spend funds originally received by the given address index.
-        #[clap(long)]
-        source: Option<u64>,
+        /// Only spend funds originally received by the given address index.
+        #[clap(long, default_value = "0")]
+        source: u32,
     },
     /// Withdraw a governance proposal that you previously submitted.
     Withdraw {
@@ -34,9 +34,9 @@ pub enum ProposalCmd {
         /// displayed to users.
         #[clap(long)]
         reason: String,
-        /// Optional. Only spend funds originally received by the given address index.
-        #[clap(long)]
-        source: Option<u64>,
+        /// Only spend funds originally received by the given address index.
+        #[clap(long, default_value = "0")]
+        source: u32,
     },
     /// Vote on a governance proposal (in your role as a delegator).
     ///
@@ -50,9 +50,9 @@ pub enum ProposalCmd {
         proposal_id: u64,
         /// The vote to cast.
         vote: Vote,
-        /// Optional. Only spend funds originally received by the given address index.
-        #[clap(long)]
-        source: Option<u64>,
+        /// Only spend funds originally received by the given address index.
+        #[clap(long, default_value = "0")]
+        source: u32,
     },
     /// Claim a governance proposal deposit for a proposal you submitted that has finished voting.
     ///
@@ -65,9 +65,9 @@ pub enum ProposalCmd {
         fee: u64,
         /// The proposal id to claim the deposit for.
         proposal_id: u64,
-        /// Optional. Only spend funds originally received by the given address index.
-        #[clap(long)]
-        source: Option<u64>,
+        /// Only spend funds originally received by the given address index.
+        #[clap(long, default_value = "0")]
+        source: u32,
     },
 }
 

@@ -65,7 +65,7 @@ mod tests {
         let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
-        let (sender, _dtk_d) = ivk_sender.payment_address(0u64.into());
+        let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
 
         let value_to_send = Value {
             amount: 1u64.into(),

@@ -7,6 +7,7 @@ use penumbra_chain::Epoch;
 use penumbra_component::stake::rate::RateData;
 use penumbra_crypto::{
     asset,
+    keys::AddressIndex,
     stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken},
     transaction::Fee,
     Amount, Value, STAKING_TOKEN_ASSET_ID,
@@ -38,9 +39,9 @@ pub enum TxCmd {
         /// The transaction fee (paid in upenumbra).
         #[clap(long, default_value = "0")]
         fee: u64,
-        /// Optional. Only spend funds originally received by the given address index.
-        #[clap(long)]
-        source: Option<u64>,
+        /// Only spend funds originally received by the given address index.
+        #[clap(long, default_value = "0")]
+        source: u32,
         /// Optional. Set the transaction's memo field to the provided text.
         #[clap(long)]
         memo: Option<String>,
@@ -56,9 +57,9 @@ pub enum TxCmd {
         /// The transaction fee (paid in upenumbra).
         #[clap(long, default_value = "0")]
         fee: u64,
-        /// Optional. Only spend funds originally received by the given address index.
-        #[clap(long)]
-        source: Option<u64>,
+        /// Only spend funds originally received by the given address index.
+        #[clap(long, default_value = "0")]
+        source: u32,
     },
     /// Withdraw stake from a validator's delegation pool.
     #[clap(display_order = 200)]
@@ -68,9 +69,9 @@ pub enum TxCmd {
         /// The transaction fee (paid in upenumbra).
         #[clap(long, default_value = "0")]
         fee: u64,
-        /// Optional. Only spend funds originally received by the given address index.
-        #[clap(long)]
-        source: Option<u64>,
+        /// Only spend funds originally received by the given address index.
+        #[clap(long, default_value = "0")]
+        source: u32,
     },
     /// Claim any undelegations that have finished unbonding.
     #[clap(display_order = 200)]
@@ -93,9 +94,9 @@ pub enum TxCmd {
         /// The transaction fee (paid in upenumbra).
         #[clap(long, default_value = "0")]
         fee: u64,
-        /// Optional. Only spend funds originally received by the given address index.
-        #[clap(long)]
-        source: Option<u64>,
+        /// Only spend funds originally received by the given address index.
+        #[clap(long, default_value = "0")]
+        source: u32,
     },
     /// Swap tokens of one denomination for another using the DEX.
     ///
@@ -117,9 +118,9 @@ pub enum TxCmd {
         /// A swap generates two transactions; the fee will be split equally over both.
         #[clap(long, default_value = "0")]
         fee: u64,
-        /// Optional. Only spend funds originally received by the given address index.
-        #[clap(long)]
-        source: Option<u64>,
+        /// Only spend funds originally received by the given address index.
+        #[clap(long, default_value = "0")]
+        source: u32,
     },
     /// Submit or withdraw a governance proposal.
     #[clap(display_order = 400, subcommand)]
@@ -177,7 +178,7 @@ impl TxCmd {
                     &values,
                     fee,
                     to,
-                    *from,
+                    AddressIndex::new(*from),
                     memo.clone(),
                 )
                 .await?;
@@ -223,13 +224,13 @@ impl TxCmd {
                 // If a source address was specified, use it for the swap, otherwise,
                 // use the default address.
                 let (claim_address, _dtk_d) =
-                    fvk.incoming().payment_address(source.unwrap_or(0).into());
+                    fvk.incoming().payment_address(AddressIndex::new(*source));
 
                 let mut planner = Planner::new(OsRng);
                 planner.fee(swap_fee);
                 planner.swap(input, into, swap_claim_fee.clone(), claim_address)?;
                 let plan = planner
-                    .plan(app.view(), &fvk, source.map(Into::into))
+                    .plan(app.view(), &fvk, AddressIndex::new(*source))
                     .await
                     .context("can't plan swap transaction")?;
 
@@ -290,7 +291,7 @@ impl TxCmd {
                         output_data: swap_record.output_data,
                         epoch_duration: params.epoch_duration,
                     })
-                    .plan(app.view(), &fvk, source.map(Into::into))
+                    .plan(app.view(), &fvk, AddressIndex::new(*source))
                     .await
                     .context("can't plan swap claim")?;
 
@@ -329,7 +330,7 @@ impl TxCmd {
                     rate_data,
                     unbonded_amount.into(),
                     fee,
-                    *source,
+                    AddressIndex::new(*source),
                 )
                 .await?;
 
@@ -375,7 +376,11 @@ impl TxCmd {
                 let plan = planner
                     .fee(fee)
                     .undelegate(delegation_value.amount, rate_data, end_epoch_index)
-                    .plan(app.view.as_mut().unwrap(), &app.fvk, source.map(Into::into))
+                    .plan(
+                        app.view.as_mut().unwrap(),
+                        &app.fvk,
+                        AddressIndex::new(*source),
+                    )
                     .await
                     .context("can't build undelegate plan")?;
 
@@ -461,7 +466,7 @@ impl TxCmd {
                                 balance_blinding: Fr::rand(&mut OsRng),
                             })
                             .fee(fee.clone())
-                            .plan(app.view.as_mut().unwrap(), &app.fvk, Some(address_index))
+                            .plan(app.view.as_mut().unwrap(), &app.fvk, address_index)
                             .await?;
                         app.build_and_submit_transaction(plan).await?;
                     }
@@ -479,7 +484,7 @@ impl TxCmd {
                     OsRng,
                     proposal,
                     fee,
-                    *source,
+                    AddressIndex::new(*source),
                 )
                 .await?;
                 app.build_and_submit_transaction(plan).await?;
@@ -498,7 +503,7 @@ impl TxCmd {
                     *proposal_id,
                     reason.clone(),
                     fee,
-                    *source,
+                    AddressIndex::new(*source),
                 )
                 .await?;
 
@@ -558,7 +563,11 @@ impl TxCmd {
                 let plan = Planner::new(OsRng)
                     .proposal_deposit_claim(*proposal_id, deposit_amount, outcome)
                     .fee(fee)
-                    .plan(app.view.as_mut().unwrap(), &app.fvk, source.map(Into::into))
+                    .plan(
+                        app.view.as_mut().unwrap(),
+                        &app.fvk,
+                        AddressIndex::new(*source),
+                    )
                     .await?;
 
                 app.build_and_submit_transaction(plan).await?;

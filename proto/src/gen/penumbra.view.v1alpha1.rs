@@ -119,7 +119,12 @@ pub struct IndexByAddressResponse {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EphemeralAddressRequest {}
+pub struct EphemeralAddressRequest {
+    #[prost(message, optional, tag = "1")]
+    pub address_index: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AddressIndex,
+    >,
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EphemeralAddressResponse {

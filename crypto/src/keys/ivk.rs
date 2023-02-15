@@ -11,7 +11,7 @@ use decaf377::{
 
 use super::{AddressIndex, Diversifier, DiversifierKey};
 use crate::{
-    fmd, ka,
+    address, fmd, ka,
     keys::{AuthorizationKeyVar, NullifierKeyVar, IVK_DOMAIN_SEP},
     prf, Address, Fr,
 };
@@ -44,18 +44,19 @@ impl IncomingViewingKey {
         )
     }
 
-    /// Derive a random ephemeral address.
+    /// Derive an ephemeral address for the provided account.
     pub fn ephemeral_address<R: RngCore + CryptoRng>(
         &self,
         mut rng: R,
+        mut address_index: AddressIndex,
     ) -> (Address, fmd::DetectionKey) {
-        let mut random_index = [0u8; 16];
-        // ensure that the index is outside the range of u64 with rejection sampling
-        while u128::from_le_bytes(random_index) <= 2u128.pow(64) {
-            rng.fill_bytes(&mut random_index);
-        }
-        let index = AddressIndex::Random(random_index);
-        self.payment_address(index)
+        let mut random_index = [0u8; 12];
+
+        rng.fill_bytes(&mut random_index);
+
+        address_index.randomizer = random_index;
+
+        self.payment_address(address_index)
     }
 
     /// Perform key agreement with a given public key.
