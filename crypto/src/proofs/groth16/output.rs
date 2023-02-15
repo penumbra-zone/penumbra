@@ -17,7 +17,7 @@ use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
 use crate::balance::BalanceVar;
-use crate::proofs::groth16::{gadgets, ParameterSetup};
+use crate::proofs::groth16::{gadgets, ParameterSetup, GROTH16_PROOF_LENGTH_BYTES};
 use crate::{
     balance, balance::commitment::BalanceCommitmentVar, keys::Diversifier, note, Address, Note,
     Rseed, Value,
@@ -164,9 +164,11 @@ impl DomainType for OutputProof {
 
 impl From<OutputProof> for pb::ZkOutputProof {
     fn from(proof: OutputProof) -> Self {
-        let mut proof_bytes = Vec::new();
+        let mut proof_bytes = [0u8; GROTH16_PROOF_LENGTH_BYTES];
         Proof::serialize(&proof.0, &mut proof_bytes[..]).expect("can serialize Proof");
-        pb::ZkOutputProof { inner: proof_bytes }
+        pb::ZkOutputProof {
+            inner: proof_bytes.to_vec(),
+        }
     }
 }
 
