@@ -22,7 +22,7 @@ pub use commitment::Commitment;
 mod imbalance;
 mod iter;
 use commitment::VALUE_BLINDING_GENERATOR;
-use decaf377::{r1cs::ElementVar, Element, Fq, Fr};
+use decaf377::{r1cs::ElementVar, Fq, Fr};
 use imbalance::Imbalance;
 
 use self::commitment::BalanceCommitmentVar;
@@ -314,7 +314,6 @@ impl AllocVar<Balance, Fq> for BalanceVar {
 impl From<ValueVar> for BalanceVar {
     fn from(ValueVar { amount, asset_id }: ValueVar) -> Self {
         let mut balance_vec = Vec::new();
-        let cs = amount.amount.cs();
         let sign = Boolean::constant(true);
         balance_vec.push((asset_id, (sign, amount)));
 
@@ -373,7 +372,6 @@ impl BalanceVar {
     /// Create a balance from a negated [`ValueVar`].
     pub fn from_negative_value_var(value: ValueVar) -> Self {
         let mut balance_vec = Vec::new();
-        let cs = value.amount.amount.cs();
         let sign = Boolean::constant(false);
         balance_vec.push((value.asset_id, (sign, value.amount)));
 
