@@ -7,6 +7,9 @@ pub use output::{OutputCircuit, OutputProof};
 pub use spend::{SpendCircuit, SpendProof};
 pub use traits::ParameterSetup;
 
+/// The length of our Groth16 proofs in bytes.
+pub const GROTH16_PROOF_LENGTH_BYTES: usize = 192;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -19,6 +22,7 @@ mod tests {
     use proptest::prelude::*;
 
     use decaf377_rdsa::{SpendAuth, VerificationKey};
+    use penumbra_proto::core::crypto::v1alpha1 as pb;
     use penumbra_tct as tct;
     use rand_core::OsRng;
 
@@ -70,8 +74,10 @@ mod tests {
                 note_commitment,
             )
             .expect("can create proof");
+            let serialized_proof: pb::ZkOutputProof = proof.into();
 
-            let proof_result = proof.verify(&vk, balance_commitment, note_commitment);
+            let deserialized_proof = OutputProof::try_from(serialized_proof).expect("can deserialize proof");
+            let proof_result = deserialized_proof.verify(&vk, balance_commitment, note_commitment);
 
             assert!(proof_result.is_ok());
         }
