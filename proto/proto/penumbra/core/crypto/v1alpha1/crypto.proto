@@ -147,3 +147,8 @@ message EffectHash {
 message ZKOutputProof {
   bytes inner = 1;
 }
+
+// A Penumbra ZK spend proof.
+message ZKSpendProof {
+  bytes inner = 1;
+}
