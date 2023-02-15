@@ -458,15 +458,24 @@ impl ViewProtocolService for ViewService {
 
     async fn ephemeral_address(
         &self,
-        _request: tonic::Request<pb::EphemeralAddressRequest>,
+        request: tonic::Request<pb::EphemeralAddressRequest>,
     ) -> Result<tonic::Response<pb::EphemeralAddressResponse>, tonic::Status> {
         let fvk =
             self.storage.full_viewing_key().await.map_err(|_| {
                 tonic::Status::failed_precondition("Error retrieving full viewing key")
             })?;
 
+        let address_index = request
+            .into_inner()
+            .address_index
+            .ok_or_else(|| tonic::Status::invalid_argument("Missing address index"))?
+            .try_into()
+            .map_err(|e| {
+                tonic::Status::invalid_argument(format!("Could not parse address index: {:#}", e))
+            })?;
+
         Ok(tonic::Response::new(pb::EphemeralAddressResponse {
-            address: Some(fvk.ephemeral_address(OsRng).0.into()),
+            address: Some(fvk.ephemeral_address(OsRng, address_index).0.into()),
         }))
     }
 

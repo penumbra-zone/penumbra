@@ -141,7 +141,9 @@ message IndexByAddressResponse {
   optional core.crypto.v1alpha1.AddressIndex address_index = 1;
 }
 
-message EphemeralAddressRequest {}
+message EphemeralAddressRequest {
+  core.crypto.v1alpha1.AddressIndex address_index = 1;
+}
 
 message EphemeralAddressResponse {
   core.crypto.v1alpha1.Address address = 1;

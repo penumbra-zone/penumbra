@@ -711,8 +711,14 @@ impl serde::Serialize for EphemeralAddressRequest {
         S: serde::Serializer,
     {
         use serde::ser::SerializeStruct;
-        let len = 0;
-        let struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.EphemeralAddressRequest", len)?;
+        let mut len = 0;
+        if self.address_index.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.EphemeralAddressRequest", len)?;
+        if let Some(v) = self.address_index.as_ref() {
+            struct_ser.serialize_field("addressIndex", v)?;
+        }
         struct_ser.end()
     }
 }
@@ -723,10 +729,13 @@ impl<'de> serde::Deserialize<'de> for EphemeralAddressRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
+            "address_index",
+            "addressIndex",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
+            AddressIndex,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -747,7 +756,10 @@ impl<'de> serde::Deserialize<'de> for EphemeralAddressRequest {
                     where
                         E: serde::de::Error,
                     {
-                            Err(serde::de::Error::unknown_field(value, FIELDS))
+                        match value {
+                            "addressIndex" | "address_index" => Ok(GeneratedField::AddressIndex),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
                     }
                 }
                 deserializer.deserialize_identifier(GeneratedVisitor)
@@ -765,10 +777,19 @@ impl<'de> serde::Deserialize<'de> for EphemeralAddressRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                while map.next_key::<GeneratedField>()?.is_some() {
-                    let _ = map.next_value::<serde::de::IgnoredAny>()?;
+                let mut address_index__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::AddressIndex => {
+                            if address_index__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("addressIndex"));
+                            }
+                            address_index__ = map.next_value()?;
+                        }
+                    }
                 }
                 Ok(EphemeralAddressRequest {
+                    address_index: address_index__,
                 })
             }
         }

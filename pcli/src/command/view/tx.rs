@@ -172,10 +172,7 @@ fn format_address(ivk: &IncomingViewingKey, address: &Address) -> String {
     if ivk.views_address(address) {
         let index = ivk.index_for_diversifier(address.diversifier());
 
-        match index {
-            AddressIndex::Numeric(index) => format!("[self: {}]", index),
-            AddressIndex::Random(_) => "[self: ephemeral]".to_string(),
-        }
+        format!("[self: {:?}]", index)
     } else {
         address.display_short_form()
     }

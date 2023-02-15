@@ -9,7 +9,7 @@ use penumbra_component::stake::{
     validator::{Validator, ValidatorToml},
     FundingStream, FundingStreams,
 };
-use penumbra_crypto::{stake::IdentityKey, transaction::Fee, GovernanceKey};
+use penumbra_crypto::{keys::AddressIndex, stake::IdentityKey, transaction::Fee, GovernanceKey};
 use penumbra_proto::{core::stake::v1alpha1::Validator as ProtoValidator, DomainType, Message};
 use penumbra_transaction::action::{ValidatorVote, ValidatorVoteBody, Vote};
 use penumbra_wallet::plan;
@@ -39,8 +39,8 @@ pub enum ValidatorCmd {
         /// The vote to cast.
         vote: Vote,
         /// Optional. Only spend funds originally received by the given address index.
-        #[clap(long)]
-        source: Option<u64>,
+        #[clap(long, default_value = "0")]
+        source: u32,
     },
 }
 
@@ -55,8 +55,8 @@ pub enum DefinitionCmd {
         #[clap(long, default_value = "0")]
         fee: u64,
         /// Optional. Only spend funds originally received by the given address index.
-        #[clap(long)]
-        source: Option<u64>,
+        #[clap(long, default_value = "0")]
+        source: u32,
     },
     /// Generates a template validator definition for editing.
     ///
@@ -142,7 +142,7 @@ impl ValidatorCmd {
                     OsRng,
                     vd,
                     fee,
-                    *source,
+                    AddressIndex::new(*source),
                 )
                 .await?;
                 app.build_and_submit_transaction(plan).await?;
@@ -181,13 +181,14 @@ impl ValidatorCmd {
 
                 // Construct a new transaction and include the validator definition.
                 let fee = Fee::from_staking_token_amount((*fee).into());
+
                 let plan = plan::validator_vote(
                     &app.fvk,
                     app.view.as_mut().unwrap(),
                     OsRng,
                     vote,
                     fee,
-                    *source,
+                    AddressIndex::new(*source),
                 )
                 .await?;
                 app.build_and_submit_transaction(plan).await?;
@@ -198,7 +199,7 @@ impl ValidatorCmd {
                 file,
                 tendermint_validator_keyfile,
             }) => {
-                let (address, _dtk) = fvk.incoming().payment_address(0u64.into());
+                let (address, _dtk) = fvk.incoming().payment_address(0u32.into());
                 let identity_key = IdentityKey(fvk.spend_verification_key().clone());
                 // By default, the template sets the governance key to the same verification key as
                 // the identity key, but a validator can change this if they want to use different

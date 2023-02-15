@@ -67,17 +67,13 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     }
 
     /// Get all the note requests necessary to fulfill the current [`Balance`].
-    pub fn notes_requests(
-        &self,
-        fvk: &FullViewingKey,
-        source: Option<AddressIndex>,
-    ) -> Vec<NotesRequest> {
+    pub fn notes_requests(&self, fvk: &FullViewingKey, source: AddressIndex) -> Vec<NotesRequest> {
         self.balance
             .required()
             .map(|Value { asset_id, amount }| NotesRequest {
                 account_id: Some(fvk.hash().into()),
                 asset_id: Some(asset_id.into()),
-                address_index: source.map(Into::into),
+                address_index: Some(source.into()),
                 amount_to_spend: amount.into(),
                 include_spent: false,
                 ..Default::default()
@@ -290,7 +286,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         &mut self,
         view: &mut V,
         fvk: &FullViewingKey,
-        source: Option<AddressIndex>,
+        source: AddressIndex,
     ) -> anyhow::Result<TransactionPlan> {
         // Gather all the information needed from the view service
         let chain_params = view.chain_params().await?;
@@ -317,7 +313,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         chain_params: &ChainParameters,
         fmd_params: &FmdParameters,
         fvk: &FullViewingKey,
-        source: Option<AddressIndex>,
+        source: AddressIndex,
         spendable_notes: Vec<SpendableNoteRecord>,
     ) -> anyhow::Result<TransactionPlan> {
         tracing::debug!(plan = ?self.plan, balance = ?self.balance, "finalizing transaction");
@@ -331,10 +327,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         }
 
         // For any remaining provided balance, make a single change note for each
-        let self_address = fvk
-            .incoming()
-            .payment_address(source.unwrap_or(AddressIndex::Numeric(0)))
-            .0;
+        let self_address = fvk.incoming().payment_address(source).0;
 
         for value in self.balance.provided().collect::<Vec<_>>() {
             self.output(value, self_address);

@@ -140,7 +140,7 @@ impl ParameterSetup for SpendCircuit {
         let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
-        let (address, _dtk_d) = ivk_sender.payment_address(0u64.into());
+        let (address, _dtk_d) = ivk_sender.payment_address(0u32.into());
 
         let spend_auth_randomizer = Fr::from(1);
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
