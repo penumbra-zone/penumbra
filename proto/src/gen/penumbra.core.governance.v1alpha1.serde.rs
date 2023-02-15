@@ -146,6 +146,9 @@ impl serde::Serialize for DelegatorVoteBody {
         if self.value.is_some() {
             len += 1;
         }
+        if self.unbonded_amount.is_some() {
+            len += 1;
+        }
         if !self.nullifier.is_empty() {
             len += 1;
         }
@@ -164,6 +167,9 @@ impl serde::Serialize for DelegatorVoteBody {
         }
         if let Some(v) = self.value.as_ref() {
             struct_ser.serialize_field("value", v)?;
+        }
+        if let Some(v) = self.unbonded_amount.as_ref() {
+            struct_ser.serialize_field("unbondedAmount", v)?;
         }
         if !self.nullifier.is_empty() {
             struct_ser.serialize_field("nullifier", pbjson::private::base64::encode(&self.nullifier).as_str())?;
@@ -186,6 +192,8 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
             "startHeight",
             "vote",
             "value",
+            "unbonded_amount",
+            "unbondedAmount",
             "nullifier",
             "rk",
         ];
@@ -196,6 +204,7 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
             StartHeight,
             Vote,
             Value,
+            UnbondedAmount,
             Nullifier,
             Rk,
         }
@@ -223,6 +232,7 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
                             "startHeight" | "start_height" => Ok(GeneratedField::StartHeight),
                             "vote" => Ok(GeneratedField::Vote),
                             "value" => Ok(GeneratedField::Value),
+                            "unbondedAmount" | "unbonded_amount" => Ok(GeneratedField::UnbondedAmount),
                             "nullifier" => Ok(GeneratedField::Nullifier),
                             "rk" => Ok(GeneratedField::Rk),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
@@ -248,6 +258,7 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
                 let mut start_height__ = None;
                 let mut vote__ = None;
                 let mut value__ = None;
+                let mut unbonded_amount__ = None;
                 let mut nullifier__ = None;
                 let mut rk__ = None;
                 while let Some(k) = map.next_key()? {
@@ -280,6 +291,12 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
                             }
                             value__ = map.next_value()?;
                         }
+                        GeneratedField::UnbondedAmount => {
+                            if unbonded_amount__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("unbondedAmount"));
+                            }
+                            unbonded_amount__ = map.next_value()?;
+                        }
                         GeneratedField::Nullifier => {
                             if nullifier__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("nullifier"));
@@ -303,6 +320,7 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
                     start_height: start_height__.unwrap_or_default(),
                     vote: vote__,
                     value: value__,
+                    unbonded_amount: unbonded_amount__,
                     nullifier: nullifier__.unwrap_or_default(),
                     rk: rk__.unwrap_or_default(),
                 })

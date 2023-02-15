@@ -80,11 +80,14 @@ pub struct DelegatorVoteBody {
     /// The value of the delegation note.
     #[prost(message, optional, tag = "4")]
     pub value: ::core::option::Option<super::super::crypto::v1alpha1::Value>,
+    /// The amount of the delegation note, in unbonded penumbra.
+    #[prost(message, optional, tag = "5")]
+    pub unbonded_amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
     /// The nullifier of the input note.
-    #[prost(bytes = "vec", tag = "5")]
+    #[prost(bytes = "vec", tag = "6")]
     pub nullifier: ::prost::alloc::vec::Vec<u8>,
     /// The randomized validating key for the spend authorization signature.
-    #[prost(bytes = "vec", tag = "6")]
+    #[prost(bytes = "vec", tag = "7")]
     pub rk: ::prost::alloc::vec::Vec<u8>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]

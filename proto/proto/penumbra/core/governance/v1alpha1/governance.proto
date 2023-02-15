@@ -55,10 +55,12 @@ message DelegatorVoteBody {
   governance.v1alpha1.Vote vote = 3;
   // The value of the delegation note.
   crypto.v1alpha1.Value value = 4;
+  // The amount of the delegation note, in unbonded penumbra.
+  crypto.v1alpha1.Amount unbonded_amount = 5;
   // The nullifier of the input note.
-  bytes nullifier = 5;
+  bytes nullifier = 6;
   // The randomized validating key for the spend authorization signature.
-  bytes rk = 6;
+  bytes rk = 7;
 }
 
 message ProposalDepositClaim {

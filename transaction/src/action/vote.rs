@@ -4,10 +4,12 @@ use std::{
 };
 
 use anyhow::anyhow;
+use ark_ff::Zero;
+use decaf377::Fr;
 use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
 use penumbra_crypto::{
     proofs::transparent::DelegatorVoteProof, stake::IdentityKey, Amount, GovernanceKey, Nullifier,
-    Value,
+    Value, VotingReceiptToken,
 };
 use penumbra_proto::{
     core::{crypto::v1alpha1::BalanceCommitment, governance::v1alpha1 as pb},
@@ -217,7 +219,11 @@ pub struct DelegatorVote {
 
 impl IsAction for DelegatorVote {
     fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
-        todo!()
+        Value {
+            asset_id: VotingReceiptToken::new(self.body.proposal).id(),
+            amount: self.body.unbonded_amount,
+        }
+        .commit(Fr::zero())
     }
 
     fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
@@ -225,12 +231,35 @@ impl IsAction for DelegatorVote {
     }
 }
 
+/// The body of a delegator vote.
 #[derive(Debug, Clone)]
 pub struct Body {
+    /// The proposal ID the vote is for.
     pub proposal: u64,
+    /// The height the proposal started at.
     pub start_height: Position,
+    /// The vote on the proposal.
     pub vote: Vote, // With flow encryption, this will be a triple of flow ciphertexts
+    /// The value of the staked note being used to vote.
     pub value: Value, // With flow encryption, this will be a triple of balance commitments, and a public denomination
+    /// The unbonded amount equivalent to the value above
+    pub unbonded_amount: Amount,
+    /// The nullifier of the staked note being used to vote.
     pub nullifier: Nullifier,
+    /// The randomized validating key for the spend authorization signature.
     pub rk: VerificationKey<SpendAuth>,
+}
+
+impl From<Body> for pb::DelegatorVoteBody {
+    fn from(value: Body) -> Self {
+        pb::DelegatorVoteBody {
+            proposal: value.proposal,
+            start_height: Some(value.start_height.into()),
+            vote: Some(value.vote.into()),
+            value: Some(value.value.into()),
+            unbonded_amount: value.unbonded_amount,
+            nullifier: Some(value.nullifier.into()),
+            rk: Some(value.rk.into()),
+        }
+    }
 }
