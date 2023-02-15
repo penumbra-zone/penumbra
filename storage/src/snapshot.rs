@@ -6,7 +6,7 @@ use jmt::storage::{LeafNode, Node, NodeKey, TreeReader};
 use tokio::sync::mpsc;
 use tracing::Span;
 
-use crate::StateRead;
+use crate::{metrics, StateRead};
 
 mod rocks_wrapper;
 use rocks_wrapper::RocksDbSnapshot;
@@ -145,7 +145,14 @@ impl StateRead for Snapshot {
         crate::future::SnapshotFuture(
             tokio::task::Builder::new()
                 .name("Snapshot::get_raw")
-                .spawn_blocking(move || span.in_scope(|| self2.get_jmt(key_hash)))
+                .spawn_blocking(move || {
+                    span.in_scope(|| {
+                        let start = std::time::Instant::now();
+                        let rsp = self2.get_jmt(key_hash);
+                        metrics::histogram!(metrics::STORAGE_GET_RAW_DURATION, start.elapsed());
+                        rsp
+                    })
+                })
                 .expect("spawning threads is possible"),
         )
     }
@@ -159,14 +166,20 @@ impl StateRead for Snapshot {
                 .name("Snapshot::nonconsensus_get_raw")
                 .spawn_blocking(move || {
                     span.in_scope(|| {
+                        let start = std::time::Instant::now();
                         let nonconsensus_cf = inner
                             .db
                             .cf_handle("nonconsensus")
                             .expect("nonconsensus column family not found");
-                        inner
+                        let rsp = inner
                             .snapshot
                             .get_cf(nonconsensus_cf, key)
-                            .map_err(Into::into)
+                            .map_err(Into::into);
+                        metrics::histogram!(
+                            metrics::STORAGE_NONCONSENSUS_GET_RAW_DURATION,
+                            start.elapsed()
+                        );
+                        rsp
                     })
                 })
                 .expect("spawning threads is possible"),
