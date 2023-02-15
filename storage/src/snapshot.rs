@@ -6,7 +6,7 @@ use jmt::storage::{LeafNode, Node, NodeKey, TreeReader};
 use tokio::sync::mpsc;
 use tracing::Span;
 
-use crate::state::StateRead;
+use crate::StateRead;
 
 mod rocks_wrapper;
 use rocks_wrapper::RocksDbSnapshot;
@@ -19,7 +19,7 @@ use rocks_wrapper::RocksDbSnapshot;
 /// snapshot](https://github.com/facebook/rocksdb/wiki/Snapshot) with a pinned
 /// JMT version number for the snapshot.
 #[derive(Clone)]
-pub struct Snapshot(Arc<Inner>);
+pub struct Snapshot(pub(crate) Arc<Inner>);
 
 impl std::fmt::Debug for Snapshot {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -31,7 +31,7 @@ impl std::fmt::Debug for Snapshot {
 
 // We don't want to expose the `TreeReader` implementation outside of this crate.
 #[derive(Debug)]
-struct Inner {
+pub(crate) struct Inner {
     snapshot: RocksDbSnapshot,
     version: jmt::Version,
     // Used to retrieve column family handles.
@@ -51,13 +51,58 @@ impl Snapshot {
         self.0.version
     }
 
+    /// Gets a value by key alongside an ICS23 existence proof of that value.
+    ///
+    /// Errors if the key is not present.
+    /// TODO: change return type to `Option<Vec<u8>>` and an
+    /// existence-or-nonexistence proof.
+    pub async fn get_with_proof(&self, key: Vec<u8>) -> Result<(Vec<u8>, ics23::ExistenceProof)> {
+        let span = Span::current();
+        let snapshot = self.clone();
+
+        tokio::task::Builder::new()
+            .name("State::get_with_proof")
+            .spawn_blocking(move || {
+                span.in_scope(|| {
+                    let tree = jmt::JellyfishMerkleTree::new(&*snapshot.0);
+                    let proof = tree.get_with_ics23_proof(key, snapshot.version())?;
+                    Ok((proof.value.clone(), proof))
+                })
+            })?
+            .await?
+    }
+
+    /// Returns the root hash of this `State`.
+    ///
+    /// If the `State` is empty, the all-zeros hash will be returned as a placeholder value.
+    ///
+    /// This method may only be used on a clean [`State`] fork, and will error
+    /// if [`is_dirty`] returns `true`.
+    pub async fn root_hash(&self) -> Result<crate::RootHash> {
+        let span = Span::current();
+        let snapshot = self.clone();
+
+        tokio::task::Builder::new()
+            .name("State::root_hash")
+            .spawn_blocking(move || {
+                span.in_scope(|| {
+                    let tree = jmt::JellyfishMerkleTree::new(&*snapshot.0);
+                    let root = tree
+                        .get_root_hash_option(snapshot.version())?
+                        .unwrap_or(crate::RootHash([0; 32]));
+                    Ok(root)
+                })
+            })?
+            .await?
+    }
+
     /// Internal helper function used by `get_raw` and `prefix_raw`.
     ///
     /// Reads from the JMT will fail if the root is missing; this method
     /// special-cases the empty tree case so that reads on an empty tree just
     /// return None.
     fn get_jmt(&self, key: jmt::KeyHash) -> Result<Option<Vec<u8>>> {
-        let tree = jmt::JellyfishMerkleTree::new(self);
+        let tree = jmt::JellyfishMerkleTree::new(&*self.0);
         match tree.get(key, self.0.version) {
             Ok(Some(value)) => {
                 tracing::trace!(version = ?self.0.version, ?key, value = ?hex::encode(&value), "read from tree");
@@ -250,19 +295,17 @@ impl StateRead for Snapshot {
 
 /// A reader interface for rocksdb. NOTE: it is up to the caller to ensure consistency between the
 /// rocksdb::DB handle and any write batches that may be applied through the writer interface.
-impl TreeReader for Snapshot {
+impl TreeReader for Inner {
     /// Gets node given a node key. Returns `None` if the node does not exist.
     fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node>> {
         let node_key = node_key;
         tracing::trace!(?node_key);
 
         let jmt_cf = self
-            .0
             .db
             .cf_handle("jmt")
             .expect("jmt column family not found");
         let value = self
-            .0
             .snapshot
             .get_cf(jmt_cf, &node_key.encode()?)?
             .map(|db_slice| Node::decode(&db_slice))
@@ -274,11 +317,10 @@ impl TreeReader for Snapshot {
 
     fn get_rightmost_leaf(&self) -> Result<Option<(NodeKey, LeafNode)>> {
         let jmt_cf = self
-            .0
             .db
             .cf_handle("jmt")
             .expect("jmt column family not found");
-        let mut iter = self.0.snapshot.raw_iterator_cf(jmt_cf);
+        let mut iter = self.snapshot.raw_iterator_cf(jmt_cf);
         iter.seek_to_last();
 
         if iter.valid() {

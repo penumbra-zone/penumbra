@@ -39,18 +39,20 @@
 mod cache;
 mod delta;
 mod metrics;
+mod read;
 mod snapshot;
 mod snapshot_cache;
-mod state;
 mod storage;
+mod write;
 
 use cache::Cache;
-use snapshot::Snapshot;
 
 pub use crate::metrics::register_metrics;
-pub use delta::StateDelta;
+pub use delta::{ArcStateDeltaExt, StateDelta};
 pub use jmt::{ics23_spec, RootHash};
-pub use state::{ArcStateExt, State, StateRead, StateTransaction, StateWrite};
-pub use storage::{StateNotification, Storage, TempStorage};
+pub use read::StateRead;
+pub use snapshot::Snapshot;
+pub use storage::{Storage, TempStorage};
+pub use write::StateWrite;
 
 pub mod future;

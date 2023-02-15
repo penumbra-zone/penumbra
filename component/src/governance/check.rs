@@ -106,11 +106,11 @@ pub mod stateful {
     use crate::stake::StateReadExt as _;
     use penumbra_chain::StateReadExt as _;
     use penumbra_crypto::{stake::IdentityKey, Amount, GovernanceKey, STAKING_TOKEN_DENOM};
-    use penumbra_storage::State;
+    use penumbra_storage::StateRead;
     use penumbra_transaction::action::{ProposalDepositClaim, ProposalPayload};
 
-    pub async fn proposal_submit(
-        state: &State,
+    pub async fn proposal_submit<S: StateRead>(
+        state: S,
         ProposalSubmit {
             deposit_amount,
             proposal, // statelessly verified
@@ -145,7 +145,7 @@ pub mod stateful {
                 effective_height,
                 new_parameters,
             } => {
-                height_in_future_of_voting_end(state, *effective_height).await?;
+                height_in_future_of_voting_end(&state, *effective_height).await?;
 
                 let old_parameters = state.get_chain_params().await?;
 
@@ -159,10 +159,10 @@ pub mod stateful {
                 cancel_transactions,
             } => {
                 for (effective_height, _) in schedule_transactions.iter() {
-                    height_in_future_of_voting_end(state, *effective_height).await?;
+                    height_in_future_of_voting_end(&state, *effective_height).await?;
                 }
                 for (scheduled_height, _) in cancel_transactions.iter() {
-                    height_in_future_of_voting_end(state, *scheduled_height).await?;
+                    height_in_future_of_voting_end(&state, *scheduled_height).await?;
                 }
                 // TODO: check that all transactions to cancel exist already and match auth hash
             }
@@ -171,7 +171,7 @@ pub mod stateful {
         Ok(())
     }
 
-    async fn height_in_future_of_voting_end(state: &State, height: u64) -> Result<()> {
+    async fn height_in_future_of_voting_end<S: StateRead>(state: S, height: u64) -> Result<()> {
         let block_height = state.get_block_height().await?;
         let voting_blocks = state.get_chain_params().await?.proposal_voting_blocks;
         let voting_end_height = block_height + voting_blocks;
@@ -186,8 +186,8 @@ pub mod stateful {
         Ok(())
     }
 
-    pub async fn validator_vote(
-        state: &State,
+    pub async fn validator_vote<S: StateRead>(
+        state: S,
         ValidatorVote {
             body:
                 ValidatorVoteBody {
@@ -199,13 +199,13 @@ pub mod stateful {
             auth_sig: _, // We already checked this in stateless verification
         }: &ValidatorVote,
     ) -> Result<()> {
-        proposal_voteable(state, *proposal).await?;
-        validator_has_not_voted(state, *proposal, identity_key).await?;
-        governance_key_matches_validator(state, identity_key, governance_key).await?;
+        proposal_voteable(&state, *proposal).await?;
+        validator_has_not_voted(&state, *proposal, identity_key).await?;
+        governance_key_matches_validator(&state, identity_key, governance_key).await?;
         Ok(())
     }
 
-    async fn proposal_voteable(state: &State, proposal_id: u64) -> Result<()> {
+    async fn proposal_voteable<S: StateRead>(state: S, proposal_id: u64) -> Result<()> {
         if let Some(proposal_state) = state.proposal_state(proposal_id).await? {
             use proposal::State::*;
             match proposal_state {
@@ -226,8 +226,8 @@ pub mod stateful {
         Ok(())
     }
 
-    async fn validator_has_not_voted(
-        state: &State,
+    async fn validator_has_not_voted<S: StateRead>(
+        state: S,
         proposal_id: u64,
         identity_key: &IdentityKey,
     ) -> Result<()> {
@@ -242,8 +242,8 @@ pub mod stateful {
         Ok(())
     }
 
-    async fn governance_key_matches_validator(
-        state: &State,
+    async fn governance_key_matches_validator<S: StateRead>(
+        state: S,
         identity_key: &IdentityKey,
         governance_key: &GovernanceKey,
     ) -> Result<()> {
@@ -262,8 +262,8 @@ pub mod stateful {
         Ok(())
     }
 
-    pub async fn proposal_withdraw(
-        state: &State,
+    pub async fn proposal_withdraw<S: StateRead>(
+        state: S,
         proposal_withdraw: &ProposalWithdraw,
     ) -> Result<()> {
         // Any voteable proposal can be withdrawn
@@ -271,15 +271,15 @@ pub mod stateful {
         Ok(())
     }
 
-    pub async fn proposal_deposit_claim(
-        state: &State,
+    pub async fn proposal_deposit_claim<S: StateRead>(
+        state: S,
         proposal_deposit_claim: &ProposalDepositClaim,
     ) -> Result<()> {
         // Any finished proposal can have its deposit claimed
-        proposal_claimable(state, proposal_deposit_claim.proposal).await?;
+        proposal_claimable(&state, proposal_deposit_claim.proposal).await?;
         // Check that the deposit amount matches the proposal being claimed
         proposal_claim_valid_deposit(
-            state,
+            &state,
             proposal_deposit_claim.proposal,
             proposal_deposit_claim.deposit_amount,
         )
@@ -287,7 +287,7 @@ pub mod stateful {
         Ok(())
     }
 
-    async fn proposal_claimable(state: &State, proposal_id: u64) -> Result<()> {
+    async fn proposal_claimable<S: StateRead>(state: S, proposal_id: u64) -> Result<()> {
         if let Some(proposal_state) = state.proposal_state(proposal_id).await? {
             use proposal::State::*;
             match proposal_state {
@@ -317,8 +317,8 @@ pub mod stateful {
         Ok(())
     }
 
-    async fn proposal_claim_valid_deposit(
-        state: &State,
+    async fn proposal_claim_valid_deposit<S: StateRead>(
+        state: S,
         proposal_id: u64,
         claim_deposit_amount: Amount,
     ) -> Result<()> {

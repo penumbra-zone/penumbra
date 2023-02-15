@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use penumbra_chain::{sync::StatePayload, StateReadExt as _};
-use penumbra_storage::{State, StateRead, StateTransaction};
+use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::SwapClaim, Transaction};
 use tracing::instrument;
 
@@ -33,7 +33,7 @@ impl ActionHandler for SwapClaim {
     }
 
     #[instrument(name = "swap_claim", skip(self, state))]
-    async fn check_stateful(&self, state: Arc<State>) -> Result<()> {
+    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
         let swap_claim = self;
 
         // 1. Validate the epoch duration passed in the swap claim matches
@@ -71,7 +71,7 @@ impl ActionHandler for SwapClaim {
     }
 
     #[instrument(name = "swap_claim", skip(self, state))]
-    async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
+    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         // Record the output notes in the state.
         let source = state.object_get("source").unwrap_or_default();
 

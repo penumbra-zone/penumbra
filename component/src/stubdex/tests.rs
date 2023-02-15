@@ -7,7 +7,7 @@ use penumbra_crypto::{
     transaction::Fee,
     Address, Amount,
 };
-use penumbra_storage::{ArcStateExt, TempStorage};
+use penumbra_storage::{ArcStateDeltaExt, StateDelta, TempStorage};
 use penumbra_transaction::{
     plan::{SwapClaimPlan, SwapPlan},
     Transaction,
@@ -24,7 +24,7 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
     let mut rng = rand_chacha::ChaChaRng::seed_from_u64(1312);
 
     let storage = TempStorage::new().await?.apply_default_genesis().await?;
-    let mut state = Arc::new(storage.latest_state());
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
 
     let height = 1;
 
@@ -121,7 +121,7 @@ async fn swap_with_nonzero_fee() -> anyhow::Result<()> {
     let mut rng = rand_chacha::ChaChaRng::seed_from_u64(1312);
 
     let storage = TempStorage::new().await?.apply_default_genesis().await?;
-    let mut state = Arc::new(storage.latest_state());
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
 
     let height = 1;
 

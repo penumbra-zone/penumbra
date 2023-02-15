@@ -51,7 +51,7 @@ impl SpecificQueryService for Info {
         &self,
         request: tonic::Request<KeyValueRequest>,
     ) -> Result<tonic::Response<KeyValueResponse>, Status> {
-        let state = self.storage.latest_state();
+        let state = self.storage.latest_snapshot();
         // We map the error here to avoid including `tonic` as a dependency
         // in the `chain` crate, to support its compilation to wasm.
         state
@@ -96,7 +96,7 @@ impl SpecificQueryService for Info {
         &self,
         request: tonic::Request<PrefixValueRequest>,
     ) -> Result<tonic::Response<Self::PrefixValueStream>, Status> {
-        let state = self.storage.latest_state();
+        let state = self.storage.latest_snapshot();
         state
             .check_chain_id(&request.get_ref().chain_id)
             .await
@@ -138,7 +138,7 @@ impl SpecificQueryService for Info {
         &self,
         request: tonic::Request<AssetInfoRequest>,
     ) -> Result<tonic::Response<AssetInfoResponse>, Status> {
-        let state = self.storage.latest_state();
+        let state = self.storage.latest_snapshot();
         state
             .check_chain_id(&request.get_ref().chain_id)
             .await
@@ -177,7 +177,7 @@ impl SpecificQueryService for Info {
         &self,
         request: tonic::Request<TransactionByNoteRequest>,
     ) -> Result<tonic::Response<TransactionByNoteResponse>, Status> {
-        let state = self.storage.latest_state();
+        let state = self.storage.latest_snapshot();
         let cm = request
             .into_inner()
             .note_commitment
@@ -201,7 +201,7 @@ impl SpecificQueryService for Info {
         &self,
         request: tonic::Request<ValidatorStatusRequest>,
     ) -> Result<tonic::Response<ValidatorStatusResponse>, Status> {
-        let state = self.storage.latest_state();
+        let state = self.storage.latest_snapshot();
         state
             .check_chain_id(&request.get_ref().chain_id)
             .await
@@ -230,7 +230,7 @@ impl SpecificQueryService for Info {
         &self,
         request: tonic::Request<ValidatorPenaltyRequest>,
     ) -> Result<tonic::Response<ValidatorPenaltyResponse>, Status> {
-        let state = self.storage.latest_state();
+        let state = self.storage.latest_snapshot();
         state
             .check_chain_id(&request.get_ref().chain_id)
             .await
@@ -259,7 +259,7 @@ impl SpecificQueryService for Info {
         &self,
         request: tonic::Request<BatchSwapOutputDataRequest>,
     ) -> Result<tonic::Response<BatchSwapOutputDataResponse>, Status> {
-        let state = self.storage.latest_state();
+        let state = self.storage.latest_snapshot();
         let request_inner = request.into_inner();
         let height = request_inner.height;
         let trading_pair = request_inner
@@ -287,7 +287,7 @@ impl SpecificQueryService for Info {
         &self,
         request: tonic::Request<StubCpmmReservesRequest>,
     ) -> Result<tonic::Response<StubCpmmReservesResponse>, Status> {
-        let state = self.storage.latest_state();
+        let state = self.storage.latest_snapshot();
         let request_inner = request.into_inner();
         let trading_pair = request_inner
             .trading_pair
@@ -313,7 +313,7 @@ impl SpecificQueryService for Info {
         &self,
         request: tonic::Request<NextValidatorRateRequest>,
     ) -> Result<tonic::Response<NextValidatorRateResponse>, Status> {
-        let state = self.storage.latest_state();
+        let state = self.storage.latest_snapshot();
         let identity_key = request
             .into_inner()
             .identity_key

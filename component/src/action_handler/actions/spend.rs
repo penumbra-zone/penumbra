@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use penumbra_storage::{State, StateRead, StateTransaction};
+use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::Spend, Transaction};
 use tracing::instrument;
 
@@ -41,14 +41,14 @@ impl ActionHandler for Spend {
     }
 
     #[instrument(name = "spend", skip(self, state))]
-    async fn check_stateful(&self, state: Arc<State>) -> Result<()> {
+    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
         // Check that the `Nullifier` has not been spent before.
         let spent_nullifier = self.body.nullifier;
         state.check_nullifier_unspent(spent_nullifier).await
     }
 
     #[instrument(name = "spend", skip(self, state))]
-    async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
+    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let source = state.object_get("source").unwrap_or_default();
 
         state.spend_nullifier(self.body.nullifier, source).await;

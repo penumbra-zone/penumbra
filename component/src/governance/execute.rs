@@ -12,7 +12,7 @@ use super::{
 use anyhow::{Context, Result};
 use penumbra_chain::{StateReadExt as _, StateWriteExt};
 use penumbra_crypto::ProposalNft;
-use penumbra_storage::StateTransaction;
+use penumbra_storage::StateWrite;
 use penumbra_transaction::action::{
     ProposalDepositClaim, ProposalPayload, ProposalSubmit, ProposalWithdraw, ValidatorVote,
     ValidatorVoteBody,
@@ -20,8 +20,8 @@ use penumbra_transaction::action::{
 use tracing::instrument;
 
 #[instrument(skip(state))]
-pub async fn proposal_submit(
-    state: &mut StateTransaction<'_>,
+pub async fn proposal_submit<S: StateWrite>(
+    mut state: S,
     ProposalSubmit {
         proposal,
         deposit_amount,
@@ -75,8 +75,8 @@ pub async fn proposal_submit(
 }
 
 #[instrument(skip(state))]
-pub async fn proposal_withdraw(
-    state: &mut StateTransaction<'_>,
+pub async fn proposal_withdraw<S: StateWrite>(
+    mut state: S,
     ProposalWithdraw { proposal, reason }: &ProposalWithdraw,
 ) -> Result<()> {
     state
@@ -100,8 +100,8 @@ pub async fn proposal_withdraw(
 }
 
 #[instrument(skip(state))]
-pub async fn validator_vote(
-    state: &mut StateTransaction<'_>,
+pub async fn validator_vote<S: StateWrite>(
+    mut state: S,
     ValidatorVote {
         auth_sig: _,
         body:
@@ -123,8 +123,8 @@ pub async fn validator_vote(
 }
 
 #[instrument(skip(state))]
-pub async fn proposal_deposit_claim(
-    state: &mut StateTransaction<'_>,
+pub async fn proposal_deposit_claim<S: StateWrite>(
+    mut state: S,
     ProposalDepositClaim {
         proposal,
         deposit_amount: _, // not needed to transition state; deposit is self-minted in tx
@@ -173,12 +173,12 @@ pub async fn proposal_deposit_claim(
 // pub async fn delegator_vote(state: &State, delegator_vote: &DelegatorVote) {}
 
 #[instrument(skip(state))]
-pub async fn enact_all_passed_proposals(state: &mut StateTransaction<'_>) -> Result<()> {
-    let parameters = tally::Parameters::new(&*state)
+pub async fn enact_all_passed_proposals<S: StateWrite>(mut state: S) -> Result<()> {
+    let parameters = tally::Parameters::new(&state)
         .await
         .context("can generate tally parameters")?;
 
-    let circumstance = tally::Circumstance::new(&*state)
+    let circumstance = tally::Circumstance::new(&state)
         .await
         .context("can generate tally circumstance")?;
 
@@ -190,7 +190,7 @@ pub async fn enact_all_passed_proposals(state: &mut StateTransaction<'_>) -> Res
     {
         // TODO: tally delegator votes
         if let Some(outcome) = parameters
-            .tally(&*state, circumstance, proposal_id)
+            .tally(&state, circumstance, proposal_id)
             .await
             .context("can tally proposal")?
         {
@@ -198,7 +198,7 @@ pub async fn enact_all_passed_proposals(state: &mut StateTransaction<'_>) -> Res
 
             // If the proposal passes, enact it now
             if outcome.is_passed() {
-                enact_proposal(state, proposal_id).await?;
+                enact_proposal(&mut state, proposal_id).await?;
             }
 
             // Log the result
@@ -221,7 +221,7 @@ pub async fn enact_all_passed_proposals(state: &mut StateTransaction<'_>) -> Res
 }
 
 #[instrument(skip(state))]
-async fn enact_proposal(state: &mut StateTransaction<'_>, proposal_id: u64) -> Result<()> {
+async fn enact_proposal<S: StateWrite>(mut state: S, proposal_id: u64) -> Result<()> {
     let payload = state
         .proposal_payload(proposal_id)
         .await
@@ -307,7 +307,7 @@ async fn enact_proposal(state: &mut StateTransaction<'_>, proposal_id: u64) -> R
     Ok(())
 }
 
-pub async fn enact_pending_parameter_changes(_state: &mut StateTransaction<'_>) -> Result<()> {
+pub async fn enact_pending_parameter_changes<S: StateWrite>(_state: S) -> Result<()> {
     // TODO: read the new parameters for this block, if any, and change the chain params to reflect
     // them. Parameters should be stored in the state as a map from name to value string.
     Ok(())

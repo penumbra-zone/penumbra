@@ -70,7 +70,7 @@ impl ObliviousQueryService for Info {
         &self,
         request: tonic::Request<ChainParametersRequest>,
     ) -> Result<tonic::Response<ChainParametersResponse>, Status> {
-        let state = self.storage.latest_state();
+        let state = self.storage.latest_snapshot();
         // We map the error here to avoid including `tonic` as a dependency
         // in the `chain` crate, to support its compilation to wasm.
         state
@@ -92,7 +92,7 @@ impl ObliviousQueryService for Info {
         &self,
         request: tonic::Request<MutableParametersRequest>,
     ) -> Result<tonic::Response<Self::MutableParametersStream>, Status> {
-        let state = self.storage.latest_state();
+        let state = self.storage.latest_snapshot();
         state
             .check_chain_id(&request.get_ref().chain_id)
             .await
@@ -126,7 +126,7 @@ impl ObliviousQueryService for Info {
         &self,
         request: tonic::Request<AssetListRequest>,
     ) -> Result<tonic::Response<AssetListResponse>, Status> {
-        let state = self.storage.latest_state();
+        let state = self.storage.latest_snapshot();
         state
             .check_chain_id(&request.get_ref().chain_id)
             .await
@@ -145,7 +145,7 @@ impl ObliviousQueryService for Info {
         &self,
         request: tonic::Request<ValidatorInfoRequest>,
     ) -> Result<tonic::Response<Self::ValidatorInfoStream>, Status> {
-        let state = self.storage.latest_state();
+        let state = self.storage.latest_snapshot();
         state
             .check_chain_id(&request.get_ref().chain_id)
             .await
@@ -195,8 +195,8 @@ impl ObliviousQueryService for Info {
         &self,
         request: tonic::Request<CompactBlockRangeRequest>,
     ) -> Result<tonic::Response<Self::CompactBlockRangeStream>, Status> {
-        let state = self.storage.latest_state();
-        state
+        let snapshot = self.storage.latest_snapshot();
+        snapshot
             .check_chain_id(&request.get_ref().chain_id)
             .await
             .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {}", e)))?;
@@ -208,7 +208,7 @@ impl ObliviousQueryService for Info {
             ..
         } = request.into_inner();
 
-        let current_height = state.get_block_height().await.map_err(|e| {
+        let current_height = snapshot.get_block_height().await.map_err(|e| {
             tonic::Status::unavailable(format!("error getting block height: {}", e))
         })?;
 
@@ -254,7 +254,7 @@ impl ObliviousQueryService for Info {
                 let storage2 = storage.clone();
                 tokio::spawn(async move {
                     for height in start_height..=end_height {
-                        let state3 = storage2.latest_state();
+                        let state3 = storage2.latest_snapshot();
                         let _ = block_fetch_tx
                             .send(tokio::spawn(
                                 async move { state3.compact_block(height).await },
@@ -281,8 +281,8 @@ impl ObliviousQueryService for Info {
 
                 // Before we can stream new compact blocks as they're created,
                 // catch up on any blocks that have been created while catching up.
-                let state = state_rx.borrow_and_update().into_state();
-                let cur_height = state.version();
+                let snapshot = state_rx.borrow_and_update().clone();
+                let cur_height = snapshot.version();
                 tracing::debug!(
                     cur_height,
                     "finished request, client requested keep-alive, continuing to stream blocks"
@@ -293,7 +293,7 @@ impl ObliviousQueryService for Info {
                 // This range could be empty.
                 for height in (end_height + 1)..=cur_height {
                     tracing::debug!(?height, "sending block in phase 2 catch-up");
-                    let block = state
+                    let block = snapshot
                         .compact_block(height)
                         .await?
                         .expect("compact block for in-range height must be present");
@@ -310,10 +310,10 @@ impl ObliviousQueryService for Info {
                 // wait for the *next* block to be created before firing.
                 loop {
                     state_rx.changed().await?;
-                    let state = state_rx.borrow().into_state();
-                    let height = state.version();
+                    let snapshot = state_rx.borrow().clone();
+                    let height = snapshot.version();
                     tracing::debug!(?height, "notifying client of new block");
-                    let block = state
+                    let block = snapshot
                         .compact_block(height)
                         .await?
                         .expect("compact block for in-range height must be present");

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc::core::ics02_client::msgs::create_client::MsgCreateClient;
-use penumbra_storage::{State, StateTransaction};
+use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Transaction;
 use tracing::instrument;
 
@@ -25,14 +25,14 @@ impl ActionHandler for MsgCreateClient {
     }
 
     #[instrument(name = "ibc_action", skip(self, state))]
-    async fn check_stateful(&self, state: Arc<State>) -> Result<()> {
+    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
         state.validate(self).await?;
 
         Ok(())
     }
 
     #[instrument(name = "ibc_action", skip(self, state))]
-    async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
+    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         state.execute_create_client(self).await?;
 
         Ok(())

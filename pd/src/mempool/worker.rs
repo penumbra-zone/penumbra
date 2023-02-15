@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use penumbra_storage::{StateNotification, Storage};
+use penumbra_storage::{Snapshot, Storage};
 
 use tokio::sync::{mpsc, watch};
 use tracing::{instrument, Instrument};
@@ -23,19 +23,19 @@ use crate::App;
 pub struct Worker {
     queue: mpsc::Receiver<Message>,
     app: App,
-    state_rx: watch::Receiver<StateNotification>,
+    snapshot_rx: watch::Receiver<Snapshot>,
 }
 
 impl Worker {
     #[instrument(skip(storage, queue), name = "mempool::Worker::new")]
     pub async fn new(storage: Storage, queue: mpsc::Receiver<Message>) -> Result<Self> {
-        let app = App::new(storage.latest_state());
-        let state_rx = storage.subscribe();
+        let app = App::new(storage.latest_snapshot());
+        let snapshot_rx = storage.subscribe();
 
         Ok(Self {
             queue,
             app,
-            state_rx,
+            snapshot_rx,
         })
     }
 
@@ -46,11 +46,11 @@ impl Worker {
                 biased;
                 // Check whether the height has changed, which requires us to throw away our
                 // ephemeral mempool state, and create a new one based on the new state.
-                change = self.state_rx.changed() => {
+                change = self.snapshot_rx.changed() => {
                     if let Ok(()) = change {
-                        let state = self.state_rx.borrow().into_state();
-                        tracing::debug!(height = ?state.version(), "resetting ephemeral mempool state");
-                        self.app = App::new(state);
+                        let snapshot = self.snapshot_rx.borrow().clone();
+                        tracing::debug!(height = ?snapshot.version(), "resetting ephemeral mempool state");
+                        self.app = App::new(snapshot);
                     } else {
                         // TODO: what triggers this, now that the channel is owned by the
                         // shared Storage instance, rather than the consensus worker?

@@ -12,7 +12,7 @@ use penumbra_crypto::{
     SwapFlow,
 };
 use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_storage::{StateRead, StateTransaction, StateWrite};
+use penumbra_storage::{StateRead, StateWrite};
 use tendermint::abci;
 use tracing::instrument;
 
@@ -24,7 +24,7 @@ pub struct StubDex {}
 #[async_trait]
 impl Component for StubDex {
     #[instrument(name = "stubdex", skip(state, _app_state))]
-    async fn init_chain(state: &mut StateTransaction, _app_state: &genesis::AppState) {
+    async fn init_chain<S: StateWrite>(mut state: S, _app_state: &genesis::AppState) {
         // Hardcode some AMMs
         let gm = asset::REGISTRY.parse_unit("gm");
         let gn = asset::REGISTRY.parse_unit("gn");
@@ -56,10 +56,10 @@ impl Component for StubDex {
     }
 
     #[instrument(name = "stubdex", skip(_state, _begin_block))]
-    async fn begin_block(_state: &mut StateTransaction, _begin_block: &abci::request::BeginBlock) {}
+    async fn begin_block<S: StateWrite>(_state: S, _begin_block: &abci::request::BeginBlock) {}
 
     #[instrument(name = "stubdex", skip(state, end_block))]
-    async fn end_block(state: &mut StateTransaction, end_block: &abci::request::EndBlock) {
+    async fn end_block<S: StateWrite>(mut state: S, end_block: &abci::request::EndBlock) {
         // For each batch swap during the block, calculate clearing prices and set in the JMT.
         for (trading_pair, swap_flows) in state.swap_flows() {
             let (delta_1, delta_2) = (swap_flows.0.mock_decrypt(), swap_flows.1.mock_decrypt());

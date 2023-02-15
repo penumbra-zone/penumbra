@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::{ensure, Result};
 use async_trait::async_trait;
-use penumbra_storage::{State, StateTransaction};
+use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::Undelegate, Transaction};
 use tracing::instrument;
 
@@ -20,7 +20,7 @@ impl ActionHandler for Undelegate {
     }
 
     #[instrument(name = "undelegate", skip(self, state))]
-    async fn check_stateful(&self, state: Arc<State>) -> Result<()> {
+    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
         let u = self;
         let rate_data = state
             .next_validator_rate(&u.validator_identity)
@@ -83,7 +83,7 @@ impl ActionHandler for Undelegate {
     }
 
     #[instrument(name = "undelegate", skip(self, state))]
-    async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
+    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         tracing::debug!(?self, "queuing undelegation for next epoch");
         state.stub_push_undelegation(self.clone());
         // Register the undelegation's denom, so we clients can look it up later.

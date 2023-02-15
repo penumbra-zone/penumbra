@@ -102,7 +102,7 @@ mod test {
     async fn fail_zero_capacity() {
         let storage = create_storage_instance().await;
         let db = storage.db();
-        let snapshot = storage.latest_state().snapshot;
+        let snapshot = storage.latest_snapshot();
         let mut cache = SnapshotCache::new(snapshot, 0);
 
         // Check that the cache has a capacity at least 1
@@ -120,7 +120,7 @@ mod test {
     async fn fail_insert_stale_snapshot() {
         let storage = create_storage_instance().await;
         let db_handle = storage.db();
-        let snapshot = storage.latest_state().snapshot;
+        let snapshot = storage.latest_snapshot();
         let mut cache = SnapshotCache::new(snapshot, 1);
         let stale_snapshot = Snapshot::new(db_handle, 1);
         cache
@@ -146,7 +146,7 @@ mod test {
     async fn cache_manage_pre_genesis() {
         let storage = create_storage_instance().await;
         let db_handle = storage.db();
-        let snapshot = storage.latest_state().snapshot;
+        let snapshot = storage.latest_snapshot();
 
         // Create a cache of size 10, populated with one entry with version: u64::MAX
         let mut cache = SnapshotCache::new(snapshot, 10);

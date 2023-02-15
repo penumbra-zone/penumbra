@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use penumbra_chain::StateReadExt as _;
-use penumbra_storage::{State, StateTransaction};
+use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Transaction;
 use std::sync::Arc;
 use tracing::instrument;
@@ -49,7 +49,7 @@ impl ActionHandler for ValidatorDefinition {
     }
 
     #[instrument(name = "validator_definition", skip(self, state))]
-    async fn check_stateful(&self, state: Arc<State>) -> Result<()> {
+    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
         // Check that the sequence numbers of the updated validators is correct.
         let v = validator::Definition::try_from(self.clone())
             .context("supplied proto is not a valid definition")?;
@@ -98,7 +98,7 @@ impl ActionHandler for ValidatorDefinition {
     }
 
     #[instrument(name = "validator_definition", skip(self, state))]
-    async fn execute(&self, state: &mut StateTransaction) -> Result<()> {
+    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let cur_epoch = state.get_current_epoch().await.unwrap();
 
         let v = validator::Definition::try_from(self.clone())
