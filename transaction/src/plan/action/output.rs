@@ -4,7 +4,7 @@ use penumbra_crypto::{
     keys::{IncomingViewingKey, OutgoingViewingKey},
     proofs::transparent::OutputProof,
     symmetric::WrappedMemoKey,
-    Address, FieldExt, Fr, Note, NotePayload, PayloadKey, Rseed, Value, STAKING_TOKEN_ASSET_ID,
+    Address, FieldExt, Fr, Note, PayloadKey, Rseed, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
 use rand_core::{CryptoRng, RngCore};
@@ -79,15 +79,10 @@ impl OutputPlan {
     pub fn output_body(&self, ovk: &OutgoingViewingKey, memo_key: &PayloadKey) -> output::Body {
         // Prepare the output note and commitment.
         let note = self.output_note();
-        let note_commitment = note.commit();
-
         let balance_commitment = self.balance().commit(self.value_blinding);
 
         // Encrypt the note to the recipient...
-        let diversified_generator = note.diversified_generator();
         let esk: ka::Secret = note.ephemeral_secret_key();
-        let ephemeral_key = esk.diversified_public(&diversified_generator);
-        let encrypted_note = note.encrypt();
         // ... and wrap the encryption key to ourselves.
         let ovk_wrapped_key = note.encrypt_key(ovk, balance_commitment);
 
@@ -99,11 +94,7 @@ impl OutputPlan {
         );
 
         output::Body {
-            note_payload: NotePayload {
-                note_commitment,
-                ephemeral_key,
-                encrypted_note,
-            },
+            note_payload: note.payload(),
             balance_commitment,
             ovk_wrapped_key,
             wrapped_memo_key,
