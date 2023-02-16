@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use penumbra_chain::{params::FmdParameters, CompactBlock, Epoch, NoteSource, StatePayload};
 use penumbra_crypto::{
     dex::swap::{SwapPayload, SwapPlaintext},
-    EncryptedNote, FullViewingKey, Note, Nullifier,
+    FullViewingKey, Note, NotePayload, Nullifier,
 };
 use penumbra_tct as tct;
 
@@ -50,13 +50,12 @@ pub async fn scan_block(
     storage: &Storage,
 ) -> anyhow::Result<FilteredBlock> {
     // Trial-decrypt a note with our own specific viewing key
-    let trial_decrypt_note =
-        |note_payload: EncryptedNote| -> tokio::task::JoinHandle<Option<Note>> {
-            // TODO: change fvk to Arc<FVK> in Worker and pass to scan_block as Arc
-            // need this so the task is 'static and not dependent on key lifetime
-            let fvk2 = fvk.clone();
-            tokio::spawn(async move { note_payload.trial_decrypt(&fvk2) })
-        };
+    let trial_decrypt_note = |note_payload: NotePayload| -> tokio::task::JoinHandle<Option<Note>> {
+        // TODO: change fvk to Arc<FVK> in Worker and pass to scan_block as Arc
+        // need this so the task is 'static and not dependent on key lifetime
+        let fvk2 = fvk.clone();
+        tokio::spawn(async move { note_payload.trial_decrypt(&fvk2) })
+    };
     // Trial-decrypt a swap with our own specific viewing key
     let trial_decrypt_swap =
         |swap_payload: SwapPayload| -> tokio::task::JoinHandle<Option<SwapPlaintext>> {

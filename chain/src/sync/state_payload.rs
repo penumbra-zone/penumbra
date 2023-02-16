@@ -3,7 +3,7 @@ use std::convert::TryFrom;
 use anyhow::Result;
 use penumbra_crypto::{
     dex::{lp::LpNft, swap::SwapPayload},
-    note, EncryptedNote,
+    note, NotePayload,
 };
 use penumbra_proto::core::chain::v1alpha1::{self as pb};
 
@@ -18,7 +18,7 @@ pub enum StatePayload {
     RolledUp(note::Commitment),
     Note {
         source: NoteSource,
-        note: EncryptedNote,
+        note: NotePayload,
     },
     Swap {
         source: NoteSource,

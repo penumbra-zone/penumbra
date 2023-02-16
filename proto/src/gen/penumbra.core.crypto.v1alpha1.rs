@@ -158,7 +158,7 @@ pub struct BindingSignature {
 /// data required to scan and process the output.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EncryptedNote {
+pub struct NotePayload {
     /// The note commitment for the output note. 32 bytes.
     #[prost(message, optional, tag = "1")]
     pub note_commitment: ::core::option::Option<StateCommitment>,

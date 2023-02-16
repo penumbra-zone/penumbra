@@ -6,7 +6,7 @@ use penumbra_crypto::{
     balance,
     proofs::transparent::OutputProof,
     symmetric::{OvkWrappedKey, WrappedMemoKey},
-    EncryptedNote, Note,
+    Note, NotePayload,
 };
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
 
@@ -66,7 +66,7 @@ impl IsAction for Output {
 
 #[derive(Clone, Debug)]
 pub struct Body {
-    pub note_payload: EncryptedNote,
+    pub note_payload: NotePayload,
     pub balance_commitment: balance::Commitment,
     pub ovk_wrapped_key: OvkWrappedKey,
     pub wrapped_memo_key: WrappedMemoKey,

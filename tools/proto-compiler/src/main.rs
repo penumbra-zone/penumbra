@@ -41,7 +41,7 @@ fn main() -> Result<()> {
         ".penumbra.core.transaction",
         // The byte fields in a compact block will also be converted to fixed-size
         // byte arrays and then discarded.
-        ".penumbra.core.crypto.v1alpha1.EncryptedNote",
+        ".penumbra.core.crypto.v1alpha1.NotePayload",
         ".penumbra.core.chain.v1alpha1.CompactBlock",
     ]);
 
