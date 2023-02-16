@@ -137,7 +137,7 @@ impl TransactionPlan {
             let auth_path = witness_data
                 .state_commitment_proofs
                 .get(&note_commitment)
-                .context(format!("could not get proof for {:?}", note_commitment))?;
+                .context(format!("could not get proof for {note_commitment:?}"))?;
 
             actions.push(Action::DelegatorVote(delegator_vote_plan.delegator_vote(
                 fvk,

@@ -187,8 +187,13 @@ impl TransactionPlan {
         for validator_vote in self.validator_votes() {
             state.update(validator_vote.effect_hash().as_bytes());
         }
-        for _delegator_vote in self.delegator_vote_plans() {
-            // TODO: get the effecthash of the delegator vote body for each plan
+        for delegator_vote in self.delegator_vote_plans() {
+            state.update(
+                delegator_vote
+                    .delegator_vote_body(fvk)
+                    .effect_hash()
+                    .as_bytes(),
+            );
         }
         for proposal_deposit_claim in self.proposal_deposit_claims() {
             state.update(proposal_deposit_claim.effect_hash().as_bytes());
