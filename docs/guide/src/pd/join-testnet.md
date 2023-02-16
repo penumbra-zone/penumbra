@@ -74,6 +74,16 @@ cd deployments/compose/
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
+or via systemd:
+
+```
+cd deployments/systemd/
+sudo cp *.service /etc/systemd/system/
+# edit service files to customize for your system
+sudo systemctl daemon-reload
+sudo systemctl restart penumbra tendermint
+```
+
 ## Joining as a validator
 
 After starting your node, as above, you should now be participating in the
