@@ -5,7 +5,7 @@ use super::{
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::{sync::StatePayload, NoteSource};
-use penumbra_crypto::{Address, Note, NotePayload, Nullifier, Rseed, Value};
+use penumbra_crypto::{Address, Note, Nullifier, Rseed, Value};
 use penumbra_proto::StateWriteProto;
 use penumbra_storage::StateWrite;
 use penumbra_tct as tct;
@@ -53,23 +53,11 @@ pub trait NoteManager: StateWrite {
             .try_into()?;
 
         let note = Note::from_parts(*address, value, Rseed(rseed_bytes))?;
-        let note_commitment = note.commit();
-
-        // Scanning assumes that notes are encrypted, so we need to create
-        // note ciphertexts, even if the plaintexts are known.
-        let esk = note.ephemeral_secret_key();
-        let ephemeral_key = esk.diversified_public(&note.diversified_generator());
-        let encrypted_note = note.encrypt();
-
         // Now record the note and update the total supply:
         self.update_token_supply(&value.asset_id, value.amount.value() as i64)
             .await?;
         self.add_state_payload(StatePayload::Note {
-            note: NotePayload {
-                note_commitment,
-                ephemeral_key,
-                encrypted_note,
-            },
+            note: note.payload(),
             source,
         })
         .await;

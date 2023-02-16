@@ -18,7 +18,7 @@ use crate::{
     asset, balance, fmd, ka,
     keys::{Diversifier, IncomingViewingKey, OutgoingViewingKey},
     symmetric::{OutgoingCipherKey, OvkWrappedKey, PayloadKey, PayloadKind},
-    Address, Fq, Rseed, Value,
+    Address, Fq, NotePayload, Rseed, Value,
 };
 
 pub const NOTE_LEN_BYTES: usize = 160;
@@ -77,6 +77,14 @@ impl Note {
             transmission_key_s: Fq::from_bytes(address.transmission_key().0)
                 .map_err(|_| Error::InvalidTransmissionKey)?,
         })
+    }
+
+    pub fn payload(&self) -> NotePayload {
+        NotePayload {
+            note_commitment: self.commit(),
+            ephemeral_key: self.ephemeral_public_key(),
+            encrypted_note: self.encrypt(),
+        }
     }
 
     /// Generate a fresh note representing the given value for the given destination address, with a
