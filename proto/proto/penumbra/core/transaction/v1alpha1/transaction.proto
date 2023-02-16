@@ -55,7 +55,7 @@ message Action {
     governance.v1alpha1.ProposalSubmit proposal_submit = 18;
     governance.v1alpha1.ProposalWithdraw proposal_withdraw = 19;
     governance.v1alpha1.ValidatorVote validator_vote = 20;
-    // DelegatorVote delegator_vote = 21;
+    governance.v1alpha1.DelegatorVote delegator_vote = 21;
     governance.v1alpha1.ProposalDepositClaim proposal_deposit_claim = 22;
 
     dex.v1alpha1.PositionOpen position_open = 30;

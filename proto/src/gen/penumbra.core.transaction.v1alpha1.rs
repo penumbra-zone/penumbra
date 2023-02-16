@@ -45,7 +45,7 @@ pub struct TransactionBody {
 pub struct Action {
     #[prost(
         oneof = "action::Action",
-        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 22, 30, 31, 32, 34, 40, 41, 42, 200"
+        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 30, 31, 32, 34, 40, 41, 42, 200"
     )]
     pub action: ::core::option::Option<action::Action>,
 }
@@ -73,7 +73,8 @@ pub mod action {
         ProposalWithdraw(super::super::super::governance::v1alpha1::ProposalWithdraw),
         #[prost(message, tag = "20")]
         ValidatorVote(super::super::super::governance::v1alpha1::ValidatorVote),
-        /// DelegatorVote delegator_vote = 21;
+        #[prost(message, tag = "21")]
+        DelegatorVote(super::super::super::governance::v1alpha1::DelegatorVote),
         #[prost(message, tag = "22")]
         ProposalDepositClaim(
             super::super::super::governance::v1alpha1::ProposalDepositClaim,
