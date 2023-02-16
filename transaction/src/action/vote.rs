@@ -15,7 +15,7 @@ use penumbra_proto::{
     core::{crypto::v1alpha1::BalanceCommitment, governance::v1alpha1 as pb},
     DomainType,
 };
-use penumbra_tct::Position;
+use penumbra_tct as tct;
 use serde::{Deserialize, Serialize};
 
 use crate::{Action, ActionView, IsAction, TransactionPerspective};
@@ -236,8 +236,10 @@ impl IsAction for DelegatorVote {
 pub struct DelegatorVoteBody {
     /// The proposal ID the vote is for.
     pub proposal: u64,
-    /// The height the proposal started at.
-    pub start_height: Position,
+    /// The epoch the proposal started at.
+    pub start_epoch: u16,
+    /// The block within that epoch the proposal started at.
+    pub start_block: u16,
     /// The vote on the proposal.
     pub vote: Vote, // With flow encryption, this will be a triple of flow ciphertexts
     /// The value of the staked note being used to vote.
@@ -254,7 +256,8 @@ impl From<DelegatorVoteBody> for pb::DelegatorVoteBody {
     fn from(value: DelegatorVoteBody) -> Self {
         pb::DelegatorVoteBody {
             proposal: value.proposal,
-            start_height: value.start_height.into(),
+            start_epoch_and_block_position: (value.start_epoch as u32) << 16
+                | value.start_block as u32,
             vote: Some(value.vote.into()),
             value: Some(value.value.into()),
             unbonded_amount: Some(value.unbonded_amount.into()),
@@ -270,7 +273,8 @@ impl TryFrom<pb::DelegatorVoteBody> for DelegatorVoteBody {
     fn try_from(msg: pb::DelegatorVoteBody) -> Result<Self, Self::Error> {
         Ok(DelegatorVoteBody {
             proposal: msg.proposal,
-            start_height: msg.start_height.try_into()?,
+            start_epoch: (msg.start_epoch_and_block_position >> 16) as u16,
+            start_block: (msg.start_epoch_and_block_position & 0xffff) as u16,
             vote: msg
                 .vote
                 .ok_or_else(|| anyhow::anyhow!("missing vote in `DelegatorVote`"))?

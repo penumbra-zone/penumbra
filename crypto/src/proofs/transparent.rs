@@ -111,7 +111,7 @@ impl DelegatorVoteProof {
     pub fn verify(
         &self,
         anchor: tct::Root,
-        start_height: tct::Position,
+        start_position: tct::Position,
         value: Value,
         nullifier: Nullifier,
         rk: VerificationKey<SpendAuth>,
@@ -124,7 +124,7 @@ impl DelegatorVoteProof {
         // Additionally, check that the position of the spend proof is before the start
         // start_height, which ensures that the note being voted with was created before voting
         // started.
-        if self.spend_proof.state_commitment_proof.position() < start_height {
+        if self.spend_proof.state_commitment_proof.position() < start_position {
             return Err(anyhow!(
                 "vote proof position is not before start height of voting"
             ));

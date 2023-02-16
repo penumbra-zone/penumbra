@@ -17,8 +17,10 @@ use crate::action::{DelegatorVote, DelegatorVoteBody};
 pub struct DelegatorVotePlan {
     /// The proposal ID to vote on.
     pub proposal: u64,
-    /// The start height of the proposal.
-    pub start_height: tct::Position,
+    /// The start epoch of the proposal.
+    pub start_epoch: u16,
+    /// The start block of the proposal within that epoch.
+    pub start_block: u16,
     /// The vote to cast.
     pub vote: crate::action::Vote,
     /// A staked note that was spendable before the proposal started.
@@ -50,7 +52,8 @@ impl DelegatorVotePlan {
     pub fn delegator_vote_body(&self, fvk: &FullViewingKey) -> DelegatorVoteBody {
         DelegatorVoteBody {
             proposal: self.proposal,
-            start_height: self.start_height,
+            start_epoch: self.start_epoch,
+            start_block: self.start_block,
             vote: self.vote,
             value: self.staked_note.value(),
             unbonded_amount: self.unbonded_amount,
@@ -91,10 +94,11 @@ impl From<DelegatorVotePlan> for pb::DelegatorVotePlan {
         pb::DelegatorVotePlan {
             proposal: inner.proposal,
             vote: Some(inner.vote.into()),
-            start_height: inner.start_height.into(),
+            start_epoch_and_block_position: (inner.start_epoch as u32) << 16
+                | inner.start_block as u32,
             staked_note: Some(inner.staked_note.into()),
             unbonded_amount: Some(inner.unbonded_amount.into()),
-            position: inner.position.into(),
+            staked_note_position: inner.position.into(),
             randomizer: inner.randomizer.to_bytes().to_vec(),
         }
     }
@@ -106,11 +110,12 @@ impl TryFrom<pb::DelegatorVotePlan> for DelegatorVotePlan {
     fn try_from(value: pb::DelegatorVotePlan) -> Result<Self, Self::Error> {
         Ok(DelegatorVotePlan {
             proposal: value.proposal,
+            start_epoch: (value.start_epoch_and_block_position >> 16) as u16,
+            start_block: (value.start_epoch_and_block_position & 0xffff) as u16,
             vote: value
                 .vote
                 .ok_or_else(|| anyhow::anyhow!("missing vote in `DelegatorVotePlan`"))?
                 .try_into()?,
-            start_height: value.start_height.try_into()?,
             staked_note: value
                 .staked_note
                 .ok_or_else(|| anyhow::anyhow!("missing staked note in `DelegatorVotePlan`"))?
@@ -119,7 +124,7 @@ impl TryFrom<pb::DelegatorVotePlan> for DelegatorVotePlan {
                 .unbonded_amount
                 .ok_or_else(|| anyhow::anyhow!("missing unbonded amount in `DelegatorVotePlan`"))?
                 .try_into()?,
-            position: value.position.into(),
+            position: value.staked_note_position.into(),
             randomizer: Fr::from_bytes(
                 value
                     .randomizer

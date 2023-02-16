@@ -1,14 +1,20 @@
 use anyhow::{Context as _, Result};
 
 use super::proposal::{self, chain_params};
-use penumbra_transaction::action::{
-    ProposalSubmit, ProposalWithdraw, ValidatorVote, ValidatorVoteBody,
+use penumbra_tct as tct;
+use penumbra_transaction::{
+    action::{
+        DelegatorVote, DelegatorVoteBody, Proposal, ProposalDepositClaim, ProposalSubmit,
+        ProposalWithdraw, ValidatorVote, ValidatorVoteBody,
+    },
+    Transaction,
 };
 
-pub mod stateless {
-    use penumbra_proto::DomainType;
-    use penumbra_transaction::action::{Proposal, ProposalDepositClaim};
+use std::sync::Arc;
 
+use penumbra_proto::DomainType;
+
+pub mod stateless {
     use super::*;
 
     pub fn proposal_submit(
@@ -83,6 +89,45 @@ pub mod stateless {
 
         // This is stateless verification, so we still need to check that the proposal being voted
         // on exists, and that this validator hasn't voted on it already.
+
+        Ok(())
+    }
+
+    pub fn delegator_vote(
+        DelegatorVote {
+            auth_sig,
+            proof,
+            body:
+                DelegatorVoteBody {
+                    start_epoch,
+                    start_block,
+                    value,
+                    nullifier,
+                    rk,
+                    // Unused in stateless checks:
+                    vote: _,            // Only used when executing the vote
+                    proposal: _,        // Checked against the current open proposals statefully
+                    unbonded_amount: _, // Checked against the proposal's snapshot exchange rate statefully
+                },
+        }: &DelegatorVote,
+        context: Arc<Transaction>,
+    ) -> Result<()> {
+        let effect_hash = context.transaction_body().effect_hash();
+        let anchor = context.anchor;
+
+        // 1. Check spend auth signature using provided spend auth key.
+        rk.verify(effect_hash.as_ref(), auth_sig)
+            .context("delegator vote auth signature failed to verify")?;
+
+        // 2. Check that the proof verifies.
+
+        // A valid proof must be *strictly before* the position (start_epoch, start_block, 0):
+        let start_position: tct::Position = (*start_epoch, *start_block, 0).into();
+
+        // Verify the proof with this position as the start position:
+        proof
+            .verify(anchor, start_position, *value, *nullifier, *rk)
+            .context("a delegator vote proof did not verify")?;
 
         Ok(())
     }
@@ -202,6 +247,36 @@ pub mod stateful {
         proposal_voteable(&state, *proposal).await?;
         validator_has_not_voted(&state, *proposal, identity_key).await?;
         governance_key_matches_validator(&state, identity_key, governance_key).await?;
+        Ok(())
+    }
+
+    pub async fn delegator_vote<S: StateRead>(
+        state: S,
+        DelegatorVote {
+            body:
+                DelegatorVoteBody {
+                    proposal,
+                    vote: _, // All votes are valid, so we don't need to do anything with this
+                    start_epoch,
+                    start_block,
+                    value,
+                    unbonded_amount,
+                    nullifier,
+                    rk,
+                },
+            auth_sig: _, // We already checked this in stateless verification
+            proof: _,    // We already checked this in stateless verification
+        }: &DelegatorVote,
+    ) -> Result<()> {
+        proposal_voteable(&state, *proposal).await?;
+        proposal_started_in_epoch_and_block(&state, *proposal, *start_epoch, *start_block).await?;
+        let start_block_height = state
+            .get_block_height_at_epoch_and_block(*start_epoch, *start_block)
+            .await?;
+        nullifier_unspent_before(&state, *start_block_height, nullifier).await?;
+        nullifier_unvoted_in_proposal(&state, *proposal, nullifier).await?;
+        unbonded_amount_correct_exchange(&state, *start_block_height, value, *unbonded_amount)
+            .await?;
         Ok(())
     }
 

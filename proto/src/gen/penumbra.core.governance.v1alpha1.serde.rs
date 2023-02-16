@@ -137,7 +137,7 @@ impl serde::Serialize for DelegatorVoteBody {
         if self.proposal != 0 {
             len += 1;
         }
-        if self.start_height != 0 {
+        if self.start_epoch_and_block_position != 0 {
             len += 1;
         }
         if self.vote.is_some() {
@@ -159,8 +159,8 @@ impl serde::Serialize for DelegatorVoteBody {
         if self.proposal != 0 {
             struct_ser.serialize_field("proposal", ToString::to_string(&self.proposal).as_str())?;
         }
-        if self.start_height != 0 {
-            struct_ser.serialize_field("startHeight", ToString::to_string(&self.start_height).as_str())?;
+        if self.start_epoch_and_block_position != 0 {
+            struct_ser.serialize_field("startEpochAndBlockPosition", &self.start_epoch_and_block_position)?;
         }
         if let Some(v) = self.vote.as_ref() {
             struct_ser.serialize_field("vote", v)?;
@@ -188,8 +188,8 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
     {
         const FIELDS: &[&str] = &[
             "proposal",
-            "start_height",
-            "startHeight",
+            "start_epoch_and_block_position",
+            "startEpochAndBlockPosition",
             "vote",
             "value",
             "unbonded_amount",
@@ -201,7 +201,7 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Proposal,
-            StartHeight,
+            StartEpochAndBlockPosition,
             Vote,
             Value,
             UnbondedAmount,
@@ -229,7 +229,7 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
                     {
                         match value {
                             "proposal" => Ok(GeneratedField::Proposal),
-                            "startHeight" | "start_height" => Ok(GeneratedField::StartHeight),
+                            "startEpochAndBlockPosition" | "start_epoch_and_block_position" => Ok(GeneratedField::StartEpochAndBlockPosition),
                             "vote" => Ok(GeneratedField::Vote),
                             "value" => Ok(GeneratedField::Value),
                             "unbondedAmount" | "unbonded_amount" => Ok(GeneratedField::UnbondedAmount),
@@ -255,7 +255,7 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut proposal__ = None;
-                let mut start_height__ = None;
+                let mut start_epoch_and_block_position__ = None;
                 let mut vote__ = None;
                 let mut value__ = None;
                 let mut unbonded_amount__ = None;
@@ -271,11 +271,11 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
                                 Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
-                        GeneratedField::StartHeight => {
-                            if start_height__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("startHeight"));
+                        GeneratedField::StartEpochAndBlockPosition => {
+                            if start_epoch_and_block_position__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("startEpochAndBlockPosition"));
                             }
-                            start_height__ = 
+                            start_epoch_and_block_position__ = 
                                 Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
@@ -317,7 +317,7 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
                 }
                 Ok(DelegatorVoteBody {
                     proposal: proposal__.unwrap_or_default(),
-                    start_height: start_height__.unwrap_or_default(),
+                    start_epoch_and_block_position: start_epoch_and_block_position__.unwrap_or_default(),
                     vote: vote__,
                     value: value__,
                     unbonded_amount: unbonded_amount__,
@@ -340,7 +340,7 @@ impl serde::Serialize for DelegatorVotePlan {
         if self.proposal != 0 {
             len += 1;
         }
-        if self.start_height != 0 {
+        if self.start_epoch_and_block_position != 0 {
             len += 1;
         }
         if self.vote.is_some() {
@@ -349,7 +349,7 @@ impl serde::Serialize for DelegatorVotePlan {
         if self.staked_note.is_some() {
             len += 1;
         }
-        if self.position != 0 {
+        if self.staked_note_position != 0 {
             len += 1;
         }
         if self.unbonded_amount.is_some() {
@@ -362,8 +362,8 @@ impl serde::Serialize for DelegatorVotePlan {
         if self.proposal != 0 {
             struct_ser.serialize_field("proposal", ToString::to_string(&self.proposal).as_str())?;
         }
-        if self.start_height != 0 {
-            struct_ser.serialize_field("startHeight", ToString::to_string(&self.start_height).as_str())?;
+        if self.start_epoch_and_block_position != 0 {
+            struct_ser.serialize_field("startEpochAndBlockPosition", &self.start_epoch_and_block_position)?;
         }
         if let Some(v) = self.vote.as_ref() {
             struct_ser.serialize_field("vote", v)?;
@@ -371,8 +371,8 @@ impl serde::Serialize for DelegatorVotePlan {
         if let Some(v) = self.staked_note.as_ref() {
             struct_ser.serialize_field("stakedNote", v)?;
         }
-        if self.position != 0 {
-            struct_ser.serialize_field("position", ToString::to_string(&self.position).as_str())?;
+        if self.staked_note_position != 0 {
+            struct_ser.serialize_field("stakedNotePosition", ToString::to_string(&self.staked_note_position).as_str())?;
         }
         if let Some(v) = self.unbonded_amount.as_ref() {
             struct_ser.serialize_field("unbondedAmount", v)?;
@@ -391,12 +391,13 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
     {
         const FIELDS: &[&str] = &[
             "proposal",
-            "start_height",
-            "startHeight",
+            "start_epoch_and_block_position",
+            "startEpochAndBlockPosition",
             "vote",
             "staked_note",
             "stakedNote",
-            "position",
+            "staked_note_position",
+            "stakedNotePosition",
             "unbonded_amount",
             "unbondedAmount",
             "randomizer",
@@ -405,10 +406,10 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Proposal,
-            StartHeight,
+            StartEpochAndBlockPosition,
             Vote,
             StakedNote,
-            Position,
+            StakedNotePosition,
             UnbondedAmount,
             Randomizer,
         }
@@ -433,10 +434,10 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
                     {
                         match value {
                             "proposal" => Ok(GeneratedField::Proposal),
-                            "startHeight" | "start_height" => Ok(GeneratedField::StartHeight),
+                            "startEpochAndBlockPosition" | "start_epoch_and_block_position" => Ok(GeneratedField::StartEpochAndBlockPosition),
                             "vote" => Ok(GeneratedField::Vote),
                             "stakedNote" | "staked_note" => Ok(GeneratedField::StakedNote),
-                            "position" => Ok(GeneratedField::Position),
+                            "stakedNotePosition" | "staked_note_position" => Ok(GeneratedField::StakedNotePosition),
                             "unbondedAmount" | "unbonded_amount" => Ok(GeneratedField::UnbondedAmount),
                             "randomizer" => Ok(GeneratedField::Randomizer),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
@@ -459,10 +460,10 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut proposal__ = None;
-                let mut start_height__ = None;
+                let mut start_epoch_and_block_position__ = None;
                 let mut vote__ = None;
                 let mut staked_note__ = None;
-                let mut position__ = None;
+                let mut staked_note_position__ = None;
                 let mut unbonded_amount__ = None;
                 let mut randomizer__ = None;
                 while let Some(k) = map.next_key()? {
@@ -475,11 +476,11 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
                                 Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
-                        GeneratedField::StartHeight => {
-                            if start_height__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("startHeight"));
+                        GeneratedField::StartEpochAndBlockPosition => {
+                            if start_epoch_and_block_position__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("startEpochAndBlockPosition"));
                             }
-                            start_height__ = 
+                            start_epoch_and_block_position__ = 
                                 Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
@@ -495,11 +496,11 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
                             }
                             staked_note__ = map.next_value()?;
                         }
-                        GeneratedField::Position => {
-                            if position__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("position"));
+                        GeneratedField::StakedNotePosition => {
+                            if staked_note_position__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("stakedNotePosition"));
                             }
-                            position__ = 
+                            staked_note_position__ = 
                                 Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
@@ -521,10 +522,10 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
                 }
                 Ok(DelegatorVotePlan {
                     proposal: proposal__.unwrap_or_default(),
-                    start_height: start_height__.unwrap_or_default(),
+                    start_epoch_and_block_position: start_epoch_and_block_position__.unwrap_or_default(),
                     vote: vote__,
                     staked_note: staked_note__,
-                    position: position__.unwrap_or_default(),
+                    staked_note_position: staked_note_position__.unwrap_or_default(),
                     unbonded_amount: unbonded_amount__,
                     randomizer: randomizer__.unwrap_or_default(),
                 })
