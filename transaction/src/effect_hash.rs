@@ -272,7 +272,7 @@ impl EffectingData for output::Body {
         // in the hash one after the other.
         state.update(&self.note_payload.note_commitment.0.to_bytes());
         state.update(&self.note_payload.ephemeral_key.0);
-        state.update(&self.note_payload.encrypted_note);
+        state.update(&self.note_payload.encrypted_note.0);
         state.update(&self.balance_commitment.to_bytes());
         state.update(&self.wrapped_memo_key.0);
         state.update(&self.ovk_wrapped_key.0);
@@ -643,7 +643,7 @@ impl EffectingData for NotePayload {
                 .to_state()
                 .update(&self.note_commitment.0.to_bytes())
                 .update(&self.ephemeral_key.0)
-                .update(&self.encrypted_note)
+                .update(&self.encrypted_note.0)
                 .finalize()
                 .as_array()
                 .clone(),
