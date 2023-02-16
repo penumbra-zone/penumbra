@@ -136,6 +136,14 @@ pub struct Note {
     #[prost(message, optional, tag = "3")]
     pub address: ::core::option::Option<Address>,
 }
+/// An encrypted note.
+/// 132 = 1(type) + 11(d) + 8(amount) + 32(asset_id) + 32(rcm) + 32(pk_d) + 16(MAC) bytes.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct NoteCiphertext {
+    #[prost(bytes = "vec", tag = "1")]
+    pub inner: ::prost::alloc::vec::Vec<u8>,
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Nullifier {
@@ -167,8 +175,8 @@ pub struct NotePayload {
     pub ephemeral_key: ::prost::bytes::Bytes,
     /// An encryption of the newly created note.
     /// 132 = 1(type) + 11(d) + 8(amount) + 32(asset_id) + 32(rcm) + 32(pk_d) + 16(MAC) bytes.
-    #[prost(bytes = "bytes", tag = "3")]
-    pub encrypted_note: ::prost::bytes::Bytes,
+    #[prost(message, optional, tag = "3")]
+    pub encrypted_note: ::core::option::Option<NoteCiphertext>,
 }
 /// An authentication path from a state commitment to the root of the state commitment tree.
 #[allow(clippy::derive_partial_eq_without_eq)]

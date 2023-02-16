@@ -35,7 +35,7 @@ pub use governance::{
     proposal_nft::{self, ProposalNft},
 };
 pub use keys::FullViewingKey;
-pub use note::Note;
+pub use note::{Note, NoteCiphertext};
 pub use note_payload::NotePayload;
 pub use nullifier::Nullifier;
 pub use rseed::Rseed;

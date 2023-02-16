@@ -5,26 +5,21 @@ use bytes::Bytes;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
-use crate::{asset::Amount, ka, note, FullViewingKey, Note};
+use crate::{asset::Amount, ka, note, FullViewingKey, Note, NoteCiphertext};
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::NotePayload", into = "pb::NotePayload")]
 pub struct NotePayload {
     pub note_commitment: note::Commitment,
     pub ephemeral_key: ka::Public,
-    pub encrypted_note: [u8; note::NOTE_CIPHERTEXT_BYTES],
+    pub encrypted_note: NoteCiphertext,
 }
 
 impl NotePayload {
     pub fn trial_decrypt(&self, fvk: &FullViewingKey) -> Option<Note> {
         // Try to decrypt the encrypted note using the ephemeral key and persistent incoming
         // viewing key -- if it doesn't decrypt, it wasn't meant for us.
-        let note = Note::decrypt(
-            self.encrypted_note.as_ref(),
-            fvk.incoming(),
-            &self.ephemeral_key,
-        )
-        .ok()?;
+        let note = Note::decrypt(&self.encrypted_note, fvk.incoming(), &self.ephemeral_key).ok()?;
         tracing::debug!(note_commitment = ?note.commit(), ?note, "found note while scanning");
 
         // Verification logic (if any fails, return None & log error)
@@ -81,7 +76,7 @@ impl From<NotePayload> for pb::NotePayload {
         pb::NotePayload {
             note_commitment: Some(msg.note_commitment.into()),
             ephemeral_key: Bytes::copy_from_slice(&msg.ephemeral_key.0),
-            encrypted_note: Bytes::copy_from_slice(&msg.encrypted_note),
+            encrypted_note: Some(msg.encrypted_note.into()),
         }
     }
 }
@@ -97,9 +92,10 @@ impl TryFrom<pb::NotePayload> for NotePayload {
                 .try_into()?,
             ephemeral_key: ka::Public::try_from(&proto.ephemeral_key[..])
                 .context("ephemeral key malformed")?,
-            encrypted_note: proto.encrypted_note[..]
-                .try_into()
-                .context("encrypted note malformed")?,
+            encrypted_note: proto
+                .encrypted_note
+                .ok_or_else(|| anyhow::anyhow!("missing encrypted note"))?
+                .try_into()?,
         })
     }
 }

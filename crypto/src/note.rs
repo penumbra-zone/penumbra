@@ -42,6 +42,11 @@ pub struct Note {
     transmission_key_s: Fq,
 }
 
+/// A note ciphertext.
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(into = "pb::NoteCiphertext", try_from = "pb::NoteCiphertext")]
+pub struct NoteCiphertext(pub [u8; NOTE_CIPHERTEXT_BYTES]);
+
 /// The domain separator used to generate note commitments.
 pub(crate) static NOTECOMMIT_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
     Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"penumbra.notecommit").as_bytes())
@@ -57,6 +62,8 @@ pub enum Error {
     NoteTypeUnsupported,
     #[error("Note deserialization error")]
     NoteDeserializationError,
+    #[error("Invalid note ciphertext")]
+    InvalidNoteCiphertext,
     #[error("Decryption error")]
     DecryptionError,
 }
@@ -134,7 +141,7 @@ impl Note {
     }
 
     /// Encrypt a note, returning its ciphertext.
-    pub fn encrypt(&self) -> [u8; NOTE_CIPHERTEXT_BYTES] {
+    pub fn encrypt(&self) -> NoteCiphertext {
         let esk = self.ephemeral_secret_key();
         let epk = esk.diversified_public(&self.diversified_generator());
         let shared_secret = esk
@@ -149,7 +156,7 @@ impl Note {
             .try_into()
             .expect("note encryption result fits in ciphertext len");
 
-        ciphertext
+        NoteCiphertext(ciphertext)
     }
 
     /// Generate encrypted outgoing cipher key for use with this note.
@@ -196,17 +203,13 @@ impl Note {
 
     /// Decrypt a note ciphertext using the wrapped OVK to generate a plaintext `Note`.
     pub fn decrypt_outgoing(
-        ciphertext: &[u8],
+        ciphertext: &NoteCiphertext,
         wrapped_ovk: OvkWrappedKey,
         cm: Commitment,
         cv: balance::Commitment,
         ovk: &OutgoingViewingKey,
         epk: &ka::Public,
     ) -> Result<Note, Error> {
-        if ciphertext.len() != NOTE_CIPHERTEXT_BYTES {
-            return Err(Error::DecryptionError);
-        }
-
         let shared_secret =
             Note::decrypt_key(wrapped_ovk, cm, cv, ovk, epk).map_err(|_| Error::DecryptionError)?;
 
@@ -216,14 +219,10 @@ impl Note {
 
     /// Decrypt a note ciphertext using the IVK and ephemeral public key to generate a plaintext `Note`.
     pub fn decrypt(
-        ciphertext: &[u8],
+        ciphertext: &NoteCiphertext,
         ivk: &IncomingViewingKey,
         epk: &ka::Public,
     ) -> Result<Note, Error> {
-        if ciphertext.len() != NOTE_CIPHERTEXT_BYTES {
-            return Err(Error::DecryptionError);
-        }
-
         let shared_secret = ivk
             .key_agreement_with(epk)
             .map_err(|_| Error::DecryptionError)?;
@@ -234,16 +233,12 @@ impl Note {
 
     /// Decrypt a note ciphertext using the [`PayloadKey`].
     pub fn decrypt_with_payload_key(
-        ciphertext: &[u8],
+        ciphertext: &NoteCiphertext,
         payload_key: &PayloadKey,
         epk: &ka::Public,
     ) -> Result<Note, Error> {
-        if ciphertext.len() != NOTE_CIPHERTEXT_BYTES {
-            return Err(Error::DecryptionError);
-        }
-
         let plaintext = payload_key
-            .decrypt(ciphertext.to_vec(), PayloadKind::Note)
+            .decrypt(ciphertext.0.to_vec(), PayloadKind::Note)
             .map_err(|_| Error::DecryptionError)?;
 
         let plaintext_bytes: [u8; NOTE_LEN_BYTES] =
@@ -426,6 +421,31 @@ impl TryFrom<[u8; NOTE_LEN_BYTES]> for Note {
 
     fn try_from(bytes: [u8; NOTE_LEN_BYTES]) -> Result<Note, Self::Error> {
         (&bytes[..]).try_into()
+    }
+}
+
+impl TryFrom<pb::NoteCiphertext> for NoteCiphertext {
+    type Error = Error;
+
+    fn try_from(msg: pb::NoteCiphertext) -> Result<Self, Self::Error> {
+        if msg.inner.len() != NOTE_CIPHERTEXT_BYTES {
+            return Err(Error::InvalidNoteCiphertext);
+        }
+
+        let inner_bytes: [u8; NOTE_CIPHERTEXT_BYTES] = msg
+            .inner
+            .try_into()
+            .map_err(|_| Error::InvalidNoteCiphertext)?;
+
+        Ok(NoteCiphertext(inner_bytes))
+    }
+}
+
+impl From<NoteCiphertext> for pb::NoteCiphertext {
+    fn from(msg: NoteCiphertext) -> Self {
+        pb::NoteCiphertext {
+            inner: msg.0.to_vec(),
+        }
     }
 }
 

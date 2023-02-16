@@ -95,6 +95,12 @@ message Note {
     Address address = 3;
 }
 
+// An encrypted note.
+// 132 = 1(type) + 11(d) + 8(amount) + 32(asset_id) + 32(rcm) + 32(pk_d) + 16(MAC) bytes.
+message NoteCiphertext {
+    bytes inner = 1;
+}
+
 message Nullifier {
     bytes inner = 1;
 }
@@ -116,7 +122,7 @@ message NotePayload {
   bytes ephemeral_key = 2;
   // An encryption of the newly created note.
   // 132 = 1(type) + 11(d) + 8(amount) + 32(asset_id) + 32(rcm) + 32(pk_d) + 16(MAC) bytes.
-  bytes encrypted_note = 3;
+  NoteCiphertext encrypted_note = 3;
 }
 
 // An authentication path from a state commitment to the root of the state commitment tree.
