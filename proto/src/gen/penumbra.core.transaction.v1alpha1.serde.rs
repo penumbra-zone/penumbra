@@ -1324,12 +1324,18 @@ impl serde::Serialize for AuthorizationData {
         if !self.spend_auths.is_empty() {
             len += 1;
         }
+        if !self.delegator_vote_auths.is_empty() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1alpha1.AuthorizationData", len)?;
         if let Some(v) = self.effect_hash.as_ref() {
             struct_ser.serialize_field("effectHash", v)?;
         }
         if !self.spend_auths.is_empty() {
             struct_ser.serialize_field("spendAuths", &self.spend_auths)?;
+        }
+        if !self.delegator_vote_auths.is_empty() {
+            struct_ser.serialize_field("delegatorVoteAuths", &self.delegator_vote_auths)?;
         }
         struct_ser.end()
     }
@@ -1345,12 +1351,15 @@ impl<'de> serde::Deserialize<'de> for AuthorizationData {
             "effectHash",
             "spend_auths",
             "spendAuths",
+            "delegator_vote_auths",
+            "delegatorVoteAuths",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             EffectHash,
             SpendAuths,
+            DelegatorVoteAuths,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -1374,6 +1383,7 @@ impl<'de> serde::Deserialize<'de> for AuthorizationData {
                         match value {
                             "effectHash" | "effect_hash" => Ok(GeneratedField::EffectHash),
                             "spendAuths" | "spend_auths" => Ok(GeneratedField::SpendAuths),
+                            "delegatorVoteAuths" | "delegator_vote_auths" => Ok(GeneratedField::DelegatorVoteAuths),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -1395,6 +1405,7 @@ impl<'de> serde::Deserialize<'de> for AuthorizationData {
             {
                 let mut effect_hash__ = None;
                 let mut spend_auths__ = None;
+                let mut delegator_vote_auths__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::EffectHash => {
@@ -1409,11 +1420,18 @@ impl<'de> serde::Deserialize<'de> for AuthorizationData {
                             }
                             spend_auths__ = Some(map.next_value()?);
                         }
+                        GeneratedField::DelegatorVoteAuths => {
+                            if delegator_vote_auths__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("delegatorVoteAuths"));
+                            }
+                            delegator_vote_auths__ = Some(map.next_value()?);
+                        }
                     }
                 }
                 Ok(AuthorizationData {
                     effect_hash: effect_hash__,
                     spend_auths: spend_auths__.unwrap_or_default(),
+                    delegator_vote_auths: delegator_vote_auths__.unwrap_or_default(),
                 })
             }
         }

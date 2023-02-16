@@ -240,6 +240,9 @@ message AuthorizationData {
     // The required spend authorizations, returned in the same order as the
     // Spend actions in the original request.
     repeated crypto.v1alpha1.SpendAuthSignature spend_auths = 2;
+    // The required delegator vote authorizations, returned in the same order as the
+    // DelegatorVote actions in the original request.
+    repeated crypto.v1alpha1.SpendAuthSignature delegator_vote_auths = 3;
 }
 
 // The data required for proving when building a transaction from a plan.
