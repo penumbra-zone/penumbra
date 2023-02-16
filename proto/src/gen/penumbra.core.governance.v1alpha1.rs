@@ -109,17 +109,23 @@ pub struct DelegatorVotePlan {
     /// The proposal to vote on.
     #[prost(uint64, tag = "1")]
     pub proposal: u64,
+    /// The start height of the proposal.
+    #[prost(uint64, tag = "2")]
+    pub start_height: u64,
     /// The vote to cast.
-    #[prost(message, optional, tag = "2")]
+    #[prost(message, optional, tag = "3")]
     pub vote: ::core::option::Option<Vote>,
     /// The delegation note to prove that we can vote.
-    #[prost(message, optional, tag = "3")]
+    #[prost(message, optional, tag = "4")]
     pub staked_note: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
     /// The position of that delegation note.
-    #[prost(uint64, tag = "4")]
+    #[prost(uint64, tag = "5")]
     pub position: u64,
+    /// The unbonded amount equivalent to the delegation note.
+    #[prost(message, optional, tag = "6")]
+    pub unbonded_amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
     /// The randomizer to use for the proof of spend capability.
-    #[prost(bytes = "vec", tag = "5")]
+    #[prost(bytes = "vec", tag = "7")]
     pub randomizer: ::prost::alloc::vec::Vec<u8>,
 }
 /// A vote on a proposal.

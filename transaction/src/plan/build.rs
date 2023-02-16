@@ -105,10 +105,6 @@ impl TransactionPlan {
             fmd_clues.push(clue_plan.clue());
         }
 
-        // We don't have anything more to build, but iterate through the rest of
-        // the action plans by type so that the transaction will have them in a
-        // defined order.
-
         // All of these actions have "transparent" value balance with no
         // blinding factor, so they don't contribute to the
         // synthetic_blinding_factor used for the binding signature.
@@ -133,7 +129,22 @@ impl TransactionPlan {
         for validator_vote in self.validator_votes().cloned() {
             actions.push(Action::ValidatorVote(validator_vote))
         }
-        // TODO: delegator vote
+        for (delegator_vote_plan, auth_sig) in self
+            .delegator_vote_plans()
+            .zip(auth_data.delegator_vote_auths.into_iter())
+        {
+            let note_commitment = delegator_vote_plan.staked_note.commit();
+            let auth_path = witness_data
+                .state_commitment_proofs
+                .get(&note_commitment)
+                .context(format!("could not get proof for {:?}", note_commitment))?;
+
+            actions.push(Action::DelegatorVote(delegator_vote_plan.delegator_vote(
+                fvk,
+                auth_sig,
+                auth_path.clone(),
+            )));
+        }
         for proposal_deposit_claim in self.proposal_deposit_claims().cloned() {
             actions.push(Action::ProposalDepositClaim(proposal_deposit_claim))
         }

@@ -340,6 +340,9 @@ impl serde::Serialize for DelegatorVotePlan {
         if self.proposal != 0 {
             len += 1;
         }
+        if self.start_height != 0 {
+            len += 1;
+        }
         if self.vote.is_some() {
             len += 1;
         }
@@ -349,12 +352,18 @@ impl serde::Serialize for DelegatorVotePlan {
         if self.position != 0 {
             len += 1;
         }
+        if self.unbonded_amount.is_some() {
+            len += 1;
+        }
         if !self.randomizer.is_empty() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.governance.v1alpha1.DelegatorVotePlan", len)?;
         if self.proposal != 0 {
             struct_ser.serialize_field("proposal", ToString::to_string(&self.proposal).as_str())?;
+        }
+        if self.start_height != 0 {
+            struct_ser.serialize_field("startHeight", ToString::to_string(&self.start_height).as_str())?;
         }
         if let Some(v) = self.vote.as_ref() {
             struct_ser.serialize_field("vote", v)?;
@@ -364,6 +373,9 @@ impl serde::Serialize for DelegatorVotePlan {
         }
         if self.position != 0 {
             struct_ser.serialize_field("position", ToString::to_string(&self.position).as_str())?;
+        }
+        if let Some(v) = self.unbonded_amount.as_ref() {
+            struct_ser.serialize_field("unbondedAmount", v)?;
         }
         if !self.randomizer.is_empty() {
             struct_ser.serialize_field("randomizer", pbjson::private::base64::encode(&self.randomizer).as_str())?;
@@ -379,19 +391,25 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
     {
         const FIELDS: &[&str] = &[
             "proposal",
+            "start_height",
+            "startHeight",
             "vote",
             "staked_note",
             "stakedNote",
             "position",
+            "unbonded_amount",
+            "unbondedAmount",
             "randomizer",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Proposal,
+            StartHeight,
             Vote,
             StakedNote,
             Position,
+            UnbondedAmount,
             Randomizer,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -415,9 +433,11 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
                     {
                         match value {
                             "proposal" => Ok(GeneratedField::Proposal),
+                            "startHeight" | "start_height" => Ok(GeneratedField::StartHeight),
                             "vote" => Ok(GeneratedField::Vote),
                             "stakedNote" | "staked_note" => Ok(GeneratedField::StakedNote),
                             "position" => Ok(GeneratedField::Position),
+                            "unbondedAmount" | "unbonded_amount" => Ok(GeneratedField::UnbondedAmount),
                             "randomizer" => Ok(GeneratedField::Randomizer),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
@@ -439,9 +459,11 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut proposal__ = None;
+                let mut start_height__ = None;
                 let mut vote__ = None;
                 let mut staked_note__ = None;
                 let mut position__ = None;
+                let mut unbonded_amount__ = None;
                 let mut randomizer__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
@@ -450,6 +472,14 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
                                 return Err(serde::de::Error::duplicate_field("proposal"));
                             }
                             proposal__ = 
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::StartHeight => {
+                            if start_height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("startHeight"));
+                            }
+                            start_height__ = 
                                 Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
@@ -473,6 +503,12 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
                                 Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::UnbondedAmount => {
+                            if unbonded_amount__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("unbondedAmount"));
+                            }
+                            unbonded_amount__ = map.next_value()?;
+                        }
                         GeneratedField::Randomizer => {
                             if randomizer__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("randomizer"));
@@ -485,9 +521,11 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
                 }
                 Ok(DelegatorVotePlan {
                     proposal: proposal__.unwrap_or_default(),
+                    start_height: start_height__.unwrap_or_default(),
                     vote: vote__,
                     staked_note: staked_note__,
                     position: position__.unwrap_or_default(),
+                    unbonded_amount: unbonded_amount__,
                     randomizer: randomizer__.unwrap_or_default(),
                 })
             }

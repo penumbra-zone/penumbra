@@ -104,7 +104,7 @@ impl SpendProof {
 /// conditions.
 #[derive(Clone, Debug)]
 pub struct DelegatorVoteProof {
-    spend_proof: SpendProof,
+    pub spend_proof: SpendProof,
 }
 
 impl DelegatorVoteProof {

@@ -75,14 +75,18 @@ message ProposalDepositClaim {
 message DelegatorVotePlan {
     // The proposal to vote on.
     uint64 proposal = 1;
+    // The start height of the proposal.
+    uint64 start_height = 2;
     // The vote to cast.
-    governance.v1alpha1.Vote vote = 2;
+    governance.v1alpha1.Vote vote = 3;
     // The delegation note to prove that we can vote.
-    crypto.v1alpha1.Note staked_note = 3;
+    crypto.v1alpha1.Note staked_note = 4;
     // The position of that delegation note.
-    uint64 position = 4;
+    uint64 position = 5;
+    // The unbonded amount equivalent to the delegation note.
+    crypto.v1alpha1.Amount unbonded_amount = 6;
     // The randomizer to use for the proof of spend capability.
-    bytes randomizer = 5;
+    bytes randomizer = 7;
 }
 
 // A vote on a proposal.

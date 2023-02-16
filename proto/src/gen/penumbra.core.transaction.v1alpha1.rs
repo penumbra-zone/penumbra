@@ -399,6 +399,12 @@ pub struct AuthorizationData {
     pub spend_auths: ::prost::alloc::vec::Vec<
         super::super::crypto::v1alpha1::SpendAuthSignature,
     >,
+    /// The required delegator vote authorizations, returned in the same order as the
+    /// DelegatorVote actions in the original request.
+    #[prost(message, repeated, tag = "3")]
+    pub delegator_vote_auths: ::prost::alloc::vec::Vec<
+        super::super::crypto::v1alpha1::SpendAuthSignature,
+    >,
 }
 /// The data required for proving when building a transaction from a plan.
 #[allow(clippy::derive_partial_eq_without_eq)]

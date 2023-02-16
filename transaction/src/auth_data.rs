@@ -12,6 +12,9 @@ pub struct AuthorizationData {
     /// The required spend authorization signatures, returned in the same order as the Spend actions
     /// in the original request.
     pub spend_auths: Vec<Signature<SpendAuth>>,
+    /// The required delegator vote authorization signatures, returned in the same order as the
+    /// DelegatorVote actions in the original request.
+    pub delegator_vote_auths: Vec<Signature<SpendAuth>>,
 }
 
 impl DomainType for AuthorizationData {
@@ -23,6 +26,11 @@ impl From<AuthorizationData> for pb::AuthorizationData {
         Self {
             effect_hash: Some(msg.effect_hash.into()),
             spend_auths: msg.spend_auths.into_iter().map(Into::into).collect(),
+            delegator_vote_auths: msg
+                .delegator_vote_auths
+                .into_iter()
+                .map(Into::into)
+                .collect(),
         }
     }
 }
@@ -37,6 +45,11 @@ impl TryFrom<pb::AuthorizationData> for AuthorizationData {
                 .try_into()?,
             spend_auths: value
                 .spend_auths
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()?,
+            delegator_vote_auths: value
+                .delegator_vote_auths
                 .into_iter()
                 .map(TryInto::try_into)
                 .collect::<Result<_, _>>()?,
