@@ -9,6 +9,7 @@ use penumbra_transaction::{Action, Transaction};
 use super::ActionHandler;
 
 mod delegate;
+mod delegator_vote;
 mod ibc_action;
 mod ics20;
 mod output;
