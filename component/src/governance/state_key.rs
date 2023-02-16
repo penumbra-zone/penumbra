@@ -1,27 +1,27 @@
-use penumbra_crypto::stake::IdentityKey;
+use penumbra_crypto::{stake::IdentityKey, Nullifier};
 
 pub fn next_proposal_id() -> &'static str {
     "governance/next_proposal_id"
 }
 
 pub fn proposal_definition(proposal_id: u64) -> String {
-    format!("governance/proposal/{}/data", proposal_id)
+    format!("governance/proposal/{proposal_id}/data")
 }
 
 pub fn proposal_state(proposal_id: u64) -> String {
-    format!("governance/proposal/{}/state", proposal_id)
+    format!("governance/proposal/{proposal_id}/state")
 }
 
 pub fn proposal_deposit_amount(proposal_id: u64) -> String {
-    format!("governance/proposal/{}/deposit_amount", proposal_id)
+    format!("governance/proposal/{proposal_id}/deposit_amount")
 }
 
 pub fn proposal_voting_start(proposal_id: u64) -> String {
-    format!("governance/proposal/{}/voting_start", proposal_id)
+    format!("governance/proposal/{proposal_id}/voting_start")
 }
 
 pub fn proposal_voting_end(proposal_id: u64) -> String {
-    format!("governance/proposal/{}/voting_end", proposal_id)
+    format!("governance/proposal/{proposal_id}/voting_end")
 }
 
 pub fn unfinished_proposals() -> &'static str {
@@ -29,12 +29,13 @@ pub fn unfinished_proposals() -> &'static str {
 }
 
 pub fn voting_validators_list(proposal_id: u64) -> String {
-    format!("governance/proposal/{}/validator_vote/", proposal_id)
+    format!("governance/proposal/{proposal_id}/validator_vote/")
 }
 
 pub fn validator_vote(proposal_id: u64, identity_key: IdentityKey) -> String {
-    format!(
-        "governance/proposal/{}/validator_vote/{}",
-        proposal_id, identity_key
-    )
+    format!("governance/proposal/{proposal_id}/validator_vote/{identity_key}")
+}
+
+pub fn per_proposal_voted_nullifier_lookup(proposal_id: u64, nullifier: &Nullifier) -> String {
+    format!("governance/proposal/{proposal_id}/voted_nullifiers/{nullifier}")
 }
