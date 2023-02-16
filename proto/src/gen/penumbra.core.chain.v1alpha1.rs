@@ -150,7 +150,7 @@ pub mod state_payload {
         pub source: ::core::option::Option<super::NoteSource>,
         #[prost(message, optional, tag = "2")]
         pub note: ::core::option::Option<
-            super::super::super::crypto::v1alpha1::EncryptedNote,
+            super::super::super::crypto::v1alpha1::NotePayload,
         >,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]

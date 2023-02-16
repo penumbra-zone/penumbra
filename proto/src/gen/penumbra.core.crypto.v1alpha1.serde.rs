@@ -1239,138 +1239,6 @@ impl<'de> serde::Deserialize<'de> for EffectHash {
         deserializer.deserialize_struct("penumbra.core.crypto.v1alpha1.EffectHash", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for EncryptedNote {
-    #[allow(deprecated)]
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        use serde::ser::SerializeStruct;
-        let mut len = 0;
-        if self.note_commitment.is_some() {
-            len += 1;
-        }
-        if !self.ephemeral_key.is_empty() {
-            len += 1;
-        }
-        if !self.encrypted_note.is_empty() {
-            len += 1;
-        }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.crypto.v1alpha1.EncryptedNote", len)?;
-        if let Some(v) = self.note_commitment.as_ref() {
-            struct_ser.serialize_field("noteCommitment", v)?;
-        }
-        if !self.ephemeral_key.is_empty() {
-            struct_ser.serialize_field("ephemeralKey", pbjson::private::base64::encode(&self.ephemeral_key).as_str())?;
-        }
-        if !self.encrypted_note.is_empty() {
-            struct_ser.serialize_field("encryptedNote", pbjson::private::base64::encode(&self.encrypted_note).as_str())?;
-        }
-        struct_ser.end()
-    }
-}
-impl<'de> serde::Deserialize<'de> for EncryptedNote {
-    #[allow(deprecated)]
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        const FIELDS: &[&str] = &[
-            "note_commitment",
-            "noteCommitment",
-            "ephemeral_key",
-            "ephemeralKey",
-            "encrypted_note",
-            "encryptedNote",
-        ];
-
-        #[allow(clippy::enum_variant_names)]
-        enum GeneratedField {
-            NoteCommitment,
-            EphemeralKey,
-            EncryptedNote,
-        }
-        impl<'de> serde::Deserialize<'de> for GeneratedField {
-            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
-            where
-                D: serde::Deserializer<'de>,
-            {
-                struct GeneratedVisitor;
-
-                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-                    type Value = GeneratedField;
-
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                        write!(formatter, "expected one of: {:?}", &FIELDS)
-                    }
-
-                    #[allow(unused_variables)]
-                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
-                    where
-                        E: serde::de::Error,
-                    {
-                        match value {
-                            "noteCommitment" | "note_commitment" => Ok(GeneratedField::NoteCommitment),
-                            "ephemeralKey" | "ephemeral_key" => Ok(GeneratedField::EphemeralKey),
-                            "encryptedNote" | "encrypted_note" => Ok(GeneratedField::EncryptedNote),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
-                        }
-                    }
-                }
-                deserializer.deserialize_identifier(GeneratedVisitor)
-            }
-        }
-        struct GeneratedVisitor;
-        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = EncryptedNote;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.crypto.v1alpha1.EncryptedNote")
-            }
-
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<EncryptedNote, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
-            {
-                let mut note_commitment__ = None;
-                let mut ephemeral_key__ = None;
-                let mut encrypted_note__ = None;
-                while let Some(k) = map.next_key()? {
-                    match k {
-                        GeneratedField::NoteCommitment => {
-                            if note_commitment__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("noteCommitment"));
-                            }
-                            note_commitment__ = map.next_value()?;
-                        }
-                        GeneratedField::EphemeralKey => {
-                            if ephemeral_key__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("ephemeralKey"));
-                            }
-                            ephemeral_key__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
-                        }
-                        GeneratedField::EncryptedNote => {
-                            if encrypted_note__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("encryptedNote"));
-                            }
-                            encrypted_note__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
-                        }
-                    }
-                }
-                Ok(EncryptedNote {
-                    note_commitment: note_commitment__,
-                    ephemeral_key: ephemeral_key__.unwrap_or_default(),
-                    encrypted_note: encrypted_note__.unwrap_or_default(),
-                })
-            }
-        }
-        deserializer.deserialize_struct("penumbra.core.crypto.v1alpha1.EncryptedNote", FIELDS, GeneratedVisitor)
-    }
-}
 impl serde::Serialize for Fee {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
@@ -2111,6 +1979,138 @@ impl<'de> serde::Deserialize<'de> for Note {
             }
         }
         deserializer.deserialize_struct("penumbra.core.crypto.v1alpha1.Note", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for NotePayload {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.note_commitment.is_some() {
+            len += 1;
+        }
+        if !self.ephemeral_key.is_empty() {
+            len += 1;
+        }
+        if !self.encrypted_note.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.crypto.v1alpha1.NotePayload", len)?;
+        if let Some(v) = self.note_commitment.as_ref() {
+            struct_ser.serialize_field("noteCommitment", v)?;
+        }
+        if !self.ephemeral_key.is_empty() {
+            struct_ser.serialize_field("ephemeralKey", pbjson::private::base64::encode(&self.ephemeral_key).as_str())?;
+        }
+        if !self.encrypted_note.is_empty() {
+            struct_ser.serialize_field("encryptedNote", pbjson::private::base64::encode(&self.encrypted_note).as_str())?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for NotePayload {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "note_commitment",
+            "noteCommitment",
+            "ephemeral_key",
+            "ephemeralKey",
+            "encrypted_note",
+            "encryptedNote",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            NoteCommitment,
+            EphemeralKey,
+            EncryptedNote,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "noteCommitment" | "note_commitment" => Ok(GeneratedField::NoteCommitment),
+                            "ephemeralKey" | "ephemeral_key" => Ok(GeneratedField::EphemeralKey),
+                            "encryptedNote" | "encrypted_note" => Ok(GeneratedField::EncryptedNote),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = NotePayload;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.crypto.v1alpha1.NotePayload")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<NotePayload, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut note_commitment__ = None;
+                let mut ephemeral_key__ = None;
+                let mut encrypted_note__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::NoteCommitment => {
+                            if note_commitment__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("noteCommitment"));
+                            }
+                            note_commitment__ = map.next_value()?;
+                        }
+                        GeneratedField::EphemeralKey => {
+                            if ephemeral_key__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("ephemeralKey"));
+                            }
+                            ephemeral_key__ = 
+                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::EncryptedNote => {
+                            if encrypted_note__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("encryptedNote"));
+                            }
+                            encrypted_note__ = 
+                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                    }
+                }
+                Ok(NotePayload {
+                    note_commitment: note_commitment__,
+                    ephemeral_key: ephemeral_key__.unwrap_or_default(),
+                    encrypted_note: encrypted_note__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.crypto.v1alpha1.NotePayload", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for Nullifier {

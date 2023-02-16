@@ -5,7 +5,7 @@ use super::{
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::{sync::StatePayload, NoteSource};
-use penumbra_crypto::{Address, EncryptedNote, Note, Nullifier, Rseed, Value};
+use penumbra_crypto::{Address, Note, NotePayload, Nullifier, Rseed, Value};
 use penumbra_proto::StateWriteProto;
 use penumbra_storage::StateWrite;
 use penumbra_tct as tct;
@@ -65,7 +65,7 @@ pub trait NoteManager: StateWrite {
         self.update_token_supply(&value.asset_id, value.amount.value() as i64)
             .await?;
         self.add_state_payload(StatePayload::Note {
-            note: EncryptedNote {
+            note: NotePayload {
                 note_commitment,
                 ephemeral_key,
                 encrypted_note,

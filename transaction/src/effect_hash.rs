@@ -2,7 +2,7 @@ use blake2b_simd::{Hash, Params};
 use decaf377::FieldExt;
 use decaf377_fmd::Clue;
 use penumbra_crypto::{
-    dex::TradingPair, transaction::Fee, EncryptedNote, FullViewingKey, PayloadKey,
+    dex::TradingPair, transaction::Fee, FullViewingKey, NotePayload, PayloadKey,
 };
 use penumbra_proto::{core::crypto::v1alpha1 as pb_crypto, DomainType, Message};
 
@@ -635,7 +635,7 @@ impl EffectingData for Clue {
     }
 }
 
-impl EffectingData for EncryptedNote {
+impl EffectingData for NotePayload {
     fn effect_hash(&self) -> EffectHash {
         EffectHash(
             blake2b_simd::Params::default()

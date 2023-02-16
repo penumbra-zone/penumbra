@@ -99,7 +99,7 @@ message StatePayload {
   }
   message Note {
     NoteSource source = 1;
-    crypto.v1alpha1.EncryptedNote note = 2;
+    crypto.v1alpha1.NotePayload note = 2;
   }
   message Swap {
     NoteSource source = 1;

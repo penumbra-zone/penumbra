@@ -10,12 +10,12 @@ pub mod asset;
 pub mod balance;
 pub mod dex;
 pub mod eddy;
-mod encrypted_note;
 mod flow;
 mod governance;
 pub mod keys;
 pub mod memo;
 pub mod note;
+mod note_payload;
 mod nullifier;
 mod prf;
 pub mod proofs;
@@ -29,7 +29,6 @@ pub use address::Address;
 pub use asset::Amount;
 pub use asset::Asset;
 pub use balance::Balance;
-pub use encrypted_note::EncryptedNote;
 pub use flow::{MockFlowCiphertext, SwapFlow};
 pub use governance::{
     key::GovernanceKey,
@@ -37,6 +36,7 @@ pub use governance::{
 };
 pub use keys::FullViewingKey;
 pub use note::Note;
+pub use note_payload::NotePayload;
 pub use nullifier::Nullifier;
 pub use rseed::Rseed;
 pub use symmetric::PayloadKey;

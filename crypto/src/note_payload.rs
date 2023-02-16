@@ -8,14 +8,14 @@ use serde::{Deserialize, Serialize};
 use crate::{asset::Amount, ka, note, FullViewingKey, Note};
 
 #[derive(Clone, Serialize, Deserialize)]
-#[serde(try_from = "pb::EncryptedNote", into = "pb::EncryptedNote")]
-pub struct EncryptedNote {
+#[serde(try_from = "pb::NotePayload", into = "pb::NotePayload")]
+pub struct NotePayload {
     pub note_commitment: note::Commitment,
     pub ephemeral_key: ka::Public,
     pub encrypted_note: [u8; note::NOTE_CIPHERTEXT_BYTES],
 }
 
-impl EncryptedNote {
+impl NotePayload {
     pub fn trial_decrypt(&self, fvk: &FullViewingKey) -> Option<Note> {
         // Try to decrypt the encrypted note using the ephemeral key and persistent incoming
         // viewing key -- if it doesn't decrypt, it wasn't meant for us.
@@ -62,9 +62,9 @@ impl EncryptedNote {
     }
 }
 
-impl std::fmt::Debug for EncryptedNote {
+impl std::fmt::Debug for NotePayload {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("EncryptedNote")
+        f.debug_struct("NotePayload")
             .field("note_commitment", &self.note_commitment)
             .field("ephemeral_key", &self.ephemeral_key)
             .field("encrypted_note", &"...")
@@ -72,13 +72,13 @@ impl std::fmt::Debug for EncryptedNote {
     }
 }
 
-impl DomainType for EncryptedNote {
-    type Proto = pb::EncryptedNote;
+impl DomainType for NotePayload {
+    type Proto = pb::NotePayload;
 }
 
-impl From<EncryptedNote> for pb::EncryptedNote {
-    fn from(msg: EncryptedNote) -> Self {
-        pb::EncryptedNote {
+impl From<NotePayload> for pb::NotePayload {
+    fn from(msg: NotePayload) -> Self {
+        pb::NotePayload {
             note_commitment: Some(msg.note_commitment.into()),
             ephemeral_key: Bytes::copy_from_slice(&msg.ephemeral_key.0),
             encrypted_note: Bytes::copy_from_slice(&msg.encrypted_note),
@@ -86,11 +86,11 @@ impl From<EncryptedNote> for pb::EncryptedNote {
     }
 }
 
-impl TryFrom<pb::EncryptedNote> for EncryptedNote {
+impl TryFrom<pb::NotePayload> for NotePayload {
     type Error = Error;
 
-    fn try_from(proto: pb::EncryptedNote) -> anyhow::Result<Self, Self::Error> {
-        Ok(EncryptedNote {
+    fn try_from(proto: pb::NotePayload) -> anyhow::Result<Self, Self::Error> {
+        Ok(NotePayload {
             note_commitment: proto
                 .note_commitment
                 .ok_or_else(|| anyhow::anyhow!("missing note commitment"))?
