@@ -103,10 +103,12 @@ update the configuration for a validator.
 
 #### Creating a template definition
 
-To create a template configuration, use `pcli validator template-definition`:
+To create a template configuration, use `pcli validator definition template`:
 
-```console
-\$ pcli validator definition template --file validator.toml
+```shell
+\$ pcli validator definition template \
+    --tendermint-validator-keyfile ~/.penumbra/testnet_data/tendermint/config/priv_validator_key.json \
+    --file validator.toml
 \$ cat validator.toml
 # This is a template for a validator definition.
 #
@@ -158,9 +160,14 @@ enabled in order to activate one's validator.
 
 #### Setting the consensus key
 
-By default `template-definition` will use a random consensus key that you won't have access to. Make sure to **set the `consensus_key` correctly** otherwise your instance of `tendermint` won't be using the key expected in the validator definition. You can get the correct value for `consensus_key` from your `tendermint` configs:
+In the command above, the `--tendermint-validator-keyfile` flag was used to instruct
+`pcli` to import the consensus key for the Tendermint identity. This works well
+if `pcli` and `pd` are used on the same machine. If you are running them in separate
+environments, you can omit the flag, and `pd` will generate a random key in the template.
+You must then **manually update the `consensus_key`**. You can get the correct value
+for `consensus_key` from your `tendermint` configs:
 
-```console
+```shell
 \$ grep -A3 pub_key ~/.penumbra/testnet_data/node0/tendermint/config/priv_validator_key.json
   "pub_key": {
     "type": "tendermint/PubKeyEd25519",
