@@ -3,7 +3,8 @@ use std::{collections::BTreeSet, pin::Pin, str::FromStr};
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use futures::{Stream, StreamExt};
-use penumbra_crypto::{asset::Amount, stake::IdentityKey};
+use penumbra_chain::SpendInfo;
+use penumbra_crypto::{asset::Amount, stake::IdentityKey, Nullifier};
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::action::{Proposal, ProposalPayload, Vote};
@@ -104,6 +105,29 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
         }
 
         Ok(total)
+    }
+
+    /// Check whether a nullifier was spent for a given proposal.
+    async fn per_proposal_check_nullifier_unvoted(
+        &self,
+        proposal_id: u64,
+        nullifier: &Nullifier,
+    ) -> Result<()> {
+        if let Some(info) = self
+            .get::<SpendInfo>(&state_key::per_proposal_voted_nullifier_lookup(
+                proposal_id,
+                nullifier,
+            ))
+            .await?
+        {
+            // If the nullifier was already voted with, error:
+            return Err(anyhow::anyhow!(
+                "nullifier {nullifier} was already used for voting on proposal {proposal_id} in {:?}",
+                info.note_source,
+            ));
+        }
+
+        Ok(())
     }
 }
 
