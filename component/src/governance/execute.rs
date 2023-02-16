@@ -14,8 +14,8 @@ use penumbra_chain::{StateReadExt as _, StateWriteExt};
 use penumbra_crypto::ProposalNft;
 use penumbra_storage::StateWrite;
 use penumbra_transaction::action::{
-    ProposalDepositClaim, ProposalPayload, ProposalSubmit, ProposalWithdraw, ValidatorVote,
-    ValidatorVoteBody,
+    DelegatorVote, ProposalDepositClaim, ProposalPayload, ProposalSubmit, ProposalWithdraw,
+    ValidatorVote, ValidatorVoteBody,
 };
 use tracing::instrument;
 
@@ -169,8 +169,10 @@ pub async fn proposal_deposit_claim<S: StateWrite>(
     Ok(())
 }
 
-// TODO: fill in when delegator votes happen
-// pub async fn delegator_vote(state: &State, delegator_vote: &DelegatorVote) {}
+#[instrument(skip(state))]
+pub async fn delegator_vote<S: StateWrite>(state: S, delegator_vote: &DelegatorVote) -> Result<()> {
+    todo!()
+}
 
 #[instrument(skip(state))]
 pub async fn enact_all_passed_proposals<S: StateWrite>(mut state: S) -> Result<()> {

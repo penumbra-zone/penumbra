@@ -9,6 +9,8 @@ use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::action::{Proposal, ProposalPayload, Vote};
 
+use crate::shielded_pool::StateWriteExt as _;
+
 use super::{
     proposal::{self, ProposalList},
     state_key,
@@ -113,8 +115,8 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
         proposal_id: u64,
         nullifier: &Nullifier,
     ) -> Result<()> {
-        if let Some(info) = self
-            .get::<SpendInfo>(&state_key::per_proposal_voted_nullifier_lookup(
+        if let Some(height) = self
+            .get_proto::<u64>(&state_key::per_proposal_voted_nullifier_lookup(
                 proposal_id,
                 nullifier,
             ))
@@ -122,8 +124,7 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
         {
             // If the nullifier was already voted with, error:
             return Err(anyhow::anyhow!(
-                "nullifier {nullifier} was already used for voting on proposal {proposal_id} in {:?}",
-                info.note_source,
+                "nullifier {nullifier} was already used for voting on proposal {proposal_id} at height {height}",
             ));
         }
 
@@ -162,6 +163,20 @@ pub trait StateWriteExt: StateWrite {
 
         // Return the new proposal id
         Ok(proposal_id)
+    }
+
+    /// Mark a nullifier as spent for a given proposal.
+    async fn mark_nullifier_voted(
+        &mut self,
+        proposal_id: u64,
+        nullifier: &Nullifier,
+    ) -> Result<()> {
+        self.put_proto(
+            state_key::per_proposal_voted_nullifier_lookup(proposal_id, nullifier),
+            self.height().await,
+        );
+
+        Ok(())
     }
 
     /// Store the proposal deposit amount.

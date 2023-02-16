@@ -71,9 +71,9 @@ pub struct DelegatorVoteBody {
     /// The proposal being voted on.
     #[prost(uint64, tag = "1")]
     pub proposal: u64,
-    /// The start height of the proposal.
-    #[prost(uint64, tag = "2")]
-    pub start_height: u64,
+    /// The start epoch and block, as a u32, in which the proposal started.
+    #[prost(uint32, tag = "2")]
+    pub start_epoch_and_block_position: u32,
     /// The vote.
     #[prost(message, optional, tag = "3")]
     pub vote: ::core::option::Option<Vote>,
@@ -109,9 +109,9 @@ pub struct DelegatorVotePlan {
     /// The proposal to vote on.
     #[prost(uint64, tag = "1")]
     pub proposal: u64,
-    /// The start height of the proposal.
-    #[prost(uint64, tag = "2")]
-    pub start_height: u64,
+    /// The start epoch and block, as a u32, in which the proposal started.
+    #[prost(uint32, tag = "2")]
+    pub start_epoch_and_block_position: u32,
     /// The vote to cast.
     #[prost(message, optional, tag = "3")]
     pub vote: ::core::option::Option<Vote>,
@@ -120,7 +120,7 @@ pub struct DelegatorVotePlan {
     pub staked_note: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
     /// The position of that delegation note.
     #[prost(uint64, tag = "5")]
-    pub position: u64,
+    pub staked_note_position: u64,
     /// The unbonded amount equivalent to the delegation note.
     #[prost(message, optional, tag = "6")]
     pub unbonded_amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
