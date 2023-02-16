@@ -3,7 +3,7 @@ use std::{
     str::FromStr,
 };
 
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use ark_ff::Zero;
 use decaf377::Fr;
 use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
@@ -18,7 +18,7 @@ use penumbra_proto::{
 use penumbra_tct::Position;
 use serde::{Deserialize, Serialize};
 
-use crate::{ActionView, IsAction, TransactionPerspective};
+use crate::{Action, ActionView, IsAction, TransactionPerspective};
 
 /// A vote on a proposal.
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Eq, PartialEq)]
@@ -212,7 +212,7 @@ impl DomainType for ValidatorVoteBody {
 
 #[derive(Debug, Clone)]
 pub struct DelegatorVote {
-    pub body: Body,
+    pub body: DelegatorVoteBody,
     pub auth_sig: Signature<SpendAuth>,
     pub proof: DelegatorVoteProof,
 }
@@ -233,7 +233,7 @@ impl IsAction for DelegatorVote {
 
 /// The body of a delegator vote.
 #[derive(Debug, Clone)]
-pub struct Body {
+pub struct DelegatorVoteBody {
     /// The proposal ID the vote is for.
     pub proposal: u64,
     /// The height the proposal started at.
@@ -250,16 +250,89 @@ pub struct Body {
     pub rk: VerificationKey<SpendAuth>,
 }
 
-impl From<Body> for pb::DelegatorVoteBody {
-    fn from(value: Body) -> Self {
+impl From<DelegatorVoteBody> for pb::DelegatorVoteBody {
+    fn from(value: DelegatorVoteBody) -> Self {
         pb::DelegatorVoteBody {
             proposal: value.proposal,
-            start_height: Some(value.start_height.into()),
+            start_height: value.start_height.into(),
             vote: Some(value.vote.into()),
             value: Some(value.value.into()),
-            unbonded_amount: value.unbonded_amount,
-            nullifier: Some(value.nullifier.into()),
-            rk: Some(value.rk.into()),
+            unbonded_amount: Some(value.unbonded_amount.into()),
+            nullifier: value.nullifier.to_bytes().into(),
+            rk: value.rk.to_bytes().into(),
         }
+    }
+}
+
+impl TryFrom<pb::DelegatorVoteBody> for DelegatorVoteBody {
+    type Error = anyhow::Error;
+
+    fn try_from(msg: pb::DelegatorVoteBody) -> Result<Self, Self::Error> {
+        Ok(DelegatorVoteBody {
+            proposal: msg.proposal,
+            start_height: msg.start_height.try_into()?,
+            vote: msg
+                .vote
+                .ok_or_else(|| anyhow::anyhow!("missing vote in `DelegatorVote`"))?
+                .try_into()?,
+            value: msg
+                .value
+                .ok_or_else(|| anyhow::anyhow!("missing value in `DelegatorVote`"))?
+                .try_into()?,
+            unbonded_amount: msg
+                .unbonded_amount
+                .ok_or_else(|| anyhow::anyhow!("missing unbonded amount in `DelegatorVote`"))?
+                .try_into()?,
+            nullifier: msg
+                .nullifier
+                .try_into()
+                .context("invalid nullifier in `DelegatorVote`")?,
+            rk: {
+                let rk_bytes: [u8; 32] = (msg.rk[..])
+                    .try_into()
+                    .context("expected 32-byte rk in `DelegatorVote`")?;
+                rk_bytes
+                    .try_into()
+                    .context("invalid  rk in `DelegatorVote`")?
+            },
+        })
+    }
+}
+
+impl DomainType for DelegatorVoteBody {
+    type Proto = pb::DelegatorVoteBody;
+}
+
+impl From<DelegatorVote> for pb::DelegatorVote {
+    fn from(value: DelegatorVote) -> Self {
+        pb::DelegatorVote {
+            body: Some(value.body.into()),
+            auth_sig: Some(value.auth_sig.into()),
+            proof: value.proof.into(),
+        }
+    }
+}
+
+impl TryFrom<pb::DelegatorVote> for DelegatorVote {
+    type Error = anyhow::Error;
+
+    fn try_from(msg: pb::DelegatorVote) -> Result<Self, Self::Error> {
+        Ok(DelegatorVote {
+            body: msg
+                .body
+                .ok_or_else(|| anyhow::anyhow!("missing body in `DelegatorVote`"))?
+                .try_into()?,
+            auth_sig: msg
+                .auth_sig
+                .ok_or_else(|| anyhow::anyhow!("missing auth sig in `DelegatorVote`"))?
+                .try_into()?,
+            proof: msg.proof[..].try_into()?,
+        })
+    }
+}
+
+impl From<DelegatorVote> for Action {
+    fn from(value: DelegatorVote) -> Self {
+        Action::DelegatorVote(value)
     }
 }

@@ -311,6 +311,25 @@ impl TryFrom<&[u8]> for SpendProof {
     }
 }
 
+impl From<DelegatorVoteProof> for Vec<u8> {
+    fn from(delegator_vote_proof: DelegatorVoteProof) -> Vec<u8> {
+        let protobuf_serialized_proof: transparent_proofs::SpendProof = delegator_vote_proof.into();
+        protobuf_serialized_proof.encode_to_vec()
+    }
+}
+
+impl TryFrom<&[u8]> for DelegatorVoteProof {
+    type Error = Error;
+
+    fn try_from(bytes: &[u8]) -> Result<DelegatorVoteProof, Self::Error> {
+        let protobuf_serialized_proof = transparent_proofs::SpendProof::decode(bytes)
+            .map_err(|_| anyhow!("proto malformed"))?;
+        protobuf_serialized_proof
+            .try_into()
+            .map_err(|_| anyhow!("proto malformed"))
+    }
+}
+
 impl From<OutputProof> for Vec<u8> {
     fn from(output_proof: OutputProof) -> Vec<u8> {
         let protobuf_serialized_proof: transparent_proofs::OutputProof = output_proof.into();

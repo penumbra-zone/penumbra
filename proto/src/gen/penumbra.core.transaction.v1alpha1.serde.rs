@@ -39,6 +39,9 @@ impl serde::Serialize for Action {
                 action::Action::ValidatorVote(v) => {
                     struct_ser.serialize_field("validatorVote", v)?;
                 }
+                action::Action::DelegatorVote(v) => {
+                    struct_ser.serialize_field("delegatorVote", v)?;
+                }
                 action::Action::ProposalDepositClaim(v) => {
                     struct_ser.serialize_field("proposalDepositClaim", v)?;
                 }
@@ -93,6 +96,8 @@ impl<'de> serde::Deserialize<'de> for Action {
             "proposalWithdraw",
             "validator_vote",
             "validatorVote",
+            "delegator_vote",
+            "delegatorVote",
             "proposal_deposit_claim",
             "proposalDepositClaim",
             "position_open",
@@ -122,6 +127,7 @@ impl<'de> serde::Deserialize<'de> for Action {
             ProposalSubmit,
             ProposalWithdraw,
             ValidatorVote,
+            DelegatorVote,
             ProposalDepositClaim,
             PositionOpen,
             PositionClose,
@@ -161,6 +167,7 @@ impl<'de> serde::Deserialize<'de> for Action {
                             "proposalSubmit" | "proposal_submit" => Ok(GeneratedField::ProposalSubmit),
                             "proposalWithdraw" | "proposal_withdraw" => Ok(GeneratedField::ProposalWithdraw),
                             "validatorVote" | "validator_vote" => Ok(GeneratedField::ValidatorVote),
+                            "delegatorVote" | "delegator_vote" => Ok(GeneratedField::DelegatorVote),
                             "proposalDepositClaim" | "proposal_deposit_claim" => Ok(GeneratedField::ProposalDepositClaim),
                             "positionOpen" | "position_open" => Ok(GeneratedField::PositionOpen),
                             "positionClose" | "position_close" => Ok(GeneratedField::PositionClose),
@@ -253,6 +260,13 @@ impl<'de> serde::Deserialize<'de> for Action {
                                 return Err(serde::de::Error::duplicate_field("validatorVote"));
                             }
                             action__ = map.next_value::<::std::option::Option<_>>()?.map(action::Action::ValidatorVote)
+;
+                        }
+                        GeneratedField::DelegatorVote => {
+                            if action__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("delegatorVote"));
+                            }
+                            action__ = map.next_value::<::std::option::Option<_>>()?.map(action::Action::DelegatorVote)
 ;
                         }
                         GeneratedField::ProposalDepositClaim => {

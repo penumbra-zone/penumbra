@@ -32,7 +32,7 @@ pub use swap::Swap;
 pub use swap_claim::SwapClaim;
 pub use undelegate::Undelegate;
 pub use undelegate_claim::{UndelegateClaim, UndelegateClaimBody};
-pub use vote::{DelegatorVote, ValidatorVote, ValidatorVoteBody, Vote};
+pub use vote::{DelegatorVote, DelegatorVoteBody, ValidatorVote, ValidatorVoteBody, Vote};
 
 /// Common behavior between Penumbra actions.
 pub trait IsAction {
@@ -52,7 +52,7 @@ pub enum Action {
     SwapClaim(SwapClaim),
     ProposalSubmit(ProposalSubmit),
     ProposalWithdraw(ProposalWithdraw),
-    // DelegatorVote(DelegatorVote),
+    DelegatorVote(DelegatorVote),
     ValidatorVote(ValidatorVote),
     ProposalDepositClaim(ProposalDepositClaim),
 
@@ -80,8 +80,8 @@ impl IsAction for Action {
             Action::SwapClaim(swap_claim) => swap_claim.balance_commitment(),
             Action::ProposalSubmit(submit) => submit.balance_commitment(),
             Action::ProposalWithdraw(withdraw) => withdraw.balance_commitment(),
-            // Action::DelegatorVote(_) => ...
-            Action::ValidatorVote(v) => v.balance_commitment(),
+            Action::DelegatorVote(delegator_vote) => delegator_vote.balance_commitment(),
+            Action::ValidatorVote(validator_vote) => validator_vote.balance_commitment(),
             Action::ProposalDepositClaim(p) => p.balance_commitment(),
             Action::PositionOpen(p) => p.balance_commitment(),
             Action::PositionClose(p) => p.balance_commitment(),
@@ -106,6 +106,7 @@ impl IsAction for Action {
             Action::UndelegateClaim(x) => x.view_from_perspective(txp),
             Action::ProposalSubmit(x) => x.view_from_perspective(txp),
             Action::ProposalWithdraw(x) => x.view_from_perspective(txp),
+            Action::DelegatorVote(x) => x.view_from_perspective(txp),
             Action::ValidatorVote(x) => x.view_from_perspective(txp),
             Action::ProposalDepositClaim(x) => x.view_from_perspective(txp),
             Action::PositionOpen(x) => x.view_from_perspective(txp),
@@ -160,9 +161,9 @@ impl From<Action> for pb::Action {
             Action::ProposalWithdraw(inner) => pb::Action {
                 action: Some(pb::action::Action::ProposalWithdraw(inner.into())),
             },
-            // Action::DelegatorVote(inner) => pb::Action {
-            //     action: Some(pb::action::Action::DelegatorVote(inner.into())),
-            // },
+            Action::DelegatorVote(inner) => pb::Action {
+                action: Some(pb::action::Action::DelegatorVote(inner.into())),
+            },
             Action::ValidatorVote(inner) => pb::Action {
                 action: Some(pb::action::Action::ValidatorVote(inner.into())),
             },
@@ -214,9 +215,9 @@ impl TryFrom<pb::Action> for Action {
             pb::action::Action::ProposalWithdraw(inner) => {
                 Ok(Action::ProposalWithdraw(inner.try_into()?))
             }
-            // pb::action::Action::DelegatorVote(inner) => {
-            //     Ok(Action::DelegatorVote(inner.try_into()?))
-            // }
+            pb::action::Action::DelegatorVote(inner) => {
+                Ok(Action::DelegatorVote(inner.try_into()?))
+            }
             pb::action::Action::ValidatorVote(inner) => {
                 Ok(Action::ValidatorVote(inner.try_into()?))
             }

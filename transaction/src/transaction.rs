@@ -109,6 +109,7 @@ impl Transaction {
                 | Action::ProposalSubmit(_)
                 | Action::ProposalWithdraw(_)
                 | Action::ValidatorVote(_)
+                | Action::DelegatorVote(_)
                 | Action::ProposalDepositClaim(_)
                 | Action::PositionOpen(_)
                 | Action::PositionClose(_)
