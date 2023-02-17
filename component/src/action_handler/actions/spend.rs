@@ -30,6 +30,7 @@ impl ActionHandler for Spend {
         spend
             .proof
             .verify(
+                &SPEND_PROOF_VERIFICATION_KEY,
                 anchor,
                 spend.body.balance_commitment,
                 spend.body.nullifier,
