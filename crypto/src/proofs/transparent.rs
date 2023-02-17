@@ -95,45 +95,6 @@ impl SpendProof {
     }
 }
 
-/// Transparent proof for new note creation.
-///
-/// This structure keeps track of the auxiliary (private) inputs.
-#[derive(Clone, Debug)]
-pub struct OutputProof {
-    // The note being created.
-    pub note: Note,
-    // The blinding factor used for generating the balance commitment.
-    pub v_blinding: Fr,
-}
-
-impl OutputProof {
-    /// Called to verify the proof using the provided public inputs.
-    ///
-    /// The public inputs are:
-    /// * balance commitment of the new note,
-    /// * note commitment of the new note,
-    pub fn verify(
-        &self,
-        balance_commitment: balance::Commitment,
-        note_commitment: note::Commitment,
-    ) -> anyhow::Result<()> {
-        gadgets::note_commitment_integrity(self.note.clone(), note_commitment)?;
-
-        // We negate the balance before the integrity check because we anticipate
-        // `balance_commitment` to be a commitment of a negative value, since this
-        // is an `OutputProof`.
-        let note_balance = -Balance::from(self.note.value());
-
-        gadgets::balance_commitment_integrity(balance_commitment, self.v_blinding, note_balance)?;
-
-        gadgets::diversified_basepoint_not_identity(
-            self.note.address().diversified_generator().clone(),
-        )?;
-
-        Ok(())
-    }
-}
-
 // Conversions
 
 impl DomainType for SpendProof {
@@ -201,38 +162,6 @@ impl TryFrom<transparent_proofs::SpendProof> for SpendProof {
     }
 }
 
-impl DomainType for OutputProof {
-    type Proto = transparent_proofs::OutputProof;
-}
-
-impl From<OutputProof> for transparent_proofs::OutputProof {
-    fn from(msg: OutputProof) -> Self {
-        transparent_proofs::OutputProof {
-            note: Some(msg.note.into()),
-            v_blinding: msg.v_blinding.to_bytes().to_vec(),
-        }
-    }
-}
-
-impl TryFrom<transparent_proofs::OutputProof> for OutputProof {
-    type Error = Error;
-
-    fn try_from(proto: transparent_proofs::OutputProof) -> anyhow::Result<Self, Self::Error> {
-        let v_blinding_bytes: [u8; 32] = proto.v_blinding[..]
-            .try_into()
-            .map_err(|_| anyhow!("proto malformed"))?;
-
-        Ok(OutputProof {
-            note: proto
-                .note
-                .ok_or_else(|| anyhow!("proto malformed"))?
-                .try_into()
-                .map_err(|_| anyhow!("proto malformed"))?,
-            v_blinding: Fr::from_bytes(v_blinding_bytes).map_err(|_| anyhow!("proto malformed"))?,
-        })
-    }
-}
-
 impl From<SpendProof> for Vec<u8> {
     fn from(spend_proof: SpendProof) -> Vec<u8> {
         let protobuf_serialized_proof: transparent_proofs::SpendProof = spend_proof.into();
@@ -245,25 +174,6 @@ impl TryFrom<&[u8]> for SpendProof {
 
     fn try_from(bytes: &[u8]) -> Result<SpendProof, Self::Error> {
         let protobuf_serialized_proof = transparent_proofs::SpendProof::decode(bytes)
-            .map_err(|_| anyhow!("proto malformed"))?;
-        protobuf_serialized_proof
-            .try_into()
-            .map_err(|_| anyhow!("proto malformed"))
-    }
-}
-
-impl From<OutputProof> for Vec<u8> {
-    fn from(output_proof: OutputProof) -> Vec<u8> {
-        let protobuf_serialized_proof: transparent_proofs::OutputProof = output_proof.into();
-        protobuf_serialized_proof.encode_to_vec()
-    }
-}
-
-impl TryFrom<&[u8]> for OutputProof {
-    type Error = Error;
-
-    fn try_from(bytes: &[u8]) -> Result<OutputProof, Self::Error> {
-        let protobuf_serialized_proof = transparent_proofs::OutputProof::decode(bytes)
             .map_err(|_| anyhow!("proto malformed"))?;
         protobuf_serialized_proof
             .try_into()
@@ -632,115 +542,8 @@ mod tests {
     use super::*;
     use crate::{
         keys::{SeedPhrase, SpendKey},
-        note, Balance, Note, Value,
+        Balance, Note, Value,
     };
-
-    #[test]
-    /// Check that the `OutputProof` verification suceeds.
-    fn test_output_proof_verification_success() {
-        let mut rng = OsRng;
-
-        let seed_phrase = SeedPhrase::generate(rng);
-        let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
-        let fvk_recipient = sk_recipient.full_viewing_key();
-        let ivk_recipient = fvk_recipient.incoming();
-        let (dest, _dtk_d) = ivk_recipient.payment_address(0u32.into());
-
-        let value_to_send = Value {
-            amount: 10u64.into(),
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
-        };
-
-        let balance = -Balance::from(value_to_send);
-
-        let v_blinding = Fr::rand(&mut rng);
-        let note = Note::generate(&mut rng, &dest, value_to_send);
-
-        let proof = OutputProof {
-            note: note.clone(),
-            v_blinding,
-        };
-
-        assert!(proof
-            .verify(balance.commit(v_blinding), note.commit())
-            .is_ok());
-    }
-
-    #[test]
-    /// Check that the `OutputProof` verification fails when using an incorrect
-    /// note commitment.
-    fn test_output_proof_verification_note_commitment_integrity_failure() {
-        let mut rng = OsRng;
-
-        let seed_phrase = SeedPhrase::generate(rng);
-        let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
-        let fvk_recipient = sk_recipient.full_viewing_key();
-        let ivk_recipient = fvk_recipient.incoming();
-        let (dest, _dtk_d) = ivk_recipient.payment_address(0u32.into());
-
-        let value_to_send = Value {
-            amount: 10u64.into(),
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
-        };
-
-        let balance_to_send = -Balance::from(value_to_send);
-
-        let v_blinding = Fr::rand(&mut rng);
-        let note = Note::generate(&mut rng, &dest, value_to_send);
-
-        let proof = OutputProof {
-            note: note.clone(),
-            v_blinding,
-        };
-
-        let incorrect_note_commitment = note::commitment(
-            Fq::rand(&mut rng),
-            value_to_send,
-            note.diversified_generator(),
-            note.transmission_key_s(),
-            note.clue_key(),
-        );
-
-        assert!(proof
-            .verify(
-                balance_to_send.commit(v_blinding),
-                incorrect_note_commitment,
-            )
-            .is_err());
-    }
-
-    #[test]
-    /// Check that the `OutputProof` verification fails when using an incorrect
-    /// balance commitment.
-    fn test_output_proof_verification_balance_commitment_integrity_failure() {
-        let mut rng = OsRng;
-
-        let seed_phrase = SeedPhrase::generate(rng);
-        let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
-        let fvk_recipient = sk_recipient.full_viewing_key();
-        let ivk_recipient = fvk_recipient.incoming();
-        let (dest, _dtk_d) = ivk_recipient.payment_address(0u32.into());
-
-        let value_to_send = Value {
-            amount: 10u64.into(),
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
-        };
-        let v_blinding = Fr::rand(&mut rng);
-
-        let bad_balance = Balance::from(value_to_send);
-        let incorrect_balance_commitment = bad_balance.commit(Fr::rand(&mut rng));
-
-        let note = Note::generate(&mut rng, &dest, value_to_send);
-
-        let proof = OutputProof {
-            note: note.clone(),
-            v_blinding,
-        };
-
-        assert!(proof
-            .verify(incorrect_balance_commitment, note.commit())
-            .is_err());
-    }
 
     #[test]
     /// Check that the `SpendProof` verification succeeds.
