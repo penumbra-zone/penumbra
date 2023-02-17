@@ -21,16 +21,6 @@ pub struct SpendProof {
     #[prost(bytes = "vec", tag = "11")]
     pub nk: ::prost::alloc::vec::Vec<u8>,
 }
-/// A Penumbra transparent output proof.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct OutputProof {
-    /// Auxiliary inputs
-    #[prost(message, optional, tag = "1")]
-    pub note: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
-    #[prost(bytes = "vec", tag = "5")]
-    pub v_blinding: ::prost::alloc::vec::Vec<u8>,
-}
 /// A Penumbra transparent SwapClaimProof.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

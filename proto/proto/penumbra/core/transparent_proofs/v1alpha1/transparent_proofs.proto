@@ -23,13 +23,6 @@ message SpendProof {
   bytes nk = 11;
 }
 
-// A Penumbra transparent output proof.
-message OutputProof {
-  // Auxiliary inputs
-  crypto.v1alpha1.Note note = 1;
-  bytes v_blinding = 5;
-}
-
 // A Penumbra transparent SwapClaimProof.
 message SwapClaimProof {
   // The swap being claimed
