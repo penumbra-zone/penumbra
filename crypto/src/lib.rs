@@ -10,6 +10,7 @@ pub mod asset;
 pub mod balance;
 pub mod dex;
 pub mod eddy;
+pub mod fixpoint;
 mod flow;
 mod governance;
 pub mod keys;
