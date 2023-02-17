@@ -9,7 +9,7 @@ mod position_manager;
 
 pub use self::metrics::register_metrics;
 pub use component::{Dex, StateReadExt, StateWriteExt};
-pub use position_manager::PositionManager;
+pub use position_manager::{PositionManager, PositionRead};
 
 #[cfg(test)]
 mod tests;
