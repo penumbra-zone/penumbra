@@ -72,8 +72,10 @@ pub struct SwapBody {
     /// This is recorded separately from delta_j_i because it's shielded;
     /// in the future we'll want separate commitments to each delta_j_i
     /// anyways in order to prove consistency with flow encryption.
-    #[prost(bytes = "vec", tag = "4")]
-    pub fee_commitment: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "4")]
+    pub fee_commitment: ::core::option::Option<
+        super::super::crypto::v1alpha1::BalanceCommitment,
+    >,
     /// The swap commitment and encryption of the swap data.
     #[prost(message, optional, tag = "5")]
     pub payload: ::core::option::Option<SwapPayload>,

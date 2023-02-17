@@ -1927,7 +1927,7 @@ impl serde::Serialize for SwapBody {
         if self.delta_2_i.is_some() {
             len += 1;
         }
-        if !self.fee_commitment.is_empty() {
+        if self.fee_commitment.is_some() {
             len += 1;
         }
         if self.payload.is_some() {
@@ -1943,8 +1943,8 @@ impl serde::Serialize for SwapBody {
         if let Some(v) = self.delta_2_i.as_ref() {
             struct_ser.serialize_field("delta2I", v)?;
         }
-        if !self.fee_commitment.is_empty() {
-            struct_ser.serialize_field("feeCommitment", pbjson::private::base64::encode(&self.fee_commitment).as_str())?;
+        if let Some(v) = self.fee_commitment.as_ref() {
+            struct_ser.serialize_field("feeCommitment", v)?;
         }
         if let Some(v) = self.payload.as_ref() {
             struct_ser.serialize_field("payload", v)?;
@@ -2051,9 +2051,7 @@ impl<'de> serde::Deserialize<'de> for SwapBody {
                             if fee_commitment__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("feeCommitment"));
                             }
-                            fee_commitment__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            fee_commitment__ = map.next_value()?;
                         }
                         GeneratedField::Payload => {
                             if payload__.is_some() {
@@ -2067,7 +2065,7 @@ impl<'de> serde::Deserialize<'de> for SwapBody {
                     trading_pair: trading_pair__,
                     delta_1_i: delta_1_i__,
                     delta_2_i: delta_2_i__,
-                    fee_commitment: fee_commitment__.unwrap_or_default(),
+                    fee_commitment: fee_commitment__,
                     payload: payload__,
                 })
             }

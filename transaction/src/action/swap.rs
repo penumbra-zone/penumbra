@@ -109,7 +109,7 @@ impl From<Body> for pb::SwapBody {
             trading_pair: Some(s.trading_pair.into()),
             delta_1_i: Some(s.delta_1_i.into()),
             delta_2_i: Some(s.delta_2_i.into()),
-            fee_commitment: s.fee_commitment.to_bytes().to_vec(),
+            fee_commitment: Some(s.fee_commitment.into()),
             payload: Some(s.payload.into()),
         }
     }
@@ -133,7 +133,10 @@ impl TryFrom<pb::SwapBody> for Body {
                 .ok_or_else(|| anyhow::anyhow!("missing delta_2"))?
                 .try_into()?,
 
-            fee_commitment: (&s.fee_commitment[..]).try_into()?,
+            fee_commitment: s
+                .fee_commitment
+                .ok_or_else(|| anyhow::anyhow!("missing fee_commitment"))?
+                .try_into()?,
             payload: s
                 .payload
                 .ok_or_else(|| anyhow::anyhow!("missing payload"))?
