@@ -1,4 +1,5 @@
 use penumbra_crypto::{stake::IdentityKey, Nullifier};
+use penumbra_transaction::action::Vote;
 
 pub fn next_proposal_id() -> &'static str {
     "governance/next_proposal_id"
@@ -42,4 +43,12 @@ pub fn per_proposal_voted_nullifier_lookup(proposal_id: u64, nullifier: &Nullifi
 
 pub fn rate_data_at_proposal_start(proposal_id: u64, identity_key: IdentityKey) -> String {
     format!("governance/proposal/{proposal_id}/rate_data_at_start/{identity_key}")
+}
+
+pub fn voting_power_at_proposal_start(proposal_id: u64, identity_key: IdentityKey) -> String {
+    format!("governance/proposal/{proposal_id}/voting_power_at_start/{identity_key}")
+}
+
+pub fn delegator_vote(proposal_id: u64, vote: Vote, nullifier: &Nullifier) -> String {
+    format!("governance/proposal/{proposal_id}/delegator_vote/{vote}/{nullifier}")
 }

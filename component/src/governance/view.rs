@@ -3,7 +3,6 @@ use std::{collections::BTreeSet, pin::Pin, str::FromStr};
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use futures::{Stream, StreamExt};
-use penumbra_chain::SpendInfo;
 use penumbra_crypto::{asset::Amount, stake::IdentityKey, Nullifier};
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
@@ -169,36 +168,44 @@ pub trait StateWriteExt: StateWrite {
             ));
         }
 
-        // Snapshot the rate data for all active validators at this height
+        // Snapshot the rate data and voting power for all active validators at this height
         let mut js = JoinSet::new();
         for identity_key in self.validator_identity_list().await? {
             let state = self.validator_state(&identity_key);
             let rate_data = self.current_validator_rate(&identity_key);
+            let power = self.validator_power(&identity_key);
             js.spawn(async move {
                 let state = state
                     .await?
                     .expect("every known validator must have a recorded state");
                 // Compute the rate data, only for active validators, and write it to the state
-                let pair = if state == validator::State::Active {
+                let per_validator = if state == validator::State::Active {
                     let rate_data = rate_data
                         .await?
                         .expect("every known validator must have a recorded current rate");
-                    Some((identity_key, rate_data))
+                    let power = power
+                        .await?
+                        .expect("every known validator must have a recorded current power");
+                    Some((identity_key, rate_data, power))
                 } else {
                     None
                 };
                 // Return the pair, to be written to the state
-                Ok::<_, anyhow::Error>(pair)
+                Ok::<_, anyhow::Error>(per_validator)
             });
         }
         // Iterate over all the futures and insert them into the state (this can be done in
         // arbitrary order, because they are non-overlapping)
-        while let Some(pair) = js.join_next().await.transpose()? {
-            if let Some((identity_key, rate_data)) = pair? {
+        while let Some(per_validator) = js.join_next().await.transpose()? {
+            if let Some((identity_key, rate_data, power)) = per_validator? {
                 self.put(
                     state_key::rate_data_at_proposal_start(proposal_id, identity_key),
                     rate_data,
                 );
+                self.put_proto(
+                    state_key::voting_power_at_proposal_start(proposal_id, identity_key),
+                    power,
+                )
             }
         }
 
@@ -290,6 +297,37 @@ pub trait StateWriteExt: StateWrite {
     /// Set the proposal voting end block height for a proposal.
     async fn put_proposal_voting_end(&mut self, proposal_id: u64, end_block: u64) {
         self.put_proto(state_key::proposal_voting_end(proposal_id), end_block);
+    }
+
+    /// Mark a nullifier as having voted on a proposal.
+    async fn mark_nullifier_voted_on_proposal(
+        &mut self,
+        proposal_id: u64,
+        nullifier: &Nullifier,
+    ) -> Result<()> {
+        self.put_proto(
+            state_key::per_proposal_voted_nullifier_lookup(proposal_id, nullifier),
+            self.height().await,
+        );
+
+        Ok(())
+    }
+
+    /// Record a delegator vote on a proposal.
+    async fn cast_delegator_vote(
+        &mut self,
+        proposal_id: u64,
+        vote: Vote,
+        nullifier: &Nullifier,
+        unbonded_amount: Amount,
+    ) -> Result<()> {
+        // Record the vote
+        self.put(
+            state_key::delegator_vote(proposal_id, vote, nullifier),
+            unbonded_amount,
+        );
+
+        Ok(())
     }
 }
 

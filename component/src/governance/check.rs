@@ -150,7 +150,7 @@ pub mod stateful {
     use super::*;
     use crate::{
         shielded_pool::{StateReadExt, SupplyRead},
-        stake::{rate::RateData, StateReadExt as _},
+        stake::StateReadExt as _,
     };
     use penumbra_chain::{Epoch, StateReadExt as _};
     use penumbra_crypto::{
@@ -268,7 +268,7 @@ pub mod stateful {
                     value,
                     unbonded_amount,
                     nullifier,
-                    rk,
+                    rk: _, // We already used this to check the auth sig in stateless verification
                 },
             auth_sig: _, // We already checked this in stateless verification
             proof: _,    // We already checked this in stateless verification
