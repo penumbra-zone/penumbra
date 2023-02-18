@@ -329,8 +329,8 @@ pub struct Spend {
         super::super::crypto::v1alpha1::SpendAuthSignature,
     >,
     /// The proof that the spend is well-formed is authorizing data.
-    #[prost(bytes = "bytes", tag = "3")]
-    pub proof: ::prost::bytes::Bytes,
+    #[prost(message, optional, tag = "3")]
+    pub proof: ::core::option::Option<super::super::crypto::v1alpha1::ZkSpendProof>,
 }
 /// The body of a spend description, containing only the effecting data
 /// describing changes to the ledger, and not the authorizing data that allows
