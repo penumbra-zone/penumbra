@@ -39,3 +39,7 @@ pub fn validator_vote(proposal_id: u64, identity_key: IdentityKey) -> String {
 pub fn per_proposal_voted_nullifier_lookup(proposal_id: u64, nullifier: &Nullifier) -> String {
     format!("governance/proposal/{proposal_id}/voted_nullifiers/{nullifier}")
 }
+
+pub fn rate_data_at_proposal_start(proposal_id: u64, identity_key: IdentityKey) -> String {
+    format!("governance/proposal/{proposal_id}/rate_data_at_start/{identity_key}")
+}

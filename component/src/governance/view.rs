@@ -8,8 +8,12 @@ use penumbra_crypto::{asset::Amount, stake::IdentityKey, Nullifier};
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::action::{Proposal, ProposalPayload, Vote};
+use tokio::task::JoinSet;
 
-use crate::shielded_pool::StateWriteExt as _;
+use crate::{
+    shielded_pool::StateWriteExt as _,
+    stake::{rate::RateData, validator, StateReadExt as _},
+};
 
 use super::{
     proposal::{self, ProposalList},
@@ -130,6 +134,19 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
 
         Ok(())
     }
+
+    /// Get the [`RateData`] for a validator at the start height of a given proposal.
+    async fn rate_data_at_proposal_start(
+        &self,
+        proposal_id: u64,
+        identity_key: IdentityKey,
+    ) -> Result<Option<RateData>> {
+        self.get(&state_key::rate_data_at_proposal_start(
+            proposal_id,
+            identity_key,
+        ))
+        .await
+    }
 }
 
 impl<T: StateRead + crate::stake::StateReadExt + ?Sized> StateReadExt for T {}
@@ -150,6 +167,39 @@ pub trait StateWriteExt: StateWrite {
                 proposal.id,
                 proposal_id
             ));
+        }
+
+        // Snapshot the rate data for all active validators at this height
+        let mut js = JoinSet::new();
+        for identity_key in self.validator_identity_list().await? {
+            let state = self.validator_state(&identity_key);
+            let rate_data = self.current_validator_rate(&identity_key);
+            js.spawn(async move {
+                let state = state
+                    .await?
+                    .expect("every known validator must have a recorded state");
+                // Compute the rate data, only for active validators, and write it to the state
+                let pair = if state == validator::State::Active {
+                    let rate_data = rate_data
+                        .await?
+                        .expect("every known validator must have a recorded current rate");
+                    Some((identity_key, rate_data))
+                } else {
+                    None
+                };
+                // Return the pair, to be written to the state
+                Ok::<_, anyhow::Error>(pair)
+            });
+        }
+        // Iterate over all the futures and insert them into the state (this can be done in
+        // arbitrary order, because they are non-overlapping)
+        while let Some(pair) = js.join_next().await.transpose()? {
+            if let Some((identity_key, rate_data)) = pair? {
+                self.put(
+                    state_key::rate_data_at_proposal_start(proposal_id, identity_key),
+                    rate_data,
+                );
+            }
         }
 
         // Record this proposal id, so we won't re-use it

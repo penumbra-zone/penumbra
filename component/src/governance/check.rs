@@ -148,9 +148,15 @@ pub mod stateless {
 pub mod stateful {
     use super::super::StateReadExt as _;
     use super::*;
-    use crate::stake::StateReadExt as _;
-    use penumbra_chain::StateReadExt as _;
-    use penumbra_crypto::{stake::IdentityKey, Amount, GovernanceKey, STAKING_TOKEN_DENOM};
+    use crate::{
+        shielded_pool::{StateReadExt, SupplyRead},
+        stake::{rate::RateData, StateReadExt as _},
+    };
+    use penumbra_chain::{Epoch, StateReadExt as _};
+    use penumbra_crypto::{
+        stake::{DelegationToken, IdentityKey},
+        Amount, GovernanceKey, Nullifier, Value, STAKING_TOKEN_DENOM,
+    };
     use penumbra_storage::StateRead;
     use penumbra_transaction::action::{ProposalDepositClaim, ProposalPayload};
 
@@ -269,14 +275,18 @@ pub mod stateful {
         }: &DelegatorVote,
     ) -> Result<()> {
         proposal_voteable(&state, *proposal).await?;
-        proposal_started_in_epoch_and_block(&state, *proposal, *start_epoch, *start_block).await?;
-        let start_block_height = state
-            .get_block_height_at_epoch_and_block(*start_epoch, *start_block)
-            .await?;
-        nullifier_unspent_before(&state, *start_block_height, nullifier).await?;
+        // TODO: once epochs are non-constant, this has to be re-done to be a stateful lookup:
+        let start_block_height = u64::from(
+            Epoch::from_height(
+                u64::from(*start_epoch),
+                state.get_chain_params().await?.epoch_duration,
+            )
+            .start_height(),
+        ) + u64::from(*start_block);
+        proposal_started_at_block_height(&state, *proposal, start_block_height).await?;
+        nullifier_unspent_before(&state, start_block_height, nullifier).await?;
         nullifier_unvoted_in_proposal(&state, *proposal, nullifier).await?;
-        unbonded_amount_correct_exchange(&state, *start_block_height, value, *unbonded_amount)
-            .await?;
+        unbonded_amount_correct_exchange(&state, *proposal, value, unbonded_amount).await?;
         Ok(())
     }
 
@@ -299,6 +309,91 @@ pub mod stateful {
         }
 
         Ok(())
+    }
+
+    async fn proposal_started_at_block_height<S: StateRead>(
+        state: S,
+        proposal_id: u64,
+        claimed_start_height: u64,
+    ) -> Result<()> {
+        if let Some(start_height) = state.proposal_voting_start(proposal_id).await? {
+            if start_height != claimed_start_height {
+                anyhow::bail!(
+                    "proposal {} was not started at claimed block height of {}",
+                    proposal_id,
+                    claimed_start_height
+                );
+            }
+        } else {
+            anyhow::bail!("proposal {} does not exist", proposal_id);
+        }
+
+        Ok(())
+    }
+
+    async fn nullifier_unspent_before<S: StateRead>(
+        state: S,
+        start_height: u64,
+        nullifier: &Nullifier,
+    ) -> Result<()> {
+        if let Some(spend_info) = state.spend_info(*nullifier).await? {
+            if spend_info.spend_height < start_height {
+                anyhow::bail!(
+                    "nullifier {} was already spent at block height {} before proposal started at block height {}",
+                    nullifier,
+                    spend_info.spend_height,
+                    start_height
+                );
+            }
+        }
+
+        Ok(())
+    }
+
+    async fn unbonded_amount_correct_exchange<S: StateRead>(
+        state: S,
+        proposal_id: u64,
+        value: &Value,
+        unbonded_amount: &Amount,
+    ) -> Result<()> {
+        // Attempt to find the denom for the asset ID of the specified value
+        let Some(denom) = state.denom_by_asset(&value.asset_id).await? else {
+            anyhow::bail!("unknown asset id {} is not a delegation token", value.asset_id);
+        };
+
+        // Attempt to find the validator identity for the specified denom, failing if it is not a
+        // delegation token
+        let validator_identity = DelegationToken::try_from(denom)?.validator();
+
+        // Attempt to look up the snapshotted `RateData` for the validator at the start of the proposal
+        let Some(rate_data) = state
+            .rate_data_at_proposal_start(proposal_id, validator_identity)
+            .await? else {
+                anyhow::bail!("validator {} was not active at the start of proposal {}", validator_identity, proposal_id);
+            };
+
+        // Check that the unbonded amount is correct relative to that exchange rate
+        if rate_data.unbonded_amount(value.amount.into()) != u64::from(*unbonded_amount) {
+            anyhow::bail!(
+                "unbonded amount {}penumbra does not correspond to {} staked delegation tokens for validator {} using the exchange rate at the start of proposal {}",
+                unbonded_amount,
+                value.amount,
+                validator_identity,
+                proposal_id,
+            );
+        }
+
+        Ok(())
+    }
+
+    async fn nullifier_unvoted_in_proposal<S: StateRead>(
+        state: S,
+        proposal_id: u64,
+        nullifier: &Nullifier,
+    ) -> Result<()> {
+        state
+            .per_proposal_check_nullifier_unvoted(proposal_id, nullifier)
+            .await
     }
 
     async fn validator_has_not_voted<S: StateRead>(

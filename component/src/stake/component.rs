@@ -1002,9 +1002,12 @@ pub trait StateReadExt: StateRead {
             .map(|rate_data| rate_data.expect("rate data must be set after init_chain"))
     }
 
-    async fn current_validator_rate(&self, identity_key: &IdentityKey) -> Result<Option<RateData>> {
+    fn current_validator_rate(
+        &self,
+        identity_key: &IdentityKey,
+    ) -> Pin<Box<dyn Future<Output = Result<Option<RateData>>> + Send + 'static>> {
         self.get(&state_key::current_rate_by_validator(identity_key))
-            .await
+            .boxed()
     }
 
     async fn next_validator_rate(&self, identity_key: &IdentityKey) -> Result<Option<RateData>> {
@@ -1115,20 +1118,25 @@ pub trait StateReadExt: StateRead {
         }
     }
 
-    async fn validator_identity_list(&self) -> Result<Vec<IdentityKey>> {
+    fn validator_identity_list(
+        &self,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<IdentityKey>>> + Send + 'static>> {
         let mut iks = Vec::new();
         // TODO: boxing here is to avoid an Unpin problem.. should
         // we bound the StateRead stream GATs as Unpin?
         // TODO: why did the previous implementation of this method
         // fail to compile with a Self does not live longe enough error?
         let mut stream = self.prefix_keys(state_key::validators::list()).boxed();
-        while let Some(key) = stream.next().await {
-            let ik = key?.as_str()[state_key::validators::list().len()..]
-                .parse::<IdentityKey>()
-                .expect("state keys should only have valid identity keys");
-            iks.push(ik);
+        async move {
+            while let Some(key) = stream.next().await {
+                let ik = key?.as_str()[state_key::validators::list().len()..]
+                    .parse::<IdentityKey>()
+                    .expect("state keys should only have valid identity keys");
+                iks.push(ik);
+            }
+            Ok(iks)
         }
-        Ok(iks)
+        .boxed()
     }
 
     async fn validator_list(&self) -> Result<Vec<Validator>> {
