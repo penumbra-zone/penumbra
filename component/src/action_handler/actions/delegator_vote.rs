@@ -1,12 +1,9 @@
 use std::sync::Arc;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::{
-    action::{DelegatorVote, DelegatorVoteBody},
-    Transaction,
-};
+use penumbra_transaction::{action::DelegatorVote, Transaction};
 
 use crate::{
     governance::{check, execute},
