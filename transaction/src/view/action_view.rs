@@ -2,20 +2,22 @@ use penumbra_proto::core::{ibc::v1alpha1::IbcAction, stake::v1alpha1::ValidatorD
 use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType};
 use serde::{Deserialize, Serialize};
 
+pub mod delegator_vote_view;
 pub mod output_view;
 pub mod spend_view;
 pub mod swap_claim_view;
 pub mod swap_view;
 
+pub use delegator_vote_view::DelegatorVoteView;
 pub use output_view::OutputView;
 pub use spend_view::SpendView;
 pub use swap_claim_view::SwapClaimView;
 pub use swap_view::SwapView;
 
 use crate::action::{
-    Delegate, Ics20Withdrawal, PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw,
-    ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, Undelegate, UndelegateClaim,
-    ValidatorVote,
+    Delegate, DelegatorVote, Ics20Withdrawal, PositionClose, PositionOpen, PositionRewardClaim,
+    PositionWithdraw, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, Undelegate,
+    UndelegateClaim, ValidatorVote,
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -33,6 +35,7 @@ pub enum ActionView {
     ProposalSubmit(ProposalSubmit),
     ProposalWithdraw(ProposalWithdraw),
     ValidatorVote(ValidatorVote),
+    DelegatorVote(DelegatorVoteView),
     ProposalDepositClaim(ProposalDepositClaim),
     PositionOpen(PositionOpen),
     PositionClose(PositionClose),
@@ -71,6 +74,7 @@ impl TryFrom<pbt::ActionView> for ActionView {
                 AV::ProposalWithdraw(x) => ActionView::ProposalWithdraw(x.try_into()?),
                 AV::ProposalDepositClaim(x) => ActionView::ProposalDepositClaim(x.try_into()?),
                 AV::ValidatorVote(x) => ActionView::ValidatorVote(x.try_into()?),
+                AV::DelegatorVote(x) => ActionView::DelegatorVote(x.try_into()?),
                 AV::PositionOpen(x) => ActionView::PositionOpen(x.try_into()?),
                 AV::PositionClose(x) => ActionView::PositionClose(x.try_into()?),
                 AV::PositionWithdraw(x) => ActionView::PositionWithdraw(x.try_into()?),
@@ -98,6 +102,7 @@ impl From<ActionView> for pbt::ActionView {
                 ActionView::ProposalSubmit(x) => AV::ProposalSubmit(x.into()),
                 ActionView::ProposalWithdraw(x) => AV::ProposalWithdraw(x.into()),
                 ActionView::ValidatorVote(x) => AV::ValidatorVote(x.into()),
+                ActionView::DelegatorVote(x) => AV::DelegatorVote(x.into()),
                 ActionView::ProposalDepositClaim(x) => AV::ProposalDepositClaim(x.into()),
                 ActionView::PositionOpen(x) => AV::PositionOpen(x.into()),
                 ActionView::PositionClose(x) => AV::PositionClose(x.into()),

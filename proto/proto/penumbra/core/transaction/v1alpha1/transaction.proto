@@ -125,8 +125,8 @@ message ActionView {
     governance.v1alpha1.ProposalSubmit proposal_submit = 18;
     governance.v1alpha1.ProposalWithdraw proposal_withdraw = 19;
     governance.v1alpha1.ValidatorVote validator_vote = 20;
+    DelegatorVoteView delegator_vote = 21;
     governance.v1alpha1.ProposalDepositClaim proposal_deposit_claim = 22;
-    // DelegatorVote delegator_vote = 21;
     dex.v1alpha1.PositionOpen position_open = 30;
     dex.v1alpha1.PositionClose position_close = 31;
     dex.v1alpha1.PositionWithdraw position_withdraw = 32;
@@ -151,6 +151,20 @@ message SpendView {
     Spend spend = 1;
   }
   oneof spend_view {
+    Visible visible = 1;
+    Opaque opaque = 2;
+  }
+}
+
+message DelegatorVoteView {
+  message Visible {
+    governance.v1alpha1.DelegatorVote delegator_vote = 1;
+    crypto.v1alpha1.Note note = 2;
+  }
+  message Opaque {
+    governance.v1alpha1.DelegatorVote delegator_vote = 1;
+  }
+  oneof delegator_vote {
     Visible visible = 1;
     Opaque opaque = 2;
   }

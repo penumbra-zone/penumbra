@@ -713,6 +713,9 @@ impl serde::Serialize for ActionView {
                 action_view::ActionView::ValidatorVote(v) => {
                     struct_ser.serialize_field("validatorVote", v)?;
                 }
+                action_view::ActionView::DelegatorVote(v) => {
+                    struct_ser.serialize_field("delegatorVote", v)?;
+                }
                 action_view::ActionView::ProposalDepositClaim(v) => {
                     struct_ser.serialize_field("proposalDepositClaim", v)?;
                 }
@@ -767,6 +770,8 @@ impl<'de> serde::Deserialize<'de> for ActionView {
             "proposalWithdraw",
             "validator_vote",
             "validatorVote",
+            "delegator_vote",
+            "delegatorVote",
             "proposal_deposit_claim",
             "proposalDepositClaim",
             "position_open",
@@ -796,6 +801,7 @@ impl<'de> serde::Deserialize<'de> for ActionView {
             ProposalSubmit,
             ProposalWithdraw,
             ValidatorVote,
+            DelegatorVote,
             ProposalDepositClaim,
             PositionOpen,
             PositionClose,
@@ -835,6 +841,7 @@ impl<'de> serde::Deserialize<'de> for ActionView {
                             "proposalSubmit" | "proposal_submit" => Ok(GeneratedField::ProposalSubmit),
                             "proposalWithdraw" | "proposal_withdraw" => Ok(GeneratedField::ProposalWithdraw),
                             "validatorVote" | "validator_vote" => Ok(GeneratedField::ValidatorVote),
+                            "delegatorVote" | "delegator_vote" => Ok(GeneratedField::DelegatorVote),
                             "proposalDepositClaim" | "proposal_deposit_claim" => Ok(GeneratedField::ProposalDepositClaim),
                             "positionOpen" | "position_open" => Ok(GeneratedField::PositionOpen),
                             "positionClose" | "position_close" => Ok(GeneratedField::PositionClose),
@@ -927,6 +934,13 @@ impl<'de> serde::Deserialize<'de> for ActionView {
                                 return Err(serde::de::Error::duplicate_field("validatorVote"));
                             }
                             action_view__ = map.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::ValidatorVote)
+;
+                        }
+                        GeneratedField::DelegatorVote => {
+                            if action_view__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("delegatorVote"));
+                            }
+                            action_view__ = map.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::DelegatorVote)
 ;
                         }
                         GeneratedField::ProposalDepositClaim => {
@@ -1566,6 +1580,316 @@ impl<'de> serde::Deserialize<'de> for CluePlan {
             }
         }
         deserializer.deserialize_struct("penumbra.core.transaction.v1alpha1.CluePlan", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for DelegatorVoteView {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.delegator_vote.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1alpha1.DelegatorVoteView", len)?;
+        if let Some(v) = self.delegator_vote.as_ref() {
+            match v {
+                delegator_vote_view::DelegatorVote::Visible(v) => {
+                    struct_ser.serialize_field("visible", v)?;
+                }
+                delegator_vote_view::DelegatorVote::Opaque(v) => {
+                    struct_ser.serialize_field("opaque", v)?;
+                }
+            }
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for DelegatorVoteView {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "visible",
+            "opaque",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Visible,
+            Opaque,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "visible" => Ok(GeneratedField::Visible),
+                            "opaque" => Ok(GeneratedField::Opaque),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = DelegatorVoteView;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.transaction.v1alpha1.DelegatorVoteView")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<DelegatorVoteView, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut delegator_vote__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::Visible => {
+                            if delegator_vote__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("visible"));
+                            }
+                            delegator_vote__ = map.next_value::<::std::option::Option<_>>()?.map(delegator_vote_view::DelegatorVote::Visible)
+;
+                        }
+                        GeneratedField::Opaque => {
+                            if delegator_vote__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("opaque"));
+                            }
+                            delegator_vote__ = map.next_value::<::std::option::Option<_>>()?.map(delegator_vote_view::DelegatorVote::Opaque)
+;
+                        }
+                    }
+                }
+                Ok(DelegatorVoteView {
+                    delegator_vote: delegator_vote__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.transaction.v1alpha1.DelegatorVoteView", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for delegator_vote_view::Opaque {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.delegator_vote.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1alpha1.DelegatorVoteView.Opaque", len)?;
+        if let Some(v) = self.delegator_vote.as_ref() {
+            struct_ser.serialize_field("delegatorVote", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for delegator_vote_view::Opaque {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "delegator_vote",
+            "delegatorVote",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            DelegatorVote,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "delegatorVote" | "delegator_vote" => Ok(GeneratedField::DelegatorVote),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = delegator_vote_view::Opaque;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.transaction.v1alpha1.DelegatorVoteView.Opaque")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<delegator_vote_view::Opaque, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut delegator_vote__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::DelegatorVote => {
+                            if delegator_vote__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("delegatorVote"));
+                            }
+                            delegator_vote__ = map.next_value()?;
+                        }
+                    }
+                }
+                Ok(delegator_vote_view::Opaque {
+                    delegator_vote: delegator_vote__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.transaction.v1alpha1.DelegatorVoteView.Opaque", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for delegator_vote_view::Visible {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.delegator_vote.is_some() {
+            len += 1;
+        }
+        if self.note.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1alpha1.DelegatorVoteView.Visible", len)?;
+        if let Some(v) = self.delegator_vote.as_ref() {
+            struct_ser.serialize_field("delegatorVote", v)?;
+        }
+        if let Some(v) = self.note.as_ref() {
+            struct_ser.serialize_field("note", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for delegator_vote_view::Visible {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "delegator_vote",
+            "delegatorVote",
+            "note",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            DelegatorVote,
+            Note,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "delegatorVote" | "delegator_vote" => Ok(GeneratedField::DelegatorVote),
+                            "note" => Ok(GeneratedField::Note),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = delegator_vote_view::Visible;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.transaction.v1alpha1.DelegatorVoteView.Visible")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<delegator_vote_view::Visible, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut delegator_vote__ = None;
+                let mut note__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::DelegatorVote => {
+                            if delegator_vote__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("delegatorVote"));
+                            }
+                            delegator_vote__ = map.next_value()?;
+                        }
+                        GeneratedField::Note => {
+                            if note__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("note"));
+                            }
+                            note__ = map.next_value()?;
+                        }
+                    }
+                }
+                Ok(delegator_vote_view::Visible {
+                    delegator_vote: delegator_vote__,
+                    note: note__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.transaction.v1alpha1.DelegatorVoteView.Visible", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for MemoPlan {
