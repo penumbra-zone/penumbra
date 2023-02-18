@@ -58,7 +58,7 @@ impl TransactionPlan {
             let auth_path = witness_data
                 .state_commitment_proofs
                 .get(&note_commitment)
-                .context(format!("could not get proof for {:?}", note_commitment))?;
+                .context(format!("could not get proof for {note_commitment:?}"))?;
 
             synthetic_blinding_factor += spend_plan.value_blinding;
             actions.push(Action::Spend(spend_plan.spend(
@@ -93,7 +93,7 @@ impl TransactionPlan {
             let auth_path = witness_data
                 .state_commitment_proofs
                 .get(&note_commitment)
-                .context(format!("could not get proof for {:?}", note_commitment))?;
+                .context(format!("could not get proof for {note_commitment:?}"))?;
 
             actions.push(Action::SwapClaim(
                 swap_claim_plan.swap_claim(fvk, auth_path),
@@ -226,7 +226,7 @@ impl TransactionPlan {
             let auth_path = witness_data
                 .state_commitment_proofs
                 .get(&note_commitment)
-                .context(format!("could not get proof for {:?}", note_commitment))?
+                .context(format!("could not get proof for {note_commitment:?}"))?
                 .clone();
 
             synthetic_blinding_factor += spend_plan.value_blinding;
@@ -266,7 +266,7 @@ impl TransactionPlan {
             let auth_path = witness_data
                 .state_commitment_proofs
                 .get(&note_commitment)
-                .context(format!("could not get proof for {:?}", note_commitment))?
+                .context(format!("could not get proof for {note_commitment:?}"))?
                 .clone();
             let fvk_ = fvk.clone();
 
