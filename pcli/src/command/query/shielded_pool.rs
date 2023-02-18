@@ -74,7 +74,7 @@ impl ShieldedPool {
                 serde_json::to_string_pretty(&note_source)?
             }
             ShieldedPool::Nullifier { .. } => {
-                let note_source = NoteSource::decode(bytes)?;
+                let note_source = SpendInfo::decode(bytes)?;
                 serde_json::to_string_pretty(&note_source)?
             }
         };
