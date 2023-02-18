@@ -6,7 +6,10 @@ use penumbra_proto::DomainType;
 use rand_core::{CryptoRng, RngCore};
 
 use super::TransactionPlan;
-use crate::{action::Action, AuthorizationData, Transaction, TransactionBody, WitnessData};
+use crate::{
+    action::{Action, IsAction},
+    AuthorizationData, Transaction, TransactionBody, WitnessData,
+};
 
 impl TransactionPlan {
     /// Build the transaction this plan describes.
@@ -278,9 +281,17 @@ impl TransactionPlan {
         }
         // Collect the output actions.
         for action in in_progress_output_actions {
-            actions.push(Action::Output(
-                action.await.expect("can form output action"),
-            ));
+            let output = action.await.expect("can form output action");
+            assert!(output
+                .clone()
+                .proof
+                .verify(
+                    &penumbra_proof_params::OUTPUT_PROOF_VERIFICATION_KEY,
+                    output.balance_commitment(),
+                    output.body.note_payload.note_commitment
+                )
+                .is_ok());
+            actions.push(Action::Output(output));
         }
         // Collect the swap actions.
         for action in in_progress_swap_actions {
