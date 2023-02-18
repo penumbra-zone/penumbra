@@ -17,6 +17,13 @@ impl Default for NoteSource {
     }
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(try_from = "pb::SpendInfo", into = "pb::SpendInfo")]
+pub struct SpendInfo {
+    pub note_source: NoteSource,
+    pub spend_height: u64,
+}
+
 const CODE_INDEX: usize = 23;
 
 impl NoteSource {
@@ -110,4 +117,30 @@ impl std::fmt::Debug for NoteSource {
             )),
         }
     }
+}
+
+impl From<SpendInfo> for pb::SpendInfo {
+    fn from(value: SpendInfo) -> Self {
+        pb::SpendInfo {
+            note_source: Some(value.note_source.into()),
+            spend_height: value.spend_height,
+        }
+    }
+}
+
+impl TryFrom<pb::SpendInfo> for SpendInfo {
+    type Error = anyhow::Error;
+    fn try_from(value: pb::SpendInfo) -> Result<Self> {
+        Ok(Self {
+            note_source: value
+                .note_source
+                .ok_or_else(|| anyhow!("missing note source"))?
+                .try_into()?,
+            spend_height: value.spend_height,
+        })
+    }
+}
+
+impl DomainType for SpendInfo {
+    type Proto = pb::SpendInfo;
 }

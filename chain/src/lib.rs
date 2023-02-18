@@ -12,7 +12,7 @@ pub mod sync;
 pub use app_hash::{AppHash, AppHashRead, PENUMBRA_COMMITMENT_PREFIX, PENUMBRA_PROOF_SPECS};
 pub use epoch::Epoch;
 pub use known_assets::KnownAssets;
-pub use note_source::NoteSource;
+pub use note_source::{NoteSource, SpendInfo};
 pub use sync::{CompactBlock, StatePayload};
 pub use view::{StateReadExt, StateWriteExt};
 
