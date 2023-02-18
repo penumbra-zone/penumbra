@@ -16,7 +16,7 @@ deps:
   - remote: buf.build
     owner: cosmos
     repository: ibc
-    commit: 1e5365bc4b5645b8b2dc353188d68710
+    commit: d397bc4bfd094c8888a63c5b80da701f
   - remote: buf.build
     owner: cosmos
     repository: ics23

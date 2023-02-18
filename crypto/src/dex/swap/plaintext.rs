@@ -310,7 +310,7 @@ mod tests {
         let fvk = sk.full_viewing_key();
         let ivk = fvk.incoming();
         let ovk = fvk.outgoing();
-        let (dest, _dtk_d) = ivk.payment_address(0u64.into());
+        let (dest, _dtk_d) = ivk.payment_address(0u32.into());
         let trading_pair = TradingPair {
             asset_1: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
             asset_2: asset::REGISTRY.parse_denom("nala").unwrap().id(),
