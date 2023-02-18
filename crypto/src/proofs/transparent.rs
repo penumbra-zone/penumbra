@@ -5,7 +5,6 @@ use ark_ff::Zero;
 use std::convert::{TryFrom, TryInto};
 
 use decaf377::FieldExt;
-use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_proto::{
     core::transparent_proofs::v1alpha1 as transparent_proofs, DomainType, Message,
 };
@@ -19,7 +18,7 @@ use crate::{
     note,
     stake::Penalty,
     transaction::Fee,
-    Amount, Balance, Fq, Fr, Note, Nullifier, Value,
+    Amount, Balance, Fq, Fr, Nullifier, Value,
 };
 
 /// Transparent proof for claiming swapped assets.
