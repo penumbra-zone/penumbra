@@ -4,7 +4,7 @@ use super::{
 };
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_chain::{sync::StatePayload, NoteSource};
+use penumbra_chain::{sync::StatePayload, NoteSource, SpendInfo};
 use penumbra_crypto::{Address, Note, Nullifier, Rseed, Value};
 use penumbra_proto::StateWriteProto;
 use penumbra_storage::StateWrite;
@@ -101,7 +101,10 @@ pub trait NoteManager: StateWrite {
             state_key::spent_nullifier_lookup(&nullifier),
             // We don't use the value for validity checks, but writing the source
             // here lets us find out what transaction spent the nullifier.
-            source,
+            SpendInfo {
+                note_source: source,
+                spend_height: self.height().await,
+            },
         );
         // Also record an ABCI event for transaction indexing.
         self.record(event::spend(&nullifier));

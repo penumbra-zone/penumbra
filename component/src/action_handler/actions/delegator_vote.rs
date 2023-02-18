@@ -45,6 +45,12 @@ impl ActionHandler for DelegatorVote {
     }
 
     async fn check_stateful<S: StateRead>(&self, _state: Arc<S>) -> Result<()> {
+        // TODO:
+        // 1. Check that the proposal exists and is open for voting.
+        // 2. Check that the `Nullifier` has not been spent before for this proposal.
+        // 3. Check that the `value` is a delegation token and converts to the `unbonded_amount`
+        //    using the exchange rate for the validator of `value` as of the moment when the
+        //    proposal started.
         Ok(())
     }
 

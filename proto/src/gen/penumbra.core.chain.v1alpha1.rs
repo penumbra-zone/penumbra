@@ -199,6 +199,15 @@ pub struct NoteSource {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
+/// A NoteSource paired with the height at which the note was spent
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SpendInfo {
+    #[prost(message, optional, tag = "1")]
+    pub note_source: ::core::option::Option<NoteSource>,
+    #[prost(uint64, tag = "2")]
+    pub spend_height: u64,
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisAppState {
