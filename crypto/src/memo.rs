@@ -136,7 +136,7 @@ mod tests {
         let sk = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk = sk.full_viewing_key();
         let ivk = fvk.incoming();
-        let (dest, _dtk_d) = ivk.payment_address(0u64.into());
+        let (dest, _dtk_d) = ivk.payment_address(0u32.into());
 
         let esk = ka::Secret::new(&mut rng);
 
@@ -174,7 +174,7 @@ mod tests {
         let fvk = sk.full_viewing_key();
         let ivk = fvk.incoming();
         let ovk = fvk.outgoing();
-        let (dest, _dtk_d) = ivk.payment_address(0u64.into());
+        let (dest, _dtk_d) = ivk.payment_address(0u32.into());
 
         let value = Value {
             amount: 10u64.into(),

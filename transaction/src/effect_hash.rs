@@ -707,7 +707,7 @@ mod tests {
         let seed_phrase = SeedPhrase::generate(rng);
         let sk = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk = sk.full_viewing_key();
-        let (addr, _dtk) = fvk.incoming().payment_address(0u64.into());
+        let (addr, _dtk) = fvk.incoming().payment_address(0u32.into());
 
         let mut sct = tct::Tree::new();
 

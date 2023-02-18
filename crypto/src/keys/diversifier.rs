@@ -207,7 +207,7 @@ impl TryFrom<&[u8]> for AddressIndex {
 
         Ok(AddressIndex {
             account: u32::from_le_bytes(slice[0..4].try_into().expect("can form 4 byte array")),
-            randomizer: slice[5..16].try_into().expect("can form 12 byte array"),
+            randomizer: slice[4..16].try_into().expect("can form 12 byte array"),
         })
     }
 }
@@ -220,7 +220,7 @@ impl From<AddressIndex> for pb::AddressIndex {
     fn from(d: AddressIndex) -> pb::AddressIndex {
         let mut bytes = [0; DIVERSIFIER_LEN_BYTES];
         bytes[0..4].copy_from_slice(&d.account.to_le_bytes());
-        bytes[5..16].copy_from_slice(d.randomizer.as_slice());
+        bytes[4..16].copy_from_slice(d.randomizer.as_slice());
         pb::AddressIndex {
             inner: bytes.to_vec(),
         }

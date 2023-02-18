@@ -1,10 +1,8 @@
 use anyhow::Result;
 use comfy_table::{presets, Table};
 use penumbra_crypto::{
-    asset::Cache,
-    dex::swap::SwapPlaintext,
-    keys::{AddressIndex, IncomingViewingKey},
-    Address, FullViewingKey, Note, Value,
+    asset::Cache, dex::swap::SwapPlaintext, keys::IncomingViewingKey, Address, FullViewingKey,
+    Note, Value,
 };
 use penumbra_transaction::{
     action::{Swap, SwapClaim},

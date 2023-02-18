@@ -49,7 +49,7 @@ mod tests {
             let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
             let fvk_recipient = sk_recipient.full_viewing_key();
             let ivk_recipient = fvk_recipient.incoming();
-            let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
+            let (dest, _dtk_d) = ivk_recipient.payment_address(0u32.into());
 
             let value_to_send = Value {
                 amount: value_amount.into(),
@@ -87,7 +87,7 @@ mod tests {
         let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk_recipient = sk_recipient.full_viewing_key();
         let ivk_recipient = fvk_recipient.incoming();
-        let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
+        let (dest, _dtk_d) = ivk_recipient.payment_address(0u32.into());
 
         let value_to_send = Value {
             amount: value_amount.into(),
@@ -133,7 +133,7 @@ mod tests {
         let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk_recipient = sk_recipient.full_viewing_key();
         let ivk_recipient = fvk_recipient.incoming();
-        let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
+        let (dest, _dtk_d) = ivk_recipient.payment_address(0u32.into());
 
         let value_to_send = Value {
             amount: value_amount.into(),
@@ -286,7 +286,7 @@ mod tests {
             let wrong_sk_sender = SpendKey::from_seed_phrase(wrong_seed_phrase, 0);
             let wrong_fvk_sender = wrong_sk_sender.full_viewing_key();
             let wrong_ivk_sender = wrong_fvk_sender.incoming();
-            let (wrong_sender, _dtk_d) = wrong_ivk_sender.payment_address(1u64.into());
+            let (wrong_sender, _dtk_d) = wrong_ivk_sender.payment_address(1u32.into());
 
             let value_to_send = Value {
                 amount: value_amount.into(),

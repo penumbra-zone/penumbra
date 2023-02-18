@@ -11,7 +11,7 @@ use decaf377::{
 
 use super::{AddressIndex, Diversifier, DiversifierKey};
 use crate::{
-    address, fmd, ka,
+    fmd, ka,
     keys::{AuthorizationKeyVar, NullifierKeyVar, IVK_DOMAIN_SEP},
     prf, Address, Fr,
 };
@@ -138,7 +138,7 @@ mod test {
         let rng = rand::rngs::OsRng;
         let spend_key = SpendKey::from_seed_phrase(SeedPhrase::generate(rng), 0);
         let ivk = spend_key.full_viewing_key().incoming();
-        let own_address = ivk.payment_address(AddressIndex::from(0u64)).0;
+        let own_address = ivk.payment_address(AddressIndex::from(0u32)).0;
         assert!(ivk.views_address(&own_address));
     }
 
@@ -151,7 +151,7 @@ mod test {
         let other_address = SpendKey::from_seed_phrase(SeedPhrase::generate(rng), 0)
             .full_viewing_key()
             .incoming()
-            .payment_address(AddressIndex::from(0u64))
+            .payment_address(AddressIndex::from(0u32))
             .0;
 
         assert!(!ivk.views_address(&other_address));

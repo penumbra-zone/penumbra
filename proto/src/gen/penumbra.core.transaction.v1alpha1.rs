@@ -279,6 +279,43 @@ pub mod output_view {
         Opaque(Opaque),
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AddressView {
+    #[prost(oneof = "address_view::AddressView", tags = "1, 2")]
+    pub address_view: ::core::option::Option<address_view::AddressView>,
+}
+/// Nested message and enum types in `AddressView`.
+pub mod address_view {
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Visible {
+        #[prost(message, optional, tag = "1")]
+        pub address: ::core::option::Option<
+            super::super::super::crypto::v1alpha1::Address,
+        >,
+        #[prost(message, optional, tag = "2")]
+        pub index: ::core::option::Option<
+            super::super::super::crypto::v1alpha1::AddressIndex,
+        >,
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Opaque {
+        #[prost(message, optional, tag = "1")]
+        pub output: ::core::option::Option<
+            super::super::super::crypto::v1alpha1::Address,
+        >,
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum AddressView {
+        #[prost(message, tag = "1")]
+        Visible(Visible),
+        #[prost(message, tag = "2")]
+        Opaque(Opaque),
+    }
+}
 /// Spends a shielded note.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
