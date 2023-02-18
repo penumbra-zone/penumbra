@@ -26,11 +26,16 @@ impl<Tree: Height> Proof<Tree> {
     ///
     /// Returns [`VerifyError`] if the proof is invalid.
     pub fn verify(&self, root: Hash) -> Result<(), VerifyError> {
-        if root == Tree::Height::root(&self.auth_path, self.position, Hash::of(self.leaf)) {
+        if root == self.root() {
             Ok(())
         } else {
             Err(VerifyError { root })
         }
+    }
+
+    /// Get the root of the tree from which the proof was generated.
+    pub fn root(&self) -> Hash {
+        Tree::Height::root(&self.auth_path, self.position, Hash::of(self.leaf))
     }
 
     /// Get the index of the item this proof claims to witness.

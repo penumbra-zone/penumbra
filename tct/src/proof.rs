@@ -78,6 +78,11 @@ impl Proof {
         self.0.index().into()
     }
 
+    /// Get the root of the tree from which the proof was generated.
+    pub fn root(&self) -> Root {
+        Root(self.0.root())
+    }
+
     /// Get the authentication path for this proof, order from root to leaf.
     pub fn auth_path(&self) -> [&[Hash; 3]; 24] {
         use crate::internal::path::{Leaf, Node};
