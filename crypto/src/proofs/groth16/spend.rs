@@ -183,7 +183,7 @@ impl ParameterSetup for SpendCircuit {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SpendProof(Proof<Bls12_377>);
 
 impl SpendProof {

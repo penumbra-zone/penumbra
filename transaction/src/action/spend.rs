@@ -4,7 +4,7 @@ use anyhow::{Context, Error};
 use bytes::Bytes;
 use penumbra_crypto::{
     balance,
-    proofs::transparent::SpendProof,
+    proofs::groth16::SpendProof,
     rdsa::{Signature, SpendAuth, VerificationKey},
     Nullifier,
 };
@@ -47,11 +47,10 @@ impl DomainType for Spend {
 
 impl From<Spend> for transaction::Spend {
     fn from(msg: Spend) -> Self {
-        let proof: Vec<u8> = msg.proof.into();
         transaction::Spend {
             body: Some(msg.body.into()),
             auth_sig: Some(msg.auth_sig.into()),
-            proof: proof.into(),
+            proof: Some(msg.proof.into()),
         }
     }
 }
@@ -70,8 +69,9 @@ impl TryFrom<transaction::Spend> for Spend {
             .ok_or_else(|| anyhow::anyhow!("missing auth sig"))?
             .try_into()
             .context("malformed auth sig")?;
-
-        let proof = (proto.proof[..])
+        let proof = proto
+            .proof
+            .ok_or_else(|| anyhow::anyhow!("missing proof"))?
             .try_into()
             .context("malformed spend proof")?;
 

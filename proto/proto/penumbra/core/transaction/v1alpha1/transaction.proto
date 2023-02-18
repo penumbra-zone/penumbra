@@ -180,7 +180,7 @@ message Spend {
   // The authorizing signature for the spend.
   crypto.v1alpha1.SpendAuthSignature auth_sig = 2;
   // The proof that the spend is well-formed is authorizing data.
-  bytes proof = 3;
+  crypto.v1alpha1.ZKSpendProof proof = 3;
 }
 
 // The body of a spend description, containing only the effecting data

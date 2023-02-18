@@ -1,12 +1,13 @@
 use ark_ff::UniformRand;
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_crypto::{
-    proofs::transparent::SpendProof, Address, FieldExt, Fr, FullViewingKey, Note, Rseed, Value,
-    STAKING_TOKEN_ASSET_ID,
+    proofs::groth16::SpendProof, Address, FieldExt, Fr, FullViewingKey, Note, Nullifier, Rseed,
+    Value, STAKING_TOKEN_ASSET_ID,
 };
+use penumbra_proof_params::SPEND_PROOF_PROVING_KEY;
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
 use penumbra_tct as tct;
-use rand_core::{CryptoRng, RngCore};
+use rand_core::{CryptoRng, OsRng, RngCore};
 use serde::{Deserialize, Serialize};
 
 use crate::action::{spend, Spend};
@@ -71,9 +72,19 @@ impl SpendPlan {
     pub fn spend_body(&self, fvk: &FullViewingKey) -> spend::Body {
         spend::Body {
             balance_commitment: self.balance().commit(self.value_blinding),
-            nullifier: fvk.derive_nullifier(self.position, &self.note.commit()),
-            rk: fvk.spend_verification_key().randomize(&self.randomizer),
+            nullifier: self.nullifier(fvk),
+            rk: self.rk(fvk),
         }
+    }
+
+    /// Construct the randomized verification key associated with this [`SpendPlan`].
+    pub fn rk(&self, fvk: &FullViewingKey) -> decaf377_rdsa::VerificationKey<SpendAuth> {
+        fvk.spend_verification_key().randomize(&self.randomizer)
+    }
+
+    /// Construct the [`Nullifier`] associated with this [`SpendPlan`].
+    pub fn nullifier(&self, fvk: &FullViewingKey) -> Nullifier {
+        fvk.derive_nullifier(self.position, &self.note.commit())
     }
 
     /// Construct the [`SpendProof`] required by the [`spend::Body`] described by this [`SpendPlan`].
@@ -82,14 +93,21 @@ impl SpendPlan {
         fvk: &FullViewingKey,
         state_commitment_proof: tct::Proof,
     ) -> SpendProof {
-        SpendProof {
-            state_commitment_proof,
-            note: self.note.clone(),
-            v_blinding: self.value_blinding,
-            spend_auth_randomizer: self.randomizer,
-            ak: *fvk.spend_verification_key(),
-            nk: *fvk.nullifier_key(),
-        }
+        SpendProof::prove(
+            &mut OsRng,
+            &SPEND_PROOF_PROVING_KEY,
+            state_commitment_proof.clone(),
+            self.note.clone(),
+            self.value_blinding,
+            self.randomizer,
+            *fvk.spend_verification_key(),
+            *fvk.nullifier_key(),
+            state_commitment_proof.root(),
+            self.balance().commit(self.value_blinding),
+            self.nullifier(fvk),
+            self.rk(fvk),
+        )
+        .expect("can generate ZKSpendProof")
     }
 
     pub fn balance(&self) -> penumbra_crypto::Balance {

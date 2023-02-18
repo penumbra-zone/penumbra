@@ -2307,7 +2307,7 @@ impl serde::Serialize for Spend {
         if self.auth_sig.is_some() {
             len += 1;
         }
-        if !self.proof.is_empty() {
+        if self.proof.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1alpha1.Spend", len)?;
@@ -2317,8 +2317,8 @@ impl serde::Serialize for Spend {
         if let Some(v) = self.auth_sig.as_ref() {
             struct_ser.serialize_field("authSig", v)?;
         }
-        if !self.proof.is_empty() {
-            struct_ser.serialize_field("proof", pbjson::private::base64::encode(&self.proof).as_str())?;
+        if let Some(v) = self.proof.as_ref() {
+            struct_ser.serialize_field("proof", v)?;
         }
         struct_ser.end()
     }
@@ -2405,16 +2405,14 @@ impl<'de> serde::Deserialize<'de> for Spend {
                             if proof__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proof"));
                             }
-                            proof__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            proof__ = map.next_value()?;
                         }
                     }
                 }
                 Ok(Spend {
                     body: body__,
                     auth_sig: auth_sig__,
-                    proof: proof__.unwrap_or_default(),
+                    proof: proof__,
                 })
             }
         }

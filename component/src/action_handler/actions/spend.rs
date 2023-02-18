@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use penumbra_proof_params::SPEND_PROOF_VERIFICATION_KEY;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::Spend, Transaction};
 use tracing::instrument;
@@ -30,6 +31,7 @@ impl ActionHandler for Spend {
         spend
             .proof
             .verify(
+                &SPEND_PROOF_VERIFICATION_KEY,
                 anchor,
                 spend.body.balance_commitment,
                 spend.body.nullifier,
