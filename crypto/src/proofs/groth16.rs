@@ -173,7 +173,7 @@ mod tests {
         #![proptest_config(ProptestConfig::with_cases(2))]
     #[test]
     /// Check that the `SpendProof` verification succeeds.
-    fn spend_proof_verification_success(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 2..200u64, v_blinding in fr_strategy()) {
+    fn spend_proof_verification_success(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 2..2000000000u64, num_commitments in 1..2000u64, v_blinding in fr_strategy()) {
         let (pk, vk) = SpendCircuit::generate_test_parameters();
         let mut rng = OsRng;
 
@@ -194,12 +194,20 @@ mod tests {
         let nk = *sk_sender.nullifier_key();
         let ak: VerificationKey<SpendAuth> = sk_sender.spend_auth_key().into();
         let mut sct = tct::Tree::new();
+
+        // Next, we simulate the case where the SCT is not empty by adding `num_commitments`
+        // unrelated items in the SCT.
+        for _ in 0..num_commitments {
+            let random_note_commitment = Note::generate(&mut rng, &sender, value_to_send).commit();
+            sct.insert(tct::Witness::Keep, random_note_commitment).unwrap();
+        }
+
         sct.insert(tct::Witness::Keep, note_commitment).unwrap();
         let anchor = sct.root();
         let state_commitment_proof = sct.witness(note_commitment).unwrap();
         let balance_commitment = value_to_send.commit(v_blinding);
         let rk: VerificationKey<SpendAuth> = rsk.into();
-        let nf = nk.derive_nullifier(0.into(), &note_commitment);
+        let nf = nk.derive_nullifier(state_commitment_proof.position(), &note_commitment);
 
         let proof = SpendProof::prove(
             &mut rng,
