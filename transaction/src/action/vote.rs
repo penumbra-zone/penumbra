@@ -11,14 +11,12 @@ use penumbra_crypto::{
     proofs::transparent::DelegatorVoteProof, stake::IdentityKey, Amount, GovernanceKey, Nullifier,
     Value, VotingReceiptToken,
 };
-use penumbra_proto::{
-    core::{crypto::v1alpha1::BalanceCommitment, governance::v1alpha1 as pb},
-    DomainType,
-};
-use penumbra_tct as tct;
+use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
-use crate::{Action, ActionView, IsAction, TransactionPerspective};
+use crate::{
+    view::action_view::DelegatorVoteView, Action, ActionView, IsAction, TransactionPerspective,
+};
 
 /// A vote on a proposal.
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Eq, PartialEq)]
@@ -226,8 +224,18 @@ impl IsAction for DelegatorVote {
         .commit(Fr::zero())
     }
 
-    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
-        todo!()
+    fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {
+        let delegator_vote_view = match txp.spend_nullifiers.get(&self.body.nullifier) {
+            Some(note) => DelegatorVoteView::Visible {
+                delegator_vote: self.to_owned(),
+                note: note.to_owned(),
+            },
+            None => DelegatorVoteView::Opaque {
+                delegator_vote: self.to_owned(),
+            },
+        };
+
+        ActionView::DelegatorVote(delegator_vote_view)
     }
 }
 
