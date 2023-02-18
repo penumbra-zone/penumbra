@@ -277,7 +277,19 @@ impl TransactionPlan {
         let mut actions = Vec::new();
         // Collect the spend actions.
         for action in in_progress_spend_actions {
-            actions.push(Action::Spend(action.await.expect("can form spend action")));
+            let spend = action.await.expect("can form spend action");
+            assert!(spend
+                .clone()
+                .proof
+                .verify(
+                    &penumbra_proof_params::SPEND_PROOF_VERIFICATION_KEY,
+                    witness_data.anchor,
+                    spend.body.balance_commitment,
+                    spend.body.nullifier,
+                    spend.body.rk,
+                )
+                .is_ok());
+            actions.push(Action::Spend(spend));
         }
         // Collect the output actions.
         for action in in_progress_output_actions {
