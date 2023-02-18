@@ -1462,7 +1462,7 @@ dependencies = [
 [[package]]
 name = "decaf377"
 version = "0.1.0"
-source = "git+https://github.com/penumbra-zone/decaf377#7a34303ef7ed527c91a9f496e2d10f4882f4c991"
+source = "git+https://github.com/penumbra-zone/decaf377#6c4df32ef69262083247562561545b179941da62"
 dependencies = [
  "anyhow",
  "ark-bls12-377",
@@ -3371,6 +3371,7 @@ dependencies = [
  "penumbra-component",
  "penumbra-crypto",
  "penumbra-custody",
+ "penumbra-proof-params",
  "penumbra-proto",
  "penumbra-tct",
  "penumbra-transaction",

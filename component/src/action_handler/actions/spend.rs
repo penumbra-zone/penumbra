@@ -86,6 +86,12 @@ mod tests {
 
         // Record that note in an SCT, where we can generate an auth path.
         let mut sct = tct::Tree::new();
+        // Assume there's a bunch of stuff already in the SCT.
+        for _ in 0..5 {
+            let random_note = Note::generate(&mut OsRng, &*test_keys::ADDRESS_0, value);
+            sct.insert(tct::Witness::Keep, random_note.commit())
+                .unwrap();
+        }
         sct.insert(tct::Witness::Keep, note.commit()).unwrap();
         // Do we want to seal the SCT block here?
         let auth_path = sct.witness(note.commit()).unwrap();
@@ -128,6 +134,7 @@ mod tests {
 
         let context = Arc::new(tx.clone());
 
+        tx.check_stateless(context.clone()).await;
         // On the verifier side, perform stateless verification.
         for action in tx.transaction_body().actions {
             let result = action.check_stateless(context.clone()).await;
