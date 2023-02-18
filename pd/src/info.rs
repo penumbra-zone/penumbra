@@ -77,7 +77,7 @@ impl Info {
                 let state = self.storage.latest_snapshot();
                 let height = state.version();
 
-                let (value, proof) = state.get_with_proof_to_apphash_tm(key).await?;
+                let (value, proof_ops) = state.get_with_proof_to_apphash_tm(key).await?;
 
                 Ok(abci::response::Query {
                     code: 0,
