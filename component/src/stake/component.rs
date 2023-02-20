@@ -23,10 +23,11 @@ use penumbra_proto::{
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::action::{Delegate, Undelegate};
 use sha2::{Digest, Sha256};
+use tendermint::validator::Update;
 use tendermint::{
     abci::{
         self,
-        types::{Evidence, LastCommitInfo, ValidatorUpdate},
+        types::{Evidence, LastCommitInfo},
     },
     block, PublicKey,
 };
@@ -69,7 +70,7 @@ pub trait ValidatorUpdates: StateRead {
     /// Returns a list of validator updates to send to Tendermint.
     ///
     /// Set during `end_block`.
-    fn tendermint_validator_updates(&self) -> Option<Vec<ValidatorUpdate>> {
+    fn tendermint_validator_updates(&self) -> Option<Vec<Update>> {
         self.object_get(state_key::internal::stub_tendermint_validator_updates())
             .unwrap_or(None)
     }
@@ -78,7 +79,7 @@ pub trait ValidatorUpdates: StateRead {
 impl<T: StateRead + ?Sized> ValidatorUpdates for T {}
 
 trait PutValidatorUpdates: StateWrite {
-    fn put_tendermint_validator_updates(&mut self, updates: Vec<ValidatorUpdate>) {
+    fn put_tendermint_validator_updates(&mut self, updates: Vec<Update>) {
         tracing::debug!(?updates);
         self.object_put(
             state_key::internal::stub_tendermint_validator_updates(),
@@ -596,7 +597,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
         // Save the validator updates to send to Tendermint.
         let tendermint_validator_updates = voting_power_by_consensus_key
             .iter()
-            .map(|(ck, power)| ValidatorUpdate {
+            .map(|(ck, power)| Update {
                 pub_key: *ck,
                 power: (*power).try_into().unwrap(),
             })

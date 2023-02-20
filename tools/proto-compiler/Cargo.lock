@@ -378,9 +378,8 @@ dependencies = [
 
 [[package]]
 name = "ibc-proto"
-version = "0.22.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "874af3f9f3fe1a3458e54b1d4ebb2ab1fadc22b02470eb2d623a59f3c7d907c0"
+version = "0.26.0"
+source = "git+https://github.com/erwanor/ibc-proto-rs?branch=release/v0.26.0#9d15eb24904fc28fe6b48ae84e2bee94680dc59a"
 dependencies = [
  "base64",
  "bytes",
@@ -394,9 +393,9 @@ dependencies = [
 
 [[package]]
 name = "ics23"
-version = "0.8.1"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "149f3093d710c18c749ba68de3bc8131927aca00410ab90f3368e0524d01fe90"
+checksum = "ca44b684ce1859cff746ff46f5765ab72e12e3c06f76a8356db8f9a2ecf43f17"
 dependencies = [
  "anyhow",
  "bytes",
@@ -928,9 +927,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-proto"
-version = "0.26.0"
+version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "974d6330a19dfa6720e9f663fc59101d207a817db3f9c730d3f31caaa565b574"
+checksum = "8c2e8dc89de3ab71cf63adcc71eb76200fae5a9ba7afd659fee54e0810beac8f"
 dependencies = [
  "bytes",
  "flex-error",

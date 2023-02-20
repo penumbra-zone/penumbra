@@ -7,10 +7,12 @@ pub mod channel_open_init {
             let channel_id = self.next_channel_id().await.unwrap();
             let new_channel = ChannelEnd {
                 state: ChannelState::Init,
-                ordering: msg.chan_end_on_a.ordering,
-                remote: msg.chan_end_on_a.remote.clone(),
-                connection_hops: msg.chan_end_on_a.connection_hops.clone(),
-                version: msg.chan_end_on_a.version.clone(),
+                ordering: msg.ordering,
+                // TODO(erwan): following tendermint-29, figure out where the channel id lives, and
+                // replace this with a specific counterparty instantiation.
+                remote: Counterparty::default(),
+                connection_hops: msg.connection_hops_on_a.clone(),
+                version: msg.version_proposal.clone(),
             };
 
             self.put_channel(&channel_id, &msg.port_id_on_a, new_channel.clone());
@@ -38,10 +40,10 @@ pub mod channel_open_try {
             let channel_id = self.next_channel_id().await.unwrap();
             let new_channel = ChannelEnd {
                 state: ChannelState::TryOpen,
-                ordering: msg.chan_end_on_b.ordering,
-                remote: msg.chan_end_on_b.remote.clone(),
-                connection_hops: msg.chan_end_on_b.connection_hops.clone(),
-                version: msg.chan_end_on_b.version.clone(),
+                ordering: msg.ordering,
+                remote: Counterparty::new(msg.port_id_on_a, Some(msg.chan_id_on_a)),
+                connection_hops: msg.connection_hops_on_b.clone(),
+                version: msg.version_supported_on_a,
             };
 
             self.put_channel(&channel_id, &msg.port_id_on_b, new_channel.clone());
@@ -173,8 +175,8 @@ pub mod recv_packet {
         async fn execute(&mut self, msg: &MsgRecvPacket) {
             let channel = self
                 .get_channel(
-                    &msg.packet.destination_channel,
-                    &msg.packet.destination_port,
+                    &msg.packet.chan_on_b,
+                    &msg.packet.port_on_b,
                 )
                 .await
                 .unwrap()
@@ -183,16 +185,16 @@ pub mod recv_packet {
             if channel.ordering == ChannelOrder::Ordered {
                 let mut next_sequence_recv = self
                     .get_recv_sequence(
-                        &msg.packet.destination_channel,
-                        &msg.packet.destination_port,
+                        &msg.packet.chan_on_b,
+                        &msg.packet.port_on_b,
                     )
                     .await
                     .unwrap();
 
                 next_sequence_recv += 1;
                 self.put_recv_sequence(
-                    &msg.packet.destination_channel,
-                    &msg.packet.destination_port,
+                    &msg.packet.chan_on_b,
+                    &msg.packet.port_on_b,
                     next_sequence_recv,
                 );
             } else {
@@ -216,28 +218,28 @@ pub mod acknowledge_packet {
     pub trait AcknowledgePacketExecute: StateWriteExt {
         async fn execute(&mut self, msg: &MsgAcknowledgement) {
             let channel = self
-                .get_channel(&msg.packet.source_channel, &msg.packet.source_port)
+                .get_channel(&msg.packet.chan_on_a, &msg.packet.port_on_a)
                 .await
                 .unwrap()
                 .unwrap();
 
             if channel.ordering == ChannelOrder::Ordered {
                 let mut next_sequence_ack = self
-                    .get_ack_sequence(&msg.packet.source_channel, &msg.packet.source_port)
+                    .get_ack_sequence(&msg.packet.chan_on_a, &msg.packet.port_on_a)
                     .await
                     .unwrap();
                 next_sequence_ack += 1;
                 self.put_ack_sequence(
-                    &msg.packet.source_channel,
-                    &msg.packet.source_port,
+                    &msg.packet.chan_on_a,
+                    &msg.packet.port_on_a,
                     next_sequence_ack,
                 );
             }
 
             // delete our commitment so we can't ack it again
             self.delete_packet_commitment(
-                &msg.packet.source_channel,
-                &msg.packet.source_port,
+                &msg.packet.chan_on_a,
+                &msg.packet.port_on_a,
                 msg.packet.sequence.into(),
             );
 
@@ -255,14 +257,14 @@ pub mod timeout {
     pub trait TimeoutExecute: StateWriteExt {
         async fn execute(&mut self, msg: &MsgTimeout) {
             let mut channel = self
-                .get_channel(&msg.packet.source_channel, &msg.packet.source_port)
+                .get_channel(&msg.packet.chan_on_a, &msg.packet.port_on_a)
                 .await
                 .unwrap()
                 .unwrap();
 
             self.delete_packet_commitment(
-                &msg.packet.source_channel,
-                &msg.packet.source_port,
+                &msg.packet.chan_on_a,
+                &msg.packet.port_on_a,
                 msg.packet.sequence.into(),
             );
 
@@ -270,8 +272,8 @@ pub mod timeout {
                 // if the channel is ordered and we get a timeout packet, close the channel
                 channel.set_state(ChannelState::Closed);
                 self.put_channel(
-                    &msg.packet.source_channel,
-                    &msg.packet.source_port,
+                    &msg.packet.chan_on_a,
+                    &msg.packet.port_on_a,
                     channel.clone(),
                 );
             }

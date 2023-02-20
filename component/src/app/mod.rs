@@ -6,7 +6,8 @@ use penumbra_chain::{genesis, AppHash, StateWriteExt as _};
 use penumbra_proto::{DomainType, StateWriteProto};
 use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, Storage};
 use penumbra_transaction::Transaction;
-use tendermint::abci::{self, types::ValidatorUpdate};
+use tendermint::abci;
+use tendermint::validator::Update;
 use tracing::instrument;
 
 use crate::action_handler::ActionHandler;
@@ -71,7 +72,7 @@ impl App {
     #[instrument(skip(self, begin_block))]
     pub async fn begin_block(
         &mut self,
-        begin_block: &abci::request::BeginBlock,
+        begin_block: &abci::request::BeginBlock
     ) -> Vec<abci::Event> {
         let mut state_tx = self
             .state
@@ -172,7 +173,7 @@ impl App {
     }
 
     // TODO: should this just be returned by `commit`? both are called during every `EndBlock`
-    pub fn tendermint_validator_updates(&self) -> Vec<ValidatorUpdate> {
+    pub fn tendermint_validator_updates(&self) -> Vec<Update> {
         self.state
             .tendermint_validator_updates()
             .expect("tendermint validator updates should be set when called in end_block")

@@ -192,7 +192,6 @@ impl DomainType for Height {
     type Proto = RawHeight;
 }
 
-// TODO(erwan): create ticket to switch to a trait object based approach
 impl DomainType for ics07_tendermint::client_state::ClientState {
     type Proto = Any;
 }

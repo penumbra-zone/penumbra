@@ -31,16 +31,16 @@ use sha2::{Digest, Sha256};
 // + sha256(data)
 pub fn commit_packet(packet: &Packet) -> Vec<u8> {
     let mut commit = vec![];
-    commit.extend_from_slice(&packet.timeout_timestamp.nanoseconds().to_be_bytes());
+    commit.extend_from_slice(&packet.timeout_timestamp_on_b.nanoseconds().to_be_bytes());
     commit.extend_from_slice(
         &packet
-            .timeout_height
+            .timeout_height_on_b
             .commitment_revision_number()
             .to_be_bytes(),
     );
     commit.extend_from_slice(
         &packet
-            .timeout_height
+            .timeout_height_on_b
             .commitment_revision_height()
             .to_be_bytes(),
     );
@@ -138,14 +138,14 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
         let (trusted_client_state, trusted_consensus_state) = self
             .get_trusted_client_and_consensus_state(
                 connection.client_id(),
-                &msg.proofs.height(),
+                &msg.proof_height_on_a,
                 connection,
             )
             .await?;
 
         let commitment_path = CommitmentsPath {
-            port_id: msg.packet.destination_port.clone(),
-            channel_id: msg.packet.destination_channel.clone(),
+            port_id: msg.packet.port_on_b,
+            channel_id: msg.packet.chan_on_b,
             sequence: msg.packet.sequence,
         };
 
@@ -154,7 +154,7 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
         verify_merkle_proof(
             &trusted_client_state.proof_specs,
             connection.counterparty().prefix(),
-            msg.proofs.object_proof(),
+            &msg.proof_commitment_on_a,
             trusted_consensus_state.root(),
             commitment_path,
             commitment_bytes,
@@ -171,21 +171,21 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
         let (trusted_client_state, trusted_consensus_state) = self
             .get_trusted_client_and_consensus_state(
                 connection.client_id(),
-                &msg.proofs.height(),
+                &msg.proof_height_on_b,
                 connection,
             )
             .await?;
 
         let ack_path = AcksPath {
-            port_id: msg.packet.destination_port.clone(),
-            channel_id: msg.packet.destination_channel.clone(),
+            port_id: msg.packet.port_on_b.clone(),
+            channel_id: msg.packet.chan_on_b.clone(),
             sequence: msg.packet.sequence,
         };
 
         verify_merkle_proof(
             &trusted_client_state.proof_specs,
             connection.counterparty().prefix(),
-            msg.proofs.object_proof(),
+            &msg.proof_acked_on_b,
             trusted_consensus_state.root(),
             ack_path,
             msg.acknowledgement.clone().into(),
@@ -202,25 +202,25 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
         let (trusted_client_state, trusted_consensus_state) = self
             .get_trusted_client_and_consensus_state(
                 connection.client_id(),
-                &msg.proofs.height(),
+                &msg.proof_height_on_b,
                 connection,
             )
             .await?;
 
         let mut seq_bytes = Vec::new();
-        u64::from(msg.next_sequence_recv)
+        u64::from(msg.next_seq_recv_on_b)
             .encode(&mut seq_bytes)
             .expect("buffer size too small");
 
         let seq_path = SeqRecvsPath(
-            msg.packet.destination_port.clone(),
-            msg.packet.destination_channel.clone(),
+            msg.packet.port_on_b.clone(),
+            msg.packet.chan_on_b.clone(),
         );
 
         verify_merkle_proof(
             &trusted_client_state.proof_specs,
             connection.counterparty().prefix(),
-            msg.proofs.object_proof(),
+            &msg.proof_unreceived_on_b,
             trusted_consensus_state.root(),
             seq_path,
             seq_bytes,
@@ -237,21 +237,21 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
         let (trusted_client_state, trusted_consensus_state) = self
             .get_trusted_client_and_consensus_state(
                 connection.client_id(),
-                &msg.proofs.height(),
+                &msg.proof_height_on_b,
                 connection,
             )
             .await?;
 
         let receipt_path = ReceiptsPath {
-            port_id: msg.packet.destination_port.clone(),
-            channel_id: msg.packet.destination_channel.clone(),
+            port_id: msg.packet.port_on_b.clone(),
+            channel_id: msg.packet.chan_on_b.clone(),
             sequence: msg.packet.sequence,
         };
 
         verify_merkle_absence_proof(
             &trusted_client_state.proof_specs,
             connection.counterparty().prefix(),
-            msg.proofs.object_proof(),
+            &msg.proof_unreceived_on_b,
             trusted_consensus_state.root(),
             receipt_path,
         )?;

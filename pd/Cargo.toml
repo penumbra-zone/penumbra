@@ -27,7 +27,7 @@ penumbra-wallet = { path = "../wallet" }
 # Penumbra dependencies
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 tower-abci = "0.2.0"
-jmt = "0.2.0"
+jmt = { git = "https://github.com/penumbra-zone/jmt.git", branch = "tendermint-29" }
 
 
 # External dependencies
@@ -36,13 +36,13 @@ tendermint-proto = "0.29.0"
 tendermint = "0.29.0"
 tendermint-light-client-verifier = "0.29.0"
 ibc = { git = "https://github.com/erwanor/ibc-rs", branch = "tendermint-29" }
-ibc-proto = { git = "https://github.com/erwanor/ibc-proto-rs", branch = "release/v0.26.0" }
+ibc-proto = { git = "https://github.com/erwanor/ibc-proto-rs", branch = "tendermint-29" }
 prost = "0.11"
 toml = "0.5"
 # We don't need this crate at all, but its upstream published a breaking change as
 # 0.7.1 (also prost-related), and depending on an exact version here will exclude
 # the bad update until it's yanked.
-ics23 = "=0.8.1"
+ics23 = "0.9.0"
 
 ark-ff = "0.3"
 async-stream = "0.2"

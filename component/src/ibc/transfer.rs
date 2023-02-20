@@ -108,13 +108,13 @@ impl<T: StateWrite + ?Sized> Ics20TransferWriteExt for T {}
 #[async_trait]
 impl AppHandlerCheck for Ics20Transfer {
     async fn chan_open_init_check<S: StateRead>(_state: S, msg: &MsgChannelOpenInit) -> Result<()> {
-        if msg.chan_end_on_a.ordering != ChannelOrder::Unordered {
+        if msg.ordering != ChannelOrder::Unordered {
             return Err(anyhow::anyhow!(
                 "channel order must be unordered for Ics20 transfer"
             ));
         }
 
-        if msg.chan_end_on_a.version != Version::ics20() {
+        if msg.version_proposal != Version::ics20() {
             return Err(anyhow::anyhow!(
                 "channel version must be ics20 for Ics20 transfer"
             ));
@@ -124,13 +124,13 @@ impl AppHandlerCheck for Ics20Transfer {
     }
 
     async fn chan_open_try_check<S: StateRead>(_state: S, msg: &MsgChannelOpenTry) -> Result<()> {
-        if msg.chan_end_on_b.ordering != ChannelOrder::Unordered {
+        if msg.ordering != ChannelOrder::Unordered {
             return Err(anyhow::anyhow!(
                 "channel order must be unordered for Ics20 transfer"
             ));
         }
 
-        if msg.version_on_a != Version::ics20() {
+        if msg.version_supported_on_a != Version::ics20() {
             return Err(anyhow::anyhow!(
                 "counterparty version must be ics20-1 for Ics20 transfer"
             ));
@@ -179,11 +179,11 @@ impl AppHandlerCheck for Ics20Transfer {
         let denom: asset::Denom = packet_data.denom.as_str().try_into()?;
 
         // 2. check if we are the source chain for the denom.
-        if is_source(&msg.packet.source_port, &msg.packet.source_channel, &denom) {
+        if is_source(&msg.packet.port_on_a, &msg.packet.chan_on_a, &denom) {
             // check if we have enough balance to unescrow tokens to receiver
             let value_balance: Amount = state
                 .get(&state_key::ics20_value_balance(
-                    &msg.packet.source_channel,
+                    &msg.packet.chan_on_a,
                     &denom.id(),
                 ))
                 .await?
@@ -204,11 +204,11 @@ impl AppHandlerCheck for Ics20Transfer {
         let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
         let denom: asset::Denom = packet_data.denom.as_str().try_into()?;
 
-        if is_source(&msg.packet.source_port, &msg.packet.source_channel, &denom) {
+        if is_source(&msg.packet.port_on_a, &msg.packet.chan_on_a, &denom) {
             // check if we have enough balance to refund tokens to sender
             let value_balance: Amount = state
                 .get(&state_key::ics20_value_balance(
-                    &msg.packet.source_channel,
+                    &msg.packet.chan_on_a,
                     &denom.id(),
                 ))
                 .await?
