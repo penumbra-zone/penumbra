@@ -99,7 +99,7 @@ impl tower_service::Service<MempoolRequest> for Mempool {
                         "code" => "1"
                     );
                     Ok(MempoolResponse::CheckTx(CheckTxRsp {
-                        code: 1,
+                        code: 1.into(),
                         // Use the alternate format specifier to include the chain of error causes.
                         log: format!("{:#}", e),
                         ..Default::default()

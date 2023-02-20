@@ -121,7 +121,7 @@ impl Worker {
         Ok(abci::response::InitChain {
             consensus_params: Some(init_chain.consensus_params),
             validators,
-            app_hash: app_hash.into(),
+            app_hash: app_hash.0.to_vec().try_into()?,
         })
     }
 
@@ -155,7 +155,7 @@ impl Worker {
             Err(e) => {
                 tracing::info!(?e, "deliver_tx failed");
                 abci::response::DeliverTx {
-                    code: 1,
+                    code: 1.into(),
                     // Use the alternate format specifier to include the chain of error causes.
                     log: format!("{:#}", e),
                     ..Default::default()
