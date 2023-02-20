@@ -47,7 +47,7 @@ pub mod connection_open_try {
                 msg.delay_period,
             );
             new_conn.set_version(
-                pick_version(SUPPORTED_VERSIONS.to_vec(), msg.versions_on_a.clone()).unwrap(),
+                pick_version(&SUPPORTED_VERSIONS.to_vec(), &msg.versions_on_a.clone()).unwrap(),
             );
 
             let new_connection_id =

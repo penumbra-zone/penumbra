@@ -18,6 +18,8 @@ pub mod connection_open_init {
 }
 
 pub mod connection_open_confirm {
+    use ibc::core::ics24_host::path::ConnectionPath;
+
     use crate::ibc::component::client::StateReadExt as _;
 
     use super::super::*;
@@ -73,10 +75,12 @@ pub mod connection_open_confirm {
                 connection.counterparty().prefix(),
                 &msg.proof_conn_end_on_a,
                 trusted_consensus_state.root(),
-                connection
-                    .counterparty()
-                    .connection_id()
-                    .ok_or_else(|| anyhow::anyhow!("invalid counterparty"))?,
+                &ConnectionPath::new(
+                    connection
+                        .counterparty()
+                        .connection_id()
+                        .ok_or_else(|| anyhow::anyhow!("invalid counterparty"))?,
+                ),
                 &expected_conn,
             )?;
 
@@ -110,6 +114,8 @@ pub mod connection_open_confirm {
 }
 
 pub mod connection_open_ack {
+    use ibc::core::ics24_host::path::{ClientConsensusStatePath, ClientStatePath, ConnectionPath};
+
     use crate::ibc::component::client::StateReadExt as _;
 
     use super::super::*;
@@ -181,7 +187,7 @@ pub mod connection_open_ack {
                     connection.counterparty().prefix(),
                     &msg.proof_conn_end_on_b,
                     trusted_consensus_state.root(),
-                    &msg.conn_id_on_b,
+                    &ConnectionPath::new(&msg.conn_id_on_b),
                     &expected_conn,
                 )
                 .map_err(|e| anyhow::anyhow!("couldn't verify connection state: {}", e))?;
@@ -194,7 +200,7 @@ pub mod connection_open_ack {
                     connection.counterparty().prefix(),
                     &msg.proof_client_state_of_a_on_b,
                     trusted_consensus_state.root(),
-                    connection.counterparty().client_id(),
+                    &ClientStatePath::new(connection.counterparty().client_id()),
                     msg.client_state_of_a_on_b.clone(),
                 )
                 .map_err(|e| anyhow::anyhow!("couldn't verify client state: {}", e))?;
@@ -211,8 +217,10 @@ pub mod connection_open_ack {
                     connection.counterparty().prefix(),
                     &msg.proof_consensus_state_of_a_on_b,
                     trusted_consensus_state.root(),
-                    connection.counterparty().client_id(),
-                    msg.consensus_height_of_a_on_b,
+                    &ClientConsensusStatePath::new(
+                        &connection.counterparty().client_id(),
+                        &msg.consensus_height_of_a_on_b,
+                    ),
                     &expected_consensus,
                 )
                 .map_err(|e| anyhow::anyhow!("couldn't verify client consensus state: {}", e))?;
@@ -284,6 +292,8 @@ pub mod connection_open_ack {
 }
 
 pub mod connection_open_try {
+    use ibc::core::ics24_host::path::{ClientConsensusStatePath, ClientStatePath, ConnectionPath};
+
     use super::super::*;
 
     #[async_trait]
@@ -324,7 +334,7 @@ pub mod connection_open_try {
             //     .unwrap_or_else(|| SUPPORTED_VERSIONS.clone());
             let supported_versions = SUPPORTED_VERSIONS.clone();
 
-            pick_version(supported_versions, msg.versions_on_a.clone())?;
+            pick_version(&supported_versions, &msg.versions_on_a.clone())?;
 
             // expected_conn is the conn that we expect to have been committed to on the counterparty
             // chain
@@ -364,10 +374,12 @@ pub mod connection_open_try {
                 msg.counterparty.prefix(),
                 &msg.proof_conn_end_on_a,
                 trusted_consensus_state.root(),
-                msg.counterparty
-                    .connection_id
-                    .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("counterparty connection id is not set"))?,
+                &ConnectionPath::new(
+                    msg.counterparty
+                        .connection_id
+                        .as_ref()
+                        .ok_or_else(|| anyhow::anyhow!("counterparty connection id is not set"))?,
+                ),
                 &expected_conn,
             )?;
 
@@ -378,7 +390,7 @@ pub mod connection_open_try {
                 msg.counterparty.prefix(),
                 &msg.proof_client_state_of_b_on_a,
                 trusted_consensus_state.root(),
-                msg.counterparty.client_id(),
+                &ClientStatePath::new(msg.counterparty.client_id()),
                 msg.client_state_of_b_on_a.clone(),
             )?;
 
@@ -393,8 +405,10 @@ pub mod connection_open_try {
                 msg.counterparty.prefix(),
                 &msg.proof_consensus_state_of_b_on_a,
                 trusted_consensus_state.root(),
-                msg.counterparty.client_id(),
-                msg.consensus_height_of_b_on_a,
+                &ClientConsensusStatePath::new(
+                    &msg.counterparty.client_id(),
+                    &msg.consensus_height_of_b_on_a,
+                ),
                 &expected_consensus,
             )?;
 

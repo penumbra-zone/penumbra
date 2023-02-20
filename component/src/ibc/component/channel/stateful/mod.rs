@@ -87,17 +87,10 @@ pub mod channel_open_try {
                 version: msg.version_supported_on_a,
             };
 
-            let proof = Proofs::new(
-                msg.proof_chan_end_on_a.clone(),
-                None,
-                None,
-                None,
-                msg.proof_height_on_a,
-            )?;
-
             self.verify_channel_proof(
                 &connection,
-                &proof,
+                &msg.proof_chan_end_on_a,
+                &msg.proof_height_on_a,
                 &channel_id,
                 &msg.port_id_on_b,
                 &expected_channel,
@@ -176,17 +169,10 @@ pub mod channel_open_ack {
                 version: msg.version_on_b.clone(),
             };
 
-            let proof = Proofs::new(
-                msg.proof_chan_end_on_b.clone(),
-                None,
-                None,
-                None,
-                msg.proof_height_on_b,
-            )?;
-
             self.verify_channel_proof(
                 &connection,
-                &proof,
+                &msg.proof_chan_end_on_b,
+                &msg.proof_height_on_b,
                 &msg.chan_id_on_b,
                 &channel.remote.port_id,
                 &expected_channel,
@@ -223,7 +209,6 @@ pub mod channel_open_ack {
 }
 
 pub mod channel_open_confirm {
-
     use crate::ibc::component::connection::StateReadExt as _;
 
     use super::super::*;
@@ -267,17 +252,10 @@ pub mod channel_open_confirm {
                 version: channel.version.clone(),
             };
 
-            let proof = Proofs::new(
-                msg.proof_chan_end_on_a.clone(),
-                None,
-                None,
-                None,
-                msg.proof_height_on_a,
-            )?;
-
             self.verify_channel_proof(
                 &connection,
-                &proof,
+                &msg.proof_chan_end_on_a,
+                &msg.proof_height_on_a,
                 &channel
                     .remote
                     .channel_id
@@ -376,17 +354,10 @@ pub mod channel_close_confirm {
                 version: channel.version.clone(),
             };
 
-            let proof = Proofs::new(
-                msg.proof_chan_end_on_a.clone(),
-                None,
-                None,
-                None,
-                msg.proof_height_on_a,
-            )?;
-
             self.verify_channel_proof(
                 &connection,
-                &proof,
+                &msg.proof_chan_end_on_a,
+                &msg.proof_height_on_a,
                 &channel
                     .remote
                     .channel_id

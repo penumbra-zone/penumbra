@@ -174,20 +174,14 @@ pub mod recv_packet {
     pub trait RecvPacketExecute: StateWriteExt {
         async fn execute(&mut self, msg: &MsgRecvPacket) {
             let channel = self
-                .get_channel(
-                    &msg.packet.chan_on_b,
-                    &msg.packet.port_on_b,
-                )
+                .get_channel(&msg.packet.chan_on_b, &msg.packet.port_on_b)
                 .await
                 .unwrap()
                 .unwrap();
 
             if channel.ordering == ChannelOrder::Ordered {
                 let mut next_sequence_recv = self
-                    .get_recv_sequence(
-                        &msg.packet.chan_on_b,
-                        &msg.packet.port_on_b,
-                    )
+                    .get_recv_sequence(&msg.packet.chan_on_b, &msg.packet.port_on_b)
                     .await
                     .unwrap();
 
