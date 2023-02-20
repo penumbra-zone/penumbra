@@ -40,7 +40,7 @@ impl ActionHandler for MsgTimeout {
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         state.execute(self).await;
         let transfer = PortId::transfer();
-        if self.packet.port_on_b  == transfer {
+        if self.packet.port_on_b == transfer {
             Ics20Transfer::timeout_packet_execute(state, self).await;
         } else {
             return Err(anyhow::anyhow!("invalid port id"));

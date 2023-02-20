@@ -72,7 +72,7 @@ impl App {
     #[instrument(skip(self, begin_block))]
     pub async fn begin_block(
         &mut self,
-        begin_block: &abci::request::BeginBlock
+        begin_block: &abci::request::BeginBlock,
     ) -> Vec<abci::Event> {
         let mut state_tx = self
             .state

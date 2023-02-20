@@ -1,6 +1,5 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_crypto::dex::lp::position::MAX_RESERVE_AMOUNT;
 use penumbra_crypto::dex::{
     lp::{
         position::{self, Position},

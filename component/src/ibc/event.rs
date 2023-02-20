@@ -307,7 +307,11 @@ pub fn receive_packet(packet: &Packet, channel: &ChannelEnd) -> Event {
         "recv_packet",
         vec![
             ("packet_data_hex", hex::encode(packet.data.clone())).index(),
-            ("packet_timeout_height", packet.timeout_height_on_b.to_string()).index(),
+            (
+                "packet_timeout_height",
+                packet.timeout_height_on_b.to_string(),
+            )
+                .index(),
             (
                 "packet_timeout_timestamp",
                 packet.timeout_timestamp_on_b.to_string(),
@@ -329,7 +333,11 @@ pub fn acknowledge_packet(packet: &Packet, channel: &ChannelEnd) -> Event {
         "acknowledge_packet",
         vec![
             ("packet_data_hex", hex::encode(packet.data.clone())).index(),
-            ("packet_timeout_height", packet.timeout_height_on_b.to_string()).index(),
+            (
+                "packet_timeout_height",
+                packet.timeout_height_on_b.to_string(),
+            )
+                .index(),
             (
                 "packet_timeout_timestamp",
                 packet.timeout_timestamp_on_b.to_string(),
@@ -351,7 +359,11 @@ pub fn timeout_packet(packet: &Packet, channel: &ChannelEnd) -> Event {
         "timeout_packet",
         vec![
             ("packet_data_hex", hex::encode(packet.data.clone())).index(),
-            ("packet_timeout_height", packet.timeout_height_on_b.to_string()).index(),
+            (
+                "packet_timeout_height",
+                packet.timeout_height_on_b.to_string(),
+            )
+                .index(),
             (
                 "packet_timeout_timestamp",
                 packet.timeout_timestamp_on_b.to_string(),

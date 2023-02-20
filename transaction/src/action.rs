@@ -1,7 +1,6 @@
 use std::convert::{TryFrom, TryInto};
 
 use penumbra_crypto::balance;
-use penumbra_crypto::dex::lp::position::MAX_RESERVE_AMOUNT;
 use penumbra_proto::{
     core::ibc::v1alpha1 as pb_ibc, core::stake::v1alpha1 as pbs, core::transaction::v1alpha1 as pb,
     DomainType,

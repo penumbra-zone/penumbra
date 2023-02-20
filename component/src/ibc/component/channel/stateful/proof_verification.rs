@@ -13,10 +13,12 @@ use ibc::core::ics23_commitment::merkle::MerkleProof;
 use ibc::core::ics23_commitment::specs::ProofSpecs;
 use ibc::core::ics24_host::identifier::ClientId;
 use ibc::core::ics24_host::path::AcksPath;
+use ibc::core::ics24_host::path::ChannelEndPath;
 use ibc::core::ics24_host::path::CommitmentsPath;
 use ibc::core::ics24_host::path::ReceiptsPath;
 use ibc::core::ics24_host::path::SeqRecvsPath;
 use ibc::core::ics24_host::Path;
+use ibc::Height;
 
 use anyhow::Context;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
@@ -89,7 +91,8 @@ pub trait ChannelProofVerifier: StateReadExt {
     async fn verify_channel_proof(
         &self,
         connection: &ConnectionEnd,
-        proofs: &ibc::proofs::Proofs,
+        proof: &CommitmentProofBytes,
+        proof_height: &Height,
         channel_id: &ChannelId,
         port_id: &PortId,
         expected_channel: &ChannelEnd,
@@ -105,7 +108,7 @@ pub trait ChannelProofVerifier: StateReadExt {
 
         // get the stored consensus state for the counterparty
         let trusted_consensus_state = self
-            .get_verified_consensus_state(proofs.height(), connection.client_id().clone())
+            .get_verified_consensus_state(proof_height.clone(), connection.client_id().clone())
             .await?;
 
         let client_def = trusted_client_state;
@@ -113,12 +116,11 @@ pub trait ChannelProofVerifier: StateReadExt {
         // PROOF VERIFICATION. verify that our counterparty committed expected_channel to its
         // state.
         client_def.verify_channel_state(
-            proofs.height(),
+            proof_height.clone(),
             connection.counterparty().prefix(),
-            proofs.object_proof(),
+            proof,
             trusted_consensus_state.root(),
-            port_id,
-            channel_id,
+            &ChannelEndPath::new(&port_id, &channel_id),
             expected_channel,
         )?;
 
@@ -212,10 +214,7 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
             .encode(&mut seq_bytes)
             .expect("buffer size too small");
 
-        let seq_path = SeqRecvsPath(
-            msg.packet.port_on_b.clone(),
-            msg.packet.chan_on_b.clone(),
-        );
+        let seq_path = SeqRecvsPath(msg.packet.port_on_b.clone(), msg.packet.chan_on_b.clone());
 
         verify_merkle_proof(
             &trusted_client_state.proof_specs,
@@ -299,7 +298,8 @@ mod inner {
             let max_time_per_block = std::time::Duration::from_secs(20);
 
             let delay_period_time = connection.delay_period();
-            let delay_period_blocks = calculate_block_delay(delay_period_time, max_time_per_block);
+            let delay_period_blocks =
+                calculate_block_delay(&delay_period_time, &max_time_per_block);
 
             TendermintClientState::verify_delay_passed(
                 current_timestamp.into(),

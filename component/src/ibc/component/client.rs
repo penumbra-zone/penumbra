@@ -193,8 +193,7 @@ pub(crate) trait Ics2ClientExt: StateWrite {
                     trusted_client_state
                         .with_header(verified_header.clone())
                         .unwrap()
-                        .with_frozen_height(verified_header.height())
-                        .unwrap(),
+                        .with_frozen_height(verified_header.height()),
                     verified_consensus_state,
                 );
             }
@@ -221,8 +220,7 @@ pub(crate) trait Ics2ClientExt: StateWrite {
                     trusted_client_state
                         .with_header(verified_header.clone())
                         .unwrap()
-                        .with_frozen_height(verified_header.height())
-                        .unwrap(),
+                        .with_frozen_height(verified_header.height()),
                     verified_consensus_state,
                 );
             }
@@ -235,8 +233,7 @@ pub(crate) trait Ics2ClientExt: StateWrite {
                     trusted_client_state
                         .with_header(verified_header.clone())
                         .unwrap()
-                        .with_frozen_height(verified_header.height())
-                        .unwrap(),
+                        .with_frozen_height(verified_header.height()),
                     verified_consensus_state,
                 );
             }
