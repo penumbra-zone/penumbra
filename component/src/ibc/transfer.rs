@@ -4,6 +4,7 @@ use crate::ibc::packet::{IBCPacket, Unchecked};
 use crate::Component;
 use anyhow::Result;
 use async_trait::async_trait;
+use ibc::applications::transfer::VERSION;
 use ibc::core::ics04_channel::channel::Order as ChannelOrder;
 use ibc::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
 use ibc::core::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
@@ -113,8 +114,8 @@ impl AppHandlerCheck for Ics20Transfer {
                 "channel order must be unordered for Ics20 transfer"
             ));
         }
-
-        if msg.version_proposal != Version::ics20() {
+        let ics20_version = Version::new(VERSION.to_string());
+        if msg.version_proposal != ics20_version {
             return Err(anyhow::anyhow!(
                 "channel version must be ics20 for Ics20 transfer"
             ));
@@ -129,8 +130,9 @@ impl AppHandlerCheck for Ics20Transfer {
                 "channel order must be unordered for Ics20 transfer"
             ));
         }
+        let ics20_version = Version::new(VERSION.to_string());
 
-        if msg.version_supported_on_a != Version::ics20() {
+        if msg.version_supported_on_a != ics20_version {
             return Err(anyhow::anyhow!(
                 "counterparty version must be ics20-1 for Ics20 transfer"
             ));
@@ -140,7 +142,8 @@ impl AppHandlerCheck for Ics20Transfer {
     }
 
     async fn chan_open_ack_check<S: StateRead>(_state: S, msg: &MsgChannelOpenAck) -> Result<()> {
-        if msg.version_on_b != Version::ics20() {
+        let ics20_version = Version::new(VERSION.to_string());
+        if msg.version_on_b != ics20_version {
             return Err(anyhow::anyhow!(
                 "counterparty version must be ics20-1 for Ics20 transfer"
             ));

@@ -12,11 +12,11 @@ use ibc::core::ics23_commitment::merkle::apply_prefix;
 use ibc::core::ics23_commitment::merkle::MerkleProof;
 use ibc::core::ics23_commitment::specs::ProofSpecs;
 use ibc::core::ics24_host::identifier::ClientId;
-use ibc::core::ics24_host::path::AcksPath;
+use ibc::core::ics24_host::path::AckPath;
 use ibc::core::ics24_host::path::ChannelEndPath;
-use ibc::core::ics24_host::path::CommitmentsPath;
-use ibc::core::ics24_host::path::ReceiptsPath;
-use ibc::core::ics24_host::path::SeqRecvsPath;
+use ibc::core::ics24_host::path::CommitmentPath;
+use ibc::core::ics24_host::path::ReceiptPath;
+use ibc::core::ics24_host::path::SeqRecvPath;
 use ibc::core::ics24_host::Path;
 use ibc::Height;
 
@@ -145,9 +145,9 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
             )
             .await?;
 
-        let commitment_path = CommitmentsPath {
-            port_id: msg.packet.port_on_b,
-            channel_id: msg.packet.chan_on_b,
+        let commitment_path = CommitmentPath {
+            port_id: msg.packet.port_on_b.clone(),
+            channel_id: msg.packet.chan_on_b.clone(),
             sequence: msg.packet.sequence,
         };
 
@@ -178,7 +178,7 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
             )
             .await?;
 
-        let ack_path = AcksPath {
+        let ack_path = AckPath {
             port_id: msg.packet.port_on_b.clone(),
             channel_id: msg.packet.chan_on_b.clone(),
             sequence: msg.packet.sequence,
@@ -214,7 +214,7 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
             .encode(&mut seq_bytes)
             .expect("buffer size too small");
 
-        let seq_path = SeqRecvsPath(msg.packet.port_on_b.clone(), msg.packet.chan_on_b.clone());
+        let seq_path = SeqRecvPath(msg.packet.port_on_b.clone(), msg.packet.chan_on_b.clone());
 
         verify_merkle_proof(
             &trusted_client_state.proof_specs,
@@ -241,7 +241,7 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
             )
             .await?;
 
-        let receipt_path = ReceiptsPath {
+        let receipt_path = ReceiptPath {
             port_id: msg.packet.port_on_b.clone(),
             channel_id: msg.packet.chan_on_b.clone(),
             sequence: msg.packet.sequence,
