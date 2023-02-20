@@ -150,17 +150,17 @@ pub trait SendPacketWrite: StateWrite {
 
         // store commitment to the packet data & packet timeout
         let packet = Packet {
-            source_channel: packet.source_channel,
-            source_port: packet.source_port.clone(),
+            chan_on_a: packet.source_channel,
+            port_on_a: packet.source_port.clone(),
             sequence: sequence.into(),
 
             // NOTE: the packet commitment is solely a function of the source port and channel, so
             // these fields do not affect the commitment. Thus, we can set them to empty values.
-            destination_port: PortId::default(),
-            destination_channel: ChannelId::default(),
+            chan_on_b: ChannelId::default(),
+            port_on_b: PortId::default(),
 
-            timeout_height: packet.timeout_height.into(),
-            timeout_timestamp: ibc::timestamp::Timestamp::from_nanoseconds(
+            timeout_height_on_b: packet.timeout_height.into(),
+            timeout_timestamp_on_b: ibc::timestamp::Timestamp::from_nanoseconds(
                 packet.timeout_timestamp,
             )
             .unwrap(),

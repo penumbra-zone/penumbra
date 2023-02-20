@@ -27,7 +27,7 @@ impl ActionHandler for MsgAcknowledgement {
     async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
         state.validate(self).await?;
         let transfer = PortId::transfer();
-        if self.packet.destination_port == transfer {
+        if self.packet.port_on_b == transfer {
             Ics20Transfer::acknowledge_packet_check(state, self).await?;
         } else {
             return Err(anyhow::anyhow!("invalid port id"));
@@ -40,7 +40,7 @@ impl ActionHandler for MsgAcknowledgement {
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         state.execute(self).await;
         let transfer = PortId::transfer();
-        if self.packet.destination_port == transfer {
+        if self.packet.port_on_b == transfer {
             Ics20Transfer::acknowledge_packet_execute(state, self).await;
         } else {
             return Err(anyhow::anyhow!("invalid port id"));
