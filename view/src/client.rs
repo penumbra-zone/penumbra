@@ -14,7 +14,7 @@ use penumbra_proto::view::v1alpha1::{
 use penumbra_transaction::{
     plan::TransactionPlan, Transaction, TransactionPerspective, WitnessData,
 };
-use tendermint::abci;
+use tendermint;
 use tonic::async_trait;
 use tonic::codegen::Bytes;
 use tracing::instrument;
@@ -118,13 +118,13 @@ pub trait ViewClient {
 
     async fn transaction_by_hash(
         &mut self,
-        tx_hash: abci::transaction::Hash,
+        tx_hash: tendermint::hash::Hash,
     ) -> Result<Option<Transaction>>;
 
     /// Generates a full perspective for a selected transaction using a full viewing key
     async fn transaction_perspective(
         &mut self,
-        tx_hash: abci::transaction::Hash,
+        tx_hash: tendermint::hash::Hash,
     ) -> Result<TransactionPerspective>;
 
     /// Queries for transactions in a range of block heights
@@ -507,7 +507,7 @@ where
 
     async fn transaction_by_hash(
         &mut self,
-        tx_hash: abci::transaction::Hash,
+        tx_hash: tendermint::hash::Hash,
     ) -> Result<Option<Transaction>> {
         ViewProtocolServiceClient::transaction_by_hash(
             self,
@@ -524,7 +524,7 @@ where
 
     async fn transaction_perspective(
         &mut self,
-        tx_hash: abci::transaction::Hash,
+        tx_hash: tendermint::hash::Hash,
     ) -> Result<TransactionPerspective> {
         ViewProtocolServiceClient::transaction_perspective(
             self,
