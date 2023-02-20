@@ -18,9 +18,9 @@ use proto::client::v1alpha1::GetStatusResponse;
 use proto::client::v1alpha1::GetTxRequest;
 use proto::client::v1alpha1::GetTxResponse;
 use proto::DomainType;
+use tendermint::abci::Code;
 use tendermint::block::Height;
-use tendermint::abci;
-use tendermint_rpc::abci::Path;
+use tendermint::hash::Hash;
 use tendermint_rpc::{Client, HttpClient};
 use tonic::Status;
 
@@ -49,7 +49,7 @@ impl TendermintProxyService for TendermintProxy {
         let prove = req.prove;
         let rsp = client
             .tx(
-                abci::transaction::Hash::new(hash.try_into().map_err(|e| {
+                Hash::new(hash.try_into().map_err(|e| {
                     tonic::Status::invalid_argument(format!("invalid transaction hash: {:#?}", e))
                 })?),
                 prove,
@@ -242,7 +242,7 @@ impl TendermintProxyService for TendermintProxy {
             .map_err(|e| tonic::Status::unavailable(format!("error querying abci: {}", e)))?;
 
         match res.code {
-            tendermint_rpc::abci::Code::Ok => Ok(tonic::Response::new(AbciQueryResponse {
+            Code::Ok => Ok(tonic::Response::new(AbciQueryResponse {
                 code: u32::from(res.code),
                 log: res.log.to_string(),
                 info: res.info,
@@ -267,7 +267,7 @@ impl TendermintProxyService for TendermintProxy {
                 })?,
                 codespace: res.codespace,
             })),
-            tendermint_rpc::abci::Code::Err(e) => Err(tonic::Status::unavailable(format!(
+            tendermint::abci::Code::Err(e) => Err(tonic::Status::unavailable(format!(
                 "error querying abci: {}",
                 e
             ))),

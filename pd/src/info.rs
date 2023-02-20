@@ -49,7 +49,7 @@ impl Info {
         .try_into()
         .unwrap();
 
-        let last_block_app_hash = state.app_hash().await?.0.to_vec().into();
+        let last_block_app_hash = state.app_hash().await?.0.to_vec().try_into()?;
 
         Ok(abci::response::Info {
             data: "penumbra".to_string(),
@@ -80,11 +80,11 @@ impl Info {
                 let (value, proof_ops) = state.get_with_proof_to_apphash_tm(key).await?;
 
                 Ok(abci::response::Query {
-                    code: 0,
+                    code: 0.into(),
                     key: query.data,
                     log: "".to_string(),
                     value: value.into(),
-                    proof: Some(proof),
+                    proof: Some(proof_ops),
                     height: height.try_into().unwrap(),
                     codespace: "".to_string(),
                     info: "".to_string(),
@@ -123,7 +123,7 @@ impl tower_service::Service<InfoRequest> for Info {
                 InfoRequest::Query(query) => match self2.query(query).await {
                     Ok(rsp) => Ok(InfoResponse::Query(rsp)),
                     Err(e) => Ok(InfoResponse::Query(abci::response::Query {
-                        code: 1,
+                        code: 1.into(),
                         log: e.to_string(),
                         ..Default::default()
                     })),
