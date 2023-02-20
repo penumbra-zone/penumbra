@@ -84,7 +84,7 @@ pub mod channel_open_try {
                     .connection_id
                     .clone()
                     .ok_or_else(|| anyhow::anyhow!("no counterparty connection id provided"))?],
-                version: msg.version_supported_on_a,
+                version: msg.version_supported_on_a.clone(),
             };
 
             self.verify_channel_proof(

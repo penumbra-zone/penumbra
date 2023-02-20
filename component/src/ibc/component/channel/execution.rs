@@ -41,9 +41,9 @@ pub mod channel_open_try {
             let new_channel = ChannelEnd {
                 state: ChannelState::TryOpen,
                 ordering: msg.ordering,
-                remote: Counterparty::new(msg.port_id_on_a, Some(msg.chan_id_on_a)),
+                remote: Counterparty::new(msg.port_id_on_a.clone(), Some(msg.chan_id_on_a.clone())),
                 connection_hops: msg.connection_hops_on_b.clone(),
-                version: msg.version_supported_on_a,
+                version: msg.version_supported_on_a.clone(),
             };
 
             self.put_channel(&channel_id, &msg.port_id_on_b, new_channel.clone());

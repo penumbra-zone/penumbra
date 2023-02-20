@@ -121,7 +121,7 @@ impl Worker {
         Ok(abci::response::InitChain {
             consensus_params: Some(init_chain.consensus_params),
             validators,
-            app_hash: app_hash.0.to_vec().into(),
+            app_hash: app_hash.into(),
         })
     }
 

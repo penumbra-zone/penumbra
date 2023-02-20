@@ -66,8 +66,9 @@ impl Component for Ics2Client {
         // own state tree, so that when we get a message from our
         // counterparties, we can verify that they are committing the correct
         // consensus states for us to their state tree.
+        let commitment_root: Vec<u8> = begin_block.header.app_hash.clone().into();
         let cs = TendermintConsensusState::new(
-            begin_block.header.app_hash.value().into(),
+            commitment_root.into(),
             begin_block.header.time,
             begin_block.header.next_validators_hash,
         );

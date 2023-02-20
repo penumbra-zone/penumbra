@@ -19,7 +19,7 @@ use proto::client::v1alpha1::GetTxRequest;
 use proto::client::v1alpha1::GetTxResponse;
 use proto::DomainType;
 use tendermint::block::Height;
-use tendermint_rpc::abci;
+use tendermint::abci;
 use tendermint_rpc::abci::Path;
 use tendermint_rpc::{Client, HttpClient};
 use tonic::Status;
