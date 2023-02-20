@@ -28,7 +28,7 @@ pbjson-types = "0.5"
 
 ibc-proto = { git = "https://github.com/erwanor/ibc-proto-rs", branch = "tendermint-29", default-features = false, features = ["std"] }
 ibc = { git = "https://github.com/erwanor/ibc-rs", branch = "tendermint-29" }
-ics23 = "0.8.1"
+ics23 = "0.9.0"
 tendermint = "0.29.0"
 
 # TODO(erwan): remove

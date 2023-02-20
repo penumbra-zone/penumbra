@@ -14,5 +14,5 @@ pbjson-types = "0.5"
 pbjson-build = "0.5"
 tempfile = "3"
 
-ibc-proto = { git = "https://github.com/erwanor/ibc-proto-rs", branch = "release/v0.26.0" }
-ics23 = "0.8.1"
+ibc-proto = { git = "https://github.com/erwanor/ibc-proto-rs", branch = "tendermint-29" }
+ics23 = "0.9.0"
