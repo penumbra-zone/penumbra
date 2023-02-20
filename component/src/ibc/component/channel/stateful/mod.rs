@@ -59,7 +59,6 @@ pub mod channel_open_init {
 }
 
 pub mod channel_open_try {
-    use ibc::proofs::Proofs;
 
     use super::super::*;
     use super::proof_verification::ChannelProofVerifier;
@@ -134,7 +133,6 @@ pub mod channel_open_try {
 }
 
 pub mod channel_open_ack {
-    use ibc::proofs::Proofs;
 
     use super::super::*;
     use super::proof_verification::ChannelProofVerifier;
@@ -225,7 +223,6 @@ pub mod channel_open_ack {
 }
 
 pub mod channel_open_confirm {
-    use ibc::proofs::Proofs;
 
     use crate::ibc::component::connection::StateReadExt as _;
 
@@ -332,7 +329,6 @@ pub mod channel_close_init {
 }
 
 pub mod channel_close_confirm {
-    use ibc::proofs::Proofs;
 
     use crate::ibc::component::connection::StateReadExt as _;
 
