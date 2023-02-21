@@ -18,7 +18,6 @@ use proto::client::v1alpha1::GetTxResponse;
 use proto::DomainType;
 use tendermint::abci::Code;
 use tendermint::block::Height;
-use tendermint::hash::Hash;
 use tendermint_rpc::{Client, HttpClient};
 use tonic::Status;
 
@@ -221,8 +220,8 @@ impl TendermintProxyService for TendermintProxy {
         // render the URL as a String, then borrow it, then re-parse the borrowed &str
         let client = HttpClient::new(self.tendermint_url.to_string().as_ref()).unwrap();
 
-        let path = Path::from_str(&req.get_ref().path)
-            .map_err(|_| tonic::Status::invalid_argument("invalid abci path"))?;
+        // TODO: how does path validation work on tendermint-rs@29
+        let path = &req.get_ref().path;
         let data = &req.get_ref().data;
         let height: Height = req
             .get_ref()
