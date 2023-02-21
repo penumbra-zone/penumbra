@@ -221,7 +221,7 @@ impl TendermintProxyService for TendermintProxy {
         let client = HttpClient::new(self.tendermint_url.to_string().as_ref()).unwrap();
 
         // TODO: how does path validation work on tendermint-rs@29
-        let path = req.get_ref().path.clone;
+        let path = req.get_ref().path.clone();
         let data = &req.get_ref().data;
         let height: Height = req
             .get_ref()
