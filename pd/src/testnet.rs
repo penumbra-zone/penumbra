@@ -206,7 +206,7 @@ pub fn write_configs(
     let priv_key = tendermint::PrivateKey::Ed25519(
         vk.validator_cons_sk.ed25519_signing_key().unwrap().clone(),
     );
-    
+
     let priv_validator_key = PrivValidatorKey {
         address,
         pub_key: vk.validator_cons_pk,
