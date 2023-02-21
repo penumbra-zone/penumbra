@@ -91,39 +91,18 @@ impl ValidatorKeys {
 
         let validator_cons_sk = ed25519_consensus::SigningKey::new(OsRng);
 
-        /* MAKESHIFT RAFT ZONE */
-        // TODO(erwan): turning our ed25519-consensus signing key into a dalek keypair
-        let signing_key_bytes = validator_cons_sk.as_bytes().as_slice();
-        let verification_key_bytes = validator_cons_sk.verification_key();
-        let verification_key_bytes = verification_key_bytes.as_ref();
-        // TODO(erwan): surely there's a better way to do this?
-        let keypair = [signing_key_bytes, verification_key_bytes].concat();
-        let keypair = keypair.as_slice();
-
-        let validator_cons_sk = ed25519_dalek::Keypair::from_bytes(keypair).unwrap();
-        /* END MAKESHIFT RAFT ZONE */
-
         // generate consensus key for tendermint.
-        let validator_cons_sk = tendermint::PrivateKey::Ed25519(validator_cons_sk);
+        let validator_cons_sk = tendermint::PrivateKey::Ed25519(
+            validator_cons_sk.as_bytes().as_slice().try_into().unwrap(),
+        );
         let validator_cons_pk = validator_cons_sk.public_key();
 
         // generate P2P auth key for tendermint.
         let node_key_sk = ed25519_consensus::SigningKey::new(OsRng);
-
-        /* MAKESHIFT RAFT ZONE */
-        // TODO(erwan): turning our ed25519-consensus signing key into a dalek keypair
-        let signing_key_bytes = node_key_sk.as_bytes();
-        let verification_key_bytes = node_key_sk.verification_key();
-        let verification_key_bytes = verification_key_bytes.as_ref();
-        // TODO(erwan): surely there's a better way to do this?
-        let keypair = [signing_key_bytes, verification_key_bytes].concat();
-        let keypair = keypair.as_slice();
-
-        let node_key_sk = ed25519_dalek::Keypair::from_bytes(keypair).unwrap();
-        /* END MAKESHIFT RAFT ZONE */
+        let signing_key_bytes = node_key_sk.as_bytes().as_slice();
 
         // generate consensus key for tendermint.
-        let node_key_sk = tendermint::PrivateKey::Ed25519(node_key_sk);
+        let node_key_sk = tendermint::PrivateKey::Ed25519(signing_key_bytes.try_into().unwrap());
         let node_key_pk = node_key_sk.public_key();
 
         ValidatorKeys {
@@ -210,13 +189,9 @@ pub fn write_configs(
 
     // Write this node's node_key.json
     // the underlying type doesn't implement Copy or Clone (for the best)
-    // TODO(erwan): this should break once tendermint-rs switches to ed25519-consensus.
-    //let priv_key =
-    //    tendermint::PrivateKey::Ed25519(vk.node_key_sk.ed25519_signing_key().unwrap().clone());
-    let priv_key = vk.node_key_sk.ed25519_keypair().unwrap().to_bytes();
-    let priv_key = priv_key.as_slice();
     let priv_key =
-        tendermint::PrivateKey::Ed25519(ed25519_dalek::Keypair::from_bytes(priv_key).unwrap());
+        tendermint::PrivateKey::Ed25519(vk.node_key_sk.ed25519_signing_key().unwrap().clone());
+
     let node_key = NodeKey { priv_key };
     let mut node_key_file_path = node_config_dir.clone();
     node_key_file_path.push("node_key.json");
@@ -227,14 +202,11 @@ pub fn write_configs(
     // Write this node's priv_validator_key.json
     let address: tendermint::account::Id = vk.validator_cons_pk.into();
     // the underlying type doesn't implement Copy or Clone (for the best)
-    // TODO(erwan): this should break once tendermint-rs switches to ed25519-consensus.
-    // let priv_key = tendermint::PrivateKey::Ed25519(
-    //     vk.validator_cons_sk.ed25519_signing_key().unwrap().clone(),
-    // );
-    let priv_key = vk.validator_cons_sk.ed25519_keypair().unwrap().to_bytes();
-    let priv_key = priv_key.as_slice();
-    let priv_key =
-        tendermint::PrivateKey::Ed25519(ed25519_dalek::Keypair::from_bytes(priv_key).unwrap());
+
+    let priv_key = tendermint::PrivateKey::Ed25519(
+        vk.validator_cons_sk.ed25519_signing_key().unwrap().clone(),
+    );
+    
     let priv_validator_key = PrivValidatorKey {
         address,
         pub_key: vk.validator_cons_pk,

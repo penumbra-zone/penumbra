@@ -294,22 +294,9 @@ impl ValidatorCmd {
 }
 
 /// Generate a new ED25519 keypair for use with Tendermint.
-/// Includes some abstruse type coercion as a temporary workaround
-/// until forthcoming changes are release in upstream `tendermint-rs`.
 fn generate_new_tendermint_keypair() -> anyhow::Result<tendermint::PrivateKey> {
-    let consensus_key = ed25519_consensus::SigningKey::new(OsRng);
-
-    /* MAKESHIFT RAFT ZONE */
-    let signing_key_bytes = consensus_key.as_bytes().as_slice();
-    let verification_key_bytes = consensus_key.verification_key();
-    let verification_key_bytes = verification_key_bytes.as_bytes().as_slice();
-    // TODO(erwan): surely there's a better way to do this?
-    let keypair = [signing_key_bytes, verification_key_bytes].concat();
-    let keypair = keypair.as_slice();
-
-    let consensus_key = ed25519_dalek::Keypair::from_bytes(keypair).unwrap();
-    /* END */
-
-    let consensus_key = tendermint::PrivateKey::Ed25519(consensus_key);
-    Ok(consensus_key)
+    let signing_key = ed25519_consensus::SigningKey::new(OsRng);
+    let slice_signing_key = signing_key.as_bytes().as_slice();
+    let priv_consensus_key = tendermint::PrivateKey::Ed25519(slice_signing_key.try_into()?);
+    Ok(priv_consensus_key)
 }
