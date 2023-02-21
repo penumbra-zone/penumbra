@@ -61,37 +61,28 @@ impl ActionHandler for Spend {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use anyhow::Result;
-    use ark_ff::UniformRand;
-    use decaf377::Fr;
     use penumbra_chain::test_keys;
-    use penumbra_crypto::{
-        asset,
-        keys::{SeedPhrase, SpendKey},
-        proofs::groth16::SpendProof,
-        rdsa::{SpendAuth, VerificationKey},
-        transaction::Fee,
-        Note, Value, STAKING_TOKEN_ASSET_ID,
-    };
-    use penumbra_proof_params::{SPEND_PROOF_PROVING_KEY, SPEND_PROOF_VERIFICATION_KEY};
+    use penumbra_crypto::{transaction::Fee, Note, Value, STAKING_TOKEN_ASSET_ID};
     use penumbra_tct as tct;
-    use penumbra_transaction::plan::{SpendPlan, TransactionPlan};
+    use penumbra_transaction::{
+        plan::{OutputPlan, SpendPlan, TransactionPlan},
+        WitnessData,
+    };
     use rand_core::OsRng;
+
+    use crate::ActionHandler;
 
     #[tokio::test]
     async fn check_stateless_succeeds_on_valid_spend() -> Result<()> {
-        let pk = &*SPEND_PROOF_PROVING_KEY;
-        let vk = &*SPEND_PROOF_VERIFICATION_KEY;
-
         // Generate a note controlled by the test address.
-        let note = Note::generate(
-            &mut OsRng,
-            &*test_keys::ADDRESS_0,
-            Value {
-                amount: 100u64.into(),
-                asset_id: *STAKING_TOKEN_ASSET_ID,
-            },
-        );
+        let value = Value {
+            amount: 100u64.into(),
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        };
+        let note = Note::generate(&mut OsRng, &*test_keys::ADDRESS_0, value);
 
         // Record that note in an SCT, where we can generate an auth path.
         let mut sct = tct::Tree::new();
@@ -99,78 +90,112 @@ mod tests {
         // Do we want to seal the SCT block here?
         let auth_path = sct.witness(note.commit()).unwrap();
 
+        // Add a single spend and output to the transaction plan such that the
+        // transaction balances.
         let plan = TransactionPlan {
             expiry_height: 0,
             fee: Fee::default(),
             chain_id: "".into(),
-            actions: vec![SpendPlan::new(&mut OsRng, note, auth_path.position()).into()],
+            actions: vec![
+                SpendPlan::new(&mut OsRng, note, auth_path.position()).into(),
+                OutputPlan::new(&mut OsRng, value, *test_keys::ADDRESS_1).into(),
+            ],
             clue_plans: vec![],
             memo_plan: None,
         };
 
-        // Comp
-
-        let seed_phrase = SeedPhrase::generate(OsRng);
-        let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
-        let fvk_sender = sk_sender.full_viewing_key();
-        let ivk_sender = fvk_sender.incoming();
-        let (sender, _dtk_d) = ivk_sender.payment_address(0u64.into());
-
-        let value_to_send = Value {
-            amount: 1u64.into(),
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+        // Build the transaction.
+        let fvk = &test_keys::FULL_VIEWING_KEY;
+        let sk = &test_keys::SPEND_KEY;
+        let auth_data = plan.authorize(OsRng, &sk);
+        let witness_data = WitnessData {
+            anchor: sct.root(),
+            state_commitment_proofs: plan
+                .spend_plans()
+                .map(|spend| {
+                    (
+                        spend.note.commit(),
+                        sct.witness(spend.note.commit()).unwrap(),
+                    )
+                })
+                .collect(),
         };
+        let mut rng = OsRng;
+        let tx = plan
+            .build_concurrent(&mut rng, fvk, auth_data, witness_data)
+            .await
+            .expect("can build transaction");
 
-        let note = Note::generate(&mut OsRng, &sender, value_to_send);
-        let note_commitment = note.commit();
-        let spend_auth_randomizer = Fr::rand(&mut OsRng);
-        let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
-        let nk = *sk_sender.nullifier_key();
-        let ak: VerificationKey<SpendAuth> = sk_sender.spend_auth_key().into();
-        let mut nct = tct::Tree::new();
-        nct.insert(tct::Witness::Keep, note_commitment).unwrap();
-        let anchor = nct.root();
-        let note_commitment_proof = nct.witness(note_commitment).unwrap();
-        let v_blinding = Fr::rand(&mut OsRng);
-        let balance_commitment = value_to_send.commit(v_blinding);
-        let rk: VerificationKey<SpendAuth> = rsk.into();
-        let nf = nk.derive_nullifier(0.into(), &note_commitment);
+        let context = Arc::new(tx.clone());
 
-        let proof = SpendProof::prove(
-            &mut OsRng,
-            pk,
-            note_commitment_proof,
-            note,
-            v_blinding,
-            spend_auth_randomizer,
-            ak,
-            nk,
-            anchor,
-            balance_commitment,
-            nf,
-            rk,
-        )
-        .expect("can create proof");
+        // On the verifier side, perform stateless verification.
+        for action in tx.transaction_body().actions {
+            let result = action.check_stateless(context.clone()).await;
+            assert!(result.is_ok())
+        }
 
-        let proof_result = proof.verify(vk, anchor, balance_commitment, nf, rk);
-        assert!(proof_result.is_ok());
-    }
-
-    #[tokio::test]
-    async fn check_stateless_fails_on_auth_sig_with_wrong_key() -> Result<()> {
-        // TODO
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn check_stateless_fails_on_auth_sig_with_wrong_effect_hash() -> Result<()> {
-        // TODO
         Ok(())
     }
 
     #[tokio::test]
     async fn check_stateless_fails_on_auth_path_with_wrong_root() -> Result<()> {
-        // TODO
+        // Generate a note controlled by the test address.
+        let value = Value {
+            amount: 100u64.into(),
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        };
+        let note = Note::generate(&mut OsRng, &*test_keys::ADDRESS_0, value);
+
+        // Record that note in an SCT, where we can generate an auth path.
+        let mut sct = tct::Tree::new();
+        let wrong_root = sct.root();
+        sct.insert(tct::Witness::Keep, note.commit()).unwrap();
+        let auth_path = sct.witness(note.commit()).unwrap();
+
+        // Add a single spend and output to the transaction plan such that the
+        // transaction balances.
+        let plan = TransactionPlan {
+            expiry_height: 0,
+            fee: Fee::default(),
+            chain_id: "".into(),
+            actions: vec![
+                SpendPlan::new(&mut OsRng, note, auth_path.position()).into(),
+                OutputPlan::new(&mut OsRng, value, *test_keys::ADDRESS_1).into(),
+            ],
+            clue_plans: vec![],
+            memo_plan: None,
+        };
+
+        // Build the transaction.
+        let fvk = &test_keys::FULL_VIEWING_KEY;
+        let sk = &test_keys::SPEND_KEY;
+        let auth_data = plan.authorize(OsRng, &sk);
+        let witness_data = WitnessData {
+            anchor: sct.root(),
+            state_commitment_proofs: plan
+                .spend_plans()
+                .map(|spend| {
+                    (
+                        spend.note.commit(),
+                        sct.witness(spend.note.commit()).unwrap(),
+                    )
+                })
+                .collect(),
+        };
+        let mut rng = OsRng;
+        let mut tx = plan
+            .build_concurrent(&mut rng, fvk, auth_data, witness_data)
+            .await
+            .expect("can build transaction");
+
+        // Set the anchor to the wrong root.
+        tx.anchor = wrong_root;
+
+        let context = Arc::new(tx.clone());
+        // On the verifier side, perform stateless verification.
+        let result = tx.check_stateless(context.clone()).await;
+        assert!(result.is_err());
+
         Ok(())
     }
 }
