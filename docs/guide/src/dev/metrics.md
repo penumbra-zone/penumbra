@@ -7,7 +7,7 @@ the Penumbra software is doing.
 
 TODO: add details on how to use Grafana:
 
-- [ ] link to <https://testnet.penumbra.zone> for dashboard on current testnet;
+- [ ] link to <https://grafana.testnet.penumbra.zone> for dashboard on current testnet;
 - [ ] instructions on how to run Grafana + Prometheus for local dev setup (ideally this could work without requiring that `pd` itself is Dockerized, since local development is often more convenient outside of docker);
 - [x] instructions on how to commit dashboards back to the repo.
 
