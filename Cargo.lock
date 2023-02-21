@@ -745,7 +745,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "40f9ca3698b2e4cb7c15571db0abc5551dca417a21ae8140460b50309bb2cc62"
 dependencies = [
  "borsh-derive",
- "hashbrown 0.11.2",
+ "hashbrown 0.12.3",
 ]
 
 [[package]]
@@ -2636,8 +2636,9 @@ checksum = "fad582f4b9e86b6caa621cabeb0963332d92eea04729ab12892c2533951e6440"
 
 [[package]]
 name = "jmt"
-version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/jmt.git?branch=tendermint-29#de8637db5e7ba7275500a66d082c6a4cdf70fa5d"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3befc2cc4fde3431cc844c476b3cc4137da4561e1047f7e454376b6aa40e27ba"
 dependencies = [
  "anyhow",
  "bcs",

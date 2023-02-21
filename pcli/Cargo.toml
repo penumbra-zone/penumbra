@@ -17,7 +17,7 @@ sct-divergence-check = ["penumbra-view/sct-divergence-check"]
 
 [dependencies]
 # Workspace dependencies
-jmt = { git = "https://github.com/penumbra-zone/jmt.git", branch = "tendermint-29" }
+jmt = "0.3"
 penumbra-proto = { path = "../proto" }
 penumbra-chain = { path = "../chain" }
 penumbra-crypto = { path = "../crypto" }
