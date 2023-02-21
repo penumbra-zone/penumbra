@@ -44,7 +44,7 @@ module "gke" {
       disk_type    = var.disk_type
       image_type   = var.image_type
       auto_repair  = true
-      auto_upgrade = true
+      auto_upgrade = false
       autoscaling  = false
       preemptible  = false
     },
