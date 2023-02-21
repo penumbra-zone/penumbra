@@ -1,6 +1,3 @@
-use std::str::FromStr;
-
-use chrono::DateTime;
 use penumbra_proto::{self as proto};
 
 use penumbra_transaction::Transaction;
@@ -49,23 +46,24 @@ impl TendermintProxyService for TendermintProxy {
         let prove = req.prove;
         let rsp = client
             .tx(
-                Hash::new(hash.try_into().map_err(|e| {
+                hash.try_into().map_err(|e| {
                     tonic::Status::invalid_argument(format!("invalid transaction hash: {:#?}", e))
-                })?),
+                })?,
                 prove,
             )
             .await
             .map_err(|e| tonic::Status::unavailable(format!("error getting tx: {}", e)))?;
 
-        let tx = Transaction::decode(rsp.tx.as_bytes())
+        let tx = Transaction::decode(rsp.tx.as_ref())
             .map_err(|e| tonic::Status::unavailable(format!("error decoding tx: {}", e)))?;
 
         Ok(tonic::Response::new(GetTxResponse {
             tx: tx.into(),
             tx_result: Some(proto::client::v1alpha1::TxResult {
                 log: rsp.tx_result.log.to_string(),
-                gas_wanted: rsp.tx_result.gas_wanted.into(),
-                gas_used: rsp.tx_result.gas_used.into(),
+                // TODO: validation here, fix mismatch between i64 <> u64
+                gas_wanted: rsp.tx_result.gas_wanted as u64,
+                gas_used: rsp.tx_result.gas_used as u64,
                 tags: rsp
                     .tx_result
                     .events
@@ -95,18 +93,15 @@ impl TendermintProxyService for TendermintProxy {
     ) -> Result<tonic::Response<BroadcastTxAsyncResponse>, Status> {
         let client = HttpClient::new(self.tendermint_url.to_string().as_ref()).unwrap();
 
-        let res = client
-            .broadcast_tx_async(req.into_inner().params.try_into().map_err(|e| {
-                tonic::Status::invalid_argument(format!("invalid transaction: {}", e))
-            })?)
-            .await
-            .map_err(|e| {
-                tonic::Status::unavailable(format!("error broadcasting tx async: {}", e))
-            })?;
+        let params = req.into_inner().params;
+
+        let res = client.broadcast_tx_async(params).await.map_err(|e| {
+            tonic::Status::unavailable(format!("error broadcasting tx async: {}", e))
+        })?;
 
         Ok(tonic::Response::new(BroadcastTxAsyncResponse {
             code: u32::from(res.code) as u64,
-            data: res.data.value().to_vec(),
+            data: res.data.to_vec(),
             log: res.log.to_string(),
             hash: res.hash.as_bytes().to_vec(),
         }))
@@ -119,9 +114,7 @@ impl TendermintProxyService for TendermintProxy {
         let client = HttpClient::new(self.tendermint_url.to_string().as_ref()).unwrap();
 
         let res = client
-            .broadcast_tx_sync(req.into_inner().params.try_into().map_err(|e| {
-                tonic::Status::invalid_argument(format!("invalid transaction: {}", e))
-            })?)
+            .broadcast_tx_sync(req.into_inner().params)
             .await
             .map_err(|e| {
                 tonic::Status::unavailable(format!("error broadcasting tx sync: {}", e))
@@ -130,7 +123,7 @@ impl TendermintProxyService for TendermintProxy {
         tracing::info!("{:#?}", res);
         Ok(tonic::Response::new(BroadcastTxSyncResponse {
             code: u32::from(res.code) as u64,
-            data: res.data.value().to_vec(),
+            data: res.data.to_vec(),
             log: res.log.to_string(),
             hash: res.hash.as_bytes().to_vec(),
         }))
