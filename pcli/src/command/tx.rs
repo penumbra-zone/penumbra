@@ -34,6 +34,9 @@ use crate::App;
 mod proposal;
 use proposal::ProposalCmd;
 
+mod liquidity_position;
+use liquidity_position::LiquidityPositionCmd;
+
 #[derive(Debug, clap::Subcommand)]
 pub enum TxCmd {
     /// Send funds to a Penumbra address.
@@ -140,6 +143,9 @@ pub enum TxCmd {
         #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
     },
+    /// Manage liquidity positions.
+    #[clap(display_order = 500, subcommand)]
+    LiquidityPosition(LiquidityPositionCmd),
     /// Consolidate many small notes into a few larger notes.
     ///
     /// Since Penumbra transactions reveal their arity (how many spends,

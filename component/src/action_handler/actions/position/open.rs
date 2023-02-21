@@ -6,7 +6,7 @@ use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::PositionOpen, Transaction};
 
 use crate::action_handler::ActionHandler;
-use crate::dex::PositionRead;
+use crate::dex::{PositionManager, PositionRead};
 
 #[async_trait]
 /// Debits the initial reserves and credits an opened position NFT.
@@ -31,24 +31,26 @@ impl ActionHandler for PositionOpen {
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, _state: Arc<S>) -> Result<()> {
+    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         // Validate that the position nonce is not already in use
         // TODO: this check is duplicated in `PositionManager::position_open`
         // but that's probably okay, checking here lets us skip out of execution sooner
         state.check_nonce_unused(&self.position).await?;
 
         // Validate that the position ID doesn't collide
-        // It's important to reject all LP actions for now, to prevent
-        // inflation / minting bugs until we implement all required checks
-        // (e.g., minting tokens by withdrawing reserves we don't check)
-        Err(anyhow::anyhow!("lp actions not supported yet"))
+        if state.position_by_id(&self.position.id()).await?.is_some() {
+            return Err(anyhow::anyhow!("position ID already exists"));
+        }
+
+        Ok(())
     }
 
-    async fn execute<S: StateWrite>(&self, _state: S) -> Result<()> {
-        // let position = self.position;
-        // let initial_reserves = self.initial_reserves;
-        // let lpnft = state.position_open(position, initial_reserves).await?;
-        // TODO: implement
+    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        let position = &self.position;
+        let initial_reserves = &self.initial_reserves;
+        let _lpnft = state
+            .position_open(position.clone(), initial_reserves.clone())
+            .await?;
 
         Ok(())
     }
