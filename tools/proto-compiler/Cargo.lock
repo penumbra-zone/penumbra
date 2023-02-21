@@ -379,7 +379,7 @@ dependencies = [
 [[package]]
 name = "ibc-proto"
 version = "0.26.0"
-source = "git+https://github.com/erwanor/ibc-proto-rs?branch=release/v0.26.0#9d15eb24904fc28fe6b48ae84e2bee94680dc59a"
+source = "git+https://github.com/erwanor/ibc-proto-rs?branch=tendermint-29#9d15eb24904fc28fe6b48ae84e2bee94680dc59a"
 dependencies = [
  "base64",
  "bytes",
