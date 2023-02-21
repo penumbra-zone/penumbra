@@ -30,7 +30,7 @@ fi
 cargo $nightly_opt doc --no-deps \
   -p tendermint \
   -p tower-abci \
-  -p jmt@0.2.0 \
+  -p jmt@0.3.0 \
   -p ark-ff \
   -p ark-serialize \
   -p ark-sponge \
