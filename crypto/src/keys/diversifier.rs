@@ -1,5 +1,6 @@
 use std::convert::{TryFrom, TryInto};
 use std::fmt::Debug;
+use std::str::FromStr;
 
 use aes::cipher::{generic_array::GenericArray, BlockDecrypt, BlockEncrypt, KeyInit};
 use aes::Aes128;
@@ -174,6 +175,18 @@ impl From<u32> for AddressIndex {
             account: x,
             randomizer: [0; 12],
         }
+    }
+}
+
+impl FromStr for AddressIndex {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> anyhow::Result<Self> {
+        let i: u32 = s.parse()?;
+        Ok(Self {
+            account: i,
+            randomizer: [0; 12],
+        })
     }
 }
 
