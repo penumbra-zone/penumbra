@@ -106,10 +106,10 @@ update the configuration for a validator.
 To create a template configuration, use `pcli validator definition template`:
 
 ```shell
-\$ cargo run --release --bin pcli -- validator definition template \
+$ cargo run --release --bin pcli -- validator definition template \
     --tendermint-validator-keyfile ~/.penumbra/testnet_data/tendermint/config/priv_validator_key.json \
     --file validator.toml
-\$ cat validator.toml
+$ cat validator.toml
 # This is a template for a validator definition.
 #
 # The identity_key and governance_key fields are auto-filled with values derived
@@ -168,7 +168,7 @@ You must then **manually update the `consensus_key`**. You can get the correct v
 for `consensus_key` from your `tendermint` configs:
 
 ```shell
-\$ grep -A3 pub_key ~/.penumbra/testnet_data/node0/tendermint/config/priv_validator_key.json
+$ grep -A3 pub_key ~/.penumbra/testnet_data/node0/tendermint/config/priv_validator_key.json
   "pub_key": {
     "type": "tendermint/PubKeyEd25519",
     "value": "Fodjg0m1kF/6uzcAZpRcLJswGf3EeNShLP2A+UCz8lw="

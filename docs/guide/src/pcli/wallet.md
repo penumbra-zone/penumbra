@@ -4,12 +4,12 @@ On first installation of `pcli`, you will need to generate a fresh wallet to use
 should see something like this:
 
 ```bash
-\$ cargo run --quiet --release --bin pcli keys generate
+$ cargo run --quiet --release --bin pcli keys generate
 
 
 YOUR PRIVATE SEED PHRASE: [...]
 DO NOT SHARE WITH ANYONE!
-Saving backup wallet to /home/\$USER/.local/share/penumbra-testnet-archive/.../custody.json
+Saving backup wallet to /home/$USER/.local/share/penumbra-testnet-archive/.../custody.json
 ```
 
 Penumbra's design automatically creates many (`u64::MAX`) publicly unlinkable addresses which all
@@ -17,7 +17,7 @@ correspond to your own wallet. When you first created your wallet above, `pcli` 
 of your wallet addresses, which you can view like this:
 
 ```bash
-\$ cargo run --quiet --release --bin pcli view address 0
+$ cargo run --quiet --release --bin pcli view address 0
 penumbrav2t1...
 ```
 
