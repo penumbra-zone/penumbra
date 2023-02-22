@@ -2407,7 +2407,8 @@ dependencies = [
 [[package]]
 name = "ibc"
 version = "0.29.0"
-source = "git+https://github.com/erwanor/ibc-rs?branch=tendermint-29#c6588fa7be704c90d21c9e5c5a680faa512990aa"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "044ca92959973f4298efb14633c21772b592e7236b06789ba2e787fb952ce607"
 dependencies = [
  "bytes",
  "derive_more",
@@ -2436,7 +2437,8 @@ dependencies = [
 [[package]]
 name = "ibc-proto"
 version = "0.26.0"
-source = "git+https://github.com/erwanor/ibc-proto-rs?branch=tendermint-29#9d15eb24904fc28fe6b48ae84e2bee94680dc59a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c9303a1308c886aea769ef0667c5caa422a78b01e9f8177fea8b91b08a4ff50c"
 dependencies = [
  "base64 0.13.1",
  "borsh",
