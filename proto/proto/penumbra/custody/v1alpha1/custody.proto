@@ -5,8 +5,6 @@ package penumbra.custody.v1alpha1;
 import "penumbra/core/crypto/v1alpha1/crypto.proto";
 import "penumbra/core/transaction/v1alpha1/transaction.proto";
 
-option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
-
 // The custody protocol is used by a wallet client to request authorization for
 // a transaction they've constructed.
 //
