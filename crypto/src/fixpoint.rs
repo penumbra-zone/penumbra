@@ -7,6 +7,8 @@ mod div;
 
 use ethnum::U256;
 
+use crate::Amount;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct U128x128(U256);
 
@@ -16,23 +18,14 @@ impl From<u128> for U128x128 {
     }
 }
 
+impl From<Amount> for U128x128 {
+    fn from(value: Amount) -> Self {
+        let value = value.value() as u128;
+        value.into()
+    }
+}
+
 impl U128x128 {
-    pub fn to_le_bytes(self) -> [u8; 32] {
-        self.0.to_le_bytes()
-    }
-
-    pub fn to_be_bytes(self) -> [u8; 32] {
-        self.0.to_be_bytes()
-    }
-
-    pub fn from_le_bytes(bytes: [u8; 32]) -> Self {
-        U128x128(U256::from_le_bytes(bytes))
-    }
-
-    pub fn from_be_bytes(bytes: [u8; 32]) -> Self {
-        U128x128(U256::from_be_bytes(bytes))
-    }
-
     pub fn checked_mul(self, rhs: Self) -> Option<Self> {
         let [x0, x1] = self.0 .0;
         let [y0, y1] = rhs.0 .0;
@@ -80,6 +73,22 @@ impl U128x128 {
         let q = U256::from_le_bytes(q_bytes);
 
         Some(U128x128(q))
+    }
+
+    pub fn to_le_bytes(self) -> [u8; 32] {
+        self.0.to_le_bytes()
+    }
+
+    pub fn to_be_bytes(self) -> [u8; 32] {
+        self.0.to_be_bytes()
+    }
+
+    pub fn from_le_bytes(bytes: [u8; 32]) -> Self {
+        U128x128(U256::from_le_bytes(bytes))
+    }
+
+    pub fn from_be_bytes(bytes: [u8; 32]) -> Self {
+        U128x128(U256::from_be_bytes(bytes))
     }
 }
 
