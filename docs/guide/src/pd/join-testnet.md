@@ -107,7 +107,7 @@ To create a template configuration, use `pcli validator definition template`:
 
 ```shell
 $ cargo run --release --bin pcli -- validator definition template \
-    --tendermint-validator-keyfile ~/.penumbra/testnet_data/tendermint/config/priv_validator_key.json \
+    --tendermint-validator-keyfile ~/.penumbra/testnet_data/node0/tendermint/config/priv_validator_key.json \
     --file validator.toml
 $ cat validator.toml
 # This is a template for a validator definition.
