@@ -103,11 +103,7 @@ impl Mul<U128x128> for U128x128 {
 impl Div<U128x128> for U128x128 {
     type Output = Option<U128x128>;
     fn div(self, rhs: U128x128) -> Self::Output {
-        let checked_div = self.0.checked_div(rhs.0);
-        let Some(result) = checked_div else {
-            return None
-        };
-        Some(Self(result))
+        self.checked_div(rhs)
     }
 }
 
@@ -137,19 +133,19 @@ mod tests {
         println!("a = {}, {:?}", a, a);
         println!("x = {}, {:?}", x, x);
         println!("y = {}, {:?}", y, y);
-        let z = x / y;
+        let z = (x / y).unwrap();
         println!("z = {}, {:?}", z, z);
-        let w = y / x;
+        let w = (y / x).unwrap();
         println!("w = {}, {:?}", w, w);
-        let w2 = w + w;
+        let w2 = (w + w).unwrap();
         println!("w2 = {}, {:?}", w2, w2);
-        let s = w2 / y;
+        let s = (w2 / y).unwrap();
         println!("s = {}, {:?}", s, s);
-        let t = z * w;
+        let t = (z * w).unwrap();
         println!("t = {}, {:?}", t, t);
-        let u = U128x128::from(1) / y;
+        let u = (U128x128::from(1) / y).unwrap();
         println!("u = {}, {:?}", u, u);
-        let v = U128x128::from(1) / u;
+        let v = (U128x128::from(1) / u).unwrap();
         println!("v = {}, {:?}", v, v);
     }
 }
