@@ -7,8 +7,6 @@ import "penumbra/core/crypto/v1alpha1/crypto.proto";
 import "penumbra/core/dex/v1alpha1/dex.proto";
 import "penumbra/core/transaction/v1alpha1/transaction.proto";
 
-option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
-
 // The view protocol is used by a view client, who wants to do some
 // transaction-related actions, to request data from a view service, which is
 // responsible for synchronizing and scanning the public chain state with one or

@@ -4,8 +4,6 @@ package penumbra.core.dex.v1alpha1;
 
 import "penumbra/core/crypto/v1alpha1/crypto.proto";
 
-option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
-
 // A transaction action that submits a swap to the dex.
 message Swap {
   // Contains the Swap proof.
