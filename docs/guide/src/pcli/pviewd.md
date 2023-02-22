@@ -22,7 +22,7 @@ pclientd start
 to start the view server, and invoke `pcli` with
 
 ```shell
-pcli --view-address 127.0.0.1:8081
+pcli -v 127.0.0.1:8081
 ```
 
 to use it instead of an in-process view service.
