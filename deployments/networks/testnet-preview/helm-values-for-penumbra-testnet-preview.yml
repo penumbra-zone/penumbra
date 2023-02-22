@@ -10,3 +10,8 @@ ingress:
     grpc: grpc.testnet-preview.penumbra.zone
     # The Grafana HTTP web interface, for viewing dashboards.
     grafana: grafana.testnet-preview.penumbra.zone
+
+# Set lower SSD requests; default is 100Gi; we'll do half that
+# for the short-lived preview deployment.
+persistence:
+  size: 50Gi

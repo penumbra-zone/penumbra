@@ -9,3 +9,8 @@ ingress:
     grpc: grpc.devnet.penumbra.zone
     # The Grafana HTTP web interface, for viewing dashboards.
     grafana: grafana.devnet.penumbra.zone
+
+# Set lower SSD requests; default is 100Gi; we'll do a tenth that
+# for bespoke sandbox environments like 'devnet'.
+persistence:
+  size: 10Gi

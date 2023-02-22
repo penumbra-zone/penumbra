@@ -15,7 +15,7 @@ spec:
   storageClassName: premium-rwo
   resources:
     requests:
-      storage: 100Gi
+      storage: {{ $.Values.persistence.size }}
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
@@ -29,5 +29,5 @@ spec:
   storageClassName: premium-rwo
   resources:
     requests:
-      storage: 100Gi
+      storage: {{ $.Values.persistence.size }}
 {{ end }}

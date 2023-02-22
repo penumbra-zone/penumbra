@@ -47,3 +47,11 @@ ingress:
     rpc: rpc.testnet.penumbra.strange.love
     # FQDN to route traffic to the pd gRPC port.
     grpc: grpc.testnet.penumbra.strange.love
+
+# Configure persistent storage requests. We hardcode
+# use of "premium-rwo" GKE SSD drives in the PVC,
+# so storageClassName is intentionally customizable,
+# but the size is.
+persistence:
+  # storageClassName: premium-rwo
+  size: 100Gi
