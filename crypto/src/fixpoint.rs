@@ -17,6 +17,22 @@ impl From<u128> for U128x128 {
 }
 
 impl U128x128 {
+    pub fn to_le_bytes(self) -> [u8; 32] {
+        self.0.to_le_bytes()
+    }
+
+    pub fn to_be_bytes(self) -> [u8; 32] {
+        self.0.to_be_bytes()
+    }
+
+    pub fn from_le_bytes(bytes: [u8; 32]) -> Self {
+        U128x128(U256::from_le_bytes(bytes))
+    }
+
+    pub fn from_be_bytes(bytes: [u8; 32]) -> Self {
+        U128x128(U256::from_be_bytes(bytes))
+    }
+
     pub fn checked_mul(self, rhs: Self) -> Option<Self> {
         let [x0, x1] = self.0 .0;
         let [y0, y1] = rhs.0 .0;
