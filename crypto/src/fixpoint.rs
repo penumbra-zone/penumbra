@@ -68,30 +68,46 @@ impl U128x128 {
 }
 
 impl Add<U128x128> for U128x128 {
-    type Output = U128x128;
+    type Output = Option<U128x128>;
     fn add(self, rhs: U128x128) -> Self::Output {
-        Self(self.0 + rhs.0)
+        let checked_add = self.0.checked_add(rhs.0);
+        let Some(result) = checked_add else {
+            return None
+        };
+        Some(Self(result))
     }
 }
 
 impl Sub<U128x128> for U128x128 {
-    type Output = U128x128;
+    type Output = Option<U128x128>;
     fn sub(self, rhs: U128x128) -> Self::Output {
-        Self(self.0 - rhs.0)
+        let checked_sub = self.0.checked_sub(rhs.0);
+        let Some(result) = checked_sub else {
+            return None
+        };
+        Some(Self(result))
     }
 }
 
 impl Mul<U128x128> for U128x128 {
-    type Output = U128x128;
+    type Output = Option<U128x128>;
     fn mul(self, rhs: U128x128) -> Self::Output {
-        self.checked_mul(rhs).unwrap()
+        let checked_mul = self.0.checked_mul(rhs.0);
+        let Some(result) = checked_mul else {
+            return None
+        };
+        Some(Self(result))
     }
 }
 
 impl Div<U128x128> for U128x128 {
-    type Output = U128x128;
+    type Output = Option<U128x128>;
     fn div(self, rhs: U128x128) -> Self::Output {
-        self.checked_div(rhs).unwrap()
+        let checked_div = self.0.checked_div(rhs.0);
+        let Some(result) = checked_div else {
+            return None
+        };
+        Some(Self(result))
     }
 }
 
