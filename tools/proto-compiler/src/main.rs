@@ -73,10 +73,10 @@ fn main() -> Result<()> {
             "../../proto/proto/penumbra/core/dex/v1alpha1/dex.proto",
             "../../proto/proto/penumbra/core/transparent_proofs/v1alpha1/transparent_proofs.proto",
             "../../proto/proto/penumbra/core/governance/v1alpha1/governance.proto",
-            "../../proto/ibc-go-vendor/tendermint/types/validator.proto",
-            "../../proto/ibc-go-vendor/tendermint/p2p/types.proto",
+            "../../proto/rust-vendored/tendermint/types/validator.proto",
+            "../../proto/rust-vendored/tendermint/p2p/types.proto",
         ],
-        &["../../proto/proto/", "../../proto/ibc-go-vendor/"],
+        &["../../proto/proto/", "../../proto/rust-vendored/"],
     )?;
 
     // For the client code, we also want to generate RPC instances, so compile via tonic:
@@ -102,11 +102,11 @@ fn main() -> Result<()> {
                 "../../proto/proto/penumbra/client/v1alpha1/client.proto",
                 "../../proto/proto/penumbra/view/v1alpha1/view.proto",
                 "../../proto/proto/penumbra/custody/v1alpha1/custody.proto",
-                "../../proto/ibc-go-vendor/cosmos/base/tendermint/v1beta1/query.proto",
-                "../../proto/ibc-go-vendor/tendermint/types/validator.proto",
-                "../../proto/ibc-go-vendor/tendermint/p2p/types.proto",
+                "../../proto/rust-vendored/cosmos/base/tendermint/v1beta1/query.proto",
+                "../../proto/rust-vendored/tendermint/types/validator.proto",
+                "../../proto/rust-vendored/tendermint/p2p/types.proto",
             ],
-            &["../../proto/proto/", "../../proto/ibc-go-vendor/"],
+            &["../../proto/proto/", "../../proto/rust-vendored/"],
         )?;
 
     // Finally, build pbjson Serialize, Deserialize impls:

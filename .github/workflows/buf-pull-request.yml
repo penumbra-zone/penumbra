@@ -30,19 +30,6 @@ jobs:
               echo "OK: no changes required to buf.lock"
           fi
 
-      - name: Check for module path changes (2/2)
-        shell: bash
-        run: |
-          cd proto/ibc-go-vendor
-          buf mod update
-          s="$(git status --porcelain)"
-          if [[ -n "$s" ]]; then
-              echo "ERROR: run 'buf mod update' to synchronize buf.lock"
-              echo "$s"
-              exit 1
-          else
-              echo "OK: no changes required to buf.lock"
-          fi
       # Disabled because we don't have any changes to compare against
       # - uses: bufbuild/buf-breaking-action@v1
       #   with:
