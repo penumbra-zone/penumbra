@@ -19,8 +19,8 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           input: 'proto'
       - uses: bufbuild/buf-lint-action@v1
-       with:
-         input: 'proto'
+        with:
+          input: 'proto'
       # Disabled because we don't have any changes to compare against
       # - uses: bufbuild/buf-breaking-action@v1
       #   with:
