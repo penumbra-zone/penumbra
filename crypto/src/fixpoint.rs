@@ -26,6 +26,19 @@ impl From<Amount> for U128x128 {
 }
 
 impl U128x128 {
+    pub fn is_integral(&self) -> bool {
+        let fractional_word = self.0.into_words().1;
+        fractional_word == 0
+    }
+
+    pub fn round_up(self) -> Self {
+        todo!()
+    }
+
+    pub fn truncate(self) -> Self {
+        todo!()
+    }
+
     pub fn checked_mul(self, rhs: Self) -> Option<Self> {
         let [x0, x1] = self.0 .0;
         let [y0, y1] = rhs.0 .0;
