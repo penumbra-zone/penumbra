@@ -95,7 +95,10 @@ pub struct AssetListResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionByNoteRequest {
-    #[prost(message, optional, tag = "1")]
+    /// The expected chain id (empty string if no expectation).
+    #[prost(string, tag = "1")]
+    pub chain_id: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "2")]
     pub note_commitment: ::core::option::Option<
         super::super::core::crypto::v1alpha1::StateCommitment,
     >,
@@ -152,7 +155,10 @@ pub struct ValidatorPenaltyResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NextValidatorRateRequest {
-    #[prost(message, optional, tag = "1")]
+    /// The expected chain id (empty string if no expectation).
+    #[prost(string, tag = "1")]
+    pub chain_id: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "2")]
     pub identity_key: ::core::option::Option<
         super::super::core::crypto::v1alpha1::IdentityKey,
     >,
@@ -167,9 +173,12 @@ pub struct NextValidatorRateResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BatchSwapOutputDataRequest {
-    #[prost(uint64, tag = "1")]
+    /// The expected chain id (empty string if no expectation).
+    #[prost(string, tag = "1")]
+    pub chain_id: ::prost::alloc::string::String,
+    #[prost(uint64, tag = "2")]
     pub height: u64,
-    #[prost(message, optional, tag = "2")]
+    #[prost(message, optional, tag = "3")]
     pub trading_pair: ::core::option::Option<
         super::super::core::dex::v1alpha1::TradingPair,
     >,
@@ -186,7 +195,10 @@ pub struct BatchSwapOutputDataResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StubCpmmReservesRequest {
-    #[prost(message, optional, tag = "1")]
+    /// The expected chain id (empty string if no expectation).
+    #[prost(string, tag = "1")]
+    pub chain_id: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "2")]
     pub trading_pair: ::core::option::Option<
         super::super::core::dex::v1alpha1::TradingPair,
     >,
@@ -216,6 +228,44 @@ pub struct AssetInfoResponse {
     /// If the requested asset was unknown, this field will not be present.
     #[prost(message, optional, tag = "1")]
     pub asset: ::core::option::Option<super::super::core::crypto::v1alpha1::Asset>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ProposalInfoRequest {
+    /// The expected chain id (empty string if no expectation).
+    #[prost(string, tag = "1")]
+    pub chain_id: ::prost::alloc::string::String,
+    /// The proposal id to request information on.
+    #[prost(uint64, tag = "2")]
+    pub proposal_id: u64,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ProposalInfoResponse {
+    /// The block height at which the proposal started voting.
+    #[prost(uint64, tag = "1")]
+    pub start_block_height: u64,
+    /// The position of the state commitment tree at which the proposal is considered to have started voting.
+    #[prost(uint64, tag = "2")]
+    pub start_position: u64,
+}
+/// Requests the validator rate data for a proposal.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ProposalRateDataRequest {
+    /// The expected chain id (empty string if no expectation).
+    #[prost(string, tag = "1")]
+    pub chain_id: ::prost::alloc::string::String,
+    /// The proposal id to request information on.
+    #[prost(uint64, tag = "2")]
+    pub proposal_id: u64,
+}
+/// The rate data for a single validator.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ProposalRateDataResponse {
+    #[prost(message, optional, tag = "1")]
+    pub rate_data: ::core::option::Option<super::super::core::stake::v1alpha1::RateData>,
 }
 /// Performs a key-value query, either by key or by key hash.
 ///
@@ -843,6 +893,47 @@ pub mod specific_query_service_client {
                 "/penumbra.client.v1alpha1.SpecificQueryService/AssetInfo",
             );
             self.inner.unary(request.into_request(), path, codec).await
+        }
+        pub async fn proposal_info(
+            &mut self,
+            request: impl tonic::IntoRequest<super::ProposalInfoRequest>,
+        ) -> Result<tonic::Response<super::ProposalInfoResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.client.v1alpha1.SpecificQueryService/ProposalInfo",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        pub async fn proposal_rate_data(
+            &mut self,
+            request: impl tonic::IntoRequest<super::ProposalRateDataRequest>,
+        ) -> Result<
+            tonic::Response<tonic::codec::Streaming<super::ProposalRateDataResponse>>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.client.v1alpha1.SpecificQueryService/ProposalRateData",
+            );
+            self.inner.server_streaming(request.into_request(), path, codec).await
         }
         /// General-purpose key-value state query API, that can be used to query
         /// arbitrary keys in the JMT storage.
@@ -1479,6 +1570,20 @@ pub mod specific_query_service_server {
             &self,
             request: tonic::Request<super::AssetInfoRequest>,
         ) -> Result<tonic::Response<super::AssetInfoResponse>, tonic::Status>;
+        async fn proposal_info(
+            &self,
+            request: tonic::Request<super::ProposalInfoRequest>,
+        ) -> Result<tonic::Response<super::ProposalInfoResponse>, tonic::Status>;
+        /// Server streaming response type for the ProposalRateData method.
+        type ProposalRateDataStream: futures_core::Stream<
+                Item = Result<super::ProposalRateDataResponse, tonic::Status>,
+            >
+            + Send
+            + 'static;
+        async fn proposal_rate_data(
+            &self,
+            request: tonic::Request<super::ProposalRateDataRequest>,
+        ) -> Result<tonic::Response<Self::ProposalRateDataStream>, tonic::Status>;
         /// General-purpose key-value state query API, that can be used to query
         /// arbitrary keys in the JMT storage.
         async fn key_value(
@@ -1837,6 +1942,88 @@ pub mod specific_query_service_server {
                                 send_compression_encodings,
                             );
                         let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.client.v1alpha1.SpecificQueryService/ProposalInfo" => {
+                    #[allow(non_camel_case_types)]
+                    struct ProposalInfoSvc<T: SpecificQueryService>(pub Arc<T>);
+                    impl<
+                        T: SpecificQueryService,
+                    > tonic::server::UnaryService<super::ProposalInfoRequest>
+                    for ProposalInfoSvc<T> {
+                        type Response = super::ProposalInfoResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::ProposalInfoRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).proposal_info(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = ProposalInfoSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.client.v1alpha1.SpecificQueryService/ProposalRateData" => {
+                    #[allow(non_camel_case_types)]
+                    struct ProposalRateDataSvc<T: SpecificQueryService>(pub Arc<T>);
+                    impl<
+                        T: SpecificQueryService,
+                    > tonic::server::ServerStreamingService<
+                        super::ProposalRateDataRequest,
+                    > for ProposalRateDataSvc<T> {
+                        type Response = super::ProposalRateDataResponse;
+                        type ResponseStream = T::ProposalRateDataStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::ProposalRateDataRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).proposal_rate_data(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = ProposalRateDataSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)

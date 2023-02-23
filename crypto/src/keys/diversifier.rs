@@ -149,7 +149,7 @@ impl AddressIndex {
         bytes
     }
 
-    fn is_ephemeral(&self) -> bool {
+    pub fn is_ephemeral(&self) -> bool {
         self.randomizer != [0; 12]
     }
 

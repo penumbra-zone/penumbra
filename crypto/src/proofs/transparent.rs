@@ -7,10 +7,7 @@ use std::convert::{TryFrom, TryInto};
 use decaf377::FieldExt;
 use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_proto::{
-    core::{
-        governance::v1alpha1::DelegatorVote, transparent_proofs::v1alpha1 as transparent_proofs,
-    },
-    DomainType, Message,
+    core::transparent_proofs::v1alpha1 as transparent_proofs, DomainType, Message,
 };
 use penumbra_tct as tct;
 

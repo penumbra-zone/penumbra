@@ -98,6 +98,13 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
             .await?)
     }
 
+    /// Get the proposal voting end block for a given proposal.
+    async fn proposal_voting_start_position(&self, proposal_id: u64) -> Result<Option<u64>> {
+        Ok(self
+            .get_proto::<u64>(&state_key::proposal_voting_start_position(proposal_id))
+            .await?)
+    }
+
     /// Get the total voting power across all validators.
     async fn total_voting_power(&self) -> Result<u64> {
         let mut total = 0;
