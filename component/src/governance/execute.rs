@@ -11,7 +11,7 @@ use super::{
 };
 use anyhow::{Context, Result};
 use penumbra_chain::{Epoch, StateReadExt as _, StateWriteExt};
-use penumbra_crypto::ProposalNft;
+use penumbra_crypto::{ProposalNft, VotingReceiptToken};
 use penumbra_storage::StateWrite;
 use penumbra_transaction::action::{
     DelegatorVote, DelegatorVoteBody, ProposalDepositClaim, ProposalPayload, ProposalSubmit,
@@ -39,6 +39,11 @@ pub async fn proposal_submit<S: StateWrite>(
     // Register the denom for the voting proposal NFT
     state
         .register_denom(&ProposalNft::voting(proposal_id).denom())
+        .await?;
+
+    // Register the denom for the vote receipt tokens
+    state
+        .register_denom(&VotingReceiptToken::new(proposal_id).denom())
         .await?;
 
     // Set the proposal state to voting (votes start immediately)
