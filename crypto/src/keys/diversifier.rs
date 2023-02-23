@@ -178,6 +178,7 @@ impl From<u32> for AddressIndex {
     }
 }
 
+// TODO: add support for ephemeral addresses to FromStr impl.
 impl FromStr for AddressIndex {
     type Err = anyhow::Error;
 
