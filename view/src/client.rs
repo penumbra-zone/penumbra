@@ -480,6 +480,10 @@ where
                 plan.swap_claim_plans()
                     .map(|swap_claim| swap_claim.swap_plaintext.swap_commitment().into()),
             )
+            .chain(
+                plan.delegator_vote_plans()
+                    .map(|vote_plan| vote_plan.staked_note.commit().into()),
+            )
             .collect();
 
         let request = WitnessRequest {

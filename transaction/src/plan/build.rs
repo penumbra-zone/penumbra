@@ -275,6 +275,26 @@ impl TransactionPlan {
             }));
         }
 
+        // Start building the transaction's delegator votes.
+        let mut in_progress_delegator_vote_actions = Vec::new();
+        for (delegator_vote_plan, auth_sig) in self
+            .delegator_vote_plans()
+            .zip(auth_data.delegator_vote_auths.into_iter())
+            .map(|(dvp, auth_sig)| (dvp.clone(), auth_sig))
+        {
+            let note_commitment = delegator_vote_plan.staked_note.commit();
+            let auth_path = witness_data
+                .state_commitment_proofs
+                .get(&note_commitment)
+                .context(format!("could not get proof for {note_commitment:?}"))?
+                .clone();
+            let fvk_ = fvk.clone();
+
+            in_progress_delegator_vote_actions.push(tokio::spawn(async move {
+                delegator_vote_plan.delegator_vote(&fvk_, auth_sig, auth_path.clone())
+            }));
+        }
+
         // Build the clue plans.
         for clue_plan in self.clue_plans() {
             fmd_clues.push(clue_plan.clue());
@@ -327,7 +347,13 @@ impl TransactionPlan {
         for validator_vote in self.validator_votes().cloned() {
             actions.push(Action::ValidatorVote(validator_vote))
         }
-        // TODO: delegator vote
+        for delegator_vote in in_progress_delegator_vote_actions {
+            actions.push(Action::DelegatorVote(
+                delegator_vote
+                    .await
+                    .expect("can form delegator vote action"),
+            ));
+        }
         for proposal_deposit_claim in self.proposal_deposit_claims().cloned() {
             actions.push(Action::ProposalDepositClaim(proposal_deposit_claim))
         }

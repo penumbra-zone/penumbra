@@ -124,9 +124,14 @@ impl DelegatorVoteProof {
         // Additionally, check that the position of the spend proof is before the start
         // start_height, which ensures that the note being voted with was created before voting
         // started.
-        if self.spend_proof.state_commitment_proof.position() < start_position {
+        let vote_proof_position = self.spend_proof.state_commitment_proof.position();
+        if vote_proof_position >= start_position {
             return Err(anyhow!(
-                "vote proof position is not before start height of voting"
+                "vote proof from epoch {}, block {} is not before start position of voting at epoch {}, block {}",
+                vote_proof_position.epoch(),
+                vote_proof_position.block(),
+                start_position.epoch(),
+                start_position.block(),
             ));
         }
 
