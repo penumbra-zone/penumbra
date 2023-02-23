@@ -1,4 +1,7 @@
-use std::{fs::File, io::Write};
+use std::{
+    fs::File,
+    io::{Read, Write},
+};
 
 use anyhow::{anyhow, Context, Result};
 use ark_ff::UniformRand;
@@ -476,7 +479,13 @@ impl TxCmd {
                 println!("Sorry, this command is not yet implemented");
             }
             TxCmd::Proposal(ProposalCmd::Submit { file, fee, source }) => {
-                let proposal: Proposal = serde_json::from_reader(File::open(file)?)?;
+                let mut proposal_file = File::open(file).context("can't open proposal file")?;
+                let mut proposal_string = String::new();
+                proposal_file
+                    .read_to_string(&mut proposal_string)
+                    .context("can't read proposal file")?;
+                let proposal: Proposal =
+                    toml::from_str(&proposal_string).context("can't parse proposal file")?;
                 let fee = Fee::from_staking_token_amount((*fee).into());
                 let plan = plan::proposal_submit(
                     &app.fvk,
@@ -523,10 +532,10 @@ impl TxCmd {
                 if let Some(file) = file {
                     File::create(file)
                         .with_context(|| format!("cannot create file {:?}", file))?
-                        .write_all(&serde_json::to_vec_pretty(&template)?)
+                        .write_all(toml::to_string_pretty(&template)?.as_bytes())
                         .context("could not write file")?;
                 } else {
-                    println!("{}", serde_json::to_string_pretty(&template)?);
+                    println!("{}", toml::to_string_pretty(&template)?);
                 }
             }
             TxCmd::Proposal(ProposalCmd::DepositClaim {
