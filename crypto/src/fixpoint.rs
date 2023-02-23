@@ -31,12 +31,22 @@ impl U128x128 {
         fractional_word == 0
     }
 
-    pub fn round_up(self) -> Self {
-        todo!()
+    pub fn rounding(self) -> Option<Self> {
+        let one_half: u128 = 1 << 127;
+        let (integral, fractional) = self.0.into_words();
+        if fractional >= one_half {
+            let Some(integral) = integral.checked_add(1) else {
+                return None;
+            };
+            Some(Self(U256::from_words(integral, 0u128)))
+        } else {
+            Some(self.truncate())
+        }
     }
 
     pub fn truncate(self) -> Self {
-        todo!()
+        let integral_word = self.0.into_words().0;
+        Self(U256::from_words(integral_word, 0u128))
     }
 
     pub fn checked_mul(self, rhs: Self) -> Option<Self> {
