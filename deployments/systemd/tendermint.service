@@ -2,7 +2,7 @@
 Description=Tendermint for Penumbra
 
 [Service]
-ExecStart=/usr/local/bin/tendermint start --home /home/$USER/.penumbra/testnet_data/node0/tendermint
+ExecStart=/usr/local/bin/tendermint start --home $HOME/.penumbra/testnet_data/node0/tendermint
 Restart=on-failure
 RestartSec=5
 User=$USER
