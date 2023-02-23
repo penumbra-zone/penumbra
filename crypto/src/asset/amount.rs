@@ -1,10 +1,11 @@
+use anyhow::anyhow;
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, iter::Sum, num::NonZeroU128, ops};
 
-use crate::{Fq, Fr};
+use crate::{fixpoint::U128x128, Fq, Fr};
 use decaf377::r1cs::FqVar;
 
 #[derive(Serialize, Deserialize, PartialEq, PartialOrd, Eq, Clone, Debug, Copy)]
@@ -242,6 +243,20 @@ impl From<i128> for Amount {
 impl From<Amount> for i128 {
     fn from(amount: Amount) -> i128 {
         amount.inner as i128
+    }
+}
+
+impl TryFrom<U128x128> for Amount {
+    type Error = anyhow::Error;
+
+    fn try_from(value: U128x128) -> Result<Self, Self::Error> {
+        if value.is_integral() {
+            let mut integral = [0u8; 16];
+            integral.copy_from_slice(&value.to_le_bytes());
+            Ok(u128::from_le_bytes(integral).into())
+        } else {
+            Err(anyhow!("cannot convert fractional number to integer"))
+        }
     }
 }
 
