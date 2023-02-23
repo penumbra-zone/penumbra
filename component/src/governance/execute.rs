@@ -10,7 +10,7 @@ use super::{
     StateReadExt as _,
 };
 use anyhow::{Context, Result};
-use penumbra_chain::{StateReadExt as _, StateWriteExt};
+use penumbra_chain::{Epoch, StateReadExt as _, StateWriteExt};
 use penumbra_crypto::ProposalNft;
 use penumbra_storage::StateWrite;
 use penumbra_transaction::action::{
@@ -62,6 +62,26 @@ pub async fn proposal_submit<S: StateWrite>(
         .put_proposal_voting_start(proposal_id, current_block)
         .await;
     state.put_proposal_voting_end(proposal_id, voting_end).await;
+
+    // Compute the epoch and block of the proposal voting start block height, and use that to
+    // compute the start TCT position for the proposal (we say that all proposals in a block have
+    // the start position at the beginning of the block, so ordering of votes cannot invalidate them
+    // within a block).
+    //
+    // TODO: The below fixed mathematical conversion from block height to epoch+block is not going
+    // to be possible when epochs can be varying in height; it will need to be replaced with a
+    // state lookup.
+    let current_epoch = Epoch::from_height(current_block, chain_params.epoch_duration);
+    let epoch: u16 = current_epoch
+        .index
+        .try_into()
+        .expect("epoch index can't be larger than 2^16");
+    let block: u16 = (current_block % u64::from(epoch))
+        .try_into()
+        .expect("block index can't be larger than 2^16");
+    state
+        .put_proposal_voting_start_position(proposal_id, (epoch, block, 0).into())
+        .await;
 
     // If there was a proposal submitted, ensure we track this so that clients
     // can retain state needed to vote as delegators

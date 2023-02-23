@@ -6,6 +6,7 @@ use futures::{Stream, StreamExt};
 use penumbra_crypto::{asset::Amount, stake::IdentityKey, Nullifier};
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
+use penumbra_tct as tct;
 use penumbra_transaction::action::{Proposal, ProposalPayload, Vote};
 use tokio::task::JoinSet;
 
@@ -296,7 +297,7 @@ pub trait StateWriteExt: StateWrite {
         self.put(state_key::validator_vote(proposal_id, identity_key), vote);
     }
 
-    /// Set the proposal voting end block height for a proposal.
+    /// Set the proposal voting start block height for a proposal.
     async fn put_proposal_voting_start(&mut self, proposal_id: u64, end_block: u64) {
         self.put_proto(state_key::proposal_voting_start(proposal_id), end_block);
     }
@@ -304,6 +305,18 @@ pub trait StateWriteExt: StateWrite {
     /// Set the proposal voting end block height for a proposal.
     async fn put_proposal_voting_end(&mut self, proposal_id: u64, end_block: u64) {
         self.put_proto(state_key::proposal_voting_end(proposal_id), end_block);
+    }
+
+    /// Set the proposal voting start position for a proposal.
+    async fn put_proposal_voting_start_position(
+        &mut self,
+        proposal_id: u64,
+        start_position: tct::Position,
+    ) {
+        self.put_proto(
+            state_key::proposal_voting_start_position(proposal_id),
+            u64::from(start_position),
+        );
     }
 
     /// Mark a nullifier as having voted on a proposal.
