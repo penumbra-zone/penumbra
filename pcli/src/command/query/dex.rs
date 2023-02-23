@@ -33,6 +33,7 @@ impl DexCmd {
         let reserves_data: Reserves = client
             .stub_cpmm_reserves(StubCpmmReservesRequest {
                 trading_pair: Some((*trading_pair).into()),
+                chain_id: app.view().chain_params().await?.chain_id,
             })
             .await?
             .into_inner()
@@ -94,6 +95,7 @@ impl DexCmd {
             .batch_swap_output_data(BatchSwapOutputDataRequest {
                 height: *height,
                 trading_pair: Some((*trading_pair).into()),
+                chain_id: app.view().chain_params().await?.chain_id,
             })
             .await?
             .into_inner()

@@ -1,7 +1,6 @@
 use anyhow::{Context as _, Result};
 
 use super::proposal::{self, chain_params};
-use penumbra_tct as tct;
 use penumbra_transaction::{
     action::{
         DelegatorVote, DelegatorVoteBody, Proposal, ProposalDepositClaim, ProposalSubmit,

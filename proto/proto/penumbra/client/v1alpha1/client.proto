@@ -104,6 +104,8 @@ service SpecificQueryService {
   rpc BatchSwapOutputData(BatchSwapOutputDataRequest) returns (BatchSwapOutputDataResponse);
   rpc StubCPMMReserves(StubCPMMReservesRequest) returns (StubCPMMReservesResponse);
   rpc AssetInfo(AssetInfoRequest) returns (AssetInfoResponse);
+  rpc ProposalInfo(ProposalInfoRequest) returns (ProposalInfoResponse);
+  rpc ProposalRateData(ProposalRateDataRequest) returns (stream ProposalRateDataResponse);
 
   // General-purpose key-value state query API, that can be used to query
   // arbitrary keys in the JMT storage.
@@ -115,7 +117,9 @@ service SpecificQueryService {
 }
 
 message TransactionByNoteRequest {
-  core.crypto.v1alpha1.StateCommitment note_commitment = 1;
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  core.crypto.v1alpha1.StateCommitment note_commitment = 2;
 }
 
 message TransactionByNoteResponse {
@@ -146,7 +150,9 @@ message ValidatorPenaltyResponse {
 }
 
 message NextValidatorRateRequest {
-  core.crypto.v1alpha1.IdentityKey identity_key = 1;
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  core.crypto.v1alpha1.IdentityKey identity_key = 2;
 }
 
 message NextValidatorRateResponse {
@@ -155,8 +161,10 @@ message NextValidatorRateResponse {
 
 // Requests batch swap data associated with a given height and trading pair from the view service.
 message BatchSwapOutputDataRequest {
-  uint64 height = 1;
-  core.dex.v1alpha1.TradingPair trading_pair = 2;
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  uint64 height = 2;
+  core.dex.v1alpha1.TradingPair trading_pair = 3;
 }
 
 message BatchSwapOutputDataResponse {
@@ -165,7 +173,9 @@ message BatchSwapOutputDataResponse {
 
 // Requests CPMM reserves data associated with a given trading pair from the view service.
 message StubCPMMReservesRequest {
-  core.dex.v1alpha1.TradingPair trading_pair = 1;
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  core.dex.v1alpha1.TradingPair trading_pair = 2;
 }
 
 message StubCPMMReservesResponse {
@@ -185,6 +195,33 @@ message AssetInfoResponse {
   //
   // If the requested asset was unknown, this field will not be present.
   core.crypto.v1alpha1.Asset asset = 1;
+}
+
+message ProposalInfoRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  // The proposal id to request information on.
+  uint64 proposal_id = 2;
+}
+
+message ProposalInfoResponse {
+  // The block height at which the proposal started voting.
+  uint64 start_block_height = 1;
+  // The position of the state commitment tree at which the proposal is considered to have started voting.
+  uint64 start_position = 2;
+}
+
+// Requests the validator rate data for a proposal.
+message ProposalRateDataRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  // The proposal id to request information on.
+  uint64 proposal_id = 2;
+}
+
+// The rate data for a single validator.
+message ProposalRateDataResponse {
+  core.stake.v1alpha1.RateData rate_data = 1;
 }
 
 // Performs a key-value query, either by key or by key hash.

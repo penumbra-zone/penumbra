@@ -21,6 +21,10 @@ pub fn proposal_voting_start(proposal_id: u64) -> String {
     format!("governance/proposal/{proposal_id}/voting_start")
 }
 
+pub fn proposal_voting_start_position(proposal_id: u64) -> String {
+    format!("governance/proposal/{proposal_id}/voting_start_position")
+}
+
 pub fn proposal_voting_end(proposal_id: u64) -> String {
     format!("governance/proposal/{proposal_id}/voting_end")
 }
@@ -43,6 +47,11 @@ pub fn per_proposal_voted_nullifier_lookup(proposal_id: u64, nullifier: &Nullifi
 
 pub fn rate_data_at_proposal_start(proposal_id: u64, identity_key: IdentityKey) -> String {
     format!("governance/proposal/{proposal_id}/rate_data_at_start/{identity_key}")
+}
+
+pub fn all_rate_data_at_proposal_start(proposal_id: u64) -> String {
+    // Note: this has to be the prefix of the `rate_data_at_proposal_start` function above.
+    format!("governance/proposal/{proposal_id}/rate_data_at_start/")
 }
 
 pub fn voting_power_at_proposal_start(proposal_id: u64, identity_key: IdentityKey) -> String {

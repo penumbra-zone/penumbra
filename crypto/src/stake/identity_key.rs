@@ -70,6 +70,7 @@ impl From<IdentityKey> for NextValidatorRateRequest {
     fn from(k: IdentityKey) -> Self {
         NextValidatorRateRequest {
             identity_key: Some(k.into()),
+            chain_id: Default::default(),
         }
     }
 }

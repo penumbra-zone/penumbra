@@ -15,9 +15,9 @@ pub use swap_claim_view::SwapClaimView;
 pub use swap_view::SwapView;
 
 use crate::action::{
-    Delegate, DelegatorVote, Ics20Withdrawal, PositionClose, PositionOpen, PositionRewardClaim,
-    PositionWithdraw, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, Undelegate,
-    UndelegateClaim, ValidatorVote,
+    Delegate, Ics20Withdrawal, PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw,
+    ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, Undelegate, UndelegateClaim,
+    ValidatorVote,
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

@@ -5,7 +5,9 @@ use futures::StreamExt;
 use futures::TryStreamExt;
 use penumbra_chain::AppHashRead;
 use penumbra_chain::StateReadExt as _;
+use penumbra_component::governance::StateReadExt as _;
 use penumbra_component::shielded_pool::{StateReadExt as _, SupplyRead as _};
+use penumbra_component::stake::rate::RateData;
 use penumbra_component::stake::StateReadExt as _;
 use penumbra_component::stubdex::StateReadExt as _;
 use penumbra_crypto::asset::{self, Asset};
@@ -13,9 +15,11 @@ use penumbra_proto::{
     self as proto,
     client::v1alpha1::{
         specific_query_service_server::SpecificQueryService, AssetInfoRequest, AssetInfoResponse,
-        BatchSwapOutputDataRequest, KeyValueRequest, KeyValueResponse, StubCpmmReservesRequest,
-        ValidatorStatusRequest,
+        BatchSwapOutputDataRequest, KeyValueRequest, KeyValueResponse, ProposalInfoRequest,
+        ProposalInfoResponse, ProposalRateDataRequest, ProposalRateDataResponse,
+        StubCpmmReservesRequest, ValidatorStatusRequest,
     },
+    StateReadProto as _,
 };
 
 use penumbra_storage::StateRead;
@@ -45,6 +49,9 @@ use super::Info;
 impl SpecificQueryService for Info {
     type PrefixValueStream =
         Pin<Box<dyn futures::Stream<Item = Result<PrefixValueResponse, tonic::Status>> + Send>>;
+    type ProposalRateDataStream = Pin<
+        Box<dyn futures::Stream<Item = Result<ProposalRateDataResponse, tonic::Status>> + Send>,
+    >;
 
     #[instrument(skip(self, request))]
     async fn key_value(
@@ -66,6 +73,8 @@ impl SpecificQueryService for Info {
             return Err(Status::invalid_argument("key is empty"));
         }
 
+        // TODO: we are unconditionally generating the proof here; we shouldn't do that if the
+        // request doesn't ask for it
         let (value, proof) = state
             .get_with_proof_to_apphash(request.key.into_bytes())
             .await
@@ -178,6 +187,10 @@ impl SpecificQueryService for Info {
         request: tonic::Request<TransactionByNoteRequest>,
     ) -> Result<tonic::Response<TransactionByNoteResponse>, Status> {
         let state = self.storage.latest_snapshot();
+        state
+            .check_chain_id(&request.get_ref().chain_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {}", e)))?;
         let cm = request
             .into_inner()
             .note_commitment
@@ -260,6 +273,10 @@ impl SpecificQueryService for Info {
         request: tonic::Request<BatchSwapOutputDataRequest>,
     ) -> Result<tonic::Response<BatchSwapOutputDataResponse>, Status> {
         let state = self.storage.latest_snapshot();
+        state
+            .check_chain_id(&request.get_ref().chain_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {}", e)))?;
         let request_inner = request.into_inner();
         let height = request_inner.height;
         let trading_pair = request_inner
@@ -288,6 +305,10 @@ impl SpecificQueryService for Info {
         request: tonic::Request<StubCpmmReservesRequest>,
     ) -> Result<tonic::Response<StubCpmmReservesResponse>, Status> {
         let state = self.storage.latest_snapshot();
+        state
+            .check_chain_id(&request.get_ref().chain_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {}", e)))?;
         let request_inner = request.into_inner();
         let trading_pair = request_inner
             .trading_pair
@@ -314,6 +335,10 @@ impl SpecificQueryService for Info {
         request: tonic::Request<NextValidatorRateRequest>,
     ) -> Result<tonic::Response<NextValidatorRateResponse>, Status> {
         let state = self.storage.latest_snapshot();
+        state
+            .check_chain_id(&request.get_ref().chain_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {}", e)))?;
         let identity_key = request
             .into_inner()
             .identity_key
@@ -332,5 +357,79 @@ impl SpecificQueryService for Info {
             })),
             None => Err(Status::not_found("next validator rate not found")),
         }
+    }
+
+    #[instrument(skip(self, request))]
+    async fn proposal_info(
+        &self,
+        request: tonic::Request<ProposalInfoRequest>,
+    ) -> Result<tonic::Response<ProposalInfoResponse>, Status> {
+        let state = self.storage.latest_snapshot();
+        state
+            .check_chain_id(&request.get_ref().chain_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {}", e)))?;
+        let proposal_id = request.into_inner().proposal_id;
+
+        let start_block_height = state
+            .proposal_voting_start(proposal_id)
+            .await
+            .map_err(|e| tonic::Status::internal(e.to_string()))?
+            .ok_or_else(|| tonic::Status::unknown(format!("proposal {proposal_id} not found")))?;
+
+        let start_position = state
+            .proposal_voting_start_position(proposal_id)
+            .await
+            .map_err(|e| tonic::Status::internal(e.to_string()))?
+            .ok_or_else(|| tonic::Status::unknown(format!("proposal {proposal_id} not found")))?;
+
+        Ok(tonic::Response::new(ProposalInfoResponse {
+            start_block_height,
+            start_position,
+        }))
+    }
+
+    #[instrument(skip(self, request))]
+    async fn proposal_rate_data(
+        &self,
+        request: tonic::Request<ProposalRateDataRequest>,
+    ) -> Result<tonic::Response<Self::ProposalRateDataStream>, Status> {
+        let state = self.storage.latest_snapshot();
+        state
+            .check_chain_id(&request.get_ref().chain_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {}", e)))?;
+        let proposal_id = request.into_inner().proposal_id;
+
+        use penumbra_component::governance::state_key;
+        let stream_iter = state
+            .prefix(&state_key::all_rate_data_at_proposal_start(proposal_id))
+            .next()
+            .await
+            .into_iter();
+        let s = try_stream! {
+            for item in stream_iter
+                .map(|item| item.map_err(|e| tonic::Status::internal(e.to_string()))) {
+                    yield item
+                }
+        };
+
+        Ok(tonic::Response::new(
+            s.map_ok(|i: Result<(String, RateData), tonic::Status>| {
+                let (_key, rate_data) = i.unwrap();
+                ProposalRateDataResponse {
+                    rate_data: Some(rate_data.into()),
+                }
+            })
+            .map_err(|e: anyhow::Error| {
+                tonic::Status::unavailable(format!(
+                    "error getting prefix value from storage: {}",
+                    e
+                ))
+            })
+            // TODO: how do we instrument a Stream
+            //.instrument(Span::current())
+            .boxed(),
+        ))
     }
 }
