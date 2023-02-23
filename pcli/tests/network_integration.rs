@@ -288,7 +288,6 @@ fn swap() {
 }
 
 // Temporarily disabled until #1938 is fixed.
-/*
 #[ignore]
 #[test]
 fn governance_submit_proposal() {
@@ -303,10 +302,9 @@ fn governance_submit_proposal() {
             "tx",
             "proposal",
             "template",
-            "--kind",
             "signaling",
             "--file",
-            "proposal.json",
+            "proposal.toml",
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     template_cmd.assert().success();
@@ -321,7 +319,7 @@ fn governance_submit_proposal() {
             "proposal",
             "submit",
             "--file",
-            "proposal.json",
+            "proposal.toml",
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     submit_cmd.assert().success();
@@ -343,7 +341,6 @@ fn governance_submit_proposal() {
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     proposals_cmd.assert().success();
 }
- */
 
 #[ignore]
 #[test]
@@ -365,7 +362,8 @@ fn duplicate_consensus_key_forbidden() {
     query_cmd.assert().success();
     let validator_def_vec = query_cmd.unwrap().stdout;
     let original_validator_def: ValidatorToml =
-        toml::from_slice(&validator_def_vec).expect("can parse validator template as TOML");
+        toml::from_str(&String::from_utf8_lossy(&validator_def_vec))
+            .expect("can parse validator template as TOML");
 
     // Get template for promoting our node to validator.
     let mut template_cmd = Command::cargo_bin("pcli").unwrap();
@@ -381,7 +379,8 @@ fn duplicate_consensus_key_forbidden() {
     template_cmd.assert().success();
     let template_vec = template_cmd.unwrap().stdout;
     let mut new_validator_def: ValidatorToml =
-        toml::from_slice(&template_vec).expect("can parse validator template as TOML");
+        toml::from_str(&String::from_utf8_lossy(&template_vec))
+            .expect("can parse validator template as TOML");
 
     // Overwrite randomly generated consensus key with one taken from
     // a real validator.
