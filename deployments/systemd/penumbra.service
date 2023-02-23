@@ -3,7 +3,7 @@ Description=Penumbra pd
 Wants=tendermint.service
 
 [Service]
-ExecStart=/usr/local/bin/pd start --home /home/$USER/.penumbra/testnet_data/node0/pd
+ExecStart=/usr/local/bin/pd start --home $HOME/.penumbra/testnet_data/node0/pd
 Restart=on-failure
 RestartSec=5
 User=$USER
