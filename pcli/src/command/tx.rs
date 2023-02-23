@@ -1,4 +1,5 @@
 use std::{
+    collections::BTreeMap,
     fs::File,
     io::{Read, Write},
 };
@@ -15,7 +16,9 @@ use penumbra_crypto::{
     transaction::Fee,
     Amount, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_proto::client::v1alpha1::ValidatorPenaltyRequest;
+use penumbra_proto::client::v1alpha1::{
+    ProposalInfoRequest, ProposalInfoResponse, ProposalRateDataRequest, ValidatorPenaltyRequest,
+};
 use penumbra_transaction::{
     action::Proposal,
     plan::{SwapClaimPlan, UndelegateClaimPlan},
@@ -582,24 +585,72 @@ impl TxCmd {
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Proposal(ProposalCmd::Vote {
-                proposal_id: _,
-                vote: _,
-                fee: _,
-                source: _,
+                proposal_id,
+                vote,
+                fee,
+                source,
             }) => {
-                println!("Sorry, delegator voting is not yet implemented");
-                // TODO: fill this in for delegator votes
-                // let plan = plan::delegator_vote(
-                //     &app.fvk,
-                //     &mut app.view,
-                //     OsRng,
-                //     *proposal_id,
-                //     *vote,
-                //     *fee,
-                //     *source,
-                // )
-                // .await?;
-                // app.build_and_submit_transaction(plan).await?;
+                // Before we vote on the proposal, we have to gather some information about it so
+                // that we can prepare our vote:
+                // - the start height, so we can select the votable staked notes to vote with
+                // - the start position, so we can submit the appropriate public `start_position`
+                //   input for stateless proof verification
+                // - the rate data for every validator at the start of the proposal, so we can
+                //   convert staked notes into voting power and mint the correct amount of voting
+                //   receipt tokens to ourselves
+
+                let mut client = app.specific_client().await?;
+                let ProposalInfoResponse {
+                    start_block_height,
+                    start_position,
+                } = client
+                    .proposal_info(ProposalInfoRequest {
+                        chain_id: app.view().chain_params().await?.chain_id,
+                        proposal_id: *proposal_id,
+                    })
+                    .await?
+                    .into_inner();
+                let start_position = start_position.into();
+
+                let mut rate_data_stream = client
+                    .proposal_rate_data(ProposalRateDataRequest {
+                        chain_id: app.view().chain_params().await?.chain_id,
+                        proposal_id: *proposal_id,
+                    })
+                    .await?
+                    .into_inner();
+
+                let mut start_rate_data = BTreeMap::new();
+                while let Some(response) = rate_data_stream.message().await? {
+                    let rate_data: RateData = response
+                        .rate_data
+                        .ok_or_else(|| {
+                            anyhow::anyhow!("proposal rate data stream response missing rate data")
+                        })?
+                        .try_into()
+                        .context("invalid rate data")?;
+                    start_rate_data.insert(rate_data.identity_key.clone(), rate_data);
+                }
+
+                let fee = Fee::from_staking_token_amount((*fee).into());
+
+                let plan = Planner::new(OsRng)
+                    .delegator_vote(
+                        *proposal_id,
+                        start_block_height,
+                        start_position,
+                        start_rate_data,
+                        *vote,
+                    )
+                    .fee(fee)
+                    .plan(
+                        app.view.as_mut().unwrap(),
+                        &app.fvk,
+                        AddressIndex::new(*source),
+                    )
+                    .await?;
+
+                app.build_and_submit_transaction(plan).await?;
             }
         }
         Ok(())
