@@ -313,11 +313,11 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
                 denom::Inner::new(format!("uvoted_on_{data}"), vec![
                     denom::UnitData {
                         exponent: 6,
-                        denom: format!("mvoted_on_{data}"),
+                        denom: format!("voted_on_{data}"),
                     },
                     denom::UnitData {
                         exponent: 3,
-                        denom: format!("voted_on_{data}"),
+                        denom: format!("mvoted_on_{data}"),
                     },
                 ])
             }) as for<'r> fn(&'r str) -> _)
