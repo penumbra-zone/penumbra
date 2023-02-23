@@ -21,8 +21,10 @@ impl TransactionPlan {
             let auth_sig = rsk.sign(&mut rng, effect_hash.as_ref());
             spend_auths.push(auth_sig);
         }
-        for spend_plan in self.delegator_vote_plans() {
-            let rsk = sk.spend_auth_key().randomize(&spend_plan.randomizer);
+        for delegator_vote_plan in self.delegator_vote_plans() {
+            let rsk = sk
+                .spend_auth_key()
+                .randomize(&delegator_vote_plan.randomizer);
             let auth_sig = rsk.sign(&mut rng, effect_hash.as_ref());
             delegator_vote_auths.push(auth_sig);
         }

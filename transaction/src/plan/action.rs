@@ -82,6 +82,7 @@ impl ActionPlan {
             ProposalSubmit(proposal_submit) => proposal_submit.balance(),
             ProposalWithdraw(proposal_withdraw) => proposal_withdraw.balance(),
             ProposalDepositClaim(proposal_deposit_claim) => proposal_deposit_claim.balance(),
+            DelegatorVote(delegator_vote) => delegator_vote.balance(),
             PositionOpen(_position_open) => todo!(),
             PositionClose(_position_close) => todo!(),
             PositionWithdraw(_position_withdraw) => todo!(),
@@ -89,9 +90,7 @@ impl ActionPlan {
                 todo!()
             }
             // None of these contribute to transaction balance:
-            IBCAction(_) | ValidatorDefinition(_) | DelegatorVote(_) | ValidatorVote(_) => {
-                Balance::default()
-            }
+            IBCAction(_) | ValidatorDefinition(_) | ValidatorVote(_) => Balance::default(),
         }
     }
 }
