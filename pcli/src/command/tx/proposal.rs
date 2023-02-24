@@ -1,14 +1,14 @@
-use penumbra_transaction::action::{ProposalKind, Vote};
+use penumbra_transaction::action::ProposalKind;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum ProposalCmd {
     /// Make a template file for a new proposal.
     Template {
         /// The file to output the template to.
-        #[clap(long)]
+        #[clap(long, global = true)]
         file: Option<camino::Utf8PathBuf>,
         /// The kind of the proposal to template [one of: signaling, emergency, parameter-change, or dao-spend].
-        #[clap(long)]
+        #[clap(subcommand)]
         kind: ProposalKind,
     },
     /// Submit a new governance proposal.
@@ -38,22 +38,6 @@ pub enum ProposalCmd {
         #[clap(long, default_value = "0")]
         source: u32,
     },
-    /// Vote on a governance proposal (in your role as a delegator).
-    ///
-    /// To vote on a proposal as a validator, use `pcli validator vote`.
-    Vote {
-        /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0")]
-        fee: u64,
-        /// The proposal id to vote on.
-        #[clap(long = "on")]
-        proposal_id: u64,
-        /// The vote to cast.
-        vote: Vote,
-        /// Only spend funds originally received by the given address index.
-        #[clap(long, default_value = "0")]
-        source: u32,
-    },
     /// Claim a governance proposal deposit for a proposal you submitted that has finished voting.
     ///
     /// This consumes the voting or withdrawn proposal NFT and mints an NFT representing whether the
@@ -78,7 +62,6 @@ impl ProposalCmd {
             ProposalCmd::Submit { .. } => false,
             ProposalCmd::Withdraw { .. } => false,
             ProposalCmd::DepositClaim { .. } => false,
-            ProposalCmd::Vote { .. } => false,
         }
     }
 }
