@@ -65,46 +65,64 @@ pub struct SpendCircuit {
 impl ConstraintSynthesizer<Fq> for SpendCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
+        assert!(cs.is_satisfied().unwrap_or(true));
         let note_var = note::NoteVar::new_witness(cs.clone(), || Ok(self.note.clone()))?;
+        assert!(cs.is_satisfied().unwrap_or(true));
         let claimed_note_commitment = note::NoteCommitmentVar::new_witness(cs.clone(), || {
             Ok(self.state_commitment_proof.commitment())
         })?;
+        assert!(cs.is_satisfied().unwrap_or(true));
 
         let position_var = tct::r1cs::PositionVar::new_witness(cs.clone(), || {
             Ok(self.state_commitment_proof.position())
         })?;
+        assert!(cs.is_satisfied().unwrap_or(true));
         let merkle_path_var =
             tct::r1cs::MerkleAuthPathVar::new(cs.clone(), self.state_commitment_proof)?;
+        assert!(cs.is_satisfied().unwrap_or(true));
 
         let v_blinding_arr: [u8; 32] = self.v_blinding.to_bytes();
+        assert!(cs.is_satisfied().unwrap_or(true));
         let v_blinding_vars = UInt8::new_witness_vec(cs.clone(), &v_blinding_arr)?;
+        assert!(cs.is_satisfied().unwrap_or(true));
 
         let spend_auth_randomizer_var =
             SpendAuthRandomizerVar::new_witness(cs.clone(), || Ok(self.spend_auth_randomizer))?;
+        assert!(cs.is_satisfied().unwrap_or(true));
         let ak_element_var: AuthorizationKeyVar =
             AuthorizationKeyVar::new_witness(cs.clone(), || Ok(self.ak))?;
+        assert!(cs.is_satisfied().unwrap_or(true));
         let nk_var = NullifierKeyVar::new_witness(cs.clone(), || Ok(self.nk))?;
+        assert!(cs.is_satisfied().unwrap_or(true));
 
         // Public inputs
         let anchor_var = FqVar::new_input(cs.clone(), || Ok(Fq::from(self.anchor)))?;
+        assert!(cs.is_satisfied().unwrap_or(true));
         let claimed_balance_commitment_var =
             BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.balance_commitment))?;
+        assert!(cs.is_satisfied().unwrap_or(true));
         let claimed_nullifier_var = NullifierVar::new_input(cs.clone(), || Ok(self.nullifier))?;
+        assert!(cs.is_satisfied().unwrap_or(true));
         let rk_var = RandomizedVerificationKey::new_input(cs.clone(), || Ok(self.rk.clone()))?;
+        assert!(cs.is_satisfied().unwrap_or(true));
 
         // We short circuit to true if value released is 0. That means this is a _dummy_ spend.
         let is_dummy = note_var.amount().is_eq(&FqVar::zero())?;
+        assert!(cs.is_satisfied().unwrap_or(true));
         // We use a Boolean constraint to enforce the below constraints only if this is not a
         // dummy spend.
         let is_not_dummy = is_dummy.not();
+        assert!(cs.is_satisfied().unwrap_or(true));
 
         // Note commitment integrity.
         let note_commitment_var = note_var.commit()?;
         note_commitment_var.conditional_enforce_equal(&claimed_note_commitment, &is_not_dummy)?;
+        assert!(cs.is_satisfied().unwrap_or(true));
 
         // Nullifier integrity.
         let nullifier_var = nk_var.derive_nullifier(&position_var, &claimed_note_commitment)?;
         nullifier_var.conditional_enforce_equal(&claimed_nullifier_var, &is_not_dummy)?;
+        assert!(cs.is_satisfied().unwrap_or(true));
 
         // Merkle auth path verification against the provided anchor.
         merkle_path_var.verify(
@@ -114,26 +132,35 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
             anchor_var,
             claimed_note_commitment.inner(),
         )?;
+        assert!(cs.is_satisfied().unwrap_or(true));
 
         // Check integrity of randomized verification key.
         let computed_rk_var = ak_element_var.randomize(&spend_auth_randomizer_var)?;
         computed_rk_var.conditional_enforce_equal(&rk_var, &is_not_dummy)?;
+        assert!(cs.is_satisfied().unwrap_or(true));
 
         // Check integrity of diversified address.
         let ivk = IncomingViewingKeyVar::derive(&nk_var, &ak_element_var)?;
+        assert!(cs.is_satisfied().unwrap_or(true));
         let computed_transmission_key =
             ivk.diversified_public(&note_var.diversified_generator())?;
+        assert!(cs.is_satisfied().unwrap_or(true));
         computed_transmission_key
             .conditional_enforce_equal(&note_var.transmission_key(), &is_not_dummy)?;
+        assert!(cs.is_satisfied().unwrap_or(true));
 
         // Check integrity of balance commitment.
         let balance_commitment = note_var.value().commit(v_blinding_vars)?;
+        assert!(cs.is_satisfied().unwrap_or(true));
         balance_commitment
             .conditional_enforce_equal(&claimed_balance_commitment_var, &is_not_dummy)?;
+        assert!(cs.is_satisfied().unwrap_or(true));
 
         // Check elements were not identity.
         gadgets::element_not_identity(cs.clone(), &is_not_dummy, note_var.diversified_generator())?;
-        gadgets::element_not_identity(cs, &is_not_dummy, ak_element_var.inner)?;
+        assert!(cs.is_satisfied().unwrap_or(true));
+        gadgets::element_not_identity(cs.clone(), &is_not_dummy, ak_element_var.inner)?;
+        assert!(cs.is_satisfied().unwrap_or(true));
         Ok(())
     }
 }
@@ -240,6 +267,7 @@ impl SpendProof {
         let proof_result =
             Groth16::verify_with_processed_vk(&processed_pvk, public_inputs.as_slice(), &self.0)
                 .map_err(|err| anyhow::anyhow!(err))?;
+        tracing::debug!(?proof_result);
         proof_result
             .then_some(())
             .ok_or_else(|| anyhow::anyhow!("proof did not verify"))
