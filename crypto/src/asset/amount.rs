@@ -1,4 +1,3 @@
-use anyhow::anyhow;
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
@@ -246,17 +245,18 @@ impl From<Amount> for i128 {
     }
 }
 
-impl TryFrom<U128x128> for Amount {
-    type Error = anyhow::Error;
+impl From<Amount> for U128x128 {
+    fn from(amount: Amount) -> U128x128 {
+        U128x128::from(amount.inner)
+    }
+}
 
+impl TryFrom<U128x128> for Amount {
+    type Error = <u128 as TryFrom<U128x128>>::Error;
     fn try_from(value: U128x128) -> Result<Self, Self::Error> {
-        if value.is_integral() {
-            let mut integral = [0u8; 16];
-            integral.copy_from_slice(&value.to_le_bytes());
-            Ok(u128::from_le_bytes(integral).into())
-        } else {
-            Err(anyhow!("cannot convert fractional number to integer"))
-        }
+        Ok(Amount {
+            inner: value.try_into()?,
+        })
     }
 }
 

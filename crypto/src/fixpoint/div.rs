@@ -61,7 +61,7 @@ fn div_rem_u384_by_u256(u: [u64; 6], mut v: [u64; 4]) -> ([u64; 6], [u64; 4]) {
 
         // D4. [Multiply and subtract.] Multiply v by q_hat, subtracting the result from u.
 
-        for i in 0..=n {
+        for _i in 0..=n {
             todo!()
         }
 
