@@ -160,14 +160,19 @@ impl DomainType for Proposal {
 
 /// The specific kind of a proposal.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "clap", derive(clap::Subcommand))]
 pub enum ProposalKind {
     /// A signaling proposal.
+    #[cfg_attr(feature = "clap", clap(display_order = 100))]
     Signaling,
     /// An emergency proposal.
+    #[cfg_attr(feature = "clap", clap(display_order = 200))]
     Emergency,
     /// A parameter change proposal.
+    #[cfg_attr(feature = "clap", clap(display_order = 300))]
     ParameterChange,
     /// A DAO spend proposal.
+    #[cfg_attr(feature = "clap", clap(display_order = 400))]
     DaoSpend,
 }
 

@@ -20,7 +20,7 @@ use penumbra_proto::client::v1alpha1::{
     ProposalInfoRequest, ProposalInfoResponse, ProposalRateDataRequest, ValidatorPenaltyRequest,
 };
 use penumbra_transaction::{
-    action::Proposal,
+    action::{Proposal, Vote},
     plan::{SwapClaimPlan, UndelegateClaimPlan},
 };
 use penumbra_view::ViewClient;
@@ -38,15 +38,15 @@ pub enum TxCmd {
     #[clap(display_order = 100)]
     Send {
         /// The destination address to send funds to.
-        #[clap(long)]
+        #[clap(long, display_order = 100)]
         to: String,
         /// The amounts to send, written as typed values 1.87penumbra, 12cubes, etc.
         values: Vec<String>,
         /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0")]
+        #[clap(long, default_value = "0", display_order = 200)]
         fee: u64,
         /// Only spend funds originally received by the given address index.
-        #[clap(long, default_value = "0")]
+        #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
         /// Optional. Set the transaction's memo field to the provided text.
         #[clap(long)]
@@ -56,15 +56,15 @@ pub enum TxCmd {
     #[clap(display_order = 200)]
     Delegate {
         /// The identity key of the validator to delegate to.
-        #[clap(long)]
+        #[clap(long, display_order = 100)]
         to: String,
         /// The amount of stake to delegate.
         amount: String,
         /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0")]
+        #[clap(long, default_value = "0", display_order = 200)]
         fee: u64,
         /// Only spend funds originally received by the given address index.
-        #[clap(long, default_value = "0")]
+        #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
     },
     /// Withdraw stake from a validator's delegation pool.
@@ -73,10 +73,10 @@ pub enum TxCmd {
         /// The amount of delegation tokens to undelegate.
         amount: String,
         /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0")]
+        #[clap(long, default_value = "0", display_order = 200)]
         fee: u64,
         /// Only spend funds originally received by the given address index.
-        #[clap(long, default_value = "0")]
+        #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
     },
     /// Claim any undelegations that have finished unbonding.
@@ -90,18 +90,18 @@ pub enum TxCmd {
     #[clap(display_order = 200)]
     Redelegate {
         /// The identity key of the validator to withdraw delegation from.
-        #[clap(long)]
+        #[clap(long, display_order = 100)]
         from: String,
         /// The identity key of the validator to delegate to.
-        #[clap(long)]
+        #[clap(long, display_order = 200)]
         to: String,
         /// The amount of stake to delegate.
         amount: String,
         /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0")]
+        #[clap(long, default_value = "0", display_order = 300)]
         fee: u64,
         /// Only spend funds originally received by the given address index.
-        #[clap(long, default_value = "0")]
+        #[clap(long, default_value = "0", display_order = 400)]
         source: u32,
     },
     /// Swap tokens of one denomination for another using the DEX.
@@ -117,19 +117,35 @@ pub enum TxCmd {
         /// The input amount to swap, written as a typed value 1.87penumbra, 12cubes, etc.
         input: String,
         /// The denomination to swap the input into.
-        #[clap(long)]
+        #[clap(long, display_order = 100)]
         into: String,
         /// The transaction fee (paid in upenumbra).
         ///
         /// A swap generates two transactions; the fee will be split equally over both.
-        #[clap(long, default_value = "0")]
+        #[clap(long, default_value = "0", display_order = 200)]
         fee: u64,
         /// Only spend funds originally received by the given address index.
-        #[clap(long, default_value = "0")]
+        #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
     },
+    /// Vote on a governance proposal in your role as a delegator (see also: `pcli validator vote`).
+    #[clap(display_order = 400)]
+    Vote {
+        /// The proposal id to vote on.
+        #[clap(long = "on", global = true, display_order = 100)]
+        proposal_id: u64,
+        /// The transaction fee (paid in upenumbra).
+        #[clap(long, default_value = "0", global = true, display_order = 200)]
+        fee: u64,
+        /// Only spend funds and vote with staked delegation tokens originally received by the given
+        /// address index.
+        #[clap(long, default_value = "0", global = true, display_order = 300)]
+        source: u32,
+        #[clap(subcommand)]
+        vote: Vote,
+    },
     /// Submit or withdraw a governance proposal.
-    #[clap(display_order = 400, subcommand)]
+    #[clap(display_order = 500, subcommand)]
     Proposal(ProposalCmd),
     /// Consolidate many small notes into a few larger notes.
     ///
@@ -154,6 +170,7 @@ impl TxCmd {
             TxCmd::Undelegate { .. } => false,
             TxCmd::UndelegateClaim { .. } => false,
             TxCmd::Redelegate { .. } => false,
+            TxCmd::Vote { .. } => false,
             TxCmd::Proposal(proposal_cmd) => proposal_cmd.offline(),
         }
     }
@@ -593,12 +610,12 @@ impl TxCmd {
 
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::Proposal(ProposalCmd::Vote {
+            TxCmd::Vote {
                 proposal_id,
                 vote,
                 fee,
                 source,
-            }) => {
+            } => {
                 // Before we vote on the proposal, we have to gather some information about it so
                 // that we can prepare our vote:
                 // - the start height, so we can select the votable staked notes to vote with

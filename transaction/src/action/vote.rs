@@ -23,12 +23,16 @@ use crate::{
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(try_from = "pb::Vote", into = "pb::Vote")]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
+#[cfg_attr(feature = "clap", derive(clap::Subcommand))]
 pub enum Vote {
-    /// The vote is to approve the proposal.
+    /// Vote to approve the proposal.
+    #[cfg_attr(feature = "clap", clap(display_order = 100))]
     Yes,
-    /// The vote is to reject the proposal.
+    /// Vote is to reject the proposal.
+    #[cfg_attr(feature = "clap", clap(display_order = 200))]
     No,
-    /// The vote is to abstain from the proposal.
+    /// Vote to abstain from the proposal.
+    #[cfg_attr(feature = "clap", clap(display_order = 300))]
     Abstain,
 }
 

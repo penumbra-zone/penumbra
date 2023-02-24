@@ -25,22 +25,20 @@ pub enum ValidatorCmd {
     /// Manage your validator's definition.
     #[clap(subcommand)]
     Definition(DefinitionCmd),
-    /// Cast a vote on a proposal in your capacity as a validator.
-    ///
-    /// This is distinct from casting a vote as a delegator, which can be done using `pcli tx
-    /// proposal vote`.
+    /// Cast a vote on a proposal in your capacity as a validator (see also: `pcli tx vote`).
     Vote {
-        /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0")]
-        fee: u64,
         /// The proposal id to vote on.
-        #[clap(long = "on")]
+        #[clap(long = "on", global = true, display_order = 100)]
         proposal_id: u64,
-        /// The vote to cast.
-        vote: Vote,
+        /// The transaction fee (paid in upenumbra).
+        #[clap(long, default_value = "0", global = true, display_order = 200)]
+        fee: u64,
         /// Optional. Only spend funds originally received by the given address index.
-        #[clap(long, default_value = "0")]
+        #[clap(long, default_value = "0", global = true, display_order = 300)]
         source: u32,
+        /// The vote to cast.
+        #[clap(subcommand)]
+        vote: Vote,
     },
 }
 

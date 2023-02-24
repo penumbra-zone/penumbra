@@ -21,7 +21,7 @@ jmt = "0.3"
 penumbra-proto = { path = "../proto" }
 penumbra-chain = { path = "../chain" }
 penumbra-crypto = { path = "../crypto" }
-penumbra-transaction = { path = "../transaction" }
+penumbra-transaction = { path = "../transaction", features = ["clap"] }
 penumbra-wallet = { path = "../wallet" }
 penumbra-view = { path = "../view" }
 penumbra-custody = { path = "../custody" }

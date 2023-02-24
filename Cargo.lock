@@ -3835,6 +3835,7 @@ dependencies = [
  "blake2b_simd 0.5.11",
  "bytes",
  "chacha20poly1305",
+ "clap 3.2.23",
  "decaf377 0.2.0",
  "decaf377-fmd",
  "decaf377-ka",
