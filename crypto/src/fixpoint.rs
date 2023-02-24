@@ -1,55 +1,97 @@
-use std::{
-    fmt::Display,
-    ops::{Add, Div, Mul, Sub},
-};
+use std::fmt::{Debug, Display};
 
 mod div;
+mod from;
+mod ops;
+
+#[cfg(test)]
+mod tests;
 
 use ethnum::U256;
 
-use crate::Amount;
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct U128x128(U256);
 
-impl From<u128> for U128x128 {
-    fn from(value: u128) -> Self {
-        Self(U256([0, value]))
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("attempted to convert non-integral value {value:?} to an integer")]
+    NonIntegral { value: U128x128 },
+    #[error("attempted to decode a slice of the wrong length {0}, expected 32")]
+    SliceLength(usize),
+}
+
+impl Debug for U128x128 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let (integral, fractional) = self.0.into_words();
+        f.debug_struct("U128x128")
+            .field("integral", &integral)
+            .field("fractional", &fractional)
+            .finish()
     }
 }
 
-impl From<Amount> for U128x128 {
-    fn from(value: Amount) -> Self {
-        let value = value.value() as u128;
-        value.into()
+// This is a hack to make the `Display` impl work.
+fn f64_from_secret(value: &U128x128) -> f64 {
+    let (hi, lo) = value.0.into_words();
+    // binary repr of 2^128
+    const BASE: u64 = 0x47f0000000000000;
+    (hi as f64) + (lo as f64) / f64::from_bits(BASE)
+}
+
+impl Display for U128x128 {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", f64_from_secret(self))
     }
 }
 
 impl U128x128 {
+    /// Encode this number as a 32-byte array.
+    ///
+    /// The encoding has the property that it preserves ordering, i.e., if `x <=
+    /// y` (with numeric ordering) then `x.to_bytes() <= y.to_bytes()` (with the
+    /// lex ordering on byte strings).
+    pub fn to_bytes(self) -> [u8; 32] {
+        // The U256 type has really weird endianness handling -- e.g., it reverses
+        // the endianness of the inner u128s (??) -- so just do it manually.
+        let mut bytes = [0u8; 32];
+        let (hi, lo) = self.0.into_words();
+        bytes[0..16].copy_from_slice(&hi.to_be_bytes());
+        bytes[16..32].copy_from_slice(&lo.to_be_bytes());
+        bytes
+    }
+
+    /// Decode this number from a 32-byte array.
+    pub fn from_bytes(bytes: [u8; 32]) -> Self {
+        // See above.
+        let hi = u128::from_be_bytes(bytes[0..16].try_into().unwrap());
+        let lo = u128::from_be_bytes(bytes[16..32].try_into().unwrap());
+        Self(U256::from_words(hi, lo))
+    }
+
+    /// Checks whether this number is integral, i.e., whether it has no fractional part.
     pub fn is_integral(&self) -> bool {
         let fractional_word = self.0.into_words().1;
         fractional_word == 0
     }
 
-    pub fn rounding(self) -> Option<Self> {
-        let one_half: u128 = 1 << 127;
-        let (integral, fractional) = self.0.into_words();
-        if fractional >= one_half {
-            let Some(integral) = integral.checked_add(1) else {
-                return None;
-            };
-            Some(Self(U256::from_words(integral, 0u128)))
-        } else {
-            Some(self.truncate())
-        }
-    }
-
-    pub fn truncate(self) -> Self {
+    /// Rounds the number down to the nearest integer.
+    pub fn round_down(self) -> Self {
         let integral_word = self.0.into_words().0;
         Self(U256::from_words(integral_word, 0u128))
     }
 
-    pub fn checked_mul(self, rhs: Self) -> Option<Self> {
+    /// Rounds the number up to the nearest integer.
+    pub fn round_up(&self) -> Self {
+        let (integral, fractional) = self.0.into_words();
+        if fractional == 0 {
+            return *self;
+        } else {
+            Self(U256::from_words(integral + 1, 0u128))
+        }
+    }
+
+    /// Performs checked multiplication, returning `Some` if no overflow occurred.
+    pub fn checked_mul(self, rhs: &Self) -> Option<Self> {
         let [x0, x1] = self.0 .0;
         let [y0, y1] = rhs.0 .0;
         let x0 = U256::from(x0);
@@ -76,7 +118,8 @@ impl U128x128 {
             .map(U128x128)
     }
 
-    pub fn checked_div(self, rhs: Self) -> Option<Self> {
+    /// Performs checked division, returning `Some` if no overflow occurred.
+    pub fn checked_div(self, rhs: &Self) -> Option<Self> {
         if rhs.0 == U256::ZERO {
             return None;
         }
@@ -98,102 +141,18 @@ impl U128x128 {
         Some(U128x128(q))
     }
 
-    pub fn to_le_bytes(self) -> [u8; 32] {
-        self.0.to_le_bytes()
+    /// Performs checked addition, returning `Some` if no overflow occurred.
+    pub fn checked_add(self, rhs: &Self) -> Option<Self> {
+        self.0.checked_add(rhs.0).map(U128x128)
     }
 
-    pub fn to_be_bytes(self) -> [u8; 32] {
-        self.0.to_be_bytes()
+    /// Performs checked subtraction, returning `Some` if no underflow occurred.
+    pub fn checked_sub(self, rhs: &Self) -> Option<Self> {
+        self.0.checked_sub(rhs.0).map(U128x128)
     }
 
-    pub fn from_le_bytes(bytes: [u8; 32]) -> Self {
-        U128x128(U256::from_le_bytes(bytes))
-    }
-
-    pub fn from_be_bytes(bytes: [u8; 32]) -> Self {
-        U128x128(U256::from_be_bytes(bytes))
-    }
-}
-
-impl Add<U128x128> for U128x128 {
-    type Output = Option<U128x128>;
-    fn add(self, rhs: U128x128) -> Self::Output {
-        let checked_add = self.0.checked_add(rhs.0);
-        let Some(result) = checked_add else {
-            return None
-        };
-        Some(Self(result))
-    }
-}
-
-impl Sub<U128x128> for U128x128 {
-    type Output = Option<U128x128>;
-    fn sub(self, rhs: U128x128) -> Self::Output {
-        let checked_sub = self.0.checked_sub(rhs.0);
-        let Some(result) = checked_sub else {
-            return None
-        };
-        Some(Self(result))
-    }
-}
-
-impl Mul<U128x128> for U128x128 {
-    type Output = Option<U128x128>;
-    fn mul(self, rhs: U128x128) -> Self::Output {
-        let checked_mul = self.0.checked_mul(rhs.0);
-        let Some(result) = checked_mul else {
-            return None
-        };
-        Some(Self(result))
-    }
-}
-
-impl Div<U128x128> for U128x128 {
-    type Output = Option<U128x128>;
-    fn div(self, rhs: U128x128) -> Self::Output {
-        self.checked_div(rhs)
-    }
-}
-
-impl From<U128x128> for f64 {
-    fn from(value: U128x128) -> Self {
-        let (hi, lo) = value.0.into_words();
-        // binary repr of 2^128
-        const BASE: u64 = 0x47f0000000000000;
-        (hi as f64) + (lo as f64) / f64::from_bits(BASE)
-    }
-}
-
-impl Display for U128x128 {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", f64::from(self.clone()))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn basic() {
-        use super::*;
-        let a = U128x128::from(1);
-        let x = U128x128::from(2);
-        let y = U128x128::from(3);
-        println!("a = {}, {:?}", a, a);
-        println!("x = {}, {:?}", x, x);
-        println!("y = {}, {:?}", y, y);
-        let z = (x / y).unwrap();
-        println!("z = {}, {:?}", z, z);
-        let w = (y / x).unwrap();
-        println!("w = {}, {:?}", w, w);
-        let w2 = (w + w).unwrap();
-        println!("w2 = {}, {:?}", w2, w2);
-        let s = (w2 / y).unwrap();
-        println!("s = {}, {:?}", s, s);
-        let t = (z * w).unwrap();
-        println!("t = {}, {:?}", t, t);
-        let u = (U128x128::from(1) / y).unwrap();
-        println!("u = {}, {:?}", u, u);
-        let v = (U128x128::from(1) / u).unwrap();
-        println!("v = {}, {:?}", v, v);
+    /// Saturating integer subtraction. Computes self - rhs, saturating at the numeric bounds instead of overflowing.
+    pub fn saturating_sub(self, rhs: &Self) -> Self {
+        U128x128(self.0.saturating_sub(rhs.0))
     }
 }
