@@ -1,4 +1,4 @@
-use ark_ff::Zero;
+use ark_ff::{UniformRand, Zero};
 use decaf377::{FieldExt, Fr};
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_crypto::{
@@ -7,9 +7,10 @@ use penumbra_crypto::{
 };
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType};
 use penumbra_tct as tct;
+use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
-use crate::action::{DelegatorVote, DelegatorVoteBody};
+use crate::action::{DelegatorVote, DelegatorVoteBody, Vote};
 
 /// A plan to vote as a delegator.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -17,12 +18,10 @@ use crate::action::{DelegatorVote, DelegatorVoteBody};
 pub struct DelegatorVotePlan {
     /// The proposal ID to vote on.
     pub proposal: u64,
-    /// The start epoch of the proposal.
-    pub start_epoch: u16,
-    /// The start block of the proposal within that epoch.
-    pub start_block: u16,
+    /// The start position of the proposal.
+    pub start_position: tct::Position,
     /// The vote to cast.
-    pub vote: crate::action::Vote,
+    pub vote: Vote,
     /// A staked note that was spendable before the proposal started.
     pub staked_note: Note,
     /// The unbonded amount corresponding to the staked note.
@@ -34,6 +33,28 @@ pub struct DelegatorVotePlan {
 }
 
 impl DelegatorVotePlan {
+    /// Create a new [`DelegatorVotePlan`] that votes using the given positioned `note`.
+    #[allow(clippy::too_many_arguments)]
+    pub fn new<R: CryptoRng + RngCore>(
+        rng: &mut R,
+        proposal: u64,
+        start_position: tct::Position,
+        vote: Vote,
+        staked_note: Note,
+        position: tct::Position,
+        unbonded_amount: Amount,
+    ) -> DelegatorVotePlan {
+        DelegatorVotePlan {
+            proposal,
+            start_position,
+            vote,
+            staked_note,
+            unbonded_amount,
+            position,
+            randomizer: Fr::rand(rng),
+        }
+    }
+
     /// Convenience method to construct the [`DelegatorVote`] described by this [`DelegatorVotePlan`].
     pub fn delegator_vote(
         &self,
@@ -52,8 +73,7 @@ impl DelegatorVotePlan {
     pub fn delegator_vote_body(&self, fvk: &FullViewingKey) -> DelegatorVoteBody {
         DelegatorVoteBody {
             proposal: self.proposal,
-            start_epoch: self.start_epoch,
-            start_block: self.start_block,
+            start_position: self.start_position,
             vote: self.vote,
             value: self.staked_note.value(),
             unbonded_amount: self.unbonded_amount,
@@ -94,8 +114,7 @@ impl From<DelegatorVotePlan> for pb::DelegatorVotePlan {
         pb::DelegatorVotePlan {
             proposal: inner.proposal,
             vote: Some(inner.vote.into()),
-            start_epoch_and_block_position: (inner.start_epoch as u32) << 16
-                | inner.start_block as u32,
+            start_position: inner.start_position.into(),
             staked_note: Some(inner.staked_note.into()),
             unbonded_amount: Some(inner.unbonded_amount.into()),
             staked_note_position: inner.position.into(),
@@ -110,8 +129,7 @@ impl TryFrom<pb::DelegatorVotePlan> for DelegatorVotePlan {
     fn try_from(value: pb::DelegatorVotePlan) -> Result<Self, Self::Error> {
         Ok(DelegatorVotePlan {
             proposal: value.proposal,
-            start_epoch: (value.start_epoch_and_block_position >> 16) as u16,
-            start_block: (value.start_epoch_and_block_position & 0xffff) as u16,
+            start_position: value.start_position.into(),
             vote: value
                 .vote
                 .ok_or_else(|| anyhow::anyhow!("missing vote in `DelegatorVotePlan`"))?

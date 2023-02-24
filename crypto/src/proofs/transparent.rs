@@ -116,10 +116,13 @@ impl DelegatorVoteProof {
         nullifier: Nullifier,
         rk: VerificationKey<SpendAuth>,
     ) -> anyhow::Result<()> {
-        // Check that the spend proof is valid, for the public value committed with the zero
-        // blinding factor, since it's not blinded.
-        self.spend_proof
-            .verify(anchor, value.commit(Fr::zero()), nullifier, rk)?;
+        // Additionally, check that the start position has a zero commitment index, since this is
+        // the only sensible start time for a vote.
+        if start_position.commitment() != 0 {
+            return Err(anyhow!(
+                "vote proof start position has non-zero commitment index"
+            ));
+        }
 
         // Additionally, check that the position of the spend proof is before the start
         // start_height, which ensures that the note being voted with was created before voting
@@ -129,6 +132,11 @@ impl DelegatorVoteProof {
                 "vote proof position is not before start height of voting"
             ));
         }
+
+        // Check that the spend proof is valid, for the public value committed with the zero
+        // blinding factor, since it's not blinded.
+        self.spend_proof
+            .verify(anchor, value.commit(Fr::zero()), nullifier, rk)?;
 
         Ok(())
     }

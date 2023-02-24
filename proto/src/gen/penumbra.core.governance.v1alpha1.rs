@@ -71,9 +71,9 @@ pub struct DelegatorVoteBody {
     /// The proposal being voted on.
     #[prost(uint64, tag = "1")]
     pub proposal: u64,
-    /// The start epoch and block, as a u32, in which the proposal started.
-    #[prost(uint32, tag = "2")]
-    pub start_epoch_and_block_position: u32,
+    /// The start position of the proposal in the TCT.
+    #[prost(uint64, tag = "2")]
+    pub start_position: u64,
     /// The vote.
     #[prost(message, optional, tag = "3")]
     pub vote: ::core::option::Option<Vote>,
@@ -109,9 +109,9 @@ pub struct DelegatorVotePlan {
     /// The proposal to vote on.
     #[prost(uint64, tag = "1")]
     pub proposal: u64,
-    /// The start epoch and block, as a u32, in which the proposal started.
-    #[prost(uint32, tag = "2")]
-    pub start_epoch_and_block_position: u32,
+    /// The start position of the proposal in the TCT.
+    #[prost(uint64, tag = "2")]
+    pub start_position: u64,
     /// The vote to cast.
     #[prost(message, optional, tag = "3")]
     pub vote: ::core::option::Option<Vote>,

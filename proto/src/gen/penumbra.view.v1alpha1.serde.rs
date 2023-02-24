@@ -188,8 +188,50 @@ impl serde::Serialize for AssetsRequest {
         S: serde::Serializer,
     {
         use serde::ser::SerializeStruct;
-        let len = 0;
-        let struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.AssetsRequest", len)?;
+        let mut len = 0;
+        if self.filtered {
+            len += 1;
+        }
+        if !self.include_specific_denominations.is_empty() {
+            len += 1;
+        }
+        if self.include_delegation_tokens {
+            len += 1;
+        }
+        if self.include_unbonding_tokens {
+            len += 1;
+        }
+        if self.include_lp_nfts {
+            len += 1;
+        }
+        if self.include_proposal_nfts {
+            len += 1;
+        }
+        if self.include_voting_receipt_tokens {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.AssetsRequest", len)?;
+        if self.filtered {
+            struct_ser.serialize_field("filtered", &self.filtered)?;
+        }
+        if !self.include_specific_denominations.is_empty() {
+            struct_ser.serialize_field("includeSpecificDenominations", &self.include_specific_denominations)?;
+        }
+        if self.include_delegation_tokens {
+            struct_ser.serialize_field("includeDelegationTokens", &self.include_delegation_tokens)?;
+        }
+        if self.include_unbonding_tokens {
+            struct_ser.serialize_field("includeUnbondingTokens", &self.include_unbonding_tokens)?;
+        }
+        if self.include_lp_nfts {
+            struct_ser.serialize_field("includeLpNfts", &self.include_lp_nfts)?;
+        }
+        if self.include_proposal_nfts {
+            struct_ser.serialize_field("includeProposalNfts", &self.include_proposal_nfts)?;
+        }
+        if self.include_voting_receipt_tokens {
+            struct_ser.serialize_field("includeVotingReceiptTokens", &self.include_voting_receipt_tokens)?;
+        }
         struct_ser.end()
     }
 }
@@ -200,10 +242,30 @@ impl<'de> serde::Deserialize<'de> for AssetsRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
+            "filtered",
+            "include_specific_denominations",
+            "includeSpecificDenominations",
+            "include_delegation_tokens",
+            "includeDelegationTokens",
+            "include_unbonding_tokens",
+            "includeUnbondingTokens",
+            "include_lp_nfts",
+            "includeLpNfts",
+            "include_proposal_nfts",
+            "includeProposalNfts",
+            "include_voting_receipt_tokens",
+            "includeVotingReceiptTokens",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
+            Filtered,
+            IncludeSpecificDenominations,
+            IncludeDelegationTokens,
+            IncludeUnbondingTokens,
+            IncludeLpNfts,
+            IncludeProposalNfts,
+            IncludeVotingReceiptTokens,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -224,7 +286,16 @@ impl<'de> serde::Deserialize<'de> for AssetsRequest {
                     where
                         E: serde::de::Error,
                     {
-                            Err(serde::de::Error::unknown_field(value, FIELDS))
+                        match value {
+                            "filtered" => Ok(GeneratedField::Filtered),
+                            "includeSpecificDenominations" | "include_specific_denominations" => Ok(GeneratedField::IncludeSpecificDenominations),
+                            "includeDelegationTokens" | "include_delegation_tokens" => Ok(GeneratedField::IncludeDelegationTokens),
+                            "includeUnbondingTokens" | "include_unbonding_tokens" => Ok(GeneratedField::IncludeUnbondingTokens),
+                            "includeLpNfts" | "include_lp_nfts" => Ok(GeneratedField::IncludeLpNfts),
+                            "includeProposalNfts" | "include_proposal_nfts" => Ok(GeneratedField::IncludeProposalNfts),
+                            "includeVotingReceiptTokens" | "include_voting_receipt_tokens" => Ok(GeneratedField::IncludeVotingReceiptTokens),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
                     }
                 }
                 deserializer.deserialize_identifier(GeneratedVisitor)
@@ -242,10 +313,67 @@ impl<'de> serde::Deserialize<'de> for AssetsRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                while map.next_key::<GeneratedField>()?.is_some() {
-                    let _ = map.next_value::<serde::de::IgnoredAny>()?;
+                let mut filtered__ = None;
+                let mut include_specific_denominations__ = None;
+                let mut include_delegation_tokens__ = None;
+                let mut include_unbonding_tokens__ = None;
+                let mut include_lp_nfts__ = None;
+                let mut include_proposal_nfts__ = None;
+                let mut include_voting_receipt_tokens__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::Filtered => {
+                            if filtered__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("filtered"));
+                            }
+                            filtered__ = Some(map.next_value()?);
+                        }
+                        GeneratedField::IncludeSpecificDenominations => {
+                            if include_specific_denominations__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("includeSpecificDenominations"));
+                            }
+                            include_specific_denominations__ = Some(map.next_value()?);
+                        }
+                        GeneratedField::IncludeDelegationTokens => {
+                            if include_delegation_tokens__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("includeDelegationTokens"));
+                            }
+                            include_delegation_tokens__ = Some(map.next_value()?);
+                        }
+                        GeneratedField::IncludeUnbondingTokens => {
+                            if include_unbonding_tokens__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("includeUnbondingTokens"));
+                            }
+                            include_unbonding_tokens__ = Some(map.next_value()?);
+                        }
+                        GeneratedField::IncludeLpNfts => {
+                            if include_lp_nfts__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("includeLpNfts"));
+                            }
+                            include_lp_nfts__ = Some(map.next_value()?);
+                        }
+                        GeneratedField::IncludeProposalNfts => {
+                            if include_proposal_nfts__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("includeProposalNfts"));
+                            }
+                            include_proposal_nfts__ = Some(map.next_value()?);
+                        }
+                        GeneratedField::IncludeVotingReceiptTokens => {
+                            if include_voting_receipt_tokens__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("includeVotingReceiptTokens"));
+                            }
+                            include_voting_receipt_tokens__ = Some(map.next_value()?);
+                        }
+                    }
                 }
                 Ok(AssetsRequest {
+                    filtered: filtered__.unwrap_or_default(),
+                    include_specific_denominations: include_specific_denominations__.unwrap_or_default(),
+                    include_delegation_tokens: include_delegation_tokens__.unwrap_or_default(),
+                    include_unbonding_tokens: include_unbonding_tokens__.unwrap_or_default(),
+                    include_lp_nfts: include_lp_nfts__.unwrap_or_default(),
+                    include_proposal_nfts: include_proposal_nfts__.unwrap_or_default(),
+                    include_voting_receipt_tokens: include_voting_receipt_tokens__.unwrap_or_default(),
                 })
             }
         }
@@ -1467,6 +1595,263 @@ impl<'de> serde::Deserialize<'de> for NoteByCommitmentResponse {
             }
         }
         deserializer.deserialize_struct("penumbra.view.v1alpha1.NoteByCommitmentResponse", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for NotesForVotingRequest {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.votable_at_height != 0 {
+            len += 1;
+        }
+        if self.address_index.is_some() {
+            len += 1;
+        }
+        if self.account_id.is_some() {
+            len += 1;
+        }
+        if self.token.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.NotesForVotingRequest", len)?;
+        if self.votable_at_height != 0 {
+            struct_ser.serialize_field("votableAtHeight", ToString::to_string(&self.votable_at_height).as_str())?;
+        }
+        if let Some(v) = self.address_index.as_ref() {
+            struct_ser.serialize_field("addressIndex", v)?;
+        }
+        if let Some(v) = self.account_id.as_ref() {
+            struct_ser.serialize_field("accountId", v)?;
+        }
+        if let Some(v) = self.token.as_ref() {
+            struct_ser.serialize_field("token", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for NotesForVotingRequest {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "votable_at_height",
+            "votableAtHeight",
+            "address_index",
+            "addressIndex",
+            "account_id",
+            "accountId",
+            "token",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            VotableAtHeight,
+            AddressIndex,
+            AccountId,
+            Token,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "votableAtHeight" | "votable_at_height" => Ok(GeneratedField::VotableAtHeight),
+                            "addressIndex" | "address_index" => Ok(GeneratedField::AddressIndex),
+                            "accountId" | "account_id" => Ok(GeneratedField::AccountId),
+                            "token" => Ok(GeneratedField::Token),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = NotesForVotingRequest;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1alpha1.NotesForVotingRequest")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<NotesForVotingRequest, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut votable_at_height__ = None;
+                let mut address_index__ = None;
+                let mut account_id__ = None;
+                let mut token__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::VotableAtHeight => {
+                            if votable_at_height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("votableAtHeight"));
+                            }
+                            votable_at_height__ = 
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::AddressIndex => {
+                            if address_index__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("addressIndex"));
+                            }
+                            address_index__ = map.next_value()?;
+                        }
+                        GeneratedField::AccountId => {
+                            if account_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("accountId"));
+                            }
+                            account_id__ = map.next_value()?;
+                        }
+                        GeneratedField::Token => {
+                            if token__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("token"));
+                            }
+                            token__ = map.next_value()?;
+                        }
+                    }
+                }
+                Ok(NotesForVotingRequest {
+                    votable_at_height: votable_at_height__.unwrap_or_default(),
+                    address_index: address_index__,
+                    account_id: account_id__,
+                    token: token__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1alpha1.NotesForVotingRequest", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for NotesForVotingResponse {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.note_record.is_some() {
+            len += 1;
+        }
+        if self.identity_key.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.NotesForVotingResponse", len)?;
+        if let Some(v) = self.note_record.as_ref() {
+            struct_ser.serialize_field("noteRecord", v)?;
+        }
+        if let Some(v) = self.identity_key.as_ref() {
+            struct_ser.serialize_field("identityKey", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for NotesForVotingResponse {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "note_record",
+            "noteRecord",
+            "identity_key",
+            "identityKey",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            NoteRecord,
+            IdentityKey,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "noteRecord" | "note_record" => Ok(GeneratedField::NoteRecord),
+                            "identityKey" | "identity_key" => Ok(GeneratedField::IdentityKey),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = NotesForVotingResponse;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1alpha1.NotesForVotingResponse")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<NotesForVotingResponse, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut note_record__ = None;
+                let mut identity_key__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::NoteRecord => {
+                            if note_record__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("noteRecord"));
+                            }
+                            note_record__ = map.next_value()?;
+                        }
+                        GeneratedField::IdentityKey => {
+                            if identity_key__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("identityKey"));
+                            }
+                            identity_key__ = map.next_value()?;
+                        }
+                    }
+                }
+                Ok(NotesForVotingResponse {
+                    note_record: note_record__,
+                    identity_key: identity_key__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1alpha1.NotesForVotingResponse", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for NotesRequest {

@@ -478,8 +478,7 @@ impl EffectingData for DelegatorVoteBody {
     fn effect_hash(&self) -> EffectHash {
         let DelegatorVoteBody {
             proposal,
-            start_epoch,
-            start_block,
+            start_position,
             vote,
             value,
             unbonded_amount,
@@ -494,8 +493,7 @@ impl EffectingData for DelegatorVoteBody {
         // All of these fields are fixed-length, so we can just throw them in the hash one after the
         // other.
         state.update(&proposal.to_le_bytes());
-        state.update(&u64::from(*start_epoch).to_le_bytes());
-        state.update(&u64::from(*start_block).to_le_bytes());
+        state.update(&u64::from(*start_position).to_le_bytes());
         state.update(vote.effect_hash().as_bytes());
         state.update(&value.asset_id.0.to_bytes());
         state.update(&value.amount.to_le_bytes());

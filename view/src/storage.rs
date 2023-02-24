@@ -4,8 +4,10 @@ use futures::Future;
 use parking_lot::Mutex;
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::{
-    asset::{self, Id},
-    note, Address, Amount, Asset, FieldExt, Fq, FullViewingKey, Note, Nullifier, Rseed, Value,
+    asset::{self, Denom, Id},
+    note,
+    stake::{DelegationToken, IdentityKey},
+    Address, Amount, Asset, FieldExt, Fq, FullViewingKey, Note, Nullifier, Rseed, Value,
 };
 use penumbra_proto::{
     client::v1alpha1::{
@@ -17,7 +19,7 @@ use penumbra_tct as tct;
 use penumbra_transaction::Transaction;
 use sha2::Digest;
 use sqlx::{migrate::MigrateDatabase, query, Pool, Row, Sqlite};
-use std::{collections::BTreeMap, num::NonZeroU64, sync::Arc};
+use std::{collections::BTreeMap, num::NonZeroU64, str::FromStr, sync::Arc};
 use tct::Commitment;
 use tokio::sync::broadcast::{self, error::RecvError};
 
@@ -72,7 +74,6 @@ impl Storage {
 
     async fn connect(path: &str) -> anyhow::Result<Pool<Sqlite>> {
         use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous};
-        use std::str::FromStr;
 
         /*
         // "yolo" options for testing
@@ -363,7 +364,12 @@ impl Storage {
         .await?;
 
         // Special-case negative values to None
-        Ok(u64::try_from(result.height).ok())
+        Ok(u64::try_from(
+            result
+                .height
+                .ok_or_else(|| anyhow!("missing sync height"))?,
+        )
+        .ok())
     }
 
     pub async fn chain_params(&self) -> anyhow::Result<ChainParameters> {
@@ -570,10 +576,61 @@ impl Storage {
             }
         }
     }
-    pub async fn assets(&self) -> anyhow::Result<Vec<Asset>> {
+
+    pub async fn all_assets(&self) -> anyhow::Result<Vec<Asset>> {
         let result = sqlx::query!(
             "SELECT *
             FROM assets"
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let mut output: Vec<Asset> = Vec::new();
+
+        for record in result {
+            let asset = Asset {
+                id: Id::try_from(record.asset_id.as_slice())?,
+                denom: asset::REGISTRY
+                    .parse_denom(&record.denom)
+                    .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", record.denom))?,
+            };
+            output.push(asset);
+        }
+
+        Ok(output)
+    }
+
+    pub async fn asset_by_denom(&self, denom: &Denom) -> anyhow::Result<Option<Asset>> {
+        let denom_string = denom.to_string();
+
+        let result = sqlx::query!(
+            "SELECT *
+            FROM assets
+            WHERE denom = ?",
+            denom_string
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        result
+            .map(|record| {
+                Ok(Asset {
+                    id: Id::try_from(record.asset_id.as_slice())?,
+                    denom: denom.clone(),
+                })
+            })
+            .transpose()
+    }
+
+    // Get assets whose denoms match the given SQL LIKE pattern, with the `_` and `%` wildcards,
+    // where `\` is the escape character.
+    pub async fn assets_matching(&self, pattern: &str) -> anyhow::Result<Vec<Asset>> {
+        let result = sqlx::query!(
+            "SELECT *
+            FROM assets
+            WHERE denom LIKE ?
+            ESCAPE '\'",
+            pattern
         )
         .fetch_all(&self.pool)
         .await?;
@@ -608,8 +665,7 @@ impl Storage {
         };
 
         // If set, only return notes with the specified asset id.
-        // crypto.AssetId asset_id = 3;
-
+        // core.crypto.v1alpha1.AssetId asset_id = 3;
         let asset_clause = asset_id
             .map(|id| format!("x'{}'", hex::encode(id.to_bytes())))
             .unwrap_or_else(|| "asset_id".to_string());
@@ -678,6 +734,64 @@ impl Storage {
         }
 
         Ok(output)
+    }
+
+    pub async fn notes_for_voting(
+        &self,
+        address_index: Option<penumbra_crypto::keys::AddressIndex>,
+        votable_at_height: u64,
+    ) -> anyhow::Result<Vec<(SpendableNoteRecord, IdentityKey)>> {
+        // If set, only return notes with the specified address index.
+        // crypto.AddressIndex address_index = 3;
+        let address_clause = address_index
+            .map(|d| format!("x'{}'", hex::encode(d.to_bytes())))
+            .unwrap_or_else(|| "address_index".to_string());
+
+        let spendable_note_records = sqlx::query_as::<_, SpendableNoteRecord>(
+            format!(
+                "SELECT notes.note_commitment,
+                        spendable_notes.height_created,
+                        notes.address,
+                        notes.amount,
+                        notes.asset_id,
+                        notes.rseed,
+                        spendable_notes.address_index,
+                        spendable_notes.source,
+                        spendable_notes.height_spent,
+                        spendable_notes.nullifier,
+                        spendable_notes.position,
+                        assets.denom
+                FROM
+                    (notes JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment)
+                    LEFT JOIN assets ON notes.asset_id = assets.asset_id
+                WHERE spendable_notes.address_index IS {address_clause}
+                AND assets.denom LIKE 'delegation\\_%' ESCAPE '\\'
+                AND ((spendable_notes.height_spent IS NULL) OR (spendable_notes.height_spent > {votable_at_height}))
+                AND (spendable_notes.height_created < {votable_at_height})",
+            )
+            .as_str(),
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        // TODO: this could be internalized into the SQL query in principle, but it's easier to do
+        // it this way; if it becomes slow, we can do it better
+        let mut results = Vec::new();
+        for record in spendable_note_records {
+            let asset_id = record.note.asset_id().to_bytes().to_vec();
+            let denom = sqlx::query!("SELECT denom FROM assets WHERE asset_id = ?", asset_id)
+                .fetch_one(&self.pool)
+                .await?
+                .denom;
+
+            let identity_key = DelegationToken::from_str(&denom)
+                .context("invalid delegation token denom")?
+                .validator();
+
+            results.push((record, identity_key));
+        }
+
+        Ok(results)
     }
 
     pub async fn record_asset(&self, asset: Asset) -> anyhow::Result<()> {
@@ -982,7 +1096,12 @@ impl Storage {
 
             if let Some(bytes) = spent_commitment_bytes {
                 // Forget spent note commitments from the SCT
-                let spent_commitment = Commitment::try_from(bytes.note_commitment.as_slice())?;
+                let spent_commitment = Commitment::try_from(
+                    bytes
+                        .note_commitment
+                        .ok_or_else(|| anyhow!("missing note commitment"))?
+                        .as_slice(),
+                )?;
                 sct.forget(spent_commitment);
             }
         }
