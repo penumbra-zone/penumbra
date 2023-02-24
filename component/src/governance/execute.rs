@@ -179,10 +179,9 @@ pub async fn delegator_vote<S: StateWrite>(
                 vote,
                 nullifier,
                 unbonded_amount,
-                start_epoch: _, // Not needed to execute: used to check validity of vote
-                start_block: _, // Not needed to execute: used to check validity of vote
-                value: _,       // Not needed to execute: used to check vote proof
-                rk: _,          // Not needed to execute: used to check auth sig
+                start_position: _, // Not needed to execute: used to check validity of vote
+                value: _,          // Not needed to execute: used to check vote proof
+                rk: _,             // Not needed to execute: used to check auth sig
             },
         ..
     }: &DelegatorVote,

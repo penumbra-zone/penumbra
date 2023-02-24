@@ -12,6 +12,7 @@ use penumbra_crypto::{
     Value, VotingReceiptToken,
 };
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType};
+use penumbra_tct as tct;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -244,10 +245,8 @@ impl IsAction for DelegatorVote {
 pub struct DelegatorVoteBody {
     /// The proposal ID the vote is for.
     pub proposal: u64,
-    /// The epoch the proposal started at.
-    pub start_epoch: u16,
-    /// The block within that epoch the proposal started at.
-    pub start_block: u16,
+    /// The start position of the proposal in the TCT.
+    pub start_position: tct::Position,
     /// The vote on the proposal.
     pub vote: Vote, // With flow encryption, this will be a triple of flow ciphertexts
     /// The value of the staked note being used to vote.
@@ -264,8 +263,7 @@ impl From<DelegatorVoteBody> for pb::DelegatorVoteBody {
     fn from(value: DelegatorVoteBody) -> Self {
         pb::DelegatorVoteBody {
             proposal: value.proposal,
-            start_epoch_and_block_position: (value.start_epoch as u32) << 16
-                | value.start_block as u32,
+            start_position: value.start_position.into(),
             vote: Some(value.vote.into()),
             value: Some(value.value.into()),
             unbonded_amount: Some(value.unbonded_amount.into()),
@@ -281,8 +279,10 @@ impl TryFrom<pb::DelegatorVoteBody> for DelegatorVoteBody {
     fn try_from(msg: pb::DelegatorVoteBody) -> Result<Self, Self::Error> {
         Ok(DelegatorVoteBody {
             proposal: msg.proposal,
-            start_epoch: (msg.start_epoch_and_block_position >> 16) as u16,
-            start_block: (msg.start_epoch_and_block_position & 0xffff) as u16,
+            start_position: msg
+                .start_position
+                .try_into()
+                .context("invalid start position in `DelegatorVote`")?,
             vote: msg
                 .vote
                 .ok_or_else(|| anyhow::anyhow!("missing vote in `DelegatorVote`"))?

@@ -99,8 +99,7 @@ pub mod stateless {
             proof,
             body:
                 DelegatorVoteBody {
-                    start_epoch,
-                    start_block,
+                    start_position,
                     value,
                     nullifier,
                     rk,
@@ -121,12 +120,9 @@ pub mod stateless {
 
         // 2. Check that the proof verifies.
 
-        // A valid proof must be *strictly before* the position (start_epoch, start_block, 0):
-        let start_position: tct::Position = (*start_epoch, *start_block, 0).into();
-
         // Verify the proof with this position as the start position:
         proof
-            .verify(anchor, start_position, *value, *nullifier, *rk)
+            .verify(anchor, *start_position, *value, *nullifier, *rk)
             .context("a delegator vote proof did not verify")?;
 
         Ok(())
@@ -263,8 +259,7 @@ pub mod stateful {
                 DelegatorVoteBody {
                     proposal,
                     vote: _, // All votes are valid, so we don't need to do anything with this
-                    start_epoch,
-                    start_block,
+                    start_position,
                     value,
                     unbonded_amount,
                     nullifier,
@@ -278,11 +273,11 @@ pub mod stateful {
         // TODO: once epochs are non-constant, this has to be re-done to be a stateful lookup:
         let start_block_height = u64::from(
             Epoch::from_height(
-                u64::from(*start_epoch),
+                u64::from(start_position.epoch()),
                 state.get_chain_params().await?.epoch_duration,
             )
             .start_height(),
-        ) + u64::from(*start_block);
+        ) + u64::from(start_position.block());
         proposal_started_at_block_height(&state, *proposal, start_block_height).await?;
         nullifier_unspent_before(&state, start_block_height, nullifier).await?;
         nullifier_unvoted_in_proposal(&state, *proposal, nullifier).await?;

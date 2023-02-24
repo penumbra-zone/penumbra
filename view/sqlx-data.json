@@ -208,6 +208,24 @@
     },
     "query": "UPDATE sync_height SET height = ?"
   },
+  "500076889c88c87f09ba96d66ff2ecfa49a0667251e658bda5f60d8fd280d8dc": {
+    "describe": {
+      "columns": [
+        {
+          "name": "denom",
+          "ordinal": 0,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT denom FROM assets WHERE asset_id = ?"
+  },
   "51ef08cc642e415be6ec5c363060713e339ab7cd967ccef037b142e0bd78a0a2": {
     "describe": {
       "columns": [],
@@ -217,6 +235,30 @@
       }
     },
     "query": "INSERT INTO sct_commitments (position, commitment) VALUES (?, ?) ON CONFLICT DO NOTHING"
+  },
+  "54af904581ce3ed796498b2ec876011879bdfb11d3cf67245739be886c59a5b2": {
+    "describe": {
+      "columns": [
+        {
+          "name": "asset_id",
+          "ordinal": 0,
+          "type_info": "Blob"
+        },
+        {
+          "name": "denom",
+          "ordinal": 1,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT *\n            FROM assets\n            WHERE denom = ?"
   },
   "63aad4faac1ffefd5525595f9ca5a82186181368251da9fbacf65a4d48671a01": {
     "describe": {
@@ -246,7 +288,7 @@
         }
       ],
       "nullable": [
-        false
+        true
       ],
       "parameters": {
         "Right": 0
@@ -321,6 +363,30 @@
       }
     },
     "query": "SELECT commitment FROM sct_commitments WHERE position = ? LIMIT 1"
+  },
+  "8865065286ba30fa536be8f316df17a8d2b629b3e2a34dd5de4e0fb9e348b7b1": {
+    "describe": {
+      "columns": [
+        {
+          "name": "asset_id",
+          "ordinal": 0,
+          "type_info": "Blob"
+        },
+        {
+          "name": "denom",
+          "ordinal": 1,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT *\n            FROM assets\n            WHERE denom LIKE ?\n            ESCAPE ''"
   },
   "8b1b113ce163b0c5a5c0bd64be67b36fcc64d1396953483cb6e76fbf51dff639": {
     "describe": {
@@ -430,7 +496,7 @@
         }
       ],
       "nullable": [
-        false
+        true
       ],
       "parameters": {
         "Right": 2

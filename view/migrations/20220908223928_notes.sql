@@ -11,8 +11,8 @@ CREATE TABLE notes (
 
 -- general purpose note queries
 CREATE INDEX notes_idx ON notes (
-    address,            
-    asset_id,           
+    address,
+    asset_id,
     amount
 );
 
@@ -30,8 +30,8 @@ CREATE TABLE spendable_notes (
     address_index           BLOB NOT NULL,
     -- the source of the note (a tx hash or structured data jammed into one)
     source                  BLOB NOT NULL,
-    --null if unspent, otherwise spent at height_spent 
-    height_spent            BIGINT 
+    -- null if unspent, otherwise spent at height_spent
+    height_spent            BIGINT
 );
 
 CREATE INDEX spendable_notes_by_nullifier_idx ON spendable_notes (

@@ -298,6 +298,9 @@ impl TxCmd {
                     penumbra_transaction::ActionView::ValidatorVote(_) => {
                         ["Validator Vote".to_string(), "".to_string()]
                     }
+                    penumbra_transaction::ActionView::DelegatorVote(_) => {
+                        ["Delegator Vote".to_string(), "".to_string()]
+                    }
                     penumbra_transaction::ActionView::PositionOpen(_) => {
                         ["Open Liquidity Position".to_string(), "".to_string()]
                     }

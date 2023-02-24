@@ -49,8 +49,8 @@ message DelegatorVote {
 message DelegatorVoteBody {
   // The proposal being voted on.
   uint64 proposal = 1;
-  // The start epoch and block, as a u32, in which the proposal started.
-  uint32 start_epoch_and_block_position = 2;
+  // The start position of the proposal in the TCT.
+  uint64 start_position = 2;
   // The vote.
   governance.v1alpha1.Vote vote = 3;
   // The value of the delegation note.
@@ -73,20 +73,20 @@ message ProposalDepositClaim {
 }
 
 message DelegatorVotePlan {
-    // The proposal to vote on.
-    uint64 proposal = 1;
-    // The start epoch and block, as a u32, in which the proposal started.
-    uint32 start_epoch_and_block_position = 2;
-    // The vote to cast.
-    governance.v1alpha1.Vote vote = 3;
-    // The delegation note to prove that we can vote.
-    crypto.v1alpha1.Note staked_note = 4;
-    // The position of that delegation note.
-    uint64 staked_note_position = 5;
-    // The unbonded amount equivalent to the delegation note.
-    crypto.v1alpha1.Amount unbonded_amount = 6;
-    // The randomizer to use for the proof of spend capability.
-    bytes randomizer = 7;
+  // The proposal to vote on.
+  uint64 proposal = 1;
+  // The start position of the proposal in the TCT.
+  uint64 start_position = 2;
+  // The vote to cast.
+  governance.v1alpha1.Vote vote = 3;
+  // The delegation note to prove that we can vote.
+  crypto.v1alpha1.Note staked_note = 4;
+  // The position of that delegation note.
+  uint64 staked_note_position = 5;
+  // The unbonded amount equivalent to the delegation note.
+  crypto.v1alpha1.Amount unbonded_amount = 6;
+  // The randomizer to use for the proof of spend capability.
+  bytes randomizer = 7;
 }
 
 // A vote on a proposal.

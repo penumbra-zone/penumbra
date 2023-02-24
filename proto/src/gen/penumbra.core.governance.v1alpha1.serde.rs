@@ -137,7 +137,7 @@ impl serde::Serialize for DelegatorVoteBody {
         if self.proposal != 0 {
             len += 1;
         }
-        if self.start_epoch_and_block_position != 0 {
+        if self.start_position != 0 {
             len += 1;
         }
         if self.vote.is_some() {
@@ -159,8 +159,8 @@ impl serde::Serialize for DelegatorVoteBody {
         if self.proposal != 0 {
             struct_ser.serialize_field("proposal", ToString::to_string(&self.proposal).as_str())?;
         }
-        if self.start_epoch_and_block_position != 0 {
-            struct_ser.serialize_field("startEpochAndBlockPosition", &self.start_epoch_and_block_position)?;
+        if self.start_position != 0 {
+            struct_ser.serialize_field("startPosition", ToString::to_string(&self.start_position).as_str())?;
         }
         if let Some(v) = self.vote.as_ref() {
             struct_ser.serialize_field("vote", v)?;
@@ -188,8 +188,8 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
     {
         const FIELDS: &[&str] = &[
             "proposal",
-            "start_epoch_and_block_position",
-            "startEpochAndBlockPosition",
+            "start_position",
+            "startPosition",
             "vote",
             "value",
             "unbonded_amount",
@@ -201,7 +201,7 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Proposal,
-            StartEpochAndBlockPosition,
+            StartPosition,
             Vote,
             Value,
             UnbondedAmount,
@@ -229,7 +229,7 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
                     {
                         match value {
                             "proposal" => Ok(GeneratedField::Proposal),
-                            "startEpochAndBlockPosition" | "start_epoch_and_block_position" => Ok(GeneratedField::StartEpochAndBlockPosition),
+                            "startPosition" | "start_position" => Ok(GeneratedField::StartPosition),
                             "vote" => Ok(GeneratedField::Vote),
                             "value" => Ok(GeneratedField::Value),
                             "unbondedAmount" | "unbonded_amount" => Ok(GeneratedField::UnbondedAmount),
@@ -255,7 +255,7 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut proposal__ = None;
-                let mut start_epoch_and_block_position__ = None;
+                let mut start_position__ = None;
                 let mut vote__ = None;
                 let mut value__ = None;
                 let mut unbonded_amount__ = None;
@@ -271,11 +271,11 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
                                 Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
-                        GeneratedField::StartEpochAndBlockPosition => {
-                            if start_epoch_and_block_position__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("startEpochAndBlockPosition"));
+                        GeneratedField::StartPosition => {
+                            if start_position__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("startPosition"));
                             }
-                            start_epoch_and_block_position__ = 
+                            start_position__ = 
                                 Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
@@ -317,7 +317,7 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
                 }
                 Ok(DelegatorVoteBody {
                     proposal: proposal__.unwrap_or_default(),
-                    start_epoch_and_block_position: start_epoch_and_block_position__.unwrap_or_default(),
+                    start_position: start_position__.unwrap_or_default(),
                     vote: vote__,
                     value: value__,
                     unbonded_amount: unbonded_amount__,
@@ -340,7 +340,7 @@ impl serde::Serialize for DelegatorVotePlan {
         if self.proposal != 0 {
             len += 1;
         }
-        if self.start_epoch_and_block_position != 0 {
+        if self.start_position != 0 {
             len += 1;
         }
         if self.vote.is_some() {
@@ -362,8 +362,8 @@ impl serde::Serialize for DelegatorVotePlan {
         if self.proposal != 0 {
             struct_ser.serialize_field("proposal", ToString::to_string(&self.proposal).as_str())?;
         }
-        if self.start_epoch_and_block_position != 0 {
-            struct_ser.serialize_field("startEpochAndBlockPosition", &self.start_epoch_and_block_position)?;
+        if self.start_position != 0 {
+            struct_ser.serialize_field("startPosition", ToString::to_string(&self.start_position).as_str())?;
         }
         if let Some(v) = self.vote.as_ref() {
             struct_ser.serialize_field("vote", v)?;
@@ -391,8 +391,8 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
     {
         const FIELDS: &[&str] = &[
             "proposal",
-            "start_epoch_and_block_position",
-            "startEpochAndBlockPosition",
+            "start_position",
+            "startPosition",
             "vote",
             "staked_note",
             "stakedNote",
@@ -406,7 +406,7 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Proposal,
-            StartEpochAndBlockPosition,
+            StartPosition,
             Vote,
             StakedNote,
             StakedNotePosition,
@@ -434,7 +434,7 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
                     {
                         match value {
                             "proposal" => Ok(GeneratedField::Proposal),
-                            "startEpochAndBlockPosition" | "start_epoch_and_block_position" => Ok(GeneratedField::StartEpochAndBlockPosition),
+                            "startPosition" | "start_position" => Ok(GeneratedField::StartPosition),
                             "vote" => Ok(GeneratedField::Vote),
                             "stakedNote" | "staked_note" => Ok(GeneratedField::StakedNote),
                             "stakedNotePosition" | "staked_note_position" => Ok(GeneratedField::StakedNotePosition),
@@ -460,7 +460,7 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut proposal__ = None;
-                let mut start_epoch_and_block_position__ = None;
+                let mut start_position__ = None;
                 let mut vote__ = None;
                 let mut staked_note__ = None;
                 let mut staked_note_position__ = None;
@@ -476,11 +476,11 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
                                 Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
-                        GeneratedField::StartEpochAndBlockPosition => {
-                            if start_epoch_and_block_position__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("startEpochAndBlockPosition"));
+                        GeneratedField::StartPosition => {
+                            if start_position__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("startPosition"));
                             }
-                            start_epoch_and_block_position__ = 
+                            start_position__ = 
                                 Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
@@ -522,7 +522,7 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
                 }
                 Ok(DelegatorVotePlan {
                     proposal: proposal__.unwrap_or_default(),
-                    start_epoch_and_block_position: start_epoch_and_block_position__.unwrap_or_default(),
+                    start_position: start_position__.unwrap_or_default(),
                     vote: vote__,
                     staked_note: staked_note__,
                     staked_note_position: staked_note_position__.unwrap_or_default(),

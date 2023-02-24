@@ -109,7 +109,7 @@ impl Worker {
 
         let known_assets = self
             .storage
-            .assets()
+            .all_assets()
             .await?
             .into_iter()
             .map(|asset| asset.id)

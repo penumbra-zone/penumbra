@@ -246,6 +246,27 @@ pub struct NotesRequest {
     #[prost(message, optional, tag = "15")]
     pub token: ::core::option::Option<ViewAuthToken>,
 }
+/// A query for notes to be used for voting on a proposal.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct NotesForVotingRequest {
+    /// The starting height of the proposal.
+    #[prost(uint64, tag = "1")]
+    pub votable_at_height: u64,
+    /// If set, only return notes with the specified asset id.
+    #[prost(message, optional, tag = "3")]
+    pub address_index: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AddressIndex,
+    >,
+    /// Identifies the FVK for the notes to query.
+    #[prost(message, optional, tag = "14")]
+    pub account_id: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AccountId,
+    >,
+    /// Authorizes the request.
+    #[prost(message, optional, tag = "15")]
+    pub token: ::core::option::Option<ViewAuthToken>,
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WitnessRequest {
@@ -279,7 +300,32 @@ pub struct WitnessResponse {
 /// Requests all assets known to the view service.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct AssetsRequest {}
+pub struct AssetsRequest {
+    /// If set to false (default), returns all assets, regardless of whether the rest of the fields of
+    /// the request indicate a filter.
+    #[prost(bool, tag = "1")]
+    pub filtered: bool,
+    /// Include these specific denominations in the response.
+    #[prost(message, repeated, tag = "2")]
+    pub include_specific_denominations: ::prost::alloc::vec::Vec<
+        super::super::core::crypto::v1alpha1::Denom,
+    >,
+    /// Include all delegation tokens, to any validator, in the response.
+    #[prost(bool, tag = "3")]
+    pub include_delegation_tokens: bool,
+    /// Include all unbonding tokens, from any validator, in the response.
+    #[prost(bool, tag = "4")]
+    pub include_unbonding_tokens: bool,
+    /// Include all LP NFTs in the response.
+    #[prost(bool, tag = "5")]
+    pub include_lp_nfts: bool,
+    /// Include all proposal NFTs in the response.
+    #[prost(bool, tag = "6")]
+    pub include_proposal_nfts: bool,
+    /// Include all voting receipt tokens in the response.
+    #[prost(bool, tag = "7")]
+    pub include_voting_receipt_tokens: bool,
+}
 /// Requests all assets known to the view service.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -465,6 +511,16 @@ pub struct TransactionPerspectiveResponse {
 pub struct NotesResponse {
     #[prost(message, optional, tag = "1")]
     pub note_record: ::core::option::Option<SpendableNoteRecord>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct NotesForVotingResponse {
+    #[prost(message, optional, tag = "1")]
+    pub note_record: ::core::option::Option<SpendableNoteRecord>,
+    #[prost(message, optional, tag = "2")]
+    pub identity_key: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::IdentityKey,
+    >,
 }
 /// A note plaintext with associated metadata about its status.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -667,6 +723,28 @@ pub mod view_protocol_service_client {
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/Notes",
+            );
+            self.inner.server_streaming(request.into_request(), path, codec).await
+        }
+        pub async fn notes_for_voting(
+            &mut self,
+            request: impl tonic::IntoRequest<super::NotesForVotingRequest>,
+        ) -> Result<
+            tonic::Response<tonic::codec::Streaming<super::NotesForVotingResponse>>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1alpha1.ViewProtocolService/NotesForVoting",
             );
             self.inner.server_streaming(request.into_request(), path, codec).await
         }
@@ -1138,6 +1216,16 @@ pub mod view_protocol_service_server {
             &self,
             request: tonic::Request<super::NotesRequest>,
         ) -> Result<tonic::Response<Self::NotesStream>, tonic::Status>;
+        /// Server streaming response type for the NotesForVoting method.
+        type NotesForVotingStream: futures_core::Stream<
+                Item = Result<super::NotesForVotingResponse, tonic::Status>,
+            >
+            + Send
+            + 'static;
+        async fn notes_for_voting(
+            &self,
+            request: tonic::Request<super::NotesForVotingRequest>,
+        ) -> Result<tonic::Response<Self::NotesForVotingStream>, tonic::Status>;
         /// Returns authentication paths for the given note commitments.
         ///
         /// This method takes a batch of input commitments, rather than just one, so
@@ -1426,6 +1514,47 @@ pub mod view_protocol_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = NotesSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1alpha1.ViewProtocolService/NotesForVoting" => {
+                    #[allow(non_camel_case_types)]
+                    struct NotesForVotingSvc<T: ViewProtocolService>(pub Arc<T>);
+                    impl<
+                        T: ViewProtocolService,
+                    > tonic::server::ServerStreamingService<super::NotesForVotingRequest>
+                    for NotesForVotingSvc<T> {
+                        type Response = super::NotesForVotingResponse;
+                        type ResponseStream = T::NotesForVotingStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::NotesForVotingRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).notes_for_voting(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = NotesForVotingSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

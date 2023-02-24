@@ -213,6 +213,9 @@ impl ViewService {
 impl ViewProtocolService for ViewService {
     type NotesStream =
         Pin<Box<dyn futures::Stream<Item = Result<pb::NotesResponse, tonic::Status>> + Send>>;
+    type NotesForVotingStream = Pin<
+        Box<dyn futures::Stream<Item = Result<pb::NotesForVotingResponse, tonic::Status>> + Send>,
+    >;
     type AssetsStream =
         Pin<Box<dyn futures::Stream<Item = Result<pb::AssetsResponse, tonic::Status>> + Send>>;
     type StatusStreamStream = Pin<
@@ -764,18 +767,96 @@ impl ViewProtocolService for ViewService {
         ))
     }
 
+    async fn notes_for_voting(
+        &self,
+        request: tonic::Request<pb::NotesForVotingRequest>,
+    ) -> Result<tonic::Response<Self::NotesForVotingStream>, tonic::Status> {
+        self.check_worker().await?;
+        self.check_fvk(request.get_ref().account_id.as_ref())
+            .await?;
+
+        let address_index = request
+            .get_ref()
+            .address_index
+            .to_owned()
+            .map(AddressIndex::try_from)
+            .map_or(Ok(None), |v| v.map(Some))
+            .map_err(|_| tonic::Status::invalid_argument("invalid address index"))?;
+
+        let votable_at_height = request.get_ref().votable_at_height;
+
+        let notes = self
+            .storage
+            .notes_for_voting(address_index, votable_at_height)
+            .await
+            .map_err(|e| tonic::Status::unavailable(format!("error fetching notes: {}", e)))?;
+
+        let stream = try_stream! {
+            for (note, identity_key) in notes {
+                yield pb::NotesForVotingResponse {
+                    note_record: Some(note.into()),
+                    identity_key: Some(identity_key.into()),
+                }
+            }
+        };
+
+        Ok(tonic::Response::new(
+            stream
+                .map_err(|e: anyhow::Error| {
+                    tonic::Status::unavailable(format!("error getting notes: {}", e))
+                })
+                .boxed(),
+        ))
+    }
+
     async fn assets(
         &self,
-        _request: tonic::Request<pb::AssetsRequest>,
+        request: tonic::Request<pb::AssetsRequest>,
     ) -> Result<tonic::Response<Self::AssetsStream>, tonic::Status> {
         self.check_worker().await?;
 
+        let pb::AssetsRequest {
+            filtered,
+            include_specific_denominations,
+            include_delegation_tokens,
+            include_unbonding_tokens,
+            include_lp_nfts,
+            include_proposal_nfts,
+            include_voting_receipt_tokens,
+        } = request.get_ref();
+
         // Fetch assets from storage.
-        let assets = self
-            .storage
-            .assets()
-            .await
-            .map_err(|e| tonic::Status::unavailable(format!("error fetching assets: {}", e)))?;
+        let assets = if !filtered {
+            self.storage
+                .all_assets()
+                .await
+                .map_err(|e| tonic::Status::unavailable(format!("error fetching assets: {e}")))?
+        } else {
+            let mut assets = vec![];
+            for denom in include_specific_denominations {
+                if let Some(denom) = asset::REGISTRY.parse_denom(&denom.denom) {
+                    if let Some(asset) = self.storage.asset_by_denom(&denom).await.map_err(|e| {
+                        tonic::Status::unavailable(format!("error fetching asset: {e}"))
+                    })? {
+                        assets.push(asset);
+                    }
+                }
+            }
+            for (include, pattern) in [
+                (include_delegation_tokens, "delegation\\_%"),
+                (include_unbonding_tokens, "unbonding\\_%"),
+                (include_lp_nfts, "lpnft\\_%"),
+                (include_proposal_nfts, "proposal\\_%"),
+                (include_voting_receipt_tokens, "voted\\_on\\_%"),
+            ] {
+                if *include {
+                    assets.extend(self.storage.assets_matching(pattern).await.map_err(|e| {
+                        tonic::Status::unavailable(format!("error fetching assets: {e}"))
+                    })?);
+                }
+            }
+            assets
+        };
 
         let stream = try_stream! {
             for asset in assets {
