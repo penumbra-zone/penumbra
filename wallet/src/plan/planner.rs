@@ -391,7 +391,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         }
 
         // Plan the transaction using the gathered information
-        self.plan_with_spendable_and_voting_notes(
+        self.plan_with_spendable_and_votable_notes(
             &chain_params,
             &fmd_params,
             fvk,
@@ -408,7 +408,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     ///
     /// Clears the contents of the planner, which can be re-used.
     #[instrument(skip(self, chain_params, fmd_params, fvk, spendable_notes))]
-    pub fn plan_with_spendable_and_voting_notes(
+    pub fn plan_with_spendable_and_votable_notes(
         &mut self,
         chain_params: &ChainParameters,
         fmd_params: &FmdParameters,

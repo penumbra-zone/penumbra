@@ -31,8 +31,8 @@ impl ActionHandler for ProposalWithdraw {
 
     #[instrument(name = "proposal_withdraw", skip(self, state))]
     async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
-        // Any voteable proposal can be withdrawn
-        state.check_proposal_voteable(self.proposal).await?;
+        // Any votable proposal can be withdrawn
+        state.check_proposal_votable(self.proposal).await?;
         Ok(())
     }
 

@@ -63,7 +63,7 @@ impl ActionHandler for DelegatorVote {
             proof: _,    // We already checked this in stateless verification
         } = self;
 
-        state.check_proposal_voteable(*proposal).await?;
+        state.check_proposal_votable(*proposal).await?;
         state
             .check_proposal_started_at_position(*proposal, *start_position)
             .await?;

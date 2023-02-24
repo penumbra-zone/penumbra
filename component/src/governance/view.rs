@@ -164,8 +164,8 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
         .await
     }
 
-    /// Throw an error if the proposal is not voteable.
-    async fn check_proposal_voteable(&self, proposal_id: u64) -> Result<()> {
+    /// Throw an error if the proposal is not votable.
+    async fn check_proposal_votable(&self, proposal_id: u64) -> Result<()> {
         if let Some(proposal_state) = self.proposal_state(proposal_id).await? {
             use proposal::State::*;
             match proposal_state {
