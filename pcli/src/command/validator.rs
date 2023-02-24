@@ -27,9 +27,6 @@ pub enum ValidatorCmd {
     Definition(DefinitionCmd),
     /// Cast a vote on a proposal in your capacity as a validator (see also: `pcli tx vote`).
     Vote {
-        /// The proposal id to vote on.
-        #[clap(long = "on", global = true, display_order = 100)]
-        proposal_id: u64,
         /// The transaction fee (paid in upenumbra).
         #[clap(long, default_value = "0", global = true, display_order = 200)]
         fee: u64,
@@ -38,7 +35,7 @@ pub enum ValidatorCmd {
         source: u32,
         /// The vote to cast.
         #[clap(subcommand)]
-        vote: Vote,
+        vote: super::tx::VoteCmd,
     },
 }
 
@@ -151,7 +148,6 @@ impl ValidatorCmd {
             }
             ValidatorCmd::Vote {
                 fee,
-                proposal_id,
                 source,
                 vote,
             } => {
@@ -160,10 +156,12 @@ impl ValidatorCmd {
                 // Currently this is always just copied from the identity key
                 let governance_key = GovernanceKey(identity_key.0);
 
+                let (proposal, vote): (u64, Vote) = (*vote).into();
+
                 // Construct the vote body
                 let body = ValidatorVoteBody {
-                    proposal: *proposal_id,
-                    vote: *vote,
+                    proposal,
+                    vote,
                     identity_key,
                     governance_key,
                 };

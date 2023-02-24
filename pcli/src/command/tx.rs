@@ -131,9 +131,6 @@ pub enum TxCmd {
     /// Vote on a governance proposal in your role as a delegator (see also: `pcli validator vote`).
     #[clap(display_order = 400)]
     Vote {
-        /// The proposal id to vote on.
-        #[clap(long = "on", global = true, display_order = 100)]
-        proposal_id: u64,
         /// The transaction fee (paid in upenumbra).
         #[clap(long, default_value = "0", global = true, display_order = 200)]
         fee: u64,
@@ -142,7 +139,7 @@ pub enum TxCmd {
         #[clap(long, default_value = "0", global = true, display_order = 300)]
         source: u32,
         #[clap(subcommand)]
-        vote: Vote,
+        vote: VoteCmd,
     },
     /// Submit or withdraw a governance proposal.
     #[clap(display_order = 500, subcommand)]
@@ -157,6 +154,42 @@ pub enum TxCmd {
     /// Currently, only zero-fee sweep transactions are implemented.
     #[clap(display_order = 990)]
     Sweep,
+}
+
+/// Vote on a governance proposal.
+#[derive(Debug, Clone, Copy, clap::Subcommand)]
+pub enum VoteCmd {
+    /// Vote in favor of a proposal.
+    #[clap(display_order = 100)]
+    Yes {
+        /// The proposal ID to vote on.
+        #[clap(long = "on")]
+        proposal_id: u64,
+    },
+    /// Vote against a proposal.
+    #[clap(display_order = 200)]
+    No {
+        /// The proposal ID to vote on.
+        #[clap(long = "on")]
+        proposal_id: u64,
+    },
+    /// Abstain from voting on a proposal.
+    #[clap(display_order = 300)]
+    Abstain {
+        /// The proposal ID to vote on.
+        #[clap(long = "on")]
+        proposal_id: u64,
+    },
+}
+
+impl From<VoteCmd> for (u64, Vote) {
+    fn from(cmd: VoteCmd) -> (u64, Vote) {
+        match cmd {
+            VoteCmd::Yes { proposal_id } => (proposal_id, Vote::Yes),
+            VoteCmd::No { proposal_id } => (proposal_id, Vote::No),
+            VoteCmd::Abstain { proposal_id } => (proposal_id, Vote::Abstain),
+        }
+    }
 }
 
 impl TxCmd {
@@ -611,11 +644,12 @@ impl TxCmd {
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Vote {
-                proposal_id,
                 vote,
                 fee,
                 source,
             } => {
+                let (proposal_id, vote): (u64, Vote) = (*vote).into();
+
                 // Before we vote on the proposal, we have to gather some information about it so
                 // that we can prepare our vote:
                 // - the start height, so we can select the votable staked notes to vote with
@@ -632,7 +666,7 @@ impl TxCmd {
                 } = client
                     .proposal_info(ProposalInfoRequest {
                         chain_id: app.view().chain_params().await?.chain_id,
-                        proposal_id: *proposal_id,
+                        proposal_id,
                     })
                     .await?
                     .into_inner();
@@ -641,7 +675,7 @@ impl TxCmd {
                 let mut rate_data_stream = client
                     .proposal_rate_data(ProposalRateDataRequest {
                         chain_id: app.view().chain_params().await?.chain_id,
-                        proposal_id: *proposal_id,
+                        proposal_id,
                     })
                     .await?
                     .into_inner();
@@ -662,11 +696,11 @@ impl TxCmd {
 
                 let plan = Planner::new(OsRng)
                     .delegator_vote(
-                        *proposal_id,
+                        proposal_id,
                         start_block_height,
                         start_position,
                         start_rate_data,
-                        *vote,
+                        vote,
                     )
                     .fee(fee)
                     .plan(
