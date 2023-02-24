@@ -514,6 +514,24 @@
     },
     "query": "INSERT INTO spendable_notes\n                    (\n                        note_commitment,\n                        nullifier,\n                        position,\n                        height_created,\n                        address_index,\n                        source,\n                        height_spent\n                    )\n                    VALUES\n                    (?, ?, ?, ?, ?, ?, NULL)"
   },
+  "cb35fc8e40a1c7886dd4418ac44cf9e342619d1659fcaeccc76a7cfefdb940db": {
+    "describe": {
+      "columns": [
+        {
+          "name": "denom",
+          "ordinal": 0,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        true
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT assets.denom\n                        FROM spendable_notes JOIN notes LEFT JOIN assets ON notes.asset_id == assets.asset_id\n                        WHERE nullifier = ?"
+  },
   "ccf9c7b45b2a68b2323a357b9780e79e359cf0de78da122ac8db978f9d834471": {
     "describe": {
       "columns": [
