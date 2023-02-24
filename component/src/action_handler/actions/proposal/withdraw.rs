@@ -1,14 +1,16 @@
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_trait::async_trait;
+use penumbra_crypto::ProposalNft;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::ProposalWithdraw, Transaction};
 use tracing::instrument;
 
 use crate::{
     action_handler::ActionHandler,
-    governance::{execute, StateReadExt},
+    governance::{proposal, StateReadExt, StateWriteExt},
+    shielded_pool::SupplyWrite,
 };
 
 #[async_trait]
@@ -35,7 +37,26 @@ impl ActionHandler for ProposalWithdraw {
     }
 
     #[instrument(name = "proposal_withdraw", skip(self, state))]
-    async fn execute<S: StateWrite>(&self, state: S) -> Result<()> {
-        execute::proposal_withdraw(state, self).await
+    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        let ProposalWithdraw { proposal, reason } = self;
+
+        state
+            .put_proposal_state(
+                *proposal,
+                proposal::State::Withdrawn {
+                    reason: reason.clone(),
+                },
+            )
+            .await
+            .context("proposal withdraw succeeds")?;
+
+        // Register the denom for the withdrawn proposal NFT
+        state
+            .register_denom(&ProposalNft::withdrawn(*proposal).denom())
+            .await?;
+
+        tracing::debug!(proposal = %proposal, "withdrew proposal");
+
+        Ok(())
     }
 }

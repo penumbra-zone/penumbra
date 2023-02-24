@@ -2,12 +2,15 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use penumbra_crypto::ProposalNft;
 use penumbra_storage::{StateRead, StateWrite};
+use penumbra_transaction::action::proposal::Outcome;
 use penumbra_transaction::{action::ProposalDepositClaim, Transaction};
 use tracing::instrument;
 
 use crate::action_handler::ActionHandler;
-use crate::governance::{execute, StateReadExt as _};
+use crate::governance::{proposal, StateReadExt as _, StateWriteExt as _};
+use crate::shielded_pool::SupplyWrite;
 
 #[async_trait]
 impl ActionHandler for ProposalDepositClaim {
@@ -29,8 +32,49 @@ impl ActionHandler for ProposalDepositClaim {
     }
 
     #[instrument(name = "proposal_deposit_claim", skip(self, state))]
-    async fn execute<S: StateWrite>(&self, state: S) -> Result<()> {
-        execute::proposal_deposit_claim(state, self).await?;
+    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        let ProposalDepositClaim {
+            proposal,
+            deposit_amount: _, // not needed to transition state; deposit is self-minted in tx
+            outcome: resupplied_outcome,
+        } = self;
+
+        // The only effect of doing a deposit claim is to state transition the proposal to claimed so it
+        // cannot be claimed again. The deposit amount is self-minted in the transaction (proof of
+        // deserving-ness is the supplied proposal NFT, which is burned in the transaction), so we don't
+        // need to distribute it here.
+
+        if let Some(proposal::State::Finished { outcome }) = state.proposal_state(*proposal).await?
+        {
+            // This should be prevented by earlier checks, but replicating here JUST IN CASE!
+            if *resupplied_outcome != outcome.as_ref().map(|_| ()) {
+                anyhow::bail!(
+                    "proposal {} has outcome {:?}, but deposit claim has outcome {:?}",
+                    proposal,
+                    outcome,
+                    resupplied_outcome
+                );
+            }
+
+            // Register the denom for the claimed proposal NFT
+            state
+                .register_denom(
+                    &match &outcome {
+                        Outcome::Passed => ProposalNft::passed(*proposal),
+                        Outcome::Failed { .. } => ProposalNft::failed(*proposal),
+                        Outcome::Vetoed { .. } => ProposalNft::vetoed(*proposal),
+                    }
+                    .denom(),
+                )
+                .await?;
+
+            // Set the proposal state to claimed
+            state
+                .put_proposal_state(*proposal, proposal::State::Claimed { outcome })
+                .await?;
+        } else {
+            anyhow::bail!("proposal {} is not in finished state", proposal);
+        }
 
         Ok(())
     }
