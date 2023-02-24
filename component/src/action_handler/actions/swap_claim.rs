@@ -76,14 +76,10 @@ impl ActionHandler for SwapClaim {
         let source = state.object_get("source").unwrap_or_default();
 
         state
-            .add_state_payload(StatePayload::RolledUp(
-                self.body.output_1_commitment.clone(),
-            ))
+            .add_state_payload(StatePayload::RolledUp(self.body.output_1_commitment))
             .await;
         state
-            .add_state_payload(StatePayload::RolledUp(
-                self.body.output_2_commitment.clone(),
-            ))
+            .add_state_payload(StatePayload::RolledUp(self.body.output_2_commitment))
             .await;
 
         state.spend_nullifier(self.body.nullifier, source).await;

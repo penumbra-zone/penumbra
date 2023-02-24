@@ -146,6 +146,7 @@ impl Policy for PreAuthorizationPolicy {
                 required_signatures,
                 allowed_signers,
             } => {
+                #[allow(clippy::unnecessary_filter_map)]
                 let ed25519_pre_auths =
                     request
                         .pre_authorizations

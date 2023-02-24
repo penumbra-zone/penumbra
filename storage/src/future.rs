@@ -144,8 +144,8 @@ where
             let search_range = (
                 this.last_key
                     .as_ref()
-                    .map(|k| Bound::Excluded(k))
-                    .unwrap_or(Bound::Included(&this.prefix)),
+                    .map(Bound::Excluded)
+                    .unwrap_or(Bound::Included(this.prefix)),
                 peeked
                     .map(|(k, _)| Bound::Included(k))
                     .unwrap_or(Bound::Unbounded),
@@ -164,7 +164,7 @@ where
                     .unwrap()
                     .nonconsensus_changes
                     .range::<Vec<u8>, _>(search_range)
-                    .take_while(|(k, _v)| k.starts_with(&this.prefix))
+                    .take_while(|(k, _v)| k.starts_with(this.prefix))
                     .next();
 
                 // Check whether the new pair, if any, is the new leftmost pair.
@@ -311,8 +311,8 @@ where
             let search_range = (
                 this.last_key
                     .as_ref()
-                    .map(|k| Bound::Excluded(k))
-                    .unwrap_or(Bound::Included(&this.prefix)),
+                    .map(Bound::Excluded)
+                    .unwrap_or(Bound::Included(this.prefix)),
                 peeked
                     .map(|(k, _)| Bound::Included(k))
                     .unwrap_or(Bound::Unbounded),
@@ -478,11 +478,9 @@ where
             let search_range = (
                 this.last_key
                     .as_ref()
-                    .map(|k| Bound::Excluded(k))
-                    .unwrap_or(Bound::Included(&this.prefix)),
-                peeked
-                    .map(|k| Bound::Included(k))
-                    .unwrap_or(Bound::Unbounded),
+                    .map(Bound::Excluded)
+                    .unwrap_or(Bound::Included(this.prefix)),
+                peeked.map(Bound::Included).unwrap_or(Bound::Unbounded),
             );
 
             // It'd be slightly cleaner to initialize `leftmost_pair` with the
@@ -536,7 +534,7 @@ where
                         let _ = this.underlying.as_mut().poll_next(cx);
                     }
                     overwrite_in_place(this.last_key, k);
-                    if let Some(_) = v {
+                    if v.is_some() {
                         // If the value is Some, we have a key-value pair to yield.
                         return Poll::Ready(Some(Ok(k.clone())));
                     } else {

@@ -18,7 +18,7 @@ pub mod validators {
     }
 
     pub fn by_id(id: &IdentityKey) -> String {
-        format!("staking/validator/{}", id)
+        format!("staking/validator/{id}")
     }
 }
 
@@ -26,39 +26,39 @@ pub fn penalty_in_epoch(id: &IdentityKey, epoch: u64) -> String {
     // Load-bearing format string: we need to pad with 0s to ensure that
     // the lex order agrees with the numeric order on epochs.
     // 10 decimal digits covers 2^32 epochs.
-    format!("staking/penalty_in_epoch/{}/{:010}", id, epoch)
+    format!("staking/penalty_in_epoch/{id}/{epoch:010}")
 }
 
 pub fn penalty_in_epoch_prefix(id: &IdentityKey) -> String {
-    format!("staking/penalty_in_epoch/{}/", id)
+    format!("staking/penalty_in_epoch/{id}/")
 }
 
 pub fn state_by_validator(id: &IdentityKey) -> String {
-    format!("staking/validator_state/{}", id)
+    format!("staking/validator_state/{id}")
 }
 
 pub fn current_rate_by_validator(id: &IdentityKey) -> String {
-    format!("staking/validator_rate/current/{}", id)
+    format!("staking/validator_rate/current/{id}")
 }
 
 pub fn next_rate_by_validator(id: &IdentityKey) -> String {
-    format!("staking/validator_rate/next/{}", id)
+    format!("staking/validator_rate/next/{id}")
 }
 
 pub fn power_by_validator(id: &IdentityKey) -> String {
-    format!("staking/validator_power/{}", id)
+    format!("staking/validator_power/{id}")
 }
 
 pub fn bonding_state_by_validator(id: &IdentityKey) -> String {
-    format!("staking/validator_bonding_state/{}", id)
+    format!("staking/validator_bonding_state/{id}")
 }
 
 pub fn uptime_by_validator(id: &IdentityKey) -> String {
-    format!("staking/validator_uptime/{}", id)
+    format!("staking/validator_uptime/{id}")
 }
 
 pub fn slashed_validators(height: u64) -> String {
-    format!("staking/slashed_validators/{}", height)
+    format!("staking/slashed_validators/{height}")
 }
 
 pub fn validator_id_by_consensus_key(pk: &PublicKey) -> String {
@@ -73,7 +73,7 @@ pub fn consensus_key_by_tendermint_address(address: &[u8; 20]) -> String {
 }
 
 pub fn delegation_changes_by_height(height: u64) -> String {
-    format!("staking/delegation_changes/{}", height)
+    format!("staking/delegation_changes/{height}")
 }
 
 pub fn current_consensus_keys() -> &'static str {
@@ -104,8 +104,8 @@ mod tests {
 
         assert_eq!(
             penalty_in_epoch(&ik, 791),
-            //                                   0123456789
-            format!("staking/penalty_in_epoch/{}/0000000791", ik),
+            //                                     0123456789
+            format!("staking/penalty_in_epoch/{ik}/0000000791"),
         );
     }
 
@@ -120,15 +120,9 @@ mod tests {
         let k79 = penalty_in_epoch(&ik, 79);
         let k7 = penalty_in_epoch(&ik, 7);
 
-        let keys = vec![
-            k791.clone(),
-            k792.clone(),
-            k793.clone(),
-            k79.clone(),
-            k7.clone(),
-        ]
-        .into_iter()
-        .collect::<BTreeSet<String>>();
+        let keys = vec![k791.clone(), k792.clone(), k793.clone(), k79, k7]
+            .into_iter()
+            .collect::<BTreeSet<String>>();
 
         // All keys are distinct
         assert_eq!(keys.len(), 5);
@@ -138,6 +132,6 @@ mod tests {
             .range(k791.clone()..=k793.clone())
             .cloned()
             .collect::<Vec<_>>();
-        assert_eq!(range, vec![k791.clone(), k792.clone(), k793.clone(),]);
+        assert_eq!(range, vec![k791, k792, k793,]);
     }
 }

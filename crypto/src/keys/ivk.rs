@@ -98,7 +98,7 @@ pub struct IncomingViewingKeyVar {
 impl IncomingViewingKeyVar {
     /// Derive the incoming viewing key from the nk and the ak.
     pub fn derive(nk: &NullifierKeyVar, ak: &AuthorizationKeyVar) -> Result<Self, SynthesisError> {
-        let cs = nk.inner.cs().clone();
+        let cs = nk.inner.cs();
         let ivk_domain_sep = FqVar::new_constant(cs.clone(), *IVK_DOMAIN_SEP)?;
         let ivk_mod_q = poseidon377::r1cs::hash_2(
             cs.clone(),
@@ -110,7 +110,7 @@ impl IncomingViewingKeyVar {
         let inner_ivk_mod_q: Fq = ivk_mod_q.value().unwrap_or_default();
         let ivk_mod_r = Fr::from_le_bytes_mod_order(&inner_ivk_mod_q.to_bytes());
         let ivk = NonNativeFieldVar::<Fr, Fq>::new_variable(
-            cs.clone(),
+            cs,
             || Ok(ivk_mod_r),
             AllocationMode::Witness,
         )?;

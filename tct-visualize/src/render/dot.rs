@@ -362,7 +362,7 @@ impl<W: Write> Writer<W> {
                 node.position().block(),
                 node.position().commitment(),
                 node.cached_hash()
-                    .map(|h| format!("{:?}", h))
+                    .map(|h| format!("{h:?}"))
                     .unwrap_or_else(|| "?".to_string())
             )?;
             if node.place() == Place::Frontier {
@@ -565,7 +565,7 @@ impl<W: Write> Writer<W> {
                 (Place::Frontier, _) if !child.children().is_empty() => FRONTIER_EDGE_COLOR,
                 _ => "black",
             };
-            write!(w, "[color=\"{}\"]", color)
+            write!(w, "[color=\"{color}\"]")
         })
     }
 
@@ -668,7 +668,7 @@ impl<W: Write> Writer<W> {
                 write!(w, "[style=\"bold\"]")?;
                 write!(w, "[penwidth={PEN_WIDTH}]")?;
                 let color = "black";
-                write!(w, "[color=\"{}\"]", color)
+                write!(w, "[color=\"{color}\"]")
             })?;
         }
 
@@ -690,7 +690,7 @@ impl<W: Write> Writer<W> {
             #[allow(clippy::collapsible_else_if)]
             if pretty {
                 if place == Some(Place::Frontier) && height != 0 {
-                    write!(w, "NODE_FRONTIER_height_{}", height)
+                    write!(w, "NODE_FRONTIER_height_{height}")
                 } else {
                     write!(
                         w,
@@ -703,7 +703,7 @@ impl<W: Write> Writer<W> {
                 }
             } else {
                 if place == Some(Place::Frontier) && height != 0 {
-                    write!(w, "N_F_{}", height)
+                    write!(w, "N_F_{height}")
                 } else {
                     write!(
                         w,
@@ -774,7 +774,7 @@ impl<W: Write> Writer<W> {
             #[allow(clippy::collapsible_else_if)]
             if pretty {
                 if place == Some(Place::Frontier) {
-                    write!(w, "SUBTREE_FRONTIER_height_{}", height)
+                    write!(w, "SUBTREE_FRONTIER_height_{height}")
                 } else {
                     write!(
                         w,
@@ -787,7 +787,7 @@ impl<W: Write> Writer<W> {
                 }
             } else {
                 if place == Some(Place::Frontier) {
-                    write!(w, "T_F_{}", height)
+                    write!(w, "T_F_{height}")
                 } else {
                     write!(
                         w,

@@ -159,7 +159,7 @@ async fn main() -> Result<()> {
                         }),
                     ];
                     Some(soft_kms::Config {
-                        spend_key: spend_key.clone(),
+                        spend_key,
                         auth_policy,
                     })
                 }
@@ -235,7 +235,7 @@ async fn main() -> Result<()> {
                             .accept_http1(true)
                             .add_service(tonic_web::enable(ViewProtocolServiceServer::new(service)))
                             .serve(
-                                format!("{}:{}", host, view_port)
+                                format!("{host}:{view_port}")
                                     .parse()
                                     .expect("this is a valid address"),
                             ),
@@ -259,7 +259,7 @@ async fn main() -> Result<()> {
                             .add_service(tonic_web::enable(ViewProtocolServiceServer::new(service)))
                             .add_service(tonic_web::enable(custody_svc))
                             .serve(
-                                format!("{}:{}", host, view_port)
+                                format!("{host}:{view_port}")
                                     .parse()
                                     .expect("this is a valid address"),
                             ),

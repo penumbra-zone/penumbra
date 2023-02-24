@@ -14,7 +14,7 @@ use penumbra_proto::view::v1alpha1::{
 use penumbra_transaction::{
     plan::TransactionPlan, Transaction, TransactionPerspective, WitnessData,
 };
-use tendermint;
+
 use tonic::async_trait;
 use tonic::codegen::Bytes;
 use tracing::instrument;

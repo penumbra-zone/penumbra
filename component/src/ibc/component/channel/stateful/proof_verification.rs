@@ -108,7 +108,7 @@ pub trait ChannelProofVerifier: StateReadExt {
 
         // get the stored consensus state for the counterparty
         let trusted_consensus_state = self
-            .get_verified_consensus_state(proof_height.clone(), connection.client_id().clone())
+            .get_verified_consensus_state(*proof_height, connection.client_id().clone())
             .await?;
 
         let client_def = trusted_client_state;
@@ -116,11 +116,11 @@ pub trait ChannelProofVerifier: StateReadExt {
         // PROOF VERIFICATION. verify that our counterparty committed expected_channel to its
         // state.
         client_def.verify_channel_state(
-            proof_height.clone(),
+            *proof_height,
             connection.counterparty().prefix(),
             proof,
             trusted_consensus_state.root(),
-            &ChannelEndPath::new(&port_id, &channel_id),
+            &ChannelEndPath::new(port_id, channel_id),
             expected_channel,
         )?;
 

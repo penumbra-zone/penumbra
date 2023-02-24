@@ -2,16 +2,16 @@ use penumbra_crypto::dex::{lp::position, DirectedTradingPair, TradingPair};
 use std::string::String;
 
 pub fn position_nonce(nonce: &[u8]) -> String {
-    format!("dex/position_nonce/{:?}", nonce)
+    format!("dex/position_nonce/{nonce:?}")
 }
 
 pub fn positions(trading_pair: &TradingPair, position_id: &str) -> String {
-    format!("dex/positions/{}/opened/{}", trading_pair, position_id)
+    format!("dex/positions/{trading_pair}/opened/{position_id}")
 }
 
 /// Looks up a `PositionMetadata` by its ID
 pub fn position_by_id(id: &position::Id) -> String {
-    format!("dex/position/{}", id)
+    format!("dex/position/{id}")
 }
 
 /// Encompasses non-consensus state keys.

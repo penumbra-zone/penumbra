@@ -58,8 +58,7 @@ impl Storage {
             Self::load(storage_path.as_str()).await
         } else {
             let mut client =
-                ObliviousQueryServiceClient::connect(format!("http://{}:{}", node, pd_port))
-                    .await?;
+                ObliviousQueryServiceClient::connect(format!("http://{node}:{pd_port}")).await?;
             let params = client
                 .chain_parameters(tonic::Request::new(ChainParametersRequest {
                     chain_id: String::new(),

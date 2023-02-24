@@ -69,7 +69,7 @@ impl Transaction {
             match action {
                 Action::Swap(swap) => {
                     let commitment = swap.body.payload.commitment;
-                    let payload_key = PayloadKey::derive_swap(&fvk.outgoing(), commitment);
+                    let payload_key = PayloadKey::derive_swap(fvk.outgoing(), commitment);
 
                     result.insert(commitment, payload_key);
                 }

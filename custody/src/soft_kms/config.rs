@@ -74,7 +74,7 @@ mod tests {
         };
 
         let encoded = toml::to_string_pretty(&example).unwrap();
-        println!("{}", encoded);
+        println!("{encoded}");
         let example2 = toml::from_str(&encoded).unwrap();
         assert_eq!(example, example2);
 

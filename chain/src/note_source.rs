@@ -112,8 +112,7 @@ impl std::fmt::Debug for NoteSource {
             NoteSource::Genesis => f.write_fmt(format_args!("NoteSource::Genesis")),
             NoteSource::Unknown => f.write_fmt(format_args!("NoteSource::Unknown")),
             NoteSource::FundingStreamReward { epoch_index } => f.write_fmt(format_args!(
-                "NoteSource::FundingStreamReward({})",
-                epoch_index
+                "NoteSource::FundingStreamReward({epoch_index})"
             )),
         }
     }

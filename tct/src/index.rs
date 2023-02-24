@@ -136,7 +136,7 @@ pub mod within {
                 commitment: Commitment(item),
             }: Block,
         ) -> Self {
-            item as u16
+            item
         }
     }
 

@@ -38,7 +38,7 @@ mod test_serde {
     fn roundtrip_json_zero() {
         let commitment = Commitment::try_from([0; 32]).unwrap();
         let bytes = serde_json::to_vec(&commitment).unwrap();
-        println!("{:?}", bytes);
+        println!("{bytes:?}");
         let deserialized: Commitment = serde_json::from_slice(&bytes).unwrap();
         assert_eq!(commitment, deserialized);
     }

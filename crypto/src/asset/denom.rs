@@ -246,9 +246,9 @@ impl Unit {
         let v2_stripped = v2_str.trim_end_matches('0');
 
         if v2 != asset::Amount::zero() {
-            format!("{}.{}", v1, v2_stripped)
+            format!("{v1}.{v2_stripped}")
         } else {
-            format!("{}", v1)
+            format!("{v1}")
         }
     }
 
@@ -292,7 +292,7 @@ impl Unit {
     pub fn exponent(&self) -> u8 {
         self.inner
             .units
-            .get(self.unit_index as usize)
+            .get(self.unit_index)
             .expect("there must be an entry for unit_index")
             .exponent
     }

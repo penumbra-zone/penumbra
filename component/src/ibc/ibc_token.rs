@@ -13,7 +13,7 @@ pub struct IBCToken {
 
 impl IBCToken {
     pub fn new(channel_id: &ChannelId, port_id: &PortId, denom: &str) -> Self {
-        let transfer_path = format!("{}/{}/{}", port_id, channel_id, denom);
+        let transfer_path = format!("{port_id}/{channel_id}/{denom}");
 
         let base_denom = asset::REGISTRY
             .parse_denom(&transfer_path)

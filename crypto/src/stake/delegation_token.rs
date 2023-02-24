@@ -27,7 +27,7 @@ impl DelegationToken {
     pub fn new(validator_identity: IdentityKey) -> Self {
         // This format string needs to be in sync with the asset registry
         let base_denom = asset::REGISTRY
-            .parse_denom(&format!("udelegation_{}", validator_identity))
+            .parse_denom(&format!("udelegation_{validator_identity}"))
             .expect("base denom format is valid");
         DelegationToken {
             validator_identity,

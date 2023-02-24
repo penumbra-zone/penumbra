@@ -6,7 +6,7 @@ use penumbra_tct::{
 use std::string::String;
 
 pub fn token_supply(asset_id: &asset::Id) -> String {
-    format!("shielded_pool/assets/{}/token_supply", asset_id)
+    format!("shielded_pool/assets/{asset_id}/token_supply")
 }
 
 pub fn known_assets() -> &'static str {
@@ -14,43 +14,43 @@ pub fn known_assets() -> &'static str {
 }
 
 pub fn denom_by_asset(asset_id: &asset::Id) -> String {
-    format!("shielded_pool/assets/{}/denom", asset_id)
+    format!("shielded_pool/assets/{asset_id}/denom")
 }
 
 pub fn note_source(note_commitment: &note::Commitment) -> String {
-    format!("shielded_pool/note_source/{}", note_commitment)
+    format!("shielded_pool/note_source/{note_commitment}")
 }
 
 pub fn compact_block(height: u64) -> String {
-    format!("shielded_pool/compact_block/{}", height)
+    format!("shielded_pool/compact_block/{height}")
 }
 
 pub fn anchor_by_height(height: u64) -> String {
-    format!("shielded_pool/anchor/{}", height)
+    format!("shielded_pool/anchor/{height}")
 }
 
 pub fn anchor_lookup(anchor: Root) -> String {
-    format!("shielded_pool/valid_anchors/{}", anchor)
+    format!("shielded_pool/valid_anchors/{anchor}")
 }
 
 pub fn epoch_anchor_by_index(index: u64) -> String {
-    format!("shielded_pool/epoch_anchor/{}", index)
+    format!("shielded_pool/epoch_anchor/{index}")
 }
 
 pub fn epoch_anchor_lookup(anchor: epoch::Root) -> String {
-    format!("shielded_pool/valid_epoch_anchors/{}", anchor)
+    format!("shielded_pool/valid_epoch_anchors/{anchor}")
 }
 
 pub fn block_anchor_by_height(height: u64) -> String {
-    format!("shielded_pool/block_anchor/{}", height)
+    format!("shielded_pool/block_anchor/{height}")
 }
 
 pub fn block_anchor_lookup(anchor: block::Root) -> String {
-    format!("shielded_pool/valid_block_anchors/{}", anchor)
+    format!("shielded_pool/valid_block_anchors/{anchor}")
 }
 
 pub fn spent_nullifier_lookup(nullifier: &Nullifier) -> String {
-    format!("shielded_pool/spent_nullifiers/{}", nullifier)
+    format!("shielded_pool/spent_nullifiers/{nullifier}")
 }
 
 // TODO: refactor this out (shielded pool should use an extension trait, not re-export other components' internals)

@@ -379,7 +379,7 @@ mod tests {
                 .entry(random_share.participant_index)
                 .or_insert_with(|| {
                     subset.push(random_share.clone());
-                    subset_pubkey_commitments.push(pubkey_commitments[i as usize]);
+                    subset_pubkey_commitments.push(pubkey_commitments[i]);
                     true
                 });
         }
