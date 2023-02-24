@@ -385,7 +385,7 @@ impl SpecificQueryService for Info {
 
         Ok(tonic::Response::new(ProposalInfoResponse {
             start_block_height,
-            start_position,
+            start_position: start_position.into(),
         }))
     }
 
