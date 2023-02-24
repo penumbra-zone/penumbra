@@ -415,7 +415,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         fvk: &FullViewingKey,
         source: AddressIndex,
         spendable_notes: Vec<SpendableNoteRecord>,
-        notes_for_voting: Vec<Vec<(SpendableNoteRecord, IdentityKey)>>,
+        votable_notes: Vec<Vec<(SpendableNoteRecord, IdentityKey)>>,
     ) -> anyhow::Result<TransactionPlan> {
         tracing::debug!(plan = ?self.plan, balance = ?self.balance, "finalizing transaction");
 
@@ -439,16 +439,26 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                     ..
                 },
             ),
-        ) in notes_for_voting
+        ) in votable_notes
             .into_iter()
             .zip(mem::take(&mut self.vote_intents).into_iter())
         {
             for (record, identity_key) in records {
+                // Vote with precisely this note on the proposal, computing the correct exchange
+                // rate for self-minted vote receipt tokens using the exchange rate of the validator
+                // at voting start time
                 let unbonded_amount = rate_data
                     .get(&identity_key)
                     .ok_or_else(|| anyhow!("missing rate data for note"))?
                     .unbonded_amount(record.note.amount().into())
                     .into();
+
+                // If the delegation token is unspent, "roll it over" by spending it (this will
+                // result in change sent back to us). This unlinks nullifiers used for voting on
+                // multiple non-overlapping proposals, increasing privacy.
+                if record.height_spent.is_none() {
+                    self.spend(record.note.clone(), record.position);
+                }
 
                 self.delegator_vote_precise(
                     proposal,
