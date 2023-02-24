@@ -146,11 +146,7 @@ impl ValidatorCmd {
                 // never appear on-chain.
                 println!("Uploaded validator definition");
             }
-            ValidatorCmd::Vote {
-                fee,
-                source,
-                vote,
-            } => {
+            ValidatorCmd::Vote { fee, source, vote } => {
                 // TODO: support submitting a separate governance key.
                 let identity_key = IdentityKey(*sk.full_viewing_key().spend_verification_key());
                 // Currently this is always just copied from the identity key
