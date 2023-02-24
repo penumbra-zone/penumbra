@@ -37,7 +37,7 @@ cargo $nightly_opt doc --no-deps \
   -p poseidon377 \
   -p https://github.com/rust-lang/crates.io-index#poseidon-paramgen@0.1.0 \
   -p poseidon-permutation \
-  -p https://github.com/penumbra-zone/decaf377#0.1.0 \
+  -p https://github.com/penumbra-zone/decaf377#0.2.0 \
   -p decaf377-rdsa \
   -p decaf377-fmd \
   -p decaf377-ka \
