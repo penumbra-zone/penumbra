@@ -6053,7 +6053,8 @@ dependencies = [
 [[package]]
 name = "tower-abci"
 version = "0.5.0"
-source = "git+https://github.com/penumbra-zone/tower-abci?branch=tendermint-29#4e22b6daa5fc11543100c4996b0b71888bd89563"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "683d5d8d6eb9c79cbb72e1acf366f01267ec076823d3faadb2d228407fc375b9"
 dependencies = [
  "bytes",
  "futures",
