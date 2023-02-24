@@ -8,7 +8,7 @@ use penumbra_transaction::Transaction;
 pub(super) fn valid_binding_signature(tx: &Transaction) -> Result<()> {
     let tx_body = tx.transaction_body().encode_to_vec();
 
-    tracing::debug!(bvk = ?tx.binding_verification_key(), tx_body = ?tx_body);
+    tracing::debug!(bvk = ?tx.binding_verification_key(), tx_body = ?base64::encode(&tx_body));
 
     // Check binding signature.
     tx.binding_verification_key()

@@ -586,6 +586,12 @@ checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
 name = "base64"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0ea22880d78093b0cbe17c89f64a7d457941e65759157ec6cb31a31d652b05e5"
+
+[[package]]
+name = "base64"
 version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4a4ddaa51a5bc52a6948f74c06d20aaaddb71924eab79b8c97a8c556e942d6a"
@@ -3339,7 +3345,7 @@ dependencies = [
  "ark-ff",
  "assert_cmd",
  "async-stream 0.2.1",
- "base64 0.13.1",
+ "base64 0.20.0",
  "bincode",
  "blake2b_simd 0.5.11",
  "bytes",
@@ -3398,7 +3404,7 @@ dependencies = [
  "ark-ff",
  "async-stream 0.2.1",
  "async-trait",
- "base64 0.13.1",
+ "base64 0.20.0",
  "bincode",
  "blake2b_simd 0.5.11",
  "bytes",
@@ -3527,7 +3533,7 @@ dependencies = [
  "anyhow",
  "ark-ff",
  "async-trait",
- "base64 0.13.1",
+ "base64 0.20.0",
  "bech32",
  "bincode",
  "bitvec",
@@ -3619,7 +3625,7 @@ name = "penumbra-custody"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "base64 0.13.1",
+ "base64 0.20.0",
  "bytes",
  "ed25519-consensus",
  "futures",
@@ -3833,6 +3839,7 @@ dependencies = [
  "anyhow",
  "ark-ff",
  "ark-serialize",
+ "base64 0.20.0",
  "bech32",
  "blake2b_simd 0.5.11",
  "bytes",
