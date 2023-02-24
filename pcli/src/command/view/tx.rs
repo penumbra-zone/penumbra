@@ -55,10 +55,7 @@ fn format_visible_swap_row(asset_cache: &Cache, swap: &SwapPlaintext) -> String 
             }
             .format(asset_cache);
 
-            return format!(
-                "{} for {} and paid claim fee {}",
-                value_1, value_2, value_fee,
-            );
+            return format!("{value_1} for {value_2} and paid claim fee {value_fee}",);
         };
 
     let from = Value {
@@ -66,17 +63,16 @@ fn format_visible_swap_row(asset_cache: &Cache, swap: &SwapPlaintext) -> String 
         asset_id: from_asset,
     }
     .format(asset_cache);
-    let to = asset_cache.get(&to_asset).map_or_else(
-        || format!("{}", to_asset),
-        |to_denom| format!("{}", to_denom),
-    );
+    let to = asset_cache
+        .get(&to_asset)
+        .map_or_else(|| format!("{to_asset}"), |to_denom| format!("{to_denom}"));
     let value_fee = Value {
         amount: swap.claim_fee.amount(),
         asset_id: swap.claim_fee.asset_id(),
     }
     .format(asset_cache);
 
-    format!("{} for {} and paid claim fee {}", from, to, value_fee)
+    format!("{from} for {to} and paid claim fee {value_fee}")
 }
 
 fn format_opaque_swap_row(swap: &Swap) -> String {
@@ -170,7 +166,7 @@ fn format_address(ivk: &IncomingViewingKey, address: &Address) -> String {
     if ivk.views_address(address) {
         let index = ivk.index_for_diversifier(address.diversifier());
 
-        format!("[self: {:?}]", index)
+        format!("[self: {index:?}]")
     } else {
         address.display_short_form()
     }
@@ -333,10 +329,10 @@ impl TxCmd {
             ]);
 
             // Print table of actions and their descriptions
-            println!("{}", actions_table);
+            println!("{actions_table}");
 
             // Print transaction metadata
-            println!("{}", metadata_table);
+            println!("{metadata_table}");
         }
 
         Ok(())

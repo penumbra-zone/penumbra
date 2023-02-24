@@ -84,7 +84,7 @@ impl BalanceCmd {
             table.add_row(format_row(row, self.by_address, &asset_cache));
         }
 
-        println!("{}", table);
+        println!("{table}");
 
         Ok(())
     }
@@ -102,7 +102,7 @@ fn format_row(
     if by_address {
         let index = u128::from(index.expect("--by-address specified, but no index set for note"));
         let index_text = if index < u64::MAX as u128 {
-            format!("{}", index)
+            format!("{index}")
         } else {
             "Ephemeral".to_string()
         };

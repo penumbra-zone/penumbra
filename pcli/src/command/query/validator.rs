@@ -109,9 +109,9 @@ impl ValidatorCmd {
                         .sum::<u16>();
 
                     table.add_row(vec![
-                        format!("{:.3}", voting_power),
-                        format!("{:.2}%", power_percent),
-                        format!("{}bps", commission_bps),
+                        format!("{voting_power:.3}"),
+                        format!("{power_percent:.2}%"),
+                        format!("{commission_bps}bps"),
                         v.status.state.to_string(),
                         v.status.bonding_state.to_string(),
                         // TODO: consider rewriting this with term colors
@@ -146,7 +146,7 @@ impl ValidatorCmd {
                     }
                 }
 
-                println!("{}", table);
+                println!("{table}");
             }
             ValidatorCmd::Definition { file, identity_key } => {
                 let identity_key = identity_key.parse::<IdentityKey>()?;
@@ -196,7 +196,7 @@ impl ValidatorCmd {
 
                 if let Some(file) = file {
                     File::create(file)
-                        .with_context(|| format!("cannot create file {:?}", file))?
+                        .with_context(|| format!("cannot create file {file:?}"))?
                         .write_all(toml::to_string_pretty(&validator)?.as_bytes())
                         .context("could not write file")?;
                 } else {

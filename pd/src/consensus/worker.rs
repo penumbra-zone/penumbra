@@ -157,7 +157,7 @@ impl Worker {
                 abci::response::DeliverTx {
                     code: 1.into(),
                     // Use the alternate format specifier to include the chain of error causes.
-                    log: format!("{:#}", e),
+                    log: format!("{e:#}"),
                     ..Default::default()
                 }
             }

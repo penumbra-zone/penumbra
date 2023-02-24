@@ -458,7 +458,7 @@ fn mismatched_consensus_key_update_fails() {
     .iter()
     .collect();
     let tm_key_config: Value =
-        serde_json::from_str(&std::fs::read_to_string(&tm_key_filepath).unwrap())
+        serde_json::from_str(&std::fs::read_to_string(tm_key_filepath).unwrap())
             .expect("Could not read tendermint key config file");
     let tm_key: tendermint::PublicKey =
         serde_json::value::from_value(tm_key_config["pub_key"].clone())

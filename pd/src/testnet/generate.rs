@@ -26,6 +26,7 @@ use tendermint::{node, public_key::Algorithm, Genesis, Time};
 /// Create a new testnet definition, including genesis and at least one
 /// validator config. Write all configs to the target testnet dir,
 /// defaulting to `~/.penumbra/testnet_data`, as usual.
+#[allow(clippy::too_many_arguments)]
 pub fn testnet_generate(
     testnet_dir: PathBuf,
     chain_id: &str,
@@ -49,12 +50,9 @@ pub fn testnet_generate(
     // in the build script
     let mut allocations = if let Some(allocations_input_file) = allocations_input_file {
         let allocations_file = File::open(&allocations_input_file)
-            .with_context(|| format!("cannot open file {:?}", allocations_input_file))?;
+            .with_context(|| format!("cannot open file {allocations_input_file:?}"))?;
         parse_allocations(allocations_file).with_context(|| {
-            format!(
-                "could not parse allocations file {:?}",
-                allocations_input_file
-            )
+            format!("could not parse allocations file {allocations_input_file:?}")
         })?
     } else {
         static LATEST_ALLOCATIONS: &str = include_str!(env!("PD_LATEST_TESTNET_ALLOCATIONS"));
@@ -70,13 +68,9 @@ pub fn testnet_generate(
     // the build script
     let testnet_validators = if let Some(validators_input_file) = validators_input_file {
         let validators_file = File::open(&validators_input_file)
-            .with_context(|| format!("cannot open file {:?}", validators_input_file))?;
-        parse_validators(validators_file).with_context(|| {
-            format!(
-                "could not parse validators file {:?}",
-                validators_input_file
-            )
-        })?
+            .with_context(|| format!("cannot open file {validators_input_file:?}"))?;
+        parse_validators(validators_file)
+            .with_context(|| format!("could not parse validators file {validators_input_file:?}"))?
     } else {
         static LATEST_VALIDATORS: &str = include_str!(env!("PD_LATEST_TESTNET_VALIDATORS"));
         parse_validators(std::io::Cursor::new(LATEST_VALIDATORS)).with_context(|| {
@@ -217,7 +211,7 @@ pub fn testnet_generate(
     };
 
     for (n, vk) in validator_keys.iter().enumerate() {
-        let node_name = format!("node{}", n);
+        let node_name = format!("node{n}");
 
         // Create the directory for this node
         let mut node_dir = testnet_dir.clone();
@@ -237,7 +231,7 @@ pub fn testnet_generate(
             .map(|(n, ip)| {
                 (
                     node::Id::from(validator_keys[n].node_key_pk.ed25519().unwrap()),
-                    format!("{}:26656", ip),
+                    format!("{ip}:26656"),
                 )
             })
             .filter_map(|(id, ip)| parse_tm_address(Some(&id), &ip).ok())
@@ -256,7 +250,7 @@ fn parse_allocations(input: impl Read) -> Result<Vec<genesis::Allocation>> {
         let record: TestnetAllocation = result?;
         let record: genesis::Allocation = record
             .try_into()
-            .with_context(|| format!("invalid address in entry {} of allocations file", line))?;
+            .with_context(|| format!("invalid address in entry {line} of allocations file"))?;
         res.push(record);
     }
 

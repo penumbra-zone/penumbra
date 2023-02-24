@@ -26,14 +26,14 @@ fn div_rem_u384_by_u256(u: [u64; 6], mut v: [u64; 4]) -> ([u64; 6], [u64; 4]) {
     for i in (1..n).rev() {
         v[i] = (v[i] << lg_d) | (v[i - 1] >> (64 - lg_d));
     }
-    v[0] = v[0] << lg_d;
+    v[0] <<= lg_d;
 
     // Normalize u in place by shifting, carrying bits across words.
     // We may need an extra word to hold extra bits, since d was chosen from v, not u.
     for i in (1..7).rev() {
         u[i] = (u[i] << lg_d) | (u[i - 1] >> (64 - lg_d));
     }
-    u[0] = u[0] << lg_d;
+    u[0] <<= lg_d;
 
     // D2. [Initialize j.] Set j to m.
     let mut j = m;
@@ -52,8 +52,8 @@ fn div_rem_u384_by_u256(u: [u64; 6], mut v: [u64; 4]) -> ([u64; 6], [u64; 4]) {
         'correction: while q_hat >= 1 << 64
             || q_hat * u128::from(v[n - 2]) > ((r_hat << 64) | u128::from(u[j + n - 2]))
         {
-            q_hat = q_hat - 1;
-            r_hat = r_hat + divisor;
+            q_hat -= 1;
+            r_hat += divisor;
             if r_hat >= 1 << 64 {
                 break 'correction;
             }
