@@ -47,15 +47,15 @@ impl TendermintProxyService for TendermintProxy {
         let rsp = client
             .tx(
                 hash.try_into().map_err(|e| {
-                    tonic::Status::invalid_argument(format!("invalid transaction hash: {:#?}", e))
+                    tonic::Status::invalid_argument(format!("invalid transaction hash: {e:#?}"))
                 })?,
                 prove,
             )
             .await
-            .map_err(|e| tonic::Status::unavailable(format!("error getting tx: {}", e)))?;
+            .map_err(|e| tonic::Status::unavailable(format!("error getting tx: {e}")))?;
 
         let tx = Transaction::decode(rsp.tx.as_ref())
-            .map_err(|e| tonic::Status::unavailable(format!("error decoding tx: {}", e)))?;
+            .map_err(|e| tonic::Status::unavailable(format!("error decoding tx: {e}")))?;
 
         Ok(tonic::Response::new(GetTxResponse {
             tx: tx.into(),
@@ -95,9 +95,10 @@ impl TendermintProxyService for TendermintProxy {
 
         let params = req.into_inner().params;
 
-        let res = client.broadcast_tx_async(params).await.map_err(|e| {
-            tonic::Status::unavailable(format!("error broadcasting tx async: {}", e))
-        })?;
+        let res = client
+            .broadcast_tx_async(params)
+            .await
+            .map_err(|e| tonic::Status::unavailable(format!("error broadcasting tx async: {e}")))?;
 
         Ok(tonic::Response::new(BroadcastTxAsyncResponse {
             code: u32::from(res.code) as u64,
@@ -116,9 +117,7 @@ impl TendermintProxyService for TendermintProxy {
         let res = client
             .broadcast_tx_sync(req.into_inner().params)
             .await
-            .map_err(|e| {
-                tonic::Status::unavailable(format!("error broadcasting tx sync: {}", e))
-            })?;
+            .map_err(|e| tonic::Status::unavailable(format!("error broadcasting tx sync: {e}")))?;
 
         tracing::info!("{:#?}", res);
         Ok(tonic::Response::new(BroadcastTxSyncResponse {
@@ -140,7 +139,7 @@ impl TendermintProxyService for TendermintProxy {
         let res = client
             .status()
             .await
-            .map_err(|e| tonic::Status::unavailable(format!("error querying status: {}", e)))?;
+            .map_err(|e| tonic::Status::unavailable(format!("error querying status: {e}")))?;
 
         // The tendermint-rs `Timestamp` type is a newtype wrapper
         // around a `time::PrimitiveDateTime` however it's private so we
@@ -232,7 +231,7 @@ impl TendermintProxyService for TendermintProxy {
         let res = client
             .abci_query(Some(path), data.clone(), Some(height), prove)
             .await
-            .map_err(|e| tonic::Status::unavailable(format!("error querying abci: {}", e)))?;
+            .map_err(|e| tonic::Status::unavailable(format!("error querying abci: {e}")))?;
 
         match res.code {
             Code::Ok => Ok(tonic::Response::new(AbciQueryResponse {
@@ -261,8 +260,7 @@ impl TendermintProxyService for TendermintProxy {
                 codespace: res.codespace,
             })),
             tendermint::abci::Code::Err(e) => Err(tonic::Status::unavailable(format!(
-                "error querying abci: {}",
-                e
+                "error querying abci: {e}"
             ))),
         }
     }
@@ -281,7 +279,7 @@ impl TendermintProxyService for TendermintProxy {
                     .expect("height should be less than 2^63"),
             )
             .await
-            .map_err(|e| tonic::Status::unavailable(format!("error querying abci: {}", e)))?;
+            .map_err(|e| tonic::Status::unavailable(format!("error querying abci: {e}")))?;
 
         // The tendermint-rs `Timestamp` type is a newtype wrapper
         // around a `time::PrimitiveDateTime` however it's private so we

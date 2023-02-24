@@ -93,7 +93,7 @@ impl StakedCmd {
             table.add_row(vec![
                 info.validator.name.clone(),
                 unbonded.format(&asset_cache),
-                format!("{:.4}", rate),
+                format!("{rate:.4}"),
                 delegation.format(&asset_cache),
             ]);
 
@@ -131,7 +131,7 @@ impl StakedCmd {
             String::new(),
             String::new(),
         ]);
-        println!("{}", table);
+        println!("{table}");
 
         Ok(())
     }

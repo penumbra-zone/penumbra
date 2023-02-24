@@ -84,7 +84,7 @@ impl U128x128 {
     pub fn round_up(&self) -> Self {
         let (integral, fractional) = self.0.into_words();
         if fractional == 0 {
-            return *self;
+            *self
         } else {
             Self(U256::from_words(integral + 1, 0u128))
         }

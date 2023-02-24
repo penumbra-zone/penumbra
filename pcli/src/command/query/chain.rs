@@ -84,7 +84,7 @@ impl ChainCmd {
                 &format!("{}", params.outbound_ics20_transfers_enabled),
             ]);
 
-        println!("{}", table);
+        println!("{table}");
 
         Ok(())
     }
@@ -200,7 +200,7 @@ impl ChainCmd {
                         &format!("{}", stats.disabled_validators),
                     ]);
 
-                println!("{}", table);
+                println!("{table}");
             }
         };
 

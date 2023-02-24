@@ -35,7 +35,7 @@ impl TransactionHashesCmd {
             ]);
         }
 
-        println!("{}", table);
+        println!("{table}");
 
         Ok(())
     }

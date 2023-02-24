@@ -71,10 +71,7 @@ impl KeysCmd {
 
                 // xxx: Something better should be done here, this is in danger of being
                 // shared by users accidentally in log output.
-                println!(
-                    "YOUR PRIVATE SEED PHRASE: {}\nDO NOT SHARE WITH ANYONE!",
-                    seed_phrase
-                );
+                println!("YOUR PRIVATE SEED PHRASE: {seed_phrase}\nDO NOT SHARE WITH ANYONE!");
 
                 let wallet = KeyStore::from_seed_phrase(seed_phrase);
                 wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
@@ -93,7 +90,7 @@ impl KeysCmd {
                 let wallet_path = data_dir.join(crate::CUSTODY_FILE_NAME);
                 if wallet_path.is_file() {
                     std::fs::remove_file(&wallet_path)?;
-                    println!("Deleted wallet file at {}", wallet_path);
+                    println!("Deleted wallet file at {wallet_path}");
                 } else if wallet_path.exists() {
                     return Err(anyhow!(
                             "Expected wallet file at {} but found something that is not a file; refusing to delete it",

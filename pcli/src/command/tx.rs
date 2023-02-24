@@ -215,7 +215,7 @@ impl TxCmd {
                 let num_plans = plans.len();
 
                 for (i, plan) in plans.into_iter().enumerate() {
-                    println!("building sweep {} of {}", i, num_plans);
+                    println!("building sweep {i} of {num_plans}");
                     let tx = app.build_transaction(plan).await?;
                     app.submit_transaction_unconfirmed(&tx).await?;
                 }
@@ -560,7 +560,7 @@ impl TxCmd {
 
                 if let Some(file) = file {
                     File::create(file)
-                        .with_context(|| format!("cannot create file {:?}", file))?
+                        .with_context(|| format!("cannot create file {file:?}"))?
                         .write_all(toml::to_string_pretty(&toml_table)?.as_bytes())
                         .context("could not write file")?;
                 } else {

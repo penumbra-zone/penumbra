@@ -59,7 +59,7 @@ pub fn parse_tm_address(
         node.push_str(":26656");
     }
     match node_id {
-        Some(id) => Ok(format!("{}@{}", id, node).parse()?),
+        Some(id) => Ok(format!("{id}@{node}").parse()?),
         None => Ok(node.to_string().parse()?),
     }
 }

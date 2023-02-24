@@ -23,7 +23,7 @@ impl DebugCmd {
                 // Using derived serialization as a cheap Display impl for formatting
                 // the output. It's human-readable enough when pretty, plus we can parse it.
                 let d = serde_json::to_string_pretty(&debug_info)?;
-                println!("{}", d);
+                println!("{d}");
                 Ok(())
             }
         }
@@ -119,7 +119,7 @@ impl DebugInfo {
     }
     /// Check whether custody JSON file exists.
     fn get_pcli_custody_file(data_dir: Option<PathBuf>) -> Option<PathBuf> {
-        match data_dir.clone() {
+        match data_dir {
             Some(dd) => {
                 let mut k = dd;
                 k.push("custody.json");

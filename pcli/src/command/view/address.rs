@@ -22,11 +22,11 @@ impl AddressCmd {
         match self.ephemeral {
             false => {
                 let (address, _dtk) = fvk.incoming().payment_address(self.index.into());
-                println!("{}", address);
+                println!("{address}");
             }
             true => {
                 let (address, _dtk) = fvk.incoming().ephemeral_address(OsRng, self.index.into());
-                println!("{}", address);
+                println!("{address}");
             }
         }
 

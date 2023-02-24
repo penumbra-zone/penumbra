@@ -100,7 +100,7 @@ impl ValidatorCmd {
             ValidatorCmd::Identity => {
                 let ik = IdentityKey(fvk.spend_verification_key().clone());
 
-                println!("{}", ik);
+                println!("{ik}");
             }
             ValidatorCmd::Definition(DefinitionCmd::Upload { file, fee, source }) => {
                 // The definitions are stored in a JSON document,
@@ -113,11 +113,11 @@ impl ValidatorCmd {
                 // We could also support defining multiple validators in a single
                 // file.
                 let mut definition_file =
-                    File::open(file).with_context(|| format!("cannot open file {:?}", file))?;
+                    File::open(file).with_context(|| format!("cannot open file {file:?}"))?;
                 let mut definition: String = String::new();
                 definition_file
                     .read_to_string(&mut definition)
-                    .with_context(|| format!("failed to read file {:?}", file))?;
+                    .with_context(|| format!("failed to read file {file:?}"))?;
                 let new_validator: ValidatorToml =
                     toml::from_str(&definition).context("Unable to parse validator definition")?;
                 let new_validator: Validator = new_validator
@@ -209,17 +209,14 @@ impl ValidatorCmd {
                 let consensus_key: tendermint::PublicKey = match tendermint_validator_keyfile {
                     Some(f) => {
                         tracing::debug!(?f, "Reading tendermint validator pubkey from file");
-                        let tm_key_config: Value = serde_json::from_str(&std::fs::read_to_string(
-                            &f,
-                        )?)
-                        .context(format!(
-                            "Could not parse file as Tendermint validator config: {}",
-                            f
-                        ))?;
+                        let tm_key_config: Value =
+                            serde_json::from_str(&std::fs::read_to_string(f)?).context(format!(
+                                "Could not parse file as Tendermint validator config: {f}"
+                            ))?;
                         serde_json::value::from_value::<tendermint::PublicKey>(
                             tm_key_config["pub_key"].clone(),
                         )
-                        .context(format!("Tendermint JSON file malformed: {}", f))?
+                        .context(format!("Tendermint JSON file malformed: {f}"))?
                     }
                     None => {
                         tracing::warn!("Generating a random consensus pubkey for Tendermint; consider using the '--tendermint-validator-keyfile' flag");
@@ -270,7 +267,7 @@ impl ValidatorCmd {
 
                 if let Some(file) = file {
                     File::create(file)
-                        .with_context(|| format!("cannot create file {:?}", file))?
+                        .with_context(|| format!("cannot create file {file:?}"))?
                         .write_all(template_str.as_bytes())
                         .context("could not write file")?;
                 } else {

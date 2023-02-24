@@ -101,7 +101,7 @@ impl Reset {
         let view_path = data_path.as_ref().join(crate::VIEW_FILE_NAME);
         if view_path.is_file() {
             std::fs::remove_file(&view_path)?;
-            println!("Deleted view data at {}", view_path);
+            println!("Deleted view data at {view_path}");
         } else if view_path.exists() {
             return Err(anyhow::anyhow!(
                 "Expected view data at {} but found something that is not a file; refusing to delete it",

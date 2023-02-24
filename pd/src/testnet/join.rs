@@ -17,7 +17,7 @@ pub async fn testnet_join(
 ) -> anyhow::Result<()> {
     let mut node_dir = output_dir;
     node_dir.push("node0");
-    let genesis_url = format!("http://{}:26657/genesis", node);
+    let genesis_url = format!("http://{node}:26657/genesis");
     tracing::info!("fetching genesis: {}", genesis_url);
     // We need to download the genesis data and the node ID from the remote node.
     // TODO: replace with TendermintProxyServiceClient
@@ -36,7 +36,7 @@ pub async fn testnet_join(
     tracing::info!("fetched genesis");
 
     let node_id = client
-        .get(format!("http://{}:26657/status", node))
+        .get(format!("http://{node}:26657/status"))
         .send()
         .await?
         .json::<serde_json::Value>()
@@ -48,7 +48,7 @@ pub async fn testnet_join(
         .take();
     let node_id: tendermint::node::Id = serde_json::value::from_value(node_id)?;
     tracing::info!(?node_id, "fetched node id");
-    let node_tm_address = parse_tm_address(Some(&node_id), &node)?;
+    let node_tm_address = parse_tm_address(Some(&node_id), node)?;
 
     // Look up more peers from the target node, so that generated tendermint config
     // contains multiple addresses, making peering easier.
@@ -58,7 +58,7 @@ pub async fn testnet_join(
     peers.extend(new_peers);
     tracing::info!(?peers);
 
-    let tm_config = generate_tm_config(&node_name, peers, external_address)?;
+    let tm_config = generate_tm_config(node_name, peers, external_address)?;
 
     let vk = ValidatorKeys::generate();
     write_configs(node_dir, &vk, &genesis, tm_config)?;
@@ -81,7 +81,7 @@ pub async fn fetch_peers(
     };
     let client = reqwest::Client::new();
     let net_info_peers = client
-        .get(format!("http://{}:26657/net_info", hostname))
+        .get(format!("http://{hostname}:26657/net_info"))
         .send()
         .await?
         .json::<serde_json::Value>()

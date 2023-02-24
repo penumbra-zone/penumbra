@@ -76,10 +76,10 @@ impl ObliviousQueryService for Info {
         state
             .check_chain_id(&request.get_ref().chain_id)
             .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {}", e)))?;
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
 
         let chain_params = state.get_chain_params().await.map_err(|e| {
-            tonic::Status::unavailable(format!("error getting chain parameters: {}", e))
+            tonic::Status::unavailable(format!("error getting chain parameters: {e}"))
         })?;
 
         Ok(tonic::Response::new(ChainParametersResponse {
@@ -96,7 +96,7 @@ impl ObliviousQueryService for Info {
         state
             .check_chain_id(&request.get_ref().chain_id)
             .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {}", e)))?;
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
 
         let mutable_params = MutableParam::iter();
 
@@ -113,7 +113,7 @@ impl ObliviousQueryService for Info {
                 })
                 .map_err(|e: anyhow::Error| {
                     // Should be impossible, but.
-                    tonic::Status::unavailable(format!("error getting mutable params: {}", e))
+                    tonic::Status::unavailable(format!("error getting mutable params: {e}"))
                 })
                 // TODO: how do we instrument a Stream
                 //.instrument(Span::current())
@@ -130,11 +130,12 @@ impl ObliviousQueryService for Info {
         state
             .check_chain_id(&request.get_ref().chain_id)
             .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {}", e)))?;
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
 
-        let known_assets = state.known_assets().await.map_err(|e| {
-            tonic::Status::unavailable(format!("error getting known assets: {}", e))
-        })?;
+        let known_assets = state
+            .known_assets()
+            .await
+            .map_err(|e| tonic::Status::unavailable(format!("error getting known assets: {e}")))?;
         Ok(tonic::Response::new(AssetListResponse {
             asset_list: Some(known_assets.into()),
         }))
@@ -149,12 +150,12 @@ impl ObliviousQueryService for Info {
         state
             .check_chain_id(&request.get_ref().chain_id)
             .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {}", e)))?;
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
 
         let validators = state
             .validator_list()
             .await
-            .map_err(|e| tonic::Status::unavailable(format!("error listing validators: {}", e)))?;
+            .map_err(|e| tonic::Status::unavailable(format!("error listing validators: {e}")))?;
 
         let show_inactive = request.get_ref().show_inactive;
         let s = try_stream! {
@@ -175,7 +176,7 @@ impl ObliviousQueryService for Info {
                 validator_info: Some(info),
             })
             .map_err(|e: anyhow::Error| {
-                tonic::Status::unavailable(format!("error getting validator info: {}", e))
+                tonic::Status::unavailable(format!("error getting validator info: {e}"))
             })
             // TODO: how do we instrument a Stream
             //.instrument(Span::current())
@@ -199,7 +200,7 @@ impl ObliviousQueryService for Info {
         snapshot
             .check_chain_id(&request.get_ref().chain_id)
             .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {}", e)))?;
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
 
         let CompactBlockRangeRequest {
             start_height,
@@ -208,9 +209,10 @@ impl ObliviousQueryService for Info {
             ..
         } = request.into_inner();
 
-        let current_height = snapshot.get_block_height().await.map_err(|e| {
-            tonic::Status::unavailable(format!("error getting block height: {}", e))
-        })?;
+        let current_height = snapshot
+            .get_block_height()
+            .await
+            .map_err(|e| tonic::Status::unavailable(format!("error getting block height: {e}")))?;
 
         // Treat end_height = 0 as end_height = current_height so that if the
         // end_height is unspecified in the proto, it will be treated as a

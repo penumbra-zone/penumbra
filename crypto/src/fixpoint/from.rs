@@ -28,7 +28,7 @@ impl From<u64> for U128x128 {
 
 impl From<u128> for U128x128 {
     fn from(value: u128) -> Self {
-        Self(U256::from_words(value.into(), 0))
+        Self(U256::from_words(value, 0))
     }
 }
 

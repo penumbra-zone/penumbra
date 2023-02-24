@@ -203,7 +203,7 @@ async fn main() -> anyhow::Result<()> {
                         .info(info.clone())
                         .finish()
                         .unwrap()
-                        .listen(format!("{}:{}", host, abci_port)),
+                        .listen(format!("{host}:{abci_port}")),
                 )
                 .expect("failed to spawn abci server");
 
@@ -230,7 +230,7 @@ async fn main() -> anyhow::Result<()> {
                             tm_proxy.clone(),
                         )))
                         .serve(
-                            format!("{}:{}", host, grpc_port)
+                            format!("{host}:{grpc_port}")
                                 .parse()
                                 .expect("this is a valid address"),
                         ),
@@ -240,7 +240,7 @@ async fn main() -> anyhow::Result<()> {
             // Configure a Prometheus recorder and exporter.
             let (recorder, exporter) = PrometheusBuilder::new()
                 .with_http_listener(
-                    format!("{}:{}", host, metrics_port)
+                    format!("{host}:{metrics_port}")
                         .parse::<SocketAddr>()
                         .expect("this is a valid address"),
                 )
