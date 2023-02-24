@@ -1095,14 +1095,30 @@ impl Storage {
             // TODO: mark spent swaps as spent
 
             if let Some(bytes) = spent_commitment_bytes {
-                // Forget spent note commitments from the SCT
+                // Forget spent note commitments from the SCT unless they are delegation tokens,
+                // which must be saved to allow voting on proposals that might or might not be open
+                // presently
                 let spent_commitment = Commitment::try_from(
                     bytes
                         .note_commitment
                         .ok_or_else(|| anyhow!("missing note commitment"))?
                         .as_slice(),
                 )?;
-                sct.forget(spent_commitment);
+
+                // Check if it's a delegation token, and only forget it if it's not:
+                let spent_denom: String = sqlx::query!(
+                        "SELECT assets.denom
+                        FROM spendable_notes JOIN notes LEFT JOIN assets ON notes.asset_id == assets.asset_id
+                        WHERE nullifier = ?",
+                        nullifier,
+                    )
+                    .fetch_one(&mut dbtx)
+                    .await?
+                    .denom
+                    .ok_or_else(|| anyhow!("denom must exist for note we know about"))?;
+                if DelegationToken::from_str(&spent_denom).is_ok() {
+                    sct.forget(spent_commitment);
+                }
             }
         }
 
