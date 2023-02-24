@@ -47,7 +47,7 @@ impl ActionHandler for ValidatorVote {
             auth_sig: _, // We already checked this in stateless verification
         } = self;
 
-        state.check_proposal_voteable(*proposal).await?;
+        state.check_proposal_votable(*proposal).await?;
         state
             .check_validator_has_not_voted(*proposal, identity_key)
             .await?;
