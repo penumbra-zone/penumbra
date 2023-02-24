@@ -3,7 +3,11 @@ use std::{collections::BTreeSet, pin::Pin, str::FromStr};
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use futures::{Stream, StreamExt};
-use penumbra_crypto::{asset::Amount, stake::IdentityKey, Nullifier};
+use penumbra_crypto::{
+    asset::Amount,
+    stake::{DelegationToken, IdentityKey},
+    Nullifier, Value,
+};
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_tct as tct;
@@ -11,7 +15,7 @@ use penumbra_transaction::action::{Proposal, ProposalPayload, Vote};
 use tokio::task::JoinSet;
 
 use crate::{
-    shielded_pool::StateWriteExt as _,
+    shielded_pool::{StateReadExt as _, StateWriteExt as _, SupplyRead},
     stake::{rate::RateData, validator, StateReadExt as _},
 };
 
@@ -100,10 +104,14 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
     }
 
     /// Get the proposal voting end block for a given proposal.
-    async fn proposal_voting_start_position(&self, proposal_id: u64) -> Result<Option<u64>> {
+    async fn proposal_voting_start_position(
+        &self,
+        proposal_id: u64,
+    ) -> Result<Option<tct::Position>> {
         Ok(self
             .get_proto::<u64>(&state_key::proposal_voting_start_position(proposal_id))
-            .await?)
+            .await?
+            .map(Into::into))
     }
 
     /// Get the total voting power across all validators.
@@ -121,7 +129,7 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
     }
 
     /// Check whether a nullifier was spent for a given proposal.
-    async fn per_proposal_check_nullifier_unvoted(
+    async fn check_nullifier_unvoted_for_proposal(
         &self,
         proposal_id: u64,
         nullifier: &Nullifier,
@@ -153,6 +161,111 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
             identity_key,
         ))
         .await
+    }
+
+    /// Throw an error if the proposal is not voteable.
+    async fn check_proposal_voteable(&self, proposal_id: u64) -> Result<()> {
+        if let Some(proposal_state) = self.proposal_state(proposal_id).await? {
+            use proposal::State::*;
+            match proposal_state {
+                Voting => {
+                    // This is when you can vote on a proposal
+                }
+                Withdrawn { .. } => {
+                    anyhow::bail!("proposal {} has already been withdrawn", proposal_id)
+                }
+                Finished { .. } | Claimed { .. } => {
+                    anyhow::bail!("voting on proposal {} has already concluded", proposal_id)
+                }
+            }
+        } else {
+            anyhow::bail!("proposal {} does not exist", proposal_id);
+        }
+
+        Ok(())
+    }
+
+    /// Throw an error if the proposal was not started at the claimed position.
+    async fn check_proposal_started_at_position(
+        &self,
+        proposal_id: u64,
+        claimed_position: tct::Position,
+    ) -> Result<()> {
+        if let Some(position) = self.proposal_voting_start_position(proposal_id).await? {
+            if position != claimed_position {
+                anyhow::bail!(
+                    "proposal {} was not started at claimed start position of {:?}",
+                    proposal_id,
+                    claimed_position
+                );
+            }
+        } else {
+            anyhow::bail!("proposal {} does not exist", proposal_id);
+        }
+
+        Ok(())
+    }
+
+    /// Throw an error if the nullifier was spent before the proposal started.
+    async fn check_nullifier_unspent_before_start_block_height(
+        &self,
+        proposal_id: u64,
+        nullifier: &Nullifier,
+    ) -> Result<()> {
+        let Some(start_height) = self.proposal_voting_start(proposal_id).await? else {
+            anyhow::bail!("proposal {} does not exist", proposal_id);
+        };
+
+        if let Some(spend_info) = self.spend_info(*nullifier).await? {
+            if spend_info.spend_height < start_height {
+                anyhow::bail!(
+                    "nullifier {} was already spent at block height {} before proposal started at block height {}",
+                    nullifier,
+                    spend_info.spend_height,
+                    start_height
+                );
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Throw an error if the exchange between the value and the unbonded amount isn't correct for
+    /// the proposal given.
+    async fn check_unbonded_amount_correct_exchange_for_proposal(
+        &self,
+        proposal_id: u64,
+        value: &Value,
+        unbonded_amount: &Amount,
+    ) -> Result<()> {
+        // Attempt to find the denom for the asset ID of the specified value
+        let Some(denom) = self.denom_by_asset(&value.asset_id).await? else {
+            anyhow::bail!("unknown asset id {} is not a delegation token", value.asset_id);
+        };
+
+        // Attempt to find the validator identity for the specified denom, failing if it is not a
+        // delegation token
+        let validator_identity = DelegationToken::try_from(denom)?.validator();
+
+        // Attempt to look up the snapshotted `RateData` for the validator at the start of the proposal
+        let Some(rate_data) = self
+            .rate_data_at_proposal_start(proposal_id, validator_identity)
+            .await? else {
+                anyhow::bail!("validator {} was not active at the start of proposal {}", validator_identity, proposal_id);
+            };
+
+        // Check that the unbonded amount is correct relative to that exchange rate
+        if rate_data.unbonded_amount(value.amount.into()) != u64::from(*unbonded_amount) {
+            anyhow::bail!(
+                "unbonded amount {}penumbra does not correspond to {} staked delegation tokens for validator {} using the exchange rate at the start of proposal {}",
+                unbonded_amount,
+                value.amount,
+                validator_identity,
+                proposal_id,
+            );
+        }
+
+        Ok(())
     }
 }
 

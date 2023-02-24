@@ -1,15 +1,10 @@
 use anyhow::{Context as _, Result};
 
 use super::proposal::{self, chain_params};
-use penumbra_transaction::{
-    action::{
-        DelegatorVote, DelegatorVoteBody, Proposal, ProposalDepositClaim, ProposalSubmit,
-        ProposalWithdraw, ValidatorVote, ValidatorVoteBody,
-    },
-    Transaction,
+use penumbra_transaction::action::{
+    Proposal, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote,
+    ValidatorVoteBody,
 };
-
-use std::sync::Arc;
 
 use penumbra_proto::DomainType;
 
@@ -88,41 +83,6 @@ pub mod stateless {
 
         // This is stateless verification, so we still need to check that the proposal being voted
         // on exists, and that this validator hasn't voted on it already.
-
-        Ok(())
-    }
-
-    pub fn delegator_vote(
-        DelegatorVote {
-            auth_sig,
-            proof,
-            body:
-                DelegatorVoteBody {
-                    start_position,
-                    value,
-                    nullifier,
-                    rk,
-                    // Unused in stateless checks:
-                    vote: _,            // Only used when executing the vote
-                    proposal: _,        // Checked against the current open proposals statefully
-                    unbonded_amount: _, // Checked against the proposal's snapshot exchange rate statefully
-                },
-        }: &DelegatorVote,
-        context: Arc<Transaction>,
-    ) -> Result<()> {
-        let effect_hash = context.transaction_body().effect_hash();
-        let anchor = context.anchor;
-
-        // 1. Check spend auth signature using provided spend auth key.
-        rk.verify(effect_hash.as_ref(), auth_sig)
-            .context("delegator vote auth signature failed to verify")?;
-
-        // 2. Check that the proof verifies.
-
-        // Verify the proof with this position as the start position:
-        proof
-            .verify(anchor, *start_position, *value, *nullifier, *rk)
-            .context("a delegator vote proof did not verify")?;
 
         Ok(())
     }
@@ -245,149 +205,10 @@ pub mod stateful {
             auth_sig: _, // We already checked this in stateless verification
         }: &ValidatorVote,
     ) -> Result<()> {
-        proposal_voteable(&state, *proposal).await?;
+        state.check_proposal_voteable(*proposal).await?;
         validator_has_not_voted(&state, *proposal, identity_key).await?;
         governance_key_matches_validator(&state, identity_key, governance_key).await?;
         Ok(())
-    }
-
-    pub async fn delegator_vote<S: StateRead>(
-        state: S,
-        DelegatorVote {
-            body:
-                DelegatorVoteBody {
-                    proposal,
-                    vote: _, // All votes are valid, so we don't need to do anything with this
-                    start_position,
-                    value,
-                    unbonded_amount,
-                    nullifier,
-                    rk: _, // We already used this to check the auth sig in stateless verification
-                },
-            auth_sig: _, // We already checked this in stateless verification
-            proof: _,    // We already checked this in stateless verification
-        }: &DelegatorVote,
-    ) -> Result<()> {
-        proposal_voteable(&state, *proposal).await?;
-        // TODO: once epochs are non-constant, this has to be re-done to be a stateful lookup:
-        let start_block_height = u64::from(
-            Epoch::from_height(
-                u64::from(start_position.epoch()),
-                state.get_chain_params().await?.epoch_duration,
-            )
-            .start_height(),
-        ) + u64::from(start_position.block());
-        proposal_started_at_block_height(&state, *proposal, start_block_height).await?;
-        nullifier_unspent_before(&state, start_block_height, nullifier).await?;
-        nullifier_unvoted_in_proposal(&state, *proposal, nullifier).await?;
-        unbonded_amount_correct_exchange(&state, *proposal, value, unbonded_amount).await?;
-        Ok(())
-    }
-
-    async fn proposal_voteable<S: StateRead>(state: S, proposal_id: u64) -> Result<()> {
-        if let Some(proposal_state) = state.proposal_state(proposal_id).await? {
-            use proposal::State::*;
-            match proposal_state {
-                Voting => {
-                    // This is when you can vote on a proposal
-                }
-                Withdrawn { .. } => {
-                    anyhow::bail!("proposal {} has already been withdrawn", proposal_id)
-                }
-                Finished { .. } | Claimed { .. } => {
-                    anyhow::bail!("voting on proposal {} has already concluded", proposal_id)
-                }
-            }
-        } else {
-            anyhow::bail!("proposal {} does not exist", proposal_id);
-        }
-
-        Ok(())
-    }
-
-    async fn proposal_started_at_block_height<S: StateRead>(
-        state: S,
-        proposal_id: u64,
-        claimed_start_height: u64,
-    ) -> Result<()> {
-        if let Some(start_height) = state.proposal_voting_start(proposal_id).await? {
-            if start_height != claimed_start_height {
-                anyhow::bail!(
-                    "proposal {} was not started at claimed block height of {}",
-                    proposal_id,
-                    claimed_start_height
-                );
-            }
-        } else {
-            anyhow::bail!("proposal {} does not exist", proposal_id);
-        }
-
-        Ok(())
-    }
-
-    async fn nullifier_unspent_before<S: StateRead>(
-        state: S,
-        start_height: u64,
-        nullifier: &Nullifier,
-    ) -> Result<()> {
-        if let Some(spend_info) = state.spend_info(*nullifier).await? {
-            if spend_info.spend_height < start_height {
-                anyhow::bail!(
-                    "nullifier {} was already spent at block height {} before proposal started at block height {}",
-                    nullifier,
-                    spend_info.spend_height,
-                    start_height
-                );
-            }
-        }
-
-        Ok(())
-    }
-
-    async fn unbonded_amount_correct_exchange<S: StateRead>(
-        state: S,
-        proposal_id: u64,
-        value: &Value,
-        unbonded_amount: &Amount,
-    ) -> Result<()> {
-        // Attempt to find the denom for the asset ID of the specified value
-        let Some(denom) = state.denom_by_asset(&value.asset_id).await? else {
-            anyhow::bail!("unknown asset id {} is not a delegation token", value.asset_id);
-        };
-
-        // Attempt to find the validator identity for the specified denom, failing if it is not a
-        // delegation token
-        let validator_identity = DelegationToken::try_from(denom)?.validator();
-
-        // Attempt to look up the snapshotted `RateData` for the validator at the start of the proposal
-        let Some(rate_data) = state
-            .rate_data_at_proposal_start(proposal_id, validator_identity)
-            .await? else {
-                anyhow::bail!("validator {} was not active at the start of proposal {}", validator_identity, proposal_id);
-            };
-
-        // Check that the unbonded amount is correct relative to that exchange rate
-        if rate_data.unbonded_amount(value.amount.into()) != u64::from(*unbonded_amount) {
-            anyhow::bail!(
-                "unbonded amount {}penumbra does not correspond to {} staked delegation tokens for validator {} using the exchange rate at the start of proposal {}",
-                unbonded_amount,
-                value.amount,
-                validator_identity,
-                proposal_id,
-            );
-        }
-
-        Ok(())
-    }
-
-    async fn nullifier_unvoted_in_proposal<S: StateRead>(
-        state: S,
-        proposal_id: u64,
-        nullifier: &Nullifier,
-    ) -> Result<()> {
-        state
-            .per_proposal_check_nullifier_unvoted(proposal_id, nullifier)
-            .await
     }
 
     async fn validator_has_not_voted<S: StateRead>(
@@ -431,7 +252,9 @@ pub mod stateful {
         proposal_withdraw: &ProposalWithdraw,
     ) -> Result<()> {
         // Any voteable proposal can be withdrawn
-        proposal_voteable(state, proposal_withdraw.proposal).await?;
+        state
+            .check_proposal_voteable(proposal_withdraw.proposal)
+            .await?;
         Ok(())
     }
 
