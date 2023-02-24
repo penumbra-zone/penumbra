@@ -156,7 +156,7 @@ impl TransactionPlan {
         // Finally, compute the binding signature and assemble the transaction.
         let binding_signing_key = rdsa::SigningKey::from(synthetic_blinding_factor);
         let binding_sig = binding_signing_key.sign(rng, &transaction_body.encode_to_vec()[..]);
-        tracing::debug!(bvk = ?rdsa::VerificationKey::from(&binding_signing_key), tx_body = ?transaction_body.encode_to_vec());
+        tracing::debug!(bvk = ?rdsa::VerificationKey::from(&binding_signing_key), tx_body = ?base64::encode(&transaction_body.encode_to_vec()));
 
         // TODO: add consistency checks?
 
@@ -339,7 +339,7 @@ impl TransactionPlan {
         // Finally, compute the binding signature and assemble the transaction.
         let binding_signing_key = rdsa::SigningKey::from(synthetic_blinding_factor);
         let binding_sig = binding_signing_key.sign(rng, &transaction_body.encode_to_vec()[..]);
-        tracing::debug!(bvk = ?rdsa::VerificationKey::from(&binding_signing_key), tx_body = ?transaction_body.encode_to_vec());
+        tracing::debug!(bvk = ?rdsa::VerificationKey::from(&binding_signing_key), tx_body = ?base64::encode(transaction_body.encode_to_vec()));
 
         Ok(Transaction {
             transaction_body,

@@ -37,7 +37,7 @@ regex = "1.5"
 once_cell = "1.8"
 bitvec = "1"
 hex = "0.4"
-base64 = "0.13.0"
+base64 = "0.20"
 tempfile = "3.3.0"
 prost = "0.11"
 
