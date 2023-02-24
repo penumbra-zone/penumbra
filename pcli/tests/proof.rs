@@ -6,11 +6,14 @@ use decaf377::Fr;
 use penumbra_crypto::{
     asset,
     keys::{SeedPhrase, SpendKey},
-    proofs::groth16::SpendProof,
+    proofs::groth16::{OutputProof, SpendProof},
     rdsa::{SpendAuth, VerificationKey},
-    Note, Value,
+    Balance, Note, Value,
 };
-use penumbra_proof_params::{SPEND_PROOF_PROVING_KEY, SPEND_PROOF_VERIFICATION_KEY};
+use penumbra_proof_params::{
+    OUTPUT_PROOF_PROVING_KEY, OUTPUT_PROOF_VERIFICATION_KEY, SPEND_PROOF_PROVING_KEY,
+    SPEND_PROOF_VERIFICATION_KEY,
+};
 use penumbra_tct as tct;
 use rand_core::OsRng;
 
@@ -62,5 +65,43 @@ fn spend_proof_parameters_vs_current_spend_circuit() {
     .expect("can create proof");
 
     let proof_result = proof.verify(vk, anchor, balance_commitment, nf, rk);
+    assert!(proof_result.is_ok());
+}
+
+#[test]
+fn output_proof_parameters_vs_current_output_circuit() {
+    let pk = &*OUTPUT_PROOF_PROVING_KEY;
+    let vk = &*OUTPUT_PROOF_VERIFICATION_KEY;
+
+    let mut rng = OsRng;
+
+    let seed_phrase = SeedPhrase::generate(OsRng);
+    let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
+    let fvk_recipient = sk_recipient.full_viewing_key();
+    let ivk_recipient = fvk_recipient.incoming();
+    let (dest, _dtk_d) = ivk_recipient.payment_address(0u32.into());
+
+    let value_to_send = Value {
+        amount: 1u64.into(),
+        asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+    };
+    let v_blinding = Fr::rand(&mut OsRng);
+
+    let note = Note::generate(&mut rng, &dest, value_to_send);
+    let note_commitment = note.commit();
+    let balance_commitment = (-Balance::from(value_to_send)).commit(v_blinding);
+
+    let proof = OutputProof::prove(
+        &mut rng,
+        &pk,
+        note,
+        v_blinding,
+        balance_commitment,
+        note_commitment,
+    )
+    .expect("can create proof");
+
+    let proof_result = proof.verify(&vk, balance_commitment, note_commitment);
+
     assert!(proof_result.is_ok());
 }
