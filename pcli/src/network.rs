@@ -42,6 +42,7 @@ impl App {
         &mut self,
         plan: TransactionPlan,
     ) -> impl Future<Output = Result<Transaction>> + '_ {
+        println!("building transaction...");
         penumbra_wallet::build_transaction(
             &self.fvk,
             self.view.as_mut().unwrap(),
