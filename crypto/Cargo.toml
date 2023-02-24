@@ -33,6 +33,10 @@ bytes = "1"
 derivative = "2.2"
 hex = "0.4"
 hmac = "0.12.0"
+# Not enabling js feature for getrandom, which is a transitive dep of rand_core,
+# because the docs recommend against doing it in libraries: https://docs.rs/getrandom/latest/getrandom/#webassembly-support
+# Downstream client projects can modify their Cargo.toml files to enable it.
+# getrandom = { version = "0.2", features = ["js"] }
 blake2b_simd = "0.5"
 serde = { version = "1", features = ["derive"] }
 serde_with = { version = "1.11", features = ["hex"] }
