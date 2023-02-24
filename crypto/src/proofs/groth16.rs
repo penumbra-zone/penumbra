@@ -18,7 +18,7 @@ mod tests {
     use crate::{
         asset,
         keys::{SeedPhrase, SpendKey},
-        Balance, Rseed,
+        Address, Balance, Rseed,
     };
     use ark_groth16::{Groth16, ProvingKey, VerifyingKey};
     use ark_r1cs_std::prelude::*;
@@ -31,6 +31,7 @@ mod tests {
     use penumbra_proto::core::crypto::v1alpha1 as pb;
     use penumbra_tct as tct;
     use rand_core::OsRng;
+    use tct::Commitment;
 
     use crate::{note, Note, Value};
 
@@ -637,6 +638,16 @@ mod tests {
         }
     }
 
+    fn make_random_note_commitment(address: Address) -> Commitment {
+        let note = Note::from_parts(
+            address,
+            Value::from_str("1upenumbra").expect("valid value"),
+            Rseed([1u8; 32]),
+        )
+        .expect("can make a note");
+        note.commit()
+    }
+
     #[test]
     fn merkle_proof_verification_succeeds() {
         let (pk, vk) = MerkleProofCircuit::generate_test_parameters();
@@ -651,14 +662,52 @@ mod tests {
         // at each step.
         let mut sct = tct::Tree::new();
 
-        for _ in 0..8 {
-            let note = Note::from_parts(
-                address,
-                Value::from_str("1upenumbra").expect("valid value"),
-                Rseed([1u8; 32]),
-            )
-            .expect("can make a note");
-            let note_commitment = note.commit();
+        for _ in 0..5 {
+            let note_commitment = make_random_note_commitment(address);
+            sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+            let anchor = sct.root();
+            let state_commitment_proof = sct.witness(note_commitment).unwrap();
+            let circuit = MerkleProofCircuit {
+                state_commitment_proof,
+                anchor,
+            };
+            let proof =
+                Groth16::prove(&pk, circuit, &mut rng).expect("should be able to form proof");
+
+            let proof_result = Groth16::verify(&vk, &[Fq::from(anchor)], &proof);
+            assert!(proof_result.is_ok());
+        }
+
+        sct.end_block().expect("can end block");
+        for _ in 0..100 {
+            let note_commitment = make_random_note_commitment(address);
+            sct.insert(tct::Witness::Forget, note_commitment).unwrap();
+        }
+
+        for _ in 0..5 {
+            let note_commitment = make_random_note_commitment(address);
+            sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+            let anchor = sct.root();
+            let state_commitment_proof = sct.witness(note_commitment).unwrap();
+            let circuit = MerkleProofCircuit {
+                state_commitment_proof,
+                anchor,
+            };
+            let proof =
+                Groth16::prove(&pk, circuit, &mut rng).expect("should be able to form proof");
+
+            let proof_result = Groth16::verify(&vk, &[Fq::from(anchor)], &proof);
+            assert!(proof_result.is_ok());
+        }
+
+        sct.end_epoch().expect("can end epoch");
+        for _ in 0..100 {
+            let note_commitment = make_random_note_commitment(address);
+            sct.insert(tct::Witness::Forget, note_commitment).unwrap();
+        }
+
+        for _ in 0..5 {
+            let note_commitment = make_random_note_commitment(address);
             sct.insert(tct::Witness::Keep, note_commitment).unwrap();
             let anchor = sct.root();
             let state_commitment_proof = sct.witness(note_commitment).unwrap();
