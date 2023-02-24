@@ -12,7 +12,7 @@ use tracing::instrument;
 
 use crate::{
     action_handler::ActionHandler,
-    governance::{execute, StateReadExt},
+    governance::{StateReadExt, StateWriteExt},
 };
 
 #[async_trait]
@@ -59,7 +59,24 @@ impl ActionHandler for ValidatorVote {
     }
 
     #[instrument(name = "validator_vote", skip(self, state))]
-    async fn execute<S: StateWrite>(&self, state: S) -> Result<()> {
-        execute::validator_vote(state, self).await
+    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        let ValidatorVote {
+            auth_sig: _,
+            body:
+                ValidatorVoteBody {
+                    proposal,
+                    vote,
+                    identity_key,
+                    governance_key: _, // This is only used for checks so that stateless verification can be done on the signature
+                },
+        } = self;
+
+        state
+            .cast_validator_vote(*proposal, *identity_key, *vote)
+            .await;
+
+        tracing::debug!(proposal = %proposal, "cast validator vote");
+
+        Ok(())
     }
 }
