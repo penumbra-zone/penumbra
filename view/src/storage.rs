@@ -691,10 +691,9 @@ impl Storage {
                         spendable_notes.position
             FROM notes
             JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
-            WHERE spendable_notes.height_spent IS {}
-            AND notes.asset_id IS {}
-            AND spendable_notes.address_index IS {}",
-                spent_clause, asset_clause, address_clause
+            WHERE spendable_notes.height_spent IS {spent_clause}
+            AND notes.asset_id IS {asset_clause}
+            AND spendable_notes.address_index IS {address_clause}"
             )
             .as_str(),
         )
@@ -759,15 +758,17 @@ impl Storage {
                         spendable_notes.source,
                         spendable_notes.height_spent,
                         spendable_notes.nullifier,
-                        spendable_notes.position,
-                        assets.denom
+                        spendable_notes.position
                 FROM
-                    (notes JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment)
-                    LEFT JOIN assets ON notes.asset_id = assets.asset_id
-                WHERE spendable_notes.address_index IS {address_clause}
-                AND assets.denom LIKE 'delegation\\_%' ESCAPE '\\'
-                AND ((spendable_notes.height_spent IS NULL) OR (spendable_notes.height_spent > {votable_at_height}))
-                AND (spendable_notes.height_created < {votable_at_height})",
+                    notes JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
+                WHERE
+                    spendable_notes.address_index IS {address_clause}
+                    AND notes.asset_id IN (
+                        SELECT asset_id FROM assets WHERE denom LIKE '_delegation\\_%' ESCAPE '\\'
+                    )
+                    AND ((spendable_notes.height_spent IS NULL) OR (spendable_notes.height_spent > {votable_at_height}))
+                    AND (spendable_notes.height_created < {votable_at_height})
+                ",
             )
             .as_str(),
         )

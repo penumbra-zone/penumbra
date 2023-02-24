@@ -843,8 +843,8 @@ impl ViewProtocolService for ViewService {
                 }
             }
             for (include, pattern) in [
-                (include_delegation_tokens, "delegation\\_%"),
-                (include_unbonding_tokens, "unbonding\\_%"),
+                (include_delegation_tokens, "_delegation\\_%"),
+                (include_unbonding_tokens, "_unbonding\\_%"),
                 (include_lp_nfts, "lpnft\\_%"),
                 (include_proposal_nfts, "proposal\\_%"),
                 (include_voting_receipt_tokens, "voted\\_on\\_%"),
