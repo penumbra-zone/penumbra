@@ -9,7 +9,6 @@ edition = "2021"
 parking_lot = "0.12"
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 anyhow = "1"
-async-trait = "0.1"
 futures = "0.3"
 merlin = "3"
 rand_core = "0.6"

@@ -8,7 +8,7 @@ edition = "2021"
 penumbra-proto = { path = "../proto", features = ["penumbra-storage"] }
 penumbra-storage = { path = "../storage" }
 penumbra-crypto = { path = "../crypto" }
-penumbra-transaction = { path = "../transaction" }
+# penumbra-transaction = { path = "../transaction" }
 penumbra-tct = { path = "../tct" }
 
 # Penumbra dependencies
