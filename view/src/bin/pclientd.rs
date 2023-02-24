@@ -1,6 +1,6 @@
 #![allow(clippy::clone_on_copy)]
 use anyhow::{Context, Result};
-use camino::Utf8PathBuf;
+use camino::{Utf8Path, Utf8PathBuf};
 use clap::Parser;
 use penumbra_crypto::keys::{SeedPhrase, SpendKey};
 use penumbra_crypto::FullViewingKey;
@@ -38,9 +38,9 @@ struct Opt {
     /// Command to run.
     #[clap(subcommand)]
     cmd: Command,
-    /// The path used to store the state database.
-    #[clap(short, long, default_value = "pclientd-db.sqlite")]
-    sqlite_path: Utf8PathBuf,
+    /// The path used to store pclientd state and config files.
+    #[clap(long)]
+    home: Utf8PathBuf,
     /// The address of the pd+tendermint node.
     #[clap(short, long, default_value = "testnet.penumbra.zone")]
     node: String,
@@ -96,13 +96,23 @@ async fn main() -> Result<()> {
                 .into_inner()
                 .try_into()?;
 
+            fs::create_dir_all(&opt.home)?;
+
+            let mut sqlite_path = opt.home.clone();
+            sqlite_path.push("pclientd-db.sqlite");
+
             penumbra_view::Storage::initialize(
-                opt.sqlite_path.as_path(),
+                <Utf8PathBuf as AsRef<Utf8Path>>::as_ref(&sqlite_path),
                 FullViewingKey::from_str(full_viewing_key.as_ref())
                     .context("The provided string is not a valid FullViewingKey")?,
                 params,
             )
             .await?;
+
+            println!(
+                "Initializing storage and configuration at: {:?}",
+                fs::canonicalize(&opt.home)?
+            );
 
             // Read seed phrase from std_in if custody = true
 
@@ -163,19 +173,11 @@ async fn main() -> Result<()> {
 
             let encoded = toml::to_string_pretty(&client_config).unwrap();
 
-            println!("{}", encoded);
-
             // Write config to directory
 
-            let mut config_dir = PathBuf::from("client_data");
-
-            config_dir.push("pclientd");
-
-            fs::create_dir_all(&config_dir)?;
-
-            let mut config_file_path = config_dir.clone();
+            let config_file_path = &mut opt.home.clone();
             config_file_path.push("config.toml");
-            let mut config_file = File::create(config_file_path)?;
+            let mut config_file = File::create(&config_file_path)?;
 
             config_file.write_all(encoded.as_bytes())?;
 
@@ -183,13 +185,25 @@ async fn main() -> Result<()> {
         }
 
         Command::Start { host, view_port } => {
-            tracing::info!(?opt.sqlite_path, ?host, ?view_port, ?opt.node, ?opt.pd_port, "starting pclientd");
+            tracing::info!(?opt.home, ?host, ?view_port, ?opt.node, ?opt.pd_port, "starting pclientd");
 
-            let storage = penumbra_view::Storage::load(opt.sqlite_path).await?;
+            let sqlite_path = &mut opt.home.clone();
+            sqlite_path.push("pclientd-db.sqlite");
 
-            let service = ViewService::new(storage, opt.node, opt.pd_port).await?;
+            println!(
+                "Reading storage and configuration at: {:?}",
+                fs::canonicalize(&opt.home)?
+            );
 
-            let config_contents = match fs::read_to_string("./client_data/pclientd/config.toml") {
+            let storage = penumbra_view::Storage::load(<Utf8PathBuf as AsRef<Utf8Path>>::as_ref(
+                &sqlite_path,
+            ))
+            .await?;
+
+            let config_file_path = &mut opt.home.clone();
+            config_file_path.push("config.toml");
+
+            let config_contents = match fs::read_to_string(config_file_path) {
                 // If successful return the files text as `contents`.
                 // `c` is a local variable.
                 Ok(c) => c,
@@ -202,6 +216,13 @@ async fn main() -> Result<()> {
             };
 
             let config: ClientConfig = toml::from_str(&config_contents)?;
+
+            println!(
+                "Starting view service at node {:?} and port {:?}",
+                &opt.node, &opt.pd_port
+            );
+
+            let service = ViewService::new(storage, opt.node, opt.pd_port).await?;
 
             match config.kms_config {
                 None => {
