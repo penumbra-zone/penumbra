@@ -99,8 +99,7 @@ impl GovernanceCmd {
 
                     writeln!(
                         writer,
-                        "#{} {:?}    {}",
-                        proposal_id, proposal_state, proposal_title
+                        "#{proposal_id} {proposal_state:?}    {proposal_title}"
                     )?;
                 }
             }
@@ -108,7 +107,7 @@ impl GovernanceCmd {
                 Definition => {
                     let proposal: Proposal =
                         client.key_domain(proposal_definition(*proposal_id)).await?;
-                    json(&proposal)?;
+                    toml(&proposal)?;
                 }
                 State => {
                     let state: proposal::State =
@@ -161,5 +160,12 @@ fn json<T: Serialize>(value: &T) -> Result<()> {
     let mut writer = stdout();
     serde_json::to_writer_pretty(&mut writer, value)?;
     writer.write_all(b"\n")?;
+    Ok(())
+}
+
+fn toml<T: Serialize>(value: &T) -> Result<()> {
+    let mut writer = stdout();
+    let string = toml::to_string_pretty(value)?;
+    writer.write_all(string.as_bytes())?;
     Ok(())
 }
