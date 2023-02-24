@@ -3,10 +3,11 @@ use std::{path::PathBuf, sync::Arc};
 use anyhow::Result;
 use jmt::{
     storage::{LeafNode, Node, NodeBatch, NodeKey, TreeWriter},
-    JellyfishMerkleTree, KeyHash,
+    KeyHash, Sha256Jmt,
 };
 use parking_lot::RwLock;
 use rocksdb::{Options, DB};
+use sha2::Sha256;
 use tokio::sync::watch;
 use tracing::Span;
 
@@ -115,13 +116,13 @@ impl Storage {
             .spawn_blocking(move || {
                 span.in_scope(|| {
                     let snap = inner.snapshots.read().latest();
-                    let jmt = JellyfishMerkleTree::new(&*snap.0);
+                    let jmt = Sha256Jmt::new(&*snap.0);
 
                     let unwritten_changes: Vec<_> = cache
                         .unwritten_changes
                         .into_iter()
                         // Pre-calculate all KeyHashes for later storage in `jmt_keys`
-                        .map(|x| (KeyHash::from(&x.0), x.0, x.1))
+                        .map(|x| (KeyHash::with::<Sha256>(&x.0), x.0, x.1))
                         .collect();
 
                     // Maintain a two-way index of the JMT keys and their hashes in RocksDB.
@@ -232,7 +233,7 @@ impl TreeWriter for Inner {
     fn write_node_batch(&self, node_batch: &NodeBatch) -> Result<()> {
         let node_batch = node_batch.clone();
 
-        for (node_key, node) in node_batch {
+        for (node_key, node) in node_batch.nodes() {
             let key_bytes = &node_key.encode()?;
             let value_bytes = &node.encode()?;
             tracing::trace!(?key_bytes, value_bytes = ?hex::encode(value_bytes));

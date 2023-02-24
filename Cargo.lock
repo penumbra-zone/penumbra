@@ -4425,6 +4425,7 @@ dependencies = [
  "parking_lot 0.12.1",
  "pin-project",
  "rocksdb",
+ "sha2 0.10.6",
  "smallvec",
  "tempfile",
  "tendermint",
