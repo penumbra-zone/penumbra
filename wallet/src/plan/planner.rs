@@ -441,8 +441,19 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             ),
         ) in votable_notes
             .into_iter()
+            .chain(std::iter::repeat(vec![]) // Chain with infinite repeating no notes, so the zip doesn't stop early
             .zip(mem::take(&mut self.vote_intents).into_iter())
         {
+            if records.is_empty() {
+                // If there are no notes to vote with, return an error, because otherwise the user
+                // would compose a transaction that would not satisfy their intention, and would
+                // silently eat the fee.
+                return Err(anyhow!(
+                    "can't vote on proposal {} because no delegation notes were staked when voting started",
+                    proposal
+                ));
+            }
+
             for (record, identity_key) in records {
                 // Vote with precisely this note on the proposal, computing the correct exchange
                 // rate for self-minted vote receipt tokens using the exchange rate of the validator
