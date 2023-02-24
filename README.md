@@ -4,12 +4,6 @@
 [Penumbra] is a fully shielded zone for the Cosmos ecosystem, allowing anyone to securely transact,
 stake, swap, or marketmake without broadcasting their personal information to the world.
 
-## License
-
-This work is dual-licensed under Apache 2.0 and MIT.  You can choose between one of them if you use this work.
-
-`SPDX-License-Identifier: MIT OR Apache-2.0`
-
 ## Getting involved
 
 The primary communication hub is our [Discord]; click the link to join the
@@ -38,3 +32,14 @@ To join the test network as a full node, follow setup instructions for Penumbra 
 [rustdoc]: https://rustdoc.penumbra.zone
 [protobuf]: https://buf.build/penumbra-zone/penumbra
 [tm-install]: https://github.com/tendermint/tendermint/blob/master/docs/introduction/install.md#from-source
+
+# License
+
+By contributing to penumbra you agree that your contributions will be licensed
+under the terms of both the [LICENSE-Apache-2.0](LICENSE-Apache-2.0) and the
+[LICENSE-MIT](LICENSE-MIT) files in the root of this source tree.
+
+If you're using penumbra you are free to choose one of the provided licenses.
+
+`SPDX-License-Identifier: MIT OR Apache-2.0`
+
