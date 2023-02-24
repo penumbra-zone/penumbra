@@ -441,7 +441,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             ),
         ) in votable_notes
             .into_iter()
-            .chain(std::iter::repeat(vec![]) // Chain with infinite repeating no notes, so the zip doesn't stop early
+            .chain(std::iter::repeat(vec![])) // Chain with infinite repeating no notes, so the zip doesn't stop early
             .zip(mem::take(&mut self.vote_intents).into_iter())
         {
             if records.is_empty() {
