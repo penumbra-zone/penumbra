@@ -195,32 +195,6 @@ pub async fn proposal_deposit_claim<S: StateWrite>(
 }
 
 #[instrument(skip(state))]
-pub async fn delegator_vote<S: StateWrite>(
-    mut state: S,
-    DelegatorVote {
-        body:
-            DelegatorVoteBody {
-                proposal,
-                vote,
-                nullifier,
-                unbonded_amount,
-                start_position: _, // Not needed to execute: used to check validity of vote
-                value: _,          // Not needed to execute: used to check vote proof
-                rk: _,             // Not needed to execute: used to check auth sig
-            },
-        ..
-    }: &DelegatorVote,
-) -> Result<()> {
-    state
-        .mark_nullifier_voted_on_proposal(*proposal, nullifier)
-        .await?;
-    state
-        .cast_delegator_vote(*proposal, *vote, nullifier, *unbonded_amount)
-        .await?;
-    Ok(())
-}
-
-#[instrument(skip(state))]
 pub async fn enact_all_passed_proposals<S: StateWrite>(mut state: S) -> Result<()> {
     let parameters = tally::Parameters::new(&state)
         .await
