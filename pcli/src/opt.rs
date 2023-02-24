@@ -59,7 +59,12 @@ pub struct Opt {
 impl Opt {
     pub fn init_tracing(&mut self) {
         tracing_subscriber::fmt()
-            .with_env_filter(std::mem::take(&mut self.trace_filter))
+            .with_env_filter(
+                std::mem::take(&mut self.trace_filter)
+                    // Without explicitly disabling the `r1cs` target, the ZK proof implementations
+                    // will spend an enormous amount of CPU and memory building useless tracing output.
+                    .add_directive("r1cs=off".parse().unwrap()),
+            )
             .with_writer(std::io::stderr)
             .init();
     }
