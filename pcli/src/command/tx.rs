@@ -532,13 +532,22 @@ impl TxCmd {
 
                 let template = kind.template_proposal(chain_id, next_proposal_id);
 
+                // Explicitly parse to a TOML table and ensure that the ID is set, because if it's
+                // zero, then the default proto serialization will omit it, and we want to make sure
+                // that the user sees it so they know it usually has to be included.
+                let mut toml_table =
+                    toml::Table::try_from(&template).context("could not parse template as TOML")?;
+                toml_table
+                    .entry("id")
+                    .or_insert(toml::Value::Integer(next_proposal_id as i64));
+
                 if let Some(file) = file {
                     File::create(file)
                         .with_context(|| format!("cannot create file {:?}", file))?
-                        .write_all(toml::to_string_pretty(&template)?.as_bytes())
+                        .write_all(toml::to_string_pretty(&toml_table)?.as_bytes())
                         .context("could not write file")?;
                 } else {
-                    println!("{}", toml::to_string_pretty(&template)?);
+                    println!("{}", toml::to_string_pretty(&toml_table)?);
                 }
             }
             TxCmd::Proposal(ProposalCmd::DepositClaim {

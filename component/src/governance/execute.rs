@@ -76,7 +76,7 @@ pub async fn proposal_submit<S: StateWrite>(
         .index
         .try_into()
         .expect("epoch index can't be larger than 2^16");
-    let block: u16 = (current_block % u64::from(epoch))
+    let block: u16 = (current_block % u64::from(chain_params.epoch_duration))
         .try_into()
         .expect("block index can't be larger than 2^16");
     state

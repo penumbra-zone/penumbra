@@ -67,7 +67,7 @@ clap = { version = "3", features = ["derive", "env"] }
 camino = "1"
 url = "2"
 colored_json = "2.1"
-toml = "0.4"
+toml = { version = "0.7", features = ["preserve_order"] }
 walkdir = "2"
 
 [build-dependencies]
