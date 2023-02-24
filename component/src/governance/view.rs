@@ -3,10 +3,11 @@ use std::{collections::BTreeSet, pin::Pin, str::FromStr};
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use futures::{Stream, StreamExt};
+use penumbra_chain::StateReadExt as _;
 use penumbra_crypto::{
     asset::Amount,
     stake::{DelegationToken, IdentityKey},
-    Nullifier, Value,
+    GovernanceKey, Nullifier, Value, STAKING_TOKEN_DENOM,
 };
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
@@ -257,12 +258,120 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
         // Check that the unbonded amount is correct relative to that exchange rate
         if rate_data.unbonded_amount(value.amount.into()) != u64::from(*unbonded_amount) {
             anyhow::bail!(
-                "unbonded amount {}penumbra does not correspond to {} staked delegation tokens for validator {} using the exchange rate at the start of proposal {}",
+                "unbonded amount {}{} does not correspond to {} staked delegation tokens for validator {} using the exchange rate at the start of proposal {}",
                 unbonded_amount,
+                *STAKING_TOKEN_DENOM,
                 value.amount,
                 validator_identity,
                 proposal_id,
             );
+        }
+
+        Ok(())
+    }
+
+    async fn check_height_in_future_of_voting_end(&self, height: u64) -> Result<()> {
+        let block_height = self.get_block_height().await?;
+        let voting_blocks = self.get_chain_params().await?.proposal_voting_blocks;
+        let voting_end_height = block_height + voting_blocks;
+
+        if height < voting_end_height {
+            anyhow::bail!(
+                "effective height {} is less than the block height {} for the end of the voting period",
+                height,
+                voting_end_height
+            );
+        }
+        Ok(())
+    }
+
+    /// Check that the validator has not voted on the proposal.
+    async fn check_validator_has_not_voted(
+        &self,
+        proposal_id: u64,
+        identity_key: &IdentityKey,
+    ) -> Result<()> {
+        if let Some(_vote) = self.validator_vote(proposal_id, *identity_key).await? {
+            anyhow::bail!(
+                "validator {} has already voted on proposal {}",
+                identity_key,
+                proposal_id
+            );
+        }
+
+        Ok(())
+    }
+
+    /// Check that the governance key matches the validator's identity key.
+    async fn check_governance_key_matches_validator(
+        &self,
+        identity_key: &IdentityKey,
+        governance_key: &GovernanceKey,
+    ) -> Result<()> {
+        if let Some(validator) = self.validator(identity_key).await? {
+            if validator.governance_key != *governance_key {
+                anyhow::bail!(
+                    "governance key {} does not match validator {}",
+                    governance_key,
+                    identity_key
+                );
+            }
+        } else {
+            anyhow::bail!("validator {} does not exist", identity_key);
+        }
+
+        Ok(())
+    }
+
+    /// Check that a deposit claim could be made on the proposal.
+    async fn check_proposal_claimable(&self, proposal_id: u64) -> Result<()> {
+        if let Some(proposal_state) = self.proposal_state(proposal_id).await? {
+            use proposal::State::*;
+            match proposal_state {
+                Voting => {
+                    anyhow::bail!("proposal {} is still voting", proposal_id)
+                }
+                Withdrawn { .. } => {
+                    anyhow::bail!(
+                        "proposal {} has been withdrawn but voting has not concluded",
+                        proposal_id
+                    )
+                }
+                Finished { .. } => {
+                    // This is when you can claim a proposal
+                }
+                Claimed { .. } => {
+                    anyhow::bail!(
+                        "the deposit for proposal {} has already been claimed",
+                        proposal_id
+                    )
+                }
+            }
+        } else {
+            anyhow::bail!("proposal {} does not exist", proposal_id);
+        }
+
+        Ok(())
+    }
+
+    /// Check that the deposit claim amount matches the proposal's deposit amount.
+    async fn check_proposal_claim_valid_deposit(
+        &self,
+        proposal_id: u64,
+        claim_deposit_amount: Amount,
+    ) -> Result<()> {
+        if let Some(proposal_deposit_amount) = self.proposal_deposit_amount(proposal_id).await? {
+            if claim_deposit_amount != proposal_deposit_amount {
+                anyhow::bail!(
+                    "proposal deposit claim for {}{} does not match proposal deposit of {}{}",
+                    claim_deposit_amount,
+                    *STAKING_TOKEN_DENOM,
+                    proposal_deposit_amount,
+                    *STAKING_TOKEN_DENOM,
+                );
+            }
+        } else {
+            anyhow::bail!("proposal {} does not exist", proposal_id);
         }
 
         Ok(())
