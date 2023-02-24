@@ -1,26 +1,61 @@
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_trait::async_trait;
+use penumbra_proto::DomainType;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::{action::ValidatorVote, Transaction};
+use penumbra_transaction::{
+    action::{ValidatorVote, ValidatorVoteBody},
+    Transaction,
+};
 use tracing::instrument;
 
 use crate::{
     action_handler::ActionHandler,
-    governance::{check, execute},
+    governance::{execute, StateReadExt},
 };
 
 #[async_trait]
 impl ActionHandler for ValidatorVote {
     #[instrument(name = "validator_vote", skip(self, _context))]
     async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
-        check::stateless::validator_vote(self)
+        let ValidatorVote { body, auth_sig } = self;
+
+        // Check the signature using the GOVERNANCE KEY:
+        let body_bytes = body.encode_to_vec();
+        body.governance_key
+            .0
+            .verify(&body_bytes, auth_sig)
+            .context("validator vote signature failed to verify")?;
+
+        // This is stateless verification, so we still need to check that the proposal being voted
+        // on exists, and that this validator hasn't voted on it already.
+
+        Ok(())
     }
 
     #[instrument(name = "validator_vote", skip(self, state))]
     async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
-        check::stateful::validator_vote(&state, self).await
+        let ValidatorVote {
+            body:
+                ValidatorVoteBody {
+                    proposal,
+                    vote: _, // All votes are valid, so we don't need to do anything with this
+                    identity_key,
+                    governance_key,
+                },
+            auth_sig: _, // We already checked this in stateless verification
+        } = self;
+
+        state.check_proposal_voteable(*proposal).await?;
+        state
+            .check_validator_has_not_voted(*proposal, identity_key)
+            .await?;
+        state
+            .check_governance_key_matches_validator(identity_key, governance_key)
+            .await?;
+
+        Ok(())
     }
 
     #[instrument(name = "validator_vote", skip(self, state))]

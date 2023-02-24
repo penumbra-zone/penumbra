@@ -14,8 +14,8 @@ use penumbra_chain::{Epoch, StateReadExt as _, StateWriteExt};
 use penumbra_crypto::{ProposalNft, VotingReceiptToken};
 use penumbra_storage::StateWrite;
 use penumbra_transaction::action::{
-    DelegatorVote, DelegatorVoteBody, ProposalDepositClaim, ProposalPayload, ProposalSubmit,
-    ProposalWithdraw, ValidatorVote, ValidatorVoteBody,
+    ProposalDepositClaim, ProposalPayload, ProposalSubmit, ProposalWithdraw, ValidatorVote,
+    ValidatorVoteBody,
 };
 use tracing::instrument;
 

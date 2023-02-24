@@ -1,4 +1,3 @@
-pub(crate) mod check;
 mod component;
 pub(crate) mod event;
 pub(crate) mod execute;
