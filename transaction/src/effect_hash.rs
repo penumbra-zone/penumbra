@@ -733,8 +733,9 @@ mod tests {
         asset,
         dex::{swap::SwapPlaintext, TradingPair},
         keys::{SeedPhrase, SpendKey},
+        memo::MemoPlaintext,
         transaction::Fee,
-        Note, Value, STAKING_TOKEN_ASSET_ID,
+        Address, Note, Value, STAKING_TOKEN_ASSET_ID,
     };
     use penumbra_tct as tct;
     use rand_core::OsRng;
@@ -797,6 +798,8 @@ mod tests {
             addr,
         );
 
+        let mut rng = OsRng;
+
         let plan = TransactionPlan {
             expiry_height: 0,
             fee: Fee::default(),
@@ -818,7 +821,16 @@ mod tests {
                 SwapPlan::new(&mut OsRng, swap_plaintext).into(),
             ],
             clue_plans: vec![CluePlan::new(&mut OsRng, addr, 1)],
-            memo_plan: Some(MemoPlan::new(&mut OsRng, String::new()).unwrap()),
+            memo_plan: Some(
+                MemoPlan::new(
+                    &mut OsRng,
+                    MemoPlaintext {
+                        sender: Address::dummy(&mut rng),
+                        text: "".to_string(),
+                    },
+                )
+                .unwrap(),
+            ),
         };
 
         println!("{}", serde_json::to_string_pretty(&plan).unwrap());

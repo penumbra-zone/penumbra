@@ -8,7 +8,7 @@ use ark_ff::Zero;
 use bytes::Bytes;
 use decaf377_fmd::Clue;
 use penumbra_crypto::{
-    memo::MemoCiphertext,
+    memo::{MemoCiphertext, MemoPlaintext},
     note::Commitment,
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
     transaction::Fee,
@@ -138,7 +138,7 @@ impl Transaction {
     pub fn decrypt_with_perspective(&self, txp: &TransactionPerspective) -> TransactionView {
         let mut action_views = Vec::new();
 
-        let mut memo_plaintext: Option<String> = None;
+        let mut memo_plaintext: Option<MemoPlaintext> = None;
 
         for action in self.actions() {
             let action_view = action.view_from_perspective(txp);

@@ -1,5 +1,5 @@
 use decaf377_fmd::Clue;
-use penumbra_crypto::transaction::Fee;
+use penumbra_crypto::{memo::MemoPlaintext, transaction::Fee};
 use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType};
 use serde::{Deserialize, Serialize};
 
@@ -17,7 +17,7 @@ pub struct TransactionView {
     pub chain_id: String,
     pub fee: Fee,
     pub fmd_clues: Vec<Clue>,
-    pub memo: Option<String>,
+    pub memo: Option<MemoPlaintext>,
 }
 
 impl DomainType for TransactionView {
@@ -45,7 +45,10 @@ impl TryFrom<pbt::TransactionView> for TransactionView {
                 .into_iter()
                 .map(TryInto::try_into)
                 .collect::<Result<Vec<_>, _>>()?,
-            memo: v.memo,
+            memo: v
+                .memo
+                .map(|m| MemoPlaintext::try_from(m.to_vec()))
+                .transpose()?,
         })
     }
 }
@@ -58,7 +61,7 @@ impl From<TransactionView> for pbt::TransactionView {
             chain_id: v.chain_id,
             fee: Some(v.fee.into()),
             fmd_clues: v.fmd_clues.into_iter().map(Into::into).collect(),
-            memo: v.memo,
+            memo: v.memo.map(|m| m.to_vec().into()),
         }
     }
 }

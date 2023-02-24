@@ -98,22 +98,27 @@ impl Address {
 
     /// A randomized dummy address.
     pub fn dummy<R: CryptoRng + Rng>(rng: &mut R) -> Self {
-        let mut diversifier_bytes = [0u8; 16];
-        rng.fill_bytes(&mut diversifier_bytes);
+        loop {
+            let mut diversifier_bytes = [0u8; 16];
+            rng.fill_bytes(&mut diversifier_bytes);
 
-        let mut pk_d_bytes = [0u8; 32];
-        rng.fill_bytes(&mut pk_d_bytes);
+            let mut pk_d_bytes = [0u8; 32];
+            rng.fill_bytes(&mut pk_d_bytes);
 
-        let mut clue_key_bytes = [0; 32];
-        rng.fill_bytes(&mut clue_key_bytes);
+            let mut clue_key_bytes = [0; 32];
+            rng.fill_bytes(&mut clue_key_bytes);
 
-        let diversifier = Diversifier(diversifier_bytes);
-        Address::from_components(
-            diversifier,
-            ka::Public(pk_d_bytes),
-            fmd::ClueKey(clue_key_bytes),
-        )
-        .expect("generated dummy address")
+            let diversifier = Diversifier(diversifier_bytes);
+            let addr = Address::from_components(
+                diversifier,
+                ka::Public(pk_d_bytes),
+                fmd::ClueKey(clue_key_bytes),
+            );
+
+            if let Some(addr) = addr {
+                return addr;
+            }
+        }
     }
 
     /// Short form suitable for displaying in a UI.

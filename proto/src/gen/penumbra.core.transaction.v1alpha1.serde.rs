@@ -4335,7 +4335,7 @@ impl serde::Serialize for TransactionView {
             struct_ser.serialize_field("fmdClues", &self.fmd_clues)?;
         }
         if let Some(v) = self.memo.as_ref() {
-            struct_ser.serialize_field("memo", v)?;
+            struct_ser.serialize_field("memo", pbjson::private::base64::encode(&v).as_str())?;
         }
         struct_ser.end()
     }
@@ -4457,7 +4457,9 @@ impl<'de> serde::Deserialize<'de> for TransactionView {
                             if memo__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("memo"));
                             }
-                            memo__ = map.next_value()?;
+                            memo__ = 
+                                map.next_value::<::std::option::Option<::pbjson::private::BytesDeserialize<_>>>()?.map(|x| x.0)
+                            ;
                         }
                     }
                 }
