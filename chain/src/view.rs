@@ -81,7 +81,7 @@ pub trait StateReadExt: StateRead {
         let chain_id = self
             .get_chain_id()
             .await
-            .context(format!("error getting chain id: {}", provided))?;
+            .context(format!("error getting chain id: {provided}"))?;
         if provided.is_empty() || provided == chain_id {
             Ok(())
         } else {

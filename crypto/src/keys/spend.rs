@@ -89,8 +89,8 @@ impl SpendKey {
     ///
     /// [`BIP39`]: https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
     pub fn from_seed_phrase(seed_phrase: SeedPhrase, index: u64) -> Self {
-        let password = format!("{}", seed_phrase);
-        let salt = format!("mnemonic{}", index);
+        let password = format!("{seed_phrase}");
+        let salt = format!("mnemonic{index}");
         let mut spend_seed_bytes = [0u8; 32];
         pbkdf2::<Hmac<sha2::Sha512>>(
             password.as_bytes(),

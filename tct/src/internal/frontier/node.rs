@@ -566,7 +566,7 @@ where
         }
 
         match height.cmp(&Self::Height::HEIGHT) {
-            Greater => panic!("height too large when setting hash: {}", height),
+            Greater => panic!("height too large when setting hash: {height}"),
             // Set the hash here
             Equal => self.hash = hash.into(),
             // Set the hash below

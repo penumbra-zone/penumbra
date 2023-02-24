@@ -362,7 +362,7 @@ mod test {
         }
 
         fn check_leaves(index: &mut [u64; 9], node: Node) {
-            assert_eq!(node.index(), index[usize::from(node.height())], "{}", node);
+            assert_eq!(node.index(), index[usize::from(node.height())], "{node}");
 
             index[usize::from(node.height())] += 1;
 
@@ -426,7 +426,7 @@ mod test {
         }
 
         fn check(node: Node, expected: u8) {
-            assert_eq!(node.height(), expected, "{}", node);
+            assert_eq!(node.height(), expected, "{node}");
             for child in node.children() {
                 check(child, expected - 1);
             }

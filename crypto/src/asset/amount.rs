@@ -227,7 +227,7 @@ impl From<u128> for Amount {
 
 impl From<Amount> for u128 {
     fn from(amount: Amount) -> u128 {
-        amount.inner as u128
+        amount.inner
     }
 }
 

@@ -72,13 +72,13 @@ impl Worker {
         sync_height_rx.borrow_and_update();
 
         let client =
-            ObliviousQueryServiceClient::connect(format!("http://{}:{}", node, pd_port)).await?;
+            ObliviousQueryServiceClient::connect(format!("http://{node}:{pd_port}")).await?;
         #[cfg(feature = "sct-divergence-check")]
         let specific_client =
-            SpecificQueryServiceClient::connect(format!("http://{}:{}", node, pd_port)).await?;
+            SpecificQueryServiceClient::connect(format!("http://{node}:{pd_port}")).await?;
 
         let tm_client =
-            TendermintProxyServiceClient::connect(format!("http://{}:{}", node, pd_port)).await?;
+            TendermintProxyServiceClient::connect(format!("http://{node}:{pd_port}")).await?;
 
         Ok((
             Self {
@@ -323,7 +323,7 @@ async fn sct_divergence_check(
 ) -> anyhow::Result<()> {
     let value = client
         .key_value(penumbra_proto::client::v1alpha1::KeyValueRequest {
-            key: format!("shielded_pool/anchor/{}", height),
+            key: format!("shielded_pool/anchor/{height}"),
             ..Default::default()
         })
         .await?

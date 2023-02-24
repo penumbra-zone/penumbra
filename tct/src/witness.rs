@@ -43,8 +43,7 @@ impl<'de> serde::Deserialize<'de> for Witness {
                     "forget" => Ok(Witness::Forget),
                     "keep" => Ok(Witness::Keep),
                     _ => Err(E::custom(format!(
-                        "invalid witness flag: expected \"forget\" or \"keep\", found \"{}\"",
-                        value
+                        "invalid witness flag: expected \"forget\" or \"keep\", found \"{value}\""
                     ))),
                 }
             }

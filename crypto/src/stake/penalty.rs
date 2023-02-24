@@ -8,15 +8,9 @@ use crate::{asset, Amount, Balance, Value, STAKING_TOKEN_ASSET_ID};
 /// Tracks slashing penalties applied to a validator in some epoch.
 ///
 /// The penalty is represented as a fixed-point integer in bps^2 (denominator 10^8).
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(try_from = "pbs::Penalty", into = "pbs::Penalty")]
 pub struct Penalty(pub u64);
-
-impl Default for Penalty {
-    fn default() -> Self {
-        Penalty(0)
-    }
-}
 
 impl Penalty {
     /// Compound this `Penalty` with another `Penalty`.
@@ -51,7 +45,8 @@ impl Penalty {
     pub fn balance_for_claim(&self, unbonding_id: asset::Id, unbonding_amount: Amount) -> Balance {
         // The undelegate claim action subtracts the unbonding amount and adds
         // the unbonded amount from the transaction's value balance.
-        let balance = Balance::zero()
+
+        Balance::zero()
             - Value {
                 amount: unbonding_amount,
                 asset_id: unbonding_id,
@@ -59,9 +54,7 @@ impl Penalty {
             + Value {
                 amount: self.apply_to(unbonding_amount),
                 asset_id: *STAKING_TOKEN_ASSET_ID,
-            };
-
-        balance
+            }
     }
 }
 

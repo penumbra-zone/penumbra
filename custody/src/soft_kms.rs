@@ -50,7 +50,7 @@ impl pb::custody_protocol_service_server::CustodyProtocolService for SoftKms {
 
         let authorization_data = self
             .sign(&request)
-            .map_err(|e| Status::unauthenticated(format!("{:#}", e)))?;
+            .map_err(|e| Status::unauthenticated(format!("{e:#}")))?;
 
         let authorization_response = AuthorizeResponse {
             data: Some(authorization_data.into()),

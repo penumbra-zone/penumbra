@@ -39,7 +39,7 @@ use tracing::instrument;
 // A simple way of doing this is by parsing the denom, looking for a prefix that is only
 // appended in the case of a bridged token. That is what this logic does.
 fn is_source(source_port: &PortId, source_channel: &ChannelId, denom: &Denom) -> bool {
-    let prefix = format!("{}/{}/", source_port, source_channel);
+    let prefix = format!("{source_port}/{source_channel}/");
 
     !denom.starts_with(&prefix)
 }

@@ -32,7 +32,7 @@ fn bench(c: &mut Criterion) {
         group.throughput(Throughput::Elements(clues.len() as u64));
 
         group.bench_function(
-            format!("detect_clues_precision_{}", precision_bits).as_str(),
+            format!("detect_clues_precision_{precision_bits}").as_str(),
             |b| b.iter(|| detect_clues(&dk, &clues)),
         );
     }

@@ -27,8 +27,8 @@ impl From<WitnessData> for pb::WitnessData {
             anchor: Some(msg.anchor.into()),
             state_commitment_proofs: msg
                 .state_commitment_proofs
-                .into_iter()
-                .map(|(_, v)| v.into())
+                .into_values()
+                .map(|v| v.into())
                 .collect(),
         }
     }

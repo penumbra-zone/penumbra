@@ -118,7 +118,7 @@ impl Address {
 
     /// Short form suitable for displaying in a UI.
     pub fn display_short_form(&self) -> String {
-        let full_address = format!("{}", self);
+        let full_address = format!("{self}");
         // Fixed prefix is `penumbrav2t` plus the Bech32m separator `1`.
         let fixed_prefix = format!("{}{}", bech32str::address::BECH32_PREFIX, '1');
         let num_chars_to_display = fixed_prefix.len() + ADDRESS_NUM_CHARS_SHORT_FORM;
@@ -245,7 +245,7 @@ mod tests {
         let ivk = fvk.incoming();
         let (dest, _dtk_d) = ivk.payment_address(0u32.into());
 
-        let encoded_addr = format!("{}", dest);
+        let encoded_addr = format!("{dest}");
 
         let addr = Address::from_str(&encoded_addr).expect("can decode valid address");
 

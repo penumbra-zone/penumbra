@@ -384,6 +384,6 @@ pub trait ArcStateDeltaExt: Sized {
 impl<S: StateRead> ArcStateDeltaExt for Arc<StateDelta<S>> {
     type S = S;
     fn try_begin_transaction(&'_ mut self) -> Option<StateDelta<&'_ mut StateDelta<S>>> {
-        Arc::get_mut(self).map(|state| StateDelta::new(state))
+        Arc::get_mut(self).map(StateDelta::new)
     }
 }

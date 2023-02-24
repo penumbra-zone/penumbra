@@ -277,7 +277,7 @@ impl<Child: GetHash + UncheckedSetHash + Clone> UncheckedSetHash for Node<Child>
         use std::cmp::Ordering::*;
 
         match height.cmp(&Self::Height::HEIGHT) {
-            Greater => panic!("height too large when setting hash: {}", height),
+            Greater => panic!("height too large when setting hash: {height}"),
             // Set the hash here
             Equal => self.hash = hash,
             // Set the hash below

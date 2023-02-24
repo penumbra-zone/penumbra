@@ -185,9 +185,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 self.set_validator_bonding_state(
                     identity_key,
                     Unbonding {
-                        unbonding_epoch: self
-                            .current_unbonding_end_epoch_for(&identity_key)
-                            .await?,
+                        unbonding_epoch: self.current_unbonding_end_epoch_for(identity_key).await?,
                     },
                 )
                 .await;
@@ -238,9 +236,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 self.set_validator_bonding_state(
                     identity_key,
                     Unbonding {
-                        unbonding_epoch: self
-                            .current_unbonding_end_epoch_for(&identity_key)
-                            .await?,
+                        unbonding_epoch: self.current_unbonding_end_epoch_for(identity_key).await?,
                     },
                 )
                 .await;
@@ -302,13 +298,9 @@ pub(crate) trait StakingImpl: StateWriteExt {
             }
         }
         tracing::debug!(
-            total_delegations = ?delegations_by_validator
-                .iter()
-                .map(|(_, v)| v.len())
+            total_delegations = ?delegations_by_validator.values().map(|v| v.len())
                 .sum::<usize>(),
-            total_undelegations = ?undelegations_by_validator
-                .iter()
-                .map(|(_, v)| v.len())
+            total_undelegations = ?undelegations_by_validator.values().map(|v| v.len())
                 .sum::<usize>(),
         );
 
@@ -553,9 +545,9 @@ pub(crate) trait StakingImpl: StateWriteExt {
         // Using a JoinSet, run each validator's state queries concurrently.
         let mut js = JoinSet::new();
         for v in self.validator_identity_list().await?.iter() {
-            let state = self.validator_state(&v);
-            let power = self.validator_power(&v);
-            let consensus_key = self.validator_consensus_key(&v);
+            let state = self.validator_state(v);
+            let power = self.validator_power(v);
+            let consensus_key = self.validator_consensus_key(v);
             js.spawn(async move {
                 let state = state
                     .await?

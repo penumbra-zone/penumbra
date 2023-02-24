@@ -337,7 +337,7 @@ pub struct InvalidForgottenVersion {
 fn display_errors(errors: impl IntoIterator<Item = impl Display>) -> String {
     let mut output = String::new();
     for error in errors.into_iter() {
-        write!(&mut output, "\n  {}", error).unwrap();
+        write!(&mut output, "\n  {error}").unwrap();
     }
     output
 }

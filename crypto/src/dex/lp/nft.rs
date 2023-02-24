@@ -29,7 +29,7 @@ pub struct LpNft {
 impl LpNft {
     pub fn new(position_id: Id, state: State) -> Self {
         let base_denom = asset::REGISTRY
-            .parse_denom(&format!("lpnft_{}_{}", state, position_id))
+            .parse_denom(&format!("lpnft_{state}_{position_id}"))
             .expect("base denom format is valid");
 
         Self {

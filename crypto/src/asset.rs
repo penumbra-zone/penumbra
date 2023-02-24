@@ -74,7 +74,7 @@ mod tests {
     fn test_registry_native_token() {
         // We should be able to use `parse_base` with the valid base denomination.
         let base_denom = REGISTRY.parse_denom("upenumbra").unwrap();
-        assert_eq!(format!("{}", base_denom), "upenumbra".to_string());
+        assert_eq!(format!("{base_denom}"), "upenumbra".to_string());
 
         // If we try to use `parse_base` with a display denomination, we should get `None`.
         let display_denoms = vec!["mpenumbra", "penumbra"];
@@ -91,7 +91,7 @@ mod tests {
                 "upenumbra".to_string()
             );
 
-            assert_eq!(format!("{}", parsed_display_denom), display_denom)
+            assert_eq!(format!("{parsed_display_denom}"), display_denom)
         }
 
         // The base denomination (upenumbra) can also be used for display purposes.
@@ -190,7 +190,7 @@ mod tests {
         // We should be able to use `parse_base` with a base denomination for assets
         // not included in the hardcoded registry.
         let base_denom = REGISTRY.parse_denom("cube").unwrap();
-        assert_eq!(format!("{}", base_denom), "cube".to_string());
+        assert_eq!(format!("{base_denom}"), "cube".to_string());
     }
 
     proptest! {

@@ -320,7 +320,7 @@ impl TreeReader for Inner {
             .expect("jmt column family not found");
         let value = self
             .snapshot
-            .get_cf(jmt_cf, &node_key.encode()?)?
+            .get_cf(jmt_cf, node_key.encode()?)?
             .map(|db_slice| Node::decode(&db_slice))
             .transpose()?;
 

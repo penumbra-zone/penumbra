@@ -81,7 +81,7 @@ pub async fn scan_block(
             StatePayload::Swap { swap, .. } => {
                 swap_decryptions.push(trial_decrypt_swap(swap.clone()));
             }
-            StatePayload::RolledUp(commitment) => unknown_commitments.push(commitment.clone()),
+            StatePayload::RolledUp(commitment) => unknown_commitments.push(*commitment),
             StatePayload::Position {
                 lpnft: _,
                 commitment: _,
@@ -126,7 +126,7 @@ pub async fn scan_block(
                 (Some(note), None) => {
                     // Keep track of this commitment for later witnessing
                     let position = state_commitment_tree
-                        .insert(tct::Witness::Keep, payload.commitment().clone())
+                        .insert(tct::Witness::Keep, *payload.commitment())
                         .expect("inserting a commitment must succeed");
 
                     let source = payload.source().cloned().unwrap_or_default();
@@ -134,7 +134,7 @@ pub async fn scan_block(
                     let address_index = fvk.incoming().index_for_diversifier(note.diversifier());
 
                     new_notes.push(SpendableNoteRecord {
-                        note_commitment: payload.commitment().clone(),
+                        note_commitment: *payload.commitment(),
                         height_spent: None,
                         height_created: height,
                         note: note.clone(),
@@ -147,7 +147,7 @@ pub async fn scan_block(
                 (None, Some(swap)) => {
                     // Keep track of this commitment for later witnessing
                     let position = state_commitment_tree
-                        .insert(tct::Witness::Keep, payload.commitment().clone())
+                        .insert(tct::Witness::Keep, *payload.commitment())
                         .expect("inserting a commitment must succeed");
 
                     let Some(output_data) = swap_outputs.get(&swap.trading_pair).cloned() else {
@@ -171,7 +171,7 @@ pub async fn scan_block(
                     let nullifier = fvk.derive_nullifier(position, payload.commitment());
 
                     new_swaps.push(SwapRecord {
-                        swap_commitment: payload.commitment().clone(),
+                        swap_commitment: *payload.commitment(),
                         swap: swap.clone(),
                         position,
                         nullifier,
@@ -183,7 +183,7 @@ pub async fn scan_block(
                 (None, None) => {
                     // Don't remember this commitment; it wasn't ours
                     state_commitment_tree
-                        .insert(tct::Witness::Forget, payload.commitment().clone())
+                        .insert(tct::Witness::Forget, *payload.commitment())
                         .expect("inserting a commitment must succeed");
                 }
                 (Some(_), Some(_)) => unreachable!("swap and note commitments are distinct"),

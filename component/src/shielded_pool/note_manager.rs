@@ -81,7 +81,7 @@ pub trait NoteManager: StateWrite {
 
         // 2. Record its source in the JMT, if present
         if let Some(source) = payload.source() {
-            self.put(state_key::note_source(payload.commitment()), source.clone());
+            self.put(state_key::note_source(payload.commitment()), *source);
         }
 
         // 3. Finally, record it in the pending compact block.

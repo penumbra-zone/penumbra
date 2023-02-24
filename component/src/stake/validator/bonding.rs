@@ -28,7 +28,7 @@ impl std::fmt::Display for State {
             State::Bonded => write!(f, "Bonded"),
             State::Unbonded => write!(f, "Unbonded"),
             State::Unbonding { unbonding_epoch } => {
-                write!(f, "Unbonding (end epoch: {})", unbonding_epoch)
+                write!(f, "Unbonding (end epoch: {unbonding_epoch})")
             }
         }
     }

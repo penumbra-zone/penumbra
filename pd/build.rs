@@ -22,10 +22,7 @@ fn setup_testnet_config() -> anyhow::Result<()> {
     let (latest_testnet_name, latest_testnet_dir) = latest_testnet(&testnets_path)?;
 
     // Output the name of the most recent testnet as a build-time environment variable
-    println!(
-        "cargo:rustc-env=PD_LATEST_TESTNET_NAME={}",
-        latest_testnet_name
-    );
+    println!("cargo:rustc-env=PD_LATEST_TESTNET_NAME={latest_testnet_name}");
 
     // For each association of environment variable to filename, set the full path to that file in
     // the environment variable, so that we can include its contents at build time
@@ -76,10 +73,7 @@ fn latest_testnet(testnets_path: impl AsRef<Path>) -> anyhow::Result<(String, St
                 .and_then(|(index_str, name)| {
                     Ok((
                         index_str.parse().with_context(|| {
-                            format!(
-                                "could not parse testnet index as a number in path '{:?}'",
-                                path
-                            )
+                            format!("could not parse testnet index as a number in path '{path:?}'")
                         })?,
                         name.to_string(),
                     ))

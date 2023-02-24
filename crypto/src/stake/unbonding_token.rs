@@ -27,8 +27,7 @@ impl UnbondingToken {
         let base_denom = asset::REGISTRY
             .parse_denom(&format!(
                 // "uu" is not a typo, these are micro-unbonding tokens
-                "uunbonding_epoch_{}_until_{}_{}",
-                start_epoch_index, end_epoch_index, validator_identity
+                "uunbonding_epoch_{start_epoch_index}_until_{end_epoch_index}_{validator_identity}"
             ))
             .expect("base denom format is valid");
         UnbondingToken {
@@ -167,7 +166,7 @@ mod tests {
         let token = UnbondingToken::new(ik, start, end);
 
         let denom = token.to_string();
-        println!("denom: {}", denom);
+        println!("denom: {denom}");
         let token2 = UnbondingToken::from_str(&denom).unwrap();
         let denom2 = token2.to_string();
 

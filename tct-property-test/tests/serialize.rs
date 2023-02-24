@@ -81,7 +81,7 @@ proptest! {
            // After running all the actions, the deserialization of the stored tree should match
             // our in-memory tree (this only holds because we ensured that the last action is always
             // a `Serialize`)
-            assert_eq!(tree, deserialized, "mismatch when deserializing from storage: {:?}", incremental);
+            assert_eq!(tree, deserialized, "mismatch when deserializing from storage: {incremental:?}");
 
             // It should also hold that the result of any sequence of incremental serialization is
             // the same as merely serializing the result all at once, after the fact
@@ -101,7 +101,7 @@ proptest! {
             #[allow(clippy::type_complexity)]
             fn v<E: Display + Debug + 'static>(validate: fn(&Tree) -> Result<(), E>) -> Box<dyn Fn(&Tree, &Tree, &InMemory)> {
                 Box::new(move |original, deserialized, storage| if let Err(error) = validate(deserialized) {
-                    panic!("{error}:\n\nERROR: {error:?}\n\nORIGINAL: {original:?}\n\nDESERIALIZED: {deserialized:?}\n\nSTORAGE: {:?}", storage);
+                    panic!("{error}:\n\nERROR: {error:?}\n\nORIGINAL: {original:?}\n\nDESERIALIZED: {deserialized:?}\n\nSTORAGE: {storage:?}");
                 })
             }
 

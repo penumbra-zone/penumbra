@@ -218,7 +218,7 @@ pub mod connection_open_ack {
                     &msg.proof_consensus_state_of_a_on_b,
                     trusted_consensus_state.root(),
                     &ClientConsensusStatePath::new(
-                        &connection.counterparty().client_id(),
+                        connection.counterparty().client_id(),
                         &msg.consensus_height_of_a_on_b,
                     ),
                     &expected_consensus,
@@ -406,7 +406,7 @@ pub mod connection_open_try {
                 &msg.proof_consensus_state_of_b_on_a,
                 trusted_consensus_state.root(),
                 &ClientConsensusStatePath::new(
-                    &msg.counterparty.client_id(),
+                    msg.counterparty.client_id(),
                     &msg.consensus_height_of_b_on_a,
                 ),
                 &expected_consensus,

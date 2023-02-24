@@ -240,7 +240,7 @@ impl ViewProtocolService for ViewService {
         let prq = request.into_inner();
 
         let chain_params = self.storage.chain_params().await.map_err(|e| {
-            tonic::Status::unavailable(format!("Could not retrieve chain id: {:#}", e))
+            tonic::Status::unavailable(format!("Could not retrieve chain id: {e:#}"))
         })?;
 
         let fee = match prq.fee {
@@ -248,7 +248,7 @@ impl ViewProtocolService for ViewService {
             None => Fee::default().into(),
         }
         .try_into()
-        .map_err(|e| tonic::Status::invalid_argument(format!("Could not parse fee: {:#}", e)))?;
+        .map_err(|e| tonic::Status::invalid_argument(format!("Could not parse fee: {e:#}")))?;
 
         let mut plan = TransactionPlan {
             actions: Vec::new(),
@@ -265,7 +265,7 @@ impl ViewProtocolService for ViewService {
                 .ok_or_else(|| tonic::Status::invalid_argument("Missing address"))?
                 .try_into()
                 .map_err(|e| {
-                    tonic::Status::invalid_argument(format!("Could not parse address: {:#}", e))
+                    tonic::Status::invalid_argument(format!("Could not parse address: {e:#}"))
                 })?;
 
             let value: penumbra_crypto::Value = output
@@ -273,7 +273,7 @@ impl ViewProtocolService for ViewService {
                 .ok_or_else(|| tonic::Status::invalid_argument("Missing value"))?
                 .try_into()
                 .map_err(|e| {
-                    tonic::Status::invalid_argument(format!("Could not parse value: {:#}", e))
+                    tonic::Status::invalid_argument(format!("Could not parse value: {e:#}"))
                 })?;
 
             let output = OutputPlan::new(&mut OsRng, value, address).into();
@@ -288,7 +288,7 @@ impl ViewProtocolService for ViewService {
             }
             .try_into()
             .map_err(|e| {
-                tonic::Status::invalid_argument(format!("Could not parse swap fee: {:#}", e))
+                tonic::Status::invalid_argument(format!("Could not parse swap fee: {e:#}"))
             })?;
 
             let target_asset: asset::Id = swap
@@ -296,7 +296,7 @@ impl ViewProtocolService for ViewService {
                 .ok_or_else(|| tonic::Status::invalid_argument("Missing swap asset"))?
                 .try_into()
                 .map_err(|e| {
-                    tonic::Status::invalid_argument(format!("Could not parse swap asset: {:#}", e))
+                    tonic::Status::invalid_argument(format!("Could not parse swap asset: {e:#}"))
                 })?;
 
             let value: Value = swap
@@ -304,12 +304,12 @@ impl ViewProtocolService for ViewService {
                 .ok_or_else(|| tonic::Status::invalid_argument("Missing swap value"))?
                 .try_into()
                 .map_err(|e| {
-                    tonic::Status::invalid_argument(format!("Could not parse swap value: {:#}", e))
+                    tonic::Status::invalid_argument(format!("Could not parse swap value: {e:#}"))
                 })?;
 
             // Determine the canonical order for the assets being swapped.
             // This will determine whether the input amount is assigned to delta_1 or delta_2.
-            let trading_pair = TradingPair::new(value.asset_id.into(), target_asset);
+            let trading_pair = TradingPair::new(value.asset_id, target_asset);
 
             // If `trading_pair.asset_1` is the input asset, then `delta_1` is the input amount,
             // and `delta_2` is 0.
@@ -343,6 +343,7 @@ impl ViewProtocolService for ViewService {
             plan.actions.push(swap);
         }
 
+        #[allow(clippy::never_loop)]
         for _delegation in prq.delegations {
             // let amount = delegation
             //     .amount
@@ -380,6 +381,7 @@ impl ViewProtocolService for ViewService {
             ));
         }
 
+        #[allow(clippy::never_loop)]
         for _undelegation in prq.undelegations {
             // let value: Value = undelegation
             //     .value
@@ -428,7 +430,7 @@ impl ViewProtocolService for ViewService {
             .ok_or_else(|| tonic::Status::invalid_argument("Missing address index"))?
             .try_into()
             .map_err(|e| {
-                tonic::Status::invalid_argument(format!("Could not parse address index: {:#}", e))
+                tonic::Status::invalid_argument(format!("Could not parse address index: {e:#}"))
             })?;
 
         Ok(tonic::Response::new(pb::AddressByIndexResponse {
@@ -451,7 +453,7 @@ impl ViewProtocolService for ViewService {
             .ok_or_else(|| tonic::Status::invalid_argument("Missing address"))?
             .try_into()
             .map_err(|e| {
-                tonic::Status::invalid_argument(format!("Could not parse address: {:#}", e))
+                tonic::Status::invalid_argument(format!("Could not parse address: {e:#}"))
             })?;
 
         Ok(tonic::Response::new(pb::IndexByAddressResponse {
@@ -474,7 +476,7 @@ impl ViewProtocolService for ViewService {
             .ok_or_else(|| tonic::Status::invalid_argument("Missing address index"))?
             .try_into()
             .map_err(|e| {
-                tonic::Status::invalid_argument(format!("Could not parse address index: {:#}", e))
+                tonic::Status::invalid_argument(format!("Could not parse address index: {e:#}"))
             })?;
 
         Ok(tonic::Response::new(pb::EphemeralAddressResponse {
@@ -571,7 +573,7 @@ impl ViewProtocolService for ViewService {
             self.storage
                 .swap_by_commitment(swap_commitment, request.await_detection)
                 .await
-                .map_err(|e| tonic::Status::internal(format!("error: {}", e)))?,
+                .map_err(|e| tonic::Status::internal(format!("error: {e}")))?,
         );
 
         Ok(tonic::Response::new(SwapByCommitmentResponse {
@@ -594,7 +596,7 @@ impl ViewProtocolService for ViewService {
             .storage
             .balance_by_address(address)
             .await
-            .map_err(|e| tonic::Status::internal(format!("error: {}", e)))?;
+            .map_err(|e| tonic::Status::internal(format!("error: {e}")))?;
 
         let stream = try_stream! {
             for element in result {
@@ -609,7 +611,7 @@ impl ViewProtocolService for ViewService {
         Ok(tonic::Response::new(
             stream
                 .map_err(|e: anyhow::Error| {
-                    tonic::Status::unavailable(format!("error getting balances: {}", e))
+                    tonic::Status::unavailable(format!("error getting balances: {e}"))
                 })
                 .boxed(),
         ))
@@ -639,7 +641,7 @@ impl ViewProtocolService for ViewService {
             self.storage
                 .note_by_commitment(note_commitment, request.await_detection)
                 .await
-                .map_err(|e| tonic::Status::internal(format!("error: {}", e)))?,
+                .map_err(|e| tonic::Status::internal(format!("error: {e}")))?,
         );
 
         Ok(tonic::Response::new(NoteByCommitmentResponse {
@@ -668,7 +670,7 @@ impl ViewProtocolService for ViewService {
                 .storage
                 .nullifier_status(nullifier, request.await_detection)
                 .await
-                .map_err(|e| tonic::Status::internal(format!("error: {}", e)))?,
+                .map_err(|e| tonic::Status::internal(format!("error: {e}")))?,
         }))
     }
 
@@ -681,7 +683,7 @@ impl ViewProtocolService for ViewService {
             .await?;
 
         Ok(tonic::Response::new(self.status().await.map_err(|e| {
-            tonic::Status::internal(format!("error: {}", e))
+            tonic::Status::internal(format!("error: {e}"))
         })?))
     }
 
@@ -696,8 +698,7 @@ impl ViewProtocolService for ViewService {
         let (latest_known_block_height, _) =
             self.latest_known_block_height().await.map_err(|e| {
                 tonic::Status::unknown(format!(
-                    "unable to fetch latest known block height from fullnode: {}",
-                    e
+                    "unable to fetch latest known block height from fullnode: {e}"
                 ))
             })?;
 
@@ -748,7 +749,7 @@ impl ViewProtocolService for ViewService {
             .storage
             .notes(include_spent, asset_id, address_index, amount_to_spend)
             .await
-            .map_err(|e| tonic::Status::unavailable(format!("error fetching notes: {}", e)))?;
+            .map_err(|e| tonic::Status::unavailable(format!("error fetching notes: {e}")))?;
 
         let stream = try_stream! {
             for note in notes {
@@ -761,7 +762,7 @@ impl ViewProtocolService for ViewService {
         Ok(tonic::Response::new(
             stream
                 .map_err(|e: anyhow::Error| {
-                    tonic::Status::unavailable(format!("error getting notes: {}", e))
+                    tonic::Status::unavailable(format!("error getting notes: {e}"))
                 })
                 .boxed(),
         ))
@@ -789,7 +790,7 @@ impl ViewProtocolService for ViewService {
             .storage
             .notes_for_voting(address_index, votable_at_height)
             .await
-            .map_err(|e| tonic::Status::unavailable(format!("error fetching notes: {}", e)))?;
+            .map_err(|e| tonic::Status::unavailable(format!("error fetching notes: {e}")))?;
 
         let stream = try_stream! {
             for (note, identity_key) in notes {
@@ -803,7 +804,7 @@ impl ViewProtocolService for ViewService {
         Ok(tonic::Response::new(
             stream
                 .map_err(|e: anyhow::Error| {
-                    tonic::Status::unavailable(format!("error getting notes: {}", e))
+                    tonic::Status::unavailable(format!("error getting notes: {e}"))
                 })
                 .boxed(),
         ))
@@ -870,7 +871,7 @@ impl ViewProtocolService for ViewService {
         Ok(tonic::Response::new(
             stream
                 .map_err(|e: anyhow::Error| {
-                    tonic::Status::unavailable(format!("error getting assets: {}", e))
+                    tonic::Status::unavailable(format!("error getting assets: {e}"))
                 })
                 .boxed(),
         ))
@@ -886,9 +887,7 @@ impl ViewProtocolService for ViewService {
             .storage
             .transaction_hashes(request.get_ref().start_height, request.get_ref().end_height)
             .await
-            .map_err(|e| {
-                tonic::Status::unavailable(format!("error fetching transactions: {}", e))
-            })?;
+            .map_err(|e| tonic::Status::unavailable(format!("error fetching transactions: {e}")))?;
 
         let stream = try_stream! {
             for tx in txs {
@@ -902,7 +901,7 @@ impl ViewProtocolService for ViewService {
         Ok(tonic::Response::new(
             stream
                 .map_err(|e: anyhow::Error| {
-                    tonic::Status::unavailable(format!("error getting transactions: {}", e))
+                    tonic::Status::unavailable(format!("error getting transactions: {e}"))
                 })
                 .boxed(),
         ))
@@ -918,9 +917,7 @@ impl ViewProtocolService for ViewService {
             .storage
             .transactions(request.get_ref().start_height, request.get_ref().end_height)
             .await
-            .map_err(|e| {
-                tonic::Status::unavailable(format!("error fetching transactions: {}", e))
-            })?;
+            .map_err(|e| tonic::Status::unavailable(format!("error fetching transactions: {e}")))?;
 
         let stream = try_stream! {
             for tx in txs {
@@ -935,7 +932,7 @@ impl ViewProtocolService for ViewService {
         Ok(tonic::Response::new(
             stream
                 .map_err(|e: anyhow::Error| {
-                    tonic::Status::unavailable(format!("error getting transactions: {}", e))
+                    tonic::Status::unavailable(format!("error getting transactions: {e}"))
                 })
                 .boxed(),
         ))
@@ -952,9 +949,7 @@ impl ViewProtocolService for ViewService {
             .storage
             .transaction_by_hash(&request.get_ref().tx_hash)
             .await
-            .map_err(|e| {
-                tonic::Status::unavailable(format!("error fetching transaction: {}", e))
-            })?;
+            .map_err(|e| tonic::Status::unavailable(format!("error fetching transaction: {e}")))?;
 
         Ok(tonic::Response::new(pb::TransactionByHashResponse {
             tx: tx.map(Into::into),
@@ -1046,9 +1041,10 @@ impl ViewProtocolService for ViewService {
     ) -> Result<tonic::Response<pb::ChainParametersResponse>, tonic::Status> {
         self.check_worker().await?;
 
-        let parameters = self.storage.chain_params().await.map_err(|e| {
-            tonic::Status::unavailable(format!("error getting chain params: {}", e))
-        })?;
+        let parameters =
+            self.storage.chain_params().await.map_err(|e| {
+                tonic::Status::unavailable(format!("error getting chain params: {e}"))
+            })?;
 
         let response = ChainParametersResponse {
             parameters: Some(parameters.into()),
@@ -1065,7 +1061,7 @@ impl ViewProtocolService for ViewService {
 
         let parameters =
             self.storage.fmd_parameters().await.map_err(|e| {
-                tonic::Status::unavailable(format!("error getting FMD params: {}", e))
+                tonic::Status::unavailable(format!("error getting FMD params: {e}"))
             })?;
 
         let response = FmdParametersResponse {
