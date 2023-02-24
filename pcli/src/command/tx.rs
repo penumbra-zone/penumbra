@@ -12,6 +12,7 @@ use penumbra_component::stake::rate::RateData;
 use penumbra_crypto::{
     asset,
     keys::AddressIndex,
+    memo::MemoPlaintext,
     stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken},
     transaction::Fee,
     Amount, Value, STAKING_TOKEN_ASSET_ID,
@@ -222,6 +223,16 @@ impl TxCmd {
                     .parse()
                     .map_err(|_| anyhow::anyhow!("address is invalid"))?;
 
+                let memo = memo.as_ref().map(|m| {
+                    let memo_ephemeral_address =
+                        app.fvk.ephemeral_address(OsRng, AddressIndex::new(*from)).0;
+
+                    MemoPlaintext {
+                        sender: memo_ephemeral_address,
+                        text: m.clone(),
+                    }
+                });
+
                 let plan = plan::send(
                     &app.fvk,
                     app.view.as_mut().unwrap(),
@@ -230,7 +241,7 @@ impl TxCmd {
                     fee,
                     to,
                     AddressIndex::new(*from),
-                    memo.clone(),
+                    memo,
                 )
                 .await?;
                 app.build_and_submit_transaction(plan).await?;

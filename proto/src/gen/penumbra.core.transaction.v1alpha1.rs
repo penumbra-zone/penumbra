@@ -165,8 +165,8 @@ pub struct TransactionView {
     pub fmd_clues: ::prost::alloc::vec::Vec<super::super::crypto::v1alpha1::Clue>,
     /// An optional plaintext memo. It will only be populated if there are
     /// outputs in the actions of this transaction.
-    #[prost(string, optional, tag = "6")]
-    pub memo: ::core::option::Option<::prost::alloc::string::String>,
+    #[prost(bytes = "bytes", optional, tag = "6")]
+    pub memo: ::core::option::Option<::prost::bytes::Bytes>,
 }
 /// A view of a specific state change action performed by a transaction.
 #[allow(clippy::derive_partial_eq_without_eq)]

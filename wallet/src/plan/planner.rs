@@ -13,6 +13,7 @@ use penumbra_crypto::{
     asset::Denom,
     dex::{swap::SwapPlaintext, TradingPair},
     keys::AddressIndex,
+    memo::MemoPlaintext,
     stake::IdentityKey,
     transaction::Fee,
     Address, FullViewingKey, Note, Value,
@@ -126,7 +127,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     ///
     /// Errors if the memo is too long.
     #[instrument(skip(self))]
-    pub fn memo(&mut self, memo: String) -> anyhow::Result<&mut Self> {
+    pub fn memo(&mut self, memo: MemoPlaintext) -> anyhow::Result<&mut Self> {
         self.plan.memo_plan = Some(MemoPlan::new(&mut self.rng, memo)?);
         Ok(self)
     }
@@ -504,7 +505,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         // If there are outputs, we check that a memo has been added. If not, we add a default memo.
         if self.plan.num_outputs() > 0 && self.plan.memo_plan.is_none() {
-            self.memo(String::new())
+            self.memo(MemoPlaintext::default())
                 .expect("empty string is a valid memo");
         } else if self.plan.num_outputs() == 0 && self.plan.memo_plan.is_some() {
             anyhow::bail!("if no outputs, no memo should be added");

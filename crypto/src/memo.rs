@@ -4,13 +4,14 @@ use std::{
 };
 
 use anyhow::anyhow;
+use rand_core::OsRng;
 
 use crate::{
     balance, ka,
     keys::OutgoingViewingKey,
     note,
     symmetric::{OvkWrappedKey, PayloadKey, PayloadKind, WrappedMemoKey},
-    Note,
+    Address, Note,
 };
 
 pub const MEMO_CIPHERTEXT_LEN_BYTES: usize = 528;
@@ -21,17 +22,72 @@ pub const MEMO_LEN_BYTES: usize = 512;
 #[derive(Clone, Debug)]
 pub struct MemoCiphertext(pub [u8; MEMO_CIPHERTEXT_LEN_BYTES]);
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct MemoPlaintext {
+    pub sender: Address,
+    pub text: String,
+}
+
+impl From<&MemoPlaintext> for Vec<u8> {
+    fn from(plaintext: &MemoPlaintext) -> Vec<u8> {
+        let mut bytes = vec![];
+        bytes.extend_from_slice(&plaintext.sender.to_vec());
+        bytes.extend_from_slice(plaintext.text.as_bytes());
+        bytes
+    }
+}
+
+impl TryFrom<Vec<u8>> for MemoPlaintext {
+    type Error = anyhow::Error;
+
+    fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
+        if bytes.len() != MEMO_LEN_BYTES {
+            return Err(anyhow!("provided memo plaintext of is too short"));
+        }
+        let sender_address_bytes = &bytes[..80];
+        let sender_address: Address = sender_address_bytes.try_into()?;
+        let text = String::from_utf8_lossy(&bytes[80..])
+            .trim_end_matches(0u8 as char)
+            .to_string();
+
+        Ok(MemoPlaintext {
+            sender: sender_address,
+            text,
+        })
+    }
+}
+
+impl Default for MemoPlaintext {
+    fn default() -> Self {
+        let mut rng = OsRng;
+        MemoPlaintext {
+            sender: Address::dummy(&mut rng),
+            text: String::new(),
+        }
+    }
+}
+
+impl MemoPlaintext {
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.into()
+    }
+}
+
 impl MemoCiphertext {
     /// Encrypt a memo, returning its ciphertext.
-    pub fn encrypt(memo_key: PayloadKey, memo: &str) -> Result<MemoCiphertext, anyhow::Error> {
-        let memo_len = memo.as_bytes().len();
+    pub fn encrypt(
+        memo_key: PayloadKey,
+        memo: &MemoPlaintext,
+    ) -> Result<MemoCiphertext, anyhow::Error> {
+        let memo_bytes: Vec<u8> = memo.into();
+        let memo_len = memo_bytes.len();
         if memo_len > MEMO_LEN_BYTES {
             return Err(anyhow::anyhow!(
                 "provided memo plaintext of length {memo_len} exceeds maximum memo length of {MEMO_LEN_BYTES}"
             ));
         }
         let mut m = [0u8; MEMO_LEN_BYTES];
-        m[..memo_len].copy_from_slice(memo.as_bytes());
+        m[..memo_len].copy_from_slice(&memo_bytes);
 
         let encryption_result = memo_key.encrypt(m.to_vec(), PayloadKind::Memo);
         let ciphertext: [u8; MEMO_CIPHERTEXT_LEN_BYTES] = encryption_result
@@ -41,15 +97,23 @@ impl MemoCiphertext {
         Ok(MemoCiphertext(ciphertext))
     }
 
-    /// Decrypt a [`MemoCiphertext`] to generate a plaintext [`String`].
+    /// Decrypt a [`MemoCiphertext`] to generate a plaintext [`MemoPlaintext`].
     pub fn decrypt(
         memo_key: &PayloadKey,
         ciphertext: MemoCiphertext,
-    ) -> Result<String, anyhow::Error> {
+    ) -> Result<MemoPlaintext, anyhow::Error> {
         let plaintext_bytes = MemoCiphertext::decrypt_bytes(memo_key, ciphertext)?;
-        Ok(String::from_utf8_lossy(&plaintext_bytes)
+
+        let sender_address_bytes = &plaintext_bytes[..80];
+        let sender_address: Address = sender_address_bytes.try_into()?;
+        let text = String::from_utf8_lossy(&plaintext_bytes[80..])
             .trim_end_matches(0u8 as char)
-            .to_string())
+            .to_string();
+
+        Ok(MemoPlaintext {
+            sender: sender_address,
+            text,
+        })
     }
 
     /// Decrypt a [`MemoCiphertext`] to generate a fixed-length slice of bytes.
@@ -75,7 +139,7 @@ impl MemoCiphertext {
         ovk: &OutgoingViewingKey,
         epk: &ka::Public,
         ciphertext: MemoCiphertext,
-    ) -> Result<String, anyhow::Error> {
+    ) -> Result<MemoPlaintext, anyhow::Error> {
         let shared_secret = Note::decrypt_key(wrapped_ovk, cm, cv, ovk, epk)
             .map_err(|_| anyhow!("key decryption error"))?;
 
@@ -92,9 +156,16 @@ impl MemoCiphertext {
             anyhow!("post-decryption, could not fit plaintext into memo size {MEMO_LEN_BYTES}")
         })?;
 
-        Ok(String::from_utf8_lossy(&plaintext_bytes)
+        let sender_address_bytes = &plaintext_bytes[..80];
+        let sender_address: Address = sender_address_bytes.try_into()?;
+        let text = String::from_utf8_lossy(&plaintext_bytes[80..])
             .trim_end_matches(0u8 as char)
-            .to_string())
+            .to_string();
+
+        Ok(MemoPlaintext {
+            sender: sender_address,
+            text,
+        })
     }
 }
 
@@ -142,7 +213,10 @@ mod tests {
 
         // On the sender side, we have to encrypt the memo to put into the transaction-level,
         // and also the memo key to put on the action-level (output).
-        let memo = String::from("Hi");
+        let memo = MemoPlaintext {
+            sender: dest,
+            text: String::from("Hi"),
+        };
         let memo_key = PayloadKey::random_key(&mut OsRng);
         let ciphertext =
             MemoCiphertext::encrypt(memo_key.clone(), &memo).expect("can encrypt memo");
@@ -184,7 +258,10 @@ mod tests {
 
         // On the sender side, we have to encrypt the memo to put into the transaction-level,
         // and also the memo key to put on the action-level (output).
-        let memo = String::from("Hello, friend");
+        let memo = MemoPlaintext {
+            sender: dest,
+            text: String::from("Hello, friend"),
+        };
         let memo_key = PayloadKey::random_key(&mut OsRng);
         let ciphertext =
             MemoCiphertext::encrypt(memo_key.clone(), &memo).expect("can encrypt memo");
@@ -228,9 +305,14 @@ mod tests {
         fn test_memo_size_limit(s in "\\PC{0,10000}") {
             let mut rng = OsRng;
             let memo_key = PayloadKey::random_key(&mut rng);
-            let memo = s;
+            let memo_address = Address::dummy(&mut rng);
+            let memo_text = s;
+            let memo = MemoPlaintext {
+                sender: memo_address,
+                text: memo_text,
+            };
             let ciphertext_result = MemoCiphertext::encrypt(memo_key.clone(), &memo);
-            if memo.as_bytes().len() > MEMO_LEN_BYTES {
+            if memo.to_vec().len() > MEMO_LEN_BYTES {
                 assert!(ciphertext_result.is_err());
             } else {
                 assert!(ciphertext_result.is_ok());

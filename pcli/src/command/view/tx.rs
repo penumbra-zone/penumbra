@@ -330,7 +330,8 @@ impl TxCmd {
                 &txv.fee.value().format(&asset_cache),
             ]);
             if let Some(memo) = txv.memo {
-                metadata_table.add_row(vec!["Transaction Memo", &memo]);
+                metadata_table.add_row(vec!["Transaction Memo Sender", &memo.sender.to_string()]);
+                metadata_table.add_row(vec!["Transaction Memo Text", &memo.text]);
             }
             metadata_table.add_row(vec![
                 "Transaction Expiration Height",

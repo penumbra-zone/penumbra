@@ -5,7 +5,8 @@ use anyhow::{Context, Result};
 use penumbra_component::stake::rate::RateData;
 use penumbra_component::stake::validator;
 use penumbra_crypto::{
-    keys::AddressIndex, transaction::Fee, Address, Amount, FullViewingKey, Value,
+    keys::AddressIndex, memo::MemoPlaintext, transaction::Fee, Address, Amount, FullViewingKey,
+    Value,
 };
 use penumbra_proto::{
     client::v1alpha1::specific_query_service_client::SpecificQueryServiceClient,
@@ -96,7 +97,7 @@ pub async fn send<V, R>(
     fee: Fee,
     dest_address: Address,
     source_address: AddressIndex,
-    tx_memo: Option<String>,
+    tx_memo: Option<MemoPlaintext>,
 ) -> Result<TransactionPlan, anyhow::Error>
 where
     V: ViewClient,
@@ -277,7 +278,7 @@ where
             // chunks, ignoring the biggest notes in the remainder.
             for group in records.chunks_exact(SWEEP_COUNT) {
                 let mut planner = Planner::new(&mut rng);
-                planner.memo(String::new())?;
+                planner.memo(MemoPlaintext::default())?;
 
                 for record in group {
                     planner.spend(record.note.clone(), record.position);

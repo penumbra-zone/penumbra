@@ -116,7 +116,7 @@ message TransactionView {
   repeated crypto.v1alpha1.Clue fmd_clues = 5;
   // An optional plaintext memo. It will only be populated if there are
   // outputs in the actions of this transaction.
-  optional string memo = 6;
+  optional bytes memo = 6;
 }
 
 // A view of a specific state change action performed by a transaction.
