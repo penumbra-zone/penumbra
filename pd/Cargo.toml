@@ -84,10 +84,6 @@ metrics-exporter-prometheus = { version = "0.10.0", features = [
 http = "0.2"
 ed25519-consensus = "2"
 
-# TODO(erwan): this is a temporary addition to satisfy compatibility
-# with tendermint-rs.
-ed25519-dalek = "1.0.1"
-
 async-trait = "0.1.52"
 tendermint-rpc = { version = "0.29.0", features = ["http-client"] }
 once_cell = "1.7.2"
