@@ -643,11 +643,7 @@ impl TxCmd {
 
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::Vote {
-                vote,
-                fee,
-                source,
-            } => {
+            TxCmd::Vote { vote, fee, source } => {
                 let (proposal_id, vote): (u64, Vote) = (*vote).into();
 
                 // Before we vote on the proposal, we have to gather some information about it so
