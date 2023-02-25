@@ -238,6 +238,7 @@ impl SpendProof {
             .expect("expect only valid element points");
         public_inputs.extend(element_rk.to_field_elements().unwrap());
 
+        tracing::debug!(?public_inputs);
         let proof_result =
             Groth16::verify_with_processed_vk(&processed_pvk, public_inputs.as_slice(), &self.0)
                 .map_err(|err| anyhow::anyhow!(err))?;
