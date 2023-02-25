@@ -3587,6 +3587,7 @@ dependencies = [
  "ark-serialize",
  "ark-snark",
  "ark-std",
+ "base64 0.20.0",
  "bech32",
  "blake2b_simd 0.5.11",
  "bytes",

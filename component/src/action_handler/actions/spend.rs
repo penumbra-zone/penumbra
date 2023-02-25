@@ -29,24 +29,13 @@ impl ActionHandler for Spend {
             .context("spend auth signature failed to verify")?;
 
         // 3. Check that the proof verifies.
-        tracing::debug!(
-            ?anchor,
-            balance_commitment = ?spend.body.balance_commitment,
-            nullifier = ?spend.body.nullifier,
-            rk = ?spend.body.rk,
-            proof = &base64::encode(spend.proof.clone().encode_to_vec()),
-            sp_vk = ?(*SPEND_PROOF_VERIFICATION_KEY),
-            "verifying spend proof"
-        );
-        let res = spend.proof.verify(
+        spend.proof.verify(
             &SPEND_PROOF_VERIFICATION_KEY,
             anchor,
             spend.body.balance_commitment,
             spend.body.nullifier,
             spend.body.rk,
-        );
-        tracing::debug!(?res, "spend proof verification result");
-        res.context("a spend proof did not verify")?;
+        ).context("a spend proof did not verify")?;
 
         Ok(())
     }

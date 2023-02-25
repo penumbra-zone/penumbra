@@ -23,6 +23,8 @@ use crate::{
     Rseed, Value,
 };
 
+use super::VerifyingKeyExt;
+
 // Public:
 // * vcm (value commitment)
 // * ncm (note commitment)
@@ -138,6 +140,7 @@ impl OutputProof {
     /// The public inputs are:
     /// * balance commitment of the new note,
     /// * note commitment of the new note,
+    #[tracing::instrument(skip(self, vk), fields(self = ?base64::encode(&self.clone().encode_to_vec()), vk = ?vk.debug_id()))]
     pub fn verify(
         &self,
         vk: &VerifyingKey<Bls12_377>,
@@ -152,9 +155,10 @@ impl OutputProof {
         let proof_result =
             Groth16::verify_with_processed_vk(&processed_pvk, public_inputs.as_slice(), &self.0)
                 .map_err(|err| anyhow::anyhow!(err))?;
+        tracing::debug!(?proof_result);
         proof_result
             .then_some(())
-            .ok_or_else(|| anyhow::anyhow!("proof did not verify"))
+            .ok_or_else(|| anyhow::anyhow!("output proof did not verify"))
     }
 }
 

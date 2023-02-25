@@ -32,7 +32,7 @@ use crate::{
     Note, Nullifier, Rseed, Value,
 };
 
-use super::GROTH16_PROOF_LENGTH_BYTES;
+use super::{VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
 
 /// Groth16 proof for spending existing notes.
 #[derive(Clone, Debug)]
@@ -246,6 +246,7 @@ impl SpendProof {
     }
 
     /// Called to verify the proof using the provided public inputs.
+    #[tracing::instrument(skip(self, vk), fields(self = ?base64::encode(&self.clone().encode_to_vec()), vk = ?vk.debug_id()))]
     pub fn verify(
         &self,
         vk: &VerifyingKey<Bls12_377>,
@@ -270,7 +271,7 @@ impl SpendProof {
         tracing::debug!(?proof_result);
         proof_result
             .then_some(())
-            .ok_or_else(|| anyhow::anyhow!("proof did not verify"))
+            .ok_or_else(|| anyhow::anyhow!("spend proof did not verify"))
     }
 }
 
