@@ -28,9 +28,7 @@ impl ActionHandler for Spend {
             .context("spend auth signature failed to verify")?;
 
         // 3. Check that the proof verifies.
-        // TEMP: Due to intermittent issues with this proof
-        // verification, we are temporarily disabling it.
-        let _result = spend
+        spend
             .proof
             .verify(
                 &SPEND_PROOF_VERIFICATION_KEY,
@@ -39,7 +37,7 @@ impl ActionHandler for Spend {
                 spend.body.nullifier,
                 spend.body.rk,
             )
-            .context("a spend proof did not verify");
+            .context("a spend proof did not verify")?;
 
         Ok(())
     }
@@ -145,9 +143,6 @@ mod tests {
         Ok(())
     }
 
-    // Proof verification is automatically passed due to intermittent failures
-    // of unknown case. While that is being debugged this test is ignored.
-    #[ignore]
     #[tokio::test]
     async fn check_stateless_fails_on_auth_path_with_wrong_root() -> Result<()> {
         // Generate a note controlled by the test address.
