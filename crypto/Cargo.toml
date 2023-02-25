@@ -20,6 +20,7 @@ poseidon-paramgen = { git = "https://github.com/penumbra-zone/poseidon377", rev 
 f4jumble = { git = "https://github.com/zcash/librustzcash", rev = "2425a0869098e3b0588ccd73c42716bcf418612c" }
 
 # Crates.io deps
+base64 = "0.20"
 ark-ff = "0.3"
 ark-std = "0.3"
 ark-serialize = "0.3"

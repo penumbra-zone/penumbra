@@ -3,6 +3,7 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use penumbra_proof_params::SPEND_PROOF_VERIFICATION_KEY;
+use penumbra_proto::DomainType;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::Spend, Transaction};
 use tracing::instrument;
@@ -28,23 +29,13 @@ impl ActionHandler for Spend {
             .context("spend auth signature failed to verify")?;
 
         // 3. Check that the proof verifies.
-        tracing::debug!(
-            ?anchor,
-            balance_commitment = ?spend.body.balance_commitment,
-            nullifier = ?spend.body.nullifier,
-            rk = ?spend.body.rk,
-            "verifying spend proof"
-        );
-        spend
-            .proof
-            .verify(
-                &SPEND_PROOF_VERIFICATION_KEY,
-                anchor,
-                spend.body.balance_commitment,
-                spend.body.nullifier,
-                spend.body.rk,
-            )
-            .context("a spend proof did not verify")?;
+        spend.proof.verify(
+            &SPEND_PROOF_VERIFICATION_KEY,
+            anchor,
+            spend.body.balance_commitment,
+            spend.body.nullifier,
+            spend.body.rk,
+        ).context("a spend proof did not verify")?;
 
         Ok(())
     }
