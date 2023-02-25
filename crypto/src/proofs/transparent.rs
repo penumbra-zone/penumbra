@@ -6,7 +6,6 @@ use decaf377_rdsa::{SpendAuth, VerificationKey};
 use std::convert::{TryFrom, TryInto};
 
 use decaf377::FieldExt;
-use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_proto::{
     core::transparent_proofs::v1alpha1 as transparent_proofs, DomainType, Message,
 };
@@ -173,6 +172,16 @@ impl From<SpendProof> for transparent_proofs::SpendProof {
 impl From<DelegatorVoteProof> for transparent_proofs::SpendProof {
     fn from(msg: DelegatorVoteProof) -> Self {
         msg.spend_proof.into()
+    }
+}
+
+impl TryFrom<transparent_proofs::SpendProof> for DelegatorVoteProof {
+    type Error = Error;
+
+    fn try_from(proto: transparent_proofs::SpendProof) -> anyhow::Result<Self, Self::Error> {
+        Ok(DelegatorVoteProof {
+            spend_proof: proto.try_into()?,
+        })
     }
 }
 

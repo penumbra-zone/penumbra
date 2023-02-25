@@ -29,13 +29,16 @@ impl ActionHandler for Spend {
             .context("spend auth signature failed to verify")?;
 
         // 3. Check that the proof verifies.
-        spend.proof.verify(
-            &SPEND_PROOF_VERIFICATION_KEY,
-            anchor,
-            spend.body.balance_commitment,
-            spend.body.nullifier,
-            spend.body.rk,
-        ).context("a spend proof did not verify")?;
+        spend
+            .proof
+            .verify(
+                &SPEND_PROOF_VERIFICATION_KEY,
+                anchor,
+                spend.body.balance_commitment,
+                spend.body.nullifier,
+                spend.body.rk,
+            )
+            .context("a spend proof did not verify")?;
 
         Ok(())
     }
@@ -132,7 +135,6 @@ mod tests {
 
         let context = Arc::new(tx.clone());
 
-        tx.check_stateless(context.clone()).await;
         // On the verifier side, perform stateless verification.
         for action in tx.transaction_body().actions {
             let result = action.check_stateless(context.clone()).await;
