@@ -5,7 +5,7 @@ mod traits;
 
 pub use output::{OutputCircuit, OutputProof};
 pub use spend::{SpendCircuit, SpendProof};
-pub use traits::ParameterSetup;
+pub use traits::{ParameterSetup, VerifyingKeyExt};
 
 /// The length of our Groth16 proofs in bytes.
 pub const GROTH16_PROOF_LENGTH_BYTES: usize = 192;
