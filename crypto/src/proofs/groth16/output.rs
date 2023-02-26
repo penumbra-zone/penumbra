@@ -152,6 +152,7 @@ impl OutputProof {
         public_inputs.extend(note_commitment.0.to_field_elements().unwrap());
         public_inputs.extend(balance_commitment.0.to_field_elements().unwrap());
 
+        tracing::trace!(?public_inputs);
         let proof_result =
             Groth16::verify_with_processed_vk(&processed_pvk, public_inputs.as_slice(), &self.0)
                 .map_err(|err| anyhow::anyhow!(err))?;
