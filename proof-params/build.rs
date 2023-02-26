@@ -15,7 +15,7 @@ fn main() {
     // that they should go and install Git LFS.
     for file in proof_parameter_files {
         let metadata = std::fs::metadata(file).expect("proof parameter file exists");
-        if metadata.len() < 1000 {
+        if metadata.len() < 500 {
             panic!(
                 "proof parameter file {} is too small; did you install Git LFS?",
                 file

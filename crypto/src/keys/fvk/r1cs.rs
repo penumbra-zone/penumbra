@@ -28,7 +28,9 @@ impl AllocVar<VerificationKey<SpendAuth>, Fq> for RandomizedVerificationKey {
                 let point = decaf377::Encoding(*inner.as_ref())
                     .vartime_decompress()
                     .unwrap();
-                let element_var: ElementVar = AllocVar::<Element, Fq>::new_input(cs, || Ok(point))?;
+                let field_element = point.vartime_compress_to_field();
+                let element_var: ElementVar =
+                    AllocVar::<Fq, Fq>::new_input(cs, || Ok(field_element))?;
                 Ok(Self { inner: element_var })
             }
             AllocationMode::Witness => unimplemented!(),
