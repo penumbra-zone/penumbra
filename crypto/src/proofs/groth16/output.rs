@@ -23,8 +23,6 @@ use crate::{
     Rseed, Value,
 };
 
-use super::VerifyingKeyExt;
-
 // Public:
 // * vcm (value commitment)
 // * ncm (note commitment)
@@ -140,7 +138,10 @@ impl OutputProof {
     /// The public inputs are:
     /// * balance commitment of the new note,
     /// * note commitment of the new note,
-    #[tracing::instrument(skip(self, vk), fields(self = ?base64::encode(&self.clone().encode_to_vec()), vk = ?vk.debug_id()))]
+    // Commented out, but this may be useful when debugging proof verification failures,
+    // to check that the proof data and verification keys are consistent.
+    //#[tracing::instrument(skip(self, vk), fields(self = ?base64::encode(&self.clone().encode_to_vec()), vk = ?vk.debug_id()))]
+    #[tracing::instrument(skip(self, vk))]
     pub fn verify(
         &self,
         vk: &VerifyingKey<Bls12_377>,
