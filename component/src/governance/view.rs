@@ -392,6 +392,111 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
 
         Ok(())
     }
+
+    /// Get all the validator votes for the proposal.
+    async fn validator_voting_power_at_proposal_start(
+        &self,
+        proposal_id: u64,
+    ) -> Result<BTreeMap<IdentityKey, u64>> {
+        let mut powers = BTreeMap::new();
+
+        let prefix = state_key::all_voting_power_at_proposal_start(proposal_id);
+        let mut stream = self.prefix_proto(&prefix);
+
+        while let Some((key, power)) = stream.next().await.transpose()? {
+            let identity_key = key
+                .rsplit('/')
+                .next()
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "incorrect key format for validator voting power at proposal start"
+                    )
+                })?
+                .parse()?;
+            powers.insert(identity_key, power);
+        }
+
+        Ok(powers)
+    }
+
+    /// Get all the validator votes for the proposal.
+    async fn validator_votes(&self, proposal_id: u64) -> Result<BTreeMap<IdentityKey, Vote>> {
+        let mut votes = BTreeMap::new();
+
+        let prefix = state_key::all_validator_votes(proposal_id);
+        let mut stream = self.prefix(&prefix);
+
+        while let Some((key, vote)) = stream.next().await.transpose()? {
+            let identity_key = key
+                .rsplit('/')
+                .next()
+                .ok_or_else(|| anyhow::anyhow!("incorrect key format for validator vote"))?
+                .parse()?;
+            votes.insert(identity_key, vote);
+        }
+
+        Ok(votes)
+    }
+
+    /// Get all the *tallied* delegator votes for the proposal (excluding those which have been
+    /// cast but not tallied).
+    async fn tallied_delegator_votes(
+        &self,
+        proposal_id: u64,
+    ) -> Result<BTreeMap<IdentityKey, Tally>> {
+        let mut tallies = BTreeMap::new();
+
+        let prefix = state_key::all_tallied_delegator_votes(proposal_id);
+        let mut stream = self.prefix(&prefix);
+
+        while let Some((key, tally)) = stream.next().await.transpose()? {
+            let identity_key = key
+                .rsplit('/')
+                .next()
+                .ok_or_else(|| anyhow::anyhow!("incorrect key format for delegator vote tally"))?
+                .parse()?;
+            tallies.insert(identity_key, tally);
+        }
+
+        Ok(tallies)
+    }
+
+    /// Add up all the currently tallied votes (without tallying any cast votes that haven't been
+    /// tallied yet).
+    async fn current_tally(&self, proposal_id: u64) -> Result<Tally> {
+        let validator_powers = self
+            .validator_voting_power_at_proposal_start(proposal_id)
+            .await?;
+        let mut validator_votes = self.validator_votes(proposal_id).await?;
+        let mut delegator_tallies = self.tallied_delegator_votes(proposal_id).await?;
+
+        // For each validator, tally their own vote, overriding it with any tallied delegator votes
+        let mut tally = Tally::default();
+        for (validator, power) in validator_powers.into_iter() {
+            let delegator_tally = delegator_tallies.remove(&validator).unwrap_or_default();
+            if let Some(vote) = validator_votes.remove(&validator) {
+                // The effective power of a validator is the voting power of that validator at
+                // proposal start, minus the total voting power used by delegators to that validator
+                // who have voted. Their votes will be added back in below, re-assigning their
+                // voting power to their chosen votes.
+                let effective_power = power - delegator_tally.total();
+                tally += (vote, effective_power).into();
+            }
+            // Add the delegator votes in, regardless of if the validator has voted.
+            tally += delegator_tally;
+        }
+
+        assert!(
+            validator_votes.is_empty(),
+            "no inactive validator should have voted"
+        );
+        assert!(
+            delegator_tallies.is_empty(),
+            "no delegator should have been able to vote for an inactive validator"
+        );
+
+        Ok(tally)
+    }
 }
 
 impl<T: StateRead + crate::stake::StateReadExt + ?Sized> StateReadExt for T {}
@@ -581,7 +686,7 @@ pub trait StateWriteExt: StateWrite {
         unbonded_amount: Amount,
     ) -> Result<()> {
         // Convert the unbonded amount into voting power
-        let power = Power::try_from(u64::from(unbonded_amount))?;
+        let power = u64::from(unbonded_amount);
         let tally: Tally = (vote, power).into();
 
         // Record the vote

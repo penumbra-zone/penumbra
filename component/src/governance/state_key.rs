@@ -53,8 +53,18 @@ pub fn voting_power_at_proposal_start(proposal_id: u64, identity_key: IdentityKe
     format!("governance/proposal/{proposal_id}/voting_power_at_start/{identity_key}")
 }
 
+pub fn all_voting_power_at_proposal_start(proposal_id: u64) -> String {
+    // Note: this has to be the prefix of the `voting_power_at_proposal_start` function above.
+    format!("governance/proposal/{proposal_id}/voting_power_at_start/")
+}
+
 pub fn validator_vote(proposal_id: u64, identity_key: IdentityKey) -> String {
     format!("governance/proposal/{proposal_id}/validator_vote/{identity_key}")
+}
+
+pub fn all_validator_votes(proposal_id: u64) -> String {
+    // Note: this has to be the prefix of the `validator_vote` function above.
+    format!("governance/proposal/{proposal_id}/validator_vote/")
 }
 
 pub fn untallied_delegator_vote(
@@ -72,4 +82,9 @@ pub fn all_untallied_delegator_votes(proposal_id: u64) -> String {
 
 pub fn tallied_delegator_votes(proposal_id: u64, identity_key: IdentityKey) -> String {
     format!("governance/proposal/{proposal_id}/tallied_delegator_votes/{identity_key}")
+}
+
+pub fn all_tallied_delegator_votes(proposal_id: u64) -> String {
+    // Note: this has to be the prefix of the `tallied_delegator_votes` function above.
+    format!("governance/proposal/{proposal_id}/tallied_delegator_votes/")
 }
