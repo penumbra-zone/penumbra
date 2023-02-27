@@ -2872,6 +2872,137 @@ impl<'de> serde::Deserialize<'de> for ProposalWithdraw {
         deserializer.deserialize_struct("penumbra.core.governance.v1alpha1.ProposalWithdraw", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for Tally {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.yes != 0 {
+            len += 1;
+        }
+        if self.no != 0 {
+            len += 1;
+        }
+        if self.abstain != 0 {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.governance.v1alpha1.Tally", len)?;
+        if self.yes != 0 {
+            struct_ser.serialize_field("yes", ToString::to_string(&self.yes).as_str())?;
+        }
+        if self.no != 0 {
+            struct_ser.serialize_field("no", ToString::to_string(&self.no).as_str())?;
+        }
+        if self.abstain != 0 {
+            struct_ser.serialize_field("abstain", ToString::to_string(&self.abstain).as_str())?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for Tally {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "yes",
+            "no",
+            "abstain",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Yes,
+            No,
+            Abstain,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "yes" => Ok(GeneratedField::Yes),
+                            "no" => Ok(GeneratedField::No),
+                            "abstain" => Ok(GeneratedField::Abstain),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = Tally;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.governance.v1alpha1.Tally")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<Tally, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut yes__ = None;
+                let mut no__ = None;
+                let mut abstain__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::Yes => {
+                            if yes__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("yes"));
+                            }
+                            yes__ = 
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::No => {
+                            if no__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("no"));
+                            }
+                            no__ = 
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::Abstain => {
+                            if abstain__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("abstain"));
+                            }
+                            abstain__ = 
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                    }
+                }
+                Ok(Tally {
+                    yes: yes__.unwrap_or_default(),
+                    no: no__.unwrap_or_default(),
+                    abstain: abstain__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.governance.v1alpha1.Tally", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for ValidatorVote {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>

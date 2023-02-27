@@ -287,6 +287,20 @@ pub mod proposal_outcome {
         Vetoed(Vetoed),
     }
 }
+/// A tally of votes on a proposal.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Tally {
+    /// The number of votes in favor of the proposal.
+    #[prost(uint64, tag = "1")]
+    pub yes: u64,
+    /// The number of votes against the proposal.
+    #[prost(uint64, tag = "2")]
+    pub no: u64,
+    /// The number of abstentions.
+    #[prost(uint64, tag = "3")]
+    pub abstain: u64,
+}
 /// A list of proposal ids.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
