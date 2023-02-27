@@ -15,6 +15,7 @@
 #![allow(clippy::clone_on_copy)]
 
 mod auth_data;
+mod auth_hash;
 mod effect_hash;
 mod error;
 mod transaction;
@@ -26,7 +27,8 @@ pub mod view;
 
 pub use action::{Action, IsAction};
 pub use auth_data::AuthorizationData;
-pub use effect_hash::EffectHash;
+pub use auth_hash::{AuthHash, AuthorizingData};
+pub use effect_hash::{EffectHash, EffectingData};
 pub use error::Error;
 pub use transaction::{Transaction, TransactionBody};
 pub use view::{ActionView, TransactionPerspective, TransactionView};

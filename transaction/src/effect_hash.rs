@@ -21,6 +21,12 @@ pub trait EffectingData {
     fn effect_hash(&self) -> EffectHash;
 }
 
+/// A hash of a transaction's _effecting data_, describing its effects on the
+/// chain state.
+///
+/// This includes, e.g., the commitments to new output notes created by the
+/// transaction, or nullifiers spent by the transaction, but does not include
+/// _authorizing data_ such as signatures or zk proofs.
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub struct EffectHash([u8; 64]);
 
