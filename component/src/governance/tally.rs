@@ -4,7 +4,7 @@ use penumbra_transaction::action::Vote;
 
 use super::{proposal::Withdrawn, StateReadExt as _};
 use crate::stake::StateReadExt as _;
-use penumbra_chain::{StateReadExt as _, params::Ratio};
+use penumbra_chain::{params::Ratio, StateReadExt as _};
 use penumbra_storage::StateRead;
 
 use super::proposal::Outcome;
