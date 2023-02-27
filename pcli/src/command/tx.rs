@@ -339,7 +339,7 @@ impl TxCmd {
                         planner.output(split_value.clone(), address);
                     }
                     let plan = planner
-                        .plan(app.view(), &fvk, Some(record.address_index))
+                        .plan(app.view(), &fvk, record.address_index)
                         .await?;
                     let tx = app.build_transaction(plan).await?;
                     println!("built transaction splitting {:?}", record.note);
