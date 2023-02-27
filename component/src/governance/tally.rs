@@ -20,6 +20,12 @@ pub struct Tally {
     abstain: u64,
 }
 
+impl Tally {
+    pub fn total(&self) -> u64 {
+        self.yes + self.no + self.abstain
+    }
+}
+
 impl From<Tally> for pb::Tally {
     fn from(tally: Tally) -> Self {
         Self {
@@ -44,21 +50,21 @@ impl DomainType for Tally {
     type Proto = pb::Tally;
 }
 
-impl From<(Vote, Power)> for Tally {
-    fn from((vote, power): (Vote, Power)) -> Self {
+impl From<(Vote, u64)> for Tally {
+    fn from((vote, u64): (Vote, u64)) -> Self {
         let mut tally = Self::default();
         *match vote {
             Vote::Yes => &mut tally.yes,
             Vote::No => &mut tally.no,
             Vote::Abstain => &mut tally.abstain,
-        } = power.into();
+        } = u64.into();
         tally
     }
 }
 
-impl From<(Power, Vote)> for Tally {
-    fn from((power, vote): (Power, Vote)) -> Self {
-        Self::from((vote, power))
+impl From<(u64, Vote)> for Tally {
+    fn from((u64, vote): (u64, Vote)) -> Self {
+        Self::from((vote, u64))
     }
 }
 
