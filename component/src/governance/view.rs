@@ -7,7 +7,7 @@ use std::{
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use futures::{Stream, StreamExt};
-use penumbra_chain::StateReadExt as _;
+use penumbra_chain::{StateReadExt as _, StateWriteExt as _};
 use penumbra_crypto::{
     asset::{self, Amount},
     stake::{DelegationToken, IdentityKey},
@@ -33,7 +33,7 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
         Ok(self
             .get_proto::<u64>(state_key::next_proposal_id())
             .await?
-            .expect("counter is initialized"))
+            .unwrap_or_default())
     }
 
     /// Get the proposal payload for a proposal.
@@ -499,17 +499,20 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
 
         Ok(tally)
     }
+
+    /// Get the current chain halt count.
+    async fn emergency_chain_halt_count(&self) -> Result<u64> {
+        Ok(self
+            .get_proto(state_key::emergency_chain_halt_count())
+            .await?
+            .unwrap_or_default())
+    }
 }
 
 impl<T: StateRead + crate::stake::StateReadExt + ?Sized> StateReadExt for T {}
 
 #[async_trait]
 pub trait StateWriteExt: StateWrite {
-    /// Initialize the proposal counter at zero.
-    async fn init_proposal_counter(&mut self) {
-        self.put_proto(state_key::next_proposal_id().to_owned(), 0);
-    }
-
     /// Store a new proposal with a new proposal id.
     async fn new_proposal(&mut self, proposal: &Proposal) -> Result<u64> {
         let proposal_id = self.next_proposal_id().await?;
@@ -745,23 +748,29 @@ pub trait StateWriteExt: StateWrite {
             ProposalPayload::Emergency { halt_chain } => {
                 // If the proposal calls to halt the chain...
                 if *halt_chain {
-                    // TODO: implement emergency halt
-                    // // Check to see if the operator has set the environment variable indicating they
-                    // // wish to resume from this particular chain halt, i.e. the chain has already halted
-                    // // and they are bringing it back up again
-                    // if std::env::var("PD_RESUME_FROM_EMERGENCY_HALT_PROPOSAL")
-                    //     .ok()
-                    //     .and_then(|v| v.parse::<u64>().ok()) // value of var must be number
-                    //     .filter(|&resume_from| resume_from == proposal_id) // number must be this proposal's id (to prevent an always-on resume functionality)
-                    //     .is_some()
-                    // {
-                    //     // If so, just print an information message, and don't halt the chain
-                    //     tracing::info!(proposal = %proposal_id, %height, "resuming from emergency chain halt");
-                    // } else {
-                    //     // If not, print an informational message and immediately exit the process
-                    //     tracing::error!(proposal = %proposal_id, %height, "emergency proposal passed, calling for immediate chain halt");
-                    //     std::process::exit(0);
-                    // }
+                    // Get the current halt count
+                    let halt_count = self.emergency_chain_halt_count().await?;
+
+                    // Check to see if the operator has set the environment variable indicating they
+                    // wish to resume from this particular chain halt, i.e. the chain has already halted
+                    // and they are bringing it back up again
+                    if std::env::var("PD_RESUME_FROM_EMERGENCY_HALT_PROPOSAL")
+                        .ok()
+                        .and_then(|v| v.parse::<u64>().ok()) // value of var must be number
+                        .filter(|&resume_from| resume_from == halt_count) // number must be the same as the halt count
+                        .is_some()
+                    {
+                        // If so, just print an information message, and don't halt the chain
+                        tracing::info!("resuming from emergency chain halt #{halt_count}");
+                    } else {
+                        // If not, print an informational message and signal to the consensus worker
+                        // to halt the process after the state is committed
+                        self.increment_emergency_chain_halt_count().await?;
+                        tracing::info!(
+                            "emergency proposal passed calling for immediate chain halt"
+                        );
+                        self.halt_now();
+                    }
                 }
             }
             ProposalPayload::ParameterChange {
@@ -812,6 +821,15 @@ pub trait StateWriteExt: StateWrite {
         }
 
         Ok(Ok(()))
+    }
+
+    async fn increment_emergency_chain_halt_count(&mut self) -> Result<()> {
+        let halt_count = self.emergency_chain_halt_count().await?;
+        self.put_proto(
+            state_key::emergency_chain_halt_count().to_string(),
+            halt_count + 1,
+        );
+        Ok(())
     }
 }
 

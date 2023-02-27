@@ -93,3 +93,7 @@ pub fn all_untallied_delegator_votes() -> &'static str {
     // Note: this has to be the prefix of the `untallied_delegator_vote` function above.
     "governance/untallied_delegator_vote/"
 }
+
+pub fn emergency_chain_halt_count() -> &'static str {
+    "governance/chain_halt_count"
+}
