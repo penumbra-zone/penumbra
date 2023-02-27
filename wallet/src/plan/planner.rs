@@ -306,6 +306,8 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     }
 
     /// Vote with all possible vote weight on a given proposal.
+    ///
+    /// Voting twice on the same proposal in the same planner will overwrite the previous vote.
     #[instrument(skip(self, start_position, start_rate_data))]
     pub fn delegator_vote(
         &mut self,
@@ -444,23 +446,17 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             .chain(std::iter::repeat(vec![])) // Chain with infinite repeating no notes, so the zip doesn't stop early
             .zip(mem::take(&mut self.vote_intents).into_iter())
         {
-            if records.is_empty() {
-                // If there are no notes to vote with, return an error, because otherwise the user
-                // would compose a transaction that would not satisfy their intention, and would
-                // silently eat the fee.
-                return Err(anyhow!(
-                    "can't vote on proposal {} because no delegation notes were staked when voting started",
-                    proposal
-                ));
-            }
+            // Keep track of whether we successfully could vote on this proposal
+            let mut voted = false;
 
             for (record, identity_key) in records {
                 // Vote with precisely this note on the proposal, computing the correct exchange
                 // rate for self-minted vote receipt tokens using the exchange rate of the validator
-                // at voting start time
+                // at voting start time. If the validator was not active at the start of the
+                // proposal, the vote will be rejected by stateful verification, so skip the note
+                // and continue to the next one.
+                let Some(rate_data) = rate_data.get(&identity_key) else { continue };
                 let unbonded_amount = rate_data
-                    .get(&identity_key)
-                    .ok_or_else(|| anyhow!("missing rate data for note"))?
                     .unbonded_amount(record.note.amount().into())
                     .into();
 
@@ -479,6 +475,18 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                     record.position,
                     unbonded_amount,
                 );
+
+                voted = true;
+            }
+
+            if !voted {
+                // If there are no notes to vote with, return an error, because otherwise the user
+                // would compose a transaction that would not satisfy their intention, and would
+                // silently eat the fee.
+                return Err(anyhow!(
+                    "can't vote on proposal {} because no delegation notes were staked to an active validator when voting started",
+                    proposal
+                ));
             }
         }
 
