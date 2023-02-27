@@ -26,7 +26,7 @@ impl ActionHandler for MsgConnectionOpenAck {
     }
 
     #[instrument(name = "connection_open_ack", skip(self, state))]
-    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         state.validate(self).await?;
 
         Ok(())

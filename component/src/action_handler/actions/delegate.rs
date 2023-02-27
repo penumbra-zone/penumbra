@@ -20,7 +20,7 @@ impl ActionHandler for Delegate {
     }
 
     #[instrument(name = "delegate", skip(self, state))]
-    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         let d = self;
         let next_rate_data = state
             .next_validator_rate(&d.validator_identity)

@@ -20,7 +20,7 @@ impl ActionHandler for Undelegate {
     }
 
     #[instrument(name = "undelegate", skip(self, state))]
-    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         let u = self;
         let rate_data = state
             .next_validator_rate(&u.validator_identity)

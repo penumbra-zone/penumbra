@@ -37,7 +37,7 @@ impl ActionHandler for Transaction {
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         claimed_anchor_is_valid(state.clone(), self).await?;
         fmd_parameters_valid(state.clone(), self).await?;
 

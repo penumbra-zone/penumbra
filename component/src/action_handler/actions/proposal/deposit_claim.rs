@@ -21,7 +21,7 @@ impl ActionHandler for ProposalDepositClaim {
     }
 
     #[instrument(name = "proposal_deposit_claim", skip(self, state))]
-    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         // Any finished proposal can have its deposit claimed
         state.check_proposal_claimable(self.proposal).await?;
         // Check that the deposit amount matches the proposal being claimed

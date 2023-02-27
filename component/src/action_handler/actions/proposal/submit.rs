@@ -66,7 +66,7 @@ impl ActionHandler for ProposalSubmit {
     }
 
     #[instrument(name = "proposal_submit", skip(self, state))]
-    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         let ProposalSubmit {
             deposit_amount,
             proposal, // statelessly verified

@@ -50,7 +50,7 @@ impl ActionHandler for Action {
         .await
     }
 
-    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         match self {
             Action::Delegate(action) => action.check_stateful(state).await,
             Action::Undelegate(action) => action.check_stateful(state).await,

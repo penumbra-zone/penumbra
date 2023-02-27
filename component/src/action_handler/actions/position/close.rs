@@ -20,7 +20,7 @@ impl ActionHandler for PositionClose {
     }
 
     #[instrument(name = "position_close", skip(self, _state))]
-    async fn check_stateful<S: StateRead>(&self, _state: Arc<S>) -> Result<()> {
+    async fn check_stateful<S: StateRead + 'static>(&self, _state: Arc<S>) -> Result<()> {
         // It's important to reject all LP actions for now, to prevent
         // inflation / minting bugs until we implement all required checks
         // (e.g., minting tokens by withdrawing reserves we don't check)

@@ -18,7 +18,7 @@ impl ActionHandler for Ics20Withdrawal {
     }
 
     #[instrument(name = "ics20_withdrawal", skip(self, state))]
-    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         state.withdrawal_check(self).await
     }
 

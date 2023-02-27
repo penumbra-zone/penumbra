@@ -22,7 +22,7 @@ impl ActionHandler for MsgConnectionOpenConfirm {
     }
 
     #[instrument(name = "connection_open_confirm", skip(self, state))]
-    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         state.validate(self).await?;
 
         Ok(())

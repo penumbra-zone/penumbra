@@ -47,7 +47,7 @@ impl ActionHandler for DelegatorVote {
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         let DelegatorVote {
             body:
                 DelegatorVoteBody {
