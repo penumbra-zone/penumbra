@@ -301,13 +301,6 @@ pub struct Tally {
     #[prost(uint64, tag = "3")]
     pub abstain: u64,
 }
-/// A list of proposal ids.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ProposalList {
-    #[prost(uint64, repeated, tag = "1")]
-    pub proposals: ::prost::alloc::vec::Vec<u64>,
-}
 /// A proposal to be voted upon.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

@@ -7,11 +7,13 @@ use std::{
 use anyhow::{Context, Result};
 use futures::{StreamExt, TryStreamExt};
 use penumbra_component::governance::{
-    proposal::{self, chain_params::MutableParam, ProposalList},
+    proposal::{self, chain_params::MutableParam},
     state_key::*,
 };
 use penumbra_crypto::stake::IdentityKey;
-use penumbra_proto::client::v1alpha1::MutableParametersRequest;
+use penumbra_proto::client::v1alpha1::{
+    MutableParametersRequest, PrefixValueRequest, PrefixValueResponse,
+};
 use penumbra_transaction::action::{Proposal, Vote};
 use penumbra_view::ViewClient;
 use serde::Serialize;
@@ -84,9 +86,22 @@ impl GovernanceCmd {
                     let next: u64 = client.key_proto(next_proposal_id()).await?;
                     (0..next).collect()
                 } else {
-                    let unfinished: ProposalList =
-                        client.key_domain(unfinished_proposals()).await?;
-                    unfinished.proposals.into_iter().collect()
+                    let mut unfinished = client
+                        .prefix_value(PrefixValueRequest {
+                            prefix: all_unfinished_proposals().into(),
+                            chain_id: app.view().chain_params().await?.chain_id,
+                        })
+                        .await?
+                        .into_inner();
+                    let mut unfinished_proposals: Vec<u64> = Vec::new();
+                    while let Some(PrefixValueResponse { key, .. }) =
+                        unfinished.next().await.transpose()?
+                    {
+                        let proposal_id = u64::from_str(key.rsplit('/').next().unwrap())
+                            .context("proposal id was not a valid u64")?;
+                        unfinished_proposals.push(proposal_id);
+                    }
+                    unfinished_proposals
                 };
 
                 let mut writer = stdout();
