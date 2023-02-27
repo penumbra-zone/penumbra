@@ -59,6 +59,7 @@ impl tower_service::Service<MempoolRequest> for Mempool {
             }
             .boxed();
         }
+        let start = std::time::Instant::now();
         let span = req.create_span();
         //let span = error_span!(parent: &span, "app", role = "mempool");
         let (tx, rx) = oneshot::channel();
@@ -83,7 +84,8 @@ impl tower_service::Service<MempoolRequest> for Mempool {
 
             match rx.await.context("mempool worker terminated or panicked")? {
                 Ok(()) => {
-                    tracing::info!("tx accepted");
+                    let elapsed = start.elapsed();
+                    tracing::info!(?elapsed, "tx accepted");
                     metrics::increment_counter!(
                         metrics::MEMPOOL_CHECKTX_TOTAL,
                         "kind" => kind_str,
@@ -92,7 +94,8 @@ impl tower_service::Service<MempoolRequest> for Mempool {
                     Ok(MempoolResponse::CheckTx(CheckTxRsp::default()))
                 }
                 Err(e) => {
-                    tracing::info!(?e, "tx rejected");
+                    let elapsed = start.elapsed();
+                    tracing::info!(?e, ?elapsed, "tx rejected");
                     metrics::increment_counter!(
                         metrics::MEMPOOL_CHECKTX_TOTAL,
                         "kind" => kind_str,
