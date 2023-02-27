@@ -3759,7 +3759,6 @@ dependencies = [
  "ibc",
  "ibc-proto",
  "ics23",
- "num-rational",
  "pbjson",
  "pbjson-types",
  "penumbra-storage",

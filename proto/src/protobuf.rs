@@ -150,25 +150,6 @@ impl TryFrom<crate::core::crypto::v1alpha1::ConsensusKey> for tendermint::Public
     }
 }
 
-impl DomainType for num_rational::Ratio<u64> {
-    type Proto = crate::core::chain::v1alpha1::Ratio;
-}
-
-impl From<num_rational::Ratio<u64>> for crate::core::chain::v1alpha1::Ratio {
-    fn from(v: num_rational::Ratio<u64>) -> Self {
-        Self {
-            numerator: *v.numer(),
-            denominator: *v.denom(),
-        }
-    }
-}
-
-impl From<crate::core::chain::v1alpha1::Ratio> for num_rational::Ratio<u64> {
-    fn from(value: crate::core::chain::v1alpha1::Ratio) -> Self {
-        Self::new(value.numerator, value.denominator)
-    }
-}
-
 // IBC-rs impls
 
 extern crate ibc as ibc_rs;

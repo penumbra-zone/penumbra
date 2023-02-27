@@ -1,4 +1,5 @@
-use num_rational::Ratio;
+use std::cmp::Ordering;
+
 use penumbra_crypto::{asset, stake::Penalty, Amount};
 use penumbra_proto::client::v1alpha1 as pb_client;
 use penumbra_proto::core::chain::v1alpha1 as pb_chain;
@@ -79,11 +80,11 @@ pub struct ChainParameters {
     pub proposal_deposit_amount: Amount,
     /// The quorum required for a proposal to be considered valid, as a fraction of the total stake
     /// weight of the network.
-    pub proposal_valid_quorum: Ratio<u64>,
+    pub proposal_valid_quorum: Ratio,
     /// The threshold for a proposal to pass voting, as a ratio of "yes" votes over "no" votes.
-    pub proposal_pass_threshold: Ratio<u64>,
+    pub proposal_pass_threshold: Ratio,
     /// The threshold for a proposal to be vetoed, as a ratio of "no" votes over all total votes.
-    pub proposal_veto_threshold: Ratio<u64>,
+    pub proposal_veto_threshold: Ratio,
 }
 
 impl DomainType for ChainParameters {
@@ -258,6 +259,67 @@ impl Default for FmdParameters {
         Self {
             precision_bits: 0,
             as_of_block_height: 1,
+        }
+    }
+}
+
+/// This is a ratio of two `u64` values, intended to be used solely in governance parameters and
+/// tallying. It only implements construction and comparison, not arithmetic, to reduce the trusted
+/// codebase for governance.
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[serde(try_from = "pb_chain::Ratio", into = "pb_chain::Ratio")]
+pub struct Ratio {
+    numerator: u64,
+    denominator: u64,
+}
+
+impl Ratio {
+    pub fn new(numerator: u64, denominator: u64) -> Self {
+        Self {
+            numerator,
+            denominator,
+        }
+    }
+}
+
+impl PartialEq for Ratio {
+    fn eq(&self, other: &Self) -> bool {
+        // Convert everything to `u128` to avoid overflow when multiplying
+        u128::from(self.numerator) * u128::from(other.denominator)
+            == u128::from(self.denominator) * u128::from(other.numerator)
+    }
+}
+
+impl Eq for Ratio {}
+
+impl PartialOrd for Ratio {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Ratio {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // Convert everything to `u128` to avoid overflow when multiplying
+        (u128::from(self.numerator) * u128::from(other.denominator))
+            .cmp(&(u128::from(self.denominator) * u128::from(other.numerator)))
+    }
+}
+
+impl From<Ratio> for pb_chain::Ratio {
+    fn from(ratio: Ratio) -> Self {
+        pb_chain::Ratio {
+            numerator: ratio.numerator,
+            denominator: ratio.denominator,
+        }
+    }
+}
+
+impl From<pb_chain::Ratio> for Ratio {
+    fn from(msg: pb_chain::Ratio) -> Self {
+        Ratio {
+            numerator: msg.numerator,
+            denominator: msg.denominator,
         }
     }
 }
