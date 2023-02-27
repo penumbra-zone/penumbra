@@ -2,11 +2,12 @@ use anyhow::{Context, Result};
 use penumbra_crypto::{
     memo::MemoCiphertext, rdsa, symmetric::PayloadKey, Fr, FullViewingKey, Zero,
 };
-use penumbra_proto::DomainType;
 use rand_core::{CryptoRng, RngCore};
 
 use super::TransactionPlan;
-use crate::{action::Action, AuthorizationData, Transaction, TransactionBody, WitnessData};
+use crate::{
+    action::Action, AuthorizationData, AuthorizingData, Transaction, TransactionBody, WitnessData,
+};
 
 impl TransactionPlan {
     /// Build the transaction this plan describes.
@@ -166,8 +167,9 @@ impl TransactionPlan {
 
         // Finally, compute the binding signature and assemble the transaction.
         let binding_signing_key = rdsa::SigningKey::from(synthetic_blinding_factor);
-        let binding_sig = binding_signing_key.sign(rng, &transaction_body.encode_to_vec()[..]);
-        tracing::debug!(bvk = ?rdsa::VerificationKey::from(&binding_signing_key), tx_body = ?base64::encode(&transaction_body.encode_to_vec()));
+        let auth_hash = transaction_body.auth_hash();
+        let binding_sig = binding_signing_key.sign(rng, auth_hash.as_bytes());
+        tracing::debug!(bvk = ?rdsa::VerificationKey::from(&binding_signing_key), ?auth_hash);
 
         // TODO: add consistency checks?
 
@@ -375,8 +377,9 @@ impl TransactionPlan {
 
         // Finally, compute the binding signature and assemble the transaction.
         let binding_signing_key = rdsa::SigningKey::from(synthetic_blinding_factor);
-        let binding_sig = binding_signing_key.sign(rng, &transaction_body.encode_to_vec()[..]);
-        tracing::debug!(bvk = ?rdsa::VerificationKey::from(&binding_signing_key), tx_body = ?base64::encode(transaction_body.encode_to_vec()));
+        let auth_hash = transaction_body.auth_hash();
+        let binding_sig = binding_signing_key.sign(rng, auth_hash.as_bytes());
+        tracing::debug!(bvk = ?rdsa::VerificationKey::from(&binding_signing_key), ?auth_hash);
 
         Ok(Transaction {
             transaction_body,
