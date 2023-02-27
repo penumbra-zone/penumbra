@@ -24,7 +24,7 @@ impl ActionHandler for MsgChannelOpenAck {
     }
 
     #[instrument(name = "channel_open_ack", skip(self, state))]
-    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         state.validate(self).await?;
         let transfer = PortId::transfer();
         if self.port_id_on_a == transfer {

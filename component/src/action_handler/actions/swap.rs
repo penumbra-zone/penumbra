@@ -30,7 +30,7 @@ impl ActionHandler for Swap {
     }
 
     #[instrument(name = "swap", skip(self, _state))]
-    async fn check_stateful<S: StateRead>(&self, _state: Arc<S>) -> Result<()> {
+    async fn check_stateful<S: StateRead + 'static>(&self, _state: Arc<S>) -> Result<()> {
         Ok(())
     }
 

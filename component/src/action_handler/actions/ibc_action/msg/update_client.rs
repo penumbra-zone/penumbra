@@ -23,7 +23,7 @@ impl ActionHandler for MsgUpdateClient {
     }
 
     #[instrument(name = "ibc_action", skip(self, state))]
-    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         state.validate(self).await?;
 
         Ok(())

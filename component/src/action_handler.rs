@@ -63,7 +63,7 @@ pub trait ActionHandler {
     /// This method should only be called on data that has been checked
     /// with [`ActionHandler::check_stateless`].  This method can be called
     /// before [`Component::begin_block`](crate::Component::begin_block).
-    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()>;
+    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()>;
 
     /// Attempts to execute this action against the provided `state`.
     ///

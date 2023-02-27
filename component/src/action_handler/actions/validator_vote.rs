@@ -35,7 +35,7 @@ impl ActionHandler for ValidatorVote {
     }
 
     #[instrument(name = "validator_vote", skip(self, state))]
-    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         let ValidatorVote {
             body:
                 ValidatorVoteBody {

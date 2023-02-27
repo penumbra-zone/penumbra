@@ -149,7 +149,7 @@ impl ActionHandler for IbcAction {
     }
 
     #[instrument(name = "ibc_action", skip(self, state))]
-    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         let raw_action = self
             .raw_action
             .as_ref()

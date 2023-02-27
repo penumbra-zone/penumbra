@@ -49,7 +49,7 @@ impl ActionHandler for ValidatorDefinition {
     }
 
     #[instrument(name = "validator_definition", skip(self, state))]
-    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         // Check that the sequence numbers of the updated validators is correct.
         let v = validator::Definition::try_from(self.clone())
             .context("supplied proto is not a valid definition")?;

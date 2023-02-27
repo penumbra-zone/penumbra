@@ -31,7 +31,7 @@ impl ActionHandler for UndelegateClaim {
     }
 
     #[instrument(name = "undelegate_claim", skip(self, state))]
-    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         // We need to check two things:
 
         // 1. That we're past the specified unbonding end epoch.

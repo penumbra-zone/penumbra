@@ -24,7 +24,7 @@ impl ActionHandler for MsgTimeout {
     }
 
     #[instrument(name = "timeout", skip(self, state))]
-    async fn check_stateful<S: StateRead>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         state.validate(self).await?;
         let transfer = PortId::transfer();
         if self.packet.port_on_b == transfer {
