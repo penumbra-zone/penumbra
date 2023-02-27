@@ -30,6 +30,19 @@ pub enum StatePayload {
     },
 }
 
+pub struct StatePayloadDebugKind<'a>(pub &'a StatePayload);
+
+impl<'a> std::fmt::Debug for StatePayloadDebugKind<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.0 {
+            StatePayload::RolledUp(_) => f.debug_struct("RolledUp").finish_non_exhaustive(),
+            StatePayload::Note { .. } => f.debug_struct("Note").finish_non_exhaustive(),
+            StatePayload::Swap { .. } => f.debug_struct("Swap").finish_non_exhaustive(),
+            StatePayload::Position { .. } => f.debug_struct("Position").finish_non_exhaustive(),
+        }
+    }
+}
+
 impl StatePayload {
     pub fn commitment(&self) -> &note::Commitment {
         match self {

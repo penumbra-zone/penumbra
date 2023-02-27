@@ -4,7 +4,10 @@ use super::{
 };
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_chain::{sync::StatePayload, NoteSource, SpendInfo};
+use penumbra_chain::{
+    sync::{StatePayload, StatePayloadDebugKind},
+    NoteSource, SpendInfo,
+};
 use penumbra_crypto::{Address, Note, Nullifier, Rseed, Value};
 use penumbra_proto::StateWriteProto;
 use penumbra_storage::StateWrite;
@@ -67,7 +70,7 @@ pub trait NoteManager: StateWrite {
 
     #[instrument(skip(self, payload), fields(commitment = ?payload.commitment()))]
     async fn add_state_payload(&mut self, payload: StatePayload) {
-        tracing::debug!(?payload);
+        tracing::debug!(payload = ?StatePayloadDebugKind(&payload));
 
         // 0. Record an ABCI event for transaction indexing.
         self.record(event::state_payload(&payload));
