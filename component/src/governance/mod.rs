@@ -1,6 +1,5 @@
 mod component;
 pub(crate) mod event;
-pub(crate) mod execute;
 mod metrics;
 mod view;
 

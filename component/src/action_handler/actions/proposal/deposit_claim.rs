@@ -65,9 +65,7 @@ impl ActionHandler for ProposalDepositClaim {
                 .await?;
 
             // Set the proposal state to claimed
-            state
-                .put_proposal_state(*proposal, proposal::State::Claimed { outcome })
-                .await?;
+            state.put_proposal_state(*proposal, proposal::State::Claimed { outcome });
         } else {
             anyhow::bail!("proposal {} is not in finished state", proposal);
         }

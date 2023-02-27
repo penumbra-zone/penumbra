@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_crypto::ProposalNft;
 use penumbra_storage::{StateRead, StateWrite};
@@ -36,15 +36,13 @@ impl ActionHandler for ProposalWithdraw {
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let ProposalWithdraw { proposal, reason } = self;
 
-        state
-            .put_proposal_state(
-                *proposal,
-                proposal::State::Withdrawn {
-                    reason: reason.clone(),
-                },
-            )
-            .await
-            .context("proposal withdraw succeeds")?;
+        // Update the proposal state to withdrawn
+        state.put_proposal_state(
+            *proposal,
+            proposal::State::Withdrawn {
+                reason: reason.clone(),
+            },
+        );
 
         // Register the denom for the withdrawn proposal NFT
         state

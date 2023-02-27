@@ -143,7 +143,7 @@ impl ActionHandler for ProposalSubmit {
             .context("can create proposal")?;
 
         // Set the deposit amount for the proposal
-        state.put_deposit_amount(proposal_id, *deposit_amount).await;
+        state.put_deposit_amount(proposal_id, *deposit_amount);
 
         // Register the denom for the voting proposal NFT
         state
@@ -156,10 +156,7 @@ impl ActionHandler for ProposalSubmit {
             .await?;
 
         // Set the proposal state to voting (votes start immediately)
-        state
-            .put_proposal_state(proposal_id, proposal::State::Voting)
-            .await
-            .context("can set proposal state")?;
+        state.put_proposal_state(proposal_id, proposal::State::Voting);
 
         // Determine what block it is currently, and calculate when the proposal should start voting
         // (now!) and finish voting (later...), then write that into the state
@@ -172,10 +169,8 @@ impl ActionHandler for ProposalSubmit {
             .await
             .context("can get block height")?;
         let voting_end = current_block + chain_params.proposal_voting_blocks;
-        state
-            .put_proposal_voting_start(proposal_id, current_block)
-            .await;
-        state.put_proposal_voting_end(proposal_id, voting_end).await;
+        state.put_proposal_voting_start(proposal_id, current_block);
+        state.put_proposal_voting_end(proposal_id, voting_end);
 
         // Compute the effective starting TCT position for the proposal, by rounding the current
         // position down to the start of the block.
@@ -185,9 +180,7 @@ impl ActionHandler for ProposalSubmit {
         // All proposals start are considered to start at the beginning of the block, because this
         // means there are no ordering games to be played within the block in which a proposal begins:
         let proposal_start_position = (sct_position.epoch(), sct_position.block(), 0).into();
-        state
-            .put_proposal_voting_start_position(proposal_id, proposal_start_position)
-            .await;
+        state.put_proposal_voting_start_position(proposal_id, proposal_start_position);
 
         // If there was a proposal submitted, ensure we track this so that clients
         // can retain state needed to vote as delegators
