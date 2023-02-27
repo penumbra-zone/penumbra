@@ -60,7 +60,7 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
     /// Get all the unfinished proposal ids.
     async fn unfinished_proposals(&self) -> Result<BTreeSet<u64>> {
         let prefix = state_key::all_unfinished_proposals();
-        let mut stream = self.prefix_proto(&prefix);
+        let mut stream = self.prefix_proto(prefix);
         let mut proposals = BTreeSet::new();
         while let Some((key, ())) = stream.next().await.transpose()? {
             let proposal_id = u64::from_str(
@@ -576,26 +576,20 @@ pub trait StateWriteExt: StateWrite {
     }
 
     /// Mark a nullifier as spent for a given proposal.
-    async fn mark_nullifier_voted(
-        &mut self,
-        proposal_id: u64,
-        nullifier: &Nullifier,
-    ) -> Result<()> {
+    async fn mark_nullifier_voted(&mut self, proposal_id: u64, nullifier: &Nullifier) {
         self.put_proto(
             state_key::per_proposal_voted_nullifier_lookup(proposal_id, nullifier),
             self.height().await,
         );
-
-        Ok(())
     }
 
     /// Store the proposal deposit amount.
-    async fn put_deposit_amount(&mut self, proposal_id: u64, amount: Amount) {
+    fn put_deposit_amount(&mut self, proposal_id: u64, amount: Amount) {
         self.put(state_key::proposal_deposit_amount(proposal_id), amount);
     }
 
     /// Set the state of a proposal.
-    async fn put_proposal_state(&mut self, proposal_id: u64, state: proposal::State) -> Result<()> {
+    fn put_proposal_state(&mut self, proposal_id: u64, state: proposal::State) {
         // Set the state of the proposal
         self.put(state_key::proposal_state(proposal_id), state.clone());
 
@@ -611,33 +605,26 @@ pub trait StateWriteExt: StateWrite {
                 self.delete(state_key::unfinished_proposal(proposal_id));
             }
         }
-
-        Ok(())
     }
 
     /// Record a validator vote for a proposal.
-    async fn cast_validator_vote(
-        &mut self,
-        proposal_id: u64,
-        identity_key: IdentityKey,
-        vote: Vote,
-    ) {
+    fn cast_validator_vote(&mut self, proposal_id: u64, identity_key: IdentityKey, vote: Vote) {
         // Record the vote
         self.put(state_key::validator_vote(proposal_id, identity_key), vote);
     }
 
     /// Set the proposal voting start block height for a proposal.
-    async fn put_proposal_voting_start(&mut self, proposal_id: u64, end_block: u64) {
+    fn put_proposal_voting_start(&mut self, proposal_id: u64, end_block: u64) {
         self.put_proto(state_key::proposal_voting_start(proposal_id), end_block);
     }
 
     /// Set the proposal voting end block height for a proposal.
-    async fn put_proposal_voting_end(&mut self, proposal_id: u64, end_block: u64) {
+    fn put_proposal_voting_end(&mut self, proposal_id: u64, end_block: u64) {
         self.put_proto(state_key::proposal_voting_end(proposal_id), end_block);
     }
 
     /// Set the proposal voting start position for a proposal.
-    async fn put_proposal_voting_start_position(
+    fn put_proposal_voting_start_position(
         &mut self,
         proposal_id: u64,
         start_position: tct::Position,
@@ -649,17 +636,11 @@ pub trait StateWriteExt: StateWrite {
     }
 
     /// Mark a nullifier as having voted on a proposal.
-    async fn mark_nullifier_voted_on_proposal(
-        &mut self,
-        proposal_id: u64,
-        nullifier: &Nullifier,
-    ) -> Result<()> {
+    async fn mark_nullifier_voted_on_proposal(&mut self, proposal_id: u64, nullifier: &Nullifier) {
         self.put_proto(
             state_key::per_proposal_voted_nullifier_lookup(proposal_id, nullifier),
             self.height().await,
         );
-
-        Ok(())
     }
 
     /// Record a delegator vote on a proposal.

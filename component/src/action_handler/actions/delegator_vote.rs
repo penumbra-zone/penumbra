@@ -97,7 +97,7 @@ impl ActionHandler for DelegatorVote {
 
         state
             .mark_nullifier_voted_on_proposal(*proposal, nullifier)
-            .await?;
+            .await;
         let identity_key = state.validator_by_delegation_asset(value.asset_id).await?;
         state
             .cast_delegator_vote(*proposal, identity_key, *vote, nullifier, *unbonded_amount)

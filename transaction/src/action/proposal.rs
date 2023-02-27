@@ -559,6 +559,48 @@ pub enum State {
 }
 
 impl State {
+    pub fn is_voting(&self) -> bool {
+        matches!(self, State::Voting)
+    }
+
+    pub fn is_withdrawn(&self) -> bool {
+        matches!(self, State::Withdrawn { .. })
+    }
+
+    pub fn is_finished(&self) -> bool {
+        matches!(self, State::Finished { .. })
+    }
+
+    pub fn is_claimed(&self) -> bool {
+        matches!(self, State::Claimed { .. })
+    }
+
+    pub fn is_passed(&self) -> bool {
+        match self {
+            State::Finished { outcome } => outcome.is_passed(),
+            State::Claimed { outcome } => outcome.is_passed(),
+            _ => false,
+        }
+    }
+
+    pub fn is_failed(&self) -> bool {
+        match self {
+            State::Finished { outcome } => outcome.is_failed(),
+            State::Claimed { outcome } => outcome.is_failed(),
+            _ => false,
+        }
+    }
+
+    pub fn is_vetoed(&self) -> bool {
+        match self {
+            State::Finished { outcome } => outcome.is_vetoed(),
+            State::Claimed { outcome } => outcome.is_vetoed(),
+            _ => false,
+        }
+    }
+}
+
+impl State {
     pub fn withdrawn(self) -> Withdrawn<String> {
         match self {
             State::Voting => Withdrawn::No,

@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use penumbra_chain::StateReadExt as _;
 use penumbra_proto::DomainType;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{
@@ -67,9 +68,30 @@ impl ActionHandler for ValidatorVote {
                 },
         } = self;
 
-        state
-            .cast_validator_vote(*proposal, *identity_key, *vote)
-            .await;
+        state.cast_validator_vote(*proposal, *identity_key, *vote);
+
+        // If a proposal is an emergency proposal, every validator vote triggers a check to see if
+        // we should immediately enact the proposal (if it's reached a 2/3 majority).
+        let proposal_state = state
+            .proposal_state(*proposal)
+            .await?
+            .expect("proposal missing state");
+        let proposal_payload = state
+            .proposal_payload(*proposal)
+            .await?
+            .expect("proposal missing payload");
+        // IMPORTANT: We don't want to enact an emergency proposal if it's been withdrawn, because
+        // withdrawal should prevent any proposal, even an emergency proposal, from being enacted.
+        if !proposal_state.is_withdrawn() && proposal_payload.is_emergency() {
+            tracing::debug!(proposal = %proposal, "proposal is emergency, checking for emergency pass condition");
+            let tally = state.current_tally(*proposal).await?;
+            let total_voting_power = state.total_voting_power().await?;
+            let chain_params = state.get_chain_params().await?;
+            if tally.emergency_pass(total_voting_power, &chain_params) {
+                tracing::debug!(proposal = %proposal, "emergency pass condition met, enacting emergency proposal");
+                // state.enact_proposal(&proposal_payload).await?;
+            }
+        }
 
         tracing::debug!(proposal = %proposal, "cast validator vote");
 
