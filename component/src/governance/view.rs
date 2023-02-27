@@ -1,11 +1,15 @@
-use std::{collections::BTreeSet, pin::Pin, str::FromStr};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    pin::Pin,
+    str::FromStr,
+};
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use futures::{Stream, StreamExt};
 use penumbra_chain::StateReadExt as _;
 use penumbra_crypto::{
-    asset::Amount,
+    asset::{self, Amount},
     stake::{DelegationToken, IdentityKey},
     GovernanceKey, Nullifier, Value, STAKING_TOKEN_DENOM,
 };
@@ -13,6 +17,7 @@ use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_tct as tct;
 use penumbra_transaction::action::{Proposal, ProposalPayload, Vote};
+use tendermint::vote::Power;
 use tokio::task::JoinSet;
 
 use crate::{
@@ -23,6 +28,7 @@ use crate::{
 use super::{
     proposal::{self, ProposalList},
     state_key,
+    tally::Tally,
 };
 
 #[async_trait]
@@ -231,6 +237,23 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
         Ok(())
     }
 
+    /// Look up the validator for a given asset ID, if it is a delegation token.
+    async fn validator_by_delegation_asset(&self, asset_id: asset::Id) -> Result<IdentityKey> {
+        // Attempt to find the denom for the asset ID of the specified value
+        let Some(denom) = self.denom_by_asset(&asset_id).await? else {
+            return Err(anyhow::anyhow!(
+                "asset ID {} does not correspond to a known denom",
+                asset_id
+            ));
+        };
+
+        // Attempt to find the validator identity for the specified denom, failing if it is not a
+        // delegation token
+        let validator_identity = DelegationToken::try_from(denom)?.validator();
+
+        Ok(validator_identity)
+    }
+
     /// Throw an error if the exchange between the value and the unbonded amount isn't correct for
     /// the proposal given.
     async fn check_unbonded_amount_correct_exchange_for_proposal(
@@ -239,14 +262,7 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
         value: &Value,
         unbonded_amount: &Amount,
     ) -> Result<()> {
-        // Attempt to find the denom for the asset ID of the specified value
-        let Some(denom) = self.denom_by_asset(&value.asset_id).await? else {
-            anyhow::bail!("unknown asset id {} is not a delegation token", value.asset_id);
-        };
-
-        // Attempt to find the validator identity for the specified denom, failing if it is not a
-        // delegation token
-        let validator_identity = DelegationToken::try_from(denom)?.validator();
+        let validator_identity = self.validator_by_delegation_asset(value.asset_id).await?;
 
         // Attempt to look up the snapshotted `RateData` for the validator at the start of the proposal
         let Some(rate_data) = self
@@ -559,15 +575,80 @@ pub trait StateWriteExt: StateWrite {
     async fn cast_delegator_vote(
         &mut self,
         proposal_id: u64,
+        identity_key: IdentityKey,
         vote: Vote,
         nullifier: &Nullifier,
         unbonded_amount: Amount,
     ) -> Result<()> {
+        // Convert the unbonded amount into voting power
+        let power = Power::try_from(u64::from(unbonded_amount))?;
+        let tally: Tally = (vote, power).into();
+
         // Record the vote
         self.put(
-            state_key::delegator_vote(proposal_id, vote, nullifier),
-            unbonded_amount,
+            state_key::untallied_delegator_vote(proposal_id, identity_key, nullifier),
+            tally,
         );
+
+        Ok(())
+    }
+
+    /// Tally delegator votes by sweeping them into the aggregate for each validator.
+    async fn tally_delegator_votes(&mut self, proposal_id: u64) -> Result<()> {
+        // Iterate over all the delegator votes
+        let prefix = state_key::all_untallied_delegator_votes(proposal_id);
+        let mut prefix_stream = self.prefix(&prefix);
+
+        // We need to keep track of modifications and then apply them after iteration, because
+        // `self.prefix(..)` borrows `self` immutably, so we can't mutate `self` during iteration
+        let mut keys_to_delete = vec![];
+        let mut new_tallies = BTreeMap::new();
+
+        while let Some((key, tally)) = prefix_stream.next().await.transpose()? {
+            // Extract the validator identity key from the key string
+            let mut reverse_path_elements = key.rsplit('/');
+            reverse_path_elements.next(); // skip the nullifier element of the key
+            let identity_key = reverse_path_elements
+                .next()
+                .ok_or_else(|| {
+                    anyhow::anyhow!("unexpected key format for untallied delegator vote")
+                })?
+                .parse()?;
+
+            // Get the current tally for this validator
+            let mut current_tally = self
+                .get::<Tally>(&state_key::tallied_delegator_votes(
+                    proposal_id,
+                    identity_key,
+                ))
+                .await?
+                .unwrap_or_default();
+
+            // Add the new tally to the current tally
+            current_tally += tally;
+
+            // Remember the new tally
+            new_tallies.insert(identity_key, current_tally);
+
+            // Remember to delete this key
+            keys_to_delete.push(key);
+        }
+
+        // Explicit drop because we need to borrow self mutably again below
+        drop(prefix_stream);
+
+        // Actually record the key deletions in the state
+        for key in keys_to_delete {
+            self.delete(key);
+        }
+
+        // Actually record the new tallies in the state
+        for (identity_key, tally) in new_tallies {
+            self.put(
+                state_key::tallied_delegator_votes(proposal_id, identity_key),
+                tally,
+            );
+        }
 
         Ok(())
     }

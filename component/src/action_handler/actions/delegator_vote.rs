@@ -88,8 +88,8 @@ impl ActionHandler for DelegatorVote {
                     vote,
                     nullifier,
                     unbonded_amount,
+                    value,
                     start_position: _, // Not needed to execute: used to check validity of vote
-                    value: _,          // Not needed to execute: used to check vote proof
                     rk: _,             // Not needed to execute: used to check auth sig
                 },
             ..
@@ -98,8 +98,9 @@ impl ActionHandler for DelegatorVote {
         state
             .mark_nullifier_voted_on_proposal(*proposal, nullifier)
             .await?;
+        let identity_key = state.validator_by_delegation_asset(value.asset_id).await?;
         state
-            .cast_delegator_vote(*proposal, *vote, nullifier, *unbonded_amount)
+            .cast_delegator_vote(*proposal, identity_key, *vote, nullifier, *unbonded_amount)
             .await?;
 
         Ok(())

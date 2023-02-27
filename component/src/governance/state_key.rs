@@ -1,5 +1,4 @@
 use penumbra_crypto::{stake::IdentityKey, Nullifier};
-use penumbra_transaction::action::Vote;
 
 pub fn next_proposal_id() -> &'static str {
     "governance/next_proposal_id"
@@ -37,10 +36,6 @@ pub fn voting_validators_list(proposal_id: u64) -> String {
     format!("governance/proposal/{proposal_id}/validator_vote/")
 }
 
-pub fn validator_vote(proposal_id: u64, identity_key: IdentityKey) -> String {
-    format!("governance/proposal/{proposal_id}/validator_vote/{identity_key}")
-}
-
 pub fn per_proposal_voted_nullifier_lookup(proposal_id: u64, nullifier: &Nullifier) -> String {
     format!("governance/proposal/{proposal_id}/voted_nullifiers/{nullifier}")
 }
@@ -58,6 +53,23 @@ pub fn voting_power_at_proposal_start(proposal_id: u64, identity_key: IdentityKe
     format!("governance/proposal/{proposal_id}/voting_power_at_start/{identity_key}")
 }
 
-pub fn delegator_vote(proposal_id: u64, vote: Vote, nullifier: &Nullifier) -> String {
-    format!("governance/proposal/{proposal_id}/delegator_vote/{vote}/{nullifier}")
+pub fn validator_vote(proposal_id: u64, identity_key: IdentityKey) -> String {
+    format!("governance/proposal/{proposal_id}/validator_vote/{identity_key}")
+}
+
+pub fn untallied_delegator_vote(
+    proposal_id: u64,
+    identity_key: IdentityKey,
+    nullifier: &Nullifier,
+) -> String {
+    format!("governance/proposal/{proposal_id}/untallied_delegator_vote/{identity_key}/{nullifier}")
+}
+
+pub fn all_untallied_delegator_votes(proposal_id: u64) -> String {
+    // Note: this has to be the prefix of the `untallied_delegator_vote` function above.
+    format!("governance/proposal/{proposal_id}/untallied_delegator_vote/")
+}
+
+pub fn tallied_delegator_votes(proposal_id: u64, identity_key: IdentityKey) -> String {
+    format!("governance/proposal/{proposal_id}/tallied_delegator_votes/{identity_key}")
 }

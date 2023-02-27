@@ -105,64 +105,74 @@ message Vote {
 
 // A chain parameter that can be modified by governance.
 message MutableChainParameter {
-    // The identifier of the parameter, used for submitting change proposals.
-    string identifier = 1;
-    // A textual description of the parameter and valid values.
-    string description = 2;
+  // The identifier of the parameter, used for submitting change proposals.
+  string identifier = 1;
+  // A textual description of the parameter and valid values.
+  string description = 2;
 }
 
 // The current state of a proposal.
 message ProposalState {
-    // Voting is in progress and the proposal has not yet concluded voting or been withdrawn.
-    message Voting {}
+  // Voting is in progress and the proposal has not yet concluded voting or been withdrawn.
+  message Voting {}
 
-    // The proposal has been withdrawn but the voting period is not yet concluded.
-    message Withdrawn {
-        // The reason for the withdrawal.
-        string reason = 1;
-    }
+  // The proposal has been withdrawn but the voting period is not yet concluded.
+  message Withdrawn {
+    // The reason for the withdrawal.
+    string reason = 1;
+  }
 
-    // The voting period has ended, and the proposal has been assigned an outcome.
-    message Finished {
-        ProposalOutcome outcome = 1;
-    }
+  // The voting period has ended, and the proposal has been assigned an outcome.
+  message Finished {
+    ProposalOutcome outcome = 1;
+  }
 
-    // The voting period has ended, and the original proposer has claimed their deposit.
-    message Claimed {
-        ProposalOutcome outcome = 1;
-    }
+  // The voting period has ended, and the original proposer has claimed their deposit.
+  message Claimed {
+    ProposalOutcome outcome = 1;
+  }
 
-    // The state of the proposal.
-    oneof state {
-        Voting voting = 2;
-        Withdrawn withdrawn = 3;
-        Finished finished = 4;
-        Claimed claimed = 5;
-    }
+  // The state of the proposal.
+  oneof state {
+    Voting voting = 2;
+    Withdrawn withdrawn = 3;
+    Finished finished = 4;
+    Claimed claimed = 5;
+  }
 }
 
 // The outcome of a concluded proposal.
 message ProposalOutcome {
-    // The proposal was passed.
-    message Passed {}
+  // The proposal was passed.
+  message Passed {}
 
-    // The proposal did not pass.
-    message Failed {
-        // The proposal was withdrawn during the voting period.
-        optional string withdrawn_with_reason = 1;
-    }
+  // The proposal did not pass.
+  message Failed {
+      // The proposal was withdrawn during the voting period.
+      optional string withdrawn_with_reason = 1;
+  }
 
-    // The proposal did not pass, and was vetoed.
-    message Vetoed {
-        // The proposal was withdrawn during the voting period.
-        optional string withdrawn_with_reason = 1;
-    }
+  // The proposal did not pass, and was vetoed.
+  message Vetoed {
+      // The proposal was withdrawn during the voting period.
+      optional string withdrawn_with_reason = 1;
+  }
 
-    oneof outcome {
-        Passed passed = 1;
-        Failed failed = 2;
-        Vetoed vetoed = 3;
-    }
+  oneof outcome {
+      Passed passed = 1;
+      Failed failed = 2;
+      Vetoed vetoed = 3;
+  }
+}
+
+// A tally of votes on a proposal.
+message Tally {
+  // The number of votes in favor of the proposal.
+  uint64 yes = 1;
+  // The number of votes against the proposal.
+  uint64 no = 2;
+  // The number of abstentions.
+  uint64 abstain = 3;
 }
 
 // A list of proposal ids.

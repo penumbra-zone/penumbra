@@ -14,48 +14,48 @@ use tracing::instrument;
 
 #[instrument(skip(state))]
 pub async fn enact_all_passed_proposals<S: StateWrite>(mut state: S) -> Result<()> {
-    let parameters = tally::Parameters::new(&state)
-        .await
-        .context("can generate tally parameters")?;
+    // let parameters = tally::Parameters::new(&state)
+    //     .await
+    //     .context("can generate tally parameters")?;
 
-    let circumstance = tally::Circumstance::new(&state)
-        .await
-        .context("can generate tally circumstance")?;
+    // let circumstance = tally::Circumstance::new(&state)
+    //     .await
+    //     .context("can generate tally circumstance")?;
 
-    // For every unfinished proposal, conclude those that finish in this block
-    for proposal_id in state
-        .unfinished_proposals()
-        .await
-        .context("can get unfinished proposals")?
-    {
-        // TODO: tally delegator votes
-        if let Some(outcome) = parameters
-            .tally(&state, circumstance, proposal_id)
-            .await
-            .context("can tally proposal")?
-        {
-            tracing::debug!(proposal = %proposal_id, outcome = ?outcome, "proposal voting finished");
+    // // For every unfinished proposal, conclude those that finish in this block
+    // for proposal_id in state
+    //     .unfinished_proposals()
+    //     .await
+    //     .context("can get unfinished proposals")?
+    // {
+    //     // TODO: tally delegator votes
+    //     if let Some(outcome) = parameters
+    //         .tally(&state, circumstance, proposal_id)
+    //         .await
+    //         .context("can tally proposal")?
+    //     {
+    //         tracing::debug!(proposal = %proposal_id, outcome = ?outcome, "proposal voting finished");
 
-            // If the proposal passes, enact it now
-            if outcome.is_passed() {
-                enact_proposal(&mut state, proposal_id).await?;
-            }
+    //         // If the proposal passes, enact it now
+    //         if outcome.is_passed() {
+    //             enact_proposal(&mut state, proposal_id).await?;
+    //         }
 
-            // Log the result
-            tracing::info!(proposal = %proposal_id, outcome = match outcome {
-                Outcome::Passed => "passed",
-                Outcome::Failed { .. } => "failed",
-                Outcome::Vetoed {.. } => "vetoed",
-            }, "voting concluded");
+    //         // Log the result
+    //         tracing::info!(proposal = %proposal_id, outcome = match outcome {
+    //             Outcome::Passed => "passed",
+    //             Outcome::Failed { .. } => "failed",
+    //             Outcome::Vetoed {.. } => "vetoed",
+    //         }, "voting concluded");
 
-            // Record the outcome of the proposal: this is especially important for emergency
-            // proposals, because it prevents the vote from continuing after they are passed
-            state
-                .put_proposal_state(proposal_id, proposal::State::Finished { outcome })
-                .await
-                .context("can put finished proposal outcome")?;
-        }
-    }
+    //         // Record the outcome of the proposal: this is especially important for emergency
+    //         // proposals, because it prevents the vote from continuing after they are passed
+    //         state
+    //             .put_proposal_state(proposal_id, proposal::State::Finished { outcome })
+    //             .await
+    //             .context("can put finished proposal outcome")?;
+    //     }
+    // }
 
     Ok(())
 }
