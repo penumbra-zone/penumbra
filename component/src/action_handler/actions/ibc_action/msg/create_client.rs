@@ -5,7 +5,6 @@ use async_trait::async_trait;
 use ibc::core::ics02_client::msgs::create_client::MsgCreateClient;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Transaction;
-use tracing::instrument;
 
 use crate::action_handler::ActionHandler;
 use crate::ibc::component::client::{
@@ -16,7 +15,6 @@ use crate::ibc::component::client::{
 
 #[async_trait]
 impl ActionHandler for MsgCreateClient {
-    #[instrument(name = "ibc_action", skip(self, _context))]
     async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         client_state_is_tendermint(self)?;
         consensus_state_is_tendermint(self)?;
@@ -24,14 +22,12 @@ impl ActionHandler for MsgCreateClient {
         Ok(())
     }
 
-    #[instrument(name = "ibc_action", skip(self, state))]
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         state.validate(self).await?;
 
         Ok(())
     }
 
-    #[instrument(name = "ibc_action", skip(self, state))]
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         state.execute_create_client(self).await?;
 

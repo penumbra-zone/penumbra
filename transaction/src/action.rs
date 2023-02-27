@@ -68,6 +68,45 @@ pub enum Action {
     Ics20Withdrawal(Ics20Withdrawal),
 }
 
+impl Action {
+    /// Create a tracing span to track execution related to this action.
+    ///
+    /// The `idx` parameter is the index of this action in the transaction.
+    pub fn create_span(&self, idx: usize) -> tracing::Span {
+        match self {
+            Action::Output(_) => tracing::info_span!("Output", ?idx),
+            Action::Spend(_) => tracing::info_span!("Spend", ?idx),
+            Action::ValidatorDefinition(_) => {
+                tracing::info_span!("ValidatorDefinition", ?idx)
+            }
+            Action::IBCAction(_) => tracing::info_span!("IbcAction", ?idx),
+            Action::Swap(_) => tracing::info_span!("Swap", ?idx),
+            Action::SwapClaim(_) => tracing::info_span!("SwapClaim", ?idx),
+            Action::ProposalSubmit(_) => tracing::info_span!("ProposalSubmit", ?idx),
+            Action::ProposalWithdraw(_) => {
+                tracing::info_span!("ProposalWithdraw", ?idx)
+            }
+            Action::DelegatorVote(_) => tracing::info_span!("DelegatorVote", ?idx),
+            Action::ValidatorVote(_) => tracing::info_span!("ValidatorVote", ?idx),
+            Action::ProposalDepositClaim(_) => {
+                tracing::info_span!("ProposalDepositClaim", ?idx)
+            }
+            Action::PositionOpen(_) => tracing::info_span!("PositionOpen", ?idx),
+            Action::PositionClose(_) => tracing::info_span!("PositionClose", ?idx),
+            Action::PositionWithdraw(_) => {
+                tracing::info_span!("PositionWithdraw", ?idx)
+            }
+            Action::PositionRewardClaim(_) => {
+                tracing::info_span!("PositionRewardClaim", ?idx)
+            }
+            Action::Delegate(_) => tracing::info_span!("Delegate", ?idx),
+            Action::Undelegate(_) => tracing::info_span!("Undelegate", ?idx),
+            Action::UndelegateClaim(_) => tracing::info_span!("UndelegateClaim", ?idx),
+            Action::Ics20Withdrawal(_) => tracing::info_span!("Ics20Withdrawal", ?idx),
+        }
+    }
+}
+
 impl IsAction for Action {
     fn balance_commitment(&self) -> balance::Commitment {
         match self {

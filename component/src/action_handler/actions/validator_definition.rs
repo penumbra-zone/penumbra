@@ -4,7 +4,6 @@ use penumbra_chain::StateReadExt as _;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Transaction;
 use std::sync::Arc;
-use tracing::instrument;
 
 use penumbra_proto::{core::stake::v1alpha1::ValidatorDefinition, DomainType};
 
@@ -15,7 +14,6 @@ use crate::{
 
 #[async_trait]
 impl ActionHandler for ValidatorDefinition {
-    #[instrument(name = "validator_definition", skip(self, _context))]
     async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         // Check that validator definition is correctly signed and well-formed:
         let definition = validator::Definition::try_from(self.clone())
@@ -48,7 +46,6 @@ impl ActionHandler for ValidatorDefinition {
         Ok(())
     }
 
-    #[instrument(name = "validator_definition", skip(self, state))]
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         // Check that the sequence numbers of the updated validators is correct.
         let v = validator::Definition::try_from(self.clone())
@@ -97,7 +94,6 @@ impl ActionHandler for ValidatorDefinition {
         Ok(())
     }
 
-    #[instrument(name = "validator_definition", skip(self, state))]
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let cur_epoch = state.get_current_epoch().await.unwrap();
 

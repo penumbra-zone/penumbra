@@ -43,7 +43,6 @@ use ibc_proto::protobuf::Protobuf;
 use penumbra_proto::core::ibc::v1alpha1::IbcAction;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Transaction;
-use tracing::instrument;
 
 use crate::action_handler::ActionHandler;
 
@@ -51,7 +50,6 @@ mod msg;
 
 #[async_trait]
 impl ActionHandler for IbcAction {
-    #[instrument(name = "ibc_action", skip(self, context))]
     async fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
         // Each stateless check is a distinct function in an appropriate submodule,
         // so that we can easily add new stateless checks and see a birds' eye view
@@ -148,7 +146,6 @@ impl ActionHandler for IbcAction {
         Ok(())
     }
 
-    #[instrument(name = "ibc_action", skip(self, state))]
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         let raw_action = self
             .raw_action
@@ -242,7 +239,6 @@ impl ActionHandler for IbcAction {
         Ok(())
     }
 
-    #[instrument(name = "ibc_action", skip(self, state))]
     async fn execute<S: StateWrite>(&self, state: S) -> Result<()> {
         let raw_action = self
             .raw_action

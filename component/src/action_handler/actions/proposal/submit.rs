@@ -7,7 +7,6 @@ use penumbra_crypto::{ProposalNft, VotingReceiptToken, STAKING_TOKEN_DENOM};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::action::{Proposal, ProposalPayload};
 use penumbra_transaction::{action::ProposalSubmit, Transaction};
-use tracing::instrument;
 
 use crate::action_handler::ActionHandler;
 use crate::governance::proposal::{self, chain_params};
@@ -16,7 +15,6 @@ use crate::shielded_pool::{StateReadExt, StateWriteExt as _, SupplyWrite};
 
 #[async_trait]
 impl ActionHandler for ProposalSubmit {
-    #[instrument(name = "proposal_submit", skip(self, _context))]
     async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         let ProposalSubmit {
             proposal,
@@ -65,7 +63,6 @@ impl ActionHandler for ProposalSubmit {
         Ok(())
     }
 
-    #[instrument(name = "proposal_submit", skip(self, state))]
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         let ProposalSubmit {
             deposit_amount,
@@ -133,7 +130,6 @@ impl ActionHandler for ProposalSubmit {
         Ok(())
     }
 
-    #[instrument(name = "proposal_submit", skip(self, state))]
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let ProposalSubmit {
             proposal,

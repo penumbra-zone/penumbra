@@ -12,13 +12,11 @@ use penumbra_chain::sync::StatePayload;
 use penumbra_crypto::MockFlowCiphertext;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::Swap, IsAction, Transaction};
-use tracing::instrument;
 
 use crate::action_handler::ActionHandler;
 
 #[async_trait]
 impl ActionHandler for Swap {
-    #[instrument(name = "swap", skip(self, _context))]
     async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         self.proof.verify(
             self.body.fee_commitment,
@@ -29,12 +27,10 @@ impl ActionHandler for Swap {
         Ok(())
     }
 
-    #[instrument(name = "swap", skip(self, _state))]
     async fn check_stateful<S: StateRead + 'static>(&self, _state: Arc<S>) -> Result<()> {
         Ok(())
     }
 
-    #[instrument(name = "swap", skip(self, state))]
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let swap = self;
 

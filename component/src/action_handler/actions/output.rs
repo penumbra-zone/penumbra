@@ -7,13 +7,11 @@ use penumbra_proof_params::OUTPUT_PROOF_VERIFICATION_KEY;
 use penumbra_storage::{StateRead, StateWrite};
 
 use penumbra_transaction::{action::Output, Transaction};
-use tracing::instrument;
 
 use crate::{action_handler::ActionHandler, shielded_pool::NoteManager};
 
 #[async_trait]
 impl ActionHandler for Output {
-    #[instrument(name = "output", skip(self, _context))]
     async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         let output = self;
 
@@ -26,12 +24,10 @@ impl ActionHandler for Output {
         Ok(())
     }
 
-    #[instrument(name = "output", skip(self, _state))]
     async fn check_stateful<S: StateRead + 'static>(&self, _state: Arc<S>) -> Result<()> {
         Ok(())
     }
 
-    #[instrument(name = "output", skip(self, state))]
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let source = state.object_get("source").unwrap_or_default();
 

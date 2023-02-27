@@ -6,6 +6,7 @@ use penumbra_chain::NoteSource;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Transaction;
 use tokio::task::JoinSet;
+use tracing::{instrument, Instrument};
 
 use crate::shielded_pool::consensus_rules;
 
@@ -20,6 +21,8 @@ use stateless::{no_duplicate_nullifiers, valid_binding_signature};
 
 #[async_trait]
 impl ActionHandler for Transaction {
+    // We only instrument the top-level `check_stateless`, so we get one span for each transaction.
+    #[instrument(skip(self, context))]
     async fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
         // TODO: add a check that ephemeral_key is not identity to prevent scanning dos attack ?
 
@@ -34,9 +37,11 @@ impl ActionHandler for Transaction {
         // use the yoke crate, but cloning is almost certainly not a big deal
         // for now.
         let mut action_checks = JoinSet::new();
-        for action in self.actions().cloned() {
+        for (i, action) in self.actions().cloned().enumerate() {
             let context2 = context.clone();
-            action_checks.spawn(async move { action.check_stateless(context2).await });
+            let span = action.create_span(i);
+            action_checks
+                .spawn(async move { action.check_stateless(context2).await }.instrument(span));
         }
         // Now check if any component action failed verification.
         while let Some(check) = action_checks.join_next().await {
@@ -46,6 +51,8 @@ impl ActionHandler for Transaction {
         Ok(())
     }
 
+    // We only instrument the top-level `check_stateful`, so we get one span for each transaction.
+    #[instrument(skip(self, state))]
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         claimed_anchor_is_valid(state.clone(), self).await?;
         fmd_parameters_valid(state.clone(), self).await?;
@@ -55,9 +62,11 @@ impl ActionHandler for Transaction {
         // use the yoke crate, but cloning is almost certainly not a big deal
         // for now.
         let mut action_checks = JoinSet::new();
-        for action in self.actions().cloned() {
+        for (i, action) in self.actions().cloned().enumerate() {
             let state2 = state.clone();
-            action_checks.spawn(async move { action.check_stateful(state2).await });
+            let span = action.create_span(i);
+            action_checks
+                .spawn(async move { action.check_stateful(state2).await }.instrument(span));
         }
         // Now check if any component action failed verification.
         while let Some(check) = action_checks.join_next().await {
@@ -67,14 +76,17 @@ impl ActionHandler for Transaction {
         Ok(())
     }
 
+    // We only instrument the top-level `execute`, so we get one span for each transaction.
+    #[instrument(skip(self, state))]
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         // While we have access to the full Transaction, hash it to
         // obtain a NoteSource we can cache for various actions.
         let source = NoteSource::Transaction { id: self.id() };
         state.object_put("source", source);
 
-        for action in self.actions() {
-            action.execute(&mut state).await?;
+        for (i, action) in self.actions().enumerate() {
+            let span = action.create_span(i);
+            action.execute(&mut state).instrument(span).await?;
         }
 
         // Delete the note source, in case someone else tries to read it.

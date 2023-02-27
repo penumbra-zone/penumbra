@@ -4,7 +4,6 @@ use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::Undelegate, Transaction};
-use tracing::instrument;
 
 use crate::{
     action_handler::ActionHandler,
@@ -14,12 +13,10 @@ use crate::{
 
 #[async_trait]
 impl ActionHandler for Undelegate {
-    #[instrument(name = "undelegate", skip(self, _context))]
     async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         Ok(())
     }
 
-    #[instrument(name = "undelegate", skip(self, state))]
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         let u = self;
         let rate_data = state
@@ -82,7 +79,6 @@ impl ActionHandler for Undelegate {
         Ok(())
     }
 
-    #[instrument(name = "undelegate", skip(self, state))]
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         tracing::debug!(?self, "queuing undelegation for next epoch");
         state.stub_push_undelegation(self.clone());
