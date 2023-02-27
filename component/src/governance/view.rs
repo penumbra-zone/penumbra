@@ -425,7 +425,7 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
     async fn validator_votes(&self, proposal_id: u64) -> Result<BTreeMap<IdentityKey, Vote>> {
         let mut votes = BTreeMap::new();
 
-        let prefix = state_key::all_validator_votes(proposal_id);
+        let prefix = state_key::all_validator_votes_for_proposal(proposal_id);
         let mut stream = self.prefix(&prefix);
 
         while let Some((key, vote)) = stream.next().await.transpose()? {
@@ -448,7 +448,7 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
     ) -> Result<BTreeMap<IdentityKey, Tally>> {
         let mut tallies = BTreeMap::new();
 
-        let prefix = state_key::all_tallied_delegator_votes(proposal_id);
+        let prefix = state_key::all_tallied_delegator_votes_for_proposal(proposal_id);
         let mut stream = self.prefix(&prefix);
 
         while let Some((key, tally)) = stream.next().await.transpose()? {
@@ -665,22 +665,28 @@ pub trait StateWriteExt: StateWrite {
         Ok(())
     }
 
-    /// Tally delegator votes by sweeping them into the aggregate for each validator.
-    async fn tally_delegator_votes(&mut self, proposal_id: u64) -> Result<()> {
+    /// Tally delegator votes by sweeping them into the aggregate for each validator, for each proposal.
+    async fn tally_delegator_votes(&mut self) -> Result<()> {
         // Iterate over all the delegator votes
-        let prefix = state_key::all_untallied_delegator_votes(proposal_id);
-        let mut prefix_stream = self.prefix(&prefix);
+        let prefix = state_key::all_untallied_delegator_votes();
+        let mut prefix_stream = self.prefix(prefix);
 
         // We need to keep track of modifications and then apply them after iteration, because
         // `self.prefix(..)` borrows `self` immutably, so we can't mutate `self` during iteration
         let mut keys_to_delete = vec![];
-        let mut new_tallies = BTreeMap::new();
+        let mut new_tallies: BTreeMap<u64, BTreeMap<IdentityKey, Tally>> = BTreeMap::new();
 
         while let Some((key, tally)) = prefix_stream.next().await.transpose()? {
             // Extract the validator identity key from the key string
             let mut reverse_path_elements = key.rsplit('/');
             reverse_path_elements.next(); // skip the nullifier element of the key
             let identity_key = reverse_path_elements
+                .next()
+                .ok_or_else(|| {
+                    anyhow::anyhow!("unexpected key format for untallied delegator vote")
+                })?
+                .parse()?;
+            let proposal_id = reverse_path_elements
                 .next()
                 .ok_or_else(|| {
                     anyhow::anyhow!("unexpected key format for untallied delegator vote")
@@ -700,7 +706,10 @@ pub trait StateWriteExt: StateWrite {
             current_tally += tally;
 
             // Remember the new tally
-            new_tallies.insert(identity_key, current_tally);
+            new_tallies
+                .entry(proposal_id)
+                .or_default()
+                .insert(identity_key, current_tally);
 
             // Remember to delete this key
             keys_to_delete.push(key);
@@ -715,14 +724,94 @@ pub trait StateWriteExt: StateWrite {
         }
 
         // Actually record the new tallies in the state
-        for (identity_key, tally) in new_tallies {
-            self.put(
-                state_key::tallied_delegator_votes(proposal_id, identity_key),
-                tally,
-            );
+        for (proposal_id, new_tallies_for_proposal) in new_tallies {
+            for (identity_key, tally) in new_tallies_for_proposal {
+                self.put(
+                    state_key::tallied_delegator_votes(proposal_id, identity_key),
+                    tally,
+                );
+            }
         }
 
         Ok(())
+    }
+
+    async fn enact_proposal(&mut self, payload: &ProposalPayload) -> Result<Result<()>> // inner error from proposal execution
+    {
+        match payload {
+            ProposalPayload::Signaling { .. } => {
+                // Nothing to do for signaling proposals
+            }
+            ProposalPayload::Emergency { halt_chain } => {
+                // If the proposal calls to halt the chain...
+                if *halt_chain {
+                    // TODO: implement emergency halt
+                    // // Check to see if the operator has set the environment variable indicating they
+                    // // wish to resume from this particular chain halt, i.e. the chain has already halted
+                    // // and they are bringing it back up again
+                    // if std::env::var("PD_RESUME_FROM_EMERGENCY_HALT_PROPOSAL")
+                    //     .ok()
+                    //     .and_then(|v| v.parse::<u64>().ok()) // value of var must be number
+                    //     .filter(|&resume_from| resume_from == proposal_id) // number must be this proposal's id (to prevent an always-on resume functionality)
+                    //     .is_some()
+                    // {
+                    //     // If so, just print an information message, and don't halt the chain
+                    //     tracing::info!(proposal = %proposal_id, %height, "resuming from emergency chain halt");
+                    // } else {
+                    //     // If not, print an informational message and immediately exit the process
+                    //     tracing::error!(proposal = %proposal_id, %height, "emergency proposal passed, calling for immediate chain halt");
+                    //     std::process::exit(0);
+                    // }
+                }
+            }
+            ProposalPayload::ParameterChange {
+                effective_height: _,
+                new_parameters: _,
+            } => {
+                // TODO: implement immediate parameter change
+                // let height = state
+                //     .get_block_height()
+                //     .await
+                //     .context("can get block height")?;
+
+                // // Since other proposals may have changed the chain parameters in the meantime,
+                // // and parameter validation must ensure consistency across all parameters, we
+                // // need to perform a final validation step prior to applying the new parameters.
+                // let old_parameters = state
+                //     .get_chain_params()
+                //     .await
+                //     .context("can get chain parameters")?;
+
+                // if !chain_params::is_valid_stateless(&new_parameters)
+                //     || !chain_params::is_valid_stateful(&new_parameters, &old_parameters)
+                // {
+                //     // The parameters are invalid, so we cannot apply them.
+                //     tracing::info!(proposal = %proposal_id, %height, "chain param proposal passed, however the new parameters are invalid");
+                //     // TODO: should there be a more descriptive error message here?
+                //     return Err(anyhow::anyhow!("invalid chain parameters, could not apply"));
+                // }
+
+                // // Apply the new (valid) parameter changes immediately:
+                // let new_params = chain_params::resolve_parameters(&new_parameters, &old_parameters)
+                //     .context("can resolve validated parameters")?;
+
+                // state.put_chain_params(new_params);
+            }
+            ProposalPayload::DaoSpend {
+                schedule_transactions: _,
+                cancel_transactions: _,
+            } => {
+                // TODO: schedule transaction cancellations by removing the first matching one from the
+                // front of the schedule for their effective block
+                // TODO: schedule new transactions by appending them to the end of the schedule for their
+                // effective block
+                // TODO: don't forget to fill in the part in the shielded pool where the transactions
+                // actually get included in a block
+                todo!("implement daospend execution")
+            }
+        }
+
+        Ok(Ok(()))
     }
 }
 
