@@ -6,6 +6,7 @@ use penumbra_proto::{
 use serde::{Deserialize, Serialize};
 
 mod delegator_vote;
+mod liquidity_position;
 mod output;
 mod spend;
 mod swap;
@@ -13,6 +14,7 @@ mod swap_claim;
 mod undelegate_claim;
 
 pub use delegator_vote::DelegatorVotePlan;
+pub use liquidity_position::PositionOpenPlan;
 pub use output::OutputPlan;
 pub use spend::SpendPlan;
 pub use swap::SwapPlan;

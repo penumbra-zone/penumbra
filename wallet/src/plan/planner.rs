@@ -25,8 +25,8 @@ use penumbra_transaction::{
         DaoDeposit, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote, Vote,
     },
     plan::{
-        ActionPlan, DelegatorVotePlan, MemoPlan, OutputPlan, SpendPlan, SwapClaimPlan, SwapPlan,
-        TransactionPlan, UndelegateClaimPlan,
+        ActionPlan, DelegatorVotePlan, MemoPlan, OutputPlan, PositionOpenPlan, SpendPlan,
+        SwapClaimPlan, SwapPlan, TransactionPlan, UndelegateClaimPlan,
     },
     proposal::{self, Proposal},
 };
@@ -150,6 +150,14 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     pub fn spend(&mut self, note: Note, position: tct::Position) -> &mut Self {
         let spend = SpendPlan::new(&mut self.rng, note, position).into();
         self.action(spend);
+        self
+    }
+
+    /// Open a liquidity position in the order book.
+    #[instrument(skip(self))]
+    pub fn position_open(&mut self, note: Note, position: tct::Position) -> &mut Self {
+        let order = PositionOpenPlan::new(&mut self.rng, note, position).into();
+        self.action(order);
         self
     }
 
