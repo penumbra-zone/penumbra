@@ -242,10 +242,11 @@ impl SpendProof {
         public_inputs.extend(element_rk.to_field_elements().unwrap());
 
         tracing::trace!(?public_inputs);
+        let start = std::time::Instant::now();
         let proof_result =
             Groth16::verify_with_processed_vk(&processed_pvk, public_inputs.as_slice(), &self.0)
                 .map_err(|err| anyhow::anyhow!(err))?;
-        tracing::debug!(?proof_result);
+        tracing::debug!(?proof_result, elapsed = ?start.elapsed());
         proof_result
             .then_some(())
             .ok_or_else(|| anyhow::anyhow!("proof did not verify"))
