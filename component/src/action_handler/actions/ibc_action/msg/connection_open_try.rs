@@ -5,7 +5,6 @@ use async_trait::async_trait;
 use ibc::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Transaction;
-use tracing::instrument;
 
 use crate::action_handler::ActionHandler;
 use crate::ibc::component::connection::execution::connection_open_try::ConnectionOpenTryExecute;
@@ -16,7 +15,6 @@ use crate::ibc::component::connection::stateless::connection_open_try::{
 
 #[async_trait]
 impl ActionHandler for MsgConnectionOpenTry {
-    #[instrument(name = "connection_open_try", skip(self, _context))]
     async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         has_client_state(self)?;
         has_client_proof(self)?;
@@ -25,14 +23,12 @@ impl ActionHandler for MsgConnectionOpenTry {
         Ok(())
     }
 
-    #[instrument(name = "connection_open_try", skip(self, state))]
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         state.validate(self).await?;
 
         Ok(())
     }
 
-    #[instrument(name = "connection_open_try", skip(self, state))]
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         state.execute(self).await;
 

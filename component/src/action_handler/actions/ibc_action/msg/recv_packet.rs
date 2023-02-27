@@ -6,7 +6,6 @@ use ibc::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use ibc::core::ics24_host::identifier::PortId;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Transaction;
-use tracing::instrument;
 
 use crate::action_handler::ActionHandler;
 use crate::ibc::component::channel::execution::recv_packet::RecvPacketExecute;
@@ -16,14 +15,12 @@ use crate::ibc::transfer::Ics20Transfer;
 
 #[async_trait]
 impl ActionHandler for MsgRecvPacket {
-    #[instrument(name = "recv_packet", skip(self, _context))]
     async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         // NOTE: no additional stateless validation is possible
 
         Ok(())
     }
 
-    #[instrument(name = "recv_packet", skip(self, state))]
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         state.validate(self).await?;
         let transfer = PortId::transfer();
@@ -36,7 +33,6 @@ impl ActionHandler for MsgRecvPacket {
         Ok(())
     }
 
-    #[instrument(name = "recv_packet", skip(self, state))]
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         state.execute(self).await;
         let transfer = PortId::transfer();

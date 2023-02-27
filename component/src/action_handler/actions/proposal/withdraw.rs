@@ -5,7 +5,6 @@ use async_trait::async_trait;
 use penumbra_crypto::ProposalNft;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::ProposalWithdraw, Transaction};
-use tracing::instrument;
 
 use crate::{
     action_handler::ActionHandler,
@@ -15,7 +14,6 @@ use crate::{
 
 #[async_trait]
 impl ActionHandler for ProposalWithdraw {
-    #[instrument(name = "proposal_withdraw", skip(self, _context))]
     async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         // Enforce a maximum length on proposal withdrawal reasons; 80 characters seems reasonable.
         const PROPOSAL_WITHDRAWAL_REASON_LIMIT: usize = 80;
@@ -29,14 +27,12 @@ impl ActionHandler for ProposalWithdraw {
         Ok(())
     }
 
-    #[instrument(name = "proposal_withdraw", skip(self, state))]
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         // Any votable proposal can be withdrawn
         state.check_proposal_votable(self.proposal).await?;
         Ok(())
     }
 
-    #[instrument(name = "proposal_withdraw", skip(self, state))]
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let ProposalWithdraw { proposal, reason } = self;
 

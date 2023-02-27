@@ -8,7 +8,6 @@ use penumbra_transaction::{
     action::{ValidatorVote, ValidatorVoteBody},
     Transaction,
 };
-use tracing::instrument;
 
 use crate::{
     action_handler::ActionHandler,
@@ -17,7 +16,6 @@ use crate::{
 
 #[async_trait]
 impl ActionHandler for ValidatorVote {
-    #[instrument(name = "validator_vote", skip(self, _context))]
     async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         let ValidatorVote { body, auth_sig } = self;
 
@@ -34,7 +32,6 @@ impl ActionHandler for ValidatorVote {
         Ok(())
     }
 
-    #[instrument(name = "validator_vote", skip(self, state))]
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         let ValidatorVote {
             body:
@@ -58,7 +55,6 @@ impl ActionHandler for ValidatorVote {
         Ok(())
     }
 
-    #[instrument(name = "validator_vote", skip(self, state))]
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let ValidatorVote {
             auth_sig: _,

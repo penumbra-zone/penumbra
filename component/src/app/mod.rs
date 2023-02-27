@@ -8,6 +8,7 @@ use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, Storage};
 use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tendermint::validator::Update;
+use tracing::Instrument;
 
 use crate::action_handler::ActionHandler;
 use crate::dex::Dex;
@@ -108,10 +109,15 @@ impl App {
         // We spawn tasks for each set of checks, to do CPU-bound stateless checks
         // and I/O-bound stateful checks at the same time.
         let tx2 = tx.clone();
-        let stateless = tokio::spawn(async move { tx2.check_stateless(tx2.clone()).await });
+        let stateless = tokio::spawn(
+            async move { tx2.check_stateless(tx2.clone()).await }
+                .instrument(tracing::Span::current()),
+        );
         let tx2 = tx.clone();
         let state = self.state.clone();
-        let stateful = tokio::spawn(async move { tx2.check_stateful(state).await });
+        let stateful = tokio::spawn(
+            async move { tx2.check_stateful(state).await }.instrument(tracing::Span::current()),
+        );
 
         stateless.await??;
         stateful.await??;

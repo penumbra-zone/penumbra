@@ -6,13 +6,11 @@ use penumbra_chain::StateReadExt;
 use penumbra_crypto::stake::UnbondingToken;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::UndelegateClaim, Transaction};
-use tracing::instrument;
 
 use crate::{action_handler::ActionHandler, stake::StateReadExt as _};
 
 #[async_trait]
 impl ActionHandler for UndelegateClaim {
-    #[instrument(name = "undelegate_claim", skip(self, _context))]
     async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         let unbonding_id = UnbondingToken::new(
             self.body.validator_identity,
@@ -30,7 +28,6 @@ impl ActionHandler for UndelegateClaim {
         Ok(())
     }
 
-    #[instrument(name = "undelegate_claim", skip(self, state))]
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         // We need to check two things:
 
@@ -55,7 +52,6 @@ impl ActionHandler for UndelegateClaim {
         Ok(())
     }
 
-    #[instrument(name = "undelegate_claim", skip(self, _state))]
     async fn execute<S: StateWrite>(&self, _state: S) -> Result<()> {
         // TODO: where should we be tracking token supply changes?
         Ok(())
