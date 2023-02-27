@@ -8,7 +8,6 @@ use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, Storage};
 use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tendermint::validator::Update;
-use tracing::instrument;
 
 use crate::action_handler::ActionHandler;
 use crate::dex::Dex;
@@ -39,7 +38,6 @@ impl App {
         }
     }
 
-    #[instrument(skip(self, app_state))]
     pub async fn init_chain(&mut self, app_state: &genesis::AppState) {
         let mut state_tx = self
             .state
@@ -69,7 +67,6 @@ impl App {
         state_tx.apply();
     }
 
-    #[instrument(skip(self, begin_block))]
     pub async fn begin_block(
         &mut self,
         begin_block: &abci::request::BeginBlock,
@@ -103,7 +100,6 @@ impl App {
         self.deliver_tx(tx).await
     }
 
-    #[instrument(skip(self, tx))]
     pub async fn deliver_tx(&mut self, tx: Arc<Transaction>) -> Result<Vec<abci::Event>> {
         // Both stateful and stateless checks take the transaction as
         // verification context.  The separate clone of the Arc<Transaction>
@@ -125,7 +121,6 @@ impl App {
         Ok(state_tx.apply().1)
     }
 
-    #[instrument(skip(self, end_block))]
     pub async fn end_block(&mut self, end_block: &abci::request::EndBlock) -> Vec<abci::Event> {
         let mut state_tx = self
             .state
@@ -150,7 +145,6 @@ impl App {
     ///
     /// This method also resets `self` as if it were constructed
     /// as an empty state over top of the newly written storage.
-    #[instrument(skip(self, storage))]
     pub async fn commit(&mut self, storage: Storage) -> AppHash {
         // We need to extract the State we've built up to commit it.  Fill in a dummy state.
         let dummy_state = StateDelta::new(storage.latest_snapshot());
