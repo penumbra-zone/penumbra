@@ -1,11 +1,10 @@
 use anyhow::Result;
-use num_rational::Ratio;
 use penumbra_chain::params::ChainParameters;
 use penumbra_transaction::action::Vote;
 
 use super::{proposal::Withdrawn, StateReadExt as _};
 use crate::stake::StateReadExt as _;
-use penumbra_chain::StateReadExt as _;
+use penumbra_chain::{StateReadExt as _, params::Ratio};
 use penumbra_storage::StateRead;
 
 use super::proposal::Outcome;
@@ -13,9 +12,9 @@ use super::proposal::Outcome;
 /// The parameters used for tallying.
 #[derive(Debug, Clone)]
 pub struct Parameters {
-    pub valid_quorum: Ratio<u64>,
-    pub pass_threshold: Ratio<u64>,
-    pub veto_threshold: Ratio<u64>,
+    pub valid_quorum: Ratio,
+    pub pass_threshold: Ratio,
+    pub veto_threshold: Ratio,
 }
 
 impl From<&ChainParameters> for Parameters {
