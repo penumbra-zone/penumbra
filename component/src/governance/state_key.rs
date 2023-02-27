@@ -64,12 +64,21 @@ pub fn all_voting_power_at_proposal_start(proposal_id: u64) -> String {
 }
 
 pub fn validator_vote(proposal_id: u64, identity_key: IdentityKey) -> String {
-    format!("governance/proposal/{proposal_id}/validator_vote/{identity_key}")
+    format!("governance/validator_vote/{proposal_id}/{identity_key}")
 }
 
-pub fn all_validator_votes(proposal_id: u64) -> String {
+pub fn all_validator_votes_for_proposal(proposal_id: u64) -> String {
     // Note: this has to be the prefix of the `validator_vote` function above.
-    format!("governance/proposal/{proposal_id}/validator_vote/")
+    format!("governance/validator_vote/{proposal_id}/")
+}
+
+pub fn tallied_delegator_votes(proposal_id: u64, identity_key: IdentityKey) -> String {
+    format!("governance/tallied_delegator_votes/{proposal_id}/{identity_key}")
+}
+
+pub fn all_tallied_delegator_votes_for_proposal(proposal_id: u64) -> String {
+    // Note: this has to be the prefix of the `tallied_delegator_votes` function above.
+    format!("governance/tallied_delegator_votes/{proposal_id}/")
 }
 
 pub fn untallied_delegator_vote(
@@ -77,19 +86,10 @@ pub fn untallied_delegator_vote(
     identity_key: IdentityKey,
     nullifier: &Nullifier,
 ) -> String {
-    format!("governance/proposal/{proposal_id}/untallied_delegator_vote/{identity_key}/{nullifier}")
+    format!("governance/untallied_delegator_vote/{proposal_id}/{identity_key}/{nullifier}")
 }
 
-pub fn all_untallied_delegator_votes(proposal_id: u64) -> String {
+pub fn all_untallied_delegator_votes() -> &'static str {
     // Note: this has to be the prefix of the `untallied_delegator_vote` function above.
-    format!("governance/proposal/{proposal_id}/untallied_delegator_vote/")
-}
-
-pub fn tallied_delegator_votes(proposal_id: u64, identity_key: IdentityKey) -> String {
-    format!("governance/proposal/{proposal_id}/tallied_delegator_votes/{identity_key}")
-}
-
-pub fn all_tallied_delegator_votes(proposal_id: u64) -> String {
-    // Note: this has to be the prefix of the `tallied_delegator_votes` function above.
-    format!("governance/proposal/{proposal_id}/tallied_delegator_votes/")
+    "governance/untallied_delegator_vote/"
 }
