@@ -63,6 +63,7 @@ message Action {
     governance.v1alpha1.DelegatorVote delegator_vote = 21;
     governance.v1alpha1.ProposalDepositClaim proposal_deposit_claim = 22;
 
+    // The various position actions don't contain private data so they have no separate Plan types.
     dex.v1alpha1.PositionOpen position_open = 30;
     dex.v1alpha1.PositionClose position_close = 31;
     dex.v1alpha1.PositionWithdraw position_withdraw = 32;

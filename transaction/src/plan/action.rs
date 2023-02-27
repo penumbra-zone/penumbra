@@ -6,7 +6,6 @@ use penumbra_proto::{
 use serde::{Deserialize, Serialize};
 
 mod delegator_vote;
-mod liquidity_position;
 mod output;
 mod spend;
 mod swap;
@@ -14,7 +13,6 @@ mod swap_claim;
 mod undelegate_claim;
 
 pub use delegator_vote::DelegatorVotePlan;
-pub use liquidity_position::PositionOpenPlan;
 pub use output::OutputPlan;
 pub use spend::SpendPlan;
 pub use swap::SwapPlan;
@@ -90,15 +88,13 @@ impl ActionPlan {
             ProposalWithdraw(proposal_withdraw) => proposal_withdraw.balance(),
             ProposalDepositClaim(proposal_deposit_claim) => proposal_deposit_claim.balance(),
             DelegatorVote(delegator_vote) => delegator_vote.balance(),
-            PositionOpen(_position_open) => todo!(),
-            PositionClose(_position_close) => todo!(),
-            PositionWithdraw(_position_withdraw) => todo!(),
-            PositionRewardClaim(_position_reward_claim) => {
-                todo!()
-            }
             DaoSpend(dao_spend) => dao_spend.balance(),
             DaoOutput(dao_output) => dao_output.balance(),
             DaoDeposit(dao_deposit) => dao_deposit.balance(),
+            PositionOpen(position_open) => position_open.balance(),
+            PositionClose(position_close) => position_close.balance(),
+            PositionWithdraw(position_withdraw) => position_withdraw.balance(),
+            PositionRewardClaim(position_reward_claim) => position_reward_claim.balance(),
             // None of these contribute to transaction balance:
             IBCAction(_) | ValidatorDefinition(_) | ValidatorVote(_) => Balance::default(),
         }
