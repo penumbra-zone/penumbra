@@ -17,7 +17,6 @@ use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_tct as tct;
 use penumbra_transaction::action::{Proposal, ProposalPayload, Vote};
-use tendermint::vote::Power;
 use tokio::task::JoinSet;
 
 use crate::{
@@ -25,11 +24,7 @@ use crate::{
     stake::{rate::RateData, validator, StateReadExt as _},
 };
 
-use super::{
-    proposal::{self, ProposalList},
-    state_key,
-    tally::Tally,
-};
+use super::{proposal, state_key, tally::Tally};
 
 #[async_trait]
 pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
@@ -64,11 +59,18 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
 
     /// Get all the unfinished proposal ids.
     async fn unfinished_proposals(&self) -> Result<BTreeSet<u64>> {
-        Ok(self
-            .get::<proposal::ProposalList>(state_key::unfinished_proposals())
-            .await?
-            .unwrap_or_default()
-            .proposals)
+        let prefix = state_key::all_unfinished_proposals();
+        let mut stream = self.prefix_proto(&prefix);
+        let mut proposals = BTreeSet::new();
+        while let Some((key, ())) = stream.next().await.transpose()? {
+            let proposal_id = u64::from_str(
+                key.rsplit('/')
+                    .next()
+                    .context("invalid key for unfinished proposal")?,
+            )?;
+            proposals.insert(proposal_id);
+        }
+        Ok(proposals)
     }
 
     /// Get the list of validators who voted on a proposal.
@@ -592,39 +594,23 @@ pub trait StateWriteExt: StateWrite {
         self.put(state_key::proposal_deposit_amount(proposal_id), amount);
     }
 
-    /// Set all the unfinished proposal ids.
-    async fn put_unfinished_proposals(&mut self, unfinished_proposals: ProposalList) {
-        self.put(
-            state_key::unfinished_proposals().to_owned(),
-            unfinished_proposals,
-        );
-    }
-
     /// Set the state of a proposal.
     async fn put_proposal_state(&mut self, proposal_id: u64, state: proposal::State) -> Result<()> {
         // Set the state of the proposal
         self.put(state_key::proposal_state(proposal_id), state.clone());
 
-        // Track the index
-        let mut unfinished_proposals = self
-            .get::<proposal::ProposalList>(state_key::unfinished_proposals())
-            .await?
-            .unwrap_or_default();
         match &state {
             proposal::State::Voting | proposal::State::Withdrawn { .. } => {
                 // If we're setting the proposal to a non-finished state, track it in our list of
                 // proposals that are not finished
-                unfinished_proposals.proposals.insert(proposal_id);
+                self.put_proto(state_key::unfinished_proposal(proposal_id), ());
             }
             proposal::State::Finished { .. } | proposal::State::Claimed { .. } => {
                 // If we're setting the proposal to a finished or claimed state, remove it from our list of
                 // proposals that are not finished
-                unfinished_proposals.proposals.remove(&proposal_id);
+                self.delete(state_key::unfinished_proposal(proposal_id));
             }
         }
-
-        // Put the modified list back into the state
-        self.put_unfinished_proposals(unfinished_proposals).await;
 
         Ok(())
     }

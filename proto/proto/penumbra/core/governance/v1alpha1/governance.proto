@@ -175,11 +175,6 @@ message Tally {
   uint64 abstain = 3;
 }
 
-// A list of proposal ids.
-message ProposalList {
-    repeated uint64 proposals = 1;
-}
-
 // A proposal to be voted upon.
 message Proposal {
   // The unique identifier of the proposal.

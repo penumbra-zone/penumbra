@@ -28,8 +28,13 @@ pub fn proposal_voting_end(proposal_id: u64) -> String {
     format!("governance/proposal/{proposal_id}/voting_end")
 }
 
-pub fn unfinished_proposals() -> &'static str {
-    "governance/unfinished_proposals"
+pub fn unfinished_proposal(proposal_id: u64) -> String {
+    format!("governance/unfinished_proposals/{proposal_id}")
+}
+
+pub fn all_unfinished_proposals() -> &'static str {
+    // Note: this has to be the prefix of the `unfinished_proposal` function above.
+    "governance/unfinished_proposals/"
 }
 
 pub fn voting_validators_list(proposal_id: u64) -> String {
