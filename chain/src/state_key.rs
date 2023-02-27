@@ -17,3 +17,7 @@ pub fn fmd_parameters_current() -> &'static str {
 pub fn fmd_parameters_previous() -> &'static str {
     "fmd_parameters/previous"
 }
+
+pub fn halt_now() -> &'static str {
+    "halt_now"
+}

@@ -118,6 +118,11 @@ pub trait StateReadExt: StateRead {
         // The current epoch
         Ok(Epoch::from_height(height, epoch_duration))
     }
+
+    /// Returns true if the chain should immediately halt upon the coming commit.
+    fn should_halt(&self) -> bool {
+        self.object_get::<()>(state_key::halt_now()).is_some()
+    }
 }
 
 impl<T: StateRead + ?Sized> StateReadExt for T {}
@@ -153,6 +158,11 @@ pub trait StateWriteExt: StateWrite {
     /// Writes the previous FMD parameters to the JMT.
     fn put_previous_fmd_parameters(&mut self, params: FmdParameters) {
         self.put(state_key::fmd_parameters_previous().into(), params)
+    }
+
+    /// Signals to the consensus worker to halt after the next commit.
+    fn halt_now(&mut self) {
+        self.object_put(state_key::halt_now(), ());
     }
 }
 

@@ -187,15 +187,7 @@ pub trait StateReadExt: StateRead {
         compact_block.block_root = block_root;
 
         // If the block ends an epoch, also close the epoch in the TCT
-        if Epoch::from_height(
-            height,
-            self.get_chain_params()
-                .await
-                .expect("chain params request must succeed")
-                .epoch_duration,
-        )
-        .is_epoch_end(height)
-        {
+        if self.epoch().await.unwrap().is_epoch_end(height) {
             tracing::debug!(?height, "end of epoch");
 
             // TODO: Put updated FMD parameters in the compact block
@@ -302,8 +294,7 @@ pub(crate) trait StateWriteExt: StateWrite {
         self.set_sct_block_anchor(height, compact_block.block_root);
         // Write the current epoch anchor, if on an epoch boundary:
         if let Some(epoch_root) = compact_block.epoch_root {
-            let epoch_duration = self.get_epoch_duration().await?;
-            let index = Epoch::from_height(height, epoch_duration).index;
+            let index = self.epoch().await?.index;
             self.set_sct_epoch_anchor(index, epoch_root);
         }
 
