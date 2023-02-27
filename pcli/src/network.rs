@@ -43,13 +43,27 @@ impl App {
         plan: TransactionPlan,
     ) -> impl Future<Output = Result<Transaction>> + '_ {
         println!("building transaction...");
-        penumbra_wallet::build_transaction(
+        let start = std::time::Instant::now();
+        let tx = penumbra_wallet::build_transaction(
             &self.fvk,
             self.view.as_mut().unwrap(),
             &mut self.custody,
             OsRng,
             plan,
-        )
+        );
+        async move {
+            let tx = tx.await?;
+            let elapsed = start.elapsed();
+            println!(
+                "finished proving in {}.{:03} seconds [{} actions, {} proofs, {} bytes]",
+                elapsed.as_secs(),
+                elapsed.subsec_millis(),
+                tx.actions().count(),
+                tx.num_proofs(),
+                tx.encode_to_vec().len()
+            );
+            Ok(tx)
+        }
     }
 
     /// Submits a transaction to the network.

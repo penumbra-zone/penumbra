@@ -59,6 +59,17 @@ impl Default for Transaction {
 }
 
 impl Transaction {
+    pub fn num_proofs(&self) -> usize {
+        self.transaction_body
+            .actions
+            .iter()
+            .map(|action| match action {
+                Action::Spend(_) => 1,
+                Action::Output(_) => 1,
+                _ => 0,
+            })
+            .sum()
+    }
     pub fn payload_keys(
         &self,
         fvk: &FullViewingKey,
