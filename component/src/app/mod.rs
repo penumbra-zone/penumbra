@@ -104,8 +104,17 @@ impl App {
         // Both stateful and stateless checks take the transaction as
         // verification context.  The separate clone of the Arc<Transaction>
         // means it can be passed through the whole tree of checks.
-        tx.check_stateless(tx.clone()).await?;
-        tx.check_stateful(self.state.clone()).await?;
+        //
+        // We spawn tasks for each set of checks, to do CPU-bound stateless checks
+        // and I/O-bound stateful checks at the same time.
+        let tx2 = tx.clone();
+        let stateless = tokio::spawn(async move { tx2.check_stateless(tx2.clone()).await });
+        let tx2 = tx.clone();
+        let state = self.state.clone();
+        let stateful = tokio::spawn(async move { tx2.check_stateful(state).await });
+
+        stateless.await??;
+        stateful.await??;
 
         // At this point, the stateful checks should have completed,
         // leaving us with exclusive access to the Arc<State>.
