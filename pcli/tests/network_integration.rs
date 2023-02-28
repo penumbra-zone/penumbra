@@ -287,7 +287,6 @@ fn swap() {
     thread::sleep(block_time);
 }
 
-// Temporarily disabled until #1938 is fixed.
 #[ignore]
 #[test]
 fn governance_submit_proposal() {
