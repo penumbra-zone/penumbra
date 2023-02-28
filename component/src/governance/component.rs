@@ -103,7 +103,7 @@ pub async fn enact_all_passed_proposals<S: StateWrite>(mut state: S) -> Result<(
                     match state.enact_proposal(&payload).await? {
                         Ok(()) => {}
                         Err(error) => {
-                            tracing::error!(proposal = %proposal_id, %error, "failed to enact proposal");
+                            tracing::warn!(proposal = %proposal_id, %error, "failed to enact proposal");
                         }
                     };
                 }
