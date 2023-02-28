@@ -4,11 +4,14 @@ use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_crypto::ProposalNft;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::{action::ProposalWithdraw, Transaction};
+use penumbra_transaction::{
+    action::{proposal, ProposalWithdraw},
+    Transaction,
+};
 
 use crate::{
     action_handler::ActionHandler,
-    governance::{proposal, StateReadExt, StateWriteExt},
+    governance::{StateReadExt, StateWriteExt},
     shielded_pool::SupplyWrite,
 };
 

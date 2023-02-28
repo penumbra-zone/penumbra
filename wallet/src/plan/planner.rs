@@ -7,10 +7,7 @@ use std::{
 use anyhow::{anyhow, Result};
 
 use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_component::{
-    governance::proposal::Outcome,
-    stake::{rate::RateData, validator},
-};
+use penumbra_component::stake::{rate::RateData, validator};
 use penumbra_crypto::{
     asset::Amount,
     asset::Denom,
@@ -24,7 +21,8 @@ use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
 use penumbra_tct as tct;
 use penumbra_transaction::{
     action::{
-        Proposal, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote, Vote,
+        proposal, Proposal, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote,
+        Vote,
     },
     plan::{
         ActionPlan, DelegatorVotePlan, MemoPlan, OutputPlan, SpendPlan, SwapClaimPlan, SwapPlan,
@@ -288,7 +286,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         &mut self,
         proposal: u64,
         deposit_amount: Amount,
-        outcome: Outcome<()>,
+        outcome: proposal::Outcome<()>,
     ) -> &mut Self {
         self.action(ActionPlan::ProposalDepositClaim(ProposalDepositClaim {
             proposal,

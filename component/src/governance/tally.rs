@@ -2,16 +2,10 @@ use std::ops::{Add, AddAssign};
 
 use penumbra_chain::params::{ChainParameters, Ratio};
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType};
-use penumbra_transaction::action::{proposal::Withdrawn, Vote};
-
-use super::proposal;
-
-// use super::{proposal::Withdrawn, StateReadExt as _};
-// use crate::stake::StateReadExt as _;
-// use penumbra_chain::{params::Ratio, StateReadExt as _};
-// use penumbra_storage::StateRead;
-
-// use super::proposal::Outcome;
+use penumbra_transaction::action::{
+    proposal::{self, Withdrawn},
+    Vote,
+};
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Tally {

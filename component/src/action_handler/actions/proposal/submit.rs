@@ -5,11 +5,10 @@ use async_trait::async_trait;
 use penumbra_chain::StateReadExt as _;
 use penumbra_crypto::{ProposalNft, VotingReceiptToken, STAKING_TOKEN_DENOM};
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::action::{Proposal, ProposalPayload};
+use penumbra_transaction::action::{proposal, Proposal, ProposalPayload};
 use penumbra_transaction::{action::ProposalSubmit, Transaction};
 
 use crate::action_handler::ActionHandler;
-use crate::governance::proposal;
 use crate::governance::{StateReadExt as _, StateWriteExt as _};
 use crate::shielded_pool::{StateReadExt, StateWriteExt as _, SupplyWrite};
 

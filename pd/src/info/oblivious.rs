@@ -6,17 +6,13 @@ use futures::{
     TryFutureExt,
 };
 use penumbra_chain::StateReadExt as _;
+use penumbra_component::shielded_pool::{StateReadExt as _, SupplyRead as _};
 use penumbra_component::stake::{validator, StateReadExt as _};
-use penumbra_component::{
-    governance::proposal::chain_params::MutableParam,
-    shielded_pool::{StateReadExt as _, SupplyRead as _},
-};
 use penumbra_proto::{
     client::v1alpha1::{
         oblivious_query_service_server::ObliviousQueryService, AssetListRequest, AssetListResponse,
         ChainParametersRequest, ChainParametersResponse, CompactBlockRangeRequest,
-        CompactBlockRangeResponse, MutableParametersRequest, MutableParametersResponse,
-        ValidatorInfoRequest, ValidatorInfoResponse,
+        CompactBlockRangeResponse, ValidatorInfoRequest, ValidatorInfoResponse,
     },
     DomainType,
 };
@@ -61,10 +57,6 @@ impl ObliviousQueryService for Info {
     type ValidatorInfoStream =
         Pin<Box<dyn futures::Stream<Item = Result<ValidatorInfoResponse, tonic::Status>> + Send>>;
 
-    type MutableParametersStream = Pin<
-        Box<dyn futures::Stream<Item = Result<MutableParametersResponse, tonic::Status>> + Send>,
-    >;
-
     #[instrument(skip(self, request))]
     async fn chain_parameters(
         &self,
@@ -85,40 +77,6 @@ impl ObliviousQueryService for Info {
         Ok(tonic::Response::new(ChainParametersResponse {
             chain_parameters: Some(chain_params.into()),
         }))
-    }
-
-    #[instrument(skip(self, request))]
-    async fn mutable_parameters(
-        &self,
-        request: tonic::Request<MutableParametersRequest>,
-    ) -> Result<tonic::Response<Self::MutableParametersStream>, Status> {
-        let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
-
-        let mutable_params = MutableParam::iter();
-
-        let stream = try_stream! {
-            for param in mutable_params {
-                yield param.to_proto();
-            }
-        };
-
-        Ok(tonic::Response::new(
-            stream
-                .map_ok(|params| MutableParametersResponse {
-                    chain_parameter: Some(params),
-                })
-                .map_err(|e: anyhow::Error| {
-                    // Should be impossible, but.
-                    tonic::Status::unavailable(format!("error getting mutable params: {e}"))
-                })
-                // TODO: how do we instrument a Stream
-                //.instrument(Span::current())
-                .boxed(),
-        ))
     }
 
     #[instrument(skip(self, request))]

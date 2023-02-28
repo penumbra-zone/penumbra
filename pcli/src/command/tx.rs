@@ -605,7 +605,9 @@ impl TxCmd {
                 proposal_id,
                 source,
             }) => {
-                use penumbra_component::governance::*;
+                use penumbra_component::governance::state_key;
+                use penumbra_transaction::action::proposal;
+
                 let fee = Fee::from_staking_token_amount((*fee).into());
 
                 let mut client = app.specific_client().await?;

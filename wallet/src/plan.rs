@@ -2,8 +2,8 @@ use std::collections::BTreeMap;
 use tonic::transport::Channel;
 
 use anyhow::{Context, Result};
+use penumbra_component::stake::rate::RateData;
 use penumbra_component::stake::validator;
-use penumbra_component::{governance::proposal::Outcome, stake::rate::RateData};
 use penumbra_crypto::{
     keys::AddressIndex, transaction::Fee, Address, Amount, FullViewingKey, Value,
 };
@@ -12,7 +12,7 @@ use penumbra_proto::{
     view::v1alpha1::NotesRequest,
 };
 use penumbra_transaction::{
-    action::{Proposal, ValidatorVote},
+    action::{proposal, Proposal, ValidatorVote},
     plan::TransactionPlan,
 };
 use penumbra_view::{SpendableNoteRecord, ViewClient};
@@ -348,7 +348,7 @@ pub async fn proposal_deposit_claim<V, R>(
     rng: R,
     proposal_id: u64,
     deposit_amount: Amount,
-    outcome: Outcome<()>,
+    outcome: proposal::Outcome<()>,
     fee: Fee,
     source_address: AddressIndex,
 ) -> Result<TransactionPlan>

@@ -16,7 +16,7 @@ use penumbra_crypto::{
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_tct as tct;
-use penumbra_transaction::action::{Proposal, ProposalPayload, Vote};
+use penumbra_transaction::action::{proposal, Proposal, ProposalPayload, Vote};
 use tokio::task::JoinSet;
 
 use crate::{
@@ -24,7 +24,7 @@ use crate::{
     stake::{rate::RateData, validator, StateReadExt as _},
 };
 
-use super::{proposal, state_key, tally::Tally};
+use super::{state_key, tally::Tally};
 
 #[async_trait]
 pub trait StateReadExt: StateRead + crate::stake::StateReadExt {

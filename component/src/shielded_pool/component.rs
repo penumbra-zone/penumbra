@@ -1,9 +1,7 @@
 use crate::Component;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
-use penumbra_chain::{
-    genesis, sync::CompactBlock, Epoch, NoteSource, SpendInfo, StateReadExt as _,
-};
+use penumbra_chain::{genesis, sync::CompactBlock, NoteSource, SpendInfo, StateReadExt as _};
 use penumbra_crypto::{asset, note, Nullifier, Value};
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};

@@ -40,22 +40,6 @@ pub struct ChainParametersResponse {
         super::super::core::chain::v1alpha1::ChainParameters,
     >,
 }
-/// Requests the governance-mutable parameters available for the chain.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MutableParametersRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MutableParametersResponse {
-    #[prost(message, optional, tag = "1")]
-    pub chain_parameter: ::core::option::Option<
-        super::super::core::governance::v1alpha1::MutableChainParameter,
-    >,
-}
 /// Requests information on the chain's validators.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -621,28 +605,6 @@ pub mod oblivious_query_service_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
-        pub async fn mutable_parameters(
-            &mut self,
-            request: impl tonic::IntoRequest<super::MutableParametersRequest>,
-        ) -> Result<
-            tonic::Response<tonic::codec::Streaming<super::MutableParametersResponse>>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.client.v1alpha1.ObliviousQueryService/MutableParameters",
-            );
-            self.inner.server_streaming(request.into_request(), path, codec).await
-        }
         pub async fn validator_info(
             &mut self,
             request: impl tonic::IntoRequest<super::ValidatorInfoRequest>,
@@ -1201,16 +1163,6 @@ pub mod oblivious_query_service_server {
             &self,
             request: tonic::Request<super::ChainParametersRequest>,
         ) -> Result<tonic::Response<super::ChainParametersResponse>, tonic::Status>;
-        /// Server streaming response type for the MutableParameters method.
-        type MutableParametersStream: futures_core::Stream<
-                Item = Result<super::MutableParametersResponse, tonic::Status>,
-            >
-            + Send
-            + 'static;
-        async fn mutable_parameters(
-            &self,
-            request: tonic::Request<super::MutableParametersRequest>,
-        ) -> Result<tonic::Response<Self::MutableParametersStream>, tonic::Status>;
         /// Server streaming response type for the ValidatorInfo method.
         type ValidatorInfoStream: futures_core::Stream<
                 Item = Result<super::ValidatorInfoResponse, tonic::Status>,
@@ -1369,48 +1321,6 @@ pub mod oblivious_query_service_server {
                                 send_compression_encodings,
                             );
                         let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/penumbra.client.v1alpha1.ObliviousQueryService/MutableParameters" => {
-                    #[allow(non_camel_case_types)]
-                    struct MutableParametersSvc<T: ObliviousQueryService>(pub Arc<T>);
-                    impl<
-                        T: ObliviousQueryService,
-                    > tonic::server::ServerStreamingService<
-                        super::MutableParametersRequest,
-                    > for MutableParametersSvc<T> {
-                        type Response = super::MutableParametersResponse;
-                        type ResponseStream = T::MutableParametersStream;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::ResponseStream>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::MutableParametersRequest>,
-                        ) -> Self::Future {
-                            let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).mutable_parameters(request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let inner = inner.0;
-                        let method = MutableParametersSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
-                        let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)

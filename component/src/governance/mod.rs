@@ -3,7 +3,6 @@ pub(crate) mod event;
 mod metrics;
 mod view;
 
-pub mod proposal;
 pub mod state_key;
 pub mod tally;
 
