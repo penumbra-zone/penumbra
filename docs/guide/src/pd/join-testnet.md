@@ -115,10 +115,6 @@ $ cat validator.toml
 # The identity_key and governance_key fields are auto-filled with values derived
 # from this wallet's account.
 #
-# The consensus_key field is random, and needs to be replaced with your
-# tendermint instance's public key, which can be found in
-# `priv_validator_key.json`.
-#
 # You should fill in the name, website, and description fields.
 #
 # By default, validators are disabled, and cannot be delegated to. To change

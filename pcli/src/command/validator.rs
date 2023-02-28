@@ -218,6 +218,16 @@ impl ValidatorCmd {
                     }
                 };
 
+                // Customize the human-readable comment text in the definition.
+                let generated_key_notice: String = match tendermint_validator_keyfile {
+                    Some(_s) => String::from(""),
+                    None => format!(
+                        "\n# The consensus_key field is random, and needs to be replaced with your
+# tendermint instance's public key, which can be found in `priv_validator_key.json`.
+#"
+                    ),
+                };
+
                 let template: ValidatorToml = Validator {
                     identity_key,
                     governance_key,
@@ -241,11 +251,7 @@ impl ValidatorCmd {
 #
 # The identity_key and governance_key fields are auto-filled with values derived
 # from this wallet's account.
-#
-# The consensus_key field is random, and needs to be replaced with your
-# tendermint instance's public key, which can be found in
-# `priv_validator_key.json`.
-#
+# {}
 # You should fill in the name, website, and description fields.
 #
 # By default, validators are disabled, and cannot be delegated to. To change
@@ -256,6 +262,7 @@ impl ValidatorCmd {
 
 {}
 ",
+                    generated_key_notice,
                     toml::to_string_pretty(&template)?
                 );
 
