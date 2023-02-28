@@ -130,7 +130,7 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
         nullifier: &Nullifier,
     ) -> Result<()> {
         if let Some(height) = self
-            .get_proto::<u64>(&state_key::per_proposal_voted_nullifier_lookup(
+            .get_proto::<u64>(&state_key::voted_nullifier_lookup_for_proposal(
                 proposal_id,
                 nullifier,
             ))
@@ -572,7 +572,7 @@ pub trait StateWriteExt: StateWrite {
     /// Mark a nullifier as spent for a given proposal.
     async fn mark_nullifier_voted(&mut self, proposal_id: u64, nullifier: &Nullifier) {
         self.put_proto(
-            state_key::per_proposal_voted_nullifier_lookup(proposal_id, nullifier),
+            state_key::voted_nullifier_lookup_for_proposal(proposal_id, nullifier),
             self.height().await,
         );
     }
@@ -632,7 +632,7 @@ pub trait StateWriteExt: StateWrite {
     /// Mark a nullifier as having voted on a proposal.
     async fn mark_nullifier_voted_on_proposal(&mut self, proposal_id: u64, nullifier: &Nullifier) {
         self.put_proto(
-            state_key::per_proposal_voted_nullifier_lookup(proposal_id, nullifier),
+            state_key::voted_nullifier_lookup_for_proposal(proposal_id, nullifier),
             self.height().await,
         );
     }

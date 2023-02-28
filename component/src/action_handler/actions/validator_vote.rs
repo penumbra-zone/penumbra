@@ -68,6 +68,7 @@ impl ActionHandler for ValidatorVote {
                 },
         } = self;
 
+        tracing::debug!(proposal = %proposal, "cast validator vote");
         state.cast_validator_vote(*proposal, *identity_key, *vote);
 
         // If a proposal is an emergency proposal, every validator vote triggers a check to see if
@@ -107,8 +108,6 @@ impl ActionHandler for ValidatorVote {
                 );
             }
         }
-
-        tracing::debug!(proposal = %proposal, "cast validator vote");
 
         Ok(())
     }

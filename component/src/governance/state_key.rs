@@ -37,7 +37,7 @@ pub fn all_unfinished_proposals() -> &'static str {
     "governance/unfinished_proposals/"
 }
 
-pub fn per_proposal_voted_nullifier_lookup(proposal_id: u64, nullifier: &Nullifier) -> String {
+pub fn voted_nullifier_lookup_for_proposal(proposal_id: u64, nullifier: &Nullifier) -> String {
     format!("governance/proposal/{proposal_id}/voted_nullifiers/{nullifier}")
 }
 

@@ -6,7 +6,7 @@ use penumbra_transaction::action::proposal;
 use tendermint::abci;
 use tracing::instrument;
 
-use super::{StateReadExt as _, StateWriteExt as _};
+use super::{tally, StateReadExt as _, StateWriteExt as _};
 use crate::{shielded_pool::StateWriteExt, Component};
 
 pub struct Governance {}
@@ -91,23 +91,31 @@ pub async fn enact_all_passed_proposals<S: StateWrite>(mut state: S) -> Result<(
                 // If the proposal passes, enact it now (or try to: if the proposal can't be
                 // enacted, continue onto the next one without throwing an error, just trace the
                 // error, since proposals are allowed to fail to be enacted)
-                if outcome.is_pass() {
-                    // IMPORTANT: We **ONLY** enact proposals that have concluded, and whose
-                    // tally is `Pass`, and whose state is not `Withdrawn`. This is the sole
-                    // place in the codebase where we prevent withdrawn proposals from being
-                    // passed!
-                    let payload = state
-                        .proposal_payload(proposal_id)
-                        .await?
-                        .context("proposal has payload")?;
-                    match state.enact_proposal(&payload).await? {
-                        Ok(()) => {
-                            tracing::info!(proposal = %proposal_id, "proposal passed and enacted successfully");
-                        }
-                        Err(error) => {
-                            tracing::warn!(proposal = %proposal_id, %error, "proposal passed but failed to enact");
-                        }
-                    };
+                match outcome {
+                    tally::Outcome::Pass => {
+                        // IMPORTANT: We **ONLY** enact proposals that have concluded, and whose
+                        // tally is `Pass`, and whose state is not `Withdrawn`. This is the sole
+                        // place in the codebase where we prevent withdrawn proposals from being
+                        // passed!
+                        let payload = state
+                            .proposal_payload(proposal_id)
+                            .await?
+                            .context("proposal has payload")?;
+                        match state.enact_proposal(&payload).await? {
+                            Ok(()) => {
+                                tracing::info!(proposal = %proposal_id, "proposal passed and enacted successfully");
+                            }
+                            Err(error) => {
+                                tracing::warn!(proposal = %proposal_id, %error, "proposal passed but failed to enact");
+                            }
+                        };
+                    }
+                    tally::Outcome::Fail => {
+                        tracing::info!(proposal = %proposal_id, "proposal failed");
+                    }
+                    tally::Outcome::Veto => {
+                        tracing::info!(proposal = %proposal_id, "proposal vetoed");
+                    }
                 }
 
                 outcome.into()
