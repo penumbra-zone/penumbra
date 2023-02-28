@@ -88,6 +88,7 @@ impl ActionHandler for ValidatorVote {
             let total_voting_power = state.total_voting_power().await?;
             let chain_params = state.get_chain_params().await?;
             if tally.emergency_pass(total_voting_power, &chain_params) {
+                // If the emergency pass condition is met, enact the proposal
                 tracing::debug!(proposal = %proposal, "emergency pass condition met, trying to enact proposal");
                 // Try to enact the proposal based on its payload
                 match state.enact_proposal(&proposal_payload).await? {
@@ -96,7 +97,8 @@ impl ActionHandler for ValidatorVote {
                         tracing::warn!(proposal = %proposal, %error, "error enacting emergency proposal")
                     }
                 }
-                // Update the proposal state to reflect the outcome
+                // Update the proposal state to reflect the outcome (it will always be passed,
+                // because we got to this point)
                 state.put_proposal_state(
                     *proposal,
                     proposal::State::Finished {
