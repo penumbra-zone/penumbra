@@ -773,50 +773,26 @@ pub trait StateWriteExt: StateWrite {
                     }
                 }
             }
-            ProposalPayload::ParameterChange {
-                effective_height: _,
-                new_parameters: _,
-            } => {
-                // TODO: implement immediate parameter change
-                // let height = state
-                //     .get_block_height()
-                //     .await
-                //     .context("can get block height")?;
+            ProposalPayload::ParameterChange { old, new } => {
+                // If there has been a chain upgrade while the proposal was pending, the stateless
+                // verification criteria for the parameter change proposal could have changed, so we
+                // should check them again here, just to be sure:
+                old.check_valid_update(new)?;
 
-                // // Since other proposals may have changed the chain parameters in the meantime,
-                // // and parameter validation must ensure consistency across all parameters, we
-                // // need to perform a final validation step prior to applying the new parameters.
-                // let old_parameters = state
-                //     .get_chain_params()
-                //     .await
-                //     .context("can get chain parameters")?;
+                // Check that the old parameters are an exact match for the current parameters, or
+                // else abort the update.
+                let current = self.get_chain_params().await?;
+                if **old != current {
+                    return Ok(Err(anyhow::anyhow!(
+                        "current chain parameters do not match the old parameters in the proposal"
+                    )));
+                }
 
-                // if !chain_params::is_valid_stateless(&new_parameters)
-                //     || !chain_params::is_valid_stateful(&new_parameters, &old_parameters)
-                // {
-                //     // The parameters are invalid, so we cannot apply them.
-                //     tracing::info!(proposal = %proposal_id, %height, "chain param proposal passed, however the new parameters are invalid");
-                //     // TODO: should there be a more descriptive error message here?
-                //     return Err(anyhow::anyhow!("invalid chain parameters, could not apply"));
-                // }
-
-                // // Apply the new (valid) parameter changes immediately:
-                // let new_params = chain_params::resolve_parameters(&new_parameters, &old_parameters)
-                //     .context("can resolve validated parameters")?;
-
-                // state.put_chain_params(new_params);
+                // Update the chain parameters
+                self.put_chain_params((**new).clone());
             }
-            ProposalPayload::DaoSpend {
-                schedule_transactions: _,
-                cancel_transactions: _,
-            } => {
-                // TODO: schedule transaction cancellations by removing the first matching one from the
-                // front of the schedule for their effective block
-                // TODO: schedule new transactions by appending them to the end of the schedule for their
-                // effective block
-                // TODO: don't forget to fill in the part in the shielded pool where the transactions
-                // actually get included in a block
-                todo!("implement daospend execution")
+            ProposalPayload::DaoSpend { transaction_plan } => {
+                // TODO: enact dao spend
             }
         }
 

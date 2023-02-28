@@ -163,6 +163,8 @@ impl ChainParameters {
     }
 }
 
+/// Ensure all of the booleans are true, and if any are false, generate an error describing which
+/// failed, based on the provided descriptions.
 fn check_all<'a>(checks: impl IntoIterator<Item = (bool, impl Display + 'a)>) -> Result<()> {
     let failed_because = checks
         .into_iter()
@@ -182,6 +184,8 @@ fn check_all<'a>(checks: impl IntoIterator<Item = (bool, impl Display + 'a)>) ->
     Ok(())
 }
 
+/// Ensure that all of the provided pairs of values are equal, and if any are not, generate an error
+/// stating that the varying names can't be changed.
 fn check_invariant<'a, T: Eq + 'a>(
     sides: impl IntoIterator<Item = (&'a T, &'a T, impl Display + 'a)>,
 ) -> Result<()> {

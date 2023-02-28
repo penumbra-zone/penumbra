@@ -4,6 +4,7 @@ package penumbra.core.governance.v1alpha1;
 
 import "google/protobuf/any.proto";
 import "penumbra/core/crypto/v1alpha1/crypto.proto";
+import "penumbra/core/chain/v1alpha1/chain.proto";
 
 message ProposalSubmit {
   // The proposal to be submitted.
@@ -211,55 +212,26 @@ message Proposal {
     bool halt_chain = 1;
   }
 
-  // A parameter change proposal describes an alteration to one or more chain parameters, which
-  // should take effect at a particular block height `effective_height` (which should be at least
-  // the height when the proposal would be passed).
+  // A parameter change proposal describes a replacement of the chain parameters, which should take
+  // effect when the proposal is passed.
   message ParameterChange {
-    // The height at which the change should take effect.
-    uint64 effective_height = 1;
+    // The old chain parameters to be replaced: even if the proposal passes, the update will not be
+    // applied if the chain parameters have changed *at all* from these chain parameters. Usually,
+    // this should be set to the current chain parameters at time of proposal.
+    chain.v1alpha1.ChainParameters old_parameters = 1;
 
-    // The set of changes to chain parameters.
-    repeated SetParameter new_parameters = 2;
-
-    // A single change to an individual chain parameter.
-    message SetParameter {
-      // The name of the parameter.
-      string parameter = 1;
-      // Its new value, as a string (this will be parsed as appropriate for the parameter's type).
-      string value = 2;
-    }
+    // The new chain parameters to be set: the *entire* chain parameters will be replaced with these
+    // at the time the proposal is passed.
+    chain.v1alpha1.ChainParameters new_parameters = 2;
   }
 
   // A DAO spend proposal describes zero or more transactions to execute on behalf of the DAO, with
   // access to its funds, and zero or more scheduled transactions from previous passed proposals to
   // cancel.
   message DaoSpend {
-    // The sequence of transactions to schedule for execution.
-    repeated ScheduleTransaction schedule_transactions = 1;
-
-    // A sequence of previously-scheduled transactions to cancel before they are executed.
-    repeated CancelTransaction cancel_transactions = 2;
-
-    // A transaction to be executed as a consequence of this proposal.
-    //
-    // It is permissible for there to be duplicate transactions scheduled for a given height; they
-    // will both be executed.
-    message ScheduleTransaction {
-      // The height at which the transaction should be executed.
-      uint64 execute_at_height = 1;
-      // The transaction to be executed.
-      google.protobuf.Any transaction = 2;
-    }
-
-    // A transaction to be canceled as a consequence of this proposal.
-    //
-    // If there are multiple duplicate transactions at the height, this cancels only the first.
-    // To cancel more of them, specify duplicate cancellations.
-    message CancelTransaction {
-      // The height for which the transaction was scheduled.
-      uint64 scheduled_at_height = 1;
-      // The auth hash of the transaction to cancel.
-      crypto.v1alpha1.EffectHash effect_hash = 2;
-    }
+    // The transaction plan to be executed at the time the proposal is passed. This must be a
+    // transaction plan which can be executed by the DAO, which means it can't require any witness
+    // data or authorization signatures, but it may use the `DaoSpend` action.
+    google.protobuf.Any transaction_plan = 2;
   }
 }

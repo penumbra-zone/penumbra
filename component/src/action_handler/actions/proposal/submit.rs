@@ -42,19 +42,11 @@ impl ActionHandler for ProposalSubmit {
         match payload {
             Signaling { commit: _ } => { /* all signaling proposals are valid */ }
             Emergency { halt_chain: _ } => { /* all emergency proposals are valid */ }
-            ParameterChange {
-                effective_height: _,
-                new_parameters,
-            } => {
-                // Check that new parameters are marked as mutable and within valid bounds
-                if !chain_params::is_valid_stateless(new_parameters) {
-                    return Err(anyhow::anyhow!("invalid chain parameters"));
-                }
+            ParameterChange { old, new } => {
+                old.check_valid_update(new)
+                    .context("invalid change to chain parameters")?;
             }
-            DaoSpend {
-                schedule_transactions: _,
-                cancel_transactions: _,
-            } => {
+            DaoSpend { transaction_plan } => {
                 // TODO: check that scheduled transactions are valid without any witness or auth data
                 anyhow::bail!("DAO spend proposals are not yet supported")
             }
@@ -94,36 +86,11 @@ impl ActionHandler for ProposalSubmit {
         match &proposal.payload {
             ProposalPayload::Signaling { .. } => { /* no stateful checks for signaling */ }
             ProposalPayload::Emergency { .. } => { /* no stateful checks for emergency */ }
-            ProposalPayload::ParameterChange {
-                effective_height,
-                new_parameters,
-            } => {
-                state
-                    .check_height_in_future_of_voting_end(*effective_height)
-                    .await?;
-
-                let old_parameters = state.get_chain_params().await?;
-
-                if !chain_params::is_valid_stateful(new_parameters, &old_parameters) {
-                    // TODO: should this return a more descriptive error?
-                    return Err(anyhow::anyhow!("invalid chain parameters"));
-                }
+            ProposalPayload::ParameterChange { .. } => {
+                /* no stateful checks for parameter change (checks are applied when proposal finishes) */
             }
-            ProposalPayload::DaoSpend {
-                schedule_transactions,
-                cancel_transactions,
-            } => {
-                for (effective_height, _) in schedule_transactions.iter() {
-                    state
-                        .check_height_in_future_of_voting_end(*effective_height)
-                        .await?;
-                }
-                for (scheduled_height, _) in cancel_transactions.iter() {
-                    state
-                        .check_height_in_future_of_voting_end(*scheduled_height)
-                        .await?;
-                }
-                // TODO: check that all transactions to cancel exist already and match auth hash
+            ProposalPayload::DaoSpend { .. } => {
+                /* no stateful checks for DAO spend (checks are applied when proposal finishes) */
             }
         }
 
