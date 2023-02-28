@@ -46,8 +46,11 @@ pub struct Opt {
     #[clap(subcommand)]
     pub cmd: Command,
     /// The directory to store the wallet and view data in.
-    #[clap(short, long, default_value_t = default_data_dir())]
+    #[clap(short, long, default_value_t = default_data_dir(), env = "PENUMBRA_DATA_PATH")]
     pub data_path: Utf8PathBuf,
+    /// The path to the wallet file itself (overrides `--data-path` if it is set).
+    #[clap(long, env = "PENUMBRA_CUSTODY_PATH")]
+    pub custody_path: Option<Utf8PathBuf>,
     /// If set, use a remote view service instead of local synchronization.
     #[clap(short, long, env = "PENUMBRA_VIEW_ADDRESS")]
     view_address: Option<SocketAddr>,
@@ -70,7 +73,11 @@ impl Opt {
     }
 
     pub async fn into_app(self) -> Result<(App, Command)> {
-        let custody_path = self.data_path.join(crate::CUSTODY_FILE_NAME);
+        let data_path = self.data_path.clone();
+        let custody_path = self
+            .custody_path
+            .clone()
+            .unwrap_or_else(|| data_path.join(crate::CUSTODY_FILE_NAME));
         let legacy_wallet_path = self.data_path.join(legacy::WALLET_FILE_NAME);
 
         // Try to auto-migrate the legacy wallet file to the new location, if:
@@ -121,7 +128,7 @@ impl Opt {
             // Use a remote view service.
             tracing::info!(%address, "using remote view service");
 
-            let ep = tonic::transport::Endpoint::new(format!("http://{}", address))?;
+            let ep = tonic::transport::Endpoint::new(format!("http://{address}"))?;
             box_grpc_svc::connect(ep).await?
         } else {
             // Use an in-memory view service.

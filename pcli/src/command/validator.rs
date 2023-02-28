@@ -21,7 +21,11 @@ use crate::App;
 #[derive(Debug, clap::Subcommand)]
 pub enum ValidatorCmd {
     /// Display the validator identity key derived from this wallet's spend seed.
-    Identity,
+    Identity {
+        /// Use Base64 encoding for the identity key, rather than the default of Bech32.
+        #[clap(long)]
+        base64: bool,
+    },
     /// Manage your validator's definition.
     #[clap(subcommand)]
     Definition(DefinitionCmd),
@@ -80,7 +84,7 @@ pub enum DefinitionCmd {
 impl ValidatorCmd {
     pub fn offline(&self) -> bool {
         match self {
-            ValidatorCmd::Identity => true,
+            ValidatorCmd::Identity { .. } => true,
             ValidatorCmd::Definition(DefinitionCmd::Upload { .. }) => false,
             ValidatorCmd::Definition(
                 DefinitionCmd::Template { .. } | DefinitionCmd::Fetch { .. },
@@ -94,10 +98,15 @@ impl ValidatorCmd {
         let sk = app.wallet.spend_key.clone();
         let fvk = sk.full_viewing_key().clone();
         match self {
-            ValidatorCmd::Identity => {
+            ValidatorCmd::Identity { base64 } => {
                 let ik = IdentityKey(fvk.spend_verification_key().clone());
 
-                println!("{ik}");
+                if *base64 {
+                    use base64::{display::Base64Display, engine::general_purpose::STANDARD};
+                    println!("{}", Base64Display::new(&ik.0.to_bytes(), &STANDARD));
+                } else {
+                    println!("{ik}");
+                }
             }
             ValidatorCmd::Definition(DefinitionCmd::Upload { file, fee, source }) => {
                 // The definitions are stored in a JSON document,
