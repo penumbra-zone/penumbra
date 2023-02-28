@@ -216,10 +216,10 @@ impl Default for ChainParameters {
             proposal_voting_blocks: 720,
             proposal_deposit_amount: 10_000_000u64.into(), // 10,000,000 upenumbra = 10 penumbra
             // governance parameters copied from cosmos hub
-            proposal_valid_quorum: Ratio::new(2, 5),
-            proposal_pass_threshold: Ratio::new(1, 2),
+            proposal_valid_quorum: Ratio::new(40, 100),
+            proposal_pass_threshold: Ratio::new(50, 100),
             // veto threshold means if (no / no + yes + abstain) > veto_threshold, then proposal is vetoed
-            proposal_veto_threshold: Ratio::new(4, 5),
+            proposal_veto_threshold: Ratio::new(80, 100),
         }
     }
 }
