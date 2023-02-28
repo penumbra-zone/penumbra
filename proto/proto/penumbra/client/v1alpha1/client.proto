@@ -26,7 +26,6 @@ import "tendermint/types/validator.proto";
 service ObliviousQueryService {
   rpc CompactBlockRange(CompactBlockRangeRequest) returns (stream CompactBlockRangeResponse);
   rpc ChainParameters(ChainParametersRequest) returns (ChainParametersResponse);
-  rpc MutableParameters(MutableParametersRequest) returns (stream MutableParametersResponse);
   rpc ValidatorInfo(ValidatorInfoRequest) returns (stream ValidatorInfoResponse);
   rpc AssetList(AssetListRequest) returns (AssetListResponse);
 }
@@ -56,16 +55,6 @@ message ChainParametersRequest {
 
 message ChainParametersResponse {
   core.chain.v1alpha1.ChainParameters chain_parameters = 1;
-}
-
-// Requests the governance-mutable parameters available for the chain.
-message MutableParametersRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
-}
-
-message MutableParametersResponse {
-  core.governance.v1alpha1.MutableChainParameter chain_parameter = 1;
 }
 
 // Requests information on the chain's validators.

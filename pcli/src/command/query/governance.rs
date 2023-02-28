@@ -5,16 +5,11 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use futures::{StreamExt, TryStreamExt};
-use penumbra_component::governance::{
-    proposal::{self, chain_params::MutableParam},
-    state_key::*,
-};
+use futures::StreamExt;
+use penumbra_component::governance::state_key::*;
 use penumbra_crypto::stake::IdentityKey;
-use penumbra_proto::client::v1alpha1::{
-    MutableParametersRequest, PrefixValueRequest, PrefixValueResponse,
-};
-use penumbra_transaction::action::{Proposal, Vote};
+use penumbra_proto::client::v1alpha1::{PrefixValueRequest, PrefixValueResponse};
+use penumbra_transaction::action::{proposal, Proposal, Vote};
 use penumbra_view::ViewClient;
 use serde::Serialize;
 use serde_json::json;
@@ -37,8 +32,6 @@ pub enum GovernanceCmd {
         #[clap(subcommand)]
         query: PerProposalCmd,
     },
-    /// Query for the governance-modifiable chain parameters.
-    Parameters,
 }
 
 #[derive(Debug, clap::Subcommand)]
@@ -62,25 +55,6 @@ impl GovernanceCmd {
         let mut client = app.specific_client().await?;
 
         match self {
-            GovernanceCmd::Parameters => {
-                let mut client = app.oblivious_client().await?;
-
-                let params = client
-                    .mutable_parameters(MutableParametersRequest {
-                        chain_id: app.view().chain_params().await?.chain_id,
-                    })
-                    .await?
-                    .into_inner()
-                    .try_collect::<Vec<_>>()
-                    .await?;
-
-                let params: Result<Vec<MutableParam>, _> =
-                    params.into_iter().map(TryInto::try_into).collect();
-
-                let params = params?;
-
-                json(&params)?;
-            }
             GovernanceCmd::ListProposals { inactive } => {
                 let proposal_id_list: Vec<u64> = if *inactive {
                     let next: u64 = client.key_proto(next_proposal_id()).await?;

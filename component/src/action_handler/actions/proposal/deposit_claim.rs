@@ -4,11 +4,11 @@ use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_crypto::ProposalNft;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::action::proposal::Outcome;
+use penumbra_transaction::action::proposal::{self, Outcome};
 use penumbra_transaction::{action::ProposalDepositClaim, Transaction};
 
 use crate::action_handler::ActionHandler;
-use crate::governance::{proposal, StateReadExt as _, StateWriteExt as _};
+use crate::governance::{StateReadExt as _, StateWriteExt as _};
 use crate::shielded_pool::SupplyWrite;
 
 #[async_trait]

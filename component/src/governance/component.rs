@@ -2,11 +2,12 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use penumbra_chain::{genesis, StateReadExt};
 use penumbra_storage::StateWrite;
+use penumbra_transaction::action::proposal;
 use tendermint::abci;
 use tracing::instrument;
 
 use super::{StateReadExt as _, StateWriteExt as _};
-use crate::{governance::proposal, shielded_pool::StateWriteExt, Component};
+use crate::{shielded_pool::StateWriteExt, Component};
 
 pub struct Governance {}
 
