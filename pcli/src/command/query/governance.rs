@@ -152,29 +152,50 @@ impl GovernanceCmd {
                         .await?;
 
                     // Combine the two mappings
+                    let mut total = governance::Tally::default();
                     let mut all_votes_and_power: BTreeMap<String, serde_json::Value> =
                         BTreeMap::new();
                     for (identity_key, (vote, power)) in validator_votes_and_power.into_iter() {
-                        all_votes_and_power.insert(
-                            identity_key.to_string(),
-                            json!({
-                                "validator": {
+                        all_votes_and_power.insert(identity_key.to_string(), {
+                            let mut map = serde_json::Map::new();
+                            map.insert(
+                                "validator".to_string(),
+                                json!({
                                     vote.to_string(): power,
-                                },
-                                "delegators": delegator_tallies.remove(&identity_key),
-                            }),
-                        );
+                                }),
+                            );
+                            let delegator_tally =
+                                if let Some(tally) = delegator_tallies.remove(&identity_key) {
+                                    map.insert("delegators".to_string(), json_tally(&tally));
+                                    tally
+                                } else {
+                                    Default::default()
+                                };
+                            // Subtract delegator total from validator power, then add delegator
+                            // tally in to get the total tally for this validator:
+                            let sub_total =
+                                governance::Tally::from((vote, power - delegator_tally.total()))
+                                    + delegator_tally;
+                            map.insert("sub_total".to_string(), json_tally(&sub_total));
+                            total += sub_total;
+                            map.into()
+                        });
                     }
                     for (identity_key, tally) in delegator_tallies.into_iter() {
-                        all_votes_and_power.insert(
-                            identity_key.to_string(),
-                            json!({
-                                "delegators": tally,
-                            }),
-                        );
+                        all_votes_and_power.insert(identity_key.to_string(), {
+                            let mut map = serde_json::Map::new();
+                            let sub_total = tally;
+                            map.insert("delegators".to_string(), json_tally(&tally));
+                            map.insert("sub_total".to_string(), json_tally(&sub_total));
+                            total += sub_total;
+                            map.into()
+                        });
                     }
 
-                    json(&all_votes_and_power)?;
+                    json(&json!({
+                        "total": json_tally(&total),
+                        "details": all_votes_and_power,
+                    }))?;
                 }
             },
         }
@@ -188,6 +209,20 @@ fn json<T: Serialize>(value: &T) -> Result<()> {
     serde_json::to_writer_pretty(&mut writer, value)?;
     writer.write_all(b"\n")?;
     Ok(())
+}
+
+fn json_tally(tally: &governance::Tally) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    if tally.yes() > 0 {
+        map.insert("yes".to_string(), tally.yes().into());
+    }
+    if tally.no() > 0 {
+        map.insert("no".to_string(), tally.no().into());
+    }
+    if tally.abstain() > 0 {
+        map.insert("abstain".to_string(), tally.abstain().into());
+    }
+    map.into()
 }
 
 fn toml<T: Serialize>(value: &T) -> Result<()> {
