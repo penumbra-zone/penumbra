@@ -4,9 +4,6 @@ use penumbra_crypto::{asset::Cache, keys::AddressIndex, FullViewingKey, Value};
 use penumbra_view::ViewClient;
 #[derive(Debug, clap::Args)]
 pub struct BalanceCmd {
-    /// If set, breaks down balances by address.
-    #[clap(short, long)]
-    pub by_address: bool,
     #[clap(long)]
     /// If set, prints the value of each note individually.
     pub by_note: bool,
@@ -38,7 +35,7 @@ impl BalanceCmd {
                     })
                 })
                 .collect()
-        } else if self.by_address {
+        } else {
             let notes = view.unspent_notes_by_address_and_asset(fvk.hash()).await?;
 
             notes
@@ -54,34 +51,14 @@ impl BalanceCmd {
                     })
                 })
                 .collect()
-        } else {
-            let notes = view.unspent_notes_by_asset_and_address(fvk.hash()).await?;
-
-            notes
-                .iter()
-                .map(|(asset, notes)| {
-                    // Sum the notes for each index:
-                    let sum: u64 = notes
-                        .values()
-                        .flat_map(|records| {
-                            records.iter().map(|record| u64::from(record.note.amount()))
-                        })
-                        .sum();
-                    (None, asset.value(sum.into()))
-                })
-                .collect()
         };
 
         let (indexed_rows, ephemeral_rows) = combine_ephemeral(rows, self.by_note);
 
-        if self.by_address {
-            table.set_header(vec!["Addr Index", "Amount"]);
-        } else {
-            table.set_header(vec!["Amount"]);
-        }
+        table.set_header(vec!["Account", "Amount"]);
 
         for row in indexed_rows.iter().chain(ephemeral_rows.iter()) {
-            table.add_row(format_row(row, self.by_address, &asset_cache));
+            table.add_row(format_row(row, &asset_cache));
         }
 
         println!("{table}");
@@ -90,24 +67,13 @@ impl BalanceCmd {
     }
 }
 
-fn format_row(
-    row: &(Option<AddressIndex>, Value),
-    by_address: bool,
-    asset_cache: &Cache,
-) -> Vec<String> {
+fn format_row(row: &(Option<AddressIndex>, Value), asset_cache: &Cache) -> Vec<String> {
     let (index, value) = row;
 
     let mut string_row = Vec::with_capacity(2);
 
-    if by_address {
-        let index = u128::from(index.expect("--by-address specified, but no index set for note"));
-        let index_text = if index < u64::MAX as u128 {
-            format!("{index}")
-        } else {
-            "Ephemeral".to_string()
-        };
-
-        string_row.push(index_text);
+    if let Some(index) = index {
+        string_row.push(format!("{}", index.account));
     }
     string_row.push(value.format(asset_cache));
 
