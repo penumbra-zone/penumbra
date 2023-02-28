@@ -86,6 +86,7 @@ pub mod action {
         ProposalDepositClaim(
             super::super::super::governance::v1alpha1::ProposalDepositClaim,
         ),
+        /// Positions
         #[prost(message, tag = "30")]
         PositionOpen(super::super::super::dex::v1alpha1::PositionOpen),
         #[prost(message, tag = "31")]
@@ -543,10 +544,11 @@ pub mod action_plan {
         PositionOpen(super::super::super::dex::v1alpha1::PositionOpen),
         #[prost(message, tag = "31")]
         PositionClose(super::super::super::dex::v1alpha1::PositionClose),
+        /// The position withdraw/reward claim actions require balance information so they have Plan types.
         #[prost(message, tag = "32")]
-        PositionWithdraw(super::super::super::dex::v1alpha1::PositionWithdraw),
+        PositionWithdraw(super::super::super::dex::v1alpha1::PositionWithdrawPlan),
         #[prost(message, tag = "34")]
-        PositionRewardClaim(super::super::super::dex::v1alpha1::PositionRewardClaim),
+        PositionRewardClaim(super::super::super::dex::v1alpha1::PositionRewardClaimPlan),
         /// We don't need any extra information (yet) to understand delegations,
         /// because we don't yet use flow encryption.
         #[prost(message, tag = "40")]

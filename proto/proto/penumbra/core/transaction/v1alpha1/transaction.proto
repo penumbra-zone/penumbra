@@ -63,7 +63,7 @@ message Action {
     governance.v1alpha1.DelegatorVote delegator_vote = 21;
     governance.v1alpha1.ProposalDepositClaim proposal_deposit_claim = 22;
 
-    // The various position actions don't contain private data so they have no separate Plan types.
+    // Positions
     dex.v1alpha1.PositionOpen position_open = 30;
     dex.v1alpha1.PositionClose position_close = 31;
     dex.v1alpha1.PositionWithdraw position_withdraw = 32;
@@ -316,8 +316,10 @@ message ActionPlan {
 
         dex.v1alpha1.PositionOpen position_open = 30;
         dex.v1alpha1.PositionClose position_close = 31;
-        dex.v1alpha1.PositionWithdraw position_withdraw = 32;
-        dex.v1alpha1.PositionRewardClaim position_reward_claim = 34;
+
+        // The position withdraw/reward claim actions require balance information so they have Plan types.
+        dex.v1alpha1.PositionWithdrawPlan position_withdraw = 32;
+        dex.v1alpha1.PositionRewardClaimPlan position_reward_claim = 34;
 
         // We don't need any extra information (yet) to understand delegations,
         // because we don't yet use flow encryption.

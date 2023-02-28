@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 
 mod delegator_vote;
 mod output;
+mod position;
 mod spend;
 mod swap;
 mod swap_claim;
@@ -14,6 +15,7 @@ mod undelegate_claim;
 
 pub use delegator_vote::DelegatorVotePlan;
 pub use output::OutputPlan;
+pub use position::{PositionRewardClaimPlan, PositionWithdrawPlan};
 pub use spend::SpendPlan;
 pub use swap::SwapPlan;
 pub use swap_claim::SwapClaimPlan;
@@ -64,8 +66,12 @@ pub enum ActionPlan {
 
     PositionOpen(PositionOpen),
     PositionClose(PositionClose),
-    PositionWithdraw(PositionWithdraw),
-    PositionRewardClaim(PositionRewardClaim),
+    // PositionWithdrawPlan requires the balance of the funds to be withdrawn, so
+    // a plan must be used.
+    PositionWithdraw(PositionWithdrawPlan),
+    // Reward Claim requires the balance of the funds to be claimed, so a plan
+    // must be used.
+    PositionRewardClaim(PositionRewardClaimPlan),
 
     DaoSpend(DaoSpend),
     DaoOutput(DaoOutput),
@@ -181,14 +187,14 @@ impl From<PositionClose> for ActionPlan {
     }
 }
 
-impl From<PositionWithdraw> for ActionPlan {
-    fn from(inner: PositionWithdraw) -> ActionPlan {
+impl From<PositionWithdrawPlan> for ActionPlan {
+    fn from(inner: PositionWithdrawPlan) -> ActionPlan {
         ActionPlan::PositionWithdraw(inner)
     }
 }
 
-impl From<PositionRewardClaim> for ActionPlan {
-    fn from(inner: PositionRewardClaim) -> ActionPlan {
+impl From<PositionRewardClaimPlan> for ActionPlan {
+    fn from(inner: PositionRewardClaimPlan) -> ActionPlan {
         ActionPlan::PositionRewardClaim(inner)
     }
 }
