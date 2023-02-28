@@ -115,9 +115,9 @@ impl GovernanceCmd {
                     json(&period)?;
                 }
                 ValidatorVotes => {
-                    let mut votes: BTreeMap<IdentityKey, Vote> = BTreeMap::new();
+                    let mut votes: BTreeMap<String, Vote> = BTreeMap::new();
                     client
-                        .prefix_domain::<Vote>(voting_validators_list(*proposal_id))
+                        .prefix_domain::<Vote>(all_validator_votes_for_proposal(*proposal_id))
                         .await?
                         .next()
                         .await
@@ -127,7 +127,8 @@ impl GovernanceCmd {
                             votes.insert(
                                 IdentityKey::from_str(
                                     r.0.rsplit('/').next().context("invalid key")?,
-                                )?,
+                                )?
+                                .to_string(),
                                 r.1,
                             );
                             Ok::<(), anyhow::Error>(())
