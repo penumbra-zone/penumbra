@@ -465,17 +465,17 @@ impl ProposalDepositClaim {
                     ProposalNft::withdrawn(self.proposal).denom(),
                     ProposalNft::failed(self.proposal).denom(),
                 ),
-                Outcome::Vetoed {
+                Outcome::Slashed {
                     withdrawn: Withdrawn::No,
                 } => (
                     ProposalNft::voting(self.proposal).denom(),
-                    ProposalNft::vetoed(self.proposal).denom(),
+                    ProposalNft::slashed(self.proposal).denom(),
                 ),
-                Outcome::Vetoed {
+                Outcome::Slashed {
                     withdrawn: Withdrawn::WithReason { .. },
                 } => (
                     ProposalNft::withdrawn(self.proposal).denom(),
-                    ProposalNft::vetoed(self.proposal).denom(),
+                    ProposalNft::slashed(self.proposal).denom(),
                 ),
             };
 
@@ -496,7 +496,7 @@ impl ProposalDepositClaim {
         let mut balance =
             Balance::from(claimed_proposal_nft) - Balance::from(voting_or_withdrawn_proposal_nft);
 
-        // Only issue a refund if the proposal was not vetoed
+        // Only issue a refund if the proposal was not slashed
         if self.outcome.should_be_refunded() {
             balance += Balance::from(deposit);
         }
@@ -547,10 +547,10 @@ impl State {
         }
     }
 
-    pub fn is_vetoed(&self) -> bool {
+    pub fn is_slashed(&self) -> bool {
         match self {
-            State::Finished { outcome } => outcome.is_vetoed(),
-            State::Claimed { outcome } => outcome.is_vetoed(),
+            State::Finished { outcome } => outcome.is_slashed(),
+            State::Claimed { outcome } => outcome.is_slashed(),
             _ => false,
         }
     }
@@ -563,11 +563,11 @@ impl State {
             State::Withdrawn { reason } => Withdrawn::WithReason { reason },
             State::Finished { outcome } => match outcome {
                 Outcome::Passed => Withdrawn::No,
-                Outcome::Failed { withdrawn } | Outcome::Vetoed { withdrawn } => withdrawn,
+                Outcome::Failed { withdrawn } | Outcome::Slashed { withdrawn } => withdrawn,
             },
             State::Claimed { outcome } => match outcome {
                 Outcome::Passed => Withdrawn::No,
-                Outcome::Failed { withdrawn } | Outcome::Vetoed { withdrawn } => withdrawn,
+                Outcome::Failed { withdrawn } | Outcome::Slashed { withdrawn } => withdrawn,
             },
         }
     }
@@ -643,21 +643,21 @@ impl TryFrom<pb::ProposalState> for State {
 pub enum Outcome<W> {
     Passed,
     Failed { withdrawn: Withdrawn<W> },
-    Vetoed { withdrawn: Withdrawn<W> },
+    Slashed { withdrawn: Withdrawn<W> },
 }
 
 impl<W> Outcome<W> {
-    /// Determines if the outcome should be refunded (i.e. it was not vetoed).
+    /// Determines if the outcome should be refunded (i.e. it was not slashed).
     pub fn should_be_refunded(&self) -> bool {
-        !self.is_vetoed()
+        !self.is_slashed()
     }
 
-    pub fn is_vetoed(&self) -> bool {
-        matches!(self, Outcome::Vetoed { .. })
+    pub fn is_slashed(&self) -> bool {
+        matches!(self, Outcome::Slashed { .. })
     }
 
     pub fn is_failed(&self) -> bool {
-        matches!(self, Outcome::Failed { .. } | Outcome::Vetoed { .. })
+        matches!(self, Outcome::Failed { .. } | Outcome::Slashed { .. })
     }
 
     pub fn is_passed(&self) -> bool {
@@ -670,7 +670,7 @@ impl<W> Outcome<W> {
             Outcome::Failed { withdrawn } => Outcome::Failed {
                 withdrawn: withdrawn.as_ref(),
             },
-            Outcome::Vetoed { withdrawn } => Outcome::Vetoed {
+            Outcome::Slashed { withdrawn } => Outcome::Slashed {
                 withdrawn: withdrawn.as_ref(),
             },
         }
@@ -682,7 +682,7 @@ impl<W> Outcome<W> {
             Outcome::Failed { withdrawn } => Outcome::Failed {
                 withdrawn: Option::from(withdrawn).map(f).into(),
             },
-            Outcome::Vetoed { withdrawn } => Outcome::Vetoed {
+            Outcome::Slashed { withdrawn } => Outcome::Slashed {
                 withdrawn: Option::from(withdrawn).map(f).into(),
             },
         }
@@ -757,8 +757,8 @@ impl From<Outcome<String>> for pb::ProposalOutcome {
                     withdrawn_with_reason: withdrawn.into(),
                 })
             }
-            Outcome::Vetoed { withdrawn } => {
-                pb::proposal_outcome::Outcome::Vetoed(pb::proposal_outcome::Vetoed {
+            Outcome::Slashed { withdrawn } => {
+                pb::proposal_outcome::Outcome::Slashed(pb::proposal_outcome::Slashed {
                     withdrawn_with_reason: withdrawn.into(),
                 })
             }
@@ -786,9 +786,9 @@ impl TryFrom<pb::ProposalOutcome> for Outcome<String> {
                 }) => Outcome::Failed {
                     withdrawn: withdrawn_with_reason.into(),
                 },
-                pb::proposal_outcome::Outcome::Vetoed(pb::proposal_outcome::Vetoed {
+                pb::proposal_outcome::Outcome::Slashed(pb::proposal_outcome::Slashed {
                     withdrawn_with_reason,
-                }) => Outcome::Vetoed {
+                }) => Outcome::Slashed {
                     withdrawn: withdrawn_with_reason.into(),
                 },
             },
@@ -811,8 +811,8 @@ impl From<Outcome<()>> for pb::ProposalOutcome {
                     withdrawn_with_reason: <Option<()>>::from(withdrawn).map(|()| "".to_string()),
                 })
             }
-            Outcome::Vetoed { withdrawn } => {
-                pb::proposal_outcome::Outcome::Vetoed(pb::proposal_outcome::Vetoed {
+            Outcome::Slashed { withdrawn } => {
+                pb::proposal_outcome::Outcome::Slashed(pb::proposal_outcome::Slashed {
                     withdrawn_with_reason: <Option<()>>::from(withdrawn).map(|()| "".to_string()),
                 })
             }
@@ -840,9 +840,9 @@ impl TryFrom<pb::ProposalOutcome> for Outcome<()> {
                 }) => Outcome::Failed {
                     withdrawn: <Withdrawn<String>>::from(withdrawn_with_reason).try_into()?,
                 },
-                pb::proposal_outcome::Outcome::Vetoed(pb::proposal_outcome::Vetoed {
+                pb::proposal_outcome::Outcome::Slashed(pb::proposal_outcome::Slashed {
                     withdrawn_with_reason,
-                }) => Outcome::Vetoed {
+                }) => Outcome::Slashed {
                     withdrawn: <Withdrawn<String>>::from(withdrawn_with_reason).try_into()?,
                 },
             },

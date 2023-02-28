@@ -50,8 +50,8 @@ later to add the previously delegated funds to your wallet.
 
 Penumbra features on-chain governance in the style of Cosmos Hub. Anyone can submit a new governance
 proposal for voting by escrowing a _proposal deposit_, which will be held until the end of the
-proposal's voting period. If the proposal is not vetoed by voters, the deposit will then be
-returned; if it is vetoed, then the deposit is burned.
+proposal's voting period. If the proposal is not slashed by voters, the deposit will then be
+returned; if it is slashed, then the deposit is burned.
 
 ### Submitting A Proposal
 
@@ -74,7 +74,7 @@ cargo run --release --bin pcli tx proposal submit --file proposal.json
 ```
 
 The proposal deposit will be immediately escrowed and the proposal voting period will start in the
-very next block. When voting finishes, if your proposal has not been vetoed, it will automatically
+very next block. When voting finishes, if your proposal has not been slashed, it will automatically
 be refunded to you with no action required on your part.
 
 ### Getting Proposal Information
@@ -107,7 +107,7 @@ These are the queries currently defined:
 
 If you want to withdraw a proposal that you have made (perhaps because a better proposal has come to
 community consensus), you can do so before voting concludes. Note that this does not make you immune
-to losing your deposit by veto, as withdrawn proposals can still be voted on and vetoed.
+to losing your deposit by slashing, as withdrawn proposals can still be voted on and slashed.
 
 ```bash
 cargo run --release --bin pcli tx proposal withdraw 0 --reason "some human-readable reason for withdrawal"
@@ -135,7 +135,7 @@ and our shielded pool design, **any** tokens can be exchanged in a private way.
 hardcoded liquidity for a few trading pairs: `gm:gn`, `penumbra:gm`, and `penumbra:gn`.
 
 This allows testing the shielded pool integration, and will cause a floating exchange rate based
-on the volume of swaps occurring in each pair. 
+on the volume of swaps occurring in each pair.
 
 You can check the current reserves for a trading pair using the `cpmm-reserves` dex query:
 

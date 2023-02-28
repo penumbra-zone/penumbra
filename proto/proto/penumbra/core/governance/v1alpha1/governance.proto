@@ -153,8 +153,8 @@ message ProposalOutcome {
       optional string withdrawn_with_reason = 1;
   }
 
-  // The proposal did not pass, and was vetoed.
-  message Vetoed {
+  // The proposal did not pass, and was slashed.
+  message Slashed {
       // The proposal was withdrawn during the voting period.
       optional string withdrawn_with_reason = 1;
   }
@@ -162,7 +162,7 @@ message ProposalOutcome {
   oneof outcome {
       Passed passed = 1;
       Failed failed = 2;
-      Vetoed vetoed = 3;
+      Slashed slashed = 3;
   }
 }
 

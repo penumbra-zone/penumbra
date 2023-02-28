@@ -203,7 +203,7 @@ impl serde::Serialize for ChainParameters {
         if self.proposal_pass_threshold.is_some() {
             len += 1;
         }
-        if self.proposal_veto_threshold.is_some() {
+        if self.proposal_slash_threshold.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.chain.v1alpha1.ChainParameters", len)?;
@@ -255,8 +255,8 @@ impl serde::Serialize for ChainParameters {
         if let Some(v) = self.proposal_pass_threshold.as_ref() {
             struct_ser.serialize_field("proposalPassThreshold", v)?;
         }
-        if let Some(v) = self.proposal_veto_threshold.as_ref() {
-            struct_ser.serialize_field("proposalVetoThreshold", v)?;
+        if let Some(v) = self.proposal_slash_threshold.as_ref() {
+            struct_ser.serialize_field("proposalSlashThreshold", v)?;
         }
         struct_ser.end()
     }
@@ -300,8 +300,8 @@ impl<'de> serde::Deserialize<'de> for ChainParameters {
             "proposalValidQuorum",
             "proposal_pass_threshold",
             "proposalPassThreshold",
-            "proposal_veto_threshold",
-            "proposalVetoThreshold",
+            "proposal_slash_threshold",
+            "proposalSlashThreshold",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -322,7 +322,7 @@ impl<'de> serde::Deserialize<'de> for ChainParameters {
             ProposalDepositAmount,
             ProposalValidQuorum,
             ProposalPassThreshold,
-            ProposalVetoThreshold,
+            ProposalSlashThreshold,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -360,7 +360,7 @@ impl<'de> serde::Deserialize<'de> for ChainParameters {
                             "proposalDepositAmount" | "proposal_deposit_amount" => Ok(GeneratedField::ProposalDepositAmount),
                             "proposalValidQuorum" | "proposal_valid_quorum" => Ok(GeneratedField::ProposalValidQuorum),
                             "proposalPassThreshold" | "proposal_pass_threshold" => Ok(GeneratedField::ProposalPassThreshold),
-                            "proposalVetoThreshold" | "proposal_veto_threshold" => Ok(GeneratedField::ProposalVetoThreshold),
+                            "proposalSlashThreshold" | "proposal_slash_threshold" => Ok(GeneratedField::ProposalSlashThreshold),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -396,7 +396,7 @@ impl<'de> serde::Deserialize<'de> for ChainParameters {
                 let mut proposal_deposit_amount__ = None;
                 let mut proposal_valid_quorum__ = None;
                 let mut proposal_pass_threshold__ = None;
-                let mut proposal_veto_threshold__ = None;
+                let mut proposal_slash_threshold__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::ChainId => {
@@ -509,11 +509,11 @@ impl<'de> serde::Deserialize<'de> for ChainParameters {
                             }
                             proposal_pass_threshold__ = map.next_value()?;
                         }
-                        GeneratedField::ProposalVetoThreshold => {
-                            if proposal_veto_threshold__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("proposalVetoThreshold"));
+                        GeneratedField::ProposalSlashThreshold => {
+                            if proposal_slash_threshold__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("proposalSlashThreshold"));
                             }
-                            proposal_veto_threshold__ = map.next_value()?;
+                            proposal_slash_threshold__ = map.next_value()?;
                         }
                     }
                 }
@@ -534,7 +534,7 @@ impl<'de> serde::Deserialize<'de> for ChainParameters {
                     proposal_deposit_amount: proposal_deposit_amount__,
                     proposal_valid_quorum: proposal_valid_quorum__,
                     proposal_pass_threshold: proposal_pass_threshold__,
-                    proposal_veto_threshold: proposal_veto_threshold__,
+                    proposal_slash_threshold: proposal_slash_threshold__,
                 })
             }
         }

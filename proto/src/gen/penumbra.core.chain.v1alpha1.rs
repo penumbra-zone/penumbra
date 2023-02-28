@@ -57,10 +57,10 @@ pub struct ChainParameters {
     /// The threshold for a proposal to pass voting, as a ratio of "yes" votes over "no" votes.
     #[prost(message, optional, tag = "23")]
     pub proposal_pass_threshold: ::core::option::Option<Ratio>,
-    /// The threshold for a proposal to be vetoed, regardless of whether the "yes" and "no" votes would
-    /// have passed it, as a ratio of "no with veto" votes over all total votes.
+    /// The threshold for a proposal to be slashed, regardless of whether the "yes" and "no" votes
+    /// would have passed it, as a ratio of "no" votes over all total votes.
     #[prost(message, optional, tag = "24")]
-    pub proposal_veto_threshold: ::core::option::Option<Ratio>,
+    pub proposal_slash_threshold: ::core::option::Option<Ratio>,
 }
 /// The ratio between two numbers, used in governance to describe vote thresholds and quorums.
 #[allow(clippy::derive_partial_eq_without_eq)]

@@ -101,7 +101,7 @@ impl AddAssign for Tally {
 pub enum Outcome {
     Pass,
     Fail,
-    Veto,
+    Slash,
 }
 
 impl Outcome {
@@ -113,8 +113,8 @@ impl Outcome {
         matches!(self, Self::Fail)
     }
 
-    pub fn is_veto(&self) -> bool {
-        matches!(self, Self::Veto)
+    pub fn is_slash(&self) -> bool {
+        matches!(self, Self::Slash)
     }
 }
 
@@ -125,7 +125,7 @@ impl<T> From<Outcome> for proposal::Outcome<T> {
             Outcome::Fail => Self::Failed {
                 withdrawn: Withdrawn::No,
             },
-            Outcome::Veto => Self::Vetoed {
+            Outcome::Slash => Self::Slashed {
                 withdrawn: Withdrawn::No,
             },
         }
@@ -137,8 +137,8 @@ impl Tally {
         Ratio::new(self.total(), total_voting_power) >= params.proposal_valid_quorum
     }
 
-    fn vetoed(&self, params: &ChainParameters) -> bool {
-        Ratio::new(self.no, self.total()) > params.proposal_veto_threshold
+    fn slashed(&self, params: &ChainParameters) -> bool {
+        Ratio::new(self.no, self.total()) > params.proposal_slash_threshold
     }
 
     fn yes_ratio(&self) -> Ratio {
@@ -156,12 +156,12 @@ impl Tally {
             return Fail;
         }
 
-        // Check to see if it has been vetoed
-        if self.vetoed(params) {
-            return Veto;
+        // Check to see if it has been slashed
+        if self.slashed(params) {
+            return Slash;
         }
 
-        // Now that we've checked for veto and quorum, we can just check to see if it should pass
+        // Now that we've checked for slash and quorum, we can just check to see if it should pass
         if self.yes_ratio() > params.proposal_pass_threshold {
             Pass
         } else {
@@ -175,12 +175,12 @@ impl Tally {
             return false;
         }
 
-        // Check to see if it has been vetoed (this check should be redundant, but we'll do it anyway)
-        if self.vetoed(params) {
+        // Check to see if it has been slashed (this check should be redundant, but we'll do it anyway)
+        if self.slashed(params) {
             return false;
         }
 
-        // Now that we've checked for veto and quorum, we can just check to see if it should pass in
+        // Now that we've checked for slash and quorum, we can just check to see if it should pass in
         // the emergency condition of 2/3 majority
         self.yes_ratio() > Ratio::new(2, 3)
     }

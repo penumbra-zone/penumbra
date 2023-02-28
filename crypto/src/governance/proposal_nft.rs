@@ -19,7 +19,7 @@ pub struct ProposalNft {
 pub enum State {
     Voting,
     Withdrawn,
-    Vetoed,
+    Slashed,
     Failed,
     Passed,
 }
@@ -29,7 +29,7 @@ impl State {
         match self {
             State::Voting => "voting",
             State::Withdrawn => "withdrawn",
-            State::Vetoed => "vetoed",
+            State::Slashed => "slashed",
             State::Failed => "failed",
             State::Passed => "passed",
         }
@@ -43,7 +43,7 @@ impl FromStr for State {
         match s {
             "voting" => Ok(State::Voting),
             "withdrawn" => Ok(State::Withdrawn),
-            "vetoed" => Ok(State::Vetoed),
+            "slashed" => Ok(State::Slashed),
             "failed" => Ok(State::Failed),
             "passed" => Ok(State::Passed),
             _ => Err(anyhow::anyhow!("invalid proposal token state")),
@@ -78,9 +78,9 @@ impl ProposalNft {
         Self::new(proposal_id, State::Withdrawn)
     }
 
-    /// Make a new proposal NFT in the vetoed state.
-    pub fn vetoed(proposal_id: u64) -> Self {
-        Self::new(proposal_id, State::Vetoed)
+    /// Make a new proposal NFT in the slashed state.
+    pub fn slashed(proposal_id: u64) -> Self {
+        Self::new(proposal_id, State::Slashed)
     }
 
     /// Make a new proposal NFT in the failed state.
@@ -127,7 +127,7 @@ impl TryFrom<asset::Denom> for ProposalNft {
 
         // Note: this regex must be in sync with asset::REGISTRY
         // The data capture group is used by asset::REGISTRY
-        let captures = Regex::new("^proposal_(?P<data>(?P<proposal_id>[0-9]+)_(?P<proposal_state>voting|withdrawn|passed|failed|vetoed))$")
+        let captures = Regex::new("^proposal_(?P<data>(?P<proposal_id>[0-9]+)_(?P<proposal_state>voting|withdrawn|passed|failed|slashed))$")
             .expect("regex is valid")
             .captures(base_string.as_ref())
             .ok_or_else(|| {
