@@ -670,9 +670,15 @@ impl Storage {
 
         // If set, only return notes with the specified address index.
         // crypto.AddressIndex address_index = 4;
+        // This isn't what we want any more, we need to be indexing notes
+        // by *account*, not just by address index.
+        // For now, just do filtering in software.
+        /*
         let address_clause = address_index
             .map(|d| format!("x'{}'", hex::encode(d.to_bytes())))
             .unwrap_or_else(|| "address_index".to_string());
+         */
+        let address_clause = "address_index".to_string();
 
         let result = sqlx::query_as::<_, SpendableNoteRecord>(
             format!(
@@ -709,6 +715,13 @@ impl Storage {
         let mut output: Vec<SpendableNoteRecord> = Vec::new();
 
         for record in result.into_iter() {
+            // Skip notes that don't match the account, since we're
+            // not doing account filtering in SQL as a temporary hack (see above)
+            if let Some(address_index) = address_index {
+                if record.address_index.account != address_index.account {
+                    continue;
+                }
+            }
             let amount = record.note.amount();
             output.push(record);
             // If we're tracking amounts, accumulate the value of the note
