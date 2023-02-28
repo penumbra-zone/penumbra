@@ -16,7 +16,7 @@ impl ChainParameters {
 
         let ChainParameters {
             chain_id,
-            epoch_duration: _,
+            epoch_duration,
             unbonding_epochs: _,
             active_validator_limit,
             base_reward_rate: _,
@@ -38,6 +38,7 @@ impl ChainParameters {
         // Ensure that certain parameters are not changed by the update:
         check_invariant([(chain_id, &new.chain_id, "chain ID")])?;
         check_invariant([
+            (epoch_duration, &new.epoch_duration, "epoch duration"),
             (
                 active_validator_limit,
                 &new.active_validator_limit,
