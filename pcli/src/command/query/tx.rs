@@ -37,7 +37,8 @@ impl Tx {
                 println!("{}", tx_json.to_colored_json_auto()?);
             }
             OutputFormat::Base64 => {
-                println!("{}", base64::encode(&rsp.tx));
+                use base64::{display::Base64Display, engine::general_purpose::STANDARD};
+                println!("{}", Base64Display::new(&rsp.tx, &STANDARD));
             }
         }
 
