@@ -349,9 +349,8 @@ pub mod proposal {
         #[prost(bool, tag = "1")]
         pub halt_chain: bool,
     }
-    /// A parameter change proposal describes an alteration to one or more chain parameters, which
-    /// should take effect at a particular block height `effective_height` (which should be at least
-    /// the height when the proposal would be passed).
+    /// A parameter change proposal describes a replacement of the chain parameters, which should take
+    /// effect when the proposal is passed.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct ParameterChange {
