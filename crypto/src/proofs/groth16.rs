@@ -20,7 +20,7 @@ mod tests {
         keys::{SeedPhrase, SpendKey},
         Address, Balance, Rseed,
     };
-    use ark_groth16::{Groth16, ProvingKey, VerifyingKey};
+    use ark_groth16::{Groth16, PreparedVerifyingKey, ProvingKey};
     use ark_r1cs_std::prelude::*;
     use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
     use ark_snark::SNARK;
@@ -610,7 +610,7 @@ mod tests {
     }
 
     impl ParameterSetup for MerkleProofCircuit {
-        fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
+        fn generate_test_parameters() -> (ProvingKey<Bls12_377>, PreparedVerifyingKey<Bls12_377>) {
             let seed_phrase = SeedPhrase::from_randomness([b'f'; 32]);
             let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
             let fvk_sender = sk_sender.full_viewing_key();
@@ -634,7 +634,7 @@ mod tests {
             };
             let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
                 .expect("can perform circuit specific setup");
-            (pk, vk)
+            (pk, vk.into())
         }
     }
 
@@ -674,7 +674,7 @@ mod tests {
             let proof =
                 Groth16::prove(&pk, circuit, &mut rng).expect("should be able to form proof");
 
-            let proof_result = Groth16::verify(&vk, &[Fq::from(anchor)], &proof);
+            let proof_result = Groth16::verify_with_processed_vk(&vk, &[Fq::from(anchor)], &proof);
             assert!(proof_result.is_ok());
         }
 
@@ -696,7 +696,7 @@ mod tests {
             let proof =
                 Groth16::prove(&pk, circuit, &mut rng).expect("should be able to form proof");
 
-            let proof_result = Groth16::verify(&vk, &[Fq::from(anchor)], &proof);
+            let proof_result = Groth16::verify_with_processed_vk(&vk, &[Fq::from(anchor)], &proof);
             assert!(proof_result.is_ok());
         }
 
@@ -718,7 +718,7 @@ mod tests {
             let proof =
                 Groth16::prove(&pk, circuit, &mut rng).expect("should be able to form proof");
 
-            let proof_result = Groth16::verify(&vk, &[Fq::from(anchor)], &proof);
+            let proof_result = Groth16::verify_with_processed_vk(&vk, &[Fq::from(anchor)], &proof);
             assert!(proof_result.is_ok());
         }
     }

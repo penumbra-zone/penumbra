@@ -1,4 +1,4 @@
-use ark_groth16::{ProvingKey, VerifyingKey};
+use ark_groth16::{PreparedVerifyingKey, ProvingKey, VerifyingKey};
 use ark_serialize::CanonicalDeserialize;
 use decaf377::Bls12_377;
 use once_cell::sync::Lazy;
@@ -8,16 +8,16 @@ pub static SPEND_PROOF_PROVING_KEY: Lazy<ProvingKey<Bls12_377>> =
     Lazy::new(spend_proving_parameters);
 
 /// Verifying key for the spend proof.
-pub static SPEND_PROOF_VERIFICATION_KEY: Lazy<VerifyingKey<Bls12_377>> =
-    Lazy::new(spend_verification_parameters);
+pub static SPEND_PROOF_VERIFICATION_KEY: Lazy<PreparedVerifyingKey<Bls12_377>> =
+    Lazy::new(|| spend_verification_parameters().into());
 
 /// Proving key for the output proof.
 pub static OUTPUT_PROOF_PROVING_KEY: Lazy<ProvingKey<Bls12_377>> =
     Lazy::new(output_proving_parameters);
 
 /// Proving key for the spend proof.
-pub static OUTPUT_PROOF_VERIFICATION_KEY: Lazy<VerifyingKey<Bls12_377>> =
-    Lazy::new(output_verification_parameters);
+pub static OUTPUT_PROOF_VERIFICATION_KEY: Lazy<PreparedVerifyingKey<Bls12_377>> =
+    Lazy::new(|| output_verification_parameters().into());
 
 // Note: Here we are using `CanonicalDeserialize::deserialize_unchecked` as the
 // parameters are being loaded from a trusted source (our source code).
