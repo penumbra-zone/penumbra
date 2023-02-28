@@ -218,7 +218,8 @@ impl Default for ChainParameters {
             // governance parameters copied from cosmos hub
             proposal_valid_quorum: Ratio::new(2, 5),
             proposal_pass_threshold: Ratio::new(1, 2),
-            proposal_veto_threshold: Ratio::new(1, 3),
+            // veto threshold means if (no / no + yes + abstain) > veto_threshold, then proposal is vetoed
+            proposal_veto_threshold: Ratio::new(4, 5),
         }
     }
 }
