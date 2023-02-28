@@ -8,7 +8,7 @@ use crate::{asset, Amount, Balance, Value, STAKING_TOKEN_ASSET_ID};
 /// Tracks slashing penalties applied to a validator in some epoch.
 ///
 /// The penalty is represented as a fixed-point integer in bps^2 (denominator 10^8).
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Default)]
 #[serde(try_from = "pbs::Penalty", into = "pbs::Penalty")]
 pub struct Penalty(pub u64);
 

@@ -8,6 +8,8 @@ use penumbra_proto::view::v1alpha1 as pb_view;
 use penumbra_proto::DomainType;
 use serde::{Deserialize, Serialize};
 
+pub mod change;
+
 #[derive(Clone, Debug)]
 pub struct AssetInfo {
     pub asset_id: asset::Id,
