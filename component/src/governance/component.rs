@@ -113,8 +113,8 @@ pub async fn enact_all_passed_proposals<S: StateWrite>(mut state: S) -> Result<(
                     tally::Outcome::Fail => {
                         tracing::info!(proposal = %proposal_id, "proposal failed");
                     }
-                    tally::Outcome::Veto => {
-                        tracing::info!(proposal = %proposal_id, "proposal vetoed");
+                    tally::Outcome::Slash => {
+                        tracing::info!(proposal = %proposal_id, "proposal slashed");
                     }
                 }
 

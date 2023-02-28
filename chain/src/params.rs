@@ -85,8 +85,8 @@ pub struct ChainParameters {
     pub proposal_valid_quorum: Ratio,
     /// The threshold for a proposal to pass voting, as a ratio of "yes" votes over "no" votes.
     pub proposal_pass_threshold: Ratio,
-    /// The threshold for a proposal to be vetoed, as a ratio of "no" votes over all total votes.
-    pub proposal_veto_threshold: Ratio,
+    /// The threshold for a proposal to be slashed, as a ratio of "no" votes over all total votes.
+    pub proposal_slash_threshold: Ratio,
 }
 
 impl DomainType for ChainParameters {
@@ -137,9 +137,9 @@ impl TryFrom<pb_chain::ChainParameters> for ChainParameters {
                 .proposal_pass_threshold
                 .ok_or_else(|| anyhow::anyhow!("missing `proposal_pass_threshold`"))?
                 .into(),
-            proposal_veto_threshold: msg
-                .proposal_veto_threshold
-                .ok_or_else(|| anyhow::anyhow!("missing `proposal_veto_threshold`"))?
+            proposal_slash_threshold: msg
+                .proposal_slash_threshold
+                .ok_or_else(|| anyhow::anyhow!("missing `proposal_slash_threshold`"))?
                 .into(),
         })
     }
@@ -186,7 +186,7 @@ impl From<ChainParameters> for pb_chain::ChainParameters {
             proposal_deposit_amount: Some(params.proposal_deposit_amount.into()),
             proposal_valid_quorum: Some(params.proposal_valid_quorum.into()),
             proposal_pass_threshold: Some(params.proposal_pass_threshold.into()),
-            proposal_veto_threshold: Some(params.proposal_veto_threshold.into()),
+            proposal_slash_threshold: Some(params.proposal_slash_threshold.into()),
         }
     }
 }
@@ -218,8 +218,8 @@ impl Default for ChainParameters {
             // governance parameters copied from cosmos hub
             proposal_valid_quorum: Ratio::new(40, 100),
             proposal_pass_threshold: Ratio::new(50, 100),
-            // veto threshold means if (no / no + yes + abstain) > veto_threshold, then proposal is vetoed
-            proposal_veto_threshold: Ratio::new(80, 100),
+            // slash threshold means if (no / no + yes + abstain) > slash_threshold, then proposal is slashed
+            proposal_slash_threshold: Ratio::new(80, 100),
         }
     }
 }

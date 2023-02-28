@@ -545,8 +545,8 @@ where
                 state.update(b"Failed");
                 state.update(withdrawn.effect_hash().as_bytes());
             }
-            proposal::Outcome::Vetoed { withdrawn } => {
-                state.update(b"Vetoed");
+            proposal::Outcome::Slashed { withdrawn } => {
+                state.update(b"Slashed");
                 state.update(withdrawn.effect_hash().as_bytes());
             }
         }

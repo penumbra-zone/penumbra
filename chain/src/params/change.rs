@@ -31,7 +31,7 @@ impl ChainParameters {
             proposal_deposit_amount: _,
             proposal_valid_quorum,
             proposal_pass_threshold,
-            proposal_veto_threshold,
+            proposal_slash_threshold,
             // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
         } = self;
 
@@ -61,9 +61,9 @@ impl ChainParameters {
                 "proposal pass threshold",
             ),
             (
-                proposal_veto_threshold,
-                &new.proposal_veto_threshold,
-                "proposal veto threshold",
+                proposal_slash_threshold,
+                &new.proposal_slash_threshold,
+                "proposal slash threshold",
             ),
         ])?;
 
@@ -88,7 +88,7 @@ impl ChainParameters {
             proposal_deposit_amount,
             proposal_valid_quorum,
             proposal_pass_threshold,
-            proposal_veto_threshold,
+            proposal_slash_threshold,
             // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
         } = self;
 
@@ -156,8 +156,8 @@ impl ChainParameters {
                 "proposal pass threshold must be greater than 1/2",
             ),
             (
-                *proposal_veto_threshold > Ratio::new(1, 2),
-                "proposal veto threshold must be greater than 1/2",
+                *proposal_slash_threshold > Ratio::new(1, 2),
+                "proposal slash threshold must be greater than 1/2",
             ),
         ])
     }

@@ -44,9 +44,9 @@ message ChainParameters {
   Ratio proposal_valid_quorum = 22;
   // The threshold for a proposal to pass voting, as a ratio of "yes" votes over "no" votes.
   Ratio proposal_pass_threshold = 23;
-  // The threshold for a proposal to be vetoed, regardless of whether the "yes" and "no" votes would
-  // have passed it, as a ratio of "no with veto" votes over all total votes.
-  Ratio proposal_veto_threshold = 24;
+  // The threshold for a proposal to be slashed, regardless of whether the "yes" and "no" votes
+  // would have passed it, as a ratio of "no" votes over all total votes.
+  Ratio proposal_slash_threshold = 24;
 }
 
 // The ratio between two numbers, used in governance to describe vote thresholds and quorums.

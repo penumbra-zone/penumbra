@@ -41,7 +41,7 @@ pub enum ProposalCmd {
     /// Claim a governance proposal deposit for a proposal you submitted that has finished voting.
     ///
     /// This consumes the voting or withdrawn proposal NFT and mints an NFT representing whether the
-    /// proposal passed, failed, or was vetoed. In the case of a veto, the deposit is not returned
+    /// proposal passed, failed, or was slashed. In the case of a slash, the deposit is not returned
     /// by this action; in other cases, it is returned to you.
     DepositClaim {
         /// The transaction fee (paid in upenumbra).

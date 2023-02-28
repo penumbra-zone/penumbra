@@ -58,7 +58,7 @@ impl ActionHandler for ProposalDepositClaim {
                     &match &outcome {
                         Outcome::Passed => ProposalNft::passed(*proposal),
                         Outcome::Failed { .. } => ProposalNft::failed(*proposal),
-                        Outcome::Vetoed { .. } => ProposalNft::vetoed(*proposal),
+                        Outcome::Slashed { .. } => ProposalNft::slashed(*proposal),
                     }
                     .denom(),
                 )

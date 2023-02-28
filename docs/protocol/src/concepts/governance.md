@@ -5,20 +5,19 @@ are public and act as default votes for their entire delegation pool, while
 delegators' votes are private, and override the default vote provided by their
 validator.
 
-Votes are the same as on the Cosmos Hub: `Yes`, `No`, `NoWithVeto`, and
-`Abstain`. `NoWithVeto` is the same as `No` but also votes that the proposer
-should lose their deposit. The intended cultural norm is that `No` should be
-used to indicate disagreement with good-faith proposals and `NoWithVeto`
-should be used to deter spam proposals.
+Votes are similar to Cosmos Hub: `Yes`, `No`, and `Abstain` have the same meanings.
+However, Penumbra does not have `NoWithVeto`; instead, a sufficiently high threshold
+of "no" votes (determined by a chain parameter) will _slash_ a proposal, which causes
+its deposit to be burned. This functions as a spam deterrent.
 
 ## Proposals
 
 Penumbra users can propose votes by escrowing a minimum amount of `PEN`.  They
-do this by creating a transaction with a `CreateProposal` description, which
-consumes some amount of `PEN` from the transaction's balance, and creates a new
-escrow note with the same amount.  The note is escrowed in the sense that it is
-recorded seperately and is not included in the state commitment tree until voting
-completes. 
+do this by creating a transaction with a `ProposalSubmit` description, which
+consumes some amount of `PEN` from the transaction's balance, and creates a
+`proposal_N_voting` NFT, which can be redeemed for the proposal deposit in the case
+that the voting concludes without slashing the proposal (both failed and passed
+proposals can reclaim their deposit).
 
 Proposals can either be normal or emergency proposals.  In either case, the
 voting period begins immediately, in the next block after the proposal has been
@@ -33,17 +32,17 @@ an 0day hotfix); the 2/3 majority of the stake required is already sufficient to
 arbitrarily rewrite the chain state.
 
 Proposals can also be withdrawn by their proposer prior to the end of the voting
-period.  This is done by creating a transaction with a `WithdrawProposal`
+period.  This is done by creating a transaction with a `ProposalWithdraw`
 description, and allows the community to iterate on proposals as the (social)
 governance process occurs.  For instance, a chain upgrade proposal can be
 withdrawn and re-proposed with a different source hash if a bug is discovered
 while upgrade voting is underway.  Withdrawn proposals cannot be accepted, even
-if the vote would have passed, but they can be vetoed.[^1]
+if the vote would have passed, but they can be slashed.[^1]
 
 ## Voting
 
-Stakeholder votes are of the form $(x_y, x_n, x_a, x_v)$, representing the
-weights for yes, no, abstain, and veto respectively.  Most stakeholders would
+Stakeholder votes are of the form $(x_y, x_n, x_a)$, representing the
+weights for yes, no, and abstain, respectively.  Most stakeholders would
 presumably set all but one weight to $0$.  Stakeholders vote by proving
 ownership of some amount of bonded stake (their voting power) prior to the
 beginning of the voting period.
@@ -51,23 +50,22 @@ beginning of the voting period.
 To do this, they create a transaction with a `Vote` description.  This
 description identifies the validator $v$ and the proposal, proves spend
 authority over a note recording $y$ `dPEN(v)`, and reveals the note's nullifier.
-Finally, it proves vote consistency $y = x_y + x_n + x_a + x_v$, produces a new
+Finally, it proves vote consistency $y = x_y + x_n + x_a$, produces a new
 note with $y$ `dPEN(v)`, and includes $\operatorname{Enc}_D(x_i)$, an encryption
 of the vote weights to the validators' decryption key.
 
 The proof statements in a `Vote` description establishing spend authority over
 the note are almost identical to those in a `Spend` description.  However, there
-are two key differences.  First, rather than proving that the note was included
-in a recent state commitment tree state, it always uses the root of the note
-commitment tree at the time that voting began, establishing that the note was
-not created after voting began.  Second, rather than checking the note's
+are two key differences.  First, rather than checking the note's
 nullifier against the global nullifier set and marking it as spent, the
 nullifier is checked against a snapshot of the nullifier set at the time that
 voting began (establishing that it was unspent then), as well as against a
 per-proposal nullifier set (establishing that it has not already been used for
 voting).  In other words, instead of marking that the note has been spent in
 general, we only mark it as having been spent in the context of voting on a
-specific proposal.
+specific proposal. Second, the ZK proof additionally proves that the note was
+created before the proposal started, and the stateful checks ensure that it was not
+spent after the proposal started.
 
 This change allows multiple proposals to be voted on concurrently, at the cost
 of linkability.  While the same note can be used to vote on multiple proposals,
@@ -98,9 +96,10 @@ for the rest of the delegation pool.  Finally, these per-validator subtotals are
 multiplied by the [voting power adjustment function](../stake/voting-power.md)
 $\theta_v(e)$ to obtain the final vote totals.
 
-If the vote was not vetoed, the escrowed note from the `Proposal` description
-is included in the state commitment tree, so that it can be spent by the
-proposer.  Otherwise, it is not, and the funds are burned.
+If the vote was not slashed, the `proposal_N_voting` NFT created during proposal
+submission can be redeemed for the original proposal deposit (if not slashed)
+and a commemorative `proposal_N_passed`, `proposal_N_failed`, or `proposal_N_slashed`
+NFT.
 
 [^1]: If withdrawing a proposal halted on-chain voting immediately, the escrow
 mechanism would not be effective at deterring spam, since the proposer could

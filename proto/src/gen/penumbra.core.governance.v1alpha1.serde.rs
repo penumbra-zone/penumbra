@@ -1372,8 +1372,8 @@ impl serde::Serialize for ProposalOutcome {
                 proposal_outcome::Outcome::Failed(v) => {
                     struct_ser.serialize_field("failed", v)?;
                 }
-                proposal_outcome::Outcome::Vetoed(v) => {
-                    struct_ser.serialize_field("vetoed", v)?;
+                proposal_outcome::Outcome::Slashed(v) => {
+                    struct_ser.serialize_field("slashed", v)?;
                 }
             }
         }
@@ -1389,14 +1389,14 @@ impl<'de> serde::Deserialize<'de> for ProposalOutcome {
         const FIELDS: &[&str] = &[
             "passed",
             "failed",
-            "vetoed",
+            "slashed",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Passed,
             Failed,
-            Vetoed,
+            Slashed,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -1420,7 +1420,7 @@ impl<'de> serde::Deserialize<'de> for ProposalOutcome {
                         match value {
                             "passed" => Ok(GeneratedField::Passed),
                             "failed" => Ok(GeneratedField::Failed),
-                            "vetoed" => Ok(GeneratedField::Vetoed),
+                            "slashed" => Ok(GeneratedField::Slashed),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -1457,11 +1457,11 @@ impl<'de> serde::Deserialize<'de> for ProposalOutcome {
                             outcome__ = map.next_value::<::std::option::Option<_>>()?.map(proposal_outcome::Outcome::Failed)
 ;
                         }
-                        GeneratedField::Vetoed => {
+                        GeneratedField::Slashed => {
                             if outcome__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("vetoed"));
+                                return Err(serde::de::Error::duplicate_field("slashed"));
                             }
-                            outcome__ = map.next_value::<::std::option::Option<_>>()?.map(proposal_outcome::Outcome::Vetoed)
+                            outcome__ = map.next_value::<::std::option::Option<_>>()?.map(proposal_outcome::Outcome::Slashed)
 ;
                         }
                     }
@@ -1637,7 +1637,7 @@ impl<'de> serde::Deserialize<'de> for proposal_outcome::Passed {
         deserializer.deserialize_struct("penumbra.core.governance.v1alpha1.ProposalOutcome.Passed", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for proposal_outcome::Vetoed {
+impl serde::Serialize for proposal_outcome::Slashed {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -1648,14 +1648,14 @@ impl serde::Serialize for proposal_outcome::Vetoed {
         if self.withdrawn_with_reason.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.governance.v1alpha1.ProposalOutcome.Vetoed", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.governance.v1alpha1.ProposalOutcome.Slashed", len)?;
         if let Some(v) = self.withdrawn_with_reason.as_ref() {
             struct_ser.serialize_field("withdrawnWithReason", v)?;
         }
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for proposal_outcome::Vetoed {
+impl<'de> serde::Deserialize<'de> for proposal_outcome::Slashed {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -1700,13 +1700,13 @@ impl<'de> serde::Deserialize<'de> for proposal_outcome::Vetoed {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = proposal_outcome::Vetoed;
+            type Value = proposal_outcome::Slashed;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.governance.v1alpha1.ProposalOutcome.Vetoed")
+                formatter.write_str("struct penumbra.core.governance.v1alpha1.ProposalOutcome.Slashed")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<proposal_outcome::Vetoed, V::Error>
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<proposal_outcome::Slashed, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -1721,12 +1721,12 @@ impl<'de> serde::Deserialize<'de> for proposal_outcome::Vetoed {
                         }
                     }
                 }
-                Ok(proposal_outcome::Vetoed {
+                Ok(proposal_outcome::Slashed {
                     withdrawn_with_reason: withdrawn_with_reason__,
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.governance.v1alpha1.ProposalOutcome.Vetoed", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.core.governance.v1alpha1.ProposalOutcome.Slashed", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for ProposalState {

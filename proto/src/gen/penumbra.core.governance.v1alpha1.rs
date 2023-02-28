@@ -266,10 +266,10 @@ pub mod proposal_outcome {
             ::prost::alloc::string::String,
         >,
     }
-    /// The proposal did not pass, and was vetoed.
+    /// The proposal did not pass, and was slashed.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
-    pub struct Vetoed {
+    pub struct Slashed {
         /// The proposal was withdrawn during the voting period.
         #[prost(string, optional, tag = "1")]
         pub withdrawn_with_reason: ::core::option::Option<
@@ -284,7 +284,7 @@ pub mod proposal_outcome {
         #[prost(message, tag = "2")]
         Failed(Failed),
         #[prost(message, tag = "3")]
-        Vetoed(Vetoed),
+        Slashed(Slashed),
     }
 }
 /// A tally of votes on a proposal.

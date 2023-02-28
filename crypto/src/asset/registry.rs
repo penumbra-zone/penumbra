@@ -295,7 +295,7 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
         )
         .add_asset(
             // Note: this regex must be in sync with ProposalNft::try_from
-            "^proposal_(?P<data>(?P<proposal_id>[0-9]+)_(?P<proposal_state>voting|withdrawn|passed|failed|vetoed))$",
+            "^proposal_(?P<data>(?P<proposal_id>[0-9]+)_(?P<proposal_state>voting|withdrawn|passed|failed|slashed))$",
             &[ /* no display units - nft, unit 1 */ ],
             (|data: &str| {
                 assert!(!data.is_empty());
