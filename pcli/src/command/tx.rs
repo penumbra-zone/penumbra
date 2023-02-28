@@ -45,7 +45,7 @@ pub enum TxCmd {
         /// The transaction fee (paid in upenumbra).
         #[clap(long, default_value = "0", display_order = 200)]
         fee: u64,
-        /// Only spend funds originally received by the given address index.
+        /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
         /// Optional. Set the transaction's memo field to the provided text.
@@ -63,7 +63,7 @@ pub enum TxCmd {
         /// The transaction fee (paid in upenumbra).
         #[clap(long, default_value = "0", display_order = 200)]
         fee: u64,
-        /// Only spend funds originally received by the given address index.
+        /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
     },
@@ -75,7 +75,7 @@ pub enum TxCmd {
         /// The transaction fee (paid in upenumbra).
         #[clap(long, default_value = "0", display_order = 200)]
         fee: u64,
-        /// Only spend funds originally received by the given address index.
+        /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
     },
@@ -100,7 +100,7 @@ pub enum TxCmd {
         /// The transaction fee (paid in upenumbra).
         #[clap(long, default_value = "0", display_order = 300)]
         fee: u64,
-        /// Only spend funds originally received by the given address index.
+        /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0", display_order = 400)]
         source: u32,
     },
@@ -124,7 +124,7 @@ pub enum TxCmd {
         /// A swap generates two transactions; the fee will be split equally over both.
         #[clap(long, default_value = "0", display_order = 200)]
         fee: u64,
-        /// Only spend funds originally received by the given address index.
+        /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
     },
@@ -135,7 +135,7 @@ pub enum TxCmd {
         #[clap(long, default_value = "0", global = true, display_order = 200)]
         fee: u64,
         /// Only spend funds and vote with staked delegation tokens originally received by the given
-        /// address index.
+        /// account.
         #[clap(long, default_value = "0", global = true, display_order = 300)]
         source: u32,
         #[clap(subcommand)]

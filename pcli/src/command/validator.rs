@@ -30,7 +30,7 @@ pub enum ValidatorCmd {
         /// The transaction fee (paid in upenumbra).
         #[clap(long, default_value = "0", global = true, display_order = 200)]
         fee: u64,
-        /// Optional. Only spend funds originally received by the given address index.
+        /// Optional. Only spend funds originally received by the given account.
         #[clap(long, default_value = "0", global = true, display_order = 300)]
         source: u32,
         /// The vote to cast.
@@ -49,7 +49,7 @@ pub enum DefinitionCmd {
         /// The transaction fee (paid in upenumbra).
         #[clap(long, default_value = "0")]
         fee: u64,
-        /// Optional. Only spend funds originally received by the given address index.
+        /// Optional. Only spend funds originally received by the given account.
         #[clap(long, default_value = "0")]
         source: u32,
     },
