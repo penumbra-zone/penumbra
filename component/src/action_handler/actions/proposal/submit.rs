@@ -9,7 +9,7 @@ use penumbra_transaction::action::{Proposal, ProposalPayload};
 use penumbra_transaction::{action::ProposalSubmit, Transaction};
 
 use crate::action_handler::ActionHandler;
-use crate::governance::proposal::{self, chain_params};
+use crate::governance::proposal;
 use crate::governance::{StateReadExt as _, StateWriteExt as _};
 use crate::shielded_pool::{StateReadExt, StateWriteExt as _, SupplyWrite};
 
@@ -46,7 +46,9 @@ impl ActionHandler for ProposalSubmit {
                 old.check_valid_update(new)
                     .context("invalid change to chain parameters")?;
             }
-            DaoSpend { transaction_plan } => {
+            DaoSpend {
+                transaction_plan: _,
+            } => {
                 // TODO: check that scheduled transactions are valid without any witness or auth data
                 anyhow::bail!("DAO spend proposals are not yet supported")
             }

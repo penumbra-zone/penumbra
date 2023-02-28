@@ -791,7 +791,9 @@ pub trait StateWriteExt: StateWrite {
                 // Update the chain parameters
                 self.put_chain_params((**new).clone());
             }
-            ProposalPayload::DaoSpend { transaction_plan } => {
+            ProposalPayload::DaoSpend {
+                transaction_plan: _,
+            } => {
                 // TODO: enact dao spend
             }
         }
