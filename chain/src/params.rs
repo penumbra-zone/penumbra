@@ -46,7 +46,7 @@ impl From<AssetInfo> for pb_chain::AssetInfo {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(
     try_from = "pb_chain::ChainParameters",
     into = "pb_chain::ChainParameters"

@@ -355,26 +355,19 @@ pub mod proposal {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct ParameterChange {
-        /// The height at which the change should take effect.
-        #[prost(uint64, tag = "1")]
-        pub effective_height: u64,
-        /// The set of changes to chain parameters.
-        #[prost(message, repeated, tag = "2")]
-        pub new_parameters: ::prost::alloc::vec::Vec<parameter_change::SetParameter>,
-    }
-    /// Nested message and enum types in `ParameterChange`.
-    pub mod parameter_change {
-        /// A single change to an individual chain parameter.
-        #[allow(clippy::derive_partial_eq_without_eq)]
-        #[derive(Clone, PartialEq, ::prost::Message)]
-        pub struct SetParameter {
-            /// The name of the parameter.
-            #[prost(string, tag = "1")]
-            pub parameter: ::prost::alloc::string::String,
-            /// Its new value, as a string (this will be parsed as appropriate for the parameter's type).
-            #[prost(string, tag = "2")]
-            pub value: ::prost::alloc::string::String,
-        }
+        /// The old chain parameters to be replaced: even if the proposal passes, the update will not be
+        /// applied if the chain parameters have changed *at all* from these chain parameters. Usually,
+        /// this should be set to the current chain parameters at time of proposal.
+        #[prost(message, optional, tag = "1")]
+        pub old_parameters: ::core::option::Option<
+            super::super::super::chain::v1alpha1::ChainParameters,
+        >,
+        /// The new chain parameters to be set: the *entire* chain parameters will be replaced with these
+        /// at the time the proposal is passed.
+        #[prost(message, optional, tag = "2")]
+        pub new_parameters: ::core::option::Option<
+            super::super::super::chain::v1alpha1::ChainParameters,
+        >,
     }
     /// A DAO spend proposal describes zero or more transactions to execute on behalf of the DAO, with
     /// access to its funds, and zero or more scheduled transactions from previous passed proposals to
@@ -382,46 +375,10 @@ pub mod proposal {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct DaoSpend {
-        /// The sequence of transactions to schedule for execution.
-        #[prost(message, repeated, tag = "1")]
-        pub schedule_transactions: ::prost::alloc::vec::Vec<
-            dao_spend::ScheduleTransaction,
-        >,
-        /// A sequence of previously-scheduled transactions to cancel before they are executed.
-        #[prost(message, repeated, tag = "2")]
-        pub cancel_transactions: ::prost::alloc::vec::Vec<dao_spend::CancelTransaction>,
-    }
-    /// Nested message and enum types in `DaoSpend`.
-    pub mod dao_spend {
-        /// A transaction to be executed as a consequence of this proposal.
-        ///
-        /// It is permissible for there to be duplicate transactions scheduled for a given height; they
-        /// will both be executed.
-        #[allow(clippy::derive_partial_eq_without_eq)]
-        #[derive(Clone, PartialEq, ::prost::Message)]
-        pub struct ScheduleTransaction {
-            /// The height at which the transaction should be executed.
-            #[prost(uint64, tag = "1")]
-            pub execute_at_height: u64,
-            /// The transaction to be executed.
-            #[prost(message, optional, tag = "2")]
-            pub transaction: ::core::option::Option<::pbjson_types::Any>,
-        }
-        /// A transaction to be canceled as a consequence of this proposal.
-        ///
-        /// If there are multiple duplicate transactions at the height, this cancels only the first.
-        /// To cancel more of them, specify duplicate cancellations.
-        #[allow(clippy::derive_partial_eq_without_eq)]
-        #[derive(Clone, PartialEq, ::prost::Message)]
-        pub struct CancelTransaction {
-            /// The height for which the transaction was scheduled.
-            #[prost(uint64, tag = "1")]
-            pub scheduled_at_height: u64,
-            /// The auth hash of the transaction to cancel.
-            #[prost(message, optional, tag = "2")]
-            pub effect_hash: ::core::option::Option<
-                super::super::super::super::crypto::v1alpha1::EffectHash,
-            >,
-        }
+        /// The transaction plan to be executed at the time the proposal is passed. This must be a
+        /// transaction plan which can be executed by the DAO, which means it can't require any witness
+        /// data or authorization signatures, but it may use the `DaoSpend` action.
+        #[prost(message, optional, tag = "2")]
+        pub transaction_plan: ::core::option::Option<::pbjson_types::Any>,
     }
 }

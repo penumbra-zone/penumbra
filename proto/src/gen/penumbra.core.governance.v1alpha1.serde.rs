@@ -847,18 +847,12 @@ impl serde::Serialize for proposal::DaoSpend {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.schedule_transactions.is_empty() {
-            len += 1;
-        }
-        if !self.cancel_transactions.is_empty() {
+        if self.transaction_plan.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.governance.v1alpha1.Proposal.DaoSpend", len)?;
-        if !self.schedule_transactions.is_empty() {
-            struct_ser.serialize_field("scheduleTransactions", &self.schedule_transactions)?;
-        }
-        if !self.cancel_transactions.is_empty() {
-            struct_ser.serialize_field("cancelTransactions", &self.cancel_transactions)?;
+        if let Some(v) = self.transaction_plan.as_ref() {
+            struct_ser.serialize_field("transactionPlan", v)?;
         }
         struct_ser.end()
     }
@@ -870,16 +864,13 @@ impl<'de> serde::Deserialize<'de> for proposal::DaoSpend {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "schedule_transactions",
-            "scheduleTransactions",
-            "cancel_transactions",
-            "cancelTransactions",
+            "transaction_plan",
+            "transactionPlan",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ScheduleTransactions,
-            CancelTransactions,
+            TransactionPlan,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -901,8 +892,7 @@ impl<'de> serde::Deserialize<'de> for proposal::DaoSpend {
                         E: serde::de::Error,
                     {
                         match value {
-                            "scheduleTransactions" | "schedule_transactions" => Ok(GeneratedField::ScheduleTransactions),
-                            "cancelTransactions" | "cancel_transactions" => Ok(GeneratedField::CancelTransactions),
+                            "transactionPlan" | "transaction_plan" => Ok(GeneratedField::TransactionPlan),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -922,254 +912,23 @@ impl<'de> serde::Deserialize<'de> for proposal::DaoSpend {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut schedule_transactions__ = None;
-                let mut cancel_transactions__ = None;
+                let mut transaction_plan__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
-                        GeneratedField::ScheduleTransactions => {
-                            if schedule_transactions__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("scheduleTransactions"));
+                        GeneratedField::TransactionPlan => {
+                            if transaction_plan__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("transactionPlan"));
                             }
-                            schedule_transactions__ = Some(map.next_value()?);
-                        }
-                        GeneratedField::CancelTransactions => {
-                            if cancel_transactions__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("cancelTransactions"));
-                            }
-                            cancel_transactions__ = Some(map.next_value()?);
+                            transaction_plan__ = map.next_value()?;
                         }
                     }
                 }
                 Ok(proposal::DaoSpend {
-                    schedule_transactions: schedule_transactions__.unwrap_or_default(),
-                    cancel_transactions: cancel_transactions__.unwrap_or_default(),
+                    transaction_plan: transaction_plan__,
                 })
             }
         }
         deserializer.deserialize_struct("penumbra.core.governance.v1alpha1.Proposal.DaoSpend", FIELDS, GeneratedVisitor)
-    }
-}
-impl serde::Serialize for proposal::dao_spend::CancelTransaction {
-    #[allow(deprecated)]
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        use serde::ser::SerializeStruct;
-        let mut len = 0;
-        if self.scheduled_at_height != 0 {
-            len += 1;
-        }
-        if self.effect_hash.is_some() {
-            len += 1;
-        }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.governance.v1alpha1.Proposal.DaoSpend.CancelTransaction", len)?;
-        if self.scheduled_at_height != 0 {
-            struct_ser.serialize_field("scheduledAtHeight", ToString::to_string(&self.scheduled_at_height).as_str())?;
-        }
-        if let Some(v) = self.effect_hash.as_ref() {
-            struct_ser.serialize_field("effectHash", v)?;
-        }
-        struct_ser.end()
-    }
-}
-impl<'de> serde::Deserialize<'de> for proposal::dao_spend::CancelTransaction {
-    #[allow(deprecated)]
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        const FIELDS: &[&str] = &[
-            "scheduled_at_height",
-            "scheduledAtHeight",
-            "effect_hash",
-            "effectHash",
-        ];
-
-        #[allow(clippy::enum_variant_names)]
-        enum GeneratedField {
-            ScheduledAtHeight,
-            EffectHash,
-        }
-        impl<'de> serde::Deserialize<'de> for GeneratedField {
-            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
-            where
-                D: serde::Deserializer<'de>,
-            {
-                struct GeneratedVisitor;
-
-                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-                    type Value = GeneratedField;
-
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                        write!(formatter, "expected one of: {:?}", &FIELDS)
-                    }
-
-                    #[allow(unused_variables)]
-                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
-                    where
-                        E: serde::de::Error,
-                    {
-                        match value {
-                            "scheduledAtHeight" | "scheduled_at_height" => Ok(GeneratedField::ScheduledAtHeight),
-                            "effectHash" | "effect_hash" => Ok(GeneratedField::EffectHash),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
-                        }
-                    }
-                }
-                deserializer.deserialize_identifier(GeneratedVisitor)
-            }
-        }
-        struct GeneratedVisitor;
-        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = proposal::dao_spend::CancelTransaction;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.governance.v1alpha1.Proposal.DaoSpend.CancelTransaction")
-            }
-
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<proposal::dao_spend::CancelTransaction, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
-            {
-                let mut scheduled_at_height__ = None;
-                let mut effect_hash__ = None;
-                while let Some(k) = map.next_key()? {
-                    match k {
-                        GeneratedField::ScheduledAtHeight => {
-                            if scheduled_at_height__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("scheduledAtHeight"));
-                            }
-                            scheduled_at_height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
-                        }
-                        GeneratedField::EffectHash => {
-                            if effect_hash__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("effectHash"));
-                            }
-                            effect_hash__ = map.next_value()?;
-                        }
-                    }
-                }
-                Ok(proposal::dao_spend::CancelTransaction {
-                    scheduled_at_height: scheduled_at_height__.unwrap_or_default(),
-                    effect_hash: effect_hash__,
-                })
-            }
-        }
-        deserializer.deserialize_struct("penumbra.core.governance.v1alpha1.Proposal.DaoSpend.CancelTransaction", FIELDS, GeneratedVisitor)
-    }
-}
-impl serde::Serialize for proposal::dao_spend::ScheduleTransaction {
-    #[allow(deprecated)]
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        use serde::ser::SerializeStruct;
-        let mut len = 0;
-        if self.execute_at_height != 0 {
-            len += 1;
-        }
-        if self.transaction.is_some() {
-            len += 1;
-        }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.governance.v1alpha1.Proposal.DaoSpend.ScheduleTransaction", len)?;
-        if self.execute_at_height != 0 {
-            struct_ser.serialize_field("executeAtHeight", ToString::to_string(&self.execute_at_height).as_str())?;
-        }
-        if let Some(v) = self.transaction.as_ref() {
-            struct_ser.serialize_field("transaction", v)?;
-        }
-        struct_ser.end()
-    }
-}
-impl<'de> serde::Deserialize<'de> for proposal::dao_spend::ScheduleTransaction {
-    #[allow(deprecated)]
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        const FIELDS: &[&str] = &[
-            "execute_at_height",
-            "executeAtHeight",
-            "transaction",
-        ];
-
-        #[allow(clippy::enum_variant_names)]
-        enum GeneratedField {
-            ExecuteAtHeight,
-            Transaction,
-        }
-        impl<'de> serde::Deserialize<'de> for GeneratedField {
-            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
-            where
-                D: serde::Deserializer<'de>,
-            {
-                struct GeneratedVisitor;
-
-                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-                    type Value = GeneratedField;
-
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                        write!(formatter, "expected one of: {:?}", &FIELDS)
-                    }
-
-                    #[allow(unused_variables)]
-                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
-                    where
-                        E: serde::de::Error,
-                    {
-                        match value {
-                            "executeAtHeight" | "execute_at_height" => Ok(GeneratedField::ExecuteAtHeight),
-                            "transaction" => Ok(GeneratedField::Transaction),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
-                        }
-                    }
-                }
-                deserializer.deserialize_identifier(GeneratedVisitor)
-            }
-        }
-        struct GeneratedVisitor;
-        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = proposal::dao_spend::ScheduleTransaction;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.governance.v1alpha1.Proposal.DaoSpend.ScheduleTransaction")
-            }
-
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<proposal::dao_spend::ScheduleTransaction, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
-            {
-                let mut execute_at_height__ = None;
-                let mut transaction__ = None;
-                while let Some(k) = map.next_key()? {
-                    match k {
-                        GeneratedField::ExecuteAtHeight => {
-                            if execute_at_height__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("executeAtHeight"));
-                            }
-                            execute_at_height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
-                        }
-                        GeneratedField::Transaction => {
-                            if transaction__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("transaction"));
-                            }
-                            transaction__ = map.next_value()?;
-                        }
-                    }
-                }
-                Ok(proposal::dao_spend::ScheduleTransaction {
-                    execute_at_height: execute_at_height__.unwrap_or_default(),
-                    transaction: transaction__,
-                })
-            }
-        }
-        deserializer.deserialize_struct("penumbra.core.governance.v1alpha1.Proposal.DaoSpend.ScheduleTransaction", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for proposal::Emergency {
@@ -1272,18 +1031,18 @@ impl serde::Serialize for proposal::ParameterChange {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.effective_height != 0 {
+        if self.old_parameters.is_some() {
             len += 1;
         }
-        if !self.new_parameters.is_empty() {
+        if self.new_parameters.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.governance.v1alpha1.Proposal.ParameterChange", len)?;
-        if self.effective_height != 0 {
-            struct_ser.serialize_field("effectiveHeight", ToString::to_string(&self.effective_height).as_str())?;
+        if let Some(v) = self.old_parameters.as_ref() {
+            struct_ser.serialize_field("oldParameters", v)?;
         }
-        if !self.new_parameters.is_empty() {
-            struct_ser.serialize_field("newParameters", &self.new_parameters)?;
+        if let Some(v) = self.new_parameters.as_ref() {
+            struct_ser.serialize_field("newParameters", v)?;
         }
         struct_ser.end()
     }
@@ -1295,15 +1054,15 @@ impl<'de> serde::Deserialize<'de> for proposal::ParameterChange {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "effective_height",
-            "effectiveHeight",
+            "old_parameters",
+            "oldParameters",
             "new_parameters",
             "newParameters",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            EffectiveHeight,
+            OldParameters,
             NewParameters,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -1326,7 +1085,7 @@ impl<'de> serde::Deserialize<'de> for proposal::ParameterChange {
                         E: serde::de::Error,
                     {
                         match value {
-                            "effectiveHeight" | "effective_height" => Ok(GeneratedField::EffectiveHeight),
+                            "oldParameters" | "old_parameters" => Ok(GeneratedField::OldParameters),
                             "newParameters" | "new_parameters" => Ok(GeneratedField::NewParameters),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
@@ -1347,141 +1106,31 @@ impl<'de> serde::Deserialize<'de> for proposal::ParameterChange {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut effective_height__ = None;
+                let mut old_parameters__ = None;
                 let mut new_parameters__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
-                        GeneratedField::EffectiveHeight => {
-                            if effective_height__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("effectiveHeight"));
+                        GeneratedField::OldParameters => {
+                            if old_parameters__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("oldParameters"));
                             }
-                            effective_height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
+                            old_parameters__ = map.next_value()?;
                         }
                         GeneratedField::NewParameters => {
                             if new_parameters__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("newParameters"));
                             }
-                            new_parameters__ = Some(map.next_value()?);
+                            new_parameters__ = map.next_value()?;
                         }
                     }
                 }
                 Ok(proposal::ParameterChange {
-                    effective_height: effective_height__.unwrap_or_default(),
-                    new_parameters: new_parameters__.unwrap_or_default(),
+                    old_parameters: old_parameters__,
+                    new_parameters: new_parameters__,
                 })
             }
         }
         deserializer.deserialize_struct("penumbra.core.governance.v1alpha1.Proposal.ParameterChange", FIELDS, GeneratedVisitor)
-    }
-}
-impl serde::Serialize for proposal::parameter_change::SetParameter {
-    #[allow(deprecated)]
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        use serde::ser::SerializeStruct;
-        let mut len = 0;
-        if !self.parameter.is_empty() {
-            len += 1;
-        }
-        if !self.value.is_empty() {
-            len += 1;
-        }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.governance.v1alpha1.Proposal.ParameterChange.SetParameter", len)?;
-        if !self.parameter.is_empty() {
-            struct_ser.serialize_field("parameter", &self.parameter)?;
-        }
-        if !self.value.is_empty() {
-            struct_ser.serialize_field("value", &self.value)?;
-        }
-        struct_ser.end()
-    }
-}
-impl<'de> serde::Deserialize<'de> for proposal::parameter_change::SetParameter {
-    #[allow(deprecated)]
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        const FIELDS: &[&str] = &[
-            "parameter",
-            "value",
-        ];
-
-        #[allow(clippy::enum_variant_names)]
-        enum GeneratedField {
-            Parameter,
-            Value,
-        }
-        impl<'de> serde::Deserialize<'de> for GeneratedField {
-            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
-            where
-                D: serde::Deserializer<'de>,
-            {
-                struct GeneratedVisitor;
-
-                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-                    type Value = GeneratedField;
-
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                        write!(formatter, "expected one of: {:?}", &FIELDS)
-                    }
-
-                    #[allow(unused_variables)]
-                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
-                    where
-                        E: serde::de::Error,
-                    {
-                        match value {
-                            "parameter" => Ok(GeneratedField::Parameter),
-                            "value" => Ok(GeneratedField::Value),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
-                        }
-                    }
-                }
-                deserializer.deserialize_identifier(GeneratedVisitor)
-            }
-        }
-        struct GeneratedVisitor;
-        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = proposal::parameter_change::SetParameter;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.governance.v1alpha1.Proposal.ParameterChange.SetParameter")
-            }
-
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<proposal::parameter_change::SetParameter, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
-            {
-                let mut parameter__ = None;
-                let mut value__ = None;
-                while let Some(k) = map.next_key()? {
-                    match k {
-                        GeneratedField::Parameter => {
-                            if parameter__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("parameter"));
-                            }
-                            parameter__ = Some(map.next_value()?);
-                        }
-                        GeneratedField::Value => {
-                            if value__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("value"));
-                            }
-                            value__ = Some(map.next_value()?);
-                        }
-                    }
-                }
-                Ok(proposal::parameter_change::SetParameter {
-                    parameter: parameter__.unwrap_or_default(),
-                    value: value__.unwrap_or_default(),
-                })
-            }
-        }
-        deserializer.deserialize_struct("penumbra.core.governance.v1alpha1.Proposal.ParameterChange.SetParameter", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for proposal::Signaling {

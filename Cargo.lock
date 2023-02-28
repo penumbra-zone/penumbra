@@ -3893,6 +3893,7 @@ dependencies = [
  "num-bigint",
  "once_cell",
  "pbjson-types",
+ "penumbra-chain",
  "penumbra-crypto",
  "penumbra-proof-params",
  "penumbra-proto",

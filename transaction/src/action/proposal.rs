@@ -1,14 +1,15 @@
 use ark_ff::Zero;
 use serde::{Deserialize, Serialize};
-use std::{collections::BTreeMap, str::FromStr};
+use std::str::FromStr;
 
+use penumbra_chain::params::ChainParameters;
 use penumbra_crypto::{
     asset::{self, Amount, Denom},
     balance, Balance, Fr, ProposalNft, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType};
 
-use crate::{plan::TransactionPlan, ActionView, EffectHash, IsAction, TransactionPerspective};
+use crate::{plan::TransactionPlan, ActionView, IsAction, TransactionPerspective};
 
 /// The protobuf type URL for a transaction plan.
 pub const TRANSACTION_PLAN_TYPE_URL: &str = "/penumbra.core.transaction.v1alpha1.TransactionPlan";
@@ -45,44 +46,18 @@ impl From<Proposal> for pb::Proposal {
             ProposalPayload::Emergency { halt_chain } => {
                 proposal.emergency = Some(pb::proposal::Emergency { halt_chain });
             }
-            ProposalPayload::ParameterChange {
-                effective_height,
-                new_parameters,
-            } => {
-                proposal.parameter_change =
-                    Some(pb::proposal::ParameterChange {
-                        effective_height,
-                        new_parameters: new_parameters
-                            .into_iter()
-                            .map(|(parameter, value)| {
-                                pb::proposal::parameter_change::SetParameter { parameter, value }
-                            })
-                            .collect(),
-                    });
+            ProposalPayload::ParameterChange { old, new } => {
+                proposal.parameter_change = Some(pb::proposal::ParameterChange {
+                    old_parameters: Some((*old).into()),
+                    new_parameters: Some((*new).into()),
+                });
             }
-            ProposalPayload::DaoSpend {
-                schedule_transactions,
-                cancel_transactions,
-            } => {
+            ProposalPayload::DaoSpend { transaction_plan } => {
                 proposal.dao_spend = Some(pb::proposal::DaoSpend {
-                    schedule_transactions: schedule_transactions
-                        .into_iter()
-                        .map(|(execute_at_height, transaction)| {
-                            pb::proposal::dao_spend::ScheduleTransaction {
-                                execute_at_height,
-                                transaction: Some(transaction),
-                            }
-                        })
-                        .collect(),
-                    cancel_transactions: cancel_transactions
-                        .into_iter()
-                        .map(|(scheduled_at_height, effect_hash)| {
-                            pb::proposal::dao_spend::CancelTransaction {
-                                scheduled_at_height,
-                                effect_hash: Some(effect_hash.into()),
-                            }
-                        })
-                        .collect(),
+                    transaction_plan: Some(pbjson_types::Any {
+                        type_url: TRANSACTION_PLAN_TYPE_URL.to_owned(),
+                        value: transaction_plan.encode_to_vec().into(),
+                    }),
                 });
             }
         }
@@ -108,43 +83,34 @@ impl TryFrom<pb::Proposal> for Proposal {
                 }
             } else if let Some(parameter_change) = inner.parameter_change {
                 ProposalPayload::ParameterChange {
-                    effective_height: parameter_change.effective_height,
-                    new_parameters: parameter_change
-                        .new_parameters
-                        .into_iter()
-                        .map(|set_parameter| (set_parameter.parameter, set_parameter.value))
-                        .collect(),
+                    old: Box::new(
+                        parameter_change
+                            .old_parameters
+                            .ok_or_else(|| anyhow::anyhow!("missing old parameters"))?
+                            .try_into()?,
+                    ),
+                    new: Box::new(
+                        parameter_change
+                            .new_parameters
+                            .ok_or_else(|| anyhow::anyhow!("missing new parameters"))?
+                            .try_into()?,
+                    ),
                 }
             } else if let Some(dao_spend) = inner.dao_spend {
                 ProposalPayload::DaoSpend {
-                        schedule_transactions: dao_spend
-                            .schedule_transactions
-                            .into_iter()
-                            .map(|schedule_transaction| {
-                                Ok::<_, anyhow::Error>((
-                                    schedule_transaction.execute_at_height,
-                                    schedule_transaction.transaction.ok_or_else(|| {
-                                        anyhow::anyhow!("missing transaction in scheduled transaction")
-                                    })?,
-                                ))
-                            })
-                            .collect::<Result<_, _>>()?,
-                        cancel_transactions: dao_spend
-                            .cancel_transactions
-                            .into_iter()
-                            .map(|cancel_transaction| {
-                                Ok::<_, anyhow::Error>((
-                                    cancel_transaction.scheduled_at_height,
-                                    cancel_transaction
-                                        .effect_hash
-                                        .ok_or_else(|| {
-                                            anyhow::anyhow!("missing effect hash in cancellation of scheduled transaction")
-                                        })?
-                                        .try_into()?,
-                                ))
-                            })
-                            .collect::<Result<_, _>>()?,
-                    }
+                    transaction_plan: {
+                        let transaction_plan = dao_spend
+                            .transaction_plan
+                            .ok_or_else(|| anyhow::anyhow!("missing transaction plan"))?;
+                        if transaction_plan.type_url != TRANSACTION_PLAN_TYPE_URL {
+                            anyhow::bail!(
+                                "unknown transaction plan type url: {}",
+                                transaction_plan.type_url
+                            );
+                        }
+                        TransactionPlan::decode(transaction_plan.value)?
+                    },
+                }
             } else {
                 return Err(anyhow::anyhow!(
                     "missing proposal payload or unknown proposal type"
@@ -211,31 +177,11 @@ impl ProposalKind {
             ProposalKind::Signaling => ProposalPayload::Signaling { commit: None },
             ProposalKind::Emergency => ProposalPayload::Emergency { halt_chain: false },
             ProposalKind::ParameterChange => {
-                let mut new_parameters = BTreeMap::new();
-                new_parameters.insert(
-                    "parameter name".to_string(),
-                    "new parameter value".to_string(),
-                );
-                ProposalPayload::ParameterChange {
-                    effective_height: 0,
-                    new_parameters,
-                }
+                todo!("template a parameter change proposal")
             }
-            ProposalKind::DaoSpend => ProposalPayload::DaoSpend {
-                schedule_transactions: vec![(
-                    0,
-                    pbjson_types::Any {
-                        type_url: TRANSACTION_PLAN_TYPE_URL.to_string(),
-                        value: TransactionPlan {
-                            chain_id,
-                            ..Default::default()
-                        }
-                        .encode_to_vec()
-                        .into(),
-                    },
-                )],
-                cancel_transactions: vec![(0, EffectHash::default())],
-            },
+            ProposalKind::DaoSpend => {
+                todo!("template a DAO spend proposal")
+            }
         };
         Proposal {
             id,
@@ -262,20 +208,30 @@ pub enum ProposalPayload {
         /// passed.
         halt_chain: bool,
     },
-    /// A parameter change proposal describes changes to one or more chain parameters.
+    /// A parameter change proposal describes a replacement of the chain parameters, which should
+    /// take effect when the proposal is passed.
     ParameterChange {
-        /// The parameter changes are enacted at this height.
-        effective_height: u64,
-        /// The parameter changes proposed, as a pair of string keys and string values.
-        new_parameters: BTreeMap<String, String>,
+        /// The old chain parameters to be replaced.
+        ///
+        /// Even if the proposal passes, the update will not be applied if the chain parameters have
+        /// changed *at all* from these chain parameters. Usually, this should be set to the current
+        /// chain parameters at time of proposal.
+        old: Box<ChainParameters>,
+        /// The new chain parameters to be set.
+        ///
+        /// The *entire* chain parameters will be replaced with these at the time the proposal is
+        /// passed.
+        new: Box<ChainParameters>,
     },
     /// A DAO spend proposal describes proposed transaction(s) to be executed or cancelled at
     /// specific heights, with the spend authority of the DAO.
     DaoSpend {
-        /// Schedule these new transactions at the given heights.
-        schedule_transactions: Vec<(u64, pbjson_types::Any)>,
-        /// Cancel these previously-scheduled transactions at the given heights.
-        cancel_transactions: Vec<(u64, EffectHash)>,
+        /// The transaction plan to be executed at the time the proposal is passed.
+        ///
+        /// This must be a transaction plan which can be executed by the DAO, which means it can't
+        /// require any witness data or authorization signatures, but it may use the `DaoSpend`
+        /// action.
+        transaction_plan: TransactionPlan,
     },
 }
 
