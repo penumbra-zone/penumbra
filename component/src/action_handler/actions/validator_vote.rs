@@ -6,7 +6,7 @@ use penumbra_chain::StateReadExt as _;
 use penumbra_proto::DomainType;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{
-    action::{ValidatorVote, ValidatorVoteBody},
+    action::{proposal, ValidatorVote, ValidatorVoteBody},
     Transaction,
 };
 
@@ -89,12 +89,20 @@ impl ActionHandler for ValidatorVote {
             let chain_params = state.get_chain_params().await?;
             if tally.emergency_pass(total_voting_power, &chain_params) {
                 tracing::debug!(proposal = %proposal, "emergency pass condition met, trying to enact proposal");
+                // Try to enact the proposal based on its payload
                 match state.enact_proposal(&proposal_payload).await? {
                     Ok(_) => tracing::debug!(proposal = %proposal, "emergency proposal enacted"),
                     Err(error) => {
                         tracing::warn!(proposal = %proposal, %error, "error enacting emergency proposal")
                     }
                 }
+                // Update the proposal state to reflect the outcome
+                state.put_proposal_state(
+                    *proposal,
+                    proposal::State::Finished {
+                        outcome: proposal::Outcome::Passed,
+                    },
+                );
             }
         }
 

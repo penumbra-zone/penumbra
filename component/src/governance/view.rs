@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use futures::{Stream, StreamExt};
+use futures::StreamExt;
 use penumbra_chain::{StateReadExt as _, StateWriteExt as _};
 use penumbra_crypto::{
     asset::{self, Amount},
@@ -17,6 +17,7 @@ use penumbra_storage::{StateRead, StateWrite};
 use penumbra_tct as tct;
 use penumbra_transaction::action::{proposal, Proposal, ProposalPayload, Vote};
 use tokio::task::JoinSet;
+use tracing::instrument;
 
 use crate::{
     shielded_pool::{StateReadExt as _, StateWriteExt as _, SupplyRead},
@@ -659,6 +660,7 @@ pub trait StateWriteExt: StateWrite {
     }
 
     /// Tally delegator votes by sweeping them into the aggregate for each validator, for each proposal.
+    #[instrument(skip(self))]
     async fn tally_delegator_votes(&mut self, just_for_proposal: Option<u64>) -> Result<()> {
         // Iterate over all the delegator votes, or just the ones for a specific proposal
         let prefix = if let Some(proposal_id) = just_for_proposal {
@@ -723,6 +725,14 @@ pub trait StateWriteExt: StateWrite {
         // Actually record the new tallies in the state
         for (proposal_id, new_tallies_for_proposal) in new_tallies {
             for (identity_key, tally) in new_tallies_for_proposal {
+                tracing::debug!(
+                    proposal_id,
+                    identity_key = %identity_key,
+                    yes = %tally.yes(),
+                    no = %tally.no(),
+                    abstain = %tally.abstain(),
+                    "tallying delegator votes"
+                );
                 self.put(
                     state_key::tallied_delegator_votes(proposal_id, identity_key),
                     tally,
@@ -733,11 +743,13 @@ pub trait StateWriteExt: StateWrite {
         Ok(())
     }
 
+    #[instrument(skip(self))]
     async fn enact_proposal(&mut self, payload: &ProposalPayload) -> Result<Result<()>> // inner error from proposal execution
     {
         match payload {
             ProposalPayload::Signaling { .. } => {
                 // Nothing to do for signaling proposals
+                tracing::info!("signaling proposal passed, nothing to do");
             }
             ProposalPayload::Emergency { halt_chain } => {
                 // If the proposal calls to halt the chain...
@@ -765,13 +777,20 @@ pub trait StateWriteExt: StateWrite {
                         );
                         self.halt_now();
                     }
+                } else {
+                    tracing::info!("emergency proposal without chain halt passed, nothing to do");
                 }
             }
             ProposalPayload::ParameterChange { old, new } => {
+                tracing::info!(
+                    "parameter change proposal passed, attempting to update chain parameters"
+                );
+
                 // If there has been a chain upgrade while the proposal was pending, the stateless
                 // verification criteria for the parameter change proposal could have changed, so we
                 // should check them again here, just to be sure:
-                old.check_valid_update(new)?;
+                old.check_valid_update(new)
+                    .context("final check for validity of chain parameter update failed")?;
 
                 // Check that the old parameters are an exact match for the current parameters, or
                 // else abort the update.
@@ -784,6 +803,8 @@ pub trait StateWriteExt: StateWrite {
 
                 // Update the chain parameters
                 self.put_chain_params((**new).clone());
+
+                tracing::info!("chain parameters updated successfully");
             }
             ProposalPayload::DaoSpend {
                 transaction_plan: _,
