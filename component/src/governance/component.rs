@@ -25,6 +25,13 @@ impl Component for Governance {
 
     #[instrument(name = "governance", skip(state, _end_block))]
     async fn end_block<S: StateWrite>(mut state: S, _end_block: &abci::request::EndBlock) {
+        // Then, enact any proposals that have passed, after considering the tallies to determine what
+        // proposals have passed. Note that this occurs regardless of whether it's the end of an
+        // epoch, because proposals can finish at any time.
+        enact_all_passed_proposals(&mut state)
+            .await
+            .expect("enacting proposals should never fail");
+
         // TODO: This will need to be altered to support dynamic epochs
         if state
             .epoch()
@@ -41,10 +48,7 @@ impl Component for Governance {
 
 async fn end_epoch<S: StateWrite>(mut state: S) -> Result<()> {
     // Every epoch, sweep all delegator votes into tallies (this will be homomorphic in the future)
-    state.tally_delegator_votes().await?;
-    // Then, enact any proposals that have passed, after considering the tallies to determine what
-    // proposals have passed
-    enact_all_passed_proposals(&mut state).await?;
+    state.tally_delegator_votes(None).await?;
     Ok(())
 }
 
@@ -66,6 +70,9 @@ pub async fn enact_all_passed_proposals<S: StateWrite>(mut state: S) -> Result<(
         if !proposal_ready {
             continue;
         }
+
+        // Do a final tally of any pending delegator votes for the proposal
+        state.tally_delegator_votes(Some(proposal_id)).await?;
 
         let current_state = state
             .proposal_state(proposal_id)
@@ -107,10 +114,10 @@ pub async fn enact_all_passed_proposals<S: StateWrite>(mut state: S) -> Result<(
                 withdrawn: proposal::Withdrawn::WithReason { reason },
             },
             proposal::State::Finished { outcome: _ } => {
-                panic!("proposal {proposal_id} is already finished, and should have been removed from the active set");
+                anyhow::bail!("proposal {proposal_id} is already finished, and should have been removed from the active set");
             }
             proposal::State::Claimed { outcome: _ } => {
-                panic!("proposal {proposal_id} is already claimed, and should have been removed from the active set");
+                anyhow::bail!("proposal {proposal_id} is already claimed, and should have been removed from the active set");
             }
         };
 

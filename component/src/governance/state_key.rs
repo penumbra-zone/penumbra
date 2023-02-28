@@ -89,6 +89,11 @@ pub fn untallied_delegator_vote(
     format!("governance/untallied_delegator_vote/{proposal_id}/{identity_key}/{nullifier}")
 }
 
+pub fn all_untallied_delegator_votes_for_proposal(proposal_id: u64) -> String {
+    // Note: this has to be the prefix of the `untallied_delegator_vote` function above.
+    format!("governance/untallied_delegator_vote/{proposal_id}/")
+}
+
 pub fn all_untallied_delegator_votes() -> &'static str {
     // Note: this has to be the prefix of the `untallied_delegator_vote` function above.
     "governance/untallied_delegator_vote/"

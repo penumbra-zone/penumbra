@@ -674,10 +674,14 @@ pub trait StateWriteExt: StateWrite {
     }
 
     /// Tally delegator votes by sweeping them into the aggregate for each validator, for each proposal.
-    async fn tally_delegator_votes(&mut self) -> Result<()> {
-        // Iterate over all the delegator votes
-        let prefix = state_key::all_untallied_delegator_votes();
-        let mut prefix_stream = self.prefix(prefix);
+    async fn tally_delegator_votes(&mut self, just_for_proposal: Option<u64>) -> Result<()> {
+        // Iterate over all the delegator votes, or just the ones for a specific proposal
+        let prefix = if let Some(proposal_id) = just_for_proposal {
+            state_key::all_untallied_delegator_votes_for_proposal(proposal_id)
+        } else {
+            state_key::all_untallied_delegator_votes().to_string()
+        };
+        let mut prefix_stream = self.prefix(&prefix);
 
         // We need to keep track of modifications and then apply them after iteration, because
         // `self.prefix(..)` borrows `self` immutably, so we can't mutate `self` during iteration
