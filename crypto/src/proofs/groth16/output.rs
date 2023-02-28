@@ -8,7 +8,7 @@ use decaf377_fmd as fmd;
 use decaf377_ka as ka;
 
 use ark_ff::ToConstraintField;
-use ark_groth16::{Groth16, Proof, ProvingKey, VerifyingKey};
+use ark_groth16::{Groth16, PreparedVerifyingKey, Proof, ProvingKey};
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
@@ -80,7 +80,7 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
 }
 
 impl ParameterSetup for OutputCircuit {
-    fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
+    fn generate_test_parameters() -> (ProvingKey<Bls12_377>, PreparedVerifyingKey<Bls12_377>) {
         let diversifier_bytes = [1u8; 16];
         let pk_d_bytes = decaf377::basepoint().vartime_compress().0;
         let clue_key_bytes = [1; 32];
@@ -106,7 +106,7 @@ impl ParameterSetup for OutputCircuit {
         };
         let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
             .expect("can perform circuit specific setup");
-        (pk, vk)
+        (pk, vk.into())
     }
 }
 
@@ -144,11 +144,10 @@ impl OutputProof {
     #[tracing::instrument(skip(self, vk))]
     pub fn verify(
         &self,
-        vk: &VerifyingKey<Bls12_377>,
+        vk: &PreparedVerifyingKey<Bls12_377>,
         balance_commitment: balance::Commitment,
         note_commitment: note::Commitment,
     ) -> anyhow::Result<()> {
-        let processed_pvk = Groth16::process_vk(vk).map_err(|err| anyhow::anyhow!(err))?;
         let mut public_inputs = Vec::new();
         public_inputs.extend(note_commitment.0.to_field_elements().unwrap());
         public_inputs.extend(balance_commitment.0.to_field_elements().unwrap());
@@ -156,7 +155,7 @@ impl OutputProof {
         tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();
         let proof_result =
-            Groth16::verify_with_processed_vk(&processed_pvk, public_inputs.as_slice(), &self.0)
+            Groth16::verify_with_processed_vk(&vk, public_inputs.as_slice(), &self.0)
                 .map_err(|err| anyhow::anyhow!(err))?;
         tracing::debug!(?proof_result, elapsed = ?start.elapsed());
         proof_result
