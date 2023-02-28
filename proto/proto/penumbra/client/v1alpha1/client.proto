@@ -6,7 +6,6 @@ import "ibc/core/commitment/v1/commitment.proto";
 import "penumbra/core/chain/v1alpha1/chain.proto";
 import "penumbra/core/crypto/v1alpha1/crypto.proto";
 import "penumbra/core/dex/v1alpha1/dex.proto";
-import "penumbra/core/governance/v1alpha1/governance.proto";
 import "penumbra/core/stake/v1alpha1/stake.proto";
 
 import "google/protobuf/timestamp.proto";
