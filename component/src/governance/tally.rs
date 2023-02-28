@@ -15,6 +15,18 @@ pub struct Tally {
 }
 
 impl Tally {
+    pub fn yes(&self) -> u64 {
+        self.yes
+    }
+
+    pub fn no(&self) -> u64 {
+        self.no
+    }
+
+    pub fn abstain(&self) -> u64 {
+        self.abstain
+    }
+
     pub fn total(&self) -> u64 {
         self.yes + self.no + self.abstain
     }

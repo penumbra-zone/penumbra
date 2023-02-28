@@ -101,18 +101,23 @@ pub async fn enact_all_passed_proposals<S: StateWrite>(mut state: S) -> Result<(
                         .await?
                         .context("proposal has payload")?;
                     match state.enact_proposal(&payload).await? {
-                        Ok(()) => {}
+                        Ok(()) => {
+                            tracing::info!(proposal = %proposal_id, "proposal passed and enacted successfully");
+                        }
                         Err(error) => {
-                            tracing::warn!(proposal = %proposal_id, %error, "failed to enact proposal");
+                            tracing::warn!(proposal = %proposal_id, %error, "proposal passed but failed to enact");
                         }
                     };
                 }
 
                 outcome.into()
             }
-            proposal::State::Withdrawn { reason } => proposal::Outcome::Failed {
-                withdrawn: proposal::Withdrawn::WithReason { reason },
-            },
+            proposal::State::Withdrawn { reason } => {
+                tracing::info!(proposal = %proposal_id, reason = ?reason, "proposal concluded after being withdrawn");
+                proposal::Outcome::Failed {
+                    withdrawn: proposal::Withdrawn::WithReason { reason },
+                }
+            }
             proposal::State::Finished { outcome: _ } => {
                 anyhow::bail!("proposal {proposal_id} is already finished, and should have been removed from the active set");
             }
@@ -120,8 +125,6 @@ pub async fn enact_all_passed_proposals<S: StateWrite>(mut state: S) -> Result<(
                 anyhow::bail!("proposal {proposal_id} is already claimed, and should have been removed from the active set");
             }
         };
-
-        tracing::info!(proposal = %proposal_id, outcome = ?outcome, "proposal voting concluded");
 
         // Update the proposal state to reflect the outcome
         state.put_proposal_state(proposal_id, proposal::State::Finished { outcome });
