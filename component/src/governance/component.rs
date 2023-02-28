@@ -13,8 +13,12 @@ pub struct Governance {}
 
 #[async_trait]
 impl Component for Governance {
-    #[instrument(name = "governance", skip(_state, _app_state))]
-    async fn init_chain<S: StateWrite>(_state: S, _app_state: &genesis::AppState) {}
+    #[instrument(name = "governance", skip(state, _app_state))]
+    async fn init_chain<S: StateWrite>(mut state: S, _app_state: &genesis::AppState) {
+        // Clients need to be able to read the next proposal number, even when no proposals have
+        // been submitted yet
+        state.init_proposal_counter();
+    }
 
     #[instrument(name = "governance", skip(_state, _begin_block))]
     async fn begin_block<S: StateWrite>(_state: S, _begin_block: &abci::request::BeginBlock) {}
