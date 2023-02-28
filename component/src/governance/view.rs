@@ -1,6 +1,5 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
-    pin::Pin,
     str::FromStr,
 };
 
@@ -71,20 +70,6 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
             proposals.insert(proposal_id);
         }
         Ok(proposals)
-    }
-
-    /// Get the list of validators who voted on a proposal.
-    async fn voting_validators(&self, proposal_id: u64) -> Result<Vec<IdentityKey>> {
-        let k = state_key::voting_validators_list(proposal_id);
-        let mut range: Pin<Box<dyn Stream<Item = Result<(String, Vote)>> + Send + '_>> =
-            self.prefix(&k);
-
-        range
-            .next()
-            .await
-            .into_iter()
-            .map(|r| IdentityKey::from_str(r?.0.rsplit('/').next().context("invalid key")?))
-            .collect()
     }
 
     /// Get the vote of a validator on a particular proposal.
