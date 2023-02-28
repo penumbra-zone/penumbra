@@ -1,3 +1,4 @@
+use anyhow::Context;
 use penumbra_crypto::keys::{SeedPhrase, SpendKey};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
@@ -20,15 +21,23 @@ impl KeyStore {
         }
         use std::io::Write;
         let path = path.as_ref();
-        let mut file = std::fs::File::create(path)?;
-        let data = serde_json::to_vec(self)?;
-        file.write_all(&data)?;
+        let mut file =
+            std::fs::File::create(path).with_context(|| format!("can't create file {path:?}"))?;
+        let data = serde_json::to_vec(self).context("can't serialize wallet")?;
+        file.write_all(&data)
+            .with_context(|| format!("can't write file {path:?}"))?;
         Ok(())
     }
 
     /// Read the wallet data from the provided path.
     pub fn load(path: impl AsRef<std::path::Path>) -> anyhow::Result<Self> {
-        serde_json::from_slice(std::fs::read(path)?.as_slice()).map_err(Into::into)
+        let path = path.as_ref();
+        serde_json::from_slice(
+            std::fs::read(path)
+                .with_context(|| format!("can't read file {path:?}"))?
+                .as_slice(),
+        )
+        .map_err(Into::into)
     }
 
     /// Create a new wallet.
