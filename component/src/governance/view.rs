@@ -513,6 +513,11 @@ impl<T: StateRead + crate::stake::StateReadExt + ?Sized> StateReadExt for T {}
 
 #[async_trait]
 pub trait StateWriteExt: StateWrite {
+    /// Initialize the proposal counter so that it can always be read.
+    fn init_proposal_counter(&mut self) {
+        self.put_proto(state_key::next_proposal_id().to_string(), 0);
+    }
+
     /// Store a new proposal with a new proposal id.
     async fn new_proposal(&mut self, proposal: &Proposal) -> Result<u64> {
         let proposal_id = self.next_proposal_id().await?;
