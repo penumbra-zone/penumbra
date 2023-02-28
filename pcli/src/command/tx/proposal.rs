@@ -19,7 +19,7 @@ pub enum ProposalCmd {
         /// The transaction fee (paid in upenumbra).
         #[clap(long, default_value = "0")]
         fee: u64,
-        /// Only spend funds originally received by the given address index.
+        /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0")]
         source: u32,
     },
@@ -34,7 +34,7 @@ pub enum ProposalCmd {
         /// displayed to users.
         #[clap(long)]
         reason: String,
-        /// Only spend funds originally received by the given address index.
+        /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0")]
         source: u32,
     },
@@ -49,7 +49,7 @@ pub enum ProposalCmd {
         fee: u64,
         /// The proposal id to claim the deposit for.
         proposal_id: u64,
-        /// Only spend funds originally received by the given address index.
+        /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0")]
         source: u32,
     },
