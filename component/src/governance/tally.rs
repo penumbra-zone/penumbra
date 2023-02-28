@@ -1,5 +1,7 @@
 use std::ops::{Add, AddAssign};
 
+use serde::{Deserialize, Serialize};
+
 use penumbra_chain::params::{ChainParameters, Ratio};
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType};
 use penumbra_transaction::action::{
@@ -7,7 +9,8 @@ use penumbra_transaction::action::{
     Vote,
 };
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize)]
+#[serde(try_from = "pb::Tally", into = "pb::Tally")]
 pub struct Tally {
     yes: u64,
     no: u64,
