@@ -1,0 +1,5 @@
+web:
+    wasm-pack build --target web
+
+build:
+    cargo build --target wasm32-unknown-unknown

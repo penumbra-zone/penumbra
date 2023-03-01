@@ -1,0 +1,31 @@
+[package]
+name = "penumbra-wasm"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+# Penumbra dependencies, known to compile to wasm.
+penumbra-proto = { path = "../proto", default-features = false }
+penumbra-crypto = { path = "../crypto" }
+penumbra-tct = { path = "../tct" }
+
+# Penumbra dependencies, not yet known to compile to wasm
+# penumbra-chain = { path = "../chain", default-features = false }
+# penumbra-custody = { path = "../custody", default-features = false }
+# penumbra-component = { path = "../component", default-features = false }
+# penumbra-eddy = { path = "../eddy", default-features = false }
+# penumbra-transaction = { path = "../transaction" }
+# penumbra-wallet = { path = "../wallet", default-features = false }
+
+# Enabling the 'js' feature for getrandom for random support; see
+# https://docs.rs/getrandom/latest/getrandom/#webassembly-support
+getrandom = { version = "0.2", features = ["js"] }
+
+[lib]
+crate-type = ["cdylib"]
+
+# We set a blank 'workspace' block disassociate this crate
+# with the workspace at the repo root. Doing so models
+# how an external developer would use it.
+[workspace]
