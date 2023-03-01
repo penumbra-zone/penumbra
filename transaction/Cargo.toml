@@ -22,7 +22,7 @@ ibc-proto = { version = "0.26", features = ["std"] }
 
 
 # Crates.io deps
-base64 = "0.20"
+base64 = "0.21"
 ark-ff = "0.3"
 ark-serialize = "0.3"
 regex = "1.5"

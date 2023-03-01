@@ -1,5 +1,11 @@
-use std::cmp::Ordering;
+use core::fmt;
+use std::{
+    cmp::Ordering,
+    fmt::{Display, Formatter},
+    str::FromStr,
+};
 
+use anyhow::Context;
 use penumbra_crypto::{asset, stake::Penalty, Amount};
 use penumbra_proto::client::v1alpha1 as pb_client;
 use penumbra_proto::core::chain::v1alpha1 as pb_chain;
@@ -87,6 +93,91 @@ pub struct ChainParameters {
     pub proposal_pass_threshold: Ratio,
     /// The threshold for a proposal to be slashed, as a ratio of "no" votes over all total votes.
     pub proposal_slash_threshold: Ratio,
+}
+
+/// A TOML-serializable version of `ChainParameters` which is more human-readable.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub struct ChainParametersToml {
+    pub chain_id: String,
+    pub epoch_duration: u64,
+
+    pub unbonding_epochs: u64,
+    pub active_validator_limit: u64,
+    pub base_reward_rate: u64,
+    pub slashing_penalty_misbehavior: u64,
+    pub slashing_penalty_downtime: u64,
+    pub signed_blocks_window_len: u64,
+    pub missed_blocks_maximum: u64,
+
+    pub ibc_enabled: bool,
+    pub inbound_ics20_transfers_enabled: bool,
+    pub outbound_ics20_transfers_enabled: bool,
+
+    pub proposal_voting_blocks: u64,
+    pub proposal_deposit_amount: u64,
+    pub proposal_valid_quorum: String,
+    pub proposal_pass_threshold: String,
+    pub proposal_slash_threshold: String,
+}
+
+impl From<ChainParameters> for ChainParametersToml {
+    fn from(value: ChainParameters) -> Self {
+        ChainParametersToml {
+            chain_id: value.chain_id,
+            epoch_duration: value.epoch_duration,
+            unbonding_epochs: value.unbonding_epochs,
+            active_validator_limit: value.active_validator_limit,
+            base_reward_rate: value.base_reward_rate,
+            slashing_penalty_misbehavior: value.slashing_penalty_misbehavior.0,
+            slashing_penalty_downtime: value.slashing_penalty_downtime.0,
+            signed_blocks_window_len: value.signed_blocks_window_len,
+            missed_blocks_maximum: value.missed_blocks_maximum,
+            ibc_enabled: value.ibc_enabled,
+            inbound_ics20_transfers_enabled: value.inbound_ics20_transfers_enabled,
+            outbound_ics20_transfers_enabled: value.outbound_ics20_transfers_enabled,
+            proposal_voting_blocks: value.proposal_voting_blocks,
+            proposal_deposit_amount: value.proposal_deposit_amount.into(),
+            proposal_valid_quorum: value.proposal_valid_quorum.to_string(),
+            proposal_pass_threshold: value.proposal_pass_threshold.to_string(),
+            proposal_slash_threshold: value.proposal_slash_threshold.to_string(),
+        }
+    }
+}
+
+impl TryFrom<ChainParametersToml> for ChainParameters {
+    type Error = anyhow::Error;
+
+    fn try_from(value: ChainParametersToml) -> Result<Self, Self::Error> {
+        Ok(ChainParameters {
+            chain_id: value.chain_id,
+            epoch_duration: value.epoch_duration,
+            unbonding_epochs: value.unbonding_epochs,
+            active_validator_limit: value.active_validator_limit,
+            base_reward_rate: value.base_reward_rate,
+            slashing_penalty_misbehavior: Penalty(value.slashing_penalty_misbehavior),
+            slashing_penalty_downtime: Penalty(value.slashing_penalty_downtime),
+            signed_blocks_window_len: value.signed_blocks_window_len,
+            missed_blocks_maximum: value.missed_blocks_maximum,
+            ibc_enabled: value.ibc_enabled,
+            inbound_ics20_transfers_enabled: value.inbound_ics20_transfers_enabled,
+            outbound_ics20_transfers_enabled: value.outbound_ics20_transfers_enabled,
+            proposal_voting_blocks: value.proposal_voting_blocks,
+            proposal_deposit_amount: value.proposal_deposit_amount.into(),
+            proposal_valid_quorum: value
+                .proposal_valid_quorum
+                .parse()
+                .with_context(|| "invalid proposal_valid_quorum")?,
+            proposal_pass_threshold: value
+                .proposal_pass_threshold
+                .parse()
+                .with_context(|| "invalid proposal_pass_threshold")?,
+            proposal_slash_threshold: value
+                .proposal_slash_threshold
+                .parse()
+                .with_context(|| "invalid proposal_slash_threshold")?,
+        })
+    }
 }
 
 impl DomainType for ChainParameters {
@@ -274,6 +365,35 @@ impl Default for FmdParameters {
 pub struct Ratio {
     numerator: u64,
     denominator: u64,
+}
+
+impl Display for Ratio {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}/{}", self.numerator, self.denominator)
+    }
+}
+
+impl FromStr for Ratio {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut parts = s.split('/');
+        let numerator = parts
+            .next()
+            .ok_or_else(|| anyhow::anyhow!("missing numerator"))?
+            .parse()?;
+        let denominator = parts
+            .next()
+            .ok_or_else(|| anyhow::anyhow!("missing denominator"))?
+            .parse()?;
+        if parts.next().is_some() {
+            return Err(anyhow::anyhow!("too many parts"));
+        }
+        Ok(Ratio {
+            numerator,
+            denominator,
+        })
+    }
 }
 
 impl Ratio {

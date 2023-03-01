@@ -20,7 +20,7 @@ use penumbra_proto::client::v1alpha1::{
     ProposalInfoRequest, ProposalInfoResponse, ProposalRateDataRequest, ValidatorPenaltyRequest,
 };
 use penumbra_transaction::{
-    action::{Proposal, Vote},
+    action::{proposal::ProposalToml, Vote},
     plan::{SwapClaimPlan, UndelegateClaimPlan},
 };
 use penumbra_view::ViewClient;
@@ -537,8 +537,11 @@ impl TxCmd {
                 proposal_file
                     .read_to_string(&mut proposal_string)
                     .context("can't read proposal file")?;
-                let proposal: Proposal =
+                let proposal_toml: ProposalToml =
                     toml::from_str(&proposal_string).context("can't parse proposal file")?;
+                let proposal = proposal_toml
+                    .try_into()
+                    .context("can't parse proposal file")?;
                 let fee = Fee::from_staking_token_amount((*fee).into());
                 let plan = plan::proposal_submit(
                     &app.fvk,
@@ -572,7 +575,7 @@ impl TxCmd {
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Proposal(ProposalCmd::Template { file, kind }) => {
-                let chain_id = app.view().chain_params().await?.chain_id;
+                let chain_params = app.view().chain_params().await?;
 
                 // Find out what the latest proposal ID is so we can include the next ID in the template:
                 let mut client = app.specific_client().await?;
@@ -580,24 +583,17 @@ impl TxCmd {
                     .key_proto(penumbra_component::governance::state_key::next_proposal_id())
                     .await?;
 
-                let template = kind.template_proposal(chain_id, next_proposal_id);
-
-                // Explicitly parse to a TOML table and ensure that the ID is set, because if it's
-                // zero, then the default proto serialization will omit it, and we want to make sure
-                // that the user sees it so they know it usually has to be included.
-                let mut toml_table =
-                    toml::Table::try_from(&template).context("could not parse template as TOML")?;
-                toml_table
-                    .entry("id")
-                    .or_insert(toml::Value::Integer(next_proposal_id as i64));
+                let toml_template: ProposalToml = kind
+                    .template_proposal(&chain_params, next_proposal_id)
+                    .into();
 
                 if let Some(file) = file {
                     File::create(file)
                         .with_context(|| format!("cannot create file {file:?}"))?
-                        .write_all(toml::to_string_pretty(&toml_table)?.as_bytes())
+                        .write_all(toml::to_string_pretty(&toml_template)?.as_bytes())
                         .context("could not write file")?;
                 } else {
-                    println!("{}", toml::to_string_pretty(&toml_table)?);
+                    println!("{}", toml::to_string_pretty(&toml_template)?);
                 }
             }
             TxCmd::Proposal(ProposalCmd::DepositClaim {

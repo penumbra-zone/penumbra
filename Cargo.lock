@@ -3867,7 +3867,7 @@ dependencies = [
  "anyhow",
  "ark-ff",
  "ark-serialize",
- "base64 0.20.0",
+ "base64 0.21.0",
  "bech32",
  "blake2b_simd 0.5.11",
  "bytes",

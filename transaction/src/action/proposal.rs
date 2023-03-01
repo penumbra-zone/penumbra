@@ -1,8 +1,10 @@
+use anyhow::Context;
 use ark_ff::Zero;
+use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
-use penumbra_chain::params::ChainParameters;
+use penumbra_chain::params::{ChainParameters, ChainParametersToml};
 use penumbra_crypto::{
     asset::{self, Amount, Denom},
     balance, Balance, Fr, ProposalNft, Value, STAKING_TOKEN_ASSET_ID,
@@ -29,6 +31,40 @@ pub struct Proposal {
 
     /// The specific kind and attributes of the proposal.
     pub payload: ProposalPayload,
+}
+
+/// A human-readable TOML-serializable version of a proposal.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProposalToml {
+    pub id: u64,
+    pub title: String,
+    pub description: String,
+    #[serde(flatten)]
+    pub payload: ProposalPayloadToml,
+}
+
+impl From<Proposal> for ProposalToml {
+    fn from(proposal: Proposal) -> ProposalToml {
+        ProposalToml {
+            id: proposal.id,
+            title: proposal.title,
+            description: proposal.description,
+            payload: proposal.payload.into(),
+        }
+    }
+}
+
+impl TryFrom<ProposalToml> for Proposal {
+    type Error = anyhow::Error;
+
+    fn try_from(proposal: ProposalToml) -> Result<Proposal, Self::Error> {
+        Ok(Proposal {
+            id: proposal.id,
+            title: proposal.title,
+            description: proposal.description,
+            payload: proposal.payload.try_into()?,
+        })
+    }
 }
 
 impl From<Proposal> for pb::Proposal {
@@ -170,18 +206,19 @@ impl Proposal {
 
 impl ProposalKind {
     /// Generate a default proposal of a particular kind.
-    pub fn template_proposal(&self, _chain_id: String, id: u64) -> Proposal {
+    pub fn template_proposal(&self, chain_params: &ChainParameters, id: u64) -> Proposal {
         let title = "A short title describing the intent of the proposal.".to_string();
         let description = "A human readable description of the proposal.".to_string();
         let payload = match self {
             ProposalKind::Signaling => ProposalPayload::Signaling { commit: None },
             ProposalKind::Emergency => ProposalPayload::Emergency { halt_chain: false },
-            ProposalKind::ParameterChange => {
-                todo!("template a parameter change proposal")
-            }
-            ProposalKind::DaoSpend => {
-                todo!("template a DAO spend proposal")
-            }
+            ProposalKind::ParameterChange => ProposalPayload::ParameterChange {
+                old: Box::new(chain_params.clone()),
+                new: Box::new(chain_params.clone()),
+            },
+            ProposalKind::DaoSpend => ProposalPayload::DaoSpend {
+                transaction_plan: TransactionPlan::default(),
+            },
         };
         Proposal {
             id,
@@ -233,6 +270,70 @@ pub enum ProposalPayload {
         /// action.
         transaction_plan: TransactionPlan,
     },
+}
+
+/// A TOML-serializable version of `ProposalPayload`, meant for human consumption.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum ProposalPayloadToml {
+    Signaling {
+        commit: Option<String>,
+    },
+    Emergency {
+        halt_chain: bool,
+    },
+    ParameterChange {
+        old: Box<ChainParametersToml>,
+        new: Box<ChainParametersToml>,
+    },
+    DaoSpend {
+        transaction: String,
+    },
+}
+
+impl TryFrom<ProposalPayloadToml> for ProposalPayload {
+    type Error = anyhow::Error;
+
+    fn try_from(toml: ProposalPayloadToml) -> Result<Self, Self::Error> {
+        Ok(match toml {
+            ProposalPayloadToml::Signaling { commit } => ProposalPayload::Signaling { commit },
+            ProposalPayloadToml::Emergency { halt_chain } => {
+                ProposalPayload::Emergency { halt_chain }
+            }
+            ProposalPayloadToml::ParameterChange { old, new } => ProposalPayload::ParameterChange {
+                old: Box::new((*old).try_into()?),
+                new: Box::new((*new).try_into()?),
+            },
+            ProposalPayloadToml::DaoSpend { transaction } => ProposalPayload::DaoSpend {
+                transaction_plan: TransactionPlan::decode(Bytes::from(
+                    base64::Engine::decode(&base64::engine::general_purpose::STANDARD, transaction)
+                        .context("couldn't decode transaction plan from base64")?,
+                ))
+                .context("couldn't decode transaction plan from proto")?,
+            },
+        })
+    }
+}
+
+impl From<ProposalPayload> for ProposalPayloadToml {
+    fn from(payload: ProposalPayload) -> Self {
+        match payload {
+            ProposalPayload::Signaling { commit } => ProposalPayloadToml::Signaling { commit },
+            ProposalPayload::Emergency { halt_chain } => {
+                ProposalPayloadToml::Emergency { halt_chain }
+            }
+            ProposalPayload::ParameterChange { old, new } => ProposalPayloadToml::ParameterChange {
+                old: Box::new((*old).into()),
+                new: Box::new((*new).into()),
+            },
+            ProposalPayload::DaoSpend { transaction_plan } => ProposalPayloadToml::DaoSpend {
+                transaction: base64::Engine::encode(
+                    &base64::engine::general_purpose::STANDARD,
+                    transaction_plan.encode_to_vec(),
+                ),
+            },
+        }
+    }
 }
 
 impl ProposalPayload {
