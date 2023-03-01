@@ -1,6 +1,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use penumbra_chain::{params::FmdParameters, CompactBlock, Epoch, NoteSource, StatePayload};
+use penumbra_chain::{
+    params::{ChainParameters, FmdParameters},
+    CompactBlock, Epoch, NoteSource, StatePayload,
+};
 use penumbra_crypto::{
     dex::swap::{SwapPayload, SwapPlaintext},
     FullViewingKey, Note, NotePayload, Nullifier,
@@ -17,6 +20,7 @@ pub struct FilteredBlock {
     pub spent_nullifiers: Vec<Nullifier>,
     pub height: u64,
     pub fmd_parameters: Option<FmdParameters>,
+    pub chain_parameters: Option<ChainParameters>,
 }
 
 impl FilteredBlock {
@@ -45,6 +49,7 @@ pub async fn scan_block(
         fmd_parameters,
         proposal_started,
         swap_outputs,
+        chain_parameters,
     }: CompactBlock,
     epoch_duration: u64,
     storage: &Storage,
@@ -219,6 +224,7 @@ pub async fn scan_block(
         spent_nullifiers: filtered_nullifiers,
         height,
         fmd_parameters,
+        chain_parameters,
     };
 
     Ok(result)

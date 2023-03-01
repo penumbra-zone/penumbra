@@ -131,8 +131,6 @@ impl Storage {
         let mut tx = pool.begin().await?;
 
         let chain_params_bytes = &ChainParameters::encode_to_vec(&params)[..];
-        let fvk_bytes = &FullViewingKey::encode_to_vec(&fvk)[..];
-
         sqlx::query!(
             "INSERT INTO chain_params (bytes) VALUES (?)",
             chain_params_bytes
@@ -140,6 +138,7 @@ impl Storage {
         .execute(&mut tx)
         .await?;
 
+        let fvk_bytes = &FullViewingKey::encode_to_vec(&fvk)[..];
         sqlx::query!("INSERT INTO full_viewing_key (bytes) VALUES (?)", fvk_bytes)
             .execute(&mut tx)
             .await?;
@@ -988,6 +987,17 @@ impl Storage {
             ));
         }
         let mut dbtx = self.pool.begin().await?;
+
+        // If the chain parameters have changed, update them.
+        if let Some(params) = filtered_block.chain_parameters {
+            let chain_params_bytes = &ChainParameters::encode_to_vec(&params)[..];
+            sqlx::query!(
+                "INSERT INTO chain_params (bytes) VALUES (?)",
+                chain_params_bytes
+            )
+            .execute(&mut dbtx)
+            .await?;
+        }
 
         // Insert new note records into storage
         for note_record in &filtered_block.new_notes {

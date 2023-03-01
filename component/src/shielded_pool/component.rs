@@ -82,6 +82,13 @@ impl Component for ShieldedPool {
         // We need to reload the compact block here, in case it was
         // edited during the preceding method calls.
         let mut compact_block = state.stub_compact_block();
+
+        // Check to see if the chain parameters have changed, and include them in the compact block
+        // if they have (this is signaled by `penumbra_chain::StateWriteExt::put_chain_params`):
+        if state.chain_params_changed() {
+            compact_block.chain_parameters = Some(state.get_chain_params().await.unwrap());
+        }
+
         // Close the block in the SCT
         let mut state_commitment_tree = state.stub_state_commitment_tree().await;
         state

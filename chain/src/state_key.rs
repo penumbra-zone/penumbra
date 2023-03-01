@@ -18,6 +18,12 @@ pub fn fmd_parameters_previous() -> &'static str {
     "fmd_parameters/previous"
 }
 
+// These are used for the object store:
+
 pub fn halt_now() -> &'static str {
     "halt_now"
+}
+
+pub fn chain_params_changed() -> &'static str {
+    "chain_params_changed"
 }

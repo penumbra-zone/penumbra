@@ -11,7 +11,7 @@ use penumbra_proto::{
 use penumbra_tct::builder::{block, epoch};
 use serde::{Deserialize, Serialize};
 
-use crate::params::FmdParameters;
+use crate::params::{ChainParameters, FmdParameters};
 
 use super::StatePayload;
 
@@ -35,6 +35,8 @@ pub struct CompactBlock {
     pub proposal_started: bool,
     /// Output prices for batch swaps occurring in this block.
     pub swap_outputs: BTreeMap<TradingPair, BatchSwapOutputData>,
+    /// Updated chain parameters, if any have changed.
+    pub chain_parameters: Option<ChainParameters>,
     // **IMPORTANT NOTE FOR FUTURE HUMANS**: if you want to add new fields to the `CompactBlock`,
     // you must update `CompactBlock::requires_scanning` to check for the emptiness of those fields,
     // because the client will skip processing any compact block that is marked as not requiring
@@ -52,6 +54,7 @@ impl Default for CompactBlock {
             fmd_parameters: None,
             proposal_started: false,
             swap_outputs: BTreeMap::new(),
+            chain_parameters: None,
         }
     }
 }
@@ -63,6 +66,7 @@ impl CompactBlock {
             || !self.nullifiers.is_empty() // need to collect nullifiers
             || self.fmd_parameters.is_some() // need to save latest FMD parameters
             || self.proposal_started // need to process proposal start
+            || self.chain_parameters.is_some() // need to save latest chain parameters
     }
 }
 
@@ -86,6 +90,7 @@ impl From<CompactBlock> for pb::CompactBlock {
             fmd_parameters: cb.fmd_parameters.map(Into::into),
             proposal_started: cb.proposal_started,
             swap_outputs: cb.swap_outputs.into_values().map(Into::into).collect(),
+            chain_parameters: cb.chain_parameters.map(Into::into),
         }
     }
 }
@@ -121,6 +126,7 @@ impl TryFrom<pb::CompactBlock> for CompactBlock {
             epoch_root: value.epoch_root.map(TryInto::try_into).transpose()?,
             fmd_parameters: value.fmd_parameters.map(TryInto::try_into).transpose()?,
             proposal_started: value.proposal_started,
+            chain_parameters: value.chain_parameters.map(TryInto::try_into).transpose()?,
         })
     }
 }

@@ -123,6 +123,12 @@ pub trait StateReadExt: StateRead {
     fn should_halt(&self) -> bool {
         self.object_get::<()>(state_key::halt_now()).is_some()
     }
+
+    /// Returns true if the chain parameters have been changed in this block.
+    fn chain_params_changed(&self) -> bool {
+        self.object_get::<()>(state_key::chain_params_changed())
+            .is_some()
+    }
 }
 
 impl<T: StateRead + ?Sized> StateReadExt for T {}
@@ -137,6 +143,10 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 pub trait StateWriteExt: StateWrite {
     /// Writes the provided chain parameters to the JMT.
     fn put_chain_params(&mut self, params: ChainParameters) {
+        // Note to the shielded pool to include the chain parameters in the next compact block:
+        self.object_put(state_key::chain_params_changed(), ());
+
+        // Change the chain parameters:
         self.put(state_key::chain_params().into(), params)
     }
 
