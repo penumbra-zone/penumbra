@@ -90,6 +90,8 @@ message CompactBlock {
   FmdParameters fmd_parameters = 100;
   // Price data for swaps executed in this block.
   repeated dex.v1alpha1.BatchSwapOutputData swap_outputs = 5;
+  // Updated chain parameters, if they have changed.
+  chain.v1alpha1.ChainParameters chain_parameters = 6;
 }
 
 message StatePayload {

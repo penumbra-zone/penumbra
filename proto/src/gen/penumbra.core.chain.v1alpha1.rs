@@ -126,6 +126,9 @@ pub struct CompactBlock {
     pub swap_outputs: ::prost::alloc::vec::Vec<
         super::super::dex::v1alpha1::BatchSwapOutputData,
     >,
+    /// Updated chain parameters, if they have changed.
+    #[prost(message, optional, tag = "6")]
+    pub chain_parameters: ::core::option::Option<ChainParameters>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

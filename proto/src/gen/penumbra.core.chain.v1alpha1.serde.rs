@@ -573,6 +573,9 @@ impl serde::Serialize for CompactBlock {
         if !self.swap_outputs.is_empty() {
             len += 1;
         }
+        if self.chain_parameters.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.chain.v1alpha1.CompactBlock", len)?;
         if self.height != 0 {
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
@@ -598,6 +601,9 @@ impl serde::Serialize for CompactBlock {
         if !self.swap_outputs.is_empty() {
             struct_ser.serialize_field("swapOutputs", &self.swap_outputs)?;
         }
+        if let Some(v) = self.chain_parameters.as_ref() {
+            struct_ser.serialize_field("chainParameters", v)?;
+        }
         struct_ser.end()
     }
 }
@@ -622,6 +628,8 @@ impl<'de> serde::Deserialize<'de> for CompactBlock {
             "fmdParameters",
             "swap_outputs",
             "swapOutputs",
+            "chain_parameters",
+            "chainParameters",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -634,6 +642,7 @@ impl<'de> serde::Deserialize<'de> for CompactBlock {
             ProposalStarted,
             FmdParameters,
             SwapOutputs,
+            ChainParameters,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -663,6 +672,7 @@ impl<'de> serde::Deserialize<'de> for CompactBlock {
                             "proposalStarted" | "proposal_started" => Ok(GeneratedField::ProposalStarted),
                             "fmdParameters" | "fmd_parameters" => Ok(GeneratedField::FmdParameters),
                             "swapOutputs" | "swap_outputs" => Ok(GeneratedField::SwapOutputs),
+                            "chainParameters" | "chain_parameters" => Ok(GeneratedField::ChainParameters),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -690,6 +700,7 @@ impl<'de> serde::Deserialize<'de> for CompactBlock {
                 let mut proposal_started__ = None;
                 let mut fmd_parameters__ = None;
                 let mut swap_outputs__ = None;
+                let mut chain_parameters__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::Height => {
@@ -742,6 +753,12 @@ impl<'de> serde::Deserialize<'de> for CompactBlock {
                             }
                             swap_outputs__ = Some(map.next_value()?);
                         }
+                        GeneratedField::ChainParameters => {
+                            if chain_parameters__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("chainParameters"));
+                            }
+                            chain_parameters__ = map.next_value()?;
+                        }
                     }
                 }
                 Ok(CompactBlock {
@@ -753,6 +770,7 @@ impl<'de> serde::Deserialize<'de> for CompactBlock {
                     proposal_started: proposal_started__.unwrap_or_default(),
                     fmd_parameters: fmd_parameters__,
                     swap_outputs: swap_outputs__.unwrap_or_default(),
+                    chain_parameters: chain_parameters__,
                 })
             }
         }
