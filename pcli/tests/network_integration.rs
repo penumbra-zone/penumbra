@@ -200,8 +200,8 @@ fn delegate_and_undelegate() {
         .stdout(predicate::str::is_match(validator.as_str()).unwrap());
 
     // Now undelegate. We attempt `num_attempts` times in case an epoch boundary passes
-    // while we prepare the delegation. See issue #1522.
-    let num_attempts = 3;
+    // while we prepare the delegation. See issues #1522, #2047.
+    let num_attempts = 5;
     for _ in 0..num_attempts {
         let amount_to_undelegate = format!("0.99delegation_{}", validator.as_str());
         let mut undelegate_cmd = Command::cargo_bin("pcli").unwrap();
