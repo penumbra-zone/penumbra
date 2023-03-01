@@ -5,6 +5,7 @@ use async_trait::async_trait;
 use penumbra_chain::StateReadExt as _;
 use penumbra_crypto::{ProposalNft, VotingReceiptToken, STAKING_TOKEN_DENOM};
 use penumbra_storage::{StateRead, StateWrite};
+use penumbra_transaction::action::proposal::{PROPOSAL_DESCRIPTION_LIMIT, PROPOSAL_TITLE_LIMIT};
 use penumbra_transaction::action::{proposal, Proposal, ProposalPayload};
 use penumbra_transaction::{action::ProposalSubmit, Transaction};
 
@@ -22,18 +23,19 @@ impl ActionHandler for ProposalSubmit {
         let Proposal {
             id: _, // we can't check the ID statelessly because it's defined by state
             title,
-            description: _, // the description can be anything
+            description,
             payload,
         } = proposal;
-
-        // This is enough room to print "Proposal #999,999: $TITLE" in 99 characters (and the
-        // proposal title itself in 80), a decent line width for a modern terminal, as well as a
-        // reasonable length for other interfaces
-        const PROPOSAL_TITLE_LIMIT: usize = 80;
 
         if title.len() > PROPOSAL_TITLE_LIMIT {
             return Err(anyhow::anyhow!(
                 "proposal title must fit within {PROPOSAL_TITLE_LIMIT} characters"
+            ));
+        }
+
+        if description.len() > PROPOSAL_DESCRIPTION_LIMIT {
+            return Err(anyhow::anyhow!(
+                "proposal description must fit within {PROPOSAL_DESCRIPTION_LIMIT} characters"
             ));
         }
 

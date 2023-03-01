@@ -16,6 +16,19 @@ use crate::{plan::TransactionPlan, ActionView, IsAction, TransactionPerspective}
 /// The protobuf type URL for a transaction plan.
 pub const TRANSACTION_PLAN_TYPE_URL: &str = "/penumbra.core.transaction.v1alpha1.TransactionPlan";
 
+// IMPORTANT: these length limits are enforced by consensus! Changing them will change which
+// transactions are accepted by the network, and so they *cannot* be changed without a network
+// upgrade! They occur here rather than in the component crate to prevent a circular dependency.
+
+// This is enough room to print "Proposal #999,999: $TITLE" in 99 characters (and the
+// proposal title itself in 80), a decent line width for a modern terminal, as well as a
+// reasonable length for other interfaces.
+pub const PROPOSAL_TITLE_LIMIT: usize = 80; // ⚠️ DON'T CHANGE THIS (see above)!
+
+// Limit the size of a description to 10,000 characters (a reasonable limit borrowed from
+// the Cosmos SDK).
+pub const PROPOSAL_DESCRIPTION_LIMIT: usize = 10_000; // ⚠️ DON'T CHANGE THIS (see above)!
+
 /// A governance proposal.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::Proposal", into = "pb::Proposal")]
@@ -207,8 +220,9 @@ impl Proposal {
 impl ProposalKind {
     /// Generate a default proposal of a particular kind.
     pub fn template_proposal(&self, chain_params: &ChainParameters, id: u64) -> Proposal {
-        let title = "A short title describing the intent of the proposal.".to_string();
-        let description = "A human readable description of the proposal.".to_string();
+        let title = format!("A short title (at most {PROPOSAL_TITLE_LIMIT} characters)");
+        let description =
+            format!("A longer description (at most {PROPOSAL_DESCRIPTION_LIMIT} characters)");
         let payload = match self {
             ProposalKind::Signaling => ProposalPayload::Signaling { commit: None },
             ProposalKind::Emergency => ProposalPayload::Emergency { halt_chain: false },
