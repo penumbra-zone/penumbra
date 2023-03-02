@@ -103,8 +103,11 @@ pub fn emergency_chain_halt_count() -> &'static str {
     "governance/chain_halt_count"
 }
 
-// This is used for delivering transactions originating from passed DaoSpend proposals; it lives in
-// the object store, not the consensus state.
-pub fn deliver_dao_transactions() -> &'static str {
-    "governance/deliver_dao_transactions"
+pub fn deliver_single_dao_transaction_at_height(block_height: u64, proposal_id: u64) -> String {
+    format!("governance/deliver_dao_transaction/{block_height}/{proposal_id}")
+}
+
+pub fn deliver_dao_transactions_at_height(block_height: u64) -> String {
+    // Note: this has to be the prefix of the `deliver_single_dao_transaction_at_height` function above.
+    format!("governance/deliver_dao_transactions/{block_height}/")
 }

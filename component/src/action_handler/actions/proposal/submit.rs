@@ -13,7 +13,7 @@ use penumbra_crypto::{
     rdsa::{VerificationKey, VerificationKeyBytes},
 };
 use penumbra_crypto::{ProposalNft, VotingReceiptToken, STAKING_TOKEN_DENOM};
-use penumbra_storage::{StateRead, StateWrite};
+use penumbra_storage::{StateDelta, StateRead, StateWrite};
 use penumbra_transaction::action::proposal::{PROPOSAL_DESCRIPTION_LIMIT, PROPOSAL_TITLE_LIMIT};
 use penumbra_transaction::action::{proposal, Proposal, ProposalPayload};
 use penumbra_transaction::plan::TransactionPlan;
@@ -129,16 +129,22 @@ impl ActionHandler for ProposalSubmit {
             }
             ProposalPayload::DaoSpend { transaction_plan } => {
                 // Check that the transaction plan can be built without any witness or auth data and
-                // it passes stateless and stateful checks.
+                // it passes stateless and stateful checks, and can be executed successfully in the
+                // current chain state. This doesn't guarantee that it will execute successfully at
+                // the time when the proposal passes, but we don't want to allow proposals that are
+                // obviously going to fail to execute.
                 let tx = build_dao_transaction(transaction_plan.clone())
                     .await
                     .context("failed to build submitted DAO spend transaction plan")?;
                 tx.check_stateless(Arc::new(tx.clone()))
                     .await
                     .context("submitted DAO spend transaction failed stateless checks")?;
-                tx.check_stateful(state)
+                tx.check_stateful(state.clone())
                     .await
                     .context("submitted DAO spend transaction failed stateful checks")?;
+                tx.execute(StateDelta::new(state)).await.context(
+                    "submitted DAO spend transaction failed to execute in current chain state",
+                )?;
             }
         }
 
@@ -150,6 +156,19 @@ impl ActionHandler for ProposalSubmit {
             proposal,
             deposit_amount,
         } = self;
+
+        // If the proposal is a DAO spend proposal, we've already built it, but we need to build it
+        // again because we can't remember anything from `check_tx_stateful` to `execute`:
+        if let ProposalPayload::DaoSpend { transaction_plan } = &proposal.payload {
+            // Build the transaction again (this time we know it will succeed because it built and
+            // passed all checks in `check_tx_stateful`):
+            let tx = build_dao_transaction(transaction_plan.clone())
+                .await
+                .context("failed to build submitted DAO spend transaction plan in execute step")?;
+
+            // Cache the built transaction in the state so we can use it later, without rebuilding:
+            state.put_dao_transaction(proposal.id, tx);
+        }
 
         // Store the contents of the proposal and generate a fresh proposal id for it
         let proposal_id = state
@@ -202,19 +221,6 @@ impl ActionHandler for ProposalSubmit {
         let mut compact_block = state.stub_compact_block();
         compact_block.proposal_started = true;
         state.stub_put_compact_block(compact_block);
-
-        // If the proposal is a DAO spend proposal, we've already built it, but we need to build it
-        // again because we can't remember anything from `check_tx_stateful` to `execute`:
-        if let ProposalPayload::DaoSpend { transaction_plan } = &proposal.payload {
-            // Build the transaction again (this time we know it will succeed because it built and
-            // passed all checks in `check_tx_stateful`):
-            let tx = build_dao_transaction(transaction_plan.clone())
-                .await
-                .context("failed to build submitted DAO spend transaction plan in execute step")?;
-
-            // Cache the built transaction in the state so we can use it later, without rebuilding:
-            state.put_dao_transaction(proposal.id, tx);
-        }
 
         tracing::debug!(proposal = %proposal_id, "created proposal");
 

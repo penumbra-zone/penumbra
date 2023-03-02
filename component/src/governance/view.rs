@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use futures::StreamExt;
+use futures::{StreamExt, TryStreamExt};
 use penumbra_chain::{StateReadExt as _, StateWriteExt as _};
 use penumbra_crypto::{
     asset::{self, Amount},
@@ -497,10 +497,28 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
             .unwrap_or_default())
     }
 
-    /// Get all the transactions set to be delivered in this block.
-    fn pending_dao_transactions(&self) -> Vec<Transaction> {
-        self.object_get(state_key::deliver_dao_transactions())
-            .unwrap_or_default()
+    /// Get all the transactions set to be delivered in this block (scheduled in last block).
+    async fn pending_dao_transactions(&self) -> Result<Vec<Transaction>> {
+        // Get the proposal IDs of the DAO transactions we are about to deliver.
+        let prefix = state_key::deliver_dao_transactions_at_height(self.get_block_height().await?);
+        let proposals: Vec<u64> = self
+            .prefix_proto::<u64>(&prefix)
+            .map(|result| Ok::<_, anyhow::Error>(result?.1))
+            .try_collect()
+            .await?;
+
+        // For each one, look up the corresponding built transaction, and return the list.
+        let mut transactions = Vec::new();
+        for proposal in proposals {
+            transactions.push(
+                self.get(&state_key::dao_transaction(proposal))
+                    .await?
+                    .ok_or_else(|| {
+                        anyhow::anyhow!("no transaction found for proposal {}", proposal)
+                    })?,
+            );
+        }
+        Ok(transactions)
     }
 }
 
@@ -825,19 +843,13 @@ pub trait StateWriteExt: StateWrite {
     }
 
     async fn deliver_dao_transaction(&mut self, proposal: u64) -> Result<()> {
-        // Fetch the transaction from the state
-        let transaction = self
-            .get::<Transaction>(&state_key::dao_transaction(proposal))
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("no transaction found for proposal {}", proposal))?;
-
-        // Enqueue it in the object store
-        let mut queued: Vec<Transaction> = self
-            .object_get(state_key::deliver_dao_transactions())
-            .unwrap_or_default();
-        queued.push(transaction);
-        self.object_put(state_key::deliver_dao_transactions(), queued);
-
+        self.put_proto(
+            state_key::deliver_single_dao_transaction_at_height(
+                self.get_block_height().await? + 1, // Schedule for beginning of next block
+                proposal,
+            ),
+            proposal,
+        );
         Ok(())
     }
 }
