@@ -8,7 +8,7 @@ use penumbra_tct as tct;
 use rand::{CryptoRng, Rng};
 
 use crate::{
-    balance::{self, commitment::BalanceCommitmentVar},
+    balance::{self, commitment::BalanceCommitmentVar, BalanceVar},
     dex::swap::{SwapPlaintext, SwapPlaintextVar},
     note::StateCommitmentVar,
     Fq, Fr,
@@ -45,7 +45,11 @@ impl ConstraintSynthesizer<Fq> for SwapCircuit {
         // Swap commitment integrity check
         claimed_swap_commitment.enforce_equal(&swap_plaintext_var.swap_commitment)?;
 
-        // TODO: Fee commitment integrity check
+        // Fee commitment integrity check
+        let fee_balance = BalanceVar::from_negative_value_var(swap_plaintext_var.claim_fee.clone());
+        let fee_commitment = fee_balance.commit(fee_blinding_var)?;
+        claimed_fee_commitment.enforce_equal(&fee_commitment)?;
+
         // TODO: Reconstruct swap action balance commitment
         // TODO: Balance commitment integrity check
 
