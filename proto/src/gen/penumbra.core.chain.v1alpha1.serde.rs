@@ -209,9 +209,6 @@ impl serde::Serialize for ChainParameters {
         if self.dao_spend_proposals_enabled {
             len += 1;
         }
-        if self.transparent_outputs_enabled_outside_dao {
-            len += 1;
-        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.chain.v1alpha1.ChainParameters", len)?;
         if !self.chain_id.is_empty() {
             struct_ser.serialize_field("chainId", &self.chain_id)?;
@@ -267,9 +264,6 @@ impl serde::Serialize for ChainParameters {
         if self.dao_spend_proposals_enabled {
             struct_ser.serialize_field("daoSpendProposalsEnabled", &self.dao_spend_proposals_enabled)?;
         }
-        if self.transparent_outputs_enabled_outside_dao {
-            struct_ser.serialize_field("transparentOutputsEnabledOutsideDao", &self.transparent_outputs_enabled_outside_dao)?;
-        }
         struct_ser.end()
     }
 }
@@ -316,8 +310,6 @@ impl<'de> serde::Deserialize<'de> for ChainParameters {
             "proposalSlashThreshold",
             "dao_spend_proposals_enabled",
             "daoSpendProposalsEnabled",
-            "transparent_outputs_enabled_outside_dao",
-            "transparentOutputsEnabledOutsideDao",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -340,7 +332,6 @@ impl<'de> serde::Deserialize<'de> for ChainParameters {
             ProposalPassThreshold,
             ProposalSlashThreshold,
             DaoSpendProposalsEnabled,
-            TransparentOutputsEnabledOutsideDao,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -380,7 +371,6 @@ impl<'de> serde::Deserialize<'de> for ChainParameters {
                             "proposalPassThreshold" | "proposal_pass_threshold" => Ok(GeneratedField::ProposalPassThreshold),
                             "proposalSlashThreshold" | "proposal_slash_threshold" => Ok(GeneratedField::ProposalSlashThreshold),
                             "daoSpendProposalsEnabled" | "dao_spend_proposals_enabled" => Ok(GeneratedField::DaoSpendProposalsEnabled),
-                            "transparentOutputsEnabledOutsideDao" | "transparent_outputs_enabled_outside_dao" => Ok(GeneratedField::TransparentOutputsEnabledOutsideDao),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -418,7 +408,6 @@ impl<'de> serde::Deserialize<'de> for ChainParameters {
                 let mut proposal_pass_threshold__ = None;
                 let mut proposal_slash_threshold__ = None;
                 let mut dao_spend_proposals_enabled__ = None;
-                let mut transparent_outputs_enabled_outside_dao__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::ChainId => {
@@ -549,12 +538,6 @@ impl<'de> serde::Deserialize<'de> for ChainParameters {
                             }
                             dao_spend_proposals_enabled__ = Some(map.next_value()?);
                         }
-                        GeneratedField::TransparentOutputsEnabledOutsideDao => {
-                            if transparent_outputs_enabled_outside_dao__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("transparentOutputsEnabledOutsideDao"));
-                            }
-                            transparent_outputs_enabled_outside_dao__ = Some(map.next_value()?);
-                        }
                     }
                 }
                 Ok(ChainParameters {
@@ -576,7 +559,6 @@ impl<'de> serde::Deserialize<'de> for ChainParameters {
                     proposal_pass_threshold: proposal_pass_threshold__.unwrap_or_default(),
                     proposal_slash_threshold: proposal_slash_threshold__.unwrap_or_default(),
                     dao_spend_proposals_enabled: dao_spend_proposals_enabled__.unwrap_or_default(),
-                    transparent_outputs_enabled_outside_dao: transparent_outputs_enabled_outside_dao__.unwrap_or_default(),
                 })
             }
         }

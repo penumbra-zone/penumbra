@@ -96,8 +96,6 @@ pub struct ChainParameters {
 
     /// Whether DAO spend proposals are enabled.
     pub dao_spend_proposals_enabled: bool,
-    /// Whether transparent outputs are allowed in ordinary user transactions.
-    pub transparent_outputs_enabled_outside_dao: bool,
 }
 
 impl DomainType for ChainParameters {
@@ -136,7 +134,6 @@ impl TryFrom<pb_chain::ChainParameters> for ChainParameters {
                 .parse()
                 .context("couldn't parse proposal_slash_threshold")?,
             dao_spend_proposals_enabled: msg.dao_spend_proposals_enabled,
-            transparent_outputs_enabled_outside_dao: msg.transparent_outputs_enabled_outside_dao,
         })
     }
 }
@@ -184,7 +181,6 @@ impl From<ChainParameters> for pb_chain::ChainParameters {
             proposal_pass_threshold: params.proposal_pass_threshold.to_string(),
             proposal_slash_threshold: params.proposal_slash_threshold.to_string(),
             dao_spend_proposals_enabled: params.dao_spend_proposals_enabled,
-            transparent_outputs_enabled_outside_dao: params.transparent_outputs_enabled_outside_dao,
         }
     }
 }
@@ -219,7 +215,6 @@ impl Default for ChainParameters {
             // slash threshold means if (no / no + yes + abstain) > slash_threshold, then proposal is slashed
             proposal_slash_threshold: Ratio::new(80, 100),
             dao_spend_proposals_enabled: true,
-            transparent_outputs_enabled_outside_dao: false,
         }
     }
 }

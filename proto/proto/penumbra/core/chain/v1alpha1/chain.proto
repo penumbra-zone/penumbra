@@ -50,8 +50,6 @@ message ChainParameters {
 
   // Whether DAO spend proposals are enabled.
   bool dao_spend_proposals_enabled = 25;
-  // Whether ordinary user transactions can use transparent outputs.
-  bool transparent_outputs_enabled_outside_dao = 26;
 }
 
 // The ratio between two numbers, used in governance to describe vote thresholds and quorums.

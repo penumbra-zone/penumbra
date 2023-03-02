@@ -58,9 +58,6 @@ pub struct ChainParameters {
     /// Whether DAO spend proposals are enabled.
     #[prost(bool, tag = "25")]
     pub dao_spend_proposals_enabled: bool,
-    /// Whether ordinary user transactions can use transparent outputs.
-    #[prost(bool, tag = "26")]
-    pub transparent_outputs_enabled_outside_dao: bool,
 }
 /// The ratio between two numbers, used in governance to describe vote thresholds and quorums.
 #[allow(clippy::derive_partial_eq_without_eq)]
