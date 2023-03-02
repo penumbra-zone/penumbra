@@ -5,14 +5,16 @@ use ark_ff::UniformRand;
 use decaf377::Fr;
 use penumbra_crypto::{
     asset,
+    dex::{swap::SwapPlaintext, TradingPair},
     keys::{SeedPhrase, SpendKey},
-    proofs::groth16::{OutputProof, SpendProof},
+    proofs::groth16::{OutputProof, SpendProof, SwapProof},
     rdsa::{SpendAuth, VerificationKey},
-    Balance, Note, Value,
+    transaction::Fee,
+    Amount, Balance, Note, Value,
 };
 use penumbra_proof_params::{
     OUTPUT_PROOF_PROVING_KEY, OUTPUT_PROOF_VERIFICATION_KEY, SPEND_PROOF_PROVING_KEY,
-    SPEND_PROOF_VERIFICATION_KEY,
+    SPEND_PROOF_VERIFICATION_KEY, SWAP_PROOF_PROVING_KEY, SWAP_PROOF_VERIFICATION_KEY,
 };
 use penumbra_tct as tct;
 use rand_core::OsRng;
@@ -65,6 +67,67 @@ fn spend_proof_parameters_vs_current_spend_circuit() {
     .expect("can create proof");
 
     let proof_result = proof.verify(vk, anchor, balance_commitment, nf, rk);
+    assert!(proof_result.is_ok());
+}
+
+#[test]
+fn swap_proof_parameters_vs_current_swap_circuit() {
+    let pk = &*SWAP_PROOF_PROVING_KEY;
+    let vk = &*SWAP_PROOF_VERIFICATION_KEY;
+
+    let mut rng = OsRng;
+
+    let seed_phrase = SeedPhrase::generate(OsRng);
+    let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
+    let fvk_recipient = sk_recipient.full_viewing_key();
+    let ivk_recipient = fvk_recipient.incoming();
+    let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());
+
+    let gm = asset::REGISTRY.parse_unit("gm");
+    let gn = asset::REGISTRY.parse_unit("gn");
+    let trading_pair = TradingPair::new(gm.id(), gn.id());
+
+    let delta_1 = Amount::from(100_000u64);
+    let delta_2 = Amount::from(0u64);
+    let fee = Fee::default();
+    let fee_blinding = Fr::rand(&mut OsRng);
+
+    let swap_plaintext =
+        SwapPlaintext::new(&mut rng, trading_pair, delta_1, delta_2, fee, claim_address);
+    let fee_commitment = swap_plaintext.claim_fee.commit(fee_blinding);
+    let swap_commitment = swap_plaintext.swap_commitment();
+
+    let value_1 = Value {
+        amount: swap_plaintext.delta_1_i,
+        asset_id: swap_plaintext.trading_pair.asset_1(),
+    };
+    let value_2 = Value {
+        amount: swap_plaintext.delta_2_i,
+        asset_id: swap_plaintext.trading_pair.asset_2(),
+    };
+    let value_fee = Value {
+        amount: swap_plaintext.claim_fee.amount(),
+        asset_id: swap_plaintext.claim_fee.asset_id(),
+    };
+    let mut balance = Balance::default();
+    balance -= value_1;
+    balance -= value_2;
+    balance -= value_fee;
+    let balance_commitment = balance.commit(fee_blinding);
+
+    let proof = SwapProof::prove(
+        &mut rng,
+        pk,
+        swap_plaintext,
+        fee_blinding,
+        balance_commitment,
+        swap_commitment,
+        fee_commitment,
+    )
+    .expect("can create proof");
+
+    let proof_result = proof.verify(vk, balance_commitment, swap_commitment, fee_commitment);
+
     assert!(proof_result.is_ok());
 }
 

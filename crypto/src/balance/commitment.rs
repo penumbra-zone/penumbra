@@ -33,8 +33,7 @@ impl ValueVar {
         value_blinding: Vec<UInt8<Fq>>,
     ) -> Result<BalanceCommitmentVar, SynthesisError> {
         let cs = self.amount().cs();
-        let value_blinding_generator =
-            ElementVar::new_constant(cs, *VALUE_BLINDING_GENERATOR)?;
+        let value_blinding_generator = ElementVar::new_constant(cs, *VALUE_BLINDING_GENERATOR)?;
 
         let asset_generator = self.asset_id.value_generator()?;
         let value_amount = self.amount();
