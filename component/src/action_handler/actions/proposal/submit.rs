@@ -132,6 +132,12 @@ impl ActionHandler for ProposalSubmit {
                 /* no stateful checks for parameter change (checks are applied when proposal finishes) */
             }
             ProposalPayload::DaoSpend { transaction_plan } => {
+                // If DAO spend proposals aren't enabled, then we can't allow them to be submitted
+                anyhow::ensure!(
+                    chain_parameters.dao_spend_proposals_enabled,
+                    "DAO spend proposals are not enabled",
+                );
+
                 // Check that the transaction plan can be built without any witness or auth data and
                 // it passes stateless and stateful checks, and can be executed successfully in the
                 // current chain state. This doesn't guarantee that it will execute successfully at
