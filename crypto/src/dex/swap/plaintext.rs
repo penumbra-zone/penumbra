@@ -178,6 +178,22 @@ pub struct SwapPlaintextVar {
     pub trading_pair_asset_2: AssetIdVar,
 }
 
+impl SwapPlaintextVar {
+    pub fn delta_1_value(&self) -> ValueVar {
+        ValueVar {
+            amount: self.delta_1_i.clone(),
+            asset_id: self.trading_pair_asset_1.clone(),
+        }
+    }
+
+    pub fn delta_2_value(&self) -> ValueVar {
+        ValueVar {
+            amount: self.delta_2_i.clone(),
+            asset_id: self.trading_pair_asset_2.clone(),
+        }
+    }
+}
+
 impl AllocVar<SwapPlaintext, Fq> for SwapPlaintextVar {
     fn new_variable<T: std::borrow::Borrow<SwapPlaintext>>(
         cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,

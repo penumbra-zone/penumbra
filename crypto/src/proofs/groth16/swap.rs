@@ -40,7 +40,7 @@ impl ConstraintSynthesizer<Fq> for SwapCircuit {
         let claimed_swap_commitment =
             StateCommitmentVar::new_input(cs.clone(), || Ok(self.swap_commitment))?;
         let claimed_fee_commitment =
-            BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.fee_commitment))?;
+            BalanceCommitmentVar::new_input(cs, || Ok(self.fee_commitment))?;
 
         // Swap commitment integrity check
         claimed_swap_commitment.enforce_equal(&swap_plaintext_var.swap_commitment)?;
@@ -50,8 +50,17 @@ impl ConstraintSynthesizer<Fq> for SwapCircuit {
         let fee_commitment = fee_balance.commit(fee_blinding_var)?;
         claimed_fee_commitment.enforce_equal(&fee_commitment)?;
 
-        // TODO: Reconstruct swap action balance commitment
-        // TODO: Balance commitment integrity check
+        // Reconstruct swap action balance commitment
+        let transparent_blinding_var = UInt8::constant_vec(&[0u8; 32]);
+        let balance_1 = BalanceVar::from_negative_value_var(swap_plaintext_var.delta_1_value());
+        let balance_2 = BalanceVar::from_negative_value_var(swap_plaintext_var.delta_2_value());
+        let balance_1_commit = balance_1.commit(transparent_blinding_var.clone())?;
+        let balance_2_commit = balance_2.commit(transparent_blinding_var)?;
+        let transparent_balance_commitment = balance_1_commit + balance_2_commit;
+        let total_balance_commitment = transparent_balance_commitment + fee_commitment;
+
+        // Balance commitment integrity check
+        claimed_balance_commitment.enforce_equal(&total_balance_commitment)?;
 
         Ok(())
     }

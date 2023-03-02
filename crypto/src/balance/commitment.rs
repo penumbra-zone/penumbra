@@ -34,7 +34,7 @@ impl ValueVar {
     ) -> Result<BalanceCommitmentVar, SynthesisError> {
         let cs = self.amount().cs();
         let value_blinding_generator =
-            ElementVar::new_constant(cs.clone(), *VALUE_BLINDING_GENERATOR)?;
+            ElementVar::new_constant(cs, *VALUE_BLINDING_GENERATOR)?;
 
         let asset_generator = self.asset_id.value_generator()?;
         let value_amount = self.amount();
@@ -94,6 +94,24 @@ impl R1CSVar<Fq> for BalanceCommitmentVar {
     fn value(&self) -> Result<Self::Value, SynthesisError> {
         let inner = self.inner.value()?;
         Ok(Commitment(inner))
+    }
+}
+
+impl std::ops::Add<BalanceCommitmentVar> for BalanceCommitmentVar {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
+            inner: self.inner + rhs.inner,
+        }
+    }
+}
+
+impl std::ops::Sub<BalanceCommitmentVar> for BalanceCommitmentVar {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self {
+            inner: self.inner - rhs.inner,
+        }
     }
 }
 
