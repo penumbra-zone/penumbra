@@ -59,14 +59,34 @@ impl ActionHandler for ProposalSubmit {
                     .context("invalid change to chain parameters")?;
             }
             DaoSpend { transaction_plan } => {
-                // Check that the transaction plan can be built without any witness or auth data and
-                // it passes stateless checks.
-                let tx = build_dao_transaction(transaction_plan.clone())
-                    .await
-                    .context("failed to build submitted DAO spend transaction plan")?;
-                tx.check_stateless(Arc::new(tx.clone()))
-                    .await
-                    .context("DAO spend transaction failed stateless checks")?
+                // Check to make sure that the transaction plan contains only valid actions for the
+                // DAO (none of them should require proving to build):
+                use penumbra_transaction::plan::ActionPlan::*;
+                for action in &transaction_plan.actions {
+                    match action {
+                        Spend(_) | Output(_) | Swap(_) | SwapClaim(_) | DelegatorVote(_) => {
+                            // These actions all require proving, so they are banned from DAO spend
+                            // proposals to prevent DoS attacks.
+                            anyhow::bail!("invalid action in DAO spend proposal")
+                        }
+                        Delegate(_)
+                        | Undelegate(_)
+                        | UndelegateClaim(_)
+                        | ValidatorDefinition(_)
+                        | IBCAction(_)
+                        | ProposalSubmit(_)
+                        | ProposalWithdraw(_)
+                        | ProposalDepositClaim(_)
+                        | ValidatorVote(_)
+                        | PositionOpen(_)
+                        | PositionClose(_)
+                        | PositionWithdraw(_)
+                        | PositionRewardClaim(_) => {
+                            // These actions are all valid for DAO spend proposals, because they
+                            // don't require proving, so they don't represent a DoS vector.
+                        }
+                    }
+                }
             }
         }
 
@@ -107,8 +127,18 @@ impl ActionHandler for ProposalSubmit {
             ProposalPayload::ParameterChange { .. } => {
                 /* no stateful checks for parameter change (checks are applied when proposal finishes) */
             }
-            ProposalPayload::DaoSpend { .. } => {
-                /* no stateful checks for DAO spend (checks are applied when proposal finishes) */
+            ProposalPayload::DaoSpend { transaction_plan } => {
+                // Check that the transaction plan can be built without any witness or auth data and
+                // it passes stateless and stateful checks.
+                let tx = build_dao_transaction(transaction_plan.clone())
+                    .await
+                    .context("failed to build submitted DAO spend transaction plan")?;
+                tx.check_stateless(Arc::new(tx.clone()))
+                    .await
+                    .context("submitted DAO spend transaction failed stateless checks")?;
+                tx.check_stateful(state)
+                    .await
+                    .context("submitted DAO spend transaction failed stateful checks")?;
             }
         }
 
@@ -167,11 +197,24 @@ impl ActionHandler for ProposalSubmit {
         let proposal_start_position = (sct_position.epoch(), sct_position.block(), 0).into();
         state.put_proposal_voting_start_position(proposal_id, proposal_start_position);
 
-        // If there was a proposal submitted, ensure we track this so that clients
-        // can retain state needed to vote as delegators
+        // Since there was a proposal submitted, ensure we track this so that clients can retain
+        // state needed to vote as delegators
         let mut compact_block = state.stub_compact_block();
         compact_block.proposal_started = true;
         state.stub_put_compact_block(compact_block);
+
+        // If the proposal is a DAO spend proposal, we've already built it, but we need to build it
+        // again because we can't remember anything from `check_tx_stateful` to `execute`:
+        if let ProposalPayload::DaoSpend { transaction_plan } = &proposal.payload {
+            // Build the transaction again (this time we know it will succeed because it built and
+            // passed all checks in `check_tx_stateful`):
+            let tx = build_dao_transaction(transaction_plan.clone())
+                .await
+                .context("failed to build submitted DAO spend transaction plan in execute step")?;
+
+            // Cache the built transaction in the state so we can use it later, without rebuilding:
+            state.put_dao_transaction(proposal.id, tx);
+        }
 
         tracing::debug!(proposal = %proposal_id, "created proposal");
 

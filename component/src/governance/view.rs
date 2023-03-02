@@ -15,7 +15,10 @@ use penumbra_crypto::{
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_tct as tct;
-use penumbra_transaction::action::{proposal, Proposal, ProposalPayload, Vote};
+use penumbra_transaction::{
+    action::{proposal, Proposal, ProposalPayload, Vote},
+    Transaction,
+};
 use tokio::task::JoinSet;
 use tracing::instrument;
 
@@ -803,6 +806,10 @@ pub trait StateWriteExt: StateWrite {
             halt_count + 1,
         );
         Ok(())
+    }
+
+    fn put_dao_transaction(&mut self, proposal: u64, transaction: Transaction) {
+        self.put(state_key::dao_transaction(proposal), transaction);
     }
 }
 

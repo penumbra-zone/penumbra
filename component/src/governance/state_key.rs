@@ -8,6 +8,10 @@ pub fn proposal_definition(proposal_id: u64) -> String {
     format!("governance/proposal/{proposal_id}/data")
 }
 
+pub fn dao_transaction(proposal_id: u64) -> String {
+    format!("governance/proposal/{proposal_id}/dao_transaction")
+}
+
 pub fn proposal_state(proposal_id: u64) -> String {
     format!("governance/proposal/{proposal_id}/state")
 }
