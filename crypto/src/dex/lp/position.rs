@@ -27,13 +27,13 @@ pub struct Position {
 
 impl Position {
     /// Construct a new [Position] with a random nonce.
-    pub fn new(pair: TradingPair, fee: Amount, p: Amount, q: Amount) -> Position {
+    pub fn new(pair: TradingPair, spread: Amount, reserves: Reserves) -> Position {
         let mut rng = OsRng;
         let mut nonce_bytes = [0u8; 32];
         rng.fill_bytes(&mut nonce_bytes);
 
         Position {
-            phi: TradingFunction::new(pair, fee.into(), p, q),
+            phi: TradingFunction::new(pair, spread.into(), reserves.r1, reserves.r2),
             nonce: nonce_bytes,
         }
     }

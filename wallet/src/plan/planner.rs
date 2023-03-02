@@ -11,7 +11,11 @@ use penumbra_component::stake::{rate::RateData, validator};
 use penumbra_crypto::{
     asset::Amount,
     asset::Denom,
-    dex::{swap::SwapPlaintext, TradingPair},
+    dex::{
+        lp::{position::Position, Reserves},
+        swap::SwapPlaintext,
+        TradingPair,
+    },
     keys::AddressIndex,
     memo::MemoPlaintext,
     stake::IdentityKey,
@@ -156,7 +160,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
     /// Open a liquidity position in the order book.
     #[instrument(skip(self))]
-    pub fn position_open(&mut self, note: Note, position: tct::Position) -> &mut Self {
+    pub fn position_open(&mut self, position: Position) -> &mut Self {
         todo!()
         // let order = PositionOpenPlan::new(&mut self.rng, note, position).into();
         // self.action(order);

@@ -531,14 +531,16 @@ pub struct SwapExecution {
     pub trades: ::prost::alloc::vec::Vec<Trade>,
 }
 /// Contains private and public data for withdrawing funds from a closed position.
-///
-/// TODO: fill in
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct PositionWithdrawPlan {}
+pub struct PositionWithdrawPlan {
+    #[prost(message, optional, tag = "1")]
+    pub reserves: ::core::option::Option<Reserves>,
+}
 /// Contains private and public data for claiming rewards from a position.
-///
-/// TODO: fill in
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct PositionRewardClaimPlan {}
+pub struct PositionRewardClaimPlan {
+    #[prost(message, optional, tag = "1")]
+    pub reserves: ::core::option::Option<Reserves>,
+}

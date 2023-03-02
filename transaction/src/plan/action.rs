@@ -257,7 +257,11 @@ impl From<ActionPlan> for pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::PositionClose(inner.into())),
             },
             ActionPlan::PositionWithdraw(inner) => pb_t::ActionPlan {
-                action: Some(pb_t::action_plan::Action::PositionWithdraw(inner.into())),
+                action: Some(pb_t::action_plan::Action::PositionWithdraw(Into::<
+                    penumbra_proto::core::dex::v1alpha1::PositionWithdrawPlan,
+                >::into(
+                    inner
+                ))),
             },
             ActionPlan::PositionRewardClaim(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::PositionRewardClaim(inner.into())),

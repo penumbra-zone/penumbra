@@ -1,7 +1,8 @@
-use anyhow::{anyhow, Error, Result};
+use std::str::FromStr;
 
-use penumbra_crypto::{asset, Amount, Value};
-use penumbra_transaction::action::{ProposalKind, Vote};
+use anyhow::{anyhow, Result};
+
+use penumbra_crypto::Value;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum PositionCmd {
@@ -27,14 +28,30 @@ impl PositionCmd {
     }
 }
 
-type PurchaseVar = (Value, Value);
+/// Expresses the desire to buy `desired` units at price `price`.
+#[derive(Clone, Debug)]
+pub struct BuyOrder {
+    pub desired: Value,
+    pub price: Value,
+}
+
+/// Expresses the desire to sell `desired` units at price `price`.
+type SellOrder = BuyOrder;
+
 /// Turns a string like `100penumbra@1.2gm` into a [`PurchaseVar`] tuple consisting of
 /// `(100 penumbra, 1.2 gm)` represented as [`Value`] types.
-fn parse_purchase_var(pvar: &str) -> Result<PurchaseVar> {
-    if let Some((lhs, rhs)) = pvar.split_once('@') {
-        Ok((lhs.parse()?, rhs.parse()?))
-    } else {
-        Err(anyhow!("invalid argument"))
+impl FromStr for BuyOrder {
+    type Err = anyhow::Error;
+
+    fn from_str(pvar: &str) -> Result<Self> {
+        if let Some((desired, price)) = pvar.split_once('@').map(|(d, p)| (d.parse(), p.parse())) {
+            Ok(BuyOrder {
+                desired: desired?,
+                price: price?,
+            })
+        } else {
+            Err(anyhow!("invalid argument"))
+        }
     }
 }
 
@@ -43,8 +60,7 @@ pub enum OrderCmd {
     Buy {
         /// The desired purchase, formatted as a string, e.g. `100penumbra@1.2gm` would attempt
         /// to purchase 100 penumbra at a price of 1.2 gm each.
-        #[clap(value_parser = clap::builder::ValueParser::new(parse_purchase_var))]
-        desired: PurchaseVar,
+        buy_order: BuyOrder,
         /// The fee associated with transactions against the liquidity position.
         #[clap(long, default_value = "0")]
         spread: u128,
@@ -58,8 +74,7 @@ pub enum OrderCmd {
     Sell {
         /// The desired sale, formatted as a string, e.g. `100penumbra@1.2gm` would attempt
         /// to sell 100 penumbra at a price of 1.2 gm each.
-        #[clap(value_parser = clap::builder::ValueParser::new(parse_purchase_var))]
-        desired: PurchaseVar,
+        sell_order: SellOrder,
         /// The fee associated with transactions against the liquidity position.
         #[clap(long, default_value = "0")]
         spread: u64,

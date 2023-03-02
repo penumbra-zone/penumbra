@@ -11,7 +11,10 @@ use penumbra_chain::Epoch;
 use penumbra_component::stake::rate::RateData;
 use penumbra_crypto::{
     asset,
-    dex::lp::position::Position,
+    dex::{
+        lp::{position::Position, Reserves},
+        TradingPair,
+    },
     keys::AddressIndex,
     memo::MemoPlaintext,
     stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken},
@@ -746,35 +749,43 @@ impl TxCmd {
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Position(PositionCmd::Order(OrderCmd::Buy {
-                desired,
+                buy_order,
                 spread,
                 fee,
                 source,
             })) => {
-                println!("Desired buy: {:?}", desired);
-                // let fee = Fee::from_staking_token_amount((*fee).into());
+                println!("Desired buy: {:?}", buy_order);
+                let fee = Fee::from_staking_token_amount((*fee).into());
 
-                // let denom_into = asset::REGISTRY.parse_unit(denom_2.as_str()).base();
+                // When opening a liquidity position, the initial reserves will only be set for one asset.
+                // This represents an "ask" in the order book, where bids are placed in the asset type without initial reserves.
+                let reserves = Reserves {
+                    // r1 will be set to 0 units of the asset being bought
+                    r1: Amount::zero(),
+                    // and r2 will be set to the amount of the asset being sold that would be needed to buy the desired amount of the asset being bought
+                    r2: buy_order.price.amount * buy_order.desired.amount,
+                };
 
-                // // When opening a liquidity position, the initial reserves will only be set for one asset.
-                // // This represents an "ask" in the order book, where bids are placed in the asset type without initial reserves.
-                // let reserves = (
-                //     reserves,
-                //     Value {
-                //         asset_id: denom_into.id(),
-                //         amount: Amount::zero(),
-                //     },
-                // );
+                println!("Opening liquidity position with reserves: {:?}", reserves);
+                let asset_cache = app.view().assets().await?;
+                // TODO: check canonical ordering of trading_pair, or
+                // use DirectedTradingPair
+                let trading_pair =
+                    TradingPair::new(buy_order.desired.asset_id, buy_order.price.asset_id);
 
-                // println!("Opening liquidity position with reserves: {:?}", reserves);
-                // let position = Position::new(reserves, *lp_fee);
-                // let plan = Planner::new(OsRng)
-                //     .position_open(OsRng, &reserves, fee, AddressIndex::new(*source))
-                //     .await?;
-                // app.build_and_submit_transaction(plan).await?;
+                let position = Position::new(trading_pair, (*spread).into(), reserves);
+                let plan = Planner::new(OsRng)
+                    .position_open(position)
+                    .plan(
+                        app.view.as_mut().unwrap(),
+                        &app.fvk,
+                        AddressIndex::new(*source),
+                    )
+                    .await?;
+                app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Position(PositionCmd::Order(OrderCmd::Sell {
-                desired,
+                sell_order,
                 spread,
                 fee,
                 source,
