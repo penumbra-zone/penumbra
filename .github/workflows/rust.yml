@@ -42,6 +42,33 @@ jobs:
           command: fmt
           args: --all -- --check
 
+  wasm:
+    name: WASM support
+    runs-on: buildjet-16vcpu-ubuntu-2004
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          lfs: true
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: wasm32-unknown-unknown
+          override: true
+      - uses: Swatinem/rust-cache@v1
+        with:
+          workspaces: |
+            . -> target
+            wasm-compat
+
+      # We cannot use the GH action because it doesn't working directory:
+      # support custom working dirs.
+      # - uses: actions-rs/cargo@v1
+      - name: build wasm32 target
+        run:
+          cargo build --release --target wasm32-unknown-unknown
+        working-directory: wasm-compat
+
   #clippy:
   #  name: Clippy
   #  runs-on: buildjet-16vcpu-ubuntu-2004
