@@ -9,7 +9,7 @@ use decaf377::FieldExt;
 use decaf377::{r1cs::FqVar, Bls12_377, Fq, Fr};
 
 use ark_ff::ToConstraintField;
-use ark_groth16::{Groth16, PreparedVerifyingKey, Proof, ProvingKey};
+use ark_groth16::{Groth16, PreparedVerifyingKey, Proof, ProvingKey, VerifyingKey};
 use ark_r1cs_std::prelude::AllocVar;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
@@ -139,7 +139,7 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
 }
 
 impl ParameterSetup for SpendCircuit {
-    fn generate_test_parameters() -> (ProvingKey<Bls12_377>, PreparedVerifyingKey<Bls12_377>) {
+    fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
         let seed_phrase = SeedPhrase::from_randomness([b'f'; 32]);
         let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk_sender = sk_sender.full_viewing_key();
@@ -179,7 +179,7 @@ impl ParameterSetup for SpendCircuit {
         };
         let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
             .expect("can perform circuit specific setup");
-        (pk, vk.into())
+        (pk, vk)
     }
 }
 

@@ -8,7 +8,7 @@ use decaf377_fmd as fmd;
 use decaf377_ka as ka;
 
 use ark_ff::ToConstraintField;
-use ark_groth16::{Groth16, PreparedVerifyingKey, Proof, ProvingKey};
+use ark_groth16::{Groth16, PreparedVerifyingKey, Proof, ProvingKey, VerifyingKey};
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
@@ -82,7 +82,7 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
 }
 
 impl ParameterSetup for OutputCircuit {
-    fn generate_test_parameters() -> (ProvingKey<Bls12_377>, PreparedVerifyingKey<Bls12_377>) {
+    fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
         let diversifier_bytes = [1u8; 16];
         let pk_d_bytes = decaf377::basepoint().vartime_compress().0;
         let clue_key_bytes = [1; 32];
@@ -108,7 +108,7 @@ impl ParameterSetup for OutputCircuit {
         };
         let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
             .expect("can perform circuit specific setup");
-        (pk, vk.into())
+        (pk, vk)
     }
 }
 

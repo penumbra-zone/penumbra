@@ -1,5 +1,4 @@
 use crate::asset::{AmountVar, AssetIdVar};
-use crate::balance::commitment::BalanceCommitmentVar;
 use crate::keys::OutgoingViewingKey;
 use crate::note::StateCommitmentVar;
 use crate::transaction::Fee;

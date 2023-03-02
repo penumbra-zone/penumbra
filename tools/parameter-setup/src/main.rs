@@ -7,7 +7,7 @@ use std::{
 use ark_groth16::{ProvingKey, VerifyingKey};
 use ark_serialize::CanonicalSerialize;
 use decaf377::Bls12_377;
-use penumbra_crypto::proofs::groth16::{OutputCircuit, ParameterSetup, SpendCircuit};
+use penumbra_crypto::proofs::groth16::{OutputCircuit, ParameterSetup, SpendCircuit, SwapCircuit};
 
 fn main() -> Result<()> {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -26,6 +26,8 @@ fn main() -> Result<()> {
     write_params(&target_dir, "spend", &spend_pk, &spend_vk)?;
     let (output_pk, output_vk) = OutputCircuit::generate_test_parameters();
     write_params(&target_dir, "output", &output_pk, &output_vk)?;
+    let (swap_pk, swap_vk) = SwapCircuit::generate_test_parameters();
+    write_params(&target_dir, "swap", &swap_pk, &swap_vk)?;
     // NOTE: New proofs go here following the approach above.
 
     Ok(())

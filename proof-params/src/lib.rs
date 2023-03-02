@@ -24,6 +24,15 @@ pub static OUTPUT_PROOF_PROVING_KEY: Lazy<ProvingKey<Bls12_377>> =
 pub static OUTPUT_PROOF_VERIFICATION_KEY: Lazy<PreparedVerifyingKey<Bls12_377>> =
     Lazy::new(|| output_verification_parameters().into());
 
+#[cfg(feature = "proving-keys")]
+/// Proving key for the swap proof.
+pub static SWAP_PROOF_PROVING_KEY: Lazy<ProvingKey<Bls12_377>> =
+    Lazy::new(proving_keys::swap_proving_parameters);
+
+/// Proving key for the swap proof.
+pub static SWAP_PROOF_VERIFICATION_KEY: Lazy<PreparedVerifyingKey<Bls12_377>> =
+    Lazy::new(|| swap_verification_parameters().into());
+
 // Note: Here we are using `CanonicalDeserialize::deserialize_unchecked` as the
 // parameters are being loaded from a trusted source (our source code).
 
@@ -34,5 +43,10 @@ fn spend_verification_parameters() -> VerifyingKey<Bls12_377> {
 
 fn output_verification_parameters() -> VerifyingKey<Bls12_377> {
     let vk_params = include_bytes!("gen/output_vk.param");
+    VerifyingKey::deserialize_unchecked(&vk_params[..]).expect("can deserialize VerifyingKey")
+}
+
+fn swap_verification_parameters() -> VerifyingKey<Bls12_377> {
+    let vk_params = include_bytes!("gen/swap_vk.param");
     VerifyingKey::deserialize_unchecked(&vk_params[..]).expect("can deserialize VerifyingKey")
 }
