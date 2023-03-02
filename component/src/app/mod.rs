@@ -5,14 +5,14 @@ use penumbra_chain::params::FmdParameters;
 use penumbra_chain::{genesis, AppHash, StateReadExt, StateWriteExt as _};
 use penumbra_proto::{DomainType, StateWriteProto};
 use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, Storage};
-use penumbra_transaction::Transaction;
+use penumbra_transaction::{Action, Transaction};
 use tendermint::abci;
 use tendermint::validator::Update;
 use tracing::Instrument;
 
 use crate::action_handler::ActionHandler;
 use crate::dex::Dex;
-use crate::governance::Governance;
+use crate::governance::{Governance, StateReadExt as _};
 use crate::ibc::IBCComponent;
 use crate::shielded_pool::ShieldedPool;
 use crate::stake::component::{Staking, ValidatorUpdates};
@@ -101,6 +101,24 @@ impl App {
     }
 
     pub async fn deliver_tx(&mut self, tx: Arc<Transaction>) -> Result<Vec<abci::Event>> {
+        // Ensure that any normally-delivered transaction (originating from a user) does not contain
+        // any DAO spends; the only place those are permitted is transactions originating from the
+        // chain itself:
+        for action in tx.actions() {
+            anyhow::ensure!(
+                !matches!(action, Action::DaoSpend { .. }),
+                "DAO spends are not permitted in user-submitted transactions"
+            );
+        }
+
+        // Now that we've ensured that there are not any DAO spends, we can deliver the transaction:
+        self.deliver_tx_allowing_dao_spends(tx).await
+    }
+
+    async fn deliver_tx_allowing_dao_spends(
+        &mut self,
+        tx: Arc<Transaction>,
+    ) -> Result<Vec<abci::Event>> {
         // Both stateful and stateless checks take the transaction as
         // verification context.  The separate clone of the Arc<Transaction>
         // means it can be passed through the whole tree of checks.
@@ -136,6 +154,21 @@ impl App {
     }
 
     pub async fn end_block(&mut self, end_block: &abci::request::EndBlock) -> Vec<abci::Event> {
+        // Deliver DAO transactions here, before any other end_block processing (effectively adding
+        // synthetic transactions slotted in before the end of the block)
+        let pending_transactions = self.state.pending_dao_transactions();
+        for transaction in pending_transactions {
+            // NOTE: We are *intentionally* using `deliver_tx_allowing_dao_spends` here, rather than
+            // `deliver_tx`, because here is the **ONLY** place we want to permit DAO spends, when
+            // delivering transactions that have been scheduled by the chain itself for delivery.
+            if let Err(error) = self
+                .deliver_tx_allowing_dao_spends(Arc::new(transaction))
+                .await
+            {
+                tracing::warn!(?error, "failed to deliver DAO transaction");
+            }
+        }
+
         let mut state_tx = self
             .state
             .try_begin_transaction()

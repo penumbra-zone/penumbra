@@ -496,6 +496,12 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
             .await?
             .unwrap_or_default())
     }
+
+    /// Get all the transactions set to be delivered in this block.
+    fn pending_dao_transactions(&self) -> Vec<Transaction> {
+        self.object_get(state_key::deliver_dao_transactions())
+            .unwrap_or_default()
+    }
 }
 
 impl<T: StateRead + crate::stake::StateReadExt + ?Sized> StateReadExt for T {}
@@ -747,7 +753,11 @@ pub trait StateWriteExt: StateWrite {
     }
 
     #[instrument(skip(self))]
-    async fn enact_proposal(&mut self, payload: &ProposalPayload) -> Result<Result<()>> // inner error from proposal execution
+    async fn enact_proposal(
+        &mut self,
+        proposal_id: u64,
+        payload: &ProposalPayload,
+    ) -> Result<Result<()>> // inner error from proposal execution
     {
         match payload {
             ProposalPayload::Signaling { .. } => {
@@ -792,7 +802,9 @@ pub trait StateWriteExt: StateWrite {
             ProposalPayload::DaoSpend {
                 transaction_plan: _,
             } => {
-                // TODO: enact dao spend
+                // All we need to do here is signal to the `App` that we'd like this transaction to
+                // be slotted in at the end of the block:
+                self.deliver_dao_transaction(proposal_id).await?;
             }
         }
 
@@ -810,6 +822,23 @@ pub trait StateWriteExt: StateWrite {
 
     fn put_dao_transaction(&mut self, proposal: u64, transaction: Transaction) {
         self.put(state_key::dao_transaction(proposal), transaction);
+    }
+
+    async fn deliver_dao_transaction(&mut self, proposal: u64) -> Result<()> {
+        // Fetch the transaction from the state
+        let transaction = self
+            .get::<Transaction>(&state_key::dao_transaction(proposal))
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("no transaction found for proposal {}", proposal))?;
+
+        // Enqueue it in the object store
+        let mut queued: Vec<Transaction> = self
+            .object_get(state_key::deliver_dao_transactions())
+            .unwrap_or_default();
+        queued.push(transaction);
+        self.object_put(state_key::deliver_dao_transactions(), queued);
+
+        Ok(())
     }
 }
 

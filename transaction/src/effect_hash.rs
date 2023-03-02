@@ -270,6 +270,7 @@ impl EffectingData for Action {
             Action::PositionWithdraw(p) => p.effect_hash(),
             Action::PositionRewardClaim(p) => p.effect_hash(),
             Action::Ics20Withdrawal(w) => w.effect_hash(),
+            Action::DaoSpend(d) => todo!("dao spend effect hash"),
         }
     }
 }

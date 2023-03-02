@@ -129,7 +129,8 @@ impl Transaction {
                 | Action::PositionClose(_)
                 | Action::PositionWithdraw(_)
                 | Action::PositionRewardClaim(_)
-                | Action::Ics20Withdrawal(_) => {}
+                | Action::Ics20Withdrawal(_)
+                | Action::DaoSpend(_) => {}
             }
         }
 
