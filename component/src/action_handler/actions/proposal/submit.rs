@@ -1,13 +1,24 @@
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
+use ark_ff::PrimeField;
 use async_trait::async_trait;
+use decaf377::Fq;
+use once_cell::sync::Lazy;
+use rand_chacha::{rand_core::SeedableRng, ChaCha20Rng};
+
 use penumbra_chain::StateReadExt as _;
+use penumbra_crypto::{
+    keys::{FullViewingKey, NullifierKey},
+    rdsa::{VerificationKey, VerificationKeyBytes},
+};
 use penumbra_crypto::{ProposalNft, VotingReceiptToken, STAKING_TOKEN_DENOM};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::action::proposal::{PROPOSAL_DESCRIPTION_LIMIT, PROPOSAL_TITLE_LIMIT};
 use penumbra_transaction::action::{proposal, Proposal, ProposalPayload};
+use penumbra_transaction::plan::TransactionPlan;
 use penumbra_transaction::{action::ProposalSubmit, Transaction};
+use penumbra_transaction::{AuthorizationData, WitnessData};
 
 use crate::action_handler::ActionHandler;
 use crate::governance::{StateReadExt as _, StateWriteExt as _};
@@ -47,11 +58,15 @@ impl ActionHandler for ProposalSubmit {
                 old.check_valid_update(new)
                     .context("invalid change to chain parameters")?;
             }
-            DaoSpend {
-                transaction_plan: _,
-            } => {
-                // TODO: check that scheduled transactions are valid without any witness or auth data
-                anyhow::bail!("DAO spend proposals are not yet supported")
+            DaoSpend { transaction_plan } => {
+                // Check that the transaction plan can be built without any witness or auth data and
+                // it passes stateless checks.
+                let tx = build_dao_transaction(transaction_plan.clone())
+                    .await
+                    .context("failed to build submitted DAO spend transaction plan")?;
+                tx.check_stateless(Arc::new(tx.clone()))
+                    .await
+                    .context("DAO spend transaction failed stateless checks")?
             }
         }
 
@@ -161,5 +176,78 @@ impl ActionHandler for ProposalSubmit {
         tracing::debug!(proposal = %proposal_id, "created proposal");
 
         Ok(())
+    }
+}
+
+/// The full viewing key used to construct transactions made by the Penumbra DAO.
+///
+/// This full viewing key does not correspond to any known spend key; it is constructed from the
+/// hashes of two arbitrary strings.
+static DAO_FULL_VIEWING_KEY: Lazy<FullViewingKey> = Lazy::new(|| {
+    // We start with two different personalization strings for the hash function:
+    let ak_personalization = b"Penumbra_DAO_ak";
+    let nk_personalization = b"Penumbra_DAO_nk";
+
+    // We pick two different arbitrary strings to hash:
+    let ak_hash_input =
+        b"This hash input is used to form the `ak` component of the Penumbra DAO's full viewing key.";
+    let nk_hash_input =
+        b"This hash input is used to form the `nk` component of the Penumbra DAO's full viewing key.";
+
+    // We hash the two strings using their respective personalizations:
+    let ak_hash = blake2b_simd::Params::new()
+        .personal(ak_personalization)
+        .hash(ak_hash_input);
+    let nk_hash = blake2b_simd::Params::new()
+        .personal(nk_personalization)
+        .hash(nk_hash_input);
+
+    // We construct the `ak` component of the full viewing key from the hash of the first string:
+    let ak = VerificationKey::try_from(VerificationKeyBytes::from(
+        decaf377::Element::encode_to_curve(&Fq::from_le_bytes_mod_order(ak_hash.as_bytes()))
+            .vartime_compress()
+            .0,
+    ))
+    .expect("penumbra DAO FVK's `ak` must be a valid verification key by construction");
+
+    // We construct the `nk` component of the full viewing key from the hash of the second string:
+    let nk = NullifierKey(Fq::from_le_bytes_mod_order(nk_hash.as_bytes()));
+
+    // We construct the full viewing key from the `ak` and `nk` components:
+    FullViewingKey::from_components(ak, nk)
+});
+
+/// The seed used for the random number generator used when constructing transactions made by the
+/// DAO.
+///
+/// It is arbitary, but must be deterministic in order to ensure that every node in the network
+/// constructs a byte-for-byte identical transaction.
+const DAO_TRANSACTION_RNG_SEED: &[u8; 32] = b"Penumbra DAO's tx build rng seed";
+
+async fn build_dao_transaction(transaction_plan: TransactionPlan) -> Result<Transaction> {
+    let effect_hash = transaction_plan.effect_hash(&DAO_FULL_VIEWING_KEY);
+    transaction_plan
+        .build_concurrent(
+            &mut ChaCha20Rng::from_seed(*DAO_TRANSACTION_RNG_SEED),
+            &DAO_FULL_VIEWING_KEY,
+            AuthorizationData {
+                effect_hash,
+                spend_auths: Default::default(),
+                delegator_vote_auths: Default::default(),
+            },
+            WitnessData {
+                anchor: penumbra_tct::Tree::new().root(),
+                state_commitment_proofs: Default::default(),
+            },
+        )
+        .await
+}
+
+#[cfg(test)]
+mod test {
+    /// Ensure that the DAO full viewing key can be constructed and does not panic when referenced.
+    #[test]
+    fn dao_fvk_can_be_constructed() {
+        let _ = *super::DAO_FULL_VIEWING_KEY;
     }
 }
