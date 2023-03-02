@@ -67,16 +67,20 @@ impl ActionHandler for ProposalSubmit {
                         Spend(_) | Output(_) | Swap(_) | SwapClaim(_) | DelegatorVote(_) => {
                             // These actions all require proving, so they are banned from DAO spend
                             // proposals to prevent DoS attacks.
-                            anyhow::bail!("invalid action in DAO spend proposal")
+                            anyhow::bail!(
+                                "invalid action in DAO spend proposal (would require proving)"
+                            )
+                        }
+                        ProposalSubmit(_) | ProposalWithdraw(_) | ProposalDepositClaim(_) => {
+                            // These actions manipulate proposals, so they are banned from DAO spend
+                            // actions because they could cause recursion.
+                            anyhow::bail!("invalid action in DAO spend proposal (not allowed to manipulate proposals from within proposals)")
                         }
                         Delegate(_)
                         | Undelegate(_)
                         | UndelegateClaim(_)
                         | ValidatorDefinition(_)
                         | IBCAction(_)
-                        | ProposalSubmit(_)
-                        | ProposalWithdraw(_)
-                        | ProposalDepositClaim(_)
                         | ValidatorVote(_)
                         | PositionOpen(_)
                         | PositionClose(_)
