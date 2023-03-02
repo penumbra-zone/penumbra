@@ -1,9 +1,15 @@
+use crate::asset::{AmountVar, AssetIdVar};
+use crate::balance::commitment::BalanceCommitmentVar;
 use crate::keys::OutgoingViewingKey;
+use crate::note::StateCommitmentVar;
 use crate::transaction::Fee;
+use crate::value::ValueVar;
 use crate::{asset, ka, Address, Amount, Note, PayloadKey, Rseed, Value};
 use anyhow::{anyhow, Error, Result};
 use ark_ff::PrimeField;
 
+use ark_r1cs_std::prelude::*;
+use ark_relations::r1cs::SynthesisError;
 use decaf377::{FieldExt, Fq};
 use once_cell::sync::Lazy;
 use penumbra_proto::{core::crypto::v1alpha1 as pb_crypto, core::dex::v1alpha1 as pb, DomainType};
@@ -159,6 +165,61 @@ impl SwapPlaintext {
             claim_fee,
             claim_address,
             rseed,
+        }
+    }
+}
+
+pub struct SwapPlaintextVar {
+    pub swap_commitment: StateCommitmentVar,
+    pub claim_fee: ValueVar,
+    pub delta_1_i: AmountVar,
+    pub trading_pair_asset_1: AssetIdVar,
+    pub delta_2_i: AmountVar,
+    pub trading_pair_asset_2: AssetIdVar,
+}
+
+impl AllocVar<SwapPlaintext, Fq> for SwapPlaintextVar {
+    fn new_variable<T: std::borrow::Borrow<SwapPlaintext>>(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: ark_r1cs_std::prelude::AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        let ns = cs.into();
+        let cs = ns.cs();
+
+        match mode {
+            AllocationMode::Constant => unimplemented!(),
+            AllocationMode::Input => {
+                unimplemented!()
+            }
+            AllocationMode::Witness => {
+                let swap_plaintext1 = f()?;
+                let swap_plaintext = swap_plaintext1.borrow();
+
+                let swap_commitment = StateCommitmentVar::new_witness(cs.clone(), || {
+                    Ok(swap_plaintext.swap_commitment())
+                })?;
+                let claim_fee =
+                    ValueVar::new_witness(cs.clone(), || Ok(swap_plaintext.claim_fee.0))?;
+                let delta_1_i =
+                    AmountVar::new_witness(cs.clone(), || Ok(swap_plaintext.delta_1_i))?;
+                let trading_pair_asset_1 = AssetIdVar::new_witness(cs.clone(), || {
+                    Ok(swap_plaintext.trading_pair.asset_1())
+                })?;
+                let delta_2_i =
+                    AmountVar::new_witness(cs.clone(), || Ok(swap_plaintext.delta_2_i))?;
+                let trading_pair_asset_2 =
+                    AssetIdVar::new_witness(cs, || Ok(swap_plaintext.trading_pair.asset_2()))?;
+
+                Ok(Self {
+                    swap_commitment,
+                    claim_fee,
+                    delta_1_i,
+                    trading_pair_asset_1,
+                    delta_2_i,
+                    trading_pair_asset_2,
+                })
+            }
         }
     }
 }

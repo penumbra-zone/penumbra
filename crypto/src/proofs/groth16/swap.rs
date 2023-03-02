@@ -1,15 +1,15 @@
 use ark_ff::ToConstraintField;
 use ark_groth16::{Groth16, PreparedVerifyingKey, Proof, ProvingKey};
-use ark_r1cs_std::prelude::AllocVar;
+use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
-use decaf377::Bls12_377;
+use decaf377::{Bls12_377, FieldExt};
 use penumbra_tct as tct;
 use rand::{CryptoRng, Rng};
 
 use crate::{
     balance::{self, commitment::BalanceCommitmentVar},
-    dex::swap::SwapPlaintext,
+    dex::swap::{SwapPlaintext, SwapPlaintextVar},
     note::StateCommitmentVar,
     Fq, Fr,
 };
@@ -30,6 +30,9 @@ pub struct SwapCircuit {
 impl ConstraintSynthesizer<Fq> for SwapCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
+        let swap_plaintext_var =
+            SwapPlaintextVar::new_witness(cs.clone(), || Ok(self.swap_plaintext.clone()))?;
+        let fee_blinding_var = UInt8::new_witness_vec(cs.clone(), &self.fee_blinding.to_bytes())?;
 
         // Inputs
         let claimed_balance_commitment =
