@@ -10,6 +10,7 @@ use async_trait::async_trait;
 
 use penumbra_chain::sync::StatePayload;
 use penumbra_crypto::MockFlowCiphertext;
+use penumbra_proof_params::SWAP_PROOF_VERIFICATION_KEY;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::Swap, IsAction, Transaction};
 
@@ -19,9 +20,10 @@ use crate::action_handler::ActionHandler;
 impl ActionHandler for Swap {
     async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
         self.proof.verify(
-            self.body.fee_commitment,
-            self.body.payload.commitment,
+            &SWAP_PROOF_VERIFICATION_KEY,
             self.balance_commitment(),
+            self.body.payload.commitment,
+            self.body.fee_commitment,
         )?;
 
         Ok(())

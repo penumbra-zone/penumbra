@@ -41,13 +41,6 @@ message SwapClaimProof {
   uint64 lambda_2_i = 21;
 }
 
-// A Penumbra transparent SwapProof.
-message SwapProof {
-  dex.v1alpha1.SwapPlaintext swap_plaintext = 1;
-  // The blinding factor used for the Swap action's fee commitment.
-  bytes fee_blinding = 2;
-}
-
 message UndelegateClaimProof {
   crypto.v1alpha1.Amount unbonding_amount = 1;
   bytes balance_blinding = 2;
