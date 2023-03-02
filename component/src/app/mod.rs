@@ -5,7 +5,7 @@ use penumbra_chain::params::FmdParameters;
 use penumbra_chain::{genesis, AppHash, StateReadExt, StateWriteExt as _};
 use penumbra_proto::{DomainType, StateWriteProto};
 use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, Storage};
-use penumbra_transaction::{Action, Transaction};
+use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tendermint::validator::Update;
 use tracing::Instrument;
@@ -131,16 +131,14 @@ impl App {
         // Ensure that any normally-delivered transaction (originating from a user) does not contain
         // any DAO spends or outputs; the only place those are permitted is transactions originating
         // from the chain itself:
-        for action in tx.actions() {
-            anyhow::ensure!(
-                !matches!(action, Action::DaoSpend { .. }),
-                "DAO spends are not permitted in user-submitted transactions"
-            );
-            anyhow::ensure!(
-                !matches!(action, Action::DaoOutput { .. }),
-                "DAO outputs are not permitted in user-submitted transactions"
-            );
-        }
+        anyhow::ensure!(
+            tx.dao_spends().peekable().peek().is_none(),
+            "DAO spends are not permitted in user-submitted transactions"
+        );
+        anyhow::ensure!(
+            tx.dao_outputs().peekable().peek().is_none(),
+            "DAO outputs are not permitted in user-submitted transactions"
+        );
 
         // Now that we've ensured that there are not any DAO spends, we can deliver the transaction:
         self.deliver_tx_allowing_dao_spends(tx).await
