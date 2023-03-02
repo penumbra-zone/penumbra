@@ -9,6 +9,7 @@ pub enum NoteSource {
     Unknown,
     Genesis,
     FundingStreamReward { epoch_index: u64 },
+    DaoOutput,
 }
 
 impl Default for NoteSource {
@@ -42,6 +43,11 @@ impl NoteSource {
                 bytes[24..].copy_from_slice(&epoch_index.to_le_bytes());
                 bytes
             }
+            Self::DaoOutput => {
+                let mut bytes = [0u8; 32];
+                bytes[CODE_INDEX] = 3;
+                bytes
+            }
         }
     }
 }
@@ -60,6 +66,7 @@ impl TryFrom<[u8; 32]> for NoteSource {
                         u64::from_le_bytes(epoch_bytes.try_into().expect("slice is of length 8"));
                     Ok(Self::FundingStreamReward { epoch_index })
                 }
+                (3, &[0, 0, 0, 0, 0, 0, 0, 0]) => Ok(Self::DaoOutput),
                 (code, data) => Err(anyhow!(
                     "unknown note source with code {} and data {:?}",
                     code,
@@ -114,6 +121,7 @@ impl std::fmt::Debug for NoteSource {
             NoteSource::FundingStreamReward { epoch_index } => f.write_fmt(format_args!(
                 "NoteSource::FundingStreamReward({epoch_index})"
             )),
+            NoteSource::DaoOutput => f.write_fmt(format_args!("NoteSource::DaoOutput")),
         }
     }
 }

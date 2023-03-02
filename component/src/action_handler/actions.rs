@@ -49,9 +49,9 @@ impl ActionHandler for Action {
             Action::Output(action) => action.check_stateless(context),
             Action::IBCAction(action) => action.check_stateless(context),
             Action::Ics20Withdrawal(action) => action.check_stateless(context),
-            Action::DaoSpend(action) => todo!("check_stateless for dao spend"),
-            Action::DaoOutput(action) => todo!("check_stateless for dao output"),
-            Action::DaoDeposit(action) => todo!("check_stateless for dao deposit"),
+            Action::DaoSpend(action) => action.check_stateless(context),
+            Action::DaoOutput(action) => action.check_stateless(context),
+            Action::DaoDeposit(action) => action.check_stateless(context),
         }
         .await
     }
@@ -85,9 +85,9 @@ impl ActionHandler for Action {
                 action.check_stateful(state).await
             }
             Action::Ics20Withdrawal(action) => action.check_stateful(state).await,
-            Action::DaoSpend(action) => todo!("check_stateful for dao spend"),
-            Action::DaoOutput(action) => todo!("check_stateful for dao output"),
-            Action::DaoDeposit(action) => todo!("check_stateful for dao deposit"),
+            Action::DaoSpend(action) => action.check_stateful(state).await,
+            Action::DaoOutput(action) => action.check_stateful(state).await,
+            Action::DaoDeposit(action) => action.check_stateful(state).await,
         }
     }
 
@@ -112,9 +112,9 @@ impl ActionHandler for Action {
             Action::Output(action) => action.execute(state).await,
             Action::IBCAction(action) => action.execute(state).await,
             Action::Ics20Withdrawal(action) => action.execute(state).await,
-            Action::DaoSpend(action) => todo!("execute for dao spend"),
-            Action::DaoOutput(action) => todo!("execute for dao output"),
-            Action::DaoDeposit(action) => todo!("execute for dao deposit"),
+            Action::DaoSpend(action) => action.execute(state).await,
+            Action::DaoOutput(action) => action.execute(state).await,
+            Action::DaoDeposit(action) => action.execute(state).await,
         }
     }
 }
