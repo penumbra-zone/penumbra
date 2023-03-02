@@ -91,7 +91,34 @@ impl App {
         // Shielded pool always executes last.
         ShieldedPool::begin_block(&mut state_tx, begin_block).await;
 
-        state_tx.apply().1
+        // Apply the state from `begin_block` and return the events (we'll append to them if
+        // necessary based on the results of applying the DAO transactions queued)
+        let mut events = state_tx.apply().1;
+
+        // Deliver DAO transactions here, before any other block processing (effectively adding
+        // synthetic transactions slotted in after the start of the block but before any user
+        // transactions)
+        let pending_transactions = self
+            .state
+            .pending_dao_transactions()
+            .await
+            .expect("DAO transactions should always be readable");
+        for transaction in pending_transactions {
+            // NOTE: We are *intentionally* using `deliver_tx_allowing_dao_spends` here, rather than
+            // `deliver_tx`, because here is the **ONLY** place we want to permit DAO spends, when
+            // delivering transactions that have been scheduled by the chain itself for delivery.
+            match self
+                .deliver_tx_allowing_dao_spends(Arc::new(transaction))
+                .await
+            {
+                Err(error) => {
+                    tracing::warn!(?error, "failed to deliver DAO transaction");
+                }
+                Ok(dao_tx_events) => events.extend(dao_tx_events),
+            }
+        }
+
+        events
     }
 
     /// Wrapper function for [`Self::deliver_tx`]  that decodes from bytes.
@@ -154,21 +181,6 @@ impl App {
     }
 
     pub async fn end_block(&mut self, end_block: &abci::request::EndBlock) -> Vec<abci::Event> {
-        // Deliver DAO transactions here, before any other end_block processing (effectively adding
-        // synthetic transactions slotted in before the end of the block)
-        let pending_transactions = self.state.pending_dao_transactions();
-        for transaction in pending_transactions {
-            // NOTE: We are *intentionally* using `deliver_tx_allowing_dao_spends` here, rather than
-            // `deliver_tx`, because here is the **ONLY** place we want to permit DAO spends, when
-            // delivering transactions that have been scheduled by the chain itself for delivery.
-            if let Err(error) = self
-                .deliver_tx_allowing_dao_spends(Arc::new(transaction))
-                .await
-            {
-                tracing::warn!(?error, "failed to deliver DAO transaction");
-            }
-        }
-
         let mut state_tx = self
             .state
             .try_begin_transaction()
