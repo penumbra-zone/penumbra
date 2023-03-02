@@ -157,3 +157,8 @@ message ZKOutputProof {
 message ZKSpendProof {
   bytes inner = 1;
 }
+
+// A Penumbra ZK swap proof.
+message ZKSwapProof {
+    bytes inner = 1;
+}

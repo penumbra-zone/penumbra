@@ -2,8 +2,10 @@ use ark_ff::ToConstraintField;
 use ark_groth16::{Groth16, PreparedVerifyingKey, Proof, ProvingKey};
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
 use decaf377::{Bls12_377, FieldExt};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
 use penumbra_tct as tct;
 use rand::{CryptoRng, Rng};
 
@@ -13,6 +15,8 @@ use crate::{
     note::StateCommitmentVar,
     Fq, Fr,
 };
+
+use super::GROTH16_PROOF_LENGTH_BYTES;
 
 pub struct SwapCircuit {
     /// The swap plaintext.
@@ -122,5 +126,29 @@ impl SwapProof {
         proof_result
             .then_some(())
             .ok_or_else(|| anyhow::anyhow!("proof did not verify"))
+    }
+}
+
+impl DomainType for SwapProof {
+    type Proto = pb::ZkSwapProof;
+}
+
+impl From<SwapProof> for pb::ZkSwapProof {
+    fn from(proof: SwapProof) -> Self {
+        let mut proof_bytes = [0u8; GROTH16_PROOF_LENGTH_BYTES];
+        Proof::serialize(&proof.0, &mut proof_bytes[..]).expect("can serialize Proof");
+        pb::ZkSwapProof {
+            inner: proof_bytes.to_vec(),
+        }
+    }
+}
+
+impl TryFrom<pb::ZkSwapProof> for SwapProof {
+    type Error = anyhow::Error;
+
+    fn try_from(proto: pb::ZkSwapProof) -> Result<Self, Self::Error> {
+        Ok(SwapProof(
+            Proof::deserialize(&proto.inner[..]).map_err(|e| anyhow::anyhow!(e))?,
+        ))
     }
 }
