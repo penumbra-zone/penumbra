@@ -41,8 +41,8 @@ impl TryFrom<Vec<u8>> for MemoPlaintext {
     type Error = anyhow::Error;
 
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
-        if bytes.len() != MEMO_LEN_BYTES {
-            return Err(anyhow!("provided memo plaintext of is too short"));
+        if bytes.len() < 80 {
+            return Err(anyhow!("malformed memo plaintext: missing sender address"));
         }
         let sender_address_bytes = &bytes[..80];
         let sender_address: Address = sender_address_bytes.try_into()?;
