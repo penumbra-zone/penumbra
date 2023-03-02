@@ -4,7 +4,7 @@ use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
-use penumbra_chain::params::{ChainParameters, ChainParametersToml};
+use penumbra_chain::params::ChainParameters;
 use penumbra_crypto::{
     asset::{self, Amount, Denom},
     balance, Balance, Fr, ProposalNft, Value, STAKING_TOKEN_ASSET_ID,
@@ -297,8 +297,8 @@ pub enum ProposalPayloadToml {
         halt_chain: bool,
     },
     ParameterChange {
-        old: Box<ChainParametersToml>,
-        new: Box<ChainParametersToml>,
+        old: Box<ChainParameters>,
+        new: Box<ChainParameters>,
     },
     DaoSpend {
         transaction: String,
@@ -314,10 +314,9 @@ impl TryFrom<ProposalPayloadToml> for ProposalPayload {
             ProposalPayloadToml::Emergency { halt_chain } => {
                 ProposalPayload::Emergency { halt_chain }
             }
-            ProposalPayloadToml::ParameterChange { old, new } => ProposalPayload::ParameterChange {
-                old: Box::new((*old).try_into()?),
-                new: Box::new((*new).try_into()?),
-            },
+            ProposalPayloadToml::ParameterChange { old, new } => {
+                ProposalPayload::ParameterChange { old, new }
+            }
             ProposalPayloadToml::DaoSpend { transaction } => ProposalPayload::DaoSpend {
                 transaction_plan: TransactionPlan::decode(Bytes::from(
                     base64::Engine::decode(&base64::engine::general_purpose::STANDARD, transaction)
@@ -336,10 +335,9 @@ impl From<ProposalPayload> for ProposalPayloadToml {
             ProposalPayload::Emergency { halt_chain } => {
                 ProposalPayloadToml::Emergency { halt_chain }
             }
-            ProposalPayload::ParameterChange { old, new } => ProposalPayloadToml::ParameterChange {
-                old: Box::new((*old).into()),
-                new: Box::new((*new).into()),
-            },
+            ProposalPayload::ParameterChange { old, new } => {
+                ProposalPayloadToml::ParameterChange { old, new }
+            }
             ProposalPayload::DaoSpend { transaction_plan } => ProposalPayloadToml::DaoSpend {
                 transaction: base64::Engine::encode(
                     &base64::engine::general_purpose::STANDARD,

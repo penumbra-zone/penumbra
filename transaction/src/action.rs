@@ -229,9 +229,7 @@ impl From<Action> for pb::Action {
             Action::Ics20Withdrawal(withdrawal) => pb::Action {
                 action: Some(pb::action::Action::Ics20Withdrawal(withdrawal.into())),
             },
-            Action::DaoSpend(inner) => pb::Action {
-                action: Some(todo!("dao spend to proto")),
-            },
+            Action::DaoSpend(_inner) => todo!("dao spend to proto"),
         }
     }
 }

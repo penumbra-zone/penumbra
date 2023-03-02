@@ -170,10 +170,10 @@ impl serde::Serialize for ChainParameters {
         if self.base_reward_rate != 0 {
             len += 1;
         }
-        if self.slashing_penalty_misbehavior.is_some() {
+        if self.slashing_penalty_misbehavior != 0 {
             len += 1;
         }
-        if self.slashing_penalty_downtime.is_some() {
+        if self.slashing_penalty_downtime != 0 {
             len += 1;
         }
         if self.signed_blocks_window_len != 0 {
@@ -194,16 +194,22 @@ impl serde::Serialize for ChainParameters {
         if self.proposal_voting_blocks != 0 {
             len += 1;
         }
-        if self.proposal_deposit_amount.is_some() {
+        if self.proposal_deposit_amount != 0 {
             len += 1;
         }
-        if self.proposal_valid_quorum.is_some() {
+        if !self.proposal_valid_quorum.is_empty() {
             len += 1;
         }
-        if self.proposal_pass_threshold.is_some() {
+        if !self.proposal_pass_threshold.is_empty() {
             len += 1;
         }
-        if self.proposal_slash_threshold.is_some() {
+        if !self.proposal_slash_threshold.is_empty() {
+            len += 1;
+        }
+        if self.dao_spend_proposals_enabled {
+            len += 1;
+        }
+        if self.transparent_outputs_enabled_outside_dao {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.chain.v1alpha1.ChainParameters", len)?;
@@ -222,11 +228,11 @@ impl serde::Serialize for ChainParameters {
         if self.base_reward_rate != 0 {
             struct_ser.serialize_field("baseRewardRate", ToString::to_string(&self.base_reward_rate).as_str())?;
         }
-        if let Some(v) = self.slashing_penalty_misbehavior.as_ref() {
-            struct_ser.serialize_field("slashingPenaltyMisbehavior", v)?;
+        if self.slashing_penalty_misbehavior != 0 {
+            struct_ser.serialize_field("slashingPenaltyMisbehavior", ToString::to_string(&self.slashing_penalty_misbehavior).as_str())?;
         }
-        if let Some(v) = self.slashing_penalty_downtime.as_ref() {
-            struct_ser.serialize_field("slashingPenaltyDowntime", v)?;
+        if self.slashing_penalty_downtime != 0 {
+            struct_ser.serialize_field("slashingPenaltyDowntime", ToString::to_string(&self.slashing_penalty_downtime).as_str())?;
         }
         if self.signed_blocks_window_len != 0 {
             struct_ser.serialize_field("signedBlocksWindowLen", ToString::to_string(&self.signed_blocks_window_len).as_str())?;
@@ -246,17 +252,23 @@ impl serde::Serialize for ChainParameters {
         if self.proposal_voting_blocks != 0 {
             struct_ser.serialize_field("proposalVotingBlocks", ToString::to_string(&self.proposal_voting_blocks).as_str())?;
         }
-        if let Some(v) = self.proposal_deposit_amount.as_ref() {
-            struct_ser.serialize_field("proposalDepositAmount", v)?;
+        if self.proposal_deposit_amount != 0 {
+            struct_ser.serialize_field("proposalDepositAmount", ToString::to_string(&self.proposal_deposit_amount).as_str())?;
         }
-        if let Some(v) = self.proposal_valid_quorum.as_ref() {
-            struct_ser.serialize_field("proposalValidQuorum", v)?;
+        if !self.proposal_valid_quorum.is_empty() {
+            struct_ser.serialize_field("proposalValidQuorum", &self.proposal_valid_quorum)?;
         }
-        if let Some(v) = self.proposal_pass_threshold.as_ref() {
-            struct_ser.serialize_field("proposalPassThreshold", v)?;
+        if !self.proposal_pass_threshold.is_empty() {
+            struct_ser.serialize_field("proposalPassThreshold", &self.proposal_pass_threshold)?;
         }
-        if let Some(v) = self.proposal_slash_threshold.as_ref() {
-            struct_ser.serialize_field("proposalSlashThreshold", v)?;
+        if !self.proposal_slash_threshold.is_empty() {
+            struct_ser.serialize_field("proposalSlashThreshold", &self.proposal_slash_threshold)?;
+        }
+        if self.dao_spend_proposals_enabled {
+            struct_ser.serialize_field("daoSpendProposalsEnabled", &self.dao_spend_proposals_enabled)?;
+        }
+        if self.transparent_outputs_enabled_outside_dao {
+            struct_ser.serialize_field("transparentOutputsEnabledOutsideDao", &self.transparent_outputs_enabled_outside_dao)?;
         }
         struct_ser.end()
     }
@@ -302,6 +314,10 @@ impl<'de> serde::Deserialize<'de> for ChainParameters {
             "proposalPassThreshold",
             "proposal_slash_threshold",
             "proposalSlashThreshold",
+            "dao_spend_proposals_enabled",
+            "daoSpendProposalsEnabled",
+            "transparent_outputs_enabled_outside_dao",
+            "transparentOutputsEnabledOutsideDao",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -323,6 +339,8 @@ impl<'de> serde::Deserialize<'de> for ChainParameters {
             ProposalValidQuorum,
             ProposalPassThreshold,
             ProposalSlashThreshold,
+            DaoSpendProposalsEnabled,
+            TransparentOutputsEnabledOutsideDao,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -361,6 +379,8 @@ impl<'de> serde::Deserialize<'de> for ChainParameters {
                             "proposalValidQuorum" | "proposal_valid_quorum" => Ok(GeneratedField::ProposalValidQuorum),
                             "proposalPassThreshold" | "proposal_pass_threshold" => Ok(GeneratedField::ProposalPassThreshold),
                             "proposalSlashThreshold" | "proposal_slash_threshold" => Ok(GeneratedField::ProposalSlashThreshold),
+                            "daoSpendProposalsEnabled" | "dao_spend_proposals_enabled" => Ok(GeneratedField::DaoSpendProposalsEnabled),
+                            "transparentOutputsEnabledOutsideDao" | "transparent_outputs_enabled_outside_dao" => Ok(GeneratedField::TransparentOutputsEnabledOutsideDao),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -397,6 +417,8 @@ impl<'de> serde::Deserialize<'de> for ChainParameters {
                 let mut proposal_valid_quorum__ = None;
                 let mut proposal_pass_threshold__ = None;
                 let mut proposal_slash_threshold__ = None;
+                let mut dao_spend_proposals_enabled__ = None;
+                let mut transparent_outputs_enabled_outside_dao__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::ChainId => {
@@ -441,13 +463,17 @@ impl<'de> serde::Deserialize<'de> for ChainParameters {
                             if slashing_penalty_misbehavior__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("slashingPenaltyMisbehavior"));
                             }
-                            slashing_penalty_misbehavior__ = map.next_value()?;
+                            slashing_penalty_misbehavior__ = 
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
                         }
                         GeneratedField::SlashingPenaltyDowntime => {
                             if slashing_penalty_downtime__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("slashingPenaltyDowntime"));
                             }
-                            slashing_penalty_downtime__ = map.next_value()?;
+                            slashing_penalty_downtime__ = 
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
                         }
                         GeneratedField::SignedBlocksWindowLen => {
                             if signed_blocks_window_len__.is_some() {
@@ -495,25 +521,39 @@ impl<'de> serde::Deserialize<'de> for ChainParameters {
                             if proposal_deposit_amount__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proposalDepositAmount"));
                             }
-                            proposal_deposit_amount__ = map.next_value()?;
+                            proposal_deposit_amount__ = 
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
                         }
                         GeneratedField::ProposalValidQuorum => {
                             if proposal_valid_quorum__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proposalValidQuorum"));
                             }
-                            proposal_valid_quorum__ = map.next_value()?;
+                            proposal_valid_quorum__ = Some(map.next_value()?);
                         }
                         GeneratedField::ProposalPassThreshold => {
                             if proposal_pass_threshold__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proposalPassThreshold"));
                             }
-                            proposal_pass_threshold__ = map.next_value()?;
+                            proposal_pass_threshold__ = Some(map.next_value()?);
                         }
                         GeneratedField::ProposalSlashThreshold => {
                             if proposal_slash_threshold__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proposalSlashThreshold"));
                             }
-                            proposal_slash_threshold__ = map.next_value()?;
+                            proposal_slash_threshold__ = Some(map.next_value()?);
+                        }
+                        GeneratedField::DaoSpendProposalsEnabled => {
+                            if dao_spend_proposals_enabled__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("daoSpendProposalsEnabled"));
+                            }
+                            dao_spend_proposals_enabled__ = Some(map.next_value()?);
+                        }
+                        GeneratedField::TransparentOutputsEnabledOutsideDao => {
+                            if transparent_outputs_enabled_outside_dao__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("transparentOutputsEnabledOutsideDao"));
+                            }
+                            transparent_outputs_enabled_outside_dao__ = Some(map.next_value()?);
                         }
                     }
                 }
@@ -523,18 +563,20 @@ impl<'de> serde::Deserialize<'de> for ChainParameters {
                     unbonding_epochs: unbonding_epochs__.unwrap_or_default(),
                     active_validator_limit: active_validator_limit__.unwrap_or_default(),
                     base_reward_rate: base_reward_rate__.unwrap_or_default(),
-                    slashing_penalty_misbehavior: slashing_penalty_misbehavior__,
-                    slashing_penalty_downtime: slashing_penalty_downtime__,
+                    slashing_penalty_misbehavior: slashing_penalty_misbehavior__.unwrap_or_default(),
+                    slashing_penalty_downtime: slashing_penalty_downtime__.unwrap_or_default(),
                     signed_blocks_window_len: signed_blocks_window_len__.unwrap_or_default(),
                     missed_blocks_maximum: missed_blocks_maximum__.unwrap_or_default(),
                     ibc_enabled: ibc_enabled__.unwrap_or_default(),
                     inbound_ics20_transfers_enabled: inbound_ics20_transfers_enabled__.unwrap_or_default(),
                     outbound_ics20_transfers_enabled: outbound_ics20_transfers_enabled__.unwrap_or_default(),
                     proposal_voting_blocks: proposal_voting_blocks__.unwrap_or_default(),
-                    proposal_deposit_amount: proposal_deposit_amount__,
-                    proposal_valid_quorum: proposal_valid_quorum__,
-                    proposal_pass_threshold: proposal_pass_threshold__,
-                    proposal_slash_threshold: proposal_slash_threshold__,
+                    proposal_deposit_amount: proposal_deposit_amount__.unwrap_or_default(),
+                    proposal_valid_quorum: proposal_valid_quorum__.unwrap_or_default(),
+                    proposal_pass_threshold: proposal_pass_threshold__.unwrap_or_default(),
+                    proposal_slash_threshold: proposal_slash_threshold__.unwrap_or_default(),
+                    dao_spend_proposals_enabled: dao_spend_proposals_enabled__.unwrap_or_default(),
+                    transparent_outputs_enabled_outside_dao: transparent_outputs_enabled_outside_dao__.unwrap_or_default(),
                 })
             }
         }
