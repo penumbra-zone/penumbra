@@ -40,36 +40,36 @@ impl SwapPlan {
 
     /// Construct the [`swap::Body`] described by this [`SwapPlan`].
     pub fn swap_body(&self, fvk: &FullViewingKey) -> swap::Body {
-        let fee_commitment = self.swap_plaintext.claim_fee.commit(self.fee_blinding);
-
         swap::Body {
             trading_pair: self.swap_plaintext.trading_pair,
             delta_1_i: self.swap_plaintext.delta_1_i,
             delta_2_i: self.swap_plaintext.delta_2_i,
-            fee_commitment,
+            fee_commitment: self.fee_commitment(),
             payload: self.swap_plaintext.encrypt(fvk.outgoing()),
         }
     }
 
     /// Construct the [`SwapProof`] required by the [`swap::Body`] described by this [`SwapPlan`].
     pub fn swap_proof(&self) -> SwapProof {
+        let balance_commitment =
+            self.transparent_balance().commit(Fr::zero()) + self.fee_commitment();
         SwapProof::prove(
             &mut OsRng,
             &SWAP_PROOF_PROVING_KEY,
             self.swap_plaintext.clone(),
             self.fee_blinding,
-            self.balance().commit(Fr::zero()),
+            balance_commitment,
             self.swap_plaintext.swap_commitment(),
-            self.swap_plaintext.claim_fee.commit(self.fee_blinding),
+            self.fee_commitment(),
         )
         .expect("can generate ZKSwapProof")
     }
 
-    pub fn balance(&self) -> penumbra_crypto::Balance {
-        // Swaps must have spends corresponding to:
-        // - the input amount of asset 1
-        // - the input amount of asset 2
-        // - the pre-paid swap claim fee
+    pub fn fee_commitment(&self) -> penumbra_crypto::balance::Commitment {
+        self.swap_plaintext.claim_fee.commit(self.fee_blinding)
+    }
+
+    pub fn transparent_balance(&self) -> penumbra_crypto::Balance {
         let value_1 = Value {
             amount: self.swap_plaintext.delta_1_i,
             asset_id: self.swap_plaintext.trading_pair.asset_1(),
@@ -78,14 +78,24 @@ impl SwapPlan {
             amount: self.swap_plaintext.delta_2_i,
             asset_id: self.swap_plaintext.trading_pair.asset_2(),
         };
+
+        let mut balance = Balance::default();
+        balance -= value_1;
+        balance -= value_2;
+        balance
+    }
+
+    pub fn balance(&self) -> penumbra_crypto::Balance {
+        // Swaps must have spends corresponding to:
+        // - the input amount of asset 1
+        // - the input amount of asset 2
+        // - the pre-paid swap claim fee
         let value_fee = Value {
             amount: self.swap_plaintext.claim_fee.amount(),
             asset_id: self.swap_plaintext.claim_fee.asset_id(),
         };
 
-        let mut balance = Balance::default();
-        balance -= value_1;
-        balance -= value_2;
+        let mut balance = self.transparent_balance();
         balance -= value_fee;
         balance
     }

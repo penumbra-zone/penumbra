@@ -56,7 +56,8 @@ impl ConstraintSynthesizer<Fq> for SwapCircuit {
             BalanceCommitmentVar::new_input(cs, || Ok(self.fee_commitment))?;
 
         // Swap commitment integrity check
-        claimed_swap_commitment.enforce_equal(&swap_plaintext_var.swap_commitment)?;
+        let swap_commitment = swap_plaintext_var.commit()?;
+        claimed_swap_commitment.enforce_equal(&swap_commitment)?;
 
         // Fee commitment integrity check
         let fee_balance = BalanceVar::from_negative_value_var(swap_plaintext_var.claim_fee.clone());

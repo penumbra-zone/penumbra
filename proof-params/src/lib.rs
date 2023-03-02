@@ -29,7 +29,7 @@ pub static OUTPUT_PROOF_VERIFICATION_KEY: Lazy<PreparedVerifyingKey<Bls12_377>> 
 pub static SWAP_PROOF_PROVING_KEY: Lazy<ProvingKey<Bls12_377>> =
     Lazy::new(proving_keys::swap_proving_parameters);
 
-/// Proving key for the swap proof.
+/// Verification key for the swap proof.
 pub static SWAP_PROOF_VERIFICATION_KEY: Lazy<PreparedVerifyingKey<Bls12_377>> =
     Lazy::new(|| swap_verification_parameters().into());
 
