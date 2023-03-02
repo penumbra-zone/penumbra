@@ -22,7 +22,7 @@ mod tests {
         keys::{SeedPhrase, SpendKey},
         Address, Balance, Rseed,
     };
-    use ark_groth16::{Groth16, PreparedVerifyingKey, ProvingKey};
+    use ark_groth16::{Groth16, PreparedVerifyingKey, ProvingKey, VerifyingKey};
     use ark_r1cs_std::prelude::*;
     use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
     use ark_snark::SNARK;
@@ -55,7 +55,7 @@ mod tests {
     #![proptest_config(ProptestConfig::with_cases(2))]
     #[test]
     fn output_proof_happy_path(seed_phrase_randomness in any::<[u8; 32]>(), v_blinding in fr_strategy(), value_amount in 2..200u64) {
-            let (pk, vk) = OutputCircuit::generate_test_parameters();
+            let (pk, vk) = OutputCircuit::generate_prepared_test_parameters();
 
             let mut rng = OsRng;
 
@@ -96,7 +96,7 @@ mod tests {
     #![proptest_config(ProptestConfig::with_cases(2))]
     #[test]
     fn output_proof_verification_note_commitment_integrity_failure(seed_phrase_randomness in any::<[u8; 32]>(), v_blinding in fr_strategy(), value_amount in 2..200u64, note_blinding in fq_strategy()) {
-        let (pk, vk) = OutputCircuit::generate_test_parameters();
+        let (pk, vk) = OutputCircuit::generate_prepared_test_parameters();
         let mut rng = OsRng;
 
         let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
@@ -142,7 +142,7 @@ mod tests {
         #![proptest_config(ProptestConfig::with_cases(2))]
         #[test]
     fn output_proof_verification_balance_commitment_integrity_failure(seed_phrase_randomness in any::<[u8; 32]>(), v_blinding in fr_strategy(), value_amount in 2..200u64, incorrect_v_blinding in fr_strategy()) {
-        let (pk, vk) = OutputCircuit::generate_test_parameters();
+        let (pk, vk) = OutputCircuit::generate_prepared_test_parameters();
         let mut rng = OsRng;
 
         let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
@@ -183,7 +183,7 @@ mod tests {
     #[test]
     /// Check that the `SpendProof` verification succeeds.
     fn spend_proof_verification_success(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 2..2000000000u64, num_commitments in 1..2000u64, v_blinding in fr_strategy()) {
-        let (pk, vk) = SpendCircuit::generate_test_parameters();
+        let (pk, vk) = SpendCircuit::generate_prepared_test_parameters();
         let mut rng = OsRng;
 
         let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
@@ -245,7 +245,7 @@ mod tests {
     /// Check that the `SpendProof` verification fails when using an incorrect
     /// TCT root (`anchor`).
     fn spend_proof_verification_merkle_path_integrity_failure(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 2..200u64, v_blinding in fr_strategy()) {
-        let (pk, vk) = SpendCircuit::generate_test_parameters();
+        let (pk, vk) = SpendCircuit::generate_prepared_test_parameters();
         let mut rng = OsRng;
 
         let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
@@ -300,7 +300,7 @@ mod tests {
         #[test]
         /// Check that the `SpendProof` verification fails when the diversified address is wrong.
         fn spend_proof_verification_diversified_address_integrity_failure(seed_phrase_randomness in any::<[u8; 32]>(), incorrect_seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 2..200u64, v_blinding in fr_strategy()) {
-            let (pk, vk) = SpendCircuit::generate_test_parameters();
+            let (pk, vk) = SpendCircuit::generate_prepared_test_parameters();
             let mut rng = OsRng;
 
             let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
@@ -359,7 +359,7 @@ mod tests {
         /// Check that the `SpendProof` verification fails, when using an
         /// incorrect nullifier.
         fn spend_proof_verification_nullifier_integrity_failure(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 2..200u64, v_blinding in fr_strategy()) {
-            let (pk, vk) = SpendCircuit::generate_test_parameters();
+            let (pk, vk) = SpendCircuit::generate_prepared_test_parameters();
             let mut rng = OsRng;
 
             let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
@@ -415,7 +415,7 @@ mod tests {
     /// Check that the `SpendProof` verification fails when using balance
     /// commitments with different blinding factors.
     fn spend_proof_verification_balance_commitment_integrity_failure(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 2..200u64, v_blinding in fr_strategy(), incorrect_blinding_factor in fr_strategy()) {
-        let (pk, vk) = SpendCircuit::generate_test_parameters();
+        let (pk, vk) = SpendCircuit::generate_prepared_test_parameters();
         let mut rng = OsRng;
 
         let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
@@ -470,7 +470,7 @@ mod tests {
         #[test]
         /// Check that the `SpendProof` verification fails when the incorrect randomizable verification key is used.
         fn spend_proof_verification_fails_rk_integrity(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 2..200u64, v_blinding in fr_strategy(), incorrect_spend_auth_randomizer in fr_strategy()) {
-            let (pk, vk) = SpendCircuit::generate_test_parameters();
+            let (pk, vk) = SpendCircuit::generate_prepared_test_parameters();
             let mut rng = OsRng;
 
             let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
@@ -528,7 +528,7 @@ mod tests {
         #[test]
         /// Check that the `SpendProof` verification always suceeds for dummy (zero value) spends.
         fn spend_proof_dummy_verification_suceeds(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), v_blinding in fr_strategy()) {
-            let (pk, vk) = SpendCircuit::generate_test_parameters();
+            let (pk, vk) = SpendCircuit::generate_prepared_test_parameters();
             let mut rng = OsRng;
 
             let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
@@ -613,7 +613,7 @@ mod tests {
     }
 
     impl ParameterSetup for MerkleProofCircuit {
-        fn generate_test_parameters() -> (ProvingKey<Bls12_377>, PreparedVerifyingKey<Bls12_377>) {
+        fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
             let seed_phrase = SeedPhrase::from_randomness([b'f'; 32]);
             let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
             let fvk_sender = sk_sender.full_viewing_key();
@@ -637,7 +637,7 @@ mod tests {
             };
             let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
                 .expect("can perform circuit specific setup");
-            (pk, vk.into())
+            (pk, vk)
         }
     }
 
@@ -653,7 +653,7 @@ mod tests {
 
     #[test]
     fn merkle_proof_verification_succeeds() {
-        let (pk, vk) = MerkleProofCircuit::generate_test_parameters();
+        let (pk, vk) = MerkleProofCircuit::generate_prepared_test_parameters();
         let mut rng = OsRng;
 
         let seed_phrase = SeedPhrase::from_randomness([b'f'; 32]);

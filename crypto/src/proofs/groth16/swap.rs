@@ -1,22 +1,31 @@
 use ark_ff::ToConstraintField;
-use ark_groth16::{Groth16, PreparedVerifyingKey, Proof, ProvingKey};
+use ark_groth16::{Groth16, PreparedVerifyingKey, Proof, ProvingKey, VerifyingKey};
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
 use decaf377::{Bls12_377, FieldExt};
+use decaf377_fmd as fmd;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
 use penumbra_tct as tct;
 use rand::{CryptoRng, Rng};
+use rand_core::OsRng;
 
 use crate::{
+    asset,
     balance::{self, commitment::BalanceCommitmentVar, BalanceVar},
-    dex::swap::{SwapPlaintext, SwapPlaintextVar},
+    dex::{
+        swap::{SwapPlaintext, SwapPlaintextVar},
+        TradingPair,
+    },
+    ka,
+    keys::Diversifier,
     note::StateCommitmentVar,
-    Fq, Fr,
+    transaction::Fee,
+    Address, Fq, Fr, Rseed, Value,
 };
 
-use super::GROTH16_PROOF_LENGTH_BYTES;
+use super::{ParameterSetup, GROTH16_PROOF_LENGTH_BYTES};
 
 pub struct SwapCircuit {
     /// The swap plaintext.
@@ -67,6 +76,47 @@ impl ConstraintSynthesizer<Fq> for SwapCircuit {
         claimed_balance_commitment.enforce_equal(&total_balance_commitment)?;
 
         Ok(())
+    }
+}
+
+impl ParameterSetup for SwapCircuit {
+    fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
+        let trading_pair = TradingPair {
+            asset_1: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_2: asset::REGISTRY.parse_denom("nala").unwrap().id(),
+        };
+        let diversifier_bytes = [1u8; 16];
+        let pk_d_bytes = decaf377::basepoint().vartime_compress().0;
+        let clue_key_bytes = [1; 32];
+        let diversifier = Diversifier(diversifier_bytes);
+        let address = Address::from_components(
+            diversifier,
+            ka::Public(pk_d_bytes),
+            fmd::ClueKey(clue_key_bytes),
+        )
+        .expect("generated 1 address");
+        let swap_plaintext = SwapPlaintext {
+            trading_pair,
+            delta_1_i: 100000u64.into(),
+            delta_2_i: 1u64.into(),
+            claim_fee: Fee(Value {
+                amount: 3u64.into(),
+                asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            }),
+            claim_address: address,
+            rseed: Rseed([1u8; 32]),
+        };
+
+        let circuit = SwapCircuit {
+            swap_plaintext: swap_plaintext.clone(),
+            fee_blinding: Fr::from(1),
+            swap_commitment: swap_plaintext.swap_commitment(),
+            fee_commitment: balance::Commitment(decaf377::basepoint()),
+            balance_commitment: balance::Commitment(decaf377::basepoint()),
+        };
+        let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
+            .expect("can perform circuit specific setup");
+        (pk, vk)
     }
 }
 

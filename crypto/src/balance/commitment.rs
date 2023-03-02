@@ -75,8 +75,7 @@ impl AllocVar<Commitment, Fq> for BalanceCommitmentVar {
         match mode {
             AllocationMode::Constant => unimplemented!(),
             AllocationMode::Input => {
-                let compressed = inner.0.vartime_compress_to_field();
-                let element_var: ElementVar = AllocVar::new_input(cs, || Ok(compressed))?;
+                let element_var: ElementVar = AllocVar::new_input(cs, || Ok(inner.0))?;
                 Ok(Self { inner: element_var })
             }
             AllocationMode::Witness => unimplemented!(),
