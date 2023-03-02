@@ -18,15 +18,11 @@ pub struct ChainParameters {
     #[prost(uint64, tag = "9")]
     pub base_reward_rate: u64,
     /// The penalty for slashing due to misbehavior.
-    #[prost(message, optional, tag = "5")]
-    pub slashing_penalty_misbehavior: ::core::option::Option<
-        super::super::stake::v1alpha1::Penalty,
-    >,
+    #[prost(uint64, tag = "5")]
+    pub slashing_penalty_misbehavior: u64,
     /// The penalty for slashing due to downtime.
-    #[prost(message, optional, tag = "10")]
-    pub slashing_penalty_downtime: ::core::option::Option<
-        super::super::stake::v1alpha1::Penalty,
-    >,
+    #[prost(uint64, tag = "10")]
+    pub slashing_penalty_downtime: u64,
     /// The number of blocks in the window to check for downtime.
     #[prost(uint64, tag = "11")]
     pub signed_blocks_window_len: u64,
@@ -46,21 +42,25 @@ pub struct ChainParameters {
     #[prost(uint64, tag = "20")]
     pub proposal_voting_blocks: u64,
     /// The deposit required to create a proposal.
-    #[prost(message, optional, tag = "21")]
-    pub proposal_deposit_amount: ::core::option::Option<
-        super::super::crypto::v1alpha1::Amount,
-    >,
+    #[prost(uint64, tag = "21")]
+    pub proposal_deposit_amount: u64,
     /// The quorum required for a proposal to be considered valid, as a fraction of the total stake
     /// weight of the network.
-    #[prost(message, optional, tag = "22")]
-    pub proposal_valid_quorum: ::core::option::Option<Ratio>,
+    #[prost(string, tag = "22")]
+    pub proposal_valid_quorum: ::prost::alloc::string::String,
     /// The threshold for a proposal to pass voting, as a ratio of "yes" votes over "no" votes.
-    #[prost(message, optional, tag = "23")]
-    pub proposal_pass_threshold: ::core::option::Option<Ratio>,
+    #[prost(string, tag = "23")]
+    pub proposal_pass_threshold: ::prost::alloc::string::String,
     /// The threshold for a proposal to be slashed, regardless of whether the "yes" and "no" votes
     /// would have passed it, as a ratio of "no" votes over all total votes.
-    #[prost(message, optional, tag = "24")]
-    pub proposal_slash_threshold: ::core::option::Option<Ratio>,
+    #[prost(string, tag = "24")]
+    pub proposal_slash_threshold: ::prost::alloc::string::String,
+    /// Whether DAO spend proposals are enabled.
+    #[prost(bool, tag = "25")]
+    pub dao_spend_proposals_enabled: bool,
+    /// Whether ordinary user transactions can use transparent outputs.
+    #[prost(bool, tag = "26")]
+    pub transparent_outputs_enabled_outside_dao: bool,
 }
 /// The ratio between two numbers, used in governance to describe vote thresholds and quorums.
 #[allow(clippy::derive_partial_eq_without_eq)]

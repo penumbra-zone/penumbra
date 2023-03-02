@@ -32,6 +32,8 @@ impl ChainParameters {
             proposal_valid_quorum,
             proposal_pass_threshold,
             proposal_slash_threshold,
+            dao_spend_proposals_enabled: _,
+            transparent_outputs_enabled_outside_dao: _,
             // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
         } = self;
 
@@ -90,6 +92,8 @@ impl ChainParameters {
             proposal_valid_quorum,
             proposal_pass_threshold,
             proposal_slash_threshold,
+            dao_spend_proposals_enabled: _,
+            transparent_outputs_enabled_outside_dao: _,
             // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
         } = self;
 

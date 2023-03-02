@@ -93,91 +93,11 @@ pub struct ChainParameters {
     pub proposal_pass_threshold: Ratio,
     /// The threshold for a proposal to be slashed, as a ratio of "no" votes over all total votes.
     pub proposal_slash_threshold: Ratio,
-}
 
-/// A TOML-serializable version of `ChainParameters` which is more human-readable.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
-pub struct ChainParametersToml {
-    pub chain_id: String,
-    pub epoch_duration: u64,
-
-    pub unbonding_epochs: u64,
-    pub active_validator_limit: u64,
-    pub base_reward_rate: u64,
-    pub slashing_penalty_misbehavior: u64,
-    pub slashing_penalty_downtime: u64,
-    pub signed_blocks_window_len: u64,
-    pub missed_blocks_maximum: u64,
-
-    pub ibc_enabled: bool,
-    pub inbound_ics20_transfers_enabled: bool,
-    pub outbound_ics20_transfers_enabled: bool,
-
-    pub proposal_voting_blocks: u64,
-    pub proposal_deposit_amount: u64,
-    pub proposal_valid_quorum: String,
-    pub proposal_pass_threshold: String,
-    pub proposal_slash_threshold: String,
-}
-
-impl From<ChainParameters> for ChainParametersToml {
-    fn from(value: ChainParameters) -> Self {
-        ChainParametersToml {
-            chain_id: value.chain_id,
-            epoch_duration: value.epoch_duration,
-            unbonding_epochs: value.unbonding_epochs,
-            active_validator_limit: value.active_validator_limit,
-            base_reward_rate: value.base_reward_rate,
-            slashing_penalty_misbehavior: value.slashing_penalty_misbehavior.0,
-            slashing_penalty_downtime: value.slashing_penalty_downtime.0,
-            signed_blocks_window_len: value.signed_blocks_window_len,
-            missed_blocks_maximum: value.missed_blocks_maximum,
-            ibc_enabled: value.ibc_enabled,
-            inbound_ics20_transfers_enabled: value.inbound_ics20_transfers_enabled,
-            outbound_ics20_transfers_enabled: value.outbound_ics20_transfers_enabled,
-            proposal_voting_blocks: value.proposal_voting_blocks,
-            proposal_deposit_amount: value.proposal_deposit_amount.into(),
-            proposal_valid_quorum: value.proposal_valid_quorum.to_string(),
-            proposal_pass_threshold: value.proposal_pass_threshold.to_string(),
-            proposal_slash_threshold: value.proposal_slash_threshold.to_string(),
-        }
-    }
-}
-
-impl TryFrom<ChainParametersToml> for ChainParameters {
-    type Error = anyhow::Error;
-
-    fn try_from(value: ChainParametersToml) -> Result<Self, Self::Error> {
-        Ok(ChainParameters {
-            chain_id: value.chain_id,
-            epoch_duration: value.epoch_duration,
-            unbonding_epochs: value.unbonding_epochs,
-            active_validator_limit: value.active_validator_limit,
-            base_reward_rate: value.base_reward_rate,
-            slashing_penalty_misbehavior: Penalty(value.slashing_penalty_misbehavior),
-            slashing_penalty_downtime: Penalty(value.slashing_penalty_downtime),
-            signed_blocks_window_len: value.signed_blocks_window_len,
-            missed_blocks_maximum: value.missed_blocks_maximum,
-            ibc_enabled: value.ibc_enabled,
-            inbound_ics20_transfers_enabled: value.inbound_ics20_transfers_enabled,
-            outbound_ics20_transfers_enabled: value.outbound_ics20_transfers_enabled,
-            proposal_voting_blocks: value.proposal_voting_blocks,
-            proposal_deposit_amount: value.proposal_deposit_amount.into(),
-            proposal_valid_quorum: value
-                .proposal_valid_quorum
-                .parse()
-                .with_context(|| "invalid proposal_valid_quorum")?,
-            proposal_pass_threshold: value
-                .proposal_pass_threshold
-                .parse()
-                .with_context(|| "invalid proposal_pass_threshold")?,
-            proposal_slash_threshold: value
-                .proposal_slash_threshold
-                .parse()
-                .with_context(|| "invalid proposal_slash_threshold")?,
-        })
-    }
+    /// Whether DAO spend proposals are enabled.
+    pub dao_spend_proposals_enabled: bool,
+    /// Whether transparent outputs are allowed in ordinary user transactions.
+    pub transparent_outputs_enabled_outside_dao: bool,
 }
 
 impl DomainType for ChainParameters {
@@ -193,20 +113,8 @@ impl TryFrom<pb_chain::ChainParameters> for ChainParameters {
             epoch_duration: msg.epoch_duration,
             unbonding_epochs: msg.unbonding_epochs,
             active_validator_limit: msg.active_validator_limit,
-            slashing_penalty_downtime: msg
-                .slashing_penalty_downtime
-                .ok_or_else(|| {
-                    anyhow::anyhow!("slashing_penalty_downtime_bps must be set in ChainParameters")
-                })?
-                .try_into()?,
-            slashing_penalty_misbehavior: msg
-                .slashing_penalty_misbehavior
-                .ok_or_else(|| {
-                    anyhow::anyhow!(
-                        "slashing_penalty_misbehavior_bps must be set in ChainParameters"
-                    )
-                })?
-                .try_into()?,
+            slashing_penalty_downtime: Penalty(msg.slashing_penalty_downtime),
+            slashing_penalty_misbehavior: Penalty(msg.slashing_penalty_misbehavior),
             base_reward_rate: msg.base_reward_rate,
             missed_blocks_maximum: msg.missed_blocks_maximum,
             signed_blocks_window_len: msg.signed_blocks_window_len,
@@ -214,24 +122,21 @@ impl TryFrom<pb_chain::ChainParameters> for ChainParameters {
             inbound_ics20_transfers_enabled: msg.inbound_ics20_transfers_enabled,
             outbound_ics20_transfers_enabled: msg.outbound_ics20_transfers_enabled,
             proposal_voting_blocks: msg.proposal_voting_blocks,
-            proposal_deposit_amount: msg
-                .proposal_deposit_amount
-                .ok_or_else(|| {
-                    anyhow::anyhow!("proposal_deposit_amount must be set in ChainParameters")
-                })?
-                .try_into()?,
+            proposal_deposit_amount: msg.proposal_deposit_amount.into(),
             proposal_valid_quorum: msg
                 .proposal_valid_quorum
-                .ok_or_else(|| anyhow::anyhow!("missing `proposal_valid_quorum`"))?
-                .into(),
+                .parse()
+                .context("couldn't parse proposal_valid_quorum")?,
             proposal_pass_threshold: msg
                 .proposal_pass_threshold
-                .ok_or_else(|| anyhow::anyhow!("missing `proposal_pass_threshold`"))?
-                .into(),
+                .parse()
+                .context("couldn't parse proposal_pass_threshold")?,
             proposal_slash_threshold: msg
                 .proposal_slash_threshold
-                .ok_or_else(|| anyhow::anyhow!("missing `proposal_slash_threshold`"))?
-                .into(),
+                .parse()
+                .context("couldn't parse proposal_slash_threshold")?,
+            dao_spend_proposals_enabled: msg.dao_spend_proposals_enabled,
+            transparent_outputs_enabled_outside_dao: msg.transparent_outputs_enabled_outside_dao,
         })
     }
 }
@@ -267,17 +172,19 @@ impl From<ChainParameters> for pb_chain::ChainParameters {
             active_validator_limit: params.active_validator_limit,
             signed_blocks_window_len: params.signed_blocks_window_len,
             missed_blocks_maximum: params.missed_blocks_maximum,
-            slashing_penalty_downtime: Some(params.slashing_penalty_downtime.into()),
-            slashing_penalty_misbehavior: Some(params.slashing_penalty_misbehavior.into()),
+            slashing_penalty_downtime: params.slashing_penalty_downtime.0,
+            slashing_penalty_misbehavior: params.slashing_penalty_misbehavior.0,
             base_reward_rate: params.base_reward_rate,
             ibc_enabled: params.ibc_enabled,
             inbound_ics20_transfers_enabled: params.inbound_ics20_transfers_enabled,
             outbound_ics20_transfers_enabled: params.outbound_ics20_transfers_enabled,
             proposal_voting_blocks: params.proposal_voting_blocks,
-            proposal_deposit_amount: Some(params.proposal_deposit_amount.into()),
-            proposal_valid_quorum: Some(params.proposal_valid_quorum.into()),
-            proposal_pass_threshold: Some(params.proposal_pass_threshold.into()),
-            proposal_slash_threshold: Some(params.proposal_slash_threshold.into()),
+            proposal_deposit_amount: params.proposal_deposit_amount.into(),
+            proposal_valid_quorum: params.proposal_valid_quorum.to_string(),
+            proposal_pass_threshold: params.proposal_pass_threshold.to_string(),
+            proposal_slash_threshold: params.proposal_slash_threshold.to_string(),
+            dao_spend_proposals_enabled: params.dao_spend_proposals_enabled,
+            transparent_outputs_enabled_outside_dao: params.transparent_outputs_enabled_outside_dao,
         }
     }
 }
@@ -311,6 +218,8 @@ impl Default for ChainParameters {
             proposal_pass_threshold: Ratio::new(50, 100),
             // slash threshold means if (no / no + yes + abstain) > slash_threshold, then proposal is slashed
             proposal_slash_threshold: Ratio::new(80, 100),
+            dao_spend_proposals_enabled: true,
+            transparent_outputs_enabled_outside_dao: false,
         }
     }
 }
