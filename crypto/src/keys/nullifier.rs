@@ -6,7 +6,7 @@ use decaf377::r1cs::FqVar;
 use penumbra_tct as tct;
 
 use crate::{
-    note::{Commitment, NoteCommitmentVar},
+    note::{Commitment, StateCommitmentVar},
     nullifier::{Nullifier, NullifierVar, NULLIFIER_DOMAIN_SEP},
     Fq,
 };
@@ -71,7 +71,7 @@ impl NullifierKeyVar {
     pub fn derive_nullifier(
         &self,
         position: &tct::r1cs::PositionVar,
-        note_commitment: &NoteCommitmentVar,
+        note_commitment: &StateCommitmentVar,
     ) -> Result<NullifierVar, SynthesisError> {
         let cs = note_commitment.inner.cs();
         let domain_sep = FqVar::new_constant(cs.clone(), *NULLIFIER_DOMAIN_SEP)?;

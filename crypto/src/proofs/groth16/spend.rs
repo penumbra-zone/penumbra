@@ -66,7 +66,7 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
         let note_var = note::NoteVar::new_witness(cs.clone(), || Ok(self.note.clone()))?;
-        let claimed_note_commitment = note::NoteCommitmentVar::new_witness(cs.clone(), || {
+        let claimed_note_commitment = note::StateCommitmentVar::new_witness(cs.clone(), || {
             Ok(self.state_commitment_proof.commitment())
         })?;
 

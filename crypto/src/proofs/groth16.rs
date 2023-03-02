@@ -594,9 +594,10 @@ mod tests {
             let merkle_path_var =
                 tct::r1cs::MerkleAuthPathVar::new(cs.clone(), self.state_commitment_proof.clone())?;
             let anchor_var = FqVar::new_input(cs.clone(), || Ok(Fq::from(self.anchor)))?;
-            let claimed_note_commitment = note::NoteCommitmentVar::new_witness(cs.clone(), || {
-                Ok(self.state_commitment_proof.commitment())
-            })?;
+            let claimed_note_commitment =
+                note::StateCommitmentVar::new_witness(cs.clone(), || {
+                    Ok(self.state_commitment_proof.commitment())
+                })?;
             let position_var = tct::r1cs::PositionVar::new_witness(cs.clone(), || {
                 Ok(self.state_commitment_proof.position())
             })?;
