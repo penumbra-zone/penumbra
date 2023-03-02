@@ -129,12 +129,16 @@ impl App {
 
     pub async fn deliver_tx(&mut self, tx: Arc<Transaction>) -> Result<Vec<abci::Event>> {
         // Ensure that any normally-delivered transaction (originating from a user) does not contain
-        // any DAO spends; the only place those are permitted is transactions originating from the
-        // chain itself:
+        // any DAO spends or outputs; the only place those are permitted is transactions originating
+        // from the chain itself:
         for action in tx.actions() {
             anyhow::ensure!(
                 !matches!(action, Action::DaoSpend { .. }),
                 "DAO spends are not permitted in user-submitted transactions"
+            );
+            anyhow::ensure!(
+                !matches!(action, Action::DaoOutput { .. }),
+                "DAO outputs are not permitted in user-submitted transactions"
             );
         }
 

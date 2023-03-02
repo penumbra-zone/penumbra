@@ -66,6 +66,15 @@ impl serde::Serialize for Action {
                 action::Action::UndelegateClaim(v) => {
                     struct_ser.serialize_field("undelegateClaim", v)?;
                 }
+                action::Action::DaoSpend(v) => {
+                    struct_ser.serialize_field("daoSpend", v)?;
+                }
+                action::Action::DaoOutput(v) => {
+                    struct_ser.serialize_field("daoOutput", v)?;
+                }
+                action::Action::DaoDeposit(v) => {
+                    struct_ser.serialize_field("daoDeposit", v)?;
+                }
                 action::Action::Ics20Withdrawal(v) => {
                     struct_ser.serialize_field("ics20Withdrawal", v)?;
                 }
@@ -112,6 +121,12 @@ impl<'de> serde::Deserialize<'de> for Action {
             "undelegate",
             "undelegate_claim",
             "undelegateClaim",
+            "dao_spend",
+            "daoSpend",
+            "dao_output",
+            "daoOutput",
+            "dao_deposit",
+            "daoDeposit",
             "ics20_withdrawal",
             "ics20Withdrawal",
         ];
@@ -136,6 +151,9 @@ impl<'de> serde::Deserialize<'de> for Action {
             Delegate,
             Undelegate,
             UndelegateClaim,
+            DaoSpend,
+            DaoOutput,
+            DaoDeposit,
             Ics20Withdrawal,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -176,6 +194,9 @@ impl<'de> serde::Deserialize<'de> for Action {
                             "delegate" => Ok(GeneratedField::Delegate),
                             "undelegate" => Ok(GeneratedField::Undelegate),
                             "undelegateClaim" | "undelegate_claim" => Ok(GeneratedField::UndelegateClaim),
+                            "daoSpend" | "dao_spend" => Ok(GeneratedField::DaoSpend),
+                            "daoOutput" | "dao_output" => Ok(GeneratedField::DaoOutput),
+                            "daoDeposit" | "dao_deposit" => Ok(GeneratedField::DaoDeposit),
                             "ics20Withdrawal" | "ics20_withdrawal" => Ok(GeneratedField::Ics20Withdrawal),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
@@ -325,6 +346,27 @@ impl<'de> serde::Deserialize<'de> for Action {
                             action__ = map.next_value::<::std::option::Option<_>>()?.map(action::Action::UndelegateClaim)
 ;
                         }
+                        GeneratedField::DaoSpend => {
+                            if action__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("daoSpend"));
+                            }
+                            action__ = map.next_value::<::std::option::Option<_>>()?.map(action::Action::DaoSpend)
+;
+                        }
+                        GeneratedField::DaoOutput => {
+                            if action__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("daoOutput"));
+                            }
+                            action__ = map.next_value::<::std::option::Option<_>>()?.map(action::Action::DaoOutput)
+;
+                        }
+                        GeneratedField::DaoDeposit => {
+                            if action__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("daoDeposit"));
+                            }
+                            action__ = map.next_value::<::std::option::Option<_>>()?.map(action::Action::DaoDeposit)
+;
+                        }
                         GeneratedField::Ics20Withdrawal => {
                             if action__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("ics20Withdrawal"));
@@ -410,6 +452,15 @@ impl serde::Serialize for ActionPlan {
                 action_plan::Action::UndelegateClaim(v) => {
                     struct_ser.serialize_field("undelegateClaim", v)?;
                 }
+                action_plan::Action::DaoSpend(v) => {
+                    struct_ser.serialize_field("daoSpend", v)?;
+                }
+                action_plan::Action::DaoOutput(v) => {
+                    struct_ser.serialize_field("daoOutput", v)?;
+                }
+                action_plan::Action::DaoDeposit(v) => {
+                    struct_ser.serialize_field("daoDeposit", v)?;
+                }
             }
         }
         struct_ser.end()
@@ -453,6 +504,12 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
             "undelegate",
             "undelegate_claim",
             "undelegateClaim",
+            "dao_spend",
+            "daoSpend",
+            "dao_output",
+            "daoOutput",
+            "dao_deposit",
+            "daoDeposit",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -475,6 +532,9 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
             Delegate,
             Undelegate,
             UndelegateClaim,
+            DaoSpend,
+            DaoOutput,
+            DaoDeposit,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -514,6 +574,9 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
                             "delegate" => Ok(GeneratedField::Delegate),
                             "undelegate" => Ok(GeneratedField::Undelegate),
                             "undelegateClaim" | "undelegate_claim" => Ok(GeneratedField::UndelegateClaim),
+                            "daoSpend" | "dao_spend" => Ok(GeneratedField::DaoSpend),
+                            "daoOutput" | "dao_output" => Ok(GeneratedField::DaoOutput),
+                            "daoDeposit" | "dao_deposit" => Ok(GeneratedField::DaoDeposit),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -662,6 +725,27 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
                             action__ = map.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::UndelegateClaim)
 ;
                         }
+                        GeneratedField::DaoSpend => {
+                            if action__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("daoSpend"));
+                            }
+                            action__ = map.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::DaoSpend)
+;
+                        }
+                        GeneratedField::DaoOutput => {
+                            if action__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("daoOutput"));
+                            }
+                            action__ = map.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::DaoOutput)
+;
+                        }
+                        GeneratedField::DaoDeposit => {
+                            if action__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("daoDeposit"));
+                            }
+                            action__ = map.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::DaoDeposit)
+;
+                        }
                     }
                 }
                 Ok(ActionPlan {
@@ -737,6 +821,15 @@ impl serde::Serialize for ActionView {
                 action_view::ActionView::Undelegate(v) => {
                     struct_ser.serialize_field("undelegate", v)?;
                 }
+                action_view::ActionView::DaoSpend(v) => {
+                    struct_ser.serialize_field("daoSpend", v)?;
+                }
+                action_view::ActionView::DaoOutput(v) => {
+                    struct_ser.serialize_field("daoOutput", v)?;
+                }
+                action_view::ActionView::DaoDeposit(v) => {
+                    struct_ser.serialize_field("daoDeposit", v)?;
+                }
                 action_view::ActionView::UndelegateClaim(v) => {
                     struct_ser.serialize_field("undelegateClaim", v)?;
                 }
@@ -784,6 +877,12 @@ impl<'de> serde::Deserialize<'de> for ActionView {
             "positionRewardClaim",
             "delegate",
             "undelegate",
+            "dao_spend",
+            "daoSpend",
+            "dao_output",
+            "daoOutput",
+            "dao_deposit",
+            "daoDeposit",
             "undelegate_claim",
             "undelegateClaim",
             "ics20_withdrawal",
@@ -809,6 +908,9 @@ impl<'de> serde::Deserialize<'de> for ActionView {
             PositionRewardClaim,
             Delegate,
             Undelegate,
+            DaoSpend,
+            DaoOutput,
+            DaoDeposit,
             UndelegateClaim,
             Ics20Withdrawal,
         }
@@ -849,6 +951,9 @@ impl<'de> serde::Deserialize<'de> for ActionView {
                             "positionRewardClaim" | "position_reward_claim" => Ok(GeneratedField::PositionRewardClaim),
                             "delegate" => Ok(GeneratedField::Delegate),
                             "undelegate" => Ok(GeneratedField::Undelegate),
+                            "daoSpend" | "dao_spend" => Ok(GeneratedField::DaoSpend),
+                            "daoOutput" | "dao_output" => Ok(GeneratedField::DaoOutput),
+                            "daoDeposit" | "dao_deposit" => Ok(GeneratedField::DaoDeposit),
                             "undelegateClaim" | "undelegate_claim" => Ok(GeneratedField::UndelegateClaim),
                             "ics20Withdrawal" | "ics20_withdrawal" => Ok(GeneratedField::Ics20Withdrawal),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
@@ -990,6 +1095,27 @@ impl<'de> serde::Deserialize<'de> for ActionView {
                                 return Err(serde::de::Error::duplicate_field("undelegate"));
                             }
                             action_view__ = map.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::Undelegate)
+;
+                        }
+                        GeneratedField::DaoSpend => {
+                            if action_view__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("daoSpend"));
+                            }
+                            action_view__ = map.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::DaoSpend)
+;
+                        }
+                        GeneratedField::DaoOutput => {
+                            if action_view__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("daoOutput"));
+                            }
+                            action_view__ = map.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::DaoOutput)
+;
+                        }
+                        GeneratedField::DaoDeposit => {
+                            if action_view__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("daoDeposit"));
+                            }
+                            action_view__ = map.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::DaoDeposit)
 ;
                         }
                         GeneratedField::UndelegateClaim => {

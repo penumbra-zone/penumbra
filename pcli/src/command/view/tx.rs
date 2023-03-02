@@ -313,6 +313,15 @@ impl TxCmd {
                     penumbra_transaction::ActionView::Ics20Withdrawal(_) => {
                         ["Ics20 Withdrawal".to_string(), "".to_string()]
                     }
+                    penumbra_transaction::ActionView::DaoDeposit(_) => {
+                        ["Dao Deposit".to_string(), "".to_string()]
+                    }
+                    penumbra_transaction::ActionView::DaoSpend(_) => {
+                        ["Dao Spend".to_string(), "".to_string()]
+                    }
+                    penumbra_transaction::ActionView::DaoOutput(_) => {
+                        ["Dao Output".to_string(), "".to_string()]
+                    }
                 });
             }
 

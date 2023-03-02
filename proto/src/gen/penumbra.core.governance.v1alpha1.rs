@@ -20,6 +20,19 @@ pub struct ProposalWithdraw {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ProposalDepositClaim {
+    /// The proposal to claim the deposit for.
+    #[prost(uint64, tag = "1")]
+    pub proposal: u64,
+    /// The expected deposit amount.
+    #[prost(message, optional, tag = "2")]
+    pub deposit_amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
+    /// The outcome of the proposal.
+    #[prost(message, optional, tag = "3")]
+    pub outcome: ::core::option::Option<ProposalOutcome>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorVote {
     /// The effecting data for the vote.
     #[prost(message, optional, tag = "1")]
@@ -92,19 +105,6 @@ pub struct DelegatorVoteBody {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ProposalDepositClaim {
-    /// The proposal to claim the deposit for.
-    #[prost(uint64, tag = "1")]
-    pub proposal: u64,
-    /// The expected deposit amount.
-    #[prost(message, optional, tag = "2")]
-    pub deposit_amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
-    /// The outcome of the proposal.
-    #[prost(message, optional, tag = "3")]
-    pub outcome: ::core::option::Option<ProposalOutcome>,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DelegatorVotePlan {
     /// The proposal to vote on.
     #[prost(uint64, tag = "1")]
@@ -127,6 +127,30 @@ pub struct DelegatorVotePlan {
     /// The randomizer to use for the proof of spend capability.
     #[prost(bytes = "vec", tag = "7")]
     pub randomizer: ::prost::alloc::vec::Vec<u8>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DaoDeposit {
+    /// The value to deposit into the DAO.
+    #[prost(message, optional, tag = "1")]
+    pub value: ::core::option::Option<super::super::crypto::v1alpha1::Value>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DaoSpend {
+    /// The value to spend from the DAO.
+    #[prost(message, optional, tag = "1")]
+    pub value: ::core::option::Option<super::super::crypto::v1alpha1::Value>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DaoOutput {
+    /// The value to output from the DAO.
+    #[prost(message, optional, tag = "1")]
+    pub value: ::core::option::Option<super::super::crypto::v1alpha1::Value>,
+    /// The address to send the output to.
+    #[prost(message, optional, tag = "2")]
+    pub address: ::core::option::Option<super::super::crypto::v1alpha1::Address>,
 }
 /// A vote on a proposal.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -181,17 +205,6 @@ pub mod vote {
             }
         }
     }
-}
-/// A chain parameter that can be modified by governance.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MutableChainParameter {
-    /// The identifier of the parameter, used for submitting change proposals.
-    #[prost(string, tag = "1")]
-    pub identifier: ::prost::alloc::string::String,
-    /// A textual description of the parameter and valid values.
-    #[prost(string, tag = "2")]
-    pub description: ::prost::alloc::string::String,
 }
 /// The current state of a proposal.
 #[allow(clippy::derive_partial_eq_without_eq)]

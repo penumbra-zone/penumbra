@@ -8,6 +8,9 @@ use penumbra_transaction::{Action, Transaction};
 
 use super::ActionHandler;
 
+mod dao_deposit;
+mod dao_output;
+mod dao_spend;
 mod delegate;
 mod delegator_vote;
 mod ibc_action;

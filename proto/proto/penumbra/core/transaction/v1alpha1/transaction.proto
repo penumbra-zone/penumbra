@@ -68,8 +68,12 @@ message Action {
     stake.v1alpha1.Undelegate undelegate = 41;
     stake.v1alpha1.UndelegateClaim undelegate_claim = 42;
 
-    ibc.v1alpha1.Ics20Withdrawal ics20_withdrawal = 200;
+    // DAO
+    governance.v1alpha1.DaoSpend dao_spend = 50;
+    governance.v1alpha1.DaoOutput dao_output = 51;
+    governance.v1alpha1.DaoDeposit dao_deposit = 52;
 
+    ibc.v1alpha1.Ics20Withdrawal ics20_withdrawal = 200;
   }
 }
 
@@ -133,6 +137,10 @@ message ActionView {
     dex.v1alpha1.PositionRewardClaim position_reward_claim = 34;
     stake.v1alpha1.Delegate delegate = 41;
     stake.v1alpha1.Undelegate undelegate = 42;
+    // DAO
+    governance.v1alpha1.DaoSpend dao_spend = 50;
+    governance.v1alpha1.DaoOutput dao_output = 51;
+    governance.v1alpha1.DaoDeposit dao_deposit = 52;
     // TODO: we have no way to recover the opening of the undelegate_claim's
     // balance commitment, and can only infer the value from looking at the rest
     // of the transaction. is that fine?
@@ -312,6 +320,11 @@ message ActionPlan {
         // because we don't yet use flow encryption.
         stake.v1alpha1.Undelegate undelegate = 41;
         stake.v1alpha1.UndelegateClaimPlan undelegate_claim = 42;
+
+        // DAO
+        governance.v1alpha1.DaoSpend dao_spend = 50;
+        governance.v1alpha1.DaoOutput dao_output = 51;
+        governance.v1alpha1.DaoDeposit dao_deposit = 52;
     }
 }
 
