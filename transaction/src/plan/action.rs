@@ -20,8 +20,9 @@ pub use swap_claim::SwapClaimPlan;
 pub use undelegate_claim::UndelegateClaimPlan;
 
 use crate::action::{
-    Delegate, PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw,
-    ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, Undelegate, ValidatorVote,
+    DaoDeposit, DaoOutput, DaoSpend, Delegate, PositionClose, PositionOpen, PositionRewardClaim,
+    PositionWithdraw, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, Undelegate,
+    ValidatorVote,
 };
 
 /// A declaration of a planned [`Action`], for use in transaction creation.
@@ -65,6 +66,10 @@ pub enum ActionPlan {
     PositionClose(PositionClose),
     PositionWithdraw(PositionWithdraw),
     PositionRewardClaim(PositionRewardClaim),
+
+    DaoSpend(DaoSpend),
+    DaoOutput(DaoOutput),
+    DaoDeposit(DaoDeposit),
 }
 
 impl ActionPlan {
@@ -89,6 +94,9 @@ impl ActionPlan {
             PositionRewardClaim(_position_reward_claim) => {
                 todo!()
             }
+            DaoSpend(dao_spend) => dao_spend.balance(),
+            DaoOutput(dao_output) => dao_output.balance(),
+            DaoDeposit(dao_deposit) => dao_deposit.balance(),
             // None of these contribute to transaction balance:
             IBCAction(_) | ValidatorDefinition(_) | ValidatorVote(_) => Balance::default(),
         }
@@ -250,6 +258,15 @@ impl From<ActionPlan> for pb_t::ActionPlan {
             ActionPlan::PositionRewardClaim(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::PositionRewardClaim(inner.into())),
             },
+            ActionPlan::DaoDeposit(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::DaoDeposit(inner.into())),
+            },
+            ActionPlan::DaoSpend(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::DaoSpend(inner.into())),
+            },
+            ActionPlan::DaoOutput(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::DaoOutput(inner.into())),
+            },
         }
     }
 }
@@ -308,6 +325,15 @@ impl TryFrom<pb_t::ActionPlan> for ActionPlan {
             }
             pb_t::action_plan::Action::PositionRewardClaim(inner) => {
                 Ok(ActionPlan::PositionRewardClaim(inner.try_into()?))
+            }
+            pb_t::action_plan::Action::DaoSpend(inner) => {
+                Ok(ActionPlan::DaoSpend(inner.try_into()?))
+            }
+            pb_t::action_plan::Action::DaoDeposit(inner) => {
+                Ok(ActionPlan::DaoDeposit(inner.try_into()?))
+            }
+            pb_t::action_plan::Action::DaoOutput(inner) => {
+                Ok(ActionPlan::DaoOutput(inner.try_into()?))
             }
         }
     }

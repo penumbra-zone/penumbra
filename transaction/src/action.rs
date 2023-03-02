@@ -6,6 +6,9 @@ use penumbra_proto::{
     DomainType,
 };
 
+mod dao_deposit;
+mod dao_output;
+mod dao_spend;
 mod delegate;
 mod delegator_vote;
 mod ibc;
@@ -26,6 +29,9 @@ use crate::{ActionView, TransactionPerspective};
 pub use self::ibc::Ics20Withdrawal;
 pub use crate::proposal::{Proposal, ProposalKind, ProposalPayload};
 pub use crate::vote::Vote;
+pub use dao_deposit::DaoDeposit;
+pub use dao_output::DaoOutput;
+pub use dao_spend::DaoSpend;
 pub use delegate::Delegate;
 pub use delegator_vote::{DelegatorVote, DelegatorVoteBody};
 pub use output::Output;
@@ -73,9 +79,9 @@ pub enum Action {
 
     Ics20Withdrawal(Ics20Withdrawal),
 
-    DaoSpend(() /* TODO: fill this in */),
-    DaoOutput(() /* TODO: fill this in */),
-    DaoDeposit(() /* TODO: fill this in */),
+    DaoSpend(DaoSpend),
+    DaoOutput(DaoOutput),
+    DaoDeposit(DaoDeposit),
 }
 
 impl Action {
@@ -140,9 +146,9 @@ impl IsAction for Action {
             Action::PositionWithdraw(p) => p.balance_commitment(),
             Action::PositionRewardClaim(p) => p.balance_commitment(),
             Action::Ics20Withdrawal(withdrawal) => withdrawal.balance_commitment(),
-            Action::DaoDeposit(_) => todo!("dao deposit balance commitment"),
-            Action::DaoSpend(_) => todo!("dao spend balance commitment"),
-            Action::DaoOutput(_) => todo!("dao output balance commitment"),
+            Action::DaoDeposit(deposit) => deposit.balance_commitment(),
+            Action::DaoSpend(spend) => spend.balance_commitment(),
+            Action::DaoOutput(output) => output.balance_commitment(),
             // These actions just post Protobuf data to the chain, and leave the
             // value balance unchanged.
             Action::ValidatorDefinition(_) => balance::Commitment::default(),
@@ -169,9 +175,9 @@ impl IsAction for Action {
             Action::PositionWithdraw(x) => x.view_from_perspective(txp),
             Action::PositionRewardClaim(x) => x.view_from_perspective(txp),
             Action::Ics20Withdrawal(x) => x.view_from_perspective(txp),
-            Action::DaoSpend(_) => todo!("dao spend view from perspective"),
-            Action::DaoOutput(_) => todo!("dao output view from perspective"),
-            Action::DaoDeposit(_) => todo!("dao deposit view from perspective"),
+            Action::DaoSpend(x) => x.view_from_perspective(txp),
+            Action::DaoOutput(x) => x.view_from_perspective(txp),
+            Action::DaoDeposit(x) => x.view_from_perspective(txp),
             // TODO: figure out where to implement the actual decryption methods for these? where are their action definitions?
             Action::ValidatorDefinition(x) => ActionView::ValidatorDefinition(x.to_owned()),
             Action::IBCAction(x) => ActionView::IBCAction(x.to_owned()),
@@ -243,9 +249,15 @@ impl From<Action> for pb::Action {
             Action::Ics20Withdrawal(withdrawal) => pb::Action {
                 action: Some(pb::action::Action::Ics20Withdrawal(withdrawal.into())),
             },
-            Action::DaoSpend(_inner) => todo!("dao spend to proto"),
-            Action::DaoOutput(_inner) => todo!("dao output to proto"),
-            Action::DaoDeposit(_inner) => todo!("dao deposit to proto"),
+            Action::DaoSpend(inner) => pb::Action {
+                action: Some(pb::action::Action::DaoSpend(inner.into())),
+            },
+            Action::DaoOutput(inner) => pb::Action {
+                action: Some(pb::action::Action::DaoOutput(inner.into())),
+            },
+            Action::DaoDeposit(inner) => pb::Action {
+                action: Some(pb::action::Action::DaoDeposit(inner.into())),
+            },
         }
     }
 }
@@ -299,6 +311,9 @@ impl TryFrom<pb::Action> for Action {
             pb::action::Action::Ics20Withdrawal(inner) => {
                 Ok(Action::Ics20Withdrawal(inner.try_into()?))
             }
+            pb::action::Action::DaoSpend(inner) => Ok(Action::DaoSpend(inner.try_into()?)),
+            pb::action::Action::DaoOutput(inner) => Ok(Action::DaoOutput(inner.try_into()?)),
+            pb::action::Action::DaoDeposit(inner) => Ok(Action::DaoDeposit(inner.try_into()?)),
         }
     }
 }

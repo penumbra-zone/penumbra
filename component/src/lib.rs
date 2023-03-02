@@ -15,6 +15,7 @@ pub use mock_client::MockClient;
 pub use temp_storage_ext::TempStorageExt;
 
 pub mod app;
+pub mod dao;
 pub mod dex;
 pub mod governance;
 pub mod ibc;

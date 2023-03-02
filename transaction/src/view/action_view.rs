@@ -15,9 +15,9 @@ pub use swap_claim_view::SwapClaimView;
 pub use swap_view::SwapView;
 
 use crate::action::{
-    Delegate, Ics20Withdrawal, PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw,
-    ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, Undelegate, UndelegateClaim,
-    ValidatorVote,
+    DaoDeposit, DaoOutput, DaoSpend, Delegate, Ics20Withdrawal, PositionClose, PositionOpen,
+    PositionRewardClaim, PositionWithdraw, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw,
+    Undelegate, UndelegateClaim, ValidatorVote,
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -45,6 +45,9 @@ pub enum ActionView {
     Undelegate(Undelegate),
     UndelegateClaim(UndelegateClaim),
     Ics20Withdrawal(Ics20Withdrawal),
+    DaoDeposit(DaoDeposit),
+    DaoSpend(DaoSpend),
+    DaoOutput(DaoOutput),
 }
 
 impl DomainType for ActionView {
@@ -80,6 +83,9 @@ impl TryFrom<pbt::ActionView> for ActionView {
                 AV::PositionWithdraw(x) => ActionView::PositionWithdraw(x.try_into()?),
                 AV::PositionRewardClaim(x) => ActionView::PositionRewardClaim(x.try_into()?),
                 AV::Ics20Withdrawal(x) => ActionView::Ics20Withdrawal(x.try_into()?),
+                AV::DaoDeposit(x) => ActionView::DaoDeposit(x.try_into()?),
+                AV::DaoSpend(x) => ActionView::DaoSpend(x.try_into()?),
+                AV::DaoOutput(x) => ActionView::DaoOutput(x.try_into()?),
             },
         )
     }
@@ -109,6 +115,9 @@ impl From<ActionView> for pbt::ActionView {
                 ActionView::PositionWithdraw(x) => AV::PositionWithdraw(x.into()),
                 ActionView::PositionRewardClaim(x) => AV::PositionRewardClaim(x.into()),
                 ActionView::Ics20Withdrawal(x) => AV::Ics20Withdrawal(x.into()),
+                ActionView::DaoDeposit(x) => AV::DaoDeposit(x.into()),
+                ActionView::DaoSpend(x) => AV::DaoSpend(x.into()),
+                ActionView::DaoOutput(x) => AV::DaoOutput(x.into()),
             }),
         }
     }

@@ -20,6 +20,15 @@ message ProposalWithdraw {
   string reason = 2;
 }
 
+message ProposalDepositClaim {
+  // The proposal to claim the deposit for.
+  uint64 proposal = 1;
+  // The expected deposit amount.
+  crypto.v1alpha1.Amount deposit_amount = 2;
+  // The outcome of the proposal.
+  ProposalOutcome outcome = 3;
+}
+
 message ValidatorVote {
   // The effecting data for the vote.
   ValidatorVoteBody body = 1;
@@ -64,15 +73,6 @@ message DelegatorVoteBody {
   bytes rk = 7;
 }
 
-message ProposalDepositClaim {
-  // The proposal to claim the deposit for.
-  uint64 proposal = 1;
-  // The expected deposit amount.
-  crypto.v1alpha1.Amount deposit_amount = 2;
-  // The outcome of the proposal.
-  ProposalOutcome outcome = 3;
-}
-
 message DelegatorVotePlan {
   // The proposal to vote on.
   uint64 proposal = 1;
@@ -90,6 +90,23 @@ message DelegatorVotePlan {
   bytes randomizer = 7;
 }
 
+message DaoDeposit {
+    // The value to deposit into the DAO.
+    crypto.v1alpha1.Value value = 1;
+}
+
+message DaoSpend {
+    // The value to spend from the DAO.
+    crypto.v1alpha1.Value value = 1;
+}
+
+message DaoOutput {
+    // The value to output from the DAO.
+    crypto.v1alpha1.Value value = 1;
+    // The address to send the output to.
+    crypto.v1alpha1.Address address = 2;
+}
+
 // A vote on a proposal.
 message Vote {
   // A vote.
@@ -102,14 +119,6 @@ message Vote {
 
   // The vote.
   Vote vote = 1;
-}
-
-// A chain parameter that can be modified by governance.
-message MutableChainParameter {
-  // The identifier of the parameter, used for submitting change proposals.
-  string identifier = 1;
-  // A textual description of the parameter and valid values.
-  string description = 2;
 }
 
 // The current state of a proposal.
