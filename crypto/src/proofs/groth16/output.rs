@@ -59,7 +59,7 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
 
         // Public inputs
         let claimed_note_commitment =
-            note::NoteCommitmentVar::new_input(cs.clone(), || Ok(self.note_commitment))?;
+            note::StateCommitmentVar::new_input(cs.clone(), || Ok(self.note_commitment))?;
         let claimed_balance_commitment =
             BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.balance_commitment))?;
 

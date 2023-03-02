@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use thiserror;
 
 mod r1cs;
-pub use r1cs::{NoteCommitmentVar, NoteVar};
+pub use r1cs::{NoteVar, StateCommitmentVar};
 
 pub use penumbra_tct::Commitment;
 

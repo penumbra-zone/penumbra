@@ -82,17 +82,17 @@ impl AllocVar<Note, Fq> for NoteVar {
 // should be `Note` which we cannot construct from the R1CS variable
 // since we do not have the rseed in-circuit.
 
-pub struct NoteCommitmentVar {
+pub struct StateCommitmentVar {
     pub inner: FqVar,
 }
 
-impl NoteCommitmentVar {
+impl StateCommitmentVar {
     pub fn inner(&self) -> FqVar {
         self.inner.clone()
     }
 }
 
-impl AllocVar<note::Commitment, Fq> for NoteCommitmentVar {
+impl AllocVar<note::Commitment, Fq> for StateCommitmentVar {
     fn new_variable<T: std::borrow::Borrow<note::Commitment>>(
         cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
         f: impl FnOnce() -> Result<T, SynthesisError>,
@@ -120,7 +120,7 @@ impl AllocVar<note::Commitment, Fq> for NoteCommitmentVar {
     }
 }
 
-impl R1CSVar<Fq> for NoteCommitmentVar {
+impl R1CSVar<Fq> for StateCommitmentVar {
     type Value = note::Commitment;
 
     fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<Fq> {
@@ -134,7 +134,7 @@ impl R1CSVar<Fq> for NoteCommitmentVar {
 }
 
 impl NoteVar {
-    pub fn commit(&self) -> Result<NoteCommitmentVar, SynthesisError> {
+    pub fn commit(&self) -> Result<StateCommitmentVar, SynthesisError> {
         let cs = self.amount().cs();
         let domain_sep = FqVar::new_constant(cs.clone(), *NOTECOMMIT_DOMAIN_SEP)?;
         let compressed_g_d = self.address.diversified_generator().compress_to_field()?;
@@ -152,11 +152,11 @@ impl NoteVar {
             ),
         )?;
 
-        Ok(NoteCommitmentVar { inner: commitment })
+        Ok(StateCommitmentVar { inner: commitment })
     }
 }
 
-impl EqGadget<Fq> for NoteCommitmentVar {
+impl EqGadget<Fq> for StateCommitmentVar {
     fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
         self.inner.is_eq(&other.inner)
     }

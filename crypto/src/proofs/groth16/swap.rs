@@ -1,12 +1,18 @@
 use ark_ff::ToConstraintField;
 use ark_groth16::{Groth16, PreparedVerifyingKey, Proof, ProvingKey};
+use ark_r1cs_std::prelude::AllocVar;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
 use decaf377::Bls12_377;
 use penumbra_tct as tct;
 use rand::{CryptoRng, Rng};
 
-use crate::{balance, dex::swap::SwapPlaintext, Fq, Fr};
+use crate::{
+    balance::{self, commitment::BalanceCommitmentVar},
+    dex::swap::SwapPlaintext,
+    note::StateCommitmentVar,
+    Fq, Fr,
+};
 
 pub struct SwapCircuit {
     /// The swap plaintext.
@@ -23,6 +29,21 @@ pub struct SwapCircuit {
 
 impl ConstraintSynthesizer<Fq> for SwapCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
+        // Witnesses
+
+        // Inputs
+        let claimed_balance_commitment =
+            BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.balance_commitment))?;
+        let claimed_swap_commitment =
+            StateCommitmentVar::new_input(cs.clone(), || Ok(self.swap_commitment))?;
+        let claimed_fee_commitment =
+            BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.fee_commitment))?;
+
+        // TODO: Swap commitment integrity check
+        // TODO: Fee commitment integrity check
+        // TODO: Reconstruct swap action balance commitment
+        // TODO: Balance commitment integrity check
+
         Ok(())
     }
 }
@@ -77,9 +98,8 @@ impl SwapProof {
 
         tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();
-        let proof_result =
-            Groth16::verify_with_processed_vk(vk, public_inputs.as_slice(), &self.0)
-                .map_err(|err| anyhow::anyhow!(err))?;
+        let proof_result = Groth16::verify_with_processed_vk(vk, public_inputs.as_slice(), &self.0)
+            .map_err(|err| anyhow::anyhow!(err))?;
         tracing::debug!(?proof_result, elapsed = ?start.elapsed());
         proof_result
             .then_some(())
