@@ -63,3 +63,5 @@ pub trait StateWriteExt: StateWrite {
         Ok(())
     }
 }
+
+impl<T: StateWrite> StateWriteExt for T {}
