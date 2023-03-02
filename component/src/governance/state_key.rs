@@ -102,3 +102,9 @@ pub fn all_untallied_delegator_votes() -> &'static str {
 pub fn emergency_chain_halt_count() -> &'static str {
     "governance/chain_halt_count"
 }
+
+// This is used for delivering transactions originating from passed DaoSpend proposals; it lives in
+// the object store, not the consensus state.
+pub fn deliver_dao_transactions() -> &'static str {
+    "governance/deliver_dao_transactions"
+}

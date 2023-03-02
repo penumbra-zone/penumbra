@@ -66,6 +66,8 @@ pub enum Action {
     UndelegateClaim(UndelegateClaim),
 
     Ics20Withdrawal(Ics20Withdrawal),
+
+    DaoSpend(() /* TODO: fill this in */),
 }
 
 impl Action {
@@ -103,6 +105,7 @@ impl Action {
             Action::Undelegate(_) => tracing::info_span!("Undelegate", ?idx),
             Action::UndelegateClaim(_) => tracing::info_span!("UndelegateClaim", ?idx),
             Action::Ics20Withdrawal(_) => tracing::info_span!("Ics20Withdrawal", ?idx),
+            Action::DaoSpend(_) => tracing::info_span!("DaoSpend", ?idx),
         }
     }
 }
@@ -131,6 +134,7 @@ impl IsAction for Action {
             // value balance unchanged.
             Action::ValidatorDefinition(_) => balance::Commitment::default(),
             Action::IBCAction(_) => balance::Commitment::default(),
+            Action::DaoSpend(_) => todo!("dao spend balance commitment"),
         }
     }
 
@@ -156,6 +160,7 @@ impl IsAction for Action {
             // TODO: figure out where to implement the actual decryption methods for these? where are their action definitions?
             Action::ValidatorDefinition(x) => ActionView::ValidatorDefinition(x.to_owned()),
             Action::IBCAction(x) => ActionView::IBCAction(x.to_owned()),
+            Action::DaoSpend(_) => todo!("dao spend view from perspective"),
         }
     }
 }
@@ -223,6 +228,9 @@ impl From<Action> for pb::Action {
             },
             Action::Ics20Withdrawal(withdrawal) => pb::Action {
                 action: Some(pb::action::Action::Ics20Withdrawal(withdrawal.into())),
+            },
+            Action::DaoSpend(inner) => pb::Action {
+                action: Some(todo!("dao spend to proto")),
             },
         }
     }

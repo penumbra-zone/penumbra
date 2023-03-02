@@ -101,7 +101,7 @@ pub async fn enact_all_passed_proposals<S: StateWrite>(mut state: S) -> Result<(
                             .proposal_payload(proposal_id)
                             .await?
                             .context("proposal has payload")?;
-                        match state.enact_proposal(&payload).await? {
+                        match state.enact_proposal(proposal_id, &payload).await? {
                             Ok(()) => {
                                 tracing::info!(proposal = %proposal_id, "proposal passed and enacted successfully");
                             }

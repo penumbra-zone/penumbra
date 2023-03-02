@@ -92,7 +92,7 @@ impl ActionHandler for ValidatorVote {
                 // If the emergency pass condition is met, enact the proposal
                 tracing::debug!(proposal = %proposal, "emergency pass condition met, trying to enact proposal");
                 // Try to enact the proposal based on its payload
-                match state.enact_proposal(&proposal_payload).await? {
+                match state.enact_proposal(*proposal, &proposal_payload).await? {
                     Ok(_) => tracing::debug!(proposal = %proposal, "emergency proposal enacted"),
                     Err(error) => {
                         tracing::warn!(proposal = %proposal, %error, "error enacting emergency proposal")

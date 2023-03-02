@@ -46,6 +46,7 @@ impl ActionHandler for Action {
             Action::Output(action) => action.check_stateless(context),
             Action::IBCAction(action) => action.check_stateless(context),
             Action::Ics20Withdrawal(action) => action.check_stateless(context),
+            Action::DaoSpend(action) => todo!("check_stateless for dao spend"),
         }
         .await
     }
@@ -79,6 +80,7 @@ impl ActionHandler for Action {
                 action.check_stateful(state).await
             }
             Action::Ics20Withdrawal(action) => action.check_stateful(state).await,
+            Action::DaoSpend(action) => todo!("check_stateful for dao spend"),
         }
     }
 
@@ -103,6 +105,7 @@ impl ActionHandler for Action {
             Action::Output(action) => action.execute(state).await,
             Action::IBCAction(action) => action.execute(state).await,
             Action::Ics20Withdrawal(action) => action.execute(state).await,
+            Action::DaoSpend(action) => todo!("execute for dao spend"),
         }
     }
 }
