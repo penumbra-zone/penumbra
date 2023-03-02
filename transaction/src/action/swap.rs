@@ -4,10 +4,10 @@ use decaf377::Fr;
 use penumbra_crypto::asset::Amount;
 use penumbra_crypto::dex::swap::SwapPayload;
 use penumbra_crypto::dex::TradingPair;
-use penumbra_crypto::proofs::transparent::SwapProof;
+use penumbra_crypto::proofs::groth16::SwapProof;
 use penumbra_crypto::Value;
 use penumbra_crypto::{balance, dex::swap::SwapCiphertext, Balance};
-use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::crypto::v1alpha1 as pbc, core::dex::v1alpha1 as pb, DomainType};
 
 use crate::view::action_view::SwapView;
 use crate::{ActionView, IsAction, TransactionPerspective};
@@ -69,8 +69,9 @@ impl DomainType for Swap {
 
 impl From<Swap> for pb::Swap {
     fn from(s: Swap) -> Self {
+        let proof: pbc::ZkSwapProof = s.proof.into();
         pb::Swap {
-            proof: s.proof.into(),
+            proof: Some(proof),
             body: Some(s.body.into()),
         }
     }
@@ -80,7 +81,11 @@ impl TryFrom<pb::Swap> for Swap {
     type Error = anyhow::Error;
     fn try_from(s: pb::Swap) -> Result<Self, Self::Error> {
         Ok(Self {
-            proof: s.proof[..].try_into().context("swap proof malformed")?,
+            proof: s
+                .proof
+                .ok_or_else(|| anyhow::anyhow!("missing swap proof"))?
+                .try_into()
+                .context("swap proof malformed")?,
             body: s
                 .body
                 .ok_or_else(|| anyhow::anyhow!("missing swap body"))?

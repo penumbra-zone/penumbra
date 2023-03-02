@@ -22,7 +22,7 @@ mod tests {
         keys::{SeedPhrase, SpendKey},
         Address, Balance, Rseed,
     };
-    use ark_groth16::{Groth16, PreparedVerifyingKey, ProvingKey, VerifyingKey};
+    use ark_groth16::{Groth16, ProvingKey, VerifyingKey};
     use ark_r1cs_std::prelude::*;
     use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
     use ark_snark::SNARK;

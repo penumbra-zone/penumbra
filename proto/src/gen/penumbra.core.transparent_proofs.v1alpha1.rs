@@ -46,18 +46,6 @@ pub struct SwapClaimProof {
     #[prost(uint64, tag = "21")]
     pub lambda_2_i: u64,
 }
-/// A Penumbra transparent SwapProof.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SwapProof {
-    #[prost(message, optional, tag = "1")]
-    pub swap_plaintext: ::core::option::Option<
-        super::super::dex::v1alpha1::SwapPlaintext,
-    >,
-    /// The blinding factor used for the Swap action's fee commitment.
-    #[prost(bytes = "vec", tag = "2")]
-    pub fee_blinding: ::prost::alloc::vec::Vec<u8>,
-}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UndelegateClaimProof {

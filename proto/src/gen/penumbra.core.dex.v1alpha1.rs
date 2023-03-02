@@ -3,8 +3,8 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Swap {
     /// Contains the Swap proof.
-    #[prost(bytes = "vec", tag = "1")]
-    pub proof: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "1")]
+    pub proof: ::core::option::Option<super::super::crypto::v1alpha1::ZkSwapProof>,
     /// MockFlowCiphertext dropped until flow encryption/ABCI++ available
     /// // Encrypted amount of asset 1 of the trading pair.
     /// MockFlowCiphertext enc_amount_1 = 2;

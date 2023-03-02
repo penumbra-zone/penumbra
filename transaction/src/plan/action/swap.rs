@@ -1,11 +1,12 @@
 use anyhow::{anyhow, Context, Result};
-use ark_ff::UniformRand;
+use ark_ff::{UniformRand, Zero};
 
 use penumbra_crypto::dex::swap::SwapPlaintext;
 use penumbra_crypto::Balance;
-use penumbra_crypto::{proofs::transparent::SwapProof, FieldExt, Fr, FullViewingKey, Value};
+use penumbra_crypto::{proofs::groth16::SwapProof, FieldExt, Fr, FullViewingKey, Value};
+use penumbra_proof_params::SWAP_PROOF_PROVING_KEY;
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
-use rand_core::{CryptoRng, RngCore};
+use rand_core::{CryptoRng, OsRng, RngCore};
 use serde::{Deserialize, Serialize};
 
 use crate::action::{swap, Swap};
@@ -52,10 +53,16 @@ impl SwapPlan {
 
     /// Construct the [`SwapProof`] required by the [`swap::Body`] described by this [`SwapPlan`].
     pub fn swap_proof(&self) -> SwapProof {
-        SwapProof {
-            fee_blinding: self.fee_blinding,
-            swap_plaintext: self.swap_plaintext.clone(),
-        }
+        SwapProof::prove(
+            &mut OsRng,
+            &SWAP_PROOF_PROVING_KEY,
+            self.swap_plaintext.clone(),
+            self.fee_blinding,
+            self.balance().commit(Fr::zero()),
+            self.swap_plaintext.swap_commitment(),
+            self.swap_plaintext.claim_fee.commit(self.fee_blinding),
+        )
+        .expect("can generate ZKSwapProof")
     }
 
     pub fn balance(&self) -> penumbra_crypto::Balance {
