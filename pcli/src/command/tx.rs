@@ -87,24 +87,6 @@ pub enum TxCmd {
         #[clap(long, default_value = "0")]
         fee: u64,
     },
-    /// Redelegate stake from one validator's delegation pool to another.
-    #[clap(display_order = 200)]
-    Redelegate {
-        /// The identity key of the validator to withdraw delegation from.
-        #[clap(long, display_order = 100)]
-        from: String,
-        /// The identity key of the validator to delegate to.
-        #[clap(long, display_order = 200)]
-        to: String,
-        /// The amount of stake to delegate.
-        amount: String,
-        /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0", display_order = 300)]
-        fee: u64,
-        /// Only spend funds originally received by the given account.
-        #[clap(long, default_value = "0", display_order = 400)]
-        source: u32,
-    },
     /// Swap tokens of one denomination for another using the DEX.
     ///
     /// Swaps are batched and executed at the market-clearing price.
@@ -203,7 +185,6 @@ impl TxCmd {
             TxCmd::Delegate { .. } => false,
             TxCmd::Undelegate { .. } => false,
             TxCmd::UndelegateClaim { .. } => false,
-            TxCmd::Redelegate { .. } => false,
             TxCmd::Vote { .. } => false,
             TxCmd::Proposal(proposal_cmd) => proposal_cmd.offline(),
         }
@@ -528,9 +509,6 @@ impl TxCmd {
                         app.build_and_submit_transaction(plan).await?;
                     }
                 }
-            }
-            TxCmd::Redelegate { .. } => {
-                println!("Sorry, this command is not yet implemented");
             }
             TxCmd::Proposal(ProposalCmd::Submit { file, fee, source }) => {
                 let mut proposal_file = File::open(file).context("can't open proposal file")?;
