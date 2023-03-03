@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use futures::{StreamExt, TryStreamExt};
 use penumbra_component::dao;
 use penumbra_crypto::{
@@ -54,21 +54,22 @@ impl DaoCmd {
             let string = value.format(&denom_by_asset);
             println!("{string}");
         } else {
-            let prefix = dao::state_key::all_assets_balance();
-            let results: Vec<_> = client.prefix_domain(prefix).await?.try_collect().await?;
-            println!("DAO balance ({} unique assets):", results.len());
-            for (key, amount) in results {
-                // Parse every key/value pair into a Value
-                let asset_id: asset::Id = key
-                    .rsplit('/')
-                    .next()
-                    .expect("valid key")
-                    .parse()
-                    .expect("valid asset ID");
-                let value = Value { asset_id, amount };
-                let string = value.format(&denom_by_asset);
-                println!("{string}");
-            }
+            anyhow::bail!("printing the entire DAO balance is not yet supported; try specifying an asset ID or base denomination");
+            // let prefix = dao::state_key::all_assets_balance();
+            // let results: Vec<_> = client.prefix_domain(prefix).await?.try_collect().await?;
+            // println!("DAO balance ({} unique assets):", results.len());
+            // for (key, amount) in results {
+            //     // Parse every key/value pair into a Value
+            //     let asset_id: asset::Id = key
+            //         .rsplit('/')
+            //         .next()
+            //         .expect("valid key")
+            //         .parse()
+            //         .expect("valid asset ID");
+            //     let value = Value { asset_id, amount };
+            //     let string = value.format(&denom_by_asset);
+            //     println!("{string}");
+            // }
         };
 
         Ok(())
