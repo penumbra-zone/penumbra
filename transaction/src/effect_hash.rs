@@ -8,10 +8,10 @@ use penumbra_proto::{core::crypto::v1alpha1 as pb_crypto, DomainType, Message};
 
 use crate::{
     action::{
-        output, spend, swap, swap_claim, Delegate, DelegatorVote, DelegatorVoteBody,
-        Ics20Withdrawal, PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw,
-        Proposal, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, Undelegate,
-        UndelegateClaimBody, ValidatorVote, ValidatorVoteBody, Vote,
+        output, spend, swap, swap_claim, DaoDeposit, DaoOutput, DaoSpend, Delegate, DelegatorVote,
+        DelegatorVoteBody, Ics20Withdrawal, PositionClose, PositionOpen, PositionRewardClaim,
+        PositionWithdraw, Proposal, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw,
+        Undelegate, UndelegateClaimBody, ValidatorVote, ValidatorVoteBody, Vote,
     },
     plan::TransactionPlan,
     proposal, Action, Transaction, TransactionBody,
@@ -218,6 +218,15 @@ impl TransactionPlan {
                 .hash(&payload.encode_to_vec());
             state.update(effect_hash.as_bytes());
         }
+        for dao_spend in self.dao_spends() {
+            state.update(dao_spend.effect_hash().as_bytes());
+        }
+        for dao_output in self.dao_outputs() {
+            state.update(dao_output.effect_hash().as_bytes());
+        }
+        for dao_deposit in self.dao_deposits() {
+            state.update(dao_deposit.effect_hash().as_bytes());
+        }
         let num_clues = self.clue_plans.len() as u32;
         state.update(&num_clues.to_le_bytes());
         for clue_plan in self.clue_plans() {
@@ -270,9 +279,9 @@ impl EffectingData for Action {
             Action::PositionWithdraw(p) => p.effect_hash(),
             Action::PositionRewardClaim(p) => p.effect_hash(),
             Action::Ics20Withdrawal(w) => w.effect_hash(),
-            Action::DaoSpend(_d) => todo!("dao spend effect hash"),
-            Action::DaoOutput(_d) => todo!("dao deposit effect hash"),
-            Action::DaoDeposit(_d) => todo!("dao deposit effect hash"),
+            Action::DaoSpend(d) => d.effect_hash(),
+            Action::DaoOutput(d) => d.effect_hash(),
+            Action::DaoDeposit(d) => d.effect_hash(),
         }
     }
 }
@@ -672,6 +681,46 @@ impl EffectingData for Ics20Withdrawal {
         state.update(&self.return_address.to_vec());
         state.update(&self.timeout_height.to_le_bytes());
         state.update(&self.timeout_time.to_le_bytes());
+        EffectHash(state.finalize().as_array().clone())
+    }
+}
+
+impl EffectingData for DaoSpend {
+    fn effect_hash(&self) -> EffectHash {
+        let mut state = blake2b_simd::Params::default()
+            .personal(b"PAH:daospend")
+            .to_state();
+
+        state.update(&self.value.amount.to_le_bytes());
+        state.update(&self.value.asset_id.to_bytes());
+
+        EffectHash(state.finalize().as_array().clone())
+    }
+}
+
+impl EffectingData for DaoDeposit {
+    fn effect_hash(&self) -> EffectHash {
+        let mut state = blake2b_simd::Params::default()
+            .personal(b"PAH:daodeposit")
+            .to_state();
+
+        state.update(&self.value.amount.to_le_bytes());
+        state.update(&self.value.asset_id.to_bytes());
+
+        EffectHash(state.finalize().as_array().clone())
+    }
+}
+
+impl EffectingData for DaoOutput {
+    fn effect_hash(&self) -> EffectHash {
+        let mut state = blake2b_simd::Params::default()
+            .personal(b"PAH:daooutput")
+            .to_state();
+
+        state.update(&self.address.encode_to_vec());
+        state.update(&self.value.amount.to_le_bytes());
+        state.update(&self.value.asset_id.to_bytes());
+
         EffectHash(state.finalize().as_array().clone())
     }
 }

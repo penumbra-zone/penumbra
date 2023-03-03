@@ -11,7 +11,8 @@ use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 
 use crate::action::{
-    Delegate, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, Undelegate, ValidatorVote,
+    DaoDeposit, DaoOutput, DaoSpend, Delegate, ProposalDepositClaim, ProposalSubmit,
+    ProposalWithdraw, Undelegate, ValidatorVote,
 };
 
 mod action;
@@ -179,6 +180,36 @@ impl TransactionPlan {
     pub fn swap_claim_plans(&self) -> impl Iterator<Item = &SwapClaimPlan> {
         self.actions.iter().filter_map(|action| {
             if let ActionPlan::SwapClaim(v) = action {
+                Some(v)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn dao_spends(&self) -> impl Iterator<Item = &DaoSpend> {
+        self.actions.iter().filter_map(|action| {
+            if let ActionPlan::DaoSpend(v) = action {
+                Some(v)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn dao_deposits(&self) -> impl Iterator<Item = &DaoDeposit> {
+        self.actions.iter().filter_map(|action| {
+            if let ActionPlan::DaoDeposit(v) = action {
+                Some(v)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn dao_outputs(&self) -> impl Iterator<Item = &DaoOutput> {
+        self.actions.iter().filter_map(|action| {
+            if let ActionPlan::DaoOutput(v) = action {
                 Some(v)
             } else {
                 None
