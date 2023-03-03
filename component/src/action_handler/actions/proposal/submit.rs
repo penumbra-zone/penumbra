@@ -117,7 +117,7 @@ impl ActionHandler for ProposalSubmit {
 
         // Register the denom for the voting proposal NFT
         state
-            .register_denom(&ProposalNft::voting(proposal_id).denom())
+            .register_denom(&ProposalNft::deposit(proposal_id).denom())
             .await?;
 
         // Register the denom for the vote receipt tokens
