@@ -10,6 +10,8 @@ mod dex;
 use dex::DexCmd;
 mod governance;
 use governance::GovernanceCmd;
+mod dao;
+use dao::DaoCmd;
 mod validator;
 pub(super) use validator::ValidatorCmd;
 
@@ -48,6 +50,9 @@ pub enum QueryCmd {
     /// Queries information about governance proposals.
     #[clap(subcommand)]
     Governance(GovernanceCmd),
+    /// Queries information about the DAO.
+    #[clap(subcommand)]
+    Dao(DaoCmd),
     /// Queries information about the decentralized exchange.
     #[clap(subcommand)]
     Dex(DexCmd),
@@ -76,12 +81,17 @@ impl QueryCmd {
             return governance.exec(app).await;
         }
 
+        if let QueryCmd::Dao(dao) = self {
+            return dao.exec(app).await;
+        }
+
         let key = match self {
             QueryCmd::Tx(_)
             | QueryCmd::Chain(_)
             | QueryCmd::Validator(_)
             | QueryCmd::Dex(_)
-            | QueryCmd::Governance(_) => {
+            | QueryCmd::Governance(_)
+            | QueryCmd::Dao(_) => {
                 unreachable!("query handled in guard");
             }
             QueryCmd::ShieldedPool(p) => p.key().clone(),
@@ -112,7 +122,8 @@ impl QueryCmd {
             | QueryCmd::Chain { .. }
             | QueryCmd::Validator { .. }
             | QueryCmd::Dex { .. }
-            | QueryCmd::Governance { .. } => {
+            | QueryCmd::Governance { .. }
+            | QueryCmd::Dao { .. } => {
                 unreachable!("query is special cased")
             }
         }

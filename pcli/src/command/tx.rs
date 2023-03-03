@@ -127,6 +127,18 @@ pub enum TxCmd {
     /// Submit or withdraw a governance proposal.
     #[clap(display_order = 500, subcommand)]
     Proposal(ProposalCmd),
+    /// Deposit funds into the DAO.
+    #[clap(display_order = 600)]
+    DaoDeposit {
+        /// The transaction fee (paid in upenumbra).
+        #[clap(long, default_value = "0", global = true, display_order = 200)]
+        fee: u64,
+        /// The amounts to send, written as typed values 1.87penumbra, 12cubes, etc.
+        values: Vec<String>,
+        /// Only spend funds originally received by the given account.
+        #[clap(long, default_value = "0", display_order = 300)]
+        source: u32,
+    },
     /// Consolidate many small notes into a few larger notes.
     ///
     /// Since Penumbra transactions reveal their arity (how many spends,
@@ -187,6 +199,7 @@ impl TxCmd {
             TxCmd::UndelegateClaim { .. } => false,
             TxCmd::Vote { .. } => false,
             TxCmd::Proposal(proposal_cmd) => proposal_cmd.offline(),
+            TxCmd::DaoDeposit { .. } => false,
         }
     }
 
@@ -220,6 +233,31 @@ impl TxCmd {
                     memo.clone(),
                 )
                 .await?;
+                app.build_and_submit_transaction(plan).await?;
+            }
+            TxCmd::DaoDeposit {
+                fee,
+                values,
+                source,
+            } => {
+                let values = values
+                    .iter()
+                    .map(|v| v.parse())
+                    .collect::<Result<Vec<Value>, _>>()?;
+                let fee = Fee::from_staking_token_amount((*fee).into());
+
+                let mut planner = Planner::new(OsRng);
+                planner.fee(fee);
+                for value in values {
+                    planner.dao_deposit(value);
+                }
+                let plan = planner
+                    .plan(
+                        app.view.as_mut().unwrap(),
+                        &app.fvk,
+                        AddressIndex::new(*source),
+                    )
+                    .await?;
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Sweep => loop {
