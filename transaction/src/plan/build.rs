@@ -185,7 +185,7 @@ impl TransactionPlan {
     /// This can be used in environments that support tokio tasks.
     pub async fn build_concurrent<R: CryptoRng + RngCore>(
         self,
-        rng: &mut R,
+        rng: R,
         fvk: &FullViewingKey,
         auth_data: AuthorizationData,
         witness_data: WitnessData,
