@@ -108,7 +108,6 @@ fn transaction_send_from_addr_0_to_addr_1() {
             tmpdir.path().to_str().unwrap(),
             "view",
             "balance",
-            "--by-address",
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     // The 1 is the index of the address which should be separated from the
