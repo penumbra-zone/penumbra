@@ -50,7 +50,6 @@ impl DaoCmd {
         if let Some(asset_id) = asset_id {
             let key = dao::state_key::balance_for_asset(asset_id);
             let amount: Amount = client.key_domain(&key).await?;
-            println!("{}: {}", key, amount);
             let value = Value { asset_id, amount };
             let string = value.format(&denom_by_asset);
             println!("{string}");
@@ -59,7 +58,6 @@ impl DaoCmd {
             let results: Vec<_> = client.prefix_domain(prefix).await?.try_collect().await?;
             println!("DAO balance ({} unique assets):", results.len());
             for (key, amount) in results {
-                println!("{}: {}", key, amount);
                 // Parse every key/value pair into a Value
                 let asset_id: asset::Id = key
                     .rsplit('/')
