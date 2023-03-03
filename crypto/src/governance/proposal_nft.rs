@@ -200,14 +200,22 @@ mod tests {
 
     #[test]
     fn proposal_token_denomination_round_trip() {
-        let token = ProposalNft::new(1, Kind::Deposit);
+        let tokens = [
+            ProposalNft::deposit(1),
+            ProposalNft::unbonding_deposit(1),
+            ProposalNft::passed(1),
+            ProposalNft::failed(1),
+            ProposalNft::slashed(1),
+        ];
 
-        let denom = token.to_string();
-        println!("denom: {denom}");
-        let token2 = ProposalNft::from_str(&denom).unwrap();
-        let denom2 = token2.to_string();
+        for token in tokens {
+            let denom = token.to_string();
+            println!("denom: {denom}");
+            let token2 = ProposalNft::from_str(&denom).unwrap();
+            let denom2 = token2.to_string();
 
-        assert_eq!(denom, denom2);
-        assert_eq!(token, token2);
+            assert_eq!(denom, denom2);
+            assert_eq!(token, token2);
+        }
     }
 }
