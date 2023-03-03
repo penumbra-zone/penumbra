@@ -49,30 +49,28 @@ impl DaoCmd {
         let mut client = app.specific_client().await?;
         if let Some(asset_id) = asset_id {
             let key = dao::state_key::balance_for_asset(asset_id);
-            let amount: Amount = client.key_domain(key).await?;
+            let amount: Amount = client.key_domain(&key).await?;
+            println!("{}: {}", key, amount);
             let value = Value { asset_id, amount };
             let string = value.format(&denom_by_asset);
             println!("{string}");
         } else {
             let prefix = dao::state_key::all_assets_balance();
-            client
-                .prefix_domain(prefix)
-                .await?
-                .map(|result| {
-                    // Parse every key/value pair into a Value
-                    let (key, amount) = result?;
-                    let asset_id: asset::Id = key.rsplit('/').next().expect("valid key").parse()?;
-                    Ok::<_, anyhow::Error>(Value { asset_id, amount })
-                })
-                .try_for_each(|value| {
-                    // Print every value
-                    let string = value.format(&denom_by_asset);
-                    async move {
-                        println!("{string}");
-                        Ok(())
-                    }
-                })
-                .await?;
+            let results: Vec<_> = client.prefix_domain(prefix).await?.try_collect().await?;
+            println!("DAO balance ({} unique assets):", results.len());
+            for (key, amount) in results {
+                println!("{}: {}", key, amount);
+                // Parse every key/value pair into a Value
+                let asset_id: asset::Id = key
+                    .rsplit('/')
+                    .next()
+                    .expect("valid key")
+                    .parse()
+                    .expect("valid asset ID");
+                let value = Value { asset_id, amount };
+                let string = value.format(&denom_by_asset);
+                println!("{string}");
+            }
         };
 
         Ok(())
