@@ -169,7 +169,7 @@ pub enum FundingStreamToml {
     },
 }
 
-// Unit struct solely to add a `recipient = "dao"` field to the TOML representation
+// Unit struct solely to add a `recipient = "DAO"` field to the TOML representation
 #[allow(non_camel_case_types)] // no way to use `rename` with `serde_unit_struct`
 #[derive(Debug, PartialEq, Eq, Clone, Deserialize_unit_struct, Serialize_unit_struct)]
 pub struct DAO;
