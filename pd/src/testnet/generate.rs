@@ -140,7 +140,7 @@ pub fn testnet_generate(
                     v.funding_streams
                         .iter()
                         .map(|fs| {
-                            Ok(FundingStream {
+                            Ok(FundingStream::ToAddress {
                                 address: Address::from_str(&fs.address)
                                     .context("invalid funding stream address in validators.json")?,
                                 rate_bps: fs.rate_bps,

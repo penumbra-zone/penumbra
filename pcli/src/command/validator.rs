@@ -230,11 +230,12 @@ impl ValidatorCmd {
                 // Customize the human-readable comment text in the definition.
                 let generated_key_notice: String = match tendermint_validator_keyfile {
                     Some(_s) => String::from(""),
-                    None => format!(
+                    None => {
                         "\n# The consensus_key field is random, and needs to be replaced with your
 # tendermint instance's public key, which can be found in `priv_validator_key.json`.
 #"
-                    ),
+                        .to_string()
+                    }
                 };
 
                 let template: ValidatorToml = Validator {
@@ -247,10 +248,13 @@ impl ValidatorCmd {
                     // Default enabled to "false" so operators are required to manually
                     // enable their validators when ready.
                     enabled: false,
-                    funding_streams: FundingStreams::try_from(vec![FundingStream {
-                        address,
-                        rate_bps: 100,
-                    }])?,
+                    funding_streams: FundingStreams::try_from(vec![
+                        FundingStream::ToAddress {
+                            address,
+                            rate_bps: 100,
+                        },
+                        FundingStream::ToDao { rate_bps: 100 },
+                    ])?,
                     sequence_number: 0,
                 }
                 .into();

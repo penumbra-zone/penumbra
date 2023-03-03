@@ -3,6 +3,7 @@
 use penumbra_crypto::{Address, GovernanceKey};
 use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
+use serde_unit_struct::{Deserialize_unit_struct, Serialize_unit_struct};
 use serde_with::DisplayFromStr;
 
 use crate::stake::{FundingStream, FundingStreams, IdentityKey};
@@ -151,30 +152,49 @@ impl TryFrom<ValidatorToml> for Validator {
 }
 
 /// Human-readable TOML-optimized version of a [`FundingStream`].
+#[allow(clippy::large_enum_variant)]
 #[serde_as]
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
-pub struct FundingStreamToml {
-    #[serde_as(as = "DisplayFromStr")]
-    /// The address of the funding stream.
-    address: Address,
-    /// The rate of the funding stream, in basis points.
-    rate_bps: u16,
+#[serde(untagged)]
+pub enum FundingStreamToml {
+    Address {
+        #[serde(rename = "recipient")]
+        #[serde_as(as = "DisplayFromStr")]
+        address: Address,
+        rate_bps: u16,
+    },
+    Dao {
+        recipient: dao,
+        rate_bps: u16,
+    },
 }
+
+// Unit struct solely to add a `recipient = "dao"` field to the TOML representation
+#[allow(non_camel_case_types)] // no way to use `rename` with `serde_unit_struct`
+#[derive(Debug, PartialEq, Eq, Clone, Deserialize_unit_struct, Serialize_unit_struct)]
+pub struct dao;
 
 impl From<FundingStream> for FundingStreamToml {
     fn from(f: FundingStream) -> Self {
-        FundingStreamToml {
-            address: f.address,
-            rate_bps: f.rate_bps,
+        match f {
+            FundingStream::ToAddress { address, rate_bps } => {
+                FundingStreamToml::Address { address, rate_bps }
+            }
+            FundingStream::ToDao { rate_bps } => FundingStreamToml::Dao {
+                rate_bps,
+                recipient: dao,
+            },
         }
     }
 }
 
 impl From<FundingStreamToml> for FundingStream {
     fn from(f: FundingStreamToml) -> Self {
-        FundingStream {
-            address: f.address,
-            rate_bps: f.rate_bps,
+        match f {
+            FundingStreamToml::Address { address, rate_bps } => {
+                FundingStream::ToAddress { address, rate_bps }
+            }
+            FundingStreamToml::Dao { rate_bps, .. } => FundingStream::ToDao { rate_bps },
         }
     }
 }

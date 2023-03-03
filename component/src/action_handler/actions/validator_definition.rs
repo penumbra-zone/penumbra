@@ -33,7 +33,7 @@ impl ActionHandler for ValidatorDefinition {
             .validator
             .funding_streams
             .iter()
-            .map(|fs| fs.rate_bps as u64)
+            .map(|fs| fs.rate_bps() as u64)
             .sum::<u64>();
 
         if total_funding_bps > 10000 {
