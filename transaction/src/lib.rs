@@ -23,7 +23,9 @@ mod witness_data;
 
 pub mod action;
 pub mod plan;
+pub mod proposal;
 pub mod view;
+pub mod vote;
 
 pub use action::{Action, IsAction};
 pub use auth_data::AuthorizationData;

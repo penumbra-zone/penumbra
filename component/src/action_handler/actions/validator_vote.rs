@@ -6,8 +6,8 @@ use penumbra_chain::StateReadExt as _;
 use penumbra_proto::DomainType;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{
-    action::{proposal, ValidatorVote, ValidatorVoteBody},
-    Transaction,
+    action::{ValidatorVote, ValidatorVoteBody},
+    proposal, Transaction,
 };
 
 use crate::{

@@ -4,9 +4,9 @@ use serde::{Deserialize, Serialize};
 
 use penumbra_chain::params::{ChainParameters, Ratio};
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType};
-use penumbra_transaction::action::{
+use penumbra_transaction::{
+    action::Vote,
     proposal::{self, Withdrawn},
-    Vote,
 };
 
 #[derive(Clone, Copy, Debug, Default, Serialize, Deserialize)]

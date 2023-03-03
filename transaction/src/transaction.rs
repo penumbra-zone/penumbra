@@ -70,6 +70,7 @@ impl Transaction {
             })
             .sum()
     }
+
     pub fn payload_keys(
         &self,
         fvk: &FullViewingKey,
@@ -130,7 +131,9 @@ impl Transaction {
                 | Action::PositionWithdraw(_)
                 | Action::PositionRewardClaim(_)
                 | Action::Ics20Withdrawal(_)
-                | Action::DaoSpend(_) => {}
+                | Action::DaoSpend(_)
+                | Action::DaoOutput(_)
+                | Action::DaoDeposit(_) => {}
             }
         }
 
@@ -289,6 +292,36 @@ impl Transaction {
             }
         })
     }
+
+    // pub fn dao_deposits(&self) -> impl Iterator<Item = &DaoDeposit> {
+    //     self.actions().filter_map(|action| {
+    //         if let Action::DaoDeposit(d) = action {
+    //             Some(d)
+    //         } else {
+    //             None
+    //         }
+    //     })
+    // }
+
+    // pub fn dao_spends(&self) -> impl Iterator<Item = &DaoSpend> {
+    //     self.actions().filter_map(|action| {
+    //         if let Action::DaoSpend(s) = action {
+    //             Some(s)
+    //         } else {
+    //             None
+    //         }
+    //     })
+    // }
+
+    // pub fn dao_outputs(&self) -> impl Iterator<Item = &DaoOutput> {
+    //     self.actions().filter_map(|action| {
+    //         if let Action::DaoOutput(o) = action {
+    //             Some(o)
+    //         } else {
+    //             None
+    //         }
+    //     })
+    // }
 
     pub fn transaction_body(&self) -> TransactionBody {
         self.transaction_body.clone()
