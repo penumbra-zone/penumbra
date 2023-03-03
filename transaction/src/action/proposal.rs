@@ -400,7 +400,7 @@ impl ProposalSubmit {
 
         let proposal_nft = Value {
             amount: Amount::from(1u64),
-            asset_id: ProposalNft::voting(self.proposal.id).denom().into(),
+            asset_id: ProposalNft::deposit(self.proposal.id).denom().into(),
         };
 
         // Proposal submissions *require* the deposit amount in order to be accepted, so they
@@ -455,11 +455,11 @@ impl ProposalWithdraw {
     pub fn balance(&self) -> Balance {
         let voting_proposal_nft = Value {
             amount: Amount::from(1u64),
-            asset_id: ProposalNft::voting(self.proposal).denom().into(),
+            asset_id: ProposalNft::deposit(self.proposal).denom().into(),
         };
         let withdrawn_proposal_nft = Value {
             amount: Amount::from(1u64),
-            asset_id: ProposalNft::withdrawn(self.proposal).denom().into(),
+            asset_id: ProposalNft::unbonding_deposit(self.proposal).denom().into(),
         };
 
         // Proposal withdrawals consume the submitted proposal and produce a withdrawn proposal:
@@ -565,31 +565,31 @@ impl ProposalDepositClaim {
         let (voting_or_withdrawn_proposal_denom, claimed_proposal_denom): (Denom, Denom) =
             match self.outcome {
                 Outcome::Passed => (
-                    ProposalNft::voting(self.proposal).denom(),
+                    ProposalNft::deposit(self.proposal).denom(),
                     ProposalNft::passed(self.proposal).denom(),
                 ),
                 Outcome::Failed {
                     withdrawn: Withdrawn::No,
                 } => (
-                    ProposalNft::voting(self.proposal).denom(),
+                    ProposalNft::deposit(self.proposal).denom(),
                     ProposalNft::failed(self.proposal).denom(),
                 ),
                 Outcome::Failed {
                     withdrawn: Withdrawn::WithReason { .. },
                 } => (
-                    ProposalNft::withdrawn(self.proposal).denom(),
+                    ProposalNft::unbonding_deposit(self.proposal).denom(),
                     ProposalNft::failed(self.proposal).denom(),
                 ),
                 Outcome::Slashed {
                     withdrawn: Withdrawn::No,
                 } => (
-                    ProposalNft::voting(self.proposal).denom(),
+                    ProposalNft::deposit(self.proposal).denom(),
                     ProposalNft::slashed(self.proposal).denom(),
                 ),
                 Outcome::Slashed {
                     withdrawn: Withdrawn::WithReason { .. },
                 } => (
-                    ProposalNft::withdrawn(self.proposal).denom(),
+                    ProposalNft::unbonding_deposit(self.proposal).denom(),
                     ProposalNft::slashed(self.proposal).denom(),
                 ),
             };
