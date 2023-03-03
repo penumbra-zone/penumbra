@@ -20,7 +20,7 @@ pub trait StateReadExt: StateRead {
     }
 
     async fn dao_balance(&self) -> Result<BTreeMap<asset::Id, Amount>> {
-        let prefix = state_key::all_assets();
+        let prefix = state_key::all_assets_balance();
         self.prefix(prefix)
             .map(|result| {
                 let (key, amount) = result?;

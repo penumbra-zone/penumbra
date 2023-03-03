@@ -20,7 +20,9 @@ use penumbra_crypto::{
 use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
 use penumbra_tct as tct;
 use penumbra_transaction::{
-    action::{ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote, Vote},
+    action::{
+        DaoDeposit, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote, Vote,
+    },
     plan::{
         ActionPlan, DelegatorVotePlan, MemoPlan, OutputPlan, SpendPlan, SwapClaimPlan, SwapPlan,
         TransactionPlan, UndelegateClaimPlan,
@@ -291,6 +293,13 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             deposit_amount,
             outcome,
         }));
+        self
+    }
+
+    /// Deposit a value into the DAO.
+    #[instrument(skip(self))]
+    pub fn dao_deposit(&mut self, value: Value) -> &mut Self {
+        self.action(ActionPlan::DaoDeposit(DaoDeposit { value }));
         self
     }
 
