@@ -20,8 +20,9 @@ use penumbra_proto::client::v1alpha1::{
     ProposalInfoRequest, ProposalInfoResponse, ProposalRateDataRequest, ValidatorPenaltyRequest,
 };
 use penumbra_transaction::{
-    action::{proposal::ProposalToml, Vote},
     plan::{SwapClaimPlan, UndelegateClaimPlan},
+    proposal::ProposalToml,
+    vote::Vote,
 };
 use penumbra_view::ViewClient;
 use penumbra_wallet::plan::{self, Planner};
@@ -602,7 +603,7 @@ impl TxCmd {
                 source,
             }) => {
                 use penumbra_component::governance::state_key;
-                use penumbra_transaction::action::proposal;
+                use penumbra_transaction::proposal;
 
                 let fee = Fee::from_staking_token_amount((*fee).into());
 

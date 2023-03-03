@@ -8,13 +8,13 @@ use penumbra_proto::{core::crypto::v1alpha1 as pb_crypto, DomainType, Message};
 
 use crate::{
     action::{
-        output, proposal, spend, swap, swap_claim, Delegate, DelegatorVote, DelegatorVoteBody,
+        output, spend, swap, swap_claim, Delegate, DelegatorVote, DelegatorVoteBody,
         Ics20Withdrawal, PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw,
         Proposal, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, Undelegate,
         UndelegateClaimBody, ValidatorVote, ValidatorVoteBody, Vote,
     },
     plan::TransactionPlan,
-    Action, Transaction, TransactionBody,
+    proposal, Action, Transaction, TransactionBody,
 };
 
 pub trait EffectingData {
@@ -271,6 +271,8 @@ impl EffectingData for Action {
             Action::PositionRewardClaim(p) => p.effect_hash(),
             Action::Ics20Withdrawal(w) => w.effect_hash(),
             Action::DaoSpend(_d) => todo!("dao spend effect hash"),
+            Action::DaoOutput(_d) => todo!("dao deposit effect hash"),
+            Action::DaoDeposit(_d) => todo!("dao deposit effect hash"),
         }
     }
 }

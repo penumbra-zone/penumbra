@@ -14,9 +14,10 @@ use penumbra_crypto::{
 };
 use penumbra_crypto::{ProposalNft, VotingReceiptToken, STAKING_TOKEN_DENOM};
 use penumbra_storage::{StateDelta, StateRead, StateWrite};
-use penumbra_transaction::action::proposal::{PROPOSAL_DESCRIPTION_LIMIT, PROPOSAL_TITLE_LIMIT};
-use penumbra_transaction::action::{proposal, Proposal, ProposalPayload};
 use penumbra_transaction::plan::TransactionPlan;
+use penumbra_transaction::proposal::{
+    self, Proposal, ProposalPayload, PROPOSAL_DESCRIPTION_LIMIT, PROPOSAL_TITLE_LIMIT,
+};
 use penumbra_transaction::{action::ProposalSubmit, Transaction};
 use penumbra_transaction::{AuthorizationData, WitnessData};
 

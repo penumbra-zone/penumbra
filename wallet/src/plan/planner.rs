@@ -20,14 +20,12 @@ use penumbra_crypto::{
 use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
 use penumbra_tct as tct;
 use penumbra_transaction::{
-    action::{
-        proposal, Proposal, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote,
-        Vote,
-    },
+    action::{ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote, Vote},
     plan::{
         ActionPlan, DelegatorVotePlan, MemoPlan, OutputPlan, SpendPlan, SwapClaimPlan, SwapPlan,
         TransactionPlan, UndelegateClaimPlan,
     },
+    proposal::{self, Proposal},
 };
 use penumbra_view::{SpendableNoteRecord, ViewClient};
 use rand::{CryptoRng, RngCore};

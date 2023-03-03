@@ -16,7 +16,8 @@ use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_tct as tct;
 use penumbra_transaction::{
-    action::{proposal, Proposal, ProposalPayload, Vote},
+    action::Vote,
+    proposal::{self, Proposal, ProposalPayload},
     Transaction,
 };
 use tokio::task::JoinSet;

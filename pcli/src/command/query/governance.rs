@@ -9,7 +9,10 @@ use futures::{StreamExt, TryStreamExt};
 use penumbra_component::governance::{self, state_key::*};
 use penumbra_crypto::stake::IdentityKey;
 use penumbra_proto::client::v1alpha1::{PrefixValueRequest, PrefixValueResponse};
-use penumbra_transaction::action::{proposal, Proposal, Vote};
+use penumbra_transaction::{
+    proposal::{self, Proposal},
+    vote::Vote,
+};
 use penumbra_view::ViewClient;
 use serde::Serialize;
 use serde_json::json;

@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use penumbra_chain::{genesis, StateReadExt};
 use penumbra_storage::StateWrite;
-use penumbra_transaction::action::proposal;
+use penumbra_transaction::proposal;
 use tendermint::abci;
 use tracing::instrument;
 

@@ -7,32 +7,38 @@ use penumbra_proto::{
 };
 
 mod delegate;
+mod delegator_vote;
 mod ibc;
 pub mod output;
 mod position;
-pub mod proposal;
+mod proposal_deposit_claim;
+mod proposal_submit;
+mod proposal_withdraw;
 pub mod spend;
 pub mod swap;
 pub mod swap_claim;
 mod undelegate;
 mod undelegate_claim;
-mod vote;
+mod validator_vote;
 
 use crate::{ActionView, TransactionPerspective};
 
 pub use self::ibc::Ics20Withdrawal;
+pub use crate::proposal::{Proposal, ProposalKind, ProposalPayload};
+pub use crate::vote::Vote;
 pub use delegate::Delegate;
+pub use delegator_vote::{DelegatorVote, DelegatorVoteBody};
 pub use output::Output;
 pub use position::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw};
-pub use proposal::{
-    Proposal, ProposalDepositClaim, ProposalKind, ProposalPayload, ProposalSubmit, ProposalWithdraw,
-};
+pub use proposal_deposit_claim::ProposalDepositClaim;
+pub use proposal_submit::ProposalSubmit;
+pub use proposal_withdraw::ProposalWithdraw;
 pub use spend::Spend;
 pub use swap::Swap;
 pub use swap_claim::SwapClaim;
 pub use undelegate::Undelegate;
 pub use undelegate_claim::{UndelegateClaim, UndelegateClaimBody};
-pub use vote::{DelegatorVote, DelegatorVoteBody, ValidatorVote, ValidatorVoteBody, Vote};
+pub use validator_vote::{ValidatorVote, ValidatorVoteBody};
 
 /// Common behavior between Penumbra actions.
 pub trait IsAction {
@@ -68,6 +74,8 @@ pub enum Action {
     Ics20Withdrawal(Ics20Withdrawal),
 
     DaoSpend(() /* TODO: fill this in */),
+    DaoOutput(() /* TODO: fill this in */),
+    DaoDeposit(() /* TODO: fill this in */),
 }
 
 impl Action {
@@ -105,7 +113,9 @@ impl Action {
             Action::Undelegate(_) => tracing::info_span!("Undelegate", ?idx),
             Action::UndelegateClaim(_) => tracing::info_span!("UndelegateClaim", ?idx),
             Action::Ics20Withdrawal(_) => tracing::info_span!("Ics20Withdrawal", ?idx),
+            Action::DaoDeposit(_) => tracing::info_span!("DaoDeposit", ?idx),
             Action::DaoSpend(_) => tracing::info_span!("DaoSpend", ?idx),
+            Action::DaoOutput(_) => tracing::info_span!("DaoOutput", ?idx),
         }
     }
 }
@@ -130,11 +140,13 @@ impl IsAction for Action {
             Action::PositionWithdraw(p) => p.balance_commitment(),
             Action::PositionRewardClaim(p) => p.balance_commitment(),
             Action::Ics20Withdrawal(withdrawal) => withdrawal.balance_commitment(),
+            Action::DaoDeposit(_) => todo!("dao deposit balance commitment"),
+            Action::DaoSpend(_) => todo!("dao spend balance commitment"),
+            Action::DaoOutput(_) => todo!("dao output balance commitment"),
             // These actions just post Protobuf data to the chain, and leave the
             // value balance unchanged.
             Action::ValidatorDefinition(_) => balance::Commitment::default(),
             Action::IBCAction(_) => balance::Commitment::default(),
-            Action::DaoSpend(_) => todo!("dao spend balance commitment"),
         }
     }
 
@@ -157,10 +169,12 @@ impl IsAction for Action {
             Action::PositionWithdraw(x) => x.view_from_perspective(txp),
             Action::PositionRewardClaim(x) => x.view_from_perspective(txp),
             Action::Ics20Withdrawal(x) => x.view_from_perspective(txp),
+            Action::DaoSpend(_) => todo!("dao spend view from perspective"),
+            Action::DaoOutput(_) => todo!("dao output view from perspective"),
+            Action::DaoDeposit(_) => todo!("dao deposit view from perspective"),
             // TODO: figure out where to implement the actual decryption methods for these? where are their action definitions?
             Action::ValidatorDefinition(x) => ActionView::ValidatorDefinition(x.to_owned()),
             Action::IBCAction(x) => ActionView::IBCAction(x.to_owned()),
-            Action::DaoSpend(_) => todo!("dao spend view from perspective"),
         }
     }
 }
@@ -230,6 +244,8 @@ impl From<Action> for pb::Action {
                 action: Some(pb::action::Action::Ics20Withdrawal(withdrawal.into())),
             },
             Action::DaoSpend(_inner) => todo!("dao spend to proto"),
+            Action::DaoOutput(_inner) => todo!("dao output to proto"),
+            Action::DaoDeposit(_inner) => todo!("dao deposit to proto"),
         }
     }
 }

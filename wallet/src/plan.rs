@@ -12,8 +12,9 @@ use penumbra_proto::{
     view::v1alpha1::NotesRequest,
 };
 use penumbra_transaction::{
-    action::{proposal, Proposal, ValidatorVote},
+    action::{Proposal, ValidatorVote},
     plan::TransactionPlan,
+    proposal,
 };
 use penumbra_view::{SpendableNoteRecord, ViewClient};
 use rand_core::{CryptoRng, RngCore};
