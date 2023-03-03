@@ -164,7 +164,7 @@ pub enum FundingStreamToml {
         rate_bps: u16,
     },
     Dao {
-        recipient: dao,
+        recipient: DAO,
         rate_bps: u16,
     },
 }
@@ -172,7 +172,7 @@ pub enum FundingStreamToml {
 // Unit struct solely to add a `recipient = "dao"` field to the TOML representation
 #[allow(non_camel_case_types)] // no way to use `rename` with `serde_unit_struct`
 #[derive(Debug, PartialEq, Eq, Clone, Deserialize_unit_struct, Serialize_unit_struct)]
-pub struct dao;
+pub struct DAO;
 
 impl From<FundingStream> for FundingStreamToml {
     fn from(f: FundingStream) -> Self {
@@ -182,7 +182,7 @@ impl From<FundingStream> for FundingStreamToml {
             }
             FundingStream::ToDao { rate_bps } => FundingStreamToml::Dao {
                 rate_bps,
-                recipient: dao,
+                recipient: DAO,
             },
         }
     }
