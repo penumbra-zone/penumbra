@@ -37,11 +37,25 @@ message ValidatorList {
 
 // A portion of a validator's commission.
 message FundingStream {
-  // The destination address for the funding stream.
-  string address = 1;
-  // The portion of the staking reward for the entire delegation pool
-  // allocated to this funding stream, specified in basis points.
-  uint32 rate_bps = 2;
+  message ToAddress {
+    // The destination address for the funding stream.
+    string address = 1;
+    // The portion of the staking reward for the entire delegation pool
+    // allocated to this funding stream, specified in basis points.
+    uint32 rate_bps = 2;
+  }
+
+  message ToDao {
+    // The portion of the staking reward for the entire delegation pool
+    // allocated to this funding stream, specified in basis points.
+    uint32 rate_bps = 2;
+  }
+
+  // The recipient of the funding stream.
+  oneof recipient {
+    ToAddress to_address = 1;
+    ToDao to_dao = 2;
+  }
 }
 
 // Describes the reward and exchange rates and voting power for a validator in some epoch.

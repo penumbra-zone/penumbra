@@ -680,13 +680,124 @@ impl serde::Serialize for FundingStream {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
+        if self.recipient.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.stake.v1alpha1.FundingStream", len)?;
+        if let Some(v) = self.recipient.as_ref() {
+            match v {
+                funding_stream::Recipient::ToAddress(v) => {
+                    struct_ser.serialize_field("toAddress", v)?;
+                }
+                funding_stream::Recipient::ToDao(v) => {
+                    struct_ser.serialize_field("toDao", v)?;
+                }
+            }
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for FundingStream {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "to_address",
+            "toAddress",
+            "to_dao",
+            "toDao",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            ToAddress,
+            ToDao,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "toAddress" | "to_address" => Ok(GeneratedField::ToAddress),
+                            "toDao" | "to_dao" => Ok(GeneratedField::ToDao),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = FundingStream;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.stake.v1alpha1.FundingStream")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<FundingStream, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut recipient__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::ToAddress => {
+                            if recipient__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("toAddress"));
+                            }
+                            recipient__ = map.next_value::<::std::option::Option<_>>()?.map(funding_stream::Recipient::ToAddress)
+;
+                        }
+                        GeneratedField::ToDao => {
+                            if recipient__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("toDao"));
+                            }
+                            recipient__ = map.next_value::<::std::option::Option<_>>()?.map(funding_stream::Recipient::ToDao)
+;
+                        }
+                    }
+                }
+                Ok(FundingStream {
+                    recipient: recipient__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.stake.v1alpha1.FundingStream", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for funding_stream::ToAddress {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
         if !self.address.is_empty() {
             len += 1;
         }
         if self.rate_bps != 0 {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.stake.v1alpha1.FundingStream", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.stake.v1alpha1.FundingStream.ToAddress", len)?;
         if !self.address.is_empty() {
             struct_ser.serialize_field("address", &self.address)?;
         }
@@ -696,7 +807,7 @@ impl serde::Serialize for FundingStream {
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for FundingStream {
+impl<'de> serde::Deserialize<'de> for funding_stream::ToAddress {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -744,13 +855,13 @@ impl<'de> serde::Deserialize<'de> for FundingStream {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = FundingStream;
+            type Value = funding_stream::ToAddress;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.stake.v1alpha1.FundingStream")
+                formatter.write_str("struct penumbra.core.stake.v1alpha1.FundingStream.ToAddress")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<FundingStream, V::Error>
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<funding_stream::ToAddress, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -774,13 +885,107 @@ impl<'de> serde::Deserialize<'de> for FundingStream {
                         }
                     }
                 }
-                Ok(FundingStream {
+                Ok(funding_stream::ToAddress {
                     address: address__.unwrap_or_default(),
                     rate_bps: rate_bps__.unwrap_or_default(),
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.stake.v1alpha1.FundingStream", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.core.stake.v1alpha1.FundingStream.ToAddress", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for funding_stream::ToDao {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.rate_bps != 0 {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.stake.v1alpha1.FundingStream.ToDao", len)?;
+        if self.rate_bps != 0 {
+            struct_ser.serialize_field("rateBps", &self.rate_bps)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for funding_stream::ToDao {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "rate_bps",
+            "rateBps",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            RateBps,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "rateBps" | "rate_bps" => Ok(GeneratedField::RateBps),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = funding_stream::ToDao;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.stake.v1alpha1.FundingStream.ToDao")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<funding_stream::ToDao, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut rate_bps__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::RateBps => {
+                            if rate_bps__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("rateBps"));
+                            }
+                            rate_bps__ = 
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                    }
+                }
+                Ok(funding_stream::ToDao {
+                    rate_bps: rate_bps__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.stake.v1alpha1.FundingStream.ToDao", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for Penalty {

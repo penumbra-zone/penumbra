@@ -105,7 +105,7 @@ impl ValidatorCmd {
                         .funding_streams
                         .as_ref()
                         .iter()
-                        .map(|fs| fs.rate_bps)
+                        .map(|fs| fs.rate_bps())
                         .sum::<u16>();
 
                     table.add_row(vec![

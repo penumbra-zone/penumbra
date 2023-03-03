@@ -5,7 +5,7 @@ use std::{
     pin::Pin,
 };
 
-use crate::Component;
+use crate::{dao::view::StateWriteExt as _, stake::funding_stream::Recipient, Component};
 use ::metrics::{decrement_gauge, gauge, increment_gauge};
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
@@ -423,17 +423,30 @@ pub(crate) trait StakingImpl: StateWriteExt {
                         &current_base_rate,
                     );
 
-                    self.mint_note(
-                        Value {
-                            amount: commission_reward_amount.into(),
-                            asset_id: *STAKING_TOKEN_ASSET_ID,
-                        },
-                        &stream.address,
-                        NoteSource::FundingStreamReward {
-                            epoch_index: epoch_to_end.index,
-                        },
-                    )
-                    .await?;
+                    match stream.recipient() {
+                        // If the recipient is an address, mint a note to that address
+                        Recipient::Address(address) => {
+                            self.mint_note(
+                                Value {
+                                    amount: commission_reward_amount.into(),
+                                    asset_id: *STAKING_TOKEN_ASSET_ID,
+                                },
+                                &address,
+                                NoteSource::FundingStreamReward {
+                                    epoch_index: epoch_to_end.index,
+                                },
+                            )
+                            .await?;
+                        }
+                        // If the recipient is the DAO, deposit the funds into the DAO
+                        Recipient::Dao => {
+                            self.dao_deposit(Value {
+                                amount: commission_reward_amount.into(),
+                                asset_id: *STAKING_TOKEN_ASSET_ID,
+                            })
+                            .await?;
+                        }
+                    }
                 }
             }
 

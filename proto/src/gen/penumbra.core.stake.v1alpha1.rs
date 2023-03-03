@@ -51,13 +51,40 @@ pub struct ValidatorList {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FundingStream {
-    /// The destination address for the funding stream.
-    #[prost(string, tag = "1")]
-    pub address: ::prost::alloc::string::String,
-    /// The portion of the staking reward for the entire delegation pool
-    /// allocated to this funding stream, specified in basis points.
-    #[prost(uint32, tag = "2")]
-    pub rate_bps: u32,
+    /// The recipient of the funding stream.
+    #[prost(oneof = "funding_stream::Recipient", tags = "1, 2")]
+    pub recipient: ::core::option::Option<funding_stream::Recipient>,
+}
+/// Nested message and enum types in `FundingStream`.
+pub mod funding_stream {
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct ToAddress {
+        /// The destination address for the funding stream.
+        #[prost(string, tag = "1")]
+        pub address: ::prost::alloc::string::String,
+        /// The portion of the staking reward for the entire delegation pool
+        /// allocated to this funding stream, specified in basis points.
+        #[prost(uint32, tag = "2")]
+        pub rate_bps: u32,
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct ToDao {
+        /// The portion of the staking reward for the entire delegation pool
+        /// allocated to this funding stream, specified in basis points.
+        #[prost(uint32, tag = "2")]
+        pub rate_bps: u32,
+    }
+    /// The recipient of the funding stream.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Recipient {
+        #[prost(message, tag = "1")]
+        ToAddress(ToAddress),
+        #[prost(message, tag = "2")]
+        ToDao(ToDao),
+    }
 }
 /// Describes the reward and exchange rates and voting power for a validator in some epoch.
 #[allow(clippy::derive_partial_eq_without_eq)]

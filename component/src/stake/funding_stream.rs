@@ -5,15 +5,46 @@ use serde::{Deserialize, Serialize};
 use crate::stake::rate::BaseRateData;
 
 /// A destination for a portion of a validator's commission of staking rewards.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Copy)]
 #[serde(try_from = "pb::FundingStream", into = "pb::FundingStream")]
-pub struct FundingStream {
-    /// The destinatination address for the funding stream..
-    pub address: Address,
+pub enum FundingStream {
+    ToAddress {
+        /// The destinatination address for the funding stream..
+        address: Address,
 
-    /// The portion (in terms of [basis points](https://en.wikipedia.org/wiki/Basis_point)) of the
-    /// validator's total staking reward that goes to this funding stream.
-    pub rate_bps: u16,
+        /// The portion (in terms of [basis points](https://en.wikipedia.org/wiki/Basis_point)) of the
+        /// validator's total staking reward that goes to this funding stream.
+        rate_bps: u16,
+    },
+    ToDao {
+        /// The portion (in terms of [basis points](https://en.wikipedia.org/wiki/Basis_point)) of the
+        /// validator's total staking reward that goes to this funding stream.
+        rate_bps: u16,
+    },
+}
+
+#[allow(clippy::large_enum_variant)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum Recipient {
+    Address(Address),
+    Dao,
+}
+
+impl FundingStream {
+    pub fn rate_bps(&self) -> u16 {
+        match self {
+            FundingStream::ToAddress { rate_bps, .. } => *rate_bps,
+            FundingStream::ToDao { rate_bps } => *rate_bps,
+        }
+    }
+
+    pub fn recipient(&self) -> Recipient {
+        match self {
+            FundingStream::ToAddress { address, .. } => Recipient::Address(*address),
+            FundingStream::ToDao { .. } => Recipient::Dao,
+        }
+    }
 }
 
 impl FundingStream {
@@ -29,7 +60,7 @@ impl FundingStream {
         }
         // take yv*cve*re*psi(e-1)
         let mut r =
-            (total_delegation_tokens as u128 * (self.rate_bps as u128 * 1_0000)) / 1_0000_0000;
+            (total_delegation_tokens as u128 * (self.rate_bps() as u128 * 1_0000)) / 1_0000_0000;
         r = (r * base_rate_data.base_reward_rate as u128) / 1_0000_0000;
         r = (r * prev_epoch_rate_data.base_exchange_rate as u128) / 1_0000_0000;
 
@@ -44,8 +75,19 @@ impl DomainType for FundingStream {
 impl From<FundingStream> for pb::FundingStream {
     fn from(fs: FundingStream) -> Self {
         pb::FundingStream {
-            address: fs.address.to_string(),
-            rate_bps: fs.rate_bps as u32,
+            recipient: match fs {
+                FundingStream::ToAddress { address, rate_bps } => Some(
+                    pb::funding_stream::Recipient::ToAddress(pb::funding_stream::ToAddress {
+                        address: address.to_string(),
+                        rate_bps: rate_bps.into(),
+                    }),
+                ),
+                FundingStream::ToDao { rate_bps } => Some(pb::funding_stream::Recipient::ToDao(
+                    pb::funding_stream::ToDao {
+                        rate_bps: rate_bps.into(),
+                    },
+                )),
+            },
         }
     }
 }
@@ -54,19 +96,39 @@ impl TryFrom<pb::FundingStream> for FundingStream {
     type Error = anyhow::Error;
 
     fn try_from(fs: pb::FundingStream) -> Result<Self, Self::Error> {
-        let rate_bps = if fs.rate_bps <= 10_000 {
-            fs.rate_bps as u16
-        } else {
-            return Err(anyhow::anyhow!(
-                "rate_bps {} is more than 100%",
-                fs.rate_bps
-            ));
-        };
-
-        Ok(FundingStream {
-            address: fs.address.parse()?,
-            rate_bps,
-        })
+        match fs
+            .recipient
+            .ok_or_else(|| anyhow::anyhow!("missing funding stream recipient"))?
+        {
+            pb::funding_stream::Recipient::ToAddress(to_address) => {
+                let address = to_address
+                    .address
+                    .parse()
+                    .map_err(|e| anyhow::anyhow!("invalid funding stream address: {}", e))?;
+                let rate_bps = to_address
+                    .rate_bps
+                    .try_into()
+                    .map_err(|e| anyhow::anyhow!("invalid funding stream rate: {}", e))?;
+                if rate_bps > 10_000 {
+                    return Err(anyhow::anyhow!(
+                        "funding stream rate exceeds 100% (10,000bps)"
+                    ));
+                }
+                Ok(FundingStream::ToAddress { address, rate_bps })
+            }
+            pb::funding_stream::Recipient::ToDao(to_dao) => {
+                let rate_bps = to_dao
+                    .rate_bps
+                    .try_into()
+                    .map_err(|e| anyhow::anyhow!("invalid funding stream rate: {}", e))?;
+                if rate_bps > 10_000 {
+                    return Err(anyhow::anyhow!(
+                        "funding stream rate exceeds 100% (10,000bps)"
+                    ));
+                }
+                Ok(FundingStream::ToDao { rate_bps })
+            }
+        }
     }
 }
 
@@ -97,9 +159,9 @@ impl TryFrom<Vec<FundingStream>> for FundingStreams {
     type Error = anyhow::Error;
 
     fn try_from(funding_streams: Vec<FundingStream>) -> Result<Self, Self::Error> {
-        if funding_streams.iter().map(|fs| fs.rate_bps).sum::<u16>() > 10_000 {
+        if funding_streams.iter().map(|fs| fs.rate_bps()).sum::<u16>() > 10_000 {
             return Err(anyhow::anyhow!(
-                "sum of funding rates exceeds 100% (10000bps)"
+                "sum of funding rates exceeds 100% (10,000bps)"
             ));
         }
 
