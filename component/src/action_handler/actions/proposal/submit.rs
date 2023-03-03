@@ -15,15 +15,26 @@ use penumbra_crypto::{
 use penumbra_crypto::{ProposalNft, VotingReceiptToken, STAKING_TOKEN_DENOM};
 use penumbra_storage::{StateDelta, StateRead, StateWrite};
 use penumbra_transaction::plan::TransactionPlan;
-use penumbra_transaction::proposal::{
-    self, Proposal, ProposalPayload, PROPOSAL_DESCRIPTION_LIMIT, PROPOSAL_TITLE_LIMIT,
-};
+use penumbra_transaction::proposal::{self, Proposal, ProposalPayload};
 use penumbra_transaction::{action::ProposalSubmit, Transaction};
 use penumbra_transaction::{AuthorizationData, WitnessData};
 
 use crate::action_handler::ActionHandler;
 use crate::governance::{StateReadExt as _, StateWriteExt as _};
 use crate::shielded_pool::{StateReadExt, StateWriteExt as _, SupplyWrite};
+
+// IMPORTANT: these length limits are enforced by consensus! Changing them will change which
+// transactions are accepted by the network, and so they *cannot* be changed without a network
+// upgrade!
+
+// This is enough room to print "Proposal #999,999: $TITLE" in 99 characters (and the
+// proposal title itself in 80), a decent line width for a modern terminal, as well as a
+// reasonable length for other interfaces.
+pub const PROPOSAL_TITLE_LIMIT: usize = 80; // ⚠️ DON'T CHANGE THIS (see above)!
+
+// Limit the size of a description to 10,000 characters (a reasonable limit borrowed from
+// the Cosmos SDK).
+pub const PROPOSAL_DESCRIPTION_LIMIT: usize = 10_000; // ⚠️ DON'T CHANGE THIS (see above)!
 
 #[async_trait]
 impl ActionHandler for ProposalSubmit {

@@ -563,7 +563,7 @@ impl TxCmd {
                     .await?;
 
                 let toml_template: ProposalToml = kind
-                    .template_proposal(&chain_params, next_proposal_id)
+                    .template_proposal(&chain_params, next_proposal_id)?
                     .into();
 
                 if let Some(file) = file {
