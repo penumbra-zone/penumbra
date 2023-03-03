@@ -155,6 +155,15 @@ impl TransactionPlan {
         for ibc_action in self.ibc_actions().cloned() {
             actions.push(Action::IBCAction(ibc_action))
         }
+        for dao_spend in self.dao_spends().cloned() {
+            actions.push(Action::DaoSpend(dao_spend))
+        }
+        for dao_output in self.dao_outputs().cloned() {
+            actions.push(Action::DaoOutput(dao_output))
+        }
+        for dao_deposit in self.dao_deposits().cloned() {
+            actions.push(Action::DaoDeposit(dao_deposit))
+        }
 
         let transaction_body = TransactionBody {
             actions,
@@ -364,6 +373,15 @@ impl TransactionPlan {
         }
         for ibc_action in self.ibc_actions().cloned() {
             actions.push(Action::IBCAction(ibc_action))
+        }
+        for dao_spend in self.dao_spends().cloned() {
+            actions.push(Action::DaoSpend(dao_spend))
+        }
+        for dao_output in self.dao_outputs().cloned() {
+            actions.push(Action::DaoOutput(dao_output))
+        }
+        for dao_deposit in self.dao_deposits().cloned() {
+            actions.push(Action::DaoDeposit(dao_deposit))
         }
 
         let transaction_body = TransactionBody {
