@@ -1,5 +1,24 @@
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct BroadcastTransactionRequest {
+    /// The transaction to broadcast.
+    #[prost(message, optional, tag = "1")]
+    pub transaction: ::core::option::Option<
+        super::super::core::transaction::v1alpha1::Transaction,
+    >,
+    /// If true, wait for the view service to detect the transaction during sync.
+    #[prost(bool, tag = "2")]
+    pub await_detection: bool,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct BroadcastTransactionResponse {
+    /// The hash of the transaction that was broadcast.
+    #[prost(message, optional, tag = "1")]
+    pub id: ::core::option::Option<super::super::core::transaction::v1alpha1::Id>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionPlannerRequest {
     /// The expiry height for the requested TransactionPlan
     #[prost(uint64, tag = "1")]
@@ -1088,6 +1107,29 @@ pub mod view_protocol_service_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
+        /// Broadcast a transaction to the network, optionally waiting for full confirmation.
+        pub async fn broadcast_transaction(
+            &mut self,
+            request: impl tonic::IntoRequest<super::BroadcastTransactionRequest>,
+        ) -> Result<
+            tonic::Response<super::BroadcastTransactionResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1alpha1.ViewProtocolService/BroadcastTransaction",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
     }
 }
 /// Generated client implementations.
@@ -1338,6 +1380,11 @@ pub mod view_protocol_service_server {
             &self,
             request: tonic::Request<super::TransactionPlannerRequest>,
         ) -> Result<tonic::Response<super::TransactionPlannerResponse>, tonic::Status>;
+        /// Broadcast a transaction to the network, optionally waiting for full confirmation.
+        async fn broadcast_transaction(
+            &self,
+            request: tonic::Request<super::BroadcastTransactionRequest>,
+        ) -> Result<tonic::Response<super::BroadcastTransactionResponse>, tonic::Status>;
     }
     /// The view protocol is used by a view client, who wants to do some
     /// transaction-related actions, to request data from a view service, which is
@@ -2197,6 +2244,46 @@ pub mod view_protocol_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = TransactionPlannerSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1alpha1.ViewProtocolService/BroadcastTransaction" => {
+                    #[allow(non_camel_case_types)]
+                    struct BroadcastTransactionSvc<T: ViewProtocolService>(pub Arc<T>);
+                    impl<
+                        T: ViewProtocolService,
+                    > tonic::server::UnaryService<super::BroadcastTransactionRequest>
+                    for BroadcastTransactionSvc<T> {
+                        type Response = super::BroadcastTransactionResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::BroadcastTransactionRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).broadcast_transaction(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = BroadcastTransactionSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

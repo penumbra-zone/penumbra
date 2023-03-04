@@ -3920,6 +3920,7 @@ dependencies = [
  "metrics",
  "parking_lot 0.12.1",
  "penumbra-chain",
+ "penumbra-component",
  "penumbra-crypto",
  "penumbra-custody",
  "penumbra-proto",

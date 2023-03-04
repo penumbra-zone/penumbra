@@ -164,6 +164,12 @@ pub trait ViewClient {
         end_height: Option<u64>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<(u64, Transaction)>>> + Send + 'static>>;
 
+    fn broadcast_transaction(
+        &mut self,
+        transaction: Transaction,
+        await_detection: bool,
+    ) -> Pin<Box<dyn Future<Output = Result<penumbra_transaction::Id>> + Send + 'static>>;
+
     /// Return unspent notes, grouped by address index and then by asset id.
     #[instrument(skip(self, account_id))]
     fn unspent_notes_by_address_and_asset(
@@ -715,6 +721,30 @@ where
                     Ok((height, tx))
                 })
                 .collect()
+        }
+        .boxed()
+    }
+
+    fn broadcast_transaction(
+        &mut self,
+        transaction: Transaction,
+        await_detection: bool,
+    ) -> Pin<Box<dyn Future<Output = Result<penumbra_transaction::Id>> + Send + 'static>> {
+        let mut self2 = self.clone();
+        async move {
+            let rsp = ViewProtocolServiceClient::broadcast_transaction(
+                &mut self2,
+                tonic::Request::new(pb::BroadcastTransactionRequest {
+                    transaction: Some(transaction.into()),
+                    await_detection,
+                }),
+            );
+            let id = rsp
+                .await?
+                .into_inner()
+                .id
+                .ok_or_else(|| anyhow::anyhow!("response id is empty"))?;
+            id.try_into()
         }
         .boxed()
     }

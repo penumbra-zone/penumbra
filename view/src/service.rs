@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use async_stream::try_stream;
 use camino::Utf8Path;
 use futures::stream::{StreamExt, TryStreamExt};
@@ -17,7 +17,8 @@ use penumbra_crypto::{
 };
 use penumbra_proto::{
     client::v1alpha1::{
-        tendermint_proxy_service_client::TendermintProxyServiceClient, GetStatusRequest,
+        tendermint_proxy_service_client::TendermintProxyServiceClient, BroadcastTxSyncRequest,
+        GetStatusRequest,
     },
     core::crypto::v1alpha1 as pbc,
     view::v1alpha1::{
@@ -26,16 +27,18 @@ use penumbra_proto::{
         TransactionHashesResponse, TransactionPlannerResponse, TransactionsResponse,
         WitnessResponse,
     },
+    DomainType,
 };
 use penumbra_tct::{Commitment, Proof};
 use penumbra_transaction::{
     plan::{OutputPlan, SwapPlan, TransactionPlan},
-    TransactionPerspective, WitnessData,
+    Transaction, TransactionPerspective, WitnessData,
 };
+use rand::Rng;
 use rand_core::OsRng;
 use tokio::sync::{watch, RwLock};
 use tokio_stream::wrappers::WatchStream;
-use tonic::async_trait;
+use tonic::{async_trait, transport::Channel};
 use tracing::instrument;
 
 use crate::{Storage, Worker};
@@ -145,13 +148,74 @@ impl ViewService {
         Ok(())
     }
 
+    #[instrument(skip(self, transaction), fields(id = %transaction.id()))]
+    async fn broadcast_transaction(
+        &self,
+        transaction: Transaction,
+        await_detection: bool,
+    ) -> Result<penumbra_transaction::Id, anyhow::Error> {
+        use penumbra_component::ActionHandler;
+
+        // 1. Pre-check the transaction for (stateless) validity.
+        transaction
+            .check_stateless(std::sync::Arc::new(transaction.clone()))
+            .await
+            .context("transaction pre-submission checks failed")?;
+
+        // 2. Broadcast the transaction to the network.
+        // Note that "synchronous" here means "wait for the tx to be accepted by
+        // the fullnode", not "wait for the tx to be included on chain.
+        let mut fullnode_client = self.tendermint_proxy_client().await?;
+        let node_rsp = fullnode_client
+            .broadcast_tx_sync(BroadcastTxSyncRequest {
+                params: transaction.encode_to_vec(),
+                req_id: OsRng.gen(),
+            })
+            .await?
+            .into_inner();
+        tracing::info!(?node_rsp);
+        if node_rsp.code != 0 {
+            return Err(anyhow::anyhow!(
+                "Error submitting transaction: code {}, log: {}",
+                node_rsp.code,
+                node_rsp.log,
+            ));
+        }
+
+        // 3. Optionally wait for the transaction to be detected by the view service.
+        let nullifier = if await_detection {
+            transaction.spent_nullifiers().next()
+        } else {
+            None
+        };
+
+        if let Some(nullifier) = nullifier {
+            tracing::info!(?nullifier, "waiting for detection of nullifier");
+            let detection = self.storage.nullifier_status(nullifier, true);
+            tokio::time::timeout(std::time::Duration::from_secs(20), detection)
+                .await
+                .context("timeout waiting to detect nullifier of submitted transaction")?
+                .context("error while waiting for detection of submitted transaction")?;
+        }
+
+        Ok(transaction.id())
+    }
+
+    async fn tendermint_proxy_client(
+        &self,
+    ) -> Result<TendermintProxyServiceClient<Channel>, anyhow::Error> {
+        let client =
+            TendermintProxyServiceClient::connect(format!("http://{}:{}", self.node, self.pd_port))
+                .await?;
+
+        Ok(client)
+    }
+
     /// Return the latest block height known by the fullnode or its peers, as
     /// well as whether the fullnode is caught up with that height.
     #[instrument(skip(self))]
     pub async fn latest_known_block_height(&self) -> Result<(u64, bool), anyhow::Error> {
-        let mut client =
-            TendermintProxyServiceClient::connect(format!("http://{}:{}", self.node, self.pd_port))
-                .await?;
+        let mut client = self.tendermint_proxy_client().await?;
 
         let rsp = client.get_status(GetStatusRequest {}).await?.into_inner();
 
@@ -232,6 +296,33 @@ impl ViewProtocolService for ViewService {
     type BalanceByAddressStream = Pin<
         Box<dyn futures::Stream<Item = Result<pb::BalanceByAddressResponse, tonic::Status>> + Send>,
     >;
+
+    async fn broadcast_transaction(
+        &self,
+        request: tonic::Request<pb::BroadcastTransactionRequest>,
+    ) -> Result<tonic::Response<pb::BroadcastTransactionResponse>, tonic::Status> {
+        let pb::BroadcastTransactionRequest {
+            transaction,
+            await_detection,
+        } = request.into_inner();
+
+        let transaction: Transaction = transaction
+            .ok_or_else(|| tonic::Status::invalid_argument("missing transaction"))?
+            .try_into()
+            .map_err(|e: anyhow::Error| e.context("could not decode transaction"))
+            .map_err(|e| tonic::Status::invalid_argument(format!("{:#}", e)))?;
+
+        let id = self
+            .broadcast_transaction(transaction, await_detection)
+            .await
+            .map_err(|e| {
+                tonic::Status::internal(format!("could not broadcast transaction: {:#}", e))
+            })?;
+
+        Ok(tonic::Response::new(pb::BroadcastTransactionResponse {
+            id: Some(id.into()),
+        }))
+    }
 
     async fn transaction_planner(
         &self,

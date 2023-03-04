@@ -25,6 +25,8 @@ penumbra-crypto = { path = "../crypto" }
 penumbra-tct = { path = "../tct" }
 penumbra-transaction = { path = "../transaction" }
 penumbra-custody = {path = "../custody"}
+# TODO: replace by a penumbra-app
+penumbra-component = { path = "../component" }
 
 sqlx = { version = "0.6", features = [ "runtime-tokio-rustls", "offline", "sqlite" ] }
 tokio = { version = "1.22", features = ["full"]}
