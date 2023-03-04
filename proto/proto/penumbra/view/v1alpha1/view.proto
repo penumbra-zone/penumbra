@@ -80,8 +80,22 @@ service ViewProtocolService {
 
   // Query for a transaction plan
   rpc TransactionPlanner(TransactionPlannerRequest) returns (TransactionPlannerResponse);
+
+  // Broadcast a transaction to the network, optionally waiting for full confirmation.
+  rpc BroadcastTransaction(BroadcastTransactionRequest) returns (BroadcastTransactionResponse);
 }
 
+message BroadcastTransactionRequest {
+  // The transaction to broadcast.
+  core.transaction.v1alpha1.Transaction transaction = 1;
+  // If true, wait for the view service to detect the transaction during sync.
+  bool await_detection = 2;
+}
+
+message BroadcastTransactionResponse {
+  // The hash of the transaction that was broadcast.
+  core.transaction.v1alpha1.Id id = 1;
+}
 
 message TransactionPlannerRequest {
     // The expiry height for the requested TransactionPlan
