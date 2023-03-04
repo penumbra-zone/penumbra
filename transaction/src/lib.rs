@@ -18,6 +18,7 @@ mod auth_data;
 mod auth_hash;
 mod effect_hash;
 mod error;
+mod id;
 mod transaction;
 mod witness_data;
 
@@ -32,6 +33,7 @@ pub use auth_data::AuthorizationData;
 pub use auth_hash::{AuthHash, AuthorizingData};
 pub use effect_hash::{EffectHash, EffectingData};
 pub use error::Error;
+pub use id::Id;
 pub use transaction::{Transaction, TransactionBody};
 pub use view::{ActionView, TransactionPerspective, TransactionView};
 pub use witness_data::WitnessData;

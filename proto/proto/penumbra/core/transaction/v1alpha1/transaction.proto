@@ -18,6 +18,11 @@ message Transaction {
   crypto.v1alpha1.MerkleRoot anchor = 3;
 }
 
+// A transaction ID, the Sha256 hash of a transaction.
+message Id {
+  bytes hash = 1;
+}
+
 // The body of a transaction.
 message TransactionBody {
   // A list of actions (state changes) performed by this transaction.

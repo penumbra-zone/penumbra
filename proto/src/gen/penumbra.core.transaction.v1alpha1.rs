@@ -12,6 +12,13 @@ pub struct Transaction {
     #[prost(message, optional, tag = "3")]
     pub anchor: ::core::option::Option<super::super::crypto::v1alpha1::MerkleRoot>,
 }
+/// A transaction ID, the Sha256 hash of a transaction.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Id {
+    #[prost(bytes = "bytes", tag = "1")]
+    pub hash: ::prost::bytes::Bytes,
+}
 /// The body of a transaction.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

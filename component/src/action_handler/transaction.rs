@@ -81,7 +81,7 @@ impl ActionHandler for Transaction {
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         // While we have access to the full Transaction, hash it to
         // obtain a NoteSource we can cache for various actions.
-        let source = NoteSource::Transaction { id: self.id() };
+        let source = NoteSource::Transaction { id: self.id().0 };
         state.object_put("source", source);
 
         for (i, action) in self.actions().enumerate() {
