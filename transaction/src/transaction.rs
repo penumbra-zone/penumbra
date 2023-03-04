@@ -27,7 +27,7 @@ use crate::{
         ProposalWithdraw, Swap, Undelegate, ValidatorVote,
     },
     view::action_view::OutputView,
-    Action, ActionView, IsAction, TransactionPerspective, TransactionView,
+    Action, ActionView, Id, IsAction, TransactionPerspective, TransactionView,
 };
 
 #[derive(Clone, Debug, Default)]
@@ -332,14 +332,14 @@ impl Transaction {
         &self.binding_sig
     }
 
-    pub fn id(&self) -> [u8; 32] {
+    pub fn id(&self) -> Id {
         use sha2::{Digest, Sha256};
 
         let tx_bytes: Vec<u8> = self.clone().try_into().expect("can serialize transaction");
         let mut id_bytes = [0; 32];
         id_bytes[..].copy_from_slice(Sha256::digest(&tx_bytes).as_slice());
 
-        id_bytes
+        Id(id_bytes)
     }
 
     /// Compute the binding verification key from the transaction data.
