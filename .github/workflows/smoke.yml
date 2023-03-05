@@ -32,16 +32,17 @@ jobs:
           export PATH=$HOME/bin:$PATH
           which tendermint
 
-      - name: Build `pd`
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --package pd
-      - name: Build `pcli` tests
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --release --features sct-divergence-check --package pcli --no-run
+      # The point of these was to do compilation upfront, doesn't seem to be effective
+      #- name: Build `pd`
+      #  uses: actions-rs/cargo@v1
+      #  with:
+      #    command: build
+      #    args: --release --package pd
+      #- name: Build `pcli` tests
+      #  uses: actions-rs/cargo@v1
+      #  with:
+      #    command: test
+      #    args: --release --features sct-divergence-check --package pcli --no-run
         
       - name: Run the smoke test suite
         run: |
