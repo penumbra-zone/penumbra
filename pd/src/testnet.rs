@@ -33,7 +33,7 @@ pub fn generate_tm_config(
     node_name: &str,
     peers: Vec<TendermintAddress>,
     external_address: Option<TendermintAddress>,
-) -> anyhow::Result<String> {
+) -> anyhow::Result<TendermintConfig> {
     tracing::debug!("List of TM peers: {:?}", peers);
     let moniker: Moniker = Moniker::from_str(node_name)?;
     let mut tm_config =
@@ -43,7 +43,8 @@ pub fn generate_tm_config(
     tm_config.p2p.seeds = peers;
     tracing::debug!("External address looks like: {:?}", external_address);
     tm_config.p2p.external_address = external_address;
-    Ok(toml::to_string(&tm_config)?)
+    //Ok(toml::to_string(&tm_config)?)
+    Ok(tm_config)
 }
 
 /// Construct a [`tendermint_config::net::Address`] from an optional node [`Id`] and `node_address`.
@@ -157,7 +158,7 @@ pub fn write_configs(
     node_dir: PathBuf,
     vk: &ValidatorKeys,
     genesis: &Genesis<AppState>,
-    tm_config: String,
+    tm_config: TendermintConfig,
 ) -> anyhow::Result<()> {
     let mut pd_dir = node_dir.clone();
     let mut tm_dir = node_dir;
@@ -185,7 +186,7 @@ pub fn write_configs(
     config_file_path.push("config.toml");
     tracing::info!(config_file_path = %config_file_path.display(), "writing tendermint config.toml");
     let mut config_file = File::create(config_file_path)?;
-    config_file.write_all(tm_config.as_bytes())?;
+    config_file.write_all(toml::to_string(&tm_config)?.as_bytes())?;
 
     // Write this node's node_key.json
     // the underlying type doesn't implement Copy or Clone (for the best)

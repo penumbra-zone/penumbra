@@ -83,6 +83,9 @@ enum TestnetCommand {
     /// Generates a directory structure containing necessary files to create a new
     /// testnet from genesis, based on input configuration.
     Generate {
+        /// The `timeout_commit` parameter (block interval) to configure Tendermint with.
+        #[clap(long)]
+        timeout_commit: Option<tendermint::Timeout>,
         /// Number of blocks per epoch.
         #[clap(long)]
         epoch_duration: Option<u64>,
@@ -327,6 +330,7 @@ async fn main() -> anyhow::Result<()> {
                     // peers will be useful in local setups until peer discovery via a seed
                     // works.
                     starting_ip,
+                    timeout_commit,
                     epoch_duration,
                     unbonding_epochs,
                     active_validator_limit,
@@ -363,6 +367,7 @@ async fn main() -> anyhow::Result<()> {
                 output_dir,
                 &chain_id,
                 active_validator_limit,
+                timeout_commit,
                 epoch_duration,
                 unbonding_epochs,
                 starting_ip,
