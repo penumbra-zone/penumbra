@@ -15,12 +15,12 @@ set -euo pipefail
 export RUST_LOG="pcli=info,pd=info,penumbra=info"
 
 # Duration that the network will be left running before script exits.
-TESTNET_RUNTIME="${TESTNET_RUNTIME:-5m}"
+TESTNET_RUNTIME="${TESTNET_RUNTIME:-200}"
 # Duration that the network will run before integration tests are run.
-TESTNET_BOOTTIME="${TESTNET_BOOTTIME:-10s}"
+TESTNET_BOOTTIME="${TESTNET_BOOTTIME:-20}"
 
 echo "Generating testnet config..."
-cargo run --release --bin pd -- testnet generate
+cargo run --release --bin pd -- testnet generate --epoch-duration 10
 
 echo "Starting Tendermint..."
 tendermint start --log_level=error --home $HOME/.penumbra/testnet_data/node0/tendermint &
@@ -29,12 +29,15 @@ tendermint_pid="$!"
 echo "Starting pd..."
 cargo run --release --bin pd -- start --home $HOME/.penumbra/testnet_data/node0/pd &
 
+echo "Waiting $TESTNET_BOOTTIME seconds for network to boot..."
+sleep "$TESTNET_BOOTTIME"
+
 echo "Running integration tests against network"
 PENUMBRA_NODE_HOSTNAME="127.0.0.1" \
     PCLI_UNLEASH_DANGER="yes" \
     cargo test --release --features sct-divergence-check --package pcli -- --ignored --test-threads 1 --nocapture
 
-echo "Waiting another $TESTNET_RUNTIME while network runs..."
+echo "Waiting another $TESTNET_RUNTIME seconds while network runs..."
 sleep "$TESTNET_RUNTIME"
 # `kill -0` checks existence of pid, i.e. whether the process is still running.
 # It doesn't inspect errors, but the only reason the process would be stopped

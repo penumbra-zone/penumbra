@@ -69,6 +69,7 @@ url = "2"
 colored_json = "2.1"
 toml = { version = "0.7", features = ["preserve_order"] }
 walkdir = "2"
+once_cell = "1"
 
 [build-dependencies]
 vergen = "5"
