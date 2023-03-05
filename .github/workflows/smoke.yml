@@ -26,7 +26,10 @@ jobs:
         run: |
           curl -L -O "https://github.com/tendermint/tendermint/releases/download/v0.34.24/tendermint_0.34.24_linux_amd64.tar.gz"
           tar xzf tendermint_0.34.24_linux_amd64.tar.gz tendermint
-          cp tendermint /usr/bin
+          mkdir -p $HOME/bin
+          cp tendermint $HOME/bin
+          echo $PATH
+          export PATH=$HOME/bin:$PATH
           which tendermint
 
       - name: Build `pd`
@@ -41,6 +44,8 @@ jobs:
           args: --release --features sct-divergence-check --package pcli --no-run
         
       - name: Run the smoke test suite
-        run: ./deployments/scripts/smoke-test.sh
+        run: |
+          export PATH=$HOME/bin:$PATH
+          ./deployments/scripts/smoke-test.sh
         env:
           TESTNET_RUNTIME: 5m
