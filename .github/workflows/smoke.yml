@@ -49,4 +49,4 @@ jobs:
           export PATH=$HOME/bin:$PATH
           ./deployments/scripts/smoke-test.sh
         env:
-          TESTNET_RUNTIME: 5m
+          TESTNET_RUNTIME: 2m
