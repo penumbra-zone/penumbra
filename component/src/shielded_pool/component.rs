@@ -20,7 +20,7 @@ impl Component for ShieldedPool {
     // #[instrument(name = "shielded_pool", skip(state, app_state))]
     async fn init_chain<S: StateWrite>(mut state: S, app_state: &genesis::AppState) {
         for allocation in &app_state.allocations {
-            tracing::info!(?allocation, "processing allocation");
+            tracing::debug!(?allocation, "processing allocation");
 
             assert_ne!(
                 allocation.amount, 0u64,
