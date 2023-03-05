@@ -89,7 +89,6 @@ impl Worker {
         &mut self,
         init_chain: abci::request::InitChain,
     ) -> Result<abci::response::InitChain> {
-        tracing::info!(?init_chain);
         // Note that errors cannot be handled in InitChain, the application must crash.
         let app_state: genesis::AppState = serde_json::from_slice(&init_chain.app_state_bytes)
             .expect("can parse app_state in genesis file");
