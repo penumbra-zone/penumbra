@@ -160,13 +160,13 @@ fn format_visible_spend_row(
 }
 
 // Turns an `Address` into a `String` representation; either a short-form for addresses
-// not associated with the `ivk`, or in the form of `[self: <index or ephemeral>]` for
+// not associated with the `ivk`, or in the form of `[account: {account}]` for
 // addresses associated with the `ivk`.
 fn format_address(ivk: &IncomingViewingKey, address: &Address) -> String {
     if ivk.views_address(address) {
-        let index = ivk.index_for_diversifier(address.diversifier());
+        let account = ivk.index_for_diversifier(address.diversifier()).account;
 
-        format!("[self: {index:?}]")
+        format!("[account {account:?}]")
     } else {
         address.display_short_form()
     }
