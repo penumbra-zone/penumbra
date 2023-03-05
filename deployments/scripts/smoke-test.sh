@@ -19,29 +19,28 @@ TESTNET_RUNTIME="${TESTNET_RUNTIME:-5m}"
 # Duration that the network will run before integration tests are run.
 TESTNET_BOOTTIME="${TESTNET_BOOTTIME:-10s}"
 
-# change to subdir where compose files are stored
-compose_dir="$(git rev-parse --show-toplevel)/deployments/compose"
-cd "$compose_dir" || exit 1
+echo "Generating testnet config..."
+cargo run --release --bin pd -- testnet generate
 
-# Run the network via compose, and pause briefly before testing.
-# { sleep 5s; true ; } &
-echo "Starting smoketest network via compose..."
-docker-compose up --abort-on-container-exit &
-smoke_test_pid="$!"
-sleep "$TESTNET_BOOTTIME"
+echo "Starting Tendermint..."
+tendermint start --home $HOME/.penumbra/testnet_data/node0/tendermint &
+tendermint_pid="$!"
+
+echo "Starting pd..."
+cargo run --release --bin pd -- start --home $HOME/.penumbra/testnet_data/node0/pd &
 
 echo "Running integration tests against network"
 PENUMBRA_NODE_HOSTNAME="127.0.0.1" \
     PCLI_UNLEASH_DANGER="yes" \
-    cargo test --features sct-divergence-check --package pcli -- --ignored --test-threads 1 --nocapture
+    cargo test --release --features sct-divergence-check --package pcli -- --ignored --test-threads 1 --nocapture
 
 echo "Waiting another $TESTNET_RUNTIME while network runs..."
 sleep "$TESTNET_RUNTIME"
 # `kill -0` checks existence of pid, i.e. whether the process is still running.
 # It doesn't inspect errors, but the only reason the process would be stopped
 # is if it failed, so it's good enough for our needs.
-if kill -0 "$smoke_test_pid"; then
-    kill -9 "$smoke_test_pid"
+if kill -0 "$tendermint_pid"; then
+    kill -9 "$tendermint_pid"
     echo "SUCCESS! Smoke test complete. Ran for $TESTNET_RUNTIME, found no errors."
 else
     >&2 echo "ERROR: smoke test compose process exited early"

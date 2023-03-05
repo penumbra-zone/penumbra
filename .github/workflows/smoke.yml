@@ -20,20 +20,26 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
+      - uses: Swatinem/rust-cache@v1
 
-      - name: Log in to the Docker Hub container registry (for pulls)
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Build the testnet.
+      - name: Install tendermint binary
         run: |
-          ./deployments/scripts/docker_compose_freshstart.sh
-          chmod -R 777 ~/.penumbra/testnet_data
-          cd ./deployments/compose/
-          docker-compose build
+          curl -L -O "https://github.com/tendermint/tendermint/releases/download/v0.34.24/tendermint_0.34.24_linux_amd64.tar.gz"
+          tar xzf tendermint_0.34.24_linux_amd64.tar.gz tendermint
+          cp tendermint /usr/bin
+          which tendermint
 
+      - name: Build `pd`
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --package pd
+      - name: Build `pcli` tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --release --features sct-divergence-check --package pcli --no-run
+        
       - name: Run the smoke test suite
         run: ./deployments/scripts/smoke-test.sh
         env:
