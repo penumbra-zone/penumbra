@@ -371,8 +371,9 @@ impl TxCmd {
                     .await
                     .context("can't plan swap claim")?;
 
-                // Submit the `SwapClaim` transaction. TODO: should probably wait for the output notes
-                // of a SwapClaim to sync.
+                // Submit the `SwapClaim` transaction.
+                // BUG: this doesn't wait for confirmation, see
+                // https://github.com/penumbra-zone/penumbra/pull/2091/commits/128b24a6303c2f855a708e35f9342987f1dd34ec
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Delegate {

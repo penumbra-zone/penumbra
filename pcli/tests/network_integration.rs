@@ -250,6 +250,9 @@ fn swap() {
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     swap_cmd.assert().success();
 
+    // HACK: remove once #1749 is fixed
+    thread::sleep(std::time::Duration::from_secs(10));
+
     // Cleanup: Swap the gn back (will fail if we received no gn in the above swap).
     let mut swap_back_cmd = Command::cargo_bin("pcli").unwrap();
     swap_back_cmd
