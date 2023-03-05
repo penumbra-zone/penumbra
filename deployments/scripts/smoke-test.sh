@@ -12,6 +12,7 @@
 # a slightly longer runtime for the suite to find more errors.
 set -euo pipefail
 
+export RUST_LOG="pcli=info,penumbra=info"
 
 # Duration that the network will be left running before script exits.
 TESTNET_RUNTIME="${TESTNET_RUNTIME:-5m}"
@@ -32,7 +33,6 @@ sleep "$TESTNET_BOOTTIME"
 echo "Running integration tests against network"
 PENUMBRA_NODE_HOSTNAME="127.0.0.1" \
     PCLI_UNLEASH_DANGER="yes" \
-    RUST_LOG="pcli=debug,penumbra=debug" \
     cargo test --features sct-divergence-check --package pcli -- --ignored --test-threads 1 --nocapture
 
 echo "Waiting another $TESTNET_RUNTIME while network runs..."
