@@ -10,12 +10,11 @@
 //! was distributed 1cube.
 
 use std::path::PathBuf;
-use std::time::Duration;
-use std::{thread, time};
+use std::thread;
 
 use assert_cmd::Command;
 use directories::UserDirs;
-use once_cell::sync::Lazy;
+//use once_cell::sync::Lazy;
 use penumbra_component::stake::validator::ValidatorToml;
 use predicates::prelude::*;
 use regex::Regex;
@@ -29,14 +28,16 @@ const TEST_ASSET: &str = "1cube";
 // The maximum amount of time any command is allowed to take before we error.
 const TIMEOUT_COMMAND_SECONDS: u64 = 20;
 
-// The estimated epoch duration time.
-const EPOCH_DURATION: Lazy<Duration> = Lazy::new(|| {
+// The time to wait before attempting to perform an undelegation claim.
+/*
+const UNBONDING_DURATION: Lazy<Duration> = Lazy::new(|| {
     let seconds = std::env::var("EPOCH_DURATION")
         .unwrap_or("100".to_string())
         .parse()
         .unwrap();
     Duration::from_secs(seconds)
 });
+ */
 
 /// Import the wallet from seed phrase into a temporary directory.
 fn load_wallet_into_tmpdir() -> TempDir {
@@ -215,7 +216,8 @@ fn delegate_and_undelegate() {
     }
 
     // Wait for the epoch duration.
-    thread::sleep(*EPOCH_DURATION);
+    //thread::sleep(*UNBONDING_DURATION);
+    // TODO: exercise undelegation claims.
 
     // Now sync.
     let mut sync_cmd = Command::cargo_bin("pcli").unwrap();
