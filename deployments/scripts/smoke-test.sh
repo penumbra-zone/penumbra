@@ -12,7 +12,7 @@
 # a slightly longer runtime for the suite to find more errors.
 set -euo pipefail
 
-export RUST_LOG="pcli=info,penumbra=info"
+export RUST_LOG="pcli=info,pd=info,penumbra=info"
 
 # Duration that the network will be left running before script exits.
 TESTNET_RUNTIME="${TESTNET_RUNTIME:-5m}"
