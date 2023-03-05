@@ -184,7 +184,17 @@ impl ViewService {
 
         // 3. Optionally wait for the transaction to be detected by the view service.
         let nullifier = if await_detection {
-            transaction.spent_nullifiers().next()
+            // This needs to be only *spend* nullifiers because the nullifier detection
+            // is broken for swaps, https://github.com/penumbra-zone/penumbra/issues/1749
+            //
+            // in the meantime, inline the definition from `Transaction`
+            transaction
+                .actions()
+                .filter_map(|action| match action {
+                    penumbra_transaction::Action::Spend(spend) => Some(spend.body.nullifier),
+                    _ => None,
+                })
+                .next()
         } else {
             None
         };
