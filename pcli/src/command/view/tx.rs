@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use comfy_table::{presets, Table};
 use penumbra_crypto::{
     asset::Cache, dex::swap::SwapPlaintext, keys::IncomingViewingKey, Address, FullViewingKey,
@@ -177,15 +177,18 @@ impl TxCmd {
         false
     }
     pub async fn exec<V: ViewClient>(&self, fvk: &FullViewingKey, view: &mut V) -> Result<()> {
+        let hash = self
+            .hash
+            // We have to convert to uppercase because `tendermint::Hash` only accepts uppercase :(
+            .to_uppercase()
+            .parse()
+            .context("invalid transaction hash")?;
         // Retrieve Transaction
-        let tx = view
-            .transaction_by_hash(self.hash.parse()?)
-            .await?
-            .ok_or_else(|| {
-                anyhow::anyhow!("transaction {} not found in view service", self.hash,)
-            })?;
+        let tx = view.transaction_by_hash(hash).await?.ok_or_else(|| {
+            anyhow::anyhow!("transaction {} not found in view service", self.hash,)
+        })?;
         // Retrieve full TxP
-        let txp = view.transaction_perspective(self.hash.parse()?).await?;
+        let txp = view.transaction_perspective(hash).await?;
         // Generate TxV using TxP
         let txv = tx.decrypt_with_perspective(&txp);
 
