@@ -3389,6 +3389,7 @@ dependencies = [
  "http-body",
  "indicatif",
  "jmt",
+ "once_cell",
  "penumbra-chain",
  "penumbra-component",
  "penumbra-crypto",

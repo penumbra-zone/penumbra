@@ -10,10 +10,12 @@
 //! was distributed 1cube.
 
 use std::path::PathBuf;
+use std::time::Duration;
 use std::{thread, time};
 
 use assert_cmd::Command;
 use directories::UserDirs;
+use once_cell::sync::Lazy;
 use penumbra_component::stake::validator::ValidatorToml;
 use predicates::prelude::*;
 use regex::Regex;
@@ -24,10 +26,17 @@ use penumbra_chain::test_keys::{ADDRESS_0_STR, ADDRESS_1_STR, SEED_PHRASE};
 
 const TEST_ASSET: &str = "1cube";
 
-const BLOCK_TIME_SECONDS: u64 = 10;
-// We need to wait for syncing to occur.
-const TIMEOUT_COMMAND_SECONDS: u64 = 360;
-const EPOCH_DURATION: u64 = 10;
+// The maximum amount of time any command is allowed to take before we error.
+const TIMEOUT_COMMAND_SECONDS: u64 = 20;
+
+// The estimated epoch duration time.
+const EPOCH_DURATION: Lazy<Duration> = Lazy::new(|| {
+    let seconds = std::env::var("EPOCH_DURATION")
+        .unwrap_or("100".to_string())
+        .parse()
+        .unwrap();
+    Duration::from_secs(seconds)
+});
 
 /// Import the wallet from seed phrase into a temporary directory.
 fn load_wallet_into_tmpdir() -> TempDir {
@@ -97,10 +106,6 @@ fn transaction_send_from_addr_0_to_addr_1() {
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     send_cmd.assert().success();
 
-    // Wait for a couple blocks for the transaction to be confirmed.
-    let block_time = time::Duration::from_secs(2 * BLOCK_TIME_SECONDS);
-    thread::sleep(block_time);
-
     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
     balance_cmd
         .args([
@@ -130,10 +135,6 @@ fn transaction_send_from_addr_0_to_addr_1() {
             ADDRESS_0_STR,
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-
-    // Wait for a couple blocks for the transaction to be confirmed before doing other tests.
-    let block_time = time::Duration::from_secs(2 * BLOCK_TIME_SECONDS);
-    thread::sleep(block_time);
 }
 
 #[ignore]
@@ -151,10 +152,6 @@ fn transaction_sweep() {
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     sweep_cmd.assert().success();
-
-    // Wait for a couple blocks for the transaction to be confirmed before doing other tests.
-    let block_time = time::Duration::from_secs(2 * BLOCK_TIME_SECONDS);
-    thread::sleep(block_time);
 }
 
 #[ignore]
@@ -179,10 +176,6 @@ fn delegate_and_undelegate() {
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     delegate_cmd.assert().success();
-
-    // Wait for a couple blocks for the transaction to be confirmed.
-    let block_time = time::Duration::from_secs(2 * BLOCK_TIME_SECONDS);
-    thread::sleep(block_time);
 
     // Check we have some of the delegation token for that validator now.
     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
@@ -219,15 +212,10 @@ fn delegate_and_undelegate() {
         if undelegation_result.is_ok() {
             break;
         }
-
-        // Wait for a couple blocks for the transaction to be confirmed.
-        let block_time = time::Duration::from_secs(2 * BLOCK_TIME_SECONDS);
-        thread::sleep(block_time);
     }
 
     // Wait for the epoch duration.
-    let block_time = time::Duration::from_secs(EPOCH_DURATION * BLOCK_TIME_SECONDS);
-    thread::sleep(block_time);
+    thread::sleep(*EPOCH_DURATION);
 
     // Now sync.
     let mut sync_cmd = Command::cargo_bin("pcli").unwrap();
@@ -262,10 +250,6 @@ fn swap() {
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     swap_cmd.assert().success();
 
-    // Wait for a couple blocks for the transaction to be confirmed.
-    let block_time = time::Duration::from_secs(2 * BLOCK_TIME_SECONDS);
-    thread::sleep(block_time);
-
     // Cleanup: Swap the gn back (will fail if we received no gn in the above swap).
     let mut swap_back_cmd = Command::cargo_bin("pcli").unwrap();
     swap_back_cmd
@@ -280,10 +264,6 @@ fn swap() {
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     swap_back_cmd.assert().success();
-
-    // Wait for a couple blocks for the transaction to be confirmed before doing other tests.
-    let block_time = time::Duration::from_secs(2 * BLOCK_TIME_SECONDS);
-    thread::sleep(block_time);
 }
 
 #[ignore]
@@ -321,10 +301,6 @@ fn governance_submit_proposal() {
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     submit_cmd.assert().success();
-
-    // Wait for a couple blocks for the transaction to be confirmed.
-    let block_time = time::Duration::from_secs(2 * BLOCK_TIME_SECONDS);
-    thread::sleep(block_time);
 
     // Now list the proposals.
     let mut proposals_cmd = Command::cargo_bin("pcli").unwrap();
