@@ -31,6 +31,7 @@ pub fn testnet_generate(
     testnet_dir: PathBuf,
     chain_id: &str,
     active_validator_limit: Option<u64>,
+    timeout_commit: Option<tendermint::Timeout>,
     epoch_duration: Option<u64>,
     unbonding_epochs: Option<u64>,
     starting_ip: Ipv4Addr,
@@ -236,7 +237,10 @@ pub fn testnet_generate(
             })
             .filter_map(|(id, ip)| parse_tm_address(Some(&id), &ip).ok())
             .collect::<Vec<_>>();
-        let tm_config = generate_tm_config(&node_name, ips_minus_mine, None)?;
+        let mut tm_config = generate_tm_config(&node_name, ips_minus_mine, None)?;
+        if let Some(timeout_commit) = timeout_commit {
+            tm_config.consensus.timeout_commit = timeout_commit;
+        }
 
         write_configs(node_dir, vk, &validator_genesis, tm_config)?;
     }
