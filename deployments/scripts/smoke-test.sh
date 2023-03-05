@@ -23,7 +23,7 @@ echo "Generating testnet config..."
 cargo run --release --bin pd -- testnet generate
 
 echo "Starting Tendermint..."
-tendermint start --home $HOME/.penumbra/testnet_data/node0/tendermint &
+tendermint start --log_level=error --home $HOME/.penumbra/testnet_data/node0/tendermint &
 tendermint_pid="$!"
 
 echo "Starting pd..."
