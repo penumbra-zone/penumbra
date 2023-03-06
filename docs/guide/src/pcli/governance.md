@@ -284,3 +284,33 @@ cargo run --release --bin pcli query dao balance upenumbra
 DAO spend proposals are only accepted for voting if they would not overdraw the current funds in the
 DAO at the time the proposal is submitted, so it's worth checking this information before submitting
 such a proposal.
+
+### Sending Validator Funding Streams To The DAO
+
+A validator may non-custodially send funds to the DAO, similarly to any other funding stream. To do
+this, add a `[[funding_stream]]` section to your validator definition TOML file that declares the
+DAO as a recipient for a funding stream. For example, your definition might look like this:
+
+```toml
+sequence_number = 0
+enabled = true
+name = "My Validator"
+website = "https://example.com"
+description = "An example validator"
+identity_key = "penumbravalid1s6kgjgnphs99udwvyplwceh7phwt95dyn849je0jl0nptw78lcqqvcd65j"
+governance_key = "penumbragovern1s6kgjgnphs99udwvyplwceh7phwt95dyn849je0jl0nptw78lcqqhknap5"
+
+[consensus_key]
+type = "tendermint/PubKeyEd25519"
+value = "tDk3/k8zjEyDQjQC1jUyv8nJ1cC1B/MgrDzeWvBTGDM="
+
+# Send a 1% commission to this address:
+[[funding_stream]]
+recipient = "penumbrav2t1hum845ches70c8kp8zfx7nerjwfe653hxsrpgwepwtspcp4jy6ytnxhe5kwn56sku684x6zzqcwp5ycrkee5mmg9kdl3jkr5lqn2xq3kqxvp4d7gwqdue5jznk2ter2t66mk4n"
+rate_bps = 100
+
+# Send another 1% commission to the DAO:
+[[funding_stream]]
+recipient = "DAO"
+rate_bps = 100
+```
