@@ -3,6 +3,19 @@
 Penumbra features on-chain governance similar to Cosmos Hub, with the simplification that there are
 only 3 kinds of vote: yes, no, and abstain.
 
+## Quick Start
+
+There's a lot you can do with the governance system in Penumbra. If you have a particular intention
+in mind, here are some quick links:
+
+- [I am a _delegator_ and I want to vote on a proposal.](#voting-as-a-delegator)
+- [I am a _validator_ and I want to vote on a proposal.](#voting-as-a-validator)
+- [I want to learn about the different kinds of proposal.](#authoring-a-proposal)
+- [I want to submit a new proposal.](#submitting-a-proposal)
+- [I submitted a proposal and I want to withdraw it before voting concludes.](#withdrawing-a-proposal)
+- [Voting has concluded on a proposal I submitted and I want to claim my deposit.](#claiming-a-proposal-deposit)
+- [I want to contribute funds to the DAO.](#contributing-to-the-dao)
+
 ## Getting Proposal Information
 
 To see information about the currently active proposals, including your own, use the `pcli query
@@ -140,7 +153,37 @@ actions, which are shielded). DAO spend transactions are unable to use regular s
 spend funds from any source other than the DAO itself, perform swaps, or submit, withdraw, or claim
 governance proposals.
 
-##### Making A DAO Spend Transaction Plan
+### Submitting A Proposal
+
+To submit a proposal, first generate a proposal template for the kind of proposal you want to
+submit. For example, suppose we want to create a signaling proposal:
+
+```bash
+cargo run --release --bin pcli tx proposal template signaling --file proposal.toml
+```
+
+This outputs a TOML template for the proposal to the file `proposal.toml`, where you can edit the
+details to match what you'd like to submit. The template will contain relevant default fields for
+you to fill in, as well as a proposal ID, automatically set to the next proposal ID at the time you
+generated the template. If someone else submits a proposal before you're ready to upload yours, you
+may need to increment this ID, because it must be the sequentially next proposal ID at the time the
+proposal is submitted to the chain.
+
+Once you're ready to submit the proposal, you can submit it. Note that you do not have to explicitly
+specify the proposal deposit in this action; it is determined automatically based on the chain
+parameters.
+
+```bash
+cargo run --release --bin pcli tx proposal submit --file proposal.toml
+```
+
+The proposal deposit will be immediately escrowed and the proposal voting period will start in the
+very next block. As the proposer, you will receive a _proposal deposit NFT_ which can be redeemed
+for the proposal deposit after voting concludes, provided the proposal is not slashed. This NFT has
+denomination `proposal_N_deposit`, where `N` is the ID of your proposal. Note that _whoever holds
+this NFT has exclusive control of the proposal_: they can withdraw it or claim the deposit.
+
+#### Making A DAO Spend Transaction Plan
 
 In order to submit a DAO spend proposal, it is necessary to create a transaction plan. At present,
 the only way to specify this is to provide a rather human-unfriendly JSON-formatted transaction
@@ -178,36 +221,6 @@ To template a DAO spend proposal using a JSON transaction plan, use the `pcli tx
 dao-spend --transaction-plan <FILENAME>.json`, which will take the transaction plan and include it
 in the generated proposal template. If no plan is specified, the transaction plan will be the empty
 transaction which does nothing when executed.
-
-### Submitting A Proposal
-
-To submit a proposal, first generate a proposal template for the kind of proposal you want to
-submit. For example, suppose we want to create a signaling proposal:
-
-```bash
-cargo run --release --bin pcli tx proposal template signaling --file proposal.toml
-```
-
-This outputs a TOML template for the proposal to the file `proposal.toml`, where you can edit the
-details to match what you'd like to submit. The template will contain relevant default fields for
-you to fill in, as well as a proposal ID, automatically set to the next proposal ID at the time you
-generated the template. If someone else submits a proposal before you're ready to upload yours, you
-may need to increment this ID, because it must be the sequentially next proposal ID at the time the
-proposal is submitted to the chain.
-
-Once you're ready to submit the proposal, you can submit it. Note that you do not have to explicitly
-specify the proposal deposit in this action; it is determined automatically based on the chain
-parameters.
-
-```bash
-cargo run --release --bin pcli tx proposal submit --file proposal.toml
-```
-
-The proposal deposit will be immediately escrowed and the proposal voting period will start in the
-very next block. As the proposer, you will receive a _proposal deposit NFT_ which can be redeemed
-for the proposal deposit after voting concludes, provided the proposal is not slashed. This NFT has
-denomination `proposal_N_deposit`, where `N` is the ID of your proposal. Note that _whoever holds
-this NFT has exclusive control of the proposal_: they can withdraw it or claim the deposit.
 
 ### Withdrawing A Proposal
 
