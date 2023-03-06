@@ -59,6 +59,11 @@ proposal 1, you would do:
 cargo run --release --bin pcli tx vote yes --on 1
 ```
 
+When you vote as a delegator (but _not_ when you vote as a validator), you will receive
+commemorative `voted_on_N` tokens, where `N` is the proposal ID, proportionate to the weight of your
+vote. Think of these as the cryptocurrency equivalent of the "I voted!" stickers you may have
+received when voting in real life at your polling place.
+
 ### Voting As A Validator
 
 If you are a validator who was active when the proposal started, you can vote on it using the
