@@ -89,7 +89,9 @@ impl ActionHandler for ValidatorVote {
         if !proposal_state.is_withdrawn() && proposal_payload.is_emergency() {
             tracing::debug!(proposal = %proposal, "proposal is emergency, checking for emergency pass condition");
             let tally = state.current_tally(*proposal).await?;
-            let total_voting_power = state.total_voting_power().await?;
+            let total_voting_power = state
+                .total_voting_power_at_proposal_start(*proposal)
+                .await?;
             let chain_params = state.get_chain_params().await?;
             if tally.emergency_pass(total_voting_power, &chain_params) {
                 // If the emergency pass condition is met, enact the proposal
