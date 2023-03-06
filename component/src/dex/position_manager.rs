@@ -35,7 +35,7 @@ pub trait PositionManager: StateWrite + PositionRead {
         &mut self,
         position: Position,
         initial_reserves: Reserves,
-    ) -> Result<LpNft> {
+    ) -> Result<()> {
         // We limit the sizes of reserve amounts to at most 112 bits. This is to give us extra
         // headroom to perform intermediary calculations during composition.
         // TODO: remove the extra casting once `Amount` gets full 128 bits support.
@@ -49,8 +49,9 @@ pub trait PositionManager: StateWrite + PositionRead {
             reserves: initial_reserves,
         };
         self.index_position(&metadata);
+        self.put_position(&id, metadata);
 
-        Ok(self.put_position(&id, metadata))
+        Ok(())
     }
 
     /// Marks an existing position as closed in the chain state.
@@ -89,10 +90,8 @@ impl<T: StateWrite + ?Sized> PositionManager for T {}
 
 #[async_trait]
 trait Inner: StateWrite {
-    fn put_position(&mut self, id: &position::Id, metadata: position::Metadata) -> LpNft {
+    fn put_position(&mut self, id: &position::Id, metadata: position::Metadata) {
         self.put(state_key::position_by_id(id), metadata);
-
-        LpNft::new(*id, position::State::Opened)
     }
 
     fn index_position(&mut self, metadata: &position::Metadata) {

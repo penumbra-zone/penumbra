@@ -39,10 +39,8 @@ impl ActionHandler for PositionOpen {
     }
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
-        let position = &self.position;
-        let initial_reserves = &self.initial_reserves;
-        let _lpnft = state
-            .position_open(position.clone(), initial_reserves.clone())
+        state
+            .position_open(self.position.clone(), self.initial_reserves.clone())
             .await?;
 
         Ok(())
