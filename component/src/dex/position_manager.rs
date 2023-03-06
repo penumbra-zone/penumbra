@@ -18,16 +18,11 @@ pub trait PositionRead: StateRead {
         self.get(&state_key::position_by_id(id)).await
     }
 
-    async fn check_nonce_unused(&self, position: &Position) -> Result<()> {
-        if let Some(()) = self
-            .get_proto::<()>(&state_key::position_nonce(&position.nonce))
-            .await?
-        {
-            return Err(anyhow::anyhow!(
-                "nonce was already used for another position"
-            ));
+    async fn check_position_id_unused(&self, id: &position::Id) -> Result<()> {
+        match self.get_raw(&state_key::position_by_id(id)).await? {
+            Some(_) => Err(anyhow::anyhow!("position id {:?} already used", id)),
+            None => Ok(()),
         }
-        Ok(())
     }
 }
 impl<T: StateRead + ?Sized> PositionRead for T {}
@@ -46,9 +41,7 @@ pub trait PositionManager: StateWrite + PositionRead {
         // TODO: remove the extra casting once `Amount` gets full 128 bits support.
         initial_reserves.check_bounds()?;
         position.check_bounds()?;
-        self.check_nonce_unused(&position).await?;
         let id = position.id();
-        self.record_position_nonce(position.nonce);
 
         let metadata = position::Metadata {
             position,
@@ -100,10 +93,6 @@ trait Inner: StateWrite {
         self.put(state_key::position_by_id(id), metadata);
 
         LpNft::new(*id, position::State::Opened)
-    }
-
-    fn record_position_nonce(&mut self, nonce: [u8; 32]) {
-        self.put_proto(state_key::position_nonce(&nonce), ());
     }
 
     fn index_position(&mut self, metadata: &position::Metadata) {

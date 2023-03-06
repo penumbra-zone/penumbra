@@ -1,10 +1,6 @@
 use penumbra_crypto::dex::{lp::position, DirectedTradingPair, TradingPair};
 use std::string::String;
 
-pub fn position_nonce(nonce: &[u8]) -> String {
-    format!("dex/position_nonce/{nonce:?}")
-}
-
 pub fn positions(trading_pair: &TradingPair, position_id: &str) -> String {
     format!("dex/positions/{trading_pair}/opened/{position_id}")
 }

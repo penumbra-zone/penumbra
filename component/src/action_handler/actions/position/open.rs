@@ -32,15 +32,8 @@ impl ActionHandler for PositionOpen {
     }
 
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
-        // Validate that the position nonce is not already in use
-        // TODO: this check is duplicated in `PositionManager::position_open`
-        // but that's probably okay, checking here lets us skip out of execution sooner
-        state.check_nonce_unused(&self.position).await?;
-
         // Validate that the position ID doesn't collide
-        if state.position_by_id(&self.position.id()).await?.is_some() {
-            return Err(anyhow::anyhow!("position ID already exists"));
-        }
+        state.check_position_id_unused(&self.position.id()).await?;
 
         Ok(())
     }
