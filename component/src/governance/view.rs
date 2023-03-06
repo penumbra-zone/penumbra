@@ -385,7 +385,7 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
         Ok(())
     }
 
-    /// Get all the validator votes for the proposal.
+    /// Get all the active validator voting power for the proposal.
     async fn validator_voting_power_at_proposal_start(
         &self,
         proposal_id: u64,
@@ -409,6 +409,30 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
         }
 
         Ok(powers)
+    }
+
+    /// Check whether a validator was active at the start of a proposal, and fail if not.
+    async fn check_validator_active_at_proposal_start(
+        &self,
+        proposal_id: u64,
+        identity_key: &IdentityKey,
+    ) -> Result<()> {
+        if self
+            .get_proto::<u64>(&state_key::voting_power_at_proposal_start(
+                proposal_id,
+                *identity_key,
+            ))
+            .await?
+            .is_none()
+        {
+            anyhow::bail!(
+                "validator {} was not active at the start of proposal {}",
+                identity_key,
+                proposal_id
+            );
+        }
+
+        Ok(())
     }
 
     /// Get all the validator votes for the proposal.
@@ -844,11 +868,13 @@ pub trait StateWriteExt: StateWrite {
     }
 
     async fn deliver_dao_transaction(&mut self, proposal: u64) -> Result<()> {
+        // Schedule for beginning of next block
+        let delivery_height = self.get_block_height().await? + 1;
+
+        tracing::info!(%proposal, %delivery_height, "scheduling DAO transaction for delivery at next block");
+
         self.put_proto(
-            state_key::deliver_single_dao_transaction_at_height(
-                self.get_block_height().await? + 1, // Schedule for beginning of next block
-                proposal,
-            ),
+            state_key::deliver_single_dao_transaction_at_height(delivery_height, proposal),
             proposal,
         );
         Ok(())

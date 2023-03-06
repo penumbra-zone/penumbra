@@ -47,6 +47,9 @@ impl ActionHandler for ValidatorVote {
 
         state.check_proposal_votable(*proposal).await?;
         state
+            .check_validator_active_at_proposal_start(*proposal, identity_key)
+            .await?;
+        state
             .check_validator_has_not_voted(*proposal, identity_key)
             .await?;
         state
