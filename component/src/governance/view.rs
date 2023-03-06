@@ -6,7 +6,7 @@ use std::{
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use futures::{StreamExt, TryStreamExt};
-use penumbra_chain::{StateReadExt as _, StateWriteExt as _};
+use penumbra_chain::{params::ChainParameters, StateReadExt as _, StateWriteExt as _};
 use penumbra_crypto::{
     asset::{self, Amount},
     stake::{DelegationToken, IdentityKey},
@@ -541,6 +541,24 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
         }
         Ok(transactions)
     }
+
+    /// Get the pending chain parameters, if any.
+    async fn pending_chain_parameters(&self) -> Result<Option<ChainParameters>> {
+        Ok(self
+            .get(&state_key::change_chain_params_at_height(
+                self.get_block_height().await?,
+            ))
+            .await?)
+    }
+
+    /// Get the next block's pending chain parameters, if any.
+    async fn next_block_pending_chain_parameters(&self) -> Result<Option<ChainParameters>> {
+        Ok(self
+            .get(&state_key::change_chain_params_at_height(
+                self.get_block_height().await? + 1,
+            ))
+            .await?)
+    }
 }
 
 impl<T: StateRead + crate::stake::StateReadExt + ?Sized> StateReadExt for T {}
@@ -826,15 +844,28 @@ pub trait StateWriteExt: StateWrite {
 
                 // Check that the old parameters are an exact match for the current parameters, or
                 // else abort the update.
-                let current = self.get_chain_params().await?;
+                let current =
+                    // If there is a pending parameter change, sequence the update on top of that
+                    // one (i.e., pretend that those new parameters are the old parameters, since
+                    // chain parameter updates must be sequentially consistent)
+                    if let Some(params) = self.next_block_pending_chain_parameters().await? {
+                        params
+                    } else {
+                        // If no pending parameter change, use the current parameters
+                        self.get_chain_params().await?
+                    };
+
+                // The current parameters (whether pending from a previous passed proposal or just the
+                // current ones, unchanged) have to match the old parameters specified in the
+                // proposal, exactly. This prevents updates from clashing.
                 if **old != current {
                     return Ok(Err(anyhow::anyhow!(
                         "current chain parameters do not match the old parameters in the proposal"
                     )));
                 }
 
-                // Update the chain parameters
-                self.put_chain_params((**new).clone());
+                // Tell the app to update the chain parameters in the next block
+                self.schedule_chain_params_change((**new).clone()).await?;
 
                 tracing::info!("chain parameters updated successfully");
             }
@@ -872,6 +903,19 @@ pub trait StateWriteExt: StateWrite {
         self.put_proto(
             state_key::deliver_single_dao_transaction_at_height(delivery_height, proposal),
             proposal,
+        );
+        Ok(())
+    }
+
+    async fn schedule_chain_params_change(&mut self, chain_params: ChainParameters) -> Result<()> {
+        // Schedule for beginning of next block
+        let delivery_height = self.get_block_height().await? + 1;
+
+        tracing::info!(%delivery_height, "scheduling chain parameters change at next block");
+
+        self.put(
+            state_key::change_chain_params_at_height(delivery_height),
+            chain_params,
         );
         Ok(())
     }

@@ -111,3 +111,7 @@ pub fn deliver_dao_transactions_at_height(block_height: u64) -> String {
     // Note: this has to be the prefix of the `deliver_single_dao_transaction_at_height` function above.
     format!("governance/deliver_dao_transactions/{block_height}/")
 }
+
+pub fn change_chain_params_at_height(block_height: u64) -> String {
+    format!("governance/change_chain_params/{block_height}/")
+}

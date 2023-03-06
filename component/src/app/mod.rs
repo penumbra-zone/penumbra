@@ -82,6 +82,19 @@ impl App {
         // store the block time
         state_tx.put_block_timestamp(begin_block.header.time);
 
+        // If a chain parameter change is scheduled for this block, apply it here, before any other
+        // component has executed. This ensures that chain parameter changes are consistently
+        // applied precisely at the boundary between blocks:
+        if let Some(chain_params) = state_tx
+            .pending_chain_parameters()
+            .await
+            .expect("chain params should always be readable")
+        {
+            tracing::info!(?chain_params, "applying pending chain parameters");
+            state_tx.put_chain_params(chain_params);
+        }
+
+        // Run each of the begin block handlers for each component, in sequence:
         Staking::begin_block(&mut state_tx, begin_block).await;
         IBCComponent::begin_block(&mut state_tx, begin_block).await;
         StubDex::begin_block(&mut state_tx, begin_block).await;
