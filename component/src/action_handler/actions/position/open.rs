@@ -12,6 +12,11 @@ use crate::dex::{PositionManager, PositionRead};
 /// Debits the initial reserves and credits an opened position NFT.
 impl ActionHandler for PositionOpen {
     async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+        // We limit the sizes of reserve amounts to at most 112 bits. This is to give us extra
+        // headroom to perform intermediary calculations during composition.
+        self.initial_reserves.check_bounds()?;
+        self.position.check_bounds()?;
+
         // The initial reserves must have a non-zero Amount for either `r1` or `r2`.
         if self.initial_reserves.r1.value() == 0 && self.initial_reserves.r2.value() == 0 {
             return Err(anyhow::anyhow!(
