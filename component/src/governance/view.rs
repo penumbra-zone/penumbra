@@ -114,17 +114,13 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
     }
 
     /// Get the total voting power across all validators.
-    async fn total_voting_power(&self) -> Result<u64> {
-        let mut total = 0;
-
-        for v in self.validator_list().await? {
-            total += self
-                .validator_power(&v.identity_key)
-                .await?
-                .unwrap_or_default();
-        }
-
-        Ok(total)
+    async fn total_voting_power_at_proposal_start(&self, proposal_id: u64) -> Result<u64> {
+        Ok(self
+            .validator_voting_power_at_proposal_start(proposal_id)
+            .await?
+            .values()
+            .copied()
+            .sum())
     }
 
     /// Check whether a nullifier was spent for a given proposal.

@@ -84,7 +84,9 @@ pub async fn enact_all_passed_proposals<S: StateWrite>(mut state: S) -> Result<(
                 // If the proposal is still in the voting state, tally and conclude it (this will
                 // automatically remove it from the list of unfinished proposals)
                 let outcome = state.current_tally(proposal_id).await?.outcome(
-                    state.total_voting_power().await?,
+                    state
+                        .total_voting_power_at_proposal_start(proposal_id)
+                        .await?,
                     &state.get_chain_params().await?,
                 );
 
