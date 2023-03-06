@@ -19,6 +19,7 @@ pub struct ShieldedPool {}
 impl Component for ShieldedPool {
     // #[instrument(name = "shielded_pool", skip(state, app_state))]
     async fn init_chain<S: StateWrite>(mut state: S, app_state: &genesis::AppState) {
+        // Register a denom for each asset in the genesis state
         for allocation in &app_state.allocations {
             tracing::debug!(?allocation, "processing allocation");
 
@@ -156,6 +157,15 @@ pub trait StateReadExt: StateRead {
 
     /// Checks whether a claimed SCT anchor is a previous valid state root.
     async fn check_claimed_anchor(&self, anchor: tct::Root) -> Result<()> {
+        // The root of the empty tree is valid, because the empty tree causally precedes all other
+        // trees, and contains no witnessed commitments, so it is valid for all possible futures. A
+        // transaction which does not use any witness data can safely use the empty anchor without
+        // having to look up a later block anchor (this is particularly useful for DAO
+        // transactions, but could be for others as well).
+        if anchor.is_empty() {
+            return Ok(());
+        }
+
         if let Some(anchor_height) = self
             .get_proto::<u64>(&state_key::anchor_lookup(anchor))
             .await?
