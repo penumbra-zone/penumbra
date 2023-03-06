@@ -107,6 +107,7 @@ impl App {
             // NOTE: We are *intentionally* using `deliver_tx_allowing_dao_spends` here, rather than
             // `deliver_tx`, because here is the **ONLY** place we want to permit DAO spends, when
             // delivering transactions that have been scheduled by the chain itself for delivery.
+            tracing::info!(?transaction, "delivering DAO transaction");
             match self
                 .deliver_tx_allowing_dao_spends(Arc::new(transaction))
                 .await
@@ -140,7 +141,7 @@ impl App {
             "DAO outputs are not permitted in user-submitted transactions"
         );
 
-        // Now that we've ensured that there are not any DAO spends, we can deliver the transaction:
+        // Now that we've ensured that there are not any DAO spends or outputs, we can deliver the transaction:
         self.deliver_tx_allowing_dao_spends(tx).await
     }
 
