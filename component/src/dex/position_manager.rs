@@ -1,10 +1,7 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_crypto::dex::{
-    lp::{
-        position::{self, Position},
-        LpNft, Reserves,
-    },
+    lp::position::{self, Position},
     DirectedTradingPair,
 };
 use penumbra_proto::{DomainType, StateReadProto, StateWriteProto};
@@ -30,54 +27,17 @@ impl<T: StateRead + ?Sized> PositionRead for T {}
 /// Manages liquidity positions within the chain state.
 #[async_trait]
 pub trait PositionManager: StateWrite + PositionRead {
-    /// Validates position arguments and records the new position in the chain state.
-    async fn position_open(
-        &mut self,
-        position: Position,
-        initial_reserves: Reserves,
-    ) -> Result<()> {
-        let id = position.id();
-
-        let metadata = position::Metadata {
-            position,
-            state: position::State::Opened,
-            reserves: initial_reserves,
-        };
-        self.index_position(&metadata);
-        self.put_position(&id, metadata);
-
-        Ok(())
-    }
-
-    /// Marks an existing position as closed in the chain state.
-    async fn position_close(&mut self, id: &position::Id) -> Result<()> {
-        let mut metadata = self
-            .position_by_id(id)
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("could not find position with id {}", id))?;
-        if metadata.state != position::State::Opened {
-            return Err(anyhow::anyhow!(
-                "attempted to close position {} with state {}",
-                id,
-                metadata.state
-            ));
-        }
-
-        metadata.state = position::State::Closed;
+    /// Writes a position to the state, updating all necessary indexes.
+    fn put_position(&mut self, metadata: position::Metadata) {
+        let id = metadata.position.id();
+        // Clear any existing indexes of the position, since changes to the
+        // reserves or the position state might have invalidated them.
         self.deindex_position(&metadata.position);
-        self.put_position(id, metadata);
-
-        Ok(())
-    }
-
-    /// Marks an existing closed position as withdrawn in the chain state.
-    async fn position_withdraw(&mut self, _id: &position::Id) {
-        todo!()
-    }
-
-    /// Marks an existing withdrawn position as claimed in the chain state.
-    async fn position_reward_claim(&mut self, _id: &position::Id) {
-        todo!()
+        // Only index the position's liquidity if it is active.
+        if metadata.state == position::State::Opened {
+            self.index_position(&metadata);
+        }
+        self.put(state_key::position_by_id(&id), metadata);
     }
 }
 
@@ -85,10 +45,6 @@ impl<T: StateWrite + ?Sized> PositionManager for T {}
 
 #[async_trait]
 trait Inner: StateWrite {
-    fn put_position(&mut self, id: &position::Id, metadata: position::Metadata) {
-        self.put(state_key::position_by_id(id), metadata);
-    }
-
     fn index_position(&mut self, metadata: &position::Metadata) {
         let (pair, phi) = (metadata.position.phi.pair, &metadata.position.phi);
         let id_bytes = metadata.position.id().encode_to_vec();

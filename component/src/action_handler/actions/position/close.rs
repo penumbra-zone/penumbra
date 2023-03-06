@@ -2,11 +2,12 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use penumbra_crypto::dex::lp::position;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::PositionClose, Transaction};
 
 use crate::action_handler::ActionHandler;
-use crate::dex::PositionManager;
+use crate::dex::{PositionManager, PositionRead};
 
 #[async_trait]
 /// Debits an opened position NFT and credits a closed position NFT.
@@ -22,7 +23,24 @@ impl ActionHandler for PositionClose {
     }
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
-        // TODO: how much logic should live in ActionHandlers vs PositionManager?
-        state.position_close(&self.position_id).await
+        let mut metadata = state
+            .position_by_id(&self.position_id)
+            .await?
+            .ok_or_else(|| {
+                anyhow::anyhow!("could not find position with id {}", self.position_id)
+            })?;
+
+        if metadata.state != position::State::Opened {
+            return Err(anyhow::anyhow!(
+                "attempted to close position {} with state {}, expected Opened",
+                self.position_id,
+                metadata.state
+            ));
+        }
+
+        metadata.state = position::State::Closed;
+        state.put_position(metadata);
+
+        Ok(())
     }
 }

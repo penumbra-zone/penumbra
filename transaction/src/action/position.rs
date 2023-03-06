@@ -49,17 +49,7 @@ impl PositionOpen {
             asset_id: LpNft::new(self.position.id(), position::State::Opened).asset_id(),
         };
 
-        let r1 = Value {
-            amount: self.initial_reserves.r1,
-            asset_id: self.position.phi.pair.asset_1(),
-        };
-
-        let r2 = Value {
-            amount: self.initial_reserves.r2,
-            asset_id: self.position.phi.pair.asset_2(),
-        };
-
-        let reserves = Balance::from(r1) + r2;
+        let reserves = self.initial_reserves.balance(&self.position.phi.pair);
 
         // The action consumes the reserves and produces an LP NFT
         Balance::from(opened_position_nft) - reserves

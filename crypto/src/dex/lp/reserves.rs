@@ -1,7 +1,10 @@
-use crate::asset::Amount;
 use penumbra_proto::{
     client::v1alpha1::StubCpmmReservesResponse, core::dex::v1alpha1 as pb, DomainType,
 };
+
+use crate::asset::Amount;
+use crate::dex::TradingPair;
+use crate::{Balance, Value};
 
 use super::position::MAX_RESERVE_AMOUNT;
 
@@ -28,6 +31,21 @@ impl Reserves {
         } else {
             Ok(())
         }
+    }
+
+    /// Augment `self` with type information to get a typed `Balance`.
+    pub fn balance(&self, pair: &TradingPair) -> Balance {
+        let r1 = Value {
+            amount: self.r1,
+            asset_id: pair.asset_1(),
+        };
+
+        let r2 = Value {
+            amount: self.r2,
+            asset_id: pair.asset_2(),
+        };
+
+        Balance::from(r1) + r2
     }
 }
 

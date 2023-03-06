@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use penumbra_crypto::dex::lp::position;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::PositionOpen, Transaction};
 
@@ -44,9 +45,12 @@ impl ActionHandler for PositionOpen {
     }
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
-        state
-            .position_open(self.position.clone(), self.initial_reserves.clone())
-            .await?;
+        // Write the newly opened position.
+        state.put_position(position::Metadata {
+            position: self.position.clone(),
+            state: position::State::Opened,
+            reserves: self.initial_reserves.clone(),
+        });
 
         Ok(())
     }
