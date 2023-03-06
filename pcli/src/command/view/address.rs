@@ -1,4 +1,5 @@
 use anyhow::Result;
+use base64::Engine;
 use rand_core::OsRng;
 
 use penumbra_crypto::FullViewingKey;
@@ -10,6 +11,9 @@ pub struct AddressCmd {
     /// Generate an ephemeral address instead of an indexed one.
     #[clap(short, long)]
     ephemeral: bool,
+    /// Output in base64 format, instead of the default bech32.
+    #[clap(long)]
+    base64: bool,
 }
 
 impl AddressCmd {
@@ -19,15 +23,18 @@ impl AddressCmd {
     }
 
     pub fn exec(&self, fvk: &FullViewingKey) -> Result<()> {
-        match self.ephemeral {
-            false => {
-                let (address, _dtk) = fvk.incoming().payment_address(self.index.into());
-                println!("{address}");
-            }
-            true => {
-                let (address, _dtk) = fvk.incoming().ephemeral_address(OsRng, self.index.into());
-                println!("{address}");
-            }
+        let (address, _dtk) = match self.ephemeral {
+            false => fvk.incoming().payment_address(self.index.into()),
+            true => fvk.incoming().ephemeral_address(OsRng, self.index.into()),
+        };
+
+        if self.base64 {
+            println!(
+                "{}",
+                base64::engine::general_purpose::STANDARD.encode(address.to_vec())
+            );
+        } else {
+            println!("{}", address);
         }
 
         Ok(())
