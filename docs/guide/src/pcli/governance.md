@@ -85,6 +85,11 @@ also optionally _withdraw_ the proposal, which prevents it from passing, but doe
 from being slashed. This is usually used when a proposal has been superceded by a revised
 alternative.
 
+<picture>
+  <source srcset="../governance-dark.png" media="(prefers-color-scheme: dark)" />
+  <img src="../governance-light.png" />
+</picture>
+
 ### Kinds Of Proposal
 
 There are 4 kinds of governance proposal on Penumbra: **signaling**, **emergency**, **parameter
