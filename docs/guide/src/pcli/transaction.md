@@ -48,82 +48,10 @@ later to add the previously delegated funds to your wallet.
 
 ## Governance
 
-Penumbra features on-chain governance in the style of Cosmos Hub. Anyone can submit a new governance
-proposal for voting by escrowing a _proposal deposit_, which will be held until the end of the
-proposal's voting period. If the proposal is not slashed by voters, the deposit will then be
-returned; if it is slashed, then the deposit is burned.
-
-### Submitting A Proposal
-
-To submit a proposal, first generate a proposal template for the kind of proposal you want to
-submit. For example, suppose we want to create a signaling proposal:
-
-```bash
-cargo run --release --bin pcli tx proposal template --kind signaling --file proposal.json
-```
-
-This outputs a JSON template for the proposal to the file `proposal.json`, where you can edit the
-details to match what you'd like to submit.
-
-Once you're ready to submit the proposal, you can submit it. Note that you do not have to explicitly
-specify the proposal deposit in this action; it is determined automatically based on the chain
-parameters.
-
-```bash
-cargo run --release --bin pcli tx proposal submit --file proposal.json
-```
-
-The proposal deposit will be immediately escrowed and the proposal voting period will start in the
-very next block. When voting finishes, if your proposal has not been slashed, it will automatically
-be refunded to you with no action required on your part.
-
-### Getting Proposal Information
-
-To see information about the currently active proposals, including your own, use the `pcli query
-proposal` subcommand.
-
-To list all the active proposals by their ID, use:
-
-```bash
-cargo run --release --bin pcli query governance list-proposals
-```
-
-Other proposal query commands all follow the form:
-
-```bash
-cargo run --release --bin pcli query governance proposal [PROPOSAL_ID] [QUERY]
-```
-
-These are the queries currently defined:
-
-- `definition` gets the details of a proposal, as the submitted JSON;
-- `state` gets information about the current state of a proposal (voting, withdrawn, or finished,
-  along with the reason for withdrawal if any, and the outcome of finished proposals);
-- `period` gets the voting start and end block heights of a proposal;
-- `tally` gets the current tally of a proposal's votes;
-- `validator-votes` gets the list of public validator votes on the proposal, by identity key
-
-### Withdrawing A Proposal
-
-If you want to withdraw a proposal that you have made (perhaps because a better proposal has come to
-community consensus), you can do so before voting concludes. Note that this does not make you immune
-to losing your deposit by slashing, as withdrawn proposals can still be voted on and slashed.
-
-```bash
-cargo run --release --bin pcli tx proposal withdraw 0 --reason "some human-readable reason for withdrawal"
-```
-
-### Voting On A Proposal
-
-Delegators cannot yet vote on proposals (this functionality is coming soon!). If you are a
-validator, you can vote on a proposal using the `validator vote` subcommand of `pcli`. For example,
-if you wanted to vote "yes" on proposal 1, you would do:
-
-```bash
-cargo run --release --bin pcli validator vote yes --on 1
-```
-
-Validators, like delegators, cannot change their votes after they have voted.
+Penumbra features on-chain governance similar to Cosmos Hub where anyone can submit proposals and
+both validators and delegators to vote on them. Penumbra's governance model incorporates a single
+DAO account, into which anyone can freely deposit, but from which only a successful governance vote
+can spend. For details on using governance, see the [governance section](./governance.md).
 
 ## Swapping Assets
 
