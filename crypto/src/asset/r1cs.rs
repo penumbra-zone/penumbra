@@ -34,6 +34,19 @@ impl AllocVar<crate::asset::Id, Fq> for AssetIdVar {
     }
 }
 
+impl R1CSVar<Fq> for AssetIdVar {
+    type Value = crate::asset::Id;
+
+    fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<Fq> {
+        self.asset_id.cs()
+    }
+
+    fn value(&self) -> Result<Self::Value, SynthesisError> {
+        let asset_id_fq = self.asset_id.value()?;
+        Ok(crate::asset::Id(asset_id_fq))
+    }
+}
+
 impl AssetIdVar {
     pub fn value_generator(&self) -> Result<ElementVar, SynthesisError> {
         let cs = self.asset_id.cs();

@@ -14,7 +14,7 @@ use crate::{
 pub const NK_LEN_BYTES: usize = 32;
 
 /// Allows deriving the nullifier associated with a positioned piece of state.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct NullifierKey(pub Fq);
 
 impl NullifierKey {
@@ -51,6 +51,19 @@ impl AllocVar<NullifierKey, Fq> for NullifierKeyVar {
                 inner: FqVar::new_witness(cs, || Ok(inner.0))?,
             }),
         }
+    }
+}
+
+impl R1CSVar<Fq> for NullifierKeyVar {
+    type Value = NullifierKey;
+
+    fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<Fq> {
+        self.inner.cs()
+    }
+
+    fn value(&self) -> Result<Self::Value, SynthesisError> {
+        let inner_fq = self.inner.value()?;
+        Ok(NullifierKey(inner_fq))
     }
 }
 

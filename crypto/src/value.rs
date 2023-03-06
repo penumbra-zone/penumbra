@@ -99,6 +99,21 @@ impl AllocVar<Value, Fq> for ValueVar {
     }
 }
 
+impl R1CSVar<Fq> for ValueVar {
+    type Value = Value;
+
+    fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<Fq> {
+        self.amount.cs()
+    }
+
+    fn value(&self) -> Result<Self::Value, SynthesisError> {
+        Ok(Value {
+            amount: self.amount.value()?,
+            asset_id: self.asset_id.value()?,
+        })
+    }
+}
+
 impl ValueVar {
     pub fn amount(&self) -> FqVar {
         self.amount.amount.clone()

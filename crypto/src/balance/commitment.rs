@@ -84,6 +84,19 @@ impl AllocVar<Commitment, Fq> for BalanceCommitmentVar {
     }
 }
 
+impl R1CSVar<Fq> for BalanceCommitmentVar {
+    type Value = Commitment;
+
+    fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<Fq> {
+        self.inner.cs()
+    }
+
+    fn value(&self) -> Result<Self::Value, SynthesisError> {
+        let inner = self.inner.value()?;
+        Ok(Commitment(inner))
+    }
+}
+
 impl EqGadget<Fq> for BalanceCommitmentVar {
     fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
         self.inner.is_eq(&other.inner)
