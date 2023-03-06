@@ -90,6 +90,9 @@ alternative.
   <img src="../governance-light.png" />
 </picture>
 
+In the above, rounded grey boxes are actions submitted by the proposal author, rectangular colored
+boxes are the state of the proposal on chain, and colored circles are outcomes of voting.
+
 ### Kinds Of Proposal
 
 There are 4 kinds of governance proposal on Penumbra: **signaling**, **emergency**, **parameter
