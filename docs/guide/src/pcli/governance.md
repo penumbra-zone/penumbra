@@ -235,3 +235,26 @@ on the result of the vote: `proposal_N_passed`, `proposal_N_failed` or `proposal
 proposal was not slashed (that is, it passed _or_ failed), this action will also produce the
 original proposal deposit. Note that you _can_ claim a slashed proposal: you will receive the
 slashed proposal result NFT, but you will not receive the original proposal deposit.
+
+## Contributing To The DAO
+
+Anyone can contribute any amount of any denomination to the Penumbra DAO. To do this, use the
+command `pcli tx dao-deposit`, like so:
+
+```bash
+cargo run --release --bin pcli tx dao-deposit 100penumbra
+```
+
+Funds contributed to the DAO cannot be withdrawn except by a successful DAO spend governance
+proposal.
+
+To query the current DAO balance, use `pcli query dao balance` with the **base denomination** of an
+asset or its asset ID (display denominations are not currently accepted). For example:
+
+```bash
+cargo run --release --bin pcli query dao balance upenumbra
+```
+
+DAO spend proposals are only accepted for voting if they would not overdraw the current funds in the
+DAO at the time the proposal is submitted, so it's worth checking this information before submitting
+such a proposal.
