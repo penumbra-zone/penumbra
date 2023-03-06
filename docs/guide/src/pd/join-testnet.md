@@ -136,7 +136,11 @@ type = 'tendermint/PubKeyEd25519'
 value = 'HDmm2FmJhLHxaKPnP5Fw3tC1DtlBx8ETgTL35UF+p6w='
 
 [[funding_stream]]
-address = 'penumbrav2t1cntf73e36y3um4zmqm4j0zar3jyxvyfqxywwg5q6fjxzhe28qttppmcww2kunetdp3q2zywcakwv6tzxdnaa3sqymll2gzq6zqhr5p0v7fnfdaghrr2ru2uw78nkeyt49uf49q'
+recipient = 'penumbrav2t1cntf73e36y3um4zmqm4j0zar3jyxvyfqxywwg5q6fjxzhe28qttppmcww2kunetdp3q2zywcakwv6tzxdnaa3sqymll2gzq6zqhr5p0v7fnfdaghrr2ru2uw78nkeyt49uf49q'
+rate_bps = 100
+
+[[funding_stream]]
+recipient = "DAO"
 rate_bps = 100
 ```
 
@@ -153,6 +157,10 @@ instances have caught up to the consensus block height.
 
 Note that by default the `enabled` field is set to false and will need to be
 enabled in order to activate one's validator.
+
+In the default template, there is a funding stream declared to [contribute funds to the
+DAO](../pcli/governance.md#contributing-to-the-dao). This is not required, and may be altered or
+removed if you wish.
 
 #### Setting the consensus key
 
