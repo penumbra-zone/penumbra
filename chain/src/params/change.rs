@@ -118,16 +118,16 @@ impl ChainParameters {
                 "slashing penalty (misbehavior) must be at least 1 basis point",
             ),
             (
-                *slashing_penalty_misbehavior <= Penalty(10_000),
-                "slashing penalty (misbehavior) must be at most 10,000 basis points",
+                *slashing_penalty_misbehavior <= Penalty(100_000_000),
+                "slashing penalty (misbehavior) must be at most 10,000 basis points^2",
             ),
             (
                 *slashing_penalty_downtime >= Penalty(1),
                 "slashing penalty (downtime) must be at least 1 basis point",
             ),
             (
-                *slashing_penalty_downtime <= Penalty(10_000),
-                "slashing penalty (downtime) must be at most 10,000 basis points",
+                *slashing_penalty_downtime <= Penalty(100_000_000),
+                "slashing penalty (downtime) must be at most 10,000 basis points^2",
             ),
             (
                 *signed_blocks_window_len >= 2,
@@ -155,8 +155,8 @@ impl ChainParameters {
                 "proposal valid quorum must be greater than 0",
             ),
             (
-                *proposal_pass_threshold > Ratio::new(1, 2),
-                "proposal pass threshold must be greater than 1/2",
+                *proposal_pass_threshold >= Ratio::new(1, 2),
+                "proposal pass threshold must be greater than or equal to 1/2",
             ),
             (
                 *proposal_slash_threshold > Ratio::new(1, 2),
