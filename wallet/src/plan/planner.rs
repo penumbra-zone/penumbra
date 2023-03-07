@@ -503,6 +503,20 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             self.output(value, self_address);
         }
 
+        // All actions have now been added, so check to make sure that you don't build and submit an
+        // empty transaction
+        if self.plan.actions.is_empty() {
+            anyhow::bail!("planned transaction would be empty, so should not be submitted");
+        }
+
+        // Now the transaction should be fully balanced, unless we didn't have enough to spend
+        if !self.balance.is_zero() {
+            anyhow::bail!(
+                "balance is non-zero after attempting to balance transaction: {:?}",
+                self.balance
+            );
+        }
+
         // If there are outputs, we check that a memo has been added. If not, we add a default memo.
         if self.plan.num_outputs() > 0 && self.plan.memo_plan.is_none() {
             self.memo(MemoPlaintext::default())
@@ -515,14 +529,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         let precision_bits = fmd_params.precision_bits;
         self.plan
             .add_all_clue_plans(&mut self.rng, precision_bits.into());
-
-        // Now the transaction should be fully balanced, unless we didn't have enough to spend
-        if !self.balance.is_zero() {
-            anyhow::bail!(
-                "balance is non-zero after attempting to balance transaction: {:?}",
-                self.balance
-            );
-        }
 
         tracing::debug!(plan = ?self.plan, "finished balancing transaction");
 
