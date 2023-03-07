@@ -17,7 +17,9 @@ use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
 use crate::balance::BalanceVar;
-use crate::proofs::groth16::{gadgets, ParameterSetup, GROTH16_PROOF_LENGTH_BYTES};
+use crate::proofs::groth16::{
+    gadgets, ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES,
+};
 use crate::{
     balance, balance::commitment::BalanceCommitmentVar, keys::Diversifier, note, Address, Note,
     Rseed, Value,
@@ -138,10 +140,9 @@ impl OutputProof {
     /// The public inputs are:
     /// * balance commitment of the new note,
     /// * note commitment of the new note,
-    // Commented out, but this may be useful when debugging proof verification failures,
+    // For debugging proof verification failures:
     // to check that the proof data and verification keys are consistent.
-    //#[tracing::instrument(skip(self, vk), fields(self = ?base64::encode(&self.clone().encode_to_vec()), vk = ?vk.debug_id()))]
-    #[tracing::instrument(skip(self, vk))]
+    #[tracing::instrument(level="debug", skip(self, vk), fields(self = ?base64::encode(&self.clone().encode_to_vec()), vk = ?vk.debug_id()))]
     pub fn verify(
         &self,
         vk: &PreparedVerifyingKey<Bls12_377>,
