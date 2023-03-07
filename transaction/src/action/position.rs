@@ -49,17 +49,7 @@ impl PositionOpen {
             asset_id: LpNft::new(self.position.id(), position::State::Opened).asset_id(),
         };
 
-        let r1 = Value {
-            amount: self.initial_reserves.r1,
-            asset_id: self.position.phi.pair.asset_1(),
-        };
-
-        let r2 = Value {
-            amount: self.initial_reserves.r2,
-            asset_id: self.position.phi.pair.asset_2(),
-        };
-
-        let reserves = Balance::from(r1) + r2;
+        let reserves = self.initial_reserves.balance(&self.position.phi.pair);
 
         // The action consumes the reserves and produces an LP NFT
         Balance::from(opened_position_nft) - reserves
@@ -92,7 +82,7 @@ impl IsAction for PositionClose {
 }
 
 impl PositionClose {
-    /// Compute a commitment to the value this action contributes to its transaction.
+    /// Compute the value this action contributes to its transaction.
     pub fn balance(&self) -> Balance {
         let opened_position_nft = Value {
             amount: 1u64.into(),
@@ -131,9 +121,14 @@ impl IsAction for PositionWithdraw {
             asset_id: LpNft::new(self.position_id, position::State::Closed).asset_id(),
         }
         .commit(Fr::zero());
+        let withdrawn_position_nft = Value {
+            amount: 1u64.into(),
+            asset_id: LpNft::new(self.position_id, position::State::Withdrawn).asset_id(),
+        }
+        .commit(Fr::zero());
 
-        // The action consumes a closed position and produces the position's reserves.
-        self.reserves_commitment - closed_position_nft
+        // The action consumes a closed position and produces the position's reserves and a withdrawn position NFT.
+        self.reserves_commitment - closed_position_nft + withdrawn_position_nft
     }
 
     fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {

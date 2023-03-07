@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 
 mod delegator_vote;
 mod output;
+mod position;
 mod spend;
 mod swap;
 mod swap_claim;
@@ -14,15 +15,15 @@ mod undelegate_claim;
 
 pub use delegator_vote::DelegatorVotePlan;
 pub use output::OutputPlan;
+pub use position::{PositionRewardClaimPlan, PositionWithdrawPlan};
 pub use spend::SpendPlan;
 pub use swap::SwapPlan;
 pub use swap_claim::SwapClaimPlan;
 pub use undelegate_claim::UndelegateClaimPlan;
 
 use crate::action::{
-    DaoDeposit, DaoOutput, DaoSpend, Delegate, PositionClose, PositionOpen, PositionRewardClaim,
-    PositionWithdraw, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, Undelegate,
-    ValidatorVote,
+    DaoDeposit, DaoOutput, DaoSpend, Delegate, PositionClose, PositionOpen, ProposalDepositClaim,
+    ProposalSubmit, ProposalWithdraw, Undelegate, ValidatorVote,
 };
 
 /// A declaration of a planned [`Action`], for use in transaction creation.
@@ -64,8 +65,12 @@ pub enum ActionPlan {
 
     PositionOpen(PositionOpen),
     PositionClose(PositionClose),
-    PositionWithdraw(PositionWithdraw),
-    PositionRewardClaim(PositionRewardClaim),
+    // PositionWithdrawPlan requires the balance of the funds to be withdrawn, so
+    // a plan must be used.
+    PositionWithdraw(PositionWithdrawPlan),
+    // Reward Claim requires the balance of the funds to be claimed, so a plan
+    // must be used.
+    PositionRewardClaim(PositionRewardClaimPlan),
 
     DaoSpend(DaoSpend),
     DaoOutput(DaoOutput),
@@ -88,15 +93,13 @@ impl ActionPlan {
             ProposalWithdraw(proposal_withdraw) => proposal_withdraw.balance(),
             ProposalDepositClaim(proposal_deposit_claim) => proposal_deposit_claim.balance(),
             DelegatorVote(delegator_vote) => delegator_vote.balance(),
-            PositionOpen(_position_open) => todo!(),
-            PositionClose(_position_close) => todo!(),
-            PositionWithdraw(_position_withdraw) => todo!(),
-            PositionRewardClaim(_position_reward_claim) => {
-                todo!()
-            }
             DaoSpend(dao_spend) => dao_spend.balance(),
             DaoOutput(dao_output) => dao_output.balance(),
             DaoDeposit(dao_deposit) => dao_deposit.balance(),
+            PositionOpen(position_open) => position_open.balance(),
+            PositionClose(position_close) => position_close.balance(),
+            PositionWithdraw(position_withdraw) => position_withdraw.balance(),
+            PositionRewardClaim(position_reward_claim) => position_reward_claim.balance(),
             // None of these contribute to transaction balance:
             IBCAction(_) | ValidatorDefinition(_) | ValidatorVote(_) => Balance::default(),
         }
@@ -183,14 +186,14 @@ impl From<PositionClose> for ActionPlan {
     }
 }
 
-impl From<PositionWithdraw> for ActionPlan {
-    fn from(inner: PositionWithdraw) -> ActionPlan {
+impl From<PositionWithdrawPlan> for ActionPlan {
+    fn from(inner: PositionWithdrawPlan) -> ActionPlan {
         ActionPlan::PositionWithdraw(inner)
     }
 }
 
-impl From<PositionRewardClaim> for ActionPlan {
-    fn from(inner: PositionRewardClaim) -> ActionPlan {
+impl From<PositionRewardClaimPlan> for ActionPlan {
+    fn from(inner: PositionRewardClaimPlan) -> ActionPlan {
         ActionPlan::PositionRewardClaim(inner)
     }
 }
@@ -253,7 +256,11 @@ impl From<ActionPlan> for pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::PositionClose(inner.into())),
             },
             ActionPlan::PositionWithdraw(inner) => pb_t::ActionPlan {
-                action: Some(pb_t::action_plan::Action::PositionWithdraw(inner.into())),
+                action: Some(pb_t::action_plan::Action::PositionWithdraw(Into::<
+                    penumbra_proto::core::dex::v1alpha1::PositionWithdrawPlan,
+                >::into(
+                    inner
+                ))),
             },
             ActionPlan::PositionRewardClaim(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::PositionRewardClaim(inner.into())),

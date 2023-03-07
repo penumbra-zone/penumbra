@@ -1,6 +1,20 @@
 use ::futures::StreamExt;
 use penumbra_storage::*;
 
+/// Checks that deleting a nonexistent key behaves as expected (no errors, it's already gone)
+#[tokio::test]
+async fn delete_nonexistent_key() -> anyhow::Result<()> {
+    let tmpdir = tempfile::tempdir()?;
+    // Initialize an empty Storage in the new directory
+    let storage = Storage::load(tmpdir.path().to_owned()).await?;
+
+    let mut state_init = StateDelta::new(storage.latest_snapshot());
+    state_init.delete("nonexist".to_string());
+    storage.commit(state_init).await?;
+
+    Ok(())
+}
+
 #[tokio::test]
 async fn simple_flow() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();

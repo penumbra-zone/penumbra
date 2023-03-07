@@ -347,3 +347,13 @@ message Trade {
 message SwapExecution {
   repeated Trade trades = 1;
 }
+
+// Contains private and public data for withdrawing funds from a closed position.
+message PositionWithdrawPlan {
+  Reserves reserves = 1;
+}
+
+// Contains private and public data for claiming rewards from a position.
+message PositionRewardClaimPlan {
+  Reserves reserves = 1;
+}

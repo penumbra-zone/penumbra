@@ -11,6 +11,10 @@ use penumbra_chain::Epoch;
 use penumbra_component::stake::rate::RateData;
 use penumbra_crypto::{
     asset,
+    dex::{
+        lp::{position::Position, Reserves},
+        TradingPair,
+    },
     keys::AddressIndex,
     memo::MemoPlaintext,
     stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken},
@@ -33,6 +37,11 @@ use crate::App;
 
 mod proposal;
 use proposal::ProposalCmd;
+
+mod liquidity_position;
+use liquidity_position::PositionCmd;
+
+use self::liquidity_position::OrderCmd;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum TxCmd {
@@ -140,6 +149,9 @@ pub enum TxCmd {
         #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
     },
+    /// Manage liquidity positions.
+    #[clap(display_order = 500, subcommand)]
+    Position(PositionCmd),
     /// Consolidate many small notes into a few larger notes.
     ///
     /// Since Penumbra transactions reveal their arity (how many spends,
@@ -201,6 +213,7 @@ impl TxCmd {
             TxCmd::Vote { .. } => false,
             TxCmd::Proposal(proposal_cmd) => proposal_cmd.offline(),
             TxCmd::DaoDeposit { .. } => false,
+            TxCmd::Position(lp_cmd) => lp_cmd.offline(),
         }
     }
 
@@ -735,6 +748,72 @@ impl TxCmd {
 
                 app.build_and_submit_transaction(plan).await?;
             }
+            TxCmd::Position(PositionCmd::Order(OrderCmd::Buy {
+                buy_order,
+                spread,
+                fee,
+                source,
+            })) => {
+                let _fee = Fee::from_staking_token_amount((*fee).into());
+
+                // When opening a liquidity position, the initial reserves will only be set for one asset.
+                // This represents an "ask" in the order book, where bids are placed in the asset type without initial reserves.
+                let reserves = Reserves {
+                    // r1 will be set to 0 units of the asset being bought
+                    r1: Amount::zero(),
+                    // and r2 will be set to the amount of the asset being sold that would be needed to buy the desired amount of the asset being bought
+                    r2: buy_order.price.amount * buy_order.desired.amount,
+                };
+
+                let _asset_cache = app.view().assets().await?;
+                // TODO: check canonical ordering of trading_pair, or
+                // use DirectedTradingPair
+                let trading_pair =
+                    TradingPair::new(buy_order.desired.asset_id, buy_order.price.asset_id);
+
+                let position = Position::new(trading_pair, (*spread).into(), reserves);
+                let _plan = Planner::new(OsRng)
+                    .position_open(position)
+                    .plan(
+                        app.view.as_mut().unwrap(),
+                        &app.fvk,
+                        AddressIndex::new(*source),
+                    )
+                    .await?;
+                // app.build_and_submit_transaction(plan).await?;
+                println!("Unimplemented");
+            }
+            TxCmd::Position(PositionCmd::Order(OrderCmd::Sell {
+                sell_order: _,
+                spread: _,
+                fee: _,
+                source: _,
+            })) => {
+                // let fee = Fee::from_staking_token_amount((*fee).into());
+
+                // let denom_into = asset::REGISTRY.parse_unit(denom_2.as_str()).base();
+
+                // // When opening a liquidity position, the initial reserves will only be set for one asset.
+                // // This represents an "ask" in the order book, where bids are placed in the asset type without initial reserves.
+                // let reserves = (
+                //     reserves,
+                //     Value {
+                //         asset_id: denom_into.id(),
+                //         amount: Amount::zero(),
+                //     },
+                // );
+
+                // println!("Opening liquidity position with reserves: {:?}", reserves);
+                // let position = Position::new(reserves, *lp_fee);
+                // let plan = Planner::new(OsRng)
+                //     .position_open(OsRng, &reserves, fee, AddressIndex::new(*source))
+                //     .await?;
+                // app.build_and_submit_transaction(plan).await?;
+                println!("Unimplemented");
+            }
+            TxCmd::Position(PositionCmd::Close {})
+            | TxCmd::Position(PositionCmd::Withdraw {})
+            | TxCmd::Position(PositionCmd::RewardClaim {}) => todo!(),
         }
         Ok(())
     }

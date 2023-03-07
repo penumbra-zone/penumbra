@@ -1,10 +1,7 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_crypto::dex::{
-    lp::{
-        position::{self, Position},
-        LpNft, Reserves,
-    },
+    lp::position::{self, Position},
     DirectedTradingPair,
 };
 use penumbra_proto::{DomainType, StateReadProto, StateWriteProto};
@@ -18,16 +15,11 @@ pub trait PositionRead: StateRead {
         self.get(&state_key::position_by_id(id)).await
     }
 
-    async fn check_nonce_unused(&self, position: &Position) -> Result<()> {
-        if let Some(()) = self
-            .get_proto::<()>(&state_key::position_nonce(&position.nonce))
-            .await?
-        {
-            return Err(anyhow::anyhow!(
-                "nonce was already used for another position"
-            ));
+    async fn check_position_id_unused(&self, id: &position::Id) -> Result<()> {
+        match self.get_raw(&state_key::position_by_id(id)).await? {
+            Some(_) => Err(anyhow::anyhow!("position id {:?} already used", id)),
+            None => Ok(()),
         }
-        Ok(())
     }
 }
 impl<T: StateRead + ?Sized> PositionRead for T {}
@@ -35,60 +27,17 @@ impl<T: StateRead + ?Sized> PositionRead for T {}
 /// Manages liquidity positions within the chain state.
 #[async_trait]
 pub trait PositionManager: StateWrite + PositionRead {
-    /// Validates position arguments and records the new position in the chain state.
-    async fn position_open(
-        &mut self,
-        position: Position,
-        initial_reserves: Reserves,
-    ) -> Result<LpNft> {
-        // We limit the sizes of reserve amounts to at most 112 bits. This is to give us extra
-        // headroom to perform intermediary calculations during composition.
-        // TODO: remove the extra casting once `Amount` gets full 128 bits support.
-        initial_reserves.check_bounds()?;
-        position.check_bounds()?;
-        self.check_nonce_unused(&position).await?;
-        let id = position.id();
-        self.record_position_nonce(position.nonce);
-
-        let metadata = position::Metadata {
-            position,
-            state: position::State::Opened,
-            reserves: initial_reserves,
-        };
-        self.index_position(&metadata);
-
-        Ok(self.put_position(&id, metadata))
-    }
-
-    /// Marks an existing position as closed in the chain state.
-    async fn position_close(&mut self, id: &position::Id) -> Result<()> {
-        let mut metadata = self
-            .position_by_id(id)
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("could not find position with id {}", id))?;
-        if metadata.state != position::State::Opened {
-            return Err(anyhow::anyhow!(
-                "attempted to close position {} with state {}",
-                id,
-                metadata.state
-            ));
-        }
-
-        metadata.state = position::State::Closed;
+    /// Writes a position to the state, updating all necessary indexes.
+    fn put_position(&mut self, metadata: position::Metadata) {
+        let id = metadata.position.id();
+        // Clear any existing indexes of the position, since changes to the
+        // reserves or the position state might have invalidated them.
         self.deindex_position(&metadata.position);
-        self.put_position(id, metadata);
-
-        Ok(())
-    }
-
-    /// Marks an existing closed position as withdrawn in the chain state.
-    async fn position_withdraw(&mut self, _id: &position::Id) {
-        todo!()
-    }
-
-    /// Marks an existing withdrawn position as claimed in the chain state.
-    async fn position_reward_claim(&mut self, _id: &position::Id) {
-        todo!()
+        // Only index the position's liquidity if it is active.
+        if metadata.state == position::State::Opened {
+            self.index_position(&metadata);
+        }
+        self.put(state_key::position_by_id(&id), metadata);
     }
 }
 
@@ -96,16 +45,6 @@ impl<T: StateWrite + ?Sized> PositionManager for T {}
 
 #[async_trait]
 trait Inner: StateWrite {
-    fn put_position(&mut self, id: &position::Id, metadata: position::Metadata) -> LpNft {
-        self.put(state_key::position_by_id(id), metadata);
-
-        LpNft::new(*id, position::State::Opened)
-    }
-
-    fn record_position_nonce(&mut self, nonce: [u8; 32]) {
-        self.put_proto(state_key::position_nonce(&nonce), ());
-    }
-
     fn index_position(&mut self, metadata: &position::Metadata) {
         let (pair, phi) = (metadata.position.phi.pair, &metadata.position.phi);
         let id_bytes = metadata.position.id().encode_to_vec();
