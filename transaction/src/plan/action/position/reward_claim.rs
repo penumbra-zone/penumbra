@@ -16,12 +16,12 @@ pub struct PositionRewardClaimPlan {}
 
 impl PositionRewardClaimPlan {
     /// Create a new [`PositionRewardClaimPlan`]
-    pub fn new<R: CryptoRng + RngCore>(rng: &mut R) -> PositionRewardClaimPlan {
+    pub fn new<R: CryptoRng + RngCore>(_rng: &mut R) -> PositionRewardClaimPlan {
         todo!()
     }
 
     /// Create a dummy [`PositionRewardClaimPlan`].
-    pub fn dummy<R: CryptoRng + RngCore>(rng: &mut R) -> PositionRewardClaimPlan {
+    pub fn dummy<R: CryptoRng + RngCore>(_rng: &mut R) -> PositionRewardClaimPlan {
         todo!()
     }
 
@@ -29,8 +29,8 @@ impl PositionRewardClaimPlan {
     pub fn position_reward_claim(
         &self,
         // fvk: &FullViewingKey,
-        auth_sig: Signature<SpendAuth>,
-        auth_path: tct::Proof,
+        _auth_sig: Signature<SpendAuth>,
+        _auth_path: tct::Proof,
     ) -> PositionRewardClaim {
         todo!()
     }
@@ -45,14 +45,14 @@ impl DomainType for PositionRewardClaimPlan {
 }
 
 impl From<PositionRewardClaimPlan> for pb::PositionRewardClaimPlan {
-    fn from(msg: PositionRewardClaimPlan) -> Self {
+    fn from(_msg: PositionRewardClaimPlan) -> Self {
         todo!()
     }
 }
 
 impl TryFrom<pb::PositionRewardClaimPlan> for PositionRewardClaimPlan {
     type Error = anyhow::Error;
-    fn try_from(msg: pb::PositionRewardClaimPlan) -> Result<Self, Self::Error> {
+    fn try_from(_msg: pb::PositionRewardClaimPlan) -> Result<Self, Self::Error> {
         todo!()
     }
 }

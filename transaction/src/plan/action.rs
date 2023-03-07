@@ -22,9 +22,8 @@ pub use swap_claim::SwapClaimPlan;
 pub use undelegate_claim::UndelegateClaimPlan;
 
 use crate::action::{
-    DaoDeposit, DaoOutput, DaoSpend, Delegate, PositionClose, PositionOpen, PositionRewardClaim,
-    PositionWithdraw, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, Undelegate,
-    ValidatorVote,
+    DaoDeposit, DaoOutput, DaoSpend, Delegate, PositionClose, PositionOpen, ProposalDepositClaim,
+    ProposalSubmit, ProposalWithdraw, Undelegate, ValidatorVote,
 };
 
 /// A declaration of a planned [`Action`], for use in transaction creation.

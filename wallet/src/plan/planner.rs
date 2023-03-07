@@ -11,11 +11,7 @@ use penumbra_component::stake::{rate::RateData, validator};
 use penumbra_crypto::{
     asset::Amount,
     asset::Denom,
-    dex::{
-        lp::{position::Position, Reserves},
-        swap::SwapPlaintext,
-        TradingPair,
-    },
+    dex::{lp::position::Position, swap::SwapPlaintext, TradingPair},
     keys::AddressIndex,
     memo::MemoPlaintext,
     stake::IdentityKey,
@@ -26,7 +22,7 @@ use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
 use penumbra_tct as tct;
 use penumbra_transaction::{
     action::{
-        DaoDeposit, PositionOpen, Proposal, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw,
+        DaoDeposit, Proposal, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw,
         ValidatorVote, Vote,
     },
     plan::{

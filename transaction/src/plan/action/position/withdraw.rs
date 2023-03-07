@@ -16,12 +16,12 @@ pub struct PositionWithdrawPlan {}
 
 impl PositionWithdrawPlan {
     /// Create a new [`PositionWithdrawPlan`]
-    pub fn new<R: CryptoRng + RngCore>(rng: &mut R) -> PositionWithdrawPlan {
+    pub fn new<R: CryptoRng + RngCore>(_rng: &mut R) -> PositionWithdrawPlan {
         todo!()
     }
 
     /// Create a dummy [`PositionWithdrawPlan`].
-    pub fn dummy<R: CryptoRng + RngCore>(rng: &mut R) -> PositionWithdrawPlan {
+    pub fn dummy<R: CryptoRng + RngCore>(_rng: &mut R) -> PositionWithdrawPlan {
         todo!()
     }
 
@@ -29,8 +29,8 @@ impl PositionWithdrawPlan {
     pub fn position_withdraw(
         &self,
         // fvk: &FullViewingKey,
-        auth_sig: Signature<SpendAuth>,
-        auth_path: tct::Proof,
+        _auth_sig: Signature<SpendAuth>,
+        _auth_path: tct::Proof,
     ) -> PositionWithdraw {
         todo!()
     }
@@ -45,14 +45,14 @@ impl DomainType for PositionWithdrawPlan {
 }
 
 impl From<PositionWithdrawPlan> for pb::PositionWithdrawPlan {
-    fn from(msg: PositionWithdrawPlan) -> Self {
+    fn from(_msg: PositionWithdrawPlan) -> Self {
         todo!()
     }
 }
 
 impl TryFrom<pb::PositionWithdrawPlan> for PositionWithdrawPlan {
     type Error = anyhow::Error;
-    fn try_from(msg: pb::PositionWithdrawPlan) -> Result<Self, Self::Error> {
+    fn try_from(_msg: pb::PositionWithdrawPlan) -> Result<Self, Self::Error> {
         todo!()
     }
 }

@@ -754,8 +754,7 @@ impl TxCmd {
                 fee,
                 source,
             })) => {
-                println!("Desired buy: {:?}", buy_order);
-                let fee = Fee::from_staking_token_amount((*fee).into());
+                let _fee = Fee::from_staking_token_amount((*fee).into());
 
                 // When opening a liquidity position, the initial reserves will only be set for one asset.
                 // This represents an "ask" in the order book, where bids are placed in the asset type without initial reserves.
@@ -766,15 +765,14 @@ impl TxCmd {
                     r2: buy_order.price.amount * buy_order.desired.amount,
                 };
 
-                println!("Opening liquidity position with reserves: {:?}", reserves);
-                let asset_cache = app.view().assets().await?;
+                let _asset_cache = app.view().assets().await?;
                 // TODO: check canonical ordering of trading_pair, or
                 // use DirectedTradingPair
                 let trading_pair =
                     TradingPair::new(buy_order.desired.asset_id, buy_order.price.asset_id);
 
                 let position = Position::new(trading_pair, (*spread).into(), reserves);
-                let plan = Planner::new(OsRng)
+                let _plan = Planner::new(OsRng)
                     .position_open(position)
                     .plan(
                         app.view.as_mut().unwrap(),
@@ -782,13 +780,14 @@ impl TxCmd {
                         AddressIndex::new(*source),
                     )
                     .await?;
-                app.build_and_submit_transaction(plan).await?;
+                // app.build_and_submit_transaction(plan).await?;
+                println!("Unimplemented");
             }
             TxCmd::Position(PositionCmd::Order(OrderCmd::Sell {
-                sell_order,
-                spread,
-                fee,
-                source,
+                sell_order: _,
+                spread: _,
+                fee: _,
+                source: _,
             })) => {
                 // let fee = Fee::from_staking_token_amount((*fee).into());
 
@@ -810,6 +809,7 @@ impl TxCmd {
                 //     .position_open(OsRng, &reserves, fee, AddressIndex::new(*source))
                 //     .await?;
                 // app.build_and_submit_transaction(plan).await?;
+                println!("Unimplemented");
             }
             TxCmd::Position(PositionCmd::Close {})
             | TxCmd::Position(PositionCmd::Withdraw {})
