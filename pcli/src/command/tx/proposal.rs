@@ -19,7 +19,7 @@ pub enum ProposalCmd {
     },
     /// Submit a new governance proposal.
     Submit {
-        /// The proposal to vote on, in JSON format.
+        /// The proposal to vote on, in TOML format.
         #[clap(long)]
         file: camino::Utf8PathBuf,
         /// The transaction fee (paid in upenumbra).
