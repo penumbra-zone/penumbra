@@ -64,3 +64,6 @@ impl AllocVar<Address, Fq> for AddressVar {
         }
     }
 }
+
+// We do not implement the R1CSVar trait for AddressVar since we do not have the
+// diversifier in-circuit in order to construct an Address.

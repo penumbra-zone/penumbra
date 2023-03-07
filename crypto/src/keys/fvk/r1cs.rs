@@ -4,7 +4,7 @@ use decaf377::{
     r1cs::{ElementVar, FqVar},
     Element, FieldExt, Fq, Fr,
 };
-use decaf377_rdsa::{SpendAuth, VerificationKey};
+use decaf377_rdsa::{SpendAuth, VerificationKey, VerificationKeyBytes};
 use once_cell::sync::Lazy;
 
 pub(crate) static SPENDAUTH_BASEPOINT: Lazy<Element> = Lazy::new(decaf377::basepoint);
@@ -35,6 +35,24 @@ impl AllocVar<VerificationKey<SpendAuth>, Fq> for RandomizedVerificationKey {
             }
             AllocationMode::Witness => unimplemented!(),
         }
+    }
+}
+
+impl R1CSVar<Fq> for RandomizedVerificationKey {
+    type Value = VerificationKey<SpendAuth>;
+
+    fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<Fq> {
+        self.inner.cs()
+    }
+
+    fn value(&self) -> Result<Self::Value, SynthesisError> {
+        let point = self.inner.value()?;
+        let key_bytes = point.vartime_compress();
+        let verification_key_bytes: VerificationKeyBytes<SpendAuth> = key_bytes.0.into();
+        Ok(
+            VerificationKey::<SpendAuth>::try_from(verification_key_bytes)
+                .expect("should be able to convert from bytes"),
+        )
     }
 }
 
@@ -82,6 +100,24 @@ impl AllocVar<VerificationKey<SpendAuth>, Fq> for AuthorizationKeyVar {
     }
 }
 
+impl R1CSVar<Fq> for AuthorizationKeyVar {
+    type Value = VerificationKey<SpendAuth>;
+
+    fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<Fq> {
+        self.inner.cs()
+    }
+
+    fn value(&self) -> Result<Self::Value, SynthesisError> {
+        let point = self.inner.value()?;
+        let key_bytes = point.vartime_compress();
+        let verification_key_bytes: VerificationKeyBytes<SpendAuth> = key_bytes.0.into();
+        Ok(
+            VerificationKey::<SpendAuth>::try_from(verification_key_bytes)
+                .expect("should be able to convert from bytes"),
+        )
+    }
+}
+
 impl AuthorizationKeyVar {
     pub fn randomize(
         &self,
@@ -119,5 +155,21 @@ impl AllocVar<Fr, Fq> for SpendAuthRandomizerVar {
                 })
             }
         }
+    }
+}
+
+impl R1CSVar<Fq> for SpendAuthRandomizerVar {
+    type Value = Fr;
+
+    fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<Fq> {
+        self.inner.cs()
+    }
+
+    fn value(&self) -> Result<Self::Value, SynthesisError> {
+        let mut bytes = [0u8; 32];
+        for (i, byte) in self.inner.iter().enumerate() {
+            bytes[i] = byte.value()?;
+        }
+        Ok(Fr::from_bytes(bytes).expect("can convert bytes to Fr"))
     }
 }

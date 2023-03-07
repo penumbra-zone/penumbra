@@ -61,7 +61,7 @@ impl AllocVar<Note, Fq> for NoteVar {
             AllocationMode::Input => unimplemented!(),
             AllocationMode::Witness => {
                 let note1 = f()?;
-                let note = note1.borrow();
+                let note: &Note = note1.borrow();
 
                 let note_blinding =
                     FqVar::new_witness(cs.clone(), || Ok(note.note_blinding().clone()))?;
@@ -77,6 +77,10 @@ impl AllocVar<Note, Fq> for NoteVar {
         }
     }
 }
+
+// We do not implement `R1CSVar` for `NoteVar` since the associated type
+// should be `Note` which we cannot construct from the R1CS variable
+// since we do not have the rseed in-circuit.
 
 pub struct NoteCommitmentVar {
     pub inner: FqVar,
@@ -113,6 +117,19 @@ impl AllocVar<note::Commitment, Fq> for NoteCommitmentVar {
                 Ok(Self { inner })
             }
         }
+    }
+}
+
+impl R1CSVar<Fq> for NoteCommitmentVar {
+    type Value = note::Commitment;
+
+    fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<Fq> {
+        self.inner.cs()
+    }
+
+    fn value(&self) -> Result<Self::Value, SynthesisError> {
+        let inner = self.inner.value()?;
+        Ok(note::Commitment(inner))
     }
 }
 

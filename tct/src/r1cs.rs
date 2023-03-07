@@ -32,6 +32,23 @@ impl AllocVar<Position, Fq> for PositionVar {
     }
 }
 
+impl R1CSVar<Fq> for PositionVar {
+    type Value = Position;
+
+    fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<Fq> {
+        self.inner.cs()
+    }
+
+    fn value(&self) -> Result<Self::Value, SynthesisError> {
+        let inner_fq = self.inner.value()?;
+        let inner_bytes = &inner_fq.to_bytes()[0..16];
+        let position_bytes: [u8; 8] = inner_bytes
+            .try_into()
+            .expect("should be able to fit in 16 bytes");
+        Ok(Position::from(u64::from_le_bytes(position_bytes)))
+    }
+}
+
 /// This represents the TCT's auth path in R1CS.
 pub struct MerkleAuthPathVar {
     inner: [[FqVar; 3]; 24],

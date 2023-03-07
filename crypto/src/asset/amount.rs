@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::{fmt::Display, iter::Sum, num::NonZeroU128, ops};
 
 use crate::{fixpoint::U128x128, Fq, Fr};
-use decaf377::r1cs::FqVar;
+use decaf377::{r1cs::FqVar, FieldExt};
 
 #[derive(Serialize, Deserialize, PartialEq, PartialOrd, Eq, Clone, Debug, Copy)]
 #[serde(try_from = "pb::Amount", into = "pb::Amount")]
@@ -66,6 +66,24 @@ impl AllocVar<Amount, Fq> for AmountVar {
                 })
             }
         }
+    }
+}
+
+impl R1CSVar<Fq> for AmountVar {
+    type Value = Amount;
+
+    fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<Fq> {
+        self.amount.cs()
+    }
+
+    fn value(&self) -> Result<Self::Value, SynthesisError> {
+        let amount_fq = self.amount.value()?;
+        let amount_bytes = &amount_fq.to_bytes()[0..16];
+        Ok(Amount::from_le_bytes(
+            amount_bytes
+                .try_into()
+                .expect("should be able to fit in 16 bytes"),
+        ))
     }
 }
 

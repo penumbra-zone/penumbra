@@ -109,6 +109,18 @@ impl AllocVar<Nullifier, Fq> for NullifierVar {
     }
 }
 
+impl R1CSVar<Fq> for NullifierVar {
+    type Value = Nullifier;
+
+    fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<Fq> {
+        self.inner.cs()
+    }
+
+    fn value(&self) -> Result<Self::Value, SynthesisError> {
+        Ok(Nullifier(self.inner.value()?))
+    }
+}
+
 impl EqGadget<Fq> for NullifierVar {
     fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
         self.inner.is_eq(&other.inner)
