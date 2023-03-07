@@ -13,7 +13,7 @@ use penumbra_crypto::{
     asset,
     dex::{
         lp::{position::Position, Reserves, TradingFunction},
-        TradingPair,
+        DirectedTradingPair, TradingPair,
     },
     keys::AddressIndex,
     memo::MemoPlaintext,
@@ -769,6 +769,13 @@ impl TxCmd {
             })) => {
                 let _fee = Fee::from_staking_token_amount((*fee).into());
 
+                let _asset_cache = app.view().assets().await?;
+
+                // Use DirectedTradingPair to get the canonical trading pair associated with the direction of the buy order.
+                let trading_pair =
+                    DirectedTradingPair::new(buy_order.price.asset_id, buy_order.desired.asset_id)
+                        .to_canonical();
+
                 // When opening a liquidity position, the initial reserves will only be set for one asset.
                 let _asset_cache = app.view().assets().await?;
                 // TODO: check canonical ordering of trading_pair, or
@@ -785,17 +792,35 @@ impl TxCmd {
                 }
                 let trading_function = TradingFunction::new(trading_pair, *spread, p, q);
 
+                // This represents an "ask" in the order book, where bids are placed in the asset type without initial reserves.
+                //
+                // The [`Position`] constructor expects the ordering of [`Reserves`] to match the ordering of the assets in the [`TradingPair`].
+                let reserves = if trading_pair.asset_1() == buy_order.desired.asset_id {
+                    Reserves {
+                        // r1 will be set to 0 units of the asset being bought
+                        r1: Amount::zero(),
+                        // and r2 will be set to the amount of the asset being sold that would be needed to buy the desired amount of the asset being bought
+                        r2: buy_order.price.amount * buy_order.desired.amount,
+                    }
+                } else {
+                    Reserves {
+                        // r1 will be set to the amount of the asset being sold that would be needed to buy the desired amount of the asset being bought
+                        r1: buy_order.price.amount * buy_order.desired.amount,
+                        // and r2 will be set to 0 units of the asset being bought
+                        r2: Amount::zero(),
+                    }
+                };
+
                 let position = Position::new(OsRng, trading_function);
-                let _plan = Planner::new(OsRng)
-                    .position_open(position)
+                let plan = Planner::new(OsRng)
+                    .position_open(position, reserves)
                     .plan(
                         app.view.as_mut().unwrap(),
                         app.fvk.account_group_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
-                // app.build_and_submit_transaction(plan).await?;
-                println!("Unimplemented");
+                app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Position(PositionCmd::Order(OrderCmd::Sell {
                 sell_order: _,

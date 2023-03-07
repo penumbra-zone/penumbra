@@ -8,7 +8,6 @@ use anyhow::{anyhow, Result};
 
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_component::stake::{rate::RateData, validator};
-use penumbra_crypto::Balance;
 use penumbra_crypto::{
     asset::Amount,
     asset::Denom,
@@ -19,11 +18,12 @@ use penumbra_crypto::{
     transaction::Fee,
     Address, Note, Value,
 };
+use penumbra_crypto::{dex::lp::Reserves, Balance};
 use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
 use penumbra_tct as tct;
 use penumbra_transaction::{
     action::{
-        DaoDeposit, Proposal, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw,
+        DaoDeposit, PositionOpen, Proposal, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw,
         ValidatorVote, Vote,
     },
     plan::{
@@ -156,16 +156,12 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
     /// Open a liquidity position in the order book.
     #[instrument(skip(self))]
-    pub fn position_open(&mut self, position: Position) -> &mut Self {
-        todo!()
-        // let order = PositionOpenPlan::new(&mut self.rng, note, position).into();
-        // self.action(order);
-        // self
-        // self.action(ActionPlan::PositionOpen(PositionOpen {
-        //     position,
-        //     initial_reserves,
-        // }));
-        // self
+    pub fn position_open(&mut self, position: Position, initial_reserves: Reserves) -> &mut Self {
+        self.action(ActionPlan::PositionOpen(PositionOpen {
+            position,
+            initial_reserves,
+        }));
+        self
     }
 
     /// Perform a swap claim based on an input swap NFT with a pre-paid fee.
