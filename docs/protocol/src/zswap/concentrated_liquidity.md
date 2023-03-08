@@ -1,12 +1,11 @@
 # Concentrated Liquidity
 
-Penumbra uses a hybrid, order-book-like AMM with automatic routing. Liquidity on Penumbra is recorded as many individual concentrated liquidity positions, akin to an order book. Each liquidity position is its own AMM, with its own fee tier, and that AMM has the simplest possible form, a constant-sum (fixed-price) market maker. These component AMMs are synthesized into a global AMM by the DEX engine, which optimally routes trades across the entire liquidity graph. Because each component AMM is of the simplest possible form, this optimization problem is easy to solve: it’s a graph traversal. Despite operating at a different time resolution, ZSwap offers similar market functions to a continuous limit order-book (*LOB). A `Swap` action is equivalent to a market order that seeks to execute at the best available price, whereas opening a liquidity position is similar to posting limit orders that quote one or both sides of the pair.
+Penumbra uses a hybrid, order-book-like AMM with automatic routing. Liquidity on Penumbra is recorded as many individual concentrated liquidity positions, akin to an order book. Each liquidity position is its own AMM, with its own fee tier, and that AMM has the simplest possible form, a constant-sum (fixed-price) market maker. These component AMMs are synthesized into a global AMM by the DEX engine, which optimally routes trades across the entire liquidity graph. Because each component AMM is of the simplest possible form, this optimization problem is easy to solve: it’s a graph traversal.
 
-// Q: can we enable orders to be consumed only exactly once? 
 
 ### Liquidity positions
 
-At a high level, a liquidity position sets aside reserves for one or both assets and specifies a fixed exchange rate. Algebraically, a liquidity position is defined by a constant-sum trading function $\varphi(R) = p_1 \cdot R_1 + p_2 \cdot R_2$, which specifies reserves and prices of the two assets, denoted by $(R_1, p_1)$ and $(R_2, p_2)$, respectively, along with a fee $\gamma$ controlling the spread between the bid/ask offered by the position.
+At a high-level, a liquidity position on Penumbra sets aside reserves for one or both assets in a trading pair and specifies a fixed exchange rate between them. The reserves are denoted by $R_1$ and $R_2$, and the valuations of the assets are denoted by $p_1$ and $p_2$, respectively. The constant-sum trading function $\varphi(R)$ combines the reserves and prices of the two assets according to the formula $\varphi(R) = p_1 \cdot R_1 + p_2 \cdot $_2$. The spread between the bid/ask offered by the position is controlled by a fee $\gamma$.
 
 In practice, a **liquidity position** consists of:
 
@@ -83,12 +82,9 @@ The set of all liquidity positions between two assets forms a market, which indi
 ```
 ### Liquidity composition
 
-Assets along with liquidity positions form a graph that can be traversed at execution. To create and execute routes, it is useful to have a notion of the available liquidity between two assets even if there are no direct liquidity positions between them.
+During execution, assets and liquidity positions create a graph that can be traversed. To create and execute routes, it is helpful to understand the available liquidity between two assets, even in the absence of direct liquidity positions between them.
 
-Composing liquidity positions means combining two constant-sum trading functions that correspond to distinct but overlapping pairs (e.g. `A <> B <> C => A <> C`).
-
-// reword this when writing `Path` doc
-Aggregating liquidity positions means tallying two constant-sum trading functions that correspond to a same pair (e.g. `A <> B + A = B => A <> B`).
+As a result, it is desirable to develop a method for combining two liquidity positions that cover separate but intersecting assets into a unified synthetic position that represents a section of the overall liquidity route. For example, combining positions for the pair `A <> B` and `B <> C` into a synthetic position for `A <> C`.
 
 Given two AMMs, $\varphi(R_1, R_2) = p_1 R_1 + p_2 R_2$ with fee $\gamma$ trading between assets $1$ and $2$ and $\psi(S_2, S_3) = q_2 S_2 + q_3 S_3$ with fee $\delta$ trading between assets $2$ and $3$, we can compose $\varphi$ and $\psi$ to obtain a synthetic position $\chi$ trading between assets $1$ and $3$ that first trades along $\varphi$ and then $\psi$ (or along $\psi$ and then $\varphi$).
 
@@ -161,6 +157,11 @@ with $r_1 = p_1 q_2$, $r_3 = p_2 q_3$, fee $\varepsilon = \gamma \delta$, and re
 
 
 ### Binning
+
+## Tickspace 
+
+## 
+
 
 ### Replicating payoffs
 
