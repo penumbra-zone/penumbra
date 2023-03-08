@@ -247,7 +247,7 @@ impl TxCmd {
                 });
 
                 let plan = plan::send(
-                    &app.fvk,
+                    app.fvk.hash(),
                     app.view.as_mut().unwrap(),
                     OsRng,
                     &values,
@@ -278,7 +278,7 @@ impl TxCmd {
                 let plan = planner
                     .plan(
                         app.view.as_mut().unwrap(),
-                        &app.fvk,
+                        app.fvk.hash(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -286,9 +286,13 @@ impl TxCmd {
             }
             TxCmd::Sweep => loop {
                 let specific_client = app.specific_client().await?;
-                let plans =
-                    plan::sweep(&app.fvk, app.view.as_mut().unwrap(), OsRng, specific_client)
-                        .await?;
+                let plans = plan::sweep(
+                    app.fvk.hash(),
+                    app.view.as_mut().unwrap(),
+                    OsRng,
+                    specific_client,
+                )
+                .await?;
                 let num_plans = plans.len();
 
                 for (i, plan) in plans.into_iter().enumerate() {
@@ -319,7 +323,6 @@ impl TxCmd {
                 let swap_claim_fee = Fee::from_staking_token_amount((fee / 2).into());
 
                 let fvk = app.fvk.clone();
-                let account_id = fvk.hash();
 
                 // If a source address was specified, use it for the swap, otherwise,
                 // use the default address.
@@ -329,8 +332,10 @@ impl TxCmd {
                 let mut planner = Planner::new(OsRng);
                 planner.fee(swap_fee);
                 planner.swap(input, into, swap_claim_fee.clone(), claim_address)?;
+
+                let account_id = app.fvk.hash();
                 let plan = planner
-                    .plan(app.view(), &fvk, AddressIndex::new(*source))
+                    .plan(app.view(), account_id, AddressIndex::new(*source))
                     .await
                     .context("can't plan swap transaction")?;
 
@@ -383,6 +388,8 @@ impl TxCmd {
 
                 let params = app.view.as_mut().unwrap().chain_params().await?;
 
+                let account_id = app.fvk.hash();
+
                 let mut planner = Planner::new(OsRng);
                 let plan = planner
                     .swap_claim(SwapClaimPlan {
@@ -391,7 +398,7 @@ impl TxCmd {
                         output_data: swap_record.output_data,
                         epoch_duration: params.epoch_duration,
                     })
-                    .plan(app.view(), &fvk, AddressIndex::new(*source))
+                    .plan(app.view(), account_id, AddressIndex::new(*source))
                     .await
                     .context("can't plan swap claim")?;
 
@@ -425,7 +432,7 @@ impl TxCmd {
                 let fee = Fee::from_staking_token_amount((*fee).into());
 
                 let plan = plan::delegate(
-                    &app.fvk,
+                    app.fvk.hash(),
                     app.view.as_mut().unwrap(),
                     OsRng,
                     rate_data,
@@ -479,7 +486,7 @@ impl TxCmd {
                     .undelegate(delegation_value.amount, rate_data, end_epoch_index)
                     .plan(
                         app.view.as_mut().unwrap(),
-                        &app.fvk,
+                        app.fvk.hash(),
                         AddressIndex::new(*source),
                     )
                     .await
@@ -567,7 +574,7 @@ impl TxCmd {
                                 balance_blinding: Fr::rand(&mut OsRng),
                             })
                             .fee(fee.clone())
-                            .plan(app.view.as_mut().unwrap(), &app.fvk, address_index)
+                            .plan(app.view.as_mut().unwrap(), app.fvk.hash(), address_index)
                             .await?;
                         app.build_and_submit_transaction(plan).await?;
                     }
@@ -586,7 +593,7 @@ impl TxCmd {
                     .context("can't parse proposal file")?;
                 let fee = Fee::from_staking_token_amount((*fee).into());
                 let plan = plan::proposal_submit(
-                    &app.fvk,
+                    app.fvk.hash(),
                     app.view.as_mut().unwrap(),
                     OsRng,
                     proposal,
@@ -604,7 +611,7 @@ impl TxCmd {
             }) => {
                 let fee = Fee::from_staking_token_amount((*fee).into());
                 let plan = plan::proposal_withdraw(
-                    &app.fvk,
+                    app.fvk.hash(),
                     app.view.as_mut().unwrap(),
                     OsRng,
                     *proposal_id,
@@ -676,7 +683,7 @@ impl TxCmd {
                     .fee(fee)
                     .plan(
                         app.view.as_mut().unwrap(),
-                        &app.fvk,
+                        app.fvk.hash(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -741,7 +748,7 @@ impl TxCmd {
                     .fee(fee)
                     .plan(
                         app.view.as_mut().unwrap(),
-                        &app.fvk,
+                        app.fvk.hash(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -776,7 +783,7 @@ impl TxCmd {
                     .position_open(position)
                     .plan(
                         app.view.as_mut().unwrap(),
-                        &app.fvk,
+                        app.fvk.hash(),
                         AddressIndex::new(*source),
                     )
                     .await?;

@@ -12,11 +12,11 @@ use penumbra_crypto::{
     asset::Amount,
     asset::Denom,
     dex::{lp::position::Position, swap::SwapPlaintext, TradingPair},
-    keys::AddressIndex,
+    keys::{AccountID, AddressIndex},
     memo::MemoPlaintext,
     stake::IdentityKey,
     transaction::Fee,
-    Address, FullViewingKey, Note, Value,
+    Address, Note, Value,
 };
 use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
 use penumbra_tct as tct;
@@ -83,14 +83,14 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// Get all the note requests necessary to fulfill the current [`Balance`].
     pub fn notes_requests(
         &self,
-        fvk: &FullViewingKey,
+        account_id: AccountID,
         source: AddressIndex,
     ) -> (Vec<NotesRequest>, Vec<NotesForVotingRequest>) {
         (
             self.balance
                 .required()
                 .map(|Value { asset_id, amount }| NotesRequest {
-                    account_id: Some(fvk.hash().into()),
+                    account_id: Some(account_id.into()),
                     asset_id: Some(asset_id.into()),
                     address_index: Some(source.into()),
                     amount_to_spend: amount.into(),
@@ -107,7 +107,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                             start_block_height, ..
                         },
                     )| NotesForVotingRequest {
-                        account_id: Some(fvk.hash().into()),
+                        account_id: Some(account_id.into()),
                         votable_at_height: *start_block_height,
                         address_index: Some(source.into()),
                         ..Default::default()
@@ -395,7 +395,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     pub async fn plan<V: ViewClient>(
         &mut self,
         view: &mut V,
-        fvk: &FullViewingKey,
+        account_id: AccountID,
         source: AddressIndex,
     ) -> anyhow::Result<TransactionPlan> {
         // Gather all the information needed from the view service
@@ -403,7 +403,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         let fmd_params = view.fmd_parameters().await?;
         let mut spendable_notes = Vec::new();
         let mut voting_notes = Vec::new();
-        let (spendable_requests, voting_requests) = self.notes_requests(fvk, source);
+        let (spendable_requests, voting_requests) = self.notes_requests(account_id, source);
         for request in spendable_requests {
             let notes = view.notes(request).await?;
             spendable_notes.extend(notes);
@@ -414,13 +414,15 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         }
 
         // Plan the transaction using the gathered information
+
+        let self_address = view.address_by_index(source).await?;
         self.plan_with_spendable_and_votable_notes(
             &chain_params,
             &fmd_params,
-            fvk,
             source,
             spendable_notes,
             voting_notes,
+            self_address,
         )
     }
 
@@ -430,15 +432,15 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// [`Planner::note_requests`].
     ///
     /// Clears the contents of the planner, which can be re-used.
-    #[instrument(skip(self, chain_params, fmd_params, fvk, spendable_notes))]
+    #[instrument(skip(self, chain_params, fmd_params, self_address, spendable_notes))]
     pub fn plan_with_spendable_and_votable_notes(
         &mut self,
         chain_params: &ChainParameters,
         fmd_params: &FmdParameters,
-        fvk: &FullViewingKey,
         source: AddressIndex,
         spendable_notes: Vec<SpendableNoteRecord>,
         votable_notes: Vec<Vec<(SpendableNoteRecord, IdentityKey)>>,
+        self_address: Address,
     ) -> anyhow::Result<TransactionPlan> {
         tracing::debug!(plan = ?self.plan, balance = ?self.balance, "finalizing transaction");
 
@@ -512,7 +514,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         }
 
         // For any remaining provided balance, make a single change note for each
-        let self_address = fvk.incoming().payment_address(source).0;
 
         for value in self.balance.provided().collect::<Vec<_>>() {
             self.output(value, self_address);

@@ -5,8 +5,10 @@ use anyhow::{Context, Result};
 use penumbra_component::stake::rate::RateData;
 use penumbra_component::stake::validator;
 use penumbra_crypto::{
-    keys::AddressIndex, memo::MemoPlaintext, transaction::Fee, Address, Amount, FullViewingKey,
-    Value,
+    keys::{AccountID, AddressIndex},
+    memo::MemoPlaintext,
+    transaction::Fee,
+    Address, Amount, FullViewingKey, Value,
 };
 use penumbra_proto::{
     client::v1alpha1::specific_query_service_client::SpecificQueryServiceClient,
@@ -25,7 +27,7 @@ mod planner;
 pub use planner::Planner;
 
 pub async fn validator_definition<V, R>(
-    fvk: &FullViewingKey,
+    account_id: AccountID,
     view: &mut V,
     rng: R,
     new_validator: validator::Definition,
@@ -39,13 +41,13 @@ where
     Planner::new(rng)
         .fee(fee)
         .validator_definition(new_validator)
-        .plan(view, fvk, source_address)
+        .plan(view, account_id, source_address)
         .await
         .context("can't build validator definition plan")
 }
 
 pub async fn validator_vote<V, R>(
-    fvk: &FullViewingKey,
+    account_id: AccountID,
     view: &mut V,
     rng: R,
     vote: ValidatorVote,
@@ -59,15 +61,15 @@ where
     Planner::new(rng)
         .fee(fee)
         .validator_vote(vote)
-        .plan(view, fvk, source_address)
+        .plan(view, account_id, source_address)
         .await
         .context("can't build validator vote plan")
 }
 
 /// Generate a new transaction plan delegating stake
-#[instrument(skip(fvk, view, rng, rate_data, unbonded_amount, fee, source_address))]
+#[instrument(skip(account_id, view, rng, rate_data, unbonded_amount, fee, source_address))]
 pub async fn delegate<V, R>(
-    fvk: &FullViewingKey,
+    account_id: AccountID,
     view: &mut V,
     rng: R,
     rate_data: RateData,
@@ -82,15 +84,24 @@ where
     Planner::new(rng)
         .fee(fee)
         .delegate(unbonded_amount, rate_data)
-        .plan(view, fvk, source_address)
+        .plan(view, account_id, source_address)
         .await
         .context("can't build delegate plan")
 }
 
 #[allow(clippy::too_many_arguments)]
-#[instrument(skip(fvk, view, rng, values, fee, dest_address, source_address, tx_memo))]
+#[instrument(skip(
+    account_id,
+    view,
+    rng,
+    values,
+    fee,
+    dest_address,
+    source_address,
+    tx_memo
+))]
 pub async fn send<V, R>(
-    fvk: &FullViewingKey,
+    account_id: AccountID,
     view: &mut V,
     rng: R,
     values: &[Value],
@@ -111,14 +122,14 @@ where
     }
     planner
         .memo(tx_memo.unwrap_or_default())?
-        .plan(view, fvk, source_address)
+        .plan(view, account_id, source_address)
         .await
         .context("can't build send transaction")
 }
 
-#[instrument(skip(fvk, view, rng))]
+#[instrument(skip(account_id, view, rng))]
 pub async fn sweep<V, R>(
-    fvk: &FullViewingKey,
+    account_id: AccountID,
     view: &mut V,
     mut rng: R,
     specific_client: SpecificQueryServiceClient<Channel>,
@@ -135,7 +146,7 @@ where
 
     // Finally, sweep dust notes by spending them to their owner's address.
     // This will consolidate small-value notes into larger ones.
-    plans.extend(sweep_notes(fvk, view, &mut rng).await?);
+    plans.extend(sweep_notes(account_id, view, &mut rng).await?);
 
     Ok(plans)
 }
@@ -231,9 +242,9 @@ where
     unimplemented!("This function has not been implemented since we changed the swap mechanism to auto-claim in scanning.")
 }
 
-#[instrument(skip(fvk, view, rng))]
+#[instrument(skip(account_id, view, rng))]
 pub async fn sweep_notes<V, R>(
-    fvk: &FullViewingKey,
+    account_id: AccountID,
     view: &mut V,
     mut rng: R,
 ) -> Result<Vec<TransactionPlan>, anyhow::Error>
@@ -245,7 +256,7 @@ where
 
     let all_notes = view
         .notes(NotesRequest {
-            account_id: Some(fvk.hash().into()),
+            account_id: Some(account_id.into()),
             ..Default::default()
         })
         .await?;
@@ -285,7 +296,7 @@ where
                 }
 
                 let plan = planner
-                    .plan(view, fvk, index)
+                    .plan(view, account_id, index)
                     .await
                     .context("can't build sweep transaction")?;
 
@@ -298,9 +309,9 @@ where
     Ok(plans)
 }
 
-#[instrument(skip(fvk, view, rng))]
+#[instrument(skip(account_id, view, rng))]
 pub async fn proposal_submit<V, R>(
-    fvk: &FullViewingKey,
+    account_id: AccountID,
     view: &mut V,
     rng: R,
     proposal: Proposal,
@@ -314,15 +325,15 @@ where
     Planner::new(rng)
         .fee(fee)
         .proposal_submit(proposal, view.chain_params().await?.proposal_deposit_amount)
-        .plan(view, fvk, source_address)
+        .plan(view, account_id, source_address)
         .await
         .context("can't build proposal submit transaction")
 }
 
 #[allow(clippy::too_many_arguments)]
-#[instrument(skip(fvk, view, rng))]
+#[instrument(skip(account_id, view, rng))]
 pub async fn proposal_withdraw<V, R>(
-    fvk: &FullViewingKey,
+    account_id: AccountID,
     view: &mut V,
     rng: R,
     proposal_id: u64,
@@ -337,15 +348,15 @@ where
     Planner::new(rng)
         .fee(fee)
         .proposal_withdraw(proposal_id, reason)
-        .plan(view, fvk, source_address)
+        .plan(view, account_id, source_address)
         .await
         .context("can't build proposal withdraw transaction")
 }
 
 #[allow(clippy::too_many_arguments)]
-#[instrument(skip(fvk, view, rng))]
+#[instrument(skip(account_id, view, rng))]
 pub async fn proposal_deposit_claim<V, R>(
-    fvk: &FullViewingKey,
+    account_id: AccountID,
     view: &mut V,
     rng: R,
     proposal_id: u64,
@@ -361,7 +372,7 @@ where
     Planner::new(rng)
         .fee(fee)
         .proposal_deposit_claim(proposal_id, deposit_amount, outcome)
-        .plan(view, fvk, source_address)
+        .plan(view, account_id, source_address)
         .await
         .context("can't build proposal withdraw transaction")
 }
