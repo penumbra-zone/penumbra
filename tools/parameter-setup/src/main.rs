@@ -38,7 +38,7 @@ fn write_params(
     vk: &VerifyingKey<Bls12_377>,
 ) -> Result<()> {
     let pk_location = target_dir.join(format!("{}_pk.bin", name));
-    let vk_location = target_dir.join(format!("{}_vk.bin", name));
+    let vk_location = target_dir.join(format!("{}_vk.param", name));
 
     let pk_file = fs::File::create(&pk_location)?;
     let vk_file = fs::File::create(&vk_location)?;
