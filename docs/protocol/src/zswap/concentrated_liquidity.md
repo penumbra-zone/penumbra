@@ -89,156 +89,82 @@ Composing liquidity positions means combining two constant-sum trading functions
 
 // reword this when writing `Path` doc
 Aggregating liquidity positions means tallying two constant-sum trading functions that correspond to a same pair (e.g. `A <> B + A = B => A <> B`).
-```
-                       ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-                       │                                                                                                                                                       │
-   Da                  │                                                                                                                                                       │
-                       │                                                                                                                                                       │
- ──────────────────────┼─►         ┌──────────────────────────────────────────────────────┐                 ┌──────────────────────────────────────────────────────┐       ────┼──────────────────►        La
-                       │           │                                                      │                 │                                                      │           │
-                       │           │     ┌────────────────┐       ┌────────────────┐      │                 │     ┌────────────────┐       ┌────────────────┐      │           │
-                       │           │     │                │       │                │      │                 │     │                │       │                │      │           │
-                       │      ─────┼─────┼──►  Da         │       │     La      ───┼──────┼──►       ───────┼─────┼─►    Db        │       │     Lb       ──┼──────┼───►       │
-                       │           │     │                │       │                │      │                 │     │                │       │                │      │           │
-                       │           │     │                │       │                │      │                 │     │                │       │                │      │           │
-                       │           │     └────────────────┘       └────────────────┘      │                 │     └────────────────┘       └────────────────┘      │           │
-                       │           │                                                      │                 │                                                      │           │
-                       │           │     ┌────────────────┐       ┌────────────────┐      │                 │     ┌────────────────┐       ┌────────────────┐      │           │
-                       │           │     │                │       │                │      │                 │     │                │       │                │      │           │
-                       │           │     │                │       │                │      │                 │     │                │       │                │      │           │
-                       │     ──────┼─────┼───►  Db        │       │     Lb      ───┼──────┼──►        ──────┼─────┼──►   Dc        │       │     Lc      ───┼──────┼───►       │
-                       │           │     │                │       │                │      │                 │     │                │       │                │      │           │
-                       │           │     └────────────────┘       └────────────────┘      │                 │     └────────────────┘       └────────────────┘      │           │
-  Dc                   │           │                                                      │                 │                                                      │           │
-                       │           └──────────────────────────────────────────────────────┘                 └──────────────────────────────────────────────────────┘           │
-───────────────────────┼─►                                                                                                                                                  ───┼──────────────────►        Lc
-                       │                                                                                                                                                       │
-                       │                                                                                                                                                       │
-                       └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-```
 
+Given two AMMs, $\varphi(R_1, R_2) = p_1 R_1 + p_2 R_2$ with fee $\gamma$ trading between assets $1$ and $2$ and $\psi(S_2, S_3) = q_2 S_2 + q_3 S_3$ with fee $\delta$ trading between assets $2$ and $3$, we can compose $\varphi$ and $\psi$ to obtain a synthetic position $\chi$ trading between assets $1$ and $3$ that first trades along $\varphi$ and then $\psi$ (or along $\psi$ and then $\varphi$).
 
-```
-  ┌─────────┐               ┌─────────┐
-  │         │               │         │
-  │         │               │         │
-  │         │               │         │
-  │         │               │         │
-  │         │               │         │
-  │         │               │         │
-  │         │               │         │
-  │         │               │         │
-┌─┼─────────┼───────────────┼─────────┼─┐
-│ │         │               │         │ │
-│ │         │               │         │ │
-│ └─────────┘               └─────────┘ │
-│                                       │
-│             ┌────┐  ┌────┐            │
-│             │    │  │    │            │
-│         ┌───┼────┼──┼────┼───┐        │
-│         │   │    │  │    │   │        │
-│         │   │    │  │    │   │        │
-│         │   └────┘  └────┘   │        │
-│         │                    │        │
-│         │                    │        │
-│         │   ┌────┐  ┌────┐   │        │
-│         │   │    │  │    │   │        │
-│         │   │    │  │    │   │        │
-│         └───┼────┼──┼────┼───┘        │
-│             │    │  │    │            │
-│             └────┘  └────┘            │
-│                                       │
-│                                       │
-│             ┌────┐  ┌────┐            │
-│             │    │  │    │            │
-│         ┌───┼────┼──┼────┼───┐        │
-│         │   │    │  │    │   │        │
-│         │   │    │  │    │   │        │
-│         │   └────┘  └────┘   │        │
-│         │                    │        │
-│         │                    │        │
-│         │   ┌────┐  ┌────┐   │        │
-│         │   │    │  │    │   │        │
-│         │   │    │  │    │   │        │
-│         └───┼────┼──┼────┼───┘        │
-│             │    │  │    │            │
-│             └────┘  └────┘            │
-│                                       │
-│                                       │
-│  ┌────────┐                ┌────────┐ │
-│  │        │                │        │ │
-│  │        │                │        │ │
-└──┼────────┼────────────────┼────────┼─┘
-   │        │                │        │
-   │        │                │        │
-   │        │                │        │
-   │        │                │        │
-   │        │                │        │
-   │        │                │        │
-   └────────┘                └────────┘
-```
+We want to write the trading function of this AMM as $\chi(T_1, T_3) = r_1 T_1 + r_3 T_3$ with fee $\varepsilon$, prices $r_1, r_2$, and reserves $T_1, T_2$.
 
-```
-┌───────┬─────────────────────────────────────────────────────────────┬───────┐
-│       │                                                             │       │
-│       │                            ┌───────────────────────────┐    │       │
-│       │                            │                           │    │       │
-│       │           ┌────┬───┬────┐  │   ┌────┬───┬────┐         │    │       │
-│       │           │    │   │    │  │   │    │   │    │         │    │       │
-│       ├──────────►│ Da │   │ La ├──┘ ┌►│ Db │   │ Lb ├───► Db  └───►│       │
-│       │           │    │   │    │    │ │    │   │    │              │       │
-├───────┤           │    │   │    │    │ │    │   │    │              ├───────┤
-│       │           ├────┤   ├────┤    │ ├────┤   ├────┤              │       │
-│       ├───┐       │    │   │    ├────┘ │    │   │    ├─────────────►│       │
-│       │   │  0 ──►│ Db │   │ Lb │      │ Dc │   │ Lc │              │       │
-│       │   │       │    │   │    │   ┌─►│    │   │    │              │       │
-│       │   │       └────┴───┴────┘   │  └────┴───┴────┘              │       │
-│       │   │                         │                               │       │
-│       │   └─────────────────────────┘                               │       │
-│       │                                                             │       │
-└───────┴─────────────────────────────────────────────────────────────┴───────┘
-```
+First, write the trade inputs and outputs for each AMM as $\Delta^\chi = (\Delta^\chi_1, \Delta^\chi_3)$, $\Lambda^\chi = (\Lambda^\chi_1, \Lambda^\chi_3)$, $\Delta^\varphi = (\Delta^\varphi_1, \Delta^\varphi_2)$, $\Lambda^\varphi = (\Lambda^\varphi_1, \Lambda^\varphi_2)$, $\Delta^\psi = (\Delta^\psi_2, \Delta^\psi_3)$, $\Lambda^\psi = (\Lambda^\psi_2, \Lambda^\psi_3)$, where the subscripts index the asset type and the superscripts index the AMM. We want $\Delta^\chi = \Delta^\varphi + \Delta^\psi$ and $\Lambda^\chi = \Lambda^\varphi + \Lambda^\psi$, meaning that:
 
-```
-┌─────┬───────────────────────────────────────────────────────────┬─────┐
-│     │                                                           │     │
-│     │                            ┌───────────────────────────┐  │     │
-│     │                            │                           │  │     │
-│     ├──────┐    ┌────┬───┬────┐  │   ┌────┬───┬────┐         │  │     │
-│     │      │    │    │   │    │  │   │    │   │    │         │  │     │
-│     │      └───►│ Da │   │ La ├──┘ ┌►│ Db │   │ Lb ├───► Db  └─►│     │
-│     │           │    │   │    │    │ │    │   │    │            │     │
-├─────┤           ├────┤   ├────┤    │ ├────┤   ├────┤            ├─────┤
-│     │           │    │   │    ├────┘ │    │   │    │            │     │
-│     │      0 ──►│ Db │   │ Lb │      │ Dc │   │ Lc ├───────────►│     │
-│     │           │    │   │    │   ┌─►│    │   │    │            │     │
-│     ├───┐       └────┴───┴────┘   │  └────┴───┴────┘            │     │
-│     │   │                         │                             │     │
-│     │   └─────────────────────────┘                             │     │
-│     │                                                           │     │
-└─────┴───────────────────────────────────────────────────────────┴─────┘
-```
+$$
+(\Delta_1^\chi, \Delta_3^\chi) = (\Delta_1^\varphi, \Delta_3^\psi), \\
+(\Lambda_1^\chi, \Lambda_3^\chi) = (\Lambda_1^\varphi, \Lambda_3^\psi), \\
+(\Delta_2^\varphi, \Delta_2^\psi) = (\Lambda_2^\psi, \Lambda_2^\varphi).
+$$
+
+Visually this gives (using $\Theta$ as a placeholder for $\psi$):
+
 ```
 ┌─────┬───────────────────────────────────────────────────────────┬─────┐
 │     │                            ┌───────────────────────────┐  │     │
 │     │                            │                           │  │     │
 │     ├──────┐    ┌────┬───┬────┐  │   ┌────┬───┬────┐         │  │     │
-│ Δa  │      │    │    │   │    │  │   │    │   │    │         │  │ Λa  │
-│     │      └───►│ Δa │   │ Λa ├──┘ ┌►│ Δb │   │ Λb ├───► Δb  └─►│     │
+│ Δᵡ₁ │      │    │    │   │    │  │   │    │   │    │         │  │ Λᵡ₁ │
+│     │      └───►│ Δᵠ₁│   │ Λᵠ₁├──┘ ┌►│ Δᶿ₂│   │ Λᶿ₂├───► 0   └─►│     │
 │     │           │    │   │    │    │ │    │   │    │            │     │
-├─────┤           ├────┤ Φ ├────┤    │ ├────┤ Ψ ├────┤            ├─────┤
+├─────┤           ├────┤ Φ ├────┤    │ ├────┤ Θ ├────┤            ├─────┤
 │     │           │    │   │    ├────┘ │    │   │    │            │     │
-│     │      0 ──►│ Δb │   │ Λb │   ┌─►│ Δc │   │ Λc ├───────────►│ Λc  │
-│ Δc  │───┐       │    │   │    │   │  │    │   │    │            │     │
+│     │      0 ──►│ Δᵠ₂│   │ Λᵠ₂│   ┌─►│ Δᶿ₃│   │ Λᶿ₃├───────────►│ Λᵡ₃ │
+│ Δᵡ₃ │───┐       │    │   │    │   │  │    │   │    │            │     │
 │     │   │       └────┴───┴────┘   │  └────┴───┴────┘            │     │
 │     │   └─────────────────────────┘                             │     │
 └─────┴───────────────────────────────────────────────────────────┴─────┘
 ```
+
+The reserves $T_1$ are precisely the maximum possible output $\Lambda_1^\chi$. On the one hand, we have $\Lambda_1^\chi = \Lambda_1^\varphi \leq R_1$, since we cannot obtain more output from $\varphi$ than its available reserves. On the other hand, we also have
+$$
+\Lambda_1^\chi = \Lambda_1^\varphi = \frac {p_2} {p_1} \gamma \Delta_2^\varphi = \frac {p_2} {p_1} \gamma \Lambda_2^\psi \leq \frac {p_2} {p_1} \gamma S_2,
+$$
+
+since we cannot input more into $\varphi$ than we can obtain as output from $\psi$. This means we have
+$$
+T_1 = \max \left\{ R_1, \frac {p_2} {p_1} \gamma S_2 \right\} \\
+T_3 = \max \left\{ S_3, \frac {q_2} {q_3} \delta R_2 \right\},
+$$
+
+using similar reasoning for $T_3$ as for $T_1$.
+
+On input $\Delta^\chi_1$, the output $\Lambda^\chi_3$ is
+$$
+\Lambda^\chi_3 = \Lambda^\psi_3
+= \frac {q_2} {q_3} \delta \Delta^\psi_2
+= \frac {q_2} {q_3} \delta \Lambda^\varphi_2
+= \frac {q_2 p_1} {q_3 p_2} \delta \gamma \Delta^\varphi_1
+= \frac {q_2 p_1} {q_3 p_2} \delta \gamma \Delta^\chi_1,
+$$
+
+and similarly on input $\Delta^\chi_3$, the output $\Lambda^\chi_1$ is
+$$
+\Lambda^\chi_1 = \Lambda^\varphi_1
+= \frac {p_2} {p_1} \gamma \Delta^\varphi_2
+= \frac {p_2} {p_1} \gamma \Lambda^\psi_2
+= \frac {p_2 q_3} {p_1 q_2} \gamma \delta \Delta^\psi_1
+= \frac {p_2 q_3} {p_1 q_2} \gamma \delta \Delta^\chi_1,
+$$
+
+so we can write the trading function $\chi$ of the composition as
+$$
+\chi(T_1, T_3) = r_1 T_1 + r_3T_3
+$$
+
+with $r_1 = p_1 q_2$, $r_3 = p_2 q_3$, fee $\varepsilon = \gamma \delta$, and reserves $T_1$, $T_3$.
+
 
 ### Binning
 
 ### Replicating payoffs
 
 1. why, talk about active management vs. passive LPing
+1.5 positive externalities of liveness for liquidity 
 2. provide an example of a polynomial trading function getting interpolated with CSMMs 
 3. payoffs vs. focus on trading functions?
