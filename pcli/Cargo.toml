@@ -20,7 +20,7 @@ sct-divergence-check = ["penumbra-view/sct-divergence-check"]
 jmt = "0.3"
 penumbra-proto = { path = "../proto" }
 penumbra-chain = { path = "../chain" }
-penumbra-crypto = { path = "../crypto" }
+penumbra-crypto = { path = "../crypto", features = ["fast-proofs"] }
 penumbra-transaction = { path = "../transaction", features = ["clap"] }
 penumbra-wallet = { path = "../wallet" }
 penumbra-view = { path = "../view" }
@@ -80,4 +80,4 @@ assert_cmd = "2.0"
 predicates = "2.1"
 tempfile = "3.3.0"
 regex = "1.6.0"
-penumbra-proof-params = { path = "../proof-params", features=["proving-keys"] }
+penumbra-proof-params = { path = "../proof-params", features=["proving-keys", "fast-proofs"] }

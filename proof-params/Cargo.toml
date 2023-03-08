@@ -23,7 +23,7 @@ rand = "0.8"
 # only needed because ark-ff doesn't display correctly
 num-bigint = "0.4"
 tracing = "0.1"
-ark-groth16 = "0.3"
+ark-groth16 = {version = "0.3", default-features = false}
 ark-snark = "0.3"
 ark-r1cs-std = "0.3"
 ark-relations = "0.3"
@@ -34,3 +34,4 @@ penumbra-tct = { path = "../tct/", features = ["r1cs"] }
 
 [features]
 proving-keys = []
+fast-proofs = ["ark-groth16/parallel"]
