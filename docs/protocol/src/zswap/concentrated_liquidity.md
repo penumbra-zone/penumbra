@@ -1,14 +1,14 @@
 # Concentrated Liquidity
 
-ZSwap offers similar market functions to a central limit order book (CLOB), a `Swap` action is equivalent to a market order that takes liquidity, and opening a liquidity position is similar to posting limit orders that quote one or both sides of the pair.
+Penumbra uses a hybrid, order-book-like AMM with automatic routing. Liquidity on Penumbra is recorded as many individual concentrated liquidity positions, akin to an order book. Each liquidity position is its own AMM, with its own fee tier, and that AMM has the simplest possible form, a constant-sum (fixed-price) market maker. These component AMMs are synthesized into a global AMM by the DEX engine, which optimally routes trades across the entire liquidity graph. Because each component AMM is of the simplest possible form, this optimization problem is easy to solve: it’s a graph traversal. Despite operating at a different time resolution, ZSwap offers similar market functions to a continuous limit order-book (*LOB). A `Swap` action is equivalent to a market order that seeks to execute at the best available price, whereas opening a liquidity position is similar to posting limit orders that quote one or both sides of the pair.
 
+// Q: can we enable orders to be consumed only exactly once? 
 
 ### Liquidity positions
 
-At a high level, a liquidity position sets aside reserves for one or both assets and specifies a fixed exchange rate. Algebraically, a liquidity position is defined by a constant-sum trading function $\phi(R) = p_1 \cdot R_1 + p_2 \cdot R_2$, which specifies reserves and prices of the two assets, denoted by $(R_1, p_1)$ and $(R_2, p_2)$, respectively.
+At a high level, a liquidity position sets aside reserves for one or both assets and specifies a fixed exchange rate. Algebraically, a liquidity position is defined by a constant-sum trading function $\varphi(R) = p_1 \cdot R_1 + p_2 \cdot R_2$, which specifies reserves and prices of the two assets, denoted by $(R_1, p_1)$ and $(R_2, p_2)$, respectively, along with a fee $\gamma$ controlling the spread between the bid/ask offered by the position.
 
-
-In Penumbra, a **liquidity position** consists of:
+In practice, a **liquidity position** consists of:
 
 * A trading pair $(\mathsf a_1, \mathsf a_2)$ recording the asset IDs of the assets in the pair. The asset IDs are $F_q$ elements, and the pair is made order-independent by requiring that $\mathsf a_1 < \mathsf a_2$.
 * A trading function $\varphi$, specified by $p_1, p_2, \gamma$.
