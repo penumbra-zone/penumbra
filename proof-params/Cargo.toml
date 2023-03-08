@@ -31,3 +31,6 @@ ark-nonnative-field = "0.3"
 
 [dev-dependencies]
 penumbra-tct = { path = "../tct/", features = ["r1cs"] }
+
+[features]
+proving-keys = []

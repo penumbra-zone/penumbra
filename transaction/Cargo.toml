@@ -11,7 +11,7 @@ penumbra-proto = { path = "../proto/" }
 penumbra-crypto = { path = "../crypto/" }
 penumbra-chain = { path = "../chain/" }
 penumbra-tct = { path = "../tct" }
-penumbra-proof-params = { path = "../proof-params/" }
+penumbra-proof-params = { path = "../proof-params/", features = ["proving-keys"] }
 
 # Git deps
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }

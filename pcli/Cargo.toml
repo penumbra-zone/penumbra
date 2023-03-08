@@ -80,4 +80,4 @@ assert_cmd = "2.0"
 predicates = "2.1"
 tempfile = "3.3.0"
 regex = "1.6.0"
-penumbra-proof-params = { path = "../proof-params" }
+penumbra-proof-params = { path = "../proof-params", features=["proving-keys"] }
