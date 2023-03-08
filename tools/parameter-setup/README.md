@@ -6,7 +6,7 @@ a single party
 * `cargo run` in this folder.
 
 The verifying and proving keys for each circuit will be created in a serialized
-form in the `proof-params/src/gen` folder. Those should be tracked using git lfs.
+form in the `proof-params/src/gen` folder. The proving keys should be tracked using git lfs. The verifying keys are stored directly in git since they are small.
 
 Each time you regenerate the parameters, increment the version of the
 `penumbra-proof-params` crate.

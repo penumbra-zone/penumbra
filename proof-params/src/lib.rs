@@ -28,7 +28,7 @@ fn spend_proving_parameters() -> ProvingKey<Bls12_377> {
 }
 
 fn spend_verification_parameters() -> VerifyingKey<Bls12_377> {
-    let vk_params = include_bytes!("gen/spend_vk.bin");
+    let vk_params = include_bytes!("gen/spend_vk.param");
     VerifyingKey::deserialize_unchecked(&vk_params[..]).expect("can deserialize VerifyingKey")
 }
 
@@ -38,6 +38,6 @@ fn output_proving_parameters() -> ProvingKey<Bls12_377> {
 }
 
 fn output_verification_parameters() -> VerifyingKey<Bls12_377> {
-    let vk_params = include_bytes!("gen/output_vk.bin");
+    let vk_params = include_bytes!("gen/output_vk.param");
     VerifyingKey::deserialize_unchecked(&vk_params[..]).expect("can deserialize VerifyingKey")
 }
