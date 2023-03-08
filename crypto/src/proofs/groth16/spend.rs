@@ -19,7 +19,7 @@ use penumbra_tct as tct;
 use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
-use crate::proofs::groth16::{gadgets, ParameterSetup};
+use crate::proofs::groth16::{gadgets, ParameterSetup, VerifyingKeyExt};
 use crate::{
     balance,
     balance::commitment::BalanceCommitmentVar,
@@ -219,10 +219,9 @@ impl SpendProof {
     }
 
     /// Called to verify the proof using the provided public inputs.
-    // Commented out, but this may be useful when debugging proof verification failures,
+    // For debugging proof verification failures,
     // to check that the proof data and verification keys are consistent.
-    //#[tracing::instrument(skip(self, vk), fields(self = ?base64::encode(&self.clone().encode_to_vec()), vk = ?vk.debug_id()))]
-    #[tracing::instrument(skip(self, vk))]
+    #[tracing::instrument(level="debug", skip(self, vk), fields(self = ?base64::encode(&self.clone().encode_to_vec()), vk = ?vk.debug_id()))]
     pub fn verify(
         &self,
         vk: &PreparedVerifyingKey<Bls12_377>,
