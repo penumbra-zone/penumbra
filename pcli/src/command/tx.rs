@@ -246,6 +246,7 @@ impl TxCmd {
                     }
                 });
 
+                println!("sending: {:?}", values);
                 let plan = plan::send(
                     app.fvk.account_group_id(),
                     app.view.as_mut().unwrap(),
@@ -800,12 +801,16 @@ impl TxCmd {
                         // r1 will be set to 0 units of the asset being bought
                         r1: Amount::zero(),
                         // and r2 will be set to the amount of the asset being sold that would be needed to buy the desired amount of the asset being bought
-                        r2: buy_order.price.amount * buy_order.desired.amount,
+                        // (divided by 1_000_000 to correct the scaling)
+                        r2: (buy_order.price.amount * buy_order.desired.amount)
+                            / 10u128.pow(6).into(),
                     }
                 } else {
                     Reserves {
                         // r1 will be set to the amount of the asset being sold that would be needed to buy the desired amount of the asset being bought
-                        r1: buy_order.price.amount * buy_order.desired.amount,
+                        // (divided by 1_000_000 to correct the scaling)
+                        r1: (buy_order.price.amount * buy_order.desired.amount)
+                            / 10u128.pow(6).into(),
                         // and r2 will be set to 0 units of the asset being bought
                         r2: Amount::zero(),
                     }
