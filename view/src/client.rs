@@ -252,6 +252,11 @@ pub trait ViewClient {
         }
         .boxed()
     }
+
+    fn address_by_index(
+        &mut self,
+        address_index: AddressIndex,
+    ) -> Pin<Box<dyn Future<Output = Result<Address>> + Send + 'static>>;
 }
 
 // We need to tell `async_trait` not to add a `Send` bound to the boxed
@@ -745,6 +750,26 @@ where
                 .id
                 .ok_or_else(|| anyhow::anyhow!("response id is empty"))?;
             id.try_into()
+        }
+        .boxed()
+    }
+
+    fn address_by_index(
+        &mut self,
+        address_index: AddressIndex,
+    ) -> Pin<Box<dyn Future<Output = Result<Address>> + Send + 'static>> {
+        let mut self2 = self.clone();
+        async move {
+            let address = self2.address_by_index(tonic::Request::new(pb::AddressByIndexRequest {
+                address_index: Some(address_index.into()),
+            }));
+            let address = address
+                .await?
+                .into_inner()
+                .address
+                .ok_or_else(|| anyhow::anyhow!("No address available for this address index"))?
+                .try_into()?;
+            Ok(address)
         }
         .boxed()
     }
