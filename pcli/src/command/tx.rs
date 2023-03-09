@@ -825,6 +825,7 @@ impl TxCmd {
                         AddressIndex::new(*source),
                     )
                     .await?;
+                println!("Tx plan: {:#?}", plan);
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Position(PositionCmd::Order(OrderCmd::Sell {
