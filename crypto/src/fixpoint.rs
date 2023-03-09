@@ -68,6 +68,10 @@ impl U128x128 {
         Self(U256::from_words(hi, lo))
     }
 
+    pub fn ratio<T: Into<Self>>(numerator: T, denominator: T) -> Option<Self> {
+        numerator.into() / denominator.into()
+    }
+
     /// Checks whether this number is integral, i.e., whether it has no fractional part.
     pub fn is_integral(&self) -> bool {
         let fractional_word = self.0.into_words().1;
