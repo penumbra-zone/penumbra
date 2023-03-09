@@ -141,7 +141,7 @@ impl ValidatorCmd {
                 };
                 // Construct a new transaction and include the validator definition.
 
-                let account_id = app.fvk.hash();
+                let account_id = app.fvk.account_id();
                 let plan = plan::validator_definition(
                     account_id,
                     app.view.as_mut().unwrap(),
@@ -185,7 +185,7 @@ impl ValidatorCmd {
                 // Construct a new transaction and include the validator definition.
                 let fee = Fee::from_staking_token_amount((*fee).into());
 
-                let account_id = app.fvk.hash();
+                let account_id = app.fvk.account_id();
 
                 let plan = plan::validator_vote(
                     account_id,

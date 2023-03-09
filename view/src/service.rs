@@ -95,7 +95,7 @@ impl ViewService {
         tokio::spawn(worker.run());
 
         let fvk = storage.full_viewing_key().await?;
-        let account_id = fvk.hash();
+        let account_id = fvk.account_id();
 
         Ok(Self {
             storage,

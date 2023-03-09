@@ -20,7 +20,7 @@ where
     // Get the authorization data from the custody service...
     let auth_data = custody
         .authorize(AuthorizeRequest {
-            account_id: fvk.hash(),
+            account_id: fvk.account_id(),
             plan: plan.clone(),
             pre_authorizations: Vec::new(),
         })
@@ -30,7 +30,7 @@ where
         .try_into()?;
 
     // Send a witness request to the view service to get witness data
-    let witness_data = view.witness(fvk.hash(), &plan).await?;
+    let witness_data = view.witness(fvk.account_id(), &plan).await?;
 
     // ... and then build the transaction:
     plan.build_concurrent(&mut rng, fvk, auth_data, witness_data)
