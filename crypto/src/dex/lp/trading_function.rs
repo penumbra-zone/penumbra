@@ -1,9 +1,11 @@
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
-use crate::dex::{TradingPair};
+use crate::dex::TradingPair;
 use crate::fixpoint::U128x128;
 use crate::Amount;
+
+use super::Reserves;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::TradingFunction", into = "pb::TradingFunction")]
@@ -85,6 +87,51 @@ impl BareTradingFunction {
             p: self.q,
             q: self.p,
         }
+    }
+
+    /// Fills a trade of asset 2 to asset 1 against the given reserves,
+    /// returning the new reserves, the unfilled amount of asset 2, and the
+    /// output amount of asset 1.
+    pub fn fill(&self, delta_2: &Amount, reserves: &Reserves) -> (Reserves, Amount, Amount) {
+        let delta_2_fp = U128x128::from(*delta_2);
+        let p = U128x128::from(self.p);
+        let q = U128x128::from(self.q);
+        let tentative_lambda_1 = (self.effective_price() * delta_2_fp).unwrap();
+        if tentative_lambda_1 >= reserves.r1.into() {
+            let r1: U128x128 = reserves.r1.into();
+            let fillable_delta_2 = (q / p).unwrap() * self.gamma() * r1;
+            let fillable_delta_2 = fillable_delta_2.unwrap();
+
+            let unfilled_amount = (delta_2_fp - fillable_delta_2)
+                .unwrap()
+                .round_up()
+                .try_into()
+                .unwrap();
+            let fillable_delta_2: Amount = fillable_delta_2.round_down().try_into().unwrap();
+
+            let reserves = Reserves {
+                r1: Amount::from(0u64),
+                r2: reserves.r2 + fillable_delta_2,
+            };
+            (reserves, unfilled_amount, r1.try_into().unwrap())
+        } else {
+            let lambda_1: Amount = tentative_lambda_1.round_down().try_into().unwrap();
+            let remaining_reserve = reserves.r1 - lambda_1;
+            let unfilled_amount = Amount::from(0u64);
+            let new_reserves = Reserves {
+                r1: remaining_reserve,
+                r2: *delta_2 + reserves.r2,
+            };
+            (new_reserves, unfilled_amount, lambda_1)
+        }
+        // let lambda_1 = (self.gamma() * delta_2 * p / q).unwrap();
+        // TODO: we have two cases:
+        // - if we're "under fill", we want to work forward from the input amount delta_2
+        //   to the output amount lambda_1
+        // - if we're "over fill", we want to work backward from the max reserves R_1 to
+        //   to the input amount delta_2' that will produce exact output R_1 (with rounding)
+        // Reason: we want to avoid leaving dust reserves when we consume the position
+        // so we don't have to process it again next time.
     }
 
     /// Returns a byte key for this trading function with the property that the
