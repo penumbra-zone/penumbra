@@ -96,7 +96,7 @@ impl ChainCmd {
         let fvk = &app.fvk;
         let view: &mut dyn ViewClient = app.view.as_mut().unwrap();
 
-        let current_block_height = view.status(fvk.hash()).await?.sync_height;
+        let current_block_height = view.status(fvk.account_id()).await?.sync_height;
         let chain_params = view.chain_params().await?;
 
         let epoch_duration = chain_params.epoch_duration;

@@ -128,7 +128,7 @@ impl FullViewingKey {
     }
 
     /// Hashes the full viewing key into an [`AccountID`].
-    pub fn hash(&self) -> AccountID {
+    pub fn account_id(&self) -> AccountID {
         let hash_result = hash_2(
             &ACCOUNT_ID_DOMAIN_SEP,
             (
