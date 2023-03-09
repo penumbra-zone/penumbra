@@ -73,12 +73,17 @@ mod tests {
 
     #[tokio::test]
     async fn check_stateless_succeeds_on_valid_spend() -> Result<()> {
-        // Generate a note controlled by the test address.
+        // Generate two notes controlled by the test address.
         let value = Value {
             amount: 100u64.into(),
             asset_id: *STAKING_TOKEN_ASSET_ID,
         };
         let note = Note::generate(&mut OsRng, &*test_keys::ADDRESS_0, value);
+        let value2 = Value {
+            amount: 50u64.into(),
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        };
+        let note2 = Note::generate(&mut OsRng, &*test_keys::ADDRESS_0, value2);
 
         // Record that note in an SCT, where we can generate an auth path.
         let mut sct = tct::Tree::new();
@@ -89,8 +94,10 @@ mod tests {
                 .unwrap();
         }
         sct.insert(tct::Witness::Keep, note.commit()).unwrap();
+        sct.insert(tct::Witness::Keep, note2.commit()).unwrap();
         // Do we want to seal the SCT block here?
         let auth_path = sct.witness(note.commit()).unwrap();
+        let auth_path2 = sct.witness(note2.commit()).unwrap();
 
         // Add a single spend and output to the transaction plan such that the
         // transaction balances.
@@ -100,6 +107,7 @@ mod tests {
             chain_id: "".into(),
             actions: vec![
                 SpendPlan::new(&mut OsRng, note, auth_path.position()).into(),
+                SpendPlan::new(&mut OsRng, note2, auth_path2.position()).into(),
                 OutputPlan::new(&mut OsRng, value, *test_keys::ADDRESS_1).into(),
             ],
             clue_plans: vec![],
