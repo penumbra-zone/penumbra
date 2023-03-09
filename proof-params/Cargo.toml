@@ -10,7 +10,7 @@ edition = "2021"
 penumbra-crypto = { path = "../crypto/" }
 
 # Git deps
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377", features = ["r1cs"] }
+decaf377 = { version = "0.2", features = ["r1cs"] }
 
 # Crates.io deps
 ark-ff = "0.3"

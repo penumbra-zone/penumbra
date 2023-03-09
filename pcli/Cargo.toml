@@ -30,7 +30,7 @@ penumbra-tct = { path = "../tct" }
 penumbra-component = { path = "../component" }
 
 # Penumbra dependencies
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
+decaf377 = "0.2"
 tendermint = { version = "0.29.0", features = ["rust-crypto"] }
 
 # External dependencies

@@ -8,4 +8,4 @@ publish = false
 penumbra-crypto = { path = "../../crypto/" }
 ark-groth16 = "0.3"
 ark-serialize = "0.3"
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377", features = ["r1cs"] }
+decaf377 = { version = "0.2", features = ["r1cs"] }

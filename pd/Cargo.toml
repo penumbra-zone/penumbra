@@ -25,7 +25,7 @@ penumbra-component = { path = "../component" }
 penumbra-wallet = { path = "../wallet" }
 
 # Penumbra dependencies
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
+decaf377 = "0.2"
 tower-abci = "0.5.0"
 jmt = "0.3"
 

@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 # We are visualizing the TCT, so we need to import it
 penumbra-tct = { path = "../tct", features = ["arbitrary"] }
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
+decaf377 = "0.2"
 
 # Dependencies for live-view server
 tokio = { version = "1", features = ["full"] }
