@@ -1,7 +1,8 @@
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
-use crate::dex::{fixed_encoding::FixedEncoding, TradingPair};
+use crate::dex::{TradingPair};
+use crate::fixpoint::U128x128;
 use crate::Amount;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -95,11 +96,7 @@ impl BareTradingFunction {
     /// Note: Currently this uses floating point to derive the encoding, which
     /// is a placeholder and should be replaced by width-expanding polynomial arithmetic.
     pub fn effective_price_key_bytes(&self) -> [u8; 32] {
-        let effective_price = self.effective_price();
-        let integer = effective_price.trunc() as u128;
-        let fractional = effective_price.fract() as u128;
-
-        FixedEncoding::new(integer, fractional).to_bytes()
+        self.effective_price().to_bytes()
     }
 
     /// Returns the effective price of the trading function.
@@ -109,14 +106,15 @@ impl BareTradingFunction {
     ///
     /// This means that if there's a greater fee, the effective price is lower.
     /// Note: the float math is a placehodler
-    pub fn effective_price(&self) -> f64 {
-        self.gamma() * self.p.value() as f64 / self.q.value() as f64
+    pub fn effective_price(&self) -> U128x128 {
+        (self.gamma() * U128x128::from(self.p) / U128x128::from(self.q))
+            .expect("gamma < 1 and q != 0")
     }
 
     /// Returns the fee of the trading function, expressed as a percentage (`gamma`).
     /// Note: the float math is a placehodler
-    pub fn gamma(&self) -> f64 {
-        (10_000.0 - self.fee as f64) / 10_000.0
+    pub fn gamma(&self) -> U128x128 {
+        (U128x128::from(10_000 - self.fee) / U128x128::from(10_000u64)).expect("10_000 != 0")
     }
 
     /// Returns the composition of two trading functions.
@@ -172,14 +170,9 @@ mod tests {
             q: 2_u32.into(),
         };
 
-        assert_eq!(btf.gamma(), 1.0);
-        assert_eq!(btf.effective_price(), 0.5);
-        let bytes = btf.effective_price_key_bytes();
-        let integer = u128::from_be_bytes(bytes[..16].try_into().unwrap());
-        let fractional = u128::from_be_bytes(bytes[16..].try_into().unwrap());
-
-        assert_eq!(integer, btf.effective_price().trunc() as u128);
-        assert_eq!(fractional, btf.effective_price().fract() as u128);
+        assert_eq!(btf.gamma(), U128x128::from(1u64));
+        assert_eq!(btf.effective_price(), U128x128::ratio(1u64, 2u64).unwrap());
+        let bytes1 = btf.effective_price_key_bytes();
 
         let btf = BareTradingFunction {
             fee: 100,
@@ -187,13 +180,13 @@ mod tests {
             q: 1_u32.into(),
         };
 
-        assert_eq!(btf.gamma(), 0.99);
-        assert_eq!(btf.effective_price(), 0.99);
-        let bytes = btf.effective_price_key_bytes();
-        let integer = u128::from_be_bytes(bytes[..16].try_into().unwrap());
-        let fractional = u128::from_be_bytes(bytes[16..].try_into().unwrap());
+        assert_eq!(btf.gamma(), U128x128::ratio(99u64, 100u64).unwrap());
+        assert_eq!(
+            btf.effective_price(),
+            U128x128::ratio(99u64, 100u64).unwrap()
+        );
+        let bytes2 = btf.effective_price_key_bytes();
 
-        assert_eq!(integer, btf.effective_price().trunc() as u128);
-        assert_eq!(fractional, btf.effective_price().fract() as u128);
+        assert!(bytes1 < bytes2);
     }
 }
