@@ -102,6 +102,7 @@ impl TransactionBody {
         let num_actions = self.actions.len() as u32;
         state.update(&num_actions.to_le_bytes());
         for action in &self.actions {
+            println!("hash action: {:?}", action);
             state.update(action.effect_hash().as_bytes());
         }
 
@@ -226,6 +227,9 @@ impl TransactionPlan {
         }
         for dao_deposit in self.dao_deposits() {
             state.update(dao_deposit.effect_hash().as_bytes());
+        }
+        for position_open in self.position_openings() {
+            state.update(position_open.effect_hash().as_bytes());
         }
         let num_clues = self.clue_plans.len() as u32;
         state.update(&num_clues.to_le_bytes());

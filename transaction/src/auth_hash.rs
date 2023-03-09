@@ -36,6 +36,7 @@ pub trait AuthorizingData {
 
 impl AuthorizingData for TransactionBody {
     fn auth_hash(&self) -> AuthHash {
+        println!("encode authorizing data for self: {:?}", self);
         AuthHash(
             blake2b_simd::Params::default()
                 .hash(&self.encode_to_vec())
