@@ -43,6 +43,7 @@ pub struct Storage {
 
     scanned_notes_tx: tokio::sync::broadcast::Sender<SpendableNoteRecord>,
     scanned_nullifiers_tx: tokio::sync::broadcast::Sender<Nullifier>,
+    scanned_swaps_tx: tokio::sync::broadcast::Sender<SwapRecord>,
 }
 
 impl Storage {
@@ -102,6 +103,7 @@ impl Storage {
             uncommitted_height: Arc::new(Mutex::new(None)),
             scanned_notes_tx: broadcast::channel(10).0,
             scanned_nullifiers_tx: broadcast::channel(10).0,
+            scanned_swaps_tx: broadcast::channel(10).0,
         })
     }
 
@@ -157,6 +159,7 @@ impl Storage {
             uncommitted_height: Arc::new(Mutex::new(None)),
             scanned_notes_tx: broadcast::channel(10).0,
             scanned_nullifiers_tx: broadcast::channel(10).0,
+            scanned_swaps_tx: broadcast::channel(10).0,
         })
     }
 
@@ -268,6 +271,10 @@ impl Storage {
         swap_commitment: tct::Commitment,
         await_detection: bool,
     ) -> impl Future<Output = anyhow::Result<SwapRecord>> {
+        // Start subscribing now, before querying for whether we already
+        // have the record, so that we can't miss it if we race a write.
+        let mut rx = self.scanned_swaps_tx.subscribe();
+
         // Clone the pool handle so that the returned future is 'static
         let pool = self.pool.clone();
         async move {
@@ -287,8 +294,33 @@ impl Storage {
 
             if !await_detection {
                 return Err(anyhow!("swap commitment {} not found", swap_commitment));
-            } else {
-                return Err(anyhow!("swap commitment await_detection not implemented"));
+            }
+
+            // Otherwise, wait for newly detected swaps and check whether they're
+            // the requested one.
+
+            loop {
+                match rx.recv().await {
+                    Ok(record) => {
+                        if record.swap_commitment == swap_commitment {
+                            return Ok(record);
+                        }
+                    }
+
+                    Err(e) => match e {
+                        RecvError::Closed => {
+                            return Err(anyhow!(
+                            "Receiver error during swap detection: closed (no more active senders)"
+                        ))
+                        }
+                        RecvError::Lagged(count) => {
+                            return Err(anyhow!(
+                                "Receiver error during swap detection: lagged (by {:?} messages)",
+                                count
+                            ))
+                        }
+                    },
+                };
             }
         }
     }
