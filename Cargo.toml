@@ -24,6 +24,7 @@ members = [
   "wallet",
   "view",
   "pd",
+  "pclientd",
   "pcli",
   "proof-params",
 ]

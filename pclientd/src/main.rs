@@ -1,4 +1,3 @@
-#![allow(clippy::clone_on_copy)]
 use anyhow::{Context, Result};
 use camino::{Utf8Path, Utf8PathBuf};
 use clap::Parser;
@@ -11,63 +10,14 @@ use penumbra_proto::client::v1alpha1::ChainParametersRequest;
 use penumbra_proto::custody::v1alpha1::custody_protocol_service_server::CustodyProtocolServiceServer;
 use penumbra_proto::view::v1alpha1::view_protocol_service_server::ViewProtocolServiceServer;
 use penumbra_view::ViewService;
-use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
+
+use std::fs;
 use std::fs::File;
 use std::io::{self, BufRead, Write};
 use std::str::FromStr;
-use std::{env, fs};
 use tonic::transport::Server;
-#[serde_as]
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct ClientConfig {
-    /// Optional KMS config for custody mode
-    pub kms_config: Option<soft_kms::Config>,
-    /// FVK for both view and custody modes
-    pub fvk: FullViewingKey,
-}
 
-#[derive(Debug, Parser)]
-#[clap(
-    name = "pclientd",
-    about = "The Penumbra view daemon.",
-    version = env!("VERGEN_GIT_SEMVER"),
-)]
-struct Opt {
-    /// Command to run.
-    #[clap(subcommand)]
-    cmd: Command,
-    /// The path used to store pclientd state and config files.
-    #[clap(long)]
-    home: Utf8PathBuf,
-    /// The address of the pd+tendermint node.
-    #[clap(short, long, default_value = "testnet.penumbra.zone")]
-    node: String,
-    /// The port to use to speak to pd's gRPC server.
-    #[clap(long, default_value = "8080")]
-    pd_port: u16,
-}
-
-#[derive(Debug, clap::Subcommand)]
-enum Command {
-    /// Initialize pclientd with the provided full viewing key (and optional seed phrase in custody mode)
-    Init {
-        /// The full viewing key to initialize the view service with.
-        full_viewing_key: String,
-        // If true, initialize in custody mode with the seed phrase provided to stdin
-        #[clap(short, long)]
-        custody: bool,
-    },
-    /// Start the view service.
-    Start {
-        /// Bind the view service to this host.
-        #[clap(long, default_value = "127.0.0.1")]
-        host: String,
-        /// Bind the view gRPC server to this port.
-        #[clap(long, default_value = "8081")]
-        view_port: u16,
-    },
-}
+use pclientd::{ClientConfig, Command, Opt};
 
 #[tokio::main]
 async fn main() -> Result<()> {
