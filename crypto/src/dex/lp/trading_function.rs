@@ -1,9 +1,11 @@
+use anyhow::anyhow;
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::dex::TradingPair;
 use crate::fixpoint::U128x128;
 use crate::Amount;
+use crate::Value;
 
 use super::Reserves;
 
@@ -19,6 +21,54 @@ impl TradingFunction {
         Self {
             component: BareTradingFunction::new(fee, p, q),
             pair,
+        }
+    }
+
+    /// Fills a trade of an input value against this position, returning the
+    /// unfilled amount of the input asset, the updated reserves, and the output
+    /// amount.
+    ///
+    /// Errors if the asset type of the input does not match either end of this
+    /// `TradingFunction`'s `TradingPair`.
+    pub fn fill(
+        &self,
+        input: Value,
+        reserves: &Reserves,
+    ) -> anyhow::Result<(Value, Reserves, Value)> {
+        if input.asset_id == self.pair.asset_1() {
+            let (unfilled, new_reserves, output) = self.component.fill(input.amount, reserves);
+            return Ok((
+                Value {
+                    amount: unfilled,
+                    asset_id: self.pair.asset_1(),
+                },
+                new_reserves,
+                Value {
+                    amount: output,
+                    asset_id: self.pair.asset_2(),
+                },
+            ));
+        } else if input.asset_id == self.pair.asset_2() {
+            let flipped_reserves = reserves.flip();
+            let (unfilled, new_reserves, output) =
+                self.component.flip().fill(input.amount, &flipped_reserves);
+            return Ok((
+                Value {
+                    amount: unfilled,
+                    asset_id: self.pair.asset_2(),
+                },
+                new_reserves.flip(),
+                Value {
+                    amount: output,
+                    asset_id: self.pair.asset_1(),
+                },
+            ));
+        } else {
+            Err(anyhow!(
+                "input asset id {:?} did not match either end of trading pair {:?}",
+                input.asset_id,
+                self.pair
+            ))
         }
     }
 }
