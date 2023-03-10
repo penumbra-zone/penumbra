@@ -36,6 +36,8 @@ service ViewProtocolService {
   // service could have advanced the state commitment tree state between queries).
   rpc Witness(WitnessRequest) returns (WitnessResponse);
 
+  rpc WitnessAndBuild(WitnessAndBuildRequest) returns (WitnessAndBuildResponse);
+
   // Queries for assets.
   rpc Assets(AssetsRequest) returns (stream AssetsResponse);
 
@@ -275,6 +277,15 @@ message WitnessRequest {
 
 message WitnessResponse {
   core.transaction.v1alpha1.WitnessData witness_data = 1;
+}
+
+message WitnessAndBuildRequest {
+  penumbra.core.transaction.v1alpha1.TransactionPlan transaction_plan = 1;
+  penumbra.core.transaction.v1alpha1.AuthorizationData authorization_data = 2;
+}
+
+message WitnessAndBuildResponse {
+  penumbra.core.transaction.v1alpha1.Transaction transaction = 1;
 }
 
 // Requests all assets known to the view service.

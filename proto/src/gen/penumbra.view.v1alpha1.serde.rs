@@ -5555,6 +5555,207 @@ impl<'de> serde::Deserialize<'de> for ViewAuthToken {
         deserializer.deserialize_struct("penumbra.view.v1alpha1.ViewAuthToken", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for WitnessAndBuildRequest {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.transaction_plan.is_some() {
+            len += 1;
+        }
+        if self.authorization_data.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.WitnessAndBuildRequest", len)?;
+        if let Some(v) = self.transaction_plan.as_ref() {
+            struct_ser.serialize_field("transactionPlan", v)?;
+        }
+        if let Some(v) = self.authorization_data.as_ref() {
+            struct_ser.serialize_field("authorizationData", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for WitnessAndBuildRequest {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "transaction_plan",
+            "transactionPlan",
+            "authorization_data",
+            "authorizationData",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            TransactionPlan,
+            AuthorizationData,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "transactionPlan" | "transaction_plan" => Ok(GeneratedField::TransactionPlan),
+                            "authorizationData" | "authorization_data" => Ok(GeneratedField::AuthorizationData),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = WitnessAndBuildRequest;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1alpha1.WitnessAndBuildRequest")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<WitnessAndBuildRequest, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut transaction_plan__ = None;
+                let mut authorization_data__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::TransactionPlan => {
+                            if transaction_plan__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("transactionPlan"));
+                            }
+                            transaction_plan__ = map.next_value()?;
+                        }
+                        GeneratedField::AuthorizationData => {
+                            if authorization_data__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("authorizationData"));
+                            }
+                            authorization_data__ = map.next_value()?;
+                        }
+                    }
+                }
+                Ok(WitnessAndBuildRequest {
+                    transaction_plan: transaction_plan__,
+                    authorization_data: authorization_data__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1alpha1.WitnessAndBuildRequest", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for WitnessAndBuildResponse {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.transaction.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.WitnessAndBuildResponse", len)?;
+        if let Some(v) = self.transaction.as_ref() {
+            struct_ser.serialize_field("transaction", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for WitnessAndBuildResponse {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "transaction",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Transaction,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "transaction" => Ok(GeneratedField::Transaction),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = WitnessAndBuildResponse;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1alpha1.WitnessAndBuildResponse")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<WitnessAndBuildResponse, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut transaction__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::Transaction => {
+                            if transaction__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("transaction"));
+                            }
+                            transaction__ = map.next_value()?;
+                        }
+                    }
+                }
+                Ok(WitnessAndBuildResponse {
+                    transaction: transaction__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1alpha1.WitnessAndBuildResponse", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for WitnessRequest {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>

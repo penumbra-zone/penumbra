@@ -11,6 +11,7 @@ use penumbra_proto::view::v1alpha1::{
     self as pb, view_protocol_service_client::ViewProtocolServiceClient, WitnessRequest,
 };
 
+use penumbra_transaction::AuthorizationData;
 use penumbra_transaction::{
     plan::TransactionPlan, Transaction, TransactionPerspective, WitnessData,
 };
@@ -133,6 +134,13 @@ pub trait ViewClient {
         account_id: AccountID,
         plan: &TransactionPlan,
     ) -> Pin<Box<dyn Future<Output = Result<WitnessData>> + Send + 'static>>;
+
+    /// Returns a transaction built from the provided TransactionPlan and AuthorizationData
+    fn witness_and_build(
+        &mut self,
+        plan: TransactionPlan,
+        auth_data: AuthorizationData,
+    ) -> Pin<Box<dyn Future<Output = Result<Transaction>> + Send + 'static>>;
 
     /// Queries for all known assets.
     fn assets(&mut self) -> Pin<Box<dyn Future<Output = Result<asset::Cache>> + Send + 'static>>;
@@ -770,6 +778,31 @@ where
                 .ok_or_else(|| anyhow::anyhow!("No address available for this address index"))?
                 .try_into()?;
             Ok(address)
+        }
+        .boxed()
+    }
+
+    fn witness_and_build(
+        &mut self,
+        transaction_plan: TransactionPlan,
+        authorization_data: AuthorizationData,
+    ) -> Pin<Box<dyn Future<Output = Result<Transaction>> + Send + 'static>> {
+        let request = pb::WitnessAndBuildRequest {
+            transaction_plan: Some(transaction_plan.into()),
+            authorization_data: Some(authorization_data.into()),
+        };
+        let mut self2 = self.clone();
+        async move {
+            let rsp = self2.witness_and_build(tonic::Request::new(request));
+
+            let tx = rsp
+                .await?
+                .into_inner()
+                .transaction
+                .ok_or_else(|| anyhow::anyhow!("empty WitnessAndBuildResponse message"))?
+                .try_into()?;
+
+            Ok(tx)
         }
         .boxed()
     }
