@@ -89,22 +89,22 @@ impl BareTradingFunction {
         }
     }
 
-    /// Fills a trade of asset 2 to asset 1 against the given reserves,
-    /// returning the unfilled amount of asset 2, the updated reserves, and the
-    /// output amount of asset 1.
-    pub fn fill(&self, delta_2: Amount, reserves: &Reserves) -> (Amount, Reserves, Amount) {
+    /// Fills a trade of asset 1 to asset 2 against the given reserves,
+    /// returning the unfilled amount of asset 1, the updated reserves, and the
+    /// output amount of asset 2.
+    pub fn fill(&self, delta_1: Amount, reserves: &Reserves) -> (Amount, Reserves, Amount) {
         // We distinguish two cases, which only differ in their rounding
         // behavior.
         //
         // If the desired fill is less than the original reserves, we want to
-        // work "forward" from the input amount `delta_2` to the output amount
-        // `lambda_1`, consuming exactly `delta_2` and rounding `lambda_1`
+        // work "forward" from the input amount `delta_1` to the output amount
+        // `lambda_2`, consuming exactly `delta_1` and rounding `lambda_2`
         // (down, so that we're burning the rounding error).
         //
         // If the desired fill is greater than the original reserves, however,
-        // we want to work "backward" from the available reserves `R_1` (the
-        // "max fill") to the input amount `delta_2`, producing exactly
-        // `lambda_1 = R_1` output and rounding `delta_2` (up, so that we're
+        // we want to work "backward" from the available reserves `R_2` (the
+        // "max fill") to the input amount `delta_1`, producing exactly
+        // `lambda_2 = R_2` output and rounding `delta_1` (up, so that we're
         // burning the rounding error).
         //
         // We want to be sure that in either case, we only round once, and derive
@@ -115,34 +115,34 @@ impl BareTradingFunction {
         // leaving some dust amount of reserves in it. Otherwise, we might try
         // executing against it again on a subsequent iteration, even though it
         // was essentially filled.
-        let tentative_lambda_1 = (self.effective_price() * U128x128::from(delta_2)).unwrap();
-        if tentative_lambda_1 <= reserves.r1.into() {
-            // Observe that for the case when `tentative_lambda_1` equals
+        let tentative_lambda_2 = (self.effective_price() * U128x128::from(delta_1)).unwrap();
+        if tentative_lambda_2 <= reserves.r2.into() {
+            // Observe that for the case when `tentative_lambda_2` equals
             // `reserves.r1`, rounding it down does not change anything since
-            // `reserves.r1` is integral. Therefore `reserves.r1 - lambda_1 >= 0`.
-            let lambda_1: Amount = tentative_lambda_1.round_down().try_into().unwrap();
+            // `reserves.r1` is integral. Therefore `reserves.r1 - lambda_2 >= 0`.
+            let lambda_2: Amount = tentative_lambda_2.round_down().try_into().unwrap();
             let new_reserves = Reserves {
-                r1: reserves.r1 - lambda_1,
-                r2: reserves.r2 + delta_2,
+                r1: reserves.r1 + delta_1,
+                r2: reserves.r2 - lambda_2,
             };
-            (0u64.into(), new_reserves, lambda_1)
+            (0u64.into(), new_reserves, lambda_2)
         } else {
-            let r1: U128x128 = reserves.r1.into();
-            let fillable_delta_2 = (r1 / self.effective_price()).unwrap();
+            let r2: U128x128 = reserves.r2.into();
+            let fillable_delta_1 = (r2 / self.effective_price()).unwrap();
 
-            let fillable_delta_2_exact: Amount = fillable_delta_2.round_up().try_into().unwrap();
+            let fillable_delta_1_exact: Amount = fillable_delta_1.round_up().try_into().unwrap();
             // We know that unfilled_amount >= 0. Why?
-            // In this branch, we have Delta_2 * (p/q) * gamma > R_1
-            //                     <=> R_1 * (q/p) * (1/gamma) < Delta_2
-            // Since fillable_delta_2_exact = ceil(LHS) and the RHS is already integral,
-            // we know that ceil(LHS) <= RHS and so fillable_delta_2_exact <= Delta_2.
-            let unfilled_amount = delta_2 - fillable_delta_2_exact;
+            // In this branch, we have delta_1 * (q/p) * gamma > R_2
+            //                     <=> R_2 * (p/q) * (1/gamma) < delta_1
+            // Since fillable_delta_1_exact = ceil(LHS) and the RHS is already integral,
+            // we know that ceil(LHS) <= RHS and so fillable_delta_1_exact <= delta_1.
+            let unfilled_amount = delta_1 - fillable_delta_1_exact;
 
             let new_reserves = Reserves {
-                r1: 0u64.into(),
-                r2: reserves.r2 + fillable_delta_2_exact,
+                r1: reserves.r1 + fillable_delta_1_exact,
+                r2: 0u64.into(),
             };
-            (unfilled_amount, new_reserves, reserves.r1)
+            (unfilled_amount, new_reserves, reserves.r2)
         }
     }
 
@@ -160,14 +160,13 @@ impl BareTradingFunction {
 
     /// Returns the effective price of the trading function.
     ///
-    /// The effective price is the price of asset 1 in terms of asset 2 according
+    /// The effective price is the price of asset 2 in terms of asset 1 according
     /// to the trading function.
     ///
     /// This means that if there's a greater fee, the effective price is lower.
-    /// Note: the float math is a placehodler
     pub fn effective_price(&self) -> U128x128 {
-        (self.gamma() * U128x128::from(self.p) / U128x128::from(self.q))
-            .expect("gamma < 1 and q != 0")
+        (self.gamma() * U128x128::from(self.q) / U128x128::from(self.p))
+            .expect("gamma < 1 and p != 0")
     }
 
     /// Returns the fee of the trading function, expressed as a percentage (`gamma`).
@@ -225,8 +224,8 @@ mod tests {
     fn test_trading_function_to_bytes() {
         let btf = BareTradingFunction {
             fee: 0,
-            p: 1_u32.into(),
-            q: 2_u32.into(),
+            p: 2_u32.into(),
+            q: 1_u32.into(),
         };
 
         assert_eq!(btf.gamma(), U128x128::from(1u64));
@@ -253,23 +252,31 @@ mod tests {
     fn fill_conserves_value() {
         let btf = BareTradingFunction {
             fee: 0,
-            p: 1_u32.into(),
-            q: 3_u32.into(),
+            p: 3_u32.into(),
+            q: 1_u32.into(),
         };
 
         let old_reserves = Reserves {
-            r1: 100_000_000u64.into(),
+            r1: 1_000_000u64.into(),
             r2: 100_000_000u64.into(),
         };
 
         let input_a = 10_000_000u64.into();
         let (unfilled_a, new_reserves_a, output_a) = btf.fill(input_a, &old_reserves);
-        assert_eq!(old_reserves.r1 + 0u64.into(), new_reserves_a.r1 + output_a);
-        assert_eq!(old_reserves.r2 + input_a, new_reserves_a.r2 + unfilled_a);
+        // Conservation of value:
+        assert_eq!(old_reserves.r1 + input_a, new_reserves_a.r1 + unfilled_a);
+        assert_eq!(old_reserves.r2 + 0u64.into(), new_reserves_a.r2 + output_a);
+        // Exact amount checks:
+        assert_eq!(output_a, 3_333_333u64.into()); // 10.0 -> 3.33...
+        assert_eq!(unfilled_a, 0u64.into());
 
         let input_b = 600_000_000u64.into();
+        // Conservation of value:
         let (unfilled_b, new_reserves_b, output_b) = btf.fill(input_b, &old_reserves);
-        assert_eq!(old_reserves.r1 + 0u64.into(), new_reserves_b.r1 + output_b);
-        assert_eq!(old_reserves.r2 + input_b, new_reserves_b.r2 + unfilled_b);
+        assert_eq!(old_reserves.r1 + input_b, new_reserves_b.r1 + unfilled_b);
+        assert_eq!(old_reserves.r2 + 0u64.into(), new_reserves_b.r2 + output_b);
+        // Exact amount checks:
+        assert_eq!(output_b, old_reserves.r2); // Exact fill of position
+        assert_eq!(unfilled_b, 299_999_999u64.into()); // rounding error is burned
     }
 }
