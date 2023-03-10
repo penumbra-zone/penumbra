@@ -25,6 +25,17 @@ impl ActionHandler for PositionOpen {
             ));
         }
 
+        if self.position.phi.component.p == 0u64.into() {
+            return Err(anyhow::anyhow!(
+                "p coefficient of trading function must be nonzero"
+            ));
+        }
+        if self.position.phi.component.q == 0u64.into() {
+            return Err(anyhow::anyhow!(
+                "q coefficient of trading function must be nonzero"
+            ));
+        }
+
         // The two assets in the position must be different.
         if self.position.phi.pair.asset_1() == self.position.phi.pair.asset_2() {
             return Err(anyhow::anyhow!(
