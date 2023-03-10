@@ -1252,6 +1252,12 @@ impl Storage {
             let _ = self.scanned_nullifiers_tx.send(*nullifier);
         }
 
+        for swap_record in filtered_block.new_swaps {
+            // This will fail to be broadcast if there is no active receiver (such as on initial sync)
+            // The error is ignored, as this isn't a problem, because if there is no active receiver there is nothing to do
+            let _ = self.scanned_swaps_tx.send(swap_record.clone());
+        }
+
         Ok(())
     }
 }
