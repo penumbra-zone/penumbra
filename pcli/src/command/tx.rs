@@ -12,7 +12,7 @@ use penumbra_component::stake::rate::RateData;
 use penumbra_crypto::{
     asset,
     dex::{
-        lp::{position::Position, Reserves},
+        lp::{position::Position, Reserves, TradingFunction},
         TradingPair,
     },
     keys::AddressIndex,
@@ -782,7 +782,16 @@ impl TxCmd {
                 let trading_pair =
                     TradingPair::new(buy_order.desired.asset_id, buy_order.price.asset_id);
 
-                let position = Position::new(trading_pair, (*spread).into(), reserves);
+                // TODO(erwan): check this then do the 1_000_000 scaling.
+                let p = buy_order.price.amount.clone();
+                let q = 1u64.into();
+
+                // TODO(erwan): spread is a `fee`, max value is `10_000`.
+                let fee = *spread as u32;
+
+                let trading_function = TradingFunction::new(trading_pair, fee, p, q);
+
+                let position = Position::new(OsRng, trading_function);
                 let _plan = Planner::new(OsRng)
                     .position_open(position)
                     .plan(
