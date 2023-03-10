@@ -1,8 +1,11 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_trait::async_trait;
-use penumbra_crypto::dex::{
-    lp::position::{self, Position},
-    DirectedTradingPair,
+use penumbra_crypto::{
+    dex::{
+        lp::position::{self, Position},
+        DirectedTradingPair,
+    },
+    Value,
 };
 use penumbra_proto::{DomainType, StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
@@ -38,6 +41,35 @@ pub trait PositionManager: StateWrite + PositionRead {
             self.index_position(&metadata);
         }
         self.put(state_key::position_by_id(&id), metadata);
+    }
+
+    /// Fill a trade of `input` value against a specific position `id`, writing
+    /// the updated reserves to the chain state and returning a pair of `(unfilled, output)`.
+    async fn fill_against(&mut self, input: Value, id: &position::Id) -> Result<(Value, Value)> {
+        let mut metadata = self
+            .position_by_id(id)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("tried to fill against unknown position {:?}", id))?;
+
+        if metadata.state != position::State::Opened {
+            return Err(anyhow::anyhow!(
+                "tried to fill against non-Opened position {:?}",
+                id
+            ));
+        }
+
+        let (unfilled, new_reserves, output) = metadata
+            .position
+            .phi
+            .fill(input, &metadata.reserves)
+            .context(format!(
+                "could not fill {:?} against position {:?}",
+                input, id
+            ))?;
+
+        metadata.reserves = new_reserves;
+
+        Ok((unfilled, output))
     }
 }
 
