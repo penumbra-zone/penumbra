@@ -1,4 +1,4 @@
-use anyhow::anyhow;
+use anyhow::{anyhow, Result};
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
@@ -205,7 +205,11 @@ impl BareTradingFunction {
     /// Note: Currently this uses floating point to derive the encoding, which
     /// is a placeholder and should be replaced by width-expanding polynomial arithmetic.
     pub fn effective_price_key_bytes(&self) -> [u8; 32] {
-        self.effective_price().to_bytes()
+        // Return the reciprocal of the effective price to ensure that the cheapest positions
+        // come first in the sorted ordering.
+        (U128x128::from(1u32) / self.effective_price())
+            .expect("unable to calculate reciprocal of effective price")
+            .to_bytes()
     }
 
     /// Returns the effective price of the trading function.
