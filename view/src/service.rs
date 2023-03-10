@@ -32,7 +32,7 @@ use penumbra_proto::{
 use penumbra_tct::{Commitment, Proof};
 use penumbra_transaction::{
     plan::{OutputPlan, SwapPlan, TransactionPlan},
-    Transaction, TransactionPerspective, WitnessData,
+    AuthorizationData, Transaction, TransactionPerspective, WitnessData,
 };
 use rand::Rng;
 use rand_core::OsRng;
@@ -1134,6 +1134,79 @@ impl ViewProtocolService for ViewService {
             witness_data: Some(witness_data.into()),
         };
         Ok(tonic::Response::new(witness_response))
+    }
+
+    async fn witness_and_build(
+        &self,
+        request: tonic::Request<pb::WitnessAndBuildRequest>,
+    ) -> Result<tonic::Response<pb::WitnessAndBuildResponse>, tonic::Status> {
+        let pb::WitnessAndBuildRequest {
+            transaction_plan,
+            authorization_data,
+        } = request.into_inner();
+
+        let transaction_plan: TransactionPlan = transaction_plan
+            .ok_or_else(|| tonic::Status::invalid_argument("missing transaction plan"))?
+            .try_into()
+            .map_err(|e: anyhow::Error| e.context("could not decode transaction plan"))
+            .map_err(|e| tonic::Status::invalid_argument(format!("{:#}", e)))?;
+
+        // Get the witness data from the view service only for non-zero amounts of value,
+        // since dummy spends will have a zero amount.
+        let note_commitments = transaction_plan
+            .spend_plans()
+            .filter(|plan| plan.note.amount() != 0u64.into())
+            .map(|spend| spend.note.commit().into())
+            .chain(
+                transaction_plan
+                    .swap_claim_plans()
+                    .map(|swap_claim| swap_claim.swap_plaintext.swap_commitment().into()),
+            )
+            .chain(
+                transaction_plan
+                    .delegator_vote_plans()
+                    .map(|vote_plan| vote_plan.staked_note.commit().into()),
+            )
+            .collect();
+
+        let authorization_data: AuthorizationData = authorization_data
+            .ok_or_else(|| tonic::Status::invalid_argument("missing authorization data"))?
+            .try_into()
+            .map_err(|e: anyhow::Error| e.context("could not decode authorization data"))
+            .map_err(|e| tonic::Status::invalid_argument(format!("{:#}", e)))?;
+
+        let witness_request = pb::WitnessRequest {
+            account_id: Some(self.account_id.into()),
+            note_commitments,
+            transaction_plan: Some(transaction_plan.clone().into()),
+            ..Default::default()
+        };
+
+        let witness_data: WitnessData = self
+            .witness(tonic::Request::new(witness_request))
+            .await?
+            .into_inner()
+            .witness_data
+            .ok_or_else(|| tonic::Status::invalid_argument("missing witness data"))?
+            .try_into()
+            .map_err(|e: anyhow::Error| e.context("could not decode witness data"))
+            .map_err(|e| tonic::Status::invalid_argument(format!("{:#}", e)))?;
+
+        let fvk =
+            self.storage.full_viewing_key().await.map_err(|_| {
+                tonic::Status::failed_precondition("Error retrieving full viewing key")
+            })?;
+
+        let transaction = Some(
+            transaction_plan
+                .build(&mut OsRng, &fvk, authorization_data, witness_data)
+                .map_err(|_| tonic::Status::failed_precondition("Error building transaction"))?
+                .into(),
+        );
+
+        Ok(tonic::Response::new(pb::WitnessAndBuildResponse {
+            transaction,
+        }))
     }
 
     async fn chain_parameters(
