@@ -17,10 +17,10 @@ pub const MAX_RESERVE_AMOUNT: u128 = (1 << 112) - 1;
 pub struct Position {
     /// A trading function to a specific trading pair.
     pub phi: TradingFunction,
-    /// A random value used to disambiguate different positions with the exact same
-    /// trading function.  The chain should reject newly created positions with the
-    /// same nonce as an existing position.  This ensures that [`Id`]s will
-    /// be unique, and allows us to track position ownership with a
+    /// A random value used to disambiguate different positions with the exact
+    /// same trading function.  The position ID is a hash of the trading
+    /// function and the nonce; the chain rejects transactions creating
+    /// duplicate position [`Id`]s, so it can track position ownership with a
     /// sequence of stateful NFTs based on the [`Id`].
     pub nonce: [u8; 32],
 }
