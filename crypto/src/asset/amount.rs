@@ -283,6 +283,12 @@ impl From<Amount> for U128x128 {
     }
 }
 
+impl From<&Amount> for U128x128 {
+    fn from(value: &Amount) -> Self {
+        (*value).into()
+    }
+}
+
 impl TryFrom<U128x128> for Amount {
     type Error = <u128 as TryFrom<U128x128>>::Error;
     fn try_from(value: U128x128) -> Result<Self, Self::Error> {
