@@ -21,8 +21,8 @@ f4jumble = { git = "https://github.com/zcash/librustzcash", rev = "2425a0869098e
 
 # Crates.io deps
 base64 = "0.20"
-ark-ff = "0.3"
-ark-std = "0.3"
+ark-ff = { version = "0.3", default_features = false }
+ark-std = { version = "0.3", default_features = false }
 ark-serialize = "0.3"
 regex = "1.5"
 sha2 = "0.10.1"
@@ -53,7 +53,7 @@ num-bigint = "0.4"
 tracing = "0.1"
 ark-groth16 = {version = "0.3", default-features = false}
 ark-snark = "0.3"
-ark-r1cs-std = "0.3"
+ark-r1cs-std = {version = "0.3", default-features = false }
 ark-relations = "0.3"
 ark-nonnative-field = "0.3"
 
@@ -64,4 +64,4 @@ frost377 = { git = "https://github.com/penumbra-zone/frost377", branch = "use-cr
 
 [features]
 default = []
-fast-proofs = ["ark-groth16/parallel"]
+fast-proofs = ["ark-ff/parallel", "ark-groth16/parallel", "ark-std/parallel", "ark-r1cs-std/parallel"]
