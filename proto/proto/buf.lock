@@ -8,7 +8,7 @@ deps:
   - remote: buf.build
     owner: cosmos
     repository: cosmos-sdk
-    commit: 7c06e7f6f43c406185136100bfd7b848
+    commit: ea733ce6ec0045ecb40ba9112132ac33
   - remote: buf.build
     owner: cosmos
     repository: gogo-proto
