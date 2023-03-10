@@ -209,3 +209,8 @@ message ZKSpendProof {
 message ZKSwapProof {
     bytes inner = 1;
 }
+
+// A Penumbra ZK swap claim proof.
+message ZKSwapClaimProof {
+    bytes inner = 1;
+}

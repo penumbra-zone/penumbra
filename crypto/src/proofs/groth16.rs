@@ -2,11 +2,13 @@ mod gadgets;
 mod output;
 mod spend;
 mod swap;
+mod swapclaim;
 mod traits;
 
 pub use output::{OutputCircuit, OutputProof};
 pub use spend::{SpendCircuit, SpendProof};
 pub use swap::{SwapCircuit, SwapProof};
+pub use swapclaim::{SwapClaimCircuit, SwapClaimProof};
 pub use traits::{ParameterSetup, ProvingKeyExt, VerifyingKeyExt};
 
 /// The length of our Groth16 proofs in bytes.
