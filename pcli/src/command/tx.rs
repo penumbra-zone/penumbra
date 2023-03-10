@@ -768,25 +768,16 @@ impl TxCmd {
                 let _fee = Fee::from_staking_token_amount((*fee).into());
 
                 // When opening a liquidity position, the initial reserves will only be set for one asset.
-                // This represents an "ask" in the order book, where bids are placed in the asset type without initial reserves.
-                let reserves = Reserves {
-                    // r1 will be set to 0 units of the asset being bought
-                    r1: Amount::zero(),
-                    // and r2 will be set to the amount of the asset being sold that would be needed to buy the desired amount of the asset being bought
-                    r2: buy_order.price.amount * buy_order.desired.amount,
-                };
-
                 let _asset_cache = app.view().assets().await?;
                 // TODO: check canonical ordering of trading_pair, or
                 // use DirectedTradingPair
                 let trading_pair =
                     TradingPair::new(buy_order.desired.asset_id, buy_order.price.asset_id);
 
-                // TODO(erwan): check this then do the 1_000_000 scaling.
-                let p = buy_order.price.amount.clone();
-                let q = 1u64.into();
+                let p = buy_order.price.amount.clone() * 1_000_000u64.into();
+                let q = 1_000_000u64.into();
 
-                // TODO(erwan): spread is a `fee`, max value is `10_000`.
+                // `spread` is another name for `fee`, which is at most 10_000 bps.
                 let fee = *spread as u32;
 
                 let trading_function = TradingFunction::new(trading_pair, fee, p, q);
