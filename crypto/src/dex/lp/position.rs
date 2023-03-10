@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Context};
 use penumbra_proto::{core::dex::v1alpha1 as pb, serializers::bech32str, DomainType};
 use rand::RngCore;
-use rand_core::OsRng;
+use rand_core::{CryptoRngCore, OsRng};
 use serde::{Deserialize, Serialize};
 
 use crate::{dex::TradingPair, Amount};
@@ -27,13 +27,12 @@ pub struct Position {
 
 impl Position {
     /// Construct a new [Position] with a random nonce.
-    pub fn new(pair: TradingPair, spread: Amount, reserves: Reserves) -> Position {
-        let mut rng = OsRng;
+    pub fn new<R: CryptoRngCore>(mut rng: R, phi: TradingFunction) -> Position {
         let mut nonce_bytes = [0u8; 32];
         rng.fill_bytes(&mut nonce_bytes);
 
         Position {
-            phi: TradingFunction::new(pair, spread.into(), reserves.r1, reserves.r2),
+            phi,
             nonce: nonce_bytes,
         }
     }
