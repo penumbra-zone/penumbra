@@ -4,7 +4,7 @@ use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
-use decaf377::{Bls12_377, FieldExt};
+use decaf377::{r1cs::FqVar, Bls12_377, FieldExt};
 use decaf377_fmd as fmd;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
 use penumbra_tct as tct;
@@ -31,9 +31,11 @@ use super::{ParameterSetup, GROTH16_PROOF_LENGTH_BYTES};
 /// only being valid for particular blocks (i.e. the exchange rates of assets change over time).
 pub struct SwapClaimCircuit {
     /// The swap being claimed
-    pub swap_plaintext: SwapPlaintext,
+    swap_plaintext: SwapPlaintext,
     /// Inclusion proof for the swap commitment
-    pub state_commitment_proof: tct::Proof,
+    state_commitment_proof: tct::Proof,
+    /// Anchor
+    pub anchor: tct::Root,
 }
 
 impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
@@ -52,9 +54,21 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
         let merkle_path_var =
             tct::r1cs::MerkleAuthPathVar::new(cs.clone(), self.state_commitment_proof)?;
 
+        // Inputs
+        let anchor_var = FqVar::new_input(cs.clone(), || Ok(Fq::from(self.anchor)))?;
+
         // Swap commitment integrity check
         let swap_commitment = swap_plaintext_var.commit()?;
         claimed_swap_commitment.enforce_equal(&swap_commitment)?;
+
+        // Merkle path integrity. Ensure the provided note commitment is in the TCT.
+        merkle_path_var.verify(
+            cs.clone(),
+            &Boolean::TRUE,
+            position_var.inner,
+            anchor_var,
+            claimed_swap_commitment.inner(),
+        )?;
 
         Ok(())
     }
@@ -96,6 +110,7 @@ impl ParameterSetup for SwapClaimCircuit {
         let circuit = SwapClaimCircuit {
             swap_plaintext,
             state_commitment_proof,
+            anchor,
         };
         let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
             .expect("can perform circuit specific setup");
@@ -113,20 +128,25 @@ impl SwapClaimProof {
         pk: &ProvingKey<Bls12_377>,
         swap_plaintext: SwapPlaintext,
         state_commitment_proof: tct::Proof,
+        anchor: tct::Root,
     ) -> anyhow::Result<Self> {
         let circuit = SwapClaimCircuit {
             swap_plaintext,
             state_commitment_proof,
+            anchor,
         };
         let proof = Groth16::prove(pk, circuit, rng).map_err(|err| anyhow::anyhow!(err))?;
         Ok(Self(proof))
     }
 
     /// Called to verify the proof using the provided public inputs.
-    #[tracing::instrument(skip(self, vk))]
-    pub fn verify(&self, vk: &PreparedVerifyingKey<Bls12_377>) -> anyhow::Result<()> {
+    pub fn verify(
+        &self,
+        vk: &PreparedVerifyingKey<Bls12_377>,
+        anchor: tct::Root,
+    ) -> anyhow::Result<()> {
         let mut public_inputs = Vec::new();
-        // public_inputs.extend(balance_commitment.0.to_field_elements().unwrap());
+        public_inputs.extend(Fq::from(anchor.0).to_field_elements().unwrap());
 
         tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();
