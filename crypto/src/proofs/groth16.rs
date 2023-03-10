@@ -719,6 +719,7 @@ mod tests {
             let nk = *sk_sender.nullifier_key();
             let ak = sk_sender.spend_auth_key().into();
             let mut sct = tct::Tree::new();
+            let wrong_anchor = sct.root();
             sct.insert(tct::Witness::Keep, note_commitment).unwrap();
             let anchor = sct.root();
             let state_commitment_proof = sct.witness(note_commitment).unwrap();
@@ -738,7 +739,7 @@ mod tests {
                 spend_auth_randomizer,
                 ak,
                 nk,
-                anchor,
+                wrong_anchor,
                 balance_commitment,
                 nf,
                 rk,
