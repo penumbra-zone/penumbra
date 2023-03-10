@@ -1462,7 +1462,8 @@ dependencies = [
 [[package]]
 name = "decaf377"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/decaf377#f26d4f215c84841ae30e651d65631a5a746ad71d"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0cbd14ba1ba8a57dbfc225798212148e4385bc16f4359abab5f9b73552a7cd91"
 dependencies = [
  "anyhow",
  "ark-bls12-377",
@@ -1485,6 +1486,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "decaf377"
+version = "0.2.0"
+source = "git+https://github.com/penumbra-zone/decaf377#f26d4f215c84841ae30e651d65631a5a746ad71d"
+dependencies = [
+ "anyhow",
+ "ark-bls12-377",
+ "ark-ec",
+ "ark-ed-on-bls12-377",
+ "ark-ff",
+ "ark-relations",
+ "ark-serialize",
+ "ark-std",
+ "hex",
+ "num-bigint",
+ "once_cell",
+ "thiserror",
+ "tracing",
+ "tracing-subscriber 0.2.25",
+ "zeroize",
+]
+
+[[package]]
 name = "decaf377-fmd"
 version = "0.1.0"
 dependencies = [
@@ -1493,7 +1516,7 @@ dependencies = [
  "bitvec",
  "blake2b_simd 0.5.11",
  "criterion",
- "decaf377 0.2.0",
+ "decaf377 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "proptest",
  "rand_core",
  "thiserror",
@@ -1504,7 +1527,7 @@ name = "decaf377-ka"
 version = "0.1.0"
 dependencies = [
  "ark-ff",
- "decaf377 0.2.0",
+ "decaf377 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex",
  "proptest",
  "rand_core",
@@ -1522,7 +1545,7 @@ dependencies = [
  "ark-serialize",
  "blake2b_simd 0.5.11",
  "byteorder",
- "decaf377 0.2.0",
+ "decaf377 0.2.0 (git+https://github.com/penumbra-zone/decaf377)",
  "digest 0.9.0",
  "hex",
  "rand_core",
@@ -1862,13 +1885,13 @@ dependencies = [
 [[package]]
 name = "frost377"
 version = "0.1.0"
-source = "git+https://github.com/penumbra-zone/frost377#c439a41f6a0c4b6b3a9b766ffa5a456ec3208434"
+source = "git+https://github.com/penumbra-zone/frost377?branch=use-crates-decaf377#e7893dbec80e817060510e0911bfbeea948b5f64"
 dependencies = [
  "anyhow",
  "ark-ff",
  "ark-poly",
  "blake2b_simd 0.5.11",
- "decaf377 0.2.0",
+ "decaf377 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand",
 ]
 
@@ -3390,7 +3413,7 @@ dependencies = [
  "clap 3.2.23",
  "colored_json",
  "comfy-table",
- "decaf377 0.2.0",
+ "decaf377 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "directories",
  "ed25519-consensus",
  "futures",
@@ -3450,7 +3473,7 @@ dependencies = [
  "clap 3.2.23",
  "console-subscriber",
  "csv",
- "decaf377 0.2.0",
+ "decaf377 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "directories",
  "ed25519-consensus",
  "futures",
@@ -3548,7 +3571,7 @@ dependencies = [
  "ark-ff",
  "async-trait",
  "bytes",
- "decaf377 0.2.0",
+ "decaf377 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex",
  "ibc",
  "ics23",
@@ -3576,7 +3599,7 @@ dependencies = [
  "bincode",
  "bitvec",
  "blake2b_simd 0.5.11",
- "decaf377 0.2.0",
+ "decaf377 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ed25519-consensus",
  "futures",
  "hex",
@@ -3631,7 +3654,7 @@ dependencies = [
  "blake2b_simd 0.5.11",
  "bytes",
  "chacha20poly1305",
- "decaf377 0.2.0",
+ "decaf377 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "decaf377-fmd",
  "decaf377-ka",
  "decaf377-rdsa",
@@ -3692,7 +3715,7 @@ dependencies = [
  "anyhow",
  "ark-ff",
  "ark-std",
- "decaf377 0.2.0",
+ "decaf377 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures",
  "merlin",
  "parking_lot 0.12.1",
@@ -3734,7 +3757,7 @@ dependencies = [
  "ark-serialize",
  "ark-snark",
  "ark-std",
- "decaf377 0.2.0",
+ "decaf377 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-bigint",
  "once_cell",
  "penumbra-crypto",
@@ -3807,7 +3830,7 @@ dependencies = [
  "ark-serialize",
  "async-trait",
  "blake2b_simd 1.0.1",
- "decaf377 0.2.0",
+ "decaf377 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "derivative",
  "futures",
  "hash_hasher",
@@ -3849,7 +3872,7 @@ dependencies = [
  "axum-server",
  "bytes",
  "clap 3.2.23",
- "decaf377 0.2.0",
+ "decaf377 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures",
  "hex",
  "include-flate",
@@ -3884,7 +3907,7 @@ dependencies = [
  "bytes",
  "chacha20poly1305",
  "clap 3.2.23",
- "decaf377 0.2.0",
+ "decaf377 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "decaf377-fmd",
  "decaf377-ka",
  "decaf377-rdsa",

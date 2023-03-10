@@ -12,7 +12,7 @@ penumbra-crypto = { path = "../crypto" }
 penumbra-tct = { path = "../tct" }
 
 # Penumbra dependencies
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
+decaf377 = "0.2"
 
 tendermint = "0.29.0"
 ibc = "0.29"

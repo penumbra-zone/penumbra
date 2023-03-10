@@ -13,7 +13,7 @@ penumbra-proto = { path = "../proto/" }
 penumbra-tct = { path = "../tct/", features = ["r1cs"] }
 
 # Git deps
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377", features = ["r1cs"] }
+decaf377 = {version = "0.2", features = ["r1cs"] }
 decaf377-rdsa = { version = "0.5", git = "https://github.com/penumbra-zone/decaf377-rdsa" }
 poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377", rev = "a2d8c7a3288e2e877ac88a4d8fd3cc4ff2b52c04", features = ["r1cs"] }
 poseidon-paramgen = { git = "https://github.com/penumbra-zone/poseidon377", rev = "a2d8c7a3288e2e877ac88a4d8fd3cc4ff2b52c04" }
@@ -60,4 +60,4 @@ ark-nonnative-field = "0.3"
 [dev-dependencies]
 proptest = "1"
 serde_json = "1"
-frost377 = { git = "https://github.com/penumbra-zone/frost377" }
+frost377 = { git = "https://github.com/penumbra-zone/frost377", branch = "use-crates-decaf377" }

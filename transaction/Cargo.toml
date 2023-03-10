@@ -14,7 +14,7 @@ penumbra-tct = { path = "../tct" }
 penumbra-proof-params = { path = "../proof-params/", features = ["proving-keys"] }
 
 # Git deps
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
+decaf377 = "0.2"
 decaf377-rdsa = { git = "https://github.com/penumbra-zone/decaf377-rdsa" }
 poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377", rev = "a2d8c7a3288e2e877ac88a4d8fd3cc4ff2b52c04" }
 ibc = "0.29"
