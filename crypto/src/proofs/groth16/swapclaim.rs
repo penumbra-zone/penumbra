@@ -13,26 +13,90 @@ use rand_core::OsRng;
 
 use crate::{
     asset, balance,
-    dex::{swap::SwapPlaintext, TradingPair},
+    dex::{
+        swap::{SwapPlaintext, SwapPlaintextVar},
+        TradingPair,
+    },
     ka,
     keys::Diversifier,
+    note,
     transaction::Fee,
     Address, Fq, Fr, Rseed, Value,
 };
 
 use super::{ParameterSetup, GROTH16_PROOF_LENGTH_BYTES};
 
-pub struct SwapClaimCircuit {}
+/// SwapClaim consumes an existing Swap NFT so they are most similar to Spend operations,
+/// however the note commitment proof needs to be for a specific block due to clearing prices
+/// only being valid for particular blocks (i.e. the exchange rates of assets change over time).
+pub struct SwapClaimCircuit {
+    /// The swap being claimed
+    pub swap_plaintext: SwapPlaintext,
+    /// Inclusion proof for the swap commitment
+    pub state_commitment_proof: tct::Proof,
+}
 
 impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
+        // Witnesses
+        let swap_plaintext_var =
+            SwapPlaintextVar::new_witness(cs.clone(), || Ok(self.swap_plaintext.clone()))?;
+
+        let claimed_swap_commitment = note::StateCommitmentVar::new_witness(cs.clone(), || {
+            Ok(self.state_commitment_proof.commitment())
+        })?;
+
+        let position_var = tct::r1cs::PositionVar::new_witness(cs.clone(), || {
+            Ok(self.state_commitment_proof.position())
+        })?;
+        let merkle_path_var =
+            tct::r1cs::MerkleAuthPathVar::new(cs.clone(), self.state_commitment_proof)?;
+
+        // Swap commitment integrity check
+        let swap_commitment = swap_plaintext_var.commit()?;
+        claimed_swap_commitment.enforce_equal(&swap_commitment)?;
+
         Ok(())
     }
 }
 
 impl ParameterSetup for SwapClaimCircuit {
     fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
-        let circuit = SwapClaimCircuit {};
+        let trading_pair = TradingPair {
+            asset_1: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_2: asset::REGISTRY.parse_denom("nala").unwrap().id(),
+        };
+        let diversifier_bytes = [1u8; 16];
+        let pk_d_bytes = decaf377::basepoint().vartime_compress().0;
+        let clue_key_bytes = [1; 32];
+        let diversifier = Diversifier(diversifier_bytes);
+        let address = Address::from_components(
+            diversifier,
+            ka::Public(pk_d_bytes),
+            fmd::ClueKey(clue_key_bytes),
+        )
+        .expect("generated 1 address");
+        let swap_plaintext = SwapPlaintext {
+            trading_pair,
+            delta_1_i: 100000u64.into(),
+            delta_2_i: 1u64.into(),
+            claim_fee: Fee(Value {
+                amount: 3u64.into(),
+                asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            }),
+            claim_address: address,
+            rseed: Rseed([1u8; 32]),
+        };
+        let mut sct = tct::Tree::new();
+        let swap_commitment = swap_plaintext.swap_commitment();
+        sct.insert(tct::Witness::Keep, swap_commitment).unwrap();
+        let anchor = sct.root();
+        let state_commitment_proof = sct.witness(swap_commitment).unwrap();
+
+        let circuit = SwapClaimCircuit {
+            swap_plaintext,
+            state_commitment_proof,
+        };
         let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
             .expect("can perform circuit specific setup");
         (pk, vk)
@@ -47,8 +111,13 @@ impl SwapClaimProof {
     pub fn prove<R: CryptoRng + Rng>(
         rng: &mut R,
         pk: &ProvingKey<Bls12_377>,
+        swap_plaintext: SwapPlaintext,
+        state_commitment_proof: tct::Proof,
     ) -> anyhow::Result<Self> {
-        let circuit = SwapClaimCircuit {};
+        let circuit = SwapClaimCircuit {
+            swap_plaintext,
+            state_commitment_proof,
+        };
         let proof = Groth16::prove(pk, circuit, rng).map_err(|err| anyhow::anyhow!(err))?;
         Ok(Self(proof))
     }
