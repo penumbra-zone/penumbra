@@ -54,6 +54,7 @@ cargo $nightly_opt doc --no-deps \
   -p penumbra-wallet \
   -p penumbra-view \
   -p pd \
+  -p pclientd \
   -p pcli
 
 if [[ -n "$REGENERATE_INDEX" ]]; then

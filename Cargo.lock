@@ -3458,6 +3458,48 @@ dependencies = [
 ]
 
 [[package]]
+name = "pclientd"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-stream 0.2.1",
+ "async-trait",
+ "bytes",
+ "camino",
+ "clap 3.2.23",
+ "ed25519-consensus",
+ "futures",
+ "hex",
+ "metrics",
+ "parking_lot 0.12.1",
+ "penumbra-chain",
+ "penumbra-component",
+ "penumbra-crypto",
+ "penumbra-custody",
+ "penumbra-proto",
+ "penumbra-tct",
+ "penumbra-transaction",
+ "penumbra-view",
+ "prost",
+ "rand",
+ "rand_core",
+ "serde",
+ "serde_json",
+ "serde_with 1.14.0",
+ "sha2 0.10.6",
+ "sqlx",
+ "tendermint",
+ "tokio",
+ "tokio-stream",
+ "toml 0.5.11",
+ "tonic",
+ "tonic-web",
+ "tracing",
+ "tracing-subscriber 0.2.25",
+ "vergen",
+]
+
+[[package]]
 name = "pd"
 version = "0.1.0"
 dependencies = [
