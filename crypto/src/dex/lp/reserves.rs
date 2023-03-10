@@ -47,6 +47,14 @@ impl Reserves {
 
         Balance::from(r1) + r2
     }
+
+    /// Flip the reserves
+    pub fn flip(&self) -> Reserves {
+        Self {
+            r1: self.r2,
+            r2: self.r1,
+        }
+    }
 }
 
 impl DomainType for Reserves {
