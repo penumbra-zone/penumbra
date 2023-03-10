@@ -48,26 +48,29 @@ trait Inner: StateWrite {
     fn index_position(&mut self, metadata: &position::Metadata) {
         let (pair, phi) = (metadata.position.phi.pair, &metadata.position.phi);
         let id_bytes = metadata.position.id().encode_to_vec();
-        if metadata.reserves.r1 != 0u64.into() {
-            // Index this position for trades FROM asset 2 TO asset 1, since the position has asset 1 to give out.
-            let pair = DirectedTradingPair {
+        if metadata.reserves.r2 != 0u64.into() {
+            // Index this position for trades FROM asset 1 TO asset 2, since the position has asset 2 to give out.
+            let pair12 = DirectedTradingPair {
                 start: pair.asset_1(),
                 end: pair.asset_2(),
             };
-            let phi = phi.component.clone();
+            let phi12 = phi.component.clone();
             self.nonconsensus_put_raw(
-                state_key::internal::price_index::key(&pair, &phi),
+                state_key::internal::price_index::key(&pair12, &phi12),
                 id_bytes.clone(),
             );
         }
-        if metadata.reserves.r2 != 0u64.into() {
-            // Index this position for trades FROM asset 1 TO asset 2, since the position has asset 2 to give out.
-            let pair = DirectedTradingPair {
+        if metadata.reserves.r1 != 0u64.into() {
+            // Index this position for trades FROM asset 2 TO asset 1, since the position has asset 1 to give out.
+            let pair21 = DirectedTradingPair {
                 start: pair.asset_2(),
                 end: pair.asset_1(),
             };
-            let phi = phi.component.flip();
-            self.nonconsensus_put_raw(state_key::internal::price_index::key(&pair, &phi), id_bytes);
+            let phi21 = phi.component.flip();
+            self.nonconsensus_put_raw(
+                state_key::internal::price_index::key(&pair21, &phi21),
+                id_bytes,
+            );
         }
     }
 
