@@ -90,48 +90,60 @@ impl BareTradingFunction {
     }
 
     /// Fills a trade of asset 2 to asset 1 against the given reserves,
-    /// returning the new reserves, the unfilled amount of asset 2, and the
+    /// returning the unfilled amount of asset 2, the updated reserves, and the
     /// output amount of asset 1.
-    pub fn fill(&self, delta_2: &Amount, reserves: &Reserves) -> (Reserves, Amount, Amount) {
-        let delta_2_fp = U128x128::from(*delta_2);
-        let p = U128x128::from(self.p);
-        let q = U128x128::from(self.q);
-        let tentative_lambda_1 = (self.effective_price() * delta_2_fp).unwrap();
-        if tentative_lambda_1 >= reserves.r1.into() {
-            let r1: U128x128 = reserves.r1.into();
-            let fillable_delta_2 = (q / p).unwrap() * self.gamma() * r1;
-            let fillable_delta_2 = fillable_delta_2.unwrap();
-
-            let unfilled_amount = (delta_2_fp - fillable_delta_2)
-                .unwrap()
-                .round_up()
-                .try_into()
-                .unwrap();
-            let fillable_delta_2: Amount = fillable_delta_2.round_down().try_into().unwrap();
-
-            let reserves = Reserves {
-                r1: Amount::from(0u64),
-                r2: reserves.r2 + fillable_delta_2,
-            };
-            (reserves, unfilled_amount, r1.try_into().unwrap())
-        } else {
+    pub fn fill(&self, delta_2: Amount, reserves: &Reserves) -> (Amount, Reserves, Amount) {
+        // We distinguish two cases, which only differ in their rounding
+        // behavior.
+        //
+        // If the desired fill is less than the original reserves, we want to
+        // work "forward" from the input amount `delta_2` to the output amount
+        // `lambda_1`, consuming exactly `delta_2` and rounding `lambda_1`
+        // (down, so that we're burning the rounding error).
+        //
+        // If the desired fill is greater than the original reserves, however,
+        // we want to work "backward" from the available reserves `R_1` (the
+        // "max fill") to the input amount `delta_2`, producing exactly
+        // `lambda_1 = R_1` output and rounding `delta_2` (up, so that we're
+        // burning the rounding error).
+        //
+        // We want to be sure that in either case, we only round once, and derive
+        // other quantities exactly from the rounded quantity. This ensures
+        // conservation of value.
+        //
+        // This also ensures that we cleanly fill the position, rather than
+        // leaving some dust amount of reserves in it. Otherwise, we might try
+        // executing against it again on a subsequent iteration, even though it
+        // was essentially filled.
+        let tentative_lambda_1 = (self.effective_price() * U128x128::from(delta_2)).unwrap();
+        if tentative_lambda_1 <= reserves.r1.into() {
+            // Observe that for the case when `tentative_lambda_1` equals
+            // `reserves.r1`, rounding it down does not change anything since
+            // `reserves.r1` is integral. Therefore `reserves.r1 - lambda_1 >= 0`.
             let lambda_1: Amount = tentative_lambda_1.round_down().try_into().unwrap();
-            let remaining_reserve = reserves.r1 - lambda_1;
-            let unfilled_amount = Amount::from(0u64);
             let new_reserves = Reserves {
-                r1: remaining_reserve,
-                r2: *delta_2 + reserves.r2,
+                r1: reserves.r1 - lambda_1,
+                r2: reserves.r2 + delta_2,
             };
-            (new_reserves, unfilled_amount, lambda_1)
+            (0u64.into(), new_reserves, lambda_1)
+        } else {
+            let r1: U128x128 = reserves.r1.into();
+            let fillable_delta_2 = (r1 / self.effective_price()).unwrap();
+
+            let fillable_delta_2_exact: Amount = fillable_delta_2.round_up().try_into().unwrap();
+            // We know that unfilled_amount >= 0. Why?
+            // In this branch, we have Delta_2 * (p/q) * gamma > R_1
+            //                     <=> R_1 * (q/p) * (1/gamma) < Delta_2
+            // Since fillable_delta_2_exact = ceil(LHS) and the RHS is already integral,
+            // we know that ceil(LHS) <= RHS and so fillable_delta_2_exact <= Delta_2.
+            let unfilled_amount = delta_2 - fillable_delta_2_exact;
+
+            let new_reserves = Reserves {
+                r1: 0u64.into(),
+                r2: reserves.r2 + fillable_delta_2_exact,
+            };
+            (unfilled_amount, new_reserves, reserves.r1)
         }
-        // let lambda_1 = (self.gamma() * delta_2 * p / q).unwrap();
-        // TODO: we have two cases:
-        // - if we're "under fill", we want to work forward from the input amount delta_2
-        //   to the output amount lambda_1
-        // - if we're "over fill", we want to work backward from the max reserves R_1 to
-        //   to the input amount delta_2' that will produce exact output R_1 (with rounding)
-        // Reason: we want to avoid leaving dust reserves when we consume the position
-        // so we don't have to process it again next time.
     }
 
     /// Returns a byte key for this trading function with the property that the
@@ -235,5 +247,29 @@ mod tests {
         let bytes2 = btf.effective_price_key_bytes();
 
         assert!(bytes1 < bytes2);
+    }
+
+    #[test]
+    fn fill_conserves_value() {
+        let btf = BareTradingFunction {
+            fee: 0,
+            p: 1_u32.into(),
+            q: 3_u32.into(),
+        };
+
+        let old_reserves = Reserves {
+            r1: 100_000_000u64.into(),
+            r2: 100_000_000u64.into(),
+        };
+
+        let input_a = 10_000_000u64.into();
+        let (unfilled_a, new_reserves_a, output_a) = btf.fill(input_a, &old_reserves);
+        assert_eq!(old_reserves.r1 + 0u64.into(), new_reserves_a.r1 + output_a);
+        assert_eq!(old_reserves.r2 + input_a, new_reserves_a.r2 + unfilled_a);
+
+        let input_b = 600_000_000u64.into();
+        let (unfilled_b, new_reserves_b, output_b) = btf.fill(input_b, &old_reserves);
+        assert_eq!(old_reserves.r1 + 0u64.into(), new_reserves_b.r1 + output_b);
+        assert_eq!(old_reserves.r2 + input_b, new_reserves_b.r2 + unfilled_b);
     }
 }
