@@ -3462,6 +3462,7 @@ name = "pclientd"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "assert_cmd",
  "async-stream 0.2.1",
  "async-trait",
  "bytes",
@@ -3488,6 +3489,7 @@ dependencies = [
  "serde_with 1.14.0",
  "sha2 0.10.6",
  "sqlx",
+ "tempfile",
  "tendermint",
  "tokio",
  "tokio-stream",

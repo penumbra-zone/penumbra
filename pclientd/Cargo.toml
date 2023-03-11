@@ -37,13 +37,17 @@ hex = "0.4"
 metrics = "0.19.0"
 async-stream = "0.2"
 parking_lot = "0.12"
-clap = { version = "3", features = ["derive"] }
+clap = { version = "3", features = ["derive", "env"] }
 camino = "1"
 async-trait = "0.1"
 tendermint = "0.29.0"
 sha2 = "0.10.1"
 toml = "0.5"
 ed25519-consensus = "2.1"
+
+[dev-dependencies]
+tempfile = "3.3.0"
+assert_cmd = "2.0"
 
 [build-dependencies]
 vergen = "5"
