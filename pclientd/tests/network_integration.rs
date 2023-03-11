@@ -6,15 +6,16 @@
 //! where no tokens have been delegated, and the address with index 0
 //! was distributedp 1cube.
 
-use assert_cmd::Command;
-use tempfile::tempdir;
-
+use assert_cmd::cargo::CommandCargoExt;
 use futures::StreamExt;
 use pclientd::PclientdConfig;
 use penumbra_chain::test_keys;
 use penumbra_custody::soft_kms;
 use penumbra_proto::penumbra::view::v1alpha1::view_protocol_service_client::ViewProtocolServiceClient;
 use penumbra_view::ViewClient;
+use std::process::Command as StdCommand;
+use tempfile::tempdir;
+use tokio::process::Command as TokioCommand;
 
 #[ignore]
 #[tokio::test]
@@ -38,21 +39,21 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
 
     // 2. Run a `pclientd` instance in the background as a subprocess.
     let home_dir = data_dir.path().to_owned();
-    let handle = std::thread::spawn(move || {
-        let mut pclientd_cmd = Command::cargo_bin("pclientd").unwrap();
-        pclientd_cmd
-            .args(["--home", home_dir.as_path().to_str().unwrap(), "start"])
-            .assert()
-            .success();
+    // Use a std Command so we can use the cargo-specific extensions from assert_cmd
+    let mut pclientd_cmd = StdCommand::cargo_bin("pclientd")?;
+    pclientd_cmd.args(["--home", home_dir.as_path().to_str().unwrap(), "start"]);
+    // Convert to an async-aware Tokio command so we can spawn it in the background.
+    let mut pclientd_cmd = TokioCommand::from(pclientd_cmd);
+    // Important: without this, we could accidentally leave the pclientd instance running.
+    pclientd_cmd.kill_on_drop(true);
 
-        ()
-    });
+    let mut pclientd = pclientd_cmd.spawn()?;
+
     // Wait for the newly spawned daemon to come up.
     tokio::time::sleep(std::time::Duration::from_millis(500)).await;
-    if handle.is_finished() {
+    if let Some(status) = pclientd.try_wait()? {
         // An error occurred during startup, probably.
-        handle.join().unwrap();
-        return Err(anyhow::anyhow!("pclientd exited early"));
+        return Err(anyhow::anyhow!("pclientd exited early: {status:?}"));
     }
 
     // 3. Build a client for the daemon we just started.
@@ -69,9 +70,11 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
     // 5.
 
     // Last, check that we didn't have any errors:
-    if handle.is_finished() {
-        handle.join().unwrap();
+    if let Some(status) = pclientd.try_wait()? {
+        // An error occurred during startup, probably.
+        return Err(anyhow::anyhow!("pclientd errored: {status:?}"));
     }
+    pclientd.kill().await?;
 
     Ok(())
 }
