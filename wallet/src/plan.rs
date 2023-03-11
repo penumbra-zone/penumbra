@@ -23,8 +23,7 @@ use penumbra_view::{SpendableNoteRecord, ViewClient};
 use rand_core::{CryptoRng, RngCore};
 use tracing::instrument;
 
-mod planner;
-pub use planner::Planner;
+pub use penumbra_view::Planner;
 
 pub async fn validator_definition<V, R>(
     account_id: AccountID,
