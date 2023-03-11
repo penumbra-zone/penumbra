@@ -30,10 +30,15 @@ pub struct Opt {
     #[clap(long)]
     pub home: Utf8PathBuf,
     /// The address of the pd+tendermint node.
-    #[clap(short, long, default_value = "testnet.penumbra.zone")]
+    #[clap(
+        short,
+        long,
+        default_value = "testnet.penumbra.zone",
+        env = "PENUMBRA_NODE_HOSTNAME"
+    )]
     pub node: String,
     /// The port to use to speak to pd's gRPC server.
-    #[clap(long, default_value = "8080")]
+    #[clap(long, default_value = "8080", env = "PENUMBRA_PD_PORT")]
     pub pd_port: u16,
 }
 
