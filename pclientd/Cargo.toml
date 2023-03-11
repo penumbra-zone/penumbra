@@ -5,6 +5,10 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = []
+sct-divergence-check = ["penumbra-view/sct-divergence-check"]
+
 [dependencies]
 # Workspace dependencies
 penumbra-proto = { path = "../proto", features = ["rpc"] }
