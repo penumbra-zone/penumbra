@@ -778,9 +778,10 @@ impl TxCmd {
                 let q = 1_000_000u64.into();
 
                 // `spread` is another name for `fee`, which is at most 10_000 bps.
-                let fee = *spread as u32;
-
-                let trading_function = TradingFunction::new(trading_pair, fee, p, q);
+                if *spread > 10_000 {
+                    anyhow::bail!("spread parameter must be at most 10_000bps (i.e. 100%)");
+                }
+                let trading_function = TradingFunction::new(trading_pair, *spread, p, q);
 
                 let position = Position::new(OsRng, trading_function);
                 let _plan = Planner::new(OsRng)
