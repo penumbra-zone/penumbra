@@ -63,7 +63,7 @@ pub enum OrderCmd {
         buy_order: BuyOrder,
         /// The fee associated with transactions against the liquidity position.
         #[clap(long, default_value = "0")]
-        spread: u128,
+        spread: u32,
         /// The transaction fee (paid in upenumbra).
         #[clap(long, default_value = "0")]
         fee: u64,
