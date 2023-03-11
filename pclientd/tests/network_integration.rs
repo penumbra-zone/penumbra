@@ -10,7 +10,7 @@ use assert_cmd::Command;
 use tempfile::tempdir;
 
 use futures::StreamExt;
-use pclientd::ClientConfig;
+use pclientd::PclientdConfig;
 use penumbra_chain::test_keys;
 use penumbra_custody::soft_kms;
 use penumbra_proto::penumbra::view::v1alpha1::view_protocol_service_client::ViewProtocolServiceClient;
@@ -24,7 +24,7 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
     let data_dir = tempdir().unwrap();
 
     // 1. Construct a config for the `pclientd` instance:
-    let config = ClientConfig {
+    let config = PclientdConfig {
         fvk: test_keys::FULL_VIEWING_KEY.clone(),
         kms_config: Some(soft_kms::Config {
             spend_key: test_keys::SPEND_KEY.clone(),
