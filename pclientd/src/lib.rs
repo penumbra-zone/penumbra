@@ -26,14 +26,14 @@ use tonic::transport::Server;
 
 #[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct ClientConfig {
+pub struct PclientdConfig {
     /// Optional KMS config for custody mode
     pub kms_config: Option<soft_kms::Config>,
     /// FVK for both view and custody modes
     pub fvk: FullViewingKey,
 }
 
-impl ClientConfig {
+impl PclientdConfig {
     pub fn load<P: AsRef<Path>>(path: P) -> Result<Self> {
         let contents = std::fs::read_to_string(path)?;
         Ok(toml::from_str(&contents)?)
@@ -202,7 +202,7 @@ impl Opt {
                     None => None,
                 };
 
-                let client_config = ClientConfig {
+                let client_config = PclientdConfig {
                     kms_config,
                     fvk: FullViewingKey::from_str(full_viewing_key.as_ref())?,
                 };
@@ -222,7 +222,7 @@ impl Opt {
             Command::Start { host, view_port } => {
                 tracing::info!(?opt.home, ?host, ?view_port, ?opt.node, ?opt.pd_port, "starting pclientd");
 
-                let config = ClientConfig::load(opt.config_path())?;
+                let config = PclientdConfig::load(opt.config_path())?;
                 let storage = opt.load_or_init_sqlite(&config.fvk).await?;
 
                 println!(
