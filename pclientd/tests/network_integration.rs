@@ -11,7 +11,15 @@ use futures::StreamExt;
 use pclientd::PclientdConfig;
 use penumbra_chain::test_keys;
 use penumbra_custody::soft_kms;
-use penumbra_proto::penumbra::view::v1alpha1::view_protocol_service_client::ViewProtocolServiceClient;
+use penumbra_proto::{
+    custody::v1alpha1::{
+        custody_protocol_service_client::CustodyProtocolServiceClient, AuthorizeRequest,
+    },
+    penumbra::view::v1alpha1::view_protocol_service_client::ViewProtocolServiceClient,
+    view::v1alpha1::{
+        BroadcastTransactionRequest, TransactionPlannerRequest, WitnessAndBuildRequest,
+    },
+};
 use penumbra_view::ViewClient;
 use std::process::Command as StdCommand;
 use tempfile::tempdir;
@@ -57,17 +65,82 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
     }
 
     // 3. Build a client for the daemon we just started.
-    let mut client = ViewProtocolServiceClient::connect("http://127.0.0.1:8081").await?;
+    let channel = tonic::transport::Channel::from_static("http://127.0.0.1:8081")
+        .connect()
+        .await?;
+    let mut view_client = ViewProtocolServiceClient::new(channel.clone());
+    let mut custody_client = CustodyProtocolServiceClient::new(channel.clone());
 
     // 4. Use the view protocol to wait for it to sync.
-    let mut status_stream = (&mut client as &mut dyn ViewClient)
+    let mut status_stream = (&mut view_client as &mut dyn ViewClient)
         .status_stream(test_keys::FULL_VIEWING_KEY.account_id())
         .await?;
     while let Some(item) = status_stream.as_mut().next().await.transpose()? {
         tracing::debug!(?item);
     }
 
-    // 5.
+    // 5. Try building a transaction using the simplified flow.
+    // Here we don't want to use the Penumbra Rust libraries much, because
+    // we're executing as if we were a Go program that had to construct all these
+    // protos manually, with no access to Penumbra crypto.
+    use penumbra_proto::view::v1alpha1::transaction_planner_request as tpr;
+
+    // 5.1. Generate a transaction plan sending funds to an address.
+    let plan = view_client
+        .transaction_planner(TransactionPlannerRequest {
+            account_id: Some(test_keys::ACCOUNT_ID.clone().into()),
+            outputs: vec![tpr::Output {
+                address: Some(test_keys::ADDRESS_1.clone().into()),
+                value: Some(
+                    penumbra_crypto::Value {
+                        amount: 1_000_000u64.into(),
+                        asset_id: penumbra_crypto::STAKING_TOKEN_ASSET_ID.clone(),
+                    }
+                    .into(),
+                ),
+            }],
+            ..Default::default()
+        })
+        .await?
+        .into_inner()
+        .plan
+        .ok_or_else(|| anyhow::anyhow!("TransactionPlannerResponse missing plan"))?;
+
+    // 5.2. Get authorization data for the transaction from pclientd (signing).
+    let auth_data = custody_client
+        .authorize(AuthorizeRequest {
+            plan: Some(plan.clone()),
+            account_id: Some(test_keys::ACCOUNT_ID.clone().into()),
+            pre_authorizations: Vec::new(),
+        })
+        .await?
+        .into_inner()
+        .data
+        .ok_or_else(|| anyhow::anyhow!("AuthorizeResponse missing data"))?;
+
+    // 5.3. Have pclientd build and sign the planned transaction.
+    let tx = view_client
+        .witness_and_build(WitnessAndBuildRequest {
+            transaction_plan: Some(plan),
+            authorization_data: Some(auth_data),
+        })
+        .await?
+        .into_inner()
+        .transaction
+        .ok_or_else(|| anyhow::anyhow!("WitnessAndBuildResponse missing transaction"))?;
+
+    // 5.4. Have pclientd broadcast and await confirmation of the built transaction.
+    let tx_id = view_client
+        .broadcast_transaction(BroadcastTransactionRequest {
+            transaction: Some(tx),
+            await_detection: true,
+        })
+        .await?
+        .into_inner()
+        .id
+        .ok_or_else(|| anyhow::anyhow!("BroadcastTransactionRequest missing id"))?;
+
+    tracing::debug!(?tx_id);
 
     // Last, check that we didn't have any errors:
     if let Some(status) = pclientd.try_wait()? {
