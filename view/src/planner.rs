@@ -8,6 +8,7 @@ use anyhow::{anyhow, Result};
 
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_component::stake::{rate::RateData, validator};
+use penumbra_crypto::Balance;
 use penumbra_crypto::{
     asset::Amount,
     asset::Denom,
@@ -31,11 +32,10 @@ use penumbra_transaction::{
     },
     proposal,
 };
-use penumbra_view::{SpendableNoteRecord, ViewClient};
 use rand::{CryptoRng, RngCore};
 use tracing::instrument;
 
-use penumbra_crypto::Balance;
+use crate::{SpendableNoteRecord, ViewClient};
 
 /// A planner for a [`TransactionPlan`] that can fill in the required spends and change outputs upon
 /// finalization to make a transaction balance.
