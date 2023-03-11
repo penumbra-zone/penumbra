@@ -7,7 +7,6 @@
 //! was distributedp 1cube.
 
 use assert_cmd::Command;
-use std::{fs::File, io::Write};
 use tempfile::tempdir;
 
 use futures::StreamExt;
@@ -35,8 +34,7 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
 
     let mut config_file_path = data_dir.path().to_owned();
     config_file_path.push("config.toml");
-    let mut config_file = File::create(&config_file_path)?;
-    config_file.write_all(toml::to_string_pretty(&config)?.as_bytes())?;
+    config.save(&config_file_path)?;
 
     // 2. Run a `pclientd` instance in the background as a subprocess.
     let home_dir = data_dir.path().to_owned();
