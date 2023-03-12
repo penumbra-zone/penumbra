@@ -29,6 +29,12 @@ pub struct TransactionPlannerRequest {
     /// The memo for the requested TransactionPlan
     #[prost(string, tag = "3")]
     pub memo: ::prost::alloc::string::String,
+    /// The valid_before timestamp for the requested TransactionPlan, formatted as an RFC 3339 timestamp
+    #[prost(string, optional, tag = "4")]
+    pub valid_before: ::core::option::Option<::prost::alloc::string::String>,
+    /// The valid_after timestamp for the requested TransactionPlan, formatted as an RFC 3339 timestamp
+    #[prost(string, optional, tag = "5")]
+    pub valid_after: ::core::option::Option<::prost::alloc::string::String>,
     /// Identifies the FVK for the notes to query.
     #[prost(message, optional, tag = "14")]
     pub account_group_id: ::core::option::Option<

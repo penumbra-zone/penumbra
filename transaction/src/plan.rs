@@ -2,6 +2,7 @@
 //! creation.
 
 use anyhow::Result;
+use ibc::timestamp::Timestamp;
 use penumbra_crypto::{transaction::Fee, Address};
 use penumbra_proto::{
     core::ibc::v1alpha1 as pb_ibc, core::stake::v1alpha1 as pb_stake,
@@ -40,6 +41,8 @@ pub struct TransactionPlan {
     pub fee: Fee,
     pub clue_plans: Vec<CluePlan>,
     pub memo_plan: Option<MemoPlan>,
+    pub valid_before: Timestamp,
+    pub valid_after: Timestamp,
 }
 
 impl TransactionPlan {
@@ -268,6 +271,8 @@ impl From<TransactionPlan> for pb::TransactionPlan {
         Self {
             actions: msg.actions.into_iter().map(Into::into).collect(),
             expiry_height: msg.expiry_height,
+            valid_after: msg.valid_after.nanoseconds(),
+            valid_before: msg.valid_before.nanoseconds(),
             chain_id: msg.chain_id,
             fee: Some(msg.fee.into()),
             clue_plans: msg.clue_plans.into_iter().map(Into::into).collect(),
@@ -291,6 +296,8 @@ impl TryFrom<pb::TransactionPlan> for TransactionPlan {
                 .map(TryInto::try_into)
                 .collect::<Result<_, _>>()?,
             expiry_height: value.expiry_height,
+            valid_after: Timestamp::from_nanoseconds(value.valid_after)?,
+            valid_before: Timestamp::from_nanoseconds(value.valid_before)?,
             chain_id: value.chain_id,
             fee: value
                 .fee

@@ -340,6 +340,14 @@ impl TxCmd {
                 "Transaction Expiration Height",
                 &format!("{}", txv.expiry_height),
             ]);
+            metadata_table.add_row(vec![
+                "Transaction Valid Before",
+                &format!("{}", txv.valid_before),
+            ]);
+            metadata_table.add_row(vec![
+                "Transaction Valid After",
+                &format!("{}", txv.valid_after),
+            ]);
 
             // Print table of actions and their descriptions
             println!("{actions_table}");

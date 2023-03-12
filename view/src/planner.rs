@@ -33,6 +33,7 @@ use penumbra_transaction::{
     proposal,
 };
 use rand::{CryptoRng, RngCore};
+use tendermint::Time;
 use tracing::instrument;
 
 use crate::{SpendableNoteRecord, ViewClient};
@@ -121,6 +122,20 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     #[instrument(skip(self))]
     pub fn expiry_height(&mut self, expiry_height: u64) -> &mut Self {
         self.plan.expiry_height = expiry_height;
+        self
+    }
+
+    /// Set the timestamp after which this transaction is valid
+    #[instrument(skip(self))]
+    pub fn valid_after(&mut self, valid_after: Time) -> &mut Self {
+        self.plan.valid_after = valid_after.into();
+        self
+    }
+
+    /// Set the timestamp before which this transaction is valid
+    #[instrument(skip(self))]
+    pub fn valid_before(&mut self, valid_before: Time) -> &mut Self {
+        self.plan.valid_before = valid_before.into();
         self
     }
 

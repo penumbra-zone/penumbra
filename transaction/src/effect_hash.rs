@@ -92,6 +92,8 @@ impl TransactionBody {
         // Hash the fixed data of the transaction body.
         state.update(chain_id_effect_hash(&self.chain_id).as_bytes());
         state.update(&self.expiry_height.to_le_bytes());
+        state.update(&self.valid_after.nanoseconds().to_le_bytes());
+        state.update(&self.valid_before.nanoseconds().to_le_bytes());
         state.update(self.fee.effect_hash().as_bytes());
         if self.memo.is_some() {
             let memo = self.memo.clone();
@@ -136,6 +138,8 @@ impl TransactionPlan {
         // Hash the fixed data of the transaction body.
         state.update(chain_id_effect_hash(&self.chain_id).as_bytes());
         state.update(&self.expiry_height.to_le_bytes());
+        state.update(&self.valid_after.nanoseconds().to_le_bytes());
+        state.update(&self.valid_before.nanoseconds().to_le_bytes());
         state.update(self.fee.effect_hash().as_bytes());
 
         // Hash the memo and save the memo key for use with outputs later.
@@ -886,6 +890,8 @@ mod tests {
                 )
                 .unwrap(),
             ),
+            valid_after: ibc::timestamp::Timestamp::none(),
+            valid_before: ibc::timestamp::Timestamp::none(),
         };
 
         println!("{}", serde_json::to_string_pretty(&plan).unwrap());

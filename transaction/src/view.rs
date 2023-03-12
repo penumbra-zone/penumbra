@@ -1,4 +1,5 @@
 use decaf377_fmd::Clue;
+use ibc::timestamp::Timestamp;
 use penumbra_crypto::{memo::MemoPlaintext, transaction::Fee, AddressView};
 use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType};
 use serde::{Deserialize, Serialize};
@@ -14,6 +15,8 @@ pub use transaction_perspective::TransactionPerspective;
 pub struct TransactionView {
     pub action_views: Vec<ActionView>,
     pub expiry_height: u64,
+    pub valid_after: Timestamp,
+    pub valid_before: Timestamp,
     pub chain_id: String,
     pub fee: Fee,
     pub fmd_clues: Vec<Clue>,
@@ -36,6 +39,8 @@ impl TryFrom<pbt::TransactionView> for TransactionView {
                 .map(TryInto::try_into)
                 .collect::<Result<Vec<_>, _>>()?,
             expiry_height: v.expiry_height,
+            valid_after: Timestamp::from_nanoseconds(v.valid_after)?,
+            valid_before: Timestamp::from_nanoseconds(v.valid_before)?,
             chain_id: v.chain_id,
             fee: v
                 .fee
@@ -64,6 +69,8 @@ impl From<TransactionView> for pbt::TransactionView {
         Self {
             action_views: v.action_views.into_iter().map(Into::into).collect(),
             expiry_height: v.expiry_height,
+            valid_after: v.valid_after.nanoseconds(),
+            valid_before: v.valid_before.nanoseconds(),
             chain_id: v.chain_id,
             fee: Some(v.fee.into()),
             fmd_clues: v.fmd_clues.into_iter().map(Into::into).collect(),

@@ -60,6 +60,7 @@ mod tests {
     use std::sync::Arc;
 
     use anyhow::Result;
+    use ibc::timestamp::Timestamp;
     use penumbra_chain::test_keys;
     use penumbra_crypto::{transaction::Fee, Note, Value, STAKING_TOKEN_ASSET_ID};
     use penumbra_tct as tct;
@@ -103,6 +104,8 @@ mod tests {
         // transaction balances.
         let plan = TransactionPlan {
             expiry_height: 0,
+            valid_after: Timestamp::none(),
+            valid_before: Timestamp::none(),
             fee: Fee::default(),
             chain_id: "".into(),
             actions: vec![
@@ -166,6 +169,8 @@ mod tests {
         // transaction balances.
         let plan = TransactionPlan {
             expiry_height: 0,
+            valid_after: Timestamp::none(),
+            valid_before: Timestamp::none(),
             fee: Fee::default(),
             chain_id: "".into(),
             actions: vec![

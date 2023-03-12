@@ -4296,6 +4296,12 @@ impl serde::Serialize for TransactionPlannerRequest {
         if !self.memo.is_empty() {
             len += 1;
         }
+        if self.valid_before.is_some() {
+            len += 1;
+        }
+        if self.valid_after.is_some() {
+            len += 1;
+        }
         if self.account_group_id.is_some() {
             len += 1;
         }
@@ -4326,6 +4332,12 @@ impl serde::Serialize for TransactionPlannerRequest {
         }
         if !self.memo.is_empty() {
             struct_ser.serialize_field("memo", &self.memo)?;
+        }
+        if let Some(v) = self.valid_before.as_ref() {
+            struct_ser.serialize_field("validBefore", v)?;
+        }
+        if let Some(v) = self.valid_after.as_ref() {
+            struct_ser.serialize_field("validAfter", v)?;
         }
         if let Some(v) = self.account_group_id.as_ref() {
             struct_ser.serialize_field("accountGroupId", v)?;
@@ -4362,6 +4374,10 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             "expiryHeight",
             "fee",
             "memo",
+            "valid_before",
+            "validBefore",
+            "valid_after",
+            "validAfter",
             "account_group_id",
             "accountGroupId",
             "token",
@@ -4378,6 +4394,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             ExpiryHeight,
             Fee,
             Memo,
+            ValidBefore,
+            ValidAfter,
             AccountGroupId,
             Token,
             Outputs,
@@ -4409,6 +4427,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             "expiryHeight" | "expiry_height" => Ok(GeneratedField::ExpiryHeight),
                             "fee" => Ok(GeneratedField::Fee),
                             "memo" => Ok(GeneratedField::Memo),
+                            "validBefore" | "valid_before" => Ok(GeneratedField::ValidBefore),
+                            "validAfter" | "valid_after" => Ok(GeneratedField::ValidAfter),
                             "accountGroupId" | "account_group_id" => Ok(GeneratedField::AccountGroupId),
                             "token" => Ok(GeneratedField::Token),
                             "outputs" => Ok(GeneratedField::Outputs),
@@ -4438,6 +4458,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                 let mut expiry_height__ = None;
                 let mut fee__ = None;
                 let mut memo__ = None;
+                let mut valid_before__ = None;
+                let mut valid_after__ = None;
                 let mut account_group_id__ = None;
                 let mut token__ = None;
                 let mut outputs__ = None;
@@ -4466,6 +4488,18 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                                 return Err(serde::de::Error::duplicate_field("memo"));
                             }
                             memo__ = Some(map.next_value()?);
+                        }
+                        GeneratedField::ValidBefore => {
+                            if valid_before__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("validBefore"));
+                            }
+                            valid_before__ = map.next_value()?;
+                        }
+                        GeneratedField::ValidAfter => {
+                            if valid_after__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("validAfter"));
+                            }
+                            valid_after__ = map.next_value()?;
                         }
                         GeneratedField::AccountGroupId => {
                             if account_group_id__.is_some() {
@@ -4515,6 +4549,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                     expiry_height: expiry_height__.unwrap_or_default(),
                     fee: fee__,
                     memo: memo__.unwrap_or_default(),
+                    valid_before: valid_before__,
+                    valid_after: valid_after__,
                     account_group_id: account_group_id__,
                     token: token__,
                     outputs: outputs__.unwrap_or_default(),

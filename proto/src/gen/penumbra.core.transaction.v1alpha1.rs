@@ -45,6 +45,26 @@ pub struct TransactionBody {
     /// outputs in the actions of this transaction. 528 bytes.
     #[prost(bytes = "bytes", optional, tag = "6")]
     pub encrypted_memo: ::core::option::Option<::prost::bytes::Bytes>,
+    /// A unix timestamp, in nanoseconds.
+    /// If this value is set, the transaction is valid iff the most recent block header
+    /// timestamp is < this value.
+    ///
+    /// If the value is zero, this value is considered unset.
+    /// [TODO: Double check that this actually does behave like google's protobufs]
+    /// The behavior of this time stamp should match google's protobuf specification:
+    /// \[specification\]: <https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp>
+    #[prost(uint64, tag = "7")]
+    pub valid_before: u64,
+    /// A unix timestamp, in nanoseconds.
+    /// If this value is set, the transaction is valid iff the most recent block header
+    /// timestamp is > this value.
+    ///
+    /// If the value is zero, this value is considered unset.
+    /// [TODO: Double check that this actually does behave like google's protobufs]
+    /// The behavior of this time stamp should match google's protobuf specification:
+    /// \[specification\]: <https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp>
+    #[prost(uint64, tag = "8")]
+    pub valid_after: u64,
 }
 /// A state change performed by a transaction.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -180,6 +200,26 @@ pub struct TransactionView {
     pub address_views: ::prost::alloc::vec::Vec<
         super::super::crypto::v1alpha1::AddressView,
     >,
+    /// A unix timestamp, in nanoseconds.
+    /// If this value is set, the transaction is valid iff the most recent block header
+    /// timestamp is < this value.
+    ///
+    /// If the value is zero, this value is considered unset.
+    /// [TODO: Double check that this actually does behave like google's protobufs]
+    /// The behavior of this time stamp should match google's protobuf specification:
+    /// \[specification\]: <https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp>
+    #[prost(uint64, tag = "7")]
+    pub valid_before: u64,
+    /// A unix timestamp, in nanoseconds.
+    /// If this value is set, the transaction is valid iff the most recent block header
+    /// timestamp is > this value.
+    ///
+    /// If the value is zero, this value is considered unset.
+    /// [TODO: Double check that this actually does behave like google's protobufs]
+    /// The behavior of this time stamp should match google's protobuf specification:
+    /// \[specification\]: <https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp>
+    #[prost(uint64, tag = "8")]
+    pub valid_after: u64,
 }
 /// A view of a specific state change action performed by a transaction.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -469,6 +509,10 @@ pub struct TransactionPlan {
     pub clue_plans: ::prost::alloc::vec::Vec<CluePlan>,
     #[prost(message, optional, tag = "6")]
     pub memo_plan: ::core::option::Option<MemoPlan>,
+    #[prost(uint64, tag = "7")]
+    pub valid_before: u64,
+    #[prost(uint64, tag = "8")]
+    pub valid_after: u64,
 }
 /// Describes a planned transaction action.
 ///

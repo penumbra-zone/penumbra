@@ -29,6 +29,7 @@ use crate::{
     view::action_view::OutputView,
     Action, ActionView, Id, IsAction, TransactionPerspective, TransactionView,
 };
+use ibc::timestamp::Timestamp;
 
 #[derive(Clone, Debug, Default)]
 pub struct TransactionBody {
@@ -38,6 +39,8 @@ pub struct TransactionBody {
     pub fee: Fee,
     pub fmd_clues: Vec<Clue>,
     pub memo: Option<MemoCiphertext>,
+    pub valid_after: Timestamp,
+    pub valid_before: Timestamp,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -171,6 +174,8 @@ impl Transaction {
         TransactionView {
             action_views,
             expiry_height: self.transaction_body().expiry_height,
+            valid_after: self.transaction_body().valid_after,
+            valid_before: self.transaction_body().valid_before,
             chain_id: self.transaction_body().chain_id,
             fee: self.transaction_body().fee,
             fmd_clues: self.transaction_body().fmd_clues,
@@ -390,6 +395,8 @@ impl From<TransactionBody> for pbt::TransactionBody {
         pbt::TransactionBody {
             actions: msg.actions.into_iter().map(|x| x.into()).collect(),
             expiry_height: msg.expiry_height,
+            valid_after: msg.valid_after.nanoseconds(),
+            valid_before: msg.valid_before.nanoseconds(),
             chain_id: msg.chain_id,
             fee: Some(msg.fee.into()),
             fmd_clues: msg.fmd_clues.into_iter().map(|x| x.into()).collect(),
@@ -412,6 +419,8 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
         }
 
         let expiry_height = proto.expiry_height;
+        let valid_before = Timestamp::from_nanoseconds(proto.valid_before)?;
+        let valid_after = Timestamp::from_nanoseconds(proto.valid_after)?;
 
         let chain_id = proto.chain_id;
 
@@ -442,6 +451,8 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
         Ok(TransactionBody {
             actions,
             expiry_height,
+            valid_before,
+            valid_after,
             chain_id,
             fee,
             fmd_clues,

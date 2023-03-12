@@ -107,6 +107,10 @@ message TransactionPlannerRequest {
     core.crypto.v1alpha1.Fee fee = 2;
     // The memo for the requested TransactionPlan
     string memo = 3;
+    // The valid_before timestamp for the requested TransactionPlan, formatted as an RFC 3339 timestamp
+    optional string valid_before = 4;
+    // The valid_after timestamp for the requested TransactionPlan, formatted as an RFC 3339 timestamp
+    optional string valid_after = 5;
     // Identifies the FVK for the notes to query.
     optional core.crypto.v1alpha1.AccountGroupId account_group_id = 14;
     // Authorizes the request.

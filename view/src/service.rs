@@ -355,6 +355,19 @@ impl ViewProtocolService for ViewService {
             )
             .expiry_height(prq.expiry_height);
 
+        if let Some(timestamp) = prq.valid_after {
+            let time = tendermint::Time::parse_from_rfc3339(timestamp.as_str()).map_err(|e| {
+                tonic::Status::invalid_argument(format!("Could not parse valid_after: {e:#}"))
+            })?;
+            planner.valid_after(time);
+        }
+
+        if let Some(timestamp) = prq.valid_before {
+            let time = tendermint::Time::parse_from_rfc3339(timestamp.as_str()).map_err(|e| {
+                tonic::Status::invalid_argument(format!("Could not parse valid_before: {e:#}"))
+            })?;
+            planner.valid_before(time);
+        }
         for output in prq.outputs {
             let address: penumbra_crypto::Address = output
                 .address

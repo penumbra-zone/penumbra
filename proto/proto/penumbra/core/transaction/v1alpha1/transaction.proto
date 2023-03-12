@@ -41,6 +41,24 @@ message TransactionBody {
   // An optional encrypted memo. It will only be populated if there are
   // outputs in the actions of this transaction. 528 bytes.
   optional bytes encrypted_memo = 6;
+  // A unix timestamp, in nanoseconds.
+  // If this value is set, the transaction is valid iff the most recent block header
+  // timestamp is < this value.
+  //
+  // If the value is zero, this value is considered unset.
+  // [TODO: Double check that this actually does behave like google's protobufs]
+  // The behavior of this time stamp should match google's protobuf specification:
+  // [specification]: https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp
+  uint64 valid_before = 7;
+  // A unix timestamp, in nanoseconds.
+  // If this value is set, the transaction is valid iff the most recent block header
+  // timestamp is > this value.
+  //
+  // If the value is zero, this value is considered unset.
+  // [TODO: Double check that this actually does behave like google's protobufs]
+  // The behavior of this time stamp should match google's protobuf specification:
+  // [specification]: https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp
+  uint64 valid_after = 8;
 }
 
 // A state change performed by a transaction.
@@ -122,9 +140,26 @@ message TransactionView {
   // An optional plaintext memo. It will only be populated if there are
   // outputs in the actions of this transaction.
   optional bytes memo = 6;
-  
   // Any relevant address views.
   repeated crypto.v1alpha1.AddressView address_views = 400;
+  // A unix timestamp, in nanoseconds.
+  // If this value is set, the transaction is valid iff the most recent block header
+  // timestamp is < this value.
+  //
+  // If the value is zero, this value is considered unset.
+  // [TODO: Double check that this actually does behave like google's protobufs]
+  // The behavior of this time stamp should match google's protobuf specification:
+  // [specification]: https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp
+  uint64 valid_before = 7;
+  // A unix timestamp, in nanoseconds.
+  // If this value is set, the transaction is valid iff the most recent block header
+  // timestamp is > this value.
+  //
+  // If the value is zero, this value is considered unset.
+  // [TODO: Double check that this actually does behave like google's protobufs]
+  // The behavior of this time stamp should match google's protobuf specification:
+  // [specification]: https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp
+  uint64 valid_after = 8;
 }
 
 // A view of a specific state change action performed by a transaction.
@@ -281,6 +316,8 @@ message TransactionPlan {
     crypto.v1alpha1.Fee fee = 4;
     repeated CluePlan clue_plans = 5;
     MemoPlan memo_plan = 6;
+    uint64 valid_before = 7;
+    uint64 valid_after = 8;
 }
 
 // Describes a planned transaction action.
