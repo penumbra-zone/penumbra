@@ -23,7 +23,7 @@ message Swap {
 // Swap transaction.
 message SwapClaim {
   // Contains the SwapClaim proof.
-  bytes proof = 1;
+  crypto.v1alpha1.ZKSwapClaimProof proof = 1;
   // Encapsulates the authorized fields of the SwapClaim action, used in signing.
   SwapClaimBody body = 2;
   // The epoch duration of the chain when the swap claim took place.
