@@ -4,26 +4,24 @@ use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
-use decaf377::{r1cs::FqVar, Bls12_377, FieldExt};
-use decaf377_fmd as fmd;
+use decaf377::{r1cs::FqVar, Bls12_377};
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
 use penumbra_tct as tct;
 use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
 use crate::{
-    asset, balance,
+    asset,
     dex::{
         swap::{SwapPlaintext, SwapPlaintextVar},
-        TradingPair,
+        BatchSwapOutputData, BatchSwapOutputDataVar, TradingPair,
     },
-    ka,
-    keys::{Diversifier, NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey},
+    keys::{NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey},
     note,
     nullifier::NullifierVar,
     transaction::Fee,
     value::ValueVar,
-    Address, Fq, Fr, Nullifier, Rseed, Value,
+    Fq, Nullifier, Rseed, Value,
 };
 
 use super::{ParameterSetup, GROTH16_PROOF_LENGTH_BYTES};
@@ -44,6 +42,8 @@ pub struct SwapClaimCircuit {
     pub nullifier: Nullifier,
     /// Fee
     pub claim_fee: Fee,
+    /// Batch swap output data
+    pub output_data: BatchSwapOutputData,
 }
 
 impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
@@ -67,6 +67,8 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
         let anchor_var = FqVar::new_input(cs.clone(), || Ok(Fq::from(self.anchor)))?;
         let claimed_nullifier_var = NullifierVar::new_input(cs.clone(), || Ok(self.nullifier))?;
         let claimed_fee_var = ValueVar::new_input(cs.clone(), || Ok(self.claim_fee.0))?;
+        let output_data_var =
+            BatchSwapOutputDataVar::new_input(cs.clone(), || Ok(self.output_data))?;
 
         // Swap commitment integrity check
         let swap_commitment = swap_plaintext_var.commit()?;
@@ -87,6 +89,11 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
 
         // Fee consistency check
         claimed_fee_var.enforce_equal(&swap_plaintext_var.claim_fee)?;
+
+        // Validate that the output data's trading pair matches the note commitment's trading pair.
+        output_data_var
+            .trading_pair
+            .enforce_equal(&swap_plaintext_var.trading_pair)?;
 
         Ok(())
     }
@@ -124,6 +131,15 @@ impl ParameterSetup for SwapClaimCircuit {
         let state_commitment_proof = sct.witness(swap_commitment).unwrap();
         let nullifier = Nullifier(Fq::from(1));
         let claim_fee = Fee::default();
+        let output_data = BatchSwapOutputData {
+            delta_1: 0,
+            delta_2: 0,
+            lambda_1: 0,
+            lambda_2: 0,
+            height: 0,
+            trading_pair: swap_plaintext.trading_pair,
+            success: true,
+        };
 
         let circuit = SwapClaimCircuit {
             swap_plaintext,
@@ -132,6 +148,7 @@ impl ParameterSetup for SwapClaimCircuit {
             nullifier,
             nk,
             claim_fee,
+            output_data,
         };
         let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
             .expect("can perform circuit specific setup");
@@ -152,15 +169,24 @@ impl SwapClaimProof {
         nk: NullifierKey,
         anchor: tct::Root,
         nullifier: Nullifier,
-        claim_fee: Fee,
     ) -> anyhow::Result<Self> {
+        let output_data = BatchSwapOutputData {
+            delta_1: 0,
+            delta_2: 0,
+            lambda_1: 0,
+            lambda_2: 0,
+            height: 0,
+            trading_pair: swap_plaintext.trading_pair,
+            success: true,
+        };
         let circuit = SwapClaimCircuit {
-            swap_plaintext,
+            swap_plaintext: swap_plaintext.clone(),
             state_commitment_proof,
             nk,
             anchor,
             nullifier,
-            claim_fee,
+            claim_fee: swap_plaintext.claim_fee,
+            output_data,
         };
         let proof = Groth16::prove(pk, circuit, rng).map_err(|err| anyhow::anyhow!(err))?;
         Ok(Self(proof))
@@ -173,12 +199,29 @@ impl SwapClaimProof {
         anchor: tct::Root,
         nullifier: Nullifier,
         fee: Fee,
+        output_data: BatchSwapOutputData,
     ) -> anyhow::Result<()> {
         let mut public_inputs = Vec::new();
         public_inputs.extend(Fq::from(anchor.0).to_field_elements().unwrap());
         public_inputs.extend(nullifier.0.to_field_elements().unwrap());
         public_inputs.extend(Fq::from(fee.0.amount).to_field_elements().unwrap());
         public_inputs.extend(fee.0.asset_id.0.to_field_elements().unwrap());
+        public_inputs.extend(
+            output_data
+                .trading_pair
+                .asset_1
+                .0
+                .to_field_elements()
+                .unwrap(),
+        );
+        public_inputs.extend(
+            output_data
+                .trading_pair
+                .asset_2
+                .0
+                .to_field_elements()
+                .unwrap(),
+        );
 
         tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();

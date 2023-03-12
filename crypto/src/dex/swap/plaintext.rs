@@ -1,5 +1,6 @@
 use crate::address::AddressVar;
 use crate::asset::{AmountVar, AssetIdVar};
+use crate::dex::trading_pair::TradingPairVar;
 use crate::keys::OutgoingViewingKey;
 use crate::note::StateCommitmentVar;
 use crate::transaction::Fee;
@@ -172,10 +173,9 @@ impl SwapPlaintext {
 
 pub struct SwapPlaintextVar {
     pub claim_fee: ValueVar,
+    pub trading_pair: TradingPairVar,
     pub delta_1_i: AmountVar,
-    pub trading_pair_asset_1: AssetIdVar,
     pub delta_2_i: AmountVar,
-    pub trading_pair_asset_2: AssetIdVar,
     pub claim_address: AddressVar,
     pub rseed: FqVar,
 }
@@ -184,14 +184,14 @@ impl SwapPlaintextVar {
     pub fn delta_1_value(&self) -> ValueVar {
         ValueVar {
             amount: self.delta_1_i.clone(),
-            asset_id: self.trading_pair_asset_1.clone(),
+            asset_id: self.trading_pair.asset_1.clone(),
         }
     }
 
     pub fn delta_2_value(&self) -> ValueVar {
         ValueVar {
             amount: self.delta_2_i.clone(),
-            asset_id: self.trading_pair_asset_2.clone(),
+            asset_id: self.trading_pair.asset_2.clone(),
         }
     }
 
@@ -209,8 +209,8 @@ impl SwapPlaintextVar {
             cs.clone(),
             &domain_sep,
             (
-                self.trading_pair_asset_1.asset_id.clone(),
-                self.trading_pair_asset_2.asset_id.clone(),
+                self.trading_pair.asset_1.asset_id.clone(),
+                self.trading_pair.asset_2.asset_id.clone(),
                 self.delta_1_i.amount.clone(),
                 self.delta_2_i.amount.clone(),
             ),
@@ -242,47 +242,33 @@ impl AllocVar<SwapPlaintext, Fq> for SwapPlaintextVar {
     ) -> Result<Self, SynthesisError> {
         let ns = cs.into();
         let cs = ns.cs();
+        let swap_plaintext = f()?.borrow().clone();
+        let claim_fee =
+            ValueVar::new_variable(cs.clone(), || Ok(swap_plaintext.claim_fee.0), mode)?;
+        let delta_1_i = AmountVar::new_variable(cs.clone(), || Ok(swap_plaintext.delta_1_i), mode)?;
+        let trading_pair =
+            TradingPairVar::new_variable(cs.clone(), || Ok(swap_plaintext.trading_pair), mode)?;
+        let delta_2_i = AmountVar::new_variable(cs.clone(), || Ok(swap_plaintext.delta_2_i), mode)?;
+        let claim_address =
+            AddressVar::new_variable(cs.clone(), || Ok(swap_plaintext.claim_address), mode)?;
+        let rseed = FqVar::new_variable(
+            cs,
+            || {
+                Ok(Fq::from_le_bytes_mod_order(
+                    &swap_plaintext.rseed.to_bytes()[..],
+                ))
+            },
+            mode,
+        )?;
 
-        match mode {
-            AllocationMode::Constant => unimplemented!(),
-            AllocationMode::Input => {
-                unimplemented!()
-            }
-            AllocationMode::Witness => {
-                let swap_plaintext1 = f()?;
-                let swap_plaintext = swap_plaintext1.borrow();
-
-                let claim_fee =
-                    ValueVar::new_witness(cs.clone(), || Ok(swap_plaintext.claim_fee.0))?;
-                let delta_1_i =
-                    AmountVar::new_witness(cs.clone(), || Ok(swap_plaintext.delta_1_i))?;
-                let trading_pair_asset_1 = AssetIdVar::new_witness(cs.clone(), || {
-                    Ok(swap_plaintext.trading_pair.asset_1())
-                })?;
-                let delta_2_i =
-                    AmountVar::new_witness(cs.clone(), || Ok(swap_plaintext.delta_2_i))?;
-                let trading_pair_asset_2 = AssetIdVar::new_witness(cs.clone(), || {
-                    Ok(swap_plaintext.trading_pair.asset_2())
-                })?;
-                let claim_address =
-                    AddressVar::new_witness(cs.clone(), || Ok(swap_plaintext.claim_address))?;
-                let rseed = FqVar::new_witness(cs, || {
-                    Ok(Fq::from_le_bytes_mod_order(
-                        &swap_plaintext.rseed.to_bytes()[..],
-                    ))
-                })?;
-
-                Ok(Self {
-                    claim_fee,
-                    delta_1_i,
-                    trading_pair_asset_1,
-                    delta_2_i,
-                    trading_pair_asset_2,
-                    claim_address,
-                    rseed,
-                })
-            }
-        }
+        Ok(Self {
+            claim_fee,
+            delta_1_i,
+            trading_pair,
+            delta_2_i,
+            claim_address,
+            rseed,
+        })
     }
 }
 

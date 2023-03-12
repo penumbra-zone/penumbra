@@ -18,13 +18,13 @@ impl ActionHandler for SwapClaim {
         // self.epoch_duration,
         // self.body.output_1_commitment,
         // self.body.output_2_commitment,
-        // self.body.output_data,
         self.proof
             .verify(
                 &SWAPCLAIM_PROOF_VERIFICATION_KEY,
                 context.anchor,
                 self.body.nullifier,
                 self.body.fee.clone(),
+                self.body.output_data,
             )
             .context("a swap claim proof did not verify")?;
 

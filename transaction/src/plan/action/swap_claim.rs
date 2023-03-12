@@ -52,11 +52,8 @@ impl SwapClaimPlan {
         // ));
 
         // SwapClaimProof {
-        //     swap_plaintext: self.swap_plaintext.clone(),
         //     lambda_1_i,
         //     lambda_2_i,
-        //     nk: nk.clone(),
-        //     swap_commitment_proof: state_commitment_proof.clone(),
         // }
         let nullifier = nk.derive_nullifier(self.position, &self.swap_plaintext.swap_commitment());
         SwapClaimProof::prove(
@@ -67,7 +64,6 @@ impl SwapClaimPlan {
             nk.clone(),
             state_commitment_proof.root(),
             nullifier,
-            self.swap_plaintext.claim_fee.clone(),
         )
         .expect("can generate ZKSwapClaimProof")
     }

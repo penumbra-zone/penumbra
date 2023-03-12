@@ -1,6 +1,8 @@
 use anyhow::{anyhow, Result};
 use ark_ff::PrimeField;
 
+use ark_r1cs_std::prelude::*;
+use ark_relations::r1cs::SynthesisError;
 use decaf377::Fq;
 use once_cell::sync::Lazy;
 use penumbra_proto::{
@@ -9,7 +11,7 @@ use penumbra_proto::{
 
 use crate::{fixpoint::U128x128, Amount};
 
-use super::TradingPair;
+use super::{trading_pair::TradingPairVar, TradingPair};
 
 mod ciphertext;
 mod payload;
@@ -73,6 +75,25 @@ impl BatchSwapOutputData {
             lambda_1_i.try_into().unwrap_or(0u64.into()),
             lambda_2_i.try_into().unwrap_or(0u64.into()),
         )
+    }
+}
+
+pub struct BatchSwapOutputDataVar {
+    pub trading_pair: TradingPairVar,
+}
+
+impl AllocVar<BatchSwapOutputData, Fq> for BatchSwapOutputDataVar {
+    fn new_variable<T: std::borrow::Borrow<BatchSwapOutputData>>(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: ark_r1cs_std::prelude::AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        let output_data = f()?.borrow().clone();
+        let trading_pair =
+            TradingPairVar::new_variable(cs.clone(), || Ok(output_data.trading_pair), mode)?;
+        Ok(Self { trading_pair })
     }
 }
 
