@@ -67,6 +67,7 @@ impl SwapClaimPlan {
             nk.clone(),
             state_commitment_proof.root(),
             nullifier,
+            self.swap_plaintext.claim_fee.clone(),
         )
         .expect("can generate ZKSwapClaimProof")
     }

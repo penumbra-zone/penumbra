@@ -22,6 +22,7 @@ use crate::{
     note,
     nullifier::NullifierVar,
     transaction::Fee,
+    value::ValueVar,
     Address, Fq, Fr, Nullifier, Rseed, Value,
 };
 
@@ -41,6 +42,8 @@ pub struct SwapClaimCircuit {
     pub anchor: tct::Root,
     /// Nullifier
     pub nullifier: Nullifier,
+    /// Fee
+    pub claim_fee: Fee,
 }
 
 impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
@@ -63,6 +66,7 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
         // Inputs
         let anchor_var = FqVar::new_input(cs.clone(), || Ok(Fq::from(self.anchor)))?;
         let claimed_nullifier_var = NullifierVar::new_input(cs.clone(), || Ok(self.nullifier))?;
+        let claimed_fee_var = ValueVar::new_input(cs.clone(), || Ok(self.claim_fee.0))?;
 
         // Swap commitment integrity check
         let swap_commitment = swap_plaintext_var.commit()?;
@@ -79,7 +83,10 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
 
         // Nullifier integrity.
         let nullifier_var = nk_var.derive_nullifier(&position_var, &claimed_swap_commitment)?;
-        nullifier_var.conditional_enforce_equal(&claimed_nullifier_var, &Boolean::TRUE)?;
+        nullifier_var.enforce_equal(&claimed_nullifier_var)?;
+
+        // Fee consistency check
+        claimed_fee_var.enforce_equal(&swap_plaintext_var.claim_fee)?;
 
         Ok(())
     }
@@ -116,6 +123,7 @@ impl ParameterSetup for SwapClaimCircuit {
         let anchor = sct.root();
         let state_commitment_proof = sct.witness(swap_commitment).unwrap();
         let nullifier = Nullifier(Fq::from(1));
+        let claim_fee = Fee::default();
 
         let circuit = SwapClaimCircuit {
             swap_plaintext,
@@ -123,6 +131,7 @@ impl ParameterSetup for SwapClaimCircuit {
             anchor,
             nullifier,
             nk,
+            claim_fee,
         };
         let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
             .expect("can perform circuit specific setup");
@@ -143,6 +152,7 @@ impl SwapClaimProof {
         nk: NullifierKey,
         anchor: tct::Root,
         nullifier: Nullifier,
+        claim_fee: Fee,
     ) -> anyhow::Result<Self> {
         let circuit = SwapClaimCircuit {
             swap_plaintext,
@@ -150,6 +160,7 @@ impl SwapClaimProof {
             nk,
             anchor,
             nullifier,
+            claim_fee,
         };
         let proof = Groth16::prove(pk, circuit, rng).map_err(|err| anyhow::anyhow!(err))?;
         Ok(Self(proof))
@@ -161,10 +172,13 @@ impl SwapClaimProof {
         vk: &PreparedVerifyingKey<Bls12_377>,
         anchor: tct::Root,
         nullifier: Nullifier,
+        fee: Fee,
     ) -> anyhow::Result<()> {
         let mut public_inputs = Vec::new();
         public_inputs.extend(Fq::from(anchor.0).to_field_elements().unwrap());
         public_inputs.extend(nullifier.0.to_field_elements().unwrap());
+        public_inputs.extend(Fq::from(fee.0.amount).to_field_elements().unwrap());
+        public_inputs.extend(fee.0.asset_id.0.to_field_elements().unwrap());
 
         tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();

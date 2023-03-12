@@ -53,6 +53,12 @@ impl AmountVar {
     }
 }
 
+impl EqGadget<Fq> for AmountVar {
+    fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
+        self.amount.is_eq(&other.amount)
+    }
+}
+
 impl AllocVar<Amount, Fq> for AmountVar {
     fn new_variable<T: std::borrow::Borrow<Amount>>(
         cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,

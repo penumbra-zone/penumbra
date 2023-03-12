@@ -57,3 +57,9 @@ impl AssetIdVar {
         ElementVar::encode_to_curve(&hashed_asset_id)
     }
 }
+
+impl EqGadget<Fq> for AssetIdVar {
+    fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
+        self.asset_id.is_eq(&other.asset_id)
+    }
+}

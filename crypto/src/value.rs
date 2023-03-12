@@ -219,18 +219,12 @@ impl AllocVar<Value, Fq> for ValueVar {
         let ns = cs.into();
         let cs = ns.cs();
         let inner: Value = *f()?.borrow();
-        match mode {
-            AllocationMode::Constant => unimplemented!(),
-            AllocationMode::Input => unimplemented!(),
-            AllocationMode::Witness => {
-                let amount_var = asset::AmountVar::new_witness(cs.clone(), || Ok(inner.amount))?;
-                let asset_id_var = asset::AssetIdVar::new_witness(cs, || Ok(inner.asset_id))?;
-                Ok(Self {
-                    amount: amount_var,
-                    asset_id: asset_id_var,
-                })
-            }
-        }
+        let amount_var = asset::AmountVar::new_variable(cs.clone(), || Ok(inner.amount), mode)?;
+        let asset_id_var = asset::AssetIdVar::new_variable(cs, || Ok(inner.asset_id), mode)?;
+        Ok(Self {
+            amount: amount_var,
+            asset_id: asset_id_var,
+        })
     }
 }
 
@@ -263,6 +257,14 @@ impl ValueVar {
 
     pub fn asset_id(&self) -> FqVar {
         self.asset_id.asset_id.clone()
+    }
+}
+
+impl EqGadget<Fq> for ValueVar {
+    fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
+        let amount_eq = self.amount.is_eq(&other.amount)?;
+        let asset_id_eq = self.asset_id.is_eq(&other.asset_id)?;
+        amount_eq.and(&asset_id_eq)
     }
 }
 
