@@ -8,7 +8,8 @@ use ark_groth16::{ProvingKey, VerifyingKey};
 use ark_serialize::CanonicalSerialize;
 use decaf377::Bls12_377;
 use penumbra_crypto::proofs::groth16::{
-    OutputCircuit, ParameterSetup, ProvingKeyExt, SpendCircuit, SwapCircuit, VerifyingKeyExt,
+    OutputCircuit, ParameterSetup, ProvingKeyExt, SpendCircuit, SwapCircuit, SwapClaimCircuit,
+    VerifyingKeyExt,
 };
 
 fn main() -> Result<()> {
@@ -30,6 +31,8 @@ fn main() -> Result<()> {
     write_params(&target_dir, "output", &output_pk, &output_vk)?;
     let (swap_pk, swap_vk) = SwapCircuit::generate_test_parameters();
     write_params(&target_dir, "swap", &swap_pk, &swap_vk)?;
+    let (swapclaim_pk, swapclaim_vk) = SwapClaimCircuit::generate_test_parameters();
+    write_params(&target_dir, "swapclaim", &swapclaim_pk, &swapclaim_vk)?;
     // NOTE: New proofs go here following the approach above.
 
     Ok(())
