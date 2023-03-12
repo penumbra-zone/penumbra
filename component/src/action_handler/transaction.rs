@@ -10,7 +10,7 @@ use tracing::{instrument, Instrument};
 
 use crate::shielded_pool::consensus_rules;
 
-use self::stateful::{claimed_anchor_is_valid, fmd_parameters_valid};
+use self::stateful::{claimed_anchor_is_valid, fmd_parameters_valid, timestamps_are_valid};
 
 use super::ActionHandler;
 
@@ -56,6 +56,7 @@ impl ActionHandler for Transaction {
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         claimed_anchor_is_valid(state.clone(), self).await?;
         fmd_parameters_valid(state.clone(), self).await?;
+        timestamps_are_valid(state.clone(), self).await?;
 
         // Currently, we need to clone the component actions so that the spawned
         // futures can have 'static lifetimes. In the future, we could try to
