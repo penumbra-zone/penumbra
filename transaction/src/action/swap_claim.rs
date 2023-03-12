@@ -4,9 +4,9 @@ use anyhow::Context;
 use ark_ff::Zero;
 use penumbra_crypto::dex::BatchSwapOutputData;
 use penumbra_crypto::transaction::Fee;
-use penumbra_crypto::{proofs::transparent::SwapClaimProof, Fr};
+use penumbra_crypto::{proofs::groth16::SwapClaimProof, Fr};
 use penumbra_crypto::{Balance, Nullifier};
-use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::crypto::v1alpha1 as pbc, core::dex::v1alpha1 as pb, DomainType};
 use penumbra_tct as tct;
 
 #[derive(Debug, Clone)]
@@ -59,8 +59,9 @@ impl DomainType for SwapClaim {
 
 impl From<SwapClaim> for pb::SwapClaim {
     fn from(sc: SwapClaim) -> Self {
+        let proof: pbc::ZkSwapClaimProof = sc.proof.into();
         pb::SwapClaim {
-            proof: sc.proof.into(),
+            proof: Some(proof),
             body: Some(sc.body.into()),
             epoch_duration: sc.epoch_duration,
         }
@@ -71,7 +72,9 @@ impl TryFrom<pb::SwapClaim> for SwapClaim {
     type Error = anyhow::Error;
     fn try_from(sc: pb::SwapClaim) -> Result<Self, Self::Error> {
         Ok(Self {
-            proof: sc.proof[..]
+            proof: sc
+                .proof
+                .ok_or_else(|| anyhow::anyhow!("missing swap claim proof"))?
                 .try_into()
                 .context("swap claim proof malformed")?,
             body: sc

@@ -2270,7 +2270,7 @@ impl serde::Serialize for SwapClaim {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.proof.is_empty() {
+        if self.proof.is_some() {
             len += 1;
         }
         if self.body.is_some() {
@@ -2280,8 +2280,8 @@ impl serde::Serialize for SwapClaim {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.dex.v1alpha1.SwapClaim", len)?;
-        if !self.proof.is_empty() {
-            struct_ser.serialize_field("proof", pbjson::private::base64::encode(&self.proof).as_str())?;
+        if let Some(v) = self.proof.as_ref() {
+            struct_ser.serialize_field("proof", v)?;
         }
         if let Some(v) = self.body.as_ref() {
             struct_ser.serialize_field("body", v)?;
@@ -2362,9 +2362,7 @@ impl<'de> serde::Deserialize<'de> for SwapClaim {
                             if proof__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proof"));
                             }
-                            proof__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            proof__ = map.next_value()?;
                         }
                         GeneratedField::Body => {
                             if body__.is_some() {
@@ -2383,7 +2381,7 @@ impl<'de> serde::Deserialize<'de> for SwapClaim {
                     }
                 }
                 Ok(SwapClaim {
-                    proof: proof__.unwrap_or_default(),
+                    proof: proof__,
                     body: body__,
                     epoch_duration: epoch_duration__.unwrap_or_default(),
                 })

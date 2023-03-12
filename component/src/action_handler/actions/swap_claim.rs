@@ -3,6 +3,7 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use penumbra_chain::{sync::StatePayload, StateReadExt as _};
+use penumbra_proof_params::SWAPCLAIM_PROOF_VERIFICATION_KEY;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::SwapClaim, Transaction};
 
@@ -14,15 +15,16 @@ use crate::{
 #[async_trait]
 impl ActionHandler for SwapClaim {
     async fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
+        // self.epoch_duration,
+        // self.body.output_1_commitment,
+        // self.body.output_2_commitment,
+        // self.body.fee.clone(),
+        // self.body.output_data,
         self.proof
             .verify(
+                &SWAPCLAIM_PROOF_VERIFICATION_KEY,
                 context.anchor,
                 self.body.nullifier,
-                self.body.output_data,
-                self.epoch_duration,
-                self.body.output_1_commitment,
-                self.body.output_2_commitment,
-                self.body.fee.clone(),
             )
             .context("a swap claim proof did not verify")?;
 

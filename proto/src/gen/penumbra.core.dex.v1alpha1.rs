@@ -22,8 +22,8 @@ pub struct Swap {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapClaim {
     /// Contains the SwapClaim proof.
-    #[prost(bytes = "vec", tag = "1")]
-    pub proof: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "1")]
+    pub proof: ::core::option::Option<super::super::crypto::v1alpha1::ZkSwapClaimProof>,
     /// Encapsulates the authorized fields of the SwapClaim action, used in signing.
     #[prost(message, optional, tag = "2")]
     pub body: ::core::option::Option<SwapClaimBody>,

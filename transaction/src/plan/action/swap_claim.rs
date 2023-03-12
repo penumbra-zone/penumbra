@@ -1,12 +1,14 @@
 use penumbra_crypto::{
     dex::{swap::SwapPlaintext, BatchSwapOutputData},
     keys::{IncomingViewingKey, NullifierKey},
-    proofs::transparent::SwapClaimProof,
+    proofs::groth16::SwapClaimProof,
     FullViewingKey, Value,
 };
+use penumbra_proof_params::SWAPCLAIM_PROOF_PROVING_KEY;
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
 use penumbra_tct as tct;
 
+use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
 use tct::Position;
 
@@ -44,18 +46,29 @@ impl SwapClaimPlan {
         state_commitment_proof: &tct::Proof,
         nk: &NullifierKey,
     ) -> SwapClaimProof {
-        let (lambda_1_i, lambda_2_i) = self.output_data.pro_rata_outputs((
-            self.swap_plaintext.delta_1_i.into(),
-            self.swap_plaintext.delta_2_i.into(),
-        ));
+        // let (lambda_1_i, lambda_2_i) = self.output_data.pro_rata_outputs((
+        //     self.swap_plaintext.delta_1_i.into(),
+        //     self.swap_plaintext.delta_2_i.into(),
+        // ));
 
-        SwapClaimProof {
-            swap_plaintext: self.swap_plaintext.clone(),
-            lambda_1_i,
-            lambda_2_i,
-            nk: nk.clone(),
-            swap_commitment_proof: state_commitment_proof.clone(),
-        }
+        // SwapClaimProof {
+        //     swap_plaintext: self.swap_plaintext.clone(),
+        //     lambda_1_i,
+        //     lambda_2_i,
+        //     nk: nk.clone(),
+        //     swap_commitment_proof: state_commitment_proof.clone(),
+        // }
+        let nullifier = nk.derive_nullifier(self.position, &self.swap_plaintext.swap_commitment());
+        SwapClaimProof::prove(
+            &mut OsRng,
+            &SWAPCLAIM_PROOF_PROVING_KEY,
+            self.swap_plaintext.clone(),
+            state_commitment_proof.clone(),
+            nk.clone(),
+            state_commitment_proof.root(),
+            nullifier,
+        )
+        .expect("can generate ZKSwapClaimProof")
     }
 
     /// Construct the [`swap_claim::Body`] described by this plan.
