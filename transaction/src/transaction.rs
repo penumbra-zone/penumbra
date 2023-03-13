@@ -140,7 +140,7 @@ impl Transaction {
         Ok(result)
     }
 
-    pub fn decrypt_with_perspective(&self, txp: &TransactionPerspective) -> TransactionView {
+    pub fn view_from_perspective(&self, txp: &TransactionPerspective) -> TransactionView {
         let mut action_views = Vec::new();
 
         let mut memo_plaintext: Option<MemoPlaintext> = None;
