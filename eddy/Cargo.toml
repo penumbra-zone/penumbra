@@ -7,16 +7,21 @@ edition = "2021"
 
 [dependencies]
 parking_lot = "0.12"
-decaf377 = "0.2"
+decaf377 = "0.3"
 anyhow = "1"
 futures = "0.3"
 merlin = "3"
 rand_core = "0.6"
 rand = "0.8.5"
 proptest = "1"
-ark-ff = "0.3"
-ark-std = "0.3"
+ark-ff = { version = "0.3", default_features = false }
+ark-std = {version = "0.3", default-features = false}
 thiserror = "1"
 
 [dev-dependencies]
 tokio = { version = "1.21.1", features = ["full"]}
+
+[features]
+default = ["std"]
+std = ["ark-ff/std", "ark-std/std"]
+parallel = ["ark-ff/parallel", "decaf377/parallel", "ark-std/parallel"]

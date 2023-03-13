@@ -16,10 +16,10 @@ hash_hasher = "2"
 thiserror = "1"
 serde = { version = "1.0", features = ["derive", "rc"] }
 parking_lot = "0.12"
-ark-ff = "0.3"
+ark-ff = { version = "0.3", default_features = false }
 ark-serialize = "0.3"
-poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377", rev = "a2d8c7a3288e2e877ac88a4d8fd3cc4ff2b52c04" }
-decaf377 = { version = "0.2", features = ["r1cs"] }
+poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377", branch = "main" }
+decaf377 = { version = "0.3" }
 tracing = { version = "0.1" }
 async-trait = { version = "0.1" }
 futures = "0.3"
@@ -27,7 +27,7 @@ ark-ed-on-bls12-377 = "0.3"
 rand = "0.8"
 im = { version = "^15.1.0", features = ["serde"] } # IMPORTANT: an OrdMap correctness bug was fixed in 15.1.0, as well as a performance improvement to `union`
 ark-relations = {version = "0.3", optional=true }
-ark-r1cs-std = {version = "0.3", optional=true }
+ark-r1cs-std = {version = "0.3", optional=true, default-features = false }
 
 # Dependencies for random testing
 proptest = { version = "1", optional = true }
@@ -36,7 +36,8 @@ proptest-derive = { version = "0.3", optional = true }
 [features]
 internal = []
 arbitrary = ["proptest", "proptest-derive"]
-r1cs = ["ark-r1cs-std", "ark-relations"]
+r1cs = ["ark-r1cs-std", "ark-relations", "decaf377/r1cs"]
+parallel = ["ark-r1cs-std/parallel", "ark-ff/parallel", "decaf377/parallel", "poseidon377/parallel"]
 
 [dev-dependencies]
 static_assertions = "1"

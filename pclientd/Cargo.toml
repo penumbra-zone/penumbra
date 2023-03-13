@@ -8,6 +8,8 @@ edition = "2021"
 [features]
 default = []
 sct-divergence-check = ["penumbra-view/sct-divergence-check"]
+# Enable to use rayon parallelism for crypto operations
+parallel = ["penumbra-tct/parallel", "penumbra-custody/parallel", "penumbra-chain/parallel", "penumbra-transaction/parallel", "penumbra-component/parallel", "penumbra-view/parallel"]
 
 [dependencies]
 # Workspace dependencies

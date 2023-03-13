@@ -33,6 +33,13 @@ where
     let witness_data = view.witness(fvk.account_group_id(), &plan).await?;
 
     // ... and then build the transaction:
-    plan.build_concurrent(&mut rng, fvk, auth_data, witness_data)
-        .await
+    #[cfg(not(feature = "parallel"))]
+    let tx = plan.build(&mut rng, fvk, auth_data, witness_data)?;
+
+    #[cfg(feature = "parallel")]
+    let tx = plan
+        .build_concurrent(&mut rng, fvk, auth_data, witness_data)
+        .await?;
+
+    Ok(tx)
 }

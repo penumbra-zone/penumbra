@@ -9,14 +9,14 @@ edition = "2021"
 # Workspace dependencies
 penumbra-crypto = { path = "../crypto" }
 penumbra-proto = { path = "../proto", features = ["penumbra-storage"] }
-penumbra-transaction = { path = "../transaction", features = ["fast-proofs"] }
+penumbra-transaction = { path = "../transaction" }
 penumbra-storage = { path = "../storage" }
 penumbra-chain = { path = "../chain" }
 penumbra-tct = { path = "../tct" }
 penumbra-proof-params = { path = "../proof-params" }
 
 # Penumbra dependencies
-decaf377 = "0.2"
+decaf377 = {version = "0.3"}
 jmt = "0.3"
 tokio = { version = "1.21.1", features = ["full", "tracing"] }
 async-trait = "0.1.52"
@@ -24,7 +24,7 @@ tonic = "0.8.1"
 futures = "0.3"
 anyhow = "1"
 tracing = "0.1"
-ark-ff = "0.3"
+ark-ff = { version = "0.3", default_features = false }
 blake2b_simd = "0.5"
 bincode = "1.3.3"
 serde = { version = "1", features = ["derive"] }
@@ -59,3 +59,8 @@ rand_chacha = "0.3"
 
 [build-dependencies]
 vergen = "5"
+
+[features]
+default = ["std"]
+std = ["ark-ff/std"]
+parallel = ["ark-ff/parallel", "penumbra-tct/parallel", "decaf377/parallel", "penumbra-transaction/parallel", "penumbra-chain/parallel"]
