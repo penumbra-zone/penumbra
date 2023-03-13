@@ -16,7 +16,7 @@ use crate::{
     note::Commitment,
     prf,
     rdsa::{SpendAuth, VerificationKey},
-    Address, Fq, Fr, Note, Nullifier,
+    Address, AddressView, Fq, Fr, Note, Nullifier,
 };
 
 pub(crate) static IVK_DOMAIN_SEP: Lazy<Fq> =
@@ -60,6 +60,21 @@ impl FullViewingKey {
         address_index: AddressIndex,
     ) -> (Address, fmd::DetectionKey) {
         self.incoming().ephemeral_address(rng, address_index)
+    }
+
+    /// Views the structure of the supplied address with this viewing key.
+    pub fn view_address(&self, address: Address) -> AddressView {
+        // WART: this can't cleanly forward to a method on the IVK,
+        // because the IVK doesn't know the AccountGroupId.
+        if self.incoming().views_address(&address) {
+            AddressView::Visible {
+                index: self.incoming().index_for_diversifier(address.diversifier()),
+                account_group_id: self.account_group_id(),
+                address,
+            }
+        } else {
+            AddressView::Opaque { address }
+        }
     }
 
     /// Returns the index of the given address, if the address is viewed by this

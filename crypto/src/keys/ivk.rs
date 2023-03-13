@@ -82,7 +82,8 @@ impl IncomingViewingKey {
 
     /// Returns the index of the given address, if the address is viewed by this
     /// viewing key; otherwise, returns `None`.
-    pub fn address_index(&self, address: &Address) -> Option<AddressIndex> {
+    // TODO: re-evaluate relative to FVK methods
+    pub(super) fn address_index(&self, address: &Address) -> Option<AddressIndex> {
         if self.views_address(address) {
             Some(self.index_for_diversifier(address.diversifier()))
         } else {
