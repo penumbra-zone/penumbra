@@ -246,7 +246,6 @@ impl TxCmd {
                     }
                 });
 
-                println!("sending: {:?}", values);
                 let plan = plan::send(
                     app.fvk.account_group_id(),
                     app.view.as_mut().unwrap(),
