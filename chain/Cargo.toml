@@ -12,14 +12,14 @@ penumbra-crypto = { path = "../crypto" }
 penumbra-tct = { path = "../tct" }
 
 # Penumbra dependencies
-decaf377 = "0.2"
+decaf377 = "0.3"
 
 tendermint = "0.29.0"
 ibc = "0.29"
 ics23 = "0.9.0"
 
 # Crates.io deps
-ark-ff = "0.3"
+ark-ff = { version = "0.3", default_features = false }
 anyhow = "1"
 bytes = "1"
 hex = "0.4"
@@ -29,3 +29,7 @@ serde = { version = "1", features = ["derive"] }
 async-trait = "0.1.52"
 tracing = "0.1"
 num-rational = "0.4"
+
+[features]
+default = ["std"]
+std = ["ark-ff/std"]

@@ -16,7 +16,7 @@ publish = false
 penumbra-proto = { path = "../proto" }
 penumbra-chain = { path = "../chain" }
 penumbra-crypto = { path = "../crypto" }
-penumbra-transaction = { path = "../transaction", features = ["fast-proofs"] }
+penumbra-transaction = { path = "../transaction", features = ["parallel"] }
 penumbra-component = { path = "../component" }
 penumbra-tct = { path = "../tct" }
 penumbra-view = { path = "../view" }

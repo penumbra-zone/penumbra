@@ -189,7 +189,7 @@ impl TransactionPlan {
         })
     }
 
-    #[cfg(feature = "fast-proofs")]
+    #[cfg(feature = "parallel")]
     /// Build the transaction this plan describes while proving concurrently.
     /// This can be used in environments that support tokio tasks.
     pub async fn build_concurrent<R: CryptoRng + RngCore>(
