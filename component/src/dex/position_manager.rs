@@ -68,6 +68,7 @@ pub trait PositionManager: StateWrite + PositionRead {
             ))?;
 
         metadata.reserves = new_reserves;
+        self.put_position(metadata);
 
         Ok((unfilled, output))
     }
