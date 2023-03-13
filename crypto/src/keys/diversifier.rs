@@ -5,7 +5,7 @@ use std::str::FromStr;
 use aes::cipher::{generic_array::GenericArray, BlockDecrypt, BlockEncrypt, KeyInit};
 use aes::Aes128;
 
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use ark_ff::PrimeField;
 use derivative::Derivative;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
@@ -232,11 +232,9 @@ impl DomainType for AddressIndex {
 
 impl From<AddressIndex> for pb::AddressIndex {
     fn from(d: AddressIndex) -> pb::AddressIndex {
-        let mut bytes = [0; DIVERSIFIER_LEN_BYTES];
-        bytes[0..4].copy_from_slice(&d.account.to_le_bytes());
-        bytes[4..16].copy_from_slice(d.randomizer.as_slice());
         pb::AddressIndex {
-            inner: bytes.to_vec(),
+            account: d.account,
+            randomizer: d.randomizer.to_vec(),
         }
     }
 }
@@ -245,7 +243,14 @@ impl TryFrom<pb::AddressIndex> for AddressIndex {
     type Error = anyhow::Error;
 
     fn try_from(d: pb::AddressIndex) -> Result<AddressIndex, Self::Error> {
-        d.inner.as_slice().try_into()
+        Ok(Self {
+            account: d.account,
+            randomizer: d
+                .randomizer
+                .as_slice()
+                .try_into()
+                .context("could not parse 12-byte array")?,
+        })
     }
 }
 
