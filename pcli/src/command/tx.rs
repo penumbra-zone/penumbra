@@ -13,7 +13,7 @@ use penumbra_crypto::{
     asset,
     dex::{
         lp::{position::Position, Reserves, TradingFunction},
-        DirectedTradingPair, TradingPair,
+        DirectedTradingPair,
     },
     keys::AddressIndex,
     memo::MemoPlaintext,
@@ -768,21 +768,12 @@ impl TxCmd {
                 fee,
                 source,
             })) => {
-                let _fee = Fee::from_staking_token_amount((*fee).into());
-
-                let _asset_cache = app.view().assets().await?;
+                let fee = Fee::from_staking_token_amount((*fee).into());
 
                 // Use DirectedTradingPair to get the canonical trading pair associated with the direction of the buy order.
                 let trading_pair =
                     DirectedTradingPair::new(buy_order.price.asset_id, buy_order.desired.asset_id)
                         .to_canonical();
-
-                // When opening a liquidity position, the initial reserves will only be set for one asset.
-                let _asset_cache = app.view().assets().await?;
-                // TODO: check canonical ordering of trading_pair, or
-                // use DirectedTradingPair
-                let trading_pair =
-                    TradingPair::new(buy_order.desired.asset_id, buy_order.price.asset_id);
 
                 let p = buy_order.price.amount.clone() * 1_000_000u64.into();
                 let q = 1_000_000u64.into();
@@ -796,6 +787,8 @@ impl TxCmd {
                 // This represents an "ask" in the order book, where bids are placed in the asset type without initial reserves.
                 //
                 // The [`Position`] constructor expects the ordering of [`Reserves`] to match the ordering of the assets in the [`TradingPair`].
+                //
+                // When opening a liquidity position, the initial reserves will only be set for one asset.
                 let reserves = if trading_pair.asset_1() == buy_order.desired.asset_id {
                     Reserves {
                         // r1 will be set to 0 units of the asset being bought
@@ -819,42 +812,72 @@ impl TxCmd {
                 let position = Position::new(OsRng, trading_function);
                 let plan = Planner::new(OsRng)
                     .position_open(position, reserves)
+                    .fee(fee)
                     .plan(
                         app.view.as_mut().unwrap(),
                         app.fvk.account_group_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
-                println!("Tx plan: {:#?}", plan);
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Position(PositionCmd::Order(OrderCmd::Sell {
-                sell_order: _,
-                spread: _,
-                fee: _,
-                source: _,
+                sell_order,
+                spread,
+                fee,
+                source,
             })) => {
-                // let fee = Fee::from_staking_token_amount((*fee).into());
+                let fee = Fee::from_staking_token_amount((*fee).into());
 
-                // let denom_into = asset::REGISTRY.parse_unit(denom_2.as_str()).base();
+                // Use DirectedTradingPair to get the canonical trading pair associated with the direction of the sell order.
+                // The sell order represents the desire to move from the `selling` asset to the `price` asset.
+                let trading_pair = DirectedTradingPair::new(
+                    sell_order.selling.asset_id,
+                    sell_order.price.asset_id,
+                )
+                .to_canonical();
 
-                // // When opening a liquidity position, the initial reserves will only be set for one asset.
-                // // This represents an "ask" in the order book, where bids are placed in the asset type without initial reserves.
-                // let reserves = (
-                //     reserves,
-                //     Value {
-                //         asset_id: denom_into.id(),
-                //         amount: Amount::zero(),
-                //     },
-                // );
+                let p = sell_order.price.amount.clone() * 1_000_000u64.into();
+                let q = 1_000_000u64.into();
 
-                // println!("Opening liquidity position with reserves: {:?}", reserves);
-                // let position = Position::new(reserves, *lp_fee);
-                // let plan = Planner::new(OsRng)
-                //     .position_open(OsRng, &reserves, fee, AddressIndex::new(*source))
-                //     .await?;
-                // app.build_and_submit_transaction(plan).await?;
-                println!("Unimplemented");
+                // `spread` is another name for `fee`, which is at most 10_000 bps.
+                if *spread > 10_000 {
+                    anyhow::bail!("spread parameter must be at most 10_000bps (i.e. 100%)");
+                }
+                let trading_function = TradingFunction::new(trading_pair, *spread, p, q);
+
+                // This represents an "ask" in the order book, where bids are placed in the asset type without initial reserves.
+                //
+                // The [`Position`] constructor expects the ordering of [`Reserves`] to match the ordering of the assets in the [`TradingPair`].
+                //
+                // When opening a liquidity position, the initial reserves will only be set for one asset.
+                let reserves = if trading_pair.asset_1() == sell_order.selling.asset_id {
+                    Reserves {
+                        // r1 will be set to the amount of the asset being sold
+                        r1: sell_order.selling.amount,
+                        // r2 will be set to 0 units of the asset being bought
+                        r2: Amount::zero(),
+                    }
+                } else {
+                    Reserves {
+                        // r1 will be set to 0 units of the asset being bought
+                        r1: Amount::zero(),
+                        // r2 will be set to the amount of the asset being sold
+                        r2: sell_order.selling.amount,
+                    }
+                };
+
+                let position = Position::new(OsRng, trading_function);
+                let plan = Planner::new(OsRng)
+                    .position_open(position, reserves)
+                    .fee(fee)
+                    .plan(
+                        app.view.as_mut().unwrap(),
+                        app.fvk.account_group_id(),
+                        AddressIndex::new(*source),
+                    )
+                    .await?;
+                app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Position(PositionCmd::Close {})
             | TxCmd::Position(PositionCmd::Withdraw {})
