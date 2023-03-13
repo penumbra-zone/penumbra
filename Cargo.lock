@@ -4105,7 +4105,7 @@ dependencies = [
 [[package]]
 name = "poseidon-parameters"
 version = "0.1.0"
-source = "git+https://github.com/penumbra-zone/poseidon377?branch=update-decaf377#f1a980eb5a71155e7a07582c3f2a2a0aa5f8993c"
+source = "git+https://github.com/penumbra-zone/poseidon377?branch=main#7c656864b993fa915e8fe5bf698ae3b52cb10e35"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4115,7 +4115,7 @@ dependencies = [
 [[package]]
 name = "poseidon-paramgen"
 version = "0.1.1"
-source = "git+https://github.com/penumbra-zone/poseidon377?branch=update-decaf377#f1a980eb5a71155e7a07582c3f2a2a0aa5f8993c"
+source = "git+https://github.com/penumbra-zone/poseidon377?branch=main#7c656864b993fa915e8fe5bf698ae3b52cb10e35"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4131,7 +4131,7 @@ dependencies = [
 [[package]]
 name = "poseidon-permutation"
 version = "0.1.1"
-source = "git+https://github.com/penumbra-zone/poseidon377?branch=update-decaf377#f1a980eb5a71155e7a07582c3f2a2a0aa5f8993c"
+source = "git+https://github.com/penumbra-zone/poseidon377?branch=main#7c656864b993fa915e8fe5bf698ae3b52cb10e35"
 dependencies = [
  "ark-ff",
  "ark-std",
@@ -4141,7 +4141,7 @@ dependencies = [
 [[package]]
 name = "poseidon377"
 version = "0.1.1"
-source = "git+https://github.com/penumbra-zone/poseidon377?branch=update-decaf377#f1a980eb5a71155e7a07582c3f2a2a0aa5f8993c"
+source = "git+https://github.com/penumbra-zone/poseidon377?branch=main#7c656864b993fa915e8fe5bf698ae3b52cb10e35"
 dependencies = [
  "ark-ed-on-bls12-377",
  "ark-ff",

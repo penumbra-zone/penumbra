@@ -16,7 +16,7 @@ publish = false
 penumbra-proto = { path = "../proto" }
 penumbra-chain = { path = "../chain" }
 penumbra-crypto = { path = "../crypto" }
-penumbra-transaction = { path = "../transaction", features = ["parallel"] }
+penumbra-transaction = { path = "../transaction" }
 penumbra-component = { path = "../component" }
 penumbra-tct = { path = "../tct" }
 penumbra-view = { path = "../view" }
@@ -46,4 +46,4 @@ once_cell = "1"
 
 [features]
 default = []
-parallel = ["penumbra-crypto/parallel", "penumbra-custody/parallel", "penumbra-chain/parallel", "penumbra-tct/parallel", "penumbra-component/parallel", "penumbra-view/parallel" ]
+parallel = ["penumbra-crypto/parallel", "penumbra-transaction/parallel", "penumbra-custody/parallel", "penumbra-chain/parallel", "penumbra-tct/parallel", "penumbra-component/parallel", "penumbra-view/parallel" ]
