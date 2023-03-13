@@ -23,6 +23,15 @@ pub enum AddressView {
     },
 }
 
+impl AddressView {
+    pub fn address(&self) -> Address {
+        match self {
+            AddressView::Opaque { address } => *address,
+            AddressView::Visible { address, .. } => *address,
+        }
+    }
+}
+
 impl DomainType for AddressView {
     type Proto = pb::AddressView;
 }

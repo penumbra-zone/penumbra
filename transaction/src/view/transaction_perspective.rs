@@ -1,4 +1,4 @@
-use penumbra_crypto::{note, Note, Nullifier, PayloadKey};
+use penumbra_crypto::{note, AddressView, Note, Nullifier, PayloadKey};
 use penumbra_proto::core::transaction::v1alpha1::{
     self as pb, NullifierWithNote, PayloadKeyWithCommitment,
 };
@@ -26,6 +26,8 @@ pub struct TransactionPerspective {
     pub spend_nullifiers: BTreeMap<Nullifier, Note>,
     /// The openings of note commitments referred to in the transaction but otherwise not included in the transaction.
     pub advice_notes: BTreeMap<note::Commitment, Note>,
+    /// The views of any relevant address.
+    pub address_views: Vec<AddressView>,
 }
 
 impl TransactionPerspective {}
@@ -35,6 +37,7 @@ impl From<TransactionPerspective> for pb::TransactionPerspective {
         let mut payload_keys = Vec::new();
         let mut spend_nullifiers = Vec::new();
         let mut advice_notes = Vec::new();
+        let mut address_views = Vec::new();
 
         for (commitment, payload_key) in msg.payload_keys {
             payload_keys.push(PayloadKeyWithCommitment {
@@ -52,10 +55,14 @@ impl From<TransactionPerspective> for pb::TransactionPerspective {
         for note in msg.advice_notes.into_values() {
             advice_notes.push(note.into());
         }
+        for address_view in msg.address_views {
+            address_views.push(address_view.into());
+        }
         Self {
             payload_keys,
             spend_nullifiers,
             advice_notes,
+            address_views,
         }
     }
 }
@@ -67,6 +74,7 @@ impl TryFrom<pb::TransactionPerspective> for TransactionPerspective {
         let mut payload_keys = BTreeMap::new();
         let mut spend_nullifiers = BTreeMap::new();
         let mut advice_notes = BTreeMap::new();
+        let mut address_views = Vec::new();
 
         for pk in msg.payload_keys {
             if pk.commitment.is_some() {
@@ -89,10 +97,15 @@ impl TryFrom<pb::TransactionPerspective> for TransactionPerspective {
             advice_notes.insert(note.commit(), note);
         }
 
+        for address_view in msg.address_views {
+            address_views.push(address_view.try_into()?);
+        }
+
         Ok(Self {
             payload_keys,
             spend_nullifiers,
             advice_notes,
+            address_views,
         })
     }
 }

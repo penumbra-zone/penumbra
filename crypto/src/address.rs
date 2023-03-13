@@ -38,6 +38,18 @@ pub struct Address {
     ck_d: fmd::ClueKey,
 }
 
+impl std::cmp::PartialOrd for Address {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.to_vec().cmp(&other.to_vec()))
+    }
+}
+
+impl std::cmp::Ord for Address {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.to_vec().cmp(&other.to_vec())
+    }
+}
+
 impl Address {
     /// Constructs a payment address from its components.
     ///
