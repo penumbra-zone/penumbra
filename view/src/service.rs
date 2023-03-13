@@ -12,7 +12,7 @@ use penumbra_crypto::{
     asset,
     keys::{AccountGroupId, AddressIndex, FullViewingKey},
     transaction::Fee,
-    Amount,
+    Address, AddressView, Amount,
 };
 use penumbra_proto::{
     client::v1alpha1::{
@@ -525,6 +525,10 @@ impl ViewProtocolService for ViewService {
             .payload_keys(&fvk)
             .map_err(|_| tonic::Status::failed_precondition("Error generating payload keys"))?;
 
+        // TODO: better way to determine relevant addresses?
+        // For now, only supply addresses that are in spends.
+        let mut address_views = BTreeMap::<Address, AddressView>::new();
+
         let mut spend_nullifiers = BTreeMap::new();
 
         for action in tx.actions() {
@@ -534,7 +538,9 @@ impl ViewProtocolService for ViewService {
                 if let Ok(spendable_note_record) =
                     self.storage.note_by_nullifier(nullifier, false).await
                 {
+                    let address_view = fvk.view_address(spendable_note_record.note.address());
                     spend_nullifiers.insert(nullifier, spendable_note_record.note);
+                    address_views.insert(address_view.address(), address_view);
                 }
             }
         }
@@ -542,10 +548,12 @@ impl ViewProtocolService for ViewService {
         // TODO: query for advice notes
         let advice_notes = Default::default();
 
+        // TODO: give views on addresses other than in spends
         let txp = TransactionPerspective {
             payload_keys,
             spend_nullifiers,
             advice_notes,
+            address_views: address_views.into_values().collect(),
         };
 
         let response = pb::TransactionPerspectiveResponse {

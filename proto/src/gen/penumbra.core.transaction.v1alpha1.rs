@@ -113,6 +113,8 @@ pub mod action {
         Ics20Withdrawal(super::super::super::ibc::v1alpha1::Ics20Withdrawal),
     }
 }
+/// A transaction perspective is a bundle of key material and commitment openings
+/// that allow generating a view of a transaction from that perspective.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionPerspective {
@@ -124,6 +126,11 @@ pub struct TransactionPerspective {
     /// but not included in the transaction.
     #[prost(message, repeated, tag = "3")]
     pub advice_notes: ::prost::alloc::vec::Vec<super::super::crypto::v1alpha1::Note>,
+    /// Any relevant address views.
+    #[prost(message, repeated, tag = "4")]
+    pub address_views: ::prost::alloc::vec::Vec<
+        super::super::crypto::v1alpha1::AddressView,
+    >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
