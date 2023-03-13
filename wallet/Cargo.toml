@@ -43,3 +43,7 @@ rand = "0.8"
 proptest = "1"
 proptest-derive = "0.3"
 once_cell = "1"
+
+[features]
+default = []
+parallel = ["penumbra-crypto/parallel", "penumbra-tct/parallel", "penumbra-component/parallel", "penumbra-view/parallel" ]

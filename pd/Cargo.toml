@@ -19,10 +19,10 @@ rust-version = "1.65"
 penumbra-proto = { path = "../proto" }
 penumbra-chain = { path = "../chain" }
 penumbra-crypto = { path = "../crypto", features = ["parallel"] }
-penumbra-transaction = { path = "../transaction" }
+penumbra-transaction = { path = "../transaction", features = ["parallel"] }
 penumbra-storage = { path = "../storage" }
-penumbra-component = { path = "../component" }
-penumbra-wallet = { path = "../wallet" }
+penumbra-component = { path = "../component", features = ["parallel"] }
+penumbra-wallet = { path = "../wallet", features = ["parallel"] }
 
 # Penumbra dependencies
 decaf377 = {version = "0.3", features = ["parallel"]}
