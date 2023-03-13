@@ -190,7 +190,7 @@ impl TxCmd {
         // Retrieve full TxP
         let txp = view.transaction_perspective(hash).await?;
         // Generate TxV using TxP
-        let txv = tx.decrypt_with_perspective(&txp);
+        let txv = tx.view_from_perspective(&txp);
 
         if self.raw {
             use colored_json::prelude::*;
