@@ -15,7 +15,7 @@ rand_core = "0.6"
 rand = "0.8.5"
 proptest = "1"
 ark-ff = { version = "0.3", default_features = false }
-ark-std = "0.3"
+ark-std = {version = "0.3", default-features = false}
 thiserror = "1"
 
 [dev-dependencies]
@@ -23,5 +23,5 @@ tokio = { version = "1.21.1", features = ["full"]}
 
 [features]
 default = ["std"]
-std = ["ark-ff/std"]
-parallel = ["ark-ff/parallel", "decaf377/parallel"]
+std = ["ark-ff/std", "ark-std/std"]
+parallel = ["ark-ff/parallel", "decaf377/parallel", "ark-std/parallel"]

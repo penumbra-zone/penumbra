@@ -300,21 +300,19 @@ const DAO_TRANSACTION_RNG_SEED: &[u8; 32] = b"Penumbra DAO's tx build rng seed";
 
 async fn build_dao_transaction(transaction_plan: TransactionPlan) -> Result<Transaction> {
     let effect_hash = transaction_plan.effect_hash(&DAO_FULL_VIEWING_KEY);
-    transaction_plan
-        .build_concurrent(
-            &mut ChaCha20Rng::from_seed(*DAO_TRANSACTION_RNG_SEED),
-            &DAO_FULL_VIEWING_KEY,
-            AuthorizationData {
-                effect_hash,
-                spend_auths: Default::default(),
-                delegator_vote_auths: Default::default(),
-            },
-            WitnessData {
-                anchor: penumbra_tct::Tree::new().root(),
-                state_commitment_proofs: Default::default(),
-            },
-        )
-        .await
+    transaction_plan.build(
+        &mut ChaCha20Rng::from_seed(*DAO_TRANSACTION_RNG_SEED),
+        &DAO_FULL_VIEWING_KEY,
+        AuthorizationData {
+            effect_hash,
+            spend_auths: Default::default(),
+            delegator_vote_auths: Default::default(),
+        },
+        WitnessData {
+            anchor: penumbra_tct::Tree::new().root(),
+            state_commitment_proofs: Default::default(),
+        },
+    )
 }
 
 #[cfg(test)]
