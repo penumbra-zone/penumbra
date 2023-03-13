@@ -175,6 +175,7 @@ impl Transaction {
             fee: self.transaction_body().fee,
             fmd_clues: self.transaction_body().fmd_clues,
             memo: memo_plaintext,
+            address_views: txp.address_views.clone(),
         }
     }
 

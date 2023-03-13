@@ -175,6 +175,11 @@ pub struct TransactionView {
     /// outputs in the actions of this transaction.
     #[prost(bytes = "bytes", optional, tag = "6")]
     pub memo: ::core::option::Option<::prost::bytes::Bytes>,
+    /// Any relevant address views.
+    #[prost(message, repeated, tag = "400")]
+    pub address_views: ::prost::alloc::vec::Vec<
+        super::super::crypto::v1alpha1::AddressView,
+    >,
 }
 /// A view of a specific state change action performed by a transaction.
 #[allow(clippy::derive_partial_eq_without_eq)]
