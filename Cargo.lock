@@ -1485,28 +1485,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "decaf377"
-version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/decaf377#877f9705fcc5de5613645b626d12dadce15fddcf"
-dependencies = [
- "anyhow",
- "ark-bls12-377",
- "ark-ec",
- "ark-ed-on-bls12-377",
- "ark-ff",
- "ark-relations",
- "ark-serialize",
- "ark-std",
- "hex",
- "num-bigint",
- "once_cell",
- "thiserror",
- "tracing",
- "tracing-subscriber 0.2.25",
- "zeroize",
-]
-
-[[package]]
 name = "decaf377-fmd"
 version = "0.1.0"
 dependencies = [
@@ -1515,7 +1493,7 @@ dependencies = [
  "bitvec",
  "blake2b_simd 0.5.11",
  "criterion",
- "decaf377 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "decaf377 0.3.0",
  "proptest",
  "rand_core",
  "thiserror",
@@ -1526,7 +1504,7 @@ name = "decaf377-ka"
 version = "0.1.0"
 dependencies = [
  "ark-ff",
- "decaf377 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "decaf377 0.3.0",
  "hex",
  "proptest",
  "rand_core",
@@ -1538,13 +1516,13 @@ dependencies = [
 [[package]]
 name = "decaf377-rdsa"
 version = "0.5.0"
-source = "git+https://github.com/penumbra-zone/decaf377-rdsa#59db09ab8d59419e155ac2e10257360fb5109052"
+source = "git+https://github.com/penumbra-zone/decaf377-rdsa#bb66a8b16ea242a5d9015bd18b46601c37838bf7"
 dependencies = [
  "ark-ff",
  "ark-serialize",
  "blake2b_simd 0.5.11",
  "byteorder",
- "decaf377 0.3.0 (git+https://github.com/penumbra-zone/decaf377)",
+ "decaf377 0.3.0",
  "digest 0.9.0",
  "hex",
  "rand_core",
@@ -1884,13 +1862,13 @@ dependencies = [
 [[package]]
 name = "frost377"
 version = "0.1.0"
-source = "git+https://github.com/penumbra-zone/frost377#ee98104d666ee1b7858cc7f6334dd5a75b1d362e"
+source = "git+https://github.com/penumbra-zone/frost377#f82f57d848e814fc895947ee5741eba818027c7f"
 dependencies = [
  "anyhow",
  "ark-ff",
  "ark-poly",
  "blake2b_simd 0.5.11",
- "decaf377 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "decaf377 0.3.0",
  "rand",
 ]
 
@@ -3403,7 +3381,7 @@ dependencies = [
  "clap 3.2.23",
  "colored_json",
  "comfy-table",
- "decaf377 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "decaf377 0.3.0",
  "directories",
  "ed25519-consensus",
  "futures",
@@ -3510,7 +3488,7 @@ dependencies = [
  "clap 3.2.23",
  "console-subscriber",
  "csv",
- "decaf377 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "decaf377 0.3.0",
  "directories",
  "ed25519-consensus",
  "futures",
@@ -3608,7 +3586,7 @@ dependencies = [
  "ark-ff",
  "async-trait",
  "bytes",
- "decaf377 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "decaf377 0.3.0",
  "hex",
  "ibc",
  "ics23",
@@ -3636,7 +3614,7 @@ dependencies = [
  "bincode",
  "bitvec",
  "blake2b_simd 0.5.11",
- "decaf377 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "decaf377 0.3.0",
  "ed25519-consensus",
  "futures",
  "hex",
@@ -3691,7 +3669,7 @@ dependencies = [
  "blake2b_simd 0.5.11",
  "bytes",
  "chacha20poly1305",
- "decaf377 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "decaf377 0.3.0",
  "decaf377-fmd",
  "decaf377-ka",
  "decaf377-rdsa",
@@ -3752,7 +3730,7 @@ dependencies = [
  "anyhow",
  "ark-ff",
  "ark-std",
- "decaf377 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "decaf377 0.3.0",
  "futures",
  "merlin",
  "parking_lot 0.12.1",
@@ -3794,7 +3772,7 @@ dependencies = [
  "ark-serialize",
  "ark-snark",
  "ark-std",
- "decaf377 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "decaf377 0.3.0",
  "num-bigint",
  "once_cell",
  "penumbra-crypto",
@@ -3867,7 +3845,7 @@ dependencies = [
  "ark-serialize",
  "async-trait",
  "blake2b_simd 1.0.1",
- "decaf377 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "decaf377 0.3.0",
  "derivative",
  "futures",
  "hash_hasher",
@@ -3909,7 +3887,7 @@ dependencies = [
  "axum-server",
  "bytes",
  "clap 3.2.23",
- "decaf377 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "decaf377 0.3.0",
  "futures",
  "hex",
  "include-flate",
@@ -3944,7 +3922,7 @@ dependencies = [
  "bytes",
  "chacha20poly1305",
  "clap 3.2.23",
- "decaf377 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "decaf377 0.3.0",
  "decaf377-fmd",
  "decaf377-ka",
  "decaf377-rdsa",
@@ -6534,9 +6512,9 @@ dependencies = [
 
 [[package]]
 name = "windows-targets"
-version = "0.42.1"
+version = "0.42.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e2522491fbfcd58cc84d47aeb2958948c4b8982e9a2d8a2a35bbaed431390e7"
+checksum = "8e5180c00cd44c9b1c88adb3693291f1cd93605ded80c250a75d472756b4d071"
 dependencies = [
  "windows_aarch64_gnullvm",
  "windows_aarch64_msvc",
@@ -6549,45 +6527,45 @@ dependencies = [
 
 [[package]]
 name = "windows_aarch64_gnullvm"
-version = "0.42.1"
+version = "0.42.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8c9864e83243fdec7fc9c5444389dcbbfd258f745e7853198f365e3c4968a608"
+checksum = "597a5118570b68bc08d8d59125332c54f1ba9d9adeedeef5b99b02ba2b0698f8"
 
 [[package]]
 name = "windows_aarch64_msvc"
-version = "0.42.1"
+version = "0.42.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c8b1b673ffc16c47a9ff48570a9d85e25d265735c503681332589af6253c6c7"
+checksum = "e08e8864a60f06ef0d0ff4ba04124db8b0fb3be5776a5cd47641e942e58c4d43"
 
 [[package]]
 name = "windows_i686_gnu"
-version = "0.42.1"
+version = "0.42.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de3887528ad530ba7bdbb1faa8275ec7a1155a45ffa57c37993960277145d640"
+checksum = "c61d927d8da41da96a81f029489353e68739737d3beca43145c8afec9a31a84f"
 
 [[package]]
 name = "windows_i686_msvc"
-version = "0.42.1"
+version = "0.42.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf4d1122317eddd6ff351aa852118a2418ad4214e6613a50e0191f7004372605"
+checksum = "44d840b6ec649f480a41c8d80f9c65108b92d89345dd94027bfe06ac444d1060"
 
 [[package]]
 name = "windows_x86_64_gnu"
-version = "0.42.1"
+version = "0.42.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1040f221285e17ebccbc2591ffdc2d44ee1f9186324dd3e84e99ac68d699c45"
+checksum = "8de912b8b8feb55c064867cf047dda097f92d51efad5b491dfb98f6bbb70cb36"
 
 [[package]]
 name = "windows_x86_64_gnullvm"
-version = "0.42.1"
+version = "0.42.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "628bfdf232daa22b0d64fdb62b09fcc36bb01f05a3939e20ab73aaf9470d0463"
+checksum = "26d41b46a36d453748aedef1486d5c7a85db22e56aff34643984ea85514e94a3"
 
 [[package]]
 name = "windows_x86_64_msvc"
-version = "0.42.1"
+version = "0.42.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "447660ad36a13288b1db4d4248e857b510e8c3a225c822ba4fb748c0aafecffd"
+checksum = "9aec5da331524158c6d1a4ac0ab1541149c0b9505fde06423b02f5ef0106b9f0"
 
 [[package]]
 name = "winnow"
