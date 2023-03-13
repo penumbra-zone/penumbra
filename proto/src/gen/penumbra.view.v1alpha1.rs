@@ -46,6 +46,10 @@ pub struct TransactionPlannerRequest {
     pub delegations: ::prost::alloc::vec::Vec<transaction_planner_request::Delegate>,
     #[prost(message, repeated, tag = "50")]
     pub undelegations: ::prost::alloc::vec::Vec<transaction_planner_request::Undelegate>,
+    #[prost(message, repeated, tag = "60")]
+    pub ibc_actions: ::prost::alloc::vec::Vec<
+        super::super::core::ibc::v1alpha1::IbcAction,
+    >,
 }
 /// Nested message and enum types in `TransactionPlannerRequest`.
 pub mod transaction_planner_request {
