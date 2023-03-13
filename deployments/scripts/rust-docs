@@ -35,9 +35,9 @@ cargo $nightly_opt doc --no-deps \
   -p ark-serialize \
   -p ark-sponge \
   -p poseidon377 \
-  -p https://github.com/rust-lang/crates.io-index#poseidon-paramgen@0.1.0 \
+  -p poseidon-paramgen@0.1.1 \
   -p poseidon-permutation \
-  -p https://github.com/penumbra-zone/decaf377#0.2.0 \
+  -p decaf377@0.3.0 \
   -p decaf377-rdsa \
   -p decaf377-fmd \
   -p decaf377-ka \
