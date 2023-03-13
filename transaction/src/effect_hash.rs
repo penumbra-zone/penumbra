@@ -102,7 +102,6 @@ impl TransactionBody {
         let num_actions = self.actions.len() as u32;
         state.update(&num_actions.to_le_bytes());
         for action in &self.actions {
-            println!("hash action: {:?}", action);
             state.update(action.effect_hash().as_bytes());
         }
 

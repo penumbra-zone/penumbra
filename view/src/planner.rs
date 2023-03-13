@@ -157,7 +157,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// Open a liquidity position in the order book.
     #[instrument(skip(self))]
     pub fn position_open(&mut self, position: Position, initial_reserves: Reserves) -> &mut Self {
-        println!("Add PositionOpen");
         self.action(ActionPlan::PositionOpen(PositionOpen {
             position,
             initial_reserves,
