@@ -17,7 +17,7 @@ rust-version = "1.65"
 [dependencies]
 # Workspace dependencies
 penumbra-proto = { path = "../proto" }
-penumbra-chain = { path = "../chain" }
+penumbra-chain = { path = "../chain", features = ["parallel"] }
 penumbra-crypto = { path = "../crypto", features = ["parallel"] }
 penumbra-transaction = { path = "../transaction", features = ["parallel"] }
 penumbra-storage = { path = "../storage" }

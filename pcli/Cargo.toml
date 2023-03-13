@@ -20,7 +20,7 @@ std = ["ark-ff/std"]
 # Workspace dependencies
 jmt = "0.3"
 penumbra-proto = { path = "../proto" }
-penumbra-chain = { path = "../chain" }
+penumbra-chain = { path = "../chain", features = ["parallel"] }
 penumbra-crypto = { path = "../crypto", features = ["parallel"] }
 penumbra-transaction = { path = "../transaction", features = ["clap", "parallel"] }
 penumbra-wallet = { path = "../wallet", features = ["parallel"] }

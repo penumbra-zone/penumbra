@@ -55,4 +55,4 @@ serde_json = "1"
 [features]
 default = ["std"]
 std = ["ark-ff/std"]
-parallel = ["decaf377-rdsa/parallel", "tokio", "ark-ff/parallel", "penumbra-tct/parallel", "decaf377-ka/parallel", "decaf377-fmd/parallel", "penumbra-crypto/parallel", "decaf377/parallel", "penumbra-proof-params/parallel"]
+parallel = ["decaf377-rdsa/parallel", "penumbra-chain/parallel", "tokio", "ark-ff/parallel", "penumbra-tct/parallel", "decaf377-ka/parallel", "decaf377-fmd/parallel", "penumbra-crypto/parallel", "decaf377/parallel", "penumbra-proof-params/parallel"]

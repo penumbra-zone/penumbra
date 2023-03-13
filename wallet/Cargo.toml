@@ -46,4 +46,4 @@ once_cell = "1"
 
 [features]
 default = []
-parallel = ["penumbra-crypto/parallel", "penumbra-tct/parallel", "penumbra-component/parallel", "penumbra-view/parallel" ]
+parallel = ["penumbra-crypto/parallel", "penumbra-chain/parallel", "penumbra-tct/parallel", "penumbra-component/parallel", "penumbra-view/parallel" ]
