@@ -26,7 +26,7 @@ pub mod symmetric;
 pub mod transaction;
 pub mod value;
 
-pub use address::Address;
+pub use address::{Address, AddressView};
 pub use asset::Amount;
 pub use asset::Asset;
 pub use balance::Balance;

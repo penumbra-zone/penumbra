@@ -10,6 +10,9 @@ use serde::{Deserialize, Serialize};
 mod r1cs;
 pub use r1cs::AddressVar;
 
+mod view;
+pub use view::AddressView;
+
 use crate::{fmd, ka, keys::Diversifier, Fq};
 
 pub const ADDRESS_LEN_BYTES: usize = 80;
