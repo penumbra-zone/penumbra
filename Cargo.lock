@@ -1434,32 +1434,6 @@ dependencies = [
 
 [[package]]
 name = "decaf377"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18207ab15ce20be28688fd467db029717d1e9cd52be6fdb35c36b33f438b1e45"
-dependencies = [
- "anyhow",
- "ark-bls12-377",
- "ark-ec",
- "ark-ed-on-bls12-377",
- "ark-ff",
- "ark-groth16",
- "ark-r1cs-std",
- "ark-relations",
- "ark-serialize",
- "ark-snark",
- "ark-std",
- "hex",
- "num-bigint",
- "once_cell",
- "thiserror",
- "tracing",
- "tracing-subscriber 0.2.25",
- "zeroize",
-]
-
-[[package]]
-name = "decaf377"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5eda36fea55fdf1651c30440ba57d92b2dc14dc2e23a862e640babeef6bde8f9"
@@ -1493,7 +1467,7 @@ dependencies = [
  "bitvec",
  "blake2b_simd 0.5.11",
  "criterion",
- "decaf377 0.3.0",
+ "decaf377",
  "proptest",
  "rand_core",
  "thiserror",
@@ -1504,7 +1478,7 @@ name = "decaf377-ka"
 version = "0.1.0"
 dependencies = [
  "ark-ff",
- "decaf377 0.3.0",
+ "decaf377",
  "hex",
  "proptest",
  "rand_core",
@@ -1522,7 +1496,7 @@ dependencies = [
  "ark-serialize",
  "blake2b_simd 0.5.11",
  "byteorder",
- "decaf377 0.3.0",
+ "decaf377",
  "digest 0.9.0",
  "hex",
  "rand_core",
@@ -1868,7 +1842,7 @@ dependencies = [
  "ark-ff",
  "ark-poly",
  "blake2b_simd 0.5.11",
- "decaf377 0.3.0",
+ "decaf377",
  "rand",
 ]
 
@@ -3381,7 +3355,7 @@ dependencies = [
  "clap 3.2.23",
  "colored_json",
  "comfy-table",
- "decaf377 0.3.0",
+ "decaf377",
  "directories",
  "ed25519-consensus",
  "futures",
@@ -3415,7 +3389,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tokio-util 0.7.7",
- "toml 0.7.2",
+ "toml 0.7.3",
  "tonic",
  "tower",
  "tracing",
@@ -3488,7 +3462,7 @@ dependencies = [
  "clap 3.2.23",
  "console-subscriber",
  "csv",
- "decaf377 0.3.0",
+ "decaf377",
  "directories",
  "ed25519-consensus",
  "futures",
@@ -3586,7 +3560,7 @@ dependencies = [
  "ark-ff",
  "async-trait",
  "bytes",
- "decaf377 0.3.0",
+ "decaf377",
  "hex",
  "ibc",
  "ics23",
@@ -3614,7 +3588,7 @@ dependencies = [
  "bincode",
  "bitvec",
  "blake2b_simd 0.5.11",
- "decaf377 0.3.0",
+ "decaf377",
  "ed25519-consensus",
  "futures",
  "hex",
@@ -3669,7 +3643,7 @@ dependencies = [
  "blake2b_simd 0.5.11",
  "bytes",
  "chacha20poly1305",
- "decaf377 0.3.0",
+ "decaf377",
  "decaf377-fmd",
  "decaf377-ka",
  "decaf377-rdsa",
@@ -3685,7 +3659,7 @@ dependencies = [
  "pbkdf2",
  "penumbra-proto",
  "penumbra-tct",
- "poseidon-paramgen 0.1.0 (git+https://github.com/penumbra-zone/poseidon377?rev=a2d8c7a3288e2e877ac88a4d8fd3cc4ff2b52c04)",
+ "poseidon-paramgen",
  "poseidon377",
  "proptest",
  "rand",
@@ -3730,7 +3704,7 @@ dependencies = [
  "anyhow",
  "ark-ff",
  "ark-std",
- "decaf377 0.3.0",
+ "decaf377",
  "futures",
  "merlin",
  "parking_lot 0.12.1",
@@ -3772,7 +3746,7 @@ dependencies = [
  "ark-serialize",
  "ark-snark",
  "ark-std",
- "decaf377 0.3.0",
+ "decaf377",
  "num-bigint",
  "once_cell",
  "penumbra-crypto",
@@ -3845,7 +3819,7 @@ dependencies = [
  "ark-serialize",
  "async-trait",
  "blake2b_simd 1.0.1",
- "decaf377 0.3.0",
+ "decaf377",
  "derivative",
  "futures",
  "hash_hasher",
@@ -3887,7 +3861,7 @@ dependencies = [
  "axum-server",
  "bytes",
  "clap 3.2.23",
- "decaf377 0.3.0",
+ "decaf377",
  "futures",
  "hex",
  "include-flate",
@@ -3922,7 +3896,7 @@ dependencies = [
  "bytes",
  "chacha20poly1305",
  "clap 3.2.23",
- "decaf377 0.3.0",
+ "decaf377",
  "decaf377-fmd",
  "decaf377-ka",
  "decaf377-rdsa",
@@ -4129,46 +4103,45 @@ dependencies = [
 ]
 
 [[package]]
-name = "poseidon-paramgen"
+name = "poseidon-parameters"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6aaee7da4206270e6530bc1ec1ff1d930f67239396412c2a1c13e200daf88eaa"
+source = "git+https://github.com/penumbra-zone/poseidon377?branch=update-decaf377#f1a980eb5a71155e7a07582c3f2a2a0aa5f8993c"
 dependencies = [
  "anyhow",
  "ark-ff",
- "merlin",
- "num",
- "num-bigint",
- "rand_core",
+ "num-integer",
 ]
 
 [[package]]
 name = "poseidon-paramgen"
-version = "0.1.0"
-source = "git+https://github.com/penumbra-zone/poseidon377?rev=a2d8c7a3288e2e877ac88a4d8fd3cc4ff2b52c04#a2d8c7a3288e2e877ac88a4d8fd3cc4ff2b52c04"
+version = "0.1.1"
+source = "git+https://github.com/penumbra-zone/poseidon377?branch=update-decaf377#f1a980eb5a71155e7a07582c3f2a2a0aa5f8993c"
 dependencies = [
  "anyhow",
  "ark-ff",
+ "ark-std",
+ "getrandom",
  "merlin",
  "num",
  "num-bigint",
+ "poseidon-parameters",
  "rand_core",
 ]
 
 [[package]]
 name = "poseidon-permutation"
-version = "0.1.0"
-source = "git+https://github.com/penumbra-zone/poseidon377?rev=a2d8c7a3288e2e877ac88a4d8fd3cc4ff2b52c04#a2d8c7a3288e2e877ac88a4d8fd3cc4ff2b52c04"
+version = "0.1.1"
+source = "git+https://github.com/penumbra-zone/poseidon377?branch=update-decaf377#f1a980eb5a71155e7a07582c3f2a2a0aa5f8993c"
 dependencies = [
  "ark-ff",
- "once_cell",
- "poseidon-paramgen 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ark-std",
+ "poseidon-parameters",
 ]
 
 [[package]]
 name = "poseidon377"
-version = "0.1.0"
-source = "git+https://github.com/penumbra-zone/poseidon377?rev=a2d8c7a3288e2e877ac88a4d8fd3cc4ff2b52c04#a2d8c7a3288e2e877ac88a4d8fd3cc4ff2b52c04"
+version = "0.1.1"
+source = "git+https://github.com/penumbra-zone/poseidon377?branch=update-decaf377#f1a980eb5a71155e7a07582c3f2a2a0aa5f8993c"
 dependencies = [
  "ark-ed-on-bls12-377",
  "ark-ff",
@@ -4177,10 +4150,11 @@ dependencies = [
  "ark-relations",
  "ark-snark",
  "ark-sponge",
- "decaf377 0.1.1",
+ "decaf377",
  "num-bigint",
  "once_cell",
- "poseidon-paramgen 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "poseidon-parameters",
+ "poseidon-paramgen",
  "poseidon-permutation",
 ]
 
@@ -5872,9 +5846,9 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "0.7.2"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f7afcae9e3f0fe2c370fd4657108972cbb2fa9db1b9f84849cefd80741b01cb6"
+checksum = "b403acf6f2bb0859c93c7f0d967cb4a75a7ac552100f9322faf64dc047669b21"
 dependencies = [
  "indexmap",
  "serde",
@@ -5894,9 +5868,9 @@ dependencies = [
 
 [[package]]
 name = "toml_edit"
-version = "0.19.5"
+version = "0.19.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7082a95d48029677a28f181e5f6422d0c8339ad8396a39d3f33d62a90c1f6c30"
+checksum = "08de71aa0d6e348f070457f85af8bd566e2bc452156a423ddf22861b3a953fae"
 dependencies = [
  "indexmap",
  "serde",

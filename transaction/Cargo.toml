@@ -16,7 +16,7 @@ penumbra-proof-params = { path = "../proof-params/", features = ["proving-keys"]
 # Git deps
 decaf377 = "0.3"
 decaf377-rdsa = { version = "0.5", git = "https://github.com/penumbra-zone/decaf377-rdsa" }
-poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377", rev = "a2d8c7a3288e2e877ac88a4d8fd3cc4ff2b52c04" }
+poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377", branch = "update-decaf377" }
 ibc = "0.29"
 ibc-proto = { version = "0.26", features = ["std"] }
 
@@ -55,4 +55,4 @@ serde_json = "1"
 [features]
 default = ["std"]
 std = ["ark-ff/std"]
-parallel = ["decaf377-rdsa/parallel", "penumbra-chain/parallel", "tokio", "ark-ff/parallel", "penumbra-tct/parallel", "decaf377-ka/parallel", "decaf377-fmd/parallel", "penumbra-crypto/parallel", "decaf377/parallel", "penumbra-proof-params/parallel"]
+parallel = ["decaf377-rdsa/parallel", "penumbra-chain/parallel", "poseidon377/parallel", "tokio", "ark-ff/parallel", "penumbra-tct/parallel", "decaf377-ka/parallel", "decaf377-fmd/parallel", "penumbra-crypto/parallel", "decaf377/parallel", "penumbra-proof-params/parallel"]

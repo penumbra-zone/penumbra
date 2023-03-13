@@ -15,8 +15,8 @@ penumbra-tct = { path = "../tct/", features = ["r1cs"] }
 # Git deps
 decaf377 = {version = "0.3", features = ["r1cs"] }
 decaf377-rdsa = { version = "0.5", git = "https://github.com/penumbra-zone/decaf377-rdsa" }
-poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377", rev = "a2d8c7a3288e2e877ac88a4d8fd3cc4ff2b52c04", features = ["r1cs"] }
-poseidon-paramgen = { git = "https://github.com/penumbra-zone/poseidon377", rev = "a2d8c7a3288e2e877ac88a4d8fd3cc4ff2b52c04" }
+poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377", branch = "update-decaf377", features = ["r1cs"] }
+poseidon-paramgen = { git = "https://github.com/penumbra-zone/poseidon377", branch = "update-decaf377" }
 f4jumble = { git = "https://github.com/zcash/librustzcash", rev = "2425a0869098e3b0588ccd73c42716bcf418612c" }
 
 # Crates.io deps
@@ -64,4 +64,4 @@ frost377 = { git = "https://github.com/penumbra-zone/frost377", default-features
 
 [features]
 default = []
-parallel = ["penumbra-tct/parallel", "ark-ff/parallel", "decaf377-rdsa/parallel", "penumbra-tct/parallel", "decaf377-fmd/parallel", "decaf377-ka/parallel", "ark-groth16/parallel", "ark-std/parallel", "ark-r1cs-std/parallel", "decaf377/parallel", "frost377/parallel"]
+parallel = ["penumbra-tct/parallel", "ark-ff/parallel", "poseidon377/parallel", "decaf377-rdsa/parallel", "penumbra-tct/parallel", "decaf377-fmd/parallel", "decaf377-ka/parallel", "ark-groth16/parallel", "ark-std/parallel", "ark-r1cs-std/parallel", "decaf377/parallel", "frost377/parallel"]
