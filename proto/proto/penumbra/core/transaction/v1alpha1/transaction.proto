@@ -204,22 +204,6 @@ message OutputView {
   }
 }
 
-message AddressView {
-    message Visible {
-    crypto.v1alpha1.Address address = 1;
-    crypto.v1alpha1.AddressIndex index = 2;
-
-  }
-
-  message Opaque {
-    crypto.v1alpha1.Address output = 1;
-  }
-  oneof address_view {
-    Visible visible = 1;
-    Opaque opaque = 2;
-  }
-}
-
 // Spends a shielded note.
 message Spend {
   // The effecting data of the spend.
