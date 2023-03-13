@@ -16,7 +16,7 @@ default = []
 # When this feature is enabled, the view worker will request every single
 # SCT root, to pinpoint exactly where any SCT root divergence occurs.
 sct-divergence-check = []
-parallel = ["penumbra-crypto/parallel", "penumbra-chain/parallel", "penumbra-tct/parallel", "penumbra-component/parallel", "penumbra-transaction/parallel" ]
+parallel = ["penumbra-crypto/parallel", "penumbra-custody/parallel", "penumbra-chain/parallel", "penumbra-tct/parallel", "penumbra-component/parallel", "penumbra-transaction/parallel" ]
 
 [dependencies]
 # Workspace dependencies

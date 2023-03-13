@@ -25,7 +25,7 @@ penumbra-crypto = { path = "../crypto", features = ["parallel"] }
 penumbra-transaction = { path = "../transaction", features = ["clap", "parallel"] }
 penumbra-wallet = { path = "../wallet", features = ["parallel"] }
 penumbra-view = { path = "../view", features = ["parallel"] }
-penumbra-custody = { path = "../custody" }
+penumbra-custody = { path = "../custody", features = ["parallel"] }
 penumbra-tct = { path = "../tct", features = ["parallel"] }
 # TODO: replace by a penumbra-app
 penumbra-component = { path = "../component", features = ["parallel"] }
