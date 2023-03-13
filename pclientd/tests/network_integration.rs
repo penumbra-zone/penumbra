@@ -12,6 +12,7 @@ use pclientd::PclientdConfig;
 use penumbra_chain::test_keys;
 use penumbra_custody::soft_kms;
 use penumbra_proto::{
+    core::ibc::v1alpha1::IbcAction,
     custody::v1alpha1::{
         custody_protocol_service_client::CustodyProtocolServiceClient, AuthorizeRequest,
     },
@@ -85,6 +86,21 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
     // protos manually, with no access to Penumbra crypto.
     use penumbra_proto::view::v1alpha1::transaction_planner_request as tpr;
 
+    // Specifically, pretend we're relaying IBC messages, so pull one in:
+
+    // base64 encoded MsgCreateClient that was used to create the currently in-use Stargaze
+    // light client on the cosmos hub:
+    // https://cosmos.bigdipper.live/transactions/13C1ECC54F088473E2925AD497DDCC092101ADE420BC64BADE67D34A75769CE9
+    let msg_create_client_stargaze_raw = base64::decode(
+        include_str!("../../component/src/ibc/test/create_client.msg").replace('\n', ""),
+    )
+    .unwrap();
+    use ibc::core::ics02_client::msgs::create_client::MsgCreateClient;
+    use ibc_proto::protobuf::Protobuf;
+    let msg_create_stargaze_client =
+        MsgCreateClient::decode(msg_create_client_stargaze_raw.as_slice()).unwrap();
+    let create_client_action: IbcAction = msg_create_stargaze_client.into();
+
     // 5.1. Generate a transaction plan sending funds to an address.
     let plan = view_client
         .transaction_planner(TransactionPlannerRequest {
@@ -99,6 +115,7 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
                     .into(),
                 ),
             }],
+            ibc_actions: vec![create_client_action],
             ..Default::default()
         })
         .await?

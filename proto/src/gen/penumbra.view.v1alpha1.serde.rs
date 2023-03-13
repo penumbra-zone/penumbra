@@ -4314,6 +4314,9 @@ impl serde::Serialize for TransactionPlannerRequest {
         if !self.undelegations.is_empty() {
             len += 1;
         }
+        if !self.ibc_actions.is_empty() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.TransactionPlannerRequest", len)?;
         if self.expiry_height != 0 {
             struct_ser.serialize_field("expiryHeight", ToString::to_string(&self.expiry_height).as_str())?;
@@ -4342,6 +4345,9 @@ impl serde::Serialize for TransactionPlannerRequest {
         if !self.undelegations.is_empty() {
             struct_ser.serialize_field("undelegations", &self.undelegations)?;
         }
+        if !self.ibc_actions.is_empty() {
+            struct_ser.serialize_field("ibcActions", &self.ibc_actions)?;
+        }
         struct_ser.end()
     }
 }
@@ -4363,6 +4369,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             "swaps",
             "delegations",
             "undelegations",
+            "ibc_actions",
+            "ibcActions",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -4376,6 +4384,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             Swaps,
             Delegations,
             Undelegations,
+            IbcActions,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -4406,6 +4415,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             "swaps" => Ok(GeneratedField::Swaps),
                             "delegations" => Ok(GeneratedField::Delegations),
                             "undelegations" => Ok(GeneratedField::Undelegations),
+                            "ibcActions" | "ibc_actions" => Ok(GeneratedField::IbcActions),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -4434,6 +4444,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                 let mut swaps__ = None;
                 let mut delegations__ = None;
                 let mut undelegations__ = None;
+                let mut ibc_actions__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::ExpiryHeight => {
@@ -4492,6 +4503,12 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             }
                             undelegations__ = Some(map.next_value()?);
                         }
+                        GeneratedField::IbcActions => {
+                            if ibc_actions__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("ibcActions"));
+                            }
+                            ibc_actions__ = Some(map.next_value()?);
+                        }
                     }
                 }
                 Ok(TransactionPlannerRequest {
@@ -4504,6 +4521,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                     swaps: swaps__.unwrap_or_default(),
                     delegations: delegations__.unwrap_or_default(),
                     undelegations: undelegations__.unwrap_or_default(),
+                    ibc_actions: ibc_actions__.unwrap_or_default(),
                 })
             }
         }

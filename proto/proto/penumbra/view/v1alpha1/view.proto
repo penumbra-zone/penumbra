@@ -6,6 +6,7 @@ import "penumbra/core/chain/v1alpha1/chain.proto";
 import "penumbra/core/crypto/v1alpha1/crypto.proto";
 import "penumbra/core/dex/v1alpha1/dex.proto";
 import "penumbra/core/transaction/v1alpha1/transaction.proto";
+import "penumbra/core/ibc/v1alpha1/ibc.proto";
 
 // The view protocol is used by a view client, who wants to do some
 // transaction-related actions, to request data from a view service, which is
@@ -116,6 +117,7 @@ message TransactionPlannerRequest {
   repeated Swap swaps = 30;
   repeated Delegate delegations = 40;
   repeated Undelegate undelegations = 50;
+  repeated penumbra.core.ibc.v1alpha1.IbcAction ibc_actions = 60;
 
   // Request message subtypes
   message Output {

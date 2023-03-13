@@ -32,7 +32,8 @@ use penumbra_proto::{
 };
 use penumbra_tct::{Commitment, Proof};
 use penumbra_transaction::{
-    plan::TransactionPlan, AuthorizationData, Transaction, TransactionPerspective, WitnessData,
+    plan::{ActionPlan, TransactionPlan},
+    AuthorizationData, Transaction, TransactionPerspective, WitnessData,
 };
 use rand::Rng;
 use rand_core::OsRng;
@@ -400,11 +401,21 @@ impl ViewProtocolService for ViewService {
         let fvk = self.storage.full_viewing_key().await.map_err(|e| {
             tonic::Status::failed_precondition(format!("Error retrieving full viewing key: {e:#}"))
         })?;
-        let plan = planner
+        let mut plan = planner
             .plan(&mut client_of_self, fvk.account_id(), 0u32.into())
             .await
             .context("could not plan requested transaction")
             .map_err(|e| tonic::Status::invalid_argument(format!("{e:#}")))?;
+
+        // Finally, insert all the requested IBC actions.  This is just stuffing
+        // the protos in, since IBC actions are just data relaying, and have no
+        // effect on the transaction's value balance etc.  TODO: after
+        // implementing fees, this will need to be supported as part of the
+        // Planner API, since the IBC actions will affect the required fees and
+        // thus the value balance.
+        for ibc_action in prq.ibc_actions {
+            plan.actions.push(ActionPlan::IBCAction(ibc_action));
+        }
 
         Ok(tonic::Response::new(TransactionPlannerResponse {
             plan: Some(plan.into()),
