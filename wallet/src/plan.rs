@@ -5,7 +5,7 @@ use anyhow::{Context, Result};
 use penumbra_component::stake::rate::RateData;
 use penumbra_component::stake::validator;
 use penumbra_crypto::{
-    keys::{AccountID, AddressIndex},
+    keys::{AccountGroupId, AddressIndex},
     memo::MemoPlaintext,
     transaction::Fee,
     Address, Amount, FullViewingKey, Value,
@@ -26,7 +26,7 @@ use tracing::instrument;
 pub use penumbra_view::Planner;
 
 pub async fn validator_definition<V, R>(
-    account_id: AccountID,
+    account_group_id: AccountGroupId,
     view: &mut V,
     rng: R,
     new_validator: validator::Definition,
@@ -40,13 +40,13 @@ where
     Planner::new(rng)
         .fee(fee)
         .validator_definition(new_validator)
-        .plan(view, account_id, source_address)
+        .plan(view, account_group_id, source_address)
         .await
         .context("can't build validator definition plan")
 }
 
 pub async fn validator_vote<V, R>(
-    account_id: AccountID,
+    account_group_id: AccountGroupId,
     view: &mut V,
     rng: R,
     vote: ValidatorVote,
@@ -60,15 +60,23 @@ where
     Planner::new(rng)
         .fee(fee)
         .validator_vote(vote)
-        .plan(view, account_id, source_address)
+        .plan(view, account_group_id, source_address)
         .await
         .context("can't build validator vote plan")
 }
 
 /// Generate a new transaction plan delegating stake
-#[instrument(skip(account_id, view, rng, rate_data, unbonded_amount, fee, source_address))]
+#[instrument(skip(
+    account_group_id,
+    view,
+    rng,
+    rate_data,
+    unbonded_amount,
+    fee,
+    source_address
+))]
 pub async fn delegate<V, R>(
-    account_id: AccountID,
+    account_group_id: AccountGroupId,
     view: &mut V,
     rng: R,
     rate_data: RateData,
@@ -83,14 +91,14 @@ where
     Planner::new(rng)
         .fee(fee)
         .delegate(unbonded_amount, rate_data)
-        .plan(view, account_id, source_address)
+        .plan(view, account_group_id, source_address)
         .await
         .context("can't build delegate plan")
 }
 
 #[allow(clippy::too_many_arguments)]
 #[instrument(skip(
-    account_id,
+    account_group_id,
     view,
     rng,
     values,
@@ -100,7 +108,7 @@ where
     tx_memo
 ))]
 pub async fn send<V, R>(
-    account_id: AccountID,
+    account_group_id: AccountGroupId,
     view: &mut V,
     rng: R,
     values: &[Value],
@@ -121,14 +129,14 @@ where
     }
     planner
         .memo(tx_memo.unwrap_or_default())?
-        .plan(view, account_id, source_address)
+        .plan(view, account_group_id, source_address)
         .await
         .context("can't build send transaction")
 }
 
-#[instrument(skip(account_id, view, rng))]
+#[instrument(skip(account_group_id, view, rng))]
 pub async fn sweep<V, R>(
-    account_id: AccountID,
+    account_group_id: AccountGroupId,
     view: &mut V,
     mut rng: R,
     specific_client: SpecificQueryServiceClient<Channel>,
@@ -145,7 +153,7 @@ where
 
     // Finally, sweep dust notes by spending them to their owner's address.
     // This will consolidate small-value notes into larger ones.
-    plans.extend(sweep_notes(account_id, view, &mut rng).await?);
+    plans.extend(sweep_notes(account_group_id, view, &mut rng).await?);
 
     Ok(plans)
 }
@@ -180,7 +188,7 @@ where
     // Fetch all spendable notes ahead of time so we can see which swap NFTs are unspent.
     let all_notes = view
         .notes(NotesRequest {
-            account_id: Some(fvk.hash().into()),
+            account_group_id: Some(fvk.hash().into()),
             ..Default::default()
         })
         .await?;
@@ -241,9 +249,9 @@ where
     unimplemented!("This function has not been implemented since we changed the swap mechanism to auto-claim in scanning.")
 }
 
-#[instrument(skip(account_id, view, rng))]
+#[instrument(skip(account_group_id, view, rng))]
 pub async fn sweep_notes<V, R>(
-    account_id: AccountID,
+    account_group_id: AccountGroupId,
     view: &mut V,
     mut rng: R,
 ) -> Result<Vec<TransactionPlan>, anyhow::Error>
@@ -255,7 +263,7 @@ where
 
     let all_notes = view
         .notes(NotesRequest {
-            account_id: Some(account_id.into()),
+            account_group_id: Some(account_group_id.into()),
             ..Default::default()
         })
         .await?;
@@ -295,7 +303,7 @@ where
                 }
 
                 let plan = planner
-                    .plan(view, account_id, index)
+                    .plan(view, account_group_id, index)
                     .await
                     .context("can't build sweep transaction")?;
 
@@ -308,9 +316,9 @@ where
     Ok(plans)
 }
 
-#[instrument(skip(account_id, view, rng))]
+#[instrument(skip(account_group_id, view, rng))]
 pub async fn proposal_submit<V, R>(
-    account_id: AccountID,
+    account_group_id: AccountGroupId,
     view: &mut V,
     rng: R,
     proposal: Proposal,
@@ -324,15 +332,15 @@ where
     Planner::new(rng)
         .fee(fee)
         .proposal_submit(proposal, view.chain_params().await?.proposal_deposit_amount)
-        .plan(view, account_id, source_address)
+        .plan(view, account_group_id, source_address)
         .await
         .context("can't build proposal submit transaction")
 }
 
 #[allow(clippy::too_many_arguments)]
-#[instrument(skip(account_id, view, rng))]
+#[instrument(skip(account_group_id, view, rng))]
 pub async fn proposal_withdraw<V, R>(
-    account_id: AccountID,
+    account_group_id: AccountGroupId,
     view: &mut V,
     rng: R,
     proposal_id: u64,
@@ -347,15 +355,15 @@ where
     Planner::new(rng)
         .fee(fee)
         .proposal_withdraw(proposal_id, reason)
-        .plan(view, account_id, source_address)
+        .plan(view, account_group_id, source_address)
         .await
         .context("can't build proposal withdraw transaction")
 }
 
 #[allow(clippy::too_many_arguments)]
-#[instrument(skip(account_id, view, rng))]
+#[instrument(skip(account_group_id, view, rng))]
 pub async fn proposal_deposit_claim<V, R>(
-    account_id: AccountID,
+    account_group_id: AccountGroupId,
     view: &mut V,
     rng: R,
     proposal_id: u64,
@@ -371,7 +379,7 @@ where
     Planner::new(rng)
         .fee(fee)
         .proposal_deposit_claim(proposal_id, deposit_amount, outcome)
-        .plan(view, account_id, source_address)
+        .plan(view, account_group_id, source_address)
         .await
         .context("can't build proposal withdraw transaction")
 }

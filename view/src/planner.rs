@@ -13,7 +13,7 @@ use penumbra_crypto::{
     asset::Amount,
     asset::Denom,
     dex::{lp::position::Position, swap::SwapPlaintext, TradingPair},
-    keys::{AccountID, AddressIndex},
+    keys::{AccountGroupId, AddressIndex},
     memo::MemoPlaintext,
     stake::IdentityKey,
     transaction::Fee,
@@ -83,14 +83,14 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// Get all the note requests necessary to fulfill the current [`Balance`].
     pub fn notes_requests(
         &self,
-        account_id: AccountID,
+        account_group_id: AccountGroupId,
         source: AddressIndex,
     ) -> (Vec<NotesRequest>, Vec<NotesForVotingRequest>) {
         (
             self.balance
                 .required()
                 .map(|Value { asset_id, amount }| NotesRequest {
-                    account_id: Some(account_id.into()),
+                    account_group_id: Some(account_group_id.into()),
                     asset_id: Some(asset_id.into()),
                     address_index: Some(source.into()),
                     amount_to_spend: amount.into(),
@@ -107,7 +107,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                             start_block_height, ..
                         },
                     )| NotesForVotingRequest {
-                        account_id: Some(account_id.into()),
+                        account_group_id: Some(account_group_id.into()),
                         votable_at_height: *start_block_height,
                         address_index: Some(source.into()),
                         ..Default::default()
@@ -395,7 +395,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     pub async fn plan<V: ViewClient>(
         &mut self,
         view: &mut V,
-        account_id: AccountID,
+        account_group_id: AccountGroupId,
         source: AddressIndex,
     ) -> anyhow::Result<TransactionPlan> {
         // Gather all the information needed from the view service
@@ -403,7 +403,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         let fmd_params = view.fmd_parameters().await?;
         let mut spendable_notes = Vec::new();
         let mut voting_notes = Vec::new();
-        let (spendable_requests, voting_requests) = self.notes_requests(account_id, source);
+        let (spendable_requests, voting_requests) = self.notes_requests(account_group_id, source);
         for request in spendable_requests {
             let notes = view.notes(request).await?;
             spendable_notes.extend(notes);

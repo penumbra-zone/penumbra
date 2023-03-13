@@ -27,7 +27,7 @@ message FullViewingKey {
     bytes inner = 1;
 }
 
-message AccountID {
+message AccountGroupId {
     bytes inner = 1;
 }
 

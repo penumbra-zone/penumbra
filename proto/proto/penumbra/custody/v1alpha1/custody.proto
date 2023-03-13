@@ -25,7 +25,7 @@ message AuthorizeRequest {
   // The transaction plan to authorize.
   core.transaction.v1alpha1.TransactionPlan plan = 1;
   // Identifies the FVK (and hence the spend authorization key) to use for signing.
-  core.crypto.v1alpha1.AccountID account_id = 2;
+  core.crypto.v1alpha1.AccountGroupId account_group_id = 2;
 
   // Optionally, pre-authorization data, if required by the custodian.
   //

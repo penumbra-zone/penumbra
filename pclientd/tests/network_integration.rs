@@ -74,7 +74,7 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
 
     // 4. Use the view protocol to wait for it to sync.
     let mut status_stream = (&mut view_client as &mut dyn ViewClient)
-        .status_stream(test_keys::FULL_VIEWING_KEY.account_id())
+        .status_stream(test_keys::FULL_VIEWING_KEY.account_group_id())
         .await?;
     while let Some(item) = status_stream.as_mut().next().await.transpose()? {
         tracing::debug!(?item);
@@ -104,7 +104,7 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
     // 5.1. Generate a transaction plan sending funds to an address.
     let plan = view_client
         .transaction_planner(TransactionPlannerRequest {
-            account_id: Some(test_keys::ACCOUNT_ID.clone().into()),
+            account_group_id: Some(test_keys::ACCOUNT_ID.clone().into()),
             outputs: vec![tpr::Output {
                 address: Some(test_keys::ADDRESS_1.clone().into()),
                 value: Some(
@@ -127,7 +127,7 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
     let auth_data = custody_client
         .authorize(AuthorizeRequest {
             plan: Some(plan.clone()),
-            account_id: Some(test_keys::ACCOUNT_ID.clone().into()),
+            account_group_id: Some(test_keys::ACCOUNT_ID.clone().into()),
             pre_authorizations: Vec::new(),
         })
         .await?

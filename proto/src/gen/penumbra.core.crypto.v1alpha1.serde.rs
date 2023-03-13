@@ -1,4 +1,4 @@
-impl serde::Serialize for AccountId {
+impl serde::Serialize for AccountGroupId {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -9,14 +9,14 @@ impl serde::Serialize for AccountId {
         if !self.inner.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.crypto.v1alpha1.AccountID", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.crypto.v1alpha1.AccountGroupId", len)?;
         if !self.inner.is_empty() {
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for AccountId {
+impl<'de> serde::Deserialize<'de> for AccountGroupId {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -60,13 +60,13 @@ impl<'de> serde::Deserialize<'de> for AccountId {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = AccountId;
+            type Value = AccountGroupId;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.crypto.v1alpha1.AccountID")
+                formatter.write_str("struct penumbra.core.crypto.v1alpha1.AccountGroupId")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<AccountId, V::Error>
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<AccountGroupId, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -83,12 +83,12 @@ impl<'de> serde::Deserialize<'de> for AccountId {
                         }
                     }
                 }
-                Ok(AccountId {
+                Ok(AccountGroupId {
                     inner: inner__.unwrap_or_default(),
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.crypto.v1alpha1.AccountID", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.core.crypto.v1alpha1.AccountGroupId", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for Address {

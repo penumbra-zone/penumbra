@@ -10,7 +10,7 @@ use camino::Utf8Path;
 use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_crypto::{
     asset,
-    keys::{AccountID, AddressIndex, FullViewingKey},
+    keys::{AccountGroupId, AddressIndex, FullViewingKey},
     transaction::Fee,
     Amount,
 };
@@ -58,7 +58,7 @@ pub struct ViewService {
     // A shared error slot for errors bubbled up by the worker. This is a regular Mutex
     // rather than a Tokio Mutex because it should be uncontended.
     error_slot: Arc<Mutex<Option<anyhow::Error>>>,
-    account_id: AccountID,
+    account_group_id: AccountGroupId,
     // A copy of the SCT used by the worker task.
     state_commitment_tree: Arc<RwLock<penumbra_tct::Tree>>,
     // The address of the pd+tendermint node.
@@ -96,11 +96,11 @@ impl ViewService {
         tokio::spawn(worker.run());
 
         let fvk = storage.full_viewing_key().await?;
-        let account_id = fvk.account_id();
+        let account_group_id = fvk.account_group_id();
 
         Ok(Self {
             storage,
-            account_id,
+            account_group_id: account_group_id,
             error_slot,
             sync_height_rx,
             state_commitment_tree: sct,
@@ -109,12 +109,12 @@ impl ViewService {
         })
     }
 
-    async fn check_fvk(&self, fvk: Option<&pbc::AccountId>) -> Result<(), tonic::Status> {
+    async fn check_fvk(&self, fvk: Option<&pbc::AccountGroupId>) -> Result<(), tonic::Status> {
         // Takes an Option to avoid making the caller handle missing fields,
         // should error on None or wrong account ID
         match fvk {
             Some(fvk) => {
-                if fvk != &self.account_id.into() {
+                if fvk != &self.account_group_id.into() {
                     return Err(tonic::Status::new(
                         tonic::Code::InvalidArgument,
                         "Invalid account ID",
@@ -402,7 +402,7 @@ impl ViewProtocolService for ViewService {
             tonic::Status::failed_precondition(format!("Error retrieving full viewing key: {e:#}"))
         })?;
         let mut plan = planner
-            .plan(&mut client_of_self, fvk.account_id(), 0u32.into())
+            .plan(&mut client_of_self, fvk.account_group_id(), 0u32.into())
             .await
             .context("could not plan requested transaction")
             .map_err(|e| tonic::Status::invalid_argument(format!("{e:#}")))?;
@@ -561,7 +561,7 @@ impl ViewProtocolService for ViewService {
         request: tonic::Request<pb::SwapByCommitmentRequest>,
     ) -> Result<tonic::Response<pb::SwapByCommitmentResponse>, tonic::Status> {
         self.check_worker().await?;
-        self.check_fvk(request.get_ref().account_id.as_ref())
+        self.check_fvk(request.get_ref().account_group_id.as_ref())
             .await?;
 
         let request = request.into_inner();
@@ -629,7 +629,7 @@ impl ViewProtocolService for ViewService {
         request: tonic::Request<pb::NoteByCommitmentRequest>,
     ) -> Result<tonic::Response<pb::NoteByCommitmentResponse>, tonic::Status> {
         self.check_worker().await?;
-        self.check_fvk(request.get_ref().account_id.as_ref())
+        self.check_fvk(request.get_ref().account_group_id.as_ref())
             .await?;
 
         let request = request.into_inner();
@@ -661,7 +661,7 @@ impl ViewProtocolService for ViewService {
         request: tonic::Request<pb::NullifierStatusRequest>,
     ) -> Result<tonic::Response<pb::NullifierStatusResponse>, tonic::Status> {
         self.check_worker().await?;
-        self.check_fvk(request.get_ref().account_id.as_ref())
+        self.check_fvk(request.get_ref().account_group_id.as_ref())
             .await?;
 
         let request = request.into_inner();
@@ -686,7 +686,7 @@ impl ViewProtocolService for ViewService {
         request: tonic::Request<pb::StatusRequest>,
     ) -> Result<tonic::Response<pb::StatusResponse>, tonic::Status> {
         self.check_worker().await?;
-        self.check_fvk(request.get_ref().account_id.as_ref())
+        self.check_fvk(request.get_ref().account_group_id.as_ref())
             .await?;
 
         Ok(tonic::Response::new(self.status().await.map_err(|e| {
@@ -699,7 +699,7 @@ impl ViewProtocolService for ViewService {
         request: tonic::Request<pb::StatusStreamRequest>,
     ) -> Result<tonic::Response<Self::StatusStreamStream>, tonic::Status> {
         self.check_worker().await?;
-        self.check_fvk(request.get_ref().account_id.as_ref())
+        self.check_fvk(request.get_ref().account_group_id.as_ref())
             .await?;
 
         let (latest_known_block_height, _) =
@@ -732,7 +732,7 @@ impl ViewProtocolService for ViewService {
         request: tonic::Request<pb::NotesRequest>,
     ) -> Result<tonic::Response<Self::NotesStream>, tonic::Status> {
         self.check_worker().await?;
-        self.check_fvk(request.get_ref().account_id.as_ref())
+        self.check_fvk(request.get_ref().account_group_id.as_ref())
             .await?;
 
         let include_spent = request.get_ref().include_spent;
@@ -780,7 +780,7 @@ impl ViewProtocolService for ViewService {
         request: tonic::Request<pb::NotesForVotingRequest>,
     ) -> Result<tonic::Response<Self::NotesForVotingStream>, tonic::Status> {
         self.check_worker().await?;
-        self.check_fvk(request.get_ref().account_id.as_ref())
+        self.check_fvk(request.get_ref().account_group_id.as_ref())
             .await?;
 
         let address_index = request
@@ -968,7 +968,7 @@ impl ViewProtocolService for ViewService {
         request: tonic::Request<pb::WitnessRequest>,
     ) -> Result<tonic::Response<WitnessResponse>, tonic::Status> {
         self.check_worker().await?;
-        self.check_fvk(request.get_ref().account_id.as_ref())
+        self.check_fvk(request.get_ref().account_group_id.as_ref())
             .await?;
 
         // Acquire a read lock for the SCT that will live for the entire request,
@@ -1082,7 +1082,7 @@ impl ViewProtocolService for ViewService {
             .map_err(|e| tonic::Status::invalid_argument(format!("{:#}", e)))?;
 
         let witness_request = pb::WitnessRequest {
-            account_id: Some(self.account_id.into()),
+            account_group_id: Some(self.account_group_id.into()),
             note_commitments,
             transaction_plan: Some(transaction_plan.clone().into()),
             ..Default::default()
