@@ -17,7 +17,7 @@ mod ovk;
 pub(crate) use fvk::IVK_DOMAIN_SEP;
 pub use fvk::{
     r1cs::{AuthorizationKeyVar, RandomizedVerificationKey, SpendAuthRandomizerVar},
-    AccountID, FullViewingKey,
+    AccountGroupId, FullViewingKey,
 };
 pub use ivk::{IncomingViewingKey, IncomingViewingKeyVar, IVK_LEN_BYTES};
 pub use ovk::{OutgoingViewingKey, OVK_LEN_BYTES};

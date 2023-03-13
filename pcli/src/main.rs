@@ -47,7 +47,8 @@ impl App {
 
     async fn sync(&mut self) -> Result<()> {
         let mut status_stream =
-            ViewClient::status_stream(self.view.as_mut().unwrap(), self.fvk.account_id()).await?;
+            ViewClient::status_stream(self.view.as_mut().unwrap(), self.fvk.account_group_id())
+                .await?;
 
         // Pull out the first message from the stream, which has the current state, and use
         // it to set up a progress bar.

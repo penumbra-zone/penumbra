@@ -31,8 +31,8 @@ pub struct TransactionPlannerRequest {
     pub memo: ::prost::alloc::string::String,
     /// Identifies the FVK for the notes to query.
     #[prost(message, optional, tag = "14")]
-    pub account_id: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AccountId,
+    pub account_group_id: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AccountGroupId,
     >,
     /// Authorizes the request.
     #[prost(message, optional, tag = "15")]
@@ -169,7 +169,7 @@ pub struct BalanceByAddressResponse {
     pub amount: ::core::option::Option<super::super::core::crypto::v1alpha1::Amount>,
 }
 /// Scaffolding for bearer-token authentication for the ViewService.
-/// The `account_id` and `token` fields are both optional,
+/// The `account_group_id` and `token` fields are both optional,
 /// and numbered as 14 & 15 throughout the view service protocol.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -197,8 +197,8 @@ pub struct ViewAuthResponse {
 pub struct StatusRequest {
     /// Identifies the FVK for the notes to query.
     #[prost(message, optional, tag = "14")]
-    pub account_id: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AccountId,
+    pub account_group_id: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AccountGroupId,
     >,
     /// Authorizes the request.
     #[prost(message, optional, tag = "15")]
@@ -221,8 +221,8 @@ pub struct StatusResponse {
 pub struct StatusStreamRequest {
     /// Identifies the FVK for the notes to query.
     #[prost(message, optional, tag = "14")]
-    pub account_id: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AccountId,
+    pub account_group_id: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AccountGroupId,
     >,
     /// Authorizes the request.
     #[prost(message, optional, tag = "15")]
@@ -262,8 +262,8 @@ pub struct NotesRequest {
     pub amount_to_spend: u64,
     /// Identifies the FVK for the notes to query.
     #[prost(message, optional, tag = "14")]
-    pub account_id: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AccountId,
+    pub account_group_id: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AccountGroupId,
     >,
     /// Authorizes the request.
     #[prost(message, optional, tag = "15")]
@@ -283,8 +283,8 @@ pub struct NotesForVotingRequest {
     >,
     /// Identifies the FVK for the notes to query.
     #[prost(message, optional, tag = "14")]
-    pub account_id: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AccountId,
+    pub account_group_id: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AccountGroupId,
     >,
     /// Authorizes the request.
     #[prost(message, optional, tag = "15")]
@@ -305,8 +305,8 @@ pub struct WitnessRequest {
     >,
     /// Identifies the FVK for the notes to query.
     #[prost(message, optional, tag = "14")]
-    pub account_id: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AccountId,
+    pub account_group_id: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AccountGroupId,
     >,
     /// Authorizes the request.
     #[prost(message, optional, tag = "15")]
@@ -412,8 +412,8 @@ pub struct NoteByCommitmentRequest {
     pub await_detection: bool,
     /// Identifies the FVK for the notes to query.
     #[prost(message, optional, tag = "14")]
-    pub account_id: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AccountId,
+    pub account_group_id: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AccountGroupId,
     >,
     /// Authorizes the request.
     #[prost(message, optional, tag = "15")]
@@ -437,8 +437,8 @@ pub struct SwapByCommitmentRequest {
     pub await_detection: bool,
     /// Identifies the FVK for the notes to query.
     #[prost(message, optional, tag = "14")]
-    pub account_id: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AccountId,
+    pub account_group_id: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AccountGroupId,
     >,
     /// Authorizes the request.
     #[prost(message, optional, tag = "15")]
@@ -461,8 +461,8 @@ pub struct NullifierStatusRequest {
     pub await_detection: bool,
     /// Identifies the FVK for the notes to query.
     #[prost(message, optional, tag = "14")]
-    pub account_id: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AccountId,
+    pub account_group_id: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AccountGroupId,
     >,
     /// Authorizes the request.
     #[prost(message, optional, tag = "15")]

@@ -20,7 +20,7 @@ pub use view::{StateReadExt, StateWriteExt};
 pub mod test_keys {
     use once_cell::sync::Lazy;
     use penumbra_crypto::{
-        keys::{AccountID, SpendKey},
+        keys::{AccountGroupId, SpendKey},
         Address, FullViewingKey,
     };
 
@@ -42,5 +42,5 @@ pub mod test_keys {
     pub static FULL_VIEWING_KEY: Lazy<FullViewingKey> =
         Lazy::new(|| SPEND_KEY.full_viewing_key().clone());
 
-    pub static ACCOUNT_ID: Lazy<AccountID> = Lazy::new(|| FULL_VIEWING_KEY.account_id());
+    pub static ACCOUNT_ID: Lazy<AccountGroupId> = Lazy::new(|| FULL_VIEWING_KEY.account_group_id());
 }

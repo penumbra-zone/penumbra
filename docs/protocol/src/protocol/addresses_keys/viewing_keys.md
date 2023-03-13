@@ -48,7 +48,7 @@ Then
 
 ```
 hash_output = poseidon_hash_2(from_le_bytes(b"Penumbra_HashFVK"), nk, decaf377_s(ak))
-account_id = hash_output.to_le_bytes()[0:32]
+account_group_id = hash_output.to_le_bytes()[0:32]
 ```
 
 i.e. we take the 32-bytes of the hash output as the account ID.

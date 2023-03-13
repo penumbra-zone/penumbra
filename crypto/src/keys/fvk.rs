@@ -37,8 +37,8 @@ pub struct FullViewingKey {
 
 /// The hash of a full viewing key, used as an account identifier.
 #[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-#[serde(try_from = "pb::AccountId", into = "pb::AccountId")]
-pub struct AccountID(pub [u8; 32]);
+#[serde(try_from = "pb::AccountGroupId", into = "pb::AccountGroupId")]
+pub struct AccountGroupId(pub [u8; 32]);
 
 impl FullViewingKey {
     pub fn controls(&self, note: &Note) -> bool {
@@ -127,8 +127,8 @@ impl FullViewingKey {
         &self.ak
     }
 
-    /// Hashes the full viewing key into an [`AccountID`].
-    pub fn account_id(&self) -> AccountID {
+    /// Hashes the full viewing key into an [`AccountGroupId`].
+    pub fn account_group_id(&self) -> AccountGroupId {
         let hash_result = hash_2(
             &ACCOUNT_ID_DOMAIN_SEP,
             (
@@ -139,7 +139,7 @@ impl FullViewingKey {
         let hash = hash_result.to_bytes()[..32]
             .try_into()
             .expect("hash is 32 bytes");
-        AccountID(hash)
+        AccountGroupId(hash)
     }
 }
 
@@ -211,11 +211,11 @@ impl std::str::FromStr for FullViewingKey {
     }
 }
 
-impl TryFrom<pb::AccountId> for AccountID {
+impl TryFrom<pb::AccountGroupId> for AccountGroupId {
     type Error = anyhow::Error;
 
-    fn try_from(value: pb::AccountId) -> Result<Self, Self::Error> {
-        Ok(AccountID(
+    fn try_from(value: pb::AccountGroupId) -> Result<Self, Self::Error> {
+        Ok(AccountGroupId(
             value
                 .inner
                 .try_into()
@@ -224,23 +224,24 @@ impl TryFrom<pb::AccountId> for AccountID {
     }
 }
 
-impl From<AccountID> for pb::AccountId {
-    fn from(value: AccountID) -> pb::AccountId {
-        pb::AccountId {
+impl From<AccountGroupId> for pb::AccountGroupId {
+    fn from(value: AccountGroupId) -> pb::AccountGroupId {
+        pb::AccountGroupId {
             inner: value.0.to_vec(),
         }
     }
 }
 
-impl std::fmt::Debug for AccountID {
+impl std::fmt::Debug for AccountGroupId {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.debug_tuple("AccountID")
+        // TODO: bech32
+        f.debug_tuple("AccountGroupId")
             .field(&hex::encode(self.0))
             .finish()
     }
 }
 
-impl std::fmt::Display for AccountID {
+impl std::fmt::Display for AccountGroupId {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         f.write_str(&hex::encode(self.0))
     }
