@@ -134,10 +134,12 @@ pub struct AddressIndex {
     pub randomizer: [u8; 12],
 }
 
-// Workaround for https://github.com/mcarton/rust-derivative/issues/91
 impl Debug for AddressIndex {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        crate::fmt_hex(self.to_bytes(), f)
+        f.debug_struct("AddressIndex")
+            .field("account", &self.account)
+            .field("randomizer", &hex::encode(&self.randomizer))
+            .finish()
     }
 }
 

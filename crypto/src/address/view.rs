@@ -90,3 +90,73 @@ impl TryFrom<pb::AddressView> for AddressView {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::keys::{SeedPhrase, SpendKey};
+    use rand_core::OsRng;
+
+    #[test]
+    fn address_view_basic() {
+        let sk1 = SpendKey::from_seed_phrase(SeedPhrase::generate(OsRng), 0);
+        let sk2 = SpendKey::from_seed_phrase(SeedPhrase::generate(OsRng), 0);
+
+        let fvk1 = sk1.full_viewing_key();
+        let fvk2 = sk2.full_viewing_key();
+
+        let addr1_0 = fvk1.payment_address(0.into()).0;
+        let addr1_1 = fvk1.payment_address(1.into()).0;
+        let addr2_0 = fvk2.payment_address(0.into()).0;
+        let addr2_1 = fvk2.payment_address(1.into()).0;
+
+        assert_eq!(
+            fvk1.view_address(addr1_0),
+            AddressView::Visible {
+                address: addr1_0,
+                index: 0.into(),
+                account_group_id: fvk1.account_group_id(),
+            }
+        );
+        assert_eq!(
+            fvk2.view_address(addr1_0),
+            AddressView::Opaque { address: addr1_0 }
+        );
+        assert_eq!(
+            fvk1.view_address(addr1_1),
+            AddressView::Visible {
+                address: addr1_1,
+                index: 1.into(),
+                account_group_id: fvk1.account_group_id(),
+            }
+        );
+        assert_eq!(
+            fvk2.view_address(addr1_1),
+            AddressView::Opaque { address: addr1_1 }
+        );
+        assert_eq!(
+            fvk1.view_address(addr2_0),
+            AddressView::Opaque { address: addr2_0 }
+        );
+        assert_eq!(
+            fvk2.view_address(addr2_0),
+            AddressView::Visible {
+                address: addr2_0,
+                index: 0.into(),
+                account_group_id: fvk2.account_group_id(),
+            }
+        );
+        assert_eq!(
+            fvk1.view_address(addr2_1),
+            AddressView::Opaque { address: addr2_1 }
+        );
+        assert_eq!(
+            fvk2.view_address(addr2_1),
+            AddressView::Visible {
+                address: addr2_1,
+                index: 1.into(),
+                account_group_id: fvk2.account_group_id(),
+            }
+        );
+    }
+}
