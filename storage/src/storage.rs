@@ -54,7 +54,7 @@ impl Storage {
                         ["jmt", "nonconsensus", "jmt_keys"],
                     )?);
 
-                    // TODO: For compatibility reasons with Tendermint, we set the "pre-genesis"
+                    // Note: for compatibility reasons with Tendermint, we set the "pre-genesis"
                     // jmt version to be u64::MAX, corresponding to -1 mod 2^64.
                     let jmt_version = latest_version(db.as_ref())?.unwrap_or(u64::MAX);
 
