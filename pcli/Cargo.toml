@@ -12,30 +12,31 @@ publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["std"]
+default = ["std", "parallel"]
 sct-divergence-check = ["penumbra-view/sct-divergence-check"]
 std = ["ark-ff/std"]
+parallel = ["penumbra-chain/parallel", "ark-ff/parallel", "penumbra-wallet/parallel", "decaf377/parallel", "penumbra-component/parallel", "penumbra-crypto/parallel", "penumbra-custody/parallel", "penumbra-tct/parallel", "penumbra-view/parallel", "penumbra-transaction/parallel", ]
 
 [dependencies]
 # Workspace dependencies
 jmt = "0.3"
 penumbra-proto = { path = "../proto" }
-penumbra-chain = { path = "../chain", features = ["parallel"] }
-penumbra-crypto = { path = "../crypto", features = ["parallel"] }
-penumbra-transaction = { path = "../transaction", features = ["clap", "parallel"] }
-penumbra-wallet = { path = "../wallet", features = ["parallel"] }
-penumbra-view = { path = "../view", features = ["parallel"] }
-penumbra-custody = { path = "../custody", features = ["parallel"] }
-penumbra-tct = { path = "../tct", features = ["parallel"] }
+penumbra-chain = { path = "../chain" }
+penumbra-crypto = { path = "../crypto" }
+penumbra-transaction = { path = "../transaction", features = ["clap"] }
+penumbra-wallet = { path = "../wallet" }
+penumbra-view = { path = "../view" }
+penumbra-custody = { path = "../custody" }
+penumbra-tct = { path = "../tct" }
 # TODO: replace by a penumbra-app
-penumbra-component = { path = "../component", features = ["parallel"] }
+penumbra-component = { path = "../component" }
 
 # Penumbra dependencies
-decaf377 = {version = "0.3", features = ["parallel"]}
+decaf377 = {version = "0.3"}
 tendermint = { version = "0.29.0", features = ["rust-crypto"] }
 
 # External dependencies
-ark-ff = { version = "0.3", features = ["parallel"] }
+ark-ff = { version = "0.3" }
 ed25519-consensus = "2"
 futures = "0.3"
 async-stream = "0.2"
