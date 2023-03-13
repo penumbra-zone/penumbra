@@ -36,7 +36,8 @@ message Diversifier {
 }
 
 message AddressIndex {
-    bytes inner = 1;
+    uint32 account = 2;
+    bytes randomizer = 3;
 }
 
 message StateCommitment {

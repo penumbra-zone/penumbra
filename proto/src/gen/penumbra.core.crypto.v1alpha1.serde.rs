@@ -192,12 +192,18 @@ impl serde::Serialize for AddressIndex {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.inner.is_empty() {
+        if self.account != 0 {
+            len += 1;
+        }
+        if !self.randomizer.is_empty() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.crypto.v1alpha1.AddressIndex", len)?;
-        if !self.inner.is_empty() {
-            struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
+        if self.account != 0 {
+            struct_ser.serialize_field("account", &self.account)?;
+        }
+        if !self.randomizer.is_empty() {
+            struct_ser.serialize_field("randomizer", pbjson::private::base64::encode(&self.randomizer).as_str())?;
         }
         struct_ser.end()
     }
@@ -209,12 +215,14 @@ impl<'de> serde::Deserialize<'de> for AddressIndex {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "inner",
+            "account",
+            "randomizer",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            Inner,
+            Account,
+            Randomizer,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -236,7 +244,8 @@ impl<'de> serde::Deserialize<'de> for AddressIndex {
                         E: serde::de::Error,
                     {
                         match value {
-                            "inner" => Ok(GeneratedField::Inner),
+                            "account" => Ok(GeneratedField::Account),
+                            "randomizer" => Ok(GeneratedField::Randomizer),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -256,21 +265,31 @@ impl<'de> serde::Deserialize<'de> for AddressIndex {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut inner__ = None;
+                let mut account__ = None;
+                let mut randomizer__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
-                        GeneratedField::Inner => {
-                            if inner__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("inner"));
+                        GeneratedField::Account => {
+                            if account__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("account"));
                             }
-                            inner__ = 
+                            account__ = 
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::Randomizer => {
+                            if randomizer__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("randomizer"));
+                            }
+                            randomizer__ = 
                                 Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                     }
                 }
                 Ok(AddressIndex {
-                    inner: inner__.unwrap_or_default(),
+                    account: account__.unwrap_or_default(),
+                    randomizer: randomizer__.unwrap_or_default(),
                 })
             }
         }
