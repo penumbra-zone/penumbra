@@ -137,10 +137,13 @@ mod test {
         // Now we try to fill the order a second time, this should leave the position untouched.
         let (unfilled, output) = state_tx.fill_against(delta_1, &position_1_id).await?;
         assert_eq!(unfilled, delta_1);
-        assert_eq!(output, penumbra_crypto::Value {
-            amount: Amount::zero(),
-            asset_id: gn.id(),
-        });
+        assert_eq!(
+            output,
+            penumbra_crypto::Value {
+                amount: Amount::zero(),
+                asset_id: gn.id(),
+            }
+        );
 
         // Fetch the position, and assert that its reserves are unchanged.
         let position = state_tx

@@ -113,7 +113,7 @@ impl DomainType for TradingFunction {
 /// The trading function `phi(R) = p*R_1 + q*R_2` is a CFMM with a constant-sum,
 /// and a fee (`0 <= fee < 10_000`) expressed in basis points.
 ///
-/// The valuations (`p`, `q`) for each asset informs the rate (or price) at which these
+/// The valuations (`p`, `q`) for each asset inform the rate (or price) at which these
 /// assets trade against each other.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::BareTradingFunction", into = "pb::BareTradingFunction")]
@@ -174,7 +174,7 @@ impl BareTradingFunction {
         // rounding loss, we prefer to first compute the numerator `(gamma * delta_1 * q)`, and then
         // perform division.
         let numerator = (U128x128::from(self.q) * self.gamma() * U128x128::from(delta_1)).unwrap();
-        let tentative_lambda_2= U128x128::ratio(numerator, U128x128::from(self.p)).unwrap();
+        let tentative_lambda_2 = U128x128::ratio(numerator, U128x128::from(self.p)).unwrap();
 
         if tentative_lambda_2 <= reserves.r2.into() {
             // Observe that for the case when `tentative_lambda_2` equals
