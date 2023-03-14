@@ -32,6 +32,16 @@ impl AllocVar<Position, Fq> for PositionVar {
     }
 }
 
+impl PositionVar {
+    pub fn block(&self) -> FqVar {
+        todo!()
+    }
+
+    pub fn epoch(&self) -> FqVar {
+        todo!()
+    }
+}
+
 impl R1CSVar<Fq> for PositionVar {
     type Value = Position;
 

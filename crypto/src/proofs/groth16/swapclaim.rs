@@ -44,6 +44,8 @@ pub struct SwapClaimCircuit {
     pub claim_fee: Fee,
     /// Batch swap output data
     pub output_data: BatchSwapOutputData,
+    /// Epoch duration
+    pub epoch_duration: u64,
 }
 
 impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
@@ -69,8 +71,10 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
         let claimed_fee_var = ValueVar::new_input(cs.clone(), || Ok(self.claim_fee.0))?;
         let output_data_var =
             BatchSwapOutputDataVar::new_input(cs.clone(), || Ok(self.output_data))?;
+        let epoch_duration_var =
+            FqVar::new_input(cs.clone(), || Ok(Fq::from(self.epoch_duration)))?;
 
-        // Swap commitment integrity check
+        // Swap commitment integrity check.
         let swap_commitment = swap_plaintext_var.commit()?;
         claimed_swap_commitment.enforce_equal(&swap_commitment)?;
 
@@ -87,8 +91,16 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
         let nullifier_var = nk_var.derive_nullifier(&position_var, &claimed_swap_commitment)?;
         nullifier_var.enforce_equal(&claimed_nullifier_var)?;
 
-        // Fee consistency check
+        // Fee consistency check.
         claimed_fee_var.enforce_equal(&swap_plaintext_var.claim_fee)?;
+
+        // Validate the swap commitment's height matches the output data's height (i.e. the clearing price height).
+        let block = position_var.block();
+        let epoch = position_var.epoch();
+        let note_commitment_block_height_var = epoch_duration_var * epoch + block;
+        output_data_var
+            .height
+            .enforce_equal(&note_commitment_block_height_var)?;
 
         // Validate that the output data's trading pair matches the note commitment's trading pair.
         output_data_var
@@ -141,6 +153,7 @@ impl ParameterSetup for SwapClaimCircuit {
             success: true,
         };
 
+        let epoch_duration = 20;
         let circuit = SwapClaimCircuit {
             swap_plaintext,
             state_commitment_proof,
@@ -149,6 +162,7 @@ impl ParameterSetup for SwapClaimCircuit {
             nk,
             claim_fee,
             output_data,
+            epoch_duration,
         };
         let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
             .expect("can perform circuit specific setup");
@@ -169,6 +183,7 @@ impl SwapClaimProof {
         nk: NullifierKey,
         anchor: tct::Root,
         nullifier: Nullifier,
+        epoch_duration: u64,
     ) -> anyhow::Result<Self> {
         let output_data = BatchSwapOutputData {
             delta_1: 0,
@@ -187,6 +202,7 @@ impl SwapClaimProof {
             nullifier,
             claim_fee: swap_plaintext.claim_fee,
             output_data,
+            epoch_duration,
         };
         let proof = Groth16::prove(pk, circuit, rng).map_err(|err| anyhow::anyhow!(err))?;
         Ok(Self(proof))
@@ -200,6 +216,7 @@ impl SwapClaimProof {
         nullifier: Nullifier,
         fee: Fee,
         output_data: BatchSwapOutputData,
+        epoch_duration: u64,
     ) -> anyhow::Result<()> {
         let mut public_inputs = Vec::new();
         public_inputs.extend(Fq::from(anchor.0).to_field_elements().unwrap());
@@ -222,6 +239,7 @@ impl SwapClaimProof {
                 .to_field_elements()
                 .unwrap(),
         );
+        public_inputs.extend(Fq::from(epoch_duration).to_field_elements().unwrap());
 
         tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();

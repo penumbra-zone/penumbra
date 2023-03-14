@@ -3,7 +3,7 @@ use ark_ff::PrimeField;
 
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
-use decaf377::Fq;
+use decaf377::{r1cs::FqVar, Fq};
 use once_cell::sync::Lazy;
 use penumbra_proto::{
     client::v1alpha1::BatchSwapOutputDataResponse, core::dex::v1alpha1 as pb, DomainType,
@@ -80,6 +80,7 @@ impl BatchSwapOutputData {
 
 pub struct BatchSwapOutputDataVar {
     pub trading_pair: TradingPairVar,
+    pub height: FqVar,
 }
 
 impl AllocVar<BatchSwapOutputData, Fq> for BatchSwapOutputDataVar {
@@ -93,7 +94,11 @@ impl AllocVar<BatchSwapOutputData, Fq> for BatchSwapOutputDataVar {
         let output_data = f()?.borrow().clone();
         let trading_pair =
             TradingPairVar::new_variable(cs.clone(), || Ok(output_data.trading_pair), mode)?;
-        Ok(Self { trading_pair })
+        let height = FqVar::new_variable(cs.clone(), || Ok(Fq::from(output_data.height)), mode)?;
+        Ok(Self {
+            trading_pair,
+            height,
+        })
     }
 }
 
