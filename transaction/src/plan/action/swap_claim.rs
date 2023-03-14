@@ -1,3 +1,4 @@
+use aes::cipher::generic_array::typenum::private::IsNotEqualPrivate;
 use penumbra_crypto::{
     dex::{swap::SwapPlaintext, BatchSwapOutputData},
     keys::{IncomingViewingKey, NullifierKey},
@@ -46,15 +47,17 @@ impl SwapClaimPlan {
         state_commitment_proof: &tct::Proof,
         nk: &NullifierKey,
     ) -> SwapClaimProof {
-        // let (lambda_1_i, lambda_2_i) = self.output_data.pro_rata_outputs((
-        //     self.swap_plaintext.delta_1_i.into(),
-        //     self.swap_plaintext.delta_2_i.into(),
-        // ));
+        let (lambda_1_i, lambda_2_i) = self.output_data.pro_rata_outputs((
+            self.swap_plaintext.delta_1_i.into(),
+            self.swap_plaintext.delta_2_i.into(),
+        ));
+        let (output_rseed_1, output_rseed_2) = self.swap_plaintext.output_rseeds();
+        let note_blinding_1 = output_rseed_1.derive_note_blinding();
+        let note_blinding_2 = output_rseed_2.derive_note_blinding();
+        let (output_1_note, output_2_note) = self.swap_plaintext.output_notes(&self.output_data);
+        let note_commitment_1 = output_1_note.commit();
+        let note_commitment_2 = output_2_note.commit();
 
-        // SwapClaimProof {
-        //     lambda_1_i,
-        //     lambda_2_i,
-        // }
         let nullifier = nk.derive_nullifier(self.position, &self.swap_plaintext.swap_commitment());
         SwapClaimProof::prove(
             &mut OsRng,
@@ -65,6 +68,12 @@ impl SwapClaimPlan {
             state_commitment_proof.root(),
             nullifier,
             self.epoch_duration,
+            lambda_1_i,
+            lambda_2_i,
+            note_blinding_1,
+            note_blinding_2,
+            note_commitment_1,
+            note_commitment_2,
         )
         .expect("can generate ZKSwapClaimProof")
     }

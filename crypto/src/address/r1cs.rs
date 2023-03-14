@@ -7,6 +7,7 @@ use decaf377::{
     Element, Fq,
 };
 
+#[derive(Clone)]
 pub struct AddressVar {
     pub diversified_generator: ElementVar,
     pub transmission_key: ElementVar,

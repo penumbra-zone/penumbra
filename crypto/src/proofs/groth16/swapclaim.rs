@@ -11,17 +11,17 @@ use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
 use crate::{
-    asset,
+    asset::{self, AmountVar},
     dex::{
         swap::{SwapPlaintext, SwapPlaintextVar},
         BatchSwapOutputData, BatchSwapOutputDataVar, TradingPair,
     },
     keys::{NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey},
-    note,
+    note::{self, NoteVar, StateCommitmentVar},
     nullifier::NullifierVar,
     transaction::Fee,
     value::ValueVar,
-    Fq, Nullifier, Rseed, Value,
+    Amount, Fq, Nullifier, Rseed, Value,
 };
 
 use super::{ParameterSetup, GROTH16_PROOF_LENGTH_BYTES};
@@ -36,6 +36,14 @@ pub struct SwapClaimCircuit {
     state_commitment_proof: tct::Proof,
     // The nullifier deriving key for the Swap NFT note.
     nk: NullifierKey,
+    /// Output amount 1
+    lambda_1_i: u64,
+    /// Output amount 2
+    lambda_2_i: u64,
+    /// Note commitment blinding factor for the first output note
+    note_blinding_1: Fq,
+    /// Note commitment blinding factor for the second output note
+    note_blinding_2: Fq,
     /// Anchor
     pub anchor: tct::Root,
     /// Nullifier
@@ -46,6 +54,10 @@ pub struct SwapClaimCircuit {
     pub output_data: BatchSwapOutputData,
     /// Epoch duration
     pub epoch_duration: u64,
+    /// Note commitment of first output note
+    pub note_commitment_1: note::Commitment,
+    /// Note commitment of second output note
+    pub note_commitment_2: note::Commitment,
 }
 
 impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
@@ -64,6 +76,12 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
         let merkle_path_var =
             tct::r1cs::MerkleAuthPathVar::new(cs.clone(), self.state_commitment_proof)?;
         let nk_var = NullifierKeyVar::new_witness(cs.clone(), || Ok(self.nk))?;
+        let lambda_1_i_var =
+            AmountVar::new_witness(cs.clone(), || Ok(Amount::from(self.lambda_1_i)))?;
+        let lambda_2_i_var =
+            AmountVar::new_witness(cs.clone(), || Ok(Amount::from(self.lambda_2_i)))?;
+        let note_blinding_1 = FqVar::new_witness(cs.clone(), || Ok(self.note_blinding_1))?;
+        let note_blinding_2 = FqVar::new_witness(cs.clone(), || Ok(self.note_blinding_2))?;
 
         // Inputs
         let anchor_var = FqVar::new_input(cs.clone(), || Ok(Fq::from(self.anchor)))?;
@@ -73,6 +91,10 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
             BatchSwapOutputDataVar::new_input(cs.clone(), || Ok(self.output_data))?;
         let epoch_duration_var =
             FqVar::new_input(cs.clone(), || Ok(Fq::from(self.epoch_duration)))?;
+        let claimed_note_commitment_1 =
+            StateCommitmentVar::new_input(cs.clone(), || Ok(self.note_commitment_1))?;
+        let claimed_note_commitment_2 =
+            StateCommitmentVar::new_input(cs.clone(), || Ok(self.note_commitment_2))?;
 
         // Swap commitment integrity check.
         let swap_commitment = swap_plaintext_var.commit()?;
@@ -106,6 +128,39 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
         output_data_var
             .trading_pair
             .enforce_equal(&swap_plaintext_var.trading_pair)?;
+
+        // Output amounts integrity
+        // let (lambda_1_i, lambda_2_i) = output_data
+        //     // TODO: Amount conversion ?
+        //     .pro_rata_outputs((
+        //         self.swap_plaintext.delta_1_i.try_into()?,
+        //         self.swap_plaintext.delta_2_i.try_into()?,
+        //     ));
+        // ensure!(self.lambda_1_i == lambda_1_i, "lambda_1_i mismatch");
+        // ensure!(self.lambda_2_i == lambda_2_i, "lambda_2_i mismatch");
+
+        // Output note integrity
+        let output_1_note = NoteVar {
+            address: swap_plaintext_var.claim_address.clone(),
+            value: ValueVar {
+                amount: lambda_1_i_var,
+                asset_id: swap_plaintext_var.trading_pair.asset_1,
+            },
+            note_blinding: note_blinding_1,
+        };
+        let output_1_commitment = output_1_note.commit()?;
+        let output_2_note = NoteVar {
+            address: swap_plaintext_var.claim_address,
+            value: ValueVar {
+                amount: lambda_2_i_var,
+                asset_id: swap_plaintext_var.trading_pair.asset_2,
+            },
+            note_blinding: note_blinding_2,
+        };
+        let output_2_commitment = output_2_note.commit()?;
+
+        claimed_note_commitment_1.enforce_equal(&output_1_commitment)?;
+        claimed_note_commitment_2.enforce_equal(&output_2_commitment)?;
 
         Ok(())
     }
@@ -152,6 +207,10 @@ impl ParameterSetup for SwapClaimCircuit {
             trading_pair: swap_plaintext.trading_pair,
             success: true,
         };
+        let note_blinding_1 = Fq::from(1);
+        let note_blinding_2 = Fq::from(1);
+        let note_commitment_1 = tct::Commitment(Fq::from(1));
+        let note_commitment_2 = tct::Commitment(Fq::from(2));
 
         let epoch_duration = 20;
         let circuit = SwapClaimCircuit {
@@ -163,6 +222,12 @@ impl ParameterSetup for SwapClaimCircuit {
             claim_fee,
             output_data,
             epoch_duration,
+            lambda_1_i: 1,
+            lambda_2_i: 1,
+            note_blinding_1,
+            note_blinding_2,
+            note_commitment_1,
+            note_commitment_2,
         };
         let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
             .expect("can perform circuit specific setup");
@@ -184,6 +249,12 @@ impl SwapClaimProof {
         anchor: tct::Root,
         nullifier: Nullifier,
         epoch_duration: u64,
+        lambda_1_i: u64,
+        lambda_2_i: u64,
+        note_blinding_1: Fq,
+        note_blinding_2: Fq,
+        note_commitment_1: tct::Commitment,
+        note_commitment_2: tct::Commitment,
     ) -> anyhow::Result<Self> {
         let output_data = BatchSwapOutputData {
             delta_1: 0,
@@ -203,6 +274,12 @@ impl SwapClaimProof {
             claim_fee: swap_plaintext.claim_fee,
             output_data,
             epoch_duration,
+            lambda_1_i,
+            lambda_2_i,
+            note_blinding_1,
+            note_blinding_2,
+            note_commitment_1,
+            note_commitment_2,
         };
         let proof = Groth16::prove(pk, circuit, rng).map_err(|err| anyhow::anyhow!(err))?;
         Ok(Self(proof))
@@ -217,6 +294,8 @@ impl SwapClaimProof {
         fee: Fee,
         output_data: BatchSwapOutputData,
         epoch_duration: u64,
+        note_commitment_1: tct::Commitment,
+        note_commitment_2: tct::Commitment,
     ) -> anyhow::Result<()> {
         let mut public_inputs = Vec::new();
         public_inputs.extend(Fq::from(anchor.0).to_field_elements().unwrap());
@@ -240,6 +319,8 @@ impl SwapClaimProof {
                 .unwrap(),
         );
         public_inputs.extend(Fq::from(epoch_duration).to_field_elements().unwrap());
+        public_inputs.extend(note_commitment_1.0.to_field_elements().unwrap());
+        public_inputs.extend(note_commitment_2.0.to_field_elements().unwrap());
 
         tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();

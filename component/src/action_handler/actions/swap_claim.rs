@@ -15,8 +15,6 @@ use crate::{
 #[async_trait]
 impl ActionHandler for SwapClaim {
     async fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
-        // self.body.output_1_commitment,
-        // self.body.output_2_commitment,
         self.proof
             .verify(
                 &SWAPCLAIM_PROOF_VERIFICATION_KEY,
@@ -25,6 +23,8 @@ impl ActionHandler for SwapClaim {
                 self.body.fee.clone(),
                 self.body.output_data,
                 self.epoch_duration,
+                self.body.output_1_commitment,
+                self.body.output_2_commitment,
             )
             .context("a swap claim proof did not verify")?;
 
