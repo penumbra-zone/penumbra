@@ -12,7 +12,7 @@ use penumbra_component::stake::rate::RateData;
 use penumbra_crypto::{
     asset,
     dex::{
-        lp::{position::Position, Reserves, TradingFunction},
+        lp::{position::Position, TradingFunction},
         TradingPair,
     },
     keys::AddressIndex,
