@@ -41,22 +41,13 @@ pub(super) async fn timestamps_are_valid<S: StateRead>(
     let current_time: Timestamp = state.get_block_timestamp().await?.into();
 
     let after = transaction.transaction_body().valid_after;
-
-    let before = transaction.transaction_body().valid_before;
-
-    if current_time.check_expiry(&after) == ibc::timestamp::Expiry::Expired {
+    if after.check_expiry(&current_time) == ibc::timestamp::Expiry::Expired {
         anyhow::bail!("Too late!");
     }
 
-    if before.check_expiry(&current_time) == ibc::timestamp::Expiry::Expired {
+    let before = transaction.transaction_body().valid_before;
+    if current_time.check_expiry(&before) == ibc::timestamp::Expiry::Expired {
         anyhow::bail!("Too early!");
-    }
-
-    if transaction.transaction_body().expiry_height != 0 {
-        let current_block = state.get_block_height().await?;
-        if current_block > transaction.transaction_body().expiry_height {
-            anyhow::bail!("Too late!");
-        }
     }
 
     Ok(())

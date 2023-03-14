@@ -17,6 +17,9 @@ use super::ActionHandler;
 mod stateful;
 mod stateless;
 
+#[cfg(test)]
+mod tests;
+
 use stateless::{no_duplicate_nullifiers, valid_binding_signature};
 
 #[async_trait]
