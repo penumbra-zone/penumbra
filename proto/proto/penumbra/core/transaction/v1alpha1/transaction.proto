@@ -95,8 +95,12 @@ message TransactionPerspective {
   repeated crypto.v1alpha1.AddressView address_views = 4;
 }
 
+message PayloadKey {
+  bytes inner = 1;
+}
+
 message PayloadKeyWithCommitment {
-  bytes payload_key = 1;
+  PayloadKey payload_key = 1;
   crypto.v1alpha1.StateCommitment commitment = 2;
 }
 
@@ -195,7 +199,7 @@ message OutputView {
   message Visible {
     Output output = 1;
     crypto.v1alpha1.Note note = 2;
-    bytes payload_key = 3;
+    PayloadKey payload_key = 3;
   }
 
   message Opaque {

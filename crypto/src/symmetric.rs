@@ -11,7 +11,9 @@ use crate::{
     keys::{IncomingViewingKey, OutgoingViewingKey},
     note,
 };
-
+use penumbra_proto::core::transaction::v1alpha1::{
+    self as pb, NullifierWithNote, PayloadKeyWithCommitment,
+};
 pub const PAYLOAD_KEY_LEN_BYTES: usize = 32;
 pub const OVK_WRAPPED_LEN_BYTES: usize = 48;
 pub const MEMOKEY_WRAPPED_LEN_BYTES: usize = 48;
@@ -168,6 +170,21 @@ impl TryFrom<Vec<u8>> for PayloadKey {
 impl From<[u8; 32]> for PayloadKey {
     fn from(bytes: [u8; 32]) -> Self {
         Self(*Key::from_slice(&bytes))
+    }
+}
+
+impl TryFrom<pb::PayloadKey> for PayloadKey {
+    type Error = anyhow::Error;
+    fn try_from(msg: pb::PayloadKey) -> Result<Self, Self::Error> {
+        msg.inner.as_ref().try_into()
+    }
+}
+
+impl From<PayloadKey> for pb::PayloadKey {
+    fn from(msg: PayloadKey) -> Self {
+        pb::PayloadKey {
+            inner: msg.0.to_vec().into(),
+        }
     }
 }
 

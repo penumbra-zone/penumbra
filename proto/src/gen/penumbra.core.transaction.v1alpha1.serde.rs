@@ -2643,7 +2643,7 @@ impl serde::Serialize for output_view::Visible {
         if self.note.is_some() {
             len += 1;
         }
-        if !self.payload_key.is_empty() {
+        if self.payload_key.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1alpha1.OutputView.Visible", len)?;
@@ -2653,8 +2653,8 @@ impl serde::Serialize for output_view::Visible {
         if let Some(v) = self.note.as_ref() {
             struct_ser.serialize_field("note", v)?;
         }
-        if !self.payload_key.is_empty() {
-            struct_ser.serialize_field("payloadKey", pbjson::private::base64::encode(&self.payload_key).as_str())?;
+        if let Some(v) = self.payload_key.as_ref() {
+            struct_ser.serialize_field("payloadKey", v)?;
         }
         struct_ser.end()
     }
@@ -2741,20 +2741,111 @@ impl<'de> serde::Deserialize<'de> for output_view::Visible {
                             if payload_key__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("payloadKey"));
                             }
-                            payload_key__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            payload_key__ = map.next_value()?;
                         }
                     }
                 }
                 Ok(output_view::Visible {
                     output: output__,
                     note: note__,
-                    payload_key: payload_key__.unwrap_or_default(),
+                    payload_key: payload_key__,
                 })
             }
         }
         deserializer.deserialize_struct("penumbra.core.transaction.v1alpha1.OutputView.Visible", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for PayloadKey {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.inner.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1alpha1.PayloadKey", len)?;
+        if !self.inner.is_empty() {
+            struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for PayloadKey {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "inner",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Inner,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "inner" => Ok(GeneratedField::Inner),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = PayloadKey;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.transaction.v1alpha1.PayloadKey")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<PayloadKey, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut inner__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::Inner => {
+                            if inner__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("inner"));
+                            }
+                            inner__ = 
+                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                    }
+                }
+                Ok(PayloadKey {
+                    inner: inner__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.transaction.v1alpha1.PayloadKey", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for PayloadKeyWithCommitment {
@@ -2765,15 +2856,15 @@ impl serde::Serialize for PayloadKeyWithCommitment {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.payload_key.is_empty() {
+        if self.payload_key.is_some() {
             len += 1;
         }
         if self.commitment.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1alpha1.PayloadKeyWithCommitment", len)?;
-        if !self.payload_key.is_empty() {
-            struct_ser.serialize_field("payloadKey", pbjson::private::base64::encode(&self.payload_key).as_str())?;
+        if let Some(v) = self.payload_key.as_ref() {
+            struct_ser.serialize_field("payloadKey", v)?;
         }
         if let Some(v) = self.commitment.as_ref() {
             struct_ser.serialize_field("commitment", v)?;
@@ -2847,9 +2938,7 @@ impl<'de> serde::Deserialize<'de> for PayloadKeyWithCommitment {
                             if payload_key__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("payloadKey"));
                             }
-                            payload_key__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            payload_key__ = map.next_value()?;
                         }
                         GeneratedField::Commitment => {
                             if commitment__.is_some() {
@@ -2860,7 +2949,7 @@ impl<'de> serde::Deserialize<'de> for PayloadKeyWithCommitment {
                     }
                 }
                 Ok(PayloadKeyWithCommitment {
-                    payload_key: payload_key__.unwrap_or_default(),
+                    payload_key: payload_key__,
                     commitment: commitment__,
                 })
             }
