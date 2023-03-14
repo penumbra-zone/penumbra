@@ -58,14 +58,14 @@ mod test {
         /* position_1: Limit Buy 100gm@1.2gn */
         let reserves = Reserves {
             r1: 0u64.into(),
-            r2: 120_000u64.into(),
+            r2: 120u64.into(),
         };
 
         let phi = TradingFunction::new(
             pair.into(),
             0u32.into(),
-            1_200_000u64.into(),
             1_000_000u64.into(),
+            1_200_000u64.into(),
         );
 
         let position_1 = position::Metadata {
@@ -106,12 +106,10 @@ mod test {
 
         // Test 1: We're trying to fill the entire order.
         let delta_1 = penumbra_crypto::Value {
-            amount: 100_000u64.into(),
+            amount: 100u64.into(),
             asset_id: gm.id(),
         };
         let (unfilled, output) = state_tx.fill_against(delta_1, &position_1_id).await?;
-        println!("unfilled: {unfilled:?}");
-        println!("output: {output:?}");
 
         let position = state_tx
             .position_by_id(&position_1_id)
