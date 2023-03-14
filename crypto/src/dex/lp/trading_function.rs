@@ -299,7 +299,7 @@ mod tests {
         );
         let bytes2 = btf.effective_price_key_bytes();
 
-        assert!(bytes1 < bytes2);
+        assert!(bytes1 > bytes2);
     }
 
     #[test]
