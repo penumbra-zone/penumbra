@@ -107,22 +107,26 @@ impl DomainType for TradingFunction {
 ///
 /// This implicitly treats the trading function as being between assets 1 and 2,
 /// without specifying what those assets are, to avoid duplicating data (each
-/// asset ID alone is twice the size of the trading function).
+/// asset ID alone is twice the size of the trading function). Which assets correspond
+/// to asset 1 and 2 is given by the canonical ordering of the pair.
 ///
-/// The trading function is `phi(R) = p*R_1 + q*R_2`.
-/// This is used as a CFMM with constant `k` and fee `fee` (gamma).
+/// The trading function `phi(R) = p*R_1 + q*R_2` is a CFMM with a constant-sum,
+/// and a fee (`0 <= fee < 10_000`) expressed in basis points.
 ///
-/// NOTE: the use of floats here is a placeholder ONLY, so we can stub out the implementation,
-/// and then decide what type of fixed-point, deterministic arithmetic should be used.
+/// The valuations (`p`, `q`) for each asset informs the rate (or price) at which these
+/// assets trade against each other.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::BareTradingFunction", into = "pb::BareTradingFunction")]
 pub struct BareTradingFunction {
     /// The fee, expressed in basis points.
     ///
-    /// The equation representing the fee percentage of the trading function (`gamma`) is:
-    /// `gamma = (10_000 - fee) / 10_000`.
+    /// The fee percentage of the trading function (`gamma`) is normalized
+    /// according to its maximum value (10_000 bps, i.e. 100%):
+    /// `gamma = (10_000 - fee) / 10_000`
     pub fee: u32,
+    /// The valuation for the first asset of the pair, according to canonical ordering.
     pub p: Amount,
+    /// The valuation for the second asset of the pair, according to canonical ordering.
     pub q: Amount,
 }
 
@@ -165,7 +169,13 @@ impl BareTradingFunction {
         // leaving some dust amount of reserves in it. Otherwise, we might try
         // executing against it again on a subsequent iteration, even though it
         // was essentially filled.
-        let tentative_lambda_2 = (self.effective_price() * U128x128::from(delta_1)).unwrap();
+
+        // The trade output `lambda_2` is given by `effective_price * delta_1`, however, to avoid
+        // rounding loss, we prefer to first compute the numerator `(gamma * delta_1 * q)`, and then
+        // perform division.
+        let numerator = (U128x128::from(self.q) * self.gamma() * U128x128::from(delta_1)).unwrap();
+        let tentative_lambda_2= U128x128::ratio(numerator, U128x128::from(self.p)).unwrap();
+
         if tentative_lambda_2 <= reserves.r2.into() {
             // Observe that for the case when `tentative_lambda_2` equals
             // `reserves.r1`, rounding it down does not change anything since
@@ -220,7 +230,7 @@ impl BareTradingFunction {
     /// This means that if there's a greater fee, the effective price is lower.
     pub fn effective_price(&self) -> U128x128 {
         (self.gamma() * U128x128::from(self.q) / U128x128::from(self.p))
-            .expect("gamma < 1 and p != 0")
+            .expect("0 < gamma <= 1 and p != 0")
     }
 
     /// Returns the fee of the trading function, expressed as a percentage (`gamma`).
@@ -332,5 +342,29 @@ mod tests {
         // Exact amount checks:
         assert_eq!(output_b, old_reserves.r2); // Exact fill of position
         assert_eq!(unfilled_b, 299_999_999u64.into()); // rounding error is burned
+    }
+
+    #[test]
+    fn fill_bad_rounding() {
+        let btf = BareTradingFunction {
+            fee: 0,
+            p: 100u32.into(),
+            q: 120u32.into(),
+        };
+
+        let old_reserves = Reserves {
+            r1: 0u64.into(),
+            r2: 120u64.into(),
+        };
+
+        let input_a = 100u64.into();
+        let (unfilled_a, new_reserves_a, output_a) = btf.fill(input_a, &old_reserves);
+
+        // Conservation of value:
+        assert_eq!(old_reserves.r1 + input_a, new_reserves_a.r1 + unfilled_a);
+        assert_eq!(old_reserves.r2 + 0u64.into(), new_reserves_a.r2 + output_a);
+        // Exact amount checks:
+        assert_eq!(output_a, 120u64.into()); // 10.0 -> 3.33...
+        assert_eq!(unfilled_a, 0u64.into());
     }
 }
