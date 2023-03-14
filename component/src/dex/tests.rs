@@ -78,6 +78,8 @@ mod test {
         // replace this with transactions?
         state_tx.put_position(position_1.clone());
 
+        let mut state_test_1 = state_tx.fork();
+
         // Scenario 1: A single limit order quotes asset 2
         // We execute four swaps against this order and verify that:
         //      - reserves are updated accurately immediately after execution
@@ -86,15 +88,10 @@ mod test {
         //          * swap_1: fills the entire order
         //          -> reserves are updated correctly
         //      Test 2:
-        //          * swap_1: try to fill the entire order
-        //          -> reserves are updated correctly
-        //          * swap_2: clone of swap 1
-        //          -> fails (no liquidity)
-        //      Test 3:
         //          * swap_1: fills entire order
         //          * swap_2: fills entire order (other direction)
         //          -> reserves are updated correctly
-        //      Test 4:
+        //      Test 3:
         //          * swap_1: partial fill
         //          -> reserves are updated correctly
         //          * swap_2: clone of swap_1
@@ -120,11 +117,11 @@ mod test {
             asset_id: gn.id(),
         };
 
-        let (unfilled, output) = state_tx.fill_against(delta_1, &position_1_id).await?;
+        let (unfilled, output) = state_test_1.fill_against(delta_1, &position_1_id).await?;
         assert_eq!(unfilled, lambda_1);
         assert_eq!(output, lambda_2);
 
-        let position = state_tx
+        let position = state_test_1
             .position_by_id(&position_1_id)
             .await
             .unwrap()
@@ -135,7 +132,7 @@ mod test {
         assert_eq!(position.reserves.r2, Amount::zero());
 
         // Now we try to fill the order a second time, this should leave the position untouched.
-        let (unfilled, output) = state_tx.fill_against(delta_1, &position_1_id).await?;
+        let (unfilled, output) = state_test_1.fill_against(delta_1, &position_1_id).await?;
         assert_eq!(unfilled, delta_1);
         assert_eq!(
             output,
@@ -146,7 +143,7 @@ mod test {
         );
 
         // Fetch the position, and assert that its reserves are unchanged.
-        let position = state_tx
+        let position = state_test_1
             .position_by_id(&position_1_id)
             .await
             .unwrap()
@@ -154,17 +151,36 @@ mod test {
         assert_eq!(position.reserves.r1, delta_1.amount);
         assert_eq!(position.reserves.r2, Amount::zero());
 
-        /*
-        let (scenario_1, events) = current_state.apply();
-        //
-        println!("fetched position: {position:?}");
-        println!("ABCI events recorded:");
-        for event in events.iter() {
-            println!("event: {event:?}");
-        }
-        */
+        // Now let's try to do a "round-trip" i.e. fill the order in the other direction:
+        let delta_2 = penumbra_crypto::Value {
+            amount: 120u64.into(),
+            asset_id: gn.id(),
+        };
+        let (unfilled, output) = state_test_1.fill_against(delta_2, &position_1_id).await?;
+        assert_eq!(
+            unfilled,
+            penumbra_crypto::Value {
+                amount: Amount::zero(),
+                asset_id: gn.id(),
+            }
+        );
+        assert_eq!(
+            output,
+            penumbra_crypto::Value {
+                amount: 100u64.into(),
+                asset_id: gm.id(),
+            }
+        );
 
-        // Scenario 2: layered
+        let position = state_test_1
+            .position_by_id(&position_1_id)
+            .await
+            .unwrap()
+            .unwrap();
+
+        assert_eq!(position.reserves.r1, Amount::zero());
+        assert_eq!(position.reserves.r2, 120u64.into());
+
         Ok(())
     }
 }
