@@ -60,7 +60,7 @@ mod test {
         /* position_1: Limit Buy 100gm@1.2gn */
         let reserves = Reserves {
             r1: 0u64.into(),
-            r2: 120u64.into(),
+            r2: 120_000u64.into(),
         };
 
         let phi = TradingFunction::new(
@@ -105,7 +105,7 @@ mod test {
 
         // Test 1: We're trying to fill the entire order.
         let delta_1 = Value {
-            amount: 100u64.into(),
+            amount: 100_000u64.into(),
             asset_id: gm.id(),
         };
 
@@ -115,7 +115,7 @@ mod test {
         };
 
         let lambda_2 = Value {
-            amount: 120u64.into(),
+            amount: 120_000u64.into(),
             asset_id: gn.id(),
         };
 
@@ -155,7 +155,7 @@ mod test {
 
         // Now let's try to do a "round-trip" i.e. fill the order in the other direction:
         let delta_2 = Value {
-            amount: 120u64.into(),
+            amount: 120_000u64.into(),
             asset_id: gn.id(),
         };
         let (unfilled, output) = state_test_1.fill_against(delta_2, &position_1_id).await?;
@@ -169,7 +169,7 @@ mod test {
         assert_eq!(
             output,
             Value {
-                amount: 100u64.into(),
+                amount: 100_000u64.into(),
                 asset_id: gm.id(),
             }
         );
@@ -181,7 +181,7 @@ mod test {
             .unwrap();
 
         assert_eq!(position.reserves.r1, Amount::zero());
-        assert_eq!(position.reserves.r2, 120u64.into());
+        assert_eq!(position.reserves.r2, 120_000u64.into());
 
         // Finally, let's test partial fills, rolling back to `state_tx`, which contains
         // a single limit order for 100gm@1.2gn.
@@ -192,12 +192,10 @@ mod test {
             .unwrap()
             .unwrap();
 
-        println!("position: {position:?}");
-
         // We are splitting a single large fill for a `100gm` into, 100 fills for `1gm`.
         for _i in 1..=100 {
             let delta_1 = Value {
-                amount: 1u64.into(),
+                amount: 1000u64.into(),
                 asset_id: gm.id(),
             };
             let (unfilled, output) = state_tx.fill_against(delta_1, &position_1_id).await?;
@@ -211,7 +209,7 @@ mod test {
             assert_eq!(
                 output,
                 Value {
-                    amount: 1u64.into(),
+                    amount: 1200u64.into(),
                     asset_id: gn.id(),
                 }
             );
@@ -224,9 +222,7 @@ mod test {
             .unwrap()
             .unwrap();
 
-        println!("position: {position:?}");
-
-        assert_eq!(position.reserves.r1, 100u64.into());
+        assert_eq!(position.reserves.r1, 100_000u64.into());
         assert_eq!(position.reserves.r2, Amount::zero());
 
         Ok(())
