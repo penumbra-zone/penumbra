@@ -91,7 +91,6 @@ impl TransactionBody {
 
         // Hash the fixed data of the transaction body.
         state.update(chain_id_effect_hash(&self.chain_id).as_bytes());
-        state.update(&self.expiry_height.to_le_bytes());
         state.update(&self.valid_after.nanoseconds().to_le_bytes());
         state.update(&self.valid_before.nanoseconds().to_le_bytes());
         state.update(self.fee.effect_hash().as_bytes());
@@ -137,7 +136,6 @@ impl TransactionPlan {
 
         // Hash the fixed data of the transaction body.
         state.update(chain_id_effect_hash(&self.chain_id).as_bytes());
-        state.update(&self.expiry_height.to_le_bytes());
         state.update(&self.valid_after.nanoseconds().to_le_bytes());
         state.update(&self.valid_before.nanoseconds().to_le_bytes());
         state.update(self.fee.effect_hash().as_bytes());
@@ -860,7 +858,6 @@ mod tests {
         let mut rng = OsRng;
 
         let plan = TransactionPlan {
-            expiry_height: 0,
             fee: Fee::default(),
             chain_id: "penumbra-test".to_string(),
             // Put outputs first to check that the auth hash

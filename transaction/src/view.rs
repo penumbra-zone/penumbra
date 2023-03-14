@@ -14,7 +14,6 @@ pub use transaction_perspective::TransactionPerspective;
 #[serde(try_from = "pbt::TransactionView", into = "pbt::TransactionView")]
 pub struct TransactionView {
     pub action_views: Vec<ActionView>,
-    pub expiry_height: u64,
     pub valid_after: Timestamp,
     pub valid_before: Timestamp,
     pub chain_id: String,
@@ -38,7 +37,6 @@ impl TryFrom<pbt::TransactionView> for TransactionView {
                 .into_iter()
                 .map(TryInto::try_into)
                 .collect::<Result<Vec<_>, _>>()?,
-            expiry_height: v.expiry_height,
             valid_after: Timestamp::from_nanoseconds(v.valid_after)?,
             valid_before: Timestamp::from_nanoseconds(v.valid_before)?,
             chain_id: v.chain_id,
@@ -68,7 +66,6 @@ impl From<TransactionView> for pbt::TransactionView {
     fn from(v: TransactionView) -> Self {
         Self {
             action_views: v.action_views.into_iter().map(Into::into).collect(),
-            expiry_height: v.expiry_height,
             valid_after: v.valid_after.nanoseconds(),
             valid_before: v.valid_before.nanoseconds(),
             chain_id: v.chain_id,

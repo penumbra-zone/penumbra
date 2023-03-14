@@ -342,18 +342,14 @@ impl ViewProtocolService for ViewService {
         let prq = request.into_inner();
 
         let mut planner = Planner::new(OsRng);
-        planner
-            .fee(
-                match prq.fee {
-                    Some(x) => x,
-                    None => Fee::default().into(),
-                }
-                .try_into()
-                .map_err(|e| {
-                    tonic::Status::invalid_argument(format!("Could not parse fee: {e:#}"))
-                })?,
-            )
-            .expiry_height(prq.expiry_height);
+        planner.fee(
+            match prq.fee {
+                Some(x) => x,
+                None => Fee::default().into(),
+            }
+            .try_into()
+            .map_err(|e| tonic::Status::invalid_argument(format!("Could not parse fee: {e:#}")))?,
+        );
 
         if let Some(timestamp) = prq.valid_after {
             let time = tendermint::Time::parse_from_rfc3339(timestamp.as_str()).map_err(|e| {

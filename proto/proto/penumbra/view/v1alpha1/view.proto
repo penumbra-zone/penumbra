@@ -101,8 +101,6 @@ message BroadcastTransactionResponse {
 }
 
 message TransactionPlannerRequest {
-    // The expiry height for the requested TransactionPlan
-    uint64 expiry_height = 1;
     // The fee for the requested TransactionPlan, if any.
     core.crypto.v1alpha1.Fee fee = 2;
     // The memo for the requested TransactionPlan

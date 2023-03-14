@@ -337,10 +337,6 @@ impl TxCmd {
                 metadata_table.add_row(vec!["Transaction Memo Text", &memo.text]);
             }
             metadata_table.add_row(vec![
-                "Transaction Expiration Height",
-                &format!("{}", txv.expiry_height),
-            ]);
-            metadata_table.add_row(vec![
                 "Transaction Valid Before",
                 &format!("{}", txv.valid_before),
             ]);

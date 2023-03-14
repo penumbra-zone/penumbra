@@ -3720,9 +3720,6 @@ impl serde::Serialize for TransactionBody {
         if !self.actions.is_empty() {
             len += 1;
         }
-        if self.expiry_height != 0 {
-            len += 1;
-        }
         if !self.chain_id.is_empty() {
             len += 1;
         }
@@ -3744,9 +3741,6 @@ impl serde::Serialize for TransactionBody {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1alpha1.TransactionBody", len)?;
         if !self.actions.is_empty() {
             struct_ser.serialize_field("actions", &self.actions)?;
-        }
-        if self.expiry_height != 0 {
-            struct_ser.serialize_field("expiryHeight", ToString::to_string(&self.expiry_height).as_str())?;
         }
         if !self.chain_id.is_empty() {
             struct_ser.serialize_field("chainId", &self.chain_id)?;
@@ -3777,8 +3771,6 @@ impl<'de> serde::Deserialize<'de> for TransactionBody {
     {
         const FIELDS: &[&str] = &[
             "actions",
-            "expiry_height",
-            "expiryHeight",
             "chain_id",
             "chainId",
             "fee",
@@ -3795,7 +3787,6 @@ impl<'de> serde::Deserialize<'de> for TransactionBody {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Actions,
-            ExpiryHeight,
             ChainId,
             Fee,
             FmdClues,
@@ -3824,7 +3815,6 @@ impl<'de> serde::Deserialize<'de> for TransactionBody {
                     {
                         match value {
                             "actions" => Ok(GeneratedField::Actions),
-                            "expiryHeight" | "expiry_height" => Ok(GeneratedField::ExpiryHeight),
                             "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "fee" => Ok(GeneratedField::Fee),
                             "fmdClues" | "fmd_clues" => Ok(GeneratedField::FmdClues),
@@ -3851,7 +3841,6 @@ impl<'de> serde::Deserialize<'de> for TransactionBody {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut actions__ = None;
-                let mut expiry_height__ = None;
                 let mut chain_id__ = None;
                 let mut fee__ = None;
                 let mut fmd_clues__ = None;
@@ -3865,14 +3854,6 @@ impl<'de> serde::Deserialize<'de> for TransactionBody {
                                 return Err(serde::de::Error::duplicate_field("actions"));
                             }
                             actions__ = Some(map.next_value()?);
-                        }
-                        GeneratedField::ExpiryHeight => {
-                            if expiry_height__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("expiryHeight"));
-                            }
-                            expiry_height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
                         }
                         GeneratedField::ChainId => {
                             if chain_id__.is_some() {
@@ -3920,7 +3901,6 @@ impl<'de> serde::Deserialize<'de> for TransactionBody {
                 }
                 Ok(TransactionBody {
                     actions: actions__.unwrap_or_default(),
-                    expiry_height: expiry_height__.unwrap_or_default(),
                     chain_id: chain_id__.unwrap_or_default(),
                     fee: fee__,
                     fmd_clues: fmd_clues__.unwrap_or_default(),
@@ -4090,9 +4070,6 @@ impl serde::Serialize for TransactionPlan {
         if !self.actions.is_empty() {
             len += 1;
         }
-        if self.expiry_height != 0 {
-            len += 1;
-        }
         if !self.chain_id.is_empty() {
             len += 1;
         }
@@ -4114,9 +4091,6 @@ impl serde::Serialize for TransactionPlan {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1alpha1.TransactionPlan", len)?;
         if !self.actions.is_empty() {
             struct_ser.serialize_field("actions", &self.actions)?;
-        }
-        if self.expiry_height != 0 {
-            struct_ser.serialize_field("expiryHeight", ToString::to_string(&self.expiry_height).as_str())?;
         }
         if !self.chain_id.is_empty() {
             struct_ser.serialize_field("chainId", &self.chain_id)?;
@@ -4147,8 +4121,6 @@ impl<'de> serde::Deserialize<'de> for TransactionPlan {
     {
         const FIELDS: &[&str] = &[
             "actions",
-            "expiry_height",
-            "expiryHeight",
             "chain_id",
             "chainId",
             "fee",
@@ -4165,7 +4137,6 @@ impl<'de> serde::Deserialize<'de> for TransactionPlan {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Actions,
-            ExpiryHeight,
             ChainId,
             Fee,
             CluePlans,
@@ -4194,7 +4165,6 @@ impl<'de> serde::Deserialize<'de> for TransactionPlan {
                     {
                         match value {
                             "actions" => Ok(GeneratedField::Actions),
-                            "expiryHeight" | "expiry_height" => Ok(GeneratedField::ExpiryHeight),
                             "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "fee" => Ok(GeneratedField::Fee),
                             "cluePlans" | "clue_plans" => Ok(GeneratedField::CluePlans),
@@ -4221,7 +4191,6 @@ impl<'de> serde::Deserialize<'de> for TransactionPlan {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut actions__ = None;
-                let mut expiry_height__ = None;
                 let mut chain_id__ = None;
                 let mut fee__ = None;
                 let mut clue_plans__ = None;
@@ -4235,14 +4204,6 @@ impl<'de> serde::Deserialize<'de> for TransactionPlan {
                                 return Err(serde::de::Error::duplicate_field("actions"));
                             }
                             actions__ = Some(map.next_value()?);
-                        }
-                        GeneratedField::ExpiryHeight => {
-                            if expiry_height__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("expiryHeight"));
-                            }
-                            expiry_height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
                         }
                         GeneratedField::ChainId => {
                             if chain_id__.is_some() {
@@ -4288,7 +4249,6 @@ impl<'de> serde::Deserialize<'de> for TransactionPlan {
                 }
                 Ok(TransactionPlan {
                     actions: actions__.unwrap_or_default(),
-                    expiry_height: expiry_height__.unwrap_or_default(),
                     chain_id: chain_id__.unwrap_or_default(),
                     fee: fee__,
                     clue_plans: clue_plans__.unwrap_or_default(),
@@ -4310,9 +4270,6 @@ impl serde::Serialize for TransactionView {
         use serde::ser::SerializeStruct;
         let mut len = 0;
         if !self.action_views.is_empty() {
-            len += 1;
-        }
-        if self.expiry_height != 0 {
             len += 1;
         }
         if !self.chain_id.is_empty() {
@@ -4339,9 +4296,6 @@ impl serde::Serialize for TransactionView {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1alpha1.TransactionView", len)?;
         if !self.action_views.is_empty() {
             struct_ser.serialize_field("actionViews", &self.action_views)?;
-        }
-        if self.expiry_height != 0 {
-            struct_ser.serialize_field("expiryHeight", ToString::to_string(&self.expiry_height).as_str())?;
         }
         if !self.chain_id.is_empty() {
             struct_ser.serialize_field("chainId", &self.chain_id)?;
@@ -4376,8 +4330,6 @@ impl<'de> serde::Deserialize<'de> for TransactionView {
         const FIELDS: &[&str] = &[
             "action_views",
             "actionViews",
-            "expiry_height",
-            "expiryHeight",
             "chain_id",
             "chainId",
             "fee",
@@ -4395,7 +4347,6 @@ impl<'de> serde::Deserialize<'de> for TransactionView {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             ActionViews,
-            ExpiryHeight,
             ChainId,
             Fee,
             FmdClues,
@@ -4425,7 +4376,6 @@ impl<'de> serde::Deserialize<'de> for TransactionView {
                     {
                         match value {
                             "actionViews" | "action_views" => Ok(GeneratedField::ActionViews),
-                            "expiryHeight" | "expiry_height" => Ok(GeneratedField::ExpiryHeight),
                             "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "fee" => Ok(GeneratedField::Fee),
                             "fmdClues" | "fmd_clues" => Ok(GeneratedField::FmdClues),
@@ -4453,7 +4403,6 @@ impl<'de> serde::Deserialize<'de> for TransactionView {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut action_views__ = None;
-                let mut expiry_height__ = None;
                 let mut chain_id__ = None;
                 let mut fee__ = None;
                 let mut fmd_clues__ = None;
@@ -4468,14 +4417,6 @@ impl<'de> serde::Deserialize<'de> for TransactionView {
                                 return Err(serde::de::Error::duplicate_field("actionViews"));
                             }
                             action_views__ = Some(map.next_value()?);
-                        }
-                        GeneratedField::ExpiryHeight => {
-                            if expiry_height__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("expiryHeight"));
-                            }
-                            expiry_height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
                         }
                         GeneratedField::ChainId => {
                             if chain_id__.is_some() {
@@ -4529,7 +4470,6 @@ impl<'de> serde::Deserialize<'de> for TransactionView {
                 }
                 Ok(TransactionView {
                     action_views: action_views__.unwrap_or_default(),
-                    expiry_height: expiry_height__.unwrap_or_default(),
                     chain_id: chain_id__.unwrap_or_default(),
                     fee: fee__,
                     fmd_clues: fmd_clues__.unwrap_or_default(),

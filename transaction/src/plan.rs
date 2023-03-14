@@ -36,7 +36,6 @@ pub use memo::MemoPlan;
 pub struct TransactionPlan {
     /// A list of this transaction's actions.
     pub actions: Vec<ActionPlan>,
-    pub expiry_height: u64,
     pub chain_id: String,
     pub fee: Fee,
     pub clue_plans: Vec<CluePlan>,
@@ -270,7 +269,6 @@ impl From<TransactionPlan> for pb::TransactionPlan {
     fn from(msg: TransactionPlan) -> Self {
         Self {
             actions: msg.actions.into_iter().map(Into::into).collect(),
-            expiry_height: msg.expiry_height,
             valid_after: msg.valid_after.nanoseconds(),
             valid_before: msg.valid_before.nanoseconds(),
             chain_id: msg.chain_id,
@@ -295,7 +293,6 @@ impl TryFrom<pb::TransactionPlan> for TransactionPlan {
                 .into_iter()
                 .map(TryInto::try_into)
                 .collect::<Result<_, _>>()?,
-            expiry_height: value.expiry_height,
             valid_after: Timestamp::from_nanoseconds(value.valid_after)?,
             valid_before: Timestamp::from_nanoseconds(value.valid_before)?,
             chain_id: value.chain_id,

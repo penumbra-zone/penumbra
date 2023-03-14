@@ -20,9 +20,6 @@ pub struct BroadcastTransactionResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionPlannerRequest {
-    /// The expiry height for the requested TransactionPlan
-    #[prost(uint64, tag = "1")]
-    pub expiry_height: u64,
     /// The fee for the requested TransactionPlan, if any.
     #[prost(message, optional, tag = "2")]
     pub fee: ::core::option::Option<super::super::core::crypto::v1alpha1::Fee>,

@@ -170,7 +170,6 @@ impl TransactionPlan {
 
         let transaction_body = TransactionBody {
             actions,
-            expiry_height: self.expiry_height,
             valid_after: self.valid_after,
             valid_before: self.valid_before,
             chain_id: self.chain_id,
@@ -394,7 +393,6 @@ impl TransactionPlan {
 
         let transaction_body = TransactionBody {
             actions,
-            expiry_height: self.expiry_height,
             valid_after: self.valid_after,
             valid_before: self.valid_before,
             chain_id: self.chain_id,

@@ -26,11 +26,6 @@ pub struct TransactionBody {
     /// A list of actions (state changes) performed by this transaction.
     #[prost(message, repeated, tag = "1")]
     pub actions: ::prost::alloc::vec::Vec<Action>,
-    /// The maximum height that this transaction can be included in the chain.
-    ///
-    /// If zero, there is no maximum.
-    #[prost(uint64, tag = "2")]
-    pub expiry_height: u64,
     /// The chain this transaction is intended for.  Including this prevents
     /// replaying a transaction on one chain onto a different chain.
     #[prost(string, tag = "3")]
@@ -176,11 +171,6 @@ pub struct TransactionView {
     /// A list views into of actions (state changes) performed by this transaction.
     #[prost(message, repeated, tag = "1")]
     pub action_views: ::prost::alloc::vec::Vec<ActionView>,
-    /// The maximum height that this transaction can be included in the chain.
-    ///
-    /// If zero, there is no maximum.
-    #[prost(uint64, tag = "2")]
-    pub expiry_height: u64,
     /// The chain this transaction is intended for.  Including this prevents
     /// replaying a transaction on one chain onto a different chain.
     #[prost(string, tag = "3")]
@@ -499,8 +489,6 @@ pub struct WitnessData {
 pub struct TransactionPlan {
     #[prost(message, repeated, tag = "1")]
     pub actions: ::prost::alloc::vec::Vec<ActionPlan>,
-    #[prost(uint64, tag = "2")]
-    pub expiry_height: u64,
     #[prost(string, tag = "3")]
     pub chain_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "4")]

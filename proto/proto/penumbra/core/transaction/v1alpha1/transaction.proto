@@ -27,10 +27,6 @@ message Id {
 message TransactionBody {
   // A list of actions (state changes) performed by this transaction.
   repeated Action actions = 1;
-  // The maximum height that this transaction can be included in the chain.
-  //
-  // If zero, there is no maximum.
-  uint64 expiry_height = 2;
   // The chain this transaction is intended for.  Including this prevents
   // replaying a transaction on one chain onto a different chain.
   string chain_id = 3;
@@ -126,10 +122,6 @@ message NullifierWithNote {
 message TransactionView {
   // A list views into of actions (state changes) performed by this transaction.
   repeated ActionView action_views = 1;
-  // The maximum height that this transaction can be included in the chain.
-  //
-  // If zero, there is no maximum.
-  uint64 expiry_height = 2;
   // The chain this transaction is intended for.  Including this prevents
   // replaying a transaction on one chain onto a different chain.
   string chain_id = 3;
@@ -311,7 +303,6 @@ message WitnessData {
 // Describes a planned transaction.
 message TransactionPlan {
     repeated ActionPlan actions = 1;
-    uint64 expiry_height = 2;
     string chain_id = 3;
     crypto.v1alpha1.Fee fee = 4;
     repeated CluePlan clue_plans = 5;

@@ -103,7 +103,6 @@ mod tests {
         // Add a single spend and output to the transaction plan such that the
         // transaction balances.
         let plan = TransactionPlan {
-            expiry_height: 0,
             valid_after: Timestamp::none(),
             valid_before: Timestamp::none(),
             fee: Fee::default(),
@@ -168,7 +167,6 @@ mod tests {
         // Add a single spend and output to the transaction plan such that the
         // transaction balances.
         let plan = TransactionPlan {
-            expiry_height: 0,
             valid_after: Timestamp::none(),
             valid_before: Timestamp::none(),
             fee: Fee::default(),

@@ -4287,9 +4287,6 @@ impl serde::Serialize for TransactionPlannerRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.expiry_height != 0 {
-            len += 1;
-        }
         if self.fee.is_some() {
             len += 1;
         }
@@ -4324,9 +4321,6 @@ impl serde::Serialize for TransactionPlannerRequest {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.TransactionPlannerRequest", len)?;
-        if self.expiry_height != 0 {
-            struct_ser.serialize_field("expiryHeight", ToString::to_string(&self.expiry_height).as_str())?;
-        }
         if let Some(v) = self.fee.as_ref() {
             struct_ser.serialize_field("fee", v)?;
         }
@@ -4370,8 +4364,6 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "expiry_height",
-            "expiryHeight",
             "fee",
             "memo",
             "valid_before",
@@ -4391,7 +4383,6 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ExpiryHeight,
             Fee,
             Memo,
             ValidBefore,
@@ -4424,7 +4415,6 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "expiryHeight" | "expiry_height" => Ok(GeneratedField::ExpiryHeight),
                             "fee" => Ok(GeneratedField::Fee),
                             "memo" => Ok(GeneratedField::Memo),
                             "validBefore" | "valid_before" => Ok(GeneratedField::ValidBefore),
@@ -4455,7 +4445,6 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut expiry_height__ = None;
                 let mut fee__ = None;
                 let mut memo__ = None;
                 let mut valid_before__ = None;
@@ -4469,14 +4458,6 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                 let mut ibc_actions__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
-                        GeneratedField::ExpiryHeight => {
-                            if expiry_height__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("expiryHeight"));
-                            }
-                            expiry_height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
-                        }
                         GeneratedField::Fee => {
                             if fee__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("fee"));
@@ -4546,7 +4527,6 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                     }
                 }
                 Ok(TransactionPlannerRequest {
-                    expiry_height: expiry_height__.unwrap_or_default(),
                     fee: fee__,
                     memo: memo__.unwrap_or_default(),
                     valid_before: valid_before__,

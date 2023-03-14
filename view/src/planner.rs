@@ -118,13 +118,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         )
     }
 
-    /// Set the expiry height for the transaction plan.
-    #[instrument(skip(self))]
-    pub fn expiry_height(&mut self, expiry_height: u64) -> &mut Self {
-        self.plan.expiry_height = expiry_height;
-        self
-    }
-
     /// Set the timestamp after which this transaction is valid
     #[instrument(skip(self))]
     pub fn valid_after(&mut self, valid_after: Time) -> &mut Self {

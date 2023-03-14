@@ -34,7 +34,6 @@ use ibc::timestamp::Timestamp;
 #[derive(Clone, Debug, Default)]
 pub struct TransactionBody {
     pub actions: Vec<Action>,
-    pub expiry_height: u64,
     pub chain_id: String,
     pub fee: Fee,
     pub fmd_clues: Vec<Clue>,
@@ -173,7 +172,6 @@ impl Transaction {
 
         TransactionView {
             action_views,
-            expiry_height: self.transaction_body().expiry_height,
             valid_after: self.transaction_body().valid_after,
             valid_before: self.transaction_body().valid_before,
             chain_id: self.transaction_body().chain_id,
@@ -394,7 +392,6 @@ impl From<TransactionBody> for pbt::TransactionBody {
     fn from(msg: TransactionBody) -> Self {
         pbt::TransactionBody {
             actions: msg.actions.into_iter().map(|x| x.into()).collect(),
-            expiry_height: msg.expiry_height,
             valid_after: msg.valid_after.nanoseconds(),
             valid_before: msg.valid_before.nanoseconds(),
             chain_id: msg.chain_id,
@@ -418,7 +415,6 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
             );
         }
 
-        let expiry_height = proto.expiry_height;
         let valid_before = Timestamp::from_nanoseconds(proto.valid_before)?;
         let valid_after = Timestamp::from_nanoseconds(proto.valid_after)?;
 
@@ -450,7 +446,6 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
 
         Ok(TransactionBody {
             actions,
-            expiry_height,
             valid_before,
             valid_after,
             chain_id,
