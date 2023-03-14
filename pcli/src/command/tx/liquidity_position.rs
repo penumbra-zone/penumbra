@@ -35,8 +35,12 @@ pub struct BuyOrder {
     pub price: Value,
 }
 
-/// Expresses the desire to sell `desired` units at price `price`.
-type SellOrder = BuyOrder;
+/// Expresses the desire to sell `selling` units at price `price`.
+#[derive(Clone, Debug)]
+pub struct SellOrder {
+    pub selling: Value,
+    pub price: Value,
+}
 
 /// Turns a string like `100penumbra@1.2gm` into a [`PurchaseVar`] tuple consisting of
 /// `(100 penumbra, 1.2 gm)` represented as [`Value`] types.
@@ -47,6 +51,23 @@ impl FromStr for BuyOrder {
         if let Some((desired, price)) = pvar.split_once('@').map(|(d, p)| (d.parse(), p.parse())) {
             Ok(BuyOrder {
                 desired: desired?,
+                price: price?,
+            })
+        } else {
+            Err(anyhow!("invalid argument"))
+        }
+    }
+}
+
+/// Turns a string like `100penumbra@1.2gm` into a [`PurchaseVar`] tuple consisting of
+/// `(100 penumbra, 1.2 gm)` represented as [`Value`] types.
+impl FromStr for SellOrder {
+    type Err = anyhow::Error;
+
+    fn from_str(pvar: &str) -> Result<Self> {
+        if let Some((selling, price)) = pvar.split_once('@').map(|(d, p)| (d.parse(), p.parse())) {
+            Ok(SellOrder {
+                selling: selling?,
                 price: price?,
             })
         } else {
@@ -77,7 +98,7 @@ pub enum OrderCmd {
         sell_order: SellOrder,
         /// The fee associated with transactions against the liquidity position.
         #[clap(long, default_value = "0")]
-        spread: u64,
+        spread: u32,
         /// The transaction fee (paid in upenumbra).
         #[clap(long, default_value = "0")]
         fee: u64,

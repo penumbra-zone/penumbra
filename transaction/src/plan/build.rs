@@ -164,6 +164,9 @@ impl TransactionPlan {
         for dao_deposit in self.dao_deposits().cloned() {
             actions.push(Action::DaoDeposit(dao_deposit))
         }
+        for position_open in self.position_openings().cloned() {
+            actions.push(Action::PositionOpen(position_open))
+        }
 
         let transaction_body = TransactionBody {
             actions,
@@ -382,6 +385,9 @@ impl TransactionPlan {
         }
         for dao_deposit in self.dao_deposits().cloned() {
             actions.push(Action::DaoDeposit(dao_deposit))
+        }
+        for position_open in self.position_openings().cloned() {
+            actions.push(Action::PositionOpen(position_open))
         }
 
         let transaction_body = TransactionBody {
