@@ -251,14 +251,31 @@ impl TryFrom<pb::PositionState> for State {
 }
 
 impl From<Metadata> for pb::PositionMetadata {
-    fn from(_: Metadata) -> Self {
-        todo!()
+    fn from(m: Metadata) -> Self {
+        Self {
+            position: Some(m.position.into()),
+            state: Some(m.state.into()),
+            reserves: Some(m.reserves.into()),
+        }
     }
 }
 
 impl TryFrom<pb::PositionMetadata> for Metadata {
     type Error = anyhow::Error;
-    fn try_from(_value: pb::PositionMetadata) -> Result<Self, Self::Error> {
-        todo!()
+    fn try_from(m: pb::PositionMetadata) -> Result<Self, Self::Error> {
+        Ok(Self {
+            position: m
+                .position
+                .ok_or_else(|| anyhow!("missing position"))?
+                .try_into()?,
+            state: m
+                .state
+                .ok_or_else(|| anyhow!("missing state"))?
+                .try_into()?,
+            reserves: m
+                .reserves
+                .ok_or_else(|| anyhow!("missing reserves"))?
+                .try_into()?,
+        })
     }
 }

@@ -112,7 +112,9 @@ impl MockClient {
                         self.sct.insert(Forget, commitment)?;
                     }
                 }
-                StatePayload::Position { .. } => todo!(),
+                StatePayload::Position { .. } => {
+                    println!("Received position payload, ignoring for now");
+                }
             }
         }
         self.sct.end_block()?;
