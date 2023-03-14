@@ -134,9 +134,15 @@ pub struct TransactionPerspective {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct PayloadKeyWithCommitment {
+pub struct PayloadKey {
     #[prost(bytes = "bytes", tag = "1")]
-    pub payload_key: ::prost::bytes::Bytes,
+    pub inner: ::prost::bytes::Bytes,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PayloadKeyWithCommitment {
+    #[prost(message, optional, tag = "1")]
+    pub payload_key: ::core::option::Option<PayloadKey>,
     #[prost(message, optional, tag = "2")]
     pub commitment: ::core::option::Option<
         super::super::crypto::v1alpha1::StateCommitment,
@@ -332,8 +338,8 @@ pub mod output_view {
         pub output: ::core::option::Option<super::Output>,
         #[prost(message, optional, tag = "2")]
         pub note: ::core::option::Option<super::super::super::crypto::v1alpha1::Note>,
-        #[prost(bytes = "bytes", tag = "3")]
-        pub payload_key: ::prost::bytes::Bytes,
+        #[prost(message, optional, tag = "3")]
+        pub payload_key: ::core::option::Option<super::PayloadKey>,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]

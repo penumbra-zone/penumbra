@@ -41,7 +41,7 @@ impl From<TransactionPerspective> for pb::TransactionPerspective {
 
         for (commitment, payload_key) in msg.payload_keys {
             payload_keys.push(PayloadKeyWithCommitment {
-                payload_key: payload_key.to_vec().into(),
+                payload_key: Some(payload_key.to_owned().into()),
                 commitment: Some(commitment.to_owned().into()),
             });
         }
@@ -80,7 +80,7 @@ impl TryFrom<pb::TransactionPerspective> for TransactionPerspective {
             if pk.commitment.is_some() {
                 payload_keys.insert(
                     pk.commitment.unwrap().try_into()?,
-                    <[u8; 32]>::try_from(pk.payload_key.as_ref())?.into(),
+                    pk.payload_key.unwrap().try_into()?,
                 );
             };
         }

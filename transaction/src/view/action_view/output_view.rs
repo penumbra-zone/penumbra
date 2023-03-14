@@ -39,7 +39,12 @@ impl TryFrom<pbt::OutputView> for OutputView {
                     .note
                     .ok_or_else(|| anyhow::anyhow!("missing note field"))?
                     .try_into()?,
-                payload_key: x.payload_key.as_ref().try_into()?,
+                payload_key: x
+                    .payload_key
+                    .ok_or_else(|| anyhow::anyhow!("missing payload key field"))?
+                    .inner
+                    .as_ref()
+                    .try_into()?,
             }),
             pbt::output_view::OutputView::Opaque(x) => Ok(OutputView::Opaque {
                 output: x
@@ -63,7 +68,7 @@ impl From<OutputView> for pbt::OutputView {
                 output_view: Some(ov::OutputView::Visible(ov::Visible {
                     output: Some(output.into()),
                     note: Some(note.into()),
-                    payload_key: payload_key.to_vec().into(),
+                    payload_key: Some(payload_key.into()),
                 })),
             },
             OutputView::Opaque { output } => Self {
