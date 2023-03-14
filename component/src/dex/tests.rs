@@ -13,6 +13,8 @@ mod test {
     use penumbra_storage::{ArcStateDeltaExt, StateDelta, TempStorage};
     use penumbra_transaction::{action::PositionOpen, plan::SwapPlan, Transaction};
 
+    use penumbra_crypto::Value;
+
     use penumbra_chain::test_keys;
 
     use crate::{dex::Dex, TempStorageExt};
@@ -102,17 +104,17 @@ mod test {
         //
 
         // Test 1: We're trying to fill the entire order.
-        let delta_1 = penumbra_crypto::Value {
+        let delta_1 = Value {
             amount: 100u64.into(),
             asset_id: gm.id(),
         };
 
-        let lambda_1 = penumbra_crypto::Value {
+        let lambda_1 = Value {
             amount: 0u64.into(),
             asset_id: gm.id(),
         };
 
-        let lambda_2 = penumbra_crypto::Value {
+        let lambda_2 = Value {
             amount: 120u64.into(),
             asset_id: gn.id(),
         };
@@ -136,7 +138,7 @@ mod test {
         assert_eq!(unfilled, delta_1);
         assert_eq!(
             output,
-            penumbra_crypto::Value {
+            Value {
                 amount: Amount::zero(),
                 asset_id: gn.id(),
             }
@@ -152,21 +154,21 @@ mod test {
         assert_eq!(position.reserves.r2, Amount::zero());
 
         // Now let's try to do a "round-trip" i.e. fill the order in the other direction:
-        let delta_2 = penumbra_crypto::Value {
+        let delta_2 = Value {
             amount: 120u64.into(),
             asset_id: gn.id(),
         };
         let (unfilled, output) = state_test_1.fill_against(delta_2, &position_1_id).await?;
         assert_eq!(
             unfilled,
-            penumbra_crypto::Value {
+            Value {
                 amount: Amount::zero(),
                 asset_id: gn.id(),
             }
         );
         assert_eq!(
             output,
-            penumbra_crypto::Value {
+            Value {
                 amount: 100u64.into(),
                 asset_id: gm.id(),
             }
@@ -180,6 +182,52 @@ mod test {
 
         assert_eq!(position.reserves.r1, Amount::zero());
         assert_eq!(position.reserves.r2, 120u64.into());
+
+        // Finally, let's test partial fills, rolling back to `state_tx`, which contains
+        // a single limit order for 100gm@1.2gn.
+
+        let position = state_tx
+            .position_by_id(&position_1_id)
+            .await
+            .unwrap()
+            .unwrap();
+
+        println!("position: {position:?}");
+
+        // We are splitting a single large fill for a `100gm` into, 100 fills for `1gm`.
+        for _i in 1..=100 {
+            let delta_1 = Value {
+                amount: 1u64.into(),
+                asset_id: gm.id(),
+            };
+            let (unfilled, output) = state_tx.fill_against(delta_1, &position_1_id).await?;
+            assert_eq!(
+                unfilled,
+                Value {
+                    amount: Amount::zero(),
+                    asset_id: gm.id(),
+                }
+            );
+            assert_eq!(
+                output,
+                Value {
+                    amount: 1u64.into(),
+                    asset_id: gn.id(),
+                }
+            );
+        }
+
+        // Finally, check that the position reserves were updated correctly and the entire order was filled.
+        let position = state_tx
+            .position_by_id(&position_1_id)
+            .await
+            .unwrap()
+            .unwrap();
+
+        println!("position: {position:?}");
+
+        assert_eq!(position.reserves.r1, 100u64.into());
+        assert_eq!(position.reserves.r2, Amount::zero());
 
         Ok(())
     }
