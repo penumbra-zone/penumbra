@@ -95,8 +95,8 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
         claimed_fee_var.enforce_equal(&swap_plaintext_var.claim_fee)?;
 
         // Validate the swap commitment's height matches the output data's height (i.e. the clearing price height).
-        let block = position_var.block();
-        let epoch = position_var.epoch();
+        let block = position_var.block()?;
+        let epoch = position_var.epoch()?;
         let note_commitment_block_height_var = epoch_duration_var * epoch + block;
         output_data_var
             .height

@@ -22,23 +22,25 @@ impl AllocVar<Position, Fq> for PositionVar {
         let ns = cs.into();
         let cs = ns.cs();
         let inner: Position = *f()?.borrow();
-        match mode {
-            AllocationMode::Constant => unimplemented!(),
-            AllocationMode::Input => unimplemented!(),
-            AllocationMode::Witness => Ok(Self {
-                inner: FqVar::new_witness(cs, || Ok(Fq::from(u64::from(inner))))?,
-            }),
-        }
+        Ok(Self {
+            inner: FqVar::new_variable(cs, || Ok(Fq::from(u64::from(inner))), mode)?,
+        })
     }
 }
 
 impl PositionVar {
-    pub fn block(&self) -> FqVar {
-        todo!()
+    /// Witness the block corresponding to this leaf.
+    pub fn block(&self) -> Result<FqVar, SynthesisError> {
+        let position = self.value().unwrap_or_default();
+        let block = position.block();
+        FqVar::new_witness(self.cs(), || Ok(Fq::from(block)))
     }
 
-    pub fn epoch(&self) -> FqVar {
-        todo!()
+    /// Witness the epoch corresponding to this leaf.
+    pub fn epoch(&self) -> Result<FqVar, SynthesisError> {
+        let position = self.value().unwrap_or_default();
+        let epoch = position.epoch();
+        FqVar::new_witness(self.cs(), || Ok(Fq::from(epoch)))
     }
 }
 
