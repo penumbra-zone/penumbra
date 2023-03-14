@@ -42,18 +42,12 @@ message TransactionBody {
   // timestamp is < this value.
   //
   // If the value is zero, this value is considered unset.
-  // [TODO: Double check that this actually does behave like google's protobufs]
-  // The behavior of this time stamp should match google's protobuf specification:
-  // [specification]: https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp
   uint64 valid_before = 7;
   // A unix timestamp, in nanoseconds.
   // If this value is set, the transaction is valid iff the most recent block header
   // timestamp is > this value.
   //
   // If the value is zero, this value is considered unset.
-  // [TODO: Double check that this actually does behave like google's protobufs]
-  // The behavior of this time stamp should match google's protobuf specification:
-  // [specification]: https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp
   uint64 valid_after = 8;
 }
 
@@ -138,19 +132,13 @@ message TransactionView {
   // If this value is set, the transaction is valid iff the most recent block header
   // timestamp is < this value.
   //
-  // If the value is zero, this value is considered unset.
-  // [TODO: Double check that this actually does behave like google's protobufs]
-  // The behavior of this time stamp should match google's protobuf specification:
-  // [specification]: https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp
+  // If the value is zero, this field is considered unset.
   uint64 valid_before = 7;
   // A unix timestamp, in nanoseconds.
   // If this value is set, the transaction is valid iff the most recent block header
   // timestamp is > this value.
   //
-  // If the value is zero, this value is considered unset.
-  // [TODO: Double check that this actually does behave like google's protobufs]
-  // The behavior of this time stamp should match google's protobuf specification:
-  // [specification]: https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp
+  // If the value is zero, this field is considered unset.
   uint64 valid_after = 8;
 }
 

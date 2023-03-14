@@ -31,6 +31,7 @@ async fn test_valid_before_and_after() -> anyhow::Result<()> {
     assert!(exactly_after.check_stateful(state.clone()).await.is_ok());
 
     let five_minutes_ahead = (now + Duration::from_secs(5 * 60)).unwrap();
+    let five_minutes_ago = (now - Duration::from_secs(5 * 60)).unwrap();
 
     let mut too_early = Transaction::default();
     too_early.transaction_body.valid_after = five_minutes_ahead.into();
@@ -39,8 +40,6 @@ async fn test_valid_before_and_after() -> anyhow::Result<()> {
     let mut early_enough = Transaction::default();
     early_enough.transaction_body.valid_before = five_minutes_ahead.into();
     assert!(early_enough.check_stateful(state.clone()).await.is_ok());
-
-    let five_minutes_ago = (now - Duration::from_secs(5 * 60)).unwrap();
 
     let mut late_enough = Transaction::default();
     late_enough.transaction_body.valid_after = five_minutes_ago.into();

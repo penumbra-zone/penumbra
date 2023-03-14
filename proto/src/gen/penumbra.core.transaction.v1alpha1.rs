@@ -45,9 +45,6 @@ pub struct TransactionBody {
     /// timestamp is < this value.
     ///
     /// If the value is zero, this value is considered unset.
-    /// [TODO: Double check that this actually does behave like google's protobufs]
-    /// The behavior of this time stamp should match google's protobuf specification:
-    /// \[specification\]: <https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp>
     #[prost(uint64, tag = "7")]
     pub valid_before: u64,
     /// A unix timestamp, in nanoseconds.
@@ -55,9 +52,6 @@ pub struct TransactionBody {
     /// timestamp is > this value.
     ///
     /// If the value is zero, this value is considered unset.
-    /// [TODO: Double check that this actually does behave like google's protobufs]
-    /// The behavior of this time stamp should match google's protobuf specification:
-    /// \[specification\]: <https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp>
     #[prost(uint64, tag = "8")]
     pub valid_after: u64,
 }
@@ -194,20 +188,14 @@ pub struct TransactionView {
     /// If this value is set, the transaction is valid iff the most recent block header
     /// timestamp is < this value.
     ///
-    /// If the value is zero, this value is considered unset.
-    /// [TODO: Double check that this actually does behave like google's protobufs]
-    /// The behavior of this time stamp should match google's protobuf specification:
-    /// \[specification\]: <https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp>
+    /// If the value is zero, this field is considered unset.
     #[prost(uint64, tag = "7")]
     pub valid_before: u64,
     /// A unix timestamp, in nanoseconds.
     /// If this value is set, the transaction is valid iff the most recent block header
     /// timestamp is > this value.
     ///
-    /// If the value is zero, this value is considered unset.
-    /// [TODO: Double check that this actually does behave like google's protobufs]
-    /// The behavior of this time stamp should match google's protobuf specification:
-    /// \[specification\]: <https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp>
+    /// If the value is zero, this field is considered unset.
     #[prost(uint64, tag = "8")]
     pub valid_after: u64,
 }
