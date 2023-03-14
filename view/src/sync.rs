@@ -90,7 +90,9 @@ pub async fn scan_block(
             StatePayload::Position {
                 lpnft: _,
                 commitment: _,
-            } => todo!(),
+            } => {
+                println!("Received position payload, ignoring for now");
+            }
         }
     }
     // Having started trial decryption in the background, ask the Storage for scanning advice:
