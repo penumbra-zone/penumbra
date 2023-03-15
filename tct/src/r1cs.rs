@@ -53,7 +53,7 @@ impl R1CSVar<Fq> for PositionVar {
 
     fn value(&self) -> Result<Self::Value, SynthesisError> {
         let inner_fq = self.inner.value()?;
-        let inner_bytes = &inner_fq.to_bytes()[0..16];
+        let inner_bytes = &inner_fq.to_bytes()[0..8];
         let position_bytes: [u8; 8] = inner_bytes
             .try_into()
             .expect("should be able to fit in 16 bytes");
