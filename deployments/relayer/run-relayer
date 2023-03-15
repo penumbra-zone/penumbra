@@ -1,0 +1,8 @@
+#!/bin/bash
+# Wrapper script to finalize configuration on relayer,
+# and submit a transaction to verify manual relaying of cross-chain
+# info for Penumbra. (Doesn't work yet =)
+
+
+>&2 echo "Attempting to 'transact link' the path..."
+rly --debug transact link penumbra_path
