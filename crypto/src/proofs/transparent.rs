@@ -14,11 +14,8 @@ use penumbra_tct as tct;
 use super::transparent_gadgets as gadgets;
 use crate::{
     asset, balance,
-    dex::{swap::SwapPlaintext, BatchSwapOutputData},
-    keys::{self, NullifierKey},
-    note,
+    keys::{self},
     stake::Penalty,
-    transaction::Fee,
     Amount, Balance, Fq, Fr, Note, Nullifier, Value,
 };
 

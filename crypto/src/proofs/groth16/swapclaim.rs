@@ -130,12 +130,10 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
             .enforce_equal(&swap_plaintext_var.trading_pair)?;
 
         // Output amounts integrity
-        let (computed_lambda_1_i, computed_lambda_2_i) = output_data_var.pro_rata_outputs(
-            swap_plaintext_var.delta_1_i.amount,
-            swap_plaintext_var.delta_2_i.amount,
-        )?;
-        computed_lambda_1_i.enforce_equal(&lambda_1_i_var.amount)?;
-        computed_lambda_2_i.enforce_equal(&lambda_2_i_var.amount)?;
+        let (computed_lambda_1_i, computed_lambda_2_i) = output_data_var
+            .pro_rata_outputs(swap_plaintext_var.delta_1_i, swap_plaintext_var.delta_2_i)?;
+        computed_lambda_1_i.enforce_equal(&lambda_1_i_var)?;
+        computed_lambda_2_i.enforce_equal(&lambda_2_i_var)?;
 
         // Output note integrity
         let output_1_note = NoteVar {

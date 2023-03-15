@@ -1,5 +1,5 @@
 use crate::address::AddressVar;
-use crate::asset::{AmountVar, AssetIdVar};
+use crate::asset::AmountVar;
 use crate::dex::trading_pair::TradingPairVar;
 use crate::keys::OutgoingViewingKey;
 use crate::note::StateCommitmentVar;

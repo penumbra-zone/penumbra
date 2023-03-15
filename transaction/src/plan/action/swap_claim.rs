@@ -1,4 +1,3 @@
-use aes::cipher::generic_array::typenum::private::IsNotEqualPrivate;
 use penumbra_crypto::{
     dex::{swap::SwapPlaintext, BatchSwapOutputData},
     keys::{IncomingViewingKey, NullifierKey},
