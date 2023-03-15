@@ -100,7 +100,7 @@ impl ViewService {
 
         Ok(Self {
             storage,
-            account_group_id: account_group_id,
+            account_group_id,
             error_slot,
             sync_height_rx,
             state_commitment_tree: sct,
@@ -1111,8 +1111,10 @@ impl ViewProtocolService for ViewService {
 
         let transaction = Some(
             transaction_plan
-                .build(&mut OsRng, &fvk, authorization_data, witness_data)
+                .build(&fvk, witness_data)
                 .map_err(|_| tonic::Status::failed_precondition("Error building transaction"))?
+                .authorize(&mut OsRng, &authorization_data)
+                .map_err(|_| tonic::Status::failed_precondition("Error authorizing transaction"))?
                 .into(),
         );
 

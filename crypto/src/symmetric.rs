@@ -11,9 +11,7 @@ use crate::{
     keys::{IncomingViewingKey, OutgoingViewingKey},
     note,
 };
-use penumbra_proto::core::transaction::v1alpha1::{
-    self as pb, NullifierWithNote, PayloadKeyWithCommitment,
-};
+use penumbra_proto::core::transaction::v1alpha1::{self as pb};
 pub const PAYLOAD_KEY_LEN_BYTES: usize = 32;
 pub const OVK_WRAPPED_LEN_BYTES: usize = 48;
 pub const MEMOKEY_WRAPPED_LEN_BYTES: usize = 48;

@@ -18,23 +18,11 @@ impl TransactionPlan {
     /// - `auth_data`, the [`AuthorizationData`] authorizing the transaction;
     /// - `witness_data`, the [`WitnessData`] used for proving;
     ///
-    pub fn build<R: CryptoRng + RngCore>(
+    pub fn build(
         self,
-        rng: &mut R,
         fvk: &FullViewingKey,
-        auth_data: AuthorizationData,
         witness_data: WitnessData,
-    ) -> Result<Transaction> {
-        // Do some basic input sanity-checking.
-        let spend_count = self.spend_plans().count();
-        if auth_data.spend_auths.len() != spend_count {
-            return Err(anyhow::anyhow!(
-                "expected {} spend auths but got {}",
-                spend_count,
-                auth_data.spend_auths.len()
-            ));
-        }
-
+    ) -> Result<UnauthTransaction> {
         let mut actions = Vec::new();
         let mut fmd_clues = Vec::new();
         let mut synthetic_blinding_factor = Fr::zero();
@@ -54,7 +42,7 @@ impl TransactionPlan {
         // transaction we'll build here without actually building it.
 
         // Build the transaction's spends.
-        for (spend_plan, auth_sig) in self.spend_plans().zip(auth_data.spend_auths.into_iter()) {
+        for spend_plan in self.spend_plans() {
             let note_commitment = spend_plan.note.commit();
             let auth_path = witness_data
                 .state_commitment_proofs
@@ -64,7 +52,7 @@ impl TransactionPlan {
             synthetic_blinding_factor += spend_plan.value_blinding;
             actions.push(Action::Spend(spend_plan.spend(
                 fvk,
-                auth_sig,
+                [0; 64].into(),
                 auth_path.clone(),
             )));
         }
@@ -130,10 +118,7 @@ impl TransactionPlan {
         for validator_vote in self.validator_votes().cloned() {
             actions.push(Action::ValidatorVote(validator_vote))
         }
-        for (delegator_vote_plan, auth_sig) in self
-            .delegator_vote_plans()
-            .zip(auth_data.delegator_vote_auths.into_iter())
-        {
+        for delegator_vote_plan in self.delegator_vote_plans() {
             let note_commitment = delegator_vote_plan.staked_note.commit();
             let auth_path = witness_data
                 .state_commitment_proofs
@@ -142,7 +127,7 @@ impl TransactionPlan {
 
             actions.push(Action::DelegatorVote(delegator_vote_plan.delegator_vote(
                 fvk,
-                auth_sig,
+                [0; 64].into(),
                 auth_path.clone(),
             )));
         }
@@ -177,18 +162,15 @@ impl TransactionPlan {
             memo,
         };
 
-        // Finally, compute the binding signature and assemble the transaction.
-        let binding_signing_key = rdsa::SigningKey::from(synthetic_blinding_factor);
-        let auth_hash = transaction_body.auth_hash();
-        let binding_sig = binding_signing_key.sign(rng, auth_hash.as_bytes());
-        tracing::debug!(bvk = ?rdsa::VerificationKey::from(&binding_signing_key), ?auth_hash);
-
         // TODO: add consistency checks?
 
-        Ok(Transaction {
-            transaction_body,
-            anchor: witness_data.anchor,
-            binding_sig,
+        Ok(UnauthTransaction {
+            inner: Transaction {
+                transaction_body,
+                anchor: witness_data.anchor,
+                binding_sig: [0; 64].into(),
+            },
+            synthetic_blinding_factor,
         })
     }
 
@@ -410,5 +392,65 @@ impl TransactionPlan {
             anchor: witness_data.anchor,
             binding_sig,
         })
+    }
+}
+
+/// A partially-constructed transaction awaiting authorization data.
+pub struct UnauthTransaction {
+    inner: Transaction,
+    synthetic_blinding_factor: Fr,
+}
+
+impl UnauthTransaction {
+    pub fn authorize<R: CryptoRng + RngCore>(
+        mut self,
+        rng: &mut R,
+        auth_data: &AuthorizationData,
+    ) -> Result<Transaction> {
+        // Overwrite the placeholder auth sigs with the real ones from `auth_data`
+
+        for (spend, auth_sig) in self
+            .inner
+            .transaction_body
+            .actions
+            .iter_mut()
+            .filter_map(|action| {
+                if let Action::Spend(s) = action {
+                    Some(s)
+                } else {
+                    None
+                }
+            })
+            .zip(auth_data.spend_auths.clone().into_iter())
+        {
+            spend.auth_sig = auth_sig;
+        }
+
+        for (mut delegator_vote, auth_sig) in self
+            .inner
+            .transaction_body
+            .actions
+            .iter_mut()
+            .filter_map(|action| {
+                if let Action::DelegatorVote(s) = action {
+                    Some(s)
+                } else {
+                    None
+                }
+            })
+            .zip(auth_data.delegator_vote_auths.clone().into_iter())
+        {
+            delegator_vote.auth_sig = auth_sig;
+        }
+
+        // Compute the binding signature and assemble the transaction.
+        let binding_signing_key = rdsa::SigningKey::from(self.synthetic_blinding_factor);
+        let auth_hash = self.inner.transaction_body.auth_hash();
+        let binding_sig = binding_signing_key.sign(rng, auth_hash.as_bytes());
+        tracing::debug!(bvk = ?rdsa::VerificationKey::from(&binding_signing_key), ?auth_hash);
+
+        self.inner.binding_sig = binding_sig;
+
+        Ok(self.inner)
     }
 }

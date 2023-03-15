@@ -24,7 +24,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     action::{
         DaoDeposit, DaoOutput, DaoSpend, Delegate, DelegatorVote, Output, PositionOpen,
-        ProposalSubmit, ProposalWithdraw, Swap, Undelegate, ValidatorVote,
+        ProposalSubmit, ProposalWithdraw, Spend, Swap, Undelegate, ValidatorVote,
     },
     view::action_view::OutputView,
     Action, ActionView, Id, IsAction, TransactionPerspective, TransactionView,
@@ -308,6 +308,16 @@ impl Transaction {
     pub fn dao_spends(&self) -> impl Iterator<Item = &DaoSpend> {
         self.actions().filter_map(|action| {
             if let Action::DaoSpend(s) = action {
+                Some(s)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn spends(&self) -> impl Iterator<Item = &Spend> {
+        self.actions().filter_map(|action| {
+            if let Action::Spend(s) = action {
                 Some(s)
             } else {
                 None
