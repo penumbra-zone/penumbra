@@ -17,13 +17,34 @@ pub trait VerifyingKeyExt {
     fn debug_id(&self) -> String;
 }
 
-impl VerifyingKeyExt for PreparedVerifyingKey<Bls12_377> {
+impl VerifyingKeyExt for VerifyingKey<Bls12_377> {
     fn debug_id(&self) -> String {
         let mut buf = Vec::new();
-        self.vk.serialize(&mut buf).unwrap();
+        self.serialize(&mut buf).unwrap();
         use sha2::Digest;
         let hash = sha2::Sha256::digest(&buf);
         use bech32::ToBase32;
-        bech32::encode("vk", hash.to_base32(), bech32::Variant::Bech32m).unwrap()
+        bech32::encode("groth16vk", hash.to_base32(), bech32::Variant::Bech32m).unwrap()
+    }
+}
+
+impl VerifyingKeyExt for PreparedVerifyingKey<Bls12_377> {
+    fn debug_id(&self) -> String {
+        self.vk.debug_id()
+    }
+}
+
+pub trait ProvingKeyExt {
+    fn debug_id(&self) -> String;
+}
+
+impl ProvingKeyExt for ProvingKey<Bls12_377> {
+    fn debug_id(&self) -> String {
+        let mut buf = Vec::new();
+        self.serialize(&mut buf).unwrap();
+        use sha2::Digest;
+        let hash = sha2::Sha256::digest(&buf);
+        use bech32::ToBase32;
+        bech32::encode("groth16pk", hash.to_base32(), bech32::Variant::Bech32m).unwrap()
     }
 }

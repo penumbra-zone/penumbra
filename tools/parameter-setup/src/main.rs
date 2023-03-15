@@ -7,7 +7,9 @@ use std::{
 use ark_groth16::{ProvingKey, VerifyingKey};
 use ark_serialize::CanonicalSerialize;
 use decaf377::Bls12_377;
-use penumbra_crypto::proofs::groth16::{OutputCircuit, ParameterSetup, SpendCircuit, SwapCircuit};
+use penumbra_crypto::proofs::groth16::{
+    OutputCircuit, ParameterSetup, ProvingKeyExt, SpendCircuit, SwapCircuit, VerifyingKeyExt,
+};
 
 fn main() -> Result<()> {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -41,6 +43,7 @@ fn write_params(
 ) -> Result<()> {
     let pk_location = target_dir.join(format!("{}_pk.bin", name));
     let vk_location = target_dir.join(format!("{}_vk.param", name));
+    let id_location = target_dir.join(format!("{}_id.rs", name));
 
     let pk_file = fs::File::create(&pk_location)?;
     let vk_file = fs::File::create(&vk_location)?;
@@ -50,6 +53,18 @@ fn write_params(
 
     ProvingKey::serialize_unchecked(pk, pk_writer).expect("can serialize ProvingKey");
     VerifyingKey::serialize_unchecked(vk, vk_writer).expect("can serialize VerifyingKey");
+
+    let pk_id = pk.debug_id();
+    let vk_id = vk.debug_id();
+    std::fs::write(
+        id_location,
+        format!(
+            r#"
+pub const PROVING_KEY_ID: &'static str = "{pk_id}";
+pub const VERIFICATION_KEY_ID: &'static str = "{vk_id}";
+"#,
+        ),
+    )?;
 
     Ok(())
 }
