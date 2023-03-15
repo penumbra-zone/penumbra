@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::shielded_pool::{StateReadExt as _, StateWriteExt as _};
+use crate::compactblock::view::{StateReadExt as _, StateWriteExt as _};
 use crate::Component;
 use anyhow::Result;
 use async_trait::async_trait;

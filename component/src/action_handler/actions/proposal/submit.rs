@@ -20,8 +20,10 @@ use penumbra_transaction::{action::ProposalSubmit, Transaction};
 use penumbra_transaction::{AuthorizationData, WitnessData};
 
 use crate::action_handler::ActionHandler;
+use crate::compactblock::view::{StateReadExt as _, StateWriteExt as _};
 use crate::governance::{StateReadExt as _, StateWriteExt as _};
-use crate::shielded_pool::{StateReadExt, StateWriteExt as _, SupplyWrite};
+use crate::sct::view::StateReadExt as _;
+use crate::shielded_pool::SupplyWrite;
 
 // IMPORTANT: these length limits are enforced by consensus! Changing them will change which
 // transactions are accepted by the network, and so they *cannot* be changed without a network

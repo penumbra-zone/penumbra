@@ -24,7 +24,8 @@ use tokio::task::JoinSet;
 use tracing::instrument;
 
 use crate::{
-    shielded_pool::{StateReadExt as _, StateWriteExt as _, SupplyRead},
+    sct::view::StateReadExt as _,
+    shielded_pool::SupplyRead,
     stake::{rate::RateData, validator, StateReadExt as _},
 };
 
@@ -639,7 +640,9 @@ pub trait StateWriteExt: StateWrite {
     async fn mark_nullifier_voted(&mut self, proposal_id: u64, nullifier: &Nullifier) {
         self.put_proto(
             state_key::voted_nullifier_lookup_for_proposal(proposal_id, nullifier),
-            self.height().await,
+            self.get_block_height()
+                .await
+                .expect("block height should be set"),
         );
     }
 
@@ -699,7 +702,9 @@ pub trait StateWriteExt: StateWrite {
     async fn mark_nullifier_voted_on_proposal(&mut self, proposal_id: u64, nullifier: &Nullifier) {
         self.put_proto(
             state_key::voted_nullifier_lookup_for_proposal(proposal_id, nullifier),
-            self.height().await,
+            self.get_block_height()
+                .await
+                .expect("block height should be set"),
         );
     }
 

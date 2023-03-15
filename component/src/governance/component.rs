@@ -7,7 +7,7 @@ use tendermint::abci;
 use tracing::instrument;
 
 use super::{tally, StateReadExt as _, StateWriteExt as _};
-use crate::{shielded_pool::StateWriteExt, Component};
+use crate::Component;
 
 pub struct Governance {}
 
@@ -33,12 +33,12 @@ impl Component for Governance {
             .expect("enacting proposals should never fail");
 
         // TODO: This will need to be altered to support dynamic epochs
-        if state
-            .epoch()
-            .await
-            .unwrap()
-            .is_epoch_end(state.height().await)
-        {
+        if state.epoch().await.unwrap().is_epoch_end(
+            state
+                .get_block_height()
+                .await
+                .expect("block height should be set"),
+        ) {
             end_epoch(&mut state)
                 .await
                 .expect("end epoch should never fail");
@@ -61,7 +61,10 @@ pub async fn enact_all_passed_proposals<S: StateWrite>(mut state: S) -> Result<(
         .context("can get unfinished proposals")?
     {
         // TODO: this check will need to be altered when proposals have clock-time end times
-        let proposal_ready = state.height().await
+        let proposal_ready = state
+            .get_block_height()
+            .await
+            .expect("block height must be set")
             >= state
                 .proposal_voting_end(proposal_id)
                 .await?
