@@ -1,0 +1,38 @@
+#!/bin/bash
+set -euo pipefail
+
+
+if [[ $# -lt 1 ]] ; then
+    >&2 echo "ERROR: no network declared. Use either 'testnet' or 'preview'."
+    >&2 echo "Usage: $0 <network>"
+    exit 1
+fi
+penumbra_network="${1:-}"
+shift 1
+
+function get_chain_id() {
+    local u
+    u="${1:-}"
+    shift 1
+    curl -s "${u}/status" | jq -r .result.node_info.network
+}
+
+case $penumbra_network in
+  # N.B. the port suffix on the URL is required; otherwise, rly complains about missing port.
+    preview)
+        PENUMBRA_RPC_URL="https://rpc.testnet-preview.penumbra.zone:443"
+        PENUMBRA_CHAIN_ID="$(get_chain_id "$PENUMBRA_RPC_URL")"
+        ;;
+    testnet)
+        PENUMBRA_RPC_URL="https://rpc.testnet.penumbra.zone:443"
+        PENUMBRA_CHAIN_ID="$(get_chain_id "$PENUMBRA_RPC_URL")"
+        ;;
+    *)
+        >&2 echo "ERROR: network '$penumbra_network' not supported"
+        exit 2
+        ;;
+esac
+
+export PENUMBRA_RPC_URL
+export PENUMBRA_CHAIN_ID
+envsubst < configs/penumbra.tpl > "configs/penumbra-${penumbra_network}.json"

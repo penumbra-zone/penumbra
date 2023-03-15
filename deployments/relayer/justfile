@@ -1,0 +1,11 @@
+all:
+   just configs
+   just run
+
+configs:
+    ./generate-configs preview
+    ./generate-configs testnet
+
+run:
+    ./configure-relayer
+    ./run-relayer

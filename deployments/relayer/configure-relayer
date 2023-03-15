@@ -1,0 +1,40 @@
+#!/bin/bash
+# Configure relayer from scratch; nukes any previous state, so use with caution.
+# Follows the config steps documented in relayer README:
+# https://github.com/cosmos/relayer/
+set -euo pipefail
+
+
+rm -rf ~/.relayer
+rly config init --memo "Automatic IBC for Penumbra, via relayer"
+
+# Must serve JSON files over network; `file:///` URLs are not supported.
+python3 -m http.server --directory configs/ &
+job_pid="$!"
+trap 'kill -9 "$job_pid"' EXIT
+sleep 2
+
+>&2 echo "Generating relayer configs..."
+rly chains add penumbra-testnet --url http://localhost:8000/penumbra-testnet.json
+rly chains add penumbra-preview --url http://localhost:8000/penumbra-preview.json
+
+# Ideally we wouldn't need to bother with generating keys for the relayer paths,
+# because Penumbra hasn't implemented fees yet, so there's no need for a wallet to pay out of.
+# If we skip keygen, though, then `rly transact link <path>` shows an error:
+#
+#   Error: key default not found on src chain penumbra-testnet-carme-dac8be27
+>&2 echo "Generating key for testnet:"
+rly keys add penumbra-testnet default
+>&2 echo "Generating key for preview:"
+rly keys add penumbra-preview default
+
+# TODO: configure paths. We can't fetch from an external registry, so we'll
+# need to munge the YAML config directly. See docs at
+# https://github.com/cosmos/relayer/blob/main/docs/create-path-across-chain.md
+testnet_chain_id="$(jq -r '.value["chain-id"]' configs/penumbra-testnet.json)"
+preview_chain_id="$(jq -r '.value["chain-id"]' configs/penumbra-preview.json)"
+rly paths new "$preview_chain_id" "$testnet_chain_id" penumbra_path
+
+>&2 echo "Emitting status info:"
+rly chains list
+rly paths list
