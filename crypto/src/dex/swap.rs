@@ -81,6 +81,11 @@ impl BatchSwapOutputData {
 pub struct BatchSwapOutputDataVar {
     pub trading_pair: TradingPairVar,
     pub height: FqVar,
+    pub success: Boolean<Fq>,
+    pub delta_1: FqVar,
+    pub delta_2: FqVar,
+    pub lambda_1: FqVar,
+    pub lambda_2: FqVar,
 }
 
 impl AllocVar<BatchSwapOutputData, Fq> for BatchSwapOutputDataVar {
@@ -95,10 +100,46 @@ impl AllocVar<BatchSwapOutputData, Fq> for BatchSwapOutputDataVar {
         let trading_pair =
             TradingPairVar::new_variable(cs.clone(), || Ok(output_data.trading_pair), mode)?;
         let height = FqVar::new_variable(cs.clone(), || Ok(Fq::from(output_data.height)), mode)?;
+        let success = Boolean::new_variable(cs, || Ok(output_data.success), mode)?;
+        let delta_1 = FqVar::new_variable(cs.clone(), || Ok(Fq::from(output_data.delta_1)), mode)?;
+        let delta_2 = FqVar::new_variable(cs.clone(), || Ok(Fq::from(output_data.delta_2)), mode)?;
+        let lambda_1 =
+            FqVar::new_variable(cs.clone(), || Ok(Fq::from(output_data.lambda_1)), mode)?;
+        let lambda_2 =
+            FqVar::new_variable(cs.clone(), || Ok(Fq::from(output_data.lambda_2)), mode)?;
         Ok(Self {
             trading_pair,
             height,
+            success,
+            delta_1,
+            delta_2,
+            lambda_1,
+            lambda_2,
         })
+    }
+}
+
+impl BatchSwapOutputDataVar {
+    pub fn pro_rata_outputs(
+        &self,
+        delta_1_i: FqVar,
+        delta_2_i: FqVar,
+    ) -> Result<(FqVar, FqVar), SynthesisError> {
+        // TODO: implement the below
+        // let lambda_2_i = ((delta_1_i as u128) * (self.lambda_2 as u128))
+        //     .checked_div(self.delta_1 as u128)
+        //     .unwrap_or(0);
+        // let lambda_1_i = ((delta_2_i as u128) * (self.lambda_1 as u128))
+        //     .checked_div(self.delta_2 as u128)
+        //     .unwrap_or(0);
+        let lambda_2_i = todo!("figure out division");
+        let lambda_1_i = todo!("figure out division");
+
+        // If success we return the results of the above computation ((lambda_1_i, lambda_2_i a)
+        // Else we return (delta_1_i, delta_2_i)
+        let return_var_1 = FqVar::conditionally_select(&self.success, &lambda_1_i, &delta_1_i)?;
+        let return_var_2 = FqVar::conditionally_select(&self.success, &lambda_2_i, &delta_2_i)?;
+        Ok((return_var_1, return_var_2))
     }
 }
 
