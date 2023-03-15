@@ -15,6 +15,10 @@ pub static SPEND_PROOF_PROVING_KEY: Lazy<ProvingKey<Bls12_377>> =
 pub static SPEND_PROOF_VERIFICATION_KEY: Lazy<PreparedVerifyingKey<Bls12_377>> =
     Lazy::new(|| spend_verification_parameters().into());
 
+pub mod spend {
+    include!("gen/spend_id.rs");
+}
+
 /// Proving key for the output proof.
 #[cfg(feature = "proving-keys")]
 pub static OUTPUT_PROOF_PROVING_KEY: Lazy<ProvingKey<Bls12_377>> =
@@ -24,6 +28,10 @@ pub static OUTPUT_PROOF_PROVING_KEY: Lazy<ProvingKey<Bls12_377>> =
 pub static OUTPUT_PROOF_VERIFICATION_KEY: Lazy<PreparedVerifyingKey<Bls12_377>> =
     Lazy::new(|| output_verification_parameters().into());
 
+pub mod output {
+    include!("gen/output_id.rs");
+}
+
 #[cfg(feature = "proving-keys")]
 /// Proving key for the swap proof.
 pub static SWAP_PROOF_PROVING_KEY: Lazy<ProvingKey<Bls12_377>> =
@@ -32,6 +40,10 @@ pub static SWAP_PROOF_PROVING_KEY: Lazy<ProvingKey<Bls12_377>> =
 /// Verification key for the swap proof.
 pub static SWAP_PROOF_VERIFICATION_KEY: Lazy<PreparedVerifyingKey<Bls12_377>> =
     Lazy::new(|| swap_verification_parameters().into());
+
+pub mod swap {
+    include!("gen/swap_id.rs");
+}
 
 // Note: Here we are using `CanonicalDeserialize::deserialize_unchecked` as the
 // parameters are being loaded from a trusted source (our source code).
