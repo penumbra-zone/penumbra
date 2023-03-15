@@ -7,8 +7,7 @@ use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::Spend, Transaction};
 
 use crate::{
-    action_handler::ActionHandler,
-    shielded_pool::{NoteManager, StateReadExt as _},
+    action_handler::ActionHandler, sct::view::StateReadExt as _, shielded_pool::NoteManager,
 };
 
 #[async_trait]

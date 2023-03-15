@@ -5,7 +5,8 @@ use penumbra_crypto::{dex::swap::SwapPlaintext, note, FullViewingKey, Note};
 use penumbra_storage::StateRead;
 use penumbra_tct as tct;
 
-use crate::shielded_pool::StateReadExt as _;
+use crate::compactblock::view::StateReadExt as _;
+use crate::sct::view::StateReadExt as _;
 
 /// A bare-bones mock client for use exercising the state machine.
 pub struct MockClient {

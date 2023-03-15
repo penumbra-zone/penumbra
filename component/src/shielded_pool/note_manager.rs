@@ -1,7 +1,6 @@
-use super::{
-    component::{StateReadExt, StateWriteExt},
-    event, state_key, SupplyWrite,
-};
+use super::{event, state_key, SupplyWrite};
+use crate::compactblock::view::{StateReadExt as _, StateWriteExt as _};
+use crate::sct::view::{StateReadExt as _, StateWriteExt as _};
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::{
