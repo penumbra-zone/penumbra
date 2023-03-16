@@ -130,10 +130,10 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
             .enforce_equal(&swap_plaintext_var.trading_pair)?;
 
         // Output amounts integrity
-        let (computed_lambda_1_i, computed_lambda_2_i) = output_data_var
-            .pro_rata_outputs(swap_plaintext_var.delta_1_i, swap_plaintext_var.delta_2_i)?;
-        computed_lambda_1_i.enforce_equal(&lambda_1_i_var)?;
-        computed_lambda_2_i.enforce_equal(&lambda_2_i_var)?;
+        // let (computed_lambda_1_i, computed_lambda_2_i) = output_data_var
+        //     .pro_rata_outputs(swap_plaintext_var.delta_1_i, swap_plaintext_var.delta_2_i)?;
+        // computed_lambda_1_i.enforce_equal(&lambda_1_i_var)?;
+        // computed_lambda_2_i.enforce_equal(&lambda_2_i_var)?;
 
         // Output note integrity
         let output_1_note = NoteVar {
@@ -298,22 +298,7 @@ impl SwapClaimProof {
         public_inputs.extend(nullifier.0.to_field_elements().unwrap());
         public_inputs.extend(Fq::from(fee.0.amount).to_field_elements().unwrap());
         public_inputs.extend(fee.0.asset_id.0.to_field_elements().unwrap());
-        public_inputs.extend(
-            output_data
-                .trading_pair
-                .asset_1
-                .0
-                .to_field_elements()
-                .unwrap(),
-        );
-        public_inputs.extend(
-            output_data
-                .trading_pair
-                .asset_2
-                .0
-                .to_field_elements()
-                .unwrap(),
-        );
+        public_inputs.extend(output_data.to_field_elements().unwrap());
         public_inputs.extend(Fq::from(epoch_duration).to_field_elements().unwrap());
         public_inputs.extend(note_commitment_1.0.to_field_elements().unwrap());
         public_inputs.extend(note_commitment_2.0.to_field_elements().unwrap());

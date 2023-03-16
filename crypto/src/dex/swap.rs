@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use ark_ff::PrimeField;
+use ark_ff::{PrimeField, ToConstraintField};
 
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
@@ -78,14 +78,29 @@ impl BatchSwapOutputData {
     }
 }
 
+impl ToConstraintField<Fq> for BatchSwapOutputData {
+    fn to_field_elements(&self) -> Option<Vec<Fq>> {
+        let mut public_inputs = Vec::new();
+        public_inputs.extend(self.trading_pair.asset_1.0.to_field_elements().unwrap());
+        public_inputs.extend(self.trading_pair.asset_2.0.to_field_elements().unwrap());
+        public_inputs.extend(Fq::from(self.height).to_field_elements().unwrap());
+        // public_inputs.extend(Fq::from(self.success).to_field_elements().unwrap());
+        // public_inputs.extend(Fq::from(self.delta_1).to_field_elements().unwrap());
+        // public_inputs.extend(Fq::from(self.delta_2).to_field_elements().unwrap());
+        // public_inputs.extend(Fq::from(self.lambda_1).to_field_elements().unwrap());
+        // public_inputs.extend(Fq::from(self.lambda_2).to_field_elements().unwrap());
+        Some(public_inputs)
+    }
+}
+
 pub struct BatchSwapOutputDataVar {
     pub trading_pair: TradingPairVar,
     pub height: FqVar,
-    pub success: Boolean<Fq>,
-    pub delta_1: AmountVar,
-    pub delta_2: AmountVar,
-    pub lambda_1: AmountVar,
-    pub lambda_2: AmountVar,
+    // pub success: Boolean<Fq>,
+    // pub delta_1: AmountVar,
+    // pub delta_2: AmountVar,
+    // pub lambda_1: AmountVar,
+    // pub lambda_2: AmountVar,
 }
 
 impl AllocVar<BatchSwapOutputData, Fq> for BatchSwapOutputDataVar {
@@ -100,52 +115,53 @@ impl AllocVar<BatchSwapOutputData, Fq> for BatchSwapOutputDataVar {
         let trading_pair =
             TradingPairVar::new_variable(cs.clone(), || Ok(output_data.trading_pair), mode)?;
         let height = FqVar::new_variable(cs.clone(), || Ok(Fq::from(output_data.height)), mode)?;
-        let success = Boolean::new_variable(cs.clone(), || Ok(output_data.success), mode)?;
-        let delta_1 =
-            AmountVar::new_variable(cs.clone(), || Ok(Amount::from(output_data.delta_1)), mode)?;
-        let delta_2 =
-            AmountVar::new_variable(cs.clone(), || Ok(Amount::from(output_data.delta_2)), mode)?;
-        let lambda_1 =
-            AmountVar::new_variable(cs.clone(), || Ok(Amount::from(output_data.lambda_1)), mode)?;
-        let lambda_2 =
-            AmountVar::new_variable(cs, || Ok(Amount::from(output_data.lambda_2)), mode)?;
+        // let success = Boolean::new_variable(cs.clone(), || Ok(output_data.success), mode)?;
+        // let delta_1 =
+        //     AmountVar::new_variable(cs.clone(), || Ok(Amount::from(output_data.delta_1)), mode)?;
+        // let delta_2 =
+        //     AmountVar::new_variable(cs.clone(), || Ok(Amount::from(output_data.delta_2)), mode)?;
+        // let lambda_1 =
+        //     AmountVar::new_variable(cs.clone(), || Ok(Amount::from(output_data.lambda_1)), mode)?;
+        // let lambda_2 =
+        //     AmountVar::new_variable(cs, || Ok(Amount::from(output_data.lambda_2)), mode)?;
         Ok(Self {
             trading_pair,
             height,
-            success,
-            delta_1,
-            delta_2,
-            lambda_1,
-            lambda_2,
+            // success,
+            // delta_1,
+            // delta_2,
+            // lambda_1,
+            // lambda_2,
         })
     }
 }
 
-impl BatchSwapOutputDataVar {
-    pub fn pro_rata_outputs(
-        &self,
-        delta_1_i: AmountVar,
-        delta_2_i: AmountVar,
-    ) -> Result<(AmountVar, AmountVar), SynthesisError> {
-        // let lambda_2_i = ((delta_1_i as u128) * (self.lambda_2 as u128))
-        //     .checked_div(self.delta_1 as u128)
-        //     .unwrap_or(0);
-        let numerator_2_var = delta_1_i.clone() * self.lambda_2.clone();
-        let (lambda_2_i, _) = numerator_2_var.quo_rem(&self.delta_1)?;
+// impl BatchSwapOutputDataVar {
+//     pub fn pro_rata_outputs(
+//         &self,
+//         delta_1_i: AmountVar,
+//         delta_2_i: AmountVar,
+//     ) -> Result<(AmountVar, AmountVar), SynthesisError> {
+//         // let lambda_2_i = ((delta_1_i as u128) * (self.lambda_2 as u128))
+//         //     .checked_div(self.delta_1 as u128)
+//         //     .unwrap_or(0);
+//         let numerator_2_var = delta_1_i.clone() * self.lambda_2.clone();
+//         let (lambda_2_i, _) = numerator_2_var.quo_rem(&self.delta_1)?;
 
-        // let lambda_1_i = ((delta_2_i as u128) * (self.lambda_1 as u128))
-        //     .checked_div(self.delta_2 as u128)
-        //     .unwrap_or(0);
-        let numerator_1_var = delta_2_i.clone() * self.lambda_1.clone();
-        let (lambda_1_i, _) = numerator_1_var.quo_rem(&self.delta_2)?;
+//         // let lambda_1_i = ((delta_2_i as u128) * (self.lambda_1 as u128))
+//         //     .checked_div(self.delta_2 as u128)
+//         //     .unwrap_or(0);
+//         let numerator_1_var = delta_2_i.clone() * self.lambda_1.clone();
+//         let (lambda_1_i, _) = numerator_1_var.quo_rem(&self.delta_2)?;
 
-        // If success we return the results of the above computation ((lambda_1_i, lambda_2_i a)
-        // Else we return (delta_1_i, delta_2_i)
-        let return_var_1 = AmountVar::conditionally_select(&self.success, &lambda_1_i, &delta_1_i)?;
-        let return_var_2 = AmountVar::conditionally_select(&self.success, &lambda_2_i, &delta_2_i)?;
-        Ok((return_var_1, return_var_2))
-    }
-}
+//         // If success we return the results of the above computation ((lambda_1_i, lambda_2_i a)
+//         // Else we return (delta_1_i, delta_2_i)
+//         // let return_var_1 = AmountVar::conditionally_select(&self.success, &lambda_1_i, &delta_1_i)?;
+//         // let return_var_2 = AmountVar::conditionally_select(&self.success, &lambda_2_i, &delta_2_i)?;
+//         // Ok((return_var_1, return_var_2))
+//         Ok((lambda_1_i, lambda_2_i))
+//     }
+// }
 
 impl DomainType for BatchSwapOutputData {
     type Proto = pb::BatchSwapOutputData;

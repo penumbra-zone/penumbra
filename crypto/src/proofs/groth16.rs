@@ -21,10 +21,10 @@ mod tests {
     use super::*;
     use crate::{
         asset,
-        dex::{swap::SwapPlaintext, TradingPair},
+        dex::{swap::SwapPlaintext, BatchSwapOutputData, TradingPair},
         keys::{SeedPhrase, SpendKey},
         transaction::Fee,
-        Address, Amount, Balance, Rseed,
+        Address, Amount, Balance, Nullifier, Rseed,
     };
     use ark_groth16::{Groth16, ProvingKey, VerifyingKey};
     use ark_r1cs_std::prelude::*;
@@ -114,6 +114,95 @@ mod tests {
             let proof_result = proof.verify(&vk, balance_commitment, swap_commitment, fee_commitment);
 
             assert!(proof_result.is_ok());
+        }
+    }
+
+    proptest! {
+    #![proptest_config(ProptestConfig::with_cases(2))]
+    #[test]
+    fn swap_claim_proof_happy_path(seed_phrase_randomness in any::<[u8; 32]>(), value1_amount in 2..200u64) {
+        let (pk, vk) = SwapClaimCircuit::generate_prepared_test_parameters();
+
+        let mut rng = OsRng;
+
+        let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
+        let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let fvk_recipient = sk_recipient.full_viewing_key();
+        let ivk_recipient = fvk_recipient.incoming();
+        let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());
+        let nk = *sk_recipient.nullifier_key();
+
+        let gm = asset::REGISTRY.parse_unit("gm");
+        let gn = asset::REGISTRY.parse_unit("gn");
+        let trading_pair = TradingPair::new(gm.id(), gn.id());
+
+        let delta_1_i = Amount::from(value1_amount);
+        let delta_2_i = Amount::from(0u64);
+        let fee = Fee::default();
+
+        let swap_plaintext =
+        SwapPlaintext::new(&mut rng, trading_pair, delta_1_i, delta_2_i, fee, claim_address);
+        let fee = swap_plaintext.clone().claim_fee;
+        let mut sct = tct::Tree::new();
+        let swap_commitment = swap_plaintext.swap_commitment();
+        sct.insert(tct::Witness::Keep, swap_commitment).unwrap();
+        let anchor = sct.root();
+        let state_commitment_proof = sct.witness(swap_commitment).unwrap();
+        let position = state_commitment_proof.position();
+        let nullifier = nk.derive_nullifier(position, &swap_commitment);
+        let epoch_duration = 20;
+        let height = epoch_duration * position.epoch() + position.block();
+
+        // Delta, Lambda without indices denote the whole batch
+        let output_data = BatchSwapOutputData {
+            delta_1: 100,
+            delta_2: 100,
+            lambda_1: 50,
+            lambda_2: 25,
+            height: height.into(),
+            trading_pair: swap_plaintext.trading_pair,
+            success: true,
+        };
+        let (lambda_1_i, lambda_2_i) = output_data.pro_rata_outputs(
+            (delta_1_i.try_into().unwrap(),
+            delta_2_i.try_into().unwrap())
+        );
+
+        let (output_rseed_1, output_rseed_2) = swap_plaintext.output_rseeds();
+        let note_blinding_1 = output_rseed_1.derive_note_blinding();
+        let note_blinding_2 = output_rseed_2.derive_note_blinding();
+        let (output_1_note, output_2_note) = swap_plaintext.output_notes(&output_data);
+        let note_commitment_1 = output_1_note.commit();
+        let note_commitment_2 = output_2_note.commit();
+
+        let proof = SwapClaimProof::prove(
+            &mut rng,
+            &pk,
+            swap_plaintext,
+            state_commitment_proof,
+            nk,
+            anchor,
+            nullifier,
+            epoch_duration.into(),
+            lambda_1_i,
+            lambda_2_i,
+            note_blinding_1,
+            note_blinding_2,
+            note_commitment_1,
+            note_commitment_2,
+        )
+        .expect("can create proof");
+
+        let proof_result = proof.verify(&vk,
+        anchor,
+        nullifier,
+        fee,
+        output_data,
+        epoch_duration.into(),
+        note_commitment_1,
+        note_commitment_2);
+
+        assert!(proof_result.is_ok());
         }
     }
 
