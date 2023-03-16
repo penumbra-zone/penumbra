@@ -504,7 +504,7 @@ impl ViewProtocolService for ViewService {
                 tonic::Status::failed_precondition("Error retrieving full viewing key")
             })?;
 
-        let tx = self
+        let maybe_tx = self
             .storage
             .transaction_by_hash(&request.tx_hash)
             .await
@@ -513,13 +513,11 @@ impl ViewProtocolService for ViewService {
                     "Error retrieving transaction by hash {}",
                     hex::encode(&request.tx_hash)
                 ))
-            })?
-            .ok_or_else(|| {
-                tonic::Status::failed_precondition(format!(
-                    "No transaction found with this hash {}",
-                    hex::encode(&request.tx_hash)
-                ))
             })?;
+
+        let Some(tx) = maybe_tx else {
+            return Ok(tonic::Response::new(pb::TransactionPerspectiveResponse::default()));
+        };
 
         let payload_keys = tx
             .payload_keys(&fvk)

@@ -1,10 +1,5 @@
 use anyhow::Result;
 
-use penumbra_crypto::FullViewingKey;
-use penumbra_proto::client::v1alpha1::oblivious_query_service_client::ObliviousQueryServiceClient;
-use penumbra_view::ViewClient;
-use tonic::transport::Channel;
-
 mod balance;
 use balance::BalanceCmd;
 mod address;
@@ -15,6 +10,8 @@ pub mod transaction_hashes;
 use transaction_hashes::TransactionHashesCmd;
 mod tx;
 use tx::TxCmd;
+
+use crate::App;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum ViewCmd {
@@ -51,19 +48,18 @@ impl ViewCmd {
         }
     }
 
-    pub async fn exec(
-        &self,
-        full_viewing_key: &FullViewingKey,
-        view_client: Option<&mut impl ViewClient>,
-        oblivious_client: &mut ObliviousQueryServiceClient<Channel>,
-    ) -> Result<()> {
+    pub async fn exec(&self, app: &mut App) -> Result<()> {
+        // TODO: refactor view methods to take a single App
+        let full_viewing_key = app.fvk.clone();
+
         match self {
             ViewCmd::Tx(tx_cmd) => {
-                tx_cmd.exec(full_viewing_key, view_client.unwrap()).await?;
+                tx_cmd.exec(app).await?;
             }
             ViewCmd::ListTransactionHashes(transactions_cmd) => {
+                let view_client = app.view();
                 transactions_cmd
-                    .exec(full_viewing_key, view_client.unwrap())
+                    .exec(&full_viewing_key, view_client)
                     .await?;
             }
             ViewCmd::Sync => {
@@ -74,16 +70,17 @@ impl ViewCmd {
                 // The wallet has already been reset by a short-circuiting path.
             }
             ViewCmd::Address(address_cmd) => {
-                address_cmd.exec(full_viewing_key)?;
+                address_cmd.exec(&full_viewing_key)?;
             }
             ViewCmd::Balance(balance_cmd) => {
-                balance_cmd
-                    .exec(full_viewing_key, view_client.unwrap())
-                    .await?;
+                let view_client = app.view();
+                balance_cmd.exec(&full_viewing_key, view_client).await?;
             }
             ViewCmd::Staked(staked_cmd) => {
+                let mut oblivious_client = app.oblivious_client().await?;
+                let view_client = app.view();
                 staked_cmd
-                    .exec(full_viewing_key, view_client.unwrap(), oblivious_client)
+                    .exec(&full_viewing_key, view_client, &mut oblivious_client)
                     .await?;
             }
         }
