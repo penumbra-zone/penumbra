@@ -705,7 +705,14 @@ where
                     tx_hash: tx_hash.as_bytes().to_vec(),
                 }),
             );
-            rsp.await?.into_inner().txp.unwrap().try_into()
+            // If no txp was supplied, use the default (empty) perspective.
+            Ok(rsp
+                .await?
+                .into_inner()
+                .txp
+                .map(|txp| txp.try_into())
+                .transpose()?
+                .unwrap_or_default())
         }
         .boxed()
     }

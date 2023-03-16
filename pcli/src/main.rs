@@ -135,13 +135,7 @@ async fn main() -> Result<()> {
         Command::Keys(_) => unreachable!("wallet command already executed"),
         Command::Debug(_) => unreachable!("debug command already executed"),
         Command::Transaction(tx_cmd) => tx_cmd.exec(&mut app).await?,
-        Command::View(view_cmd) => {
-            let mut oblivious_client = app.oblivious_client().await?;
-
-            view_cmd
-                .exec(&app.fvk, app.view.as_mut(), &mut oblivious_client)
-                .await?
-        }
+        Command::View(view_cmd) => view_cmd.exec(&mut app).await?,
         Command::Validator(cmd) => cmd.exec(&mut app).await?,
         Command::Query(cmd) => cmd.exec(&mut app).await?,
     }

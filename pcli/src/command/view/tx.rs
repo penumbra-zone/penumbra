@@ -1,14 +1,17 @@
 use anyhow::{Context, Result};
 use comfy_table::{presets, Table};
 use penumbra_crypto::{
-    asset::Cache, dex::swap::SwapPlaintext, keys::IncomingViewingKey, Address, FullViewingKey,
-    Note, Value,
+    asset::Cache, dex::swap::SwapPlaintext, keys::IncomingViewingKey, Address, Note, Value,
 };
+use penumbra_proto::{client::v1alpha1::GetTxRequest, DomainType};
 use penumbra_transaction::{
     action::{Swap, SwapClaim},
     view::action_view::{OutputView, SpendView, SwapClaimView, SwapView},
+    Transaction,
 };
 use penumbra_view::ViewClient;
+
+use crate::App;
 
 /// Queries the chain for a transaction by hash.
 #[derive(Debug, clap::Args)]
@@ -176,19 +179,35 @@ impl TxCmd {
     pub fn offline(&self) -> bool {
         false
     }
-    pub async fn exec<V: ViewClient>(&self, fvk: &FullViewingKey, view: &mut V) -> Result<()> {
+    pub async fn exec(&self, app: &mut App) -> Result<()> {
+        let fvk = app.fvk.clone();
         let hash = self
             .hash
             // We have to convert to uppercase because `tendermint::Hash` only accepts uppercase :(
             .to_uppercase()
             .parse()
             .context("invalid transaction hash")?;
-        // Retrieve Transaction
-        let tx = view.transaction_by_hash(hash).await?.ok_or_else(|| {
-            anyhow::anyhow!("transaction {} not found in view service", self.hash,)
-        })?;
+
+        // Retrieve Transaction from the view service first, or else the fullnode
+        let tx = if let Some(tx) = app.view().transaction_by_hash(hash).await? {
+            tx
+        } else {
+            println!("Transaction not found in view service, fetching from fullnode...");
+            // Fall back to fetching from fullnode
+            let mut client = app.tendermint_proxy_client().await?;
+            let rsp = client
+                .get_tx(GetTxRequest {
+                    hash: hex::decode(self.hash.clone())?,
+                    prove: false,
+                })
+                .await?;
+
+            let rsp = rsp.into_inner();
+            let tx = Transaction::decode(rsp.tx.as_slice())?;
+            tx
+        };
         // Retrieve full TxP
-        let txp = view.transaction_perspective(hash).await?;
+        let txp = app.view().transaction_perspective(hash).await?;
         // Generate TxV using TxP
         let txv = tx.view_from_perspective(&txp);
 
@@ -208,7 +227,7 @@ impl TxCmd {
             metadata_table.load_preset(presets::NOTHING);
             metadata_table.set_header(vec!["", ""]);
 
-            let asset_cache = view.assets().await?;
+            let asset_cache = app.view().assets().await?;
             // Iterate over the ActionViews in the TxV & display as appropriate
 
             for av in txv.action_views {

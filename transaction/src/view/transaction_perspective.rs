@@ -6,6 +6,7 @@ use std::collections::BTreeMap;
 
 /// This represents the data to understand an individual transaction without
 /// disclosing viewing keys.
+#[derive(Debug, Clone, Default)]
 pub struct TransactionPerspective {
     /// List of per-action payload keys. These can be used to decrypt
     /// the notes, swaps, and memo keys in the transaction.
