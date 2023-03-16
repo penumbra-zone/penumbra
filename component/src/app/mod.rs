@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use crate::compactblock::view::{StateReadExt as _, StateWriteExt as _};
+use crate::sct::view::{StateReadExt as _, StateWriteExt as _};
 use anyhow::Result;
 use penumbra_chain::params::FmdParameters;
 use penumbra_chain::{genesis, AppHash, StateReadExt, StateWriteExt as _};
@@ -64,6 +66,34 @@ impl App {
         Governance::init_chain(&mut state_tx, app_state).await;
         // Shielded pool always executes last.
         ShieldedPool::init_chain(&mut state_tx, app_state).await;
+
+        let mut compact_block = state_tx.stub_compact_block();
+        let mut state_commitment_tree = state_tx.stub_state_commitment_tree().await;
+
+        // Hard-coded to zero because we are in the genesis block
+        // Tendermint starts blocks at 1, so this is a "phantom" compact block
+        compact_block.height = 0;
+
+        // Add current FMD parameters to the initial block.
+        compact_block.fmd_parameters = Some(state_tx.get_current_fmd_parameters().await.unwrap());
+
+        // Close the genesis block
+
+        // TODO: MOVE TO APP
+        state_tx
+            .finish_sct_block(&mut compact_block, &mut state_commitment_tree)
+            .await;
+
+        state_tx.set_compact_block(compact_block.clone());
+
+        state_tx
+            .write_sct(
+                compact_block.height,
+                state_commitment_tree,
+                compact_block.block_root,
+                compact_block.epoch_root,
+            )
+            .await;
 
         state_tx.apply();
     }
@@ -210,6 +240,41 @@ impl App {
 
         // Shielded pool always executes last.
         ShieldedPool::end_block(&mut state_tx, end_block).await;
+
+        // We need to reload the compact block here, in case it was
+        // edited during the preceding method calls.
+        // Get the current block height
+        let height = state_tx
+            .get_block_height()
+            .await
+            .expect("block height should be set");
+
+        // Set the height of the compact block and save it.
+        let mut compact_block = state_tx.stub_compact_block();
+        compact_block.height = height;
+        state_tx.stub_put_compact_block(compact_block.clone());
+        let mut state_commitment_tree = state_tx.stub_state_commitment_tree().await;
+
+        // Check to see if the chain parameters have changed, and include them in the compact block
+        // if they have (this is signaled by `penumbra_chain::StateWriteExt::put_chain_params`):
+        if state_tx.chain_params_changed() {
+            compact_block.chain_parameters = Some(state_tx.get_chain_params().await.unwrap());
+        }
+
+        state_tx
+            .finish_sct_block(&mut compact_block.clone(), &mut state_commitment_tree)
+            .await;
+
+        state_tx.set_compact_block(compact_block.clone());
+
+        state_tx
+            .write_sct(
+                compact_block.height,
+                state_commitment_tree,
+                compact_block.block_root,
+                compact_block.epoch_root,
+            )
+            .await;
 
         state_tx.apply().1
     }

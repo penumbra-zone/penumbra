@@ -74,42 +74,5 @@ impl Component for ShieldedPool {
     async fn begin_block<S: StateWrite>(_state: S, _begin_block: &abci::request::BeginBlock) {}
 
     // #[instrument(name = "shielded_pool", skip(state, _end_block))]
-    async fn end_block<S: StateWrite>(mut state: S, _end_block: &abci::request::EndBlock) {
-        // Get the current block height
-        let height = state.height().await;
-
-        // Set the height of the compact block and save it.
-        let mut compact_block = state.stub_compact_block();
-        compact_block.height = height;
-        state.stub_put_compact_block(compact_block);
-
-        // TODO: execute any scheduled DAO spend transactions for this block
-
-        // We need to reload the compact block here, in case it was
-        // edited during the preceding method calls.
-        let mut compact_block = state.stub_compact_block();
-        let mut state_commitment_tree = state.stub_state_commitment_tree().await;
-
-        // Check to see if the chain parameters have changed, and include them in the compact block
-        // if they have (this is signaled by `penumbra_chain::StateWriteExt::put_chain_params`):
-        if state.chain_params_changed() {
-            compact_block.chain_parameters = Some(state.get_chain_params().await.unwrap());
-        }
-
-        // TODO: MOVE TO APP
-        state
-            .finish_sct_block(&mut compact_block, &mut state_commitment_tree)
-            .await;
-
-        state.set_compact_block(compact_block.clone());
-
-        state
-            .write_sct(
-                compact_block.height,
-                state_commitment_tree,
-                compact_block.block_root,
-                compact_block.epoch_root,
-            )
-            .await;
-    }
+    async fn end_block<S: StateWrite>(mut _state: S, _end_block: &abci::request::EndBlock) {}
 }
