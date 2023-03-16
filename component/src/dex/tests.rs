@@ -4,52 +4,30 @@ mod test {
         asset,
         dex::{
             lp::{position, Reserves, TradingFunction},
-            swap::SwapPlaintext,
             DirectedTradingPair,
         },
-        transaction::Fee,
-        Address, Amount,
+        Amount,
     };
     use penumbra_storage::{ArcStateDeltaExt, StateDelta, TempStorage};
-    use penumbra_transaction::{action::PositionOpen, plan::SwapPlan, Transaction};
+
+    use rand_core::OsRng;
 
     use penumbra_crypto::Value;
 
-    use penumbra_chain::test_keys;
-
-    use crate::{dex::Dex, TempStorageExt};
-    use tendermint::abci;
-
-    use crate::action_handler::ActionHandler;
     use crate::dex::position_manager::PositionManager;
     use crate::dex::position_manager::PositionRead;
-    use crate::shielded_pool::ShieldedPool;
-    use crate::Component;
-    use rand_core::OsRng;
+    use crate::TempStorageExt;
     use std::sync::Arc;
-
-    /*
-     *
-     * We want to test:
-     *
-     *
-     * fee at 100% -> outputs are zero
-     * fee at 0% -> outputs are untouched
-     * layered: AB_AB
-     * stacked: AB_BA
-     * regular: A_A executed once
-     * */
 
     #[tokio::test]
     /// Builds a simple order book with a single limit order, and tests different
-    /// market executions against it.
+    /// market order execution against it.
     async fn single_limit_order() -> anyhow::Result<()> {
         let storage = TempStorage::new().await?.apply_default_genesis().await?;
         let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
         let mut state_tx = state.try_begin_transaction().unwrap();
         let height = 1;
 
-        // `BeginBlock`.
         state_tx.put_block_height(height);
 
         let gm = asset::REGISTRY.parse_unit("gm");
@@ -77,15 +55,13 @@ mod test {
         };
 
         let position_1_id = position_1.position.id();
-        // replace this with transactions?
         state_tx.put_position(position_1.clone());
 
         let mut state_test_1 = state_tx.fork();
 
-        // Scenario 1: A single limit order quotes asset 2
-        // We execute four swaps against this order and verify that:
-        //      - reserves are updated accurately immediately after execution
-        //
+        // A single limit order quotes asset 2
+        // We execute four swaps against this order and verify that reserves are accurately updated,
+        // and that filled amounts all checkout.
         //      Test 1:
         //          * swap_1: fills the entire order
         //          -> reserves are updated correctly
@@ -100,8 +76,6 @@ mod test {
         //          -> reserves are updated correctly
         //          * swap_3: fills what is left
         //          -> reserves are updated correctly
-        //
-        //
 
         // Test 1: We're trying to fill the entire order.
         let delta_1 = Value {
@@ -184,21 +158,16 @@ mod test {
         assert_eq!(position.reserves.r2, 120_000u64.into());
 
         // Finally, let's test partial fills, rolling back to `state_tx`, which contains
-        // a single limit order for 100gm@1.2gn.
-
-        let position = state_tx
-            .position_by_id(&position_1_id)
-            .await
-            .unwrap()
-            .unwrap();
-
-        // We are splitting a single large fill for a `100gm` into, 100 fills for `1gm`.
+        // a single limit order for 100_000gm@1.2gn.
         for _i in 1..=100 {
             let delta_1 = Value {
                 amount: 1000u64.into(),
                 asset_id: gm.id(),
             };
+            // We are splitting a single large fill for a `100_000gm` into, 100 fills for `1000gm`.
             let (unfilled, output) = state_tx.fill_against(delta_1, &position_1_id).await?;
+
+            // We check that there are no unfilled `gm`s resulting from executing the order
             assert_eq!(
                 unfilled,
                 Value {
@@ -206,6 +175,7 @@ mod test {
                     asset_id: gm.id(),
                 }
             );
+            // And that for every `1000gm`, we get `1200gn` as desired.
             assert_eq!(
                 output,
                 Value {
@@ -215,7 +185,8 @@ mod test {
             );
         }
 
-        // Finally, check that the position reserves were updated correctly and the entire order was filled.
+        // Now, we want to verify that the position is updated with the correct reserves.
+        // We should have depleted the order of all its `gn`s, and replaced it with `100_000gm`.
         let position = state_tx
             .position_by_id(&position_1_id)
             .await
