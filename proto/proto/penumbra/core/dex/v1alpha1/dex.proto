@@ -163,16 +163,18 @@ message BatchSwapOutputData {
   uint64 delta_1 = 1;
   // The total amount of asset 2 that was input to the batch swap.
   uint64 delta_2 = 2;
-  // The total amount of asset 1 that was output from the batch swap.
-  uint64 lambda_1 = 3;
-  // The total amount of asset 2 that was output from the batch swap.
-  uint64 lambda_2 = 4;
-  // Whether the swap succeeded or not.
-  bool success = 5;
+  // The total amount of asset 1 that was output from the batch swap for 1=>2 trades.
+  uint64 lambda_1_1 = 3;
+  // The total amount of asset 2 that was output from the batch swap for 1=>2 trades.
+  uint64 lambda_2_1 = 4;
+  // The total amount of asset 1 that was output from the batch swap for 2=>1 trades.
+  uint64 lambda_1_2 = 5;
+  // The total amount of asset 2 that was output from the batch swap for 2=>1 trades.
+  uint64 lambda_2_2 = 6;
   // The height for which the batch swap data is valid.
-  uint64 height = 6;
+  uint64 height = 7;
   // The trading pair associated with the batch swap.
-  TradingPair trading_pair = 7;
+  TradingPair trading_pair = 8;
 }
 
 // The trading function for a specific pair.

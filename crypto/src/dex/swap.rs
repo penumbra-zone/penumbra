@@ -29,40 +29,39 @@ pub static DOMAIN_SEPARATOR: Lazy<Fq> =
 pub struct BatchSwapOutputData {
     pub delta_1: u64,
     pub delta_2: u64,
-    pub lambda_1: u64,
-    pub lambda_2: u64,
+    pub lambda_1_1: u64,
+    pub lambda_2_1: u64,
+    pub lambda_1_2: u64,
+    pub lambda_2_2: u64,
     pub height: u64,
     pub trading_pair: TradingPair,
-    pub success: bool,
 }
 
 impl BatchSwapOutputData {
     /// Given a user's inputs `(delta_1_i, delta_2_i)`, compute their pro rata share
     /// of the batch output `(lambda_1_i, lambda_2_i)`.
     pub fn pro_rata_outputs(&self, (delta_1_i, delta_2_i): (u64, u64)) -> (u64, u64) {
-        if self.success {
-            // The swap succeeded, so the pro rata share is a share of the output amount of
-            // the opposite token type.
-            // The pro rata fraction is delta_j_i / delta_j, which we can multiply through:
-            //   lambda_2_i = (delta_1_i / delta_1) * lambda_2
-            //   lambda_1_i = (delta_2_i / delta_2) * lambda_1
-            // But we want to compute these as
-            //   lambda_2_i = (delta_1_i * lambda_2) / delta_1
-            //   lambda_1_i = (delta_2_i * lambda_1) / delta_2
-            // so that we can do division and rounding at the end.
-            let lambda_2_i = ((delta_1_i as u128) * (self.lambda_2 as u128))
-                .checked_div(self.delta_1 as u128)
+        // The pro rata fraction is delta_j_i / delta_j, which we can multiply through:
+        //   lambda_2_i = (delta_1_i / delta_1) * lambda_2_1 + (delta_2_i / delta_2) * lambda_2_2
+        //   lambda_1_i = (delta_1_i / delta_1) * lambda_1_1 + (delta_2_i / delta_2) * lambda_1_2
+        // But we want to compute these as
+        //   lambda_2_i = (delta_1_i * lambda_2_1) / delta_1 + (delta_2_i * lambda_2_2) / delta_2
+        //   lambda_1_i = (delta_1_i * lambda_1_1) / delta_1 + (delta_2_i * lambda_1_2) / delta_2
+        // so that we can do division and rounding at the end.
+        let lambda_2_i = ((delta_1_i as u128) * (self.lambda_2_1 as u128))
+            .checked_div(self.delta_1 as u128)
+            .unwrap_or(0)
+            + ((delta_2_i as u128) * (self.lambda_2_2 as u128))
+                .checked_div(self.delta_2 as u128)
                 .unwrap_or(0);
-            let lambda_1_i = ((delta_2_i as u128) * (self.lambda_1 as u128))
+        let lambda_1_i = ((delta_1_i as u128) * (self.lambda_2_1 as u128))
+            .checked_div(self.delta_1 as u128)
+            .unwrap_or(0)
+            + ((delta_2_i as u128) * (self.lambda_1_2 as u128))
                 .checked_div(self.delta_2 as u128)
                 .unwrap_or(0);
 
-            (lambda_1_i as u64, lambda_2_i as u64)
-        } else {
-            // The swap failed, so the pro rata share is a share of the input amount of
-            // the same token type. But this is exactly the delta_j_i.
-            (delta_1_i, delta_2_i)
-        }
+        (lambda_1_i as u64, lambda_2_i as u64)
     }
 }
 
@@ -75,11 +74,12 @@ impl From<BatchSwapOutputData> for pb::BatchSwapOutputData {
         pb::BatchSwapOutputData {
             delta_1: s.delta_1,
             delta_2: s.delta_2,
-            lambda_1: s.lambda_1,
-            lambda_2: s.lambda_2,
-            success: s.success,
             trading_pair: Some(s.trading_pair.into()),
             height: s.height,
+            lambda_1_1: s.lambda_1_1,
+            lambda_2_1: s.lambda_2_1,
+            lambda_1_2: s.lambda_1_2,
+            lambda_2_2: s.lambda_2_2,
         }
     }
 }
@@ -98,9 +98,10 @@ impl TryFrom<pb::BatchSwapOutputData> for BatchSwapOutputData {
         Ok(Self {
             delta_1: s.delta_1,
             delta_2: s.delta_2,
-            lambda_1: s.lambda_1,
-            lambda_2: s.lambda_2,
-            success: s.success,
+            lambda_1_1: s.lambda_1_1,
+            lambda_2_1: s.lambda_2_1,
+            lambda_1_2: s.lambda_1_2,
+            lambda_2_2: s.lambda_2_2,
             height: s.height,
             trading_pair: s
                 .trading_pair

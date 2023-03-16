@@ -251,20 +251,23 @@ pub struct BatchSwapOutputData {
     /// The total amount of asset 2 that was input to the batch swap.
     #[prost(uint64, tag = "2")]
     pub delta_2: u64,
-    /// The total amount of asset 1 that was output from the batch swap.
+    /// The total amount of asset 1 that was output from the batch swap for 1=>2 trades.
     #[prost(uint64, tag = "3")]
-    pub lambda_1: u64,
-    /// The total amount of asset 2 that was output from the batch swap.
+    pub lambda_1_1: u64,
+    /// The total amount of asset 2 that was output from the batch swap for 1=>2 trades.
     #[prost(uint64, tag = "4")]
-    pub lambda_2: u64,
-    /// Whether the swap succeeded or not.
-    #[prost(bool, tag = "5")]
-    pub success: bool,
-    /// The height for which the batch swap data is valid.
+    pub lambda_2_1: u64,
+    /// The total amount of asset 1 that was output from the batch swap for 2=>1 trades.
+    #[prost(uint64, tag = "5")]
+    pub lambda_1_2: u64,
+    /// The total amount of asset 2 that was output from the batch swap for 2=>1 trades.
     #[prost(uint64, tag = "6")]
+    pub lambda_2_2: u64,
+    /// The height for which the batch swap data is valid.
+    #[prost(uint64, tag = "7")]
     pub height: u64,
     /// The trading pair associated with the batch swap.
-    #[prost(message, optional, tag = "7")]
+    #[prost(message, optional, tag = "8")]
     pub trading_pair: ::core::option::Option<TradingPair>,
 }
 /// The trading function for a specific pair.
