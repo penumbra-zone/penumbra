@@ -175,6 +175,24 @@ pub struct BatchSwapOutputDataResponse {
         super::super::core::dex::v1alpha1::BatchSwapOutputData,
     >,
 }
+/// Requests liquidity position data from the view service.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LiquidityPositionsRequest {
+    /// The expected chain id (empty string if no expectation).
+    #[prost(string, tag = "1")]
+    pub chain_id: ::prost::alloc::string::String,
+    #[prost(bool, tag = "2")]
+    pub only_mine: bool,
+    #[prost(bool, tag = "3")]
+    pub only_open: bool,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LiquidityPositionsResponse {
+    #[prost(message, repeated, tag = "1")]
+    pub data: ::prost::alloc::vec::Vec<super::super::core::dex::v1alpha1::Position>,
+}
 /// Requests CPMM reserves data associated with a given trading pair from the view service.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -815,6 +833,25 @@ pub mod specific_query_service_client {
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.client.v1alpha1.SpecificQueryService/BatchSwapOutputData",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        pub async fn liquidity_positions(
+            &mut self,
+            request: impl tonic::IntoRequest<super::LiquidityPositionsRequest>,
+        ) -> Result<tonic::Response<super::LiquidityPositionsResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.client.v1alpha1.SpecificQueryService/LiquidityPositions",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -1472,6 +1509,10 @@ pub mod specific_query_service_server {
             &self,
             request: tonic::Request<super::BatchSwapOutputDataRequest>,
         ) -> Result<tonic::Response<super::BatchSwapOutputDataResponse>, tonic::Status>;
+        async fn liquidity_positions(
+            &self,
+            request: tonic::Request<super::LiquidityPositionsRequest>,
+        ) -> Result<tonic::Response<super::LiquidityPositionsResponse>, tonic::Status>;
         async fn stub_cpmm_reserves(
             &self,
             request: tonic::Request<super::StubCpmmReservesRequest>,
@@ -1767,6 +1808,46 @@ pub mod specific_query_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = BatchSwapOutputDataSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.client.v1alpha1.SpecificQueryService/LiquidityPositions" => {
+                    #[allow(non_camel_case_types)]
+                    struct LiquidityPositionsSvc<T: SpecificQueryService>(pub Arc<T>);
+                    impl<
+                        T: SpecificQueryService,
+                    > tonic::server::UnaryService<super::LiquidityPositionsRequest>
+                    for LiquidityPositionsSvc<T> {
+                        type Response = super::LiquidityPositionsResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::LiquidityPositionsRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).liquidity_positions(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = LiquidityPositionsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

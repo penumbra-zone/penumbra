@@ -1,7 +1,12 @@
 use anyhow::{Context, Result};
 use comfy_table::{presets, Table};
-use penumbra_crypto::dex::{lp::Reserves, BatchSwapOutputData, TradingPair};
-use penumbra_proto::client::v1alpha1::{BatchSwapOutputDataRequest, StubCpmmReservesRequest};
+use penumbra_crypto::dex::{
+    lp::{position::Position, Reserves},
+    BatchSwapOutputData, TradingPair,
+};
+use penumbra_proto::client::v1alpha1::{
+    BatchSwapOutputDataRequest, LiquidityPositionsRequest, StubCpmmReservesRequest,
+};
 use penumbra_view::ViewClient;
 
 use crate::App;
@@ -20,6 +25,15 @@ pub enum DexCmd {
         height: u64,
         /// The trading pair to query for batch outputs.
         trading_pair: TradingPair,
+    },
+    /// Display information about liquidity positions known to the chain.
+    LiquidityPositions {
+        /// Display only liquidity positions owned by the active wallet.
+        #[clap(default_value_t = false)]
+        only_mine: bool,
+        /// Display closed and withdrawn liquidity positions.
+        #[clap(default_value_t = true)]
+        only_open: bool,
     },
 }
 
@@ -103,6 +117,25 @@ impl DexCmd {
             .context("cannot parse batch swap output data")
     }
 
+    pub async fn get_liquidity_positions(
+        &self,
+        app: &mut App,
+        only_mine: &bool,
+        only_open: &bool,
+    ) -> Result<Vec<Position>> {
+        let mut client = app.specific_client().await?;
+        client
+            .liquidity_positions(LiquidityPositionsRequest {
+                only_mine,
+                only_open,
+                chain_id: app.view().chain_params().await?.chain_id,
+            })
+            .await?
+            .into_inner()
+            .try_into()
+            .context("cannot parse liquidity position data")
+    }
+
     pub async fn exec(&self, app: &mut App) -> Result<()> {
         match self {
             DexCmd::CPMMReserves { trading_pair } => {
@@ -168,6 +201,14 @@ impl DexCmd {
                     .add_row(vec![asset_2.0, asset_2.1, asset_2.2]);
 
                 println!("{table}");
+            }
+            DexCmd::LiquidityPositions {
+                only_mine,
+                only_open,
+            } => {
+                let positions = self
+                    .get_liquidity_positions(app, only_mine, only_open)
+                    .await?;
             }
         };
 
