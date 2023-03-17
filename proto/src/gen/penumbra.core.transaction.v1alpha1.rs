@@ -19,6 +19,12 @@ pub struct Id {
     #[prost(bytes = "bytes", tag = "1")]
     pub hash: ::prost::bytes::Bytes,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EffectHash {
+    #[prost(bytes = "bytes", tag = "1")]
+    pub inner: ::prost::bytes::Bytes,
+}
 /// The body of a transaction.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
