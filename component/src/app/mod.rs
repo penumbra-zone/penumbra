@@ -64,7 +64,6 @@ impl App {
         Dex::init_chain(&mut state_tx, app_state).await;
         StubDex::init_chain(&mut state_tx, app_state).await;
         Governance::init_chain(&mut state_tx, app_state).await;
-        // Shielded pool always executes last.
         ShieldedPool::init_chain(&mut state_tx, app_state).await;
 
         let mut compact_block = state_tx.stub_compact_block();
@@ -129,7 +128,6 @@ impl App {
         Dex::begin_block(&mut state_tx, begin_block).await;
         Governance::begin_block(&mut state_tx, begin_block).await;
 
-        // Shielded pool always executes last.
         ShieldedPool::begin_block(&mut state_tx, begin_block).await;
 
         // Apply the state from `begin_block` and return the events (we'll append to them if
@@ -236,7 +234,6 @@ impl App {
         Dex::end_block(&mut state_tx, end_block).await;
         Governance::end_block(&mut state_tx, end_block).await;
 
-        // Shielded pool always executes last.
         ShieldedPool::end_block(&mut state_tx, end_block).await;
 
         App::finish_block(&mut state_tx).await;
