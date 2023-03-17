@@ -34,8 +34,8 @@ penumbra-ibc = { path = "../crates/ibc" }
 # Penumbra dependencies
 decaf377 = { version = "0.4", features = ["parallel"] }
 tower-abci = "0.5.0"
-jmt = "0.3"
 tower-actor = "0.1.0"
+jmt = "0.4"
 
 # External dependencies
 tendermint-config = "0.29.0"

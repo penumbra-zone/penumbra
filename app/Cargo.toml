@@ -24,8 +24,8 @@ penumbra-tct = { path = "../tct" }
 penumbra-proof-params = { path = "../proof-params" }
 
 # Penumbra dependencies
-decaf377 = { version = "0.4" }
-jmt = "0.3"
+decaf377 = "0.4"
+jmt = "0.4"
 tokio = { version = "1.21.1", features = ["full", "tracing"] }
 async-trait = "0.1.52"
 tonic = "0.8.1"
