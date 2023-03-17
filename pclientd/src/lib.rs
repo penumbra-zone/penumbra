@@ -24,6 +24,9 @@ use std::io::{self, BufRead, Write};
 use std::str::FromStr;
 use tonic::transport::Server;
 
+mod proxy;
+pub use proxy::{ObliviousQueryProxy, SpecificQueryProxy, TendermintProxyProxy};
+
 #[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct PclientdConfig {
@@ -225,6 +228,18 @@ impl Opt {
                 let config = PclientdConfig::load(opt.config_path())?;
                 let storage = opt.load_or_init_sqlite(&config.fvk).await?;
 
+                let proxy_channel = tonic::transport::Channel::from_shared(format!(
+                    "http://{}:{}",
+                    opt.node, opt.pd_port
+                ))
+                .expect("this is a valid address")
+                .connect()
+                .await?;
+
+                let oblivious_query_proxy = ObliviousQueryProxy(proxy_channel.clone());
+                let specific_query_proxy = SpecificQueryProxy(proxy_channel.clone());
+                let tendermint_proxy_proxy = TendermintProxyProxy(proxy_channel.clone());
+
                 let view_service = ViewProtocolServiceServer::new(
                     ViewService::new(storage, opt.node, opt.pd_port).await?,
                 );
@@ -238,6 +253,9 @@ impl Opt {
                     .accept_http1(true)
                     .add_service(tonic_web::enable(view_service))
                     .add_optional_service(custody_service.map(|s| tonic_web::enable(s)))
+                    .add_service(tonic_web::enable(oblivious_query_proxy))
+                    .add_service(tonic_web::enable(specific_query_proxy))
+                    .add_service(tonic_web::enable(tendermint_proxy_proxy))
                     .serve(
                         format!("{host}:{view_port}")
                             .parse()
