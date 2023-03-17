@@ -6,6 +6,9 @@ use once_cell::sync::Lazy;
 #[cfg(feature = "proving-keys")]
 mod proving_keys;
 
+#[cfg(feature = "download-proving-keys")]
+mod git_lfs;
+
 /// Proving key for the spend proof.
 #[cfg(feature = "proving-keys")]
 pub static SPEND_PROOF_PROVING_KEY: Lazy<ProvingKey<Bls12_377>> =

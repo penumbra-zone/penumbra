@@ -3757,13 +3757,18 @@ dependencies = [
  "ark-snark",
  "ark-std",
  "decaf377",
+ "hex",
  "num-bigint",
  "once_cell",
  "penumbra-crypto",
  "penumbra-tct",
  "rand",
  "rand_core",
+ "regex",
+ "reqwest",
  "serde",
+ "serde_json",
+ "sha2 0.10.6",
  "tracing",
 ]
 
