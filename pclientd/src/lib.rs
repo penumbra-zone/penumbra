@@ -225,60 +225,26 @@ impl Opt {
                 let config = PclientdConfig::load(opt.config_path())?;
                 let storage = opt.load_or_init_sqlite(&config.fvk).await?;
 
-                println!(
-                    "Starting view service at node {:?} and port {:?}",
-                    &opt.node, &opt.pd_port
+                let view_service = ViewProtocolServiceServer::new(
+                    ViewService::new(storage, opt.node, opt.pd_port).await?,
                 );
+                let custody_service = config.kms_config.as_ref().map(|kms_config| {
+                    CustodyProtocolServiceServer::new(SoftKms::new(
+                        kms_config.spend_key.clone().into(),
+                    ))
+                });
 
-                let service = ViewService::new(storage, opt.node, opt.pd_port).await?;
+                let server = Server::builder()
+                    .accept_http1(true)
+                    .add_service(tonic_web::enable(view_service))
+                    .add_optional_service(custody_service.map(|s| tonic_web::enable(s)))
+                    .serve(
+                        format!("{host}:{view_port}")
+                            .parse()
+                            .expect("this is a valid address"),
+                    );
 
-                match config.kms_config {
-                    None => {
-                        // No key management config: start in view mode
-
-                        println!("No spend key found in config, starting pclientd in View mode.");
-
-                        tokio::spawn(
-                            Server::builder()
-                                .accept_http1(true)
-                                .add_service(tonic_web::enable(ViewProtocolServiceServer::new(
-                                    service,
-                                )))
-                                .serve(
-                                    format!("{host}:{view_port}")
-                                        .parse()
-                                        .expect("this is a valid address"),
-                                ),
-                        )
-                        .await??;
-                    }
-                    Some(kms_config) => {
-                        // Key management config & spend key present: start in custody mode
-
-                        println!("Spend key found in config, starting pclientd in Custody mode.");
-
-                        let spend_key = kms_config.spend_key;
-
-                        let soft_kms = SoftKms::new(spend_key.clone().into());
-
-                        let custody_svc = CustodyProtocolServiceServer::new(soft_kms);
-
-                        tokio::spawn(
-                            Server::builder()
-                                .accept_http1(true)
-                                .add_service(tonic_web::enable(ViewProtocolServiceServer::new(
-                                    service,
-                                )))
-                                .add_service(tonic_web::enable(custody_svc))
-                                .serve(
-                                    format!("{host}:{view_port}")
-                                        .parse()
-                                        .expect("this is a valid address"),
-                                ),
-                        )
-                        .await??;
-                    }
-                }
+                tokio::spawn(server).await??;
 
                 Ok(())
             }
