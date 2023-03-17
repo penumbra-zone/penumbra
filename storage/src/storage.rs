@@ -51,7 +51,7 @@ impl Storage {
                     let db = Arc::new(DB::open_cf(
                         &opts,
                         path,
-                        ["jmt", "nonconsensus", "jmt_keys"],
+                        ["jmt", "nonconsensus", "jmt_keys", "jmt_keys_by_keyhash"],
                     )?);
 
                     // Note: for compatibility reasons with Tendermint, we set the "pre-genesis"
@@ -124,18 +124,32 @@ impl Storage {
                         .map(|x| (KeyHash::from(&x.0), x.0, x.1))
                         .collect();
 
-                    // Write the JMT key lookups to RocksDB
+                    // Maintain a two-way index of the JMT keys and their hashes in RocksDB.
+                    // The `jmt_keys` column family maps JMT `key`s to their `keyhash`.
+                    // The `jmt_keys_by_keyhash` column family maps JMT `keyhash`es to their preimage.
                     let jmt_keys_cf = inner
                         .db
                         .cf_handle("jmt_keys")
                         .expect("jmt_keys column family not found");
+
+                    let jmt_keys_by_keyhash_cf = inner
+                        .db
+                        .cf_handle("jmt_keys_by_keyhash")
+                        .expect("jmt_keys_by_keyhash family not found");
+
                     for (keyhash, key_preimage, v) in unwritten_changes.iter() {
                         match v {
-                            // Key still exists, so we need to store the key preimage
-                            Some(_) => inner.db.put_cf(jmt_keys_cf, key_preimage, keyhash.0)?,
-                            // Key was deleted, so delete the key preimage
+                            // Key still exists, so we need to index its hash, and vice-versa.
+                            Some(_) => {
+                                inner.db.put_cf(jmt_keys_cf, key_preimage, keyhash.0)?;
+                                inner
+                                    .db
+                                    .put_cf(jmt_keys_by_keyhash_cf, keyhash.0, key_preimage)?
+                            }
+                            // Key was deleted, so delete the key preimage, and its keyhash index.
                             None => {
                                 inner.db.delete_cf(jmt_keys_cf, key_preimage)?;
+                                inner.db.delete_cf(jmt_keys_by_keyhash_cf, keyhash.0)?;
                             }
                         };
                     }
