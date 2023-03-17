@@ -337,13 +337,21 @@ impl TreeReader for Inner {
         let Some(jmt_key) = self
             .snapshot
             .get_cf(jmt_keys_by_keyhash_cf, key_hash.0)?
-            .map(|db_slice| Node::decode(&db_slice))
-            .transpose()? else {
+            .map(|db_slice| String::from_utf8(db_slice)).transpose()? else {
                 return Ok(None)
             };
 
         tracing::trace!(?key_hash, ?jmt_key);
-        self.get_node_option(jmt_key)
+
+        let jmt_values_cf = self
+            .db
+            .cf_handle("jmt_values")
+            .expect("jmt_values column family not found");
+
+        let Some(value) = self.snapshot.get_cf(jmt_values_cf, jmt_key).transpose() else {
+            return Ok(None)
+        };
+        todo!()
     }
 
     /// Gets node given a node key. Returns `None` if the node does not exist.
