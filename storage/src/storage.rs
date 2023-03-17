@@ -52,7 +52,15 @@ impl Storage {
                     let db = Arc::new(DB::open_cf(
                         &opts,
                         path,
-                        ["jmt", "nonconsensus", "jmt_keys", "jmt_keys_by_keyhash"],
+                        // TODO(erwan): MERGEBLOCK - jmt still relevant now? maybe rename keys x keyhash
+                        // add describition of each CFs
+                        [
+                            "jmt",
+                            "jmt_values",
+                            "jmt_keys",
+                            "jmt_keys_by_keyhash",
+                            "nonconsensus",
+                        ],
                     )?);
 
                     // Note: for compatibility reasons with Tendermint, we set the "pre-genesis"
@@ -227,22 +235,41 @@ impl Storage {
     }
 }
 
+// TODO(erwan): move this somewhere? should this live in the jmt crate?
+pub struct VersionedKey {
+    version: jmt::Version,
+    key: String,
+}
+
 impl TreeWriter for Inner {
     /// Writes a node batch into storage.
     //TODO: Change JMT traits to accept owned NodeBatch
     fn write_node_batch(&self, node_batch: &NodeBatch) -> Result<()> {
         let node_batch = node_batch.clone();
+        let jmt_cf = self
+            .db
+            .cf_handle("jmt")
+            .expect("jmt column family not found");
 
+        let jmt_values_cf = self
+            .db
+            .cf_handle("jmt_values")
+            .expect("jmt_values column family not found");
+
+        // TODO(erwan): MERGEBLOCK --- do we need to keep the jmt cf now?
         for (node_key, node) in node_batch.nodes() {
             let key_bytes = &node_key.encode()?;
-            let value_bytes = &node.encode()?;
-            tracing::trace!(?key_bytes, value_bytes = ?hex::encode(value_bytes));
+            let node_bytes = &node.encode()?;
+            tracing::trace!(?key_bytes, node_bytes = ?hex::encode(node_bytes));
+            let key = String::from_utf8(key_bytes.to_vec())?;
 
-            let jmt_cf = self
-                .db
-                .cf_handle("jmt")
-                .expect("jmt column family not found");
-            self.db.put_cf(jmt_cf, key_bytes, value_bytes)?;
+            let versioned_key = VersionedKey {
+                version: node_key.version(),
+                key,
+            };
+
+            self.db.put_cf(jmt_cf, key_bytes, node_bytes)?;
+            self.db.put_cf(jmt_values_cf, key, value)
         }
 
         Ok(())
