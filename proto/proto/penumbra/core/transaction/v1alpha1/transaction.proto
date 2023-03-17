@@ -23,6 +23,10 @@ message Id {
   bytes hash = 1;
 }
 
+message EffectHash {
+  bytes inner = 1;
+}
+
 // The body of a transaction.
 message TransactionBody {
   // A list of actions (state changes) performed by this transaction.

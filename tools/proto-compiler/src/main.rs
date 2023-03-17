@@ -73,6 +73,7 @@ fn main() -> Result<()> {
             "../../proto/proto/penumbra/core/dex/v1alpha1/dex.proto",
             "../../proto/proto/penumbra/core/transparent_proofs/v1alpha1/transparent_proofs.proto",
             "../../proto/proto/penumbra/core/governance/v1alpha1/governance.proto",
+            "../../proto/proto/penumbra/narsil/v1alpha1/narsil.proto",
             "../../proto/rust-vendored/tendermint/types/validator.proto",
             "../../proto/rust-vendored/tendermint/p2p/types.proto",
         ],

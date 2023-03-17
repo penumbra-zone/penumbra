@@ -2,33 +2,158 @@ syntax = "proto3";
 
 package penumbra.narsil.v1alpha1;
 
+import "penumbra/core/crypto/v1alpha1/crypto.proto";
+import "penumbra/core/transaction/v1alpha1/transaction.proto";
+import "penumbra/custody/v1alpha1/custody.proto";
+
 // https://www.ietf.org/archive/id/draft-irtf-cfrg-frost-11.html
 
 // Config data
 
-message ConsensusKey {
+// The root identity key material for a shard operator.
+message ShardIdentityKey {
+    // An Ed25519 key.
     bytes inner = 1;
 }
 
-message ShardOperator {
-    // The validator's consensus pubkey for use in Tendermint (ed25519)
-    ConsensusKey consensus_key = 1;
-    // A label for the shard.
-    string label = 2;
+// The key that Tendermint will use to identify a validator.
+message ConsensusKey {
+    // An Ed25519 key.
+    bytes inner = 1;
 }
 
-message AccountInfo {
+message ShardMessageKey {
+    // An Ed25519 key.
+    bytes inner = 1;
+}
+
+// The threshold key share controlled by a shard operator.
+message ShardKey {
+    // A decaf377 scalar.
+    bytes inner = 1;
+}
+
+message ShardMessageSignature {
+    // An Ed25519 signature.
+    bytes inner = 1;
+}
+
+// A description of one of the operators of a threshold key share (shard).
+// 
+// The `ShardOperator` message doesn't have the threshold key share itself,
+// because the workflow is that the set of operators is going to be configured
+// first, as part of the genesis / chain configuration, and then the shards
+// perform DKG as the chain boots, using the chain as the messaging layer for
+// the DKG messages.  This means there's no interactive setup procedure for the
+// shard operators.
+message ShardDescription {
+    // The shard operator's offline identity key material which is the root of their authority.
+    ShardIdentityKey identity_key = 1;
+    // A subkey used for signing messages sent to the ledger.
+    ShardMessageKey message_key = 2;
+    // The validator's consensus pubkey for use in Tendermint (ed25519)
+    ConsensusKey consensus_key = 3;
+    // A label for the shard.
+    string label = 4;
+}
+
+message ShardOperator {
+    ShardDescription description = 1;
+    bytes sig = 2;
+}
+
+message GenesisData {
+    repeated ShardOperator operators = 1;
+}
+
+// Describes the Penumbra account group jointly controlled by the Narsil instance.
+message AccountGroupInfo {
     // The full viewing key for the shared account.
     // 
     // The spend verification key component is the `PK` in the FROST I-D.
-    core.crypto.FullViewingKey full_viewing_key = 1;
+    core.crypto.v1alpha1.FullViewingKey full_viewing_key = 1;
     repeated ShardInfo participants = 2;
 }
 
 message ShardInfo {
     uint32 index = 1;
     // The shard verification key, corresponding to `PK_i` in the FROST I-D
-    core.crypto.SpendVerificationKey shard_verification_key = 2;
+    core.crypto.v1alpha1.SpendVerificationKey shard_verification_key = 2;
+}
+
+message RequestIndex {
+    core.transaction.v1alpha1.EffectHash effect_hash = 1;
+}
+
+message CeremonyIndex {
+    uint64 ceremony_index = 1;
+    RequestIndex request_index = 2;
+}
+
+message Committee {
+    CeremonyIndex ceremony = 1;
+    repeated ShardInfo participants = 2;
+}
+
+message CeremonyFailure {
+    // TODO: consider filling these in with structured info about the failure
+    message Timeout {}
+    message BadCommitment {}
+    message BadShare {}
+    message Canceled {}
+    oneof failure {
+        Timeout timeout = 1;
+        BadCommitment bad_commitment = 2;
+        BadShare bad_share = 3;
+        Canceled canceled = 4;
+    }
+}
+
+// The data recorded on-chain about the current state of a signing ceremony.
+message CeremonyState {
+    message Pending { }
+    message StartedRound1 {
+        // The committee performing the ceremony.
+        Committee committee = 1;
+        // A list of commitment messages received so far (begins empty).
+        repeated AuthorizeCommitment commitments = 2;
+    }
+    message StartedRound2 {
+        // The committee performing the ceremony.
+        Committee committee = 1;
+        // A list of commitment messages received in round 1.
+        repeated AuthorizeCommitment commitments = 2;
+        // A list of authorization share messages received so far (begins empty).
+        repeated AuthorizeShare shares = 3;
+    }
+    message Finished {
+        // The committee performing the ceremony.
+        Committee committee = 1;
+        // A list of commitment messages received in round 1.
+        repeated AuthorizeCommitment commitments = 2;
+        // A list of authorization share messages received in round 2.
+        repeated AuthorizeShare shares = 3;
+        // The authorization data resulting from the ceremony.
+        core.transaction.v1alpha1.AuthorizationData auth_data = 4;
+    }
+    message Failed {
+        // The committee performing the ceremony.
+        Committee committee = 1;
+        // A list of commitment messages received in round 1, if any.
+        repeated AuthorizeCommitment commitments = 2;
+        // A list of authorization share messages received in round 2, if any.
+        repeated AuthorizeShare shares = 3;
+        // A description of the failure.
+        CeremonyFailure failure = 4;
+    }
+
+    oneof state {
+        Pending pending = 1;
+        StartedRound1 started_round_1 = 2;
+        StartedRound2 started_round_2 = 3;
+        Finished finished = 4;
+        Failed failed = 5;
+    }
 }
 
 // On-chain data structures
@@ -50,27 +175,56 @@ message ShardInfo {
 // - ledger is frost coordinator and observes completion
 // - node watches for set of auth signatures, responds to AuthorizeRequest
 
-
-message Transaction {
-  oneof transaction {
-    core.custody.AuthorizeRequest auth_request = 1;
+message NarsilPacket {
+  oneof packet {
+    // An authorization request submitted to the Narsil cluster
+    //
+    // Packet handling:
+    // - check admission policy (black box / ignore for now)
+    // - index the request
+    // - start 1 or more committees to sign it
+    custody.v1alpha1.AuthorizeRequest authorize_request = 1;
+    // A shard's round 1 contribution to a signing ceremony
+    AuthorizeCommitment authorize_commitment = 2;
+    // A shard's round 2 contribution to a signing ceremony
+    AuthorizeShare authorize_share = 3;
   }
 }
 
-message SigningKeyShare {
-    bytes inner = 1;
-}
-
-// FROST messages
-
-// TODO: need to have "inner" and "outer" types, for a few reasons:
-// - each auth request has multiple required signatures
-// - shards should have a way to explicitly reject auth requests, rather than just ignoring them
-
+// A wrapper around the FROST commitment message, exchanged in round 1 of the
+// signing protocol for a single signature.
 message FrostCommitment {
     bytes payload = 1;
 }
 
+// A wrapper around the FROST signature share, exchanged in round 2 of the
+// signing protocol for a single signature.
 message FrostSignatureShare {
     bytes payload = 1;
+}
+
+// A Narsil shard's commitment message for a single ceremony, which may perform
+// multiple signatures (one for each spend in the `AuthorizeRequest`'s
+// `TransactionPlan`).
+message AuthorizeCommitment {
+    message Body {
+        CeremonyIndex ceremony_index = 1;
+        repeated FrostCommitment commitments = 2;
+    }
+    Body body = 1;
+    ShardMessageKey signer = 2;
+    ShardMessageSignature signature = 3;
+}
+
+// A Narsil shard's signature share message for a single ceremony, which may perform
+// multiple signatures (one for each spend in the `AuthorizeRequest`'s
+// `TransactionPlan`).
+message AuthorizeShare {
+    message Body {
+        CeremonyIndex ceremony_index = 1;
+        repeated FrostCommitment commitments = 2;
+    }
+    Body body = 1;
+    ShardMessageKey signer = 2;
+    ShardMessageSignature signature = 3;
 }
