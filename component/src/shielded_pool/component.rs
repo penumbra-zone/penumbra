@@ -40,34 +40,6 @@ impl Component for ShieldedPool {
                 .await
                 .unwrap();
         }
-
-        let mut compact_block = state.stub_compact_block();
-        let mut state_commitment_tree = state.stub_state_commitment_tree().await;
-
-        // Hard-coded to zero because we are in the genesis block
-        // Tendermint starts blocks at 1, so this is a "phantom" compact block
-        compact_block.height = 0;
-
-        // Add current FMD parameters to the initial block.
-        compact_block.fmd_parameters = Some(state.get_current_fmd_parameters().await.unwrap());
-
-        // Close the genesis block
-
-        // TODO: MOVE TO APP
-        state
-            .finish_sct_block(&mut compact_block, &mut state_commitment_tree)
-            .await;
-
-        state.set_compact_block(compact_block.clone());
-
-        state
-            .write_sct(
-                compact_block.height,
-                state_commitment_tree,
-                compact_block.block_root,
-                compact_block.epoch_root,
-            )
-            .await;
     }
 
     // #[instrument(name = "shielded_pool", skip(_state, _begin_block))]
