@@ -1,12 +1,13 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use jmt::{
     storage::{LeafNode, Node, NodeBatch, NodeKey, TreeWriter},
-    JellyfishMerkleTree, KeyHash,
+    JellyfishMerkleTree, KeyHash, Sha256Jmt, Version,
 };
 use parking_lot::RwLock;
 use rocksdb::{Options, DB};
+use sha2::Sha256;
 use tokio::sync::watch;
 use tracing::Span;
 
@@ -51,7 +52,17 @@ impl Storage {
                     let db = Arc::new(DB::open_cf(
                         &opts,
                         path,
-                        ["jmt", "nonconsensus", "jmt_keys"],
+                        [
+                            // Maps `NodeKey` -> `Node`
+                            "jmt",
+                            // Maps: `KeyHash` || BE(Version) => value
+                            "jmt_values",
+                            // Maps: Key -> KeyHash
+                            "jmt_keys",
+                            // Maps: KeyHash -> Key
+                            "jmt_keys_by_keyhash",
+                            "nonconsensus",
+                        ],
                     )?);
 
                     // Note: for compatibility reasons with Tendermint, we set the "pre-genesis"
@@ -115,40 +126,77 @@ impl Storage {
             .spawn_blocking(move || {
                 span.in_scope(|| {
                     let snap = inner.snapshots.read().latest();
-                    let jmt = JellyfishMerkleTree::new(&*snap.0);
+                    let jmt = Sha256Jmt::new(&*snap.0);
 
                     let unwritten_changes: Vec<_> = cache
                         .unwritten_changes
                         .into_iter()
                         // Pre-calculate all KeyHashes for later storage in `jmt_keys`
-                        .map(|x| (KeyHash::from(&x.0), x.0, x.1))
+                        .map(|x| (KeyHash::with::<Sha256>(&x.0), x.0, x.1))
                         .collect();
 
-                    // Write the JMT key lookups to RocksDB
+                    // Maintain a two-way index of the JMT keys and their hashes in RocksDB.
+                    // The `jmt_keys` column family maps JMT `key`s to their `keyhash`.
+                    // The `jmt_keys_by_keyhash` column family maps JMT `keyhash`es to their preimage.
                     let jmt_keys_cf = inner
                         .db
                         .cf_handle("jmt_keys")
                         .expect("jmt_keys column family not found");
+
+                    let jmt_keys_by_keyhash_cf = inner
+                        .db
+                        .cf_handle("jmt_keys_by_keyhash")
+                        .expect("jmt_keys_by_keyhash family not found");
+
                     for (keyhash, key_preimage, v) in unwritten_changes.iter() {
                         match v {
-                            // Key still exists, so we need to store the key preimage
-                            Some(_) => inner.db.put_cf(jmt_keys_cf, key_preimage, keyhash.0)?,
-                            // Key was deleted, so delete the key preimage
+                            // Key still exists, so we need to index its hash, and vice-versa.
+                            Some(_) => {
+                                inner.db.put_cf(jmt_keys_cf, key_preimage, keyhash.0)?;
+                                inner
+                                    .db
+                                    .put_cf(jmt_keys_by_keyhash_cf, keyhash.0, key_preimage)?
+                            }
+                            // Key was deleted, so delete the key preimage, and its keyhash index.
                             None => {
                                 inner.db.delete_cf(jmt_keys_cf, key_preimage)?;
+                                inner.db.delete_cf(jmt_keys_by_keyhash_cf, keyhash.0)?;
                             }
                         };
                     }
 
-                    // Write the unwritten changes from the state to the JMT.
+                    // Apply the unwritten state changes to the JMT.
                     let (root_hash, batch) = jmt.put_value_set(
                         unwritten_changes.into_iter().map(|x| (x.0, x.2)),
                         new_version,
                     )?;
 
-                    // Apply the JMT changes to the DB.
+                    // Persist JMT structure changes to RocksDB.
                     inner.write_node_batch(&batch.node_batch)?;
                     tracing::trace!(?root_hash, "wrote node batch to backing store");
+
+                    // Record the node values in RocksDB: the value of jmt [`jmt::LeafNode`] must be
+                    // persisted separately.
+                    let jmt_values_cf = inner
+                        .db
+                        .cf_handle("jmt_values")
+                        .expect("jmt_values column family not found");
+
+                    for ((version, key_hash), value) in batch.node_batch.values() {
+                        let Some(value) = value else {
+                                // The key has been deleted -- do nothing.
+                                    continue;
+                                };
+
+                        let versioned_key = VersionedKey {
+                            key_hash: key_hash.clone(),
+                            version: *version,
+                        };
+
+                        inner
+                            .db
+                            .put_cf(jmt_values_cf, versioned_key.encode(), value)?;
+                    }
 
                     // Write the unwritten changes from the nonconsensus to RocksDB.
                     for (k, v) in cache.nonconsensus_changes.into_iter() {
@@ -212,22 +260,56 @@ impl Storage {
     }
 }
 
+// TODO(erwan): move this somewhere? should this live in the jmt crate?
+#[derive(Clone, Debug)]
+pub struct VersionedKey {
+    pub key_hash: KeyHash,
+    pub version: jmt::Version,
+}
+
+impl VersionedKey {
+    pub fn encode(&self) -> Vec<u8> {
+        let mut buf: Vec<u8> = self.key_hash.0.to_vec();
+        buf.extend_from_slice(&self.version.to_be_bytes());
+        buf
+    }
+
+    pub fn decode(buf: Vec<u8>) -> Result<Self> {
+        if buf.len() != 40 {
+            Err(anyhow!(
+                "could not decode buffer into VersionedKey (invalid size)"
+            ))
+        } else {
+            let raw_key_hash: [u8; 32] = buf[0..32]
+                .try_into()
+                .expect("buffer is at least 40 bytes wide");
+            let key_hash = KeyHash(raw_key_hash);
+
+            let raw_version: [u8; 8] = buf[32..40]
+                .try_into()
+                .expect("buffer is at least 40 bytes wide");
+            let version: u64 = u64::from_be_bytes(raw_version);
+
+            Ok(VersionedKey { version, key_hash })
+        }
+    }
+}
+
 impl TreeWriter for Inner {
     /// Writes a node batch into storage.
-    //TODO: Change JMT traits to accept owned NodeBatch
+    //TODO(erwan): Change JMT traits to accept owned NodeBatch
     fn write_node_batch(&self, node_batch: &NodeBatch) -> Result<()> {
         let node_batch = node_batch.clone();
+        let jmt_cf = self
+            .db
+            .cf_handle("jmt")
+            .expect("jmt column family not found");
 
-        for (node_key, node) in node_batch {
+        for (node_key, node) in node_batch.nodes() {
             let key_bytes = &node_key.encode()?;
-            let value_bytes = &node.encode()?;
-            tracing::trace!(?key_bytes, value_bytes = ?hex::encode(value_bytes));
-
-            let jmt_cf = self
-                .db
-                .cf_handle("jmt")
-                .expect("jmt column family not found");
-            self.db.put_cf(jmt_cf, key_bytes, value_bytes)?;
+            let node_bytes = &node.encode()?;
+            tracing::trace!(?key_bytes, node_bytes = ?hex::encode(node_bytes));
+            self.db.put_cf(jmt_cf, key_bytes, node_bytes)?;
         }
 
         Ok(())

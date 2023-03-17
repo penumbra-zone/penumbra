@@ -20,7 +20,7 @@ parallel = ["penumbra-proof-params/parallel", "decaf377/parallel", "penumbra-cry
 
 [dependencies]
 # Workspace dependencies
-jmt = "0.3"
+jmt = "0.4"
 penumbra-proto = { path = "../proto" }
 penumbra-chain = { path = "../chain" }
 penumbra-crypto = { path = "../crypto" }

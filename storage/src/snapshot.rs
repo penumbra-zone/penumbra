@@ -2,11 +2,16 @@ use std::{any::Any, sync::Arc};
 
 use anyhow::Result;
 use async_trait::async_trait;
-use jmt::storage::{LeafNode, Node, NodeKey, TreeReader};
+use jmt::{
+    storage::{LeafNode, Node, NodeKey, TreeReader},
+    KeyHash, OwnedValue, Sha256Jmt,
+};
+use rocksdb::{IteratorMode, ReadOptions};
+use sha2::Sha256;
 use tokio::sync::mpsc;
 use tracing::Span;
 
-use crate::{metrics, StateRead};
+use crate::{metrics, storage::VersionedKey, StateRead};
 
 mod rocks_wrapper;
 use rocks_wrapper::RocksDbSnapshot;
@@ -64,7 +69,7 @@ impl Snapshot {
             .name("State::get_with_proof")
             .spawn_blocking(move || {
                 span.in_scope(|| {
-                    let tree = jmt::JellyfishMerkleTree::new(&*snapshot.0);
+                    let tree: Sha256Jmt<_> = jmt::JellyfishMerkleTree::new(&*snapshot.0);
                     let proof = tree.get_with_ics23_proof(key, snapshot.version())?;
                     Ok((proof.value.clone(), proof))
                 })
@@ -86,7 +91,7 @@ impl Snapshot {
             .name("State::root_hash")
             .spawn_blocking(move || {
                 span.in_scope(|| {
-                    let tree = jmt::JellyfishMerkleTree::new(&*snapshot.0);
+                    let tree: Sha256Jmt<_> = jmt::JellyfishMerkleTree::new(&*snapshot.0);
                     let root = tree
                         .get_root_hash_option(snapshot.version())?
                         .unwrap_or(crate::RootHash([0; 32]));
@@ -102,7 +107,7 @@ impl Snapshot {
     /// special-cases the empty tree case so that reads on an empty tree just
     /// return None.
     fn get_jmt(&self, key: jmt::KeyHash) -> Result<Option<Vec<u8>>> {
-        let tree = jmt::JellyfishMerkleTree::new(&*self.0);
+        let tree: Sha256Jmt<_> = jmt::JellyfishMerkleTree::new(&*self.0);
         match tree.get(key, self.0.version) {
             Ok(Some(value)) => {
                 tracing::trace!(version = ?self.0.version, ?key, value = ?hex::encode(&value), "read from tree");
@@ -140,7 +145,7 @@ impl StateRead for Snapshot {
     /// Fetch a key from the JMT column family.
     fn get_raw(&self, key: &str) -> Self::GetRawFut {
         let span = Span::current();
-        let key_hash = jmt::KeyHash::from(key);
+        let key_hash = jmt::KeyHash::with::<Sha256>(key);
         let self2 = self.clone();
         crate::future::SnapshotFuture(
             tokio::task::Builder::new()
@@ -215,8 +220,9 @@ impl StateRead for Snapshot {
                         let k = std::str::from_utf8(key_preimage.as_ref())
                             .expect("saved jmt keys are utf-8 strings")
                             .to_string();
+
                         let v = self2
-                            .get_jmt(k.as_bytes().into())?
+                            .get_jmt(KeyHash::with::<Sha256>(k.clone()))?
                             .expect("keys in jmt_keys should have a corresponding value in jmt");
                         tracing::debug!(%k, "prefix_raw");
                         tx.blocking_send(Ok((k, v)))?;
@@ -312,9 +318,59 @@ impl StateRead for Snapshot {
     }
 }
 
-/// A reader interface for rocksdb. NOTE: it is up to the caller to ensure consistency between the
-/// rocksdb::DB handle and any write batches that may be applied through the writer interface.
+/// A Reader interface for RocksDB.
+///
+/// Note that it is up to the caller to ensure consistency between the [`rocksdb::DB`] handle,
+/// and any write batches that may be applied through the writer interface.
 impl TreeReader for Inner {
+    /// Gets a value by identifier, returning the newest value whose version is *less than or
+    /// equal to* the specified version.  Returns None if the value does not exist.
+    fn get_value_option(
+        &self,
+        max_version: jmt::Version,
+        key_hash: KeyHash,
+    ) -> Result<Option<OwnedValue>> {
+        let jmt_values_cf = self
+            .db
+            .cf_handle("jmt_values")
+            .expect("jmt_values column family not found");
+
+        // Prefix ranges exclude the upper bound in the iterator result.
+        // This means that when requesting the largest possible version, there
+        // is no way to specify a range that is inclusive of `u64::MAX`.
+        if max_version == u64::MAX {
+            let k = VersionedKey {
+                version: u64::MAX,
+                key_hash,
+            };
+
+            if let Some(v) = self.snapshot.get_cf(jmt_values_cf, k.encode())? {
+                return Ok(Some(v));
+            }
+        }
+
+        let mut lower_bound = key_hash.0.to_vec();
+        lower_bound.extend_from_slice(&0u64.to_be_bytes());
+
+        let mut upper_bound = key_hash.0.to_vec();
+        // The upper bound is excluded from the iteration results.
+        upper_bound.extend_from_slice(&(max_version.saturating_add(1)).to_be_bytes());
+
+        let mut readopts = ReadOptions::default();
+        readopts.set_iterate_lower_bound(lower_bound);
+        readopts.set_iterate_upper_bound(upper_bound);
+        let mut iterator =
+            self.snapshot
+                .iterator_cf_opt(jmt_values_cf, readopts, IteratorMode::End);
+
+        let Some(tuple) = iterator.next() else {
+            return Ok(None)
+        };
+
+        let (_key, value) = tuple?;
+        Ok(Some(value.into()))
+    }
+
     /// Gets node given a node key. Returns `None` if the node does not exist.
     fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node>> {
         let node_key = node_key;

@@ -14,6 +14,7 @@ penumbra-tct = { path = "../tct" }
 
 # Penumbra dependencies
 decaf377 = "0.4"
+jmt = "0.4"
 
 tendermint = "0.29.0"
 ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.1.x",  version = "0.1.1" }
