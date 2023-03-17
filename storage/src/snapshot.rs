@@ -317,8 +317,10 @@ impl StateRead for Snapshot {
     }
 }
 
-/// A reader interface for rocksdb. NOTE: it is up to the caller to ensure consistency between the
-/// rocksdb::DB handle and any write batches that may be applied through the writer interface.
+/// A Reader interface for RocksDB.
+///
+/// Note that it is up to the caller to ensure consistency between the [`rocksdb::DB`] handle,
+/// and any write batches that may be applied through the writer interface.
 impl TreeReader for Inner {
     /// Gets a value by identifier, returning the newest value whose version is *less than or
     /// equal to* the specified version.  Returns None if the value does not exist.
@@ -327,7 +329,21 @@ impl TreeReader for Inner {
         max_version: jmt::Version,
         key_hash: KeyHash,
     ) -> Result<Option<OwnedValue>> {
-        Ok(self.get_value(max_version, key_hash).ok())
+        let jmt_keys_by_keyhash_cf = self
+            .db
+            .cf_handle("jmt_keys_by_keyhash")
+            .expect("jmt_keys_by_keyhash column family not found");
+
+        let Some(jmt_key) = self
+            .snapshot
+            .get_cf(jmt_keys_by_keyhash_cf, key_hash.0)?
+            .map(|db_slice| Node::decode(&db_slice))
+            .transpose()? else {
+                return Ok(None)
+            };
+
+        tracing::trace!(?key_hash, ?jmt_key);
+        self.get_node_option(jmt_key)
     }
 
     /// Gets node given a node key. Returns `None` if the node does not exist.
