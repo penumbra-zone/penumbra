@@ -45,7 +45,6 @@ pub(crate) trait StateWriteExt: StateWrite {
         block_root: tct::builder::block::Root,
         epoch_root: Option<tct::builder::epoch::Root>,
     ) {
-        println!("writing sct anchor: {:?}", sct.root());
         self.set_sct_anchor(height, sct.root());
 
         self.set_sct_block_anchor(height, block_root);
