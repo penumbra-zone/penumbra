@@ -118,6 +118,10 @@ pub mod penumbra {
 
             // TODO(hdevalence): do we want any of this code?
 
+            use async_stream::try_stream;
+            use futures::Stream;
+            use futures::StreamExt;
+            use std::pin::Pin;
             #[cfg(feature = "rpc")]
             use tonic::{
                 body::BoxBody,

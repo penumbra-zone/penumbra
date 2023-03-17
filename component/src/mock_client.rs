@@ -49,7 +49,10 @@ impl MockClient {
                 .ok_or_else(|| anyhow::anyhow!("missing sct anchor for height {}", height))?;
             anyhow::ensure!(
                 root == expected_root,
-                "client sct root should match chain state"
+                format!(
+                    "client sct root should match chain state: {:?} != {:?}",
+                    root, expected_root
+                )
             );
         }
         Ok(())

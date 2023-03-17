@@ -15,6 +15,7 @@ use penumbra_transaction::{
 use rand_core::SeedableRng;
 use tendermint::abci;
 
+use crate::app::App;
 use crate::{shielded_pool::ShieldedPool, ActionHandler, Component, MockClient, TempStorageExt};
 
 use super::{StateReadExt as _, StubDex};
@@ -69,8 +70,10 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
     let mut state_tx = state.try_begin_transaction().unwrap();
     // Execute EndBlock for the Dex, to actually execute the swaps...
     StubDex::end_block(&mut state_tx, &end_block).await;
-    // ... and for the ShieldedPool, to correctly write out the SCT with the data we'll use next.
     ShieldedPool::end_block(&mut state_tx, &end_block).await;
+    // ... and for the App, to correctly write out the SCT with the data we'll use next.
+    App::finish_block(&mut state_tx).await;
+
     state_tx.apply();
 
     // 6. Create a SwapClaim action
@@ -167,6 +170,7 @@ async fn swap_with_nonzero_fee() -> anyhow::Result<()> {
     // Execute EndBlock for the Dex, to actually execute the swaps...
     StubDex::end_block(&mut state_tx, &end_block).await;
     ShieldedPool::end_block(&mut state_tx, &end_block).await;
+    App::finish_block(&mut state_tx).await;
     state_tx.apply();
 
     Ok(())

@@ -6,7 +6,7 @@ use anyhow::Result;
 use penumbra_chain::params::FmdParameters;
 use penumbra_chain::{genesis, AppHash, StateReadExt, StateWriteExt as _};
 use penumbra_proto::{DomainType, StateWriteProto};
-use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, Storage};
+use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, StateWrite, Storage};
 use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tendermint::validator::Update;
@@ -241,33 +241,39 @@ impl App {
         // Shielded pool always executes last.
         ShieldedPool::end_block(&mut state_tx, end_block).await;
 
+        App::finish_block(&mut state_tx).await;
+
+        state_tx.apply().1
+    }
+
+    pub(crate) async fn finish_block<S: StateWrite>(mut state: S) {
         // We need to reload the compact block here, in case it was
         // edited during the preceding method calls.
         // Get the current block height
-        let height = state_tx
+        let height = state
             .get_block_height()
             .await
             .expect("block height should be set");
 
         // Set the height of the compact block and save it.
-        let mut compact_block = state_tx.stub_compact_block();
+        let mut compact_block = state.stub_compact_block();
         compact_block.height = height;
-        state_tx.stub_put_compact_block(compact_block.clone());
-        let mut state_commitment_tree = state_tx.stub_state_commitment_tree().await;
+        state.stub_put_compact_block(compact_block.clone());
+        let mut state_commitment_tree = state.stub_state_commitment_tree().await;
 
         // Check to see if the chain parameters have changed, and include them in the compact block
         // if they have (this is signaled by `penumbra_chain::StateWriteExt::put_chain_params`):
-        if state_tx.chain_params_changed() {
-            compact_block.chain_parameters = Some(state_tx.get_chain_params().await.unwrap());
+        if state.chain_params_changed() {
+            compact_block.chain_parameters = Some(state.get_chain_params().await.unwrap());
         }
 
-        state_tx
+        state
             .finish_sct_block(&mut compact_block.clone(), &mut state_commitment_tree)
             .await;
 
-        state_tx.set_compact_block(compact_block.clone());
+        state.set_compact_block(compact_block.clone());
 
-        state_tx
+        state
             .write_sct(
                 compact_block.height,
                 state_commitment_tree,
@@ -275,8 +281,6 @@ impl App {
                 compact_block.epoch_root,
             )
             .await;
-
-        state_tx.apply().1
     }
 
     /// Commits the application state to persistent storage,

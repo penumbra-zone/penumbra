@@ -6,7 +6,8 @@ use futures::{
     TryFutureExt,
 };
 use penumbra_chain::StateReadExt as _;
-use penumbra_component::shielded_pool::{StateReadExt as _, SupplyRead as _};
+use penumbra_component::compactblock::view::StateReadExt as _;
+use penumbra_component::shielded_pool::SupplyRead as _;
 use penumbra_component::stake::{validator, StateReadExt as _};
 use penumbra_proto::{
     client::v1alpha1::{

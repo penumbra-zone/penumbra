@@ -40,10 +40,11 @@ pub enum ShieldedPool {
 
 impl ShieldedPool {
     pub fn key(&self) -> String {
+        use penumbra_component::sct::state_key as sct_state_key;
         use penumbra_component::shielded_pool::state_key;
         match self {
-            ShieldedPool::Anchor { height } => state_key::anchor_by_height(*height),
-            ShieldedPool::BlockAnchor { height } => state_key::block_anchor_by_height(*height),
+            ShieldedPool::Anchor { height } => sct_state_key::anchor_by_height(*height),
+            ShieldedPool::BlockAnchor { height } => sct_state_key::block_anchor_by_height(*height),
             ShieldedPool::EpochAnchor { epoch } => state_key::epoch_anchor_by_index(*epoch),
             ShieldedPool::CompactBlock { height } => state_key::compact_block(*height),
             ShieldedPool::Commitment { commitment } => state_key::note_source(commitment),
