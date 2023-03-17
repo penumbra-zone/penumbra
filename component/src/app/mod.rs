@@ -78,8 +78,6 @@ impl App {
         compact_block.fmd_parameters = Some(state_tx.get_current_fmd_parameters().await.unwrap());
 
         // Close the genesis block
-
-        // TODO: MOVE TO APP
         state_tx
             .finish_sct_block(&mut compact_block, &mut state_commitment_tree)
             .await;
