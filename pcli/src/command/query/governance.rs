@@ -13,7 +13,6 @@ use penumbra_transaction::{
     proposal::{self, Proposal},
     vote::Vote,
 };
-use penumbra_view::ViewClient;
 use serde::Serialize;
 use serde_json::json;
 
@@ -64,7 +63,7 @@ impl GovernanceCmd {
                     let mut unfinished = client
                         .prefix_value(PrefixValueRequest {
                             prefix: all_unfinished_proposals().into(),
-                            chain_id: app.view().chain_params().await?.chain_id,
+                            ..Default::default()
                         })
                         .await?
                         .into_inner();
