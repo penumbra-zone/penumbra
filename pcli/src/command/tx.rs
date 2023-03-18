@@ -317,7 +317,7 @@ impl TxCmd {
                 let all_notes = app
                     .view()
                     .notes(NotesRequest {
-                        account_id: Some(fvk.hash().into()),
+                        account_group_id: Some(fvk.account_group_id().into()),
                         ..Default::default()
                     })
                     .await?;
@@ -339,11 +339,11 @@ impl TxCmd {
                         planner.output(split_value.clone(), address);
                     }
                     let plan = planner
-                        .plan(app.view(), &fvk, record.address_index)
+                        .plan(app.view(), fvk.account_group_id(), record.address_index)
                         .await?;
                     let tx = app.build_transaction(plan).await?;
                     println!("built transaction splitting {:?}", record.note);
-                    app.submit_transaction_unconfirmed(&tx).await?;
+                    app.submit_transaction_unconfirmed(tx).await?;
                 }
             }
             TxCmd::Swap {
