@@ -16,7 +16,7 @@ use penumbra_proto::{
 };
 use penumbra_view::{Storage, ViewService};
 use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
+use serde_with::{serde_as, DisplayFromStr};
 
 use std::fs;
 use std::fs::File;
@@ -30,10 +30,11 @@ pub use proxy::{ObliviousQueryProxy, SpecificQueryProxy, TendermintProxyProxy};
 #[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct PclientdConfig {
+    /// FVK for both view and custody modes
+    #[serde_as(as = "DisplayFromStr")]
+    pub fvk: FullViewingKey,
     /// Optional KMS config for custody mode
     pub kms_config: Option<soft_kms::Config>,
-    /// FVK for both view and custody modes
-    pub fvk: FullViewingKey,
 }
 
 impl PclientdConfig {
