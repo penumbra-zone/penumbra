@@ -231,6 +231,22 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
             }) as for<'r> fn(&'r str) -> _,
         )
         .add_asset(
+            "^wpusd$",
+            &["^pusd$"],
+            (|data: &str| {
+                assert!(data.is_empty());
+                denom::Inner::new(
+                    "wpusd".to_string(),
+                    vec![
+                        denom::UnitData {
+                            exponent: 18,
+                            denom: "pusd".to_string(),
+                        },
+                    ],
+                )
+            }) as for<'r> fn(&'r str) -> _,
+        )
+        .add_asset(
             // Note: this regex must be in sync with DelegationToken::try_from
             // and VALIDATOR_IDENTITY_BECH32_PREFIX in the penumbra-stake crate
             // TODO: this doesn't restrict the length of the bech32 encoding

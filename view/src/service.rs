@@ -773,7 +773,12 @@ impl ViewProtocolService for ViewService {
 
         let notes = self
             .storage
-            .notes(include_spent, asset_id, address_index, amount_to_spend)
+            .notes(
+                include_spent,
+                asset_id,
+                address_index,
+                amount_to_spend.into(),
+            )
             .await
             .map_err(|e| tonic::Status::unavailable(format!("error fetching notes: {e}")))?;
 
