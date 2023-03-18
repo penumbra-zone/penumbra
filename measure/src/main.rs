@@ -5,9 +5,12 @@ use clap::Parser;
 use tracing_subscriber::EnvFilter;
 
 use penumbra_chain::{params::ChainParameters, sync::CompactBlock};
-use penumbra_proto::client::v1alpha1::{
-    oblivious_query_service_client::ObliviousQueryServiceClient, ChainParametersRequest,
-    CompactBlockRangeRequest,
+use penumbra_proto::{
+    client::v1alpha1::{
+        oblivious_query_service_client::ObliviousQueryServiceClient, ChainParametersRequest,
+        CompactBlockRangeRequest,
+    },
+    Message,
 };
 
 #[derive(Debug, Parser)]
@@ -92,11 +95,50 @@ impl Opt {
                         ));
                 progress_bar.set_position(0);
 
+                let mut bytes = 0;
+                let mut cb_count = 0;
+                let mut nf_count = 0;
+                let mut sp_rolled_up_count = 0;
+                let mut sp_note_count = 0;
+                let mut sp_swap_count = 0;
+
+                use penumbra_chain::sync::StatePayload;
+
                 while let Some(block_rsp) = stream.message().await? {
+                    cb_count += 1;
+                    bytes += block_rsp.encoded_len();
                     let block: CompactBlock = block_rsp.try_into()?;
+                    nf_count += block.nullifiers.len();
+                    sp_rolled_up_count += block
+                        .state_payloads
+                        .iter()
+                        .filter(|sp| matches!(sp, StatePayload::RolledUp { .. }))
+                        .count();
+                    sp_note_count += block
+                        .state_payloads
+                        .iter()
+                        .filter(|sp| matches!(sp, StatePayload::Note { .. }))
+                        .count();
+                    sp_swap_count += block
+                        .state_payloads
+                        .iter()
+                        .filter(|sp| matches!(sp, StatePayload::Swap { .. }))
+                        .count();
                     progress_bar.set_position(block.height);
                 }
                 progress_bar.finish();
+
+                let sp_count = sp_note_count + sp_swap_count + sp_rolled_up_count;
+                println!(
+                    "Fetched at least {}",
+                    bytesize::to_string(bytes as u64, false)
+                );
+                println!("Fetched {cb_count} compact blocks, containing:");
+                println!("\t{nf_count} nullifiers");
+                println!("\t{sp_count} state payloads, containing:");
+                println!("\t\t{sp_note_count} note payloads");
+                println!("\t\t{sp_swap_count} swap payloads");
+                println!("\t\t{sp_rolled_up_count} rolled up payloads");
             }
         }
 
