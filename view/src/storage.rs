@@ -163,7 +163,7 @@ impl Storage {
     }
 
     /// Query for account balance by address
-    pub async fn balance_by_address(&self, address: Address) -> anyhow::Result<BTreeMap<Id, u64>> {
+    pub async fn balance_by_address(&self, address: Address) -> anyhow::Result<BTreeMap<Id, u128>> {
         let address = address.to_vec();
 
         let result = sqlx::query!(
@@ -183,8 +183,8 @@ impl Storage {
         for record in result {
             balance_by_address
                 .entry(Id::try_from(record.asset_id.as_slice())?)
-                .and_modify(|x| *x += record.amount as u64)
-                .or_insert(record.amount as u64);
+                .and_modify(|x| *x += (record.amount as u64))
+                .or_insert((record.amount as u64).into());
         }
 
         Ok(balance_by_address)
@@ -684,7 +684,7 @@ impl Storage {
         include_spent: bool,
         asset_id: Option<asset::Id>,
         address_index: Option<penumbra_crypto::keys::AddressIndex>,
-        amount_to_spend: u64,
+        amount_to_spend: u128,
     ) -> anyhow::Result<Vec<SpendableNoteRecord>> {
         // If set, return spent notes as well as unspent notes.
         // bool include_spent = 2;
@@ -885,7 +885,7 @@ impl Storage {
     pub async fn give_advice(&self, note: Note) -> anyhow::Result<()> {
         //Do not insert advice for zero amounts, simply return Ok because this is fine
 
-        if u64::from(note.amount()) == 0u64 {
+        if u128::from(note.amount()) == 0u128 {
             return Ok(());
         }
 
@@ -893,7 +893,7 @@ impl Storage {
 
         let note_commitment = note.commit().0.to_bytes().to_vec();
         let address = note.address().to_vec();
-        let amount = u64::from(note.amount()) as i64;
+        let amount = u128::from(note.amount()).to_be_bytes().to_vec();
         let asset_id = note.asset_id().to_bytes().to_vec();
         let rseed = note.rseed().to_bytes().to_vec();
 
@@ -958,7 +958,7 @@ impl Storage {
         let mut notes = BTreeMap::new();
         for row in rows {
             let address = Address::try_from(row.get::<&[u8], _>("address"))?;
-            let amount = (row.get::<i64, _>("amount") as u64).into();
+            let amount = (row.get::<i64, _>("amount") as u128).into();
             let asset_id = asset::Id(Fq::from_bytes(
                 row.get::<&[u8], _>("asset_id")
                     .try_into()
@@ -1059,7 +1059,7 @@ impl Storage {
             let note_commitment = note_record.note_commitment.0.to_bytes().to_vec();
             let height_created = filtered_block.height as i64;
             let address = note_record.note.address().to_vec();
-            let amount = u64::from(note_record.note.amount()) as i64;
+            let amount = u128::from(note_record.note.amount()).to_be_bytes().to_vec();
             let asset_id = note_record.note.asset_id().to_bytes().to_vec();
             let rseed = note_record.note.rseed().to_bytes().to_vec();
             let address_index = note_record.address_index.to_bytes().to_vec();

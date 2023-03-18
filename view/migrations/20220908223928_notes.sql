@@ -4,7 +4,7 @@
 CREATE TABLE notes (
     note_commitment         BLOB PRIMARY KEY NOT NULL,
     address                 BLOB NOT NULL,
-    amount                  BIGINT NOT NULL,
+    amount                  BLOB NOT NULL,
     asset_id                BLOB NOT NULL,
     rseed                   BLOB NOT NULL
 );
