@@ -256,7 +256,6 @@ impl TreeWriter for Inner {
             .cf_handle("jmt_values")
             .expect("jmt_values column family not found");
 
-        // TODO(erwan): MERGEBLOCK --- do we need to keep the jmt cf now?
         for (node_key, node) in node_batch.nodes() {
             let key_bytes = &node_key.encode()?;
             let node_bytes = &node.encode()?;
@@ -267,9 +266,8 @@ impl TreeWriter for Inner {
                 version: node_key.version(),
                 key,
             };
-
             self.db.put_cf(jmt_cf, key_bytes, node_bytes)?;
-            self.db.put_cf(jmt_values_cf, key, value)
+            self.db.put_cf(jmt_values_cf, versioned_key, value)?;
         }
 
         Ok(())
