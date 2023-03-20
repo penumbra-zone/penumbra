@@ -21,12 +21,12 @@ impl GitLFSPointer {
         let pointer_utf8 = std::str::from_utf8(bytes).expect("git LFS should be valid UTF-8");
 
         // `oid sha256:digest`
-        let oid_re = Regex::new(r"oid \w*").unwrap();
+        let oid_re = Regex::new(r"oid [\w,:]*").unwrap();
         let caps = oid_re
             .captures(pointer_utf8)
             .expect("git LFS pointers have oid field");
         let oid_line: Vec<String> = caps
-            .get(1)
+            .get(0)
             .expect("hash algorithm should be in oid field")
             .as_str()
             .split_whitespace()
@@ -42,7 +42,7 @@ impl GitLFSPointer {
             .captures(pointer_utf8)
             .expect("git LFS pointers have size field");
         let size_line: Vec<String> = caps
-            .get(1)
+            .get(0)
             .expect("size in bytes should be in git LFS pointer")
             .as_str()
             .split_whitespace()
