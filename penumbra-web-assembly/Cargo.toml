@@ -2,7 +2,7 @@
 name = "penumbra-web-assembly"
 version = "0.48.0"
 authors = ["Valentine <valentine@zpoken.io>"]
-edition = "2018"
+edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -41,3 +41,8 @@ wasm-bindgen-test = "0.3.13"
 
 [profile.release]
 opt-level = "s"
+
+# We set a blank 'workspace' block disassociate this crate
+# with the workspace at the repo root. Doing so models
+# how an external developer would use it.
+[workspace]
