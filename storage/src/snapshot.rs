@@ -348,10 +348,7 @@ impl TreeReader for Inner {
             .cf_handle("jmt_values")
             .expect("jmt_values column family not found");
 
-        let Some(value) = self.snapshot.get_cf(jmt_values_cf, jmt_key).transpose() else {
-            return Ok(None)
-        };
-        todo!()
+        Ok(self.snapshot.get_cf(jmt_values_cf, jmt_key)?)
     }
 
     /// Gets node given a node key. Returns `None` if the node does not exist.
