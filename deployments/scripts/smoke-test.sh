@@ -40,7 +40,7 @@ PENUMBRA_NODE_HOSTNAME="127.0.0.1" \
 echo "Running pcli integration tests against network"
 PENUMBRA_NODE_HOSTNAME="127.0.0.1" \
     PCLI_UNLEASH_DANGER="yes" \
-    cargo test --quiet --release --features sct-divergence-check --package pcli -- --ignored --test-threads 1 --nocapture
+    cargo test --quiet --release --features sct-divergence-check,download-proving-keys --package pcli -- --ignored --test-threads 1 --nocapture
 
 echo "Waiting another $TESTNET_RUNTIME seconds while network runs..."
 sleep "$TESTNET_RUNTIME"
