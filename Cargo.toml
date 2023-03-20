@@ -27,5 +27,4 @@ members = [
   "pclientd",
   "pcli",
   "proof-params",
-  "penumbra-web-assembly"
 ]
