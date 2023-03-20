@@ -1,9 +1,9 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
 
 use anyhow::Result;
 use jmt::{
     storage::{LeafNode, Node, NodeBatch, NodeKey, TreeWriter},
-    KeyHash, Sha256Jmt,
+    JellyfishMerkleTree, KeyHash, Sha256Jmt, Version,
 };
 use parking_lot::RwLock;
 use rocksdb::{Options, DB};
@@ -163,15 +163,36 @@ impl Storage {
                         };
                     }
 
-                    // Write the unwritten changes from the state to the JMT.
+                    // Apply the unwritten state changes to the JMT.
                     let (root_hash, batch) = jmt.put_value_set(
                         unwritten_changes.into_iter().map(|x| (x.0, x.2)),
                         new_version,
                     )?;
 
-                    // Apply the JMT changes to the DB.
+                    // Persist JMT structure changes to RocksDB.
                     inner.write_node_batch(&batch.node_batch)?;
                     tracing::trace!(?root_hash, "wrote node batch to backing store");
+
+                    // Record the node values in RocksDB: the value of jmt [`jmt::LeafNode`] must be
+                    // persisted separately.
+                    let jmt_values_cf = inner
+                        .db
+                        .cf_handle("jmt_values")
+                        .expect("jmt_values column family not found");
+
+                    for ((version, key_hash), value) in batch.node_batch.values() {
+                        let Some(value) = value else {
+                            // TODO(erwan): the key has been deleted -- do nothing?
+                                    continue;
+                                };
+
+                        let versioned_key = VersionedKey {
+                            version: *version,
+                            key_hash: key_hash.clone(),
+                        };
+                        // TODO(erwan): encode the versioned key
+                        inner.db.put_cf(jmt_values_cf, versioned_key, value)?;
+                    }
 
                     // Write the unwritten changes from the nonconsensus to RocksDB.
                     for (k, v) in cache.nonconsensus_changes.into_iter() {
@@ -236,14 +257,15 @@ impl Storage {
 }
 
 // TODO(erwan): move this somewhere? should this live in the jmt crate?
+#[derive(Clone, Debug)]
 pub struct VersionedKey {
     version: jmt::Version,
-    key: String,
+    key_hash: KeyHash,
 }
 
 impl TreeWriter for Inner {
     /// Writes a node batch into storage.
-    //TODO: Change JMT traits to accept owned NodeBatch
+    //TODO(erwan): Change JMT traits to accept owned NodeBatch
     fn write_node_batch(&self, node_batch: &NodeBatch) -> Result<()> {
         let node_batch = node_batch.clone();
         let jmt_cf = self
@@ -251,23 +273,11 @@ impl TreeWriter for Inner {
             .cf_handle("jmt")
             .expect("jmt column family not found");
 
-        let jmt_values_cf = self
-            .db
-            .cf_handle("jmt_values")
-            .expect("jmt_values column family not found");
-
         for (node_key, node) in node_batch.nodes() {
             let key_bytes = &node_key.encode()?;
             let node_bytes = &node.encode()?;
             tracing::trace!(?key_bytes, node_bytes = ?hex::encode(node_bytes));
-            let key = String::from_utf8(key_bytes.to_vec())?;
-
-            let versioned_key = VersionedKey {
-                version: node_key.version(),
-                key,
-            };
             self.db.put_cf(jmt_cf, key_bytes, node_bytes)?;
-            self.db.put_cf(jmt_values_cf, versioned_key, value)?;
         }
 
         Ok(())
