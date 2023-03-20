@@ -18,7 +18,7 @@ penumbra-proof-params = { path = "../proof-params" }
 # Penumbra dependencies
 decaf377 = {version = "0.3"}
 jmt = "0.3"
-tokio = { version = "1.21.1", features = ["full", "tracing"] }
+tokio = { version = "1.21.1", features = ["rt", "sync", "tracing"] }
 async-trait = "0.1.52"
 tonic = "0.8.1"
 futures = "0.3"

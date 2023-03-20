@@ -44,7 +44,7 @@ pbjson-types = "0.5"
 num-bigint = "0.4"
 serde_json = "1"
 tracing = "0.1"
-tokio = { version = "1.21.1", features = ["full"], optional = true }
+tokio = { version = "1.21.1", features = ["rt", "sync"], optional = true }
 clap = { version = "3", features = ["derive"], optional = true }
 
 [dev-dependencies]

@@ -11,7 +11,7 @@ penumbra-tct = { path = "../tct", features = ["arbitrary"] }
 decaf377 = "0.3"
 
 # Dependencies for live-view server
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1", features = ["rt", "sync"] }
 tokio-util = { version = "0.7", features = ["full"] }
 tonic = { version = "0.8.1" }
 prost = { version = "0.11" }

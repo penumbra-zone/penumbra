@@ -30,7 +30,7 @@ penumbra-custody = {path = "../custody"}
 penumbra-component = { path = "../component" }
 
 sqlx = { version = "0.6", features = [ "runtime-tokio-rustls", "offline", "sqlite" ] }
-tokio = { version = "1.22", features = ["full"]}
+tokio = { version = "1.22", features = ["rt", "sync"]}
 tokio-stream = { version =  "0.1.8", features = ["sync"] }
 anyhow = "1"
 rand_core = { version = "0.6.3", features = ["getrandom"] }
