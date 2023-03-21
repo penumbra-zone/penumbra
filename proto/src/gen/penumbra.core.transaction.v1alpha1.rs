@@ -162,9 +162,24 @@ pub struct NullifierWithNote {
     #[prost(message, optional, tag = "2")]
     pub note: ::core::option::Option<super::super::crypto::v1alpha1::Note>,
 }
+/// View of a Penumbra transaction.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionView {
+    /// View of the transaction body
+    #[prost(message, optional, tag = "1")]
+    pub body_view: ::core::option::Option<TransactionBodyView>,
+    /// The binding signature is stored separately from the transaction body that it signs.
+    #[prost(bytes = "bytes", tag = "2")]
+    pub binding_sig: ::prost::bytes::Bytes,
+    /// The root of some previous state of the state commitment tree, used as an anchor for all
+    /// ZK state transition proofs.
+    #[prost(message, optional, tag = "3")]
+    pub anchor: ::core::option::Option<super::super::crypto::v1alpha1::MerkleRoot>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransactionBodyView {
     /// A list views into of actions (state changes) performed by this transaction.
     #[prost(message, repeated, tag = "1")]
     pub action_views: ::prost::alloc::vec::Vec<ActionView>,
@@ -574,11 +589,56 @@ pub struct CluePlan {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MemoPlan {
     /// The plaintext.
-    #[prost(bytes = "bytes", tag = "1")]
-    pub plaintext: ::prost::bytes::Bytes,
+    #[prost(message, optional, tag = "1")]
+    pub plaintext: ::core::option::Option<MemoPlaintext>,
     /// The key to use to encrypt the memo.
     #[prost(bytes = "bytes", tag = "2")]
     pub key: ::prost::bytes::Bytes,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MemoCiphertext {
+    #[prost(bytes = "bytes", tag = "1")]
+    pub inner: ::prost::bytes::Bytes,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MemoPlaintext {
+    #[prost(message, optional, tag = "1")]
+    pub sender: ::core::option::Option<super::super::crypto::v1alpha1::Address>,
+    #[prost(string, tag = "2")]
+    pub text: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MemoView {
+    #[prost(oneof = "memo_view::MemoView", tags = "1, 2")]
+    pub memo_view: ::core::option::Option<memo_view::MemoView>,
+}
+/// Nested message and enum types in `MemoView`.
+pub mod memo_view {
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Visible {
+        #[prost(message, optional, tag = "1")]
+        pub ciphertext: ::core::option::Option<super::MemoCiphertext>,
+        #[prost(message, optional, tag = "2")]
+        pub plaintext: ::core::option::Option<super::MemoPlaintext>,
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Opaque {
+        #[prost(message, optional, tag = "1")]
+        pub ciphertext: ::core::option::Option<super::MemoCiphertext>,
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum MemoView {
+        #[prost(message, tag = "1")]
+        Visible(Visible),
+        #[prost(message, tag = "2")]
+        Opaque(Opaque),
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
