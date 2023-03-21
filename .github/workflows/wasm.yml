@@ -20,13 +20,20 @@ jobs:
           target: wasm32-unknown-unknown
           override: true
 
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
         with:
           workspaces: |
             . -> target
             wasm
 
       # We can't use the GH action for cargo because it doesn't custom working directory.
+      # Duplicate fmt check from Rust CI config, due to separate workspace.
+      - run: rustup component add rustfmt
+      - name: cargo fmt
+        run:
+          cargo fmt --all -- --check
+        working-directory: wasm
+
       - name: build wasm32 target
         run:
           cargo build --release --target wasm32-unknown-unknown

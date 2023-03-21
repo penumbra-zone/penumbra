@@ -70,4 +70,3 @@ impl TryFrom<pb::SpendableNoteRecord> for SpendableNoteRecord {
         })
     }
 }
-

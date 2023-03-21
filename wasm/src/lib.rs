@@ -8,7 +8,7 @@ mod tx;
 mod utils;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, serializers::bech32str, DomainType};
 
-use penumbra_crypto::{ka, FullViewingKey, Note, Address};
+use penumbra_crypto::{ka, Address, FullViewingKey, Note};
 use std::convert::TryFrom;
 use std::str::FromStr;
 
@@ -23,7 +23,6 @@ use penumbra_transaction::Transaction;
 pub use mock_client::ViewClient;
 pub use tx::send_plan;
 use web_sys::console as web_console;
-
 
 #[wasm_bindgen]
 pub fn generate_spend_key(seed_phrase: &str) -> JsValue {
@@ -58,7 +57,6 @@ pub fn get_full_viewing_key(spend_key_str: &str) -> JsValue {
     return serde_wasm_bindgen::to_value(&fvk_str).unwrap();
 }
 
-
 #[wasm_bindgen]
 pub fn get_address_by_index(full_viewing_key: &str, index: u32) -> JsValue {
     utils::set_panic_hook();
@@ -69,23 +67,24 @@ pub fn get_address_by_index(full_viewing_key: &str, index: u32) -> JsValue {
     let (address, _dtk) = fvk.incoming().payment_address(index.into());
 
     let proto = address.to_proto();
-    let address_str =  &bech32str::encode(
-            &proto.inner,
-            bech32str::address::BECH32_PREFIX,
-            bech32str::Bech32m);
+    let address_str = &bech32str::encode(
+        &proto.inner,
+        bech32str::address::BECH32_PREFIX,
+        bech32str::Bech32m,
+    );
 
     return serde_wasm_bindgen::to_value(&address_str).unwrap();
 }
-
 
 #[wasm_bindgen]
 pub fn base64_to_bech32(prefix: &str, base64_str: &str) -> JsValue {
     utils::set_panic_hook();
 
     let bech32 = &bech32str::encode(
-            &base64::decode(base64_str).unwrap(),
-            prefix,
-            bech32str::Bech32m);
+        &base64::decode(base64_str).unwrap(),
+        prefix,
+        bech32str::Bech32m,
+    );
     return serde_wasm_bindgen::to_value(bech32).unwrap();
 }
 #[wasm_bindgen]
