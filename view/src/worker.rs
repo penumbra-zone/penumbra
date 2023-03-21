@@ -321,9 +321,11 @@ async fn sct_divergence_check(
     height: u64,
     actual_root: penumbra_tct::Root,
 ) -> anyhow::Result<()> {
+    use penumbra_component::sct::state_key as sct_state_key;
+
     let value = client
         .key_value(penumbra_proto::client::v1alpha1::KeyValueRequest {
-            key: format!("shielded_pool/anchor/{height}"),
+            key: sct_state_key::anchor_by_height(height),
             ..Default::default()
         })
         .await?
