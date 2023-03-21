@@ -25,10 +25,16 @@ pub(crate) mod internal {
             key
         }
 
-        pub fn key(pair: &DirectedTradingPair, btf: &BareTradingFunction) -> Vec<u8> {
-            let mut key = [0u8; 103];
+        pub fn key(
+            pair: &DirectedTradingPair,
+            btf: &BareTradingFunction,
+            id: &position::Id,
+        ) -> Vec<u8> {
+            let id_bytes = id.0;
+            let mut key = [0u8; 135];
             key[0..71].copy_from_slice(&prefix(pair));
             key[71..103].copy_from_slice(&btf.effective_price_key_bytes());
+            key[103..135].copy_from_slice(&id_bytes);
             key.to_vec()
         }
     }
