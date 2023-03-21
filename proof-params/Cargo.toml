@@ -28,14 +28,16 @@ ark-snark = "0.3"
 ark-r1cs-std = {version = "0.3", default-features = false}
 ark-relations = "0.3"
 ark-nonnative-field = "0.3"
+
+[dev-dependencies]
+penumbra-tct = { path = "../tct/", features = ["r1cs"] }
+
+[build-dependencies]
 regex = {version = "1", optional=true }
 reqwest = {version ="0.11.14", optional=true, features = ["blocking", "json"] }
 serde_json = {version = "1", optional = true}
 sha2 = {version = "0.10.6", optional=true}
 hex = {version = "0.4.3", optional=true}
-
-[dev-dependencies]
-penumbra-tct = { path = "../tct/", features = ["r1cs"] }
 
 [features]
 proving-keys = []
