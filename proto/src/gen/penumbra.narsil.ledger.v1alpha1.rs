@@ -14,6 +14,7 @@ pub struct ConsensusKey {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
+/// A subkey a shard uses to sign messages sent to the ledger.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ShardMessageKey {
@@ -29,6 +30,7 @@ pub struct ShardKey {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
+/// A signature over a message sent to the ledger by a shard.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ShardMessageSignature {
@@ -60,6 +62,7 @@ pub struct ShardDescription {
     #[prost(string, tag = "4")]
     pub label: ::prost::alloc::string::String,
 }
+/// A self-authenticating `ShardDescription`, signed with the `ShardIdentityKey`.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ShardOperator {
@@ -68,11 +71,21 @@ pub struct ShardOperator {
     #[prost(bytes = "vec", tag = "2")]
     pub sig: ::prost::alloc::vec::Vec<u8>,
 }
+/// The genesis data describing the set of shard operators who jointly control
+/// the Narsil instance.
+///
+/// The genesis data does not specify the threshold key shares themselves,
+/// because these will be computed as the ledger boots up and the shard operators
+/// perform the DKG to generate the shared key, described by the `ShardInfo`.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisData {
+    /// The set of shard operators (implicitly specifying the `n` in `t-of-n`).
     #[prost(message, repeated, tag = "1")]
     pub operators: ::prost::alloc::vec::Vec<ShardOperator>,
+    /// The number of shards required to sign a message (the `t` in `t-of-n`).
+    #[prost(uint32, tag = "2")]
+    pub threshold: u32,
 }
 /// Describes the Penumbra account group jointly controlled by the Narsil instance.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -80,25 +93,46 @@ pub struct GenesisData {
 pub struct AccountGroupInfo {
     /// The full viewing key for the shared account.
     ///
+    /// In the Penumbra key hierarchy, this is the highest-authority key below
+    /// spend authority, and allows deriving all subkeys for all accounts in the
+    /// account group.  It is replicated across all shards.
+    ///
     /// The spend verification key component is the `PK` in the FROST I-D.
     #[prost(message, optional, tag = "1")]
     pub full_viewing_key: ::core::option::Option<
         super::super::super::core::crypto::v1alpha1::FullViewingKey,
     >,
+    /// Describes the participants in the account group.
     #[prost(message, repeated, tag = "2")]
     pub participants: ::prost::alloc::vec::Vec<ShardInfo>,
 }
+/// Describes a single shard of the Narsil instance.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ShardInfo {
+    /// The index of the shard, used for FROST accounting purposes.
     #[prost(uint32, tag = "1")]
     pub index: u32,
-    /// The shard verification key, corresponding to `PK_i` in the FROST I-D
+    /// The shard verification key, corresponding to `PK_i` in the FROST I-D.
     #[prost(message, optional, tag = "2")]
     pub shard_verification_key: ::core::option::Option<
         super::super::super::core::crypto::v1alpha1::SpendVerificationKey,
     >,
+    /// The shard operator's identity key, used to identify the operator of this shard.
+    #[prost(message, optional, tag = "3")]
+    pub identity_key: ::core::option::Option<ShardIdentityKey>,
 }
+/// Transaction authorization requests are identified by the proposed
+/// transaction's effect hash.
+///
+/// This acts as a form of content addressing, providing a number of useful
+/// behaviors:
+///
+/// - Multiple users can request authorization of the same `TransactionPlan`, and
+///    the ledger can stack their pre-authorizations until some threshold is met.
+/// - Rather than having to hold open a connection, clients can re-request
+///    authorization of the same `TransactionPlan` after it has been signed, and the
+///    ledger can immediately return the already-existing authorization data.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestIndex {
@@ -107,14 +141,19 @@ pub struct RequestIndex {
         super::super::super::core::transaction::v1alpha1::EffectHash,
     >,
 }
+/// Identifies a particular signing ceremony.
+///
+/// Ceremonies are identified first by request index and then by a sub-index for
+/// the ceremony.  This allows failed or timed-out ceremonies to be repeated.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CeremonyIndex {
-    #[prost(uint64, tag = "1")]
-    pub ceremony_index: u64,
-    #[prost(message, optional, tag = "2")]
+    #[prost(message, optional, tag = "1")]
     pub request_index: ::core::option::Option<RequestIndex>,
+    #[prost(uint64, tag = "2")]
+    pub ceremony_index: u64,
 }
+/// A committee of shards assigned to carry out a particular signing ceremony.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Committee {
@@ -123,6 +162,9 @@ pub struct Committee {
     #[prost(message, repeated, tag = "2")]
     pub participants: ::prost::alloc::vec::Vec<ShardInfo>,
 }
+/// Records a failed ceremony and the reason why it failed.
+///
+/// TODO: consider filling these in with structured info about the failure
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CeremonyFailure {
@@ -131,7 +173,6 @@ pub struct CeremonyFailure {
 }
 /// Nested message and enum types in `CeremonyFailure`.
 pub mod ceremony_failure {
-    /// TODO: consider filling these in with structured info about the failure
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Timeout {}
@@ -158,6 +199,9 @@ pub mod ceremony_failure {
     }
 }
 /// The data recorded on-chain about the current state of a signing ceremony.
+///
+/// The ceremony steps are described in the FROST I-D:
+/// <https://www.ietf.org/archive/id/draft-irtf-cfrg-frost-11.html>
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CeremonyState {
@@ -166,9 +210,15 @@ pub struct CeremonyState {
 }
 /// Nested message and enum types in `CeremonyState`.
 pub mod ceremony_state {
+    /// A ceremony that has not yet started.
+    ///
+    /// For instance, a request could be queued until sufficient pre-authorizations were recorded on the ledger.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Pending {}
+    /// A ceremony that has started round 1.
+    ///
+    /// The committee has been chosen and the ledger is waiting to record round 1 contributions from all committee members.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct StartedRound1 {
@@ -179,6 +229,9 @@ pub mod ceremony_state {
         #[prost(message, repeated, tag = "2")]
         pub commitments: ::prost::alloc::vec::Vec<super::AuthorizeCommitment>,
     }
+    /// A ceremony that has started round 2.
+    ///
+    /// The committee has been chosen, all round 1 commitments have been recorded, and the ledger is waiting to record round 1 contributions from all committee members.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct StartedRound2 {
@@ -192,6 +245,9 @@ pub mod ceremony_state {
         #[prost(message, repeated, tag = "3")]
         pub shares: ::prost::alloc::vec::Vec<super::AuthorizeShare>,
     }
+    /// A ceremony that has successfully finished.
+    ///
+    /// The transcript of the ceremony is recorded along with the resulting `AuthorizationData`.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Finished {
@@ -210,6 +266,9 @@ pub mod ceremony_state {
             super::super::super::super::core::transaction::v1alpha1::AuthorizationData,
         >,
     }
+    /// A ceremony that failed.
+    ///
+    /// The transcript of the ceremony is recorded along with the reason for the failure.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Failed {
@@ -241,10 +300,16 @@ pub mod ceremony_state {
         Failed(Failed),
     }
 }
+/// A packet of data sent to the Narsil ledger.
+///
+/// This structure is what Narsil uses as a Tendermint transaction.  However, we
+/// use the word "packet" rather than "transaction" here so that it's always
+/// unambiguous whether we're referring to data posted to the Penumbra chain or
+/// to a Narsil instance.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NarsilPacket {
-    #[prost(oneof = "narsil_packet::Packet", tags = "1, 2, 3")]
+    #[prost(oneof = "narsil_packet::Packet", tags = "1, 2, 3, 1000, 1001")]
     pub packet: ::core::option::Option<narsil_packet::Packet>,
 }
 /// Nested message and enum types in `NarsilPacket`.
@@ -268,6 +333,12 @@ pub mod narsil_packet {
         /// A shard's round 2 contribution to a signing ceremony
         #[prost(message, tag = "3")]
         AuthorizeShare(super::AuthorizeShare),
+        /// A shard operator's round 1 contribution to the DKG.
+        #[prost(message, tag = "1000")]
+        DkgRound1(super::DkgRound1),
+        /// A shard operator's round 2 contribution to the DKG.
+        #[prost(message, tag = "1001")]
+        DkgRound2(super::DkgRound2),
     }
 }
 /// A wrapper around the FROST commitment message, exchanged in round 1 of the
@@ -289,6 +360,9 @@ pub struct FrostSignatureShare {
 /// A Narsil shard's commitment message for a single ceremony, which may perform
 /// multiple signatures (one for each spend in the `AuthorizeRequest`'s
 /// `TransactionPlan`).
+///
+/// This bundle of messages is signed with the shard's `ShardMessageKey` to
+/// prevent tampering (e.g., reordering of the internal FROST messages, etc).
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuthorizeCommitment {
@@ -313,6 +387,9 @@ pub mod authorize_commitment {
 /// A Narsil shard's signature share message for a single ceremony, which may perform
 /// multiple signatures (one for each spend in the `AuthorizeRequest`'s
 /// `TransactionPlan`).
+///
+/// This bundle of messages is signed with the shard's `ShardMessageKey` to
+/// prevent tampering (e.g., reordering of the internal FROST messages, etc).
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuthorizeShare {
@@ -332,5 +409,69 @@ pub mod authorize_share {
         pub ceremony_index: ::core::option::Option<super::CeremonyIndex>,
         #[prost(message, repeated, tag = "2")]
         pub commitments: ::prost::alloc::vec::Vec<super::FrostCommitment>,
+    }
+}
+/// A shard operator's round 1 contribution to the DKG ceremony.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DkgRound1 {
+    #[prost(bytes = "vec", tag = "1")]
+    pub payload: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "2")]
+    pub signer: ::core::option::Option<ShardMessageKey>,
+    #[prost(message, optional, tag = "3")]
+    pub signature: ::core::option::Option<ShardMessageSignature>,
+}
+/// A shard operator's round 2 contribution to the DKG ceremony.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DkgRound2 {
+    #[prost(bytes = "vec", tag = "1")]
+    pub payload: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "2")]
+    pub signer: ::core::option::Option<ShardMessageKey>,
+    #[prost(message, optional, tag = "3")]
+    pub signature: ::core::option::Option<ShardMessageSignature>,
+}
+/// The data recorded on-chain about the current state of the DKG ceremony.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DkgState {}
+/// Nested message and enum types in `DkgState`.
+pub mod dkg_state {
+    /// The DKG has started round 1, and the ledger is waiting to record contributions from shard operators.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct StartedRound1 {
+        /// A list of round 1 messages received so far (begins empty).
+        #[prost(message, repeated, tag = "1")]
+        pub round_1_messages: ::prost::alloc::vec::Vec<super::DkgRound1>,
+    }
+    /// The DKG has started round 2, and the ledger is waiting to record contributions from shard operators.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct StartedRound2 {
+        /// A list of messages received during round 1.
+        #[prost(message, repeated, tag = "1")]
+        pub round_1_messages: ::prost::alloc::vec::Vec<super::DkgRound1>,
+        /// A list of round 2 messages received so far (begins empty).
+        #[prost(message, repeated, tag = "2")]
+        pub round_2_messages: ::prost::alloc::vec::Vec<super::DkgRound2>,
+    }
+    /// The DKG has finished successfully, producing the jointly-controlled `AccountGroupInfo`.
+    ///
+    /// Unlike the signing ceremony, we don't record a failure case here: if the DKG fails, we abort the entire ledger.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Finished {
+        /// A list of messages received during round 1.
+        #[prost(message, repeated, tag = "1")]
+        pub round_1_messages: ::prost::alloc::vec::Vec<super::DkgRound1>,
+        /// A list of messages received during round 2.
+        #[prost(message, repeated, tag = "2")]
+        pub round_2_messages: ::prost::alloc::vec::Vec<super::DkgRound2>,
+        /// The jointly-controlled `AccountGroupInfo` resulting from the DKG.
+        #[prost(message, optional, tag = "3")]
+        pub account_group_info: ::core::option::Option<super::AccountGroupInfo>,
     }
 }
