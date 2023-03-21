@@ -80,7 +80,7 @@ impl<T: StateWrite + ?Sized> PositionManager for T {}
 trait Inner: StateWrite {
     fn index_position(&mut self, metadata: &position::Metadata) {
         let (pair, phi) = (metadata.position.phi.pair, &metadata.position.phi);
-        let id_bytes = metadata.position.id().encode_to_vec();
+        let id = metadata.position.id();
         if metadata.reserves.r2 != 0u64.into() {
             // Index this position for trades FROM asset 1 TO asset 2, since the position has asset 2 to give out.
             let pair12 = DirectedTradingPair {
@@ -89,8 +89,8 @@ trait Inner: StateWrite {
             };
             let phi12 = phi.component.clone();
             self.nonconsensus_put_raw(
-                state_key::internal::price_index::key(&pair12, &phi12),
-                id_bytes.clone(),
+                state_key::internal::price_index::key(&pair12, &phi12, &id),
+                vec![],
             );
         }
         if metadata.reserves.r1 != 0u64.into() {
@@ -101,8 +101,8 @@ trait Inner: StateWrite {
             };
             let phi21 = phi.component.flip();
             self.nonconsensus_put_raw(
-                state_key::internal::price_index::key(&pair21, &phi21),
-                id_bytes,
+                state_key::internal::price_index::key(&pair21, &phi21, &id),
+                vec![],
             );
         }
     }
@@ -118,8 +118,16 @@ trait Inner: StateWrite {
             end: position.phi.pair.asset_1(),
         };
         let phi21 = position.phi.component.flip();
-        self.nonconsensus_delete(state_key::internal::price_index::key(&pair12, &phi12));
-        self.nonconsensus_delete(state_key::internal::price_index::key(&pair21, &phi21));
+        self.nonconsensus_delete(state_key::internal::price_index::key(
+            &pair12,
+            &phi12,
+            &position.id(),
+        ));
+        self.nonconsensus_delete(state_key::internal::price_index::key(
+            &pair21,
+            &phi21,
+            &position.id(),
+        ));
     }
 }
 impl<T: StateWrite + ?Sized> Inner for T {}
