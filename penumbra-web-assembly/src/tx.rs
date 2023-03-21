@@ -121,7 +121,9 @@ pub fn build_transaction(
     witness_data: WitnessData,
 ) -> Transaction {
     return plan
-        .build(&mut OsRng, fvk, auth_data, witness_data)
+        .build(fvk, witness_data)
+        .unwrap()
+        .authorize(&mut OsRng, &auth_data)
         .unwrap();
 }
 
