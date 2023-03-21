@@ -6,7 +6,7 @@ on: [pull_request]
 name: WASM compatibility
 jobs:
   wasm:
-    name: penumbra-web-assembly
+    name: Build WASM
     runs-on: buildjet-16vcpu-ubuntu-2004
     steps:
       - uses: actions/checkout@v2
@@ -24,13 +24,13 @@ jobs:
         with:
           workspaces: |
             . -> target
-            penumbra-web-assembly
+            wasm
 
       # We can't use the GH action for cargo because it doesn't custom working directory.
       - name: build wasm32 target
         run:
           cargo build --release --target wasm32-unknown-unknown
-        working-directory: penumbra-web-assembly
+        working-directory: wasm
 
       # Download prebuilt binary for wasm-pack; faster than `cargo install`.
       - uses: jetli/wasm-pack-action@v0.4.0
@@ -42,4 +42,4 @@ jobs:
       - name: run wasm-pack build
         run:
           wasm-pack build
-        working-directory: penumbra-web-assembly
+        working-directory: wasm
