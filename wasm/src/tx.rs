@@ -3,9 +3,9 @@ use std::str::FromStr;
 
 use anyhow::Context;
 use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_crypto::{FullViewingKey, Address};
+use penumbra_crypto::{Address, FullViewingKey};
 
-use penumbra_crypto::keys::{SpendKey, AddressIndex};
+use penumbra_crypto::keys::{AddressIndex, SpendKey};
 use penumbra_tct::{Commitment, Proof, Tree};
 use penumbra_transaction::plan::TransactionPlan;
 use penumbra_transaction::{AuthorizationData, Transaction, WitnessData};
@@ -27,8 +27,6 @@ pub struct SendTx {
     fmd_parameters: penumbra_proto::core::chain::v1alpha1::FmdParameters,
 }
 
-
-
 #[wasm_bindgen]
 pub fn send_plan(
     full_viewing_key: &str,
@@ -41,7 +39,6 @@ pub fn send_plan(
 
     let value: penumbra_proto::core::crypto::v1alpha1::Value =
         serde_wasm_bindgen::from_value(value_js).unwrap();
-
 
     let address = Address::from_str(dest_address).unwrap();
     let mut planner = Planner::new(OsRng);
@@ -62,7 +59,7 @@ pub fn send_plan(
             &chain_params,
             &fmd_params,
             &fvk,
-           AddressIndex::from(0u32),
+            AddressIndex::from(0u32),
             send_tx.notes.try_into().unwrap(),
             Default::default(),
         )
@@ -75,15 +72,17 @@ pub fn send_plan(
 pub fn encode_tx(transaction: JsValue) -> JsValue {
     utils::set_panic_hook();
     let tx: Transaction = serde_wasm_bindgen::from_value(transaction).unwrap();
-    let tx_encoding :Vec<u8> = tx.try_into().unwrap();
+    let tx_encoding: Vec<u8> = tx.try_into().unwrap();
     return serde_wasm_bindgen::to_value(&tx_encoding).unwrap();
 }
 
 #[wasm_bindgen]
-pub fn build_tx(spend_key_str: &str,
-                full_viewing_key: &str,
-                transaction_plan: JsValue,
-                stored_tree: JsValue) -> JsValue {
+pub fn build_tx(
+    spend_key_str: &str,
+    full_viewing_key: &str,
+    transaction_plan: JsValue,
+    stored_tree: JsValue,
+) -> JsValue {
     utils::set_panic_hook();
     let plan: TransactionPlan = serde_wasm_bindgen::from_value(transaction_plan).unwrap();
 
@@ -91,10 +90,7 @@ pub fn build_tx(spend_key_str: &str,
         .context("The provided string is not a valid FullViewingKey")
         .unwrap();
 
-
     let auth_data = sign_plan(spend_key_str, plan.clone());
-
-
 
     let stored_tree: StoredTree = serde_wasm_bindgen::from_value(stored_tree).unwrap();
 

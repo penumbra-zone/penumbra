@@ -186,7 +186,6 @@ impl ViewClient {
                     }
                 }
                 StatePayload::Position { lpnft, commitment } => todo!(),
-
             }
         }
 
@@ -215,12 +214,8 @@ impl ViewClient {
         return serde_wasm_bindgen::to_value(&result).unwrap();
     }
 
-
     #[wasm_bindgen]
-    pub fn scan_block_without_updates(
-            &mut self,
-            compact_block: JsValue,
-            ) -> JsValue  {
+    pub fn scan_block_without_updates(&mut self, compact_block: JsValue) -> JsValue {
         utils::set_panic_hook();
 
         let block_proto: penumbra_proto::core::chain::v1alpha1::CompactBlock =
@@ -333,13 +328,9 @@ impl ViewClient {
         };
 
         return serde_wasm_bindgen::to_value(&result).unwrap();
-
     }
 
-    pub fn get_updates(&mut self,
-                       last_position: JsValue,
-                       last_forgotten: JsValue) -> JsValue {
-
+    pub fn get_updates(&mut self, last_position: JsValue, last_forgotten: JsValue) -> JsValue {
         let stored_position: Option<StoredPosition> =
             serde_wasm_bindgen::from_value(last_position).unwrap();
         let stored_forgotten: Option<Forgotten> =
@@ -348,7 +339,7 @@ impl ViewClient {
         let nct_updates: Updates = self
             .nct
             .updates(
-                    stored_position.unwrap_or_default(),
+                stored_position.unwrap_or_default(),
                 stored_forgotten.unwrap_or_default(),
             )
             .collect::<Updates>();
@@ -365,7 +356,6 @@ impl ViewClient {
     pub fn get_nct_root(&mut self) -> JsValue {
         let root = self.nct.root();
         return serde_wasm_bindgen::to_value(&root).unwrap();
-
     }
 }
 

@@ -6,6 +6,7 @@ use std::{
 
 use anyhow::{anyhow, Result};
 
+use crate::note_record::SpendableNoteRecord;
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::{
     asset::Amount,
@@ -27,14 +28,13 @@ use penumbra_transaction::{
         TransactionPlan, UndelegateClaimPlan,
     },
 };
-use crate::note_record::SpendableNoteRecord;
 
 // use penumbra_view::{SpendableNoteRecord, ViewClient};
 use rand_core::{CryptoRng, RngCore};
 // use tracing::instrument;
 
-use penumbra_crypto::Balance;
 use penumbra_crypto::memo::MemoPlaintext;
+use penumbra_crypto::Balance;
 
 /// A planner for a [`TransactionPlan`] that can fill in the required spends and change outputs upon
 /// finalization to make a transaction balance.
@@ -129,7 +129,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self.plan.memo_plan = Some(MemoPlan::new(&mut self.rng, memo)?);
         Ok(self)
     }
-
 
     /// Add a fee to the transaction plan.
     ///
@@ -334,7 +333,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             position,
             unbonded_amount,
         )
-            .into();
+        .into();
         self.action(vote);
         self
     }
@@ -368,7 +367,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         spendable_notes: Vec<SpendableNoteRecord>,
         votable_notes: Vec<Vec<(SpendableNoteRecord, IdentityKey)>>,
     ) -> anyhow::Result<TransactionPlan> {
-
         // Fill in the chain id based on the view service
         self.plan.chain_id = chain_params.chain_id.clone();
 
@@ -459,7 +457,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                 self.balance
             );
         }
-
 
         // Clear the planner and pull out the plan to return
         self.balance = Balance::zero();
