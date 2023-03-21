@@ -49,3 +49,13 @@ terraform output
 
 The reserved IPv4 address will be displayed. The devnet network may not have a reliable
 DNS record, or any at all.
+
+## Dude, where's my logs?
+
+There's web-based access for viewing logs from the testnet deployment:
+
+* [Top-level view of all deployments](https://console.cloud.google.com/kubernetes/workload/overview?project=penumbra-sl-testnet)
+* [Logs for the deployment with RPC endpoints exposed](https://console.cloud.google.com/kubernetes/replicationcontroller/us-central1/testnet/default/penumbra-testnet-fn-0/logs?project=penumbra-sl-testnet)
+
+You must authenticate with your PL Google account to view that information;
+ask a team member if you need a grant added for your account.
