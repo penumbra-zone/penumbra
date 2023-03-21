@@ -91,6 +91,11 @@ impl Component for StubDex {
             state.set_output_data(output_data);
         }
     }
+
+    #[instrument(name = "stubdex", skip(_state))]
+    async fn end_epoch<S: StateWrite>(mut _state: S) -> Result<()> {
+        Ok(())
+    }
 }
 
 /// Extension trait providing read access to dex data.

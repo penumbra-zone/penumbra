@@ -939,15 +939,13 @@ impl Component for Staking {
             )
             .await;
 
-        // If this is an epoch boundary, updated rates need to be calculated and set.
-        let cur_epoch = state.get_current_epoch().await.unwrap();
-        let cur_height = state.get_block_height().await.unwrap();
-
-        if cur_epoch.is_epoch_end(cur_height) {
-            state.end_epoch(cur_epoch).await.unwrap();
-        }
-
         state.build_tendermint_validator_updates().await.unwrap();
+    }
+
+    #[instrument(name = "staking", skip(state))]
+    async fn end_epoch<S: StateWrite>(mut state: S) -> anyhow::Result<()> {
+        let cur_epoch = state.get_current_epoch().await.unwrap();
+        state.end_epoch(cur_epoch).await
     }
 }
 

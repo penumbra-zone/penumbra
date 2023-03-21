@@ -84,6 +84,11 @@ impl Component for Ics2Client {
 
     #[instrument(name = "ics2_client", skip(_state, _end_block))]
     async fn end_block<S: StateWrite>(_state: S, _end_block: &abci::request::EndBlock) {}
+
+    #[instrument(name = "ics2_client", skip(_state))]
+    async fn end_epoch<S: StateWrite>(mut _state: S) -> anyhow::Result<()> {
+        Ok(())
+    }
 }
 
 #[async_trait]
