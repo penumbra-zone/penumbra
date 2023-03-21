@@ -138,9 +138,9 @@ message TransactionBodyView {
   crypto.v1alpha1.Fee fee = 4;
   // A list of clues for use with Fuzzy Message Detection.
   repeated crypto.v1alpha1.Clue fmd_clues = 5;
-  // An optional plaintext memo. It will only be populated if there are
+  // An optional view of a transaction memo. It will only be populated if there are
   // outputs in the actions of this transaction.
-  optional bytes memo = 6;
+  optional MemoView memo_view = 6;
   
   // Any relevant address views.
   repeated crypto.v1alpha1.AddressView address_views = 400;

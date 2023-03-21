@@ -62,3 +62,12 @@ impl From<SpendView> for pbt::SpendView {
         }
     }
 }
+
+impl From<SpendView> for Spend {
+    fn from(v: SpendView) -> Self {
+        match v {
+            SpendView::Visible { spend, note: _ } => spend,
+            SpendView::Opaque { spend } => spend,
+        }
+    }
+}

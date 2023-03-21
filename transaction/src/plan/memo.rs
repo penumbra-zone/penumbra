@@ -1,6 +1,8 @@
+use anyhow::Context;
 use penumbra_crypto::{
     memo::{MemoCiphertext, MemoPlaintext},
     symmetric::PayloadKey,
+    Address,
 };
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
 
@@ -34,8 +36,10 @@ impl DomainType for MemoPlan {
 
 impl From<MemoPlan> for pb::MemoPlan {
     fn from(msg: MemoPlan) -> Self {
+        let sender = Some(msg.plaintext.sender.into());
+        let text = msg.plaintext.text.into();
         Self {
-            plaintext: MemoPlaintext::from(msg.plaintext.to_vec()).into(),
+            plaintext: Some(pb::MemoPlaintext { sender, text }),
             key: msg.key.to_vec().into(),
         }
     }
@@ -45,8 +49,25 @@ impl TryFrom<pb::MemoPlan> for MemoPlan {
     type Error = anyhow::Error;
 
     fn try_from(msg: pb::MemoPlan) -> Result<Self, Self::Error> {
-        let plaintext = MemoPlaintext::try_from(msg.plaintext.to_vec())?;
+        let sender: Address = msg
+            .plaintext
+            .clone()
+            .ok_or_else(|| anyhow::anyhow!("memo plan missing memo plaintext"))?
+            .sender
+            .ok_or_else(|| anyhow::anyhow!("memo plaintext missing sender address"))?
+            .try_into()
+            .context("sender address malformed")?;
+
+        let text: String = msg
+            .plaintext
+            .ok_or_else(|| anyhow::anyhow!("memo plan missing memo plaintext"))?
+            .text;
+
         let key = PayloadKey::try_from(msg.key.to_vec())?;
-        Ok(Self { plaintext, key })
+
+        Ok(Self {
+            plaintext: MemoPlaintext { sender, text },
+            key,
+        })
     }
 }

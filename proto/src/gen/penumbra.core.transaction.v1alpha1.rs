@@ -198,10 +198,10 @@ pub struct TransactionBodyView {
     /// A list of clues for use with Fuzzy Message Detection.
     #[prost(message, repeated, tag = "5")]
     pub fmd_clues: ::prost::alloc::vec::Vec<super::super::crypto::v1alpha1::Clue>,
-    /// An optional plaintext memo. It will only be populated if there are
+    /// An optional view of a transaction memo. It will only be populated if there are
     /// outputs in the actions of this transaction.
-    #[prost(bytes = "bytes", optional, tag = "6")]
-    pub memo: ::core::option::Option<::prost::bytes::Bytes>,
+    #[prost(message, optional, tag = "6")]
+    pub memo_view: ::core::option::Option<MemoView>,
     /// Any relevant address views.
     #[prost(message, repeated, tag = "400")]
     pub address_views: ::prost::alloc::vec::Vec<

@@ -230,7 +230,7 @@ impl TxCmd {
             let asset_cache = app.view().assets().await?;
             // Iterate over the ActionViews in the TxV & display as appropriate
 
-            for av in txv.action_views {
+            for av in txv.body_view.action_views {
                 actions_table.add_row(match av {
                     penumbra_transaction::ActionView::Swap(SwapView::Visible {
                         swap: _,
@@ -349,15 +349,30 @@ impl TxCmd {
 
             metadata_table.add_row(vec![
                 "Transaction Fee",
-                &txv.fee.value().format(&asset_cache),
+                &txv.body_view.fee.value().format(&asset_cache),
             ]);
-            if let Some(memo) = txv.memo {
-                metadata_table.add_row(vec!["Transaction Memo Sender", &memo.sender.to_string()]);
-                metadata_table.add_row(vec!["Transaction Memo Text", &memo.text]);
+
+            let memo_view = txv.body_view.memo_view;
+
+            if let Some(memo_view) = memo_view {
+                match memo_view {
+                    penumbra_transaction::MemoView::Visible {
+                        plaintext,
+                        ciphertext: _,
+                    } => {
+                        metadata_table.add_row(vec![
+                            "Transaction Memo Sender",
+                            &plaintext.sender.to_string(),
+                        ]);
+                        metadata_table.add_row(vec!["Transaction Memo Text", &plaintext.text]);
+                    }
+                    penumbra_transaction::MemoView::Opaque { ciphertext: _ } => (),
+                }
             }
+
             metadata_table.add_row(vec![
                 "Transaction Expiration Height",
-                &format!("{}", txv.expiry_height),
+                &format!("{}", txv.body_view.expiry_height),
             ]);
 
             // Print table of actions and their descriptions

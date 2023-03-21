@@ -35,5 +35,5 @@ pub use effect_hash::{EffectHash, EffectingData};
 pub use error::Error;
 pub use id::Id;
 pub use transaction::{Transaction, TransactionBody};
-pub use view::{ActionView, TransactionPerspective, TransactionView};
+pub use view::{ActionView, MemoView, TransactionPerspective, TransactionView};
 pub use witness_data::WitnessData;

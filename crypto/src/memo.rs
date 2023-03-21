@@ -13,7 +13,7 @@ use crate::{
     symmetric::{OvkWrappedKey, PayloadKey, PayloadKind, WrappedMemoKey},
     Address, Note,
 };
-
+use penumbra_proto::core::transaction::v1alpha1 as pbt;
 pub const MEMO_CIPHERTEXT_LEN_BYTES: usize = 528;
 
 // This is the `MEMO_CIPHERTEXT_LEN_BYTES` - MAC size (16 bytes).
@@ -182,6 +182,46 @@ impl TryFrom<&[u8]> for MemoCiphertext {
         mc[..input.len()].copy_from_slice(input);
 
         Ok(MemoCiphertext(mc))
+    }
+}
+
+impl From<MemoPlaintext> for pbt::MemoPlaintext {
+    fn from(plaintext: MemoPlaintext) -> pbt::MemoPlaintext {
+        pbt::MemoPlaintext {
+            sender: Some(plaintext.sender.into()),
+            text: plaintext.text,
+        }
+    }
+}
+
+impl TryFrom<pbt::MemoCiphertext> for MemoCiphertext {
+    type Error = anyhow::Error;
+
+    fn try_from(msg: pbt::MemoCiphertext) -> Result<Self, Self::Error> {
+        MemoCiphertext::try_from(msg.inner.to_vec().as_slice())
+    }
+}
+
+impl From<MemoCiphertext> for pbt::MemoCiphertext {
+    fn from(ciphertext: MemoCiphertext) -> pbt::MemoCiphertext {
+        pbt::MemoCiphertext {
+            inner: ciphertext.0.to_vec().into(),
+        }
+    }
+}
+
+impl TryFrom<pbt::MemoPlaintext> for MemoPlaintext {
+    type Error = anyhow::Error;
+
+    fn try_from(msg: pbt::MemoPlaintext) -> Result<Self, Self::Error> {
+        let sender = msg
+            .sender
+            .ok_or_else(|| anyhow::anyhow!("message missing sender address"))?
+            .try_into()?;
+        Ok(Self {
+            sender,
+            text: msg.text,
+        })
     }
 }
 
