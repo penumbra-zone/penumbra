@@ -1,7 +1,7 @@
 use crate::sct::state_key;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
-use penumbra_chain::{sync::CompactBlock, StateReadExt as _};
+use penumbra_chain::StateReadExt as _;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_tct as tct;
@@ -92,34 +92,6 @@ pub trait StateReadExt: StateRead {
                 "provided anchor {} is not a valid SCT root",
                 anchor
             ))
-        }
-    }
-
-    async fn finish_sct_block(
-        &self,
-        compact_block: &mut CompactBlock,
-        state_commitment_tree: &mut tct::Tree,
-    ) {
-        let height = compact_block.height;
-
-        // Close the block in the TCT
-        let block_root = state_commitment_tree
-            .end_block()
-            .expect("ending a block in the state commitment tree can never fail");
-
-        // Put the block root in the compact block
-        compact_block.block_root = block_root;
-
-        // If the block ends an epoch, also close the epoch in the TCT
-        if self.epoch().await.unwrap().is_epoch_end(height) {
-            tracing::debug!(?height, "end of epoch");
-
-            let epoch_root = state_commitment_tree
-                .end_epoch()
-                .expect("ending an epoch in the state commitment tree can never fail");
-
-            // Put the epoch root in the compact block
-            compact_block.epoch_root = Some(epoch_root);
         }
     }
 }
