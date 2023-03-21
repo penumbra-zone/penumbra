@@ -65,6 +65,12 @@ impl Component for StubDex {
             let (delta_1, delta_2) = (swap_flows.0.mock_decrypt(), swap_flows.1.mock_decrypt());
 
             tracing::debug!(?delta_1, ?delta_2, ?trading_pair);
+            // Currently the stub CPMM supports only simple one-directional trades
+            // that either completely succeed or completely fail.
+            //
+            // This does not match the semantics of the real swap mechanism wherein
+            // two directional trades are performed with fractional outputs. We
+            // simulate that behavior here based on the success bit.
             let (lambda_1, lambda_2, success) =
                 match state.stub_cpmm_reserves(&trading_pair).await.unwrap() {
                     Some(reserves) => {
@@ -75,17 +81,24 @@ impl Component for StubDex {
                         state.set_stub_cpmm_reserves(&trading_pair, amm.reserves);
                         (lambda_1, lambda_2, true)
                     }
-                    None => (0, 0, false),
+                    None => (0u64.into(), 0u64.into(), false),
                 };
+
+            let (lambda_1_1, lambda_2_2, lambda_2_1, lambda_1_2) = if success {
+                (0u64.into(), 0u64.into(), lambda_2, lambda_1)
+            } else {
+                (delta_1, delta_2, 0u64.into(), 0u64.into())
+            };
 
             let output_data = BatchSwapOutputData {
                 height: end_block.height.try_into().unwrap(),
                 trading_pair,
                 delta_1,
                 delta_2,
-                lambda_1,
-                lambda_2,
-                success,
+                lambda_1_1,
+                lambda_2_2,
+                lambda_1_2,
+                lambda_2_1,
             };
             tracing::debug!(?output_data);
             state.set_output_data(output_data);

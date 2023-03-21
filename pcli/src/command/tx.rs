@@ -365,14 +365,6 @@ impl TxCmd {
                 ));
                 println!("Swap submitted and batch confirmed!");
                 println!(
-                    "Swap was: {}",
-                    if swap_record.output_data.success {
-                        "successful"
-                    } else {
-                        "unsuccessful"
-                    }
-                );
-                println!(
                     "You will receive outputs of {} and {}. Claiming now...",
                     Value {
                         amount: pro_rata_outputs.0.into(),

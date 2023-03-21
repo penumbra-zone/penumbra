@@ -114,51 +114,48 @@ impl DexCmd {
             } => {
                 let outputs = self.get_batch_outputs(app, height, trading_pair).await?;
 
-                println!(
-                    "Batch Swap Output status was: {}",
-                    if outputs.success {
-                        "Success"
-                    } else {
-                        "Failure"
-                    }
-                );
-
                 let view_client: &mut dyn ViewClient = app.view.as_mut().unwrap();
                 let asset_cache = view_client.assets().await?;
                 let asset_1 = asset_cache
                     .get(&trading_pair.asset_1())
                     .map(|base_denom| {
-                        let display_denom = base_denom
-                            .best_unit_for(std::cmp::max(outputs.delta_1, outputs.lambda_1).into());
+                        let display_denom = base_denom.best_unit_for(
+                            std::cmp::max(outputs.delta_1, outputs.lambda_1_1 + outputs.lambda_1_2)
+                                .into(),
+                        );
                         (
                             format!("{display_denom}"),
                             display_denom.format_value(outputs.delta_1.into()),
-                            display_denom.format_value(outputs.lambda_1.into()),
+                            display_denom
+                                .format_value((outputs.lambda_1_1 + outputs.lambda_1_2).into()),
                         )
                     })
                     .unwrap_or_else(|| {
                         (
                             format!("{}", trading_pair.asset_1()),
                             outputs.delta_1.to_string(),
-                            outputs.lambda_1.to_string(),
+                            (outputs.lambda_1_1 + outputs.lambda_1_2).to_string(),
                         )
                     });
                 let asset_2 = asset_cache
                     .get(&trading_pair.asset_2())
                     .map(|base_denom| {
-                        let display_denom = base_denom
-                            .best_unit_for(std::cmp::max(outputs.delta_2, outputs.lambda_2).into());
+                        let display_denom = base_denom.best_unit_for(
+                            std::cmp::max(outputs.delta_2, outputs.lambda_2_1 + outputs.lambda_2_2)
+                                .into(),
+                        );
                         (
                             format!("{display_denom}"),
                             display_denom.format_value(outputs.delta_2.into()),
-                            display_denom.format_value(outputs.lambda_2.into()),
+                            display_denom
+                                .format_value((outputs.lambda_2_1 + outputs.lambda_2_2).into()),
                         )
                     })
                     .unwrap_or_else(|| {
                         (
                             format!("{}", trading_pair.asset_2()),
                             outputs.delta_2.to_string(),
-                            outputs.lambda_2.to_string(),
+                            (outputs.lambda_2_1 + outputs.lambda_2_2).to_string(),
                         )
                     });
 

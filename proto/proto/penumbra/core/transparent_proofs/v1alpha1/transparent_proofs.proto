@@ -37,8 +37,8 @@ message SwapClaimProof {
    * @exclude
    * Describes output amounts
   */
-  uint64 lambda_1_i = 20;
-  uint64 lambda_2_i = 21;
+  crypto.v1alpha1.Amount lambda_1_i = 20;
+  crypto.v1alpha1.Amount lambda_2_i = 21;
 }
 
 message UndelegateClaimProof {
