@@ -9,7 +9,7 @@ decaf377-ka = { path = "../decaf377-ka/" }
 decaf377-fmd = { path = "../decaf377-fmd/" }
 penumbra-proto = { path = "../proto/" }
 penumbra-crypto = { path = "../crypto/" }
-penumbra-chain = { path = "../chain/" }
+penumbra-chain = { path = "../chain/", default-features = false }
 penumbra-tct = { path = "../tct" }
 penumbra-proof-params = { path = "../proof-params/", features = ["proving-keys"] }
 

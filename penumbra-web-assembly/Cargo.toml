@@ -13,9 +13,9 @@ default = ["console_error_panic_hook"]
 [dependencies]
 penumbra-crypto = { path = "../crypto" }
 penumbra-tct = { path = "../tct/" }
-penumbra-transaction = { path = "../transaction" }
-penumbra-proto = { path = "../proto" }
-penumbra-chain = { path = "../chain"}
+penumbra-transaction = { path = "../transaction", default-features = false }
+penumbra-proto = { path = "../proto", default-features = false }
+penumbra-chain = { path = "../chain", default-features = false }
 
 anyhow = "1"
 hex = "0.4"

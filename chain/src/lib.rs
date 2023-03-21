@@ -1,20 +1,27 @@
 mod epoch;
 mod known_assets;
 mod note_source;
+
+#[cfg(feature = "penumbra-storage")]
 mod view;
 
+#[cfg(feature = "penumbra-storage")]
 pub mod app_hash;
+
 pub mod genesis;
 pub mod params;
-pub(crate) mod state_key;
+pub mod state_key;
 pub mod sync;
 
+#[cfg(feature = "penumbra-storage")]
 pub use app_hash::{AppHash, AppHashRead, PENUMBRA_COMMITMENT_PREFIX, PENUMBRA_PROOF_SPECS};
+#[cfg(feature = "penumbra-storage")]
+pub use view::{StateReadExt, StateWriteExt};
+
 pub use epoch::Epoch;
 pub use known_assets::KnownAssets;
 pub use note_source::{NoteSource, SpendInfo};
 pub use sync::{CompactBlock, StatePayload};
-pub use view::{StateReadExt, StateWriteExt};
 
 /// Hardcoded test data used by the `Default` genesis state.
 pub mod test_keys {
