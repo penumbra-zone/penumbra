@@ -6,9 +6,8 @@ use penumbra_proof_params::SPEND_PROOF_VERIFICATION_KEY;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::Spend, Transaction};
 
-use crate::{
-    action_handler::ActionHandler, sct::view::StateReadExt as _, shielded_pool::NoteManager,
-};
+use crate::shielded_pool::StateReadExt;
+use crate::{action_handler::ActionHandler, shielded_pool::NoteManager};
 
 #[async_trait]
 impl ActionHandler for Spend {

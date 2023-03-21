@@ -1,8 +1,7 @@
 use crate::sct::state_key;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
-use penumbra_chain::{sync::CompactBlock, NoteSource, SpendInfo, StateReadExt as _};
-use penumbra_crypto::{note, Nullifier};
+use penumbra_chain::{sync::CompactBlock, StateReadExt as _};
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_tct as tct;
@@ -71,29 +70,6 @@ pub trait StateReadExt: StateRead {
             Some(bytes) => bincode::deserialize(&bytes).unwrap(),
             None => tct::Tree::new(),
         }
-    }
-
-    async fn note_source(&self, note_commitment: note::Commitment) -> Result<Option<NoteSource>> {
-        self.get(&state_key::note_source(&note_commitment)).await
-    }
-
-    async fn check_nullifier_unspent(&self, nullifier: Nullifier) -> Result<()> {
-        if let Some(info) = self
-            .get::<SpendInfo>(&state_key::spent_nullifier_lookup(&nullifier))
-            .await?
-        {
-            return Err(anyhow!(
-                "nullifier {} was already spent in {:?}",
-                nullifier,
-                info.note_source,
-            ));
-        }
-        Ok(())
-    }
-
-    async fn spend_info(&self, nullifier: Nullifier) -> Result<Option<SpendInfo>> {
-        self.get(&state_key::spent_nullifier_lookup(&nullifier))
-            .await
     }
 
     async fn anchor_by_height(&self, height: u64) -> Result<Option<tct::Root>> {

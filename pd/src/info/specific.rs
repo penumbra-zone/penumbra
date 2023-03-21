@@ -6,7 +6,7 @@ use futures::TryStreamExt;
 use penumbra_chain::AppHashRead;
 use penumbra_chain::StateReadExt as _;
 use penumbra_component::governance::StateReadExt as _;
-use penumbra_component::sct::view::StateReadExt as _;
+use penumbra_component::shielded_pool::StateReadExt as _;
 use penumbra_component::shielded_pool::SupplyRead as _;
 use penumbra_component::stake::rate::RateData;
 use penumbra_component::stake::StateReadExt as _;
