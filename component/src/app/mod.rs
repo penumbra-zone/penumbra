@@ -233,8 +233,21 @@ impl App {
         StubDex::end_block(&mut state_tx, end_block).await;
         Dex::end_block(&mut state_tx, end_block).await;
         Governance::end_block(&mut state_tx, end_block).await;
-
         ShieldedPool::end_block(&mut state_tx, end_block).await;
+
+        if state_tx.epoch().await.unwrap().is_epoch_end(
+            state_tx
+                .get_block_height()
+                .await
+                .expect("block height should be set"),
+        ) {
+            Staking::end_epoch(&mut state_tx).await.unwrap();
+            IBCComponent::end_epoch(&mut state_tx).await.unwrap();
+            StubDex::end_epoch(&mut state_tx).await.unwrap();
+            Dex::end_epoch(&mut state_tx).await.unwrap();
+            Governance::end_epoch(&mut state_tx).await.unwrap();
+            ShieldedPool::end_epoch(&mut state_tx).await.unwrap();
+        }
 
         App::finish_block(&mut state_tx).await;
 

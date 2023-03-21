@@ -33,23 +33,13 @@ impl Component for Governance {
             .expect("enacting proposals should never fail");
 
         // TODO: This will need to be altered to support dynamic epochs
-        if state.epoch().await.unwrap().is_epoch_end(
-            state
-                .get_block_height()
-                .await
-                .expect("block height should be set"),
-        ) {
-            end_epoch(&mut state)
-                .await
-                .expect("end epoch should never fail");
-        }
     }
-}
 
-async fn end_epoch<S: StateWrite>(mut state: S) -> Result<()> {
-    // Every epoch, sweep all delegator votes into tallies (this will be homomorphic in the future)
-    state.tally_delegator_votes(None).await?;
-    Ok(())
+    #[instrument(name = "governance", skip(state))]
+    async fn end_epoch<S: StateWrite>(mut state: S) -> Result<()> {
+        state.tally_delegator_votes(None).await?;
+        Ok(())
+    }
 }
 
 #[instrument(skip(state))]

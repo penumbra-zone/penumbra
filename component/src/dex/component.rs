@@ -1,4 +1,5 @@
 use crate::Component;
+use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::genesis;
 use penumbra_storage::{StateRead, StateWrite};
@@ -17,6 +18,11 @@ impl Component for Dex {
 
     #[instrument(name = "dex", skip(_state, _end_block))]
     async fn end_block<S: StateWrite>(_state: S, _end_block: &abci::request::EndBlock) {}
+
+    #[instrument(name = "dex", skip(_state))]
+    async fn end_epoch<S: StateWrite>(mut _state: S) -> Result<()> {
+        Ok(())
+    }
 }
 
 /// Extension trait providing read access to dex data.

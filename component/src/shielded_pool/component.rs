@@ -1,4 +1,5 @@
 use crate::Component;
+use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::{genesis, NoteSource};
 use penumbra_crypto::{asset, Value};
@@ -44,4 +45,8 @@ impl Component for ShieldedPool {
 
     // #[instrument(name = "shielded_pool", skip(state, _end_block))]
     async fn end_block<S: StateWrite>(mut _state: S, _end_block: &abci::request::EndBlock) {}
+
+    async fn end_epoch<S: StateWrite>(mut _state: S) -> Result<()> {
+        Ok(())
+    }
 }

@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate serde_with;
 
+use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::genesis;
 use penumbra_storage::StateWrite;
@@ -48,4 +49,7 @@ pub trait Component {
     /// This method should only be called after [`Component::begin_block`].
     /// No methods should be called following this method.
     async fn end_block<S: StateWrite>(state: S, end_block: &abci::request::EndBlock);
+
+    /// Ends the epoch, applying component-specific state transitions that should occur when an epoch ends.
+    async fn end_epoch<S: StateWrite>(state: S) -> Result<()>;
 }

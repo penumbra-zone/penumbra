@@ -10,6 +10,7 @@ pub(crate) mod state_key;
 
 use crate::ibc::transfer::Ics20Transfer;
 use crate::Component;
+use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::genesis;
 use penumbra_storage::StateWrite;
@@ -42,5 +43,9 @@ impl Component for IBCComponent {
         connection::ConnectionComponent::end_block(&mut state, end_block).await;
         channel::Ics4Channel::end_block(&mut state, end_block).await;
         Ics20Transfer::end_block(&mut state, end_block).await;
+    }
+
+    async fn end_epoch<S: StateWrite>(mut _state: S) -> Result<()> {
+        Ok(())
     }
 }
