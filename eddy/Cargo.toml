@@ -24,4 +24,3 @@ tokio = { version = "1.21.1", features = ["full"]}
 [features]
 default = ["std"]
 std = ["ark-ff/std", "ark-std/std"]
-parallel = ["ark-ff/parallel", "decaf377/parallel", "ark-std/parallel"]

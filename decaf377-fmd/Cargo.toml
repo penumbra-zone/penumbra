@@ -25,4 +25,3 @@ harness = false
 [features]
 default = ["std"]
 std = ["ark-ff/std"]
-parallel = ["ark-ff/parallel", "decaf377/parallel"]

@@ -63,4 +63,3 @@ vergen = "5"
 [features]
 default = ["std"]
 std = ["ark-ff/std"]
-parallel = ["ark-ff/parallel", "penumbra-tct/parallel", "decaf377/parallel", "penumbra-transaction/parallel", "penumbra-chain/parallel"]

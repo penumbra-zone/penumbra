@@ -33,4 +33,3 @@ num-rational = "0.4"
 [features]
 default = ["std"]
 std = ["ark-ff/std"]
-parallel = ["ark-ff/parallel", "decaf377/parallel", "penumbra-crypto/parallel", "penumbra-tct/parallel"]

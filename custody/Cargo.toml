@@ -31,7 +31,3 @@ vergen = "5"
 
 [dev-dependencies]
 toml = "0.5"
-
-[features]
-default = []
-parallel = ["penumbra-crypto/parallel", "penumbra-transaction/parallel"]
