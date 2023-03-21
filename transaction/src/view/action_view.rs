@@ -19,6 +19,7 @@ use crate::action::{
     PositionRewardClaim, PositionWithdraw, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw,
     Undelegate, UndelegateClaim, ValidatorVote,
 };
+use crate::Action;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(try_from = "pbt::ActionView", into = "pbt::ActionView")]
@@ -119,6 +120,35 @@ impl From<ActionView> for pbt::ActionView {
                 ActionView::DaoSpend(x) => AV::DaoSpend(x.into()),
                 ActionView::DaoOutput(x) => AV::DaoOutput(x.into()),
             }),
+        }
+    }
+}
+
+impl From<ActionView> for Action {
+    fn from(action_view: ActionView) -> Action {
+        match action_view {
+            ActionView::Swap(x) => Action::Swap(x.into()),
+            ActionView::SwapClaim(x) => Action::SwapClaim(x.into()),
+            ActionView::Output(x) => Action::Output(x.into()),
+            ActionView::Spend(x) => Action::Spend(x.into()),
+            ActionView::Delegate(x) => Action::Delegate(x),
+            ActionView::Undelegate(x) => Action::Undelegate(x),
+            ActionView::UndelegateClaim(x) => Action::UndelegateClaim(x),
+            ActionView::ValidatorDefinition(x) => Action::ValidatorDefinition(x),
+            ActionView::IBCAction(x) => Action::IBCAction(x),
+            ActionView::ProposalSubmit(x) => Action::ProposalSubmit(x),
+            ActionView::ProposalWithdraw(x) => Action::ProposalWithdraw(x),
+            ActionView::ValidatorVote(x) => Action::ValidatorVote(x),
+            ActionView::DelegatorVote(x) => Action::DelegatorVote(x.into()),
+            ActionView::ProposalDepositClaim(x) => Action::ProposalDepositClaim(x),
+            ActionView::PositionOpen(x) => Action::PositionOpen(x),
+            ActionView::PositionClose(x) => Action::PositionClose(x),
+            ActionView::PositionWithdraw(x) => Action::PositionWithdraw(x),
+            ActionView::PositionRewardClaim(x) => Action::PositionRewardClaim(x),
+            ActionView::Ics20Withdrawal(x) => Action::Ics20Withdrawal(x),
+            ActionView::DaoDeposit(x) => Action::DaoDeposit(x),
+            ActionView::DaoSpend(x) => Action::DaoSpend(x),
+            ActionView::DaoOutput(x) => Action::DaoOutput(x),
         }
     }
 }

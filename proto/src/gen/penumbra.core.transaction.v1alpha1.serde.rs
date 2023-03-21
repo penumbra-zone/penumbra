@@ -4605,7 +4605,7 @@ impl serde::Serialize for TransactionBodyView {
         if !self.fmd_clues.is_empty() {
             len += 1;
         }
-        if self.memo.is_some() {
+        if self.memo_view.is_some() {
             len += 1;
         }
         if !self.address_views.is_empty() {
@@ -4627,8 +4627,8 @@ impl serde::Serialize for TransactionBodyView {
         if !self.fmd_clues.is_empty() {
             struct_ser.serialize_field("fmdClues", &self.fmd_clues)?;
         }
-        if let Some(v) = self.memo.as_ref() {
-            struct_ser.serialize_field("memo", pbjson::private::base64::encode(&v).as_str())?;
+        if let Some(v) = self.memo_view.as_ref() {
+            struct_ser.serialize_field("memoView", v)?;
         }
         if !self.address_views.is_empty() {
             struct_ser.serialize_field("addressViews", &self.address_views)?;
@@ -4652,7 +4652,8 @@ impl<'de> serde::Deserialize<'de> for TransactionBodyView {
             "fee",
             "fmd_clues",
             "fmdClues",
-            "memo",
+            "memo_view",
+            "memoView",
             "address_views",
             "addressViews",
         ];
@@ -4664,7 +4665,7 @@ impl<'de> serde::Deserialize<'de> for TransactionBodyView {
             ChainId,
             Fee,
             FmdClues,
-            Memo,
+            MemoView,
             AddressViews,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -4692,7 +4693,7 @@ impl<'de> serde::Deserialize<'de> for TransactionBodyView {
                             "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "fee" => Ok(GeneratedField::Fee),
                             "fmdClues" | "fmd_clues" => Ok(GeneratedField::FmdClues),
-                            "memo" => Ok(GeneratedField::Memo),
+                            "memoView" | "memo_view" => Ok(GeneratedField::MemoView),
                             "addressViews" | "address_views" => Ok(GeneratedField::AddressViews),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
@@ -4718,7 +4719,7 @@ impl<'de> serde::Deserialize<'de> for TransactionBodyView {
                 let mut chain_id__ = None;
                 let mut fee__ = None;
                 let mut fmd_clues__ = None;
-                let mut memo__ = None;
+                let mut memo_view__ = None;
                 let mut address_views__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
@@ -4754,13 +4755,11 @@ impl<'de> serde::Deserialize<'de> for TransactionBodyView {
                             }
                             fmd_clues__ = Some(map.next_value()?);
                         }
-                        GeneratedField::Memo => {
-                            if memo__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("memo"));
+                        GeneratedField::MemoView => {
+                            if memo_view__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("memoView"));
                             }
-                            memo__ = 
-                                map.next_value::<::std::option::Option<::pbjson::private::BytesDeserialize<_>>>()?.map(|x| x.0)
-                            ;
+                            memo_view__ = map.next_value()?;
                         }
                         GeneratedField::AddressViews => {
                             if address_views__.is_some() {
@@ -4776,7 +4775,7 @@ impl<'de> serde::Deserialize<'de> for TransactionBodyView {
                     chain_id: chain_id__.unwrap_or_default(),
                     fee: fee__,
                     fmd_clues: fmd_clues__.unwrap_or_default(),
-                    memo: memo__,
+                    memo_view: memo_view__,
                     address_views: address_views__.unwrap_or_default(),
                 })
             }

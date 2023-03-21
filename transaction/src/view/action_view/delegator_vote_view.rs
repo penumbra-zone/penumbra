@@ -70,3 +70,15 @@ impl From<DelegatorVoteView> for pbt::DelegatorVoteView {
         }
     }
 }
+
+impl From<DelegatorVoteView> for DelegatorVote {
+    fn from(v: DelegatorVoteView) -> Self {
+        match v {
+            DelegatorVoteView::Visible {
+                delegator_vote,
+                note: _,
+            } => delegator_vote,
+            DelegatorVoteView::Opaque { delegator_vote } => delegator_vote,
+        }
+    }
+}

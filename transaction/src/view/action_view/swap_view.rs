@@ -70,3 +70,15 @@ impl From<SwapView> for pb::SwapView {
         }
     }
 }
+
+impl From<SwapView> for Swap {
+    fn from(v: SwapView) -> Self {
+        match v {
+            SwapView::Visible {
+                swap,
+                swap_plaintext: _,
+            } => swap,
+            SwapView::Opaque { swap } => swap,
+        }
+    }
+}

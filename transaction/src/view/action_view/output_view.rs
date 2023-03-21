@@ -79,3 +79,16 @@ impl From<OutputView> for pbt::OutputView {
         }
     }
 }
+
+impl From<OutputView> for Output {
+    fn from(v: OutputView) -> Self {
+        match v {
+            OutputView::Visible {
+                output,
+                payload_key: _,
+                note: _,
+            } => output,
+            OutputView::Opaque { output } => output,
+        }
+    }
+}

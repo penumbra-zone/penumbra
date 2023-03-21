@@ -92,3 +92,16 @@ impl From<SwapClaimView> for pbd::SwapClaimView {
         }
     }
 }
+
+impl From<SwapClaimView> for SwapClaim {
+    fn from(v: SwapClaimView) -> Self {
+        match v {
+            SwapClaimView::Visible {
+                swap_claim,
+                output_1: _,
+                output_2: _,
+            } => swap_claim,
+            SwapClaimView::Opaque { swap_claim } => swap_claim,
+        }
+    }
+}

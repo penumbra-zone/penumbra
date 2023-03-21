@@ -26,7 +26,7 @@ use crate::{
         DaoDeposit, DaoOutput, DaoSpend, Delegate, DelegatorVote, Output, PositionOpen,
         ProposalSubmit, ProposalWithdraw, Spend, Swap, Undelegate, ValidatorVote,
     },
-    view::{action_view::OutputView, TransactionBodyView},
+    view::{action_view::OutputView, MemoView, TransactionBodyView},
     Action, ActionView, Id, IsAction, TransactionPerspective, TransactionView,
 };
 
@@ -144,6 +144,7 @@ impl Transaction {
         let mut action_views = Vec::new();
 
         let mut memo_plaintext: Option<MemoPlaintext> = None;
+        let mut memo_ciphertext: Option<MemoCiphertext> = None;
 
         for action in self.actions() {
             let action_view = action.view_from_perspective(txp);
@@ -152,14 +153,17 @@ impl Transaction {
             if let ActionView::Output(output) = &action_view {
                 if memo_plaintext.is_none() {
                     memo_plaintext = match self.transaction_body().memo {
-                        Some(ciphertext) => match output {
-                            OutputView::Visible {
-                                output: _,
-                                note: _,
-                                payload_key: decrypted_memo_key,
-                            } => MemoCiphertext::decrypt(decrypted_memo_key, ciphertext).ok(),
-                            OutputView::Opaque { output: _ } => None,
-                        },
+                        Some(ciphertext) => {
+                            memo_ciphertext = Some(ciphertext.clone());
+                            match output {
+                                OutputView::Visible {
+                                    output: _,
+                                    note: _,
+                                    payload_key: decrypted_memo_key,
+                                } => MemoCiphertext::decrypt(decrypted_memo_key, ciphertext).ok(),
+                                OutputView::Opaque { output: _ } => None,
+                            }
+                        }
                         None => None,
                     }
                 }
@@ -168,14 +172,25 @@ impl Transaction {
             action_views.push(action_view);
         }
 
+        let memo_view = match memo_ciphertext {
+            Some(ciphertext) => match memo_plaintext {
+                Some(plaintext) => Some(MemoView::Visible {
+                    plaintext,
+                    ciphertext,
+                }),
+                None => Some(MemoView::Opaque { ciphertext }),
+            },
+            None => None,
+        };
+
         TransactionView {
-            transaction_body_view: TransactionBodyView {
+            body_view: TransactionBodyView {
                 action_views,
                 expiry_height: self.transaction_body().expiry_height,
                 chain_id: self.transaction_body().chain_id,
                 fee: self.transaction_body().fee,
                 fmd_clues: self.transaction_body().fmd_clues,
-                memo: memo_plaintext,
+                memo_view,
                 address_views: txp.address_views.clone(),
             },
             binding_sig: self.binding_sig,
