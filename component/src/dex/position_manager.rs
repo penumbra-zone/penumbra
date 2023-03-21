@@ -25,8 +25,7 @@ pub trait PositionRead: StateRead {
         self.nonconsensus_prefix_raw(&prefix)
             .map(|entry| match entry {
                 Ok((k, _)) => {
-                    let raw_id=
-                        <&[u8; 32]>::try_from(&k[103..135])?.to_owned();
+                    let raw_id = <&[u8; 32]>::try_from(&k[103..135])?.to_owned();
                     Ok(position::Id(raw_id))
                 }
                 Err(e) => Err(e),
