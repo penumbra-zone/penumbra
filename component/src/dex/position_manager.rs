@@ -25,10 +25,9 @@ pub trait PositionRead: StateRead {
         self.nonconsensus_prefix_raw(&prefix)
             .map(|entry| match entry {
                 Ok((k, _)) => {
-                    // TODO(erwan): remove this when i implement clean decoding on `state_key::internal::price_index`
-                    let raw_id = <&[u8; 32]>::try_from(&k[103..135])
-                        .expect("cache entries are 135 bytes wide");
-                    Ok(position::Id(raw_id.to_owned()))
+                    let raw_id=
+                        <&[u8; 32]>::try_from(&k[103..135])?.to_owned();
+                    Ok(position::Id(raw_id))
                 }
                 Err(e) => Err(e),
             })
