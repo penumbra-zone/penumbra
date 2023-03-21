@@ -76,7 +76,8 @@ impl App {
         compact_block.fmd_parameters = Some(state_tx.get_current_fmd_parameters().await.unwrap());
 
         state_tx.stub_put_compact_block(compact_block);
-        App::finish_block(&mut state_tx).await;
+
+        App::finish_sct_block(&mut state_tx).await;
 
         state_tx.apply();
     }
@@ -221,38 +222,51 @@ impl App {
         Governance::end_block(&mut state_tx, end_block).await;
         ShieldedPool::end_block(&mut state_tx, end_block).await;
 
-        if state_tx.epoch().await.unwrap().is_epoch_end(
+        let end_epoch = state_tx.epoch().await.unwrap().is_epoch_end(
             state_tx
                 .get_block_height()
                 .await
                 .expect("block height should be set"),
-        ) {
+        );
+
+        if end_epoch {
             Staking::end_epoch(&mut state_tx).await.unwrap();
             IBCComponent::end_epoch(&mut state_tx).await.unwrap();
             StubDex::end_epoch(&mut state_tx).await.unwrap();
             Dex::end_epoch(&mut state_tx).await.unwrap();
             Governance::end_epoch(&mut state_tx).await.unwrap();
             ShieldedPool::end_epoch(&mut state_tx).await.unwrap();
-        }
 
-        App::finish_block(&mut state_tx).await;
+            App::finish_sct_epoch(&mut state_tx).await;
+        } else {
+            App::finish_sct_block(&mut state_tx).await;
+        }
 
         state_tx.apply().1
     }
 
-    pub(crate) async fn finish_block<S: StateWrite>(mut state: S) {
-        // We need to reload the compact block here, in case it was
-        // edited during the preceding method calls.
-        // Get the current block height
+    /// Finish an SCT block and use the resulting roots to finalize the current `CompactBlock`.
+    pub(crate) async fn finish_sct_block<S: StateWrite>(state: S) {
+        Self::finish_sct_inner(state, false).await;
+    }
+
+    /// Finish an SCT block and epoch and use the resulting roots to finalize the current `CompactBlock`.
+    pub(crate) async fn finish_sct_epoch<S: StateWrite>(state: S) {
+        Self::finish_sct_inner(state, true).await;
+    }
+
+    async fn finish_sct_inner<S: StateWrite>(mut state: S, end_epoch: bool) {
         let height = state
             .get_block_height()
             .await
             .expect("block height should be set");
 
-        // Set the height of the compact block and save it.
+        // Grab the compact block and SCT from the state to do final processing.
         let mut compact_block = state.stub_compact_block();
-        compact_block.height = height;
         let mut state_commitment_tree = state.stub_state_commitment_tree().await;
+
+        // Set the height of the compact block.
+        compact_block.height = height;
 
         // Check to see if the chain parameters have changed, and include them in the compact block
         // if they have (this is signaled by `penumbra_chain::StateWriteExt::put_chain_params`):
@@ -260,9 +274,25 @@ impl App {
             compact_block.chain_parameters = Some(state.get_chain_params().await.unwrap());
         }
 
-        state
-            .finish_sct_block(&mut compact_block, &mut state_commitment_tree)
-            .await;
+        // Close the block in the SCT
+        let block_root = state_commitment_tree
+            .end_block()
+            .expect("ending a block in the state commitment tree can never fail");
+
+        // Put the block root in the compact block
+        compact_block.block_root = block_root;
+
+        // If the block ends an epoch, also close the epoch in the SCT
+        let epoch_root = if end_epoch {
+            let epoch_root = state_commitment_tree
+                .end_epoch()
+                .expect("ending an epoch in the state commitment tree can never fail");
+            Some(epoch_root)
+        } else {
+            None
+        };
+        // Put the epoch root, if any, in the compact block
+        compact_block.epoch_root = epoch_root;
 
         state.set_compact_block(compact_block.clone());
 
@@ -270,8 +300,8 @@ impl App {
             .write_sct(
                 compact_block.height,
                 state_commitment_tree,
-                compact_block.block_root,
-                compact_block.epoch_root,
+                block_root,
+                epoch_root,
             )
             .await;
     }
