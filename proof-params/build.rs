@@ -1,7 +1,8 @@
+#[cfg(feature = "proving-keys")]
 use std::io::Read;
 
-use regex::Regex;
-use reqwest::blocking::Client;
+#[cfg(feature = "download-proving-keys")]
+use {regex::Regex, reqwest::blocking::Client, std::io::Write};
 
 fn main() {
     let proving_parameter_files = [
@@ -31,12 +32,14 @@ fn main() {
 
 /// Check that the proving key is not a Git LFS pointer.
 pub fn check_proving_key(file: &str) {
-    let f = std::fs::File::open(file).expect("can open proving key file");
-    let mut reader = std::io::BufReader::new(f);
     let mut bytes = Vec::new();
-    reader
-        .read_to_end(&mut bytes)
-        .expect("can read proving key file");
+    {
+        let f = std::fs::File::open(file).expect("can open proving key file");
+        let mut reader = std::io::BufReader::new(f);
+        reader
+            .read_to_end(&mut bytes)
+            .expect("can read proving key file");
+    }
 
     // At build time, we check that the Git LFS pointers to proving keys are resolved.
     // If the system does _not_ have Git LFS installed, then the files will
@@ -47,7 +50,13 @@ pub fn check_proving_key(file: &str) {
         #[cfg(feature = "download-proving-keys")]
         {
             let pointer = GitLFSPointer::parse(&bytes[..]);
-            _ = pointer.resolve();
+            let downloaded_bytes = pointer.resolve();
+            // Save downloaded bytes to file.
+            let f = std::fs::File::create(file).expect("can open proving key file");
+            let mut writer = std::io::BufWriter::new(f);
+            writer
+                .write_all(&downloaded_bytes[..])
+                .expect("can write proving key file");
         }
         #[cfg(not(feature = "download-proving-keys"))]
         {
@@ -164,9 +173,6 @@ impl GitLFSPointer {
             let sha256_str = hex::encode(sha256_digest);
             assert_eq!(sha256_str, self.oid);
         }
-
-        // TODO: Write bytes to location of pointer file so we don't need to download again on
-        // next run.
 
         bytes.into()
     }
