@@ -81,13 +81,13 @@ impl Component for StubDex {
                         state.set_stub_cpmm_reserves(&trading_pair, amm.reserves);
                         (lambda_1, lambda_2, true)
                     }
-                    None => (0, 0, false),
+                    None => (0u64.into(), 0u64.into(), false),
                 };
 
             let (lambda_1_1, lambda_2_2, lambda_2_1, lambda_1_2) = if success {
-                (0, 0, lambda_2, lambda_1)
+                (0u64.into(), 0u64.into(), lambda_2, lambda_1)
             } else {
-                (delta_1, delta_2, 0, 0)
+                (delta_1, delta_2, 0u64.into(), 0u64.into())
             };
 
             let output_data = BatchSwapOutputData {

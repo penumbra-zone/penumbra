@@ -1,21 +1,24 @@
 use std::ops::{Add, AddAssign, Deref, DerefMut};
 
+use anyhow::anyhow;
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
+use crate::Amount;
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(try_from = "pb::MockFlowCiphertext", into = "pb::MockFlowCiphertext")]
-pub struct MockFlowCiphertext(u64);
+pub struct MockFlowCiphertext(Amount);
 
 // Fake implementation for now, TODO: replace w/ additively homomorphic encryption impl
 // once Eddy impl available
 impl MockFlowCiphertext {
-    pub fn new(plaintext: u64) -> Self {
+    pub fn new(plaintext: Amount) -> Self {
         // TODO: do encryption stuff here
         Self(plaintext)
     }
 
-    pub fn mock_decrypt(&self) -> u64 {
+    pub fn mock_decrypt(&self) -> Amount {
         // TODO: do decryption stuff here
         self.0
     }
@@ -23,7 +26,7 @@ impl MockFlowCiphertext {
 
 impl Default for MockFlowCiphertext {
     fn default() -> Self {
-        Self::new(0)
+        Self::new(0u64.into())
     }
 }
 
@@ -47,14 +50,20 @@ impl DomainType for MockFlowCiphertext {
 
 impl From<MockFlowCiphertext> for pb::MockFlowCiphertext {
     fn from(ik: MockFlowCiphertext) -> Self {
-        pb::MockFlowCiphertext { value: ik.0 }
+        pb::MockFlowCiphertext {
+            value: Some(ik.0.into()),
+        }
     }
 }
 
 impl TryFrom<pb::MockFlowCiphertext> for MockFlowCiphertext {
     type Error = anyhow::Error;
     fn try_from(ct: pb::MockFlowCiphertext) -> Result<Self, Self::Error> {
-        Ok(Self(ct.value))
+        Ok(Self(
+            ct.value
+                .ok_or_else(|| anyhow!("Missing value"))?
+                .try_into()?,
+        ))
     }
 }
 

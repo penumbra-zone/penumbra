@@ -7,7 +7,7 @@ use std::{fmt::Display, iter::Sum, num::NonZeroU128, ops};
 use crate::{fixpoint::U128x128, Fq, Fr};
 use decaf377::{r1cs::FqVar, FieldExt};
 
-#[derive(Serialize, Deserialize, PartialEq, PartialOrd, Eq, Clone, Copy)]
+#[derive(Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Clone, Copy)]
 #[serde(try_from = "pb::Amount", into = "pb::Amount")]
 pub struct Amount {
     inner: u128,

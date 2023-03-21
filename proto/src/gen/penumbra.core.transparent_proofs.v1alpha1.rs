@@ -41,10 +41,10 @@ pub struct SwapClaimProof {
     /// *
     /// @exclude
     /// Describes output amounts
-    #[prost(uint64, tag = "20")]
-    pub lambda_1_i: u64,
-    #[prost(uint64, tag = "21")]
-    pub lambda_2_i: u64,
+    #[prost(message, optional, tag = "20")]
+    pub lambda_1_i: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
+    #[prost(message, optional, tag = "21")]
+    pub lambda_2_i: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

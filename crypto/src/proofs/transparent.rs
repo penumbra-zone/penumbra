@@ -285,8 +285,8 @@ pub struct SwapClaimProof {
     // The nullifier deriving key for the Swap NFT note.
     pub nk: keys::NullifierKey,
     // Describes output amounts
-    pub lambda_1_i: u64,
-    pub lambda_2_i: u64,
+    pub lambda_1_i: Amount,
+    pub lambda_2_i: Amount,
 }
 
 impl SwapClaimProof {
@@ -414,8 +414,8 @@ impl From<SwapClaimProof> for transparent_proofs::SwapClaimProof {
             swap_commitment_proof: Some(msg.swap_commitment_proof.into()),
             swap_plaintext: Some(msg.swap_plaintext.into()),
             nk: msg.nk.0.to_bytes().to_vec(),
-            lambda_1_i: msg.lambda_1_i,
-            lambda_2_i: msg.lambda_2_i,
+            lambda_1_i: Some(msg.lambda_1_i.into()),
+            lambda_2_i: Some(msg.lambda_2_i.into()),
         }
     }
 }
@@ -443,8 +443,12 @@ impl TryFrom<transparent_proofs::SwapClaimProof> for SwapClaimProof {
             swap_commitment_proof,
             swap_plaintext,
             nk,
-            lambda_1_i,
-            lambda_2_i,
+            lambda_1_i: lambda_1_i
+                .ok_or_else(|| anyhow!("missing lambda_1_i"))?
+                .try_into()?,
+            lambda_2_i: lambda_2_i
+                .ok_or_else(|| anyhow!("missing lambda_2_i"))?
+                .try_into()?,
         })
     }
 }

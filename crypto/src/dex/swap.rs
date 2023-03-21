@@ -7,6 +7,8 @@ use penumbra_proto::{
     client::v1alpha1::BatchSwapOutputDataResponse, core::dex::v1alpha1 as pb, DomainType,
 };
 
+use crate::{fixpoint::U128x128, Amount};
+
 use super::TradingPair;
 
 mod ciphertext;
@@ -27,12 +29,12 @@ pub static DOMAIN_SEPARATOR: Lazy<Fq> =
 
 #[derive(Clone, Debug, Copy, PartialEq, Eq)]
 pub struct BatchSwapOutputData {
-    pub delta_1: u64,
-    pub delta_2: u64,
-    pub lambda_1_1: u64,
-    pub lambda_2_1: u64,
-    pub lambda_1_2: u64,
-    pub lambda_2_2: u64,
+    pub delta_1: Amount,
+    pub delta_2: Amount,
+    pub lambda_1_1: Amount,
+    pub lambda_2_1: Amount,
+    pub lambda_1_2: Amount,
+    pub lambda_2_2: Amount,
     pub height: u64,
     pub trading_pair: TradingPair,
 }
@@ -40,7 +42,7 @@ pub struct BatchSwapOutputData {
 impl BatchSwapOutputData {
     /// Given a user's inputs `(delta_1_i, delta_2_i)`, compute their pro rata share
     /// of the batch output `(lambda_1_i, lambda_2_i)`.
-    pub fn pro_rata_outputs(&self, (delta_1_i, delta_2_i): (u64, u64)) -> (u64, u64) {
+    pub fn pro_rata_outputs(&self, (delta_1_i, delta_2_i): (Amount, Amount)) -> (Amount, Amount) {
         // The pro rata fraction is delta_j_i / delta_j, which we can multiply through:
         //   lambda_2_i = (delta_1_i / delta_1) * lambda_2_1 + (delta_2_i / delta_2) * lambda_2_2
         //   lambda_1_i = (delta_1_i / delta_1) * lambda_1_1 + (delta_2_i / delta_2) * lambda_1_2
@@ -48,20 +50,29 @@ impl BatchSwapOutputData {
         //   lambda_2_i = (delta_1_i * lambda_2_1) / delta_1 + (delta_2_i * lambda_2_2) / delta_2
         //   lambda_1_i = (delta_1_i * lambda_1_1) / delta_1 + (delta_2_i * lambda_1_2) / delta_2
         // so that we can do division and rounding at the end.
-        let lambda_2_i = ((delta_1_i as u128) * (self.lambda_2_1 as u128))
-            .checked_div(self.delta_1 as u128)
-            .unwrap_or(0)
-            + ((delta_2_i as u128) * (self.lambda_2_2 as u128))
-                .checked_div(self.delta_2 as u128)
-                .unwrap_or(0);
-        let lambda_1_i = ((delta_1_i as u128) * (self.lambda_2_1 as u128))
-            .checked_div(self.delta_1 as u128)
-            .unwrap_or(0)
-            + ((delta_2_i as u128) * (self.lambda_1_2 as u128))
-                .checked_div(self.delta_2 as u128)
-                .unwrap_or(0);
+        let lambda_2_i: U128x128 = ((U128x128::from(delta_1_i) * U128x128::from(self.lambda_2_1))
+            .unwrap_or(0u64.into())
+            .checked_div(&U128x128::from(self.delta_1))
+            .unwrap_or(0u64.into())
+            + (U128x128::from(delta_2_i) * U128x128::from(self.lambda_2_2))
+                .unwrap_or(0u64.into())
+                .checked_div(&U128x128::from(self.delta_2))
+                .unwrap_or(0u64.into()))
+        .unwrap_or(0u64.into());
+        let lambda_1_i: U128x128 = ((U128x128::from(delta_1_i) * U128x128::from(self.lambda_2_1))
+            .unwrap_or(0u64.into())
+            .checked_div(&U128x128::from(self.delta_1))
+            .unwrap_or(0u64.into())
+            + (U128x128::from(delta_2_i) * U128x128::from(self.lambda_1_2))
+                .unwrap_or(0u64.into())
+                .checked_div(&U128x128::from(self.delta_2))
+                .unwrap_or(0u64.into()))
+        .unwrap_or(0u64.into());
 
-        (lambda_1_i as u64, lambda_2_i as u64)
+        (
+            lambda_1_i.try_into().unwrap_or(0u64.into()),
+            lambda_2_i.try_into().unwrap_or(0u64.into()),
+        )
     }
 }
 
@@ -72,14 +83,14 @@ impl DomainType for BatchSwapOutputData {
 impl From<BatchSwapOutputData> for pb::BatchSwapOutputData {
     fn from(s: BatchSwapOutputData) -> Self {
         pb::BatchSwapOutputData {
-            delta_1: s.delta_1,
-            delta_2: s.delta_2,
+            delta_1: Some(s.delta_1.into()),
+            delta_2: Some(s.delta_2.into()),
             trading_pair: Some(s.trading_pair.into()),
             height: s.height,
-            lambda_1_1: s.lambda_1_1,
-            lambda_2_1: s.lambda_2_1,
-            lambda_1_2: s.lambda_1_2,
-            lambda_2_2: s.lambda_2_2,
+            lambda_1_1: Some(s.lambda_1_1.into()),
+            lambda_2_1: Some(s.lambda_2_1.into()),
+            lambda_1_2: Some(s.lambda_1_2.into()),
+            lambda_2_2: Some(s.lambda_2_2.into()),
         }
     }
 }
@@ -96,12 +107,30 @@ impl TryFrom<pb::BatchSwapOutputData> for BatchSwapOutputData {
     type Error = anyhow::Error;
     fn try_from(s: pb::BatchSwapOutputData) -> Result<Self, Self::Error> {
         Ok(Self {
-            delta_1: s.delta_1,
-            delta_2: s.delta_2,
-            lambda_1_1: s.lambda_1_1,
-            lambda_2_1: s.lambda_2_1,
-            lambda_1_2: s.lambda_1_2,
-            lambda_2_2: s.lambda_2_2,
+            delta_1: s
+                .delta_1
+                .ok_or_else(|| anyhow!("Missing delta_1"))?
+                .try_into()?,
+            delta_2: s
+                .delta_2
+                .ok_or_else(|| anyhow!("Missing delta_2"))?
+                .try_into()?,
+            lambda_1_1: s
+                .lambda_1_1
+                .ok_or_else(|| anyhow!("Missing lambda_1_1"))?
+                .try_into()?,
+            lambda_2_1: s
+                .lambda_2_1
+                .ok_or_else(|| anyhow!("Missing lambda_2_1"))?
+                .try_into()?,
+            lambda_1_2: s
+                .lambda_1_2
+                .ok_or_else(|| anyhow!("Missing lambda_1_2"))?
+                .try_into()?,
+            lambda_2_2: s
+                .lambda_2_2
+                .ok_or_else(|| anyhow!("Missing lambda_2_2"))?
+                .try_into()?,
             height: s.height,
             trading_pair: s
                 .trading_pair
