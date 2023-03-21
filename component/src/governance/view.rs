@@ -24,7 +24,7 @@ use tokio::task::JoinSet;
 use tracing::instrument;
 
 use crate::{
-    sct::view::StateReadExt as _,
+    shielded_pool::StateReadExt as _,
     shielded_pool::SupplyRead,
     stake::{rate::RateData, validator, StateReadExt as _},
 };

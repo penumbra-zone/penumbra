@@ -7,7 +7,7 @@ use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::SwapClaim, Transaction};
 
 use crate::{
-    action_handler::ActionHandler, sct::view::StateReadExt as _, shielded_pool::NoteManager,
+    action_handler::ActionHandler, shielded_pool::NoteManager, shielded_pool::StateReadExt as _,
     stubdex::StateReadExt as _,
 };
 

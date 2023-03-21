@@ -1,8 +1,13 @@
+use crate::shielded_pool::state_key;
 use crate::Component;
+use anyhow::anyhow;
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_chain::{genesis, NoteSource};
+use penumbra_chain::{genesis, NoteSource, SpendInfo};
 use penumbra_crypto::{asset, Value};
+use penumbra_crypto::{note, Nullifier};
+use penumbra_proto::StateReadProto;
+use penumbra_storage::StateRead;
 use penumbra_storage::StateWrite;
 use tendermint::abci;
 
@@ -50,3 +55,30 @@ impl Component for ShieldedPool {
         Ok(())
     }
 }
+
+#[async_trait]
+pub trait StateReadExt: StateRead {
+    async fn note_source(&self, note_commitment: note::Commitment) -> Result<Option<NoteSource>> {
+        self.get(&state_key::note_source(&note_commitment)).await
+    }
+
+    async fn check_nullifier_unspent(&self, nullifier: Nullifier) -> Result<()> {
+        if let Some(info) = self
+            .get::<SpendInfo>(&state_key::spent_nullifier_lookup(&nullifier))
+            .await?
+        {
+            return Err(anyhow!(
+                "nullifier {} was already spent in {:?}",
+                nullifier,
+                info.note_source,
+            ));
+        }
+        Ok(())
+    }
+    async fn spend_info(&self, nullifier: Nullifier) -> Result<Option<SpendInfo>> {
+        self.get(&state_key::spent_nullifier_lookup(&nullifier))
+            .await
+    }
+}
+
+impl<T: StateRead + ?Sized> StateReadExt for T {}

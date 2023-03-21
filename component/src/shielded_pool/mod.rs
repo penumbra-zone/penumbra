@@ -9,5 +9,6 @@ pub mod state_key;
 
 pub use self::metrics::register_metrics;
 pub use component::ShieldedPool;
+pub use component::StateReadExt;
 pub use note_manager::NoteManager;
 pub use supply::{SupplyRead, SupplyWrite};
