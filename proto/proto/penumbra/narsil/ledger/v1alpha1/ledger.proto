@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package penumbra.narsil.v1alpha1;
+package penumbra.narsil.ledger.v1alpha1;
 
 import "penumbra/core/crypto/v1alpha1/crypto.proto";
 import "penumbra/core/transaction/v1alpha1/transaction.proto";
