@@ -36,13 +36,15 @@ where
     #[cfg(not(feature = "parallel"))]
     {
         let unauth_tx = plan.build(fvk, witness_data)?;
-        let tx = unauth_tx.authorize(&mut rng, auth_data)?;
+        let tx = unauth_tx.authorize(&mut rng, &auth_data)?;
+        return Ok(tx);
     }
 
     #[cfg(feature = "parallel")]
-    let tx = plan
-        .build_concurrent(&mut rng, fvk, auth_data, witness_data)
-        .await?;
-
-    Ok(tx)
+    {
+        let tx = plan
+            .build_concurrent(&mut rng, fvk, auth_data, witness_data)
+            .await?;
+        Ok(tx)
+    }
 }
