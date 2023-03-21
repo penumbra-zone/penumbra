@@ -66,31 +66,7 @@ impl App {
         Governance::init_chain(&mut state_tx, app_state).await;
         ShieldedPool::init_chain(&mut state_tx, app_state).await;
 
-        let mut compact_block = state_tx.stub_compact_block();
-        let mut state_commitment_tree = state_tx.stub_state_commitment_tree().await;
-
-        // Hard-coded to zero because we are in the genesis block
-        // Tendermint starts blocks at 1, so this is a "phantom" compact block
-        compact_block.height = 0;
-
-        // Add current FMD parameters to the initial block.
-        compact_block.fmd_parameters = Some(state_tx.get_current_fmd_parameters().await.unwrap());
-
-        // Close the genesis block
-        state_tx
-            .finish_sct_block(&mut compact_block, &mut state_commitment_tree)
-            .await;
-
-        state_tx.set_compact_block(compact_block.clone());
-
-        state_tx
-            .write_sct(
-                compact_block.height,
-                state_commitment_tree,
-                compact_block.block_root,
-                compact_block.epoch_root,
-            )
-            .await;
+        App::finish_block(&mut state_tx).await;
 
         state_tx.apply();
     }
