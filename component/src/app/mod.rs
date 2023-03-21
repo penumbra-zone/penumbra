@@ -253,7 +253,6 @@ impl App {
         // Set the height of the compact block and save it.
         let mut compact_block = state.stub_compact_block();
         compact_block.height = height;
-        state.stub_put_compact_block(compact_block.clone());
         let mut state_commitment_tree = state.stub_state_commitment_tree().await;
 
         // Check to see if the chain parameters have changed, and include them in the compact block
@@ -267,6 +266,7 @@ impl App {
             .await;
 
         state.set_compact_block(compact_block.clone());
+        state.stub_put_compact_block(compact_block.clone());
 
         state
             .write_sct(

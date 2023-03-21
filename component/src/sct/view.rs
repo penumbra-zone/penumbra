@@ -126,12 +126,15 @@ pub trait StateReadExt: StateRead {
     ) {
         let height = compact_block.height;
 
+        // Close the block in the TCT
         let block_root = state_commitment_tree
             .end_block()
             .expect("ending a block in the state commitment tree can never fail");
 
+        // Put the block root in the compact block
         compact_block.block_root = block_root;
 
+        // If the block ends an epoch, also close the epoch in the TCT
         if self.epoch().await.unwrap().is_epoch_end(height) {
             tracing::debug!(?height, "end of epoch");
 
@@ -139,6 +142,7 @@ pub trait StateReadExt: StateRead {
                 .end_epoch()
                 .expect("ending an epoch in the state commitment tree can never fail");
 
+            // Put the epoch root in the compact block
             compact_block.epoch_root = Some(epoch_root);
         }
     }
