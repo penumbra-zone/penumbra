@@ -1,12 +1,9 @@
 use crate::Component;
 use async_trait::async_trait;
-use penumbra_chain::{genesis, NoteSource, StateReadExt as _};
+use penumbra_chain::{genesis, NoteSource};
 use penumbra_crypto::{asset, Value};
 use penumbra_storage::StateWrite;
 use tendermint::abci;
-
-use crate::compactblock::view::{StateReadExt as _, StateWriteExt as _};
-use crate::sct::view::{StateReadExt as _, StateWriteExt as _};
 
 use super::{NoteManager, SupplyWrite};
 

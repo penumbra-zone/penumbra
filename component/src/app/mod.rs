@@ -262,7 +262,7 @@ impl App {
         }
 
         state
-            .finish_sct_block(&mut compact_block.clone(), &mut state_commitment_tree)
+            .finish_sct_block(&mut compact_block, &mut state_commitment_tree)
             .await;
 
         state.set_compact_block(compact_block.clone());
