@@ -31,8 +31,6 @@ impl Component for Governance {
         enact_all_passed_proposals(&mut state)
             .await
             .expect("enacting proposals should never fail");
-
-        // TODO: This will need to be altered to support dynamic epochs
     }
 
     #[instrument(name = "governance", skip(state))]
