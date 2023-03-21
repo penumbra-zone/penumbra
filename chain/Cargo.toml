@@ -5,8 +5,8 @@ edition = "2021"
 
 [dependencies]
 # Workspace dependencies
-penumbra-proto = { path = "../proto", features = ["penumbra-storage"] }
-penumbra-storage = { path = "../storage" }
+penumbra-proto = { path = "../proto", default-features = false }
+penumbra-storage = { path = "../storage", optional = true }
 penumbra-crypto = { path = "../crypto" }
 # penumbra-transaction = { path = "../transaction" }
 penumbra-tct = { path = "../tct" }
@@ -31,5 +31,6 @@ tracing = "0.1"
 num-rational = "0.4"
 
 [features]
-default = ["std"]
+default = ["std", "storage"]
 std = ["ark-ff/std"]
+storage = ["penumbra-storage", "penumbra-proto/penumbra-storage" ]
