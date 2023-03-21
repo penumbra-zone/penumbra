@@ -1,72 +1,45 @@
 on: [pull_request]
 # The WASM compatibility workflow exists outside the suite of "Rust"
-# workflows because the tests don't yet pass, and we want to isolate
-# that CI failure specifically to the WASM compatibility push.
-#
-# There are two jobs:
-#
-#   1. dummy-package
-#   2. penumrba-web-assembly
-#
-# The first documents a known-working build to the wasm32-unknown-unknown target,
-# but without any functionality: it's an empty package. Still, it provides a baseline
-# for known working dependencies, with other deps commented out.
-#
-# The second is the goal target: we want to support all the functionality in
-# the "penumbra-web-assembly" crate, written by Zpoken. This crate has never compiled
-# successfully, but we'll use that target to plan refactors to support WASM.
+# workflows because the WASM crate is intentionally excluded from
+# the parent workspace, in order to test how a downstream developer
+# will work with our dependencies.
 name: WASM compatibility
 jobs:
-  dummy_package:
-    name: dummy-package
-    runs-on: buildjet-16vcpu-ubuntu-2004
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          lfs: true
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          target: wasm32-unknown-unknown
-          override: true
-      - uses: Swatinem/rust-cache@v1
-        with:
-          workspaces: |
-            . -> target
-            wasm-compat
-
-      # We cannot use the GH action because it doesn't working directory:
-      # support custom working dirs.
-      # - uses: actions-rs/cargo@v1
-      - name: build wasm32 target
-        run:
-          cargo build --release --target wasm32-unknown-unknown
-        working-directory: wasm-compat
-
-  penumbra_web_assembly:
+  wasm:
     name: penumbra-web-assembly
     runs-on: buildjet-16vcpu-ubuntu-2004
     steps:
       - uses: actions/checkout@v2
         with:
           lfs: true
+
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
           target: wasm32-unknown-unknown
           override: true
+
       - uses: Swatinem/rust-cache@v1
         with:
           workspaces: |
             . -> target
             penumbra-web-assembly
 
-      # We cannot use the GH action because it doesn't working directory:
-      # support custom working dirs.
-      # - uses: actions-rs/cargo@v1
+      # We can't use the GH action for cargo because it doesn't custom working directory.
       - name: build wasm32 target
         run:
           cargo build --release --target wasm32-unknown-unknown
+        working-directory: penumbra-web-assembly
+
+      # Download prebuilt binary for wasm-pack; faster than `cargo install`.
+      - uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: 'latest'
+
+      # `wasm-pack build` will automatically compile to target wasm32-unknown-unknown,
+      # but we run it as a separate task to isolate potential failures in the build pipeline.
+      - name: run wasm-pack build
+        run:
+          wasm-pack build
         working-directory: penumbra-web-assembly
