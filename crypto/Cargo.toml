@@ -64,4 +64,4 @@ frost377 = { git = "https://github.com/penumbra-zone/frost377", default-features
 
 [features]
 default = []
-parallel = ["penumbra-tct/parallel", "ark-ff/parallel", "poseidon377/parallel", "decaf377-rdsa/parallel", "penumbra-tct/parallel", "decaf377-fmd/parallel", "decaf377-ka/parallel", "ark-groth16/parallel", "ark-std/parallel", "ark-r1cs-std/parallel", "decaf377/parallel", "frost377/parallel"]
+parallel = ["penumbra-tct/parallel", "ark-ff/parallel", "poseidon377/parallel", "decaf377-rdsa/parallel", "ark-groth16/parallel", "ark-std/parallel", "ark-r1cs-std/parallel", "decaf377/parallel", "frost377/parallel"]

@@ -15,7 +15,7 @@ publish = false
 default = ["std", "parallel"]
 sct-divergence-check = ["penumbra-view/sct-divergence-check"]
 std = ["ark-ff/std"]
-parallel = ["penumbra-chain/parallel", "penumbra-proof-params/parallel", "ark-ff/parallel", "penumbra-wallet/parallel", "decaf377/parallel", "penumbra-component/parallel", "penumbra-crypto/parallel", "penumbra-custody/parallel", "penumbra-tct/parallel", "penumbra-view/parallel", "penumbra-transaction/parallel", ]
+parallel = ["penumbra-proof-params/parallel", "decaf377/parallel", "penumbra-crypto/parallel", "penumbra-transaction/parallel", "penumbra-wallet/parallel" ]
 
 [dependencies]
 # Workspace dependencies

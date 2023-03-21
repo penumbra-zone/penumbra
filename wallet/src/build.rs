@@ -34,7 +34,10 @@ where
 
     // ... and then build the transaction:
     #[cfg(not(feature = "parallel"))]
-    let tx = plan.build(&mut rng, fvk, auth_data, witness_data)?;
+    {
+        let unauth_tx = plan.build(fvk, witness_data)?;
+        let tx = unauth_tx.authorize(&mut rng, auth_data)?;
+    }
 
     #[cfg(feature = "parallel")]
     let tx = plan
