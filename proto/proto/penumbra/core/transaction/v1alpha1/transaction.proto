@@ -113,7 +113,18 @@ message NullifierWithNote {
   crypto.v1alpha1.Note note = 2;
 }
 
+// View of a Penumbra transaction.
 message TransactionView {
+  // View of the transaction body
+  TransactionBodyView body_view = 1;
+  // The binding signature is stored separately from the transaction body that it signs.
+  bytes binding_sig = 2;
+  // The root of some previous state of the state commitment tree, used as an anchor for all
+  // ZK state transition proofs.
+  crypto.v1alpha1.MerkleRoot anchor = 3;
+}
+
+message TransactionBodyView {
   // A list views into of actions (state changes) performed by this transaction.
   repeated ActionView action_views = 1;
   // The maximum height that this transaction can be included in the chain.
@@ -348,9 +359,31 @@ message CluePlan {
 // Describes a plan for forming a `Memo`.
 message MemoPlan {
   // The plaintext.
-  bytes plaintext = 1;
+  MemoPlaintext plaintext = 1;
   // The key to use to encrypt the memo.
   bytes key = 2;
+}
+
+message MemoCiphertext { bytes inner = 1; } 
+
+message MemoPlaintext { 
+  crypto.v1alpha1.Address sender = 1;
+  string text = 2; 
+} 
+
+message MemoView {
+  message Visible {
+    MemoCiphertext ciphertext = 1;
+    MemoPlaintext plaintext = 2;
+  }
+
+  message Opaque {
+    MemoCiphertext ciphertext = 1;
+  }
+  oneof memo_view {
+    Visible visible = 1;
+    Opaque opaque = 2;
+  }
 }
 
 message SpendPlan {
