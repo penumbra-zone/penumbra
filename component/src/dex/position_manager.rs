@@ -11,9 +11,28 @@ use penumbra_proto::{DomainType, StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 
 use super::state_key;
+use futures::Stream;
+use futures::StreamExt;
+use std::pin::Pin;
 
 #[async_trait]
 pub trait PositionRead: StateRead {
+    async fn positions_by_price(
+        &self,
+        pair: DirectedTradingPair,
+    ) -> Pin<Box<dyn Stream<Item = Result<position::Id>> + Send + 'static>> {
+        let prefix = state_key::internal::price_index::prefix(&pair);
+        self.nonconsensus_prefix_raw(&prefix)
+            .map(|entry| match entry {
+                Ok((k, _)) => {
+                    let raw_id = <&[u8; 32]>::try_from(&k[103..135])?.to_owned();
+                    Ok(position::Id(raw_id))
+                }
+                Err(e) => Err(e),
+            })
+            .boxed()
+    }
+
     async fn position_by_id(&self, id: &position::Id) -> Result<Option<position::Metadata>> {
         self.get(&state_key::position_by_id(id)).await
     }
