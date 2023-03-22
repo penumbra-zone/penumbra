@@ -35,7 +35,7 @@ impl DomainType for MemoPlan {
 impl From<MemoPlan> for pb::MemoPlan {
     fn from(msg: MemoPlan) -> Self {
         Self {
-            plaintext: msg.plaintext.to_vec().into(),
+            plaintext: MemoPlaintext::from(msg.plaintext.to_vec()).into(),
             key: msg.key.to_vec().into(),
         }
     }

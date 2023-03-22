@@ -26,7 +26,7 @@ use crate::{
         DaoDeposit, DaoOutput, DaoSpend, Delegate, DelegatorVote, Output, PositionOpen,
         ProposalSubmit, ProposalWithdraw, Spend, Swap, Undelegate, ValidatorVote,
     },
-    view::action_view::OutputView,
+    view::{action_view::OutputView, TransactionBodyView},
     Action, ActionView, Id, IsAction, TransactionPerspective, TransactionView,
 };
 
@@ -169,13 +169,17 @@ impl Transaction {
         }
 
         TransactionView {
-            action_views,
-            expiry_height: self.transaction_body().expiry_height,
-            chain_id: self.transaction_body().chain_id,
-            fee: self.transaction_body().fee,
-            fmd_clues: self.transaction_body().fmd_clues,
-            memo: memo_plaintext,
-            address_views: txp.address_views.clone(),
+            transaction_body_view: TransactionBodyView {
+                action_views,
+                expiry_height: self.transaction_body().expiry_height,
+                chain_id: self.transaction_body().chain_id,
+                fee: self.transaction_body().fee,
+                fmd_clues: self.transaction_body().fmd_clues,
+                memo: memo_plaintext,
+                address_views: txp.address_views.clone(),
+            },
+            binding_sig: self.binding_sig,
+            anchor: self.anchor,
         }
     }
 
