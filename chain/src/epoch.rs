@@ -1,62 +1,52 @@
+use penumbra_proto::{core::chain::v1alpha1 as pb_chain, DomainType};
+use serde::{Deserialize, Serialize};
 use tendermint::block;
 
 /// Penumbra groups blocks into epochs and restricts validator changes to epoch boundaries.
-///
-/// The epoch duration is a chain parameter and cannot be changed after initialization.
-#[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone)]
+#[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Serialize, Deserialize)]
+#[serde(try_from = "pb_chain::Epoch", into = "pb_chain::Epoch")]
 pub struct Epoch {
     pub index: u64,
-    pub duration: u64,
+    pub start_height: u64,
+    pub end_height: u64,
+}
+
+impl DomainType for Epoch {
+    type Proto = pb_chain::Epoch;
+}
+
+impl From<pb_chain::Epoch> for Epoch {
+    fn from(msg: pb_chain::Epoch) -> Self {
+        Epoch {
+            index: msg.index,
+            start_height: msg.start_height,
+            end_height: msg.end_height,
+        }
+    }
+}
+
+impl From<Epoch> for pb_chain::Epoch {
+    fn from(epoch: Epoch) -> Self {
+        pb_chain::Epoch {
+            index: epoch.index,
+            start_height: epoch.start_height,
+            end_height: epoch.end_height,
+        }
+    }
 }
 
 impl Epoch {
-    /// Instantiates a new `Epoch` from a given block height and epoch duration.
-    pub fn from_height(height: u64, epoch_duration: u64) -> Epoch {
-        Epoch {
-            index: height / epoch_duration,
-            duration: epoch_duration,
-        }
-    }
-
     /// Indicates the starting block height for this epoch (inclusive)
     pub fn start_height(&self) -> block::Height {
-        block::Height::try_from(self.index * self.duration).expect("able to parse block height")
+        block::Height::try_from(self.start_height).expect("able to parse block height")
     }
 
     /// Indicates the ending block height for this epoch (inclusive)
     pub fn end_height(&self) -> block::Height {
-        block::Height::try_from((self.index + 1) * self.duration - 1)
-            .expect("able to parse block height")
+        block::Height::try_from(self.end_height).expect("able to parse block height")
     }
 
     pub fn is_epoch_end(&self, height: u64) -> bool {
-        self.end_height().value() == height
-    }
-
-    /// Returns the epoch following this one.
-    pub fn next(&self) -> Self {
-        Epoch {
-            index: self.index + 1,
-            duration: self.duration,
-        }
-    }
-
-    /// Returns the epoch preceding this one.
-    pub fn prev(&self) -> Self {
-        Epoch {
-            index: self.index - 1,
-            duration: self.duration,
-        }
-    }
-}
-
-impl std::ops::Add<u64> for Epoch {
-    type Output = Epoch;
-
-    fn add(self, other: u64) -> Self::Output {
-        Epoch {
-            index: self.index + other,
-            duration: self.duration,
-        }
+        self.end_height == height
     }
 }

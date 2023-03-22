@@ -1141,6 +1141,24 @@ impl ViewProtocolService for ViewService {
         Ok(tonic::Response::new(response))
     }
 
+    async fn current_epoch(
+        &self,
+        _request: tonic::Request<pb::CurrentEpochRequest>,
+    ) -> Result<tonic::Response<pb::CurrentEpochResponse>, tonic::Status> {
+        self.check_worker().await?;
+
+        let epoch =
+            self.storage.current_epoch().await.map_err(|e| {
+                tonic::Status::unavailable(format!("error getting current epoch: {e}"))
+            })?;
+
+        let response = CurrentEpochResponse {
+            epoch: Some(epoch.into()),
+        };
+
+        Ok(tonic::Response::new(response))
+    }
+
     async fn fmd_parameters(
         &self,
         _request: tonic::Request<pb::FmdParametersRequest>,

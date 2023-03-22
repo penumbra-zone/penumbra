@@ -2,7 +2,10 @@ use anyhow::{anyhow, Context};
 use camino::Utf8Path;
 use futures::Future;
 use parking_lot::Mutex;
-use penumbra_chain::params::{ChainParameters, FmdParameters};
+use penumbra_chain::{
+    params::{ChainParameters, FmdParameters},
+    Epoch,
+};
 use penumbra_crypto::{
     asset::{self, Denom, Id},
     note,
@@ -414,6 +417,17 @@ impl Storage {
         .await?;
 
         ChainParameters::decode(result.bytes.as_slice())
+    }
+
+    pub async fn current_epoch(&self) -> anyhow::Result<Epoch> {
+        let result = query!(
+            r#"
+            SELECT epoch FROM epochs ORDER BY index DESC LIMIT 1"#
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        Epoch::decode(result.bytes.as_slice())
     }
 
     pub async fn fmd_parameters(&self) -> anyhow::Result<FmdParameters> {

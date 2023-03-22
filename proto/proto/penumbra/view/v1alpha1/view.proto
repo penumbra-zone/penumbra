@@ -45,6 +45,9 @@ service ViewProtocolService {
   // Query for the current chain parameters.
   rpc ChainParameters(ChainParametersRequest) returns (ChainParametersResponse);
 
+  // Query for the current epoch.
+  rpc CurrentEpoch(CurrentEpochRequest) returns (CurrentEpochResponse);
+
   // Query for the current FMD parameters.
   rpc FMDParameters(FMDParametersRequest) returns (FMDParametersResponse);
 
@@ -319,6 +322,12 @@ message ChainParametersRequest {}
 
 message ChainParametersResponse {
   core.chain.v1alpha1.ChainParameters parameters = 1;
+}
+
+// Requests the current epoch from the view service
+message CurrentEpochRequest {}
+message CurrentEpochResponse {
+  core.chain.v1alpha1.Epoch epoch = 1;
 }
 
 // Requests the current FMD parameters from the view service.

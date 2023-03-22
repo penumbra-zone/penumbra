@@ -28,11 +28,12 @@ pub trait StateReadExt: StateRead {
 
     /// Gets the current epoch for the chain.
     async fn get_current_epoch(&self) -> Result<Epoch> {
-        let block_height = self.get_block_height().await?;
-        Ok(Epoch::from_height(
-            block_height,
-            self.get_epoch_duration().await?,
-        ))
+        // Get the height
+        let height = self.get_block_height().await?;
+
+        self.get(&state_key::epoch_by_height(height))
+            .await?
+            .ok_or_else(|| anyhow!("missing epoch for current height"))
     }
 
     /// Gets the epoch duration for the chain.
@@ -112,11 +113,9 @@ pub trait StateReadExt: StateRead {
         // Get the height
         let height = self.get_block_height().await?;
 
-        // Get the epoch duration
-        let epoch_duration = self.get_epoch_duration().await?;
-
-        // The current epoch
-        Ok(Epoch::from_height(height, epoch_duration))
+        self.get(&state_key::epoch_by_height(height))
+            .await?
+            .ok_or_else(|| anyhow!("missing epoch for current height"))
     }
 
     /// Returns true if the chain should immediately halt upon the coming commit.
@@ -128,6 +127,12 @@ pub trait StateReadExt: StateRead {
     fn chain_params_changed(&self) -> bool {
         self.object_get::<()>(state_key::chain_params_changed())
             .is_some()
+    }
+
+    async fn epoch_by_height(&self, height: u64) -> Result<Epoch> {
+        self.get(&state_key::epoch_by_height(height))
+            .await?
+            .ok_or_else(|| anyhow!("missing epoch for height"))
     }
 }
 

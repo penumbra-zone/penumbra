@@ -27,3 +27,7 @@ pub fn halt_now() -> &'static str {
 pub fn chain_params_changed() -> &'static str {
     "chain_params_changed"
 }
+
+pub fn epoch_by_height(height: u64) -> String {
+    format!("chain/epoch_by_height/{}", height)
+}

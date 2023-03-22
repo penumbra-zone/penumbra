@@ -122,8 +122,8 @@ impl MockClient {
             }
         }
         self.sct.end_block()?;
-        if Epoch::from_height(block.height, self.epoch_duration).is_epoch_end(block.height) {
-            self.sct.end_epoch()?;
+        if block.epoch_root.is_some() {
+            self.sct.end_epoch();
         }
 
         self.latest_height = block.height;

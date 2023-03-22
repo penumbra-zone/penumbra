@@ -204,7 +204,7 @@ pub async fn scan_block(
     }
 
     // If we've also reached the end of the epoch, end the epoch in the commitment tree
-    let is_epoch_end = Epoch::from_height(height, epoch_duration).is_epoch_end(height);
+    let is_epoch_end = epoch_root.is_some();
     if is_epoch_end {
         tracing::debug!(?height, "end of epoch");
         state_commitment_tree

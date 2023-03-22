@@ -859,8 +859,7 @@ impl Component for Staking {
     #[instrument(name = "staking", skip(state, app_state))]
     async fn init_chain<S: StateWrite>(mut state: S, app_state: &genesis::AppState) {
         let starting_height = state.get_block_height().await.unwrap();
-        let starting_epoch =
-            Epoch::from_height(starting_height, state.get_epoch_duration().await.unwrap());
+        let starting_epoch = state.epoch_by_height(starting_height).await.unwrap();
         let epoch_index = starting_epoch.index;
 
         // Delegations require knowing the rates for the next epoch, so
