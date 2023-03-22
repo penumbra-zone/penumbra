@@ -10,6 +10,10 @@ pub fn position_by_id(id: &position::Id) -> String {
     format!("dex/position/{id}")
 }
 
+pub fn all_positions() -> &'static str {
+    "dex/position/"
+}
+
 /// Encompasses non-consensus state keys.
 pub(crate) mod internal {
     use super::*;
@@ -17,6 +21,7 @@ pub(crate) mod internal {
 
     pub mod price_index {
         use super::*;
+
         pub fn prefix(pair: &DirectedTradingPair) -> [u8; 71] {
             let mut key = [0u8; 71];
             key[0..7].copy_from_slice(b"dex/pi/");

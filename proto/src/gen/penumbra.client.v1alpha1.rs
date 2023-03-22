@@ -202,8 +202,8 @@ pub struct LiquidityPositionsRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LiquidityPositionsResponse {
-    #[prost(message, repeated, tag = "1")]
-    pub data: ::prost::alloc::vec::Vec<super::super::core::dex::v1alpha1::Position>,
+    #[prost(message, optional, tag = "1")]
+    pub data: ::core::option::Option<super::super::core::dex::v1alpha1::Position>,
 }
 /// Requests CPMM reserves data associated with a given trading pair from the view service.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -870,7 +870,10 @@ pub mod specific_query_service_client {
         pub async fn liquidity_positions(
             &mut self,
             request: impl tonic::IntoRequest<super::LiquidityPositionsRequest>,
-        ) -> Result<tonic::Response<super::LiquidityPositionsResponse>, tonic::Status> {
+        ) -> Result<
+            tonic::Response<tonic::codec::Streaming<super::LiquidityPositionsResponse>>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -884,7 +887,7 @@ pub mod specific_query_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.client.v1alpha1.SpecificQueryService/LiquidityPositions",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            self.inner.server_streaming(request.into_request(), path, codec).await
         }
         pub async fn stub_cpmm_reserves(
             &mut self,
@@ -1584,10 +1587,16 @@ pub mod specific_query_service_server {
             &self,
             request: tonic::Request<super::BatchSwapOutputDataRequest>,
         ) -> Result<tonic::Response<super::BatchSwapOutputDataResponse>, tonic::Status>;
+        /// Server streaming response type for the LiquidityPositions method.
+        type LiquidityPositionsStream: futures_core::Stream<
+                Item = Result<super::LiquidityPositionsResponse, tonic::Status>,
+            >
+            + Send
+            + 'static;
         async fn liquidity_positions(
             &self,
             request: tonic::Request<super::LiquidityPositionsRequest>,
-        ) -> Result<tonic::Response<super::LiquidityPositionsResponse>, tonic::Status>;
+        ) -> Result<tonic::Response<Self::LiquidityPositionsStream>, tonic::Status>;
         async fn stub_cpmm_reserves(
             &self,
             request: tonic::Request<super::StubCpmmReservesRequest>,
@@ -1899,11 +1908,13 @@ pub mod specific_query_service_server {
                     struct LiquidityPositionsSvc<T: SpecificQueryService>(pub Arc<T>);
                     impl<
                         T: SpecificQueryService,
-                    > tonic::server::UnaryService<super::LiquidityPositionsRequest>
-                    for LiquidityPositionsSvc<T> {
+                    > tonic::server::ServerStreamingService<
+                        super::LiquidityPositionsRequest,
+                    > for LiquidityPositionsSvc<T> {
                         type Response = super::LiquidityPositionsResponse;
+                        type ResponseStream = T::LiquidityPositionsStream;
                         type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
+                            tonic::Response<Self::ResponseStream>,
                             tonic::Status,
                         >;
                         fn call(
@@ -1929,7 +1940,7 @@ pub mod specific_query_service_server {
                                 accept_compression_encodings,
                                 send_compression_encodings,
                             );
-                        let res = grpc.unary(method, req).await;
+                        let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)

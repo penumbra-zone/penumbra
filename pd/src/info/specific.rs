@@ -5,6 +5,7 @@ use futures::StreamExt;
 use futures::TryStreamExt;
 use penumbra_chain::AppHashRead;
 use penumbra_chain::StateReadExt as _;
+use penumbra_component::dex::PositionRead;
 use penumbra_component::governance::StateReadExt as _;
 use penumbra_component::shielded_pool::StateReadExt as _;
 use penumbra_component::shielded_pool::SupplyRead as _;
@@ -12,6 +13,8 @@ use penumbra_component::stake::rate::RateData;
 use penumbra_component::stake::StateReadExt as _;
 use penumbra_component::stubdex::StateReadExt as _;
 use penumbra_crypto::asset::{self, Asset};
+use penumbra_crypto::dex::lp::position;
+use penumbra_crypto::dex::lp::position::Position;
 use penumbra_proto::{
     self as proto,
     client::v1alpha1::{
@@ -25,6 +28,8 @@ use penumbra_proto::{
 
 use penumbra_storage::StateRead;
 use proto::client::v1alpha1::BatchSwapOutputDataResponse;
+use proto::client::v1alpha1::LiquidityPositionsRequest;
+use proto::client::v1alpha1::LiquidityPositionsResponse;
 use proto::client::v1alpha1::NextValidatorRateRequest;
 use proto::client::v1alpha1::NextValidatorRateResponse;
 use proto::client::v1alpha1::PrefixValueRequest;
@@ -48,6 +53,44 @@ use super::Info;
 
 #[tonic::async_trait]
 impl SpecificQueryService for Info {
+    type LiquidityPositionsStream = Pin<
+        Box<dyn futures::Stream<Item = Result<LiquidityPositionsResponse, tonic::Status>> + Send>,
+    >;
+
+    #[instrument(skip(self, request))]
+    async fn liquidity_positions(
+        &self,
+        request: tonic::Request<LiquidityPositionsRequest>,
+    ) -> Result<tonic::Response<Self::LiquidityPositionsStream>, Status> {
+        let state = self.storage.latest_snapshot();
+        // state
+        //     .all_positions()
+        //     .await
+        //     .map_err(|e| tonic::Status::unknown(format!("error getting liquidity positions: {e}")));
+        // let proposal_id = request.into_inner().proposal_id;
+
+        let stream = state.all_positions().await;
+        let s = try_stream! {
+            while let Some(item) = stream.next().await {
+                yield item
+            }
+        };
+
+        Ok(tonic::Response::new(
+            s.map_ok(
+                |i: Result<position::Id, anyhow::Error>| LiquidityPositionsResponse {
+                    data: Some(i.unwrap().into()),
+                },
+            )
+            .map_err(|e: anyhow::Error| {
+                tonic::Status::unavailable(format!("error getting prefix value from storage: {e}"))
+            })
+            // TODO: how do we instrument a Stream
+            //.instrument(Span::current())
+            .boxed(),
+        ))
+    }
+
     #[instrument(skip(self, request))]
     async fn transaction_by_note(
         &self,

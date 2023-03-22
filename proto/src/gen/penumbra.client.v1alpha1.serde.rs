@@ -2695,12 +2695,12 @@ impl serde::Serialize for LiquidityPositionsResponse {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.data.is_empty() {
+        if self.data.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.client.v1alpha1.LiquidityPositionsResponse", len)?;
-        if !self.data.is_empty() {
-            struct_ser.serialize_field("data", &self.data)?;
+        if let Some(v) = self.data.as_ref() {
+            struct_ser.serialize_field("data", v)?;
         }
         struct_ser.end()
     }
@@ -2766,12 +2766,12 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsResponse {
                             if data__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("data"));
                             }
-                            data__ = Some(map.next_value()?);
+                            data__ = map.next_value()?;
                         }
                     }
                 }
                 Ok(LiquidityPositionsResponse {
-                    data: data__.unwrap_or_default(),
+                    data: data__,
                 })
             }
         }

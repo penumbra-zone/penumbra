@@ -99,7 +99,7 @@ service SpecificQueryService {
   rpc ValidatorPenalty(ValidatorPenaltyRequest) returns (ValidatorPenaltyResponse);
   rpc NextValidatorRate(NextValidatorRateRequest) returns (NextValidatorRateResponse);
   rpc BatchSwapOutputData(BatchSwapOutputDataRequest) returns (BatchSwapOutputDataResponse);
-  rpc LiquidityPositions(LiquidityPositionsRequest) returns (LiquidityPositionsResponse);
+  rpc LiquidityPositions(LiquidityPositionsRequest) returns (stream LiquidityPositionsResponse);
   rpc StubCPMMReserves(StubCPMMReservesRequest) returns (StubCPMMReservesResponse);
   rpc AssetInfo(AssetInfoRequest) returns (AssetInfoResponse);
   rpc ProposalInfo(ProposalInfoRequest) returns (ProposalInfoResponse);
@@ -178,7 +178,7 @@ message LiquidityPositionsRequest {
 }
 
 message LiquidityPositionsResponse {
-  repeated core.dex.v1alpha1.Position data = 1;
+  core.dex.v1alpha1.Position data = 1;
 }
 
 // Requests CPMM reserves data associated with a given trading pair from the view service.

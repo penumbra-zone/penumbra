@@ -1,13 +1,19 @@
+use std::pin::Pin;
+
 use anyhow::{Context, Result};
+use async_stream::try_stream;
 use comfy_table::{presets, Table};
+use futures::{Future, FutureExt, Stream, StreamExt, TryStreamExt};
 use penumbra_crypto::dex::{
     lp::{position::Position, Reserves},
     BatchSwapOutputData, TradingPair,
 };
 use penumbra_proto::client::v1alpha1::{
-    BatchSwapOutputDataRequest, LiquidityPositionsRequest, StubCpmmReservesRequest,
+    BatchSwapOutputDataRequest, LiquidityPositionsRequest, LiquidityPositionsResponse,
+    StubCpmmReservesRequest,
 };
 use penumbra_view::ViewClient;
+use tonic::Streaming;
 
 use crate::App;
 
@@ -117,23 +123,98 @@ impl DexCmd {
             .context("cannot parse batch swap output data")
     }
 
+    // fn status_stream(
+    //     &mut self,
+    //     account_group_id: AccountGroupId,
+    // ) -> Pin<
+    //     Box<
+    //         dyn Future<
+    //                 Output = Result<
+    //                     Pin<Box<dyn Stream<Item = Result<StatusStreamResponse>> + Send + 'static>>,
+    //                 >,
+    //             > + Send
+    //             + 'static,
+    //     >,
+    // > {
+    //     let mut self2 = self.clone();
+    //     async move {
+    //         let stream = self2.status_stream(tonic::Request::new(pb::StatusStreamRequest {
+    //             account_group_id: Some(account_group_id.into()),
+    //             ..Default::default()
+    //         }));
+    //         let stream = stream.await?.into_inner();
+
+    //         Ok(stream
+    //             .map_err(|e| anyhow::anyhow!("view service error: {}", e))
+    //             .and_then(|msg| async move { StatusStreamResponse::try_from(msg) })
+    //             .boxed())
+    //     }
+    //     .boxed()
+    // }
     pub async fn get_liquidity_positions(
         &self,
         app: &mut App,
         only_mine: &bool,
         only_open: &bool,
-    ) -> Result<Vec<Position>> {
-        let mut client = app.specific_client().await?;
-        client
-            .liquidity_positions(LiquidityPositionsRequest {
-                only_mine,
-                only_open,
+    ) -> Pin<
+        Box<
+            dyn Future<Output = Result<Pin<Box<dyn Stream<Item = Result<Position>> + Send + '_>>>>
+                + Send
+                + '_,
+        >,
+    > {
+        let mut client = app.specific_client().await.unwrap();
+
+        //     let mut self2 = self.clone();
+        //     async move {
+        //         let stream = self2.status_stream(tonic::Request::new(pb::StatusStreamRequest {
+        //             account_group_id: Some(account_group_id.into()),
+        //             ..Default::default()
+        //         }));
+        //         let stream = stream.await?.into_inner();
+
+        //         Ok(stream
+        //             .map_err(|e| anyhow::anyhow!("view service error: {}", e))
+        //             .and_then(|msg| async move { StatusStreamResponse::try_from(msg) })
+        //             .boxed())
+        //     }
+        //     .boxed()
+        async move {
+            let stream = client.liquidity_positions(LiquidityPositionsRequest {
+                only_mine: *only_mine,
+                only_open: *only_open,
                 chain_id: app.view().chain_params().await?.chain_id,
-            })
-            .await?
-            .into_inner()
-            .try_into()
-            .context("cannot parse liquidity position data")
+            });
+            let stream = stream.await?.into_inner();
+
+            Ok(stream
+                .map_err(|e| anyhow::anyhow!("error fetching liquidity positions: {}", e))
+                .and_then(|msg| async move {
+                    msg.data
+                        .ok_or(anyhow::anyhow!(
+                            "missing liquidity position in response data"
+                        ))
+                        .map(|data| Position::try_from(data))?
+                })
+                .boxed())
+        }
+        .boxed()
+
+        // self.nonconsensus_prefix_raw(&prefix)
+        //     .map(|entry| match entry {
+        //         Ok((k, _)) => {
+        //             let raw_id = <&[u8; 32]>::try_from(&k[103..135])?.to_owned();
+        //             Ok(position::Id(raw_id))
+        //         }
+        //         Err(e) => Err(e),
+        //     })
+        //     .boxed()
+
+        // Ok(try_stream! {
+        //     while let Some(lp) = lp_stream.message().await? {
+        //         println!("lp : {:?}", lp);
+        //     }
+        // })
     }
 
     pub async fn exec(&self, app: &mut App) -> Result<()> {
