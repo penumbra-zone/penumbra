@@ -17,6 +17,16 @@ use std::pin::Pin;
 
 #[async_trait]
 pub trait PositionRead: StateRead {
+    fn all_positions(&self) -> Pin<Box<dyn Stream<Item = Result<position::Metadata>> + Send + '_>> {
+        let prefix = state_key::all_positions();
+        self.prefix(&prefix)
+            .map(|entry| match entry {
+                Ok((_, metadata)) => Ok(metadata),
+                Err(e) => Err(e),
+            })
+            .boxed()
+    }
+
     async fn positions_by_price(
         &self,
         pair: DirectedTradingPair,
