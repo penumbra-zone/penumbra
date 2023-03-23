@@ -32,8 +32,8 @@ impl From<Epoch> for pb_chain::Epoch {
 }
 
 impl Epoch {
-    // NOTE: this should be changed when we move to time-based mechanisms
-    pub fn is_epoch_end(&self, current_height: u64, epoch_duration: u64) -> bool {
+    // Returns true if current_height is the scheduled last block of the epoch
+    pub fn is_scheduled_epoch_end(&self, current_height: u64, epoch_duration: u64) -> bool {
         current_height - self.start_height >= epoch_duration - 1
     }
 }

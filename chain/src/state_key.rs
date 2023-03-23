@@ -35,3 +35,7 @@ pub fn epoch_by_height(height: u64) -> String {
 pub fn epoch_change_at_height(height: u64) -> String {
     format!("chain/pending_epoch_changes/{}", height)
 }
+
+pub fn end_epoch_early() -> &'static str {
+    "end_epoch_early"
+}

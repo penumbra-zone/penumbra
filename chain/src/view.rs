@@ -115,16 +115,7 @@ pub trait StateReadExt: StateRead {
 
         self.get(&state_key::epoch_by_height(height))
             .await?
-            .ok_or_else(|| anyhow!("missing epoch for current height"))
-    }
-
-    /// Gets the pending epoch change, if any
-    async fn pending_epoch(&self) -> Result<Option<Epoch>> {
-        Ok(self
-            .get(&state_key::epoch_change_at_height(
-                self.get_block_height().await?,
-            ))
-            .await?)
+            .ok_or_else(|| anyhow!("missing epoch for current height: {height}"))
     }
 
     /// Returns true if the chain should immediately halt upon the coming commit.
@@ -142,6 +133,12 @@ pub trait StateReadExt: StateRead {
         self.get(&state_key::epoch_by_height(height))
             .await?
             .ok_or_else(|| anyhow!("missing epoch for height"))
+    }
+
+    // Returns true if the epoch is ending early this block.
+    fn epoch_ending_early(&self) -> bool {
+        self.object_get(state_key::end_epoch_early())
+            .unwrap_or(false)
     }
 }
 
@@ -162,23 +159,6 @@ pub trait StateWriteExt: StateWrite {
 
         // Change the chain parameters:
         self.put(state_key::chain_params().into(), params)
-    }
-
-    /// Schedules an epoch change for the next block
-    async fn schedule_epoch_change(&mut self) -> Result<()> {
-        let change_height = self.get_block_height().await? + 1;
-
-        let current_epoch = self.epoch().await?;
-        let new_epoch = Epoch {
-            index: current_epoch.index + 1,
-            start_height: change_height,
-        };
-
-        tracing::info!(%change_height, "scheduling epoch change at next block");
-
-        self.put(state_key::epoch_change_at_height(change_height), new_epoch);
-
-        Ok(())
     }
     /// Writes the block height to the JMT
     fn put_block_height(&mut self, height: u64) {
@@ -208,6 +188,11 @@ pub trait StateWriteExt: StateWrite {
     /// Signals to the consensus worker to halt after the next commit.
     fn halt_now(&mut self) {
         self.object_put(state_key::halt_now(), ());
+    }
+
+    // Signals that the epoch should end this block.
+    fn signal_end_epoch(&mut self) {
+        self.object_put(state_key::end_epoch_early(), true)
     }
 }
 
