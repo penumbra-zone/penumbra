@@ -236,6 +236,7 @@ impl DexCmd {
                 let mut table = Table::new();
                 table.load_preset(presets::NOTHING);
                 table.set_header(vec![
+                    "ID",
                     "Trading Pair",
                     "State",
                     "Reserves",
@@ -257,6 +258,7 @@ impl DexCmd {
                         .map(|bd| format!("{bd}"))
                         .unwrap_or("unknown".to_string());
                     table.add_row(vec![
+                        format!("{}", position.position.id()),
                         format!("({}, {})", asset_1, asset_2),
                         position.state.to_string(),
                         format!("({}, {})", position.reserves.r1, position.reserves.r2),
