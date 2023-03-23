@@ -122,34 +122,6 @@ impl DexCmd {
             .context("cannot parse batch swap output data")
     }
 
-    // fn status_stream(
-    //     &mut self,
-    //     account_group_id: AccountGroupId,
-    // ) -> Pin<
-    //     Box<
-    //         dyn Future<
-    //                 Output = Result<
-    //                     Pin<Box<dyn Stream<Item = Result<StatusStreamResponse>> + Send + 'static>>,
-    //                 >,
-    //             > + Send
-    //             + 'static,
-    //     >,
-    // > {
-    //     let mut self2 = self.clone();
-    //     async move {
-    //         let stream = self2.status_stream(tonic::Request::new(pb::StatusStreamRequest {
-    //             account_group_id: Some(account_group_id.into()),
-    //             ..Default::default()
-    //         }));
-    //         let stream = stream.await?.into_inner();
-
-    //         Ok(stream
-    //             .map_err(|e| anyhow::anyhow!("view service error: {}", e))
-    //             .and_then(|msg| async move { StatusStreamResponse::try_from(msg) })
-    //             .boxed())
-    //     }
-    //     .boxed()
-    // }
     pub async fn get_liquidity_positions(
         &self,
         mut client: SpecificQueryServiceClient<Channel>,
@@ -164,20 +136,6 @@ impl DexCmd {
                 + 'static,
         >,
     > {
-        //     let mut self2 = self.clone();
-        //     async move {
-        //         let stream = self2.status_stream(tonic::Request::new(pb::StatusStreamRequest {
-        //             account_group_id: Some(account_group_id.into()),
-        //             ..Default::default()
-        //         }));
-        //         let stream = stream.await?.into_inner();
-
-        //         Ok(stream
-        //             .map_err(|e| anyhow::anyhow!("view service error: {}", e))
-        //             .and_then(|msg| async move { StatusStreamResponse::try_from(msg) })
-        //             .boxed())
-        //     }
-        //     .boxed()
         async move {
             let stream = client.liquidity_positions(LiquidityPositionsRequest {
                 only_mine,
