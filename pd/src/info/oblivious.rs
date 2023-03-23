@@ -13,8 +13,8 @@ use penumbra_proto::{
     client::v1alpha1::{
         oblivious_query_service_server::ObliviousQueryService, AssetListRequest, AssetListResponse,
         ChainParametersRequest, ChainParametersResponse, CompactBlockRangeRequest,
-        CompactBlockRangeResponse, EpochRequest, EpochResponse, ValidatorInfoRequest,
-        ValidatorInfoResponse,
+        CompactBlockRangeResponse, EpochByHeightRequest, EpochByHeightResponse,
+        ValidatorInfoRequest, ValidatorInfoResponse,
     },
     DomainType,
 };
@@ -102,10 +102,10 @@ impl ObliviousQueryService for Info {
     }
 
     #[instrument(skip(self, request))]
-    async fn epoch(
+    async fn epoch_by_height(
         &self,
-        request: tonic::Request<EpochRequest>,
-    ) -> Result<tonic::Response<EpochResponse>, Status> {
+        request: tonic::Request<EpochByHeightRequest>,
+    ) -> Result<tonic::Response<EpochByHeightResponse>, Status> {
         let state = self.storage.latest_snapshot();
 
         let epoch = state
@@ -113,7 +113,7 @@ impl ObliviousQueryService for Info {
             .await
             .map_err(|e| tonic::Status::unknown(format!("could not get epoch for height: {e}")))?;
 
-        Ok(tonic::Response::new(EpochResponse {
+        Ok(tonic::Response::new(EpochByHeightResponse {
             epoch: Some(epoch.into()),
         }))
     }

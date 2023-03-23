@@ -1697,7 +1697,7 @@ impl<'de> serde::Deserialize<'de> for CompactBlockRangeResponse {
         deserializer.deserialize_struct("penumbra.client.v1alpha1.CompactBlockRangeResponse", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for EpochRequest {
+impl serde::Serialize for EpochByHeightRequest {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -1708,14 +1708,14 @@ impl serde::Serialize for EpochRequest {
         if self.height != 0 {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.client.v1alpha1.EpochRequest", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.client.v1alpha1.EpochByHeightRequest", len)?;
         if self.height != 0 {
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for EpochRequest {
+impl<'de> serde::Deserialize<'de> for EpochByHeightRequest {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -1759,13 +1759,13 @@ impl<'de> serde::Deserialize<'de> for EpochRequest {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = EpochRequest;
+            type Value = EpochByHeightRequest;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.client.v1alpha1.EpochRequest")
+                formatter.write_str("struct penumbra.client.v1alpha1.EpochByHeightRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<EpochRequest, V::Error>
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<EpochByHeightRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -1782,15 +1782,15 @@ impl<'de> serde::Deserialize<'de> for EpochRequest {
                         }
                     }
                 }
-                Ok(EpochRequest {
+                Ok(EpochByHeightRequest {
                     height: height__.unwrap_or_default(),
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.client.v1alpha1.EpochRequest", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.client.v1alpha1.EpochByHeightRequest", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for EpochResponse {
+impl serde::Serialize for EpochByHeightResponse {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -1801,14 +1801,14 @@ impl serde::Serialize for EpochResponse {
         if self.epoch.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.client.v1alpha1.EpochResponse", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.client.v1alpha1.EpochByHeightResponse", len)?;
         if let Some(v) = self.epoch.as_ref() {
             struct_ser.serialize_field("epoch", v)?;
         }
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for EpochResponse {
+impl<'de> serde::Deserialize<'de> for EpochByHeightResponse {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -1852,13 +1852,13 @@ impl<'de> serde::Deserialize<'de> for EpochResponse {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = EpochResponse;
+            type Value = EpochByHeightResponse;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.client.v1alpha1.EpochResponse")
+                formatter.write_str("struct penumbra.client.v1alpha1.EpochByHeightResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<EpochResponse, V::Error>
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<EpochByHeightResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -1873,12 +1873,12 @@ impl<'de> serde::Deserialize<'de> for EpochResponse {
                         }
                     }
                 }
-                Ok(EpochResponse {
+                Ok(EpochByHeightResponse {
                     epoch: epoch__,
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.client.v1alpha1.EpochResponse", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.client.v1alpha1.EpochByHeightResponse", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for GetBlockByHeightRequest {

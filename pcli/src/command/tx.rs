@@ -21,7 +21,7 @@ use penumbra_crypto::{
     Amount, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::client::v1alpha1::{
-    EpochRequest, ProposalInfoRequest, ProposalInfoResponse, ProposalRateDataRequest,
+    EpochByHeightRequest, ProposalInfoRequest, ProposalInfoResponse, ProposalRateDataRequest,
     ValidatorPenaltyRequest,
 };
 use penumbra_transaction::{
@@ -506,7 +506,7 @@ impl TxCmd {
                 let params = view.chain_params().await?;
                 let current_height = view.status(account_group_id).await?.sync_height;
                 let current_epoch = oblivious_client
-                    .epoch(EpochRequest {
+                    .epoch_by_height(EpochByHeightRequest {
                         height: current_height,
                     })
                     .await?

@@ -34,13 +34,13 @@ pub struct ChainParametersRequest {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EpochRequest {
+pub struct EpochByHeightRequest {
     #[prost(uint64, tag = "1")]
     pub height: u64,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EpochResponse {
+pub struct EpochByHeightResponse {
     #[prost(message, optional, tag = "1")]
     pub epoch: ::core::option::Option<super::super::core::chain::v1alpha1::Epoch>,
 }
@@ -617,10 +617,10 @@ pub mod oblivious_query_service_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
-        pub async fn epoch(
+        pub async fn epoch_by_height(
             &mut self,
-            request: impl tonic::IntoRequest<super::EpochRequest>,
-        ) -> Result<tonic::Response<super::EpochResponse>, tonic::Status> {
+            request: impl tonic::IntoRequest<super::EpochByHeightRequest>,
+        ) -> Result<tonic::Response<super::EpochByHeightResponse>, tonic::Status> {
             self.inner
                 .ready()
                 .await
@@ -632,7 +632,7 @@ pub mod oblivious_query_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.client.v1alpha1.ObliviousQueryService/Epoch",
+                "/penumbra.client.v1alpha1.ObliviousQueryService/EpochByHeight",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -1194,10 +1194,10 @@ pub mod oblivious_query_service_server {
             &self,
             request: tonic::Request<super::ChainParametersRequest>,
         ) -> Result<tonic::Response<super::ChainParametersResponse>, tonic::Status>;
-        async fn epoch(
+        async fn epoch_by_height(
             &self,
-            request: tonic::Request<super::EpochRequest>,
-        ) -> Result<tonic::Response<super::EpochResponse>, tonic::Status>;
+            request: tonic::Request<super::EpochByHeightRequest>,
+        ) -> Result<tonic::Response<super::EpochByHeightResponse>, tonic::Status>;
         /// Server streaming response type for the ValidatorInfo method.
         type ValidatorInfoStream: futures_core::Stream<
                 Item = Result<super::ValidatorInfoResponse, tonic::Status>,
@@ -1360,23 +1360,26 @@ pub mod oblivious_query_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.client.v1alpha1.ObliviousQueryService/Epoch" => {
+                "/penumbra.client.v1alpha1.ObliviousQueryService/EpochByHeight" => {
                     #[allow(non_camel_case_types)]
-                    struct EpochSvc<T: ObliviousQueryService>(pub Arc<T>);
+                    struct EpochByHeightSvc<T: ObliviousQueryService>(pub Arc<T>);
                     impl<
                         T: ObliviousQueryService,
-                    > tonic::server::UnaryService<super::EpochRequest> for EpochSvc<T> {
-                        type Response = super::EpochResponse;
+                    > tonic::server::UnaryService<super::EpochByHeightRequest>
+                    for EpochByHeightSvc<T> {
+                        type Response = super::EpochByHeightResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::EpochRequest>,
+                            request: tonic::Request<super::EpochByHeightRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move { (*inner).epoch(request).await };
+                            let fut = async move {
+                                (*inner).epoch_by_height(request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -1385,7 +1388,7 @@ pub mod oblivious_query_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = EpochSvc(inner);
+                        let method = EpochByHeightSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

@@ -25,7 +25,7 @@ import "tendermint/types/validator.proto";
 service ObliviousQueryService {
   rpc CompactBlockRange(CompactBlockRangeRequest) returns (stream CompactBlockRangeResponse);
   rpc ChainParameters(ChainParametersRequest) returns (ChainParametersResponse);
-  rpc Epoch(EpochRequest) returns (EpochResponse);
+  rpc EpochByHeight(EpochByHeightRequest) returns (EpochByHeightResponse);
   rpc ValidatorInfo(ValidatorInfoRequest) returns (stream ValidatorInfoResponse);
   rpc AssetList(AssetListRequest) returns (AssetListResponse);
 }
@@ -53,11 +53,11 @@ message ChainParametersRequest {
   string chain_id = 1;
 }
 
-message EpochRequest {
+message EpochByHeightRequest {
     uint64 height = 1;
 }
 
-message EpochResponse {
+message EpochByHeightResponse {
     core.chain.v1alpha1.Epoch epoch = 1;
 }
 
