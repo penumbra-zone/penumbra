@@ -16,6 +16,7 @@ use std::{
     env::current_dir,
     fs::{self, File},
     io::Write,
+    net::SocketAddr,
     path::PathBuf,
     str::FromStr,
 };
@@ -23,6 +24,7 @@ use tendermint::{node::Id, Genesis, Moniker, PrivateKey};
 use tendermint_config::{
     net::Address as TendermintAddress, NodeKey, PrivValidatorKey, TendermintConfig,
 };
+use url::Url;
 
 pub mod generate;
 pub mod join;
@@ -33,6 +35,8 @@ pub fn generate_tm_config(
     node_name: &str,
     peers: Vec<TendermintAddress>,
     external_address: Option<TendermintAddress>,
+    tm_rpc_bind: Option<SocketAddr>,
+    tm_p2p_bind: Option<SocketAddr>,
 ) -> anyhow::Result<TendermintConfig> {
     tracing::debug!("List of TM peers: {:?}", peers);
     let moniker: Moniker = Moniker::from_str(node_name)?;
@@ -43,6 +47,15 @@ pub fn generate_tm_config(
     tm_config.p2p.seeds = peers;
     tracing::debug!("External address looks like: {:?}", external_address);
     tm_config.p2p.external_address = external_address;
+    // The Tendermint config wants URLs, not SocketAddrs, so we'll prepend protocol.
+    if let Some(rpc) = tm_rpc_bind {
+        tm_config.rpc.laddr =
+            parse_tm_address(None, &Url::parse(format!("tcp://{}", rpc).as_str())?)?;
+    }
+    if let Some(p2p) = tm_p2p_bind {
+        tm_config.p2p.laddr =
+            parse_tm_address(None, &Url::parse(format!("tcp://{}", p2p).as_str())?)?;
+    }
     //Ok(toml::to_string(&tm_config)?)
     Ok(tm_config)
 }
@@ -52,16 +65,25 @@ pub fn generate_tm_config(
 /// to 26656 if not specified.
 pub fn parse_tm_address(
     node_id: Option<&Id>,
-    node_address: &str,
+    node_address: &Url,
 ) -> anyhow::Result<TendermintAddress> {
-    let mut node = String::from(node_address);
+    let hostname = match node_address.host() {
+        Some(h) => h,
+        None => {
+            return Err(anyhow::anyhow!(format!(
+                "Could not find hostname in URL: {}",
+                node_address
+            )))
+        }
+    };
     // Default to 26656 for Tendermint port, if not specified.
-    if !node.contains(':') {
-        node.push_str(":26656");
-    }
+    let port = match node_address.port() {
+        Some(p) => p,
+        None => 26656,
+    };
     match node_id {
-        Some(id) => Ok(format!("{id}@{node}").parse()?),
-        None => Ok(node.to_string().parse()?),
+        Some(id) => Ok(format!("{id}@{hostname}:{port}").parse()?),
+        None => Ok(format!("{hostname}:{port}").parse()?),
     }
 }
 

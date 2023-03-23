@@ -163,8 +163,10 @@ spec:
             - start
             - --home
             - /home/pd
-            - --host
-            - 0.0.0.0
+            - --grpc-bind
+            - 0.0.0.0:8080
+            - --metrics-bind
+            - 0.0.0.0:9000
         - name: health-check
           image: "{{ $.Values.health.image }}:{{ $.Values.health.version }}"
           imagePullPolicy: IfNotPresent

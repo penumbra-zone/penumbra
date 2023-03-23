@@ -41,6 +41,7 @@ tracing = "0.1"
 tracing-subscriber = "0.2"
 tonic = "0.8.1"
 tonic-web = "0.4.0"
+url = "2"
 bytes = { version = "1", features = ["serde"] }
 prost = "0.11"
 futures = "0.3"

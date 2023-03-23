@@ -31,7 +31,7 @@ This will delete the entire testnet data directory.
 Next, generate a set of configs for the current testnet:
 
 ```shell
-cargo run --bin pd --release -- testnet join --external-address IP_ADDRESS --moniker MY_NODE_NAME
+cargo run --bin pd --release -- testnet join --external-address tcp://IP_ADDRESS:26656 --moniker MY_NODE_NAME
 ```
 
 where `IP_ADDRESS` (like `1.2.3.4`) is the public IP address of the node you're running,

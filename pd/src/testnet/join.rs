@@ -1,8 +1,10 @@
 //! Logic for onboarding a new `pd` node onto an existing testnet.
 //! Handles generation of config files for `pd` and `tendermint`.
+use anyhow::Context;
 use std::net::{IpAddr, SocketAddr};
 use std::path::PathBuf;
 use tendermint_config::net::Address as TendermintAddress;
+use url::Url;
 
 use crate::testnet::{generate_tm_config, parse_tm_address, write_configs, ValidatorKeys};
 
@@ -11,14 +13,16 @@ use crate::testnet::{generate_tm_config, parse_tm_address, write_configs, Valida
 /// p2p settings with that peer info.
 pub async fn testnet_join(
     output_dir: PathBuf,
-    node: &str,
+    node: Url,
     node_name: &str,
     external_address: Option<TendermintAddress>,
+    tm_rpc_bind: SocketAddr,
+    tm_p2p_bind: SocketAddr,
 ) -> anyhow::Result<()> {
     let mut node_dir = output_dir;
     node_dir.push("node0");
-    let genesis_url = format!("http://{node}:26657/genesis");
-    tracing::info!("fetching genesis: {}", genesis_url);
+    let genesis_url = node.join("/genesis")?;
+    tracing::info!(?genesis_url, "fetching genesis");
     // We need to download the genesis data and the node ID from the remote node.
     // TODO: replace with TendermintProxyServiceClient
     let client = reqwest::Client::new();
@@ -35,8 +39,9 @@ pub async fn testnet_join(
     let genesis = serde_json::value::from_value(genesis_json)?;
     tracing::info!("fetched genesis");
 
+    let status_url = node.join("/status")?;
     let node_id = client
-        .get(format!("http://{node}:26657/status"))
+        .get(status_url)
         .send()
         .await?
         .json::<serde_json::Value>()
@@ -48,17 +53,23 @@ pub async fn testnet_join(
         .take();
     let node_id: tendermint::node::Id = serde_json::value::from_value(node_id)?;
     tracing::info!(?node_id, "fetched node id");
-    let node_tm_address = parse_tm_address(Some(&node_id), node)?;
+    let node_tm_address = parse_tm_address(Some(&node_id), &node)?;
 
     // Look up more peers from the target node, so that generated tendermint config
     // contains multiple addresses, making peering easier.
     let mut peers = Vec::new();
-    let new_peers = fetch_peers(&node_tm_address).await?;
+    let new_peers = fetch_peers(&node).await?;
     peers.push(node_tm_address);
     peers.extend(new_peers);
     tracing::info!(?peers);
 
-    let tm_config = generate_tm_config(node_name, peers, external_address)?;
+    let tm_config = generate_tm_config(
+        node_name,
+        peers,
+        external_address,
+        Some(tm_rpc_bind),
+        Some(tm_p2p_bind),
+    )?;
 
     let vk = ValidatorKeys::generate();
     write_configs(node_dir, &vk, &genesis, tm_config)?;
@@ -68,20 +79,11 @@ pub async fn testnet_join(
 /// Query the Tendermint node's RPC endpoint and return a list of all known peers
 /// by their `external_address`es. Omits private/special addresses like `localhost`
 /// or `0.0.0.0`.
-pub async fn fetch_peers(
-    node_address: &TendermintAddress,
-) -> anyhow::Result<Vec<TendermintAddress>> {
-    let hostname = match node_address {
-        TendermintAddress::Tcp { host, .. } => host,
-        _ => {
-            return Err(anyhow::anyhow!(
-                "Only TCP addresses are supported for Tendermint nodes in Penumbra"
-            ))
-        }
-    };
+pub async fn fetch_peers(tm_url: &Url) -> anyhow::Result<Vec<TendermintAddress>> {
     let client = reqwest::Client::new();
+    let net_info_url = tm_url.join("/net_info")?;
     let net_info_peers = client
-        .get(format!("http://{hostname}:26657/net_info"))
+        .get(net_info_url)
         .send()
         .await?
         .json::<serde_json::Value>()
@@ -113,7 +115,14 @@ pub async fn fetch_peers(
             continue;
         }
 
-        let peer_tm_address = parse_tm_address(Some(&node_id), listen_addr)?;
+        // The API returns a str formatted as a SocketAddr; prepend protocol so we can handle
+        // as a URL. The Tendermint config template already includes the tcp:// prefix.
+        let laddr = format!("tcp://{}", listen_addr);
+        let listen_url = Url::parse(&laddr).context(format!(
+            "Failed to parse candidate tendermint addr as URL: {}",
+            listen_addr
+        ))?;
+        let peer_tm_address = parse_tm_address(Some(&node_id), &listen_url)?;
         peers.push(peer_tm_address);
     }
     Ok(peers)

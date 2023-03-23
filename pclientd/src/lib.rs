@@ -1,4 +1,5 @@
 use std::env;
+use std::net::SocketAddr;
 use std::path::Path;
 
 use anyhow::Result;
@@ -23,6 +24,7 @@ use std::fs::File;
 use std::io::{self, BufRead, Write};
 use std::str::FromStr;
 use tonic::transport::Server;
+use url::Url;
 
 mod proxy;
 pub use proxy::{ObliviousQueryProxy, SpecificQueryProxy, TendermintProxyProxy};
@@ -61,19 +63,16 @@ pub struct Opt {
     #[clap(subcommand)]
     pub cmd: Command,
     /// The path used to store pclientd state and config files.
-    #[clap(long)]
+    #[clap(long, env = "PENUMBRA_PCLIENTD_HOME")]
     pub home: Utf8PathBuf,
-    /// The address of the pd+tendermint node.
+    /// The URL of the gRPC endpoint for pd.
     #[clap(
         short,
         long,
-        default_value = "testnet.penumbra.zone",
-        env = "PENUMBRA_NODE_HOSTNAME"
+        default_value = "http://testnet.penumbra.zone:8080",
+        env = "PENUMBRA_NODE_PD_URL"
     )]
-    pub node: String,
-    /// The port to use to speak to pd's gRPC server.
-    #[clap(long, default_value = "8080", env = "PENUMBRA_PD_PORT")]
-    pub pd_port: u16,
+    pub node: Url,
 }
 
 #[derive(Debug, clap::Subcommand)]
@@ -88,12 +87,13 @@ pub enum Command {
     },
     /// Start the view service.
     Start {
-        /// Bind the view service to this host.
-        #[clap(long, default_value = "127.0.0.1")]
-        host: String,
-        /// Bind the view gRPC server to this port.
-        #[clap(long, default_value = "8081")]
-        view_port: u16,
+        /// Bind the view service to this socket.
+        #[clap(
+            long,
+            env = "PENUMBRA_PCLIENTD_BIND",
+            default_value = "127.0.0.1:8081"
+        )]
+        bind_addr: SocketAddr,
     },
 }
 
@@ -112,9 +112,7 @@ impl Opt {
 
     async fn init_sqlite(&self, fvk: &FullViewingKey) -> Result<Storage> {
         // Initialize client and storage
-        let mut client =
-            ObliviousQueryServiceClient::connect(format!("http://{}:{}", self.node, self.pd_port))
-                .await?;
+        let mut client = ObliviousQueryServiceClient::connect(self.node.to_string()).await?;
 
         let params = client
             .chain_parameters(tonic::Request::new(ChainParametersRequest {
@@ -223,27 +221,23 @@ impl Opt {
 
                 Ok(())
             }
-            Command::Start { host, view_port } => {
-                tracing::info!(?opt.home, ?host, ?view_port, ?opt.node, ?opt.pd_port, "starting pclientd");
+            Command::Start { bind_addr } => {
+                tracing::info!(?opt.home, ?bind_addr, ?opt.node, "starting pclientd");
 
                 let config = PclientdConfig::load(opt.config_path())?;
                 let storage = opt.load_or_init_sqlite(&config.fvk).await?;
 
-                let proxy_channel = tonic::transport::Channel::from_shared(format!(
-                    "http://{}:{}",
-                    opt.node, opt.pd_port
-                ))
-                .expect("this is a valid address")
-                .connect()
-                .await?;
+                let proxy_channel = tonic::transport::Channel::from_shared(opt.node.to_string())
+                    .expect("this is a valid address")
+                    .connect()
+                    .await?;
 
                 let oblivious_query_proxy = ObliviousQueryProxy(proxy_channel.clone());
                 let specific_query_proxy = SpecificQueryProxy(proxy_channel.clone());
                 let tendermint_proxy_proxy = TendermintProxyProxy(proxy_channel.clone());
 
-                let view_service = ViewProtocolServiceServer::new(
-                    ViewService::new(storage, opt.node, opt.pd_port).await?,
-                );
+                let view_service =
+                    ViewProtocolServiceServer::new(ViewService::new(storage, opt.node).await?);
                 let custody_service = config.kms_config.as_ref().map(|kms_config| {
                     CustodyProtocolServiceServer::new(SoftKms::new(
                         kms_config.spend_key.clone().into(),
@@ -257,11 +251,7 @@ impl Opt {
                     .add_service(tonic_web::enable(oblivious_query_proxy))
                     .add_service(tonic_web::enable(specific_query_proxy))
                     .add_service(tonic_web::enable(tendermint_proxy_proxy))
-                    .serve(
-                        format!("{host}:{view_port}")
-                            .parse()
-                            .expect("this is a valid address"),
-                    );
+                    .serve(bind_addr.clone());
 
                 tokio::spawn(server).await??;
 

@@ -176,8 +176,10 @@ spec:
             - start
             - --home
             - /home/pd
-            - --host
-            - 0.0.0.0
+            - --grpc-bind
+            - 0.0.0.0:8080
+            - --metrics-bind
+            - 0.0.0.0:9000
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler

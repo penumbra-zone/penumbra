@@ -1,6 +1,6 @@
-//! Basic integration testing of `pcli` versus a target testnet.
+//! Basic integration testing of `pclientd` versus a target testnet.
 //!
-//! Tests against the network in the `PENUMBRA_NODE_HOSTNAME` environment variable.
+//! Tests against the network in the `PENUMBRA_NODE_PD_URL` environment variable.
 //!
 //! Tests assume that the initial state of the test account is after genesis,
 //! where no tokens have been delegated, and the address with index 0

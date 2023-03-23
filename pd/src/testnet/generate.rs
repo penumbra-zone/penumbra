@@ -22,6 +22,7 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 use tendermint::{node, public_key::Algorithm, Genesis, Time};
+use url::Url;
 
 /// Create a new testnet definition, including genesis and at least one
 /// validator config. Write all configs to the target testnet dir,
@@ -232,12 +233,12 @@ pub fn testnet_generate(
             .map(|(n, ip)| {
                 (
                     node::Id::from(validator_keys[n].node_key_pk.ed25519().unwrap()),
-                    format!("{ip}:26656"),
+                    Url::parse(format!("{ip}:26656").as_str()).unwrap(),
                 )
             })
             .filter_map(|(id, ip)| parse_tm_address(Some(&id), &ip).ok())
             .collect::<Vec<_>>();
-        let mut tm_config = generate_tm_config(&node_name, ips_minus_mine, None)?;
+        let mut tm_config = generate_tm_config(&node_name, ips_minus_mine, None, None, None)?;
         if let Some(timeout_commit) = timeout_commit {
             tm_config.consensus.timeout_commit = timeout_commit;
         }

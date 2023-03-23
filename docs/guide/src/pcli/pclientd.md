@@ -9,20 +9,19 @@ pcli keys export full-viewing-key
 Next, use the FVK it prints to initialize the `pclientd` state:
 
 ```shell
-pclientd init FVK_STRING
+pclientd --home /path/to/state/dir init FVK_STRING
 ```
 
-The location of the `pclientd` state can be changed with the `-s` parameter.
 Finally, run
 
 ```shell
-pclientd start
+pclientd --home /path/to/state/dir start
 ```
 
 to start the view server, and invoke `pcli` with
 
 ```shell
-pcli -v 127.0.0.1:8081
+pcli -v 127.0.0.1:8081 q validator list
 ```
 
 to use it instead of an in-process view service.
