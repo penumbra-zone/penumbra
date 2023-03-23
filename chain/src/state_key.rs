@@ -31,3 +31,7 @@ pub fn chain_params_changed() -> &'static str {
 pub fn epoch_by_height(height: u64) -> String {
     format!("chain/epoch_by_height/{}", height)
 }
+
+pub fn epoch_change_at_height(height: u64) -> String {
+    format!("chain/pending_epoch_changes/{}", height)
+}

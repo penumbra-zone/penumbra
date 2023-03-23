@@ -104,6 +104,21 @@ impl App {
         // store the block time
         state_tx.put_block_timestamp(begin_block.header.time);
 
+        if let Some(new_epoch) = state_tx
+            .pending_epoch()
+            .await
+            .expect("pending epoch should always be readable")
+        {
+            tracing::info!(?new_epoch, "starting new epoch");
+            state_tx.put_epoch_by_height(begin_block.header.height.into(), new_epoch);
+        } else {
+            let prev_epoch = state_tx
+                .epoch_by_height(u64::from(begin_block.header.height) - 1)
+                .await
+                .unwrap();
+            state_tx.put_epoch_by_height(begin_block.header.height.into(), prev_epoch);
+        }
+
         // If a chain parameter change is scheduled for this block, apply it here, before any other
         // component has executed. This ensures that chain parameter changes are consistently
         // applied precisely at the boundary between blocks:
@@ -250,19 +265,8 @@ impl App {
 
             App::finish_sct_epoch(&mut state_tx).await;
 
-            let current_epoch = state_tx.get_current_epoch().await.unwrap();
-            let new_epoch = penumbra_chain::Epoch {
-                index: current_epoch.index + 1,
-                start_height: current_height + 1,
-            };
-            state_tx.put_epoch_by_height(current_height + 1, new_epoch);
+            state_tx.schedule_epoch_change().await.unwrap();
         } else {
-            let current_epoch = state_tx.get_current_epoch().await.unwrap();
-            let new_epoch = penumbra_chain::Epoch {
-                index: current_epoch.index,
-                start_height: current_height + 1,
-            };
-            state_tx.put_epoch_by_height(current_height + 1, new_epoch);
             App::finish_sct_block(&mut state_tx).await;
         }
 

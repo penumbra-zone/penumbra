@@ -118,6 +118,15 @@ pub trait StateReadExt: StateRead {
             .ok_or_else(|| anyhow!("missing epoch for current height"))
     }
 
+    /// Gets the pending epoch change, if any
+    async fn pending_epoch(&self) -> Result<Option<Epoch>> {
+        Ok(self
+            .get(&state_key::epoch_change_at_height(
+                self.get_block_height().await?,
+            ))
+            .await?)
+    }
+
     /// Returns true if the chain should immediately halt upon the coming commit.
     fn should_halt(&self) -> bool {
         self.object_get::<()>(state_key::halt_now()).is_some()
@@ -155,6 +164,22 @@ pub trait StateWriteExt: StateWrite {
         self.put(state_key::chain_params().into(), params)
     }
 
+    /// Schedules an epoch change for the next block
+    async fn schedule_epoch_change(&mut self) -> Result<()> {
+        let change_height = self.get_block_height().await? + 1;
+
+        let current_epoch = self.epoch().await?;
+        let new_epoch = Epoch {
+            index: current_epoch.index + 1,
+            start_height: change_height,
+        };
+
+        tracing::info!(%change_height, "scheduling epoch change at next block");
+
+        self.put(state_key::epoch_change_at_height(change_height), new_epoch);
+
+        Ok(())
+    }
     /// Writes the block height to the JMT
     fn put_block_height(&mut self, height: u64) {
         self.put_proto("block_height".into(), height)
