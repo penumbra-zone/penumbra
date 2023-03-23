@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use penumbra_chain::{sync::CompactBlock, Epoch};
+use penumbra_chain::sync::CompactBlock;
 use penumbra_crypto::{Asset, FullViewingKey, Nullifier};
 use penumbra_proto::{
     self as proto,
@@ -241,7 +241,7 @@ impl Worker {
                 sct_guard.end_block().unwrap();
                 // We also need to end the epoch, since if there are no funding streams, then an
                 // epoch boundary won't necessarily require scanning:
-                if Epoch::from_height(height, epoch_duration).is_epoch_end(height) {
+                if block.epoch_root.is_some() {
                     sct_guard
                         .end_epoch()
                         .expect("ending the epoch must succeed");

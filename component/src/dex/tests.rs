@@ -29,6 +29,13 @@ mod test {
         let height = 1;
 
         state_tx.put_block_height(height);
+        state_tx.put_epoch_by_height(
+            height,
+            penumbra_chain::Epoch {
+                index: 0,
+                start_height: 0,
+            },
+        );
 
         let gm = asset::REGISTRY.parse_unit("gm");
         let gn = asset::REGISTRY.parse_unit("gn");

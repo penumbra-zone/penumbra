@@ -233,3 +233,11 @@ pub mod genesis_app_state {
         >,
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Epoch {
+    #[prost(uint64, tag = "1")]
+    pub index: u64,
+    #[prost(uint64, tag = "2")]
+    pub start_height: u64,
+}

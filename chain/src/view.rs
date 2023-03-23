@@ -28,11 +28,12 @@ pub trait StateReadExt: StateRead {
 
     /// Gets the current epoch for the chain.
     async fn get_current_epoch(&self) -> Result<Epoch> {
-        let block_height = self.get_block_height().await?;
-        Ok(Epoch::from_height(
-            block_height,
-            self.get_epoch_duration().await?,
-        ))
+        // Get the height
+        let height = self.get_block_height().await?;
+
+        self.get(&state_key::epoch_by_height(height))
+            .await?
+            .ok_or_else(|| anyhow!("missing epoch for current height"))
     }
 
     /// Gets the epoch duration for the chain.
@@ -112,11 +113,9 @@ pub trait StateReadExt: StateRead {
         // Get the height
         let height = self.get_block_height().await?;
 
-        // Get the epoch duration
-        let epoch_duration = self.get_epoch_duration().await?;
-
-        // The current epoch
-        Ok(Epoch::from_height(height, epoch_duration))
+        self.get(&state_key::epoch_by_height(height))
+            .await?
+            .ok_or_else(|| anyhow!("missing epoch for current height: {height}"))
     }
 
     /// Returns true if the chain should immediately halt upon the coming commit.
@@ -128,6 +127,18 @@ pub trait StateReadExt: StateRead {
     fn chain_params_changed(&self) -> bool {
         self.object_get::<()>(state_key::chain_params_changed())
             .is_some()
+    }
+
+    async fn epoch_by_height(&self, height: u64) -> Result<Epoch> {
+        self.get(&state_key::epoch_by_height(height))
+            .await?
+            .ok_or_else(|| anyhow!("missing epoch for height"))
+    }
+
+    // Returns true if the epoch is ending early this block.
+    fn epoch_ending_early(&self) -> bool {
+        self.object_get(state_key::end_epoch_early())
+            .unwrap_or(false)
     }
 }
 
@@ -149,10 +160,14 @@ pub trait StateWriteExt: StateWrite {
         // Change the chain parameters:
         self.put(state_key::chain_params().into(), params)
     }
-
     /// Writes the block height to the JMT
     fn put_block_height(&mut self, height: u64) {
         self.put_proto("block_height".into(), height)
+    }
+
+    /// Writes the epoch for the current height
+    fn put_epoch_by_height(&mut self, height: u64, epoch: Epoch) {
+        self.put(state_key::epoch_by_height(height), epoch)
     }
 
     /// Writes the block timestamp to the JMT
@@ -173,6 +188,11 @@ pub trait StateWriteExt: StateWrite {
     /// Signals to the consensus worker to halt after the next commit.
     fn halt_now(&mut self) {
         self.object_put(state_key::halt_now(), ());
+    }
+
+    // Signals that the epoch should end this block.
+    fn signal_end_epoch(&mut self) {
+        self.object_put(state_key::end_epoch_early(), true)
     }
 }
 

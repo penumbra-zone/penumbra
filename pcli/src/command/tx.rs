@@ -7,7 +7,6 @@ use std::{
 use anyhow::{anyhow, Context, Result};
 use ark_ff::UniformRand;
 use decaf377::Fr;
-use penumbra_chain::Epoch;
 use penumbra_component::stake::rate::RateData;
 use penumbra_crypto::{
     asset,
@@ -22,7 +21,8 @@ use penumbra_crypto::{
     Amount, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::client::v1alpha1::{
-    ProposalInfoRequest, ProposalInfoResponse, ProposalRateDataRequest, ValidatorPenaltyRequest,
+    EpochByHeightRequest, ProposalInfoRequest, ProposalInfoResponse, ProposalRateDataRequest,
+    ValidatorPenaltyRequest,
 };
 use penumbra_transaction::{
     plan::{SwapClaimPlan, UndelegateClaimPlan},
@@ -492,11 +492,19 @@ impl TxCmd {
                 let account_group_id = app.fvk.account_group_id(); // this should be optional? or saved in the client statefully?
 
                 let mut specific_client = app.specific_client().await?;
+                let mut oblivious_client = app.oblivious_client().await?;
                 let view: &mut dyn ViewClient = app.view.as_mut().unwrap();
 
                 let params = view.chain_params().await?;
                 let current_height = view.status(account_group_id).await?.sync_height;
-                let current_epoch = Epoch::from_height(current_height, params.epoch_duration);
+                let current_epoch = oblivious_client
+                    .epoch_by_height(EpochByHeightRequest {
+                        height: current_height,
+                    })
+                    .await?
+                    .into_inner()
+                    .epoch
+                    .unwrap();
                 let asset_cache = view.assets().await?;
 
                 // Query the view client for the list of undelegations that are ready to be claimed.

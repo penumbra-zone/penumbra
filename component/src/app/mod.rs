@@ -6,7 +6,7 @@ use anyhow::Result;
 use penumbra_chain::params::FmdParameters;
 use penumbra_chain::{genesis, AppHash, StateReadExt, StateWriteExt as _};
 use penumbra_proto::{DomainType, StateWriteProto};
-use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, StateWrite, Storage};
+use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, StateRead, StateWrite, Storage};
 use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tendermint::validator::Update;
@@ -58,6 +58,24 @@ impl App {
 
         // The genesis block height is 0
         state_tx.put_block_height(0);
+
+        state_tx.put_epoch_by_height(
+            0,
+            penumbra_chain::Epoch {
+                index: 0,
+                start_height: 0,
+            },
+        );
+
+        // We need to set the epoch for the first block as well, since we set
+        // the epoch by height in end_block, and end_block isn't called after init_chain.
+        state_tx.put_epoch_by_height(
+            1,
+            penumbra_chain::Epoch {
+                index: 0,
+                start_height: 0,
+            },
+        );
 
         Staking::init_chain(&mut state_tx, app_state).await;
         IBCComponent::init_chain(&mut state_tx, app_state).await;
@@ -222,14 +240,16 @@ impl App {
         Governance::end_block(&mut state_tx, end_block).await;
         ShieldedPool::end_block(&mut state_tx, end_block).await;
 
-        let end_epoch = state_tx.epoch().await.unwrap().is_epoch_end(
-            state_tx
-                .get_block_height()
-                .await
-                .expect("block height should be set"),
-        );
+        let current_height = state_tx.get_block_height().await.unwrap();
+        let current_epoch = state_tx.epoch().await.unwrap();
+
+        let end_epoch = current_epoch
+            .is_scheduled_epoch_end(current_height, state_tx.get_epoch_duration().await.unwrap())
+            || state_tx.epoch_ending_early();
 
         if end_epoch {
+            tracing::info!(?current_height, "ending epoch");
+
             Staking::end_epoch(&mut state_tx).await.unwrap();
             IBCComponent::end_epoch(&mut state_tx).await.unwrap();
             StubDex::end_epoch(&mut state_tx).await.unwrap();
@@ -238,7 +258,18 @@ impl App {
             ShieldedPool::end_epoch(&mut state_tx).await.unwrap();
 
             App::finish_sct_epoch(&mut state_tx).await;
+
+            // set the epoch for the next block
+            state_tx.put_epoch_by_height(
+                current_height + 1,
+                penumbra_chain::Epoch {
+                    index: current_epoch.index + 1,
+                    start_height: current_height + 1,
+                },
+            );
         } else {
+            // set the epoch for the next block
+            state_tx.put_epoch_by_height(current_height + 1, current_epoch);
             App::finish_sct_block(&mut state_tx).await;
         }
 
@@ -346,6 +377,8 @@ impl App {
     pub fn tendermint_validator_updates(&self) -> Vec<Update> {
         self.state
             .tendermint_validator_updates()
-            .expect("tendermint validator updates should be set when called in end_block")
+            // If the tendermint validator updates are not set, we return an empty
+            // update set, signaling no change to Tendermint.
+            .unwrap_or_default()
     }
 }

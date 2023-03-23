@@ -10,7 +10,7 @@ use ::metrics::{decrement_gauge, gauge, increment_gauge};
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use futures::{FutureExt, StreamExt, TryFutureExt, TryStreamExt};
-use penumbra_chain::{genesis, Epoch, NoteSource, StateReadExt as _};
+use penumbra_chain::{genesis, Epoch, NoteSource, StateReadExt as _, StateWriteExt as _};
 use penumbra_crypto::stake::Penalty;
 use penumbra_crypto::{
     stake::{DelegationToken, IdentityKey},
@@ -262,6 +262,9 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 // Finally, set the validator to be tombstoned.
                 self.put(state_key, Tombstoned);
 
+                // Start a new epoch when a validator is slashed
+                self.signal_end_epoch();
+
                 Ok(())
             }
             (Jailed | Disabled, Active) => {
@@ -282,7 +285,10 @@ pub(crate) trait StakingImpl: StateWriteExt {
         // and save the next rate data. ensure that non-Active validators maintain constant rates.
         let mut delegations_by_validator = BTreeMap::<IdentityKey, Vec<Delegate>>::new();
         let mut undelegations_by_validator = BTreeMap::<IdentityKey, Vec<Undelegate>>::new();
-        for height in epoch_to_end.start_height().value()..=epoch_to_end.end_height().value() {
+
+        let end_height = self.get_block_height().await?;
+
+        for height in epoch_to_end.start_height..=end_height {
             let changes = self.delegation_changes(height.try_into().unwrap()).await?;
             for d in changes.delegations {
                 delegations_by_validator
@@ -859,8 +865,7 @@ impl Component for Staking {
     #[instrument(name = "staking", skip(state, app_state))]
     async fn init_chain<S: StateWrite>(mut state: S, app_state: &genesis::AppState) {
         let starting_height = state.get_block_height().await.unwrap();
-        let starting_epoch =
-            Epoch::from_height(starting_height, state.get_epoch_duration().await.unwrap());
+        let starting_epoch = state.epoch_by_height(starting_height).await.unwrap();
         let epoch_index = starting_epoch.index;
 
         // Delegations require knowing the rates for the next epoch, so
@@ -938,14 +943,16 @@ impl Component for Staking {
                 state.stub_delegation_changes().clone(),
             )
             .await;
-
-        state.build_tendermint_validator_updates().await.unwrap();
     }
 
     #[instrument(name = "staking", skip(state))]
     async fn end_epoch<S: StateWrite>(mut state: S) -> anyhow::Result<()> {
         let cur_epoch = state.get_current_epoch().await.unwrap();
-        state.end_epoch(cur_epoch).await
+        state.end_epoch(cur_epoch).await?;
+        // Since we only update the validator set at epoch boundaries,
+        // we only need to build the validator set updates here in end_epoch.
+        state.build_tendermint_validator_updates().await.unwrap();
+        Ok(())
     }
 }
 

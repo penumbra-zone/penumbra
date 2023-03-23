@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use penumbra_chain::{CompactBlock, Epoch, StatePayload};
+use penumbra_chain::{CompactBlock, StatePayload};
 use penumbra_crypto::{dex::swap::SwapPlaintext, note, FullViewingKey, Note};
 use penumbra_storage::StateRead;
 use penumbra_tct as tct;
@@ -11,7 +11,6 @@ use crate::sct::view::StateReadExt as _;
 /// A bare-bones mock client for use exercising the state machine.
 pub struct MockClient {
     latest_height: u64,
-    epoch_duration: u64,
     fvk: FullViewingKey,
     notes: BTreeMap<note::Commitment, Note>,
     swaps: BTreeMap<tct::Commitment, SwapPlaintext>,
@@ -19,11 +18,10 @@ pub struct MockClient {
 }
 
 impl MockClient {
-    pub fn new(fvk: FullViewingKey, epoch_duration: u64) -> MockClient {
+    pub fn new(fvk: FullViewingKey) -> MockClient {
         Self {
             latest_height: u64::MAX,
             fvk,
-            epoch_duration,
             notes: Default::default(),
             sct: Default::default(),
             swaps: Default::default(),
@@ -122,7 +120,7 @@ impl MockClient {
             }
         }
         self.sct.end_block()?;
-        if Epoch::from_height(block.height, self.epoch_duration).is_epoch_end(block.height) {
+        if block.epoch_root.is_some() {
             self.sct.end_epoch()?;
         }
 
