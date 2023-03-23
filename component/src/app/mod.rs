@@ -104,13 +104,6 @@ impl App {
         // store the block time
         state_tx.put_block_timestamp(begin_block.header.time);
 
-        // store the current epoch
-        let prev_epoch = state_tx
-            .epoch_by_height(u64::from(begin_block.header.height) - 1)
-            .await
-            .unwrap();
-        state_tx.put_epoch_by_height(begin_block.header.height.into(), prev_epoch);
-
         // If a chain parameter change is scheduled for this block, apply it here, before any other
         // component has executed. This ensures that chain parameter changes are consistently
         // applied precisely at the boundary between blocks:
@@ -248,13 +241,6 @@ impl App {
             .is_epoch_end(current_height, state_tx.get_epoch_duration().await.unwrap());
 
         if end_epoch {
-            let current_epoch = state_tx.get_current_epoch().await.unwrap();
-            let new_epoch = penumbra_chain::Epoch {
-                index: current_epoch.index + 1,
-                start_height: current_height + 1,
-            };
-            state_tx.put_epoch_by_height(current_height + 1, new_epoch);
-
             Staking::end_epoch(&mut state_tx).await.unwrap();
             IBCComponent::end_epoch(&mut state_tx).await.unwrap();
             StubDex::end_epoch(&mut state_tx).await.unwrap();
@@ -263,7 +249,20 @@ impl App {
             ShieldedPool::end_epoch(&mut state_tx).await.unwrap();
 
             App::finish_sct_epoch(&mut state_tx).await;
+
+            let current_epoch = state_tx.get_current_epoch().await.unwrap();
+            let new_epoch = penumbra_chain::Epoch {
+                index: current_epoch.index + 1,
+                start_height: current_height + 1,
+            };
+            state_tx.put_epoch_by_height(current_height + 1, new_epoch);
         } else {
+            let current_epoch = state_tx.get_current_epoch().await.unwrap();
+            let new_epoch = penumbra_chain::Epoch {
+                index: current_epoch.index,
+                start_height: current_height + 1,
+            };
+            state_tx.put_epoch_by_height(current_height + 1, new_epoch);
             App::finish_sct_block(&mut state_tx).await;
         }
 
