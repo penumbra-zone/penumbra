@@ -884,6 +884,12 @@ impl Storage {
     }
 
     pub async fn give_advice(&self, note: Note) -> anyhow::Result<()> {
+        //Do not insert advice for zero amounts, simply return Ok because this is fine
+
+        if u64::from(note.amount()) == 0u64 {
+            return Ok(());
+        }
+
         let mut tx = self.pool.begin().await?;
 
         let note_commitment = note.commit().0.to_bytes().to_vec();
