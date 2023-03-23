@@ -282,7 +282,10 @@ pub(crate) trait StakingImpl: StateWriteExt {
         // and save the next rate data. ensure that non-Active validators maintain constant rates.
         let mut delegations_by_validator = BTreeMap::<IdentityKey, Vec<Delegate>>::new();
         let mut undelegations_by_validator = BTreeMap::<IdentityKey, Vec<Undelegate>>::new();
-        for height in epoch_to_end.start_height().value()..=epoch_to_end.end_height().value() {
+
+        let end_height = self.get_block_height().await?;
+
+        for height in epoch_to_end.start_height..=end_height {
             let changes = self.delegation_changes(height.try_into().unwrap()).await?;
             for d in changes.delegations {
                 delegations_by_validator

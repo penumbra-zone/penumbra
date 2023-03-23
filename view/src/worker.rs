@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use penumbra_chain::{sync::CompactBlock, Epoch};
+use penumbra_chain::sync::CompactBlock;
 use penumbra_crypto::{Asset, FullViewingKey, Nullifier};
 use penumbra_proto::{
     self as proto,

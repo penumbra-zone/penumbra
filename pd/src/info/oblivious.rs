@@ -13,7 +13,8 @@ use penumbra_proto::{
     client::v1alpha1::{
         oblivious_query_service_server::ObliviousQueryService, AssetListRequest, AssetListResponse,
         ChainParametersRequest, ChainParametersResponse, CompactBlockRangeRequest,
-        CompactBlockRangeResponse, ValidatorInfoRequest, ValidatorInfoResponse,
+        CompactBlockRangeResponse, EpochRequest, EpochResponse, ValidatorInfoRequest,
+        ValidatorInfoResponse,
     },
     DomainType,
 };
@@ -97,6 +98,23 @@ impl ObliviousQueryService for Info {
             .map_err(|e| tonic::Status::unavailable(format!("error getting known assets: {e}")))?;
         Ok(tonic::Response::new(AssetListResponse {
             asset_list: Some(known_assets.into()),
+        }))
+    }
+
+    #[instrument(skip(self, request))]
+    async fn epoch(
+        &self,
+        request: tonic::Request<EpochRequest>,
+    ) -> Result<tonic::Response<EpochResponse>, Status> {
+        let state = self.storage.latest_snapshot();
+
+        let epoch = state
+            .epoch_by_height(request.get_ref().height)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("could not get epoch for height: {e}")))?;
+
+        Ok(tonic::Response::new(EpochResponse {
+            epoch: Some(epoch.into()),
         }))
     }
 

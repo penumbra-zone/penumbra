@@ -32,6 +32,13 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
     // 1. Simulate BeginBlock
 
     let mut state_tx = state.try_begin_transaction().unwrap();
+    state_tx.put_epoch_by_height(
+        height,
+        penumbra_chain::Epoch {
+            index: 0,
+            start_height: 0,
+        },
+    );
     state_tx.put_block_height(height);
     state_tx.apply();
 
@@ -83,7 +90,7 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
     // state.
 
     let epoch_duration = state.get_epoch_duration().await?;
-    let mut client = MockClient::new(test_keys::FULL_VIEWING_KEY.clone(), epoch_duration);
+    let mut client = MockClient::new(test_keys::FULL_VIEWING_KEY.clone());
     // TODO: generalize StateRead/StateWrite impls from impl for &S to impl for Deref<Target=S>
     client.sync_to(1, state.deref()).await?;
 
@@ -132,6 +139,13 @@ async fn swap_with_nonzero_fee() -> anyhow::Result<()> {
 
     let mut state_tx = state.try_begin_transaction().unwrap();
     state_tx.put_block_height(height);
+    state_tx.put_epoch_by_height(
+        height,
+        penumbra_chain::Epoch {
+            index: 0,
+            start_height: 0,
+        },
+    );
     state_tx.apply();
 
     // 2. Create a Swap action

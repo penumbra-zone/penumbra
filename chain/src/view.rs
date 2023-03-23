@@ -160,6 +160,11 @@ pub trait StateWriteExt: StateWrite {
         self.put_proto("block_height".into(), height)
     }
 
+    /// Writes the epoch for the current height
+    fn put_epoch_by_height(&mut self, height: u64, epoch: Epoch) {
+        self.put(state_key::epoch_by_height(height), epoch)
+    }
+
     /// Writes the block timestamp to the JMT
     fn put_block_timestamp(&mut self, timestamp: Time) {
         self.put_proto(state_key::block_timestamp().into(), timestamp.to_rfc3339())

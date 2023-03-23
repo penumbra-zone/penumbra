@@ -240,6 +240,4 @@ pub struct Epoch {
     pub index: u64,
     #[prost(uint64, tag = "2")]
     pub start_height: u64,
-    #[prost(uint64, tag = "3")]
-    pub end_height: u64,
 }

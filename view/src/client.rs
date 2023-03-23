@@ -3,7 +3,6 @@ use std::{collections::BTreeMap, future::Future, pin::Pin};
 use anyhow::Result;
 use futures::{FutureExt, Stream, StreamExt, TryStreamExt};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_chain::Epoch;
 use penumbra_crypto::asset::Id;
 use penumbra_crypto::keys::AccountGroupId;
 use penumbra_crypto::{asset, keys::AddressIndex, note, Asset, Nullifier};
@@ -60,9 +59,6 @@ pub trait ViewClient {
     fn chain_params(
         &mut self,
     ) -> Pin<Box<dyn Future<Output = Result<ChainParameters>> + Send + 'static>>;
-
-    /// Get the current epoch.
-    fn current_epoch(&mut self) -> Pin<Box<dyn Future<Output = Result<Epoch>> + Send + 'static>>;
 
     /// Get a copy of the FMD parameters.
     fn fmd_parameters(

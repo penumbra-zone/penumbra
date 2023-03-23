@@ -151,5 +151,4 @@ message GenesisAppState {
 message Epoch {
     uint64 index = 1;
     uint64 start_height = 2;
-    uint64 end_height = 3;
 }

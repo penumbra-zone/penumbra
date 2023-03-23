@@ -388,16 +388,6 @@ pub struct ChainParametersResponse {
         super::super::core::chain::v1alpha1::ChainParameters,
     >,
 }
-/// Requests the current epoch from the view service
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CurrentEpochRequest {}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CurrentEpochResponse {
-    #[prost(message, optional, tag = "1")]
-    pub epoch: ::core::option::Option<super::super::core::chain::v1alpha1::Epoch>,
-}
 /// Requests the current FMD parameters from the view service.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -888,26 +878,6 @@ pub mod view_protocol_service_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
-        /// Query for the current epoch.
-        pub async fn current_epoch(
-            &mut self,
-            request: impl tonic::IntoRequest<super::CurrentEpochRequest>,
-        ) -> Result<tonic::Response<super::CurrentEpochResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocolService/CurrentEpoch",
-            );
-            self.inner.unary(request.into_request(), path, codec).await
-        }
         /// Query for the current FMD parameters.
         pub async fn fmd_parameters(
             &mut self,
@@ -1371,11 +1341,6 @@ pub mod view_protocol_service_server {
             &self,
             request: tonic::Request<super::ChainParametersRequest>,
         ) -> Result<tonic::Response<super::ChainParametersResponse>, tonic::Status>;
-        /// Query for the current epoch.
-        async fn current_epoch(
-            &self,
-            request: tonic::Request<super::CurrentEpochRequest>,
-        ) -> Result<tonic::Response<super::CurrentEpochResponse>, tonic::Status>;
         /// Query for the current FMD parameters.
         async fn fmd_parameters(
             &self,
@@ -1841,46 +1806,6 @@ pub mod view_protocol_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = ChainParametersSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/penumbra.view.v1alpha1.ViewProtocolService/CurrentEpoch" => {
-                    #[allow(non_camel_case_types)]
-                    struct CurrentEpochSvc<T: ViewProtocolService>(pub Arc<T>);
-                    impl<
-                        T: ViewProtocolService,
-                    > tonic::server::UnaryService<super::CurrentEpochRequest>
-                    for CurrentEpochSvc<T> {
-                        type Response = super::CurrentEpochResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::CurrentEpochRequest>,
-                        ) -> Self::Future {
-                            let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).current_epoch(request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let inner = inner.0;
-                        let method = CurrentEpochSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

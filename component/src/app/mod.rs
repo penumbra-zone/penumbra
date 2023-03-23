@@ -59,6 +59,14 @@ impl App {
         // The genesis block height is 0
         state_tx.put_block_height(0);
 
+        state_tx.put_epoch_by_height(
+            0,
+            penumbra_chain::Epoch {
+                index: 0,
+                start_height: 0,
+            },
+        );
+
         Staking::init_chain(&mut state_tx, app_state).await;
         IBCComponent::init_chain(&mut state_tx, app_state).await;
         Dex::init_chain(&mut state_tx, app_state).await;
@@ -95,6 +103,9 @@ impl App {
         state_tx.put_block_height(begin_block.header.height.into());
         // store the block time
         state_tx.put_block_timestamp(begin_block.header.time);
+        // store the current epoch
+        let prev_epoch = state_tx.get_current_epoch().await.unwrap();
+        state_tx.put_epoch_by_height(begin_block.header.height.into(), prev_epoch);
 
         // If a chain parameter change is scheduled for this block, apply it here, before any other
         // component has executed. This ensures that chain parameter changes are consistently
@@ -222,14 +233,24 @@ impl App {
         Governance::end_block(&mut state_tx, end_block).await;
         ShieldedPool::end_block(&mut state_tx, end_block).await;
 
-        let end_epoch = state_tx.epoch().await.unwrap().is_epoch_end(
-            state_tx
-                .get_block_height()
-                .await
-                .expect("block height should be set"),
-        );
+        // TODO: add ability to trigger epoch end early
+
+        let current_height = state_tx.get_block_height().await.unwrap();
+
+        let end_epoch = state_tx
+            .epoch()
+            .await
+            .unwrap()
+            .is_epoch_end(current_height, state_tx.get_epoch_duration().await.unwrap());
 
         if end_epoch {
+            let current_epoch = state_tx.get_current_epoch().await.unwrap();
+            let new_epoch = penumbra_chain::Epoch {
+                index: current_epoch.index + 1,
+                start_height: current_height + 1,
+            };
+            state_tx.put_epoch_by_height(current_height + 1, new_epoch);
+
             Staking::end_epoch(&mut state_tx).await.unwrap();
             IBCComponent::end_epoch(&mut state_tx).await.unwrap();
             StubDex::end_epoch(&mut state_tx).await.unwrap();

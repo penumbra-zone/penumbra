@@ -815,18 +815,12 @@ impl serde::Serialize for Epoch {
         if self.start_height != 0 {
             len += 1;
         }
-        if self.end_height != 0 {
-            len += 1;
-        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.chain.v1alpha1.Epoch", len)?;
         if self.index != 0 {
             struct_ser.serialize_field("index", ToString::to_string(&self.index).as_str())?;
         }
         if self.start_height != 0 {
             struct_ser.serialize_field("startHeight", ToString::to_string(&self.start_height).as_str())?;
-        }
-        if self.end_height != 0 {
-            struct_ser.serialize_field("endHeight", ToString::to_string(&self.end_height).as_str())?;
         }
         struct_ser.end()
     }
@@ -841,15 +835,12 @@ impl<'de> serde::Deserialize<'de> for Epoch {
             "index",
             "start_height",
             "startHeight",
-            "end_height",
-            "endHeight",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Index,
             StartHeight,
-            EndHeight,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -873,7 +864,6 @@ impl<'de> serde::Deserialize<'de> for Epoch {
                         match value {
                             "index" => Ok(GeneratedField::Index),
                             "startHeight" | "start_height" => Ok(GeneratedField::StartHeight),
-                            "endHeight" | "end_height" => Ok(GeneratedField::EndHeight),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -895,7 +885,6 @@ impl<'de> serde::Deserialize<'de> for Epoch {
             {
                 let mut index__ = None;
                 let mut start_height__ = None;
-                let mut end_height__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::Index => {
@@ -914,20 +903,11 @@ impl<'de> serde::Deserialize<'de> for Epoch {
                                 Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
-                        GeneratedField::EndHeight => {
-                            if end_height__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("endHeight"));
-                            }
-                            end_height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
-                        }
                     }
                 }
                 Ok(Epoch {
                     index: index__.unwrap_or_default(),
                     start_height: start_height__.unwrap_or_default(),
-                    end_height: end_height__.unwrap_or_default(),
                 })
             }
         }

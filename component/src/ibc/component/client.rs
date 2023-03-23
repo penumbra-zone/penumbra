@@ -531,6 +531,13 @@ mod tests {
         //              the ibc::ics02::Height constructor forbids building `Height` with value zero.
         //              Semantically this seem to correspond to a blockchain that has not begun to produce blocks
         state_tx.put_block_height(1);
+        state_tx.put_epoch_by_height(
+            1,
+            penumbra_chain::Epoch {
+                index: 0,
+                start_height: 0,
+            },
+        );
         state_tx.apply();
 
         // base64 encoded MsgCreateClient that was used to create the currently in-use Stargaze

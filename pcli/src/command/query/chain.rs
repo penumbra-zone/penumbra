@@ -1,7 +1,6 @@
 use anyhow::Result;
 use comfy_table::{presets, Table};
 use futures::TryStreamExt;
-use penumbra_chain::Epoch;
 use penumbra_component::stake::validator;
 use penumbra_view::ViewClient;
 
@@ -23,7 +22,6 @@ pub enum ChainCmd {
 
 pub struct Stats {
     current_block_height: u64,
-    current_epoch: u64,
     total_validators: u64,
     active_validators: u64,
     inactive_validators: u64,
@@ -99,9 +97,6 @@ impl ChainCmd {
         let current_block_height = view.status(fvk.account_group_id()).await?.sync_height;
         let chain_params = view.chain_params().await?;
 
-        let epoch_duration = chain_params.epoch_duration;
-        let current_epoch = Epoch::from_height(current_block_height, epoch_duration).index;
-
         // Fetch validators.
         let validators = client
             .validator_info(ValidatorInfoRequest {
@@ -140,7 +135,6 @@ impl ChainCmd {
 
         Ok(Stats {
             current_block_height,
-            current_epoch,
             total_validators,
             active_validators,
             inactive_validators,
@@ -174,7 +168,6 @@ impl ChainCmd {
                         "Current Block Height",
                         &format!("{}", stats.current_block_height),
                     ])
-                    .add_row(vec!["Current Epoch", &format!("{}", stats.current_epoch)])
                     .add_row(vec![
                         "Total Validators",
                         &format!("{}", stats.total_validators),
