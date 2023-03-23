@@ -103,8 +103,12 @@ impl App {
         state_tx.put_block_height(begin_block.header.height.into());
         // store the block time
         state_tx.put_block_timestamp(begin_block.header.time);
+
         // store the current epoch
-        let prev_epoch = state_tx.get_current_epoch().await.unwrap();
+        let prev_epoch = state_tx
+            .epoch_by_height(u64::from(begin_block.header.height) - 1)
+            .await
+            .unwrap();
         state_tx.put_epoch_by_height(begin_block.header.height.into(), prev_epoch);
 
         // If a chain parameter change is scheduled for this block, apply it here, before any other
