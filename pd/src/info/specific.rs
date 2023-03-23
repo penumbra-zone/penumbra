@@ -13,8 +13,6 @@ use penumbra_component::stake::rate::RateData;
 use penumbra_component::stake::StateReadExt as _;
 use penumbra_component::stubdex::StateReadExt as _;
 use penumbra_crypto::asset::{self, Asset};
-use penumbra_crypto::dex::lp::position;
-use penumbra_crypto::dex::lp::position::Position;
 use penumbra_proto::{
     self as proto,
     client::v1alpha1::{
@@ -63,26 +61,18 @@ impl SpecificQueryService for Info {
         request: tonic::Request<LiquidityPositionsRequest>,
     ) -> Result<tonic::Response<Self::LiquidityPositionsStream>, Status> {
         let state = self.storage.latest_snapshot();
-        // state
-        //     .all_positions()
-        //     .await
-        //     .map_err(|e| tonic::Status::unknown(format!("error getting liquidity positions: {e}")));
-        // let proposal_id = request.into_inner().proposal_id;
 
-        let stream = state.all_positions().await;
+        // TODO: use request parameters to filter
+        let stream_iter = state.all_positions().next().await.into_iter();
         let s = try_stream! {
-            while let Some(item) = stream.next().await {
-                yield item
-            }
+            for item in stream_iter
+                .map(|item| item.map_err(|e| tonic::Status::internal(e.to_string()))) {
+                yield LiquidityPositionsResponse { data: Some(item.unwrap().into()) }
+                }
         };
 
         Ok(tonic::Response::new(
-            s.map_ok(
-                |i: Result<position::Id, anyhow::Error>| LiquidityPositionsResponse {
-                    data: Some(i.unwrap().into()),
-                },
-            )
-            .map_err(|e: anyhow::Error| {
+            s.map_err(|e: anyhow::Error| {
                 tonic::Status::unavailable(format!("error getting prefix value from storage: {e}"))
             })
             // TODO: how do we instrument a Stream
