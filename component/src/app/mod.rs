@@ -240,10 +240,7 @@ impl App {
         Governance::end_block(&mut state_tx, end_block).await;
         ShieldedPool::end_block(&mut state_tx, end_block).await;
 
-        // TODO: add ability to trigger epoch end early
-
         let current_height = state_tx.get_block_height().await.unwrap();
-
         let current_epoch = state_tx.epoch().await.unwrap();
 
         let end_epoch = current_epoch
