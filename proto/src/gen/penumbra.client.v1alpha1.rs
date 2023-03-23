@@ -194,8 +194,6 @@ pub struct LiquidityPositionsRequest {
     /// The expected chain id (empty string if no expectation).
     #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
-    #[prost(bool, tag = "2")]
-    pub only_mine: bool,
     #[prost(bool, tag = "3")]
     pub only_open: bool,
 }

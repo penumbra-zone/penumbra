@@ -2570,18 +2570,12 @@ impl serde::Serialize for LiquidityPositionsRequest {
         if !self.chain_id.is_empty() {
             len += 1;
         }
-        if self.only_mine {
-            len += 1;
-        }
         if self.only_open {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.client.v1alpha1.LiquidityPositionsRequest", len)?;
         if !self.chain_id.is_empty() {
             struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
-        if self.only_mine {
-            struct_ser.serialize_field("onlyMine", &self.only_mine)?;
         }
         if self.only_open {
             struct_ser.serialize_field("onlyOpen", &self.only_open)?;
@@ -2598,8 +2592,6 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsRequest {
         const FIELDS: &[&str] = &[
             "chain_id",
             "chainId",
-            "only_mine",
-            "onlyMine",
             "only_open",
             "onlyOpen",
         ];
@@ -2607,7 +2599,6 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsRequest {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             ChainId,
-            OnlyMine,
             OnlyOpen,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -2631,7 +2622,6 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsRequest {
                     {
                         match value {
                             "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
-                            "onlyMine" | "only_mine" => Ok(GeneratedField::OnlyMine),
                             "onlyOpen" | "only_open" => Ok(GeneratedField::OnlyOpen),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
@@ -2653,7 +2643,6 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsRequest {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut chain_id__ = None;
-                let mut only_mine__ = None;
                 let mut only_open__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
@@ -2662,12 +2651,6 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsRequest {
                                 return Err(serde::de::Error::duplicate_field("chainId"));
                             }
                             chain_id__ = Some(map.next_value()?);
-                        }
-                        GeneratedField::OnlyMine => {
-                            if only_mine__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("onlyMine"));
-                            }
-                            only_mine__ = Some(map.next_value()?);
                         }
                         GeneratedField::OnlyOpen => {
                             if only_open__.is_some() {
@@ -2679,7 +2662,6 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsRequest {
                 }
                 Ok(LiquidityPositionsRequest {
                     chain_id: chain_id__.unwrap_or_default(),
-                    only_mine: only_mine__.unwrap_or_default(),
                     only_open: only_open__.unwrap_or_default(),
                 })
             }

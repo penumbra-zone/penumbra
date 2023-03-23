@@ -62,12 +62,14 @@ impl SpecificQueryService for Info {
     ) -> Result<tonic::Response<Self::LiquidityPositionsStream>, Status> {
         let state = self.storage.latest_snapshot();
 
-        // TODO: use request parameters to filter
         let stream_iter = state.all_positions().next().await.into_iter();
         let s = try_stream! {
             for item in stream_iter
                 .map(|item| item.map_err(|e| tonic::Status::internal(e.to_string()))) {
-                yield LiquidityPositionsResponse { data: Some(item.unwrap().into()) }
+                    let item = item.unwrap();
+                    if (request.get_ref().only_open && item.state == penumbra_crypto::dex::lp::position::State::Opened) || request.get_ref().only_open == false {
+                        yield LiquidityPositionsResponse { data: Some(item.into()) }
+                    }
                 }
         };
 

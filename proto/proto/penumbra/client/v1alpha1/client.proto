@@ -173,7 +173,6 @@ message BatchSwapOutputDataResponse {
 message LiquidityPositionsRequest {
   // The expected chain id (empty string if no expectation).
   string chain_id = 1;
-  bool only_mine = 2;
   bool only_open = 3;
 }
 

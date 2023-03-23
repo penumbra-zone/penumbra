@@ -33,9 +33,6 @@ pub enum DexCmd {
     },
     /// Display information about liquidity positions known to the chain.
     LiquidityPositions {
-        /// Display only liquidity positions owned by the active wallet.
-        #[clap(default_value_t = false)]
-        only_mine: bool,
         /// Display closed and withdrawn liquidity positions.
         #[clap(default_value_t = true)]
         only_open: bool,
@@ -60,6 +57,7 @@ impl DexCmd {
             .context("cannot parse stub CPMM reserves data")?;
         println!("Constant-Product Market Maker Reserves:");
         let mut table = Table::new();
+        // TODO: use oblivious query service instead of view service
         let view_client: &mut dyn ViewClient = app.view.as_mut().unwrap();
         let asset_cache = view_client.assets().await?;
         let asset_1 = asset_cache
@@ -125,7 +123,6 @@ impl DexCmd {
     pub async fn get_liquidity_positions(
         &self,
         mut client: SpecificQueryServiceClient<Channel>,
-        only_mine: bool,
         only_open: bool,
         chain_id: String,
     ) -> Pin<
@@ -138,7 +135,6 @@ impl DexCmd {
     > {
         async move {
             let stream = client.liquidity_positions(LiquidityPositionsRequest {
-                only_mine,
                 only_open,
                 chain_id,
             });
@@ -169,6 +165,7 @@ impl DexCmd {
             } => {
                 let outputs = self.get_batch_outputs(app, height, trading_pair).await?;
 
+                // TODO: use oblivious query service instead of view service
                 let view_client: &mut dyn ViewClient = app.view.as_mut().unwrap();
                 let asset_cache = view_client.assets().await?;
                 let asset_1 = asset_cache
@@ -224,17 +221,15 @@ impl DexCmd {
 
                 println!("{table}");
             }
-            DexCmd::LiquidityPositions {
-                only_mine,
-                only_open,
-            } => {
+            DexCmd::LiquidityPositions { only_open } => {
                 let client = app.specific_client().await.unwrap();
+                // TODO: use oblivious query service instead of view service
                 let view_client: &mut dyn ViewClient = app.view.as_mut().unwrap();
                 let chain_id = view_client.chain_params().await?.chain_id;
                 let asset_cache = view_client.assets().await?;
 
                 let mut positions_stream = self
-                    .get_liquidity_positions(client, *only_mine, *only_open, chain_id)
+                    .get_liquidity_positions(client, *only_open, chain_id)
                     .await
                     .await?;
 
