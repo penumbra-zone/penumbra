@@ -53,14 +53,14 @@ pub enum Command {
 }
 
 impl Command {
-    /// Determine if this command requires a network sync before it executes.
+    /// Determine if this command can run in "offline" mode.
     pub fn offline(&self) -> bool {
         match self {
             Command::Transaction(cmd) => cmd.offline(),
             Command::View(cmd) => cmd.offline(),
             Command::Keys(cmd) => cmd.offline(),
             Command::Validator(cmd) => cmd.offline(),
-            Command::Query(_) => true,
+            Command::Query(_) => false,
             Command::Debug(cmd) => cmd.offline(),
         }
     }
