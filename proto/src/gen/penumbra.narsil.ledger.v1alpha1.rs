@@ -200,6 +200,19 @@ pub mod ceremony_failure {
 }
 /// The data recorded on-chain about the current state of a signing ceremony.
 ///
+/// The state machine of a signing ceremony is depicted in the following diagram:
+/// ```
+/// ┌───────┐   ┌─────────────┐   ┌─────────────┐   ┌────────┐
+/// │Pending│──▶│StartedRound1│──▶│StartedRound2│──▶│Finished│
+/// └───────┘   └─────────────┘   └─────────────┘   ├────────┤
+///      │              │                 │          │AuthData│
+///      │              │                 │          └────────┘
+///      │              │                 │
+///      │              │                 │          ┌────────┐
+///      └──────────────┴─────────────────┴─────────▶│ Failed │
+///                                                  └────────┘
+/// ```
+///
 /// The ceremony steps are described in the FROST I-D:
 /// <https://www.ietf.org/archive/id/draft-irtf-cfrg-frost-11.html>
 #[allow(clippy::derive_partial_eq_without_eq)]
