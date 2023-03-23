@@ -60,6 +60,8 @@ impl Command {
             Command::View(cmd) => cmd.offline(),
             Command::Keys(cmd) => cmd.offline(),
             Command::Validator(cmd) => cmd.offline(),
+            // TODO: revert this to `true` after all `pcli q` commands are updated
+            // to not use the view service any more.
             Command::Query(_) => false,
             Command::Debug(cmd) => cmd.offline(),
         }
