@@ -376,6 +376,8 @@ impl App {
     pub fn tendermint_validator_updates(&self) -> Vec<Update> {
         self.state
             .tendermint_validator_updates()
-            .expect("tendermint validator updates should be set when called in end_block")
+            // If the tendermint validator updates are not set, we return an empty
+            // update set, signaling no change to Tendermint.
+            .unwrap_or_default()
     }
 }

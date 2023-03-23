@@ -10,7 +10,7 @@ use ::metrics::{decrement_gauge, gauge, increment_gauge};
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use futures::{FutureExt, StreamExt, TryFutureExt, TryStreamExt};
-use penumbra_chain::{genesis, Epoch, NoteSource, StateReadExt as _, StateWriteExt as _};
+use penumbra_chain::{genesis, Epoch, NoteSource, StateReadExt as _};
 use penumbra_crypto::stake::Penalty;
 use penumbra_crypto::{
     stake::{DelegationToken, IdentityKey},
@@ -943,14 +943,16 @@ impl Component for Staking {
                 state.stub_delegation_changes().clone(),
             )
             .await;
-
-        state.build_tendermint_validator_updates().await.unwrap();
     }
 
     #[instrument(name = "staking", skip(state))]
     async fn end_epoch<S: StateWrite>(mut state: S) -> anyhow::Result<()> {
         let cur_epoch = state.get_current_epoch().await.unwrap();
-        state.end_epoch(cur_epoch).await
+        state.end_epoch(cur_epoch).await?;
+        // Since we only update the validator set at epoch boundaries,
+        // we only need to build the validator set updates here in end_epoch.
+        state.build_tendermint_validator_updates().await.unwrap();
+        Ok(())
     }
 }
 
