@@ -1,19 +1,18 @@
 use std::pin::Pin;
 
 use anyhow::{Context, Result};
-use async_stream::try_stream;
 use comfy_table::{presets, Table};
 use futures::{Future, FutureExt, Stream, StreamExt, TryStreamExt};
 use penumbra_crypto::dex::{
-    lp::{position::Position, Reserves},
+    lp::{position::Metadata, Reserves},
     BatchSwapOutputData, TradingPair,
 };
 use penumbra_proto::client::v1alpha1::{
-    BatchSwapOutputDataRequest, LiquidityPositionsRequest, LiquidityPositionsResponse,
-    StubCpmmReservesRequest,
+    specific_query_service_client::SpecificQueryServiceClient, BatchSwapOutputDataRequest,
+    LiquidityPositionsRequest, StubCpmmReservesRequest,
 };
 use penumbra_view::ViewClient;
-use tonic::Streaming;
+use tonic::transport::Channel;
 
 use crate::App;
 
@@ -153,18 +152,18 @@ impl DexCmd {
     // }
     pub async fn get_liquidity_positions(
         &self,
-        app: &mut App,
-        only_mine: &bool,
-        only_open: &bool,
+        mut client: SpecificQueryServiceClient<Channel>,
+        only_mine: bool,
+        only_open: bool,
+        chain_id: String,
     ) -> Pin<
         Box<
-            dyn Future<Output = Result<Pin<Box<dyn Stream<Item = Result<Position>> + Send + '_>>>>
-                + Send
-                + '_,
+            dyn Future<
+                    Output = Result<Pin<Box<dyn Stream<Item = Result<Metadata>> + Send + 'static>>>,
+                > + Send
+                + 'static,
         >,
     > {
-        let mut client = app.specific_client().await.unwrap();
-
         //     let mut self2 = self.clone();
         //     async move {
         //         let stream = self2.status_stream(tonic::Request::new(pb::StatusStreamRequest {
@@ -181,9 +180,9 @@ impl DexCmd {
         //     .boxed()
         async move {
             let stream = client.liquidity_positions(LiquidityPositionsRequest {
-                only_mine: *only_mine,
-                only_open: *only_open,
-                chain_id: app.view().chain_params().await?.chain_id,
+                only_mine,
+                only_open,
+                chain_id,
             });
             let stream = stream.await?.into_inner();
 
@@ -194,27 +193,11 @@ impl DexCmd {
                         .ok_or(anyhow::anyhow!(
                             "missing liquidity position in response data"
                         ))
-                        .map(|data| Position::try_from(data))?
+                        .map(|data| Metadata::try_from(data))?
                 })
                 .boxed())
         }
         .boxed()
-
-        // self.nonconsensus_prefix_raw(&prefix)
-        //     .map(|entry| match entry {
-        //         Ok((k, _)) => {
-        //             let raw_id = <&[u8; 32]>::try_from(&k[103..135])?.to_owned();
-        //             Ok(position::Id(raw_id))
-        //         }
-        //         Err(e) => Err(e),
-        //     })
-        //     .boxed()
-
-        // Ok(try_stream! {
-        //     while let Some(lp) = lp_stream.message().await? {
-        //         println!("lp : {:?}", lp);
-        //     }
-        // })
     }
 
     pub async fn exec(&self, app: &mut App) -> Result<()> {
@@ -287,9 +270,21 @@ impl DexCmd {
                 only_mine,
                 only_open,
             } => {
-                let positions = self
-                    .get_liquidity_positions(app, only_mine, only_open)
+                let client = app.specific_client().await.unwrap();
+                let chain_id = app.view().chain_params().await?.chain_id;
+
+                let mut positions_stream = self
+                    .get_liquidity_positions(client, *only_mine, *only_open, chain_id)
+                    .await
                     .await?;
+
+                while let Ok(position) =
+                    positions_stream.next().await.transpose()?.ok_or_else(|| {
+                        anyhow::anyhow!("view service did not return liquidity position")
+                    })
+                {
+                    println!("{:?}", position);
+                }
             }
         };
 

@@ -7,7 +7,7 @@ use penumbra_crypto::{
     },
     Value,
 };
-use penumbra_proto::{DomainType, StateReadProto, StateWriteProto};
+use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 
 use super::state_key;

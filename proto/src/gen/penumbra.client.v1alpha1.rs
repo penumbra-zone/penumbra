@@ -191,7 +191,9 @@ pub struct LiquidityPositionsRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LiquidityPositionsResponse {
     #[prost(message, optional, tag = "1")]
-    pub data: ::core::option::Option<super::super::core::dex::v1alpha1::Position>,
+    pub data: ::core::option::Option<
+        super::super::core::dex::v1alpha1::PositionMetadata,
+    >,
 }
 /// Requests CPMM reserves data associated with a given trading pair from the view service.
 #[allow(clippy::derive_partial_eq_without_eq)]
