@@ -101,6 +101,36 @@ pub trait PositionManager: StateWrite + PositionRead {
 
         Ok((unfilled, output))
     }
+
+    /// Fill a trade of `input` value against all available positions, until completion, or
+    /// the available liquidity is exhausted.
+    /// TODO(erwan): global slippage parameter should act as a "fail-early" guard here, but we'd
+    /// need to get some signal about the phi of the position we're executing against.
+    async fn fill(&mut self, input: Value, pair: DirectedTradingPair) -> Result<(Value, Value)> {
+        let mut hposition_ids = self.positions_by_price(pair).await;
+
+        let mut remaining = input;
+        let zero = Value {
+            asset_id: input.asset_id,
+            amount: 0u64.into(),
+        };
+
+        let mut total_output = zero;
+
+        for id in position_ids.next().await {
+            if remaining == zero {
+                break;
+            }
+            let (unfilled, output) = self.fill_against(remaining, &id?).await?;
+            remaining = unfilled;
+            total_output = Value {
+                asset_id: input.asset_id,
+                amount: total_output.amount + output.amount,
+            };
+        }
+
+        Ok((remaining, total_output))
+    }
 }
 
 impl<T: StateWrite + ?Sized> PositionManager for T {}
