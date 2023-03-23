@@ -271,7 +271,7 @@ impl DexCmd {
                 only_open,
             } => {
                 let client = app.specific_client().await.unwrap();
-                let chain_id = app.view().chain_params().await?.chain_id;
+                let chain_id = app.view.as_mut().unwrap().chain_params().await?.chain_id;
 
                 let mut positions_stream = self
                     .get_liquidity_positions(client, *only_mine, *only_open, chain_id)
