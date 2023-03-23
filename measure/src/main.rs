@@ -12,6 +12,7 @@ use penumbra_proto::{
     },
     Message,
 };
+use url::Url;
 
 #[derive(Debug, Parser)]
 #[clap(
@@ -20,22 +21,23 @@ use penumbra_proto::{
     version = env!("VERGEN_GIT_SEMVER"),
 )]
 pub struct Opt {
-    /// The hostname of the pd+tendermint node.
+    /// The URL for the gRPC endpoint of the remote pd node.
     #[clap(
         short,
         long,
-        default_value = "testnet.penumbra.zone",
-        env = "PENUMBRA_NODE_HOSTNAME",
-        parse(try_from_str = url::Host::parse)
+        default_value = "http://testnet.penumbra.zone:8080",
+        env = "PENUMBRA_NODE_PD_URL",
+        parse(try_from_str = url::Url::parse)
     )]
-    node: url::Host,
+    node: Url,
     // TODO: use TendermintProxyService instead
-    /// The port to use to speak to tendermint's RPC server.
-    #[clap(long, default_value_t = 26657, env = "PENUMBRA_TENDERMINT_PORT")]
-    tendermint_port: u16,
-    /// The port to use to speak to pd's gRPC server.
-    #[clap(long, default_value_t = 8080, env = "PENUMBRA_PD_PORT")]
-    pd_port: u16,
+    /// The URL for the Tendermint RPC endpoint of the remote node.
+    #[clap(
+        long,
+        default_value = "http://testnet.penumbra.zone:26657",
+        env = "PENUMBRA_NODE_TM_URL"
+    )]
+    tendermint_url: Url,
     #[clap(subcommand)]
     pub cmd: Command,
     /// The filter for log messages.
@@ -61,11 +63,8 @@ impl Opt {
     pub async fn run(&self) -> anyhow::Result<()> {
         match self.cmd {
             Command::StreamBlocks => {
-                let mut client = ObliviousQueryServiceClient::connect(format!(
-                    "http://{}:{}",
-                    self.node, self.pd_port
-                ))
-                .await?;
+                let mut client =
+                    ObliviousQueryServiceClient::connect(self.node.to_string()).await?;
 
                 let params: ChainParameters = client
                     .chain_parameters(tonic::Request::new(ChainParametersRequest {
@@ -151,10 +150,7 @@ impl Opt {
         let client = reqwest::Client::new();
 
         let rsp: serde_json::Value = client
-            .get(format!(
-                r#"http://{}:{}/status"#,
-                self.node, self.tendermint_port
-            ))
+            .get(self.tendermint_url.clone())
             .send()
             .await?
             .json()

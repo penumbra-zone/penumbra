@@ -27,6 +27,7 @@ use tendermint_config::net::Address as TendermintAddress;
 use tokio::runtime;
 use tonic::transport::Server;
 use tracing_subscriber::{prelude::*, EnvFilter};
+use url::Url;
 
 #[derive(Debug, Parser)]
 #[clap(
@@ -47,24 +48,41 @@ struct Opt {
 enum RootCommand {
     /// Start running the ABCI and wallet services.
     Start {
-        /// The path used to store pd-releated data, including the Rocks database.
-        #[clap(long)]
+        /// The path used to store pd-related data, including the Rocks database.
+        #[clap(long, env = "PENUMBRA_PD_HOME")]
         home: PathBuf,
-        /// Bind the services to this host.
-        #[clap(long, default_value = "127.0.0.1")]
-        host: String,
-        /// Bind the ABCI server to this port.
-        #[clap(short, long, default_value = "26658")]
-        abci_port: u16,
-        /// Bind the gRPC server to this port.
-        #[clap(short, long, default_value = "8080")]
-        grpc_port: u16,
-        /// bind the metrics endpoint to this port.
-        #[clap(short, long, default_value = "9000")]
-        metrics_port: u16,
-        /// Proxy Tendermint requests against the gRPC server to this address.
-        #[clap(short, long, default_value = "http://127.0.0.1:26657")]
-        tendermint_addr: url::Url,
+        /// Bind the ABCI server to this socket.
+        #[clap(
+            short,
+            long,
+            env = "PENUMBRA_PD_ABCI_BIND",
+            default_value = "127.0.0.1:26658"
+        )]
+        abci_bind: SocketAddr,
+        /// Bind the gRPC server to this socket.
+        #[clap(
+            short,
+            long,
+            env = "PENUMBRA_PD_GRPC_BIND",
+            default_value = "127.0.0.1:8080"
+        )]
+        grpc_bind: SocketAddr,
+        /// Bind the metrics endpoint to this socket.
+        #[clap(
+            short,
+            long,
+            env = "PENUMBRA_PD_METRICS_BIND",
+            default_value = "127.0.0.1:9000"
+        )]
+        metrics_bind: SocketAddr,
+        /// Proxy Tendermint requests against the gRPC server to this URL.
+        #[clap(
+            short,
+            long,
+            env = "PENUMBRA_PD_TM_PROXY_URL",
+            default_value = "http://127.0.0.1:26657"
+        )]
+        tendermint_addr: Url,
     },
     /// Generate, join, or reset a testnet.
     Testnet {
@@ -114,18 +132,35 @@ enum TestnetCommand {
 
     /// Like `testnet generate`, but joins the testnet to which the specified node belongs
     Join {
-        #[clap(default_value = "testnet.penumbra.zone")]
-        node: String,
-        // Default: node-#
+        /// URL of the remote Tendermint RPC endpoint for bootstrapping connection.
+        #[clap(
+            env = "PENUMBRA_PD_JOIN_URL",
+            default_value = "http://testnet.penumbra.zone:26657"
+        )]
+        node: Url,
         /// Human-readable name to identify node on network
         // Default: 'node-#'
-        #[clap(long)]
+        #[clap(long, env = "PENUMBRA_PD_TM_MONIKER")]
         moniker: Option<String>,
-        /// Public IP address to advertise for this node's Tendermint P2P service.
+        /// Public URL to advertise for this node's Tendermint P2P service.
         /// Setting this option will instruct other nodes on the network to connect
-        /// to yours.
-        #[clap(long)]
-        external_address: Option<String>,
+        /// to yours. Must be in the form of a full URL, e.g. "tcp://1.2.3.4:26656".
+        #[clap(long, env = "PENUMBRA_PD_TM_EXTERNAL_URL")]
+        external_address: Option<Url>,
+        /// When generating Tendermint config, use this socket to bind the Tendermint RPC service.
+        #[clap(
+            long,
+            env = "PENUMBRA_PD_TM_RPC_BIND",
+            default_value = "0.0.0.0:26657"
+        )]
+        tendermint_rpc_bind: SocketAddr,
+        /// When generating Tendermint config, use this socket to bind the Tendermint P2P service.
+        #[clap(
+            long,
+            env = "PENUMBRA_PD_TM_P2P_BIND",
+            default_value = "0.0.0.0:26656"
+        )]
+        tendermint_p2p_bind: SocketAddr,
     },
 
     /// Reset all `pd` testnet state.
@@ -175,13 +210,12 @@ async fn main() -> anyhow::Result<()> {
     match opt.cmd {
         RootCommand::Start {
             home,
-            host,
-            abci_port,
-            grpc_port,
-            metrics_port,
+            abci_bind,
+            grpc_bind,
+            metrics_bind,
             tendermint_addr,
         } => {
-            tracing::info!(?host, ?abci_port, ?grpc_port, "starting pd");
+            tracing::info!(?abci_bind, ?grpc_bind, ?metrics_bind, "starting pd");
 
             let mut rocks_path = home.clone();
             rocks_path.push("rocksdb");
@@ -217,7 +251,7 @@ async fn main() -> anyhow::Result<()> {
                         .info(info.clone())
                         .finish()
                         .unwrap()
-                        .listen(format!("{host}:{abci_port}")),
+                        .listen(abci_bind),
                 )
                 .expect("failed to spawn abci server");
 
@@ -243,21 +277,13 @@ async fn main() -> anyhow::Result<()> {
                         .add_service(tonic_web::enable(TendermintProxyServiceServer::new(
                             tm_proxy.clone(),
                         )))
-                        .serve(
-                            format!("{host}:{grpc_port}")
-                                .parse()
-                                .expect("this is a valid address"),
-                        ),
+                        .serve(grpc_bind),
                 )
                 .expect("failed to spawn grpc server");
 
             // Configure a Prometheus recorder and exporter.
             let (recorder, exporter) = PrometheusBuilder::new()
-                .with_http_listener(
-                    format!("{host}:{metrics_port}")
-                        .parse::<SocketAddr>()
-                        .expect("this is a valid address"),
-                )
+                .with_http_listener(metrics_bind)
                 .build()
                 .expect("failed to build prometheus recorder");
 
@@ -303,6 +329,8 @@ async fn main() -> anyhow::Result<()> {
                     node,
                     moniker,
                     external_address,
+                    tendermint_rpc_bind,
+                    tendermint_p2p_bind,
                 },
             testnet_dir,
         } => {
@@ -330,7 +358,15 @@ async fn main() -> anyhow::Result<()> {
 
             // Join the target testnet, looking up network info and writing
             // local configs for pd and tendermint.
-            testnet_join(output_dir, &node, &node_name, external_address).await?;
+            testnet_join(
+                output_dir,
+                node,
+                &node_name,
+                external_address,
+                tendermint_rpc_bind,
+                tendermint_p2p_bind,
+            )
+            .await?;
         }
 
         RootCommand::Testnet {

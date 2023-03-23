@@ -3454,6 +3454,7 @@ dependencies = [
  "tower",
  "tracing",
  "tracing-subscriber 0.2.25",
+ "url",
  "vergen",
 ]
 
@@ -3983,6 +3984,7 @@ dependencies = [
  "tonic-web",
  "tracing",
  "tracing-subscriber 0.2.25",
+ "url",
  "vergen",
 ]
 
