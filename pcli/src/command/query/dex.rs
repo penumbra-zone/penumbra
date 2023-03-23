@@ -271,20 +271,52 @@ impl DexCmd {
                 only_open,
             } => {
                 let client = app.specific_client().await.unwrap();
-                let chain_id = app.view.as_mut().unwrap().chain_params().await?.chain_id;
+                let view_client: &mut dyn ViewClient = app.view.as_mut().unwrap();
+                let chain_id = view_client.chain_params().await?.chain_id;
+                let asset_cache = view_client.assets().await?;
 
                 let mut positions_stream = self
                     .get_liquidity_positions(client, *only_mine, *only_open, chain_id)
                     .await
                     .await?;
 
+                let mut table = Table::new();
+                table.load_preset(presets::NOTHING);
+                table.set_header(vec![
+                    "Trading Pair",
+                    "State",
+                    "Reserves",
+                    "Trading Function",
+                ]);
+
                 while let Ok(position) =
                     positions_stream.next().await.transpose()?.ok_or_else(|| {
                         anyhow::anyhow!("view service did not return liquidity position")
                     })
                 {
-                    println!("{:?}", position);
+                    let trading_pair = position.position.phi.pair;
+                    let asset_1 = asset_cache
+                        .get(&trading_pair.asset_1())
+                        .map(|bd| format!("{bd}"))
+                        .unwrap_or("unknown".to_string());
+                    let asset_2 = asset_cache
+                        .get(&trading_pair.asset_2())
+                        .map(|bd| format!("{bd}"))
+                        .unwrap_or("unknown".to_string());
+                    table.add_row(vec![
+                        format!("({}, {})", asset_1, asset_2),
+                        position.state.to_string(),
+                        format!("({}, {})", position.reserves.r1, position.reserves.r2),
+                        format!(
+                            "p: {} q: {} fee: {}",
+                            position.position.phi.component.p,
+                            position.position.phi.component.q,
+                            position.position.phi.component.fee
+                        ),
+                    ]);
                 }
+
+                println!("{table}");
             }
         };
 
