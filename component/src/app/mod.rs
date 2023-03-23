@@ -6,7 +6,7 @@ use anyhow::Result;
 use penumbra_chain::params::FmdParameters;
 use penumbra_chain::{genesis, AppHash, StateReadExt, StateWriteExt as _};
 use penumbra_proto::{DomainType, StateWriteProto};
-use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, StateWrite, Storage};
+use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, StateRead, StateWrite, Storage};
 use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tendermint::validator::Update;
@@ -253,7 +253,8 @@ impl App {
             .epoch()
             .await
             .unwrap()
-            .is_epoch_end(current_height, state_tx.get_epoch_duration().await.unwrap());
+            .is_epoch_end(current_height, state_tx.get_epoch_duration().await.unwrap())
+            || state_tx.object_get("early_epoch_end").unwrap_or(false);
 
         if end_epoch {
             Staking::end_epoch(&mut state_tx).await.unwrap();
@@ -266,6 +267,7 @@ impl App {
             App::finish_sct_epoch(&mut state_tx).await;
 
             state_tx.schedule_epoch_change().await.unwrap();
+            state_tx.object_delete("early_epoch_end");
         } else {
             App::finish_sct_block(&mut state_tx).await;
         }

@@ -10,7 +10,7 @@ use ::metrics::{decrement_gauge, gauge, increment_gauge};
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use futures::{FutureExt, StreamExt, TryFutureExt, TryStreamExt};
-use penumbra_chain::{genesis, Epoch, NoteSource, StateReadExt as _};
+use penumbra_chain::{genesis, Epoch, NoteSource, StateReadExt as _, StateWriteExt as _};
 use penumbra_crypto::stake::Penalty;
 use penumbra_crypto::{
     stake::{DelegationToken, IdentityKey},
@@ -261,6 +261,9 @@ pub(crate) trait StakingImpl: StateWriteExt {
 
                 // Finally, set the validator to be tombstoned.
                 self.put(state_key, Tombstoned);
+
+                // Start a new epoch when a validator is slashed
+                self.object_put("early_epoch_end", true);
 
                 Ok(())
             }
