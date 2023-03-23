@@ -190,7 +190,7 @@ impl ViewClient {
         }
 
         self.nct.end_block().unwrap();
-        if compact_block.epoch_root.is_some() {
+        if block.epoch_root.is_some() {
             self.nct.end_epoch().unwrap();
         }
 
@@ -314,7 +314,7 @@ impl ViewClient {
         }
 
         self.nct.end_block().unwrap();
-        if compact_block.epoch_root.is_some() {
+        if block.epoch_root.is_some() {
             self.nct.end_epoch().unwrap();
         }
 
