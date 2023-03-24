@@ -37,7 +37,7 @@ impl TradingFunction {
     ) -> anyhow::Result<(Value, Reserves, Value)> {
         if input.asset_id == self.pair.asset_1() {
             let (unfilled, new_reserves, output) = self.component.fill(input.amount, reserves);
-            return Ok((
+            Ok((
                 Value {
                     amount: unfilled,
                     asset_id: self.pair.asset_1(),
@@ -47,12 +47,12 @@ impl TradingFunction {
                     amount: output,
                     asset_id: self.pair.asset_2(),
                 },
-            ));
+            ))
         } else if input.asset_id == self.pair.asset_2() {
             let flipped_reserves = reserves.flip();
             let (unfilled, new_reserves, output) =
                 self.component.flip().fill(input.amount, &flipped_reserves);
-            return Ok((
+            Ok((
                 Value {
                     amount: unfilled,
                     asset_id: self.pair.asset_2(),
@@ -62,7 +62,7 @@ impl TradingFunction {
                     amount: output,
                     asset_id: self.pair.asset_1(),
                 },
-            ));
+            ))
         } else {
             Err(anyhow!(
                 "input asset id {:?} did not match either end of trading pair {:?}",
