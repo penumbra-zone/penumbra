@@ -130,9 +130,11 @@ mod tests {
         };
         let mut rng = OsRng;
         let tx = plan
-            .build_concurrent(&mut rng, fvk, auth_data, witness_data)
+            .build_concurrent(&mut rng, fvk, witness_data)
             .await
-            .expect("can build transaction");
+            .expect("can build transaction")
+            .authorize(&mut rng, &auth_data)
+            .expect("can authorize transaction");
 
         let context = Arc::new(tx.clone());
 
@@ -192,9 +194,11 @@ mod tests {
         };
         let mut rng = OsRng;
         let mut tx = plan
-            .build_concurrent(&mut rng, fvk, auth_data, witness_data)
+            .build_concurrent(&mut rng, fvk, witness_data)
             .await
-            .expect("can build transaction");
+            .expect("can build transaction")
+            .authorize(&mut rng, &auth_data)
+            .expect("can authorize transaction");
 
         // Set the anchor to the wrong root.
         tx.anchor = wrong_root;
