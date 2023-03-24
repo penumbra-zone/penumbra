@@ -1,4 +1,4 @@
-use penumbra_crypto::Note;
+use penumbra_crypto::NoteView;
 use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType};
 use serde::{Deserialize, Serialize};
 
@@ -10,7 +10,7 @@ use crate::action::DelegatorVote;
 pub enum DelegatorVoteView {
     Visible {
         delegator_vote: DelegatorVote,
-        note: Note,
+        note: NoteView,
     },
     Opaque {
         delegator_vote: DelegatorVote,

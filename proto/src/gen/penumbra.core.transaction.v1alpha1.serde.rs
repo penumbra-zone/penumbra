@@ -4608,9 +4608,6 @@ impl serde::Serialize for TransactionBodyView {
         if self.memo_view.is_some() {
             len += 1;
         }
-        if !self.address_views.is_empty() {
-            len += 1;
-        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1alpha1.TransactionBodyView", len)?;
         if !self.action_views.is_empty() {
             struct_ser.serialize_field("actionViews", &self.action_views)?;
@@ -4629,9 +4626,6 @@ impl serde::Serialize for TransactionBodyView {
         }
         if let Some(v) = self.memo_view.as_ref() {
             struct_ser.serialize_field("memoView", v)?;
-        }
-        if !self.address_views.is_empty() {
-            struct_ser.serialize_field("addressViews", &self.address_views)?;
         }
         struct_ser.end()
     }
@@ -4654,8 +4648,6 @@ impl<'de> serde::Deserialize<'de> for TransactionBodyView {
             "fmdClues",
             "memo_view",
             "memoView",
-            "address_views",
-            "addressViews",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -4666,7 +4658,6 @@ impl<'de> serde::Deserialize<'de> for TransactionBodyView {
             Fee,
             FmdClues,
             MemoView,
-            AddressViews,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -4694,7 +4685,6 @@ impl<'de> serde::Deserialize<'de> for TransactionBodyView {
                             "fee" => Ok(GeneratedField::Fee),
                             "fmdClues" | "fmd_clues" => Ok(GeneratedField::FmdClues),
                             "memoView" | "memo_view" => Ok(GeneratedField::MemoView),
-                            "addressViews" | "address_views" => Ok(GeneratedField::AddressViews),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -4720,7 +4710,6 @@ impl<'de> serde::Deserialize<'de> for TransactionBodyView {
                 let mut fee__ = None;
                 let mut fmd_clues__ = None;
                 let mut memo_view__ = None;
-                let mut address_views__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::ActionViews => {
@@ -4761,12 +4750,6 @@ impl<'de> serde::Deserialize<'de> for TransactionBodyView {
                             }
                             memo_view__ = map.next_value()?;
                         }
-                        GeneratedField::AddressViews => {
-                            if address_views__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("addressViews"));
-                            }
-                            address_views__ = Some(map.next_value()?);
-                        }
                     }
                 }
                 Ok(TransactionBodyView {
@@ -4776,7 +4759,6 @@ impl<'de> serde::Deserialize<'de> for TransactionBodyView {
                     fee: fee__,
                     fmd_clues: fmd_clues__.unwrap_or_default(),
                     memo_view: memo_view__,
-                    address_views: address_views__.unwrap_or_default(),
                 })
             }
         }
@@ -4803,6 +4785,9 @@ impl serde::Serialize for TransactionPerspective {
         if !self.address_views.is_empty() {
             len += 1;
         }
+        if !self.denoms.is_empty() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1alpha1.TransactionPerspective", len)?;
         if !self.payload_keys.is_empty() {
             struct_ser.serialize_field("payloadKeys", &self.payload_keys)?;
@@ -4815,6 +4800,9 @@ impl serde::Serialize for TransactionPerspective {
         }
         if !self.address_views.is_empty() {
             struct_ser.serialize_field("addressViews", &self.address_views)?;
+        }
+        if !self.denoms.is_empty() {
+            struct_ser.serialize_field("denoms", &self.denoms)?;
         }
         struct_ser.end()
     }
@@ -4834,6 +4822,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
             "adviceNotes",
             "address_views",
             "addressViews",
+            "denoms",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -4842,6 +4831,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
             SpendNullifiers,
             AdviceNotes,
             AddressViews,
+            Denoms,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -4867,6 +4857,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
                             "spendNullifiers" | "spend_nullifiers" => Ok(GeneratedField::SpendNullifiers),
                             "adviceNotes" | "advice_notes" => Ok(GeneratedField::AdviceNotes),
                             "addressViews" | "address_views" => Ok(GeneratedField::AddressViews),
+                            "denoms" => Ok(GeneratedField::Denoms),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -4890,6 +4881,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
                 let mut spend_nullifiers__ = None;
                 let mut advice_notes__ = None;
                 let mut address_views__ = None;
+                let mut denoms__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::PayloadKeys => {
@@ -4916,6 +4908,12 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
                             }
                             address_views__ = Some(map.next_value()?);
                         }
+                        GeneratedField::Denoms => {
+                            if denoms__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("denoms"));
+                            }
+                            denoms__ = Some(map.next_value()?);
+                        }
                     }
                 }
                 Ok(TransactionPerspective {
@@ -4923,6 +4921,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
                     spend_nullifiers: spend_nullifiers__.unwrap_or_default(),
                     advice_notes: advice_notes__.unwrap_or_default(),
                     address_views: address_views__.unwrap_or_default(),
+                    denoms: denoms__.unwrap_or_default(),
                 })
             }
         }

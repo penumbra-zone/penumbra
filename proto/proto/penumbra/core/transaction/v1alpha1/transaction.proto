@@ -97,6 +97,8 @@ message TransactionPerspective {
   repeated crypto.v1alpha1.Note advice_notes = 3;
   // Any relevant address views.
   repeated crypto.v1alpha1.AddressView address_views = 4;
+  // Any relevant denoms for viewed assets.
+  repeated crypto.v1alpha1.Denom denoms = 5;
 }
 
 message PayloadKey {
@@ -141,9 +143,6 @@ message TransactionBodyView {
   // An optional view of a transaction memo. It will only be populated if there are
   // outputs in the actions of this transaction.
   optional MemoView memo_view = 6;
-  
-  // Any relevant address views.
-  repeated crypto.v1alpha1.AddressView address_views = 400;
 }
 
 // A view of a specific state change action performed by a transaction.
@@ -185,7 +184,7 @@ message ActionView {
 message SpendView {
   message Visible {
     Spend spend = 1;
-    crypto.v1alpha1.Note note = 2;
+    crypto.v1alpha1.NoteView note = 2;
   }
   message Opaque {
     Spend spend = 1;
@@ -199,7 +198,7 @@ message SpendView {
 message DelegatorVoteView {
   message Visible {
     governance.v1alpha1.DelegatorVote delegator_vote = 1;
-    crypto.v1alpha1.Note note = 2;
+    crypto.v1alpha1.NoteView note = 2;
   }
   message Opaque {
     governance.v1alpha1.DelegatorVote delegator_vote = 1;
@@ -213,7 +212,7 @@ message DelegatorVoteView {
 message OutputView {
   message Visible {
     Output output = 1;
-    crypto.v1alpha1.Note note = 2;
+    crypto.v1alpha1.NoteView note = 2;
     PayloadKey payload_key = 3;
   }
 

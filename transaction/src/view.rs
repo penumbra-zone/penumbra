@@ -5,7 +5,6 @@ use decaf377_rdsa::{Binding, Signature};
 use penumbra_crypto::{
     memo::{MemoCiphertext, MemoPlaintext},
     transaction::Fee,
-    AddressView,
 };
 use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType};
 
@@ -39,7 +38,6 @@ pub struct TransactionBodyView {
     pub fee: Fee,
     pub fmd_clues: Vec<Clue>,
     pub memo_view: Option<MemoView>,
-    pub address_views: Vec<AddressView>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -178,12 +176,6 @@ impl TryFrom<pbt::TransactionBodyView> for TransactionBodyView {
             None => None,
         };
 
-        let mut address_views = Vec::<AddressView>::new();
-
-        for address_view in body_view.address_views.clone() {
-            address_views.push(address_view.try_into()?);
-        }
-
         Ok(TransactionBodyView {
             action_views,
             expiry_height,
@@ -191,7 +183,6 @@ impl TryFrom<pbt::TransactionBodyView> for TransactionBodyView {
             fee,
             fmd_clues,
             memo_view,
-            address_views,
         })
     }
 }
@@ -215,7 +206,6 @@ impl From<TransactionBodyView> for pbt::TransactionBodyView {
             fee: Some(v.fee.into()),
             fmd_clues: v.fmd_clues.into_iter().map(Into::into).collect(),
             memo_view: v.memo_view.map(|m| m.into()),
-            address_views: v.address_views.into_iter().map(Into::into).collect(),
         }
     }
 }

@@ -546,12 +546,23 @@ impl ViewProtocolService for ViewService {
         // TODO: query for advice notes
         let advice_notes = Default::default();
 
+        // TODO: HACK: filter known denoms to relevant ones
+        let denoms: asset::Cache = self
+            .storage
+            .all_assets()
+            .await
+            .map_err(|_| tonic::Status::internal("Error retrieving denoms"))?
+            .into_iter()
+            .map(|asset| asset.denom)
+            .collect();
+
         // TODO: give views on addresses other than in spends
         let txp = TransactionPerspective {
             payload_keys,
             spend_nullifiers,
             advice_notes,
             address_views: address_views.into_values().collect(),
+            denoms,
         };
 
         let response = pb::TransactionPerspectiveResponse {

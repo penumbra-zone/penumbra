@@ -191,7 +191,6 @@ impl Transaction {
                 fee: self.transaction_body().fee,
                 fmd_clues: self.transaction_body().fmd_clues,
                 memo_view,
-                address_views: txp.address_views.clone(),
             },
             binding_sig: self.binding_sig,
             anchor: self.anchor,
