@@ -1247,9 +1247,6 @@ impl serde::Serialize for Undelegate {
         if self.start_epoch_index != 0 {
             len += 1;
         }
-        if self.end_epoch_index != 0 {
-            len += 1;
-        }
         if self.unbonded_amount.is_some() {
             len += 1;
         }
@@ -1262,9 +1259,6 @@ impl serde::Serialize for Undelegate {
         }
         if self.start_epoch_index != 0 {
             struct_ser.serialize_field("startEpochIndex", ToString::to_string(&self.start_epoch_index).as_str())?;
-        }
-        if self.end_epoch_index != 0 {
-            struct_ser.serialize_field("endEpochIndex", ToString::to_string(&self.end_epoch_index).as_str())?;
         }
         if let Some(v) = self.unbonded_amount.as_ref() {
             struct_ser.serialize_field("unbondedAmount", v)?;
@@ -1286,8 +1280,6 @@ impl<'de> serde::Deserialize<'de> for Undelegate {
             "validatorIdentity",
             "start_epoch_index",
             "startEpochIndex",
-            "end_epoch_index",
-            "endEpochIndex",
             "unbonded_amount",
             "unbondedAmount",
             "delegation_amount",
@@ -1298,7 +1290,6 @@ impl<'de> serde::Deserialize<'de> for Undelegate {
         enum GeneratedField {
             ValidatorIdentity,
             StartEpochIndex,
-            EndEpochIndex,
             UnbondedAmount,
             DelegationAmount,
         }
@@ -1324,7 +1315,6 @@ impl<'de> serde::Deserialize<'de> for Undelegate {
                         match value {
                             "validatorIdentity" | "validator_identity" => Ok(GeneratedField::ValidatorIdentity),
                             "startEpochIndex" | "start_epoch_index" => Ok(GeneratedField::StartEpochIndex),
-                            "endEpochIndex" | "end_epoch_index" => Ok(GeneratedField::EndEpochIndex),
                             "unbondedAmount" | "unbonded_amount" => Ok(GeneratedField::UnbondedAmount),
                             "delegationAmount" | "delegation_amount" => Ok(GeneratedField::DelegationAmount),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
@@ -1348,7 +1338,6 @@ impl<'de> serde::Deserialize<'de> for Undelegate {
             {
                 let mut validator_identity__ = None;
                 let mut start_epoch_index__ = None;
-                let mut end_epoch_index__ = None;
                 let mut unbonded_amount__ = None;
                 let mut delegation_amount__ = None;
                 while let Some(k) = map.next_key()? {
@@ -1364,14 +1353,6 @@ impl<'de> serde::Deserialize<'de> for Undelegate {
                                 return Err(serde::de::Error::duplicate_field("startEpochIndex"));
                             }
                             start_epoch_index__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
-                        }
-                        GeneratedField::EndEpochIndex => {
-                            if end_epoch_index__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("endEpochIndex"));
-                            }
-                            end_epoch_index__ = 
                                 Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
@@ -1392,7 +1373,6 @@ impl<'de> serde::Deserialize<'de> for Undelegate {
                 Ok(Undelegate {
                     validator_identity: validator_identity__,
                     start_epoch_index: start_epoch_index__.unwrap_or_default(),
-                    end_epoch_index: end_epoch_index__.unwrap_or_default(),
                     unbonded_amount: unbonded_amount__,
                     delegation_amount: delegation_amount__,
                 })

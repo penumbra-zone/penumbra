@@ -387,7 +387,6 @@ impl EffectingData for Undelegate {
         // in the hash one after the other.
         state.update(&self.validator_identity.0.to_bytes());
         state.update(&self.start_epoch_index.to_le_bytes());
-        state.update(&self.end_epoch_index.to_le_bytes());
         state.update(&self.unbonded_amount.to_le_bytes());
         state.update(&self.delegation_amount.to_le_bytes());
 

@@ -13,28 +13,22 @@ use crate::asset;
 pub struct UnbondingToken {
     validator_identity: IdentityKey,
     start_epoch_index: u64,
-    end_epoch_index: u64,
     base_denom: asset::Denom,
 }
 
 impl UnbondingToken {
-    pub fn new(
-        validator_identity: IdentityKey,
-        start_epoch_index: u64,
-        end_epoch_index: u64,
-    ) -> Self {
+    pub fn new(validator_identity: IdentityKey, start_epoch_index: u64) -> Self {
         // This format string needs to be in sync with the asset registry
         let base_denom = asset::REGISTRY
             .parse_denom(&format!(
                 // "uu" is not a typo, these are micro-unbonding tokens
-                "uunbonding_epoch_{start_epoch_index}_until_{end_epoch_index}_{validator_identity}"
+                "uunbonding_epoch_{start_epoch_index}_{validator_identity}"
             ))
             .expect("base denom format is valid");
         UnbondingToken {
             validator_identity,
             base_denom,
             start_epoch_index,
-            end_epoch_index,
         }
     }
 
@@ -60,10 +54,6 @@ impl UnbondingToken {
 
     pub fn start_epoch_index(&self) -> u64 {
         self.start_epoch_index
-    }
-
-    pub fn end_epoch_index(&self) -> u64 {
-        self.end_epoch_index
     }
 }
 
@@ -98,17 +88,11 @@ impl TryFrom<asset::Denom> for UnbondingToken {
             .expect("start is a named capture")
             .as_str()
             .parse()?;
-        let end_epoch_index = captures
-            .name("end")
-            .expect("end is a named capture")
-            .as_str()
-            .parse()?;
 
         Ok(Self {
             base_denom,
             validator_identity,
             start_epoch_index,
-            end_epoch_index,
         })
     }
 }
@@ -163,7 +147,7 @@ mod tests {
         let start = 782;
         let end = 789;
 
-        let token = UnbondingToken::new(ik, start, end);
+        let token = UnbondingToken::new(ik, start);
 
         let denom = token.to_string();
         println!("denom: {denom}");

@@ -300,18 +300,15 @@ pub struct Undelegate {
     /// The index of the epoch in which this undelegation was performed.
     #[prost(uint64, tag = "2")]
     pub start_epoch_index: u64,
-    /// The index of the epoch in which unbonding should complete.
-    #[prost(uint64, tag = "3")]
-    pub end_epoch_index: u64,
     /// The amount to undelegate, in units of unbonding tokens.
-    #[prost(message, optional, tag = "4")]
+    #[prost(message, optional, tag = "3")]
     pub unbonded_amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
     /// The amount of delegation tokens consumed by this action.
     ///
     /// This is implied by the validator's exchange rate in the specified epoch
     /// (and should be checked in transaction validation!), but including it allows
     /// stateless verification that the transaction is internally consistent.
-    #[prost(message, optional, tag = "5")]
+    #[prost(message, optional, tag = "4")]
     pub delegation_amount: ::core::option::Option<
         super::super::crypto::v1alpha1::Amount,
     >,

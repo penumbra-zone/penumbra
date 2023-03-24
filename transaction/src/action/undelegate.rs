@@ -18,8 +18,6 @@ pub struct Undelegate {
     /// The index of the epoch in which this undelegation was performed.
     /// The undelegation takes effect after the unbonding period.
     pub start_epoch_index: u64,
-    /// The index of the epoch in which unbonding should complete.
-    pub end_epoch_index: u64,
     /// The amount to undelegate, in units of unbonding tokens.
     pub unbonded_amount: Amount,
     /// The amount of delegation tokens produced by this action.
@@ -58,11 +56,7 @@ impl Undelegate {
     }
 
     pub fn unbonding_token(&self) -> UnbondingToken {
-        UnbondingToken::new(
-            self.validator_identity.clone(),
-            self.start_epoch_index,
-            self.end_epoch_index,
-        )
+        UnbondingToken::new(self.validator_identity.clone(), self.start_epoch_index)
     }
 
     pub fn delegation_token(&self) -> DelegationToken {
@@ -79,7 +73,6 @@ impl From<Undelegate> for pb::Undelegate {
         pb::Undelegate {
             validator_identity: Some(d.validator_identity.into()),
             start_epoch_index: d.start_epoch_index,
-            end_epoch_index: d.end_epoch_index,
             unbonded_amount: Some(d.unbonded_amount.into()),
             delegation_amount: Some(d.delegation_amount.into()),
         }
@@ -95,7 +88,6 @@ impl TryFrom<pb::Undelegate> for Undelegate {
                 .ok_or_else(|| anyhow::anyhow!("missing validator identity"))?
                 .try_into()?,
             start_epoch_index: d.start_epoch_index,
-            end_epoch_index: d.end_epoch_index,
             unbonded_amount: d
                 .unbonded_amount
                 .ok_or_else(|| anyhow::anyhow!("missing unbonded amount"))?

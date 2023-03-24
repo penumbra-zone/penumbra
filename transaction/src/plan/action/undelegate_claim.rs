@@ -53,12 +53,8 @@ impl UndelegateClaimPlan {
     }
 
     pub fn balance(&self) -> penumbra_crypto::Balance {
-        let unbonding_id = UnbondingToken::new(
-            self.validator_identity,
-            self.start_epoch_index,
-            self.end_epoch_index,
-        )
-        .id();
+        let unbonding_id =
+            UnbondingToken::new(self.validator_identity, self.start_epoch_index).id();
         self.penalty
             .balance_for_claim(unbonding_id, self.unbonding_amount)
     }
