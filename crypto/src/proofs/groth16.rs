@@ -153,7 +153,6 @@ mod tests {
         let epoch_duration = 20;
         let height = epoch_duration * position.epoch() + position.block();
 
-        // Delta, Lambda without indices denote the whole batch
         let output_data = BatchSwapOutputData {
             delta_1: Amount::from(100u64),
             delta_2: Amount::from(100u64),

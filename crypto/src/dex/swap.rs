@@ -84,12 +84,12 @@ impl ToConstraintField<Fq> for BatchSwapOutputData {
         public_inputs.extend(self.trading_pair.asset_1.0.to_field_elements().unwrap());
         public_inputs.extend(self.trading_pair.asset_2.0.to_field_elements().unwrap());
         public_inputs.extend(Fq::from(self.height).to_field_elements().unwrap());
-        // public_inputs.extend(Fq::from(self.delta_1).to_field_elements().unwrap());
-        // public_inputs.extend(Fq::from(self.delta_2).to_field_elements().unwrap());
-        // public_inputs.extend(Fq::from(self.lambda_1_1).to_field_elements().unwrap());
-        // public_inputs.extend(Fq::from(self.lambda_2_1).to_field_elements().unwrap());
-        // public_inputs.extend(Fq::from(self.lambda_1_2).to_field_elements().unwrap());
-        // public_inputs.extend(Fq::from(self.lambda_2_2).to_field_elements().unwrap());
+        public_inputs.extend(Fq::from(self.delta_1).to_field_elements().unwrap());
+        public_inputs.extend(Fq::from(self.delta_2).to_field_elements().unwrap());
+        public_inputs.extend(Fq::from(self.lambda_1_1).to_field_elements().unwrap());
+        public_inputs.extend(Fq::from(self.lambda_2_1).to_field_elements().unwrap());
+        public_inputs.extend(Fq::from(self.lambda_1_2).to_field_elements().unwrap());
+        public_inputs.extend(Fq::from(self.lambda_2_2).to_field_elements().unwrap());
         Some(public_inputs)
     }
 }
@@ -97,12 +97,12 @@ impl ToConstraintField<Fq> for BatchSwapOutputData {
 pub struct BatchSwapOutputDataVar {
     pub trading_pair: TradingPairVar,
     pub height: FqVar,
-    // pub delta_1: AmountVar,
-    // pub delta_2: AmountVar,
-    // pub lambda_1_1: AmountVar,
-    // pub lambda_2_1: AmountVar,
-    // pub lambda_1_2: AmountVar,
-    // pub lambda_2_2: AmountVar,
+    pub delta_1: AmountVar,
+    pub delta_2: AmountVar,
+    pub lambda_1_1: AmountVar,
+    pub lambda_2_1: AmountVar,
+    pub lambda_1_2: AmountVar,
+    pub lambda_2_2: AmountVar,
 }
 
 impl AllocVar<BatchSwapOutputData, Fq> for BatchSwapOutputDataVar {
@@ -117,27 +117,21 @@ impl AllocVar<BatchSwapOutputData, Fq> for BatchSwapOutputDataVar {
         let trading_pair =
             TradingPairVar::new_variable(cs.clone(), || Ok(output_data.trading_pair), mode)?;
         let height = FqVar::new_variable(cs.clone(), || Ok(Fq::from(output_data.height)), mode)?;
-        // let delta_1 =
-        //     AmountVar::new_variable(cs.clone(), || Ok(Amount::from(output_data.delta_1)), mode)?;
-        // let delta_2 =
-        //     AmountVar::new_variable(cs.clone(), || Ok(Amount::from(output_data.delta_2)), mode)?;
-        // let lambda_1_1 =
-        //     AmountVar::new_variable(cs.clone(), || Ok(Amount::from(output_data.lambda_1_1)), mode)?;
-        // let lambda_2_1 =
-        //     AmountVar::new_variable(cs, || Ok(Amount::from(output_data.lambda_2_1)), mode)?;
-        // let lambda_1_2 =
-        //     AmountVar::new_variable(cs.clone(), || Ok(Amount::from(output_data.lambda_1_2)), mode)?;
-        // let lambda_2_2 =
-        //     AmountVar::new_variable(cs, || Ok(Amount::from(output_data.lambda_2_2)), mode)?;
+        let delta_1 = AmountVar::new_variable(cs.clone(), || Ok(output_data.delta_1), mode)?;
+        let delta_2 = AmountVar::new_variable(cs.clone(), || Ok(output_data.delta_2), mode)?;
+        let lambda_1_1 = AmountVar::new_variable(cs.clone(), || Ok(output_data.lambda_1_1), mode)?;
+        let lambda_2_1 = AmountVar::new_variable(cs.clone(), || Ok(output_data.lambda_2_1), mode)?;
+        let lambda_1_2 = AmountVar::new_variable(cs.clone(), || Ok(output_data.lambda_1_2), mode)?;
+        let lambda_2_2 = AmountVar::new_variable(cs, || Ok(output_data.lambda_2_2), mode)?;
         Ok(Self {
             trading_pair,
             height,
-            // delta_1,
-            // delta_2,
-            // lambda_1_1,
-            // lambda_2_1,
-            // lambda_1_2,
-            // lambda_2_2
+            delta_1,
+            delta_2,
+            lambda_1_1,
+            lambda_2_1,
+            lambda_1_2,
+            lambda_2_2,
         })
     }
 }
