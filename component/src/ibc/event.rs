@@ -15,7 +15,12 @@ pub fn create_client(client_id: ClientId, client_state: tm::client_state::Client
         "create_client",
         vec![
             ("client_id", client_id.to_string()).index(),
-            ("client_type", client_state.client_type().to_string()).index(),
+            // BUG: impl Display for ClientType is wrong and doesn't match as_str
+            (
+                "client_type",
+                client_state.client_type().as_str().to_owned(),
+            )
+                .index(),
             ("consensus_height", client_state.latest_height().to_string()).index(),
         ],
     )
@@ -30,7 +35,12 @@ pub fn update_client(
         "update_client",
         vec![
             ("client_id", client_id.to_string()).index(),
-            ("client_type", client_state.client_type().to_string()).index(),
+            // BUG: impl Display for ClientType is wrong and doesn't match as_str
+            (
+                "client_type",
+                client_state.client_type().as_str().to_owned(),
+            )
+                .index(),
             ("consensus_height", header.height().to_string()).index(),
             ("header", header.to_string()).index(),
         ],
