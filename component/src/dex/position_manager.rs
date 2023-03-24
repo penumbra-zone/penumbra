@@ -17,9 +17,10 @@ use std::pin::Pin;
 
 #[async_trait]
 pub trait PositionRead: StateRead {
+    /// Return a stream of all [`position::Metadata`] available.
     fn all_positions(&self) -> Pin<Box<dyn Stream<Item = Result<position::Metadata>> + Send + '_>> {
         let prefix = state_key::all_positions();
-        self.prefix(&prefix)
+        self.prefix(prefix)
             .map(|entry| match entry {
                 Ok((_, metadata)) => Ok(metadata),
                 Err(e) => Err(e),
@@ -27,6 +28,7 @@ pub trait PositionRead: StateRead {
             .boxed()
     }
 
+    /// Returns a stream of [`position::Id`] ordered by effective price.
     async fn positions_by_price(
         &self,
         pair: DirectedTradingPair,
@@ -103,21 +105,22 @@ pub trait PositionManager: StateWrite + PositionRead {
     }
 
     /// Fill a trade of `input` value against all available positions, until completion, or
-    /// the available liquidity is exhausted.
+    /// the available liquidity is exhausted. Returns a tuple containing the unfilled amount,
+    /// and the total output of the trade.
     /// TODO(erwan): global slippage parameter should act as a "fail-early" guard here, but we'd
     /// need to get some signal about the phi of the position we're executing against.
     async fn fill(&mut self, input: Value, pair: DirectedTradingPair) -> Result<(Value, Value)> {
-        let mut hposition_ids = self.positions_by_price(pair).await;
+        let mut position_ids = self.positions_by_price(pair).await;
 
-        let mut remaining = input;
         let zero = Value {
             asset_id: input.asset_id,
             amount: 0u64.into(),
         };
 
+        let mut remaining = input;
         let mut total_output = zero;
 
-        for id in position_ids.next().await {
+        while let Some(id) = position_ids.next().await {
             if remaining == zero {
                 break;
             }
