@@ -127,6 +127,49 @@ pub struct Value {
     #[prost(message, optional, tag = "2")]
     pub asset_id: ::core::option::Option<AssetId>,
 }
+/// Represents a value of a known or unknown denomination.
+///
+/// Note: unlike some other View types, we don't just store the underlying
+/// `Value` message together with an additional `Denom`.  Instead, we record
+/// either an `Amount` and `Denom` (only) or an `Amount` and `AssetId`.  This is
+/// because we don't want to allow a situation where the supplied `Denom` doesn't
+/// match the `AssetId`, and a consumer of the API that doesn't check is tricked.
+/// This way, the `Denom` will always match, because the consumer is forced to
+/// recompute it themselves if they want it.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ValueView {
+    #[prost(oneof = "value_view::ValueView", tags = "1, 2")]
+    pub value_view: ::core::option::Option<value_view::ValueView>,
+}
+/// Nested message and enum types in `ValueView`.
+pub mod value_view {
+    /// A value whose asset ID has a known denomination.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct KnownDenom {
+        #[prost(message, optional, tag = "1")]
+        pub amount: ::core::option::Option<super::Amount>,
+        #[prost(message, optional, tag = "2")]
+        pub denom: ::core::option::Option<super::Denom>,
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct UnknownDenom {
+        #[prost(message, optional, tag = "1")]
+        pub amount: ::core::option::Option<super::Amount>,
+        #[prost(message, optional, tag = "2")]
+        pub asset_id: ::core::option::Option<super::AssetId>,
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum ValueView {
+        #[prost(message, tag = "1")]
+        KnownDenom(KnownDenom),
+        #[prost(message, tag = "2")]
+        UnknownDenom(UnknownDenom),
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MerkleRoot {
@@ -170,6 +213,16 @@ pub struct Note {
     pub rseed: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "3")]
     pub address: ::core::option::Option<Address>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct NoteView {
+    #[prost(message, optional, tag = "1")]
+    pub value: ::core::option::Option<ValueView>,
+    #[prost(bytes = "vec", tag = "2")]
+    pub rseed: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "3")]
+    pub address: ::core::option::Option<AddressView>,
 }
 /// An encrypted note.
 /// 132 = 1(type) + 11(d) + 8(amount) + 32(asset_id) + 32(rcm) + 32(pk_d) + 16(MAC) bytes.

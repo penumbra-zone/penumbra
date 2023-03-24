@@ -9,7 +9,7 @@ use std::{
     str::FromStr,
 };
 
-use penumbra_proto::core::crypto::v1alpha1 as pb;
+use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
@@ -21,6 +21,87 @@ pub struct Value {
     pub amount: asset::Amount,
     // The asset ID. 256 bits.
     pub asset_id: asset::Id,
+}
+
+/// Represents a value of a known or unknown denomination.
+///
+/// Note: unlike some other View types, we don't just store the underlying
+/// `Value` message together with an additional `Denom`.  Instead, we record
+/// either an `Amount` and `Denom` (only) or an `Amount` and `AssetId`.  This is
+/// because we don't want to allow a situation where the supplied `Denom` doesn't
+/// match the `AssetId`, and a consumer of the API that doesn't check is tricked.
+/// This way, the `Denom` will always match, because the consumer is forced to
+/// recompute it themselves if they want it.
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
+#[serde(try_from = "pb::ValueView", into = "pb::ValueView")]
+pub enum ValueView {
+    KnownDenom {
+        amount: asset::Amount,
+        denom: asset::Denom,
+    },
+    UnknownDenom {
+        amount: asset::Amount,
+        asset_id: asset::Id,
+    },
+}
+
+impl ValueView {
+    /// Convert this `ValueView` down to the underlying `Value`.
+    pub fn value(&self) -> Value {
+        self.clone().into()
+    }
+}
+
+impl Value {
+    /// Convert this `Value` into a `ValueView` with the given `Denom`.
+    pub fn view_with_denom(&self, denom: asset::Denom) -> anyhow::Result<ValueView> {
+        if self.asset_id == denom.id() {
+            Ok(ValueView::KnownDenom {
+                amount: self.amount,
+                denom,
+            })
+        } else {
+            Err(anyhow::anyhow!(
+                "asset ID {} does not match denom {}",
+                self.asset_id,
+                denom
+            ))
+        }
+    }
+
+    /// Convert this `Value` into a `ValueView` using the given `asset::Cache`
+    pub fn view_with_cache(&self, cache: &asset::Cache) -> ValueView {
+        match cache.get(&self.asset_id) {
+            Some(denom) => ValueView::KnownDenom {
+                amount: self.amount,
+                denom: denom.clone(),
+            },
+            None => ValueView::UnknownDenom {
+                amount: self.amount,
+                asset_id: self.asset_id.clone(),
+            },
+        }
+    }
+}
+
+impl From<ValueView> for Value {
+    fn from(value: ValueView) -> Self {
+        match value {
+            ValueView::KnownDenom { amount, denom } => Value {
+                amount,
+                asset_id: asset::Id::from(denom),
+            },
+            ValueView::UnknownDenom { amount, asset_id } => Value { amount, asset_id },
+        }
+    }
+}
+
+impl DomainType for Value {
+    type Proto = pb::Value;
+}
+
+impl DomainType for ValueView {
+    type Proto = pb::ValueView;
 }
 
 impl From<Value> for pb::Value {
@@ -47,6 +128,60 @@ impl TryFrom<pb::Value> for Value {
                 .ok_or_else(|| anyhow::anyhow!("missing value commitment"))?
                 .try_into()?,
         })
+    }
+}
+
+impl From<ValueView> for pb::ValueView {
+    fn from(v: ValueView) -> Self {
+        match v {
+            ValueView::KnownDenom { amount, denom } => pb::ValueView {
+                value_view: Some(pb::value_view::ValueView::KnownDenom(
+                    pb::value_view::KnownDenom {
+                        amount: Some(amount.into()),
+                        denom: Some(denom.into()),
+                    },
+                )),
+            },
+            ValueView::UnknownDenom { amount, asset_id } => pb::ValueView {
+                value_view: Some(pb::value_view::ValueView::UnknownDenom(
+                    pb::value_view::UnknownDenom {
+                        amount: Some(amount.into()),
+                        asset_id: Some(asset_id.into()),
+                    },
+                )),
+            },
+        }
+    }
+}
+
+impl TryFrom<pb::ValueView> for ValueView {
+    type Error = anyhow::Error;
+    fn try_from(value: pb::ValueView) -> Result<Self, Self::Error> {
+        match value
+            .value_view
+            .ok_or_else(|| anyhow::anyhow!("missing value_view field"))?
+        {
+            pb::value_view::ValueView::KnownDenom(v) => Ok(ValueView::KnownDenom {
+                amount: v
+                    .amount
+                    .ok_or_else(|| anyhow::anyhow!("missing amount field"))?
+                    .try_into()?,
+                denom: v
+                    .denom
+                    .ok_or_else(|| anyhow::anyhow!("missing denom field"))?
+                    .try_into()?,
+            }),
+            pb::value_view::ValueView::UnknownDenom(v) => Ok(ValueView::UnknownDenom {
+                amount: v
+                    .amount
+                    .ok_or_else(|| anyhow::anyhow!("missing amount field"))?
+                    .try_into()?,
+                asset_id: v
+                    .asset_id
+                    .ok_or_else(|| anyhow::anyhow!("missing asset_id field"))?
+                    .try_into()?,
+            }),
+        }
     }
 }
 
