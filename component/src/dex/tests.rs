@@ -1,5 +1,5 @@
 mod test {
-    use penumbra_chain::StateWriteExt;
+    use anyhow::Ok;
     use penumbra_crypto::{
         asset,
         dex::{
@@ -26,16 +26,6 @@ mod test {
         let storage = TempStorage::new().await?.apply_default_genesis().await?;
         let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
         let mut state_tx = state.try_begin_transaction().unwrap();
-        let height = 1;
-
-        state_tx.put_block_height(height);
-        state_tx.put_epoch_by_height(
-            height,
-            penumbra_chain::Epoch {
-                index: 0,
-                start_height: 0,
-            },
-        );
 
         let gm = asset::REGISTRY.parse_unit("gm");
         let gn = asset::REGISTRY.parse_unit("gn");
@@ -207,16 +197,12 @@ mod test {
     }
 
     #[tokio::test]
-
     /// Try to execute against multiple positions, mainly testing that the order-book traversal
     /// is done correctly.
-    async fn multiple_orders() -> anyhow::Result<()> {
+    async fn multiple_limit_orders() -> anyhow::Result<()> {
         let storage = TempStorage::new().await?.apply_default_genesis().await?;
         let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
         let mut state_tx = state.try_begin_transaction().unwrap();
-        let height = 1;
-
-        state_tx.put_block_height(height);
 
         let gm = asset::REGISTRY.parse_unit("gm");
         let gn = asset::REGISTRY.parse_unit("gn");
@@ -244,12 +230,8 @@ mod test {
         let reserves_2 = reserves_1.clone();
         let reserves_3 = reserves_1.clone();
 
-        let phi_1 = TradingFunction::new(
-            pair.into(),
-            9u32.into(),
-            1_000_000u64.into(),
-            1_200_000u64.into(),
-        );
+        let phi_1 =
+            TradingFunction::new(pair.into(), 9u32, 1_000_000u64.into(), 1_200_000u64.into());
 
         // Order B's trading function, with a 10 bps fee.
         let mut phi_2 = phi_1.clone();
@@ -303,6 +285,9 @@ mod test {
             .fill(delta_1, DirectedTradingPair::new(gm.id(), gn.id()))
             .await?;
 
+        assert_eq!(unfilled.amount, Amount::zero());
+        assert_eq!(output.amount, 120_000u64.into());
+
         // We fetch the entire order book, checking that only position 1 was filled against.
         let p_1 = state_test_1.position_by_id(&position_1_id).await?.unwrap();
         assert_eq!(p_1.reserves.r1, 100_091u64.into());
@@ -325,6 +310,9 @@ mod test {
             .fill(delta_1, DirectedTradingPair::new(gm.id(), gn.id()))
             .await?;
 
+        assert_eq!(unfilled.amount, Amount::zero());
+        assert_eq!(output.amount, 240_000u64.into());
+
         // We fetch the entire order book, checking that only position 1 was filled against.
         let p_1 = state_test_2.position_by_id(&position_1_id).await?.unwrap();
         assert_eq!(p_1.reserves.r1, 100_091u64.into());
@@ -336,7 +324,7 @@ mod test {
         assert_eq!(p_3.reserves.r1, Amount::zero());
         assert_eq!(p_3.reserves.r2, 120_000u64.into());
 
-        // Test 3: We're trying to all the orders.
+        // Test 3: We're trying to fill all the orders.
         let mut state_test_3 = full_orderbook_state.fork();
         let delta_1 = Value {
             amount: delta_1.amount + 100_111u64.into(),
@@ -346,6 +334,9 @@ mod test {
         let (unfilled, output) = state_test_3
             .fill(delta_1, DirectedTradingPair::new(gm.id(), gn.id()))
             .await?;
+
+        assert_eq!(unfilled.amount, Amount::zero());
+        assert_eq!(output.amount, 360_000u64.into());
 
         // We fetch the entire order book, checking that only position 1 was filled against.
         let p_1 = state_test_3.position_by_id(&position_1_id).await?.unwrap();
