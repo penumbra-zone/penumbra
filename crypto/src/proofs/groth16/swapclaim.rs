@@ -37,9 +37,9 @@ pub struct SwapClaimCircuit {
     // The nullifier deriving key for the Swap NFT note.
     nk: NullifierKey,
     /// Output amount 1
-    lambda_1_i: u64,
+    lambda_1_i: Amount,
     /// Output amount 2
-    lambda_2_i: u64,
+    lambda_2_i: Amount,
     /// Note commitment blinding factor for the first output note
     note_blinding_1: Fq,
     /// Note commitment blinding factor for the second output note
@@ -76,10 +76,8 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
         let merkle_path_var =
             tct::r1cs::MerkleAuthPathVar::new(cs.clone(), self.state_commitment_proof)?;
         let nk_var = NullifierKeyVar::new_witness(cs.clone(), || Ok(self.nk))?;
-        let lambda_1_i_var =
-            AmountVar::new_witness(cs.clone(), || Ok(Amount::from(self.lambda_1_i)))?;
-        let lambda_2_i_var =
-            AmountVar::new_witness(cs.clone(), || Ok(Amount::from(self.lambda_2_i)))?;
+        let lambda_1_i_var = AmountVar::new_witness(cs.clone(), || Ok(self.lambda_1_i))?;
+        let lambda_2_i_var = AmountVar::new_witness(cs.clone(), || Ok(self.lambda_2_i))?;
         let note_blinding_1 = FqVar::new_witness(cs.clone(), || Ok(self.note_blinding_1))?;
         let note_blinding_2 = FqVar::new_witness(cs.clone(), || Ok(self.note_blinding_2))?;
 
@@ -195,13 +193,14 @@ impl ParameterSetup for SwapClaimCircuit {
         let nullifier = Nullifier(Fq::from(1));
         let claim_fee = Fee::default();
         let output_data = BatchSwapOutputData {
-            delta_1: 0,
-            delta_2: 0,
-            lambda_1: 0,
-            lambda_2: 0,
+            delta_1: Amount::from(0u64),
+            delta_2: Amount::from(0u64),
+            lambda_1_1: Amount::from(0u64),
+            lambda_2_1: Amount::from(0u64),
+            lambda_1_2: Amount::from(0u64),
+            lambda_2_2: Amount::from(0u64),
             height: 0,
             trading_pair: swap_plaintext.trading_pair,
-            success: true,
         };
         let note_blinding_1 = Fq::from(1);
         let note_blinding_2 = Fq::from(1);
@@ -218,8 +217,8 @@ impl ParameterSetup for SwapClaimCircuit {
             claim_fee,
             output_data,
             epoch_duration,
-            lambda_1_i: 1,
-            lambda_2_i: 1,
+            lambda_1_i: Amount::from(1u64),
+            lambda_2_i: Amount::from(1u64),
             note_blinding_1,
             note_blinding_2,
             note_commitment_1,
@@ -245,8 +244,8 @@ impl SwapClaimProof {
         anchor: tct::Root,
         nullifier: Nullifier,
         epoch_duration: u64,
-        lambda_1_i: u64,
-        lambda_2_i: u64,
+        lambda_1_i: Amount,
+        lambda_2_i: Amount,
         note_blinding_1: Fq,
         note_blinding_2: Fq,
         note_commitment_1: tct::Commitment,

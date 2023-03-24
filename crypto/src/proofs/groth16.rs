@@ -155,13 +155,14 @@ mod tests {
 
         // Delta, Lambda without indices denote the whole batch
         let output_data = BatchSwapOutputData {
-            delta_1: 100,
-            delta_2: 100,
-            lambda_1: 50,
-            lambda_2: 25,
+            delta_1: Amount::from(100u64),
+            delta_2: Amount::from(100u64),
+            lambda_1_1: Amount::from(50u64),
+            lambda_2_1: Amount::from(25u64),
+            lambda_1_2: Amount::from(23u64),
+            lambda_2_2: Amount::from(50u64),
             height: height.into(),
             trading_pair: swap_plaintext.trading_pair,
-            success: true,
         };
         let (lambda_1_i, lambda_2_i) = output_data.pro_rata_outputs(
             (delta_1_i.try_into().unwrap(),
