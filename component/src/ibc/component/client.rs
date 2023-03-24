@@ -385,9 +385,10 @@ pub trait StateReadExt: StateRead {
     ) -> Result<TendermintConsensusState> {
         // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
         // it's not in the same path namespace.
-        self.get(&format!("penumbra_consensus_states/{height}"))
+        let key = format!("penumbra_consensus_states/{height}");
+        self.get(&key)
             .await?
-            .ok_or_else(|| anyhow::anyhow!("consensus state not found"))
+            .ok_or_else(|| anyhow::anyhow!("failed to find penumbra consensus state at path {key}"))
     }
 
     async fn get_verified_consensus_state(
@@ -395,11 +396,10 @@ pub trait StateReadExt: StateRead {
         height: Height,
         client_id: ClientId,
     ) -> Result<TendermintConsensusState> {
-        self.get(&state_key::verified_client_consensus_state(
-            &client_id, &height,
-        ))
-        .await?
-        .ok_or_else(|| anyhow::anyhow!("consensus state not found"))
+        let key = state_key::verified_client_consensus_state(&client_id, &height);
+        self.get(&key)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("failed to find verified consensus state at path {key}"))
     }
 
     async fn get_client_update_height(
