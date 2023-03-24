@@ -81,6 +81,31 @@ message Value {
     AssetId asset_id = 2;
 }
 
+// Represents a value of a known or unknown denomination.
+//
+// Note: unlike some other View types, we don't just store the underlying
+// `Value` message together with an additional `Denom`.  Instead, we record
+// either an `Amount` and `Denom` (only) or an `Amount` and `AssetId`.  This is
+// because we don't want to allow a situation where the supplied `Denom` doesn't
+// match the `AssetId`, and a consumer of the API that doesn't check is tricked.
+// This way, the `Denom` will always match, because the consumer is forced to
+// recompute it themselves if they want it.
+message ValueView {
+    // A value whose asset ID has a known denomination.
+    message KnownDenom {
+        Amount amount = 1;
+        Denom denom = 2;
+    }
+    message UnknownDenom {
+        Amount amount = 1;
+        AssetId asset_id = 2;
+    }
+    oneof value_view {
+        KnownDenom known_denom = 1;
+        UnknownDenom unknown_denom = 2;
+    }
+}
+
 message MerkleRoot {
     bytes inner = 1;
 }
@@ -108,6 +133,12 @@ message Note {
     Value value = 1;
     bytes rseed = 2;
     Address address = 3;
+}
+
+message NoteView {
+    ValueView value = 1;
+    bytes rseed = 2;
+    AddressView address = 3;
 }
 
 // An encrypted note.

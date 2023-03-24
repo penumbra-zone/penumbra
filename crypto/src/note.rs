@@ -18,7 +18,7 @@ use crate::{
     asset, balance, fmd, ka,
     keys::{Diversifier, IncomingViewingKey, OutgoingViewingKey},
     symmetric::{OutgoingCipherKey, OvkWrappedKey, PayloadKey, PayloadKind},
-    Address, Fq, NotePayload, Rseed, Value,
+    Address, AddressView, Fq, NotePayload, Rseed, Value, ValueView,
 };
 
 pub const NOTE_LEN_BYTES: usize = 160;
@@ -40,6 +40,30 @@ pub struct Note {
     /// with a valid transmission key (the `ka::Public` does not validate
     /// the curve point until it is used, since validation is not free).
     transmission_key_s: Fq,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(into = "pb::NoteView", try_from = "pb::NoteView")]
+pub struct NoteView {
+    pub value: ValueView,
+    pub rseed: Rseed,
+    pub address: AddressView,
+}
+
+impl NoteView {
+    pub fn note(&self) -> Result<Note, Error> {
+        self.clone().try_into()
+    }
+}
+
+impl TryFrom<NoteView> for Note {
+    type Error = Error;
+
+    fn try_from(view: NoteView) -> Result<Self, Self::Error> {
+        let value = view.value.value();
+        let address = view.address.address();
+        Note::from_parts(address, value, view.rseed)
+    }
 }
 
 /// A note ciphertext.
@@ -360,6 +384,37 @@ impl From<Note> for pb::Note {
             value: Some(msg.value().into()),
             rseed: msg.rseed.to_bytes().to_vec(),
         }
+    }
+}
+
+impl From<NoteView> for pb::NoteView {
+    fn from(msg: NoteView) -> Self {
+        pb::NoteView {
+            address: Some(msg.address.into()),
+            value: Some(msg.value.into()),
+            rseed: msg.rseed.to_bytes().to_vec(),
+        }
+    }
+}
+
+impl TryFrom<pb::NoteView> for NoteView {
+    type Error = anyhow::Error;
+    fn try_from(msg: pb::NoteView) -> Result<Self, Self::Error> {
+        let address = msg
+            .address
+            .ok_or_else(|| anyhow::anyhow!("missing value"))?
+            .try_into()?;
+        let value = msg
+            .value
+            .ok_or_else(|| anyhow::anyhow!("missing value"))?
+            .try_into()?;
+        let rseed = Rseed(msg.rseed.as_slice().try_into()?);
+
+        Ok(NoteView {
+            address,
+            value,
+            rseed,
+        })
     }
 }
 

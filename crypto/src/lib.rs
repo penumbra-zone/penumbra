@@ -37,12 +37,12 @@ pub use governance::{
     voting_receipt_token::{self, VotingReceiptToken},
 };
 pub use keys::FullViewingKey;
-pub use note::{Note, NoteCiphertext};
+pub use note::{Note, NoteCiphertext, NoteView};
 pub use note_payload::NotePayload;
 pub use nullifier::Nullifier;
 pub use rseed::Rseed;
 pub use symmetric::PayloadKey;
-pub use value::Value;
+pub use value::{Value, ValueView};
 
 fn fmt_hex<T: AsRef<[u8]>>(data: T, f: &mut std::fmt::Formatter) -> std::fmt::Result {
     write!(f, "{}", hex::encode(data))
