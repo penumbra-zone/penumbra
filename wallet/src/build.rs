@@ -1,7 +1,7 @@
 use anyhow::Result;
 use penumbra_crypto::FullViewingKey;
 use penumbra_custody::{AuthorizeRequest, CustodyClient};
-use penumbra_transaction::{plan::TransactionPlan, Transaction};
+use penumbra_transaction::{plan::TransactionPlan, AuthorizationData, Transaction};
 use penumbra_view::ViewClient;
 use rand_core::{CryptoRng, RngCore};
 
@@ -18,7 +18,7 @@ where
     R: RngCore + CryptoRng,
 {
     // Get the authorization data from the custody service...
-    let auth_data = custody
+    let auth_data: AuthorizationData = custody
         .authorize(AuthorizeRequest {
             account_group_id: fvk.account_group_id(),
             plan: plan.clone(),
@@ -43,8 +43,12 @@ where
     #[cfg(feature = "parallel")]
     {
         let tx = plan
-            .build_concurrent(&mut rng, fvk, auth_data, witness_data)
-            .await?;
+            .build_concurrent(&mut rng, fvk, witness_data)
+            .await
+            .map_err(|_| tonic::Status::failed_precondition("Error building transaction"))?
+            .authorize(&mut rng, &auth_data)
+            .map_err(|_| tonic::Status::failed_precondition("Error authorizing transaction"))?;
+
         Ok(tx)
     }
 }

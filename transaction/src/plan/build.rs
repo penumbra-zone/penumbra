@@ -12,10 +12,9 @@ use crate::{
 impl TransactionPlan {
     /// Build the transaction this plan describes.
     ///
-    /// To turn a transaction plan into a transaction, we need:
+    /// To turn a transaction plan into an unauthorized transaction, we need:
     ///
     /// - `fvk`, the [`FullViewingKey`] for the source funds;
-    /// - `auth_data`, the [`AuthorizationData`] authorizing the transaction;
     /// - `witness_data`, the [`WitnessData`] used for proving;
     ///
     pub fn build(
@@ -181,19 +180,8 @@ impl TransactionPlan {
         self,
         rng: R,
         fvk: &FullViewingKey,
-        auth_data: AuthorizationData,
         witness_data: WitnessData,
-    ) -> Result<Transaction> {
-        // Do some basic input sanity-checking.
-        let spend_count = self.spend_plans().count();
-        if auth_data.spend_auths.len() != spend_count {
-            return Err(anyhow::anyhow!(
-                "expected {} spend auths but got {}",
-                spend_count,
-                auth_data.spend_auths.len()
-            ));
-        }
-
+    ) -> Result<UnauthTransaction> {
         let mut fmd_clues = Vec::new();
         let mut synthetic_blinding_factor = Fr::zero();
 
@@ -213,11 +201,7 @@ impl TransactionPlan {
 
         // Start building the transaction's spends.
         let mut in_progress_spend_actions = Vec::new();
-        for (spend_plan, auth_sig) in self
-            .spend_plans()
-            .cloned()
-            .zip(auth_data.spend_auths.into_iter())
-        {
+        for spend_plan in self.spend_plans().cloned() {
             let note_commitment = spend_plan.note.commit();
             let auth_path = witness_data
                 .state_commitment_proofs
@@ -228,6 +212,8 @@ impl TransactionPlan {
             synthetic_blinding_factor += spend_plan.value_blinding;
             let fvk_ = fvk.clone();
             in_progress_spend_actions.push(tokio::spawn(async move {
+                //Add dummy auth sig for UnauthTransaction
+                let auth_sig = [0; 64].into();
                 spend_plan.spend(&fvk_, auth_sig, auth_path)
             }));
         }
@@ -273,11 +259,7 @@ impl TransactionPlan {
 
         // Start building the transaction's delegator votes.
         let mut in_progress_delegator_vote_actions = Vec::new();
-        for (delegator_vote_plan, auth_sig) in self
-            .delegator_vote_plans()
-            .zip(auth_data.delegator_vote_auths.into_iter())
-            .map(|(dvp, auth_sig)| (dvp.clone(), auth_sig))
-        {
+        for delegator_vote_plan in self.delegator_vote_plans().cloned() {
             let note_commitment = delegator_vote_plan.staked_note.commit();
             let auth_path = witness_data
                 .state_commitment_proofs
@@ -287,6 +269,8 @@ impl TransactionPlan {
             let fvk_ = fvk.clone();
 
             in_progress_delegator_vote_actions.push(tokio::spawn(async move {
+                //Add dummy auth sig for UnauthTransaction
+                let auth_sig = [0; 64].into();
                 delegator_vote_plan.delegator_vote(&fvk_, auth_sig, auth_path.clone())
             }));
         }
@@ -387,10 +371,13 @@ impl TransactionPlan {
         let binding_sig = binding_signing_key.sign(rng, auth_hash.as_bytes());
         tracing::debug!(bvk = ?rdsa::VerificationKey::from(&binding_signing_key), ?auth_hash);
 
-        Ok(Transaction {
-            transaction_body,
-            anchor: witness_data.anchor,
-            binding_sig,
+        Ok(UnauthTransaction {
+            inner: Transaction {
+                transaction_body,
+                binding_sig,
+                anchor: witness_data.anchor,
+            },
+            synthetic_blinding_factor,
         })
     }
 }
@@ -407,6 +394,15 @@ impl UnauthTransaction {
         rng: &mut R,
         auth_data: &AuthorizationData,
     ) -> Result<Transaction> {
+        // Do some basic input sanity-checking.
+        let spend_count = self.inner.spends().count();
+        if auth_data.spend_auths.len() != spend_count {
+            return Err(anyhow::anyhow!(
+                "expected {} spend auths but got {}",
+                spend_count,
+                auth_data.spend_auths.len()
+            ));
+        }
         // Overwrite the placeholder auth sigs with the real ones from `auth_data`
 
         for (spend, auth_sig) in self
