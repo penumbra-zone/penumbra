@@ -1,10 +1,7 @@
 use std::convert::TryFrom;
 
 use anyhow::Result;
-use penumbra_crypto::{
-    dex::{lp::LpNft, swap::SwapPayload},
-    note, NotePayload,
-};
+use penumbra_crypto::{dex::swap::SwapPayload, note, NotePayload};
 use penumbra_proto::core::chain::v1alpha1::{self as pb};
 
 use serde::{Deserialize, Serialize};
@@ -24,10 +21,6 @@ pub enum StatePayload {
         source: NoteSource,
         swap: SwapPayload,
     },
-    Position {
-        lpnft: LpNft,
-        commitment: note::Commitment,
-    },
 }
 
 pub struct StatePayloadDebugKind<'a>(pub &'a StatePayload);
@@ -38,7 +31,6 @@ impl<'a> std::fmt::Debug for StatePayloadDebugKind<'a> {
             StatePayload::RolledUp(_) => f.debug_struct("RolledUp").finish_non_exhaustive(),
             StatePayload::Note { .. } => f.debug_struct("Note").finish_non_exhaustive(),
             StatePayload::Swap { .. } => f.debug_struct("Swap").finish_non_exhaustive(),
-            StatePayload::Position { .. } => f.debug_struct("Position").finish_non_exhaustive(),
         }
     }
 }
@@ -49,7 +41,6 @@ impl StatePayload {
             Self::RolledUp(commitment) => commitment,
             Self::Note { note, .. } => &note.note_commitment,
             Self::Swap { swap, .. } => &swap.commitment,
-            Self::Position { commitment, .. } => commitment,
         }
     }
 
@@ -58,7 +49,6 @@ impl StatePayload {
             Self::RolledUp(_) => None,
             Self::Note { source, .. } => Some(source),
             Self::Swap { source, .. } => Some(source),
-            Self::Position { .. } => None,
         }
     }
 }
@@ -86,14 +76,6 @@ impl From<StatePayload> for pb::StatePayload {
                     pb::state_payload::Swap {
                         source: Some(source.into()),
                         swap: Some(swap.into()),
-                    },
-                )),
-            },
-            StatePayload::Position { lpnft, commitment } => pb::StatePayload {
-                state_payload: Some(pb::state_payload::StatePayload::Position(
-                    pb::state_payload::Position {
-                        lp_nft: Some(lpnft.into()),
-                        commitment: Some(commitment.into()),
                     },
                 )),
             },
@@ -132,17 +114,6 @@ impl TryFrom<pb::StatePayload> for StatePayload {
                     .try_into()?,
                 source: source
                     .ok_or_else(|| anyhow::anyhow!("missing source"))?
-                    .try_into()?,
-            }),
-            Some(pb::state_payload::StatePayload::Position(pb::state_payload::Position {
-                lp_nft,
-                commitment,
-            })) => Ok(StatePayload::Position {
-                lpnft: lp_nft
-                    .ok_or_else(|| anyhow::anyhow!("missing LP NFT"))?
-                    .try_into()?,
-                commitment: commitment
-                    .ok_or_else(|| anyhow::anyhow!("missing commitment"))?
                     .try_into()?,
             }),
             None => Err(anyhow::anyhow!("missing state payload")),

@@ -185,7 +185,6 @@ impl ViewClient {
                         self.nct.insert(Forget, commitment).unwrap();
                     }
                 }
-                StatePayload::Position { lpnft, commitment } => todo!(),
             }
         }
 
@@ -309,7 +308,6 @@ impl ViewClient {
                         self.nct.insert(Forget, commitment).unwrap();
                     }
                 }
-                StatePayload::Position { lpnft, commitment } => todo!(),
             }
         }
 
