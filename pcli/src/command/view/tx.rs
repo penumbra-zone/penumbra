@@ -1,7 +1,8 @@
 use anyhow::{Context, Result};
 use comfy_table::{presets, Table};
 use penumbra_crypto::{
-    asset::Cache, dex::swap::SwapPlaintext, keys::IncomingViewingKey, Address, Note, Value,
+    asset::Cache, dex::swap::SwapPlaintext, keys::IncomingViewingKey, Address, Note, NoteView,
+    Value,
 };
 use penumbra_proto::{client::v1alpha1::GetTxRequest, DomainType};
 use penumbra_transaction::{
@@ -141,24 +142,24 @@ fn format_visible_swap_claim_row(
 fn format_visible_output_row(
     asset_cache: &Cache,
     ivk: &IncomingViewingKey,
-    decrypted_note: &Note,
+    decrypted_note: &NoteView,
 ) -> String {
     format!(
         "{} to {}",
-        decrypted_note.value().format(asset_cache),
-        format_address(ivk, &decrypted_note.address()),
+        decrypted_note.value.value().format(asset_cache),
+        format_address(ivk, &decrypted_note.address.address()),
     )
 }
 
 fn format_visible_spend_row(
     asset_cache: &Cache,
     ivk: &IncomingViewingKey,
-    decrypted_note: &Note,
+    decrypted_note: &NoteView,
 ) -> String {
     format!(
         "{} spent {}",
-        format_address(ivk, &decrypted_note.address()),
-        decrypted_note.value().format(asset_cache),
+        format_address(ivk, &decrypted_note.address.address()),
+        decrypted_note.value.value().format(asset_cache),
     )
 }
 
@@ -251,8 +252,8 @@ impl TxCmd {
                         format_visible_swap_claim_row(
                             &asset_cache,
                             &swap_claim,
-                            &output_1,
-                            &output_2,
+                            &output_1.note()?,
+                            &output_2.note()?,
                         ),
                     ],
                     penumbra_transaction::ActionView::SwapClaim(SwapClaimView::Opaque {

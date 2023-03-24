@@ -1,4 +1,7 @@
-use penumbra_crypto::{note, AddressView, Note, Nullifier, PayloadKey};
+use penumbra_crypto::{
+    asset::{self, Denom},
+    note, AddressView, Note, NoteView, Nullifier, PayloadKey,
+};
 use penumbra_proto::core::transaction::v1alpha1::{
     self as pb, NullifierWithNote, PayloadKeyWithCommitment,
 };
@@ -29,6 +32,33 @@ pub struct TransactionPerspective {
     pub advice_notes: BTreeMap<note::Commitment, Note>,
     /// The views of any relevant address.
     pub address_views: Vec<AddressView>,
+    /// Any relevant denoms for viewed assets.
+    pub denoms: asset::Cache,
+}
+
+impl TransactionPerspective {
+    pub fn view_note(&self, note: Note) -> NoteView {
+        let note_address = note.address();
+
+        let address = match self
+            .address_views
+            .iter()
+            .find(|av| av.address() == note_address)
+        {
+            Some(av) => av.clone(),
+            None => AddressView::Opaque {
+                address: note_address,
+            },
+        };
+
+        let value = note.value().view_with_cache(&self.denoms);
+
+        NoteView {
+            address,
+            value,
+            rseed: note.rseed(),
+        }
+    }
 }
 
 impl TransactionPerspective {}
@@ -39,6 +69,7 @@ impl From<TransactionPerspective> for pb::TransactionPerspective {
         let mut spend_nullifiers = Vec::new();
         let mut advice_notes = Vec::new();
         let mut address_views = Vec::new();
+        let mut denoms = Vec::new();
 
         for (commitment, payload_key) in msg.payload_keys {
             payload_keys.push(PayloadKeyWithCommitment {
@@ -59,11 +90,16 @@ impl From<TransactionPerspective> for pb::TransactionPerspective {
         for address_view in msg.address_views {
             address_views.push(address_view.into());
         }
+        for denom in msg.denoms.values() {
+            denoms.push(denom.clone().into());
+        }
+
         Self {
             payload_keys,
             spend_nullifiers,
             advice_notes,
             address_views,
+            denoms,
         }
     }
 }
@@ -76,6 +112,7 @@ impl TryFrom<pb::TransactionPerspective> for TransactionPerspective {
         let mut spend_nullifiers = BTreeMap::new();
         let mut advice_notes = BTreeMap::new();
         let mut address_views = Vec::new();
+        let mut denoms = Vec::new();
 
         for pk in msg.payload_keys {
             if pk.commitment.is_some() {
@@ -102,11 +139,16 @@ impl TryFrom<pb::TransactionPerspective> for TransactionPerspective {
             address_views.push(address_view.try_into()?);
         }
 
+        for denom in msg.denoms {
+            denoms.push(Denom::try_from(denom)?);
+        }
+
         Ok(Self {
             payload_keys,
             spend_nullifiers,
             advice_notes,
             address_views,
+            denoms: denoms.into_iter().collect(),
         })
     }
 }

@@ -123,8 +123,8 @@ message SwapView {
 message SwapClaimView {
   message Visible {
     dex.v1alpha1.SwapClaim swap_claim = 1;
-    crypto.v1alpha1.Note output_1 = 2;
-    crypto.v1alpha1.Note output_2 = 3;
+    crypto.v1alpha1.NoteView output_1 = 2;
+    crypto.v1alpha1.NoteView output_2 = 3;
   }
   message Opaque { 
     dex.v1alpha1.SwapClaim swap_claim = 1;

@@ -30,8 +30,8 @@ impl IsAction for SwapClaim {
             (Some(output_1), Some(output_2)) => {
                 let swap_claim_view = SwapClaimView::Visible {
                     swap_claim: self.to_owned(),
-                    output_1: output_1.to_owned(),
-                    output_2: output_2.to_owned(),
+                    output_1: txp.view_note(output_1.to_owned()),
+                    output_2: txp.view_note(output_2.to_owned()),
                 };
                 ActionView::SwapClaim(swap_claim_view)
             }

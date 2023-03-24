@@ -1,4 +1,4 @@
-use penumbra_crypto::Note;
+use penumbra_crypto::NoteView;
 use penumbra_proto::{core::dex::v1alpha1 as pbd, DomainType};
 use serde::{Deserialize, Serialize};
 
@@ -10,8 +10,8 @@ use crate::action::SwapClaim;
 pub enum SwapClaimView {
     Visible {
         swap_claim: SwapClaim,
-        output_1: Note,
-        output_2: Note,
+        output_1: NoteView,
+        output_2: NoteView,
     },
     Opaque {
         swap_claim: SwapClaim,

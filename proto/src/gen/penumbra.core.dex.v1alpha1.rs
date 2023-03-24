@@ -191,11 +191,11 @@ pub mod swap_claim_view {
         pub swap_claim: ::core::option::Option<super::SwapClaim>,
         #[prost(message, optional, tag = "2")]
         pub output_1: ::core::option::Option<
-            super::super::super::crypto::v1alpha1::Note,
+            super::super::super::crypto::v1alpha1::NoteView,
         >,
         #[prost(message, optional, tag = "3")]
         pub output_2: ::core::option::Option<
-            super::super::super::crypto::v1alpha1::Note,
+            super::super::super::crypto::v1alpha1::NoteView,
         >,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]

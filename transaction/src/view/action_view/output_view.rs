@@ -1,4 +1,4 @@
-use penumbra_crypto::{Note, PayloadKey};
+use penumbra_crypto::{NoteView, PayloadKey};
 use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType};
 use serde::{Deserialize, Serialize};
 
@@ -10,7 +10,7 @@ use crate::action::Output;
 pub enum OutputView {
     Visible {
         output: Output,
-        note: Note,
+        note: NoteView,
         payload_key: PayloadKey,
     },
     Opaque {

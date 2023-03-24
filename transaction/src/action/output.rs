@@ -46,7 +46,7 @@ impl IsAction for Output {
                 // Neither decryption failed, so return the visible ActionView
                 OutputView::Visible {
                     output: self.to_owned(),
-                    note: decrypted_note,
+                    note: txp.view_note(decrypted_note),
                     payload_key: decrypted_memo_key,
                 }
             } else {

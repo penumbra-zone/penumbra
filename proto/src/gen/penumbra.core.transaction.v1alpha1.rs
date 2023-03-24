@@ -137,6 +137,9 @@ pub struct TransactionPerspective {
     pub address_views: ::prost::alloc::vec::Vec<
         super::super::crypto::v1alpha1::AddressView,
     >,
+    /// Any relevant denoms for viewed assets.
+    #[prost(message, repeated, tag = "5")]
+    pub denoms: ::prost::alloc::vec::Vec<super::super::crypto::v1alpha1::Denom>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -202,11 +205,6 @@ pub struct TransactionBodyView {
     /// outputs in the actions of this transaction.
     #[prost(message, optional, tag = "6")]
     pub memo_view: ::core::option::Option<MemoView>,
-    /// Any relevant address views.
-    #[prost(message, repeated, tag = "400")]
-    pub address_views: ::prost::alloc::vec::Vec<
-        super::super::crypto::v1alpha1::AddressView,
-    >,
 }
 /// A view of a specific state change action performed by a transaction.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -292,7 +290,9 @@ pub mod spend_view {
         #[prost(message, optional, tag = "1")]
         pub spend: ::core::option::Option<super::Spend>,
         #[prost(message, optional, tag = "2")]
-        pub note: ::core::option::Option<super::super::super::crypto::v1alpha1::Note>,
+        pub note: ::core::option::Option<
+            super::super::super::crypto::v1alpha1::NoteView,
+        >,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
@@ -325,7 +325,9 @@ pub mod delegator_vote_view {
             super::super::super::governance::v1alpha1::DelegatorVote,
         >,
         #[prost(message, optional, tag = "2")]
-        pub note: ::core::option::Option<super::super::super::crypto::v1alpha1::Note>,
+        pub note: ::core::option::Option<
+            super::super::super::crypto::v1alpha1::NoteView,
+        >,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
@@ -358,7 +360,9 @@ pub mod output_view {
         #[prost(message, optional, tag = "1")]
         pub output: ::core::option::Option<super::Output>,
         #[prost(message, optional, tag = "2")]
-        pub note: ::core::option::Option<super::super::super::crypto::v1alpha1::Note>,
+        pub note: ::core::option::Option<
+            super::super::super::crypto::v1alpha1::NoteView,
+        >,
         #[prost(message, optional, tag = "3")]
         pub payload_key: ::core::option::Option<super::PayloadKey>,
     }

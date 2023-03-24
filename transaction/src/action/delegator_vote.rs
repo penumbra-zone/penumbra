@@ -33,7 +33,7 @@ impl IsAction for DelegatorVote {
         let delegator_vote_view = match txp.spend_nullifiers.get(&self.body.nullifier) {
             Some(note) => DelegatorVoteView::Visible {
                 delegator_vote: self.to_owned(),
-                note: note.to_owned(),
+                note: txp.view_note(note.to_owned()),
             },
             None => DelegatorVoteView::Opaque {
                 delegator_vote: self.to_owned(),
