@@ -251,16 +251,8 @@ impl SwapClaimProof {
         note_blinding_2: Fq,
         note_commitment_1: tct::Commitment,
         note_commitment_2: tct::Commitment,
+        output_data: BatchSwapOutputData,
     ) -> anyhow::Result<Self> {
-        let output_data = BatchSwapOutputData {
-            delta_1: 0,
-            delta_2: 0,
-            lambda_1: 0,
-            lambda_2: 0,
-            height: 0,
-            trading_pair: swap_plaintext.trading_pair,
-            success: true,
-        };
         let circuit = SwapClaimCircuit {
             swap_plaintext: swap_plaintext.clone(),
             state_commitment_proof,

@@ -24,7 +24,7 @@ mod tests {
         dex::{swap::SwapPlaintext, BatchSwapOutputData, TradingPair},
         keys::{SeedPhrase, SpendKey},
         transaction::Fee,
-        Address, Amount, Balance, Nullifier, Rseed,
+        Address, Amount, Balance, Rseed,
     };
     use ark_groth16::{Groth16, ProvingKey, VerifyingKey};
     use ark_r1cs_std::prelude::*;
@@ -190,6 +190,7 @@ mod tests {
             note_blinding_2,
             note_commitment_1,
             note_commitment_2,
+            output_data,
         )
         .expect("can create proof");
 

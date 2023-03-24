@@ -73,6 +73,7 @@ impl SwapClaimPlan {
             note_blinding_2,
             note_commitment_1,
             note_commitment_2,
+            self.output_data,
         )
         .expect("can generate ZKSwapClaimProof")
     }
