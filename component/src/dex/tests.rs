@@ -235,7 +235,6 @@ mod test {
 
         Then, we want to try to fill A and B. And finally, all three orders, ensuring that execution
         is well-ordered.
-
         */
 
         let reserves_1 = Reserves {
@@ -340,7 +339,7 @@ mod test {
         // Test 3: We're trying to all the orders.
         let mut state_test_3 = full_orderbook_state.fork();
         let delta_1 = Value {
-            amount: delta_1.amount + 100_112u64.into(),
+            amount: delta_1.amount + 100_111u64.into(),
             asset_id: gm.id(),
         };
 
@@ -356,7 +355,7 @@ mod test {
         assert_eq!(p_2.reserves.r1, 100_101u64.into());
         assert_eq!(p_2.reserves.r2, Amount::zero());
         let p_3 = state_test_3.position_by_id(&position_3_id).await?.unwrap();
-        assert_eq!(p_3.reserves.r1, 100_112u64.into());
+        assert_eq!(p_3.reserves.r1, 100_111u64.into());
         assert_eq!(p_3.reserves.r2, Amount::zero());
 
         Ok(())
