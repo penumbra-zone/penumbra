@@ -8,6 +8,9 @@ use super::{trading_function::TradingFunction, Reserves};
 /// Reserve amounts for positions must be at most 112 bits wide.
 pub const MAX_RESERVE_AMOUNT: u128 = (1 << 112) - 1;
 
+/// A trading function's fee (spread) must be at most 50% (5000 bps)
+pub const MAX_FEE_BPS: u32 = 5000;
+
 /// Data identifying a position.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::Position", into = "pb::Position")]
@@ -53,11 +56,19 @@ impl Position {
         Id(bytes)
     }
 
-    pub fn check_bounds(&self) -> anyhow::Result<()> {
-        if self.phi.component.p.value() as u128 > MAX_RESERVE_AMOUNT
+    pub fn check_stateless(&self) -> anyhow::Result<()> {
+        if self.phi.component.p == 0u64.into() || self.phi.component.q == 0u64.into() {
+            Err(anyhow::anyhow!(
+                "trading function coefficients must be nonzero"
+            ))
+        } else if self.phi.component.p.value() as u128 > MAX_RESERVE_AMOUNT
             || self.phi.component.q.value() as u128 > MAX_RESERVE_AMOUNT
         {
-            Err(anyhow::anyhow!(format!("Position's trading function coefficients are out-of-bounds (limit: {MAX_RESERVE_AMOUNT})")))
+            Err(anyhow!("trading function coefficients are too large"))
+        } else if self.phi.pair.asset_1() == self.phi.pair.asset_2() {
+            Err(anyhow!("cyclical pairs aren't allowed"))
+        } else if self.phi.component.fee > MAX_FEE_BPS {
+            Err(anyhow!("fee cannot be greater than 50% (5000bps)"))
         } else {
             Ok(())
         }

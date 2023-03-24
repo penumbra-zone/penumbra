@@ -13,35 +13,16 @@ use crate::dex::{PositionManager, PositionRead};
 /// Debits the initial reserves and credits an opened position NFT.
 impl ActionHandler for PositionOpen {
     async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
-        // We limit the sizes of reserve amounts to at most 112 bits. This is to give us extra
-        // headroom to perform intermediary calculations during composition.
+        // Check:
+        //  + reserves are at most 112 bits wide,
+        //  + at least some assets are provisioned.
         self.initial_reserves.check_bounds()?;
-        self.position.check_bounds()?;
-
-        // The initial reserves must have a non-zero Amount for either `r1` or `r2`.
-        if self.initial_reserves.r1.value() == 0 && self.initial_reserves.r2.value() == 0 {
-            return Err(anyhow::anyhow!(
-                "initial reserves must have a non-zero Amount for either `r1` or `r2`"
-            ));
-        }
-
-        if self.position.phi.component.p == 0u64.into() {
-            return Err(anyhow::anyhow!(
-                "p coefficient of trading function must be nonzero"
-            ));
-        }
-        if self.position.phi.component.q == 0u64.into() {
-            return Err(anyhow::anyhow!(
-                "q coefficient of trading function must be nonzero"
-            ));
-        }
-
-        // The two assets in the position must be different.
-        if self.position.phi.pair.asset_1() == self.position.phi.pair.asset_2() {
-            return Err(anyhow::anyhow!(
-                "the two assets in the position must be different"
-            ));
-        }
+        // Check:
+        //  + the trading function coefficients are at most 112 bits wide.
+        //  + the trading function coefficients are non-zero,
+        //  + the trading function doesn't specify a cyclic pair,
+        //  + the fee is <=50%.
+        self.position.check_stateless()?;
 
         // TODO: any other checks of the trading function that should be performed?
 
