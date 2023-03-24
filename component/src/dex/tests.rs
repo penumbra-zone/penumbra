@@ -205,4 +205,160 @@ mod test {
 
         Ok(())
     }
+
+    #[tokio::test]
+
+    /// Try to execute against multiple positions, mainly testing that the order-book traversal
+    /// is done correctly.
+    async fn multiple_orders() -> anyhow::Result<()> {
+        let storage = TempStorage::new().await?.apply_default_genesis().await?;
+        let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+        let mut state_tx = state.try_begin_transaction().unwrap();
+        let height = 1;
+
+        state_tx.put_block_height(height);
+
+        let gm = asset::REGISTRY.parse_unit("gm");
+        let gn = asset::REGISTRY.parse_unit("gn");
+
+        let pair = DirectedTradingPair::new(gm.id(), gn.id());
+
+        /*
+
+        Setup 1:
+            We post three identical orders (buy 100gm@1.2gn), with different fees.
+            Order A: 9 bps fee
+            Order B: 10 bps fee
+            Order C: 11 bps fee
+
+        We are first going to check that we can exhaust Order A, while leaving B and C intact.
+
+        Then, we want to try to fill A and B. And finally, all three orders, ensuring that execution
+        is well-ordered.
+
+        */
+
+        let reserves_1 = Reserves {
+            r1: 0u64.into(),
+            r2: 120_000u64.into(),
+        };
+        let reserves_2 = reserves_1.clone();
+        let reserves_3 = reserves_1.clone();
+
+        let phi_1 = TradingFunction::new(
+            pair.into(),
+            9u32.into(),
+            1_000_000u64.into(),
+            1_200_000u64.into(),
+        );
+
+        // Order B's trading function, with a 10 bps fee.
+        let mut phi_2 = phi_1.clone();
+        phi_2.component.fee = 10u32;
+
+        // Order C's trading function with an 11 bps fee
+        let mut phi_3 = phi_1.clone();
+        phi_3.component.fee = 11u32;
+
+        // Building positions:
+
+        let position_1 = position::Metadata {
+            reserves: reserves_1,
+            position: position::Position::new(OsRng, phi_1),
+            state: position::State::Opened,
+        };
+
+        let position_2 = position::Metadata {
+            reserves: reserves_2,
+            position: position::Position::new(OsRng, phi_2),
+            state: position::State::Opened,
+        };
+
+        let position_3 = position::Metadata {
+            reserves: reserves_3,
+            position: position::Position::new(OsRng, phi_3),
+            state: position::State::Opened,
+        };
+
+        let position_1_id = position_1.position.id();
+        let position_2_id = position_2.position.id();
+        let position_3_id = position_3.position.id();
+
+        // The insertion order shouldn't matter.
+        state_tx.put_position(position_2.clone());
+        state_tx.put_position(position_1.clone());
+        state_tx.put_position(position_3.clone());
+
+        let mut full_orderbook_state = state_tx;
+
+        let mut state_test_1 = full_orderbook_state.fork();
+
+        // Since we are looking to exhaust the order's reserves, Delta_1's amount
+        // must account for the 9 bps fee, rounded up.
+        let delta_1 = Value {
+            amount: 100_091u64.into(),
+            asset_id: gm.id(),
+        };
+
+        let (unfilled, output) = state_test_1
+            .fill(delta_1, DirectedTradingPair::new(gm.id(), gn.id()))
+            .await?;
+
+        // We fetch the entire order book, checking that only position 1 was filled against.
+        let p_1 = state_test_1.position_by_id(&position_1_id).await?.unwrap();
+        assert_eq!(p_1.reserves.r1, 100_091u64.into());
+        assert_eq!(p_1.reserves.r2, Amount::zero());
+        let p_2 = state_test_1.position_by_id(&position_2_id).await?.unwrap();
+        assert_eq!(p_2.reserves.r1, Amount::zero());
+        assert_eq!(p_2.reserves.r2, 120_000u64.into());
+        let p_3 = state_test_1.position_by_id(&position_3_id).await?.unwrap();
+        assert_eq!(p_3.reserves.r1, Amount::zero());
+        assert_eq!(p_3.reserves.r2, 120_000u64.into());
+
+        // Test 2: We're trying to exhaust order A and B:
+        let mut state_test_2 = full_orderbook_state.fork();
+        let delta_1 = Value {
+            amount: delta_1.amount + 100_101u64.into(),
+            asset_id: gm.id(),
+        };
+
+        let (unfilled, output) = state_test_2
+            .fill(delta_1, DirectedTradingPair::new(gm.id(), gn.id()))
+            .await?;
+
+        // We fetch the entire order book, checking that only position 1 was filled against.
+        let p_1 = state_test_2.position_by_id(&position_1_id).await?.unwrap();
+        assert_eq!(p_1.reserves.r1, 100_091u64.into());
+        assert_eq!(p_1.reserves.r2, Amount::zero());
+        let p_2 = state_test_2.position_by_id(&position_2_id).await?.unwrap();
+        assert_eq!(p_2.reserves.r1, 100_101u64.into());
+        assert_eq!(p_2.reserves.r2, 0u64.into());
+        let p_3 = state_test_2.position_by_id(&position_3_id).await?.unwrap();
+        assert_eq!(p_3.reserves.r1, Amount::zero());
+        assert_eq!(p_3.reserves.r2, 120_000u64.into());
+
+        // Test 3: We're trying to all the orders.
+        let mut state_test_3 = full_orderbook_state.fork();
+        let delta_1 = Value {
+            amount: delta_1.amount + 100_112u64.into(),
+            asset_id: gm.id(),
+        };
+
+        let (unfilled, output) = state_test_3
+            .fill(delta_1, DirectedTradingPair::new(gm.id(), gn.id()))
+            .await?;
+
+        // We fetch the entire order book, checking that only position 1 was filled against.
+        let p_1 = state_test_3.position_by_id(&position_1_id).await?.unwrap();
+        assert_eq!(p_1.reserves.r1, 100_091u64.into());
+        assert_eq!(p_1.reserves.r2, Amount::zero());
+        let p_2 = state_test_3.position_by_id(&position_2_id).await?.unwrap();
+        assert_eq!(p_2.reserves.r1, 100_101u64.into());
+        assert_eq!(p_2.reserves.r2, Amount::zero());
+        let p_3 = state_test_3.position_by_id(&position_3_id).await?.unwrap();
+        assert_eq!(p_3.reserves.r1, 100_112u64.into());
+        assert_eq!(p_3.reserves.r2, Amount::zero());
+
+        Ok(())
+    }
 }
