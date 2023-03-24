@@ -130,7 +130,7 @@ pub struct CompactBlock {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatePayload {
-    #[prost(oneof = "state_payload::StatePayload", tags = "1, 2, 3, 4")]
+    #[prost(oneof = "state_payload::StatePayload", tags = "1, 2, 3")]
     pub state_payload: ::core::option::Option<state_payload::StatePayload>,
 }
 /// Nested message and enum types in `StatePayload`.
@@ -164,16 +164,6 @@ pub mod state_payload {
         >,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Message)]
-    pub struct Position {
-        #[prost(message, optional, tag = "2")]
-        pub lp_nft: ::core::option::Option<super::super::super::dex::v1alpha1::LpNft>,
-        #[prost(message, optional, tag = "1")]
-        pub commitment: ::core::option::Option<
-            super::super::super::crypto::v1alpha1::StateCommitment,
-        >,
-    }
-    #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum StatePayload {
         #[prost(message, tag = "1")]
@@ -182,8 +172,6 @@ pub mod state_payload {
         Note(Note),
         #[prost(message, tag = "3")]
         Swap(Swap),
-        #[prost(message, tag = "4")]
-        Position(Position),
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]

@@ -109,15 +109,10 @@ message StatePayload {
     NoteSource source = 1;
     dex.v1alpha1.SwapPayload swap = 2;
   }
-  message Position {
-    dex.v1alpha1.LpNft lp_nft = 2;
-    crypto.v1alpha1.StateCommitment commitment = 1;
-  }
   oneof state_payload {
     RolledUp rolled_up = 1;
     Note note = 2;
     Swap swap = 3;
-    Position position = 4;
   }
 }
 
