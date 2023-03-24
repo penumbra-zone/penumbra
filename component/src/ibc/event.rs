@@ -8,6 +8,7 @@ use ibc::core::{
 };
 // TODO(erwan): generalize this
 use ibc::clients::ics07_tendermint as tm;
+use ibc_proto::protobuf::Protobuf;
 use tendermint::abci::{Event, EventAttributeIndexExt};
 
 pub fn create_client(client_id: ClientId, client_state: tm::client_state::ClientState) -> Event {
@@ -26,13 +27,18 @@ pub fn update_client(
     client_state: tm::client_state::ClientState,
     header: tm::header::Header,
 ) -> Event {
+    // AYFKM
+    let header_hex_proto_bytes = <ibc::clients::ics07_tendermint::header::Header as Protobuf<
+        ibc_proto::ibc::lightclients::tendermint::v1::Header,
+    >>::encode_to_hex_string(&header);
     Event::new(
         "update_client",
         vec![
             ("client_id", client_id.to_string()).index(),
             ("client_type", client_state.client_type().to_string()).index(),
             ("consensus_height", header.height().to_string()).index(),
-            ("header", header.to_string()).index(),
+            // We need to encode the header as hex-encoded proto-encoded bytes.
+            ("header", header_hex_proto_bytes).index(),
         ],
     )
 }
