@@ -11,7 +11,7 @@ mod dao_output;
 mod dao_spend;
 mod delegate;
 mod delegator_vote;
-mod ibc;
+mod ics20_withdrawal;
 pub mod output;
 mod position;
 mod proposal_deposit_claim;
@@ -26,7 +26,7 @@ mod validator_vote;
 
 use crate::{ActionView, TransactionPerspective};
 
-pub use self::ibc::Ics20Withdrawal;
+pub use self::ics20_withdrawal::Ics20Withdrawal;
 pub use crate::proposal::{Proposal, ProposalKind, ProposalPayload};
 pub use crate::vote::Vote;
 pub use dao_deposit::DaoDeposit;
