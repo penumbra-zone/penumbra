@@ -39,31 +39,8 @@ impl ActionHandler for IbcAction {
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
-        match self {
-            IbcAction::CreateClient(msg) => msg.check_stateful(state).await?,
-            IbcAction::UpdateClient(msg) => msg.check_stateful(state).await?,
-            IbcAction::ConnectionOpenInit(msg) => msg.check_stateful(state).await?,
-            IbcAction::ConnectionOpenTry(msg) => msg.check_stateful(state).await?,
-            IbcAction::ConnectionOpenAck(msg) => msg.check_stateful(state).await?,
-            IbcAction::ConnectionOpenConfirm(msg) => msg.check_stateful(state).await?,
-            IbcAction::ChannelOpenInit(msg) => msg.check_stateful(state).await?,
-            IbcAction::ChannelOpenTry(msg) => msg.check_stateful(state).await?,
-            IbcAction::ChannelOpenAck(msg) => msg.check_stateful(state).await?,
-            IbcAction::ChannelOpenConfirm(msg) => msg.check_stateful(state).await?,
-            IbcAction::ChannelCloseInit(msg) => msg.check_stateful(state).await?,
-            IbcAction::ChannelCloseConfirm(msg) => msg.check_stateful(state).await?,
-            IbcAction::RecvPacket(msg) => msg.check_stateful(state).await?,
-            IbcAction::Acknowledgement(msg) => msg.check_stateful(state).await?,
-            IbcAction::Timeout(msg) => msg.check_stateful(state).await?,
-            IbcAction::Unknown(msg) => {
-                return Err(anyhow::anyhow!(
-                    "unknown IBC message type: {}",
-                    msg.type_url
-                ))
-            }
-        }
-
+    async fn check_stateful<S: StateRead + 'static>(&self, _state: Arc<S>) -> Result<()> {
+        // No-op: IBC actions merge check_stateful and execute.
         Ok(())
     }
 

@@ -20,13 +20,13 @@ impl ActionHandler for MsgUpdateClient {
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
-        state.validate(self).await?;
-
+    async fn check_stateful<S: StateRead + 'static>(&self, _state: Arc<S>) -> Result<()> {
+        // No-op: IBC actions merge check_stateful and execute.
         Ok(())
     }
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        state.validate(self).await?;
         state.execute_update_client(self).await?;
 
         Ok(())
