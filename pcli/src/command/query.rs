@@ -14,6 +14,8 @@ mod dao;
 use dao::DaoCmd;
 mod validator;
 pub(super) use validator::ValidatorCmd;
+mod ibc_query;
+use ibc_query::IbcCmd;
 
 use crate::App;
 
@@ -56,6 +58,9 @@ pub enum QueryCmd {
     /// Queries information about the decentralized exchange.
     #[clap(subcommand)]
     Dex(DexCmd),
+    /// Queries information about IBC.
+    #[clap(subcommand)]
+    Ibc(IbcCmd),
 }
 
 impl QueryCmd {
@@ -85,13 +90,18 @@ impl QueryCmd {
             return dao.exec(app).await;
         }
 
+        if let QueryCmd::Ibc(ibc) = self {
+            return ibc.exec(app).await;
+        }
+
         let key = match self {
             QueryCmd::Tx(_)
             | QueryCmd::Chain(_)
             | QueryCmd::Validator(_)
             | QueryCmd::Dex(_)
             | QueryCmd::Governance(_)
-            | QueryCmd::Dao(_) => {
+            | QueryCmd::Dao(_)
+            | QueryCmd::Ibc(_) => {
                 unreachable!("query handled in guard");
             }
             QueryCmd::ShieldedPool(p) => p.key().clone(),
@@ -123,7 +133,8 @@ impl QueryCmd {
             | QueryCmd::Validator { .. }
             | QueryCmd::Dex { .. }
             | QueryCmd::Governance { .. }
-            | QueryCmd::Dao { .. } => {
+            | QueryCmd::Dao { .. }
+            | QueryCmd::Ibc(_) => {
                 unreachable!("query is special cased")
             }
         }
