@@ -3367,6 +3367,8 @@ dependencies = [
  "futures",
  "hex",
  "http-body",
+ "ibc",
+ "ibc-proto",
  "indicatif",
  "jmt",
  "once_cell",
