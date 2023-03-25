@@ -1,7 +1,6 @@
 use penumbra_crypto::Balance;
 use penumbra_proto::{
-    core::ibc::v1alpha1 as pb_ibc, core::stake::v1alpha1 as pb_stake,
-    core::transaction::v1alpha1 as pb_t, DomainType,
+    core::stake::v1alpha1 as pb_stake, core::transaction::v1alpha1 as pb_t, DomainType,
 };
 use serde::{Deserialize, Serialize};
 
@@ -22,8 +21,8 @@ pub use swap_claim::SwapClaimPlan;
 pub use undelegate_claim::UndelegateClaimPlan;
 
 use crate::action::{
-    DaoDeposit, DaoOutput, DaoSpend, Delegate, PositionClose, PositionOpen, ProposalDepositClaim,
-    ProposalSubmit, ProposalWithdraw, Undelegate, ValidatorVote,
+    DaoDeposit, DaoOutput, DaoSpend, Delegate, IbcAction, PositionClose, PositionOpen,
+    ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, Undelegate, ValidatorVote,
 };
 
 /// A declaration of a planned [`Action`], for use in transaction creation.
@@ -51,7 +50,7 @@ pub enum ActionPlan {
     Swap(SwapPlan),
     /// Describes a swap claim.
     SwapClaim(SwapClaimPlan),
-    IBCAction(pb_ibc::IbcAction),
+    IbcAction(IbcAction),
     /// Propose a governance vote.
     ProposalSubmit(ProposalSubmit),
     /// Withdraw a proposed vote.
@@ -101,7 +100,7 @@ impl ActionPlan {
             PositionWithdraw(position_withdraw) => position_withdraw.balance(),
             PositionRewardClaim(position_reward_claim) => position_reward_claim.balance(),
             // None of these contribute to transaction balance:
-            IBCAction(_) | ValidatorDefinition(_) | ValidatorVote(_) => Balance::default(),
+            IbcAction(_) | ValidatorDefinition(_) | ValidatorVote(_) => Balance::default(),
         }
     }
 }
@@ -150,9 +149,9 @@ impl From<pb_stake::ValidatorDefinition> for ActionPlan {
     }
 }
 
-impl From<pb_ibc::IbcAction> for ActionPlan {
-    fn from(inner: pb_ibc::IbcAction) -> ActionPlan {
-        ActionPlan::IBCAction(inner)
+impl From<IbcAction> for ActionPlan {
+    fn from(inner: IbcAction) -> ActionPlan {
+        ActionPlan::IbcAction(inner)
     }
 }
 
@@ -229,8 +228,8 @@ impl From<ActionPlan> for pb_t::ActionPlan {
             ActionPlan::Swap(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::Swap(inner.into())),
             },
-            ActionPlan::IBCAction(inner) => pb_t::ActionPlan {
-                action: Some(pb_t::action_plan::Action::IbcAction(inner)),
+            ActionPlan::IbcAction(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::IbcAction(inner.into())),
             },
             ActionPlan::ProposalSubmit(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::ProposalSubmit(inner.into())),
@@ -305,7 +304,9 @@ impl TryFrom<pb_t::ActionPlan> for ActionPlan {
             pb_t::action_plan::Action::SwapClaim(inner) => {
                 Ok(ActionPlan::SwapClaim(inner.try_into()?))
             }
-            pb_t::action_plan::Action::IbcAction(inner) => Ok(ActionPlan::IBCAction(inner)),
+            pb_t::action_plan::Action::IbcAction(inner) => {
+                Ok(ActionPlan::IbcAction(inner.try_into()?))
+            }
             pb_t::action_plan::Action::ProposalSubmit(inner) => {
                 Ok(ActionPlan::ProposalSubmit(inner.try_into()?))
             }

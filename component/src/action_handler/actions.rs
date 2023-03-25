@@ -47,7 +47,7 @@ impl ActionHandler for Action {
             Action::SwapClaim(action) => action.check_stateless(context),
             Action::Spend(action) => action.check_stateless(context),
             Action::Output(action) => action.check_stateless(context),
-            Action::IBCAction(action) => action.check_stateless(context),
+            Action::IbcAction(action) => action.check_stateless(context),
             Action::Ics20Withdrawal(action) => action.check_stateless(context),
             Action::DaoSpend(action) => action.check_stateless(context),
             Action::DaoOutput(action) => action.check_stateless(context),
@@ -75,7 +75,7 @@ impl ActionHandler for Action {
             Action::SwapClaim(action) => action.check_stateful(state).await,
             Action::Spend(action) => action.check_stateful(state).await,
             Action::Output(action) => action.check_stateful(state).await,
-            Action::IBCAction(action) => {
+            Action::IbcAction(action) => {
                 if !state.get_chain_params().await?.ibc_enabled {
                     return Err(anyhow::anyhow!(
                         "transaction contains IBC actions, but IBC is not enabled"
@@ -110,7 +110,7 @@ impl ActionHandler for Action {
             Action::SwapClaim(action) => action.execute(state).await,
             Action::Spend(action) => action.execute(state).await,
             Action::Output(action) => action.execute(state).await,
-            Action::IBCAction(action) => action.execute(state).await,
+            Action::IbcAction(action) => action.execute(state).await,
             Action::Ics20Withdrawal(action) => action.execute(state).await,
             Action::DaoSpend(action) => action.execute(state).await,
             Action::DaoOutput(action) => action.execute(state).await,

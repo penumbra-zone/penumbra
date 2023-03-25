@@ -1,16 +1,14 @@
 use std::convert::{TryFrom, TryInto};
 
 use penumbra_crypto::balance;
-use penumbra_proto::{
-    core::ibc::v1alpha1 as pb_ibc, core::stake::v1alpha1 as pbs, core::transaction::v1alpha1 as pb,
-    DomainType,
-};
+use penumbra_proto::{core::stake::v1alpha1 as pbs, core::transaction::v1alpha1 as pb, DomainType};
 
 mod dao_deposit;
 mod dao_output;
 mod dao_spend;
 mod delegate;
 mod delegator_vote;
+mod ibc_action;
 mod ics20_withdrawal;
 pub mod output;
 mod position;
@@ -26,7 +24,6 @@ mod validator_vote;
 
 use crate::{ActionView, TransactionPerspective};
 
-pub use self::ics20_withdrawal::Ics20Withdrawal;
 pub use crate::proposal::{Proposal, ProposalKind, ProposalPayload};
 pub use crate::vote::Vote;
 pub use dao_deposit::DaoDeposit;
@@ -34,6 +31,8 @@ pub use dao_output::DaoOutput;
 pub use dao_spend::DaoSpend;
 pub use delegate::Delegate;
 pub use delegator_vote::{DelegatorVote, DelegatorVoteBody};
+pub use ibc_action::IbcAction;
+pub use ics20_withdrawal::Ics20Withdrawal;
 pub use output::Output;
 pub use position::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw};
 pub use proposal_deposit_claim::ProposalDepositClaim;
@@ -59,7 +58,7 @@ pub enum Action {
     Output(output::Output),
     Spend(spend::Spend),
     ValidatorDefinition(pbs::ValidatorDefinition),
-    IBCAction(pb_ibc::IbcAction),
+    IbcAction(IbcAction),
     Swap(Swap),
     SwapClaim(SwapClaim),
     ProposalSubmit(ProposalSubmit),
@@ -95,7 +94,13 @@ impl Action {
             Action::ValidatorDefinition(_) => {
                 tracing::info_span!("ValidatorDefinition", ?idx)
             }
-            Action::IBCAction(_) => tracing::info_span!("IbcAction", ?idx),
+            Action::IbcAction(msg) => {
+                // Construct a nested span, identifying the IbcAction within
+                // the transaction but also the message within the IbcAction.
+                let action_span = tracing::info_span!("IbcAction", ?idx);
+                let inner_span = msg.create_span(&action_span);
+                inner_span
+            }
             Action::Swap(_) => tracing::info_span!("Swap", ?idx),
             Action::SwapClaim(_) => tracing::info_span!("SwapClaim", ?idx),
             Action::ProposalSubmit(_) => tracing::info_span!("ProposalSubmit", ?idx),
@@ -151,8 +156,8 @@ impl IsAction for Action {
             Action::DaoOutput(output) => output.balance_commitment(),
             // These actions just post Protobuf data to the chain, and leave the
             // value balance unchanged.
+            Action::IbcAction(x) => x.balance_commitment(),
             Action::ValidatorDefinition(_) => balance::Commitment::default(),
-            Action::IBCAction(_) => balance::Commitment::default(),
         }
     }
 
@@ -180,7 +185,7 @@ impl IsAction for Action {
             Action::DaoDeposit(x) => x.view_from_perspective(txp),
             // TODO: figure out where to implement the actual decryption methods for these? where are their action definitions?
             Action::ValidatorDefinition(x) => ActionView::ValidatorDefinition(x.to_owned()),
-            Action::IBCAction(x) => ActionView::IBCAction(x.to_owned()),
+            Action::IbcAction(x) => ActionView::IbcAction(x.to_owned()),
         }
     }
 }
@@ -216,8 +221,8 @@ impl From<Action> for pb::Action {
             Action::Swap(inner) => pb::Action {
                 action: Some(pb::action::Action::Swap(inner.into())),
             },
-            Action::IBCAction(inner) => pb::Action {
-                action: Some(pb::action::Action::IbcAction(inner)),
+            Action::IbcAction(inner) => pb::Action {
+                action: Some(pb::action::Action::IbcAction(inner.into())),
             },
             Action::ProposalSubmit(inner) => pb::Action {
                 action: Some(pb::action::Action::ProposalSubmit(inner.into())),
@@ -281,7 +286,7 @@ impl TryFrom<pb::Action> for Action {
             }
             pb::action::Action::SwapClaim(inner) => Ok(Action::SwapClaim(inner.try_into()?)),
             pb::action::Action::Swap(inner) => Ok(Action::Swap(inner.try_into()?)),
-            pb::action::Action::IbcAction(inner) => Ok(Action::IBCAction(inner)),
+            pb::action::Action::IbcAction(inner) => Ok(Action::IbcAction(inner.try_into()?)),
             pb::action::Action::ProposalSubmit(inner) => {
                 Ok(Action::ProposalSubmit(inner.try_into()?))
             }

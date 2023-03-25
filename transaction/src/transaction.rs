@@ -15,15 +15,14 @@ use penumbra_crypto::{
     Fr, FullViewingKey, Note, Nullifier, PayloadKey,
 };
 use penumbra_proto::{
-    core::ibc::v1alpha1 as pb_ibc, core::stake::v1alpha1 as pbs,
-    core::transaction::v1alpha1 as pbt, DomainType, Message,
+    core::stake::v1alpha1 as pbs, core::transaction::v1alpha1 as pbt, DomainType, Message,
 };
 use penumbra_tct as tct;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     action::{
-        DaoDeposit, DaoOutput, DaoSpend, Delegate, DelegatorVote, Output, PositionOpen,
+        DaoDeposit, DaoOutput, DaoSpend, Delegate, DelegatorVote, IbcAction, Output, PositionOpen,
         ProposalSubmit, ProposalWithdraw, Spend, Swap, Undelegate, ValidatorVote,
     },
     view::{action_view::OutputView, MemoView, TransactionBodyView},
@@ -120,7 +119,7 @@ impl Transaction {
                 | Action::Undelegate(_)
                 | Action::UndelegateClaim(_)
                 | Action::ValidatorDefinition(_)
-                | Action::IBCAction(_)
+                | Action::IbcAction(_)
                 | Action::ProposalSubmit(_)
                 | Action::ProposalWithdraw(_)
                 | Action::ValidatorVote(_)
@@ -261,9 +260,9 @@ impl Transaction {
         })
     }
 
-    pub fn ibc_actions(&self) -> impl Iterator<Item = &pb_ibc::IbcAction> {
+    pub fn ibc_actions(&self) -> impl Iterator<Item = &IbcAction> {
         self.actions().filter_map(|action| {
-            if let Action::IBCAction(ibc_action) = action {
+            if let Action::IbcAction(ibc_action) = action {
                 Some(ibc_action)
             } else {
                 None

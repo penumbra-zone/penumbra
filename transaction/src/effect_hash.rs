@@ -270,7 +270,7 @@ impl EffectingData for Action {
                     .as_array()
                     .clone(),
             ),
-            Action::IBCAction(payload) => EffectHash(
+            Action::IbcAction(payload) => EffectHash(
                 Params::default()
                     .personal(b"PAH:ibc_action")
                     .hash(&payload.encode_to_vec())

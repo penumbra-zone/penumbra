@@ -2,47 +2,8 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc::core::ics02_client::msgs::create_client::{MsgCreateClient, TYPE_URL as CREATE_CLIENT};
-use ibc::core::ics02_client::msgs::update_client::{MsgUpdateClient, TYPE_URL as UPDATE_CLIENT};
-use ibc::core::ics03_connection::msgs::conn_open_ack::{
-    MsgConnectionOpenAck, TYPE_URL as CONNECTION_OPEN_ACK,
-};
-use ibc::core::ics03_connection::msgs::conn_open_confirm::{
-    MsgConnectionOpenConfirm, TYPE_URL as CONNECTION_OPEN_CONFIRM,
-};
-use ibc::core::ics03_connection::msgs::conn_open_init::{
-    MsgConnectionOpenInit, TYPE_URL as CONNECTION_OPEN_INIT,
-};
-use ibc::core::ics03_connection::msgs::conn_open_try::{
-    MsgConnectionOpenTry, TYPE_URL as CONNECTION_OPEN_TRY,
-};
-use ibc::core::ics04_channel::msgs::acknowledgement::{
-    MsgAcknowledgement, TYPE_URL as ACKNOWLEDGEMENT,
-};
-use ibc::core::ics04_channel::msgs::chan_close_confirm::{
-    MsgChannelCloseConfirm, TYPE_URL as CHANNEL_CLOSE_CONFIRM,
-};
-use ibc::core::ics04_channel::msgs::chan_close_init::{
-    MsgChannelCloseInit, TYPE_URL as CHANNEL_CLOSE_INIT,
-};
-use ibc::core::ics04_channel::msgs::chan_open_ack::{
-    MsgChannelOpenAck, TYPE_URL as CHANNEL_OPEN_ACK,
-};
-use ibc::core::ics04_channel::msgs::chan_open_confirm::{
-    MsgChannelOpenConfirm, TYPE_URL as CHANNEL_OPEN_CONFIRM,
-};
-use ibc::core::ics04_channel::msgs::chan_open_init::{
-    MsgChannelOpenInit, TYPE_URL as CHANNEL_OPEN_INIT,
-};
-use ibc::core::ics04_channel::msgs::chan_open_try::{
-    MsgChannelOpenTry, TYPE_URL as CHANNEL_OPEN_TRY,
-};
-use ibc::core::ics04_channel::msgs::recv_packet::{MsgRecvPacket, TYPE_URL as RECV_PACKET};
-use ibc::core::ics04_channel::msgs::timeout::{MsgTimeout, TYPE_URL as TIMEOUT};
-use ibc_proto::protobuf::Protobuf;
-use penumbra_proto::core::ibc::v1alpha1::IbcAction;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::Transaction;
+use penumbra_transaction::{action::IbcAction, Transaction};
 
 use crate::action_handler::ActionHandler;
 
@@ -51,95 +12,27 @@ mod msg;
 #[async_trait]
 impl ActionHandler for IbcAction {
     async fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
-        // Each stateless check is a distinct function in an appropriate submodule,
-        // so that we can easily add new stateless checks and see a birds' eye view
-        // of all of the checks we're performing.
-        let raw_action = self
-            .raw_action
-            .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("empty IBC transaction is not allowed"))?;
-
-        let action_type = raw_action.type_url.as_str();
-        let raw_action_bytes = raw_action.value.clone();
-
-        match action_type {
-            CREATE_CLIENT => {
-                let msg = MsgCreateClient::decode(raw_action_bytes)?;
-
-                msg.check_stateless(context).await?;
-            }
-            UPDATE_CLIENT => {
-                let msg = MsgUpdateClient::decode(raw_action_bytes)?;
-
-                msg.check_stateless(context).await?;
-            }
-            CONNECTION_OPEN_INIT => {
-                let msg = MsgConnectionOpenInit::decode(raw_action_bytes)?;
-
-                msg.check_stateless(context).await?;
-            }
-            CONNECTION_OPEN_TRY => {
-                let msg = MsgConnectionOpenTry::decode(raw_action_bytes)?;
-
-                msg.check_stateless(context).await?;
-            }
-            CONNECTION_OPEN_ACK => {
-                let msg = MsgConnectionOpenAck::decode(raw_action_bytes)?;
-
-                msg.check_stateless(context).await?;
-            }
-            CONNECTION_OPEN_CONFIRM => {
-                let msg = MsgConnectionOpenConfirm::decode(raw_action_bytes)?;
-
-                msg.check_stateless(context).await?;
-            }
-            ACKNOWLEDGEMENT => {
-                let msg = MsgAcknowledgement::decode(raw_action_bytes)?;
-
-                msg.check_stateless(context).await?;
-            }
-            CHANNEL_OPEN_INIT => {
-                let msg = MsgChannelOpenInit::decode(raw_action_bytes)?;
-
-                msg.check_stateless(context).await?;
-            }
-            CHANNEL_OPEN_TRY => {
-                let msg = MsgChannelOpenTry::decode(raw_action_bytes)?;
-
-                msg.check_stateless(context).await?;
-            }
-            CHANNEL_OPEN_ACK => {
-                let msg = MsgChannelOpenAck::decode(raw_action_bytes)?;
-
-                msg.check_stateless(context).await?;
-            }
-            CHANNEL_OPEN_CONFIRM => {
-                let msg = MsgChannelOpenConfirm::decode(raw_action_bytes)?;
-
-                msg.check_stateless(context).await?;
-            }
-            CHANNEL_CLOSE_INIT => {
-                let msg = MsgChannelCloseInit::decode(raw_action_bytes)?;
-
-                msg.check_stateless(context).await?;
-            }
-            CHANNEL_CLOSE_CONFIRM => {
-                let msg = MsgChannelCloseConfirm::decode(raw_action_bytes)?;
-
-                msg.check_stateless(context).await?;
-            }
-            RECV_PACKET => {
-                let msg = MsgRecvPacket::decode(raw_action_bytes)?;
-
-                msg.check_stateless(context).await?;
-            }
-            TIMEOUT => {
-                let msg = MsgTimeout::decode(raw_action_bytes)?;
-
-                msg.check_stateless(context).await?;
-            }
-            _ => {
-                return Err(anyhow::anyhow!("unknown IBC action type: {}", action_type));
+        match self {
+            IbcAction::CreateClient(msg) => msg.check_stateless(context).await?,
+            IbcAction::UpdateClient(msg) => msg.check_stateless(context).await?,
+            IbcAction::ConnectionOpenInit(msg) => msg.check_stateless(context).await?,
+            IbcAction::ConnectionOpenTry(msg) => msg.check_stateless(context).await?,
+            IbcAction::ConnectionOpenAck(msg) => msg.check_stateless(context).await?,
+            IbcAction::ConnectionOpenConfirm(msg) => msg.check_stateless(context).await?,
+            IbcAction::ChannelOpenInit(msg) => msg.check_stateless(context).await?,
+            IbcAction::ChannelOpenTry(msg) => msg.check_stateless(context).await?,
+            IbcAction::ChannelOpenAck(msg) => msg.check_stateless(context).await?,
+            IbcAction::ChannelOpenConfirm(msg) => msg.check_stateless(context).await?,
+            IbcAction::ChannelCloseInit(msg) => msg.check_stateless(context).await?,
+            IbcAction::ChannelCloseConfirm(msg) => msg.check_stateless(context).await?,
+            IbcAction::RecvPacket(msg) => msg.check_stateless(context).await?,
+            IbcAction::Acknowledgement(msg) => msg.check_stateless(context).await?,
+            IbcAction::Timeout(msg) => msg.check_stateless(context).await?,
+            IbcAction::Unknown(msg) => {
+                return Err(anyhow::anyhow!(
+                    "unknown IBC message type: {}",
+                    msg.type_url
+                ))
             }
         }
 
@@ -147,92 +40,27 @@ impl ActionHandler for IbcAction {
     }
 
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
-        let raw_action = self
-            .raw_action
-            .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("empty IBC transaction is not allowed"))?;
-
-        let action_type = raw_action.type_url.as_str();
-        let raw_action_bytes = raw_action.value.clone();
-
-        match action_type {
-            CREATE_CLIENT => {
-                let msg = MsgCreateClient::decode(raw_action_bytes)?;
-
-                msg.check_stateful(state).await?;
-            }
-            UPDATE_CLIENT => {
-                let msg = MsgUpdateClient::decode(raw_action_bytes)?;
-
-                msg.check_stateful(state).await?;
-            }
-            CONNECTION_OPEN_INIT => {
-                let msg = MsgConnectionOpenInit::decode(raw_action_bytes)?;
-
-                msg.check_stateful(state).await?;
-            }
-            CONNECTION_OPEN_TRY => {
-                let msg = MsgConnectionOpenTry::decode(raw_action_bytes)?;
-
-                msg.check_stateful(state).await?;
-            }
-            CONNECTION_OPEN_ACK => {
-                let msg = MsgConnectionOpenAck::decode(raw_action_bytes)?;
-
-                msg.check_stateful(state).await?;
-            }
-            CONNECTION_OPEN_CONFIRM => {
-                let msg = MsgConnectionOpenConfirm::decode(raw_action_bytes)?;
-
-                msg.check_stateful(state).await?;
-            }
-            ACKNOWLEDGEMENT => {
-                let msg = MsgAcknowledgement::decode(raw_action_bytes)?;
-
-                msg.check_stateful(state).await?;
-            }
-            CHANNEL_OPEN_INIT => {
-                let msg = MsgChannelOpenInit::decode(raw_action_bytes)?;
-
-                msg.check_stateful(state).await?;
-            }
-            CHANNEL_OPEN_TRY => {
-                let msg = MsgChannelOpenTry::decode(raw_action_bytes)?;
-
-                msg.check_stateful(state).await?;
-            }
-            CHANNEL_OPEN_ACK => {
-                let msg = MsgChannelOpenAck::decode(raw_action_bytes)?;
-
-                msg.check_stateful(state).await?;
-            }
-            CHANNEL_OPEN_CONFIRM => {
-                let msg = MsgChannelOpenConfirm::decode(raw_action_bytes)?;
-
-                msg.check_stateful(state).await?;
-            }
-            CHANNEL_CLOSE_INIT => {
-                let msg = MsgChannelCloseInit::decode(raw_action_bytes)?;
-
-                msg.check_stateful(state).await?;
-            }
-            CHANNEL_CLOSE_CONFIRM => {
-                let msg = MsgChannelCloseConfirm::decode(raw_action_bytes)?;
-
-                msg.check_stateful(state).await?;
-            }
-            RECV_PACKET => {
-                let msg = MsgRecvPacket::decode(raw_action_bytes)?;
-
-                msg.check_stateful(state).await?;
-            }
-            TIMEOUT => {
-                let msg = MsgTimeout::decode(raw_action_bytes)?;
-
-                msg.check_stateful(state).await?;
-            }
-            _ => {
-                return Err(anyhow::anyhow!("unknown IBC action type: {}", action_type));
+        match self {
+            IbcAction::CreateClient(msg) => msg.check_stateful(state).await?,
+            IbcAction::UpdateClient(msg) => msg.check_stateful(state).await?,
+            IbcAction::ConnectionOpenInit(msg) => msg.check_stateful(state).await?,
+            IbcAction::ConnectionOpenTry(msg) => msg.check_stateful(state).await?,
+            IbcAction::ConnectionOpenAck(msg) => msg.check_stateful(state).await?,
+            IbcAction::ConnectionOpenConfirm(msg) => msg.check_stateful(state).await?,
+            IbcAction::ChannelOpenInit(msg) => msg.check_stateful(state).await?,
+            IbcAction::ChannelOpenTry(msg) => msg.check_stateful(state).await?,
+            IbcAction::ChannelOpenAck(msg) => msg.check_stateful(state).await?,
+            IbcAction::ChannelOpenConfirm(msg) => msg.check_stateful(state).await?,
+            IbcAction::ChannelCloseInit(msg) => msg.check_stateful(state).await?,
+            IbcAction::ChannelCloseConfirm(msg) => msg.check_stateful(state).await?,
+            IbcAction::RecvPacket(msg) => msg.check_stateful(state).await?,
+            IbcAction::Acknowledgement(msg) => msg.check_stateful(state).await?,
+            IbcAction::Timeout(msg) => msg.check_stateful(state).await?,
+            IbcAction::Unknown(msg) => {
+                return Err(anyhow::anyhow!(
+                    "unknown IBC message type: {}",
+                    msg.type_url
+                ))
             }
         }
 
@@ -240,93 +68,27 @@ impl ActionHandler for IbcAction {
     }
 
     async fn execute<S: StateWrite>(&self, state: S) -> Result<()> {
-        let raw_action = self
-            .raw_action
-            .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("empty IBC transaction is not allowed"))?;
-
-        let action_type = raw_action.type_url.as_str();
-        let raw_action_bytes = raw_action.value.clone();
-
-        // Handle the message type of this IBC action.
-        match action_type {
-            CREATE_CLIENT => {
-                let msg = MsgCreateClient::decode(raw_action_bytes)?;
-
-                msg.execute(state).await?;
-            }
-            UPDATE_CLIENT => {
-                let msg = MsgUpdateClient::decode(raw_action_bytes)?;
-
-                msg.execute(state).await?;
-            }
-            CONNECTION_OPEN_INIT => {
-                let msg = MsgConnectionOpenInit::decode(raw_action_bytes)?;
-
-                msg.execute(state).await?;
-            }
-            CONNECTION_OPEN_TRY => {
-                let msg = MsgConnectionOpenTry::decode(raw_action_bytes)?;
-
-                msg.execute(state).await?;
-            }
-            CONNECTION_OPEN_ACK => {
-                let msg = MsgConnectionOpenAck::decode(raw_action_bytes)?;
-
-                msg.execute(state).await?;
-            }
-            CONNECTION_OPEN_CONFIRM => {
-                let msg = MsgConnectionOpenConfirm::decode(raw_action_bytes)?;
-
-                msg.execute(state).await?;
-            }
-            ACKNOWLEDGEMENT => {
-                let msg = MsgAcknowledgement::decode(raw_action_bytes)?;
-
-                msg.execute(state).await?;
-            }
-            CHANNEL_OPEN_INIT => {
-                let msg = MsgChannelOpenInit::decode(raw_action_bytes)?;
-
-                msg.execute(state).await?;
-            }
-            CHANNEL_OPEN_TRY => {
-                let msg = MsgChannelOpenTry::decode(raw_action_bytes)?;
-
-                msg.execute(state).await?;
-            }
-            CHANNEL_OPEN_ACK => {
-                let msg = MsgChannelOpenAck::decode(raw_action_bytes)?;
-
-                msg.execute(state).await?;
-            }
-            CHANNEL_OPEN_CONFIRM => {
-                let msg = MsgChannelOpenConfirm::decode(raw_action_bytes)?;
-
-                msg.execute(state).await?;
-            }
-            CHANNEL_CLOSE_INIT => {
-                let msg = MsgChannelCloseInit::decode(raw_action_bytes)?;
-
-                msg.execute(state).await?;
-            }
-            CHANNEL_CLOSE_CONFIRM => {
-                let msg = MsgChannelCloseConfirm::decode(raw_action_bytes)?;
-
-                msg.execute(state).await?;
-            }
-            RECV_PACKET => {
-                let msg = MsgRecvPacket::decode(raw_action_bytes)?;
-
-                msg.execute(state).await?;
-            }
-            TIMEOUT => {
-                let msg = MsgTimeout::decode(raw_action_bytes)?;
-
-                msg.execute(state).await?;
-            }
-            _ => {
-                return Err(anyhow::anyhow!("unknown IBC action type: {}", action_type));
+        match self {
+            IbcAction::CreateClient(msg) => msg.execute(state).await?,
+            IbcAction::UpdateClient(msg) => msg.execute(state).await?,
+            IbcAction::ConnectionOpenInit(msg) => msg.execute(state).await?,
+            IbcAction::ConnectionOpenTry(msg) => msg.execute(state).await?,
+            IbcAction::ConnectionOpenAck(msg) => msg.execute(state).await?,
+            IbcAction::ConnectionOpenConfirm(msg) => msg.execute(state).await?,
+            IbcAction::ChannelOpenInit(msg) => msg.execute(state).await?,
+            IbcAction::ChannelOpenTry(msg) => msg.execute(state).await?,
+            IbcAction::ChannelOpenAck(msg) => msg.execute(state).await?,
+            IbcAction::ChannelOpenConfirm(msg) => msg.execute(state).await?,
+            IbcAction::ChannelCloseInit(msg) => msg.execute(state).await?,
+            IbcAction::ChannelCloseConfirm(msg) => msg.execute(state).await?,
+            IbcAction::RecvPacket(msg) => msg.execute(state).await?,
+            IbcAction::Acknowledgement(msg) => msg.execute(state).await?,
+            IbcAction::Timeout(msg) => msg.execute(state).await?,
+            IbcAction::Unknown(msg) => {
+                return Err(anyhow::anyhow!(
+                    "unknown IBC message type: {}",
+                    msg.type_url
+                ))
             }
         }
 
