@@ -21,19 +21,20 @@ impl ActionHandler for MsgAcknowledgement {
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
-        state.validate(self).await?;
-        let transfer = PortId::transfer();
-        if self.packet.port_on_b == transfer {
-            Ics20Transfer::acknowledge_packet_check(state, self).await?;
-        } else {
-            return Err(anyhow::anyhow!("invalid port id"));
-        }
-
+    async fn check_stateful<S: StateRead + 'static>(&self, _state: Arc<S>) -> Result<()> {
+        // No-op: IBC actions merge check_stateful and execute.
         Ok(())
     }
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        state.validate(self).await?;
+        let transfer = PortId::transfer();
+        if self.packet.port_on_b == transfer {
+            Ics20Transfer::acknowledge_packet_check(&mut state, self).await?;
+        } else {
+            return Err(anyhow::anyhow!("invalid port id"));
+        }
+
         state.execute(self).await;
         let transfer = PortId::transfer();
         if self.packet.port_on_b == transfer {
