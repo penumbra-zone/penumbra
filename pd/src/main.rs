@@ -144,9 +144,9 @@ enum TestnetCommand {
         moniker: Option<String>,
         /// Public URL to advertise for this node's Tendermint P2P service.
         /// Setting this option will instruct other nodes on the network to connect
-        /// to yours. Must be in the form of a full URL, e.g. "tcp://1.2.3.4:26656".
-        #[clap(long, env = "PENUMBRA_PD_TM_EXTERNAL_URL")]
-        external_address: Option<Url>,
+        /// to yours. Must be in the form of a socket, e.g. "1.2.3.4:26656".
+        #[clap(long, env = "PENUMBRA_PD_TM_EXTERNAL_ADDR")]
+        external_address: Option<SocketAddr>,
         /// When generating Tendermint config, use this socket to bind the Tendermint RPC service.
         #[clap(
             long,
@@ -335,7 +335,10 @@ async fn main() -> anyhow::Result<()> {
 
             // Check whether an external address was set, and parse as TendermintAddress.
             let external_address: Option<TendermintAddress> = match external_address {
-                Some(a) => parse_tm_address(None, &a).ok(),
+                Some(a) => {
+                    let u = Url::parse(format!("tcp://{}", a).as_str())?;
+                    parse_tm_address(None, &u).ok()
+                }
                 None => None,
             };
 
