@@ -27,6 +27,7 @@ impl ActionHandler for MsgChannelOpenConfirm {
     }
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        tracing::debug!(msg = ?self);
         state.validate(self).await?;
         let transfer = PortId::transfer();
         if self.port_id_on_b == transfer {

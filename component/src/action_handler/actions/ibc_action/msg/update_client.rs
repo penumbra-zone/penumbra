@@ -31,8 +31,11 @@ impl ActionHandler for MsgUpdateClient {
         // transactions fail just because they both contain the same client
         // update.
         if !state.update_is_already_committed(&self).await? {
+            tracing::debug!(msg = ?self);
             state.validate(self).await?;
             state.execute_update_client(self).await?;
+        } else {
+            tracing::debug!("skipping duplicate update");
         }
 
         Ok(())

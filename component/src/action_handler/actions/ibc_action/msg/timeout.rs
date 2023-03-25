@@ -27,7 +27,7 @@ impl ActionHandler for MsgTimeout {
     }
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
-        // No-op: IBC actions merge check_stateful and execute.
+        tracing::debug!(msg = ?self);
         state.validate(self).await?;
         let transfer = PortId::transfer();
         if self.packet.port_on_b == transfer {
