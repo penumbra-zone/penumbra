@@ -114,6 +114,7 @@ pub mod connection_open_confirm {
 }
 
 pub mod connection_open_ack {
+    use anyhow::Context;
     use ibc::core::ics24_host::path::{ClientConsensusStatePath, ClientStatePath, ConnectionPath};
 
     use crate::ibc::component::client::StateReadExt as _;
@@ -190,7 +191,7 @@ pub mod connection_open_ack {
                     &ConnectionPath::new(&msg.conn_id_on_b),
                     &expected_conn,
                 )
-                .map_err(|e| anyhow::anyhow!("couldn't verify connection state: {}", e))?;
+                .context("couldn't verify connection state")?;
 
             // 2. verify that the counterparty chain committed the correct ClientState (that was
             //    provided in the msg)
@@ -203,7 +204,7 @@ pub mod connection_open_ack {
                     &ClientStatePath::new(connection.counterparty().client_id()),
                     msg.client_state_of_a_on_b.clone(),
                 )
-                .map_err(|e| anyhow::anyhow!("couldn't verify client state: {}", e))?;
+                .context("couldn't verify client state")?;
 
             let expected_consensus = self
                 .get_penumbra_consensus_state(msg.consensus_height_of_a_on_b)
@@ -223,7 +224,7 @@ pub mod connection_open_ack {
                     ),
                     &expected_consensus,
                 )
-                .map_err(|e| anyhow::anyhow!("couldn't verify client consensus state: {}", e))?;
+                .context("couldn't verify client consensus state")?;
 
             Ok(())
         }

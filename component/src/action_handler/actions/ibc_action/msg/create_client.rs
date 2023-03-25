@@ -28,6 +28,7 @@ impl ActionHandler for MsgCreateClient {
     }
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        tracing::debug!(msg = ?self);
         state.validate(self).await?;
         state.execute_create_client(self).await?;
 

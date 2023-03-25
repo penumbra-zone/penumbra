@@ -30,6 +30,7 @@ impl ActionHandler for MsgConnectionOpenTry {
     }
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        tracing::debug!(msg = ?self);
         state.execute(self).await;
 
         Ok(())

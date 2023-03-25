@@ -27,6 +27,7 @@ impl ActionHandler for MsgAcknowledgement {
     }
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        tracing::debug!(msg = ?self);
         state.validate(self).await?;
         let transfer = PortId::transfer();
         if self.packet.port_on_b == transfer {
