@@ -123,7 +123,7 @@ impl Policy for AuthPolicy {
                     match action {
                         ActionPlan::Spend { .. }
                         | ActionPlan::Output { .. }
-                        | ActionPlan::IBCAction { .. } => {}
+                        | ActionPlan::IbcAction { .. } => {}
                         _ => {
                             return Err(anyhow::anyhow!(
                                 "action {:?} not allowed by OnlyRelay policy",

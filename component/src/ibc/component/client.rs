@@ -506,9 +506,8 @@ mod tests {
     use super::*;
     use ibc_proto::protobuf::Protobuf;
     use penumbra_chain::StateWriteExt;
-    use penumbra_proto::core::ibc::v1alpha1::IbcAction;
     use penumbra_storage::{ArcStateDeltaExt, StateDelta, TempStorage};
-    use penumbra_transaction::Transaction;
+    use penumbra_transaction::{action::IbcAction, Transaction};
     use std::str::FromStr;
     use tendermint::Time;
 
@@ -559,8 +558,8 @@ mod tests {
 
         msg_update_stargaze_client.client_id = ClientId::from_str("07-tendermint-0").unwrap();
 
-        let create_client_action: IbcAction = msg_create_stargaze_client.into();
-        let update_client_action: IbcAction = msg_update_stargaze_client.into();
+        let create_client_action = IbcAction::CreateClient(msg_create_stargaze_client);
+        let update_client_action = IbcAction::UpdateClient(msg_update_stargaze_client);
 
         // The ActionHandler trait provides the transaction the action was part
         // of as context available during verification.  This is used, for instance,
@@ -596,7 +595,7 @@ mod tests {
 
         let mut second_update = MsgUpdateClient::decode(msg_update_second.as_slice()).unwrap();
         second_update.client_id = ClientId::from_str("07-tendermint-0").unwrap();
-        let second_update_client_action: IbcAction = second_update.into();
+        let second_update_client_action = IbcAction::UpdateClient(second_update);
 
         second_update_client_action
             .check_stateless(dummy_context.clone())

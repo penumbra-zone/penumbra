@@ -4,15 +4,14 @@
 use anyhow::Result;
 use penumbra_crypto::{transaction::Fee, Address};
 use penumbra_proto::{
-    core::ibc::v1alpha1 as pb_ibc, core::stake::v1alpha1 as pb_stake,
-    core::transaction::v1alpha1 as pb, DomainType,
+    core::stake::v1alpha1 as pb_stake, core::transaction::v1alpha1 as pb, DomainType,
 };
 use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 
 use crate::action::{
-    DaoDeposit, DaoOutput, DaoSpend, Delegate, PositionOpen, ProposalDepositClaim, ProposalSubmit,
-    ProposalWithdraw, Undelegate, ValidatorVote,
+    DaoDeposit, DaoOutput, DaoSpend, Delegate, IbcAction, PositionOpen, ProposalDepositClaim,
+    ProposalSubmit, ProposalWithdraw, Undelegate, ValidatorVote,
 };
 
 mod action;
@@ -97,9 +96,9 @@ impl TransactionPlan {
         })
     }
 
-    pub fn ibc_actions(&self) -> impl Iterator<Item = &pb_ibc::IbcAction> {
+    pub fn ibc_actions(&self) -> impl Iterator<Item = &IbcAction> {
         self.actions.iter().filter_map(|action| {
-            if let ActionPlan::IBCAction(ibc_action) = action {
+            if let ActionPlan::IbcAction(ibc_action) = action {
                 Some(ibc_action)
             } else {
                 None

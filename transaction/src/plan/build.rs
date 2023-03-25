@@ -137,7 +137,7 @@ impl TransactionPlan {
             actions.push(Action::ValidatorDefinition(vd))
         }
         for ibc_action in self.ibc_actions().cloned() {
-            actions.push(Action::IBCAction(ibc_action))
+            actions.push(Action::IbcAction(ibc_action))
         }
         for dao_spend in self.dao_spends().cloned() {
             actions.push(Action::DaoSpend(dao_spend))
@@ -341,7 +341,7 @@ impl TransactionPlan {
             actions.push(Action::ValidatorDefinition(vd))
         }
         for ibc_action in self.ibc_actions().cloned() {
-            actions.push(Action::IBCAction(ibc_action))
+            actions.push(Action::IbcAction(ibc_action))
         }
         for dao_spend in self.dao_spends().cloned() {
             actions.push(Action::DaoSpend(dao_spend))

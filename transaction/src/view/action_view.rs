@@ -1,4 +1,4 @@
-use penumbra_proto::core::{ibc::v1alpha1::IbcAction, stake::v1alpha1::ValidatorDefinition};
+use penumbra_proto::core::stake::v1alpha1::ValidatorDefinition;
 use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType};
 use serde::{Deserialize, Serialize};
 
@@ -15,9 +15,9 @@ pub use swap_claim_view::SwapClaimView;
 pub use swap_view::SwapView;
 
 use crate::action::{
-    DaoDeposit, DaoOutput, DaoSpend, Delegate, Ics20Withdrawal, PositionClose, PositionOpen,
-    PositionRewardClaim, PositionWithdraw, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw,
-    Undelegate, UndelegateClaim, ValidatorVote,
+    DaoDeposit, DaoOutput, DaoSpend, Delegate, IbcAction, Ics20Withdrawal, PositionClose,
+    PositionOpen, PositionRewardClaim, PositionWithdraw, ProposalDepositClaim, ProposalSubmit,
+    ProposalWithdraw, Undelegate, UndelegateClaim, ValidatorVote,
 };
 use crate::Action;
 
@@ -32,7 +32,7 @@ pub enum ActionView {
     SwapClaim(SwapClaimView),
     // Action types with transparent contents
     ValidatorDefinition(ValidatorDefinition),
-    IBCAction(IbcAction),
+    IbcAction(IbcAction),
     ProposalSubmit(ProposalSubmit),
     ProposalWithdraw(ProposalWithdraw),
     ValidatorVote(ValidatorVote),
@@ -73,7 +73,7 @@ impl TryFrom<pbt::ActionView> for ActionView {
                 AV::Swap(x) => ActionView::Swap(x.try_into()?),
                 AV::SwapClaim(x) => ActionView::SwapClaim(x.try_into()?),
                 AV::ValidatorDefinition(x) => ActionView::ValidatorDefinition(x),
-                AV::IbcAction(x) => ActionView::IBCAction(x),
+                AV::IbcAction(x) => ActionView::IbcAction(x.try_into()?),
                 AV::ProposalSubmit(x) => ActionView::ProposalSubmit(x.try_into()?),
                 AV::ProposalWithdraw(x) => ActionView::ProposalWithdraw(x.try_into()?),
                 AV::ProposalDepositClaim(x) => ActionView::ProposalDepositClaim(x.try_into()?),
@@ -104,8 +104,9 @@ impl From<ActionView> for pbt::ActionView {
                 ActionView::Delegate(x) => AV::Delegate(x.into()),
                 ActionView::Undelegate(x) => AV::Undelegate(x.into()),
                 ActionView::UndelegateClaim(x) => AV::UndelegateClaim(x.into()),
+                // FIXME: this shouldn't be using a proto type internally
                 ActionView::ValidatorDefinition(x) => AV::ValidatorDefinition(x),
-                ActionView::IBCAction(x) => AV::IbcAction(x),
+                ActionView::IbcAction(x) => AV::IbcAction(x.into()),
                 ActionView::ProposalSubmit(x) => AV::ProposalSubmit(x.into()),
                 ActionView::ProposalWithdraw(x) => AV::ProposalWithdraw(x.into()),
                 ActionView::ValidatorVote(x) => AV::ValidatorVote(x.into()),
@@ -135,7 +136,7 @@ impl From<ActionView> for Action {
             ActionView::Undelegate(x) => Action::Undelegate(x),
             ActionView::UndelegateClaim(x) => Action::UndelegateClaim(x),
             ActionView::ValidatorDefinition(x) => Action::ValidatorDefinition(x),
-            ActionView::IBCAction(x) => Action::IBCAction(x),
+            ActionView::IbcAction(x) => Action::IbcAction(x),
             ActionView::ProposalSubmit(x) => Action::ProposalSubmit(x),
             ActionView::ProposalWithdraw(x) => Action::ProposalWithdraw(x),
             ActionView::ValidatorVote(x) => Action::ValidatorVote(x),

@@ -414,7 +414,14 @@ impl ViewProtocolService for ViewService {
         // Planner API, since the IBC actions will affect the required fees and
         // thus the value balance.
         for ibc_action in prq.ibc_actions {
-            plan.actions.push(ActionPlan::IBCAction(ibc_action));
+            plan.actions
+                .push(ActionPlan::IbcAction(ibc_action.try_into().map_err(
+                    |e| {
+                        tonic::Status::invalid_argument(format!(
+                            "Could not parse IBC action: {e:#}"
+                        ))
+                    },
+                )?));
         }
 
         Ok(tonic::Response::new(TransactionPlannerResponse {

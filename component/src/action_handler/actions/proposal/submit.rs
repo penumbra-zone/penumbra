@@ -94,7 +94,7 @@ impl ActionHandler for ProposalSubmit {
                         | Undelegate(_)
                         | UndelegateClaim(_)
                         | ValidatorDefinition(_)
-                        | IBCAction(_)
+                        | IbcAction(_)
                         | ValidatorVote(_)
                         | PositionOpen(_)
                         | PositionClose(_)
