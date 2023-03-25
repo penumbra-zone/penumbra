@@ -26,8 +26,14 @@ impl ActionHandler for MsgUpdateClient {
     }
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
-        state.validate(self).await?;
-        state.execute_update_client(self).await?;
+        // Optimization: no-op if the update is already committed.  We no-op
+        // to Ok(()) rather than erroring to avoid having two "racing" relay
+        // transactions fail just because they both contain the same client
+        // update.
+        if !state.update_is_already_committed(&self).await? {
+            state.validate(self).await?;
+            state.execute_update_client(self).await?;
+        }
 
         Ok(())
     }
