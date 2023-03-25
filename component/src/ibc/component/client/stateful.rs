@@ -33,17 +33,6 @@ pub mod update_client {
 
             let untrusted_header = ics02_validation::get_tendermint_header(msg.header.clone())?;
 
-            // Optimization: reject duplicate updates instead of verifying them.
-            if self
-                .update_is_already_committed(&msg.client_id, &untrusted_header)
-                .await?
-            {
-                // If the update is already committed, return an error to reject a duplicate update.
-                return Err(anyhow::anyhow!(
-                    "Client update has already been committed to the chain state"
-                ));
-            }
-
             header_revision_matches_client_state(&trusted_client_state, &untrusted_header)?;
             header_height_is_consistent(&untrusted_header)?;
 
@@ -106,6 +95,29 @@ pub mod update_client {
                     "could not verify tendermint header: invalid: {:?}",
                     detail
                 )),
+            }
+        }
+
+        async fn update_is_already_committed(&self, msg: &MsgUpdateClient) -> anyhow::Result<bool> {
+            let untrusted_header = ics02_validation::get_tendermint_header(msg.header.clone())?;
+            let client_id = msg.client_id.clone();
+
+            // check if we already have a consensus state for this height, if we do, check that it is
+            // the same as this update, if it is, return early.
+            let untrusted_consensus_state =
+                TendermintConsensusState::from(untrusted_header.clone());
+            if let Ok(stored_consensus_state) = self
+                .get_verified_consensus_state(untrusted_header.height(), client_id.clone())
+                .await
+            {
+                let stored_tm_consensus_state = stored_consensus_state;
+
+                Ok(stored_tm_consensus_state == untrusted_consensus_state)
+            } else {
+                // If we don't have a consensus state for this height for
+                // whatever reason (either missing or a DB error), we don't
+                // consider it an error, it's just not already committed.
+                Ok(false)
             }
         }
     }
@@ -190,30 +202,6 @@ pub mod update_client {
                     Err(anyhow::anyhow!("client is expired"))
                 } else {
                     Ok(())
-                }
-            }
-
-            async fn update_is_already_committed(
-                &self,
-                client_id: &ClientId,
-                untrusted_header: &TendermintHeader,
-            ) -> anyhow::Result<bool> {
-                // check if we already have a consensus state for this height, if we do, check that it is
-                // the same as this update, if it is, return early.
-                let untrusted_consensus_state =
-                    TendermintConsensusState::from(untrusted_header.clone());
-                if let Ok(stored_consensus_state) = self
-                    .get_verified_consensus_state(untrusted_header.height(), client_id.clone())
-                    .await
-                {
-                    let stored_tm_consensus_state = stored_consensus_state;
-
-                    Ok(stored_tm_consensus_state == untrusted_consensus_state)
-                } else {
-                    // If we don't have a consensus state for this height for
-                    // whatever reason (either missing or a DB error), we don't
-                    // consider it an error, it's just not already committed.
-                    Ok(false)
                 }
             }
         }
