@@ -4,8 +4,9 @@
 pub struct SpendProof {
     /// Auxiliary inputs
     #[prost(message, optional, tag = "1")]
-    pub state_commitment_proof:
-        ::core::option::Option<super::super::crypto::v1alpha1::StateCommitmentProof>,
+    pub state_commitment_proof: ::core::option::Option<
+        super::super::crypto::v1alpha1::StateCommitmentProof,
+    >,
     /// *
     /// @exclude
     /// From the note being spent

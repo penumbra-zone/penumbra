@@ -3,7 +3,6 @@ syntax = "proto3";
 package penumbra.core.transparent_proofs.v1alpha1;
 
 import "penumbra/core/crypto/v1alpha1/crypto.proto";
-import "penumbra/core/dex/v1alpha1/dex.proto";
 
 // A Penumbra transparent Spend Proof.
 message SpendProof {
