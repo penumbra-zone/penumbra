@@ -182,6 +182,25 @@ pub mod connection_open_ack {
 
             // PROOF VERIFICATION
             // 1. verify that the counterparty chain committed the expected_conn to its state
+            tracing::debug!(?trusted_client_state,);
+            tracing::debug!(
+                msg.proofs_height_on_b = ?msg.proofs_height_on_b,
+            );
+            tracing::debug!(
+                counterparty_prefix = ?connection.counterparty().prefix(),
+            );
+            tracing::debug!(
+                msg.proof_conn_end_on_b = ?msg.proof_conn_end_on_b,
+            );
+            tracing::debug!(
+                trusted_consensus_state_root = ?trusted_consensus_state.root(),
+            );
+            tracing::debug!(
+                connection_path = %ConnectionPath::new(&msg.conn_id_on_b),
+            );
+            tracing::debug!(
+                expected_conn = ?expected_conn,
+            );
             trusted_client_state
                 .verify_connection_state(
                     msg.proofs_height_on_b,
