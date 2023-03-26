@@ -1153,21 +1153,17 @@ impl Storage {
             )
             .fetch_optional(&mut dbtx)
             .await?;
-            // TODO: mark spent swaps as spent
 
-            if let Some(bytes) = spent_commitment_bytes {
-                // Forget spent note commitments from the SCT unless they are delegation tokens,
-                // which must be saved to allow voting on proposals that might or might not be open
-                // presently
-                let spent_commitment = Commitment::try_from(
-                    bytes
-                        .note_commitment
-                        .ok_or_else(|| anyhow!("missing note commitment"))?
-                        .as_slice(),
-                )?;
+            let swap_commitment_bytes = sqlx::query!(
+                "UPDATE swaps SET height_claimed = ? WHERE nullifier = ? RETURNING swap_commitment",
+                height_spent,
+                nullifier,
+            )
+            .fetch_optional(&mut dbtx)
+            .await?;
 
-                // Check if it's a delegation token, and only forget it if it's not:
-                let spent_denom: String = sqlx::query!(
+            // Check denom type
+            let spent_denom: String = sqlx::query!(
                         "SELECT assets.denom
                         FROM spendable_notes JOIN notes LEFT JOIN assets ON notes.asset_id == assets.asset_id
                         WHERE nullifier = ?",
@@ -1177,10 +1173,40 @@ impl Storage {
                     .await?
                     .denom
                     .ok_or_else(|| anyhow!("denom must exist for note we know about"))?;
+
+            if let Some(bytes) = spent_commitment_bytes {
+                // Forget spent note commitments from the SCT unless they are delegation tokens,
+                // which must be saved to allow voting on proposals that might or might not be open
+                // presently
+
                 if DelegationToken::from_str(&spent_denom).is_ok() {
+                    let spent_commitment = Commitment::try_from(
+                        bytes
+                            .note_commitment
+                            .ok_or_else(|| anyhow!("missing note commitment"))?
+                            .as_slice(),
+                    )?;
                     sct.forget(spent_commitment);
                 }
-            }
+            };
+
+            // Mark spent swaps as spent
+
+            if let Some(bytes) = swap_commitment_bytes {
+                // Forget spent swap commitments from the SCT unless they are delegation tokens,
+                // which must be saved to allow voting on proposals that might or might not be open
+                // presently
+
+                if DelegationToken::from_str(&spent_denom).is_ok() {
+                    let spent_swap_commitment = Commitment::try_from(
+                        bytes
+                            .swap_commitment
+                            .ok_or_else(|| anyhow!("missing note commitment"))?
+                            .as_slice(),
+                    )?;
+                    sct.forget(spent_swap_commitment);
+                }
+            };
         }
 
         // Update SCT table with current SCT state

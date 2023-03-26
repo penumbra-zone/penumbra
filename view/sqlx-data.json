@@ -278,6 +278,24 @@
     },
     "query": "\n            SELECT bytes\n            FROM full_viewing_key\n            LIMIT 1\n            "
   },
+  "6503df824fa6478b3b1634aee0029dfcf7b8f57c2fc53f89afb771997bd146c6": {
+    "describe": {
+      "columns": [
+        {
+          "name": "swap_commitment",
+          "ordinal": 0,
+          "type_info": "Blob"
+        }
+      ],
+      "nullable": [
+        true
+      ],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "UPDATE swaps SET height_claimed = ? WHERE nullifier = ? RETURNING swap_commitment"
+  },
   "6684105462e0bba65abb19049c13836941421a0ed4ac59c6355dccdcab50dca7": {
     "describe": {
       "columns": [
