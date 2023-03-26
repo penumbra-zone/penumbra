@@ -7,6 +7,9 @@ mod ops;
 #[cfg(test)]
 mod tests;
 
+use ark_r1cs_std::prelude::AllocVar;
+use ark_relations::r1cs::SynthesisError;
+use decaf377::{r1cs::FqVar, FieldExt, Fq};
 use ethnum::U256;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -158,5 +161,33 @@ impl U128x128 {
     /// Saturating integer subtraction. Computes self - rhs, saturating at the numeric bounds instead of overflowing.
     pub fn saturating_sub(self, rhs: &Self) -> Self {
         U128x128(self.0.saturating_sub(rhs.0))
+    }
+}
+
+pub struct U128x128Var {
+    pub lo_var: FqVar,
+    pub hi_var: FqVar,
+}
+
+impl AllocVar<U128x128, Fq> for U128x128Var {
+    fn new_variable<T: std::borrow::Borrow<U128x128>>(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: ark_r1cs_std::prelude::AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        let inner: U128x128 = *f()?.borrow();
+        let (lo, hi) = inner.0.into_words();
+        let mut lo_bytes = [0u8; 32];
+        lo_bytes.copy_from_slice(&lo.to_le_bytes()[..]);
+        let lo_fq = Fq::from_bytes(lo_bytes).expect("can form field element from bytes");
+        let lo_var = FqVar::new_variable(cs.clone(), || Ok(lo_fq), mode)?;
+
+        let mut hi_bytes = [0u8; 32];
+        hi_bytes.copy_from_slice(&hi.to_le_bytes()[..]);
+        let hi_fq = Fq::from_bytes(hi_bytes).expect("can form field element from bytes");
+        let hi_var = FqVar::new_variable(cs, || Ok(hi_fq), mode)?;
+        Ok(Self { lo_var, hi_var })
     }
 }
