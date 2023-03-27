@@ -1,4 +1,4 @@
-use penumbra_crypto::asset::Asset;
+use penumbra_crypto::asset::{self, Asset};
 use penumbra_proto::{
     client::v1alpha1::AssetListResponse, core::chain::v1alpha1 as pb, DomainType,
 };
@@ -42,5 +42,11 @@ impl From<KnownAssets> for AssetListResponse {
         Self {
             asset_list: Some(assets.into()),
         }
+    }
+}
+
+impl From<KnownAssets> for asset::Cache {
+    fn from(assets: KnownAssets) -> Self {
+        Self::from_iter(assets.0.into_iter().map(|asset| asset.denom))
     }
 }
