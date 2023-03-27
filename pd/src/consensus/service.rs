@@ -12,7 +12,6 @@ use tokio_util::sync::PollSender;
 use tower_abci::BoxError;
 
 use super::{Message, Worker};
-use crate::RequestExt;
 
 #[derive(Clone)]
 pub struct Consensus {
@@ -55,7 +54,7 @@ impl tower_service::Service<ConsensusRequest> for Consensus {
             .boxed();
         }
 
-        let span = req.create_span();
+        let span = tracing::Span::current();
         //let span = error_span!(parent: &span, "app", role = "consensus");
         let (tx, rx) = oneshot::channel();
 
