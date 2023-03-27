@@ -197,12 +197,16 @@ async fn main() -> anyhow::Result<()> {
                 .layer(request_span::layer(|req: &ConsensusRequest| {
                     req.create_span()
                 }))
-                .service(pd::Consensus::new(storage.clone()).await?);
+                .service(tower_actor::Actor::new(10, |queue: _| {
+                    pd::Consensus::new(storage.clone(), queue).run()
+                }));
             let mempool = tower::ServiceBuilder::new()
                 .layer(request_span::layer(|req: &MempoolRequest| {
                     req.create_span()
                 }))
-                .service(pd::Mempool::new(storage.clone()).await?);
+                .service(tower_actor::Actor::new(10, |queue: _| {
+                    pd::Mempool::new(storage.clone(), queue).run()
+                }));
             let info = pd::Info::new(storage.clone());
             let tm_proxy = pd::TendermintProxy::new(tendermint_addr);
             let snapshot = pd::Snapshot {};
