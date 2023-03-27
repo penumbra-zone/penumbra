@@ -233,7 +233,7 @@ pub fn testnet_generate(
             .map(|(n, ip)| {
                 (
                     node::Id::from(validator_keys[n].node_key_pk.ed25519().unwrap()),
-                    Url::parse(format!("{ip}:26656").as_str()).unwrap(),
+                    Url::parse(format!("tcp://{ip}:26656").as_str()).unwrap(),
                 )
             })
             .filter_map(|(id, ip)| parse_tm_address(Some(&id), &ip).ok())
