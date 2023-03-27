@@ -13,7 +13,7 @@ pub mod testnet;
 /// A vendored copy of the unpublished `tracing-tower` crate.
 pub mod trace;
 
-use request_ext::RequestExt;
+pub use request_ext::RequestExt;
 
 pub use crate::metrics::register_metrics;
 pub use consensus::Consensus;

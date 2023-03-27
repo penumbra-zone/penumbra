@@ -22,11 +22,11 @@ use penumbra_proto::client::v1alpha1::{
 use penumbra_storage::Storage;
 use rand::Rng;
 use rand_core::OsRng;
+use tendermint::abci::{ConsensusRequest, MempoolRequest};
+use tendermint_config::net::Address as TendermintAddress;
 use tokio::runtime;
 use tonic::transport::Server;
 use tracing_subscriber::{prelude::*, EnvFilter};
-
-use tendermint_config::net::Address as TendermintAddress;
 
 #[derive(Debug, Parser)]
 #[clap(
@@ -190,8 +190,19 @@ async fn main() -> anyhow::Result<()> {
                 .await
                 .context("Unable to initialize RocksDB storage")?;
 
-            let consensus = pd::Consensus::new(storage.clone()).await?;
-            let mempool = pd::Mempool::new(storage.clone()).await?;
+            use pd::trace::request_span;
+            use pd::RequestExt;
+
+            let consensus = tower::ServiceBuilder::new()
+                .layer(request_span::layer(|req: &ConsensusRequest| {
+                    req.create_span()
+                }))
+                .service(pd::Consensus::new(storage.clone()).await?);
+            let mempool = tower::ServiceBuilder::new()
+                .layer(request_span::layer(|req: &MempoolRequest| {
+                    req.create_span()
+                }))
+                .service(pd::Mempool::new(storage.clone()).await?);
             let info = pd::Info::new(storage.clone());
             let tm_proxy = pd::TendermintProxy::new(tendermint_addr);
             let snapshot = pd::Snapshot {};

@@ -18,7 +18,6 @@ use tracing::Instrument;
 
 use super::{Message, Worker};
 use crate::metrics;
-use crate::RequestExt;
 
 #[derive(Clone)]
 pub struct Mempool {
@@ -60,7 +59,7 @@ impl tower_service::Service<MempoolRequest> for Mempool {
             .boxed();
         }
         let start = std::time::Instant::now();
-        let span = req.create_span();
+        let span = tracing::Span::current();
         //let span = error_span!(parent: &span, "app", role = "mempool");
         let (tx, rx) = oneshot::channel();
 
