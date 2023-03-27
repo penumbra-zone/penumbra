@@ -3,15 +3,20 @@ use std::pin::Pin;
 use anyhow::{Context, Result};
 use comfy_table::{presets, Table};
 use futures::{Future, FutureExt, Stream, StreamExt, TryStreamExt};
-use penumbra_crypto::dex::{
-    lp::{position::Metadata, Reserves},
-    BatchSwapOutputData, TradingPair,
+use penumbra_chain::KnownAssets;
+use penumbra_crypto::{
+    asset::Cache,
+    dex::{
+        lp::{position::Metadata, Reserves},
+        BatchSwapOutputData, TradingPair,
+    },
+    Asset,
 };
 use penumbra_proto::client::v1alpha1::{
-    specific_query_service_client::SpecificQueryServiceClient, BatchSwapOutputDataRequest,
-    LiquidityPositionsRequest, StubCpmmReservesRequest,
+    specific_query_service_client::SpecificQueryServiceClient, AssetListRequest,
+    BatchSwapOutputDataRequest, ChainParametersRequest, LiquidityPositionsRequest,
+    StubCpmmReservesRequest,
 };
-use penumbra_view::ViewClient;
 use tonic::transport::Channel;
 
 use crate::App;
@@ -40,16 +45,50 @@ pub enum DexCmd {
 }
 
 impl DexCmd {
+    async fn get_asset_cache(&self, app: &mut App) -> Result<(String, Cache)> {
+        let mut oblivious_client = app.oblivious_client().await?;
+
+        let chain_params = oblivious_client
+            .chain_parameters(tonic::Request::new(ChainParametersRequest {
+                chain_id: "".to_string(),
+            }))
+            .await?
+            .into_inner()
+            .chain_parameters
+            .ok_or_else(|| anyhow::anyhow!("empty ChainParametersResponse message"))?;
+
+        let chain_id = chain_params.chain_id;
+        let assets = oblivious_client
+            .asset_list(tonic::Request::new(AssetListRequest {
+                chain_id: chain_id.clone(),
+            }))
+            .await?
+            .into_inner()
+            .asset_list
+            .ok_or_else(|| anyhow::anyhow!("empty AssetListResponse message"))?
+            .assets;
+
+        let mut known_assets = KnownAssets(vec![]);
+        for new_asset in assets {
+            let new_asset = Asset::try_from(new_asset)?;
+            known_assets.0.push(new_asset);
+        }
+
+        Ok((chain_id, known_assets.into()))
+    }
+
     pub async fn print_cpmm_reserves(
         &self,
         app: &mut App,
         trading_pair: &TradingPair,
     ) -> Result<()> {
+        let (chain_id, asset_cache) = self.get_asset_cache(app).await?;
+
         let mut client = app.specific_client().await?;
         let reserves_data: Reserves = client
             .stub_cpmm_reserves(StubCpmmReservesRequest {
                 trading_pair: Some((*trading_pair).into()),
-                chain_id: app.view().chain_params().await?.chain_id,
+                chain_id: chain_id.clone(),
             })
             .await?
             .into_inner()
@@ -57,9 +96,7 @@ impl DexCmd {
             .context("cannot parse stub CPMM reserves data")?;
         println!("Constant-Product Market Maker Reserves:");
         let mut table = Table::new();
-        // TODO: use oblivious query service instead of view service
-        let view_client: &mut dyn ViewClient = app.view.as_mut().unwrap();
-        let asset_cache = view_client.assets().await?;
+
         let asset_1 = asset_cache
             .get(&trading_pair.asset_1())
             .map(|base_denom| {
@@ -104,6 +141,7 @@ impl DexCmd {
     pub async fn get_batch_outputs(
         &self,
         app: &mut App,
+        chain_id: String,
         height: &u64,
         trading_pair: &TradingPair,
     ) -> Result<BatchSwapOutputData> {
@@ -112,7 +150,7 @@ impl DexCmd {
             .batch_swap_output_data(BatchSwapOutputDataRequest {
                 height: *height,
                 trading_pair: Some((*trading_pair).into()),
-                chain_id: app.view().chain_params().await?.chain_id,
+                chain_id,
             })
             .await?
             .into_inner()
@@ -163,11 +201,11 @@ impl DexCmd {
                 height,
                 trading_pair,
             } => {
-                let outputs = self.get_batch_outputs(app, height, trading_pair).await?;
+                let (chain_id, asset_cache) = self.get_asset_cache(app).await?;
+                let outputs = self
+                    .get_batch_outputs(app, chain_id, height, trading_pair)
+                    .await?;
 
-                // TODO: use oblivious query service instead of view service
-                let view_client: &mut dyn ViewClient = app.view.as_mut().unwrap();
-                let asset_cache = view_client.assets().await?;
                 let asset_1 = asset_cache
                     .get(&trading_pair.asset_1())
                     .map(|base_denom| {
@@ -223,10 +261,7 @@ impl DexCmd {
             }
             DexCmd::LiquidityPositions { only_open } => {
                 let client = app.specific_client().await.unwrap();
-                // TODO: use oblivious query service instead of view service
-                let view_client: &mut dyn ViewClient = app.view.as_mut().unwrap();
-                let chain_id = view_client.chain_params().await?.chain_id;
-                let asset_cache = view_client.assets().await?;
+                let (chain_id, asset_cache) = self.get_asset_cache(app).await?;
 
                 let mut positions_stream = self
                     .get_liquidity_positions(client, *only_open, chain_id)
@@ -245,7 +280,7 @@ impl DexCmd {
 
                 while let Ok(position) =
                     positions_stream.next().await.transpose()?.ok_or_else(|| {
-                        anyhow::anyhow!("view service did not return liquidity position")
+                        anyhow::anyhow!("specific query service did not return liquidity position")
                     })
                 {
                     let trading_pair = position.position.phi.pair;
