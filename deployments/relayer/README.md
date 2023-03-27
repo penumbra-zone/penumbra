@@ -9,7 +9,7 @@ from testnet-preview to testnet.
 ```
 ./generate-configs preview
 ./generate-configs testnet
-./configure-relayer
+./configure-relayer penumbra-preview penumbra-testnet
 ./run-relayer
 ```
 

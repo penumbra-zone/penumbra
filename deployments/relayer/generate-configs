@@ -27,6 +27,10 @@ case $penumbra_network in
         PENUMBRA_RPC_URL="https://rpc.testnet.penumbra.zone:443"
         PENUMBRA_CHAIN_ID="$(get_chain_id "$PENUMBRA_RPC_URL")"
         ;;
+    local)
+        PENUMBRA_RPC_URL="http://localhost:26657"
+        PENUMBRA_CHAIN_ID="$(get_chain_id "$PENUMBRA_RPC_URL")"
+        ;;
     *)
         >&2 echo "ERROR: network '$penumbra_network' not supported"
         exit 2
