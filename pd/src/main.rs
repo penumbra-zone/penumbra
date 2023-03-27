@@ -1,4 +1,5 @@
 #![allow(clippy::clone_on_copy)]
+#![recursion_limit = "512"]
 use std::{
     net::{Ipv4Addr, SocketAddr},
     path::PathBuf,
