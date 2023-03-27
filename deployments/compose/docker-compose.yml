@@ -1,20 +1,31 @@
+---
+# docker-compose file for running a Penumbra node.
+# Requires testnet config generation on the host machine.
+# See docs for details:  https://guide.penumbra.zone/main/pd/join-testnet.html
+
+# N.B. the "latest" tag for Penumbra container images maps to the latest
+# tagged release; use "main" tag for tracking the rolling preview networks.
 version: "3.7"
 services:
+
   # The Penumbra daemon
   pd-node0:
-    container_name: penumbra-node0
-    build:
-      context: ../../
-      dockerfile: deployments/containerfiles/Dockerfile.old
+    image: ghcr.io/penumbra-zone/penumbra:latest
     environment:
-      - RUST_LOG=${RUST_LOG:-warn,pd=debug,penumbra=debug,jmt=info}
-    volumes:
-      - ~/.penumbra/testnet_data/node0/pd:/pd
-    command: /bin/pd start --host 0.0.0.0 --home /pd --tendermint-addr http://192.167.10.11:26657
+      - RUST_LOG=pd=debug
+    command: >-
+      sh -c
+      "
+      if ! test -e /pd/testnet_data/node0/tendermint/config/config.toml ; then
+          >&2 printf 'ERROR: testnet config not found. Run `pd testnet join` on the host machine.'
+          >&2 echo ' See docs for details: https://guide.penumbra.zone/main/pd/join-testnet.html'
+          exit 1
+      fi &&
+      /bin/pd start --home /pd/testnet_data/node0/pd --grpc-bind 0.0.0.0:8080 --abci-bind 0.0.0.0:26658
+      "
     restart: on-failure
-    networks:
-      localnet:
-        ipv4_address: 192.167.10.10
+    volumes:
+      - ~/.penumbra:/pd
     user: "${UID:-1000}"
     ports:
       - "26658:26658"
@@ -24,27 +35,15 @@ services:
   tendermint-node0:
     image: "docker.io/tendermint/tendermint:v0.34.23"
     user: "${UID:-1000}"
-    container_name: tendermint-node0
     ports:
       - "26656:26656"
       - "26657:26657"
     volumes:
       - ~/.penumbra/testnet_data/node0/tendermint:/tendermint
+    entrypoint: tendermint
     command: start --proxy_app=tcp://pd-node0:26658
     environment:
       - ID=0
       - LOG=${LOG:-tendermint.log}
     depends_on:
       - pd-node0
-    networks:
-      localnet:
-        ipv4_address: 192.167.10.11
-
-networks:
-  localnet:
-    driver: bridge
-    name: penumbra_localnet
-    ipam:
-      driver: default
-      config:
-        - subnet: 192.167.10.0/16

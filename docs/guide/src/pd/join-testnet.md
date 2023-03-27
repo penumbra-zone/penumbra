@@ -71,7 +71,7 @@ Alternatively, `pd` and `tendermint` can be orchestrated with `docker-compose`:
 
 ```shell
 cd deployments/compose/
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+docker-compose up --abort-on-container-exit
 ```
 
 or via systemd:
