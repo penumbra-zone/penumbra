@@ -2323,6 +2323,307 @@ impl<'de> serde::Deserialize<'de> for GetTxResponse {
         deserializer.deserialize_struct("penumbra.client.v1alpha1.GetTxResponse", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for InfoRequest {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.version.is_empty() {
+            len += 1;
+        }
+        if self.block_version != 0 {
+            len += 1;
+        }
+        if self.p2p_version != 0 {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.client.v1alpha1.InfoRequest", len)?;
+        if !self.version.is_empty() {
+            struct_ser.serialize_field("version", &self.version)?;
+        }
+        if self.block_version != 0 {
+            struct_ser.serialize_field("blockVersion", ToString::to_string(&self.block_version).as_str())?;
+        }
+        if self.p2p_version != 0 {
+            struct_ser.serialize_field("p2pVersion", ToString::to_string(&self.p2p_version).as_str())?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for InfoRequest {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "version",
+            "block_version",
+            "blockVersion",
+            "p2p_version",
+            "p2pVersion",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Version,
+            BlockVersion,
+            P2pVersion,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "version" => Ok(GeneratedField::Version),
+                            "blockVersion" | "block_version" => Ok(GeneratedField::BlockVersion),
+                            "p2pVersion" | "p2p_version" => Ok(GeneratedField::P2pVersion),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = InfoRequest;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.client.v1alpha1.InfoRequest")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<InfoRequest, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut version__ = None;
+                let mut block_version__ = None;
+                let mut p2p_version__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::Version => {
+                            if version__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("version"));
+                            }
+                            version__ = Some(map.next_value()?);
+                        }
+                        GeneratedField::BlockVersion => {
+                            if block_version__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("blockVersion"));
+                            }
+                            block_version__ = 
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::P2pVersion => {
+                            if p2p_version__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("p2pVersion"));
+                            }
+                            p2p_version__ = 
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                    }
+                }
+                Ok(InfoRequest {
+                    version: version__.unwrap_or_default(),
+                    block_version: block_version__.unwrap_or_default(),
+                    p2p_version: p2p_version__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.client.v1alpha1.InfoRequest", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for InfoResponse {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.data.is_empty() {
+            len += 1;
+        }
+        if !self.version.is_empty() {
+            len += 1;
+        }
+        if self.app_version != 0 {
+            len += 1;
+        }
+        if self.last_block_height != 0 {
+            len += 1;
+        }
+        if !self.last_block_app_hash.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.client.v1alpha1.InfoResponse", len)?;
+        if !self.data.is_empty() {
+            struct_ser.serialize_field("data", pbjson::private::base64::encode(&self.data).as_str())?;
+        }
+        if !self.version.is_empty() {
+            struct_ser.serialize_field("version", &self.version)?;
+        }
+        if self.app_version != 0 {
+            struct_ser.serialize_field("appVersion", ToString::to_string(&self.app_version).as_str())?;
+        }
+        if self.last_block_height != 0 {
+            struct_ser.serialize_field("lastBlockHeight", ToString::to_string(&self.last_block_height).as_str())?;
+        }
+        if !self.last_block_app_hash.is_empty() {
+            struct_ser.serialize_field("lastBlockAppHash", pbjson::private::base64::encode(&self.last_block_app_hash).as_str())?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for InfoResponse {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "data",
+            "version",
+            "app_version",
+            "appVersion",
+            "last_block_height",
+            "lastBlockHeight",
+            "last_block_app_hash",
+            "lastBlockAppHash",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Data,
+            Version,
+            AppVersion,
+            LastBlockHeight,
+            LastBlockAppHash,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "data" => Ok(GeneratedField::Data),
+                            "version" => Ok(GeneratedField::Version),
+                            "appVersion" | "app_version" => Ok(GeneratedField::AppVersion),
+                            "lastBlockHeight" | "last_block_height" => Ok(GeneratedField::LastBlockHeight),
+                            "lastBlockAppHash" | "last_block_app_hash" => Ok(GeneratedField::LastBlockAppHash),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = InfoResponse;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.client.v1alpha1.InfoResponse")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<InfoResponse, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut data__ = None;
+                let mut version__ = None;
+                let mut app_version__ = None;
+                let mut last_block_height__ = None;
+                let mut last_block_app_hash__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::Data => {
+                            if data__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("data"));
+                            }
+                            data__ = 
+                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::Version => {
+                            if version__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("version"));
+                            }
+                            version__ = Some(map.next_value()?);
+                        }
+                        GeneratedField::AppVersion => {
+                            if app_version__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("appVersion"));
+                            }
+                            app_version__ = 
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::LastBlockHeight => {
+                            if last_block_height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("lastBlockHeight"));
+                            }
+                            last_block_height__ = 
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::LastBlockAppHash => {
+                            if last_block_app_hash__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("lastBlockAppHash"));
+                            }
+                            last_block_app_hash__ = 
+                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                    }
+                }
+                Ok(InfoResponse {
+                    data: data__.unwrap_or_default(),
+                    version: version__.unwrap_or_default(),
+                    app_version: app_version__.unwrap_or_default(),
+                    last_block_height: last_block_height__.unwrap_or_default(),
+                    last_block_app_hash: last_block_app_hash__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.client.v1alpha1.InfoResponse", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for KeyValueRequest {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
