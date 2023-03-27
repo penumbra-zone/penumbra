@@ -88,11 +88,7 @@ pub enum Command {
     /// Start the view service.
     Start {
         /// Bind the view service to this socket.
-        #[clap(
-            long,
-            env = "PENUMBRA_PCLIENTD_BIND",
-            default_value = "127.0.0.1:8081"
-        )]
+        #[clap(long, env = "PENUMBRA_PCLIENTD_BIND", default_value = "127.0.0.1:8081")]
         bind_addr: SocketAddr,
     },
 }
