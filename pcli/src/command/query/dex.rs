@@ -45,6 +45,7 @@ pub enum DexCmd {
 }
 
 impl DexCmd {
+    // TODO: this is duplicated between various pcli q subcommands, is there a single place it could live?
     async fn get_asset_cache(&self, app: &mut App) -> Result<(String, Cache)> {
         let mut oblivious_client = app.oblivious_client().await?;
 

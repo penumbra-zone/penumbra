@@ -82,6 +82,31 @@ impl ObliviousQueryService for Info {
     }
 
     #[instrument(skip(self, request))]
+    async fn info(
+        &self,
+        request: tonic::Request<penumbra_proto::client::v1alpha1::InfoRequest>,
+    ) -> Result<tonic::Response<penumbra_proto::client::v1alpha1::InfoResponse>, Status> {
+        let info = self
+            .info(tendermint::abci::request::Info {
+                version: request.get_ref().version.clone(),
+                block_version: request.get_ref().block_version,
+                p2p_version: request.get_ref().p2p_version,
+            })
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("error getting ABCI info: {e}")))?;
+
+        Ok(tonic::Response::new(
+            penumbra_proto::client::v1alpha1::InfoResponse {
+                data: info.data.into(),
+                version: info.version,
+                app_version: info.app_version,
+                last_block_height: info.last_block_height.into(),
+                last_block_app_hash: info.last_block_app_hash.into(),
+            },
+        ))
+    }
+
+    #[instrument(skip(self, request))]
     async fn asset_list(
         &self,
         request: tonic::Request<AssetListRequest>,

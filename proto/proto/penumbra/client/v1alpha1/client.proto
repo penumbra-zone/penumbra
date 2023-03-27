@@ -28,6 +28,31 @@ service ObliviousQueryService {
   rpc EpochByHeight(EpochByHeightRequest) returns (EpochByHeightResponse);
   rpc ValidatorInfo(ValidatorInfoRequest) returns (stream ValidatorInfoResponse);
   rpc AssetList(AssetListRequest) returns (AssetListResponse);
+  rpc Info(InfoRequest) returns (InfoResponse);
+}
+
+// Requests information about the chain state as known by the node.
+message InfoRequest {
+  // The Tendermint software semantic version.
+  string version = 1;
+  // The Tendermint block protocol version.
+  uint64 block_version = 2;
+  // The Tendermint p2p protocol version.
+  uint64 p2p_version = 3;
+}
+
+// Contains information about the chain state as known by the node.
+message InfoResponse {
+    // Some arbitrary information.
+    bytes data = 1;
+    // The application software semantic version.
+    string version = 2;
+    // The application protocol version.
+    uint64 app_version = 3;
+    // The latest block for which the app has called [`Commit`](super::super::Request::Commit).
+    uint64 last_block_height = 4;
+    // The latest result of [`Commit`](super::super::Request::Commit).
+    bytes last_block_app_hash = 5;
 }
 
 // Requests a range of compact block data.

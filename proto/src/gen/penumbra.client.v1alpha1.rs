@@ -1,3 +1,37 @@
+/// Requests information about the chain state as known by the node.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct InfoRequest {
+    /// The Tendermint software semantic version.
+    #[prost(string, tag = "1")]
+    pub version: ::prost::alloc::string::String,
+    /// The Tendermint block protocol version.
+    #[prost(uint64, tag = "2")]
+    pub block_version: u64,
+    /// The Tendermint p2p protocol version.
+    #[prost(uint64, tag = "3")]
+    pub p2p_version: u64,
+}
+/// Contains information about the chain state as known by the node.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct InfoResponse {
+    /// Some arbitrary information.
+    #[prost(bytes = "vec", tag = "1")]
+    pub data: ::prost::alloc::vec::Vec<u8>,
+    /// The application software semantic version.
+    #[prost(string, tag = "2")]
+    pub version: ::prost::alloc::string::String,
+    /// The application protocol version.
+    #[prost(uint64, tag = "3")]
+    pub app_version: u64,
+    /// The latest block for which the app has called \[`Commit`\](super::super::Request::Commit).
+    #[prost(uint64, tag = "4")]
+    pub last_block_height: u64,
+    /// The latest result of \[`Commit`\](super::super::Request::Commit).
+    #[prost(bytes = "vec", tag = "5")]
+    pub last_block_app_hash: ::prost::alloc::vec::Vec<u8>,
+}
 /// Requests a range of compact block data.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -695,6 +729,25 @@ pub mod oblivious_query_service_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
+        pub async fn info(
+            &mut self,
+            request: impl tonic::IntoRequest<super::InfoRequest>,
+        ) -> Result<tonic::Response<super::InfoResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.client.v1alpha1.ObliviousQueryService/Info",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
     }
 }
 /// Generated client implementations.
@@ -1252,6 +1305,10 @@ pub mod oblivious_query_service_server {
             &self,
             request: tonic::Request<super::AssetListRequest>,
         ) -> Result<tonic::Response<super::AssetListResponse>, tonic::Status>;
+        async fn info(
+            &self,
+            request: tonic::Request<super::InfoRequest>,
+        ) -> Result<tonic::Response<super::InfoResponse>, tonic::Status>;
     }
     /// Methods for accessing chain state that are "oblivious" in the sense that they
     /// do not request specific portions of the chain state that could reveal private
@@ -1508,6 +1565,43 @@ pub mod oblivious_query_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = AssetListSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.client.v1alpha1.ObliviousQueryService/Info" => {
+                    #[allow(non_camel_case_types)]
+                    struct InfoSvc<T: ObliviousQueryService>(pub Arc<T>);
+                    impl<
+                        T: ObliviousQueryService,
+                    > tonic::server::UnaryService<super::InfoRequest> for InfoSvc<T> {
+                        type Response = super::InfoResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::InfoRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move { (*inner).info(request).await };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = InfoSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

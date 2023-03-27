@@ -2,7 +2,7 @@ use anyhow::Result;
 use comfy_table::{presets, Table};
 use futures::TryStreamExt;
 use penumbra_component::stake::validator;
-use penumbra_view::ViewClient;
+use penumbra_proto::client::v1alpha1::{ChainParametersRequest, InfoRequest};
 
 // TODO: remove this subcommand and merge into `pcli q`
 
@@ -31,8 +31,17 @@ pub struct Stats {
 }
 
 impl ChainCmd {
-    pub async fn print_chain_params<V: ViewClient>(&self, view: &mut V) -> Result<()> {
-        let params = view.chain_params().await?;
+    pub async fn print_chain_params(&self, app: &mut App) -> Result<()> {
+        let mut oblivious_client = app.oblivious_client().await?;
+
+        let params = oblivious_client
+            .chain_parameters(tonic::Request::new(ChainParametersRequest {
+                chain_id: "".to_string(),
+            }))
+            .await?
+            .into_inner()
+            .chain_parameters
+            .ok_or_else(|| anyhow::anyhow!("empty ChainParametersResponse message"))?;
 
         println!("Chain Parameters:");
         let mut table = Table::new();
@@ -91,11 +100,25 @@ impl ChainCmd {
         use penumbra_proto::client::v1alpha1::ValidatorInfoRequest;
 
         let mut client = app.oblivious_client().await?;
-        let fvk = &app.fvk;
-        let view: &mut dyn ViewClient = app.view.as_mut().unwrap();
 
-        let current_block_height = view.status(fvk.account_group_id()).await?.sync_height;
-        let chain_params = view.chain_params().await?;
+        let info = client
+            .info(InfoRequest {
+                version: "".to_string(),
+                block_version: 0,
+                p2p_version: 0,
+            })
+            .await?
+            .into_inner();
+
+        let current_block_height = info.last_block_height;
+        let chain_params = client
+            .chain_parameters(tonic::Request::new(ChainParametersRequest {
+                chain_id: "".to_string(),
+            }))
+            .await?
+            .into_inner()
+            .chain_parameters
+            .ok_or_else(|| anyhow::anyhow!("empty ChainParametersResponse message"))?;
 
         // Fetch validators.
         let validators = client
@@ -147,14 +170,14 @@ impl ChainCmd {
     pub async fn exec(&self, app: &mut App) -> Result<()> {
         match self {
             ChainCmd::Params => {
-                self.print_chain_params(app.view.as_mut().unwrap()).await?;
+                self.print_chain_params(app).await?;
             }
             // TODO: we could implement this as an RPC call using the metrics
             // subsystems once #829 is complete
             // OR (hdevalence): fold it into pcli q
             ChainCmd::Info { verbose } => {
                 if *verbose {
-                    self.print_chain_params(app.view.as_mut().unwrap()).await?;
+                    self.print_chain_params(app).await?;
                 }
 
                 let stats = self.get_stats(app).await?;
