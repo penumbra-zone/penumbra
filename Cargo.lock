@@ -3497,6 +3497,7 @@ dependencies = [
  "penumbra-transaction",
  "penumbra-wallet",
  "pin-project",
+ "pin-project-lite",
  "prost",
  "prost-types",
  "rand",

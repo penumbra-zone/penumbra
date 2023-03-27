@@ -43,6 +43,7 @@ toml = "0.5"
 # the bad update until it's yanked.
 ics23 = "0.9.0"
 
+pin-project-lite = "0.2.9"
 ark-ff = { version = "0.3" }
 async-stream = "0.2"
 bincode = "1.3.3"

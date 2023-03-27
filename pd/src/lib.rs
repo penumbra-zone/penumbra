@@ -10,6 +10,8 @@ mod snapshot;
 mod tendermint_proxy;
 
 pub mod testnet;
+/// A vendored copy of the unpublished `tracing-tower` crate.
+pub mod trace;
 
 use request_ext::RequestExt;
 
