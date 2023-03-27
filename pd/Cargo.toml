@@ -28,6 +28,7 @@ penumbra-wallet = { path = "../wallet" }
 decaf377 = {version = "0.3", features = ["parallel"]}
 tower-abci = "0.5.0"
 jmt = "0.3"
+tower-actor = "0.1.0"
 
 # External dependencies
 tendermint-config = "0.29.0"
