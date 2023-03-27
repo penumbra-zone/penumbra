@@ -101,6 +101,7 @@ impl ChainCmd {
 
         let mut client = app.oblivious_client().await?;
 
+        // TODO: is it possible to use the TendermintProxyService instead here??
         let info = client
             .info(InfoRequest {
                 version: "".to_string(),
