@@ -36,23 +36,6 @@ impl ActionHandler for Undelegate {
             ));
         }
 
-        // Check whether the end epoch is correct for the given validator (it
-        // may already be unbonding).  This will only differ from the generic
-        // unbonding time if the validator is already unbonding, so we only
-        // require that the declared unbonding period is at least as long as the
-        // expected one, to allow clients the option of skipping a query to
-        // discover if the validator is already unbonding.
-        let expected_end_epoch = state
-            .current_unbonding_end_epoch_for(&u.validator_identity)
-            .await?;
-        if u.end_epoch_index < expected_end_epoch {
-            return Err(anyhow::anyhow!(
-                "undelegation end epoch must be at least {} but {} was specified",
-                expected_end_epoch,
-                u.end_epoch_index,
-            ));
-        }
-
         // For undelegations, we enforce correct computation (with rounding)
         // of the *unbonded amount based on the delegation amount*, because
         // users (should be) starting with the amount of delegation tokens they

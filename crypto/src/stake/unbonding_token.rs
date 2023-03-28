@@ -8,8 +8,8 @@ use crate::asset;
 /// Unbonding tokens represent staking tokens that are currently unbonding and
 /// subject to slashing.
 ///
-/// Unbonding tokens are parameterized by the validator identity, the epoch at
-/// which unbonding began, and the epoch at which unbonding ends.
+/// Unbonding tokens are parameterized by the validator identity, and the epoch at
+/// which unbonding began.
 pub struct UnbondingToken {
     validator_identity: IdentityKey,
     start_epoch_index: u64,
@@ -67,7 +67,7 @@ impl TryFrom<asset::Denom> for UnbondingToken {
         // and VALIDATOR_IDENTITY_BECH32_PREFIX
         // The data capture group is used by asset::REGISTRY
         let captures =
-            Regex::new("^uunbonding_(?P<data>epoch_(?P<start>[0-9]+)_until_(?P<end>[0-9]+)_(?P<validator>penumbravalid1[a-zA-HJ-NP-Z0-9]+))$")
+            Regex::new("^uunbonding_(?P<data>epoch_(?P<start>[0-9]+)_(?P<validator>penumbravalid1[a-zA-HJ-NP-Z0-9]+))$")
                 .expect("regex is valid")
                 .captures(base_string.as_ref())
                 .ok_or_else(|| {
@@ -145,7 +145,6 @@ mod tests {
 
         let ik = IdentityKey(SigningKey::<SpendAuth>::new(OsRng).into());
         let start = 782;
-        let end = 789;
 
         let token = UnbondingToken::new(ik, start);
 

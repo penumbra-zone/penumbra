@@ -1179,6 +1179,27 @@ pub trait StateReadExt: StateRead {
         Ok(self.get_chain_params().await?.missed_blocks_maximum)
     }
 
+    async fn unbonding_end_epoch_for(
+        &self,
+        id: &IdentityKey,
+        start_epoch_index: u64,
+    ) -> Result<u64> {
+        let unbonding_epochs = self.get_chain_params().await?.unbonding_epochs;
+
+        let default_unbonding = start_epoch_index + unbonding_epochs;
+
+        let validator_unbonding =
+            if let Some(validator::BondingState::Unbonding { unbonding_epoch }) =
+                self.validator_bonding_state(id).await?
+            {
+                unbonding_epoch
+            } else {
+                u64::MAX
+            };
+
+        Ok(std::cmp::min(default_unbonding, validator_unbonding))
+    }
+
     async fn current_unbonding_end_epoch_for(&self, id: &IdentityKey) -> Result<u64> {
         let current_epoch = self.get_current_epoch().await?;
         let unbonding_epochs = self.get_chain_params().await?.unbonding_epochs;

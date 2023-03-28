@@ -334,15 +334,12 @@ pub struct UndelegateClaimBody {
     /// The epoch in which unbonding began, used to verify the penalty.
     #[prost(uint64, tag = "2")]
     pub start_epoch_index: u64,
-    /// The epoch in which unbonding finished, used to verify the penalty.
-    #[prost(uint64, tag = "3")]
-    pub end_epoch_index: u64,
     /// The penalty applied to undelegation, in bps^2 (10e-8).
     /// In the happy path (no slashing), this is 0.
-    #[prost(message, optional, tag = "4")]
+    #[prost(message, optional, tag = "3")]
     pub penalty: ::core::option::Option<Penalty>,
     /// The action's contribution to the transaction's value balance.
-    #[prost(message, optional, tag = "5")]
+    #[prost(message, optional, tag = "4")]
     pub balance_commitment: ::core::option::Option<
         super::super::crypto::v1alpha1::BalanceCommitment,
     >,
@@ -358,9 +355,6 @@ pub struct UndelegateClaimPlan {
     /// The epoch in which unbonding began, used to verify the penalty.
     #[prost(uint64, tag = "2")]
     pub start_epoch_index: u64,
-    /// The epoch in which unbonding finished, used to verify the penalty.
-    #[prost(uint64, tag = "3")]
-    pub end_epoch_index: u64,
     /// The penalty applied to undelegation, in bps^2 (10e-8).
     /// In the happy path (no slashing), this is 0.
     #[prost(message, optional, tag = "4")]

@@ -467,15 +467,11 @@ impl TxCmd {
                     .into_inner()
                     .try_into()?;
 
-                let params = app.view.as_mut().unwrap().chain_params().await?;
-
-                let end_epoch_index = rate_data.epoch_index + params.unbonding_epochs;
-
                 let mut planner = Planner::new(OsRng);
 
                 let plan = planner
                     .fee(fee)
-                    .undelegate(delegation_value.amount, rate_data, end_epoch_index)
+                    .undelegate(delegation_value.amount, rate_data)
                     .plan(
                         app.view.as_mut().unwrap(),
                         app.fvk.account_group_id(),
@@ -514,9 +510,8 @@ impl TxCmd {
                     .await?;
 
                 for (address_index, notes_by_asset) in notes.into_iter() {
-                    for (token, notes) in notes_by_asset
-                        .into_iter()
-                        .filter_map(|(asset_id, notes)| {
+                    for (token, notes) in
+                        notes_by_asset.into_iter().filter_map(|(asset_id, notes)| {
                             // Filter for notes that are unbonding tokens.
                             let denom = asset_cache.get(&asset_id).unwrap().clone();
                             match UnbondingToken::try_from(denom) {
@@ -524,23 +519,11 @@ impl TxCmd {
                                 Err(_) => None,
                             }
                         })
-                        .filter_map(|(token, notes)| {
-                            // Filter for notes that are ready to be claimed.
-                            if token.end_epoch_index() <= current_epoch.index {
-                                Some((token, notes))
-                            } else {
-                                println!(
-                                    "skipping {} because it is not yet ready to be claimed",
-                                    token.denom().default_unit(),
-                                );
-                                None
-                            }
-                        })
                     {
                         println!("claiming {}", token.denom().default_unit());
                         let validator_identity = token.validator();
                         let start_epoch_index = token.start_epoch_index();
-                        let end_epoch_index = token.end_epoch_index();
+                        let end_epoch_index = current_epoch.index;
 
                         let penalty: Penalty = specific_client
                             .validator_penalty(tonic::Request::new(ValidatorPenaltyRequest {
@@ -570,7 +553,6 @@ impl TxCmd {
                             .undelegate_claim(UndelegateClaimPlan {
                                 validator_identity,
                                 start_epoch_index,
-                                end_epoch_index,
                                 penalty,
                                 unbonding_amount,
                                 balance_blinding: Fr::rand(&mut OsRng),
