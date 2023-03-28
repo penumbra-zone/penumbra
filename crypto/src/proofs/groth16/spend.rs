@@ -73,8 +73,9 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         let position_var = tct::r1cs::PositionVar::new_witness(cs.clone(), || {
             Ok(self.state_commitment_proof.position())
         })?;
-        let merkle_path_var =
-            tct::r1cs::MerkleAuthPathVar::new(cs.clone(), self.state_commitment_proof)?;
+        let merkle_path_var = tct::r1cs::MerkleAuthPathVar::new_witness(cs.clone(), || {
+            Ok(self.state_commitment_proof)
+        })?;
 
         let v_blinding_arr: [u8; 32] = self.v_blinding.to_bytes();
         let v_blinding_vars = UInt8::new_witness_vec(cs.clone(), &v_blinding_arr)?;

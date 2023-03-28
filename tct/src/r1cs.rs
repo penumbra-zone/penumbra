@@ -22,13 +22,9 @@ impl AllocVar<Position, Fq> for PositionVar {
         let ns = cs.into();
         let cs = ns.cs();
         let inner: Position = *f()?.borrow();
-        match mode {
-            AllocationMode::Constant => unimplemented!(),
-            AllocationMode::Input => unimplemented!(),
-            AllocationMode::Witness => Ok(Self {
-                inner: FqVar::new_witness(cs, || Ok(Fq::from(u64::from(inner))))?,
-            }),
-        }
+        Ok(Self {
+            inner: FqVar::new_variable(cs, || Ok(Fq::from(u64::from(inner))), mode)?,
+        })
     }
 }
 
@@ -54,16 +50,22 @@ pub struct MerkleAuthPathVar {
     inner: [[FqVar; 3]; 24],
 }
 
-impl MerkleAuthPathVar {
-    /// Witness a TCT auth path.
-    ///
-    /// This adds one FqVar per sibling and keeps them grouped together by height.
-    pub fn new(cs: ConstraintSystemRef<Fq>, tct_proof: Proof) -> Result<Self, SynthesisError> {
+impl AllocVar<Proof, Fq> for MerkleAuthPathVar {
+    fn new_variable<T: std::borrow::Borrow<Proof>>(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: ark_r1cs_std::prelude::AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        let inner1 = f()?;
+        let inner: &Proof = inner1.borrow();
+        // This adds one FqVar per sibling and keeps them grouped together by height.
         let mut auth_path = Vec::<[FqVar; 3]>::new();
-        for depth in tct_proof.auth_path() {
+        for depth in inner.auth_path() {
             let mut nodes = [FqVar::zero(), FqVar::zero(), FqVar::zero()];
             for (i, node) in depth.iter().enumerate() {
-                nodes[i] = FqVar::new_witness(cs.clone(), || Ok(Fq::from(*node)))?;
+                nodes[i] = FqVar::new_variable(cs.clone(), || Ok(Fq::from(*node)), mode)?;
             }
             auth_path.push(nodes);
         }
@@ -74,7 +76,9 @@ impl MerkleAuthPathVar {
                 .expect("TCT auth path should have depth 24"),
         })
     }
+}
 
+impl MerkleAuthPathVar {
     /// Hash a node given the children at the given height.
     pub fn hash_node(
         cs: ConstraintSystemRef<Fq>,
@@ -116,7 +120,8 @@ impl MerkleAuthPathVar {
                     .expect("index value should always fit in a u64"),
             );
             let which_way = WhichWay::at(height_value, index_value).0;
-            let which_way_var = WhichWayVar::new(cs.clone(), which_way)?;
+            let which_way_var =
+                WhichWayVar::new_variable(cs.clone(), || Ok(which_way), AllocationMode::Witness)?;
 
             let height_var = FqVar::new_constant(cs.clone(), Fq::from(height_value as u64))?;
 
@@ -156,41 +161,45 @@ pub struct WhichWayVar {
     pub is_rightmost: Boolean<Fq>,
 }
 
-impl WhichWayVar {
-    /// Create an R1CS `WhichWayVar` from a `WhichWay` enum.
-    pub fn new(
-        cs: ConstraintSystemRef<Fq>,
-        which_way: WhichWay,
-    ) -> Result<WhichWayVar, SynthesisError> {
-        // TODO: impl AllocVar
+impl AllocVar<WhichWay, Fq> for WhichWayVar {
+    fn new_variable<T: std::borrow::Borrow<WhichWay>>(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: ark_r1cs_std::prelude::AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        let which_way: WhichWay = *f()?.borrow();
         match which_way {
             WhichWay::Leftmost => Ok(WhichWayVar {
-                is_leftmost: Boolean::new_witness(cs.clone(), || Ok(true))?,
-                is_left: Boolean::new_witness(cs.clone(), || Ok(false))?,
-                is_right: Boolean::new_witness(cs.clone(), || Ok(false))?,
-                is_rightmost: Boolean::new_witness(cs, || Ok(false))?,
+                is_leftmost: Boolean::new_variable(cs.clone(), || Ok(true), mode)?,
+                is_left: Boolean::new_variable(cs.clone(), || Ok(false), mode)?,
+                is_right: Boolean::new_variable(cs.clone(), || Ok(false), mode)?,
+                is_rightmost: Boolean::new_variable(cs, || Ok(false), mode)?,
             }),
             WhichWay::Left => Ok(WhichWayVar {
-                is_leftmost: Boolean::new_witness(cs.clone(), || Ok(false))?,
-                is_left: Boolean::new_witness(cs.clone(), || Ok(true))?,
-                is_right: Boolean::new_witness(cs.clone(), || Ok(false))?,
-                is_rightmost: Boolean::new_witness(cs, || Ok(false))?,
+                is_leftmost: Boolean::new_variable(cs.clone(), || Ok(false), mode)?,
+                is_left: Boolean::new_variable(cs.clone(), || Ok(true), mode)?,
+                is_right: Boolean::new_variable(cs.clone(), || Ok(false), mode)?,
+                is_rightmost: Boolean::new_variable(cs, || Ok(false), mode)?,
             }),
             WhichWay::Right => Ok(WhichWayVar {
-                is_leftmost: Boolean::new_witness(cs.clone(), || Ok(false))?,
-                is_left: Boolean::new_witness(cs.clone(), || Ok(false))?,
-                is_right: Boolean::new_witness(cs.clone(), || Ok(true))?,
-                is_rightmost: Boolean::new_witness(cs, || Ok(false))?,
+                is_leftmost: Boolean::new_variable(cs.clone(), || Ok(false), mode)?,
+                is_left: Boolean::new_variable(cs.clone(), || Ok(false), mode)?,
+                is_right: Boolean::new_variable(cs.clone(), || Ok(true), mode)?,
+                is_rightmost: Boolean::new_variable(cs, || Ok(false), mode)?,
             }),
             WhichWay::Rightmost => Ok(WhichWayVar {
-                is_leftmost: Boolean::new_witness(cs.clone(), || Ok(false))?,
-                is_left: Boolean::new_witness(cs.clone(), || Ok(false))?,
-                is_right: Boolean::new_witness(cs.clone(), || Ok(false))?,
-                is_rightmost: Boolean::new_witness(cs, || Ok(true))?,
+                is_leftmost: Boolean::new_variable(cs.clone(), || Ok(false), mode)?,
+                is_left: Boolean::new_variable(cs.clone(), || Ok(false), mode)?,
+                is_right: Boolean::new_variable(cs.clone(), || Ok(false), mode)?,
+                is_rightmost: Boolean::new_variable(cs, || Ok(true), mode)?,
             }),
         }
     }
+}
 
+impl WhichWayVar {
     /// Insert the provided node into the quadtree at the provided height.
     pub fn insert(&self, node: FqVar, siblings: [FqVar; 3]) -> Result<[FqVar; 4], SynthesisError> {
         // Cases:
