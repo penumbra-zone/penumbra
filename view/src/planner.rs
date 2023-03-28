@@ -23,8 +23,8 @@ use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
 use penumbra_tct as tct;
 use penumbra_transaction::{
     action::{
-        DaoDeposit, PositionOpen, Proposal, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw,
-        ValidatorVote, Vote,
+        DaoDeposit, PositionClose, PositionOpen, Proposal, ProposalDepositClaim, ProposalSubmit,
+        ProposalWithdraw, ValidatorVote, Vote,
     },
     plan::{
         ActionPlan, DelegatorVotePlan, MemoPlan, OutputPlan, SpendPlan, SwapClaimPlan, SwapPlan,
@@ -160,6 +160,15 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self.action(ActionPlan::PositionOpen(PositionOpen {
             position,
             initial_reserves,
+        }));
+        self
+    }
+
+    /// Close a liquidity position in the order book.
+    #[instrument(skip(self))]
+    pub fn position_close(&mut self, position: Position) -> &mut Self {
+        self.action(ActionPlan::PositionClose(PositionClose {
+            position_id: position.id(),
         }));
         self
     }

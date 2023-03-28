@@ -151,6 +151,9 @@ impl TransactionPlan {
         for position_open in self.position_openings().cloned() {
             actions.push(Action::PositionOpen(position_open))
         }
+        for position_close in self.position_closings().cloned() {
+            actions.push(Action::PositionClose(position_close))
+        }
 
         let transaction_body = TransactionBody {
             actions,
@@ -354,6 +357,9 @@ impl TransactionPlan {
         }
         for position_open in self.position_openings().cloned() {
             actions.push(Action::PositionOpen(position_open))
+        }
+        for position_close in self.position_closings().cloned() {
+            actions.push(Action::PositionClose(position_close))
         }
 
         let transaction_body = TransactionBody {
