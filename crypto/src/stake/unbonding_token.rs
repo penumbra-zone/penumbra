@@ -8,33 +8,27 @@ use crate::asset;
 /// Unbonding tokens represent staking tokens that are currently unbonding and
 /// subject to slashing.
 ///
-/// Unbonding tokens are parameterized by the validator identity, the epoch at
-/// which unbonding began, and the epoch at which unbonding ends.
+/// Unbonding tokens are parameterized by the validator identity, and the epoch at
+/// which unbonding began.
 pub struct UnbondingToken {
     validator_identity: IdentityKey,
     start_epoch_index: u64,
-    end_epoch_index: u64,
     base_denom: asset::Denom,
 }
 
 impl UnbondingToken {
-    pub fn new(
-        validator_identity: IdentityKey,
-        start_epoch_index: u64,
-        end_epoch_index: u64,
-    ) -> Self {
+    pub fn new(validator_identity: IdentityKey, start_epoch_index: u64) -> Self {
         // This format string needs to be in sync with the asset registry
         let base_denom = asset::REGISTRY
             .parse_denom(&format!(
                 // "uu" is not a typo, these are micro-unbonding tokens
-                "uunbonding_epoch_{start_epoch_index}_until_{end_epoch_index}_{validator_identity}"
+                "uunbonding_epoch_{start_epoch_index}_{validator_identity}"
             ))
             .expect("base denom format is valid");
         UnbondingToken {
             validator_identity,
             base_denom,
             start_epoch_index,
-            end_epoch_index,
         }
     }
 
@@ -61,10 +55,6 @@ impl UnbondingToken {
     pub fn start_epoch_index(&self) -> u64 {
         self.start_epoch_index
     }
-
-    pub fn end_epoch_index(&self) -> u64 {
-        self.end_epoch_index
-    }
 }
 
 impl TryFrom<asset::Denom> for UnbondingToken {
@@ -77,7 +67,7 @@ impl TryFrom<asset::Denom> for UnbondingToken {
         // and VALIDATOR_IDENTITY_BECH32_PREFIX
         // The data capture group is used by asset::REGISTRY
         let captures =
-            Regex::new("^uunbonding_(?P<data>epoch_(?P<start>[0-9]+)_until_(?P<end>[0-9]+)_(?P<validator>penumbravalid1[a-zA-HJ-NP-Z0-9]+))$")
+            Regex::new("^uunbonding_(?P<data>epoch_(?P<start>[0-9]+)_(?P<validator>penumbravalid1[a-zA-HJ-NP-Z0-9]+))$")
                 .expect("regex is valid")
                 .captures(base_string.as_ref())
                 .ok_or_else(|| {
@@ -98,17 +88,11 @@ impl TryFrom<asset::Denom> for UnbondingToken {
             .expect("start is a named capture")
             .as_str()
             .parse()?;
-        let end_epoch_index = captures
-            .name("end")
-            .expect("end is a named capture")
-            .as_str()
-            .parse()?;
 
         Ok(Self {
             base_denom,
             validator_identity,
             start_epoch_index,
-            end_epoch_index,
         })
     }
 }
@@ -161,9 +145,8 @@ mod tests {
 
         let ik = IdentityKey(SigningKey::<SpendAuth>::new(OsRng).into());
         let start = 782;
-        let end = 789;
 
-        let token = UnbondingToken::new(ik, start, end);
+        let token = UnbondingToken::new(ik, start);
 
         let denom = token.to_string();
         println!("denom: {denom}");

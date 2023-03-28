@@ -155,12 +155,11 @@ impl RateData {
 
     /// Uses this `RateData` to build an `Undelegate` transaction action that
     /// undelegates `delegation_amount` of the validator's delegation tokens.
-    pub fn build_undelegate(&self, delegation_amount: Amount, end_epoch_index: u64) -> Undelegate {
+    pub fn build_undelegate(&self, delegation_amount: Amount) -> Undelegate {
         // TODO: port to amounts
         let delegation_amount_u64 = u64::try_from(delegation_amount).unwrap();
         Undelegate {
             start_epoch_index: self.epoch_index,
-            end_epoch_index,
             delegation_amount,
             unbonded_amount: self.unbonded_amount(delegation_amount_u64).into(),
             validator_identity: self.identity_key.clone(),

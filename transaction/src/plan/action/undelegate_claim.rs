@@ -16,8 +16,6 @@ pub struct UndelegateClaimPlan {
     pub validator_identity: IdentityKey,
     /// The epoch in which unbonding began, used to verify the penalty.
     pub start_epoch_index: u64,
-    /// The epoch in which unbonding ended, used to verify the penalty.
-    pub end_epoch_index: u64,
     /// The penalty applied to undelegation, in bps^2.
     pub penalty: Penalty,
     /// The amount of unbonding tokens to claim. This is a bare number because its denom is determined by the preceding data.
@@ -41,7 +39,6 @@ impl UndelegateClaimPlan {
         UndelegateClaimBody {
             validator_identity: self.validator_identity,
             start_epoch_index: self.start_epoch_index,
-            end_epoch_index: self.end_epoch_index,
             penalty: self.penalty,
             balance_commitment: self.balance().commit(self.balance_blinding),
         }
@@ -53,12 +50,8 @@ impl UndelegateClaimPlan {
     }
 
     pub fn balance(&self) -> penumbra_crypto::Balance {
-        let unbonding_id = UnbondingToken::new(
-            self.validator_identity,
-            self.start_epoch_index,
-            self.end_epoch_index,
-        )
-        .id();
+        let unbonding_id =
+            UnbondingToken::new(self.validator_identity, self.start_epoch_index).id();
         self.penalty
             .balance_for_claim(unbonding_id, self.unbonding_amount)
     }
@@ -73,7 +66,6 @@ impl From<UndelegateClaimPlan> for pb::UndelegateClaimPlan {
         Self {
             validator_identity: Some(msg.validator_identity.into()),
             start_epoch_index: msg.start_epoch_index,
-            end_epoch_index: msg.end_epoch_index,
             penalty: Some(msg.penalty.into()),
             unbonding_amount: Some(msg.unbonding_amount.into()),
             balance_blinding: msg.balance_blinding.to_bytes().to_vec(),
@@ -90,7 +82,6 @@ impl TryFrom<pb::UndelegateClaimPlan> for UndelegateClaimPlan {
                 .ok_or_else(|| anyhow::anyhow!("missing validator_identity"))?
                 .try_into()?,
             start_epoch_index: msg.start_epoch_index,
-            end_epoch_index: msg.end_epoch_index,
             penalty: msg
                 .penalty
                 .ok_or_else(|| anyhow::anyhow!("missing penalty"))?

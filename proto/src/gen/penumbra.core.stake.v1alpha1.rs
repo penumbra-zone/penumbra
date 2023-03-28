@@ -300,18 +300,15 @@ pub struct Undelegate {
     /// The index of the epoch in which this undelegation was performed.
     #[prost(uint64, tag = "2")]
     pub start_epoch_index: u64,
-    /// The index of the epoch in which unbonding should complete.
-    #[prost(uint64, tag = "3")]
-    pub end_epoch_index: u64,
     /// The amount to undelegate, in units of unbonding tokens.
-    #[prost(message, optional, tag = "4")]
+    #[prost(message, optional, tag = "3")]
     pub unbonded_amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
     /// The amount of delegation tokens consumed by this action.
     ///
     /// This is implied by the validator's exchange rate in the specified epoch
     /// (and should be checked in transaction validation!), but including it allows
     /// stateless verification that the transaction is internally consistent.
-    #[prost(message, optional, tag = "5")]
+    #[prost(message, optional, tag = "4")]
     pub delegation_amount: ::core::option::Option<
         super::super::crypto::v1alpha1::Amount,
     >,
@@ -337,15 +334,12 @@ pub struct UndelegateClaimBody {
     /// The epoch in which unbonding began, used to verify the penalty.
     #[prost(uint64, tag = "2")]
     pub start_epoch_index: u64,
-    /// The epoch in which unbonding finished, used to verify the penalty.
-    #[prost(uint64, tag = "3")]
-    pub end_epoch_index: u64,
     /// The penalty applied to undelegation, in bps^2 (10e-8).
     /// In the happy path (no slashing), this is 0.
-    #[prost(message, optional, tag = "4")]
+    #[prost(message, optional, tag = "3")]
     pub penalty: ::core::option::Option<Penalty>,
     /// The action's contribution to the transaction's value balance.
-    #[prost(message, optional, tag = "5")]
+    #[prost(message, optional, tag = "4")]
     pub balance_commitment: ::core::option::Option<
         super::super::crypto::v1alpha1::BalanceCommitment,
     >,
@@ -361,9 +355,6 @@ pub struct UndelegateClaimPlan {
     /// The epoch in which unbonding began, used to verify the penalty.
     #[prost(uint64, tag = "2")]
     pub start_epoch_index: u64,
-    /// The epoch in which unbonding finished, used to verify the penalty.
-    #[prost(uint64, tag = "3")]
-    pub end_epoch_index: u64,
     /// The penalty applied to undelegation, in bps^2 (10e-8).
     /// In the happy path (no slashing), this is 0.
     #[prost(message, optional, tag = "4")]

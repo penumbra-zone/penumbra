@@ -1247,9 +1247,6 @@ impl serde::Serialize for Undelegate {
         if self.start_epoch_index != 0 {
             len += 1;
         }
-        if self.end_epoch_index != 0 {
-            len += 1;
-        }
         if self.unbonded_amount.is_some() {
             len += 1;
         }
@@ -1262,9 +1259,6 @@ impl serde::Serialize for Undelegate {
         }
         if self.start_epoch_index != 0 {
             struct_ser.serialize_field("startEpochIndex", ToString::to_string(&self.start_epoch_index).as_str())?;
-        }
-        if self.end_epoch_index != 0 {
-            struct_ser.serialize_field("endEpochIndex", ToString::to_string(&self.end_epoch_index).as_str())?;
         }
         if let Some(v) = self.unbonded_amount.as_ref() {
             struct_ser.serialize_field("unbondedAmount", v)?;
@@ -1286,8 +1280,6 @@ impl<'de> serde::Deserialize<'de> for Undelegate {
             "validatorIdentity",
             "start_epoch_index",
             "startEpochIndex",
-            "end_epoch_index",
-            "endEpochIndex",
             "unbonded_amount",
             "unbondedAmount",
             "delegation_amount",
@@ -1298,7 +1290,6 @@ impl<'de> serde::Deserialize<'de> for Undelegate {
         enum GeneratedField {
             ValidatorIdentity,
             StartEpochIndex,
-            EndEpochIndex,
             UnbondedAmount,
             DelegationAmount,
         }
@@ -1324,7 +1315,6 @@ impl<'de> serde::Deserialize<'de> for Undelegate {
                         match value {
                             "validatorIdentity" | "validator_identity" => Ok(GeneratedField::ValidatorIdentity),
                             "startEpochIndex" | "start_epoch_index" => Ok(GeneratedField::StartEpochIndex),
-                            "endEpochIndex" | "end_epoch_index" => Ok(GeneratedField::EndEpochIndex),
                             "unbondedAmount" | "unbonded_amount" => Ok(GeneratedField::UnbondedAmount),
                             "delegationAmount" | "delegation_amount" => Ok(GeneratedField::DelegationAmount),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
@@ -1348,7 +1338,6 @@ impl<'de> serde::Deserialize<'de> for Undelegate {
             {
                 let mut validator_identity__ = None;
                 let mut start_epoch_index__ = None;
-                let mut end_epoch_index__ = None;
                 let mut unbonded_amount__ = None;
                 let mut delegation_amount__ = None;
                 while let Some(k) = map.next_key()? {
@@ -1364,14 +1353,6 @@ impl<'de> serde::Deserialize<'de> for Undelegate {
                                 return Err(serde::de::Error::duplicate_field("startEpochIndex"));
                             }
                             start_epoch_index__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
-                        }
-                        GeneratedField::EndEpochIndex => {
-                            if end_epoch_index__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("endEpochIndex"));
-                            }
-                            end_epoch_index__ = 
                                 Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
@@ -1392,7 +1373,6 @@ impl<'de> serde::Deserialize<'de> for Undelegate {
                 Ok(Undelegate {
                     validator_identity: validator_identity__,
                     start_epoch_index: start_epoch_index__.unwrap_or_default(),
-                    end_epoch_index: end_epoch_index__.unwrap_or_default(),
                     unbonded_amount: unbonded_amount__,
                     delegation_amount: delegation_amount__,
                 })
@@ -1525,9 +1505,6 @@ impl serde::Serialize for UndelegateClaimBody {
         if self.start_epoch_index != 0 {
             len += 1;
         }
-        if self.end_epoch_index != 0 {
-            len += 1;
-        }
         if self.penalty.is_some() {
             len += 1;
         }
@@ -1540,9 +1517,6 @@ impl serde::Serialize for UndelegateClaimBody {
         }
         if self.start_epoch_index != 0 {
             struct_ser.serialize_field("startEpochIndex", ToString::to_string(&self.start_epoch_index).as_str())?;
-        }
-        if self.end_epoch_index != 0 {
-            struct_ser.serialize_field("endEpochIndex", ToString::to_string(&self.end_epoch_index).as_str())?;
         }
         if let Some(v) = self.penalty.as_ref() {
             struct_ser.serialize_field("penalty", v)?;
@@ -1564,8 +1538,6 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimBody {
             "validatorIdentity",
             "start_epoch_index",
             "startEpochIndex",
-            "end_epoch_index",
-            "endEpochIndex",
             "penalty",
             "balance_commitment",
             "balanceCommitment",
@@ -1575,7 +1547,6 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimBody {
         enum GeneratedField {
             ValidatorIdentity,
             StartEpochIndex,
-            EndEpochIndex,
             Penalty,
             BalanceCommitment,
         }
@@ -1601,7 +1572,6 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimBody {
                         match value {
                             "validatorIdentity" | "validator_identity" => Ok(GeneratedField::ValidatorIdentity),
                             "startEpochIndex" | "start_epoch_index" => Ok(GeneratedField::StartEpochIndex),
-                            "endEpochIndex" | "end_epoch_index" => Ok(GeneratedField::EndEpochIndex),
                             "penalty" => Ok(GeneratedField::Penalty),
                             "balanceCommitment" | "balance_commitment" => Ok(GeneratedField::BalanceCommitment),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
@@ -1625,7 +1595,6 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimBody {
             {
                 let mut validator_identity__ = None;
                 let mut start_epoch_index__ = None;
-                let mut end_epoch_index__ = None;
                 let mut penalty__ = None;
                 let mut balance_commitment__ = None;
                 while let Some(k) = map.next_key()? {
@@ -1641,14 +1610,6 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimBody {
                                 return Err(serde::de::Error::duplicate_field("startEpochIndex"));
                             }
                             start_epoch_index__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
-                        }
-                        GeneratedField::EndEpochIndex => {
-                            if end_epoch_index__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("endEpochIndex"));
-                            }
-                            end_epoch_index__ = 
                                 Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
@@ -1669,7 +1630,6 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimBody {
                 Ok(UndelegateClaimBody {
                     validator_identity: validator_identity__,
                     start_epoch_index: start_epoch_index__.unwrap_or_default(),
-                    end_epoch_index: end_epoch_index__.unwrap_or_default(),
                     penalty: penalty__,
                     balance_commitment: balance_commitment__,
                 })
@@ -1692,9 +1652,6 @@ impl serde::Serialize for UndelegateClaimPlan {
         if self.start_epoch_index != 0 {
             len += 1;
         }
-        if self.end_epoch_index != 0 {
-            len += 1;
-        }
         if self.penalty.is_some() {
             len += 1;
         }
@@ -1710,9 +1667,6 @@ impl serde::Serialize for UndelegateClaimPlan {
         }
         if self.start_epoch_index != 0 {
             struct_ser.serialize_field("startEpochIndex", ToString::to_string(&self.start_epoch_index).as_str())?;
-        }
-        if self.end_epoch_index != 0 {
-            struct_ser.serialize_field("endEpochIndex", ToString::to_string(&self.end_epoch_index).as_str())?;
         }
         if let Some(v) = self.penalty.as_ref() {
             struct_ser.serialize_field("penalty", v)?;
@@ -1737,8 +1691,6 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimPlan {
             "validatorIdentity",
             "start_epoch_index",
             "startEpochIndex",
-            "end_epoch_index",
-            "endEpochIndex",
             "penalty",
             "unbonding_amount",
             "unbondingAmount",
@@ -1750,7 +1702,6 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimPlan {
         enum GeneratedField {
             ValidatorIdentity,
             StartEpochIndex,
-            EndEpochIndex,
             Penalty,
             UnbondingAmount,
             BalanceBlinding,
@@ -1777,7 +1728,6 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimPlan {
                         match value {
                             "validatorIdentity" | "validator_identity" => Ok(GeneratedField::ValidatorIdentity),
                             "startEpochIndex" | "start_epoch_index" => Ok(GeneratedField::StartEpochIndex),
-                            "endEpochIndex" | "end_epoch_index" => Ok(GeneratedField::EndEpochIndex),
                             "penalty" => Ok(GeneratedField::Penalty),
                             "unbondingAmount" | "unbonding_amount" => Ok(GeneratedField::UnbondingAmount),
                             "balanceBlinding" | "balance_blinding" => Ok(GeneratedField::BalanceBlinding),
@@ -1802,7 +1752,6 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimPlan {
             {
                 let mut validator_identity__ = None;
                 let mut start_epoch_index__ = None;
-                let mut end_epoch_index__ = None;
                 let mut penalty__ = None;
                 let mut unbonding_amount__ = None;
                 let mut balance_blinding__ = None;
@@ -1819,14 +1768,6 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimPlan {
                                 return Err(serde::de::Error::duplicate_field("startEpochIndex"));
                             }
                             start_epoch_index__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
-                        }
-                        GeneratedField::EndEpochIndex => {
-                            if end_epoch_index__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("endEpochIndex"));
-                            }
-                            end_epoch_index__ = 
                                 Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
@@ -1855,7 +1796,6 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimPlan {
                 Ok(UndelegateClaimPlan {
                     validator_identity: validator_identity__,
                     start_epoch_index: start_epoch_index__.unwrap_or_default(),
-                    end_epoch_index: end_epoch_index__.unwrap_or_default(),
                     penalty: penalty__,
                     unbonding_amount: unbonding_amount__,
                     balance_blinding: balance_blinding__.unwrap_or_default(),

@@ -146,16 +146,14 @@ message Undelegate {
   crypto.v1alpha1.IdentityKey validator_identity = 1;
   // The index of the epoch in which this undelegation was performed.
   uint64 start_epoch_index = 2;
-  // The index of the epoch in which unbonding should complete.
-  uint64 end_epoch_index = 3;
   // The amount to undelegate, in units of unbonding tokens.
-  crypto.v1alpha1.Amount unbonded_amount = 4;
+  crypto.v1alpha1.Amount unbonded_amount = 3;
   // The amount of delegation tokens consumed by this action.
   //
   // This is implied by the validator's exchange rate in the specified epoch
   // (and should be checked in transaction validation!), but including it allows
   // stateless verification that the transaction is internally consistent.
-  crypto.v1alpha1.Amount delegation_amount = 5;
+  crypto.v1alpha1.Amount delegation_amount = 4;
 }
 
 // A transaction action finishing an undelegation, converting (slashable)
@@ -170,13 +168,11 @@ message UndelegateClaimBody {
   crypto.v1alpha1.IdentityKey validator_identity = 1;
   // The epoch in which unbonding began, used to verify the penalty.
   uint64 start_epoch_index = 2;
-  // The epoch in which unbonding finished, used to verify the penalty.
-  uint64 end_epoch_index = 3;
   // The penalty applied to undelegation, in bps^2 (10e-8).
   // In the happy path (no slashing), this is 0.
-  Penalty penalty = 4;
+  Penalty penalty = 3;
   // The action's contribution to the transaction's value balance.
-  crypto.v1alpha1.BalanceCommitment balance_commitment = 5;
+  crypto.v1alpha1.BalanceCommitment balance_commitment = 4;
 }
 
 message UndelegateClaimPlan {
@@ -184,8 +180,6 @@ message UndelegateClaimPlan {
   crypto.v1alpha1.IdentityKey validator_identity = 1;
   // The epoch in which unbonding began, used to verify the penalty.
   uint64 start_epoch_index = 2;
-  // The epoch in which unbonding finished, used to verify the penalty.
-  uint64 end_epoch_index = 3;
   // The penalty applied to undelegation, in bps^2 (10e-8).
   // In the happy path (no slashing), this is 0.
   Penalty penalty = 4;

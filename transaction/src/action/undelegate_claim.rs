@@ -15,8 +15,6 @@ pub struct UndelegateClaimBody {
     pub validator_identity: IdentityKey,
     /// The epoch in which unbonding began, used to verify the penalty.
     pub start_epoch_index: u64,
-    /// The epoch in which unbonding ended, used to verify the penalty.
-    pub end_epoch_index: u64,
     /// The penalty applied to undelegation, in bps^2.
     pub penalty: Penalty,
     /// The action's contribution to the transaction's value balance.
@@ -49,7 +47,6 @@ impl From<UndelegateClaimBody> for pb::UndelegateClaimBody {
         pb::UndelegateClaimBody {
             validator_identity: Some(d.validator_identity.into()),
             start_epoch_index: d.start_epoch_index,
-            end_epoch_index: d.end_epoch_index,
             penalty: Some(d.penalty.into()),
             balance_commitment: Some(d.balance_commitment.into()),
         }
@@ -65,7 +62,6 @@ impl TryFrom<pb::UndelegateClaimBody> for UndelegateClaimBody {
                 .ok_or_else(|| anyhow::anyhow!("missing validator identity"))?
                 .try_into()?,
             start_epoch_index: d.start_epoch_index,
-            end_epoch_index: d.end_epoch_index,
             penalty: d
                 .penalty
                 .ok_or_else(|| anyhow::anyhow!("missing penalty"))?

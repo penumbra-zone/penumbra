@@ -245,15 +245,8 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     ///
     /// TODO: can we put the chain parameters into the planner at the start, so we can compute end_epoch_index?
     #[instrument(skip(self))]
-    pub fn undelegate(
-        &mut self,
-        delegation_amount: Amount,
-        rate_data: RateData,
-        end_epoch_index: u64,
-    ) -> &mut Self {
-        let undelegation = rate_data
-            .build_undelegate(delegation_amount, end_epoch_index)
-            .into();
+    pub fn undelegate(&mut self, delegation_amount: Amount, rate_data: RateData) -> &mut Self {
+        let undelegation = rate_data.build_undelegate(delegation_amount).into();
         self.action(undelegation);
         self
     }

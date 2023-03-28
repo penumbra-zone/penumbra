@@ -12,12 +12,8 @@ use crate::{action_handler::ActionHandler, stake::StateReadExt as _};
 #[async_trait]
 impl ActionHandler for UndelegateClaim {
     async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
-        let unbonding_id = UnbondingToken::new(
-            self.body.validator_identity,
-            self.body.start_epoch_index,
-            self.body.end_epoch_index,
-        )
-        .id();
+        let unbonding_id =
+            UnbondingToken::new(self.body.validator_identity, self.body.start_epoch_index).id();
 
         self.proof.verify(
             self.body.balance_commitment,
@@ -32,8 +28,13 @@ impl ActionHandler for UndelegateClaim {
         // We need to check two things:
 
         // 1. That we're past the specified unbonding end epoch.
+
+        let current_epoch = state.epoch().await?;
+        let end_epoch_index = state
+            .unbonding_end_epoch_for(&self.body.validator_identity, self.body.start_epoch_index)
+            .await?;
         ensure!(
-            state.get_current_epoch().await?.index >= self.body.end_epoch_index,
+            current_epoch.index >= end_epoch_index,
             "cannot claim unbonding tokens before the end epoch"
         );
 
@@ -42,7 +43,7 @@ impl ActionHandler for UndelegateClaim {
             .compounded_penalty_over_range(
                 &self.body.validator_identity,
                 self.body.start_epoch_index,
-                self.body.end_epoch_index,
+                end_epoch_index,
             )
             .await?;
         ensure!(
