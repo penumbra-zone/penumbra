@@ -286,10 +286,15 @@ pub mod connection_open_ack {
                 &self,
                 msg: &MsgConnectionOpenAck,
             ) -> anyhow::Result<ConnectionEnd> {
-                let connection = self
-                    .get_connection(&msg.conn_id_on_b)
-                    .await?
-                    .ok_or_else(|| anyhow::anyhow!("no connection with the specified ID exists"))?;
+                let connection =
+                    self.get_connection(&msg.conn_id_on_a)
+                        .await?
+                        .ok_or_else(|| {
+                            anyhow::anyhow!(
+                                "no connection with the specified ID {} exists",
+                                msg.conn_id_on_a
+                            )
+                        })?;
 
                 // see
                 // https://github.com/cosmos/ibc/blob/master/spec/core/ics-003-connection-semantics/README.md
