@@ -68,16 +68,36 @@ impl Info {
 
         match query.path.as_str() {
             "state/key" => {
-                // TODO: decide how to handle height field
-                // - add versioned get_with_proof to Storage ?
-                // - add a State cache in Storage ?
-                let _height: u64 = query.height.into();
+                let (snapshot, height) = match u64::from(query.height) {
+                    // ABCI docs say:
+                    //
+                    // The default `0` returns data for the latest committed block. Note that
+                    // this is the height of the block containing the application's Merkle root
+                    // hash, which represents the state as it was after committing the block at
+                    // `height - 1`.
+                    //
+                    // Try to do this behavior by querying at height = latest-1.
+                    0 => {
+                        let height = self.storage.latest_snapshot().version() - 1;
+                        let snapshot = self
+                            .storage
+                            .snapshot(height)
+                            .ok_or_else(|| anyhow::anyhow!("no snapshot of height {height}"))?;
+
+                        (snapshot, height.try_into().unwrap())
+                    }
+                    height => {
+                        let snapshot = self
+                            .storage
+                            .snapshot(height)
+                            .ok_or_else(|| anyhow::anyhow!("no snapshot of height {height}"))?;
+                        (snapshot, query.height)
+                    }
+                };
+
                 let key = hex::decode(&query.data).unwrap_or_else(|_| query.data.to_vec());
 
-                let state = self.storage.latest_snapshot();
-                let height = state.version();
-
-                let (value, proof_ops) = state.get_with_proof_to_apphash_tm(key).await?;
+                let (value, proof_ops) = snapshot.get_with_proof_to_apphash_tm(key).await?;
 
                 Ok(abci::response::Query {
                     code: 0.into(),
@@ -85,7 +105,7 @@ impl Info {
                     log: "".to_string(),
                     value: value.into(),
                     proof: Some(proof_ops),
-                    height: height.try_into().unwrap(),
+                    height,
                     codespace: "".to_string(),
                     info: "".to_string(),
                     index: 0,
