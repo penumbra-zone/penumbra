@@ -872,8 +872,25 @@ impl TxCmd {
                     .await?;
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::Position(PositionCmd::Close {})
-            | TxCmd::Position(PositionCmd::Withdraw {})
+            TxCmd::Position(PositionCmd::Close {
+                position_id,
+                fee,
+                source,
+            }) => {
+                let fee = Fee::from_staking_token_amount((*fee).into());
+
+                let plan = Planner::new(OsRng)
+                    .position_close(*position_id)
+                    .fee(fee)
+                    .plan(
+                        app.view.as_mut().unwrap(),
+                        app.fvk.account_group_id(),
+                        AddressIndex::new(*source),
+                    )
+                    .await?;
+                app.build_and_submit_transaction(plan).await?;
+            }
+            TxCmd::Position(PositionCmd::Withdraw {})
             | TxCmd::Position(PositionCmd::RewardClaim {}) => todo!(),
         }
         Ok(())

@@ -61,7 +61,6 @@ impl SpecificQueryService for Info {
         request: tonic::Request<LiquidityPositionsRequest>,
     ) -> Result<tonic::Response<Self::LiquidityPositionsStream>, Status> {
         let state = self.storage.latest_snapshot();
-
         let stream_iter = state.all_positions().next().await.into_iter();
         let s = try_stream! {
             for item in stream_iter
