@@ -392,7 +392,7 @@ pub trait StateReadExt: StateRead {
         // it's not in the same path namespace.
         self.get(&format!("penumbra_consensus_states/{height}"))
             .await?
-            .ok_or_else(|| anyhow::anyhow!("consensus state not found"))
+            .ok_or_else(|| anyhow::anyhow!("penumbra_consensus_states consensus state not found"))
     }
 
     async fn get_verified_consensus_state(
