@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use anyhow::{anyhow, Result};
 
-use penumbra_crypto::Value;
+use penumbra_crypto::{dex::lp::position, Value};
 
 #[derive(Debug, clap::Subcommand)]
 pub enum PositionCmd {
@@ -10,7 +10,16 @@ pub enum PositionCmd {
     #[clap(display_order = 100, subcommand)]
     Order(OrderCmd),
     /// Debits an opened position NFT and credits a closed position NFT.
-    Close {},
+    Close {
+        /// The transaction fee (paid in upenumbra).
+        #[clap(long, default_value = "0")]
+        fee: u64,
+        /// Only spend funds originally received by the given address index.
+        #[clap(long, default_value = "0")]
+        source: u32,
+        /// The [`position::Id`] of the position to close.
+        position_id: position::Id,
+    },
     /// Debits a closed position NFT and credits a withdrawn position NFT and the final reserves.
     Withdraw {},
     /// Debits a withdrawn position NFT and credits a claimed position NFT and any liquidity incentives.

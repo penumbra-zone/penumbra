@@ -39,7 +39,7 @@ pub enum DexCmd {
     /// Display information about liquidity positions known to the chain.
     LiquidityPositions {
         /// Display closed and withdrawn liquidity positions.
-        #[clap(default_value_t = true)]
+        #[clap(long, default_value_t = false, action=clap::ArgAction::SetTrue)]
         only_open: bool,
     },
 }

@@ -11,7 +11,11 @@ use penumbra_component::stake::{rate::RateData, validator};
 use penumbra_crypto::{
     asset::Amount,
     asset::Denom,
-    dex::{lp::position::Position, swap::SwapPlaintext, TradingPair},
+    dex::{
+        lp::position::{self, Position},
+        swap::SwapPlaintext,
+        TradingPair,
+    },
     keys::{AccountGroupId, AddressIndex},
     memo::MemoPlaintext,
     stake::IdentityKey,
@@ -166,10 +170,8 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
     /// Close a liquidity position in the order book.
     #[instrument(skip(self))]
-    pub fn position_close(&mut self, position: Position) -> &mut Self {
-        self.action(ActionPlan::PositionClose(PositionClose {
-            position_id: position.id(),
-        }));
+    pub fn position_close(&mut self, position_id: position::Id) -> &mut Self {
+        self.action(ActionPlan::PositionClose(PositionClose { position_id }));
         self
     }
 
