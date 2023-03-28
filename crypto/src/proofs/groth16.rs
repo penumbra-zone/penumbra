@@ -655,8 +655,9 @@ mod tests {
             self,
             cs: ConstraintSystemRef<Fq>,
         ) -> ark_relations::r1cs::Result<()> {
-            let merkle_path_var =
-                tct::r1cs::MerkleAuthPathVar::new(cs.clone(), self.state_commitment_proof.clone())?;
+            let merkle_path_var = tct::r1cs::MerkleAuthPathVar::new_witness(cs.clone(), || {
+                Ok(self.state_commitment_proof.clone())
+            })?;
             let anchor_var = FqVar::new_input(cs.clone(), || Ok(Fq::from(self.anchor)))?;
             let claimed_note_commitment =
                 note::StateCommitmentVar::new_witness(cs.clone(), || {
