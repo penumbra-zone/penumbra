@@ -62,24 +62,22 @@ pub mod channel_open_try {
 
     use super::super::*;
     use super::proof_verification::ChannelProofVerifier;
+    use anyhow::Context as _;
 
     #[async_trait]
     pub trait ChannelOpenTryCheck: ChannelProofVerifier + inner::Inner {
+        // NOTE: Here, we are chain B, verifying chain A's inclusion of a MsgChannelOpenInit
         async fn validate(&self, msg: &MsgChannelOpenTry) -> anyhow::Result<()> {
-            let channel_id = ChannelId::new(self.get_channel_counter().await?);
-
-            let connection = self.verify_connections_open(msg).await?;
+            let connection_on_b = self.verify_connections_open(msg).await?;
 
             // TODO: do we want to do capability authentication?
             // TODO: version intersection
 
-            let expected_counterparty = Counterparty::new(msg.port_id_on_b.clone(), None);
-
-            let expected_channel = ChannelEnd {
+            let expected_channel_on_a = ChannelEnd {
                 state: ChannelState::Init,
                 ordering: msg.ordering,
-                remote: expected_counterparty,
-                connection_hops: vec![connection
+                remote: Counterparty::new(msg.port_id_on_b.clone(), None),
+                connection_hops: vec![connection_on_b
                     .counterparty()
                     .connection_id
                     .clone()
@@ -87,13 +85,15 @@ pub mod channel_open_try {
                 version: msg.version_supported_on_a.clone(),
             };
 
+            tracing::debug!(?msg, ?expected_channel_on_a);
+
             self.verify_channel_proof(
-                &connection,
+                &connection_on_b,
                 &msg.proof_chan_end_on_a,
                 &msg.proof_height_on_a,
-                &channel_id,
-                &msg.port_id_on_b,
-                &expected_channel,
+                &msg.chan_id_on_a,
+                &msg.port_id_on_a,
+                &expected_channel_on_a,
             )
             .await
         }

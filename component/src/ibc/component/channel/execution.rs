@@ -8,9 +8,7 @@ pub mod channel_open_init {
             let new_channel = ChannelEnd {
                 state: ChannelState::Init,
                 ordering: msg.ordering,
-                // TODO(erwan): following tendermint-29, figure out where the channel id lives, and
-                // replace this with a specific counterparty instantiation.
-                remote: Counterparty::default(),
+                remote: Counterparty::new(msg.port_id_on_b.clone(), None),
                 connection_hops: msg.connection_hops_on_a.clone(),
                 version: msg.version_proposal.clone(),
             };
