@@ -1,6 +1,7 @@
 use anyhow::Result;
 use colored_json::prelude::*;
 use ibc::core::ics03_connection::connection::ConnectionEnd;
+use ibc::core::ics04_channel::channel::ChannelEnd;
 use penumbra_proto::client::v1alpha1::KeyValueRequest;
 use penumbra_proto::DomainType;
 
@@ -11,6 +12,8 @@ use crate::App;
 pub enum IbcCmd {
     /// Queries for connection info
     Connection { connection_id: String },
+    /// Queries for channel info
+    Channel { port: String, channel_id: String },
 }
 
 impl IbcCmd {
@@ -29,6 +32,21 @@ impl IbcCmd {
                     .value;
 
                 let connection = ConnectionEnd::decode(value.as_ref())?;
+                let connection_json = serde_json::to_string_pretty(&connection)?;
+                println!("{}", connection_json.to_colored_json_auto()?);
+            }
+            IbcCmd::Channel { port, channel_id } => {
+                let key = format!("channelEnds/ports/{port}/channels/{channel_id}");
+                let value = client
+                    .key_value(KeyValueRequest {
+                        key,
+                        ..Default::default()
+                    })
+                    .await?
+                    .into_inner()
+                    .value;
+
+                let connection = ChannelEnd::decode(value.as_ref())?;
                 let connection_json = serde_json::to_string_pretty(&connection)?;
                 println!("{}", connection_json.to_colored_json_auto()?);
             }
