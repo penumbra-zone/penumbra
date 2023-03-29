@@ -20,6 +20,12 @@ pub enum Error {
     SliceLength(usize),
 }
 
+impl Default for U128x128 {
+    fn default() -> Self {
+        Self::from(0u64)
+    }
+}
+
 impl Debug for U128x128 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let (integral, fractional) = self.0.into_words();

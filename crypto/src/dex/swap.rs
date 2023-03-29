@@ -6,6 +6,7 @@ use once_cell::sync::Lazy;
 use penumbra_proto::{
     client::v1alpha1::BatchSwapOutputDataResponse, core::dex::v1alpha1 as pb, DomainType,
 };
+use serde::{Deserialize, Serialize};
 
 use crate::{fixpoint::U128x128, Amount};
 
@@ -27,15 +28,24 @@ pub const SWAP_LEN_BYTES: usize = 256;
 pub static DOMAIN_SEPARATOR: Lazy<Fq> =
     Lazy::new(|| Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"penumbra.swap").as_bytes()));
 
-#[derive(Clone, Debug, Copy, PartialEq, Eq)]
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "pb::BatchSwapOutputData", into = "pb::BatchSwapOutputData")]
 pub struct BatchSwapOutputData {
+    /// The total amount of asset 1 that was input to the batch swap.
     pub delta_1: Amount,
+    /// The total amount of asset 2 that was input to the batch swap.
     pub delta_2: Amount,
+    /// The total amount of asset 1 that was output from the batch swap for 1=>2 trades.
     pub lambda_1_1: Amount,
+    /// The total amount of asset 2 that was output from the batch swap for 1=>2 trades.
     pub lambda_2_1: Amount,
+    /// The total amount of asset 1 that was output from the batch swap for 2=>1 trades.
     pub lambda_1_2: Amount,
+    /// The total amount of asset 2 that was output from the batch swap for 2=>1 trades.
     pub lambda_2_2: Amount,
+    /// The height for which the batch swap data is valid.
     pub height: u64,
+    /// The trading pair associated with the batch swap.
     pub trading_pair: TradingPair,
 }
 
@@ -46,32 +56,37 @@ impl BatchSwapOutputData {
         // The pro rata fraction is delta_j_i / delta_j, which we can multiply through:
         //   lambda_2_i = (delta_1_i / delta_1) * lambda_2_1 + (delta_2_i / delta_2) * lambda_2_2
         //   lambda_1_i = (delta_1_i / delta_1) * lambda_1_1 + (delta_2_i / delta_2) * lambda_1_2
-        // But we want to compute these as
-        //   lambda_2_i = (delta_1_i * lambda_2_1) / delta_1 + (delta_2_i * lambda_2_2) / delta_2
-        //   lambda_1_i = (delta_1_i * lambda_1_1) / delta_1 + (delta_2_i * lambda_1_2) / delta_2
-        // so that we can do division and rounding at the end.
-        let lambda_2_i: U128x128 = ((U128x128::from(delta_1_i) * U128x128::from(self.lambda_2_1))
-            .unwrap_or(0u64.into())
-            .checked_div(&U128x128::from(self.delta_1))
-            .unwrap_or(0u64.into())
-            + (U128x128::from(delta_2_i) * U128x128::from(self.lambda_2_2))
-                .unwrap_or(0u64.into())
-                .checked_div(&U128x128::from(self.delta_2))
-                .unwrap_or(0u64.into()))
-        .unwrap_or(0u64.into());
-        let lambda_1_i: U128x128 = ((U128x128::from(delta_1_i) * U128x128::from(self.lambda_2_1))
-            .unwrap_or(0u64.into())
-            .checked_div(&U128x128::from(self.delta_1))
-            .unwrap_or(0u64.into())
-            + (U128x128::from(delta_2_i) * U128x128::from(self.lambda_1_2))
-                .unwrap_or(0u64.into())
-                .checked_div(&U128x128::from(self.delta_2))
-                .unwrap_or(0u64.into()))
-        .unwrap_or(0u64.into());
+
+        let delta_1_i = U128x128::from(delta_1_i);
+        let delta_2_i = U128x128::from(delta_2_i);
+        let delta_1 = U128x128::from(self.delta_1);
+        let delta_2 = U128x128::from(self.delta_2);
+        let lambda_1_1 = U128x128::from(self.lambda_1_1);
+        let lambda_1_2 = U128x128::from(self.lambda_1_2);
+        let lambda_2_1 = U128x128::from(self.lambda_2_1);
+        let lambda_2_2 = U128x128::from(self.lambda_2_2);
+
+        // Compute the user i's share of the batch inputs of assets 1 and 2.
+        // The .unwrap_or_default ensures that when the batch input delta_1 is zero, all pro-rata shares of it are also zero.
+        let pro_rata_input_1 = (delta_1_i / delta_1).unwrap_or_default();
+        let pro_rata_input_2 = (delta_2_i / delta_2).unwrap_or_default();
+
+        let lambda_2_i = (pro_rata_input_1 * lambda_2_1).unwrap_or_default()
+            + (pro_rata_input_2 * lambda_2_2).unwrap_or_default();
+        let lambda_1_i = (pro_rata_input_1 * lambda_1_1).unwrap_or_default()
+            + (pro_rata_input_2 * lambda_1_2).unwrap_or_default();
 
         (
-            lambda_1_i.try_into().unwrap_or(0u64.into()),
-            lambda_2_i.try_into().unwrap_or(0u64.into()),
+            lambda_1_i
+                .unwrap_or_default()
+                .round_down()
+                .try_into()
+                .expect("rounded amount is integral"),
+            lambda_2_i
+                .unwrap_or_default()
+                .round_down()
+                .try_into()
+                .expect("rounded amount is integral"),
         )
     }
 }
@@ -147,5 +162,46 @@ impl TryFrom<BatchSwapOutputDataResponse> for BatchSwapOutputData {
             .data
             .ok_or_else(|| anyhow::anyhow!("empty BatchSwapOutputDataResponse message"))?
             .try_into()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pasiphae_inflation_bug() {
+        let bsod: BatchSwapOutputData = serde_json::from_str(
+            r#"
+{
+    "delta1": {
+        "lo": "31730032"
+    },
+    "delta2": {},
+    "lambda11": {},
+    "lambda21": {
+        "lo": "28766268"
+    },
+    "lambda12": {},
+    "lambda22": {},
+    "height": "2185",
+    "tradingPair": {
+        "asset1": {
+        "inner": "HW2Eq3UZVSBttoUwUi/MUtE7rr2UU7/UH500byp7OAc="
+        },
+        "asset2": {
+        "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+        }
+    }
+}"#,
+        )
+        .unwrap();
+
+        let (delta_1_i, delta_2_i) = (Amount::from(31730032u64), Amount::from(0u64));
+
+        let (lambda_1_i, lambda_2_i) = bsod.pro_rata_outputs((delta_1_i, delta_2_i));
+
+        assert_eq!(lambda_1_i, Amount::from(0u64));
+        assert_eq!(lambda_2_i, Amount::from(28766268u64));
     }
 }
