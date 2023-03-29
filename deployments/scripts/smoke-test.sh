@@ -20,7 +20,8 @@ TESTNET_RUNTIME="${TESTNET_RUNTIME:-120}"
 TESTNET_BOOTTIME="${TESTNET_BOOTTIME:-20}"
 
 echo "Generating testnet config..."
-cargo run --quiet --release --bin pd -- testnet generate --epoch-duration 100 --timeout-commit 500ms
+EPOCH_DURATION="${EPOCH_DURATION:-100}"
+cargo run --quiet --release --bin pd -- testnet generate --epoch-duration $EPOCH_DURATION --timeout-commit 500ms
 
 echo "Starting Tendermint..."
 tendermint start --log_level=error --home $HOME/.penumbra/testnet_data/node0/tendermint &
