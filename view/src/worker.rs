@@ -100,18 +100,6 @@ impl Worker {
 
         let chain_id = self.storage.chain_params().await?.chain_id;
 
-        // Hack to work around SQL query -- if we insert duplicate assets with
-        // the query, it will give a duplicate key error, so just manually load
-        // them all into memory.  better -- fix the sql query
-
-        let known_assets = self
-            .storage
-            .all_assets()
-            .await?
-            .into_iter()
-            .map(|asset| asset.id)
-            .collect::<BTreeSet<_>>();
-
         let assets = self
             .client
             .asset_list(tonic::Request::new(AssetListRequest { chain_id }))
@@ -123,9 +111,9 @@ impl Worker {
 
         for new_asset in assets {
             let new_asset = Asset::try_from(new_asset)?;
-            if !known_assets.contains(&new_asset.id) {
+
                 self.storage.record_asset(new_asset).await?;
-            }
+            
         }
 
         tracing::info!("updated asset cache");

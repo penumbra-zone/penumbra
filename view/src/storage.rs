@@ -848,8 +848,9 @@ impl Storage {
 
         let asset_id = asset.id.to_bytes().to_vec();
         let denom = asset.denom.to_string();
+
         sqlx::query!(
-            "INSERT INTO assets
+            "INSERT OR IGNORE INTO assets
                     (
                         asset_id,
                         denom
