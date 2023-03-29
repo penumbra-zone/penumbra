@@ -36,7 +36,7 @@ proptest-derive = { version = "0.3", optional = true }
 [features]
 internal = []
 arbitrary = ["proptest", "proptest-derive"]
-r1cs = ["ark-r1cs-std", "ark-relations", "decaf377/r1cs"]
+r1cs = ["ark-r1cs-std", "ark-relations", "decaf377/r1cs", "poseidon377/r1cs"]
 parallel = ["ark-r1cs-std/parallel", "ark-ff/parallel", "decaf377/parallel", "poseidon377/parallel"]
 
 [dev-dependencies]
