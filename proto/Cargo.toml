@@ -32,3 +32,4 @@ tendermint = "0.29.0"
 
 [features]
 rpc = ["dep:tonic", "ibc-proto/client"]
+penumbra-storage = ["dep:penumbra-storage"]

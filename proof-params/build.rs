@@ -31,6 +31,7 @@ fn main() {
     }
 }
 
+#[cfg(feature = "proving-keys")]
 /// Check that the proving key is not a Git LFS pointer.
 pub fn check_proving_key(file: &str) -> anyhow::Result<()> {
     let mut bytes = Vec::new();

@@ -32,3 +32,6 @@ target/
 
 # Python3
 .venv
+
+# Ignoring lock file for the parameter-setup tool.
+tools/parameter-setup/Cargo.lock

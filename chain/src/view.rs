@@ -2,7 +2,9 @@ use std::str::FromStr;
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
+#[cfg(feature = "penumbra-storage")]
 use penumbra_proto::{StateReadProto, StateWriteProto};
+#[cfg(feature = "penumbra-storage")]
 use penumbra_storage::{StateRead, StateWrite};
 use tendermint::Time;
 
