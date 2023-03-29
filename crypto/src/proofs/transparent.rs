@@ -17,7 +17,6 @@ use crate::{
     dex::{swap::SwapPlaintext, BatchSwapOutputData},
     keys::{self, NullifierKey},
     note,
-    stake::Penalty,
     transaction::Fee,
     Amount, Balance, Fq, Fr, Note, Nullifier, Value,
 };
@@ -449,70 +448,6 @@ impl TryFrom<transparent_proofs::SwapClaimProof> for SwapClaimProof {
             lambda_2_i: lambda_2_i
                 .ok_or_else(|| anyhow!("missing lambda_2_i"))?
                 .try_into()?,
-        })
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct UndelegateClaimProof {
-    unbonding_amount: Amount,
-    balance_blinding: Fr,
-}
-
-impl UndelegateClaimProof {
-    pub fn new(unbonding_amount: Amount, balance_blinding: Fr) -> Self {
-        Self {
-            unbonding_amount,
-            balance_blinding,
-        }
-    }
-
-    pub fn verify(
-        &self,
-        balance_commitment: balance::Commitment,
-        unbonding_id: asset::Id,
-        penalty: Penalty,
-    ) -> anyhow::Result<()> {
-        let expected_balance = penalty.balance_for_claim(unbonding_id, self.unbonding_amount);
-        let expected_commitment = expected_balance.commit(self.balance_blinding);
-        ensure!(
-            expected_commitment == balance_commitment,
-            "balance commitment mismatch"
-        );
-        Ok(())
-    }
-}
-
-impl DomainType for UndelegateClaimProof {
-    type Proto = transparent_proofs::UndelegateClaimProof;
-}
-
-impl From<UndelegateClaimProof> for transparent_proofs::UndelegateClaimProof {
-    fn from(claim_proof: UndelegateClaimProof) -> Self {
-        transparent_proofs::UndelegateClaimProof {
-            unbonding_amount: Some(claim_proof.unbonding_amount.into()),
-            balance_blinding: claim_proof.balance_blinding.to_bytes().into(),
-        }
-    }
-}
-
-impl TryFrom<transparent_proofs::UndelegateClaimProof> for UndelegateClaimProof {
-    type Error = Error;
-
-    fn try_from(proto: transparent_proofs::UndelegateClaimProof) -> Result<Self, Self::Error> {
-        let unbonding_amount = proto
-            .unbonding_amount
-            .ok_or_else(|| anyhow!("proto malformed"))?
-            .try_into()
-            .map_err(|_| anyhow!("proto malformed"))?;
-        let balance_blinding_bytes: [u8; 32] = proto.balance_blinding[..]
-            .try_into()
-            .map_err(|_| anyhow!("proto malformed"))?;
-        let balance_blinding = Fr::from_bytes(balance_blinding_bytes)?;
-
-        Ok(UndelegateClaimProof {
-            unbonding_amount,
-            balance_blinding,
         })
     }
 }

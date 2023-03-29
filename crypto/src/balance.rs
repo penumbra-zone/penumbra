@@ -379,6 +379,18 @@ impl BalanceVar {
     }
 }
 
+impl std::ops::Add for BalanceVar {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        let mut balance_vec = self.inner.clone();
+        for (asset_id, (sign, amount)) in other.inner {
+            balance_vec.push((asset_id, (sign, amount)));
+        }
+        BalanceVar { inner: balance_vec }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::{Fr, Zero, STAKING_TOKEN_ASSET_ID};

@@ -1,9 +1,17 @@
 use std::str::FromStr;
 
+use ark_ff::ToConstraintField;
+use ark_r1cs_std::prelude::*;
+use ark_relations::r1cs::SynthesisError;
+use decaf377::{r1cs::FqVar, FieldExt, Fq};
 use penumbra_proto::{core::stake::v1alpha1 as pbs, DomainType};
 use serde::{Deserialize, Serialize};
 
-use crate::{asset, Amount, Balance, Value, STAKING_TOKEN_ASSET_ID};
+use crate::{
+    asset::{self, AmountVar, AssetIdVar},
+    balance::BalanceVar,
+    Amount, Balance, Value, ValueVar, STAKING_TOKEN_ASSET_ID,
+};
 
 /// Tracks slashing penalties applied to a validator in some epoch.
 ///
@@ -55,6 +63,92 @@ impl Penalty {
                 amount: self.apply_to(unbonding_amount),
                 asset_id: *STAKING_TOKEN_ASSET_ID,
             }
+    }
+}
+
+impl ToConstraintField<Fq> for Penalty {
+    fn to_field_elements(&self) -> Option<Vec<Fq>> {
+        let field_elements = vec![Fq::from(self.0)];
+        Some(field_elements)
+    }
+}
+
+pub struct PenaltyVar {
+    inner: FqVar,
+}
+
+impl AllocVar<Penalty, Fq> for PenaltyVar {
+    fn new_variable<T: std::borrow::Borrow<Penalty>>(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: ark_r1cs_std::prelude::AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        let inner: Penalty = *f()?.borrow();
+        Ok(Self {
+            inner: FqVar::new_variable(cs, || Ok(Fq::from(inner.0)), mode)?,
+        })
+    }
+}
+
+impl PenaltyVar {
+    pub fn apply_to(&self, amount: AmountVar) -> Result<AmountVar, SynthesisError> {
+        let penalty = self.value().unwrap_or(Penalty(0));
+
+        // Out of circuit scale factor computation:
+        let scale_factor = (1_0000_0000 - penalty.0 as u128) / 1_0000_0000;
+
+        // Now witness scale factor:
+        let scale_factor_var = FqVar::new_witness(self.cs(), || Ok(Fq::from(scale_factor)))?;
+
+        // If the scale factor was correctly computed, then the following should be true:
+        // 1_0000_0000 * scale_factor_var = 1_0000_0000 - penalty_var
+        let hundred_mil = FqVar::new_constant(self.cs(), Fq::from(1_0000_0000))?; // 1_0000_0000
+        let lhs = hundred_mil.clone() * scale_factor_var.clone();
+        let rhs = hundred_mil - &self.inner;
+        lhs.enforce_equal(&rhs)?;
+
+        // Now we need the amount to be scaled by the scale factor
+        let scaled_amount = amount.amount * scale_factor_var;
+        Ok(AmountVar {
+            amount: scaled_amount,
+        })
+    }
+
+    pub fn balance_for_claim(
+        &self,
+        unbonding_id: AssetIdVar,
+        unbonding_amount: AmountVar,
+    ) -> Result<BalanceVar, SynthesisError> {
+        let negative_value = BalanceVar::from_negative_value_var(ValueVar {
+            amount: unbonding_amount.clone(),
+            asset_id: unbonding_id,
+        });
+        let staking_token_asset_id_var =
+            AssetIdVar::new_witness(self.cs(), || Ok(*STAKING_TOKEN_ASSET_ID))?;
+        let positive_value = BalanceVar::from_positive_value_var(ValueVar {
+            amount: self.apply_to(unbonding_amount)?,
+            asset_id: staking_token_asset_id_var,
+        });
+        Ok(negative_value + positive_value)
+    }
+}
+
+impl R1CSVar<Fq> for PenaltyVar {
+    type Value = Penalty;
+
+    fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<Fq> {
+        self.inner.cs()
+    }
+
+    fn value(&self) -> Result<Self::Value, SynthesisError> {
+        let inner_fq = self.inner.value()?;
+        let inner_bytes = &inner_fq.to_bytes()[0..8];
+        let penalty_bytes: [u8; 8] = inner_bytes
+            .try_into()
+            .expect("should be able to fit in 16 bytes");
+        Ok(Penalty(u64::from_le_bytes(penalty_bytes)))
     }
 }
 

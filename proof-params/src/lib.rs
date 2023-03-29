@@ -45,6 +45,19 @@ pub mod swap {
     include!("gen/swap_id.rs");
 }
 
+#[cfg(feature = "proving-keys")]
+/// Proving key for the undelegateclaim proof.
+pub static UNDELEGATECLAIM_PROOF_PROVING_KEY: Lazy<ProvingKey<Bls12_377>> =
+    Lazy::new(proving_keys::undelegateclaim_proving_parameters);
+
+/// Verification key for the undelegateclaim proof.
+pub static UNDELEGATECLAIM_PROOF_VERIFICATION_KEY: Lazy<PreparedVerifyingKey<Bls12_377>> =
+    Lazy::new(|| undelegateclaim_verification_parameters().into());
+
+pub mod undelegateclaim {
+    include!("gen/undelegateclaim_id.rs");
+}
+
 // Note: Here we are using `CanonicalDeserialize::deserialize_unchecked` as the
 // parameters are being loaded from a trusted source (our source code).
 
@@ -60,5 +73,10 @@ fn output_verification_parameters() -> VerifyingKey<Bls12_377> {
 
 fn swap_verification_parameters() -> VerifyingKey<Bls12_377> {
     let vk_params = include_bytes!("gen/swap_vk.param");
+    VerifyingKey::deserialize_unchecked(&vk_params[..]).expect("can deserialize VerifyingKey")
+}
+
+fn undelegateclaim_verification_parameters() -> VerifyingKey<Bls12_377> {
+    let vk_params = include_bytes!("gen/undelegateclaim_vk.param");
     VerifyingKey::deserialize_unchecked(&vk_params[..]).expect("can deserialize VerifyingKey")
 }

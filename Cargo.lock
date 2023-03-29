@@ -2785,9 +2785,9 @@ dependencies = [
 
 [[package]]
 name = "lockfree-object-pool"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8166fbddef141acbea89cf3425ed97d4c22d14a68161977fc01c301175a4fb89"
+checksum = "ee33defb27b106378a6efcfcde4dda6226dfdac8ba7a2904f5bc93363cb88557"
 
 [[package]]
 name = "log"

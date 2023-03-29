@@ -5,5 +5,5 @@ mod unbonding_token;
 
 pub use delegation_token::DelegationToken;
 pub use identity_key::IdentityKey;
-pub use penalty::Penalty;
+pub use penalty::{Penalty, PenaltyVar};
 pub use unbonding_token::UnbondingToken;
