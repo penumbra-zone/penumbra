@@ -14,8 +14,8 @@ use std::{path::PathBuf, time::Duration};
 
 use assert_cmd::Command;
 use directories::UserDirs;
-use penumbra_app::stake::validator::ValidatorToml;
 use once_cell::sync::Lazy;
+use penumbra_app::stake::validator::ValidatorToml;
 use predicates::prelude::*;
 use regex::Regex;
 use serde_json::Value;
@@ -29,12 +29,14 @@ const TEST_ASSET: &str = "1cube";
 const TIMEOUT_COMMAND_SECONDS: u64 = 20;
 
 // The time to wait before attempting to perform an undelegation claim.
+// By default the epoch duration is 100 blocks, the block time is ~500 ms,
+// and the number of unbonding epochs is 2.
 const UNBONDING_DURATION: Lazy<Duration> = Lazy::new(|| {
-    let seconds = std::env::var("EPOCH_DURATION")
+    let blocks: f64 = std::env::var("EPOCH_DURATION")
         .unwrap_or("100".to_string())
         .parse()
         .unwrap();
-    Duration::from_secs(seconds)
+    Duration::from_secs((1.5 * blocks) as u64)
 });
 
 /// Import the wallet from seed phrase into a temporary directory.
