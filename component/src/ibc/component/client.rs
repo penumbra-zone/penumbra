@@ -392,7 +392,9 @@ pub trait StateReadExt: StateRead {
         // it's not in the same path namespace.
         self.get(&format!("penumbra_consensus_states/{height}"))
             .await?
-            .ok_or_else(|| anyhow::anyhow!("penumbra_consensus_states consensus state not found"))
+            .ok_or_else(|| {
+                anyhow::anyhow!("penumbra consensus state not found for height {height}")
+            })
     }
 
     async fn get_verified_consensus_state(
@@ -404,7 +406,11 @@ pub trait StateReadExt: StateRead {
             &client_id, &height,
         ))
         .await?
-        .ok_or_else(|| anyhow::anyhow!("consensus state not found"))
+        .ok_or_else(|| {
+            anyhow::anyhow!(
+                "counterparty consensus state not found for client {client_id} at height {height}"
+            )
+        })
     }
 
     async fn get_client_update_height(
@@ -414,7 +420,11 @@ pub trait StateReadExt: StateRead {
     ) -> Result<ibc::Height> {
         self.get(&state_key::client_processed_heights(client_id, height))
             .await?
-            .ok_or_else(|| anyhow::anyhow!("client update time not found"))
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "client update time not found for client {client_id} at height {height}"
+                )
+            })
     }
 
     async fn get_client_update_time(
@@ -425,7 +435,11 @@ pub trait StateReadExt: StateRead {
         let timestamp_nanos = self
             .get_proto::<u64>(&state_key::client_processed_times(client_id, height))
             .await?
-            .ok_or_else(|| anyhow::anyhow!("client update time not found"))?;
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "client update time not found for client {client_id} at height {height}"
+                )
+            })?;
 
         ibc::timestamp::Timestamp::from_nanoseconds(timestamp_nanos)
             .context("invalid client update time")
