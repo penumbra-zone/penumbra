@@ -98,16 +98,6 @@
     },
     "query": "INSERT INTO sync_height (height) VALUES (?)"
   },
-  "2547294717840bcb1bef870394b99cf275bcba98d005f1f18b03c7a3d93909e1": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 2
-      }
-    },
-    "query": "INSERT INTO assets\n                    (\n                        asset_id,\n                        denom\n                    )\n                    VALUES\n                    (\n                        ?,\n                        ?\n                    )"
-  },
   "3330ad89b630f87f1ed502363de779624f72710fb59f2133c5db2c1dc8d30b2d": {
     "describe": {
       "columns": [],
@@ -235,30 +225,6 @@
       }
     },
     "query": "INSERT INTO sct_commitments (position, commitment) VALUES (?, ?) ON CONFLICT DO NOTHING"
-  },
-  "54af904581ce3ed796498b2ec876011879bdfb11d3cf67245739be886c59a5b2": {
-    "describe": {
-      "columns": [
-        {
-          "name": "asset_id",
-          "ordinal": 0,
-          "type_info": "Blob"
-        },
-        {
-          "name": "denom",
-          "ordinal": 1,
-          "type_info": "Text"
-        }
-      ],
-      "nullable": [
-        false,
-        false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "SELECT *\n            FROM assets\n            WHERE denom = ?"
   },
   "63aad4faac1ffefd5525595f9ca5a82186181368251da9fbacf65a4d48671a01": {
     "describe": {
@@ -667,5 +633,15 @@
       }
     },
     "query": "SELECT nullifier, height_spent FROM spendable_notes WHERE nullifier = ?"
+  },
+  "fdb8974407a554416c57c5387c969d53e67c30615c8d84c0887c5adc2dc2e08f": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "INSERT OR IGNORE INTO assets\n                    (\n                        asset_id,\n                        denom\n                    )\n                    VALUES\n                    (\n                        ?,\n                        ?\n                    )"
   }
 }
