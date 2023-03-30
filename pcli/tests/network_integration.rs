@@ -9,12 +9,12 @@
 //! where no tokens have been delegated, and the address with index 0
 //! was distributed 1cube.
 
-use std::path::PathBuf;
 use std::thread;
+use std::{path::PathBuf, time::Duration};
 
 use assert_cmd::Command;
 use directories::UserDirs;
-//use once_cell::sync::Lazy;
+use once_cell::sync::Lazy;
 use penumbra_app::stake::validator::ValidatorToml;
 use predicates::prelude::*;
 use regex::Regex;
@@ -29,15 +29,15 @@ const TEST_ASSET: &str = "1cube";
 const TIMEOUT_COMMAND_SECONDS: u64 = 20;
 
 // The time to wait before attempting to perform an undelegation claim.
-/*
+// By default the epoch duration is 100 blocks, the block time is ~500 ms,
+// and the number of unbonding epochs is 2.
 const UNBONDING_DURATION: Lazy<Duration> = Lazy::new(|| {
-    let seconds = std::env::var("EPOCH_DURATION")
+    let blocks: f64 = std::env::var("EPOCH_DURATION")
         .unwrap_or("100".to_string())
         .parse()
         .unwrap();
-    Duration::from_secs(seconds)
+    Duration::from_secs((1.5 * blocks) as u64)
 });
- */
 
 /// Import the wallet from seed phrase into a temporary directory.
 fn load_wallet_into_tmpdir() -> TempDir {
@@ -61,10 +61,23 @@ fn load_wallet_into_tmpdir() -> TempDir {
     tmpdir
 }
 
+/// Sync the wallet.
+fn sync(tmpdir: &TempDir) {
+    let mut sync_cmd = Command::cargo_bin("pcli").unwrap();
+    sync_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "view",
+            "sync",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    sync_cmd.assert().success();
+}
+
 /// Look up a currently active validator on the testnet.
 /// Will return the most bonded, which means the Penumbra Labs CI validator.
-fn get_validator() -> String {
-    let tmpdir = load_wallet_into_tmpdir();
+fn get_validator(tmpdir: &TempDir) -> String {
     let mut validator_cmd = Command::cargo_bin("pcli").unwrap();
     validator_cmd
         .args([
@@ -161,7 +174,7 @@ fn delegate_and_undelegate() {
     let tmpdir = load_wallet_into_tmpdir();
 
     // Get a validator from the testnet.
-    let validator = get_validator();
+    let validator = get_validator(&tmpdir);
 
     // Delegate a tiny bit of penumbra to the validator.
     let mut delegate_cmd = Command::cargo_bin("pcli").unwrap();
@@ -216,20 +229,18 @@ fn delegate_and_undelegate() {
     }
 
     // Wait for the epoch duration.
-    //thread::sleep(*UNBONDING_DURATION);
-    // TODO: exercise undelegation claims.
-
-    // Now sync.
-    let mut sync_cmd = Command::cargo_bin("pcli").unwrap();
-    sync_cmd
+    thread::sleep(*UNBONDING_DURATION);
+    let mut undelegate_claim_cmd = Command::cargo_bin("pcli").unwrap();
+    undelegate_claim_cmd
         .args([
             "--data-path",
             tmpdir.path().to_str().unwrap(),
-            "view",
-            "sync",
+            "tx",
+            "undelegate-claim",
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-    sync_cmd.assert().success();
+    undelegate_claim_cmd.assert().success();
+    sync(&tmpdir);
 }
 
 #[ignore]
@@ -325,8 +336,8 @@ fn governance_submit_proposal() {
 #[test]
 fn duplicate_consensus_key_forbidden() {
     // Look up validator, so we have known-good data to munge.
-    let validator = get_validator();
     let tmpdir = load_wallet_into_tmpdir();
+    let validator = get_validator(&tmpdir);
     let mut query_cmd = Command::cargo_bin("pcli").unwrap();
     query_cmd
         .args([
