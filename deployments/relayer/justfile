@@ -7,5 +7,5 @@ configs:
     ./generate-configs testnet
 
 run:
-    ./configure-relayer
+    ./configure-relayer penumbra-testnet penumbra-preview
     ./run-relayer

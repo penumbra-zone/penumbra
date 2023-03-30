@@ -39,4 +39,4 @@ esac
 
 export PENUMBRA_RPC_URL
 export PENUMBRA_CHAIN_ID
-envsubst < configs/penumbra.tpl > "configs/penumbra-${penumbra_network}.json"
+envsubst < penumbra.tpl > "configs/penumbra-${penumbra_network}.json"

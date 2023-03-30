@@ -10,36 +10,33 @@ if [[ $# -lt 2 ]] ; then
     exit 1
 fi
 
+chain_a="$1"
+chain_b="$2"
+shift 2
+
 
 rm -rf ~/.relayer
 rly config init --memo "Automatic IBC for Penumbra, via relayer"
 
-# Must serve JSON files over network; `file:///` URLs are not supported.
-python3 -m http.server --directory configs/ &
-job_pid="$!"
-trap 'kill -9 "$job_pid"' EXIT
-sleep 2
-
->&2 echo "Generating relayer configs..."
-rly chains add $1 --url http://localhost:8000/$1.json
-rly chains add $2 --url http://localhost:8000/$2.json
+>&2 echo "Adding chain specs to relayer config..."
+rly chains add-dir configs/
 
 # Ideally we wouldn't need to bother with generating keys for the relayer paths,
 # because Penumbra hasn't implemented fees yet, so there's no need for a wallet to pay out of.
 # If we skip keygen, though, then `rly transact link <path>` shows an error:
 #
 #   Error: key default not found on src chain penumbra-testnet-carme-dac8be27
->&2 echo "Generating key for $1:"
-rly keys add $1 default
->&2 echo "Generating key for $2:"
-rly keys add $2 default
+>&2 echo "Generating key for $chain_a:"
+rly keys add "$chain_a" default
+>&2 echo "Generating key for $chain_b:"
+rly keys add "$chain_b" default
 
-# TODO: configure paths. We can't fetch from an external registry, so we'll
+# Configure paths. We can't fetch from an external registry, so we'll
 # need to munge the YAML config directly. See docs at
 # https://github.com/cosmos/relayer/blob/main/docs/create-path-across-chain.md
-chain_1_id="$(jq -r '.value["chain-id"]' configs/$1.json)"
-chain_2_id="$(jq -r '.value["chain-id"]' configs/$2.json)"
-rly paths new "$chain_1_id" "$chain_2_id" penumbra_path
+chain_a_id="$(jq -r '.value["chain-id"]' "configs/${chain_a}.json")"
+chain_b_id="$(jq -r '.value["chain-id"]' "configs/${chain_b}.json")"
+rly paths new "$chain_a_id" "$chain_b_id" penumbra_path
 
 >&2 echo "Emitting status info:"
 rly chains list
