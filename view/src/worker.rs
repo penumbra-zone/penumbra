@@ -318,7 +318,7 @@ async fn sct_divergence_check(
     height: u64,
     actual_root: penumbra_tct::Root,
 ) -> anyhow::Result<()> {
-    use penumbra_component::sct::state_key as sct_state_key;
+    use penumbra_app::sct::state_key as sct_state_key;
 
     let value = client
         .key_value(penumbra_proto::client::v1alpha1::KeyValueRequest {

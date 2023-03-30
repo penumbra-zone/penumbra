@@ -152,7 +152,7 @@ impl ViewService {
         transaction: Transaction,
         await_detection: bool,
     ) -> Result<penumbra_transaction::Id, anyhow::Error> {
-        use penumbra_component::ActionHandler;
+        use penumbra_app::ActionHandler;
 
         // 1. Pre-check the transaction for (stateless) validity.
         transaction

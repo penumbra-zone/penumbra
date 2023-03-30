@@ -12,7 +12,7 @@ members = [
   "eddy",
   "proto",
   "chain",
-  "component",
+  "app",
   "crypto",
   "custody",
   "measure",

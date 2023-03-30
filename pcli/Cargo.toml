@@ -30,7 +30,7 @@ penumbra-view = { path = "../view" }
 penumbra-custody = { path = "../custody" }
 penumbra-tct = { path = "../tct" }
 # TODO: replace by a penumbra-app
-penumbra-component = { path = "../component" }
+penumbra-app = { path = "../app" }
 
 # Penumbra dependencies
 decaf377 = {version = "0.3" }

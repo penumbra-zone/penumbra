@@ -1,7 +1,7 @@
 use anyhow::Result;
 use comfy_table::{presets, Table};
 use futures::TryStreamExt;
-use penumbra_component::stake::validator;
+use penumbra_app::stake::validator;
 use penumbra_proto::client::v1alpha1::{ChainParametersRequest, InfoRequest};
 
 // TODO: remove this subcommand and merge into `pcli q`

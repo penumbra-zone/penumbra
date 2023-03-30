@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
 use anyhow::Result;
+use penumbra_app::dao;
 use penumbra_chain::KnownAssets;
-use penumbra_component::dao;
 use penumbra_crypto::{
     asset::{Cache, Denom},
     Amount, Asset, Value,

@@ -40,9 +40,9 @@ pub enum ShieldedPool {
 
 impl ShieldedPool {
     pub fn key(&self) -> String {
-        use penumbra_component::compactblock::state_key as cpb_state_key;
-        use penumbra_component::sct::state_key as sct_state_key;
-        use penumbra_component::shielded_pool::state_key;
+        use penumbra_app::compactblock::state_key as cpb_state_key;
+        use penumbra_app::sct::state_key as sct_state_key;
+        use penumbra_app::shielded_pool::state_key;
         match self {
             ShieldedPool::Anchor { height } => sct_state_key::anchor_by_height(*height),
             ShieldedPool::BlockAnchor { height } => sct_state_key::block_anchor_by_height(*height),

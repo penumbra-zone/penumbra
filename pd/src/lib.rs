@@ -19,6 +19,6 @@ pub use crate::metrics::register_metrics;
 pub use consensus::Consensus;
 pub use info::Info;
 pub use mempool::Mempool;
-pub use penumbra_component::app::App;
+pub use penumbra_app::app::App;
 pub use snapshot::Snapshot;
 pub use tendermint_proxy::TendermintProxy;

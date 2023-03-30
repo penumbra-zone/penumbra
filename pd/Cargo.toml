@@ -21,7 +21,7 @@ penumbra-chain = { path = "../chain" }
 penumbra-crypto = { path = "../crypto", features = ["parallel"] }
 penumbra-transaction = { path = "../transaction" }
 penumbra-storage = { path = "../storage" }
-penumbra-component = { path = "../component" }
+penumbra-app = { path = "../app" }
 penumbra-wallet = { path = "../wallet" }
 
 # Penumbra dependencies

@@ -6,7 +6,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use futures::{StreamExt, TryStreamExt};
-use penumbra_component::governance::{self, state_key::*};
+use penumbra_app::governance::{self, state_key::*};
 use penumbra_crypto::stake::IdentityKey;
 use penumbra_proto::client::v1alpha1::{PrefixValueRequest, PrefixValueResponse};
 use penumbra_transaction::{
