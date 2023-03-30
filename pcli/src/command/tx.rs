@@ -7,7 +7,7 @@ use std::{
 use anyhow::{anyhow, Context, Result};
 use ark_ff::UniformRand;
 use decaf377::Fr;
-use penumbra_component::stake::rate::RateData;
+use penumbra_app::stake::rate::RateData;
 use penumbra_crypto::{
     asset,
     dex::{
@@ -617,7 +617,7 @@ impl TxCmd {
                 // Find out what the latest proposal ID is so we can include the next ID in the template:
                 let mut client = app.specific_client().await?;
                 let next_proposal_id: u64 = client
-                    .key_proto(penumbra_component::governance::state_key::next_proposal_id())
+                    .key_proto(penumbra_app::governance::state_key::next_proposal_id())
                     .await?;
 
                 let toml_template: ProposalToml = kind
@@ -638,7 +638,7 @@ impl TxCmd {
                 proposal_id,
                 source,
             }) => {
-                use penumbra_component::governance::state_key;
+                use penumbra_app::governance::state_key;
                 use penumbra_transaction::proposal;
 
                 let fee = Fee::from_staking_token_amount((*fee).into());

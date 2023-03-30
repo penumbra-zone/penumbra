@@ -6,8 +6,8 @@ use std::{
 
 use anyhow::{anyhow, Result};
 
+use penumbra_app::stake::{rate::RateData, validator};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_component::stake::{rate::RateData, validator};
 use penumbra_crypto::{
     asset::Amount,
     asset::Denom,

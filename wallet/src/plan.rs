@@ -2,8 +2,8 @@ use std::collections::BTreeMap;
 use tonic::transport::Channel;
 
 use anyhow::{Context, Result};
-use penumbra_component::stake::rate::RateData;
-use penumbra_component::stake::validator;
+use penumbra_app::stake::rate::RateData;
+use penumbra_app::stake::validator;
 use penumbra_crypto::{
     keys::{AccountGroupId, AddressIndex},
     memo::MemoPlaintext,

@@ -5,10 +5,10 @@ use futures::{
     stream::{StreamExt, TryStreamExt},
     TryFutureExt,
 };
+use penumbra_app::compactblock::view::StateReadExt as _;
+use penumbra_app::shielded_pool::SupplyRead as _;
+use penumbra_app::stake::{validator, StateReadExt as _};
 use penumbra_chain::StateReadExt as _;
-use penumbra_component::compactblock::view::StateReadExt as _;
-use penumbra_component::shielded_pool::SupplyRead as _;
-use penumbra_component::stake::{validator, StateReadExt as _};
 use penumbra_proto::{
     client::v1alpha1::{
         oblivious_query_service_server::ObliviousQueryService, AssetListRequest, AssetListResponse,

@@ -28,7 +28,7 @@ COPY proto ./proto
 COPY chain ./chain
 COPY crypto ./crypto
 COPY custody ./custody
-COPY component ./component
+COPY app ./app
 COPY storage ./storage
 COPY tct ./tct
 COPY decaf377-fmd ./decaf377-fmd
@@ -53,7 +53,7 @@ RUN cargo fetch --target $(uname -m)-unknown-linux-gnu
 RUN cargo build --release --bin pd --target $(uname -m)-unknown-linux-gnu
 
 # Remove the cached builds of internal packages.
-RUN rm -rf pcli pd crypto wallet config stake ibc component storage
+RUN rm -rf pcli pd crypto wallet config stake ibc app storage
 
 # Copy the repo source now that dependencies have been built and cached.
 COPY . .

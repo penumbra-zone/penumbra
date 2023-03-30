@@ -3,15 +3,15 @@ use std::pin::Pin;
 use async_stream::try_stream;
 use futures::StreamExt;
 use futures::TryStreamExt;
+use penumbra_app::dex::PositionRead;
+use penumbra_app::governance::StateReadExt as _;
+use penumbra_app::shielded_pool::StateReadExt as _;
+use penumbra_app::shielded_pool::SupplyRead as _;
+use penumbra_app::stake::rate::RateData;
+use penumbra_app::stake::StateReadExt as _;
+use penumbra_app::stubdex::StateReadExt as _;
 use penumbra_chain::AppHashRead;
 use penumbra_chain::StateReadExt as _;
-use penumbra_component::dex::PositionRead;
-use penumbra_component::governance::StateReadExt as _;
-use penumbra_component::shielded_pool::StateReadExt as _;
-use penumbra_component::shielded_pool::SupplyRead as _;
-use penumbra_component::stake::rate::RateData;
-use penumbra_component::stake::StateReadExt as _;
-use penumbra_component::stubdex::StateReadExt as _;
 use penumbra_crypto::asset::{self, Asset};
 use penumbra_proto::{
     self as proto,
@@ -344,7 +344,7 @@ impl SpecificQueryService for Info {
             .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
         let proposal_id = request.into_inner().proposal_id;
 
-        use penumbra_component::governance::state_key;
+        use penumbra_app::governance::state_key;
         let stream_iter = state
             .prefix(&state_key::all_rate_data_at_proposal_start(proposal_id))
             .next()

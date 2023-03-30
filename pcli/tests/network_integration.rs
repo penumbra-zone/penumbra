@@ -15,7 +15,7 @@ use std::thread;
 use assert_cmd::Command;
 use directories::UserDirs;
 //use once_cell::sync::Lazy;
-use penumbra_component::stake::validator::ValidatorToml;
+use penumbra_app::stake::validator::ValidatorToml;
 use predicates::prelude::*;
 use regex::Regex;
 use serde_json::Value;

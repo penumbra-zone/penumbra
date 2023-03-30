@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use penumbra_component::stake::{
+use penumbra_app::stake::{
     validator,
     validator::{Validator, ValidatorToml},
     FundingStream, FundingStreams,
