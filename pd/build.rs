@@ -24,6 +24,9 @@ fn setup_testnet_config() -> anyhow::Result<()> {
     // Output the name of the most recent testnet as a build-time environment variable
     println!("cargo:rustc-env=PD_LATEST_TESTNET_NAME={latest_testnet_name}");
 
+    // Ensure that changes to the allocations files trigger a rebuild of pd.
+    println!("cargo:rerun-if-changed={latest_testnet_dir}");
+
     // For each association of environment variable to filename, set the full path to that file in
     // the environment variable, so that we can include its contents at build time
     for (env_var, filename) in [
