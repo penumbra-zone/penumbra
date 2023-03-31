@@ -133,7 +133,7 @@ message SpendInfo {
 
 message GenesisAppState {
     message Allocation {
-        uint64 amount = 1;
+        crypto.v1alpha1.Amount amount = 1;
         string denom = 2;
         crypto.v1alpha1.Address address = 3;
     }

@@ -24,7 +24,8 @@ impl Component for ShieldedPool {
             tracing::debug!(?allocation, "processing allocation");
 
             assert_ne!(
-                allocation.amount, 0u64,
+                allocation.amount,
+                0u128.into(),
                 "Genesis allocations contain empty note",
             );
 
@@ -34,7 +35,9 @@ impl Component for ShieldedPool {
             state
                 .mint_note(
                     Value {
-                        amount: (allocation.amount * 10u64.pow(unit.exponent().into())).into(),
+                        amount: (u128::from(allocation.amount)
+                            * 10u128.pow(unit.exponent().into()))
+                        .into(),
                         asset_id: unit.id(),
                     },
                     &allocation.address,

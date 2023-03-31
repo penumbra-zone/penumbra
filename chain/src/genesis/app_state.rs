@@ -24,17 +24,22 @@ impl Default for AppState {
             validators: Default::default(),
             allocations: vec![
                 Allocation {
-                    amount: 1000,
+                    amount: 1000u128.into(),
                     denom: "penumbra".parse().unwrap(),
                     address: crate::test_keys::ADDRESS_0_STR.parse().unwrap(),
                 },
                 Allocation {
-                    amount: 100,
+                    amount: 100u128.into(),
+                    denom: "pusd".parse().unwrap(),
+                    address: crate::test_keys::ADDRESS_0_STR.parse().unwrap(),
+                },
+                Allocation {
+                    amount: 100u128.into(),
                     denom: "gm".parse().unwrap(),
                     address: crate::test_keys::ADDRESS_1_STR.parse().unwrap(),
                 },
                 Allocation {
-                    amount: 100,
+                    amount: 100u128.into(),
                     denom: "gn".parse().unwrap(),
                     address: crate::test_keys::ADDRESS_1_STR.parse().unwrap(),
                 },

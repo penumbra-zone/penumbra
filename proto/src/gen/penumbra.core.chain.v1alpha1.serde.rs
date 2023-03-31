@@ -1162,7 +1162,7 @@ impl serde::Serialize for genesis_app_state::Allocation {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.amount != 0 {
+        if self.amount.is_some() {
             len += 1;
         }
         if !self.denom.is_empty() {
@@ -1172,8 +1172,8 @@ impl serde::Serialize for genesis_app_state::Allocation {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.chain.v1alpha1.GenesisAppState.Allocation", len)?;
-        if self.amount != 0 {
-            struct_ser.serialize_field("amount", ToString::to_string(&self.amount).as_str())?;
+        if let Some(v) = self.amount.as_ref() {
+            struct_ser.serialize_field("amount", v)?;
         }
         if !self.denom.is_empty() {
             struct_ser.serialize_field("denom", &self.denom)?;
@@ -1253,9 +1253,7 @@ impl<'de> serde::Deserialize<'de> for genesis_app_state::Allocation {
                             if amount__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("amount"));
                             }
-                            amount__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
+                            amount__ = map.next_value()?;
                         }
                         GeneratedField::Denom => {
                             if denom__.is_some() {
@@ -1272,7 +1270,7 @@ impl<'de> serde::Deserialize<'de> for genesis_app_state::Allocation {
                     }
                 }
                 Ok(genesis_app_state::Allocation {
-                    amount: amount__.unwrap_or_default(),
+                    amount: amount__,
                     denom: denom__.unwrap_or_default(),
                     address: address__,
                 })

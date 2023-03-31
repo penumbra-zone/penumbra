@@ -47,9 +47,9 @@ impl BalanceCmd {
                 .flat_map(|(index, notes_by_asset)| {
                     // Sum the notes for each asset:
                     notes_by_asset.iter().map(|(asset, notes)| {
-                        let sum: u64 = notes
+                        let sum: u128 = notes
                             .iter()
-                            .map(|record| u64::from(record.note.amount()))
+                            .map(|record| u128::from(record.note.amount()))
                             .sum();
                         (Some(*index), asset.value(sum.into()))
                     })

@@ -106,7 +106,7 @@ pub fn testnet_generate(
             // Add an initial allocation of 25,000 delegation tokens,
             // starting them with 2.5x the individual allocations to discord users.
             // 25,000 delegation tokens * 1e6 udelegation factor
-            amount: (25_000 * 10u64.pow(6)),
+            amount: (25_000 * 10u128.pow(6)).into(),
             denom: delegation_denom.to_string(),
         });
 
@@ -297,7 +297,7 @@ impl TryFrom<TestnetAllocation> for genesis::Allocation {
 
     fn try_from(a: TestnetAllocation) -> anyhow::Result<genesis::Allocation> {
         Ok(genesis::Allocation {
-            amount: a.amount,
+            amount: a.amount.into(),
             denom: a.denom.clone(),
             address: Address::from_str(&a.address)
                 .context("invalid address format in genesis allocations")?,

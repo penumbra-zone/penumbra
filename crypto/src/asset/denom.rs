@@ -157,7 +157,7 @@ impl Denom {
     /// has no leading zeros when formatted).
     pub fn best_unit_for(&self, amount: asset::Amount) -> Unit {
         for (unit_index, unit) in self.inner.units.iter().enumerate() {
-            let unit_amount = asset::Amount::from(10u64.pow(unit.exponent as u32));
+            let unit_amount = asset::Amount::from(10u128.pow(unit.exponent as u32));
             if amount >= unit_amount {
                 return Unit {
                     unit_index,
@@ -230,14 +230,14 @@ impl Unit {
     }
 
     pub fn format_value(&self, value: asset::Amount) -> String {
-        let power_of_ten = asset::Amount::from(10u64.pow(self.exponent().into()));
+        let power_of_ten = asset::Amount::from(10u128.pow(self.exponent().into()));
         let v1 = value / power_of_ten;
         let v2 = value % power_of_ten;
 
         // Pad `v2` to exponent digits.
         let v2_str = format!(
             "{:0width$}",
-            u64::from(v2),
+            u128::from(v2),
             width = self.exponent() as usize
         );
 
@@ -263,9 +263,9 @@ impl Unit {
             // such that the rest of the logic is the same.
             let right = if split.len() > 1 { split[1] } else { "0" };
 
-            let v1 = left.parse::<u64>().map_err(|e| anyhow::anyhow!(e))?;
-            let mut v2 = right.parse::<u64>().map_err(|e| anyhow::anyhow!(e))?;
-            let v1_power_of_ten = 10u64.pow(self.exponent().into());
+            let v1 = left.parse::<u128>().map_err(|e| anyhow::anyhow!(e))?;
+            let mut v2 = right.parse::<u128>().map_err(|e| anyhow::anyhow!(e))?;
+            let v1_power_of_ten = 10u128.pow(self.exponent().into());
 
             if right.len() == (self.exponent() + 1) as usize && v2 == 0 {
                 // This stanza means that the value is the base unit. Simply return v1.
@@ -274,7 +274,7 @@ impl Unit {
                 return Err(anyhow::anyhow!("cannot represent this value"));
             }
 
-            let v2_power_of_ten = 10u64.pow((self.exponent() - right.len() as u8).into());
+            let v2_power_of_ten = 10u128.pow((self.exponent() - right.len() as u8).into());
             v2 = v2.checked_mul(v2_power_of_ten).unwrap();
 
             let v = v1

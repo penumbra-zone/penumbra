@@ -89,7 +89,14 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for SpendableNoteRecord {
                 source: e.into(),
             })?;
 
-        let amount = row.get::<'r, i64, _>("amount") as u64;
+        let amount = <[u8; 16]>::try_from(row.get::<'r, &[u8], _>("amount")).map_err(|e| {
+            sqlx::Error::ColumnDecode {
+                index: "amount".to_string(),
+                source: e.into(),
+            }
+        })?;
+
+        let amount_u128: u128 = u128::from_be_bytes(amount);
 
         let asset_id = asset::Id(
             Fq::from_bytes(
@@ -137,7 +144,7 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for SpendableNoteRecord {
         let position = (row.get::<'r, i64, _>("position") as u64).into();
 
         let value = Value {
-            amount: amount.into(),
+            amount: amount_u128.into(),
             asset_id,
         };
         let note =

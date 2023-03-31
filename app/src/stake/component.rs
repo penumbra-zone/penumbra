@@ -403,7 +403,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
 
             // Calculate the voting power in the newly beginning epoch
             let voting_power =
-                current_rate.voting_power(delegation_token_supply, &current_base_rate);
+                current_rate.voting_power(delegation_token_supply.into(), &current_base_rate);
             tracing::debug!(?voting_power);
 
             // Update the state of the validator within the validator set
@@ -723,7 +723,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
     /// state with power assigned.
     async fn add_genesis_validator(
         &mut self,
-        genesis_allocations: &BTreeMap<&String, u64>,
+        genesis_allocations: &BTreeMap<&String, u128>,
         genesis_base_rate: &BaseRateData,
         validator: Validator,
     ) -> Result<()> {
@@ -889,7 +889,8 @@ impl Component for Staking {
         // to compute the delegation tokens for each validator.
         let mut genesis_allocations = BTreeMap::new();
         for allocation in &app_state.allocations {
-            *genesis_allocations.entry(&allocation.denom).or_insert(0) += allocation.amount;
+            *genesis_allocations.entry(&allocation.denom).or_insert(0) +=
+                u128::from(allocation.amount);
         }
 
         // Add initial validators to the JMT

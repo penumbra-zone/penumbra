@@ -211,8 +211,10 @@ pub mod genesis_app_state {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Allocation {
-        #[prost(uint64, tag = "1")]
-        pub amount: u64,
+        #[prost(message, optional, tag = "1")]
+        pub amount: ::core::option::Option<
+            super::super::super::crypto::v1alpha1::Amount,
+        >,
         #[prost(string, tag = "2")]
         pub denom: ::prost::alloc::string::String,
         #[prost(message, optional, tag = "3")]

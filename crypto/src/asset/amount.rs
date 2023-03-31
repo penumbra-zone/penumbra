@@ -20,8 +20,8 @@ impl std::fmt::Debug for Amount {
 }
 
 impl Amount {
-    pub fn value(&self) -> u64 {
-        self.inner as u64
+    pub fn value(&self) -> u128 {
+        self.inner as u128
     }
 
     pub fn zero() -> Self {
