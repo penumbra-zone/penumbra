@@ -181,10 +181,14 @@ impl Storage {
         let mut balance_by_address = BTreeMap::new();
 
         for record in result {
+            let amount: [u8; 16] = record.amount.try_into().expect("16 bytes");
+
+            let amount_u128: u128 = u128::from_be_bytes(amount);
+
             balance_by_address
                 .entry(Id::try_from(record.asset_id.as_slice())?)
-                .and_modify(|x| *x += (record.amount as u64))
-                .or_insert((record.amount as u64).into());
+                .and_modify(|x| *x += amount_u128)
+                .or_insert(amount_u128);
         }
 
         Ok(balance_by_address)
@@ -958,7 +962,16 @@ impl Storage {
         let mut notes = BTreeMap::new();
         for row in rows {
             let address = Address::try_from(row.get::<&[u8], _>("address"))?;
-            let amount = (row.get::<i64, _>("amount") as u128).into();
+
+            let amount = <[u8; 16]>::try_from(row.get::<&[u8], _>("amount")).map_err(|e| {
+                sqlx::Error::ColumnDecode {
+                    index: "amount".to_string(),
+                    source: e.into(),
+                }
+            })?;
+
+            let amount_u128: u128 = u128::from_be_bytes(amount);
+
             let asset_id = asset::Id(Fq::from_bytes(
                 row.get::<&[u8], _>("asset_id")
                     .try_into()
@@ -966,7 +979,15 @@ impl Storage {
             )?);
             let rseed = Rseed(row.get::<&[u8], _>("rseed").try_into().expect("32 bytes"));
 
-            let note = Note::from_parts(address, Value { amount, asset_id }, rseed).unwrap();
+            let note = Note::from_parts(
+                address,
+                Value {
+                    amount: amount_u128.into(),
+                    asset_id,
+                },
+                rseed,
+            )
+            .unwrap();
 
             notes.insert(note.commit(), note);
         }

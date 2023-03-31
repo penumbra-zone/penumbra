@@ -1,4 +1,4 @@
-use penumbra_crypto::{asset, Address, Note, Rseed, Value};
+use penumbra_crypto::{asset, Address, Amount, Note, Rseed, Value};
 use penumbra_proto::{core::chain::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
     into = "pb::genesis_app_state::Allocation"
 )]
 pub struct Allocation {
-    pub amount: u64,
+    pub amount: Amount,
     pub denom: String,
     pub address: Address,
 }
@@ -17,7 +17,7 @@ pub struct Allocation {
 impl From<Allocation> for pb::genesis_app_state::Allocation {
     fn from(a: Allocation) -> Self {
         pb::genesis_app_state::Allocation {
-            amount: a.amount,
+            amount: Some(a.amount.into()),
             denom: a.denom,
             address: Some(a.address.into()),
         }
@@ -29,7 +29,10 @@ impl TryFrom<pb::genesis_app_state::Allocation> for Allocation {
 
     fn try_from(msg: pb::genesis_app_state::Allocation) -> Result<Self, Self::Error> {
         Ok(Allocation {
-            amount: msg.amount,
+            amount: msg
+                .amount
+                .ok_or_else(|| anyhow::anyhow!("missing amount field in proto"))?
+                .try_into()?,
             denom: msg.denom,
             address: msg
                 .address
@@ -60,7 +63,7 @@ impl Allocation {
         Note::from_parts(
             self.address,
             Value {
-                amount: self.amount.into(),
+                amount: self.amount,
                 asset_id: asset::REGISTRY
                     .parse_denom(&self.denom)
                     .ok_or_else(|| anyhow::anyhow!("invalid denomination"))?

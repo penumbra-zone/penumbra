@@ -178,20 +178,37 @@ fn delegate_and_undelegate() {
     // Get a validator from the testnet.
     let validator = get_validator(&tmpdir);
 
-    // Delegate a tiny bit of penumbra to the validator.
-    let mut delegate_cmd = Command::cargo_bin("pcli").unwrap();
-    delegate_cmd
-        .args([
-            "--data-path",
-            tmpdir.path().to_str().unwrap(),
-            "tx",
-            "delegate",
-            "1penumbra",
-            "--to",
-            validator.as_str(),
-        ])
-        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-    delegate_cmd.assert().success();
+    // Now undelegate. We attempt `max_attempts` times in case an epoch boundary passes
+    // while we prepare the delegation. See issues #1522, #2047.
+    let max_attempts = 5;
+
+    let mut num_attempts = 0;
+    loop {
+        // Delegate a tiny bit of penumbra to the validator.
+        let mut delegate_cmd = Command::cargo_bin("pcli").unwrap();
+        delegate_cmd
+            .args([
+                "--data-path",
+                tmpdir.path().to_str().unwrap(),
+                "tx",
+                "delegate",
+                "1penumbra",
+                "--to",
+                validator.as_str(),
+            ])
+            .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+        let delegation_result = delegate_cmd.assert().try_success();
+
+        // If the undelegation command succeeded, we can exit this loop.
+        if delegation_result.is_ok() {
+            break;
+        } else {
+            num_attempts += 1;
+            if num_attempts >= max_attempts {
+                panic!("Exceeded max attempts for fallible command");
+            }
+        }
+    }
 
     // Check we have some of the delegation token for that validator now.
     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
@@ -207,10 +224,10 @@ fn delegate_and_undelegate() {
         .assert()
         .stdout(predicate::str::is_match(validator.as_str()).unwrap());
 
-    // Now undelegate. We attempt `num_attempts` times in case an epoch boundary passes
+    // Now undelegate. We attempt `max_attempts` times in case an epoch boundary passes
     // while we prepare the delegation. See issues #1522, #2047.
-    let num_attempts = 5;
-    for _ in 0..num_attempts {
+    let mut num_attempts = 0;
+    loop {
         let amount_to_undelegate = format!("0.99delegation_{}", validator.as_str());
         let mut undelegate_cmd = Command::cargo_bin("pcli").unwrap();
         undelegate_cmd
@@ -227,6 +244,11 @@ fn delegate_and_undelegate() {
         // If the undelegation command succeeded, we can exit this loop.
         if undelegation_result.is_ok() {
             break;
+        } else {
+            num_attempts += 1;
+            if num_attempts >= max_attempts {
+                panic!("Exceeded max attempts for fallible command");
+            }
         }
     }
 

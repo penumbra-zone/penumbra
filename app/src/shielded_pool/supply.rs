@@ -1,7 +1,10 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::KnownAssets;
-use penumbra_crypto::asset::{self, Asset, Denom};
+use penumbra_crypto::{
+    asset::{self, Asset, Denom},
+    Amount,
+};
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 
@@ -61,12 +64,13 @@ pub trait SupplyWrite: StateWrite {
     // #[instrument(skip(self, change))]
     async fn update_token_supply(&mut self, asset_id: &asset::Id, change: i64) -> Result<()> {
         let key = state_key::token_supply(asset_id);
-        let current_supply = self.get_proto(&key).await?.unwrap_or(0u64);
+        let current_supply: Amount = self.get_proto(&key).await?.unwrap_or(0u64).into();
 
         // TODO: replace with a single checked_add_signed call when mixed_integer_ops lands in stable (1.66)
-        let new_supply = if change < 0 {
+        let new_supply: Amount = if change < 0 {
             current_supply
-                .checked_sub(change.unsigned_abs())
+                .value()
+                .checked_sub(change.unsigned_abs().into())
                 .ok_or_else(|| {
                     anyhow::anyhow!(
                         "underflow updating token supply {} with delta {}",
@@ -74,18 +78,23 @@ pub trait SupplyWrite: StateWrite {
                         change
                     )
                 })?
+                .into()
         } else {
-            current_supply.checked_add(change as u64).ok_or_else(|| {
-                anyhow::anyhow!(
-                    "overflow updating token supply {} with delta {}",
-                    current_supply,
-                    change
-                )
-            })?
+            current_supply
+                .value()
+                .checked_add((change as u64).into())
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "overflow updating token supply {} with delta {}",
+                        current_supply,
+                        change
+                    )
+                })?
+                .into()
         };
         tracing::debug!(?current_supply, ?new_supply, ?change);
 
-        self.put_proto(key, new_supply);
+        self.put(key, new_supply);
         Ok(())
     }
 }
