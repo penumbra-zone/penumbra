@@ -52,6 +52,7 @@ cargo $nightly_opt doc --no-deps \
   -p penumbra-tct \
   -p penumbra-transaction \
   -p penumbra-wallet \
+  -p penumbra-wasm \
   -p penumbra-view \
   -p pd \
   -p pclientd \

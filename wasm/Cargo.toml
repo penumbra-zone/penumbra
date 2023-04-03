@@ -34,11 +34,3 @@ wee_alloc = { version = "0.4.5", optional = true }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.13"
-
-[profile.release]
-opt-level = "s"
-
-# We set a blank 'workspace' block disassociate this crate
-# with the workspace at the repo root. Doing so models
-# how an external developer would use it.
-[workspace]

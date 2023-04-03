@@ -27,4 +27,9 @@ members = [
   "pclientd",
   "pcli",
   "proof-params",
+  "wasm",
 ]
+
+# Optimize for small binaries in just the wasm crate.
+[profile.release.package.penumbra-wasm]
+opt-level = "s"
