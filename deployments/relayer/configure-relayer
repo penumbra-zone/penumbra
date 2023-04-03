@@ -4,17 +4,6 @@
 # https://github.com/cosmos/relayer/
 set -euo pipefail
 
-if [[ $# -lt 2 ]] ; then
-    >&2 echo "ERROR: networks not specified. Use, e.g., 'penumbra-testnet penumbra-preview'."
-    >&2 echo "Usage: $0 <network-1> <network-2>"
-    exit 1
-fi
-
-chain_a="$1"
-chain_b="$2"
-shift 2
-
-
 rm -rf ~/.relayer
 rly config init --memo "Automatic IBC for Penumbra, via relayer"
 
@@ -26,17 +15,43 @@ rly chains add-dir configs/
 # If we skip keygen, though, then `rly transact link <path>` shows an error:
 #
 #   Error: key default not found on src chain penumbra-testnet-carme-dac8be27
->&2 echo "Generating key for $chain_a:"
-rly keys add "$chain_a" default
->&2 echo "Generating key for $chain_b:"
-rly keys add "$chain_b" default
+for chain in $(rly chains list --json | jq 'keys | join("\n")' -r) ; do
+    >&2 echo "Generating key for $chain"
+    rly keys add "$chain" default
+done
 
-# Configure paths. We can't fetch from an external registry, so we'll
-# need to munge the YAML config directly. See docs at
-# https://github.com/cosmos/relayer/blob/main/docs/create-path-across-chain.md
-chain_a_id="$(jq -r '.value["chain-id"]' "configs/${chain_a}.json")"
-chain_b_id="$(jq -r '.value["chain-id"]' "configs/${chain_b}.json")"
-rly paths new "$chain_a_id" "$chain_b_id" penumbra_path
+function create_paths() {
+    if [[ $# -lt 3 ]] ; then
+        >&2 echo "ERROR: networks not specified. Use, e.g., 'penumbra-testnet penumbra-preview'."
+        >&2 echo "Usage: $0 <network-1> <network-2> <path-name>"
+        return 1
+    fi
+
+    local chain_a="$1"
+    local chain_b="$2"
+    local path_name="$3"
+    shift 3
+
+    # Make sure requested chain configs exist locally. This won't be necessary
+    # when the referenced chains exist in the upstream public chain registry.
+    if [[ ! -e "configs/${chain_a}.json" ]]; then
+        >&2 echo "ERROR: file not found: configs/${chain_a}.json"
+        return 2
+    elif [[ ! -e "configs/${chain_b}.json" ]]; then
+        >&2 echo "ERROR: file not found: configs/${chain_b}.json"
+        return 2
+    fi
+
+    chain_a_id="$(jq -r '.value["chain-id"]' "configs/${chain_a}.json")"
+    chain_b_id="$(jq -r '.value["chain-id"]' "configs/${chain_b}.json")"
+    rly paths new "$chain_a_id" "$chain_b_id" "$path_name"
+}
+
+# Create Penumbra-only path, between preview and testnet. Works!
+create_paths penumbra-testnet penumbra-preview penumbra_path
+
+# Create path between Penumbra preview and Babylon testnet; not yet working =(
+create_paths penumbra-preview babylon-testnet babylon
 
 >&2 echo "Emitting status info:"
 rly chains list
