@@ -14,7 +14,7 @@ function get_chain_id() {
     local u
     u="${1:-}"
     shift 1
-    curl -s "${u}/status" | jq -r .result.node_info.network
+    curl -sSf "${u}/status" | jq -r .result.node_info.network
 }
 
 case $penumbra_network in

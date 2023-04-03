@@ -9,7 +9,9 @@ from testnet-preview to testnet.
 ```
 ./generate-configs preview
 ./generate-configs testnet
-./configure-relayer penumbra-preview penumbra-testnet
+./configure-relayer penumbra-testnet penumbra-preview penumbra_path
+./configure-relayer penumbra-preview babylon-testnet babylon
+
 ./run-relayer
 ```
 
@@ -19,3 +21,5 @@ in the relayer repo. Our configs will get out of date very quickly: the preview 
 on every merge into main, for instance. Short-term, that's fine: we want to exercise IBC
 in our CI deployments, and dynamically generating the configs is good enough. Longer term, we'll want
 to upload our configs to the [chain-registry repo](https://github.com/cosmos/chain-registry).
+Full documentation on the underlying steps used by the relayer can be found in the
+[cross-chain docs](https://github.com/cosmos/relayer/blob/main/docs/create-path-across-chain.md).

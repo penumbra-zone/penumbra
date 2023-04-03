@@ -7,5 +7,6 @@ configs:
     ./generate-configs testnet
 
 run:
-    ./configure-relayer penumbra-testnet penumbra-preview
+    ./configure-relayer penumbra-testnet penumbra-preview penumbra_path
+    ./configure-relayer penumbra-preview babylon-testnet babylon
     ./run-relayer

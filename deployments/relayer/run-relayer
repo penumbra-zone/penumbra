@@ -1,10 +1,24 @@
 #!/bin/bash
 # Wrapper script to finalize configuration on relayer,
 # and submit a transaction to verify manual relaying of cross-chain
-# info for Penumbra.
+# info for Penumbra. We look up all paths configured in the relayer,
+# and attempt to build a link across them.
+set -euo pipefail
 
 
->&2 echo "Attempting to 'transact link' the path..."
-rly --debug transact link penumbra_path
->&2 echo "Finished! No errors encountered setting up link. Available paths:"
+# Function to add green bg to text, so it stands out amid
+# a wall of debug logs.
+function visible_log() {
+    local s="$1"
+    shift
+    >&2 printf '\e[42m%s\e[0m\n' "$s"
+}
+
+while read -r p ; do
+    visible_log "Attempting to 'transact link' the $p path..."
+    rly --debug transact link "$p"
+# We reverse-sort so that "penumbra" (which works) comes before "babylon" (which doesn't work, yet).
+done < <(rly paths list --json | jq 'keys | join ("\n")' -r | sort -r)
+
+visible_log "Finished! No errors encountered setting up link. Available paths:"
 rly paths list
