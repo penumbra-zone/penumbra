@@ -1,0 +1,16 @@
+{
+  "type": "cosmos",
+  "value": {
+    "key": "default",
+    "chain-id": "malaga-420",
+    "rpc-addr": "https://rpc.malaga-420.cosmwasm.com:443",
+    "account-prefix": "wasm",
+    "keyring-backend": "test",
+    "gas-adjustment": 1.0,
+    "gas-prices": "0.03umlg",
+    "debug": true,
+    "timeout": "20s",
+    "output-format": "json",
+    "sign-mode": "direct"
+  }
+}

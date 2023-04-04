@@ -50,8 +50,13 @@ function create_paths() {
 # Create Penumbra-only path, between preview and testnet. Works!
 create_paths penumbra-testnet penumbra-preview penumbra_path
 
-# Create path between Penumbra preview and Babylon testnet; not yet working =(
-create_paths penumbra-preview babylon-testnet babylon
+# Create paths between Penumbra and/or other Cosmos-adjacent testnets.
+# These are not working yet, so commenting them out by default.
+#
+# create_paths penumbra-preview babylon-testnet babylon
+# create_paths osmosis-testnet babylon-testnet osmosis
+# create_paths osmosis-testnet cosmwasm-testnet osmosis-wasm
+# create_paths osmosis-testnet celestia-testnet osmosis-celestia
 
 >&2 echo "Emitting status info:"
 rly chains list
