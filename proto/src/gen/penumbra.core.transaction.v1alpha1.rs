@@ -510,7 +510,7 @@ pub struct TransactionPlan {
 pub struct ActionPlan {
     #[prost(
         oneof = "action_plan::Action",
-        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 30, 31, 32, 34, 40, 41, 42, 50, 51, 52"
+        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 23, 30, 31, 32, 34, 40, 41, 42, 50, 51, 52"
     )]
     pub action: ::core::option::Option<action_plan::Action>,
 }
@@ -546,6 +546,8 @@ pub mod action_plan {
         ProposalDepositClaim(
             super::super::super::governance::v1alpha1::ProposalDepositClaim,
         ),
+        #[prost(message, tag = "23")]
+        WithdrawalPlan(super::super::super::ibc::v1alpha1::Ics20WithdrawalPlan),
         #[prost(message, tag = "30")]
         PositionOpen(super::super::super::dex::v1alpha1::PositionOpen),
         #[prost(message, tag = "31")]

@@ -5,6 +5,7 @@ use penumbra_proto::{
 use serde::{Deserialize, Serialize};
 
 mod delegator_vote;
+mod ics20_withdrawal;
 mod output;
 mod position;
 mod spend;
@@ -13,6 +14,7 @@ mod swap_claim;
 mod undelegate_claim;
 
 pub use delegator_vote::DelegatorVotePlan;
+pub use ics20_withdrawal::Ics20WithdrawalPlan;
 pub use output::OutputPlan;
 pub use position::{PositionRewardClaimPlan, PositionWithdrawPlan};
 pub use spend::SpendPlan;
@@ -74,6 +76,8 @@ pub enum ActionPlan {
     DaoSpend(DaoSpend),
     DaoOutput(DaoOutput),
     DaoDeposit(DaoDeposit),
+
+    WithdrawalPlan(Ics20WithdrawalPlan),
 }
 
 impl ActionPlan {
@@ -99,6 +103,7 @@ impl ActionPlan {
             PositionClose(position_close) => position_close.balance(),
             PositionWithdraw(position_withdraw) => position_withdraw.balance(),
             PositionRewardClaim(position_reward_claim) => position_reward_claim.balance(),
+            WithdrawalPlan(withdrawal_plan) => withdrawal_plan.balance(),
             // None of these contribute to transaction balance:
             IbcAction(_) | ValidatorDefinition(_) | ValidatorVote(_) => Balance::default(),
         }
@@ -197,6 +202,12 @@ impl From<PositionRewardClaimPlan> for ActionPlan {
     }
 }
 
+impl From<Ics20WithdrawalPlan> for ActionPlan {
+    fn from(inner: Ics20WithdrawalPlan) -> ActionPlan {
+        ActionPlan::WithdrawalPlan(inner)
+    }
+}
+
 impl DomainType for ActionPlan {
     type Proto = pb_t::ActionPlan;
 }
@@ -273,6 +284,9 @@ impl From<ActionPlan> for pb_t::ActionPlan {
             ActionPlan::DaoOutput(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::DaoOutput(inner.into())),
             },
+            ActionPlan::WithdrawalPlan(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::WithdrawalPlan(inner.into())),
+            },
         }
     }
 }
@@ -342,6 +356,9 @@ impl TryFrom<pb_t::ActionPlan> for ActionPlan {
             }
             pb_t::action_plan::Action::DaoOutput(inner) => {
                 Ok(ActionPlan::DaoOutput(inner.try_into()?))
+            }
+            pb_t::action_plan::Action::WithdrawalPlan(inner) => {
+                Ok(ActionPlan::WithdrawalPlan(inner.try_into()?))
             }
         }
     }

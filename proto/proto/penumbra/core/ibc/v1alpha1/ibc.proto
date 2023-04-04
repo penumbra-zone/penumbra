@@ -78,6 +78,14 @@ message Ics20Withdrawal {
   string source_channel = 9;
 }
 
+message Ics20WithdrawalPlan {
+  string destination_chain_id = 1;
+  string destination_chain_address = 2;
+  crypto.v1alpha1.AssetId asset_id = 3;
+  crypto.v1alpha1.Amount amount = 4;
+  crypto.v1alpha1.Address return_address = 5;
+}
+
 message ClientData {
   string client_id = 1;
   google.protobuf.Any client_state = 2; // NOTE: left as Any to allow us to add more client types later

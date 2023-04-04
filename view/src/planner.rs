@@ -11,6 +11,7 @@ use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::{
     asset::Amount,
     asset::Denom,
+    asset::Id,
     dex::{
         lp::position::{self, Position},
         swap::SwapPlaintext,
@@ -31,8 +32,9 @@ use penumbra_transaction::{
         ProposalWithdraw, ValidatorVote, Vote,
     },
     plan::{
-        ActionPlan, DelegatorVotePlan, MemoPlan, OutputPlan, PositionWithdrawPlan, SpendPlan,
-        SwapClaimPlan, SwapPlan, TransactionPlan, UndelegateClaimPlan,
+        ActionPlan, DelegatorVotePlan, Ics20WithdrawalPlan, MemoPlan, OutputPlan,
+        PositionWithdrawPlan, SpendPlan, SwapClaimPlan, SwapPlan, TransactionPlan,
+        UndelegateClaimPlan,
     },
     proposal,
 };
@@ -339,6 +341,26 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     #[instrument(skip(self))]
     pub fn validator_vote(&mut self, vote: ValidatorVote) -> &mut Self {
         self.action(ActionPlan::ValidatorVote(vote));
+        self
+    }
+
+    /// Perform an ICS-20 withdrawal
+    #[instrument(skip(self))]
+    pub fn ics20_withdrawal(
+        &mut self,
+        destination_chain_id: String,
+        destination_chain_address: String,
+        asset_id: Id,
+        amount: Amount,
+        return_address: Address,
+    ) -> &mut Self {
+        self.action(ActionPlan::WithdrawalPlan(Ics20WithdrawalPlan {
+            destination_chain_id,
+            destination_chain_address,
+            asset_id,
+            amount,
+            return_address,
+        }));
         self
     }
 
