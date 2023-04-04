@@ -21,8 +21,8 @@ mod clue;
 mod memo;
 
 pub use action::{
-    ActionPlan, DelegatorVotePlan, OutputPlan, SpendPlan, SwapClaimPlan, SwapPlan,
-    UndelegateClaimPlan,
+    ActionPlan, DelegatorVotePlan, Ics20WithdrawalPlan, OutputPlan, SpendPlan, SwapClaimPlan,
+    SwapPlan, UndelegateClaimPlan,
 };
 pub use clue::CluePlan;
 pub use memo::MemoPlan;
@@ -229,6 +229,16 @@ impl TransactionPlan {
     pub fn position_closings(&self) -> impl Iterator<Item = &PositionClose> {
         self.actions.iter().filter_map(|action| {
             if let ActionPlan::PositionClose(v) = action {
+                Some(v)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn ics20_withdrawals(&self) -> impl Iterator<Item = &Ics20WithdrawalPlan> {
+        self.actions.iter().filter_map(|action| {
+            if let ActionPlan::WithdrawalPlan(v) = action {
                 Some(v)
             } else {
                 None
