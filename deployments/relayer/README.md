@@ -9,11 +9,13 @@ from testnet-preview to testnet.
 ```
 ./generate-configs preview
 ./generate-configs testnet
-./configure-relayer penumbra-testnet penumbra-preview penumbra_path
-./configure-relayer penumbra-preview babylon-testnet babylon
+./configure-relayer
 
 ./run-relayer
 ```
+Or, you can use `just` to run it all, soup to nuts. See the path configuration
+block in the `./configure-relayer` script for some example paths between chains
+that aren't yet known to work.
 
 ## Further reading
 The config format for the JSON files are adapted from the [example-configs](https://github.com/cosmos/relayer/tree/main/docs/example-configs)

@@ -1,0 +1,16 @@
+{
+  "type": "cosmos",
+  "value": {
+    "key": "default",
+    "chain-id": "blockspacerace-0",
+    "rpc-addr": "https://celestia-blockspacerace-rpc.brocha.in:443",
+    "account-prefix": "celestia",
+    "keyring-backend": "test",
+    "gas-adjustment": 1.0,
+    "gas-prices": "0.00utia",
+    "debug": true,
+    "timeout": "20s",
+    "output-format": "json",
+    "sign-mode": "direct"
+  }
+}
