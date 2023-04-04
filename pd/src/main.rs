@@ -160,19 +160,6 @@ enum TestnetCommand {
     UnsafeResetAll {},
 }
 
-// Extracted from tonic's remote_addr implementation; we'd like to instrument
-// spans with the remote addr at the server level rather than at the individual
-// request level, but the hook available to do that gives us an http::Request
-// rather than a tonic::Request, so the tonic::Request::remote_addr method isn't
-// available.
-fn remote_addr(req: &http::Request<()>) -> Option<SocketAddr> {
-    use tonic::transport::server::TcpConnectInfo;
-    // NOTE: needs to also check TlsConnectInfo if we use TLS
-    req.extensions()
-        .get::<TcpConnectInfo>()
-        .and_then(|i| i.remote_addr())
-}
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // Instantiate tracing layers.
@@ -217,8 +204,8 @@ async fn main() -> anyhow::Result<()> {
                 .await
                 .context("Unable to initialize RocksDB storage")?;
 
-            use pd::trace::request_span;
-            use pd::RequestExt;
+            use penumbra_tower_trace::trace::request_span;
+            use penumbra_tower_trace::RequestExt;
 
             let consensus = tower::ServiceBuilder::new()
                 .layer(request_span::layer(|req: &ConsensusRequest| {

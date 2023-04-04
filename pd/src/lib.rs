@@ -5,15 +5,10 @@ mod consensus;
 mod info;
 mod mempool;
 mod metrics;
-mod request_ext;
 mod snapshot;
 mod tendermint_proxy;
 
 pub mod testnet;
-/// A vendored copy of the unpublished `tracing-tower` crate.
-pub mod trace;
-
-pub use request_ext::RequestExt;
 
 pub use crate::metrics::register_metrics;
 pub use consensus::Consensus;

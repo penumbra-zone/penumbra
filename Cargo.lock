@@ -3544,6 +3544,7 @@ dependencies = [
  "penumbra-crypto",
  "penumbra-proto",
  "penumbra-storage",
+ "penumbra-tower-trace",
  "penumbra-transaction",
  "penumbra-wallet",
  "pin-project",
@@ -3802,9 +3803,37 @@ dependencies = [
 name = "penumbra-narsil"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "async-stream 0.2.1",
+ "clap 3.2.23",
+ "console-subscriber",
+ "futures",
+ "hex",
+ "http",
+ "metrics",
+ "metrics-exporter-prometheus",
+ "metrics-tracing-context",
+ "metrics-util",
+ "penumbra-chain",
+ "penumbra-proto",
  "penumbra-storage",
+ "penumbra-tower-trace",
+ "tendermint",
+ "tendermint-config",
+ "tendermint-light-client-verifier",
+ "tendermint-proto",
+ "tokio",
+ "tokio-stream",
+ "tokio-util 0.7.7",
+ "tonic",
+ "tonic-web",
+ "tower",
  "tower-abci",
  "tower-actor",
+ "tower-service",
+ "tracing",
+ "tracing-subscriber 0.3.16",
+ "vergen",
 ]
 
 [[package]]
@@ -3958,6 +3987,40 @@ dependencies = [
  "tokio-util 0.7.7",
  "tonic",
  "tower-http",
+ "tracing-subscriber 0.3.16",
+]
+
+[[package]]
+name = "penumbra-tower-trace"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap 3.2.23",
+ "console-subscriber",
+ "futures",
+ "hex",
+ "http",
+ "metrics",
+ "metrics-exporter-prometheus",
+ "metrics-tracing-context",
+ "metrics-util",
+ "pin-project",
+ "pin-project-lite",
+ "sha2 0.9.9",
+ "tendermint",
+ "tendermint-config",
+ "tendermint-light-client-verifier",
+ "tendermint-proto",
+ "tokio",
+ "tokio-stream",
+ "tokio-util 0.7.7",
+ "tonic",
+ "tonic-web",
+ "tower",
+ "tower-abci",
+ "tower-actor",
+ "tower-service",
+ "tracing",
  "tracing-subscriber 0.3.16",
 ]
 

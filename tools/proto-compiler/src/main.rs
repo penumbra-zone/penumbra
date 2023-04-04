@@ -73,7 +73,6 @@ fn main() -> Result<()> {
             "../../proto/proto/penumbra/core/dex/v1alpha1/dex.proto",
             "../../proto/proto/penumbra/core/transparent_proofs/v1alpha1/transparent_proofs.proto",
             "../../proto/proto/penumbra/core/governance/v1alpha1/governance.proto",
-            "../../proto/proto/penumbra/narsil/ledger/v1alpha1/ledger.proto",
             "../../proto/rust-vendored/tendermint/types/validator.proto",
             "../../proto/rust-vendored/tendermint/p2p/types.proto",
         ],
@@ -90,6 +89,14 @@ fn main() -> Result<()> {
         .server_mod_attribute("penumbra.custody.v1alpha1", "#[cfg(feature = \"rpc\")]")
         .client_mod_attribute("penumbra.custody.v1alpha1", "#[cfg(feature = \"rpc\")]")
         .server_mod_attribute(
+            "penumbra.narsil.v1alpha1.ledger",
+            "#[cfg(feature = \"rpc\")]",
+        )
+        .client_mod_attribute(
+            "penumbra.narsil.v1alpha1.ledger",
+            "#[cfg(feature = \"rpc\")]",
+        )
+        .server_mod_attribute(
             "cosmos.base.tendermint.v1beta1",
             "#[cfg(feature = \"rpc\")]",
         )
@@ -101,6 +108,7 @@ fn main() -> Result<()> {
             config,
             &[
                 "../../proto/proto/penumbra/client/v1alpha1/client.proto",
+                "../../proto/proto/penumbra/narsil/ledger/v1alpha1/ledger.proto",
                 "../../proto/proto/penumbra/view/v1alpha1/view.proto",
                 "../../proto/proto/penumbra/custody/v1alpha1/custody.proto",
                 "../../proto/rust-vendored/cosmos/base/tendermint/v1beta1/query.proto",

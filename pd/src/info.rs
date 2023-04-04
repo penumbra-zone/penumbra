@@ -12,7 +12,7 @@ use tendermint::abci::{self, response::Echo, InfoRequest, InfoResponse};
 use tower_abci::BoxError;
 use tracing::Instrument;
 
-use crate::RequestExt;
+use penumbra_tower_trace::RequestExt;
 
 mod oblivious;
 mod specific;

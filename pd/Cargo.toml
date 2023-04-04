@@ -23,6 +23,7 @@ penumbra-transaction = { path = "../transaction" }
 penumbra-storage = { path = "../storage" }
 penumbra-app = { path = "../app" }
 penumbra-wallet = { path = "../wallet" }
+penumbra-tower-trace = { path = "../tower-trace" }
 
 # Penumbra dependencies
 decaf377 = {version = "0.3", features = ["parallel"]}
