@@ -17,7 +17,8 @@ rly chains add-dir configs/
 #   Error: key default not found on src chain penumbra-testnet-carme-dac8be27
 for chain in $(rly chains list --json | jq 'keys | join("\n")' -r) ; do
     >&2 echo "Generating key for $chain"
-    rly keys add "$chain" default
+    # We silence output to avoid dumping seed phrases to screen/logging.
+    rly keys add "$chain" default > /dev/null
 done
 
 function create_paths() {

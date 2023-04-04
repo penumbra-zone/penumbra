@@ -1,0 +1,28 @@
+FROM ghcr.io/cosmos/relayer:main AS upstream
+FROM docker.io/debian:stable
+
+# Normal user config build args
+ARG UID=1000
+ARG GID=1000
+ARG USERNAME=penumbra
+
+# Install apt deps.
+RUN apt-get update && apt-get install -y \
+        gettext-base \
+        curl \
+        jq \
+        && rm -r /var/lib/apt/lists
+
+# Copy rly binary from upstream image
+COPY --from=upstream /bin/rly /bin/rly
+
+# Create normal user account
+RUN groupadd -g ${GID} ${USERNAME} && useradd -m -d /home/${USERNAME} -g ${GID} -u ${UID} ${USERNAME}
+
+# Prepare custom config script
+RUN mkdir -p /usr/src/penumbra-relayer
+COPY deployments/relayer/ /usr/src/penumbra-relayer/
+WORKDIR /usr/src/penumbra-relayer
+RUN chown -R ${USERNAME}:${USERNAME} /usr/src/penumbra-relayer
+USER ${USERNAME}
+ENTRYPOINT ["/usr/src/penumbra-relayer/entrypoint.sh"]
