@@ -16,6 +16,7 @@ members = [
   "crypto",
   "custody",
   "measure",
+  "narsil",
   "storage",
   "tct",
   "tct-property-test",

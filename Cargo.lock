@@ -3799,6 +3799,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "penumbra-narsil"
+version = "0.1.0"
+dependencies = [
+ "penumbra-storage",
+ "tower-abci",
+ "tower-actor",
+]
+
+[[package]]
 name = "penumbra-proof-params"
 version = "0.1.0"
 dependencies = [

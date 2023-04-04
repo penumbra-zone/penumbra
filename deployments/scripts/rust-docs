@@ -56,7 +56,8 @@ cargo $nightly_opt doc --no-deps \
   -p penumbra-view \
   -p pd \
   -p pclientd \
-  -p pcli
+  -p pcli \
+  -p narsil
 
 if [[ -n "$REGENERATE_INDEX" ]]; then
     >&2 echo "Copying newly built index file to version-controlled path:"
