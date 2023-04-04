@@ -165,6 +165,17 @@ pub enum TxCmd {
     /// Currently, only zero-fee sweep transactions are implemented.
     #[clap(display_order = 990)]
     Sweep,
+
+    /// Perform an ICS-20 withdrawal.
+    #[clap(display_order = 1000)]
+    Ics20Withdrawal {
+        destination_chain_id: String,
+        destination_chain_address: String,
+        amount: String,
+
+        #[clap(long, default_value = "0", display_order = 200)]
+        return_address_index: u32,
+    },
 }
 
 /// Vote on a governance proposal.
@@ -217,6 +228,7 @@ impl TxCmd {
             TxCmd::Proposal(proposal_cmd) => proposal_cmd.offline(),
             TxCmd::DaoDeposit { .. } => false,
             TxCmd::Position(lp_cmd) => lp_cmd.offline(),
+            TxCmd::Ics20Withdrawal { .. } => false,
         }
     }
 
@@ -807,6 +819,36 @@ impl TxCmd {
                         app.view.as_mut().unwrap(),
                         app.fvk.account_group_id(),
                         AddressIndex::new(*source),
+                    )
+                    .await?;
+                app.build_and_submit_transaction(plan).await?;
+            }
+            TxCmd::Ics20Withdrawal {
+                destination_chain_id,
+                destination_chain_address,
+                amount,
+                return_address_index,
+            } => {
+                let fee = Fee::from_staking_token_amount(1_000_000u64.into());
+                let (ephemeral_return_address, _) = app
+                    .fvk
+                    .ephemeral_address(OsRng, AddressIndex::from(*return_address_index));
+
+                let Value { amount, asset_id } = amount.parse::<Value>()?;
+
+                let plan = Planner::new(OsRng)
+                    .ics20_withdrawal(
+                        destination_chain_id.clone(),
+                        destination_chain_address.clone(),
+                        asset_id,
+                        amount,
+                        ephemeral_return_address,
+                    )
+                    .fee(fee)
+                    .plan(
+                        app.view.as_mut().unwrap(),
+                        app.fvk.account_group_id(),
+                        AddressIndex::new(0),
                     )
                     .await?;
                 app.build_and_submit_transaction(plan).await?;

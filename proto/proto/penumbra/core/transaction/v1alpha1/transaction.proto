@@ -322,6 +322,8 @@ message ActionPlan {
         governance.v1alpha1.ValidatorVote validator_vote = 20;
         governance.v1alpha1.DelegatorVotePlan delegator_vote = 21;
         governance.v1alpha1.ProposalDepositClaim proposal_deposit_claim = 22;
+        
+        ibc.v1alpha1.Ics20WithdrawalPlan withdrawal_plan = 23;
 
         dex.v1alpha1.PositionOpen position_open = 30;
         dex.v1alpha1.PositionClose position_close = 31;
