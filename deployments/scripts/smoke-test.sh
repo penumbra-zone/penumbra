@@ -12,6 +12,15 @@
 # a slightly longer runtime for the suite to find more errors.
 set -euo pipefail
 
+
+# Fail fast if testnet dir exists, otherwise `cargo run ...` will block
+# for a while, masking the error.
+if [[ -d ~/.penumbra/testnet_data ]] ; then
+    >&2 echo "ERROR: testnet data directory exists at ~/.penumbra/testnet_data"
+    >&2 echo "Not removing this directory automatically; to remove, run: pd testnet unsafe-reset-all"
+    exit 1
+fi
+
 export RUST_LOG="pclientd=info,pcli=info,pd=info,penumbra=info"
 
 # Duration that the network will be left running before script exits.
@@ -21,14 +30,18 @@ TESTNET_BOOTTIME="${TESTNET_BOOTTIME:-20}"
 
 echo "Generating testnet config..."
 EPOCH_DURATION="${EPOCH_DURATION:-100}"
-cargo run --quiet --release --bin pd -- testnet generate --epoch-duration $EPOCH_DURATION --timeout-commit 500ms
+cargo run --quiet --release --bin pd -- testnet generate --epoch-duration "$EPOCH_DURATION" --timeout-commit 500ms
 
 echo "Starting Tendermint..."
-tendermint start --log_level=error --home $HOME/.penumbra/testnet_data/node0/tendermint &
+tendermint start --log_level=error --home "${HOME}/.penumbra/testnet_data/node0/tendermint" &
 tendermint_pid="$!"
 
 echo "Starting pd..."
-cargo run --quiet --release --bin pd -- start --home $HOME/.penumbra/testnet_data/node0/pd &
+cargo run --quiet --release --bin pd -- start --home "${HOME}/.penumbra/testnet_data/node0/pd" &
+pd_pid="$!"
+
+# Ensure processes are cleaned up after script exits, regardless of status.
+trap 'kill -9 "$tendermint_pid" "$pd_pid"' EXIT
 
 echo "Waiting $TESTNET_BOOTTIME seconds for network to boot..."
 sleep "$TESTNET_BOOTTIME"
@@ -48,11 +61,10 @@ sleep "$TESTNET_RUNTIME"
 # `kill -0` checks existence of pid, i.e. whether the process is still running.
 # It doesn't inspect errors, but the only reason the process would be stopped
 # is if it failed, so it's good enough for our needs.
-if kill -0 "$tendermint_pid"; then
-    kill -9 "$tendermint_pid"
-    echo "SUCCESS! Smoke test complete. Ran for $TESTNET_RUNTIME, found no errors."
-else
-    >&2 echo "ERROR: smoke test compose process exited early"
+if ! kill -0 "$tendermint_pid" || ! kill -0 "$pd_pid" ; then
+    >&2 echo "ERROR: smoke test process exited early"
     exit 1
+else
+    echo "SUCCESS! Smoke test complete. Ran for $TESTNET_RUNTIME, found no errors."
 fi
 exit 0
