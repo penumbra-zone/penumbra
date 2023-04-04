@@ -1,10 +1,6 @@
-notes/**
-.github
-.firebaserc
-theme
-book.toml
-*.md
-Dockerfile
-docker-compose.yml
-*.json
+docs/
+.github/
 target/**
+
+# We'll generate relayer configs dynamically for now
+deployments/relayer/configs/*
