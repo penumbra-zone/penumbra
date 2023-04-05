@@ -27,9 +27,14 @@ penumbra-transaction = { path = "../transaction" }
 # TODO: replace by a penumbra-app
 penumbra-app = { path = "../app" }
 
-sqlx = { version = "0.6", features = [ "runtime-tokio-rustls", "offline", "sqlite" ] }
-tokio = { version = "1.22", features = ["full"]}
-tokio-stream = { version =  "0.1.8", features = ["sync"] }
+ibc = "0.29"
+sqlx = { version = "0.6", features = [
+    "runtime-tokio-rustls",
+    "offline",
+    "sqlite",
+] }
+tokio = { version = "1.22", features = ["full"] }
+tokio-stream = { version = "0.1.8", features = ["sync"] }
 anyhow = "1"
 rand_core = { version = "0.6.3", features = ["getrandom"] }
 rand = "0.8"

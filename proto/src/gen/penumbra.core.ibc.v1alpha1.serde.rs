@@ -760,10 +760,10 @@ impl serde::Serialize for Ics20Withdrawal {
         if !self.destination_chain_id.is_empty() {
             len += 1;
         }
-        if self.denom.is_some() {
+        if self.amount.is_some() {
             len += 1;
         }
-        if self.amount.is_some() {
+        if self.denom.is_some() {
             len += 1;
         }
         if !self.destination_chain_address.is_empty() {
@@ -788,11 +788,11 @@ impl serde::Serialize for Ics20Withdrawal {
         if !self.destination_chain_id.is_empty() {
             struct_ser.serialize_field("destinationChainId", &self.destination_chain_id)?;
         }
-        if let Some(v) = self.denom.as_ref() {
-            struct_ser.serialize_field("denom", v)?;
-        }
         if let Some(v) = self.amount.as_ref() {
             struct_ser.serialize_field("amount", v)?;
+        }
+        if let Some(v) = self.denom.as_ref() {
+            struct_ser.serialize_field("denom", v)?;
         }
         if !self.destination_chain_address.is_empty() {
             struct_ser.serialize_field("destinationChainAddress", &self.destination_chain_address)?;
@@ -824,8 +824,8 @@ impl<'de> serde::Deserialize<'de> for Ics20Withdrawal {
         const FIELDS: &[&str] = &[
             "destination_chain_id",
             "destinationChainId",
-            "denom",
             "amount",
+            "denom",
             "destination_chain_address",
             "destinationChainAddress",
             "return_address",
@@ -843,8 +843,8 @@ impl<'de> serde::Deserialize<'de> for Ics20Withdrawal {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             DestinationChainId,
-            Denom,
             Amount,
+            Denom,
             DestinationChainAddress,
             ReturnAddress,
             TimeoutHeight,
@@ -873,8 +873,8 @@ impl<'de> serde::Deserialize<'de> for Ics20Withdrawal {
                     {
                         match value {
                             "destinationChainId" | "destination_chain_id" => Ok(GeneratedField::DestinationChainId),
-                            "denom" => Ok(GeneratedField::Denom),
                             "amount" => Ok(GeneratedField::Amount),
+                            "denom" => Ok(GeneratedField::Denom),
                             "destinationChainAddress" | "destination_chain_address" => Ok(GeneratedField::DestinationChainAddress),
                             "returnAddress" | "return_address" => Ok(GeneratedField::ReturnAddress),
                             "timeoutHeight" | "timeout_height" => Ok(GeneratedField::TimeoutHeight),
@@ -901,8 +901,8 @@ impl<'de> serde::Deserialize<'de> for Ics20Withdrawal {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut destination_chain_id__ = None;
-                let mut denom__ = None;
                 let mut amount__ = None;
+                let mut denom__ = None;
                 let mut destination_chain_address__ = None;
                 let mut return_address__ = None;
                 let mut timeout_height__ = None;
@@ -917,17 +917,17 @@ impl<'de> serde::Deserialize<'de> for Ics20Withdrawal {
                             }
                             destination_chain_id__ = Some(map.next_value()?);
                         }
-                        GeneratedField::Denom => {
-                            if denom__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("denom"));
-                            }
-                            denom__ = map.next_value()?;
-                        }
                         GeneratedField::Amount => {
                             if amount__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("amount"));
                             }
                             amount__ = map.next_value()?;
+                        }
+                        GeneratedField::Denom => {
+                            if denom__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("denom"));
+                            }
+                            denom__ = map.next_value()?;
                         }
                         GeneratedField::DestinationChainAddress => {
                             if destination_chain_address__.is_some() {
@@ -973,8 +973,8 @@ impl<'de> serde::Deserialize<'de> for Ics20Withdrawal {
                 }
                 Ok(Ics20Withdrawal {
                     destination_chain_id: destination_chain_id__.unwrap_or_default(),
-                    denom: denom__,
                     amount: amount__,
+                    denom: denom__,
                     destination_chain_address: destination_chain_address__.unwrap_or_default(),
                     return_address: return_address__,
                     timeout_height: timeout_height__.unwrap_or_default(),
@@ -1001,10 +1001,19 @@ impl serde::Serialize for Ics20WithdrawalPlan {
         if !self.destination_chain_address.is_empty() {
             len += 1;
         }
-        if self.asset_id.is_some() {
+        if self.denom.is_some() {
             len += 1;
         }
         if self.amount.is_some() {
+            len += 1;
+        }
+        if !self.source_channel.is_empty() {
+            len += 1;
+        }
+        if self.timeout_height != 0 {
+            len += 1;
+        }
+        if self.timeout_timestamp != 0 {
             len += 1;
         }
         if self.return_address.is_some() {
@@ -1017,11 +1026,20 @@ impl serde::Serialize for Ics20WithdrawalPlan {
         if !self.destination_chain_address.is_empty() {
             struct_ser.serialize_field("destinationChainAddress", &self.destination_chain_address)?;
         }
-        if let Some(v) = self.asset_id.as_ref() {
-            struct_ser.serialize_field("assetId", v)?;
+        if let Some(v) = self.denom.as_ref() {
+            struct_ser.serialize_field("denom", v)?;
         }
         if let Some(v) = self.amount.as_ref() {
             struct_ser.serialize_field("amount", v)?;
+        }
+        if !self.source_channel.is_empty() {
+            struct_ser.serialize_field("sourceChannel", &self.source_channel)?;
+        }
+        if self.timeout_height != 0 {
+            struct_ser.serialize_field("timeoutHeight", ToString::to_string(&self.timeout_height).as_str())?;
+        }
+        if self.timeout_timestamp != 0 {
+            struct_ser.serialize_field("timeoutTimestamp", ToString::to_string(&self.timeout_timestamp).as_str())?;
         }
         if let Some(v) = self.return_address.as_ref() {
             struct_ser.serialize_field("returnAddress", v)?;
@@ -1040,9 +1058,14 @@ impl<'de> serde::Deserialize<'de> for Ics20WithdrawalPlan {
             "destinationChainId",
             "destination_chain_address",
             "destinationChainAddress",
-            "asset_id",
-            "assetId",
+            "denom",
             "amount",
+            "source_channel",
+            "sourceChannel",
+            "timeout_height",
+            "timeoutHeight",
+            "timeout_timestamp",
+            "timeoutTimestamp",
             "return_address",
             "returnAddress",
         ];
@@ -1051,8 +1074,11 @@ impl<'de> serde::Deserialize<'de> for Ics20WithdrawalPlan {
         enum GeneratedField {
             DestinationChainId,
             DestinationChainAddress,
-            AssetId,
+            Denom,
             Amount,
+            SourceChannel,
+            TimeoutHeight,
+            TimeoutTimestamp,
             ReturnAddress,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -1077,8 +1103,11 @@ impl<'de> serde::Deserialize<'de> for Ics20WithdrawalPlan {
                         match value {
                             "destinationChainId" | "destination_chain_id" => Ok(GeneratedField::DestinationChainId),
                             "destinationChainAddress" | "destination_chain_address" => Ok(GeneratedField::DestinationChainAddress),
-                            "assetId" | "asset_id" => Ok(GeneratedField::AssetId),
+                            "denom" => Ok(GeneratedField::Denom),
                             "amount" => Ok(GeneratedField::Amount),
+                            "sourceChannel" | "source_channel" => Ok(GeneratedField::SourceChannel),
+                            "timeoutHeight" | "timeout_height" => Ok(GeneratedField::TimeoutHeight),
+                            "timeoutTimestamp" | "timeout_timestamp" => Ok(GeneratedField::TimeoutTimestamp),
                             "returnAddress" | "return_address" => Ok(GeneratedField::ReturnAddress),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
@@ -1101,8 +1130,11 @@ impl<'de> serde::Deserialize<'de> for Ics20WithdrawalPlan {
             {
                 let mut destination_chain_id__ = None;
                 let mut destination_chain_address__ = None;
-                let mut asset_id__ = None;
+                let mut denom__ = None;
                 let mut amount__ = None;
+                let mut source_channel__ = None;
+                let mut timeout_height__ = None;
+                let mut timeout_timestamp__ = None;
                 let mut return_address__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
@@ -1118,17 +1150,39 @@ impl<'de> serde::Deserialize<'de> for Ics20WithdrawalPlan {
                             }
                             destination_chain_address__ = Some(map.next_value()?);
                         }
-                        GeneratedField::AssetId => {
-                            if asset_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("assetId"));
+                        GeneratedField::Denom => {
+                            if denom__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("denom"));
                             }
-                            asset_id__ = map.next_value()?;
+                            denom__ = map.next_value()?;
                         }
                         GeneratedField::Amount => {
                             if amount__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("amount"));
                             }
                             amount__ = map.next_value()?;
+                        }
+                        GeneratedField::SourceChannel => {
+                            if source_channel__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("sourceChannel"));
+                            }
+                            source_channel__ = Some(map.next_value()?);
+                        }
+                        GeneratedField::TimeoutHeight => {
+                            if timeout_height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("timeoutHeight"));
+                            }
+                            timeout_height__ = 
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::TimeoutTimestamp => {
+                            if timeout_timestamp__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("timeoutTimestamp"));
+                            }
+                            timeout_timestamp__ = 
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
                         }
                         GeneratedField::ReturnAddress => {
                             if return_address__.is_some() {
@@ -1141,8 +1195,11 @@ impl<'de> serde::Deserialize<'de> for Ics20WithdrawalPlan {
                 Ok(Ics20WithdrawalPlan {
                     destination_chain_id: destination_chain_id__.unwrap_or_default(),
                     destination_chain_address: destination_chain_address__.unwrap_or_default(),
-                    asset_id: asset_id__,
+                    denom: denom__,
                     amount: amount__,
+                    source_channel: source_channel__.unwrap_or_default(),
+                    timeout_height: timeout_height__.unwrap_or_default(),
+                    timeout_timestamp: timeout_timestamp__.unwrap_or_default(),
                     return_address: return_address__,
                 })
             }
