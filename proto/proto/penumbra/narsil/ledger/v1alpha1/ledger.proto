@@ -6,6 +6,35 @@ import "penumbra/core/crypto/v1alpha1/crypto.proto";
 import "penumbra/core/transaction/v1alpha1/transaction.proto";
 import "penumbra/custody/v1alpha1/custody.proto";
 
+// Methods for narsil clients to communicate with narsild.
+service LedgerService {
+  rpc Info(InfoRequest) returns (InfoResponse);
+}
+
+// Requests information about the chain state as known by the node.
+message InfoRequest {
+  // The Tendermint software semantic version.
+  string version = 1;
+  // The Tendermint block protocol version.
+  uint64 block_version = 2;
+  // The Tendermint p2p protocol version.
+  uint64 p2p_version = 3;
+}
+
+// Contains information about the chain state as known by the node.
+message InfoResponse {
+    // Some arbitrary information.
+    bytes data = 1;
+    // The application software semantic version.
+    string version = 2;
+    // The application protocol version.
+    uint64 app_version = 3;
+    // The latest block for which the app has called [`Commit`](super::super::Request::Commit).
+    uint64 last_block_height = 4;
+    // The latest result of [`Commit`](super::super::Request::Commit).
+    bytes last_block_app_hash = 5;
+}
+
 // The root identity key material for a shard operator.
 message ShardIdentityKey {
     // An Ed25519 key.

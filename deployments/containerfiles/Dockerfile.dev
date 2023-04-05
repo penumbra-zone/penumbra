@@ -34,6 +34,7 @@ COPY tct ./tct
 COPY decaf377-fmd ./decaf377-fmd
 COPY decaf377-ka ./decaf377-ka
 COPY measure ./measure
+COPY narsil ./narsil
 COPY eddy ./eddy
 COPY tct-property-test ./tct-property-test
 COPY tct-visualize ./tct-visualize

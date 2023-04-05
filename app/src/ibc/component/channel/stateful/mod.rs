@@ -62,7 +62,6 @@ pub mod channel_open_try {
 
     use super::super::*;
     use super::proof_verification::ChannelProofVerifier;
-    use anyhow::Context as _;
 
     #[async_trait]
     pub trait ChannelOpenTryCheck: ChannelProofVerifier + inner::Inner {
