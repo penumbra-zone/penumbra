@@ -92,7 +92,11 @@ async fn main() -> anyhow::Result<()> {
     // The MetricsLayer handles enriching metrics output with labels from tracing spans.
     let metrics_layer = MetricsLayer::new();
     // The ConsoleLayer enables collection of data for `tokio-console`.
-    let console_layer = ConsoleLayer::builder().with_default_env().spawn();
+    let console_layer = ConsoleLayer::builder()
+        .with_default_env()
+        // Set the console subscriber port to be different than the one used for `pd`
+        .server_addr(([127, 0, 0, 1], 6769))
+        .spawn();
     // The `FmtLayer` is used to print to the console.
     let fmt_layer = tracing_subscriber::fmt::layer().with_target(false);
     // The `EnvFilter` layer is used to filter events based on `RUST_LOG`.
