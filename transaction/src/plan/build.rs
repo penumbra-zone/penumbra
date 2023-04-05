@@ -155,6 +155,13 @@ impl TransactionPlan {
             actions.push(Action::PositionClose(position_close))
         }
 
+        // build the transaction's ICS20 withdrawals
+        for ics20_withdraw_plan in self.ics20_withdrawals() {
+            actions.push(Action::Ics20Withdrawal(
+                ics20_withdraw_plan.withdrawal_action(),
+            ))
+        }
+
         let transaction_body = TransactionBody {
             actions,
             expiry_height: self.expiry_height,

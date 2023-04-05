@@ -2,11 +2,14 @@ use std::{
     collections::BTreeMap,
     fs::File,
     io::{Read, Write},
+    str::FromStr,
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 use anyhow::{anyhow, Context, Result};
 use ark_ff::UniformRand;
 use decaf377::Fr;
+use ibc::core::ics24_host::identifier::ChannelId;
 use penumbra_app::stake::rate::RateData;
 use penumbra_crypto::{
     asset,
@@ -168,7 +171,14 @@ pub enum TxCmd {
     Ics20Withdrawal {
         destination_chain_id: String,
         destination_chain_address: String,
+        denom: String, //TODO: should we pull this out of amount
         amount: String,
+        source_channel: String,
+
+        #[clap(long, default_value = "0", display_order = 100)]
+        timeout_height: u64,
+        #[clap(long, default_value = "0", display_order = 150)]
+        timeout_timestamp: u64,
 
         #[clap(long, default_value = "0", display_order = 200)]
         return_address_index: u32,
@@ -824,22 +834,49 @@ impl TxCmd {
                 destination_chain_id,
                 destination_chain_address,
                 amount,
+                denom,
+                timeout_height,
+                timeout_timestamp,
+                source_channel,
                 return_address_index,
             } => {
                 let fee = Fee::from_staking_token_amount(1_000_000u64.into());
                 let (ephemeral_return_address, _) = app
                     .fvk
                     .ephemeral_address(OsRng, AddressIndex::from(*return_address_index));
+                let account_group_id = app.fvk.account_group_id();
+                let current_height = app.view().status(account_group_id).await?.sync_height;
 
-                let Value { amount, asset_id } = amount.parse::<Value>()?;
+                // get the current time on the local machine
+                let current_time_u64 = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .expect("Time went backwards")
+                    .as_secs();
+
+                let mut timeout_height = *timeout_height;
+                if timeout_height == 0u64 {
+                    // add two days to height, assuming 6 blocks per minute
+                    timeout_height = current_height + 28800u64;
+                }
+                let mut timeout_timestamp = *timeout_timestamp;
+                if timeout_timestamp == 0u64 {
+                    // add 2 days to current time
+                    timeout_timestamp = current_time_u64 + 172800u64;
+                }
+
+                let denom = asset::REGISTRY.parse_denom(denom).unwrap();
+                let amount = Amount::try_from(amount.clone()).unwrap();
 
                 let plan = Planner::new(OsRng)
                     .ics20_withdrawal(
                         destination_chain_id.clone(),
                         destination_chain_address.clone(),
-                        asset_id,
+                        denom,
                         amount,
+                        timeout_height,
+                        timeout_timestamp,
                         ephemeral_return_address,
+                        ChannelId::from_str(source_channel)?,
                     )
                     .fee(fee)
                     .plan(
