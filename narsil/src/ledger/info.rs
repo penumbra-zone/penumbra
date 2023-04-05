@@ -13,19 +13,6 @@ use tracing::Instrument;
 
 use penumbra_tower_trace::RequestExt;
 
-use async_stream::try_stream;
-use futures::{
-    stream::{StreamExt, TryStreamExt},
-    TryFutureExt,
-};
-use penumbra_chain::StateReadExt as _;
-use penumbra_proto::{narsil::v1alpha1::ledger::ledger_service_server::LedgerService, DomainType};
-use tokio::sync::mpsc;
-use tonic::Status;
-use tracing::instrument;
-
-use crate::metrics;
-
 // const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
 const ABCI_INFO_VERSION: &str = "wut";
 const APP_VERSION: u64 = 1;
@@ -93,7 +80,7 @@ impl tower_service::Service<InfoRequest> for Info {
                     .await
                     .map(InfoResponse::Info)
                     .map_err(Into::into),
-                InfoRequest::Query(query) => todo!(),
+                InfoRequest::Query(_query) => todo!(),
                 InfoRequest::Echo(echo) => Ok(InfoResponse::Echo(Echo {
                     message: echo.message,
                 })),

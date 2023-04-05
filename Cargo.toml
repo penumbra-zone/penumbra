@@ -21,6 +21,8 @@ members = [
   "tct",
   "tct-property-test",
   "tct-visualize",
+  "tendermint-proxy",
+  "tower-trace",
   "transaction",
   "wallet",
   "view",

@@ -21,6 +21,8 @@ use penumbra_proto::client::v1alpha1::{
     tendermint_proxy_service_server::TendermintProxyServiceServer,
 };
 use penumbra_storage::Storage;
+use penumbra_tendermint_proxy::TendermintProxy;
+use penumbra_tower_trace::remote_addr;
 use rand::Rng;
 use rand_core::OsRng;
 use tendermint::abci::{ConsensusRequest, MempoolRequest};
@@ -222,7 +224,7 @@ async fn main() -> anyhow::Result<()> {
                     pd::Mempool::new(storage.clone(), queue).run()
                 }));
             let info = pd::Info::new(storage.clone());
-            let tm_proxy = pd::TendermintProxy::new(tendermint_addr);
+            let tm_proxy = TendermintProxy::new(tendermint_addr);
             let snapshot = pd::Snapshot {};
 
             let abci_server = tokio::task::Builder::new()

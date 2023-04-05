@@ -1,17 +1,21 @@
 #![allow(clippy::clone_on_copy)]
 #![recursion_limit = "512"]
-use std::{
-    net::{Ipv4Addr, SocketAddr},
-    path::PathBuf,
-};
+use std::{net::SocketAddr, path::PathBuf};
 
 use console_subscriber::ConsoleLayer;
 use metrics_tracing_context::{MetricsLayer, TracingContextLayer};
 use metrics_util::layers::Stack;
+use penumbra_tendermint_proxy::TendermintProxy;
 use tendermint::abci::{ConsensusRequest, MempoolRequest};
 
-use penumbra_narsil::{ledger::Info, metrics::register_metrics};
-use penumbra_proto::narsil::v1alpha1::ledger::ledger_service_server::LedgerServiceServer;
+use penumbra_narsil::{
+    ledger::{consensus::Consensus, mempool::Mempool, snapshot::Snapshot, Info},
+    metrics::register_metrics,
+};
+use penumbra_proto::{
+    client::v1alpha1::tendermint_proxy_service_server::TendermintProxyServiceServer,
+    narsil::v1alpha1::ledger::ledger_service_server::LedgerServiceServer,
+};
 
 use anyhow::Context;
 use clap::{Parser, Subcommand};
@@ -21,6 +25,7 @@ use penumbra_tower_trace::remote_addr;
 use tokio::runtime;
 use tonic::transport::Server;
 use tracing_subscriber::{prelude::*, EnvFilter};
+use url::Url;
 
 #[derive(Debug, Parser)]
 #[clap(
@@ -68,6 +73,14 @@ enum RootCommand {
             default_value = "127.0.0.1:9081"
         )]
         metrics_bind: SocketAddr,
+        /// Proxy Tendermint requests against the gRPC server to this URL.
+        #[clap(
+            short,
+            long,
+            env = "PENUMBRA_NARSILD_TM_PROXY_URL",
+            default_value = "http://127.0.0.1:36657"
+        )]
+        tendermint_addr: Url,
     },
 }
 
@@ -106,6 +119,7 @@ async fn main() -> anyhow::Result<()> {
             grpc_bind,
             metrics_bind,
             abci_bind,
+            tendermint_addr,
         } => {
             tracing::info!(?abci_bind, ?grpc_bind, ?metrics_bind, "starting narsild");
 
@@ -125,17 +139,17 @@ async fn main() -> anyhow::Result<()> {
                     req.create_span()
                 }))
                 .service(tower_actor::Actor::new(10, |queue: _| {
-                    pd::Consensus::new(storage.clone(), queue).run()
+                    Consensus::new(storage.clone(), queue).run()
                 }));
             let mempool = tower::ServiceBuilder::new()
                 .layer(request_span::layer(|req: &MempoolRequest| {
                     req.create_span()
                 }))
                 .service(tower_actor::Actor::new(10, |queue: _| {
-                    pd::Mempool::new(storage.clone(), queue).run()
+                    Mempool::new(storage.clone(), queue).run()
                 }));
-            let tm_proxy = pd::TendermintProxy::new(tendermint_addr);
-            let snapshot = pd::Snapshot {};
+            let tm_proxy = TendermintProxy::new(tendermint_addr);
+            let snapshot = Snapshot {};
 
             let abci_server = tokio::task::Builder::new()
                 .name("abci_server")
@@ -165,6 +179,9 @@ async fn main() -> anyhow::Result<()> {
                         .accept_http1(true)
                         // Wrap each of the gRPC services in a tonic-web proxy:
                         .add_service(tonic_web::enable(LedgerServiceServer::new(info.clone())))
+                        .add_service(tonic_web::enable(TendermintProxyServiceServer::new(
+                            tm_proxy.clone(),
+                        )))
                         .serve(grpc_bind),
                 )
                 .expect("failed to spawn grpc server");

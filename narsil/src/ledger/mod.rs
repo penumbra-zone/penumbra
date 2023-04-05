@@ -1,35 +1,15 @@
 //! Logic for enabling `narsild` to interact with chain state.
-use std::{
-    future::Future,
-    pin::Pin,
-    task::{Context, Poll},
-};
-
-use futures::FutureExt;
-use penumbra_chain::AppHashRead;
-use penumbra_storage::Storage;
-use tendermint::abci::{self, response::Echo, InfoRequest, InfoResponse};
-use tower_abci::BoxError;
-use tracing::Instrument;
-
-use penumbra_tower_trace::RequestExt;
-
-use async_stream::try_stream;
-use futures::{
-    stream::{StreamExt, TryStreamExt},
-    TryFutureExt,
-};
-use penumbra_chain::StateReadExt as _;
-use penumbra_proto::{narsil::v1alpha1::ledger::ledger_service_server::LedgerService, DomainType};
-use tokio::sync::mpsc;
+use penumbra_proto::narsil::v1alpha1::ledger::ledger_service_server::LedgerService;
 use tonic::Status;
 use tracing::instrument;
 
 use crate::metrics;
 
+pub mod app;
 pub mod consensus;
 pub mod info;
 pub mod mempool;
+pub mod snapshot;
 pub use info::Info;
 
 /// RAII guard used to increment and decrement an active connection counter.

@@ -7,7 +7,7 @@ use tokio::sync::mpsc;
 use tower_actor::Message;
 use tracing::Instrument;
 
-use crate::App;
+use crate::ledger::app::App;
 
 pub struct Consensus {
     queue: mpsc::Receiver<Message<Request, Response, tower::BoxError>>,

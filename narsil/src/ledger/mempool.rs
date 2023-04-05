@@ -10,7 +10,7 @@ use tokio::sync::{mpsc, watch};
 use tower_actor::Message;
 use tracing::Instrument;
 
-use crate::{metrics, App};
+use crate::{ledger::app::App, metrics};
 
 /// When using ABCI, we can't control block proposal directly, so we could
 /// potentially end up creating blocks with mutually incompatible transactions.
