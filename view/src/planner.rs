@@ -6,12 +6,12 @@ use std::{
 
 use anyhow::{anyhow, Result};
 
+use ibc::core::ics24_host::identifier::ChannelId;
 use penumbra_app::stake::{rate::RateData, validator};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::{
     asset::Amount,
     asset::Denom,
-    asset::Id,
     dex::{
         lp::position::{self, Position},
         swap::SwapPlaintext,
@@ -350,15 +350,21 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         &mut self,
         destination_chain_id: String,
         destination_chain_address: String,
-        asset_id: Id,
+        denom: Denom,
         amount: Amount,
+        timeout_height: u64,
+        timeout_timestamp: u64,
         return_address: Address,
+        source_channel: ChannelId,
     ) -> &mut Self {
         self.action(ActionPlan::WithdrawalPlan(Ics20WithdrawalPlan {
             destination_chain_id,
             destination_chain_address,
-            asset_id,
+            denom,
             amount,
+            timeout_height,
+            timeout_timestamp,
+            source_channel,
             return_address,
         }));
         self

@@ -4089,6 +4089,7 @@ dependencies = [
  "ed25519-consensus",
  "futures",
  "hex",
+ "ibc",
  "metrics",
  "parking_lot 0.12.1",
  "penumbra-app",

@@ -18,8 +18,8 @@ pub struct Ics20Withdrawal {
     // the chain ID of the destination chain for this Ics20 transfer
     pub destination_chain_id: String,
     // a transparent value consisting of an amount and an asset ID.
-    pub denom: asset::Denom,
     pub amount: Amount,
+    pub denom: asset::Denom,
     // the address on the destination chain to send the transfer to
     pub destination_chain_address: String,
     // a "sender" penumbra address to use to return funds from this withdrawal.
@@ -51,7 +51,7 @@ impl IsAction for Ics20Withdrawal {
 
 impl Ics20Withdrawal {
     pub fn value(&self) -> value::Value {
-        value::Value {
+        penumbra_crypto::Value {
             amount: self.amount,
             asset_id: self.denom.id(),
         }
@@ -96,8 +96,8 @@ impl From<Ics20Withdrawal> for pb::Ics20Withdrawal {
     fn from(w: Ics20Withdrawal) -> Self {
         pb::Ics20Withdrawal {
             destination_chain_id: w.destination_chain_id,
-            denom: Some(w.denom.into()),
             amount: Some(w.amount.into()),
+            denom: Some(w.denom.into()),
             destination_chain_address: w.destination_chain_address,
             return_address: Some(w.return_address.into()),
             timeout_height: w.timeout_height,
@@ -113,13 +113,13 @@ impl TryFrom<pb::Ics20Withdrawal> for Ics20Withdrawal {
     fn try_from(s: pb::Ics20Withdrawal) -> Result<Self, Self::Error> {
         Ok(Self {
             destination_chain_id: s.destination_chain_id,
+            amount: s
+                .amount
+                .ok_or_else(|| anyhow::anyhow!("missing denom"))?
+                .try_into()?,
             denom: s
                 .denom
                 .ok_or_else(|| anyhow::anyhow!("missing denom"))?
-                .try_into()?,
-            amount: s
-                .amount
-                .ok_or_else(|| anyhow::anyhow!("missing amount"))?
                 .try_into()?,
             destination_chain_address: s.destination_chain_address,
             return_address: s
