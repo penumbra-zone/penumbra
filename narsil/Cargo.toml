@@ -1,5 +1,5 @@
 [package]
-name = "penumbra-narsil"
+name = "narsil"
 authors = ["Penumbra Labs <team@penumbra.zone>"]
 description = "The software for the Narsil sharded custody implementation"
 version = "0.1.0"

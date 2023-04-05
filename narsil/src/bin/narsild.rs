@@ -8,7 +8,7 @@ use metrics_util::layers::Stack;
 use penumbra_tendermint_proxy::TendermintProxy;
 use tendermint::abci::{ConsensusRequest, MempoolRequest};
 
-use penumbra_narsil::{
+use narsil::{
     ledger::{consensus::Consensus, mempool::Mempool, snapshot::Snapshot, Info},
     metrics::register_metrics,
 };
