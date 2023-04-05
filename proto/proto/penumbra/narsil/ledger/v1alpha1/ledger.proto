@@ -6,13 +6,6 @@ import "penumbra/core/crypto/v1alpha1/crypto.proto";
 import "penumbra/core/transaction/v1alpha1/transaction.proto";
 import "penumbra/custody/v1alpha1/custody.proto";
 
-import "google/protobuf/timestamp.proto";
-import "tendermint/p2p/types.proto";
-import "tendermint/crypto/proof.proto";
-import "tendermint/types/block.proto";
-import "tendermint/types/types.proto";
-import "tendermint/types/validator.proto";
-
 // Methods for narsil clients to communicate with narsild.
 service LedgerService {
   rpc Info(InfoRequest) returns (InfoResponse);
