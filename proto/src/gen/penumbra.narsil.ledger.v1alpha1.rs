@@ -523,6 +523,7 @@ pub mod dkg_state {
     }
 }
 /// Generated client implementations.
+#[cfg(feature = "rpc")]
 pub mod ledger_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
@@ -614,6 +615,7 @@ pub mod ledger_service_client {
     }
 }
 /// Generated server implementations.
+#[cfg(feature = "rpc")]
 pub mod ledger_service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;

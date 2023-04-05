@@ -89,11 +89,11 @@ fn main() -> Result<()> {
         .server_mod_attribute("penumbra.custody.v1alpha1", "#[cfg(feature = \"rpc\")]")
         .client_mod_attribute("penumbra.custody.v1alpha1", "#[cfg(feature = \"rpc\")]")
         .server_mod_attribute(
-            "penumbra.narsil.v1alpha1.ledger",
+            "penumbra.narsil.ledger.v1alpha1",
             "#[cfg(feature = \"rpc\")]",
         )
         .client_mod_attribute(
-            "penumbra.narsil.v1alpha1.ledger",
+            "penumbra.narsil.ledger.v1alpha1",
             "#[cfg(feature = \"rpc\")]",
         )
         .server_mod_attribute(
