@@ -12,8 +12,7 @@ fn main() -> Result<()> {
         .join("gen");
     println!("{}", target_dir.display());
 
-    let tmpdir = tempfile::tempdir().unwrap();
-    let descriptor_path = tmpdir.path().to_owned().join("proto_descriptor.bin");
+    let descriptor_path = target_dir.join("proto_descriptor.bin");
 
     let mut config = prost_build::Config::new();
     config.out_dir(&target_dir);
