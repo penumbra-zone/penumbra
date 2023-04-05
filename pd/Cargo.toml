@@ -65,6 +65,7 @@ prost-types = "0.11"
 pbjson-types = "0.5"
 tonic = "0.8.1"
 tonic-web = "0.4.0"
+tonic-reflection = "0.6"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "ansi"] }
 url = "2"
 pin-project = "1"

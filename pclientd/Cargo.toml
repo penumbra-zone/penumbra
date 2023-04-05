@@ -40,6 +40,7 @@ http-body = "0.4.5"
 tower = "0.4.0"
 tonic = "0.8.1"
 tonic-web = "0.4.0"
+tonic-reflection = "0.6"
 bytes = { version = "1", features = ["serde"] }
 prost = "0.11"
 futures = "0.3"
