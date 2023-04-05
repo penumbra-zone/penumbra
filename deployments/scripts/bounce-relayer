@@ -1,0 +1,38 @@
+#!/bin/bash
+# CI script to handle re-deploying the IBC relayer deployment.
+# Unlike most of our CI deployments, we only run one (1) relayer instance.
+# It's deployed right after a new preview deploy goes out, referencing the
+# freshly generated preview chain, as well as the currently running testnet.
+#
+# At all times, we expect there to be one (1) relayer deployment, and we're
+# currently deploying the latest image built from "main". Therefore we cannot
+# expect helm to handle resetting the deployment, because on the surface,
+# the config looks identical: same container tag, same vars, same number of replicas.
+# To accommodate, we'll look up whether a relayer deployment exists, and if so,
+# bounce it via `rollout deployment restart`, which will trigger a new image pull
+# due to the chart's `image.pull=Always` setting. If and when we decide to redeploy
+# the relayer as part of the testnets, rather than preview, we should modify this
+# logic to set a specific version, e.g. `image.tag=049-pasiphae.1` or similar.
+set -euo pipefail
+
+
+# Set name for expected deployment.
+relayer_deployment="relayer-preview"
+
+# If any deployments with the string "relayer" in the name are found,
+# consider the relayer to be running already, in which case we'll bounce.
+if kubectl get deployments --output json | jq .items[].metadata.name -r | grep -q "$relayer_deployment" ; then
+    >&2 echo "Found existing relayer deployment, bouncing it..."
+    kubectl rollout restart deployment "$relayer_deployment"
+    # Block until deployment is complete. The entrypoint script builds configs,
+    # and blocks for a while. The helm chart waits 10m before giving up, so let's
+    # wait slightly longer than that on this timeout.
+    kubectl rollout status deployment "$relayer_deployment" --timeout=15m
+# Otherwise, relayer is not running. Maybe it was manually destroyed?
+# Enforce state again by applying the helm chart.
+else
+    >&2 echo "Relayer NOT currently running. Deploying it..."
+    repo_root="$(git rev-parse --show-toplevel)"
+    cd "${repo_root}/deployments" || exit 1
+    helm upgrade --install "$relayer_deployment" ./charts/relayer
+fi

@@ -16,7 +16,7 @@ The networks are completely separate.
 ```
 .
 ├── ci.sh # runner script for executing a deploy against k8s
-├── helm/ # helm chart used to configure full-node/validator layout
+├── charts/ # helm charts used to configure full-node/validator layout
 ├── networks/ # logic specific to network, e.g. "testnet" or "testnet-preview"
 │  └── testnet/
 └── terraform/ # server and cluster provisioning logic
