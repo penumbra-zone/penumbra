@@ -18,5 +18,7 @@ Finished configuring the relayer for Penumbra!
 Starting service...
 ##############################################
 EOM
-# Run the relayer as a blocking service
-exec rly start penumbra_path
+# Run the relayer as a blocking service.
+# We set a custom debug address (default is 5183) to support
+# healthchecks determining whether it's running.
+exec rly start penumbra_path --debug-addr 127.0.0.1:5100

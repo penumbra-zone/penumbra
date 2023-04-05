@@ -15,7 +15,7 @@ set -euo pipefail
 # The following env vars can be used to override config fars
 # for the helm chart. N.B. these env vars are also configured
 # in GitHub Actions, so the values below may be out of date.
-WORKDIR="${WORKDIR:=$(pwd)/helm/pdcli}"
+WORKDIR="${WORKDIR:=$(pwd)/charts/penumbra/pdcli}"
 IMAGE="${IMAGE:-ghcr.io/penumbra-zone/penumbra}"
 PENUMBRA_VERSION="${PENUMBRA_VERSION:-main}"
 PENUMBRA_UID_GID="${PENUMBRA_UID_GID:-1000\:1000}"
@@ -118,7 +118,7 @@ done
 # as necessary. Will *not* replace certain durable resources like
 # the ManagedCertificate, which is annotated with helm.sh/resource-policy=keep.
 function helm_install() {
-    helm upgrade --install "$HELM_RELEASE" ./helm \
+    helm upgrade --install "$HELM_RELEASE" ./charts/penumbra \
         --set "numValidators=$NVALS" \
         --set "numFullNodes=$NFULLNODES" \
         --set "penumbra.image=$IMAGE" \
