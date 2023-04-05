@@ -3005,6 +3005,47 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e5ce46fe64a9d73be07dcbe690a38ce1b293be448fd8ce1e6c1b8062c9f72c6a"
 
 [[package]]
+name = "narsil"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-stream 0.2.1",
+ "clap 3.2.23",
+ "console-subscriber",
+ "futures",
+ "hex",
+ "http",
+ "metrics",
+ "metrics-exporter-prometheus",
+ "metrics-tracing-context",
+ "metrics-util",
+ "penumbra-chain",
+ "penumbra-proto",
+ "penumbra-storage",
+ "penumbra-tendermint-proxy",
+ "penumbra-tower-trace",
+ "serde",
+ "serde_json",
+ "tendermint",
+ "tendermint-config",
+ "tendermint-light-client-verifier",
+ "tendermint-proto",
+ "tokio",
+ "tokio-stream",
+ "tokio-util 0.7.7",
+ "tonic",
+ "tonic-web",
+ "tower",
+ "tower-abci",
+ "tower-actor",
+ "tower-service",
+ "tracing",
+ "tracing-subscriber 0.3.16",
+ "url",
+ "vergen",
+]
+
+[[package]]
 name = "native-tls"
 version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3796,47 +3837,6 @@ dependencies = [
  "serde_json",
  "tokio",
  "tonic",
- "tracing",
- "tracing-subscriber 0.3.16",
- "url",
- "vergen",
-]
-
-[[package]]
-name = "penumbra-narsil"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-stream 0.2.1",
- "clap 3.2.23",
- "console-subscriber",
- "futures",
- "hex",
- "http",
- "metrics",
- "metrics-exporter-prometheus",
- "metrics-tracing-context",
- "metrics-util",
- "penumbra-chain",
- "penumbra-proto",
- "penumbra-storage",
- "penumbra-tendermint-proxy",
- "penumbra-tower-trace",
- "serde",
- "serde_json",
- "tendermint",
- "tendermint-config",
- "tendermint-light-client-verifier",
- "tendermint-proto",
- "tokio",
- "tokio-stream",
- "tokio-util 0.7.7",
- "tonic",
- "tonic-web",
- "tower",
- "tower-abci",
- "tower-actor",
- "tower-service",
  "tracing",
  "tracing-subscriber 0.3.16",
  "url",
