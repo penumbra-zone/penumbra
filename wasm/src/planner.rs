@@ -17,12 +17,9 @@ use penumbra_crypto::{
     transaction::Fee,
     Address, FullViewingKey, Note, Value,
 };
-use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
 use penumbra_tct as tct;
 use penumbra_transaction::{
-    action::{
-        Proposal, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote, Vote,
-    },
+    action::{Proposal, ProposalSubmit, ProposalWithdraw, ValidatorVote, Vote},
     plan::{
         ActionPlan, DelegatorVotePlan, MemoPlan, OutputPlan, SpendPlan, SwapClaimPlan, SwapPlan,
         TransactionPlan, UndelegateClaimPlan,
