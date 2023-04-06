@@ -2036,19 +2036,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
 
 [[package]]
-name = "gloo-utils"
-version = "0.1.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8e8fc851e9c7b9852508bc6e3f690f452f474417e8545ec9857b7f7377036b5"
-dependencies = [
- "js-sys",
- "serde",
- "serde_json",
- "wasm-bindgen",
- "web-sys",
-]
-
-[[package]]
 name = "h2"
 version = "0.3.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3680,7 +3667,6 @@ dependencies = [
  "ibc-proto",
  "jmt",
  "metrics",
- "num-rational",
  "once_cell",
  "penumbra-chain",
  "penumbra-crypto",
@@ -3720,7 +3706,6 @@ dependencies = [
  "hex",
  "ibc",
  "ics23",
- "num-rational",
  "once_cell",
  "penumbra-crypto",
  "penumbra-proto",
@@ -3767,7 +3752,6 @@ dependencies = [
  "pbkdf2",
  "penumbra-proto",
  "penumbra-tct",
- "poseidon-paramgen",
  "poseidon377",
  "proptest",
  "rand",
@@ -4111,7 +4095,6 @@ dependencies = [
  "penumbra-app",
  "penumbra-chain",
  "penumbra-crypto",
- "penumbra-custody",
  "penumbra-proto",
  "penumbra-tct",
  "penumbra-transaction",
@@ -4120,15 +4103,12 @@ dependencies = [
  "rand_core",
  "serde",
  "serde_json",
- "serde_with 1.14.0",
  "sha2 0.10.6",
  "sqlx",
  "tendermint",
  "tokio",
  "tokio-stream",
- "toml 0.5.11",
  "tonic",
- "tonic-web",
  "tracing",
  "tracing-subscriber 0.2.25",
  "url",
@@ -4164,7 +4144,6 @@ dependencies = [
  "tonic",
  "tower",
  "tracing",
- "tracing-subscriber 0.3.16",
 ]
 
 [[package]]
@@ -4175,7 +4154,6 @@ dependencies = [
  "base64 0.20.0",
  "console_error_panic_hook",
  "getrandom",
- "gloo-utils",
  "hex",
  "indexmap",
  "js-sys",

@@ -8,21 +8,18 @@ mod tx;
 mod utils;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, serializers::bech32str, DomainType};
 
-use penumbra_crypto::{ka, Address, FullViewingKey, Note};
+use penumbra_crypto::{Address, FullViewingKey};
 use std::convert::TryFrom;
 use std::str::FromStr;
 
 use anyhow::Context;
 use penumbra_crypto::keys::{SeedPhrase, SpendKey};
-use rand_core::OsRng;
 use wasm_bindgen::prelude::*;
 
-use penumbra_transaction::plan::TransactionPlan;
 use penumbra_transaction::Transaction;
 
 pub use mock_client::ViewClient;
 pub use tx::send_plan;
-use web_sys::console as web_console;
 
 #[wasm_bindgen]
 pub fn generate_spend_key(seed_phrase: &str) -> JsValue {

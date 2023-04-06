@@ -1,6 +1,6 @@
 use anyhow::Context;
-use penumbra_chain::{CompactBlock, Epoch, StatePayload};
-use penumbra_crypto::{dex::swap::SwapPlaintext, note, FullViewingKey, Note};
+use penumbra_chain::{CompactBlock, StatePayload};
+use penumbra_crypto::{note, FullViewingKey};
 use penumbra_tct as tct;
 use penumbra_tct::Witness::*;
 use serde::{Deserialize, Serialize};
@@ -153,7 +153,6 @@ impl ViewClient {
                                 .ok_or_else(|| anyhow::anyhow!("server gave invalid compact block"))
                                 .unwrap();
 
-                            let (output_1, output_2) = swap.output_notes(batch_data);
                             let source = clone_payload.source().cloned().unwrap_or_default();
                             let nullifier = self
                                 .fvk
@@ -276,7 +275,6 @@ impl ViewClient {
                                 .ok_or_else(|| anyhow::anyhow!("server gave invalid compact block"))
                                 .unwrap();
 
-                            let (output_1, output_2) = swap.output_notes(batch_data);
                             let source = clone_payload.source().cloned().unwrap_or_default();
                             let nullifier = self
                                 .fvk

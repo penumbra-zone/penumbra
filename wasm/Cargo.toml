@@ -26,7 +26,6 @@ serde-wasm-bindgen = "0.4.5"
 js-sys = "0.3"
 indexmap = "=1.9.2"
 web-sys = { version = "0.3.4", features = ["console"] }
-gloo-utils = { version = "0.1", features = ["serde"] }
 rand_core = { version = "0.6.3", features = ["getrandom"] }
 getrandom = { version = "0.2", features = ["js"] }
 console_error_panic_hook = { version = "0.1.6", optional = true }

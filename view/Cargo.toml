@@ -24,7 +24,6 @@ penumbra-chain = { path = "../chain" }
 penumbra-crypto = { path = "../crypto" }
 penumbra-tct = { path = "../tct" }
 penumbra-transaction = { path = "../transaction" }
-penumbra-custody = {path = "../custody"}
 # TODO: replace by a penumbra-app
 penumbra-app = { path = "../app" }
 
@@ -36,11 +35,9 @@ rand_core = { version = "0.6.3", features = ["getrandom"] }
 rand = "0.8"
 serde_json = "1"
 serde = { version = "1", features = ["derive"] }
-serde_with = { version = "1.11", features = ["hex"] }
 tracing = "0.1"
 tracing-subscriber = "0.2"
 tonic = "0.8.1"
-tonic-web = "0.4.0"
 url = "2"
 bytes = { version = "1", features = ["serde"] }
 prost = "0.11"
@@ -54,7 +51,6 @@ camino = "1"
 async-trait = "0.1"
 tendermint = "0.29.0"
 sha2 = "0.10.1"
-toml = "0.5"
 ed25519-consensus = "2.1"
 
 [build-dependencies]
