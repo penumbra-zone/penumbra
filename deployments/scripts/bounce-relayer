@@ -26,6 +26,8 @@ if kubectl get deployments --output json | jq .items[].metadata.name -r | grep -
     kubectl rollout restart deployment "$relayer_deployment"
     # Block until deployment is complete, but not until pod is ready.
     kubectl rollout status deployment "$relayer_deployment" --timeout=5m
+    # Wait a bit for the pod to be created, so we can find its name.
+    sleep 30s
     relayer_pod="$(kubectl get pods -l app.kubernetes.io/instance="$relayer_deployment" -o name | head -n1)"
     if [[ -z "$relayer_pod" ]] ; then
         >&2 echo "ERROR: failed to find pod for deployed relayer"
