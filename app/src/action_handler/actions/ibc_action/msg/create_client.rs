@@ -10,10 +10,7 @@ use penumbra_transaction::Transaction;
 
 use crate::action_handler::ActionHandler;
 use crate::ibc::client::ics02_validation;
-use crate::ibc::component::client::{
-    stateless::create_client::{client_state_is_tendermint, consensus_state_is_tendermint},
-    StateReadExt as _, StateWriteExt as _,
-};
+use crate::ibc::component::client::{StateReadExt as _, StateWriteExt as _};
 use crate::ibc::{event, ClientCounter};
 
 #[async_trait]
@@ -70,5 +67,24 @@ impl ActionHandler for MsgCreateClient {
 
         state.record(event::create_client(client_id, client_state));
         Ok(())
+    }
+}
+fn client_state_is_tendermint(msg: &MsgCreateClient) -> anyhow::Result<()> {
+    if ics02_validation::is_tendermint_client_state(&msg.client_state) {
+        Ok(())
+    } else {
+        Err(anyhow::anyhow!(
+            "MsgCreateClient: not a tendermint client state"
+        ))
+    }
+}
+
+fn consensus_state_is_tendermint(msg: &MsgCreateClient) -> anyhow::Result<()> {
+    if ics02_validation::is_tendermint_consensus_state(&msg.consensus_state) {
+        Ok(())
+    } else {
+        Err(anyhow::anyhow!(
+            "MsgCreateClient: not a tendermint consensus state"
+        ))
     }
 }

@@ -11,11 +11,8 @@ use ibc::{
     },
     core::{
         ics02_client::{
-            client_state::ClientState,
-            client_type::ClientType,
-            consensus_state::ConsensusState,
-            height::Height,
-            msgs::{create_client::MsgCreateClient, update_client::MsgUpdateClient},
+            client_state::ClientState, client_type::ClientType, consensus_state::ConsensusState,
+            height::Height, msgs::update_client::MsgUpdateClient,
         },
         ics24_host::identifier::ClientId,
     },
@@ -23,18 +20,10 @@ use ibc::{
 use penumbra_chain::StateReadExt as _;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
-use tendermint::validator;
-use tendermint_light_client_verifier::{
-    types::{TrustedBlockState, UntrustedBlockState},
-    ProdVerifier, Verdict, Verifier,
-};
 
 use crate::ibc::{event, ClientCounter, VerifiedHeights};
 
 use super::state_key;
-
-pub(crate) mod stateful;
-pub(crate) mod stateless;
 
 // TODO(erwan): remove before opening PR
 // + replace concrete types with trait objects
