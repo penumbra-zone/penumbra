@@ -4,6 +4,12 @@
 set -euo pipefail
 
 
+# We set a custom debug address (default is 5183) to support
+# healthchecks determining whether it's running.
+# Setting all-interfaces rather than localhost so that k8s
+# probes can access the socket.
+RELAYER_DEBUG_ADDR="${RELAYER_DEBUG_ADDR:-0.0.0.0:5100}"
+
 # Generate latest configs, polling chain id from RPC endpoints
 cd /usr/src/penumbra-relayer || exit 1
 ./generate-configs preview
@@ -19,6 +25,4 @@ Starting service...
 ##############################################
 EOM
 # Run the relayer as a blocking service.
-# We set a custom debug address (default is 5183) to support
-# healthchecks determining whether it's running.
-exec rly start penumbra_path --debug-addr 127.0.0.1:5100
+exec rly start penumbra_path --debug-addr "$RELAYER_DEBUG_ADDR"

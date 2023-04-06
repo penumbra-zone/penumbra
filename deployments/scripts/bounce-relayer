@@ -24,10 +24,16 @@ relayer_deployment="relayer-preview"
 if kubectl get deployments --output json | jq .items[].metadata.name -r | grep -q "$relayer_deployment" ; then
     >&2 echo "Found existing relayer deployment, bouncing it..."
     kubectl rollout restart deployment "$relayer_deployment"
-    # Block until deployment is complete. The entrypoint script builds configs,
-    # and blocks for a while. The helm chart waits 10m before giving up, so let's
-    # wait slightly longer than that on this timeout.
-    kubectl rollout status deployment "$relayer_deployment" --timeout=15m
+    # Block until deployment is complete, but not until pod is ready.
+    kubectl rollout status deployment "$relayer_deployment" --timeout=5m
+    relayer_pod="$(kubectl get pods -l app.kubernetes.io/instance="$relayer_deployment" -o name | head -n1)"
+    if [[ -z "$relayer_pod" ]] ; then
+        >&2 echo "ERROR: failed to find pod for deployed relayer"
+        exit 1
+    fi
+    # Block until pod is ready. Entrypoint script takes ~90s to build configs.
+    kubectl wait --for=condition=ready "$relayer_pod" --timeout=5m
+
 # Otherwise, relayer is not running. Maybe it was manually destroyed?
 # Enforce state again by applying the helm chart.
 else
