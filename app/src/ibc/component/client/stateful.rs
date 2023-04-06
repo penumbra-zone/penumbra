@@ -1,22 +1,3 @@
-pub mod create_client {
-    use super::super::*;
-
-    #[async_trait]
-    pub trait CreateClientCheck: StateReadExt {
-        async fn validate(&self, msg: &MsgCreateClient) -> anyhow::Result<()> {
-            let id_counter = self.client_counter().await?;
-            let client_state =
-                ics02_validation::get_tendermint_client_state(msg.client_state.clone())?;
-
-            ClientId::new(client_state.client_type(), id_counter.0)?;
-
-            Ok(())
-        }
-    }
-
-    impl<T: StateReadExt> CreateClientCheck for T {}
-}
-
 pub mod update_client {
     use super::super::*;
 
