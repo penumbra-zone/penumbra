@@ -531,22 +531,63 @@ impl ViewProtocolService for ViewService {
 
         let mut spend_nullifiers = BTreeMap::new();
 
+        let mut advice_commitments: Vec<Commitment> = Vec::new();
+
         for action in tx.actions() {
+            // Currently only supporting spends and swap claims.
             if let penumbra_transaction::Action::Spend(spend) = action {
                 let nullifier = spend.body.nullifier;
+
                 // An error here indicates we don't know the nullifier, so we omit it from the Perspective.
                 if let Ok(spendable_note_record) =
                     self.storage.note_by_nullifier(nullifier, false).await
                 {
                     let address_view = fvk.view_address(spendable_note_record.note.address());
+                    let commitment = spendable_note_record.note.commit();
+
                     spend_nullifiers.insert(nullifier, spendable_note_record.note);
                     address_views.insert(address_view.address(), address_view);
+                    advice_commitments.push(commitment);
+                }
+            }
+
+            if let penumbra_transaction::Action::SwapClaim(claim) = action {
+                let nullifier = claim.body.nullifier;
+
+                // An error here indicates we don't know the nullifier, so we omit it from the Perspective.
+                if let Ok(spendable_note_record) =
+                    self.storage.note_by_nullifier(nullifier, false).await
+                {
+                    let address_view = fvk.view_address(spendable_note_record.note.address());
+                    let commitment = spendable_note_record.note.commit();
+
+                    spend_nullifiers.insert(nullifier, spendable_note_record.note);
+                    address_views.insert(address_view.address(), address_view);
+                    advice_commitments.push(commitment);
+                }
+            }
+
+            if let penumbra_transaction::Action::Output(output) = action {
+                if let Ok(spendable_note_record) = self
+                    .storage
+                    .note_by_commitment(output.body.note_payload.note_commitment, false)
+                    .await
+                    .map_err(|_| tonic::Status::internal("Error retrieving note"))
+                {
+                    let address_view = fvk.view_address(spendable_note_record.note.address());
+                    let commitment = spendable_note_record.note.commit();
+
+                    address_views.insert(address_view.address(), address_view);
+                    advice_commitments.push(commitment);
                 }
             }
         }
 
-        // TODO: query for advice notes
-        let advice_notes = Default::default();
+        let advice_notes = self
+            .storage
+            .scan_advice(advice_commitments)
+            .await
+            .map_err(|_| tonic::Status::internal("Error retrieving advice"))?;
 
         // TODO: HACK: filter known denoms to relevant ones
         let denoms: asset::Cache = self
