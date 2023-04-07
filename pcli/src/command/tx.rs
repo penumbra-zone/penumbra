@@ -170,8 +170,8 @@ pub enum TxCmd {
     Sweep,
 
     /// Perform an ICS-20 withdrawal.
-    #[clap(display_order = 1000)]
-    Ics20Withdrawal {
+    #[clap(display_order = 250)]
+    Withdraw {
         destination_chain_id: String,
         destination_chain_address: String,
         denom: String, //TODO: should we pull this out of amount
@@ -238,7 +238,7 @@ impl TxCmd {
             TxCmd::Proposal(proposal_cmd) => proposal_cmd.offline(),
             TxCmd::DaoDeposit { .. } => false,
             TxCmd::Position(lp_cmd) => lp_cmd.offline(),
-            TxCmd::Ics20Withdrawal { .. } => false,
+            TxCmd::Withdraw { .. } => false,
         }
     }
 
@@ -833,7 +833,7 @@ impl TxCmd {
                     .await?;
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::Ics20Withdrawal {
+            TxCmd::Withdraw {
                 destination_chain_id,
                 destination_chain_address,
                 amount,
