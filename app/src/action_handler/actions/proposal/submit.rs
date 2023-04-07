@@ -78,8 +78,7 @@ impl ActionHandler for ProposalSubmit {
                 use penumbra_transaction::plan::ActionPlan::*;
                 for action in &transaction_plan.actions {
                     match action {
-                        Spend(_) | Output(_) | Swap(_) | SwapClaim(_) | DelegatorVote(_)
-                        | WithdrawalPlan(_) => {
+                        Spend(_) | Output(_) | Swap(_) | SwapClaim(_) | DelegatorVote(_) => {
                             // These actions all require proving, so they are banned from DAO spend
                             // proposals to prevent DoS attacks.
                             anyhow::bail!(
@@ -103,6 +102,7 @@ impl ActionHandler for ProposalSubmit {
                         | PositionRewardClaim(_)
                         | DaoSpend(_)
                         | DaoOutput(_)
+                        | WithdrawalPlan(_)
                         | DaoDeposit(_) => {
                             // These actions are all valid for DAO spend proposals, because they
                             // don't require proving, so they don't represent a DoS vector.
