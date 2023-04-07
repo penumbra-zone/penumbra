@@ -539,6 +539,10 @@ pub struct SwapExecution {
 pub struct PositionWithdrawPlan {
     #[prost(message, optional, tag = "1")]
     pub reserves: ::core::option::Option<Reserves>,
+    #[prost(message, optional, tag = "2")]
+    pub position_id: ::core::option::Option<PositionId>,
+    #[prost(message, optional, tag = "3")]
+    pub pair: ::core::option::Option<TradingPair>,
 }
 /// Contains private and public data for claiming rewards from a position.
 #[allow(clippy::derive_partial_eq_without_eq)]

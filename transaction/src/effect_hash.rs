@@ -233,6 +233,14 @@ impl TransactionPlan {
         for position_close in self.position_closings() {
             state.update(position_close.effect_hash().as_bytes());
         }
+        for position_withdraw in self.position_withdrawals() {
+            state.update(
+                position_withdraw
+                    .position_withdraw()
+                    .effect_hash()
+                    .as_bytes(),
+            );
+        }
         let num_clues = self.clue_plans.len() as u32;
         state.update(&num_clues.to_le_bytes());
         for clue_plan in self.clue_plans() {

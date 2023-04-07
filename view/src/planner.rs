@@ -31,8 +31,8 @@ use penumbra_transaction::{
         ProposalWithdraw, ValidatorVote, Vote,
     },
     plan::{
-        ActionPlan, DelegatorVotePlan, MemoPlan, OutputPlan, SpendPlan, SwapClaimPlan, SwapPlan,
-        TransactionPlan, UndelegateClaimPlan,
+        ActionPlan, DelegatorVotePlan, MemoPlan, OutputPlan, PositionWithdrawPlan, SpendPlan,
+        SwapClaimPlan, SwapPlan, TransactionPlan, UndelegateClaimPlan,
     },
     proposal,
 };
@@ -172,6 +172,22 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     #[instrument(skip(self))]
     pub fn position_close(&mut self, position_id: position::Id) -> &mut Self {
         self.action(ActionPlan::PositionClose(PositionClose { position_id }));
+        self
+    }
+
+    /// Withdraw a liquidity position in the order book.
+    #[instrument(skip(self))]
+    pub fn position_withdraw(
+        &mut self,
+        position_id: position::Id,
+        reserves: Reserves,
+        pair: TradingPair,
+    ) -> &mut Self {
+        self.action(ActionPlan::PositionWithdraw(PositionWithdrawPlan::new(
+            reserves,
+            position_id,
+            pair,
+        )));
         self
     }
 

@@ -20,9 +20,12 @@ use penumbra_crypto::{
     transaction::Fee,
     Amount, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_proto::client::v1alpha1::{
-    EpochByHeightRequest, ProposalInfoRequest, ProposalInfoResponse, ProposalRateDataRequest,
-    ValidatorPenaltyRequest,
+use penumbra_proto::{
+    client::v1alpha1::{
+        EpochByHeightRequest, LiquidityPositionByIdRequest, ProposalInfoRequest,
+        ProposalInfoResponse, ProposalRateDataRequest, ValidatorPenaltyRequest,
+    },
+    core::dex::v1alpha1::PositionId,
 };
 use penumbra_transaction::{
     plan::{SwapClaimPlan, UndelegateClaimPlan},
@@ -890,8 +893,55 @@ impl TxCmd {
                     .await?;
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::Position(PositionCmd::Withdraw {})
-            | TxCmd::Position(PositionCmd::RewardClaim {}) => todo!(),
+            TxCmd::Position(PositionCmd::Withdraw {
+                fee,
+                source,
+                position_id,
+            }) => {
+                let mut specific_client = app.specific_client().await?;
+
+                let view: &mut dyn ViewClient = app.view.as_mut().unwrap();
+                let params = view.chain_params().await?;
+
+                // Fetch the information regarding the position from the view service.
+                let position = specific_client
+                    .liquidity_position_by_id(LiquidityPositionByIdRequest {
+                        chain_id: params.chain_id.to_string(),
+                        position_id: Some(PositionId::from(*position_id)),
+                    })
+                    .await?
+                    .into_inner();
+
+                let reserves = position
+                    .data
+                    .clone()
+                    .expect("missing position metadata")
+                    .reserves
+                    .expect("missing position reserves");
+                let pair = position
+                    .data
+                    .expect("missing position metadata")
+                    .position
+                    .expect("missing position")
+                    .phi
+                    .expect("missing position trading function")
+                    .pair
+                    .expect("missing trading function pair");
+
+                let fee = Fee::from_staking_token_amount((*fee).into());
+
+                let plan = Planner::new(OsRng)
+                    .position_withdraw(*position_id, reserves.try_into()?, pair.try_into()?)
+                    .fee(fee)
+                    .plan(
+                        app.view.as_mut().unwrap(),
+                        app.fvk.account_group_id(),
+                        AddressIndex::new(*source),
+                    )
+                    .await?;
+                app.build_and_submit_transaction(plan).await?;
+            }
+            TxCmd::Position(PositionCmd::RewardClaim {}) => todo!(),
         }
         Ok(())
     }
