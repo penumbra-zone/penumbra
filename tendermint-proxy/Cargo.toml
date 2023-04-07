@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 # Penumbra dependencies
-penumbra-proto = { path = "../proto" }
+penumbra-proto = { path = "../proto", features = ["rpc"] }
 penumbra-transaction = { path = "../transaction" }
 
 # External dependencies
