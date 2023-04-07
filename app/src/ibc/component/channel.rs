@@ -1,57 +1,23 @@
 use super::state_key;
-use crate::ibc::event;
-use crate::Component;
 use anyhow::Result;
 use async_trait::async_trait;
 
 use ibc::core::ics02_client::consensus_state::ConsensusState;
-use ibc::core::ics03_connection::connection::{ConnectionEnd, State as ConnectionState};
-use ibc::core::ics04_channel::channel::Order as ChannelOrder;
-use ibc::core::ics04_channel::channel::State as ChannelState;
-use ibc::core::ics04_channel::channel::{ChannelEnd, Counterparty};
+use ibc::core::ics03_connection::connection::ConnectionEnd;
+use ibc::core::ics04_channel::channel::ChannelEnd;
 use ibc::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
-use ibc::core::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
-use ibc::core::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
-use ibc::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
-use ibc::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
-use ibc::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
-use ibc::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use ibc::core::ics04_channel::msgs::timeout::MsgTimeout;
 use ibc::core::ics04_channel::packet::Packet;
 use ibc::core::ics24_host::identifier::ChannelId;
 use ibc::core::ics24_host::identifier::PortId;
-use penumbra_chain::genesis;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::StateRead;
 use penumbra_storage::StateWrite;
-use tendermint::abci;
-use tracing::instrument;
 
-pub(crate) mod execution;
 pub(crate) mod stateful;
-pub(crate) mod stateless;
 
 use stateful::proof_verification::commit_packet;
-
-pub struct Ics4Channel {}
-
-#[async_trait]
-impl Component for Ics4Channel {
-    #[instrument(name = "ics4_channel", skip(_state, _app_state))]
-    async fn init_chain<S: StateWrite>(_state: S, _app_state: &genesis::AppState) {}
-
-    #[instrument(name = "ics4_channel", skip(_state, _begin_block))]
-    async fn begin_block<S: StateWrite>(_state: S, _begin_block: &abci::request::BeginBlock) {}
-
-    #[instrument(name = "ics4_channel", skip(_state, _end_block))]
-    async fn end_block<S: StateWrite>(_state: S, _end_block: &abci::request::EndBlock) {}
-
-    #[instrument(name = "ics4_channel", skip(_state))]
-    async fn end_epoch<S: StateWrite>(mut _state: S) -> anyhow::Result<()> {
-        Ok(())
-    }
-}
 
 #[async_trait]
 pub trait StateWriteExt: StateWrite + StateReadExt {

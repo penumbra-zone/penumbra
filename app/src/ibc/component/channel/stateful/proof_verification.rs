@@ -1,5 +1,7 @@
 use crate::ibc::component::client::StateReadExt;
 
+// NOTE: where should this code live after the refactor to actionhandlers?
+
 use super::super::*;
 use ibc::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
 use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
