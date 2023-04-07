@@ -40,13 +40,13 @@ impl ActionHandler for MsgUpdateClient {
         // to Ok(()) rather than erroring to avoid having two "racing" relay
         // transactions fail just because they both contain the same client
         // update.
-        if !update_is_already_committed(&mut state, &self).await? {
+        if !update_is_already_committed(&state, self).await? {
             tracing::debug!(msg = ?self);
 
-            let client_state = client_is_present(&mut state, self).await?;
+            let client_state = client_is_present(&state, self).await?;
 
             client_is_not_frozen(&client_state)?;
-            client_is_not_expired(&mut state, &self.client_id, &client_state).await?;
+            client_is_not_expired(&state, &self.client_id, &client_state).await?;
 
             let trusted_client_state = client_state;
 
