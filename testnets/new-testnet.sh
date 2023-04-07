@@ -2,10 +2,10 @@
 
 set -euo pipefail
 
-PREVIOUS_TESTNET_DIRECTORY=$(ls -F | grep '/$' | tail -1)
-PREVIOUS_TESTNET_NUMBER=$(ls -F | grep '/$' | wc -l)
+PREVIOUS_TESTNET_DIRECTORY=$(find . -mindepth 1 -type d | tail -n1)
+PREVIOUS_TESTNET_NUMBER=$(find . -mindepth 1 -type d | wc -l)
 NEW_TESTNET_NUMBER="0$(echo "1 + $PREVIOUS_TESTNET_NUMBER" | bc)"
-NEW_TESTNET_DIRECTORY="$NEW_TESTNET_NUMBER-$(head -$NEW_TESTNET_NUMBER < names.txt | tail -1 | tr '[:upper:]' '[:lower:]')"
+NEW_TESTNET_DIRECTORY="$NEW_TESTNET_NUMBER-$(head -"$NEW_TESTNET_NUMBER" < names.txt | tail -1 | tr '[:upper:]' '[:lower:]')"
 
 echo "Creating new testnet directory $NEW_TESTNET_DIRECTORY..."
 
