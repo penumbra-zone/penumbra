@@ -125,7 +125,7 @@ service SpecificQueryService {
   rpc NextValidatorRate(NextValidatorRateRequest) returns (NextValidatorRateResponse);
   rpc BatchSwapOutputData(BatchSwapOutputDataRequest) returns (BatchSwapOutputDataResponse);
   rpc LiquidityPositions(LiquidityPositionsRequest) returns (stream LiquidityPositionsResponse);
-  rpc LiquidityPositionById(LiquidityPositionByIdRequest) returns (LiquidityPositionsResponse);
+  rpc LiquidityPositionById(LiquidityPositionByIdRequest) returns (LiquidityPositionByIdResponse);
   rpc StubCPMMReserves(StubCPMMReservesRequest) returns (StubCPMMReservesResponse);
   rpc AssetInfo(AssetInfoRequest) returns (AssetInfoResponse);
   rpc ProposalInfo(ProposalInfoRequest) returns (ProposalInfoResponse);
@@ -203,6 +203,10 @@ message LiquidityPositionsRequest {
 }
 
 message LiquidityPositionsResponse {
+  core.dex.v1alpha1.PositionMetadata data = 1;
+}
+
+message LiquidityPositionByIdResponse {
   core.dex.v1alpha1.PositionMetadata data = 1;
 }
 

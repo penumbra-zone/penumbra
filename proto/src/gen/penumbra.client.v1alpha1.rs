@@ -239,6 +239,14 @@ pub struct LiquidityPositionsResponse {
         super::super::core::dex::v1alpha1::PositionMetadata,
     >,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LiquidityPositionByIdResponse {
+    #[prost(message, optional, tag = "1")]
+    pub data: ::core::option::Option<
+        super::super::core::dex::v1alpha1::PositionMetadata,
+    >,
+}
 /// Requests specific liquidity position data from the view service.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -957,7 +965,10 @@ pub mod specific_query_service_client {
         pub async fn liquidity_position_by_id(
             &mut self,
             request: impl tonic::IntoRequest<super::LiquidityPositionByIdRequest>,
-        ) -> Result<tonic::Response<super::LiquidityPositionsResponse>, tonic::Status> {
+        ) -> Result<
+            tonic::Response<super::LiquidityPositionByIdResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -1725,7 +1736,10 @@ pub mod specific_query_service_server {
         async fn liquidity_position_by_id(
             &self,
             request: tonic::Request<super::LiquidityPositionByIdRequest>,
-        ) -> Result<tonic::Response<super::LiquidityPositionsResponse>, tonic::Status>;
+        ) -> Result<
+            tonic::Response<super::LiquidityPositionByIdResponse>,
+            tonic::Status,
+        >;
         async fn stub_cpmm_reserves(
             &self,
             request: tonic::Request<super::StubCpmmReservesRequest>,
@@ -2081,7 +2095,7 @@ pub mod specific_query_service_server {
                         T: SpecificQueryService,
                     > tonic::server::UnaryService<super::LiquidityPositionByIdRequest>
                     for LiquidityPositionByIdSvc<T> {
-                        type Response = super::LiquidityPositionsResponse;
+                        type Response = super::LiquidityPositionByIdResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,

@@ -28,6 +28,7 @@ use penumbra_proto::{
 use penumbra_storage::StateRead;
 use proto::client::v1alpha1::BatchSwapOutputDataResponse;
 use proto::client::v1alpha1::LiquidityPositionByIdRequest;
+use proto::client::v1alpha1::LiquidityPositionByIdResponse;
 use proto::client::v1alpha1::LiquidityPositionsRequest;
 use proto::client::v1alpha1::LiquidityPositionsResponse;
 use proto::client::v1alpha1::NextValidatorRateRequest;
@@ -88,7 +89,7 @@ impl SpecificQueryService for Info {
     async fn liquidity_position_by_id(
         &self,
         request: tonic::Request<LiquidityPositionByIdRequest>,
-    ) -> Result<tonic::Response<LiquidityPositionsResponse>, Status> {
+    ) -> Result<tonic::Response<LiquidityPositionByIdResponse>, Status> {
         let state = self.storage.latest_snapshot();
 
         let position_id: position::Id = request
@@ -108,7 +109,7 @@ impl SpecificQueryService for Info {
             })?
             .ok_or_else(|| Status::not_found("position not found"))?;
 
-        Ok(tonic::Response::new(LiquidityPositionsResponse {
+        Ok(tonic::Response::new(LiquidityPositionByIdResponse {
             data: Some(position.into()),
         }))
     }
