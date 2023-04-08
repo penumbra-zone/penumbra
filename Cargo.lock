@@ -3505,6 +3505,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-stream 0.2.1",
+ "atty",
  "clap 3.2.23",
  "console-subscriber",
  "futures",
@@ -4014,6 +4015,7 @@ dependencies = [
  "assert_cmd",
  "async-stream 0.2.1",
  "async-trait",
+ "atty",
  "base64 0.20.0",
  "bytes",
  "camino",
@@ -4066,6 +4068,7 @@ dependencies = [
  "ark-ff",
  "async-stream 0.2.1",
  "async-trait",
+ "atty",
  "base64 0.20.0",
  "bincode",
  "blake2b_simd 0.5.11",

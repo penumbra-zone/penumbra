@@ -55,6 +55,7 @@ tendermint = "0.29.0"
 sha2 = "0.10.1"
 toml = "0.5"
 ed25519-consensus = "2.1"
+atty = "0.2"
 
 [dev-dependencies]
 tempfile = "3.3.0"
