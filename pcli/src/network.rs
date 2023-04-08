@@ -1,3 +1,4 @@
+use anyhow::Context;
 use penumbra_proto::{
     client::v1alpha1::{
         oblivious_query_service_client::ObliviousQueryServiceClient,
@@ -10,7 +11,7 @@ use penumbra_transaction::{plan::TransactionPlan, Id as TransactionId, Transacti
 use penumbra_view::ViewClient;
 use rand_core::OsRng;
 use std::future::Future;
-use tonic::transport::Channel;
+use tonic::transport::{Channel, ClientTlsConfig};
 use tracing::instrument;
 
 use crate::App;
@@ -78,27 +79,38 @@ impl App {
         Ok(())
     }
 
+    async fn pd_channel(&self) -> anyhow::Result<Channel> {
+        match self.pd_url.scheme() {
+            "http" => Ok(Channel::from_shared(self.pd_url.to_string())?
+                .connect()
+                .await?),
+            "https" => Ok(Channel::from_shared(self.pd_url.to_string())?
+                .tls_config(ClientTlsConfig::new())?
+                .connect()
+                .await?),
+            other => Err(anyhow::anyhow!("unknown url scheme {other}"))
+                .with_context(|| format!("could not connect to {}", self.pd_url)),
+        }
+    }
+
     pub async fn specific_client(
         &self,
     ) -> Result<SpecificQueryServiceClient<Channel>, anyhow::Error> {
-        SpecificQueryServiceClient::connect(self.pd_url.as_ref().to_owned())
-            .await
-            .map_err(Into::into)
+        let channel = self.pd_channel().await?;
+        Ok(SpecificQueryServiceClient::new(channel))
     }
 
     pub async fn oblivious_client(
         &self,
     ) -> Result<ObliviousQueryServiceClient<Channel>, anyhow::Error> {
-        ObliviousQueryServiceClient::connect(self.pd_url.as_ref().to_owned())
-            .await
-            .map_err(Into::into)
+        let channel = self.pd_channel().await?;
+        Ok(ObliviousQueryServiceClient::new(channel))
     }
 
     pub async fn tendermint_proxy_client(
         &self,
     ) -> Result<TendermintProxyServiceClient<Channel>, anyhow::Error> {
-        TendermintProxyServiceClient::connect(self.pd_url.as_ref().to_owned())
-            .await
-            .map_err(Into::into)
+        let channel = self.pd_channel().await?;
+        Ok(TendermintProxyServiceClient::new(channel))
     }
 }
