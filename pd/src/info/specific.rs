@@ -13,6 +13,7 @@ use penumbra_app::stubdex::StateReadExt as _;
 use penumbra_chain::AppHashRead;
 use penumbra_chain::StateReadExt as _;
 use penumbra_crypto::asset::{self, Asset};
+use penumbra_crypto::dex::lp::position;
 use penumbra_proto::{
     self as proto,
     client::v1alpha1::{
@@ -26,6 +27,8 @@ use penumbra_proto::{
 
 use penumbra_storage::StateRead;
 use proto::client::v1alpha1::BatchSwapOutputDataResponse;
+use proto::client::v1alpha1::LiquidityPositionByIdRequest;
+use proto::client::v1alpha1::LiquidityPositionByIdResponse;
 use proto::client::v1alpha1::LiquidityPositionsRequest;
 use proto::client::v1alpha1::LiquidityPositionsResponse;
 use proto::client::v1alpha1::NextValidatorRateRequest;
@@ -80,6 +83,35 @@ impl SpecificQueryService for Info {
             //.instrument(Span::current())
             .boxed(),
         ))
+    }
+
+    #[instrument(skip(self, request))]
+    async fn liquidity_position_by_id(
+        &self,
+        request: tonic::Request<LiquidityPositionByIdRequest>,
+    ) -> Result<tonic::Response<LiquidityPositionByIdResponse>, Status> {
+        let state = self.storage.latest_snapshot();
+
+        let position_id: position::Id = request
+            .into_inner()
+            .position_id
+            .ok_or_else(|| Status::invalid_argument("empty message"))?
+            .try_into()
+            .map_err(|e: anyhow::Error| {
+                tonic::Status::invalid_argument(format!("error converting position_id: {e}"))
+            })?;
+
+        let position = state
+            .position_by_id(&position_id)
+            .await
+            .map_err(|e: anyhow::Error| {
+                tonic::Status::unavailable(format!("error fetching position from storage: {e}"))
+            })?
+            .ok_or_else(|| Status::not_found("position not found"))?;
+
+        Ok(tonic::Response::new(LiquidityPositionByIdResponse {
+            data: Some(position.into()),
+        }))
     }
 
     #[instrument(skip(self, request))]

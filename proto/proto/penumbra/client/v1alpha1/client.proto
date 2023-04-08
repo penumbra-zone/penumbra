@@ -125,6 +125,7 @@ service SpecificQueryService {
   rpc NextValidatorRate(NextValidatorRateRequest) returns (NextValidatorRateResponse);
   rpc BatchSwapOutputData(BatchSwapOutputDataRequest) returns (BatchSwapOutputDataResponse);
   rpc LiquidityPositions(LiquidityPositionsRequest) returns (stream LiquidityPositionsResponse);
+  rpc LiquidityPositionById(LiquidityPositionByIdRequest) returns (LiquidityPositionByIdResponse);
   rpc StubCPMMReserves(StubCPMMReservesRequest) returns (StubCPMMReservesResponse);
   rpc AssetInfo(AssetInfoRequest) returns (AssetInfoResponse);
   rpc ProposalInfo(ProposalInfoRequest) returns (ProposalInfoResponse);
@@ -194,7 +195,7 @@ message BatchSwapOutputDataResponse {
   core.dex.v1alpha1.BatchSwapOutputData data = 1;
 }
 
-// Requests liquidity position data from the view service.
+// Requests all liquidity position data from the view service.
 message LiquidityPositionsRequest {
   // The expected chain id (empty string if no expectation).
   string chain_id = 1;
@@ -203,6 +204,17 @@ message LiquidityPositionsRequest {
 
 message LiquidityPositionsResponse {
   core.dex.v1alpha1.PositionMetadata data = 1;
+}
+
+message LiquidityPositionByIdResponse {
+  core.dex.v1alpha1.PositionMetadata data = 1;
+}
+
+// Requests specific liquidity position data from the view service.
+message LiquidityPositionByIdRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  core.dex.v1alpha1.PositionId position_id = 2;
 }
 
 // Requests CPMM reserves data associated with a given trading pair from the view service.

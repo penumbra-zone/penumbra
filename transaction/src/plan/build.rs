@@ -154,6 +154,11 @@ impl TransactionPlan {
         for position_close in self.position_closings().cloned() {
             actions.push(Action::PositionClose(position_close))
         }
+        for position_withdraw in self.position_withdrawals().cloned() {
+            actions.push(Action::PositionWithdraw(
+                position_withdraw.position_withdraw(),
+            ))
+        }
 
         let transaction_body = TransactionBody {
             actions,
@@ -360,6 +365,11 @@ impl TransactionPlan {
         }
         for position_close in self.position_closings().cloned() {
             actions.push(Action::PositionClose(position_close))
+        }
+        for position_withdraw in self.position_withdrawals().cloned() {
+            actions.push(Action::PositionWithdraw(
+                position_withdraw.position_withdraw(),
+            ))
         }
 
         let transaction_body = TransactionBody {

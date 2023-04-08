@@ -21,7 +21,16 @@ pub enum PositionCmd {
         position_id: position::Id,
     },
     /// Debits a closed position NFT and credits a withdrawn position NFT and the final reserves.
-    Withdraw {},
+    Withdraw {
+        /// The transaction fee (paid in upenumbra).
+        #[clap(long, default_value = "0")]
+        fee: u64,
+        /// Only spend funds originally received by the given address index.
+        #[clap(long, default_value = "0")]
+        source: u32,
+        /// The [`position::Id`] of the position to withdraw.
+        position_id: position::Id,
+    },
     /// Debits a withdrawn position NFT and credits a claimed position NFT and any liquidity incentives.
     RewardClaim {},
 }

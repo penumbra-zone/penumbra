@@ -353,6 +353,8 @@ message SwapExecution {
 // Contains private and public data for withdrawing funds from a closed position.
 message PositionWithdrawPlan {
   Reserves reserves = 1;
+  PositionId position_id = 2;
+  TradingPair pair = 3;
 }
 
 // Contains private and public data for claiming rewards from a position.
