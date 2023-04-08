@@ -57,6 +57,7 @@ tower-service = "0.3.2"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "ansi"] }
 url = "2"
+atty = "0.2"
 
 [build-dependencies]
 vergen = "5"
