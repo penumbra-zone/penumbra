@@ -241,7 +241,7 @@ impl Opt {
                 });
 
                 let server = Server::builder()
-                    //.accept_http1(true)
+                    .accept_http1(true)
                     .add_service(tonic_web::enable(view_service))
                     .add_optional_service(custody_service.map(|s| tonic_web::enable(s)))
                     .add_service(tonic_web::enable(oblivious_query_proxy))
