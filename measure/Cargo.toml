@@ -27,3 +27,6 @@ vergen = "5"
 [[bin]]
 name = "measure"
 path = "src/main.rs"
+
+[package.metadata.dist]
+dist = false

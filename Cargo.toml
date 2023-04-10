@@ -36,3 +36,35 @@ members = [
 # Optimize for small binaries in just the wasm crate.
 [profile.release.package.penumbra-wasm]
 opt-level = "s"
+
+# Config for 'cargo dist'
+[workspace.metadata.dist]
+# The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
+cargo-dist-version = "0.0.5"
+# The preferred Rust toolchain to use in CI (rustup toolchain syntax).
+# We use the same value as the MSRV in pd/Cargo.toml.
+rust-toolchain-version = "1.65"
+# CI backends to support (see 'cargo dist generate-ci')
+ci = ["github"]
+# Target platforms to build apps for (Rust target-triple syntax)
+targets = ["x86_64-unknown-linux-gnu", "x86_64-apple-darwin", "x86_64-pc-windows-msvc", "aarch64-apple-darwin"]
+
+# The profile that 'cargo dist' will build with
+[profile.dist]
+inherits = "release"
+
+# config for 'cargo release'
+[workspace.metadata.release]
+# Instruct cargo-release to increment versions for all packages in the workspace in lockstep.
+shared-version = true
+# Format spec for the auto-generated git tag, based on new version for release.
+tag-name = "v{{version}}"
+# The message is required for an annotated tag to be created.
+tag-message = "Penumbra version {{version}}"
+pre-release-commit-message = "chore: release version {{version}}"
+# Don't push to crates.io; we're still using git branches for velocity.
+publish = false
+# Do commit, tag, and push the version bump, triggering a new release.
+tag = true
+# Don't push, since we're still evaluating the new release workflow.
+push = false
