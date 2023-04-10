@@ -1,0 +1,65 @@
+#!/bin/bash
+# CI script for gating testnet releases based on semver difference.
+# For major version bumps, we error, because we're pre-v1 mainnet.
+# For minor version bumps, we re-deploy the testnet with a new chain id.
+# For patch releases (usually bugfix), we want to tag new versions,
+# but leave existing deployed testnets alone.
+set -euo pipefail
+
+# First we look up the two most recent tags, so we have a before-and-after to compare.
+#
+# Get most recent tag name from the current HEAD. This is the release to be performed.
+# N.B. we don't use the terser 'git describe --abbrev=0' because it only returns annotated tags.
+most_recent_tag_ref="$(git for-each-ref --sort=-taggerdate --format '%(objectname)' refs/tags | sed -n 1p)"
+most_recent_tag="$(git describe "$most_recent_tag_ref")"
+
+# Get second most recent tag; this is the previously released, actively running testnet, including
+# any bugfixes.
+second_most_recent_tag_ref="$(git for-each-ref --sort=-taggerdate --format '%(objectname)' refs/tags | sed -n 2p)"
+second_most_recent_tag="$(git describe "$second_most_recent_tag_ref")"
+
+
+# The semver comparison we offload to a third-party bash script, which emits
+# convenient output such as "major", "minor", or "patch". Script source:
+#
+#   https://raw.githubusercontent.com/fsaintjacques/semver-tool/master/src/semver
+#
+# In CI, we'll want to pull down a published release of `semver-tool`, so we're
+# not surprised by changes tracking main branch.
+
+if ! hash semver-tool > /dev/null 2>&1 ; then
+    >&2 echo "ERROR: missing required cli 'semver-tool'"
+    exit 1
+fi
+
+# Look up what type of semver change this was: major, minor, or patch.
+increment_type="$(semver-tool diff "$second_most_recent_tag" "$most_recent_tag")"
+>&2 echo "The current release appears to be a $increment_type release: $second_most_recent_tag -> $most_recent_tag"
+
+case $increment_type in
+    major)
+        >&2 echo "ERROR: MAJOR version bump detected, aborting release because we're not on mainnet yet"
+        exit 2
+        ;;
+    minor)
+        >&2 echo "MINOR version bump detected, would trigger full release with new chains."
+        ;;
+    patch)
+        >&2 cat <<EOM
+PATCH version bump detected. No changes to chain state
+but would update pd container version in cluster
+
+        from: ghcr.io/penumbra-zone/penumbra/$second_most_recent_tag
+        to:   ghcr.io/penumbra-zone/penumbra/$most_recent_tag
+
+and bounce the services.
+EOM
+        ;;
+    *)
+        >&2 echo "ERROR: unsupported increment type for version change: '$increment_type'"
+        exit 3
+        ;;
+esac
+
+# Finally, output the increment type to stdout, so other scripts can use the value.
+echo "$increment_type"
