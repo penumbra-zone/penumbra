@@ -13,7 +13,11 @@ penumbra-crypto = { path = "../crypto", default-features = false }
 penumbra-tct = { path = "../tct" }
 
 # Penumbra dependencies
+<<<<<<< HEAD
 decaf377 = "0.4"
+=======
+decaf377 = "0.3.0"
+>>>>>>> 7f272cc7 (# This is a combination of 2 commits.)
 jmt = "0.4"
 
 tendermint = "0.29.0"
