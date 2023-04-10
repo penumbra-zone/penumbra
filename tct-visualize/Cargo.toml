@@ -39,3 +39,6 @@ name = "tct-visualize"
 
 [[bin]]
 name = "tct-live-edit"
+
+[package.metadata.dist]
+dist = false
