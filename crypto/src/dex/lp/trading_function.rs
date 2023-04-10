@@ -188,7 +188,7 @@ impl BareTradingFunction {
             (0u64.into(), new_reserves, lambda_2)
         } else {
             let r2: U128x128 = reserves.r2.into();
-            let fillable_delta_1 = (r2 / self.effective_price()).unwrap();
+            let fillable_delta_1 = (r2 * self.effective_price()).unwrap();
 
             let fillable_delta_1_exact: Amount = fillable_delta_1.round_up().try_into().unwrap();
             // We know that unfilled_amount >= 0. Why?
@@ -211,26 +211,20 @@ impl BareTradingFunction {
     /// corresponding trading functions by effective price.
     ///
     /// This allows trading functions to be indexed by price using a key-value store.
-    ///
-    /// Note: Currently this uses floating point to derive the encoding, which
-    /// is a placeholder and should be replaced by width-expanding polynomial arithmetic.
     pub fn effective_price_key_bytes(&self) -> [u8; 32] {
-        // Return the reciprocal of the effective price to ensure that the cheapest positions
-        // come first in the sorted ordering.
-        (U128x128::from(1u32) / self.effective_price())
-            .expect("unable to calculate reciprocal of effective price")
-            .to_bytes()
+        self.effective_price().to_bytes()
     }
 
     /// Returns the effective price of the trading function.
     ///
     /// The effective price is the price of asset 2 in terms of asset 1 according
-    /// to the trading function.
-    ///
-    /// This means that if there's a greater fee, the effective price is lower.
+    /// to the trading function.  A lower price means more output of asset 2 per asset 1.
     pub fn effective_price(&self) -> U128x128 {
-        (self.gamma() * U128x128::from(self.q) / U128x128::from(self.p))
-            .expect("0 < gamma <= 1 and p != 0")
+        let p = U128x128::from(self.p);
+        let q = U128x128::from(self.q);
+
+        p.checked_div(&(q * self.gamma()).expect("gamma <= 1, so no overflow"))
+            .expect("gamma, q != 0")
     }
 
     /// Returns the fee of the trading function, expressed as a percentage (`gamma`).
@@ -293,7 +287,7 @@ mod tests {
         };
 
         assert_eq!(btf.gamma(), U128x128::from(1u64));
-        assert_eq!(btf.effective_price(), U128x128::ratio(1u64, 2u64).unwrap());
+        assert_eq!(btf.effective_price(), U128x128::ratio(2u64, 1u64).unwrap());
         let bytes1 = btf.effective_price_key_bytes();
 
         let btf = BareTradingFunction {
@@ -305,7 +299,7 @@ mod tests {
         assert_eq!(btf.gamma(), U128x128::ratio(99u64, 100u64).unwrap());
         assert_eq!(
             btf.effective_price(),
-            U128x128::ratio(99u64, 100u64).unwrap()
+            U128x128::ratio(100u64, 99u64).unwrap()
         );
         let bytes2 = btf.effective_price_key_bytes();
 
