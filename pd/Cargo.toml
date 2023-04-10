@@ -104,3 +104,6 @@ atty = "0.2"
 [build-dependencies]
 vergen = "5"
 anyhow = "1"
+
+[package.metadata.dist]
+dist = true
