@@ -416,6 +416,7 @@ mod tests {
     use crate::TempStorageExt;
 
     use super::*;
+    use ibc::core::ics02_client::msgs::create_client::MsgCreateClient;
     use ibc_proto::protobuf::Protobuf;
     use penumbra_chain::StateWriteExt;
     use penumbra_storage::{ArcStateDeltaExt, StateDelta, TempStorage};
