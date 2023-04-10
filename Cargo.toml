@@ -51,3 +51,19 @@ targets = ["x86_64-unknown-linux-gnu", "x86_64-apple-darwin", "x86_64-pc-windows
 # The profile that 'cargo dist' will build with
 [profile.dist]
 inherits = "release"
+
+# config for 'cargo release'
+[workspace.metadata.release]
+# Instruct cargo-release to increment versions for all packages in the workspace in lockstep.
+shared-version = true
+# Format spec for the auto-generated git tag, based on new version for release.
+tag-name = "v{{version}}"
+# The message is required for an annotated tag to be created.
+tag-message = "Penumbra version {{version}}"
+pre-release-commit-message = "chore: release version {{version}}"
+# Don't push to crates.io; we're still using git branches for velocity.
+publish = false
+# Do commit, tag, and push the version bump, triggering a new release.
+tag = true
+# Don't push, since we're still evaluating the new release workflow.
+push = false
