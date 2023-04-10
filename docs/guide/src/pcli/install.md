@@ -56,7 +56,7 @@ latest tag for the current
 [testnet](https://github.com/penumbra-zone/penumbra/releases):
 
 ```bash
-cd penumbra && git fetch && git checkout 049-pasiphae.1
+cd penumbra && git fetch && git checkout 050-thebe
 ```
 
 ### Building the `pcli` client software

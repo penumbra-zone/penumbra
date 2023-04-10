@@ -12,7 +12,7 @@
 # bounce it via `rollout deployment restart`, which will trigger a new image pull
 # due to the chart's `image.pull=Always` setting. If and when we decide to redeploy
 # the relayer as part of the testnets, rather than preview, we should modify this
-# logic to set a specific version, e.g. `image.tag=049-pasiphae.1` or similar.
+# logic to set a specific version, e.g. `image.tag=050-thebe` or similar.
 set -euo pipefail
 
 
