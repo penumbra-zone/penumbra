@@ -341,7 +341,7 @@ impl TreeReader for Inner {
         let mut upper_bound = key_hash.0.to_vec();
 
         // The upper bound is excluded from the iteration results.
-        upper_bound.extend_from_slice(&(max_version + 1).to_be_bytes());
+        upper_bound.extend_from_slice(&(max_version.wrapping_add(1)).to_be_bytes());
 
         let mut readopts = ReadOptions::default();
         readopts.set_iterate_lower_bound(lower_bound);
