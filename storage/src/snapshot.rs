@@ -16,6 +16,8 @@ use crate::{metrics, storage::VersionedKey, StateRead};
 mod rocks_wrapper;
 use rocks_wrapper::RocksDbSnapshot;
 
+pub(crate) const TOMBSTONED_VALUE: &str = "DELETED_VALUE";
+
 /// A snapshot of the underlying storage at a specific state version, suitable
 /// for read-only access by multiple threads, e.g., RPC calls.
 ///
@@ -368,7 +370,13 @@ impl TreeReader for Inner {
         };
 
         let (_key, value) = tuple?;
-        Ok(Some(value.into()))
+        let value = value.into();
+
+        if value == TOMBSTONED_VALUE.as_bytes().to_vec() {
+            Ok(None)
+        } else {
+            Ok(Some(value))
+        }
     }
 
     /// Gets node given a node key. Returns `None` if the node does not exist.

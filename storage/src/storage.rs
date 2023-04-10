@@ -1,9 +1,9 @@
-use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc};
 
 use anyhow::{anyhow, Result};
 use jmt::{
     storage::{LeafNode, Node, NodeBatch, NodeKey, TreeWriter},
-    JellyfishMerkleTree, KeyHash, Sha256Jmt, Version,
+    KeyHash, Sha256Jmt,
 };
 use parking_lot::RwLock;
 use rocksdb::{Options, DB};
@@ -182,11 +182,11 @@ impl Storage {
                         .cf_handle("jmt_values")
                         .expect("jmt_values column family not found");
 
-                    for ((version, key_hash), value) in batch.node_batch.values() {
-                        let Some(value) = value else {
-                                // The key has been deleted -- do nothing.
-                                    continue;
-                                };
+                    for ((version, key_hash), some_value) in batch.node_batch.values() {
+                        let value = match some_value {
+                            Some(v) => v,
+                            None => crate::snapshot::TOMBSTONED_VALUE.as_bytes(),
+                        };
 
                         let versioned_key = VersionedKey {
                             key_hash: key_hash.clone(),
