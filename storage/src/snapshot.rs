@@ -6,11 +6,12 @@ use jmt::{
     storage::{LeafNode, Node, NodeKey, TreeReader},
     KeyHash, OwnedValue, Sha256Jmt,
 };
+use rocksdb::{IteratorMode, ReadOptions};
 use sha2::Sha256;
 use tokio::sync::mpsc;
 use tracing::Span;
 
-use crate::{metrics, StateRead};
+use crate::{metrics, storage::VersionedKey, StateRead};
 
 mod rocks_wrapper;
 use rocks_wrapper::RocksDbSnapshot;
@@ -329,26 +330,41 @@ impl TreeReader for Inner {
         max_version: jmt::Version,
         key_hash: KeyHash,
     ) -> Result<Option<OwnedValue>> {
-        let jmt_keys_by_keyhash_cf = self
-            .db
-            .cf_handle("jmt_keys_by_keyhash")
-            .expect("jmt_keys_by_keyhash column family not found");
-
-        let Some(jmt_key) = self
-            .snapshot
-            .get_cf(jmt_keys_by_keyhash_cf, key_hash.0)?
-            .map(|db_slice| String::from_utf8(db_slice)).transpose()? else {
-                return Ok(None)
-            };
-
-        tracing::trace!(?key_hash, ?jmt_key);
-
         let jmt_values_cf = self
             .db
             .cf_handle("jmt_values")
             .expect("jmt_values column family not found");
 
-        Ok(self.snapshot.get_cf(jmt_values_cf, jmt_key)?)
+        let mut lower_bound = key_hash.0.to_vec();
+        lower_bound.extend_from_slice(&0u64.to_be_bytes());
+
+        let mut upper_bound = key_hash.0.to_vec();
+        upper_bound.extend_from_slice(&(max_version + 1).to_be_bytes());
+
+        let mut readopts = ReadOptions::default();
+        readopts.set_iterate_lower_bound(lower_bound);
+        let mut iterator = self
+            .db
+            .iterator_cf_opt(jmt_values_cf, readopts, IteratorMode::End);
+
+        let Some(tuple) = iterator.next() else {
+            // Pre-genesis values have version `-1`.
+            // If no recent keys were found, we do an extra lookup to 
+            // check for a pre-genesis value.
+            let pre_genesis_key = VersionedKey {
+                version: u64::MAX, // i.e `-1 mod 2^64`
+                key_hash,
+            };
+
+            let Some(v) = self.snapshot.get_cf(jmt_values_cf, pre_genesis_key.encode())? else {
+                return Ok(None)
+            };
+
+            return Ok(Some(v))
+        };
+
+        let (_key, value) = tuple?;
+        Ok(Some(value.into()))
     }
 
     /// Gets node given a node key. Returns `None` if the node does not exist.
