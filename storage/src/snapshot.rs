@@ -335,13 +335,26 @@ impl TreeReader for Inner {
             .cf_handle("jmt_values")
             .expect("jmt_values column family not found");
 
+        // Prefix ranges exclude the upper bound in the iterator result.
+        // This means that when requesting the largest possible version, there
+        // is no way to specify a range that is inclusive of `u64::MAX`.
+        if max_version == u64::MAX {
+            let k = VersionedKey {
+                version: u64::MAX,
+                key_hash,
+            };
+
+            if let Some(v) = self.snapshot.get_cf(jmt_values_cf, k.encode())? {
+                return Ok(Some(v));
+            }
+        }
+
         let mut lower_bound = key_hash.0.to_vec();
         lower_bound.extend_from_slice(&0u64.to_be_bytes());
 
         let mut upper_bound = key_hash.0.to_vec();
-
         // The upper bound is excluded from the iteration results.
-        upper_bound.extend_from_slice(&(max_version.wrapping_add(1)).to_be_bytes());
+        upper_bound.extend_from_slice(&(max_version.saturating_add(1)).to_be_bytes());
 
         let mut readopts = ReadOptions::default();
         readopts.set_iterate_lower_bound(lower_bound);
@@ -351,19 +364,7 @@ impl TreeReader for Inner {
                 .iterator_cf_opt(jmt_values_cf, readopts, IteratorMode::End);
 
         let Some(tuple) = iterator.next() else {
-            // Pre-genesis values have version `-1`.
-            // If no recent keys were found, we do an extra lookup to 
-            // check for a pre-genesis value.
-            let pre_genesis_key = VersionedKey {
-                version: u64::MAX, // i.e `-1 mod 2^64`
-                key_hash,
-            };
-
-            let Some(v) = self.snapshot.get_cf(jmt_values_cf, pre_genesis_key.encode())? else {
-                return Ok(None)
-            };
-
-            return Ok(Some(v))
+            return Ok(None)
         };
 
         let (_key, value) = tuple?;
