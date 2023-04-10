@@ -1,5 +1,4 @@
 use crate::ibc::client::ics02_validation;
-use crate::Component;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use ibc::clients::ics07_tendermint;
@@ -12,31 +11,19 @@ use ibc::{
     },
     core::{
         ics02_client::{
-            client_state::ClientState,
-            client_type::ClientType,
-            consensus_state::ConsensusState,
-            height::Height,
-            msgs::{create_client::MsgCreateClient, update_client::MsgUpdateClient},
+            client_state::ClientState, client_type::ClientType, consensus_state::ConsensusState,
+            height::Height, msgs::update_client::MsgUpdateClient,
         },
         ics24_host::identifier::ClientId,
     },
 };
-use penumbra_chain::{genesis, StateReadExt as _};
+use penumbra_chain::StateReadExt as _;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
-use tendermint::{abci, validator};
-use tendermint_light_client_verifier::{
-    types::{TrustedBlockState, UntrustedBlockState},
-    ProdVerifier, Verdict, Verifier,
-};
-use tracing::instrument;
 
 use crate::ibc::{event, ClientCounter, VerifiedHeights};
 
 use super::state_key;
-
-pub(crate) mod stateful;
-pub(crate) mod stateless;
 
 // TODO(erwan): remove before opening PR
 // + replace concrete types with trait objects
@@ -45,51 +32,6 @@ pub(crate) mod stateless;
 // + ADR004 defers LC state/consensus deserialization later, maybe we should have a preprocessing step before execution
 // . to distinguish I/O errors from actual execution errors. It would also make things a little less boilerplaty.
 // +
-
-/// The Penumbra IBC client component. Handles all client-related IBC actions: MsgCreateClient,
-/// MsgUpdateClient, MsgUpgradeClient, and MsgSubmitMisbehaviour. The core responsibility of the
-/// client component is tracking light clients for IBC, creating new light clients and verifying
-/// state updates. Currently, only Tendermint light clients are supported.
-pub struct Ics2Client {}
-
-#[async_trait]
-impl Component for Ics2Client {
-    #[instrument(name = "ics2_client", skip(state, _app_state))]
-    async fn init_chain<S: StateWrite>(mut state: S, _app_state: &genesis::AppState) {
-        // set the initial client count
-        state.put_client_counter(ClientCounter(0));
-    }
-
-    #[instrument(name = "ics2_client", skip(state, begin_block))]
-    async fn begin_block<S: StateWrite>(mut state: S, begin_block: &abci::request::BeginBlock) {
-        // In BeginBlock, we want to save a copy of our consensus state to our
-        // own state tree, so that when we get a message from our
-        // counterparties, we can verify that they are committing the correct
-        // consensus states for us to their state tree.
-        let commitment_root: Vec<u8> = begin_block.header.app_hash.clone().into();
-        let cs = TendermintConsensusState::new(
-            commitment_root.into(),
-            begin_block.header.time,
-            begin_block.header.next_validators_hash,
-        );
-
-        // Currently, we don't use a revision number, because we don't have
-        // any further namespacing of blocks than the block height.
-        let revision_number = 0;
-        let height = Height::new(revision_number, begin_block.header.height.into())
-            .expect("block height cannot be zero");
-
-        state.put_penumbra_consensus_state(height, cs);
-    }
-
-    #[instrument(name = "ics2_client", skip(_state, _end_block))]
-    async fn end_block<S: StateWrite>(_state: S, _end_block: &abci::request::EndBlock) {}
-
-    #[instrument(name = "ics2_client", skip(_state))]
-    async fn end_epoch<S: StateWrite>(mut _state: S) -> anyhow::Result<()> {
-        Ok(())
-    }
-}
 
 #[async_trait]
 pub(crate) trait Ics2ClientExt: StateWrite {
@@ -129,50 +71,6 @@ pub(crate) trait Ics2ClientExt: StateWrite {
             client_state,
             tm_header,
         ));
-        Ok(())
-    }
-
-    // execute IBC CreateClient.
-    //
-    //  we compute the client's ID (a concatenation of a monotonically increasing integer, the
-    //  number of clients on Penumbra, and the client type) and commit the following to our state:
-    // - client type
-    // - consensus state
-    // - processed time and height
-    async fn execute_create_client(&mut self, msg_create_client: &MsgCreateClient) -> Result<()> {
-        tracing::info!("deserializing client state");
-        // TODO(erwan): deferred client state deserialization means `execute_create_client` is faillible
-        // see ibc-rs ADR004: https://github.com/cosmos/ibc-rs/blob/main/docs/architecture/adr-004-light-client-crates-extraction.md#light-client-specific-code
-        let client_state =
-            ics02_validation::get_tendermint_client_state(msg_create_client.client_state.clone())?;
-
-        // get the current client counter
-        let id_counter = self.client_counter().await.unwrap();
-        let client_id = ClientId::new(client_state.client_type(), id_counter.0).unwrap();
-
-        tracing::info!("creating client {:?}", client_id);
-
-        let consensus_state = ics02_validation::get_tendermint_consensus_state(
-            msg_create_client.consensus_state.clone(),
-        )?;
-
-        // store the client data
-        self.put_client(&client_id, client_state.clone());
-
-        // store the genesis consensus state
-        self.put_verified_consensus_state(
-            client_state.latest_height(),
-            client_id.clone(),
-            consensus_state,
-        )
-        .await
-        .unwrap();
-
-        // increment client counter
-        let counter = self.client_counter().await.unwrap_or(ClientCounter(0));
-        self.put_client_counter(ClientCounter(counter.0 + 1));
-
-        self.record(event::create_client(client_id, client_state));
         Ok(())
     }
 
@@ -518,6 +416,7 @@ mod tests {
     use crate::TempStorageExt;
 
     use super::*;
+    use ibc::core::ics02_client::msgs::create_client::MsgCreateClient;
     use ibc_proto::protobuf::Protobuf;
     use penumbra_chain::StateWriteExt;
     use penumbra_storage::{ArcStateDeltaExt, StateDelta, TempStorage};

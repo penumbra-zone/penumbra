@@ -1,51 +1,15 @@
-use crate::ibc::{event, validate_penumbra_client_state, ConnectionCounter, SUPPORTED_VERSIONS};
-use crate::Component;
+use crate::ibc::ConnectionCounter;
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc::core::ics02_client::client_state::ClientState;
-use ibc::core::ics02_client::consensus_state::ConsensusState;
 // TODO(erwan): remove in polish MERGEBLOCK
 // use ibc::core::ics02_client::client_def::AnyClient;
 // use ibc::core::ics02_client::client_def::ClientDef;
-use ibc::core::ics03_connection::connection::Counterparty;
-use ibc::core::ics03_connection::connection::{ConnectionEnd, State as ConnectionState};
-use ibc::core::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
-use ibc::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
-use ibc::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
-use ibc::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
-use ibc::core::ics03_connection::version::{pick_version, Version};
+use ibc::core::ics03_connection::connection::ConnectionEnd;
 use ibc::core::ics24_host::identifier::ConnectionId;
-use ibc::Height as IBCHeight;
-use penumbra_chain::genesis;
 use penumbra_storage::{StateRead, StateWrite};
-use tendermint::abci;
-use tracing::instrument;
 
 use super::state_key;
 use penumbra_proto::{StateReadProto, StateWriteProto};
-
-pub(crate) mod execution;
-pub(crate) mod stateful;
-pub(crate) mod stateless;
-
-pub struct ConnectionComponent {}
-
-#[async_trait]
-impl Component for ConnectionComponent {
-    #[instrument(name = "ibc_connection", skip(_state, _app_state))]
-    async fn init_chain<S: StateWrite>(_state: S, _app_state: &genesis::AppState) {}
-
-    #[instrument(name = "ibc_connection", skip(_state, _begin_block))]
-    async fn begin_block<S: StateWrite>(_state: S, _begin_block: &abci::request::BeginBlock) {}
-
-    #[instrument(name = "ibc_connection", skip(_state, _end_block))]
-    async fn end_block<S: StateWrite>(_state: S, _end_block: &abci::request::EndBlock) {}
-
-    #[instrument(name = "ibc_connection", skip(_state))]
-    async fn end_epoch<S: StateWrite>(mut _state: S) -> anyhow::Result<()> {
-        Ok(())
-    }
-}
 
 #[async_trait]
 pub trait StateWriteExt: StateWrite {
