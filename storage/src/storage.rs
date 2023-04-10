@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use jmt::{
     storage::{LeafNode, Node, NodeBatch, NodeKey, TreeWriter},
     JellyfishMerkleTree, KeyHash, Sha256Jmt, Version,
@@ -52,12 +52,14 @@ impl Storage {
                     let db = Arc::new(DB::open_cf(
                         &opts,
                         path,
-                        // TODO(erwan): MERGEBLOCK - jmt still relevant now? maybe rename keys x keyhash
-                        // add describition of each CFs
                         [
+                            // Maps `NodeKey` -> `Node`
                             "jmt",
+                            // Maps: `KeyHash` || BE(Version) => value
                             "jmt_values",
+                            // Maps: Key -> KeyHash
                             "jmt_keys",
+                            // Maps: KeyHash -> Key
                             "jmt_keys_by_keyhash",
                             "nonconsensus",
                         ],
@@ -190,8 +192,10 @@ impl Storage {
                             version: *version,
                             key_hash: key_hash.clone(),
                         };
-                        // TODO(erwan): encode the versioned key
-                        inner.db.put_cf(jmt_values_cf, versioned_key, value)?;
+
+                        inner
+                            .db
+                            .put_cf(jmt_values_cf, versioned_key.encode(), value)?;
                     }
 
                     // Write the unwritten changes from the nonconsensus to RocksDB.
@@ -259,8 +263,36 @@ impl Storage {
 // TODO(erwan): move this somewhere? should this live in the jmt crate?
 #[derive(Clone, Debug)]
 pub struct VersionedKey {
-    version: jmt::Version,
     key_hash: KeyHash,
+    version: jmt::Version,
+}
+
+impl VersionedKey {
+    fn encode(&self) -> Vec<u8> {
+        let mut buf: Vec<u8> = self.key_hash.0.to_vec();
+        buf.extend_from_slice(&self.version.to_be_bytes());
+        buf
+    }
+
+    fn decode(buf: Vec<u8>) -> Result<Self> {
+        if buf.len() != 40 {
+            Err(anyhow!(
+                "could not decode buffer into VersionedKey (invalid size)"
+            ))
+        } else {
+            let raw_key_hash: [u8; 32] = buf[0..32]
+                .try_into()
+                .expect("buffer is at least 40 bytes wide");
+            let key_hash = KeyHash(raw_key_hash);
+
+            let raw_version: [u8; 8] = buf[32..40]
+                .try_into()
+                .expect("buffer is at least 40 bytes wide");
+            let version: u64 = u64::from_be_bytes(raw_version);
+
+            Ok(VersionedKey { version, key_hash })
+        }
+    }
 }
 
 impl TreeWriter for Inner {
