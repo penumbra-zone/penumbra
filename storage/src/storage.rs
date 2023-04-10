@@ -184,7 +184,7 @@ impl Storage {
 
                     for ((version, key_hash), value) in batch.node_batch.values() {
                         let Some(value) = value else {
-                            // TODO(erwan): the key has been deleted -- do nothing?
+                                // The key has been deleted -- do nothing.
                                     continue;
                                 };
 

@@ -339,13 +339,16 @@ impl TreeReader for Inner {
         lower_bound.extend_from_slice(&0u64.to_be_bytes());
 
         let mut upper_bound = key_hash.0.to_vec();
-        upper_bound.extend_from_slice(&max_version.to_be_bytes());
+
+        // The upper bound is excluded from the iteration results.
+        upper_bound.extend_from_slice(&(max_version + 1).to_be_bytes());
 
         let mut readopts = ReadOptions::default();
         readopts.set_iterate_lower_bound(lower_bound);
-        let mut iterator = self
-            .db
-            .iterator_cf_opt(jmt_values_cf, readopts, IteratorMode::End);
+        readopts.set_iterate_upper_bound(upper_bound);
+        let mut iterator =
+            self.snapshot
+                .iterator_cf_opt(jmt_values_cf, readopts, IteratorMode::End);
 
         let Some(tuple) = iterator.next() else {
             // Pre-genesis values have version `-1`.
