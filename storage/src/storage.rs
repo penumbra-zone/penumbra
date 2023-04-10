@@ -189,8 +189,8 @@ impl Storage {
                                 };
 
                         let versioned_key = VersionedKey {
-                            version: *version,
                             key_hash: key_hash.clone(),
+                            version: *version,
                         };
 
                         inner
