@@ -263,18 +263,18 @@ impl Storage {
 // TODO(erwan): move this somewhere? should this live in the jmt crate?
 #[derive(Clone, Debug)]
 pub struct VersionedKey {
-    key_hash: KeyHash,
-    version: jmt::Version,
+    pub key_hash: KeyHash,
+    pub version: jmt::Version,
 }
 
 impl VersionedKey {
-    fn encode(&self) -> Vec<u8> {
+    pub fn encode(&self) -> Vec<u8> {
         let mut buf: Vec<u8> = self.key_hash.0.to_vec();
         buf.extend_from_slice(&self.version.to_be_bytes());
         buf
     }
 
-    fn decode(buf: Vec<u8>) -> Result<Self> {
+    pub fn decode(buf: Vec<u8>) -> Result<Self> {
         if buf.len() != 40 {
             Err(anyhow!(
                 "could not decode buffer into VersionedKey (invalid size)"
