@@ -1,3 +1,4 @@
+mod delegator_vote;
 mod gadgets;
 mod output;
 mod spend;
@@ -5,6 +6,7 @@ mod swap;
 mod traits;
 mod undelegate;
 
+pub use delegator_vote::{DelegatorVoteCircuit, DelegatorVoteProof};
 pub use output::{OutputCircuit, OutputProof};
 pub use spend::{SpendCircuit, SpendProof};
 pub use swap::{SwapCircuit, SwapProof};
