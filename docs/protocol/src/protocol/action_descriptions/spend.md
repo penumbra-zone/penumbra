@@ -15,7 +15,7 @@ transmission key $pk_d \isin \mathbb G$, and clue key $\mathsf{ck_d} \isin \math
 * Spend authorization randomizer used for generating the randomized spend authorization key $\alpha \isin \mathbb F_r$
 * Spend authorization key $ak \isin \mathbb G$
 * Nullifier deriving key $nk \isin \mathbb F_q$
-* Merkle proof of inclusion for the note commitment, consisting of a `u64` position and an authentication path consisting of 72 $\mathbb F_q$ elements (3 siblings each per 24 levels)
+* Merkle proof of inclusion for the note commitment, consisting of a position `pos` and an authentication path consisting of 72 $\mathbb F_q$ elements (3 siblings each per 24 levels)
 
 And the corresponding public inputs:
 
@@ -48,7 +48,17 @@ where $G_{\tilde v}$ is a constant generator and $G_v$ is an asset-specific gene
 
 ### Nullifier Integrity
 
-TODO
+The zk-SNARK certifies that for non-zero values $v \ne 0$, the
+revealed nullifier $nf$ was derived as:
+
+$nf = hash_3(ds, (nk, cm, pos))$
+
+using the witnessed values above and where `ds` is a constant domain separator:
+
+`ds = from_le_bytes(BLAKE2b-512(b"penumbra.nullifier")) mod q
+`
+
+as described in [Nullifiers](../notes/nullifiers.md).
 
 ### Diversified address Integrity
 
@@ -66,8 +76,8 @@ Note that [issue 2135](https://github.com/penumbra-zone/penumbra/issues/2135) tr
 
 ### Diversified Base is not Identity
 
-The zk-SNARK certifies that the diversified basepoint $B_d$ associated with the address on the note is not identity. This is skipped when $v = 0$.
+The zk-SNARK certifies that for non-zero values $v \ne 0$, the diversified basepoint $B_d$ associated with the address on the note is not identity.
 
 ### The spend authorization key is not Identity
 
-The zk-SNARK certifies that the spend authorization key $ak$ is not identity. This is skipped when $v = 0$.
+The zk-SNARK certifies that for non-zero values $v \ne 0$, the spend authorization key $ak$ is not identity.

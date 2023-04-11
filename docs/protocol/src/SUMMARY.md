@@ -60,7 +60,7 @@
     - [Note Plaintexts](./protocol/notes/note_plaintexts.md)
     - [Note Commitments](./protocol/notes/note_commitments.md)
     - [Note Ciphertexts]()
-    - [Nullifiers]()
+    - [Nullifiers](./protocol/notes/nullifiers.md)
   - [Action Descriptions](./protocol/action_descriptions.md)
     - [Fee Descriptions]()
     - [Spend Descriptions](./protocol/action_descriptions/spend.md)
