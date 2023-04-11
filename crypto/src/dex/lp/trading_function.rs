@@ -173,8 +173,9 @@ impl BareTradingFunction {
         // The trade output `lambda_2` is given by `effective_price * delta_1`, however, to avoid
         // rounding loss, we prefer to first compute the numerator `(gamma * delta_1 * q)`, and then
         // perform division.
-        let numerator = (U128x128::from(self.q) * self.gamma() * U128x128::from(delta_1)).unwrap();
-        let tentative_lambda_2 = U128x128::ratio(numerator, U128x128::from(self.p)).unwrap();
+        let tentative_lambda_2 = self
+            .effective_price_with_precompute(delta_1.into(), 1u64.into())
+            .unwrap();
 
         if tentative_lambda_2 <= reserves.r2.into() {
             // Observe that for the case when `tentative_lambda_2` equals
@@ -188,14 +189,50 @@ impl BareTradingFunction {
             (0u64.into(), new_reserves, lambda_2)
         } else {
             let r2: U128x128 = reserves.r2.into();
-            let fillable_delta_1 = (r2 * self.effective_price()).unwrap();
+            // In this case, we don't have enough reserves to completely execute
+            // the fill. So we know that `lambda_2 = r2` or that the output will
+            // consist of all the reserves available.
+            //
+            // We must work backwards to infer what `delta_1` (input) correspond
+            // exactly to a fill of `lambda_2 = r2`.
+            //
+            // Normally, we would have:
+            //
+            // lambda_2 = effective_price * delta_1
+            // since lambda_2 = r2, we have:
+            //
+            // r2 = effective_price * delta_1, and since effective_price != 0:
+            // delta_1 = r2 * effective_price^-1
+            // since effective_price = (p/(q*gamma)), we have:
+            // delta_1 = r2 * q * gamma * p^-1
+            //
+            // We burn the rouding error by apply `ceil` to delta_1:
+            //
+            // delta_1_star = Ceil(delta_1)
+            let p = U128x128::from(self.p);
+            let q = U128x128::from(self.q);
+            let gamma = self.gamma();
+            let numerator = (gamma * q).unwrap();
+            let numerator = (r2 * numerator).unwrap();
+
+            let fillable_delta_1 = numerator.checked_div(&p).unwrap();
 
             let fillable_delta_1_exact: Amount = fillable_delta_1.round_up().try_into().unwrap();
-            // We know that unfilled_amount >= 0. Why?
-            // In this branch, we have delta_1 * (q/p) * gamma > R_2
-            //                     <=> R_2 * (p/q) * (1/gamma) < delta_1
-            // Since fillable_delta_1_exact = ceil(LHS) and the RHS is already integral,
-            // we know that ceil(LHS) <= RHS and so fillable_delta_1_exact <= delta_1.
+
+            // How to show that: `unfilled_amount >= 0`:
+            // In this branch, we have:
+            //      delta_1 * effective_price > R_2, in other words:
+            //      delta_1 * (p/q)*(1/gamma) > R_2
+            //  <=> delta_1 > R_2 * (effective_price)^-1, in other words:
+            //      delta_1 > R_2 * (q*gamma)/p
+            //
+            //  fillable_delta_1_exact = ceil(RHS) is integral (rounded), and
+            //  delta_1 is integral by definition.
+            //
+            //  where delta_1 is integral, therefore we have:
+            //
+            //  delta_1 > fillable_delta_1_exact, or in other words:
+            //  unfilled_amount > 0.
             let unfilled_amount = delta_1 - fillable_delta_1_exact;
 
             let new_reserves = Reserves {
@@ -215,20 +252,41 @@ impl BareTradingFunction {
         self.effective_price().to_bytes()
     }
 
-    /// Returns the effective price of the trading function.
+    /// Returns the effective price for the trading function inclusive of fees.
     ///
-    /// The effective price is the price of asset 2 in terms of asset 1 according
-    /// to the trading function.  A lower price means more output of asset 2 per asset 1.
+    /// The effective price is the exchange rate between asset 1 and asset 2, after
+    /// applying the fee discount factor (aka. gamma).
+    ///
+    /// A lower effective price means than one gets more of asset 2 per asset 1.
+    /// A higher fee means a lower discount factor, which leads to a higher price.
     pub fn effective_price(&self) -> U128x128 {
-        let p = U128x128::from(self.p);
-        let q = U128x128::from(self.q);
-
-        p.checked_div(&(q * self.gamma()).expect("gamma <= 1, so no overflow"))
+        self.effective_price_with_precompute(1u64.into(), 1u64.into())
             .expect("gamma, q != 0")
     }
 
-    /// Returns the fee of the trading function, expressed as a percentage (`gamma`).
-    /// Note: the float math is a placehodler
+    pub fn effective_price_with_precompute(
+        &self,
+        num: U128x128,
+        denom: U128x128,
+    ) -> Result<U128x128> {
+        let p = U128x128::from(self.p);
+        let q = U128x128::from(self.q);
+
+        let numerator = (num * p).ok_or_else(|| anyhow!("numerator overflow"))?;
+        let denominator = (q * self.gamma()).expect("gamma <= 1, so no overflow is possible");
+        let denominator = (denominator * denom).ok_or_else(|| anyhow!("denominator overflow"))?;
+        numerator
+            .checked_div(&denominator)
+            .ok_or_else(|| anyhow!("failed to perform checked division"))
+    }
+
+    /// Returns `gamma` i.e. the discount factor of the fee.
+    /// The fee is expressed in basis points (0 <= fee < 10_000), where 10_000 bps = 100%.
+    ///
+    /// ## Examples:
+    ///     * A fee of 0% (0 bps) results in a discount factor of 1.
+    ///     * A fee of 30 bps (30 bps) results in a discount factor of 0.997.
+    ///     * A fee of 100% (10_000bps) results in a discount factor of 0.
     pub fn gamma(&self) -> U128x128 {
         (U128x128::from(10_000 - self.fee) / U128x128::from(10_000u64)).expect("10_000 != 0")
     }
@@ -279,71 +337,116 @@ mod tests {
     use super::*;
 
     #[test]
+    /// Test that effective prices are encoded in a way that preserves their
+    /// numerical ordering. Numerical ordering should transfer over lexicographic order
+    /// of the encoded prices.
     fn test_trading_function_to_bytes() {
         let btf = BareTradingFunction {
             fee: 0,
-            p: 2_u32.into(),
-            q: 1_u32.into(),
+            p: 2_000_000u32.into(),
+            q: 1_000_000u32.into(),
         };
 
         assert_eq!(btf.gamma(), U128x128::from(1u64));
-        assert_eq!(btf.effective_price(), U128x128::ratio(2u64, 1u64).unwrap());
+        assert_eq!(
+            btf.effective_price(),
+            U128x128::ratio(btf.p, btf.q).unwrap()
+        );
         let bytes1 = btf.effective_price_key_bytes();
 
         let btf = BareTradingFunction {
             fee: 100,
-            p: 1_u32.into(),
-            q: 1_u32.into(),
+            p: 2_000_000u32.into(),
+            q: 1_000_000u32.into(),
         };
 
-        assert_eq!(btf.gamma(), U128x128::ratio(99u64, 100u64).unwrap());
-        assert_eq!(
-            btf.effective_price(),
-            U128x128::ratio(100u64, 99u64).unwrap()
-        );
+        // Compares the `BareTradingFunction::gamma` to a scaled ratio (10^4)
+        let gamma_term =
+            U128x128::ratio::<Amount>(99_000_000u64.into(), 100_000_000u64.into()).unwrap();
+        assert_eq!(btf.gamma(), gamma_term,);
+
+        let price_without_fee = U128x128::ratio(btf.p, btf.q).unwrap();
+        let reciprocal = (U128x128::from(1u64) / gamma_term).unwrap();
+        let price_with_fee = (price_without_fee * reciprocal).unwrap();
+
+        assert_eq!(btf.effective_price(), price_with_fee);
         let bytes2 = btf.effective_price_key_bytes();
+
+        // Assert that the encoded effective prices' lexicographic order
+        // matches their numerical order.
 
         assert!(bytes1 > bytes2);
     }
 
     #[test]
+    /// Test that filling a position follows the asset conservation law,
+    /// meaning that the R + Delta = R + Lambda
+    ///
+    /// There is two branches of the `BareTradingFunction::fill` method that we
+    /// want to exercise. The first one is executed when there are enough reserves
+    /// available to perform the fill.
+    ///
+    /// The second case, is when the output is constrained by the available reserves.
     fn fill_conserves_value() {
         let btf = BareTradingFunction {
             fee: 0,
-            p: 3_u32.into(),
-            q: 1_u32.into(),
+            p: 1_u32.into(),
+            q: 3_u32.into(),
         };
+
+        // First, we want to test asset conservations in the case of a partial fill:
+        // D_1 = 10,000,000
+        // D_2 = 0
+        //
+        // price: p/q = 1/3, so you get 1 unit of asset 2 for 3 units of asset 1.
+        //
+        // L_1 = 0
+        // L_2 = 3_333_333 (D_1/3)
 
         let old_reserves = Reserves {
             r1: 1_000_000u64.into(),
             r2: 100_000_000u64.into(),
         };
 
-        let input_a = 10_000_000u64.into();
-        let (unfilled_a, new_reserves_a, output_a) = btf.fill(input_a, &old_reserves);
+        let delta_1 = 10_000_000u64.into();
+        let delta_2 = 0u64.into();
+        let (lambda_1, new_reserves, lambda_2) = btf.fill(delta_1, &old_reserves);
         // Conservation of value:
-        assert_eq!(old_reserves.r1 + input_a, new_reserves_a.r1 + unfilled_a);
-        assert_eq!(old_reserves.r2 + 0u64.into(), new_reserves_a.r2 + output_a);
-        // Exact amount checks:
-        assert_eq!(output_a, 3_333_333u64.into()); // 10.0 -> 3.33...
-        assert_eq!(unfilled_a, 0u64.into());
+        assert_eq!(old_reserves.r1 + delta_1, new_reserves.r1 + lambda_1);
+        assert_eq!(old_reserves.r2 + delta_2, new_reserves.r2 + lambda_2);
 
-        let input_b = 600_000_000u64.into();
-        // Conservation of value:
-        let (unfilled_b, new_reserves_b, output_b) = btf.fill(input_b, &old_reserves);
-        assert_eq!(old_reserves.r1 + input_b, new_reserves_b.r1 + unfilled_b);
-        assert_eq!(old_reserves.r2 + 0u64.into(), new_reserves_b.r2 + output_b);
         // Exact amount checks:
-        assert_eq!(output_b, old_reserves.r2); // Exact fill of position
-        assert_eq!(unfilled_b, 299_999_999u64.into()); // rounding error is burned
+        assert_eq!(lambda_1, 0u64.into());
+        assert_eq!(lambda_2, 3_333_333u64.into());
+
+        // Here we test trying to swap or more output than what is available in
+        // the reserves:
+        // lambda_1 = delta_1/3
+        // lambda_2 = r2
+        let old_reserves = Reserves {
+            r1: 1_000_000u64.into(),
+            r2: 100_000_000u64.into(),
+        };
+        let delta_1 = 600_000_000u64.into();
+        let delta_2 = 0u64.into();
+
+        let (lambda_1, new_reserves, lambda_2) = btf.fill(delta_1, &old_reserves);
+        // Conservation of value:
+        assert_eq!(old_reserves.r1 + delta_1, new_reserves.r1 + lambda_1);
+        assert_eq!(old_reserves.r2 + delta_2, new_reserves.r2 + lambda_2);
+
+        // Exact amount checks:
+        assert_eq!(lambda_1, 300_000_000u64.into());
+        assert_eq!(lambda_2, old_reserves.r2);
+        assert_eq!(new_reserves.r2, 0u64.into());
     }
 
     #[test]
     fn fill_bad_rounding() {
         let btf = BareTradingFunction {
             fee: 0,
-            p: 100u32.into(),
-            q: 120u32.into(),
+            p: 12u32.into(),
+            q: 10u32.into(),
         };
 
         let old_reserves = Reserves {
@@ -351,14 +454,14 @@ mod tests {
             r2: 120u64.into(),
         };
 
-        let input_a = 100u64.into();
-        let (unfilled_a, new_reserves_a, output_a) = btf.fill(input_a, &old_reserves);
+        let delta_1 = 100u64.into();
+        let (lambda_1, new_reserves, lambda_2) = btf.fill(delta_1, &old_reserves);
 
         // Conservation of value:
-        assert_eq!(old_reserves.r1 + input_a, new_reserves_a.r1 + unfilled_a);
-        assert_eq!(old_reserves.r2 + 0u64.into(), new_reserves_a.r2 + output_a);
+        assert_eq!(old_reserves.r1 + delta_1, new_reserves.r1 + lambda_1);
+        assert_eq!(old_reserves.r2 + 0u64.into(), new_reserves.r2 + lambda_2);
         // Exact amount checks:
-        assert_eq!(output_a, 120u64.into()); // 10.0 -> 3.33...
-        assert_eq!(unfilled_a, 0u64.into());
+        assert_eq!(lambda_1, 0u64.into());
+        assert_eq!(lambda_2, 120u64.into());
     }
 }
