@@ -1,6 +1,6 @@
 {
     "rust-analyzer.cargo.features": [
-        "parallel"
+        "penumbra-transaction/parallel"
     ]
     /*
     // Setting this variable will cause rust-analyzer to perform
