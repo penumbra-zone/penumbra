@@ -511,14 +511,6 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
         Ok(tally)
     }
 
-    /// Get the current chain halt count.
-    async fn emergency_chain_halt_count(&self) -> Result<u64> {
-        Ok(self
-            .get_proto(state_key::emergency_chain_halt_count())
-            .await?
-            .unwrap_or_default())
-    }
-
     /// Get all the transactions set to be delivered in this block (scheduled in last block).
     async fn pending_dao_transactions(&self) -> Result<Vec<Transaction>> {
         // Get the proposal IDs of the DAO transactions we are about to deliver.
@@ -831,9 +823,8 @@ pub trait StateWriteExt: StateWrite {
                 if *halt_chain {
                     // Print an informational message and signal to the consensus worker to halt the
                     // process after the state is committed
-                    self.increment_emergency_chain_halt_count().await?;
                     tracing::info!("emergency proposal passed calling for immediate chain halt");
-                    self.halt_now();
+                    self.signal_halt().await?;
                 }
             }
             ProposalPayload::ParameterChange { old, new } => {
@@ -884,15 +875,6 @@ pub trait StateWriteExt: StateWrite {
         }
 
         Ok(Ok(()))
-    }
-
-    async fn increment_emergency_chain_halt_count(&mut self) -> Result<()> {
-        let halt_count = self.emergency_chain_halt_count().await?;
-        self.put_proto(
-            state_key::emergency_chain_halt_count().to_string(),
-            halt_count + 1,
-        );
-        Ok(())
     }
 
     fn put_dao_transaction(&mut self, proposal: u64, transaction: Transaction) {

@@ -99,10 +99,6 @@ pub fn all_untallied_delegator_votes() -> &'static str {
     "governance/untallied_delegator_vote/"
 }
 
-pub fn emergency_chain_halt_count() -> &'static str {
-    "governance/chain_halt_count"
-}
-
 pub fn deliver_single_dao_transaction_at_height(block_height: u64, proposal_id: u64) -> String {
     format!("governance/deliver_dao_transactions/{block_height}/{proposal_id:020}")
 }

@@ -214,14 +214,21 @@ async fn main() -> anyhow::Result<()> {
                     req.create_span()
                 }))
                 .service(tower_actor::Actor::new(10, |queue: _| {
-                    pd::Consensus::new(storage.clone(), queue).run()
+                    let storage = storage.clone();
+                    async move {
+                        pd::Consensus::new(storage.clone(), queue)
+                            .await?
+                            .run()
+                            .await
+                    }
                 }));
             let mempool = tower::ServiceBuilder::new()
                 .layer(request_span::layer(|req: &MempoolRequest| {
                     req.create_span()
                 }))
                 .service(tower_actor::Actor::new(10, |queue: _| {
-                    pd::Mempool::new(storage.clone(), queue).run()
+                    let storage = storage.clone();
+                    async move { pd::Mempool::new(storage.clone(), queue).await?.run().await }
                 }));
             let info = pd::Info::new(storage.clone());
             let tm_proxy = TendermintProxy::new(tendermint_addr);

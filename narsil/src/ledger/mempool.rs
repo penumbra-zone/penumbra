@@ -31,18 +31,18 @@ pub struct Mempool {
 }
 
 impl Mempool {
-    pub fn new(
+    pub async fn new(
         storage: Storage,
         queue: mpsc::Receiver<Message<Request, Response, tower::BoxError>>,
-    ) -> Self {
-        let app = App::new(storage.latest_snapshot());
+    ) -> Result<Self> {
+        let app = App::new(storage.latest_snapshot()).await?;
         let snapshot_rx = storage.subscribe();
 
-        Self {
+        Ok(Self {
             queue,
             app,
             snapshot_rx,
-        }
+        })
     }
 
     pub async fn check_tx(&mut self, req: Request) -> Result<Response, tower::BoxError> {
@@ -99,7 +99,7 @@ impl Mempool {
                     if let Ok(()) = change {
                         let snapshot = self.snapshot_rx.borrow().clone();
                         tracing::debug!(height = ?snapshot.version(), "resetting ephemeral mempool state");
-                        self.app = App::new(snapshot);
+                        self.app = App::new(snapshot).await?;
                     } else {
                         // TODO: what triggers this, now that the channel is owned by the
                         // shared Storage instance, rather than the consensus worker?

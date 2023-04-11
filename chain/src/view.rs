@@ -120,9 +120,12 @@ pub trait StateReadExt: StateRead {
             .ok_or_else(|| anyhow!("missing epoch for current height: {height}"))
     }
 
-    /// Returns true if the chain should immediately halt upon the coming commit.
-    fn should_halt(&self) -> bool {
-        self.object_get::<()>(state_key::halt_now()).is_some()
+    /// Returns true if the chain is halted (or will be halted momentarily).
+    async fn is_chain_halted(&self, total_halt_count: u64) -> Result<bool> {
+        Ok(self
+            .nonconsensus_get_raw(&state_key::halted(total_halt_count))
+            .await?
+            .is_some())
     }
 
     /// Returns true if the chain parameters have been changed in this block.
@@ -141,6 +144,14 @@ pub trait StateReadExt: StateRead {
     fn epoch_ending_early(&self) -> bool {
         self.object_get(state_key::end_epoch_early())
             .unwrap_or(false)
+    }
+
+    /// Get the current chain halt count.
+    async fn chain_halt_count(&self) -> Result<u64> {
+        Ok(self
+            .get_proto::<u64>(state_key::chain_halt_count())
+            .await?
+            .unwrap_or_default())
     }
 }
 
@@ -188,8 +199,18 @@ pub trait StateWriteExt: StateWrite {
     }
 
     /// Signals to the consensus worker to halt after the next commit.
-    fn halt_now(&mut self) {
-        self.object_put(state_key::halt_now(), ());
+    async fn signal_halt(&mut self) -> Result<()> {
+        let halt_count = self.chain_halt_count().await?;
+
+        // Increment the current halt count unconditionally...
+        self.put_proto(state_key::chain_halt_count().to_string(), halt_count + 1);
+
+        // ...and signal that a halt should occur if the halt count is fresh (`is_chain_halted` will
+        // check against the total number of expected chain halts to determine whether a halt should
+        // actually occur).
+        self.nonconsensus_put_raw(state_key::halted(halt_count).to_vec(), vec![]);
+
+        Ok(())
     }
 
     // Signals that the epoch should end this block.
