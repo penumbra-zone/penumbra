@@ -18,12 +18,18 @@ pub fn fmd_parameters_previous() -> &'static str {
     "fmd_parameters/previous"
 }
 
-// These are used for the object store:
-
-pub fn halt_now() -> &'static str {
-    "halt_now"
+pub fn chain_halt_count() -> &'static str {
+    "chain/halt_count"
 }
 
+// These are used in the nonconsensus store:
+pub fn halted(total_halt_count: u64) -> Vec<u8> {
+    let mut key = b"chain/halt/".to_vec();
+    key.extend(total_halt_count.to_be_bytes());
+    key
+}
+
+// These are used for the object store:
 pub fn chain_params_changed() -> &'static str {
     "chain_params_changed"
 }

@@ -15,13 +15,21 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(snapshot: Snapshot) -> Self {
+    pub async fn new(snapshot: Snapshot) -> Result<Self> {
         tracing::debug!("initializing App instance");
-        Self {
-            // We perform the `Arc` wrapping of `State` here to ensure
-            // there should be no unexpected copies elsewhere.
-            state: Arc::new(StateDelta::new(snapshot)),
+
+        // We perform the `Arc` wrapping of `State` here to ensure
+        // there should be no unexpected copies elsewhere.
+        let state = Arc::new(StateDelta::new(snapshot));
+
+        // If the state says that the chain is halted, we should not proceed. This is a safety check
+        // to ensure that automatic restarts by software like systemd do not cause the chain to come
+        // back up again after a halt.
+        if state.is_chain_halted(TOTAL_HALT_COUNT).await? {
+            anyhow::bail!("chain is halted, refusing to restart");
         }
+
+        Ok(Self { state })
     }
 
     pub async fn init_chain(&mut self, _app_state: &genesis::AppState) {
@@ -78,7 +86,10 @@ impl App {
             .expect("we have exclusive ownership of the State at commit()");
 
         // Check if someone has signaled that we should halt.
-        let should_halt = state.should_halt();
+        let should_halt = state
+            .is_chain_halted(TOTAL_HALT_COUNT)
+            .await
+            .expect("must be able to read halt flag");
 
         // Commit the pending writes, clearing the state.
         let jmt_root = storage
@@ -112,3 +123,9 @@ impl App {
         //     .unwrap_or_default()
     }
 }
+
+/// The total number of times the chain has been halted.
+///
+/// Increment this manually after fixing the root cause for a chain halt: updated nodes will then be
+/// able to proceed past the block height of the halt.
+const TOTAL_HALT_COUNT: u64 = 0;
