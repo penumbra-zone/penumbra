@@ -5,23 +5,6 @@ package penumbra.core.transparent_proofs.v1alpha1;
 import "penumbra/core/crypto/v1alpha1/crypto.proto";
 import "penumbra/core/dex/v1alpha1/dex.proto";
 
-// A Penumbra transparent Spend Proof.
-message SpendProof {
-  // Auxiliary inputs
-  crypto.v1alpha1.StateCommitmentProof state_commitment_proof = 1;
-
-  /**
-   * @exclude
-   * From the note being spent
-  */
-  crypto.v1alpha1.Note note = 2;
-
-  bytes v_blinding = 6;
-  bytes spend_auth_randomizer = 9;
-  bytes ak = 10;
-  bytes nk = 11;
-}
-
 // A Penumbra transparent SwapClaimProof.
 message SwapClaimProof {
   // The swap being claimed

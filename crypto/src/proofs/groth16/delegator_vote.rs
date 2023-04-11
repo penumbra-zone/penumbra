@@ -252,15 +252,15 @@ impl DelegatorVoteProof {
         public_inputs.extend(Fq::from(anchor.0).to_field_elements().unwrap());
         public_inputs.extend(balance_commitment.0.to_field_elements().unwrap());
         public_inputs.extend(nullifier.0.to_field_elements().unwrap());
+        let element_rk = decaf377::Encoding(rk.to_bytes())
+            .vartime_decompress()
+            .expect("expect only valid element points");
+        public_inputs.extend(element_rk.to_field_elements().unwrap());
         public_inputs.extend(
             Fq::from(u64::from(start_position))
                 .to_field_elements()
                 .unwrap(),
         );
-        let element_rk = decaf377::Encoding(rk.to_bytes())
-            .vartime_decompress()
-            .expect("expect only valid element points");
-        public_inputs.extend(element_rk.to_field_elements().unwrap());
 
         tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();

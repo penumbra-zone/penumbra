@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
+use ark_ff::Zero;
 use async_trait::async_trait;
+use decaf377::Fr;
+use penumbra_proof_params::DELEGATOR_VOTE_PROOF_VERIFICATION_KEY;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{
     action::{DelegatorVote, DelegatorVoteBody},
@@ -28,7 +31,7 @@ impl ActionHandler for DelegatorVote {
                     // Unused in stateless checks:
                     vote: _,            // Only used when executing the vote
                     proposal: _,        // Checked against the current open proposals statefully
-                    unbonded_amount: _, // Checked against the proposal's snapshot exchange rate statefully
+                    unbonded_amount: _, // Also checked against the proposal's snapshot exchange rate statefully
                 },
         } = self;
 
@@ -41,7 +44,14 @@ impl ActionHandler for DelegatorVote {
 
         // 2. Verify the proof against the provided anchor and start position:
         proof
-            .verify(anchor, *start_position, *value, *nullifier, *rk)
+            .verify(
+                &DELEGATOR_VOTE_PROOF_VERIFICATION_KEY,
+                anchor,
+                value.commit(Fr::zero()),
+                *nullifier,
+                *rk,
+                *start_position,
+            )
             .context("a delegator vote proof did not verify")?;
 
         Ok(())

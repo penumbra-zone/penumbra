@@ -75,8 +75,10 @@ pub struct DelegatorVote {
         super::super::crypto::v1alpha1::SpendAuthSignature,
     >,
     /// The vote proof is authorizing data.
-    #[prost(bytes = "vec", tag = "3")]
-    pub proof: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "3")]
+    pub proof: ::core::option::Option<
+        super::super::crypto::v1alpha1::ZkDelegatorVoteProof,
+    >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

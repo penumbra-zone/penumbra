@@ -8,7 +8,7 @@ use ark_groth16::{ProvingKey, VerifyingKey};
 use ark_serialize::CanonicalSerialize;
 use decaf377::Bls12_377;
 use penumbra_crypto::proofs::groth16::{
-    OutputCircuit, ParameterSetup, ProvingKeyExt, SpendCircuit, SwapCircuit,
+    DelegatorVoteCircuit, OutputCircuit, ParameterSetup, ProvingKeyExt, SpendCircuit, SwapCircuit,
     UndelegateClaimCircuit, VerifyingKeyExt,
 };
 
@@ -38,6 +38,13 @@ fn main() -> Result<()> {
         "undelegateclaim",
         &undelegateclaim_pk,
         &undelegateclaim_vk,
+    )?;
+    let (delegator_vote_pk, delegator_vote_vk) = DelegatorVoteCircuit::generate_test_parameters();
+    write_params(
+        &target_dir,
+        "delegator_vote",
+        &delegator_vote_pk,
+        &delegator_vote_vk,
     )?;
     // NOTE: New proofs go here following the approach above.
 

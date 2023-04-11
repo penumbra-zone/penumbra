@@ -3,7 +3,7 @@ use ark_ff::Zero;
 use decaf377::Fr;
 use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
 use penumbra_crypto::{
-    proofs::transparent::DelegatorVoteProof, Amount, Nullifier, Value, VotingReceiptToken,
+    proofs::groth16::DelegatorVoteProof, Amount, Nullifier, Value, VotingReceiptToken,
 };
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType};
 use penumbra_tct as tct;
@@ -124,7 +124,7 @@ impl From<DelegatorVote> for pb::DelegatorVote {
         pb::DelegatorVote {
             body: Some(value.body.into()),
             auth_sig: Some(value.auth_sig.into()),
-            proof: value.proof.into(),
+            proof: Some(value.proof.into()),
         }
     }
 }
@@ -142,7 +142,11 @@ impl TryFrom<pb::DelegatorVote> for DelegatorVote {
                 .auth_sig
                 .ok_or_else(|| anyhow::anyhow!("missing auth sig in `DelegatorVote`"))?
                 .try_into()?,
-            proof: msg.proof[..].try_into()?,
+            proof: msg
+                .proof
+                .ok_or_else(|| anyhow::anyhow!("missing delegator vote proof"))?
+                .try_into()
+                .context("delegator vote proof malformed")?,
         })
     }
 }
