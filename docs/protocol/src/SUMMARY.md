@@ -63,7 +63,7 @@
     - [Nullifiers]()
   - [Action Descriptions](./protocol/action_descriptions.md)
     - [Fee Descriptions]()
-    - [Spend Descriptions]()
+    - [Spend Descriptions](./protocol/action_descriptions/spend.md)
     - [Output Descriptions](./protocol/action_descriptions/outputs.md)
     - [Transfer Descriptions]()
     - [Delegate Descriptions]()
