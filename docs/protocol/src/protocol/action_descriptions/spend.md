@@ -62,17 +62,27 @@ as described in [Nullifiers](../notes/nullifiers.md).
 
 ### Diversified address Integrity
 
-TODO
+The zk-SNARK certifies that for non-zero values $v \ne 0$, the diversified address $pk_d$ associated with the note being spent was derived as:
+
+$pk_d ​= [ivk] B_d$
+
+where $B_d$ is the witnessed diversified basepoint and $ivk$ is the incoming viewing key computed using a rate-2 Poseidon hash from the witnessed $nk$ and $ak$ as:
+
+`ivk = hash_2(from_le_bytes(b"penumbra.derive.ivk"), nk, decaf377_s(ak)) mod r`
+
+as described in [Viewing Keys](../addresses_keys/viewing_keys.md).
 
 ### Randomized verification key Integrity
 
-TODO
+The zk-SNARK certifies that for non-zero values $v \ne 0$, the randomized verification key $rk$ was derived using the witnessed $ak$ and spend auth randomizer $\alpha$ as:
+
+$rk = ak + [\alpha]B_{SpendAuth}$
+
+where $B_{SpendAuth}$ is the conventional `decaf377` basepoint as described in [The Decaf377 Group](../../crypto/decaf377.md).
 
 ### Merkle auth path verification
 
-TODO
-
-Note that [issue 2135](https://github.com/penumbra-zone/penumbra/issues/2135) tracks a problem where dummy spends fail to verify due to the merkle paths.
+The zk-SNARK certifies that for non-zero values[^1] $v \ne 0$, the witnessed Merkle authentication path is a valid Merkle path to the provided public anchor.
 
 ### Diversified Base is not Identity
 
@@ -81,3 +91,5 @@ The zk-SNARK certifies that for non-zero values $v \ne 0$, the diversified basep
 ### The spend authorization key is not Identity
 
 The zk-SNARK certifies that for non-zero values $v \ne 0$, the spend authorization key $ak$ is not identity.
+
+[^1]: Note that [issue 2135](https://github.com/penumbra-zone/penumbra/issues/2135) tracks a bug where dummy spends fail to verify due to the merkle paths.
