@@ -38,9 +38,7 @@ mod tests {
     use proptest::prelude::*;
 
     use decaf377_rdsa::{SpendAuth, VerificationKey};
-    use penumbra_proto::{
-        client::v1alpha1::tendermint_proxy::Validator, core::crypto::v1alpha1 as pb,
-    };
+    use penumbra_proto::core::crypto::v1alpha1 as pb;
     use penumbra_tct as tct;
     use rand_core::OsRng;
     use tct::Commitment;
@@ -156,6 +154,72 @@ mod tests {
             let proof_result = proof.verify(&vk, balance_commitment, unbonding_id, penalty);
 
             assert!(proof_result.is_ok());
+        }
+    }
+
+    proptest! {
+    #![proptest_config(ProptestConfig::with_cases(2))]
+    #[test]
+    fn delegator_vote_happy_path(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 2..2000000000u64, num_commitments in 1..2000u64) {
+        let (pk, vk) = DelegatorVoteCircuit::generate_prepared_test_parameters();
+        let mut rng = OsRng;
+
+        let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
+        let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let fvk_sender = sk_sender.full_viewing_key();
+        let ivk_sender = fvk_sender.incoming();
+        let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
+
+        let value_to_send = Value {
+            amount: value_amount.into(),
+            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+        };
+
+        let note = Note::generate(&mut rng, &sender, value_to_send);
+        let note_commitment = note.commit();
+        let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
+        let nk = *sk_sender.nullifier_key();
+        let ak: VerificationKey<SpendAuth> = sk_sender.spend_auth_key().into();
+        let mut sct = tct::Tree::new();
+
+        // Next, we simulate the case where the SCT is not empty by adding `num_commitments`
+        // unrelated items in the SCT.
+        for _ in 0..num_commitments {
+            let random_note_commitment = Note::generate(&mut rng, &sender, value_to_send).commit();
+            sct.insert(tct::Witness::Keep, random_note_commitment).unwrap();
+        }
+
+        sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+        let anchor = sct.root();
+        let state_commitment_proof = sct.witness(note_commitment).unwrap();
+        sct.end_epoch().unwrap();
+
+        let first_note_commitment = Note::generate(&mut rng, &sender, value_to_send).commit();
+        sct.insert(tct::Witness::Keep, first_note_commitment).unwrap();
+        let start_position = sct.witness(first_note_commitment).unwrap().position();
+
+        let balance_commitment = value_to_send.commit(Fr::from(0u64));
+        let rk: VerificationKey<SpendAuth> = rsk.into();
+        let nf = nk.derive_nullifier(state_commitment_proof.position(), &note_commitment);
+
+        let proof = DelegatorVoteProof::prove(
+            &mut rng,
+            &pk,
+            state_commitment_proof,
+            note,
+            spend_auth_randomizer,
+            ak,
+            nk,
+            anchor,
+            balance_commitment,
+            nf,
+            rk,
+            start_position,
+        )
+        .expect("can create proof");
+
+        let proof_result = proof.verify(&vk, anchor, balance_commitment, nf, rk, start_position);
+        assert!(proof_result.is_ok());
         }
     }
 
