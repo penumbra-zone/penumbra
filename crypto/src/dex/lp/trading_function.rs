@@ -372,10 +372,12 @@ mod tests {
         assert_eq!(btf.effective_price(), price_with_fee);
         let bytes2 = btf.effective_price_key_bytes();
 
-        // Assert that the encoded effective prices' lexicographic order
-        // matches their numerical order.
+        // Assert that the effective price ordering (cheaper is better) matches the
+        // encoded lexicographic ordering.
+        //
+        // The cheaper price (bytes1) vs. the more expensive price (bytes2)
 
-        assert!(bytes1 > bytes2);
+        assert!(bytes2 > bytes1);
     }
 
     #[test]
