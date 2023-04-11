@@ -21,16 +21,10 @@ impl AllocVar<crate::asset::Id, Fq> for AssetIdVar {
         let ns = cs.into();
         let cs = ns.cs();
         let asset_id: crate::asset::Id = *f()?.borrow();
-        match mode {
-            AllocationMode::Constant => unimplemented!(),
-            AllocationMode::Input => unimplemented!(),
-            AllocationMode::Witness => {
-                let inner_asset_id_var = FqVar::new_witness(cs, || Ok(asset_id.0))?;
-                Ok(Self {
-                    asset_id: inner_asset_id_var,
-                })
-            }
-        }
+        let inner_asset_id_var = FqVar::new_variable(cs, || Ok(asset_id.0), mode)?;
+        Ok(Self {
+            asset_id: inner_asset_id_var,
+        })
     }
 }
 
@@ -49,11 +43,12 @@ impl R1CSVar<Fq> for AssetIdVar {
 
 impl AssetIdVar {
     pub fn value_generator(&self) -> Result<ElementVar, SynthesisError> {
-        let cs = self.asset_id.cs();
+        let cs = self.cs();
         let value_generator_domain_sep =
             FqVar::new_constant(cs.clone(), *VALUE_GENERATOR_DOMAIN_SEP)?;
         let hashed_asset_id =
             poseidon377::r1cs::hash_1(cs, &value_generator_domain_sep, self.asset_id.clone())?;
-        ElementVar::encode_to_curve(&hashed_asset_id)
+        let result = ElementVar::encode_to_curve(&hashed_asset_id);
+        result
     }
 }

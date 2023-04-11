@@ -46,11 +46,3 @@ pub struct SwapClaimProof {
     #[prost(message, optional, tag = "21")]
     pub lambda_2_i: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
 }
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct UndelegateClaimProof {
-    #[prost(message, optional, tag = "1")]
-    pub unbonding_amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
-    #[prost(bytes = "vec", tag = "2")]
-    pub balance_blinding: ::prost::alloc::vec::Vec<u8>,
-}

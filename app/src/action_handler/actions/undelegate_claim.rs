@@ -4,6 +4,7 @@ use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use penumbra_chain::StateReadExt;
 use penumbra_crypto::stake::UnbondingToken;
+use penumbra_proof_params::UNDELEGATECLAIM_PROOF_VERIFICATION_KEY;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::UndelegateClaim, Transaction};
 
@@ -16,6 +17,7 @@ impl ActionHandler for UndelegateClaim {
             UnbondingToken::new(self.body.validator_identity, self.body.start_epoch_index).id();
 
         self.proof.verify(
+            &UNDELEGATECLAIM_PROOF_VERIFICATION_KEY,
             self.body.balance_commitment,
             unbonding_id,
             self.body.penalty,

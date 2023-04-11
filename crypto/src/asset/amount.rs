@@ -21,7 +21,7 @@ impl std::fmt::Debug for Amount {
 
 impl Amount {
     pub fn value(&self) -> u128 {
-        self.inner as u128
+        self.inner
     }
 
     pub fn zero() -> Self {
@@ -51,6 +51,53 @@ impl AmountVar {
             amount: self.amount.negate()?,
         })
     }
+
+    pub fn quo_rem(
+        &self,
+        divisor_var: &AmountVar,
+    ) -> Result<(AmountVar, AmountVar), SynthesisError> {
+        let current_amount_bytes: [u8; 16] = self.amount.value().unwrap_or_default().to_bytes()
+            [0..16]
+            .try_into()
+            .expect("amounts should fit in 16 bytes");
+        let current_amount = u128::from_le_bytes(current_amount_bytes);
+        let divisor_bytes: [u8; 16] = divisor_var.amount.value().unwrap_or_default().to_bytes()
+            [0..16]
+            .try_into()
+            .expect("amounts should fit in 16 bytes");
+        let divisor = u128::from_le_bytes(divisor_bytes);
+
+        // Out of circuit
+        let quo = current_amount.checked_div(divisor).unwrap_or(0);
+        let rem = current_amount.checked_rem(divisor).unwrap_or(0);
+
+        // Add corresponding in-circuit variables
+        let quo_var = AmountVar {
+            amount: FqVar::new_witness(self.cs(), || Ok(Fq::from(quo)))?,
+        };
+        let rem_var = AmountVar {
+            amount: FqVar::new_witness(self.cs(), || Ok(Fq::from(rem)))?,
+        };
+
+        // Constrain: numerator = quo * divisor + rem
+        let numerator_var = quo_var.clone() * divisor_var.clone() + rem_var.clone();
+        self.enforce_equal(&numerator_var)?;
+
+        // In this stanza we constrain: 0 <= rem <= divisor
+        let zero_var = AmountVar {
+            amount: FqVar::new_constant(self.cs(), Fq::from(0))?,
+        };
+        // First constrain: 0 <= rem
+        zero_var
+            .amount
+            .enforce_cmp(&rem_var.amount, core::cmp::Ordering::Less, true)?;
+        // Next constrain: rem <= divisor
+        rem_var
+            .amount
+            .enforce_cmp(&divisor_var.amount, core::cmp::Ordering::Less, true)?;
+
+        Ok((quo_var, rem_var))
+    }
 }
 
 impl AllocVar<Amount, Fq> for AmountVar {
@@ -62,16 +109,10 @@ impl AllocVar<Amount, Fq> for AmountVar {
         let ns = cs.into();
         let cs = ns.cs();
         let amount: Amount = *f()?.borrow();
-        match mode {
-            AllocationMode::Constant => unimplemented!(),
-            AllocationMode::Input => unimplemented!(),
-            AllocationMode::Witness => {
-                let inner_amount_var = FqVar::new_witness(cs, || Ok(Fq::from(amount)))?;
-                Ok(Self {
-                    amount: inner_amount_var,
-                })
-            }
-        }
+        let inner_amount_var = FqVar::new_variable(cs, || Ok(Fq::from(amount)), mode)?;
+        Ok(Self {
+            amount: inner_amount_var,
+        })
     }
 }
 
@@ -90,6 +131,54 @@ impl R1CSVar<Fq> for AmountVar {
                 .try_into()
                 .expect("should be able to fit in 16 bytes"),
         ))
+    }
+}
+
+impl EqGadget<Fq> for AmountVar {
+    fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
+        self.amount.is_eq(&other.amount)
+    }
+}
+
+impl CondSelectGadget<Fq> for AmountVar {
+    fn conditionally_select(
+        cond: &Boolean<Fq>,
+        true_value: &Self,
+        false_value: &Self,
+    ) -> Result<Self, SynthesisError> {
+        Ok(Self {
+            amount: FqVar::conditionally_select(cond, &true_value.amount, &false_value.amount)?,
+        })
+    }
+}
+
+impl std::ops::Add for AmountVar {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
+            amount: self.amount + rhs.amount,
+        }
+    }
+}
+
+impl std::ops::Sub for AmountVar {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self {
+            amount: self.amount - rhs.amount,
+        }
+    }
+}
+
+impl std::ops::Mul for AmountVar {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        Self {
+            amount: self.amount * rhs.amount,
+        }
     }
 }
 

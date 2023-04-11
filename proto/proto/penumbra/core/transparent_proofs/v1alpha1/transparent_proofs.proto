@@ -40,8 +40,3 @@ message SwapClaimProof {
   crypto.v1alpha1.Amount lambda_1_i = 20;
   crypto.v1alpha1.Amount lambda_2_i = 21;
 }
-
-message UndelegateClaimProof {
-  crypto.v1alpha1.Amount unbonding_amount = 1;
-  bytes balance_blinding = 2;
-}

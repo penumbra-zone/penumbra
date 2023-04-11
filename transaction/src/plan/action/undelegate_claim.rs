@@ -1,9 +1,12 @@
 use penumbra_crypto::{
-    proofs::transparent::UndelegateClaimProof,
+    asset, balance,
+    proofs::groth16::UndelegateClaimProof,
     stake::{IdentityKey, Penalty, UnbondingToken},
     Amount, FieldExt, Fr,
 };
+use penumbra_proof_params::UNDELEGATECLAIM_PROOF_PROVING_KEY;
 use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
+use rand_core::OsRng;
 
 use serde::{Deserialize, Serialize};
 
@@ -46,14 +49,33 @@ impl UndelegateClaimPlan {
 
     /// Construct the [`UndelegateClaimProof`] required by the [`UndelegateClaimBody`] described by this [`UndelegateClaimPlan`].
     pub fn undelegate_claim_proof(&self) -> UndelegateClaimProof {
-        UndelegateClaimProof::new(self.unbonding_amount, self.balance_blinding)
+        UndelegateClaimProof::prove(
+            &mut OsRng,
+            &UNDELEGATECLAIM_PROOF_PROVING_KEY,
+            self.unbonding_amount,
+            self.balance_blinding,
+            self.balance_commitment(),
+            self.unbonding_id(),
+            self.penalty,
+        )
+        .expect("can generate undelegate claim proof")
+    }
+
+    pub fn unbonding_token(&self) -> UnbondingToken {
+        UnbondingToken::new(self.validator_identity, self.start_epoch_index)
+    }
+
+    pub fn unbonding_id(&self) -> asset::Id {
+        self.unbonding_token().id()
+    }
+
+    pub fn balance_commitment(&self) -> balance::Commitment {
+        self.balance().commit(self.balance_blinding)
     }
 
     pub fn balance(&self) -> penumbra_crypto::Balance {
-        let unbonding_id =
-            UnbondingToken::new(self.validator_identity, self.start_epoch_index).id();
         self.penalty
-            .balance_for_claim(unbonding_id, self.unbonding_amount)
+            .balance_for_claim(self.unbonding_id(), self.unbonding_amount)
     }
 }
 

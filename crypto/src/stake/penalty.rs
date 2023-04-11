@@ -1,9 +1,17 @@
 use std::str::FromStr;
 
+use ark_ff::ToConstraintField;
+use ark_r1cs_std::prelude::*;
+use ark_relations::r1cs::SynthesisError;
+use decaf377::{r1cs::FqVar, FieldExt, Fq};
 use penumbra_proto::{core::stake::v1alpha1 as pbs, DomainType};
 use serde::{Deserialize, Serialize};
 
-use crate::{asset, Amount, Balance, Value, STAKING_TOKEN_ASSET_ID};
+use crate::{
+    asset::{self, AmountVar, AssetIdVar},
+    balance::BalanceVar,
+    Amount, Balance, Value, ValueVar, STAKING_TOKEN_ASSET_ID,
+};
 
 /// Tracks slashing penalties applied to a validator in some epoch.
 ///
@@ -45,7 +53,6 @@ impl Penalty {
     pub fn balance_for_claim(&self, unbonding_id: asset::Id, unbonding_amount: Amount) -> Balance {
         // The undelegate claim action subtracts the unbonding amount and adds
         // the unbonded amount from the transaction's value balance.
-
         Balance::zero()
             - Value {
                 amount: unbonding_amount,
@@ -55,6 +62,100 @@ impl Penalty {
                 amount: self.apply_to(unbonding_amount),
                 asset_id: *STAKING_TOKEN_ASSET_ID,
             }
+    }
+}
+
+impl ToConstraintField<Fq> for Penalty {
+    fn to_field_elements(&self) -> Option<Vec<Fq>> {
+        let field_elements = vec![Fq::from(self.0)];
+        Some(field_elements)
+    }
+}
+
+pub struct PenaltyVar {
+    inner: FqVar,
+}
+
+impl AllocVar<Penalty, Fq> for PenaltyVar {
+    fn new_variable<T: std::borrow::Borrow<Penalty>>(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: ark_r1cs_std::prelude::AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        let inner: Penalty = *f()?.borrow();
+        Ok(Self {
+            inner: FqVar::new_variable(cs, || Ok(Fq::from(inner.0)), mode)?,
+        })
+    }
+}
+
+impl PenaltyVar {
+    pub fn apply_to(&self, amount: AmountVar) -> Result<AmountVar, SynthesisError> {
+        let penalty = self.value().unwrap_or(Penalty(0));
+
+        // Out of circuit scale factor computation:
+        let amount_bytes = &amount.value().unwrap_or(Amount::from(0u64)).to_le_bytes()[0..16];
+        let amount_128 =
+            u128::from_le_bytes(amount_bytes.try_into().expect("should fit in 16 bytes"));
+        let penalized_amount = amount_128 * (1_0000_0000 - penalty.0 as u128) / 1_0000_0000;
+
+        // Witness the result in the circuit.
+        let penalized_amount_var = AmountVar::new_witness(self.cs(), || {
+            Ok(Amount::from(
+                u64::try_from(penalized_amount).expect("can fit in u64"),
+            ))
+        })?;
+
+        // If the witnessed penalized amount is calculated correctly, then:
+        // penalized_amount = amount * (1_0000_0000 - penalty (public)) / 1_0000_0000
+        let hundred_mil = AmountVar::new_constant(self.cs(), Amount::from(1_0000_0000u128))?; // 1_0000_0000
+        let numerator = amount
+            * (hundred_mil.clone()
+                - AmountVar {
+                    amount: self.inner.clone(),
+                });
+        let (penalized_amount_quo, _) = numerator.quo_rem(&hundred_mil)?;
+        penalized_amount_quo.enforce_equal(&penalized_amount_var)?;
+
+        Ok(penalized_amount_var)
+    }
+
+    pub fn balance_for_claim(
+        &self,
+        unbonding_id: AssetIdVar,
+        unbonding_amount: AmountVar,
+    ) -> Result<BalanceVar, SynthesisError> {
+        let negative_value = BalanceVar::from_negative_value_var(ValueVar {
+            amount: unbonding_amount.clone(),
+            asset_id: unbonding_id,
+        });
+        let staking_token_asset_id_var =
+            AssetIdVar::new_witness(self.cs(), || Ok(*STAKING_TOKEN_ASSET_ID))?;
+
+        let positive_value = BalanceVar::from_positive_value_var(ValueVar {
+            amount: self.apply_to(unbonding_amount)?,
+            asset_id: staking_token_asset_id_var,
+        });
+        Ok(negative_value + positive_value)
+    }
+}
+
+impl R1CSVar<Fq> for PenaltyVar {
+    type Value = Penalty;
+
+    fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<Fq> {
+        self.inner.cs()
+    }
+
+    fn value(&self) -> Result<Self::Value, SynthesisError> {
+        let inner_fq = self.inner.value()?;
+        let inner_bytes = &inner_fq.to_bytes()[0..8];
+        let penalty_bytes: [u8; 8] = inner_bytes
+            .try_into()
+            .expect("should be able to fit in 16 bytes");
+        Ok(Penalty(u64::from_le_bytes(penalty_bytes)))
     }
 }
 

@@ -1,6 +1,6 @@
 use penumbra_crypto::{
     balance,
-    proofs::transparent::UndelegateClaimProof,
+    proofs::groth16::UndelegateClaimProof,
     stake::{IdentityKey, Penalty},
 };
 use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
@@ -21,7 +21,7 @@ pub struct UndelegateClaimBody {
     pub balance_commitment: balance::Commitment,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::UndelegateClaim", into = "pb::UndelegateClaim")]
 pub struct UndelegateClaim {
     pub body: UndelegateClaimBody,

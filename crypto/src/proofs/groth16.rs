@@ -3,11 +3,13 @@ mod output;
 mod spend;
 mod swap;
 mod traits;
+mod undelegate;
 
 pub use output::{OutputCircuit, OutputProof};
 pub use spend::{SpendCircuit, SpendProof};
 pub use swap::{SwapCircuit, SwapProof};
 pub use traits::{ParameterSetup, ProvingKeyExt, VerifyingKeyExt};
+pub use undelegate::{UndelegateClaimCircuit, UndelegateClaimProof};
 
 /// The length of our Groth16 proofs in bytes.
 pub const GROTH16_PROOF_LENGTH_BYTES: usize = 192;
@@ -21,6 +23,8 @@ mod tests {
         asset,
         dex::{swap::SwapPlaintext, TradingPair},
         keys::{SeedPhrase, SpendKey},
+        rdsa,
+        stake::{IdentityKey, Penalty, UnbondingToken},
         transaction::Fee,
         Address, Amount, Balance, Rseed,
     };
@@ -32,7 +36,9 @@ mod tests {
     use proptest::prelude::*;
 
     use decaf377_rdsa::{SpendAuth, VerificationKey};
-    use penumbra_proto::core::crypto::v1alpha1 as pb;
+    use penumbra_proto::{
+        client::v1alpha1::tendermint_proxy::Validator, core::crypto::v1alpha1 as pb,
+    };
     use penumbra_tct as tct;
     use rand_core::OsRng;
     use tct::Commitment;
@@ -110,6 +116,42 @@ mod tests {
             .expect("can create proof");
 
             let proof_result = proof.verify(&vk, balance_commitment, swap_commitment, fee_commitment);
+
+            assert!(proof_result.is_ok());
+        }
+    }
+
+    proptest! {
+    #![proptest_config(ProptestConfig::with_cases(2))]
+    #[test]
+    fn undelegate_claim_proof_happy_path(validator_randomness in fr_strategy(), balance_blinding in fr_strategy(), value1_amount in 2..200u64, penalty_amount in 2..200u64) {
+            let (pk, vk) = UndelegateClaimCircuit::generate_prepared_test_parameters();
+
+            let mut rng = OsRng;
+
+            let sk = rdsa::SigningKey::new_from_field(validator_randomness);
+            let validator_identity = IdentityKey((&sk).into());
+            let unbonding_amount = Amount::from(value1_amount);
+
+            let start_epoch_index = 1;
+            let unbonding_token = UnbondingToken::new(validator_identity, start_epoch_index);
+            let unbonding_id = unbonding_token.id();
+            let penalty = Penalty(penalty_amount);
+            let balance = penalty.balance_for_claim(unbonding_id, unbonding_amount);
+            let balance_commitment = balance.commit(balance_blinding);
+
+            let proof = UndelegateClaimProof::prove(
+                &mut rng,
+                &pk,
+                unbonding_amount,
+                balance_blinding,
+                balance_commitment,
+                unbonding_id,
+                penalty
+            )
+            .expect("can create proof");
+
+            let proof_result = proof.verify(&vk, balance_commitment, unbonding_id, penalty);
 
             assert!(proof_result.is_ok());
         }
