@@ -7,6 +7,7 @@ use decaf377::{r1cs::FqVar, FieldExt, Fq};
 
 use crate::{internal::hash::DOMAIN_SEPARATOR, prelude::WhichWay, Position, Proof};
 
+#[derive(Clone, Debug)]
 /// Represents the position of a leaf in the TCT represented in R1CS.
 pub struct PositionVar {
     /// The FqVar representing the leaf.
@@ -25,6 +26,29 @@ impl AllocVar<Position, Fq> for PositionVar {
         Ok(Self {
             inner: FqVar::new_variable(cs, || Ok(Fq::from(u64::from(inner))), mode)?,
         })
+    }
+}
+
+impl PositionVar {
+    /// Witness the commitment index corresponding to this leaf.
+    pub fn commitment(&self) -> Result<FqVar, SynthesisError> {
+        let position = self.value().unwrap_or_default();
+        let commitment = position.commitment();
+        FqVar::new_witness(self.cs(), || Ok(Fq::from(commitment)))
+    }
+
+    /// Witness the block corresponding to this leaf.
+    pub fn block(&self) -> Result<FqVar, SynthesisError> {
+        let position = self.value().unwrap_or_default();
+        let block = position.block();
+        FqVar::new_witness(self.cs(), || Ok(Fq::from(block)))
+    }
+
+    /// Witness the epoch corresponding to this leaf.
+    pub fn epoch(&self) -> Result<FqVar, SynthesisError> {
+        let position = self.value().unwrap_or_default();
+        let epoch = position.epoch();
+        FqVar::new_witness(self.cs(), || Ok(Fq::from(epoch)))
     }
 }
 
