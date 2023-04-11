@@ -1,13 +1,15 @@
-use ark_ff::{UniformRand, Zero};
+use ark_ff::UniformRand;
 use decaf377::{FieldExt, Fr};
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_crypto::{
-    proofs::transparent::{DelegatorVoteProof, SpendProof},
-    Amount, FullViewingKey, Note, VotingReceiptToken,
+    proofs::groth16::DelegatorVoteProof, Amount, FullViewingKey, Note, Nullifier,
+    VotingReceiptToken,
 };
+use penumbra_proof_params::DELEGATOR_VOTE_PROOF_PROVING_KEY;
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType};
 use penumbra_tct as tct;
 use rand::{CryptoRng, RngCore};
+use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
 
 use crate::action::{DelegatorVote, DelegatorVoteBody, Vote};
@@ -88,16 +90,31 @@ impl DelegatorVotePlan {
         fvk: &FullViewingKey,
         state_commitment_proof: tct::Proof,
     ) -> DelegatorVoteProof {
-        DelegatorVoteProof {
-            spend_proof: SpendProof {
-                state_commitment_proof,
-                note: self.staked_note.clone(),
-                v_blinding: Fr::zero(),
-                spend_auth_randomizer: self.randomizer,
-                ak: *fvk.spend_verification_key(),
-                nk: *fvk.nullifier_key(),
-            },
-        }
+        DelegatorVoteProof::prove(
+            &mut OsRng,
+            &DELEGATOR_VOTE_PROOF_PROVING_KEY,
+            state_commitment_proof.clone(),
+            self.staked_note.clone(),
+            self.randomizer,
+            *fvk.spend_verification_key(),
+            *fvk.nullifier_key(),
+            state_commitment_proof.root(),
+            self.balance().commit(Fr::from(0u64)),
+            self.nullifier(fvk),
+            self.rk(fvk),
+            self.start_position,
+        )
+        .expect("can generate ZK delegator vote proof")
+    }
+
+    /// Construct the randomized verification key associated with this [`DelegatorVotePlan`].
+    pub fn rk(&self, fvk: &FullViewingKey) -> decaf377_rdsa::VerificationKey<SpendAuth> {
+        fvk.spend_verification_key().randomize(&self.randomizer)
+    }
+
+    /// Construct the [`Nullifier`] associated with this [`DelegatorVotePlan`].
+    pub fn nullifier(&self, fvk: &FullViewingKey) -> Nullifier {
+        fvk.derive_nullifier(self.position, &self.staked_note.commit())
     }
 
     pub fn balance(&self) -> penumbra_crypto::Balance {

@@ -58,6 +58,19 @@ pub mod undelegateclaim {
     include!("gen/undelegateclaim_id.rs");
 }
 
+#[cfg(feature = "proving-keys")]
+/// Proving key for the delegator vote proof.
+pub static DELEGATOR_VOTE_PROOF_PROVING_KEY: Lazy<ProvingKey<Bls12_377>> =
+    Lazy::new(proving_keys::delegator_vote_proving_parameters);
+
+/// Verification key for the delegator vote proof.
+pub static DELEGATOR_VOTE_PROOF_VERIFICATION_KEY: Lazy<PreparedVerifyingKey<Bls12_377>> =
+    Lazy::new(|| delegator_vote_verification_parameters().into());
+
+pub mod delegator_vote {
+    include!("gen/delegator_vote_id.rs");
+}
+
 // Note: Here we are using `CanonicalDeserialize::deserialize_unchecked` as the
 // parameters are being loaded from a trusted source (our source code).
 
@@ -78,5 +91,10 @@ fn swap_verification_parameters() -> VerifyingKey<Bls12_377> {
 
 fn undelegateclaim_verification_parameters() -> VerifyingKey<Bls12_377> {
     let vk_params = include_bytes!("gen/undelegateclaim_vk.param");
+    VerifyingKey::deserialize_unchecked(&vk_params[..]).expect("can deserialize VerifyingKey")
+}
+
+fn delegator_vote_verification_parameters() -> VerifyingKey<Bls12_377> {
+    let vk_params = include_bytes!("gen/delegator_vote_vk.param");
     VerifyingKey::deserialize_unchecked(&vk_params[..]).expect("can deserialize VerifyingKey")
 }

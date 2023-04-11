@@ -53,7 +53,7 @@ message DelegatorVote {
   // The vote authorization signature is authorizing data.
   crypto.v1alpha1.SpendAuthSignature auth_sig = 2;
   // The vote proof is authorizing data.
-  bytes proof = 3;
+  crypto.v1alpha1.ZKDelegatorVoteProof proof = 3;
 }
 
 message DelegatorVoteBody {
