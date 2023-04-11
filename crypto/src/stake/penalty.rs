@@ -53,7 +53,6 @@ impl Penalty {
     pub fn balance_for_claim(&self, unbonding_id: asset::Id, unbonding_amount: Amount) -> Balance {
         // The undelegate claim action subtracts the unbonding amount and adds
         // the unbonded amount from the transaction's value balance.
-
         Balance::zero()
             - Value {
                 amount: unbonding_amount,
@@ -97,23 +96,30 @@ impl PenaltyVar {
         let penalty = self.value().unwrap_or(Penalty(0));
 
         // Out of circuit scale factor computation:
-        let scale_factor = (1_0000_0000 - penalty.0 as u128) / 1_0000_0000;
+        let amount_bytes = &amount.value().unwrap_or(Amount::from(0u64)).to_le_bytes()[0..16];
+        let amount_128 =
+            u128::from_le_bytes(amount_bytes.try_into().expect("should fit in 16 bytes"));
+        let penalized_amount = amount_128 * (1_0000_0000 - penalty.0 as u128) / 1_0000_0000;
 
-        // Now witness scale factor:
-        let scale_factor_var = FqVar::new_witness(self.cs(), || Ok(Fq::from(scale_factor)))?;
+        // Witness the result in the circuit.
+        let penalized_amount_var = AmountVar::new_witness(self.cs(), || {
+            Ok(Amount::from(
+                u64::try_from(penalized_amount).expect("can fit in u64"),
+            ))
+        })?;
 
-        // If the scale factor was correctly computed, then the following should be true:
-        // 1_0000_0000 * scale_factor_var = 1_0000_0000 - penalty_var
-        let hundred_mil = FqVar::new_constant(self.cs(), Fq::from(1_0000_0000))?; // 1_0000_0000
-        let lhs = hundred_mil.clone() * scale_factor_var.clone();
-        let rhs = hundred_mil - &self.inner;
-        lhs.enforce_equal(&rhs)?;
+        // If the witnessed penalized amount is calculated correctly, then:
+        // penalized_amount = amount * (1_0000_0000 - penalty (public)) / 1_0000_0000
+        let hundred_mil = AmountVar::new_constant(self.cs(), Amount::from(1_0000_0000u128))?; // 1_0000_0000
+        let numerator = amount
+            * (hundred_mil.clone()
+                - AmountVar {
+                    amount: self.inner.clone(),
+                });
+        let (penalized_amount_quo, _) = numerator.quo_rem(&hundred_mil)?;
+        penalized_amount_quo.enforce_equal(&penalized_amount_var)?;
 
-        // Now we need the amount to be scaled by the scale factor
-        let scaled_amount = amount.amount * scale_factor_var;
-        Ok(AmountVar {
-            amount: scaled_amount,
-        })
+        Ok(penalized_amount_var)
     }
 
     pub fn balance_for_claim(
@@ -127,6 +133,7 @@ impl PenaltyVar {
         });
         let staking_token_asset_id_var =
             AssetIdVar::new_witness(self.cs(), || Ok(*STAKING_TOKEN_ASSET_ID))?;
+
         let positive_value = BalanceVar::from_positive_value_var(ValueVar {
             amount: self.apply_to(unbonding_amount)?,
             asset_id: staking_token_asset_id_var,
