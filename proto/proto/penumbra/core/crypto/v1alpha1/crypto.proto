@@ -214,3 +214,8 @@ message ZKSwapProof {
 message ZKUndelegateClaimProof {
     bytes inner = 1;
 }
+
+// A Penumbra ZK delegator vote proof.
+message ZKDelegatorVoteProof {
+    bytes inner = 1;
+}
