@@ -15,6 +15,7 @@ use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
 use penumbra_tct as tct;
 use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
+use tct::r1cs::PositionVar;
 
 use crate::proofs::groth16::{gadgets, ParameterSetup, VerifyingKeyExt};
 use crate::{
@@ -57,6 +58,8 @@ pub struct DelegatorVoteCircuit {
     pub nullifier: Nullifier,
     /// the randomized verification spend key.
     pub rk: VerificationKey<SpendAuth>,
+    /// the start position of the proposal being voted on.
+    pub start_position: tct::Position,
 }
 
 impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
@@ -89,6 +92,7 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
             BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.balance_commitment))?;
         let claimed_nullifier_var = NullifierVar::new_input(cs.clone(), || Ok(self.nullifier))?;
         let rk_var = RandomizedVerificationKey::new_input(cs.clone(), || Ok(self.rk.clone()))?;
+        let start_position = PositionVar::new_input(cs.clone(), || Ok(self.start_position))?;
 
         // Note commitment integrity.
         let note_commitment_var = note_var.commit()?;
@@ -102,7 +106,7 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
         merkle_path_var.verify(
             cs.clone(),
             &Boolean::TRUE,
-            position_var.inner,
+            position_var.clone().inner,
             anchor_var,
             claimed_note_commitment.inner(),
         )?;
@@ -128,6 +132,19 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
             note_var.diversified_generator(),
         )?;
         gadgets::element_not_identity(cs, &Boolean::TRUE, ak_element_var.inner)?;
+
+        // Additionally, check that the start position has a zero commitment index, since this is
+        // the only sensible start time for a vote.
+        let zero_constant = FqVar::constant(Fq::from(0u64));
+        start_position.commitment()?.enforce_equal(&zero_constant)?;
+
+        // Additionally, check that the position of the spend proof is before the start
+        // start_height, which ensures that the note being voted with was created before voting
+        // started.
+        position_var
+            .inner
+            .enforce_cmp(&start_position.inner, core::cmp::Ordering::Less, false)?;
+
         Ok(())
     }
 }
@@ -158,6 +175,7 @@ impl ParameterSetup for DelegatorVoteCircuit {
         sct.insert(tct::Witness::Keep, note_commitment).unwrap();
         let anchor = sct.root();
         let state_commitment_proof = sct.witness(note_commitment).unwrap();
+        let start_position = state_commitment_proof.position();
 
         let circuit = DelegatorVoteCircuit {
             state_commitment_proof,
@@ -170,6 +188,7 @@ impl ParameterSetup for DelegatorVoteCircuit {
             balance_commitment: balance::Commitment(decaf377::basepoint()),
             nullifier,
             rk,
+            start_position,
         };
         let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
             .expect("can perform circuit specific setup");
@@ -187,7 +206,6 @@ impl DelegatorVoteProof {
         pk: &ProvingKey<Bls12_377>,
         state_commitment_proof: tct::Proof,
         note: Note,
-        v_blinding: Fr,
         spend_auth_randomizer: Fr,
         ak: VerificationKey<SpendAuth>,
         nk: NullifierKey,
@@ -195,11 +213,15 @@ impl DelegatorVoteProof {
         balance_commitment: balance::Commitment,
         nullifier: Nullifier,
         rk: VerificationKey<SpendAuth>,
+        start_position: tct::Position,
     ) -> anyhow::Result<Self> {
+        // The blinding factor for the value commitment is zero since it
+        // is not blinded.
+        let zero_blinding = Fr::from(0);
         let circuit = DelegatorVoteCircuit {
             state_commitment_proof,
             note,
-            v_blinding,
+            v_blinding: zero_blinding,
             spend_auth_randomizer,
             ak,
             nk,
@@ -207,6 +229,7 @@ impl DelegatorVoteProof {
             balance_commitment,
             nullifier,
             rk,
+            start_position,
         };
         let proof = Groth16::prove(pk, circuit, rng).map_err(|err| anyhow::anyhow!(err))?;
         Ok(Self(proof))
@@ -223,11 +246,17 @@ impl DelegatorVoteProof {
         balance_commitment: balance::Commitment,
         nullifier: Nullifier,
         rk: VerificationKey<SpendAuth>,
+        start_position: tct::Position,
     ) -> anyhow::Result<()> {
         let mut public_inputs = Vec::new();
         public_inputs.extend(Fq::from(anchor.0).to_field_elements().unwrap());
         public_inputs.extend(balance_commitment.0.to_field_elements().unwrap());
         public_inputs.extend(nullifier.0.to_field_elements().unwrap());
+        public_inputs.extend(
+            Fq::from(u64::from(start_position))
+                .to_field_elements()
+                .unwrap(),
+        );
         let element_rk = decaf377::Encoding(rk.to_bytes())
             .vartime_decompress()
             .expect("expect only valid element points");
