@@ -50,6 +50,11 @@ impl ValueView {
     pub fn value(&self) -> Value {
         self.clone().into()
     }
+
+    /// Get the `asset::Id` of the underlying `Value`, without having to match on visibility.
+    pub fn asset_id(&self) -> asset::Id {
+        self.value().asset_id
+    }
 }
 
 impl Value {

@@ -4185,12 +4185,18 @@ impl serde::Serialize for TransactionPerspectiveResponse {
         if self.tx.is_some() {
             len += 1;
         }
+        if self.txv.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.TransactionPerspectiveResponse", len)?;
         if let Some(v) = self.txp.as_ref() {
             struct_ser.serialize_field("txp", v)?;
         }
         if let Some(v) = self.tx.as_ref() {
             struct_ser.serialize_field("tx", v)?;
+        }
+        if let Some(v) = self.txv.as_ref() {
+            struct_ser.serialize_field("txv", v)?;
         }
         struct_ser.end()
     }
@@ -4204,12 +4210,14 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspectiveResponse {
         const FIELDS: &[&str] = &[
             "txp",
             "tx",
+            "txv",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Txp,
             Tx,
+            Txv,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -4233,6 +4241,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspectiveResponse {
                         match value {
                             "txp" => Ok(GeneratedField::Txp),
                             "tx" => Ok(GeneratedField::Tx),
+                            "txv" => Ok(GeneratedField::Txv),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -4254,6 +4263,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspectiveResponse {
             {
                 let mut txp__ = None;
                 let mut tx__ = None;
+                let mut txv__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::Txp => {
@@ -4268,11 +4278,18 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspectiveResponse {
                             }
                             tx__ = map.next_value()?;
                         }
+                        GeneratedField::Txv => {
+                            if txv__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("txv"));
+                            }
+                            txv__ = map.next_value()?;
+                        }
                     }
                 }
                 Ok(TransactionPerspectiveResponse {
                     txp: txp__,
                     tx: tx__,
+                    txv: txv__,
                 })
             }
         }

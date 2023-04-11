@@ -548,6 +548,10 @@ pub struct TransactionPerspectiveResponse {
     pub tx: ::core::option::Option<
         super::super::core::transaction::v1alpha1::Transaction,
     >,
+    #[prost(message, optional, tag = "3")]
+    pub txv: ::core::option::Option<
+        super::super::core::transaction::v1alpha1::TransactionView,
+    >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

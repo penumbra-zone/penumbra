@@ -4,7 +4,7 @@ use futures::Future;
 use parking_lot::Mutex;
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::{
-    asset::{self, Denom, Id},
+    asset::{self, Id},
     note,
     stake::{DelegationToken, IdentityKey},
     Address, Amount, Asset, FieldExt, Fq, FullViewingKey, Note, Nullifier, Rseed, Value,
@@ -633,14 +633,14 @@ impl Storage {
         Ok(output)
     }
 
-    pub async fn asset_by_denom(&self, denom: &Denom) -> anyhow::Result<Option<Asset>> {
-        let denom_string = denom.to_string();
+    pub async fn asset_by_id(&self, id: &Id) -> anyhow::Result<Option<Asset>> {
+        let id = id.to_bytes().to_vec();
 
         let result = sqlx::query!(
             "SELECT *
             FROM assets
-            WHERE denom = ?",
-            denom_string
+            WHERE asset_id = ?",
+            id
         )
         .fetch_optional(&self.pool)
         .await?;
@@ -649,7 +649,9 @@ impl Storage {
             .map(|record| {
                 Ok(Asset {
                     id: Id::try_from(record.asset_id.as_slice())?,
-                    denom: denom.clone(),
+                    denom: asset::REGISTRY
+                        .parse_denom(&record.denom)
+                        .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", record.denom))?,
                 })
             })
             .transpose()

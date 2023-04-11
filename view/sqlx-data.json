@@ -602,6 +602,30 @@
     },
     "query": "SELECT block_height, tx_hash\n            FROM tx\n            WHERE block_height BETWEEN ? AND ?"
   },
+  "d9c93dfff9991fc0f833d04cf8db8f84f8140e50c530852b2bf97e57e611c971": {
+    "describe": {
+      "columns": [
+        {
+          "name": "asset_id",
+          "ordinal": 0,
+          "type_info": "Blob"
+        },
+        {
+          "name": "denom",
+          "ordinal": 1,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT *\n            FROM assets\n            WHERE asset_id = ?"
+  },
   "efb5f4932197a38ca134b63d8ea5d2fad9145fb56d03a60351f15b5302905402": {
     "describe": {
       "columns": [
