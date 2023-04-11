@@ -36,6 +36,12 @@ impl Component for Governance {
     #[instrument(name = "governance", skip(state))]
     async fn end_epoch<S: StateWrite>(mut state: S) -> Result<()> {
         state.tally_delegator_votes(None).await?;
+
+        // An epoch transition could be the consequence of a validator being tombstoned, which means
+        // we should check again whether any emergency proposals have passed, since tombstoned
+        // validators and their delegators are retroactively disqualified from voting on proposals.
+        state.enact_proposals_if_emergency(None).await?;
+
         Ok(())
     }
 }

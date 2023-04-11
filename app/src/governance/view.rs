@@ -26,7 +26,7 @@ use tracing::instrument;
 use crate::{
     shielded_pool::StateReadExt as _,
     shielded_pool::SupplyRead,
-    stake::{rate::RateData, validator, StateReadExt as _},
+    stake::{self, rate::RateData, validator, StateReadExt as _},
 };
 
 use super::{state_key, tally::Tally};
@@ -114,7 +114,9 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
             .map(Into::into))
     }
 
-    /// Get the total voting power across all validators.
+    /// Get the total voting power across all active validators at the start of the given proposal.
+    ///
+    /// This omits any validators who have been tombstoned since the start of the proposal.
     async fn total_voting_power_at_proposal_start(&self, proposal_id: u64) -> Result<u64> {
         Ok(self
             .validator_voting_power_at_proposal_start(proposal_id)
@@ -383,6 +385,8 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
     }
 
     /// Get all the active validator voting power for the proposal.
+    ///
+    /// This omits any validators who have been tombstoned after the proposal started.
     async fn validator_voting_power_at_proposal_start(
         &self,
         proposal_id: u64,
@@ -402,6 +406,16 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
                     )
                 })?
                 .parse()?;
+
+            // Check to make sure the validator was not tombstoned after the proposal started.
+            if matches!(
+                self.validator_state(&identity_key).await?,
+                Some(stake::validator::State::Tombstoned)
+            ) {
+                // Its power does not count anymore!
+                continue;
+            }
+
             powers.insert(identity_key, power);
         }
 
@@ -409,6 +423,8 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
     }
 
     /// Check whether a validator was active at the start of a proposal, and fail if not.
+    ///
+    /// This also fails if the validator was tombstoned after the proposal started.
     async fn check_validator_active_at_proposal_start(
         &self,
         proposal_id: u64,
@@ -423,7 +439,7 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
             .is_none()
         {
             anyhow::bail!(
-                "validator {} was not active at the start of proposal {}",
+                "validator {} was not active at the start of proposal {}, or was tombstoned after the proposal started",
                 identity_key,
                 proposal_id
             );
@@ -433,6 +449,8 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
     }
 
     /// Get all the validator votes for the proposal.
+    ///
+    /// This omits any validators who have been tombstoned after the proposal started.
     async fn validator_votes(&self, proposal_id: u64) -> Result<BTreeMap<IdentityKey, Vote>> {
         let mut votes = BTreeMap::new();
 
@@ -445,6 +463,16 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
                 .next()
                 .ok_or_else(|| anyhow::anyhow!("incorrect key format for validator vote"))?
                 .parse()?;
+
+            // Check to make sure the validator was not tombstoned after the proposal started.
+            if matches!(
+                self.validator_state(&identity_key).await?,
+                Some(stake::validator::State::Tombstoned)
+            ) {
+                // Its vote does not count anymore!
+                continue;
+            }
+
             votes.insert(identity_key, vote);
         }
 
@@ -453,6 +481,8 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
 
     /// Get all the *tallied* delegator votes for the proposal (excluding those which have been
     /// cast but not tallied).
+    ///
+    /// This omits any delegators to validators who have been tombstoned after the proposal started.
     async fn tallied_delegator_votes(
         &self,
         proposal_id: u64,
@@ -468,6 +498,17 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
                 .next()
                 .ok_or_else(|| anyhow::anyhow!("incorrect key format for delegator vote tally"))?
                 .parse()?;
+
+            // Check to make sure the delegator's validator was not tombstoned after the proposal
+            // started.
+            if matches!(
+                self.validator_state(&identity_key).await?,
+                Some(stake::validator::State::Tombstoned)
+            ) {
+                // Its delegators' votes do not count anymore!
+                continue;
+            }
+
             tallies.insert(identity_key, tally);
         }
 
@@ -485,6 +526,11 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
 
         // For each validator, tally their own vote, overriding it with any tallied delegator votes
         let mut tally = Tally::default();
+
+        // Because we iterate over the validator powers, which are defined to exclude tombstoned
+        // validators, we don't need to double-check that the validator wasn't tombstoned, because
+        // the check has already been performed inside the call to
+        // `validator_voting_power_at_proposal_start`.
         for (validator, power) in validator_powers.into_iter() {
             let delegator_tally = delegator_tallies.remove(&validator).unwrap_or_default();
             if let Some(vote) = validator_votes.remove(&validator) {
@@ -501,11 +547,11 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
 
         assert!(
             validator_votes.is_empty(),
-            "no inactive validator should have voted"
+            "no inactive validator should have voted, except for a later-tombstoned validator"
         );
         assert!(
             delegator_tallies.is_empty(),
-            "no delegator should have been able to vote for an inactive validator"
+            "no delegator should have been able to vote for an inactive validator, except for a later-tombstoned validator"
         );
 
         Ok(tally)
@@ -730,7 +776,8 @@ pub trait StateWriteExt: StateWrite {
         Ok(())
     }
 
-    /// Tally delegator votes by sweeping them into the aggregate for each validator, for each proposal.
+    /// Tally delegator votes by sweeping them into the aggregate for each validator, for each
+    /// proposal or just for the proposal specified.
     #[instrument(skip(self))]
     async fn tally_delegator_votes(&mut self, just_for_proposal: Option<u64>) -> Result<()> {
         // Iterate over all the delegator votes, or just the ones for a specific proposal
@@ -884,6 +931,64 @@ pub trait StateWriteExt: StateWrite {
         }
 
         Ok(Ok(()))
+    }
+
+    /// If a proposal is an emergency proposal, every validator vote and epoch transition triggers a
+    /// check to see if we should immediately enact the proposal (if it's reached a 2/3 majority).
+    #[instrument(skip(self))]
+    async fn enact_proposals_if_emergency(&mut self, just_for_proposal: Option<u64>) -> Result<()> {
+        // If only one proposal is specified, just check that one. Otherwise, check all unfinished
+        // proposals.
+        let proposals = if let Some(proposal) = just_for_proposal {
+            [proposal].into_iter().collect()
+        } else {
+            self.unfinished_proposals().await?
+        };
+
+        for proposal in proposals {
+            // Pull out the proposal state and payload
+            let proposal_state = self
+                .proposal_state(proposal)
+                .await?
+                .expect("proposal missing state");
+            let proposal_payload = self
+                .proposal_payload(proposal)
+                .await?
+                .expect("proposal missing payload");
+
+            // IMPORTANT: We don't want to enact an emergency proposal if it's been withdrawn, because
+            // withdrawal should prevent any proposal, even an emergency proposal, from being enacted.
+            if !proposal_state.is_withdrawn() && proposal_payload.is_emergency() {
+                tracing::debug!(proposal = %proposal, "proposal is emergency, checking for emergency pass condition");
+                let tally = self.current_tally(proposal).await?;
+                let total_voting_power =
+                    self.total_voting_power_at_proposal_start(proposal).await?;
+                let chain_params = self.get_chain_params().await?;
+                if tally.emergency_pass(total_voting_power, &chain_params) {
+                    // If the emergency pass condition is met, enact the proposal
+                    tracing::debug!(proposal = %proposal, "emergency pass condition met, trying to enact proposal");
+                    // Try to enact the proposal based on its payload
+                    match self.enact_proposal(proposal, &proposal_payload).await? {
+                        Ok(_) => {
+                            tracing::debug!(proposal = %proposal, "emergency proposal enacted")
+                        }
+                        Err(error) => {
+                            tracing::warn!(proposal = %proposal, %error, "error enacting emergency proposal")
+                        }
+                    }
+                    // Update the proposal state to reflect the outcome (it will always be passed,
+                    // because we got to this point)
+                    self.put_proposal_state(
+                        proposal,
+                        proposal::State::Finished {
+                            outcome: proposal::Outcome::Passed,
+                        },
+                    );
+                }
+            }
+        }
+
+        Ok(())
     }
 
     async fn increment_emergency_chain_halt_count(&mut self) -> Result<()> {

@@ -74,45 +74,9 @@ impl ActionHandler for ValidatorVote {
         tracing::debug!(proposal = %proposal, "cast validator vote");
         state.cast_validator_vote(*proposal, *identity_key, *vote);
 
-        // If a proposal is an emergency proposal, every validator vote triggers a check to see if
-        // we should immediately enact the proposal (if it's reached a 2/3 majority).
-        let proposal_state = state
-            .proposal_state(*proposal)
-            .await?
-            .expect("proposal missing state");
-        let proposal_payload = state
-            .proposal_payload(*proposal)
-            .await?
-            .expect("proposal missing payload");
-        // IMPORTANT: We don't want to enact an emergency proposal if it's been withdrawn, because
-        // withdrawal should prevent any proposal, even an emergency proposal, from being enacted.
-        if !proposal_state.is_withdrawn() && proposal_payload.is_emergency() {
-            tracing::debug!(proposal = %proposal, "proposal is emergency, checking for emergency pass condition");
-            let tally = state.current_tally(*proposal).await?;
-            let total_voting_power = state
-                .total_voting_power_at_proposal_start(*proposal)
-                .await?;
-            let chain_params = state.get_chain_params().await?;
-            if tally.emergency_pass(total_voting_power, &chain_params) {
-                // If the emergency pass condition is met, enact the proposal
-                tracing::debug!(proposal = %proposal, "emergency pass condition met, trying to enact proposal");
-                // Try to enact the proposal based on its payload
-                match state.enact_proposal(*proposal, &proposal_payload).await? {
-                    Ok(_) => tracing::debug!(proposal = %proposal, "emergency proposal enacted"),
-                    Err(error) => {
-                        tracing::warn!(proposal = %proposal, %error, "error enacting emergency proposal")
-                    }
-                }
-                // Update the proposal state to reflect the outcome (it will always be passed,
-                // because we got to this point)
-                state.put_proposal_state(
-                    *proposal,
-                    proposal::State::Finished {
-                        outcome: proposal::Outcome::Passed,
-                    },
-                );
-            }
-        }
+        // If the proposal was an emergency proposal, enact it immediately if it passes the special
+        // emergency proposal threshold.
+        state.enact_proposals_if_emergency(Some(*proposal)).await?;
 
         Ok(())
     }
