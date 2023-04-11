@@ -84,6 +84,10 @@ impl TransactionView {
             anchor: self.anchor,
         }
     }
+
+    pub fn action_views(&self) -> impl Iterator<Item = &ActionView> {
+        self.body_view.action_views.iter()
+    }
 }
 
 impl DomainType for TransactionView {

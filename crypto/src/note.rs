@@ -54,6 +54,14 @@ impl NoteView {
     pub fn note(&self) -> Result<Note, Error> {
         self.clone().try_into()
     }
+
+    pub fn address(&self) -> Address {
+        self.address.address()
+    }
+
+    pub fn asset_id(&self) -> asset::Id {
+        self.value.asset_id()
+    }
 }
 
 impl TryFrom<NoteView> for Note {

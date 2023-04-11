@@ -1,5 +1,5 @@
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     pin::Pin,
     sync::{Arc, Mutex},
 };
@@ -9,10 +9,10 @@ use async_stream::try_stream;
 use camino::Utf8Path;
 use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_crypto::{
-    asset,
+    asset::{self},
     keys::{AccountGroupId, AddressIndex, FullViewingKey},
     transaction::Fee,
-    Address, AddressView, Amount,
+    Amount, Asset,
 };
 use penumbra_proto::{
     client::v1alpha1::{
@@ -521,96 +521,115 @@ impl ViewProtocolService for ViewService {
             return Ok(tonic::Response::new(pb::TransactionPerspectiveResponse::default()));
         };
 
-        let payload_keys = tx
-            .payload_keys(&fvk)
-            .map_err(|_| tonic::Status::failed_precondition("Error generating payload keys"))?;
+        // First, create a TxP with the payload keys visible to our FVK and no other data.
+        let mut txp = TransactionPerspective {
+            payload_keys: tx
+                .payload_keys(&fvk)
+                .map_err(|_| tonic::Status::failed_precondition("Error generating payload keys"))?,
+            ..Default::default()
+        };
 
-        // TODO: better way to determine relevant addresses?
-        // For now, only supply addresses that are in spends.
-        let mut address_views = BTreeMap::<Address, AddressView>::new();
-
-        let mut spend_nullifiers = BTreeMap::new();
-
-        let mut advice_commitments: Vec<Commitment> = Vec::new();
-
+        // Next, extend the TxP with the openings of commitments known to our view server
+        // but not included in the transaction body, for instance spent notes or swap claim outputs.
         for action in tx.actions() {
-            // Currently only supporting spends and swap claims.
-            if let penumbra_transaction::Action::Spend(spend) = action {
-                let nullifier = spend.body.nullifier;
-
-                // An error here indicates we don't know the nullifier, so we omit it from the Perspective.
-                if let Ok(spendable_note_record) =
-                    self.storage.note_by_nullifier(nullifier, false).await
-                {
-                    let address_view = fvk.view_address(spendable_note_record.note.address());
-                    let commitment = spendable_note_record.note.commit();
-
-                    spend_nullifiers.insert(nullifier, spendable_note_record.note);
-                    address_views.insert(address_view.address(), address_view);
-                    advice_commitments.push(commitment);
+            use penumbra_transaction::Action;
+            match action {
+                Action::Spend(spend) => {
+                    let nullifier = spend.body.nullifier;
+                    // An error here indicates we don't know the nullifier, so we omit it from the Perspective.
+                    if let Ok(spendable_note_record) =
+                        self.storage.note_by_nullifier(nullifier, false).await
+                    {
+                        txp.spend_nullifiers
+                            .insert(nullifier, spendable_note_record.note);
+                    }
                 }
-            }
-
-            if let penumbra_transaction::Action::SwapClaim(claim) = action {
-                let nullifier = claim.body.nullifier;
-
-                // An error here indicates we don't know the nullifier, so we omit it from the Perspective.
-                if let Ok(spendable_note_record) =
-                    self.storage.note_by_nullifier(nullifier, false).await
-                {
-                    let address_view = fvk.view_address(spendable_note_record.note.address());
-                    let commitment = spendable_note_record.note.commit();
-
-                    spend_nullifiers.insert(nullifier, spendable_note_record.note);
-                    address_views.insert(address_view.address(), address_view);
-                    advice_commitments.push(commitment);
+                Action::SwapClaim(claim) => {
+                    let claim_advice = self
+                        .storage
+                        .scan_advice(vec![
+                            claim.body.output_1_commitment,
+                            claim.body.output_2_commitment,
+                        ])
+                        .await
+                        .map_err(|e| {
+                            tonic::Status::internal(format!("Error retrieving advice: {:#}", e))
+                        })?;
+                    txp.advice_notes.extend(claim_advice);
                 }
-            }
-
-            if let penumbra_transaction::Action::Output(output) = action {
-                if let Ok(spendable_note_record) = self
-                    .storage
-                    .note_by_commitment(output.body.note_payload.note_commitment, false)
-                    .await
-                    .map_err(|_| tonic::Status::internal("Error retrieving note"))
-                {
-                    let address_view = fvk.view_address(spendable_note_record.note.address());
-                    let commitment = spendable_note_record.note.commit();
-
-                    address_views.insert(address_view.address(), address_view);
-                    advice_commitments.push(commitment);
-                }
+                _ => {}
             }
         }
 
-        let advice_notes = self
-            .storage
-            .scan_advice(advice_commitments)
-            .await
-            .map_err(|_| tonic::Status::internal("Error retrieving advice"))?;
+        // Now, generate a stub TxV from our minimal TxP, and inspect it to see what data we should
+        // augment the minimal TxP with to provide additional context (e.g., filling in denoms for
+        // visible asset IDs).
+        let min_view = tx.view_from_perspective(&txp);
+        let mut address_views = BTreeMap::new();
+        let mut asset_ids = BTreeSet::new();
+        for action_view in min_view.action_views() {
+            use penumbra_transaction::view::action_view::{
+                ActionView, DelegatorVoteView, OutputView, SpendView, SwapClaimView, SwapView,
+            };
+            match action_view {
+                ActionView::Spend(SpendView::Visible { note, .. }) => {
+                    let address = note.address();
+                    address_views.insert(address, fvk.view_address(address));
+                    asset_ids.insert(note.asset_id());
+                }
+                ActionView::Output(OutputView::Visible { note, .. }) => {
+                    let address = note.address();
+                    address_views.insert(address, fvk.view_address(address));
+                    asset_ids.insert(note.asset_id());
+                }
+                ActionView::Swap(SwapView::Visible { swap_plaintext, .. }) => {
+                    let address = swap_plaintext.claim_address;
+                    address_views.insert(address, fvk.view_address(address));
+                    asset_ids.insert(swap_plaintext.trading_pair.asset_1());
+                    asset_ids.insert(swap_plaintext.trading_pair.asset_2());
+                }
+                ActionView::SwapClaim(SwapClaimView::Visible {
+                    output_1, output_2, ..
+                }) => {
+                    // Both will be sent to the same address so this only needs to be added once
+                    let address = output_1.address();
+                    address_views.insert(address, fvk.view_address(address));
+                    asset_ids.insert(output_1.asset_id());
+                    asset_ids.insert(output_2.asset_id());
+                }
+                ActionView::DelegatorVote(DelegatorVoteView::Visible { note, .. }) => {
+                    let address = note.address();
+                    address_views.insert(address, fvk.view_address(address));
+                    asset_ids.insert(note.asset_id());
+                }
+                _ => {}
+            }
+        }
 
-        // TODO: HACK: filter known denoms to relevant ones
-        let denoms: asset::Cache = self
-            .storage
-            .all_assets()
-            .await
-            .map_err(|_| tonic::Status::internal("Error retrieving denoms"))?
-            .into_iter()
-            .map(|asset| asset.denom)
-            .collect();
+        // Now, extend the TxV with information helpful to understand the data it can view:
 
-        // TODO: give views on addresses other than in spends
-        let txp = TransactionPerspective {
-            payload_keys,
-            spend_nullifiers,
-            advice_notes,
-            address_views: address_views.into_values().collect(),
-            denoms,
-        };
+        let mut denoms = Vec::new();
 
+        for id in asset_ids {
+            if let Some(asset) = self.storage.asset_by_id(&id).await.map_err(|e| {
+                tonic::Status::internal(format!("Error retrieving asset by id: {:#}", e))
+            })? {
+                denoms.push(asset.denom);
+            }
+        }
+
+        txp.denoms.extend(denoms.into_iter());
+
+        txp.address_views = address_views.into_values().collect();
+
+        // Finally, compute the full TxV from the full TxP:
+        let txv = tx.view_from_perspective(&txp);
+
+        // TODO: change response to include txv
         let response = pb::TransactionPerspectiveResponse {
             txp: Some(txp.into()),
             tx: Some(tx.into()),
+            txv: Some(txv.into()),
         };
 
         Ok(tonic::Response::new(response))
@@ -908,11 +927,10 @@ impl ViewProtocolService for ViewService {
             let mut assets = vec![];
             for denom in include_specific_denominations {
                 if let Some(denom) = asset::REGISTRY.parse_denom(&denom.denom) {
-                    if let Some(asset) = self.storage.asset_by_denom(&denom).await.map_err(|e| {
-                        tonic::Status::unavailable(format!("error fetching asset: {e}"))
-                    })? {
-                        assets.push(asset);
-                    }
+                    assets.push(Asset {
+                        id: denom.id(),
+                        denom,
+                    });
                 }
             }
             for (include, pattern) in [

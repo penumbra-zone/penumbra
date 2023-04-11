@@ -412,6 +412,7 @@ message TransactionPerspectiveRequest {
 message TransactionPerspectiveResponse {
   core.transaction.v1alpha1.TransactionPerspective txp = 1;
   core.transaction.v1alpha1.Transaction tx = 2;
+  core.transaction.v1alpha1.TransactionView txv = 3;
 }
 
 message NotesResponse {
