@@ -295,7 +295,9 @@ pub struct AssetInfoResponse {
     ///
     /// If the requested asset was unknown, this field will not be present.
     #[prost(message, optional, tag = "1")]
-    pub asset: ::core::option::Option<super::super::core::crypto::v1alpha1::Asset>,
+    pub denom_metadata: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::DenomMetadata,
+    >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

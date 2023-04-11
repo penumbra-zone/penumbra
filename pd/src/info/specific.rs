@@ -22,6 +22,7 @@ use penumbra_proto::{
         ProposalInfoResponse, ProposalRateDataRequest, ProposalRateDataResponse,
         StubCpmmReservesRequest, ValidatorStatusRequest,
     },
+    core::crypto::v1alpha1::{DenomMetadata, DenomUnit},
     StateReadProto as _,
 };
 
@@ -317,8 +318,26 @@ impl SpecificQueryService for Info {
         let rsp = match denom {
             Some(denom) => {
                 tracing::debug!(?id, ?denom, "found denom");
+
+                let base_unit = DenomUnit {
+                    denom: denom.to_string(),
+                    exponent: 0,
+                    aliases: vec![],
+                };
+
                 AssetInfoResponse {
-                    asset: Some(Asset { id, denom }.into()),
+                    denom_metadata: Some(DenomMetadata {
+                        base: base_unit.denom.clone(),
+                        display: base_unit.denom.clone(),
+                        denom_units: vec![base_unit],
+                        penumbra_asset_id: Some(id.into()),
+                        // TODO: Keep track of this metadata and report it for Penumbra's own assets
+                        name: Default::default(),
+                        description: Default::default(),
+                        symbol: Default::default(),
+                        uri: Default::default(),
+                        uri_hash: Default::default(),
+                    }),
                 }
             }
             None => {

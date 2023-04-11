@@ -240,7 +240,7 @@ message AssetInfoResponse {
   // If present, information on the requested asset.
   //
   // If the requested asset was unknown, this field will not be present.
-  core.crypto.v1alpha1.Asset asset = 1;
+  core.crypto.v1alpha1.DenomMetadata denom_metadata = 1;
 }
 
 message ProposalInfoRequest {
