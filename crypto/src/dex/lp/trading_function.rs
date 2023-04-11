@@ -229,9 +229,10 @@ impl BareTradingFunction {
             //  fillable_delta_1_exact = ceil(RHS) is integral (rounded), and
             //  delta_1 is integral by definition.
             //
-            //  where delta_1 is integral, therefore we have:
+            //  Therefore, we have:
             //
             //  delta_1 > fillable_delta_1_exact, or in other words:
+            //
             //  unfilled_amount > 0.
             let unfilled_amount = delta_1 - fillable_delta_1_exact;
 
@@ -264,6 +265,9 @@ impl BareTradingFunction {
             .expect("gamma, q != 0")
     }
 
+    /// Applies the effective price formula with extra-parameters for the numerator
+    /// and denominator. This is useful to conserve precision by operating multiplications
+    /// before the checked division is applied.
     pub fn effective_price_with_precompute(
         &self,
         num: U128x128,
