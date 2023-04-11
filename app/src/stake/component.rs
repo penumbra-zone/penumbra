@@ -144,6 +144,17 @@ pub(crate) trait StakingImpl: StateWriteExt {
         // ensures we exhaustively cover all possible state transitions.
         use validator::BondingState::*;
         use validator::State::*;
+
+        // Whenever a validator transitions out of the active state to a disabled, jailed, or
+        // tombstoned state, this means that we need to explicitly signal the end of an epoch,
+        // because there has been a change to the validator set outside of a normal epoch
+        // transition. All other validator state transitions (including from active to inactive) are
+        // triggered by epoch transitions themselves, or don't immediately affect the active
+        // validator set.
+        if let (Active, Disabled | Jailed | Tombstoned) = (cur_state, new_state) {
+            self.signal_end_epoch();
+        }
+
         match (cur_state, new_state) {
             (Inactive, Inactive) => Ok(()), // no-op
             (Disabled, Disabled) => Ok(()), // no-op
@@ -261,9 +272,6 @@ pub(crate) trait StakingImpl: StateWriteExt {
 
                 // Finally, set the validator to be tombstoned.
                 self.put(state_key, Tombstoned);
-
-                // Start a new epoch when a validator is slashed
-                self.signal_end_epoch();
 
                 Ok(())
             }
