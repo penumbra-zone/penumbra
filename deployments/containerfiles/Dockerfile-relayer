@@ -1,4 +1,7 @@
-FROM ghcr.io/cosmos/relayer:main AS upstream
+# FROM ghcr.io/cosmos/relayer:main AS upstream
+# Temporarily track upstream image built from unmerged PR:
+# https://github.com/cosmos/relayer/pull/1168
+FROM ghcr.io/penumbra-zone/relayer:penumbra-proto-update AS upstream
 FROM docker.io/debian:stable
 
 # Normal user config build args
