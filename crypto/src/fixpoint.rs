@@ -187,8 +187,7 @@ impl U128x128 {
 }
 
 pub struct U128x128Var {
-    pub lo_var: FqVar,
-    pub hi_var: FqVar,
+    pub limbs: [FqVar; 4],
 }
 
 impl AllocVar<U128x128, Fq> for U128x128Var {
@@ -200,17 +199,19 @@ impl AllocVar<U128x128, Fq> for U128x128Var {
         let ns = cs.into();
         let cs = ns.cs();
         let inner: U128x128 = *f()?.borrow();
-        let (lo, hi) = inner.0.into_words();
-        let mut lo_bytes = [0u8; 32];
-        lo_bytes.copy_from_slice(&lo.to_le_bytes()[..]);
-        let lo_fq = Fq::from_bytes(lo_bytes).expect("can form field element from bytes");
-        let lo_var = FqVar::new_variable(cs.clone(), || Ok(lo_fq), mode)?;
+        // let (lo, hi) = inner.0.into_words();
 
-        let mut hi_bytes = [0u8; 32];
-        hi_bytes.copy_from_slice(&hi.to_le_bytes()[..]);
-        let hi_fq = Fq::from_bytes(hi_bytes).expect("can form field element from bytes");
-        let hi_var = FqVar::new_variable(cs, || Ok(hi_fq), mode)?;
-        Ok(Self { lo_var, hi_var })
+        // let mut lo_bytes = [0u8; 32];
+        // lo_bytes.copy_from_slice(&lo.to_le_bytes()[..]);
+        // let lo_fq = Fq::from_bytes(lo_bytes).expect("can form field element from bytes");
+        // let lo_var = FqVar::new_variable(cs.clone(), || Ok(lo_fq), mode)?;
+
+        // let mut hi_bytes = [0u8; 32];
+        // hi_bytes.copy_from_slice(&hi.to_le_bytes()[..]);
+        // let hi_fq = Fq::from_bytes(hi_bytes).expect("can form field element from bytes");
+        // let hi_var = FqVar::new_variable(cs, || Ok(hi_fq), mode)?;
+        // Ok(Self { lo_var, hi_var })
+        todo!()
     }
 }
 
@@ -218,20 +219,22 @@ impl R1CSVar<Fq> for U128x128Var {
     type Value = U128x128;
 
     fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<Fq> {
-        self.lo_var.cs()
+        //self.lo_var.cs()
+        todo!()
     }
 
     fn value(&self) -> Result<Self::Value, ark_relations::r1cs::SynthesisError> {
-        let lo = self.lo_var.value()?;
-        let lo_bytes = lo.to_bytes();
-        let hi = self.hi_var.value()?;
-        let hi_bytes = hi.to_bytes();
+        // let lo = self.lo_var.value()?;
+        // let lo_bytes = lo.to_bytes();
+        // let hi = self.hi_var.value()?;
+        // let hi_bytes = hi.to_bytes();
 
-        let mut bytes = [0u8; 32];
-        bytes.copy_from_slice(&lo_bytes[..]);
-        bytes.copy_from_slice(&hi_bytes[..]);
+        // let mut bytes = [0u8; 32];
+        // bytes.copy_from_slice(&lo_bytes[..]);
+        // bytes.copy_from_slice(&hi_bytes[..]);
 
-        Ok(Self::Value::from_bytes(bytes))
+        // Ok(Self::Value::from_bytes(bytes))
+        todo!()
     }
 }
 
@@ -241,16 +244,79 @@ impl U128x128Var {
         rhs: &Self,
         cs: ConstraintSystemRef<Fq>,
     ) -> Result<U128x128Var, SynthesisError> {
-        // Result of checked addition can be Some or None
-        let default = U128x128::from_bytes([0u8; 32]);
-        let lhs = self.value().unwrap_or(default);
-        let rhs = rhs.value().unwrap_or(default);
-        // Result can be Some or None
-        let result = (lhs + rhs).expect("result does not overflow");
-
-        // Missing constraints
-        U128x128Var::new_variable(cs, || Ok(result), AllocationMode::Witness)
+        todo!()
     }
 
-    //pub fn checked_sub()
+    pub fn checked_sub(
+        self,
+        rhs: &Self,
+        cs: ConstraintSystemRef<Fq>,
+    ) -> Result<U128x128Var, SynthesisError> {
+        todo!()
+    }
+
+    pub fn checked_mul(
+        self,
+        rhs: &Self,
+        cs: ConstraintSystemRef<Fq>,
+    ) -> Result<U128x128Var, SynthesisError> {
+        // x = [x0, x1, x2, x3]
+        // x = x0 + x1 * 2^64 + x2 * 2^128 + x3 * 2^192
+        // y = [y0, y1, y2, y3]
+        // y = y0 + y1 * 2^64 + y2 * 2^128 + y3 * 2^192
+        // z = x * y
+        // z = [z0, z1, z2, z3, z4, z5, z6, z7]
+        // zi is 128 bits
+        // z0 = x0 * y0
+        // z1 = x0 * y1 + x1 * y0
+        // z2 = x0 * y2 + x1 * y1 + x2 * y0
+        // z3 = x0 * y3 + x1 * y2 + x2 * y1 + x3 * y0
+        // z4 = x1 * y3 + x2 * y2 + x3 * y1
+        // z5 = x2 * y3 + x3 * y2
+        // z6 = x3 * y3
+        // z7 = 0
+        // z = z0 + z1 * 2^64 + z2 * 2^128 + z3 * 2^192 + z4 * 2^256 + z5 * 2^320 + z6 * 2^384
+        // z*2^-128 = z0*2^-128 + z1*2^-64 + z2 + z3*2^64 + z4*2^128 + z5*2^192 + z6*2^256
+        //
+        // w = [w0, w1, w2, w3]
+        // w0
+        // wi are 64 bits like xi and yi
+        //
+        // t0 = z0 + z1 * 2^64
+        // t0 fits in 193 bits
+        // t0 we bit constrain
+        // t1 = (t0 >> 128) + z2
+        // t1 fits in 129 bits
+
+        // w0 = t0 & 2^64 - 1
+
+        // t2 = (t1 >> 64) + z3
+        // t2 fits in 129 bits
+        // w1 = t2 & 2^64 - 1
+
+        // t3 = (t2 >> 64) + z4
+        // t3 fits in 129 bits
+        // w2 = t3 & 2^64 - 1
+
+        // t4 = (t3 >> 64) + z5
+        // t4 fits in 129 bits
+        // If we didn't overflow, it will fit in 64 bits.
+        // w3 = t4 & 2^64 - 1
+
+        // t5 = (t4 >> 64) + z6
+        // Overflow condition. Constrain t5 = 0.
+
+        // Internal rep: 4 Uint64
+
+        let x0 = self.limbs[0].clone();
+        todo!()
+    }
+
+    pub fn checked_div(
+        self,
+        rhs: &Self,
+        cs: ConstraintSystemRef<Fq>,
+    ) -> Result<U128x128Var, SynthesisError> {
+        todo!()
+    }
 }
