@@ -82,7 +82,6 @@ pub trait PositionManager: StateWrite + PositionRead {
         if position.state == position::State::Opened {
             self.index_position(&position);
         }
-        println!("putting position: {:?}", position);
         self.put(state_key::position_by_id(&id), position);
     }
 
