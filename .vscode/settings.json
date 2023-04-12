@@ -1,7 +1,4 @@
 {
-    "rust-analyzer.cargo.features": [
-        "penumbra-transaction/parallel"
-    ]
     /*
     // Setting this variable will cause rust-analyzer to perform
     // compile-time checks against the sqlite instance in this location.

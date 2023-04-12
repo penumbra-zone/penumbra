@@ -54,6 +54,7 @@ ed25519-consensus = "2"
 rand_core = "0.6"
 penumbra-tct = { path = "../tct" }
 rand_chacha = "0.3"
+penumbra-transaction = { path = "../transaction", features = ["parallel"] }
 
 [build-dependencies]
 vergen = "5"
