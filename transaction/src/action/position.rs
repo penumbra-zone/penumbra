@@ -26,9 +26,6 @@ pub struct PositionOpen {
     /// Positions are immutable, so the `PositionData` (and hence the `PositionId`)
     /// are unchanged over the entire lifetime of the position.
     pub position: Position,
-    /// The initial reserves of the position.  Unlike the `PositionData`, the
-    /// reserves evolve over time as trades are executed against the position.
-    pub initial_reserves: Reserves,
 }
 
 impl IsAction for PositionOpen {
@@ -49,7 +46,7 @@ impl PositionOpen {
             asset_id: LpNft::new(self.position.id(), position::State::Opened).asset_id(),
         };
 
-        let reserves = self.initial_reserves.balance(&self.position.phi.pair);
+        let reserves = self.position.reserves.balance(&self.position.phi.pair);
 
         // The action consumes the reserves and produces an LP NFT
         Balance::from(opened_position_nft) - reserves
@@ -176,7 +173,6 @@ impl From<PositionOpen> for pb::PositionOpen {
     fn from(value: PositionOpen) -> Self {
         Self {
             position: Some(value.position.into()),
-            initial_reserves: Some(value.initial_reserves.into()),
         }
     }
 }
@@ -189,10 +185,6 @@ impl TryFrom<pb::PositionOpen> for PositionOpen {
             position: value
                 .position
                 .ok_or_else(|| anyhow::anyhow!("missing position"))?
-                .try_into()?,
-            initial_reserves: value
-                .initial_reserves
-                .ok_or_else(|| anyhow::anyhow!("missing initial reserves"))?
                 .try_into()?,
         })
     }

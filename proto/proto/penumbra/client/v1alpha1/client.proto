@@ -203,11 +203,11 @@ message LiquidityPositionsRequest {
 }
 
 message LiquidityPositionsResponse {
-  core.dex.v1alpha1.PositionMetadata data = 1;
+  core.dex.v1alpha1.Position data = 1;
 }
 
 message LiquidityPositionByIdResponse {
-  core.dex.v1alpha1.PositionMetadata data = 1;
+  core.dex.v1alpha1.Position data = 1;
 }
 
 // Requests specific liquidity position data from the view service.

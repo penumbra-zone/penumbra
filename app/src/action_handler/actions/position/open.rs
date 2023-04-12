@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_crypto::dex::lp::position;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::PositionOpen, Transaction};
 
@@ -16,7 +15,7 @@ impl ActionHandler for PositionOpen {
         // Check:
         //  + reserves are at most 112 bits wide,
         //  + at least some assets are provisioned.
-        self.initial_reserves.check_bounds()?;
+        self.position.reserves.check_bounds()?;
         // Check:
         //  + the trading function coefficients are at most 112 bits wide.
         //  + the trading function coefficients are non-zero,
@@ -38,11 +37,7 @@ impl ActionHandler for PositionOpen {
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         // Write the newly opened position.
-        state.put_position(position::Metadata {
-            position: self.position.clone(),
-            state: position::State::Opened,
-            reserves: self.initial_reserves.clone(),
-        });
+        state.put_position(self.position.clone());
 
         Ok(())
     }

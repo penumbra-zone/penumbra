@@ -5,7 +5,7 @@ pub fn positions(trading_pair: &TradingPair, position_id: &str) -> String {
     format!("dex/positions/{trading_pair}/opened/{position_id}")
 }
 
-/// Looks up a `PositionMetadata` by its ID
+/// Looks up a `Position` by its ID
 pub fn position_by_id(id: &position::Id) -> String {
     format!("dex/position/{id}")
 }

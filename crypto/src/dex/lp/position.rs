@@ -3,6 +3,11 @@ use penumbra_proto::{core::dex::v1alpha1 as pb, serializers::bech32str, DomainTy
 use rand_core::CryptoRngCore;
 use serde::{Deserialize, Serialize};
 
+use crate::{
+    dex::{DirectedTradingPair, TradingPair},
+    Amount,
+};
+
 use super::{trading_function::TradingFunction, Reserves};
 
 /// Reserve amounts for positions must be at most 112 bits wide.
@@ -11,10 +16,13 @@ pub const MAX_RESERVE_AMOUNT: u128 = (1 << 112) - 1;
 /// A trading function's fee (spread) must be at most 50% (5000 bps)
 pub const MAX_FEE_BPS: u32 = 5000;
 
-/// Data identifying a position.
+/// Encapsulates the immutable parts of the position (phi/nonce), along
+/// with the mutable parts (state/reserves).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::Position", into = "pb::Position")]
 pub struct Position {
+    pub state: State,
+    pub reserves: Reserves,
     /// A trading function to a specific trading pair.
     pub phi: TradingFunction,
     /// A random value used to disambiguate different positions with the exact
@@ -26,14 +34,54 @@ pub struct Position {
 }
 
 impl Position {
-    /// Construct a new [Position] with a random nonce.
-    pub fn new<R: CryptoRngCore>(mut rng: R, phi: TradingFunction) -> Position {
+    /// Construct a new opened [Position] with a random nonce.
+    ///
+    /// The `p` value is the coefficient for the position's trading function that will be
+    /// associated with the start asset, and the `q` value is the coefficient for the end asset.
+    ///
+    /// The reserves `r1` and `r2` also correspond to the start and end assets, respectively.
+    pub fn new<R: CryptoRngCore>(
+        mut rng: R,
+        pair: DirectedTradingPair,
+        fee: u32,
+        p: Amount,
+        q: Amount,
+        reserves: Reserves,
+    ) -> Position {
+        // Internally mutable so we can swap the `p` and `q` values if necessary.
+        let mut p = p;
+        let mut q = q;
+        let mut reserves = reserves;
+
         let mut nonce_bytes = [0u8; 32];
         rng.fill_bytes(&mut nonce_bytes);
 
+        // The [`TradingFunction`] uses a canonical non-directed trading pair ([`TradingPair`]).
+        // This means that the `p` and `q` values may need to be swapped, depending on the canonical
+        // representation of the trading pair.
+        let canonical_tp: TradingPair = pair.into();
+
+        // The passed-in `p` value is associated with the start asset, as is `r1`.
+        if pair.start != canonical_tp.asset_1() {
+            // The canonical representation of the trading pair has the start asset as the second
+            // asset, so we need to swap the `p` and `q` values.
+            let tmp = p;
+            p = q;
+            q = tmp;
+
+            // The ordering of the reserves should also be swapped.
+            reserves = Reserves {
+                r1: reserves.r2,
+                r2: reserves.r1,
+            };
+        }
+
+        let phi = TradingFunction::new(canonical_tp, fee, p, q);
         Position {
             phi,
             nonce: nonce_bytes,
+            state: State::Opened,
+            reserves,
         }
     }
 
@@ -152,49 +200,10 @@ impl std::str::FromStr for State {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(try_from = "pb::PositionMetadata", into = "pb::PositionMetadata")]
-pub struct Metadata {
-    pub position: Position,
-    pub state: State,
-    pub reserves: Reserves,
-}
-
 // ==== Protobuf impls
-
-impl DomainType for Metadata {
-    type Proto = pb::PositionMetadata;
-}
 
 impl DomainType for Position {
     type Proto = pb::Position;
-}
-
-impl TryFrom<pb::Position> for Position {
-    type Error = anyhow::Error;
-
-    fn try_from(value: pb::Position) -> Result<Self, Self::Error> {
-        Ok(Self {
-            phi: value
-                .phi
-                .ok_or_else(|| anyhow::anyhow!("missing trading function"))?
-                .try_into()?,
-            nonce: value
-                .nonce
-                .as_slice()
-                .try_into()
-                .context("expected 32-byte nonce")?,
-        })
-    }
-}
-
-impl From<Position> for pb::Position {
-    fn from(value: Position) -> Self {
-        Self {
-            phi: Some(value.phi.into()),
-            nonce: value.nonce.to_vec(),
-        }
-    }
 }
 
 impl DomainType for Id {
@@ -261,32 +270,38 @@ impl TryFrom<pb::PositionState> for State {
     }
 }
 
-impl From<Metadata> for pb::PositionMetadata {
-    fn from(m: Metadata) -> Self {
+impl From<Position> for pb::Position {
+    fn from(p: Position) -> Self {
         Self {
-            position: Some(m.position.into()),
-            state: Some(m.state.into()),
-            reserves: Some(m.reserves.into()),
+            state: Some(p.state.into()),
+            reserves: Some(p.reserves.into()),
+            phi: Some(p.phi.into()),
+            nonce: p.nonce.to_vec(),
         }
     }
 }
 
-impl TryFrom<pb::PositionMetadata> for Metadata {
+impl TryFrom<pb::Position> for Position {
     type Error = anyhow::Error;
-    fn try_from(metadata_pb: pb::PositionMetadata) -> Result<Self, Self::Error> {
+    fn try_from(p: pb::Position) -> Result<Self, Self::Error> {
         Ok(Self {
-            position: metadata_pb
-                .position
-                .ok_or_else(|| anyhow::anyhow!("missing position in PositionMetadata message"))?
-                .try_into()?,
-            state: metadata_pb
+            state: p
                 .state
-                .ok_or_else(|| anyhow::anyhow!("missing state in PositionMetadata message"))?
+                .ok_or_else(|| anyhow::anyhow!("missing state in Position message"))?
                 .try_into()?,
-            reserves: metadata_pb
+            reserves: p
                 .reserves
-                .ok_or_else(|| anyhow::anyhow!("missing reserves in PositionMetadata message"))?
+                .ok_or_else(|| anyhow::anyhow!("missing reserves in Position message"))?
                 .try_into()?,
+            phi: p
+                .phi
+                .ok_or_else(|| anyhow::anyhow!("missing trading function"))?
+                .try_into()?,
+            nonce: p
+                .nonce
+                .as_slice()
+                .try_into()
+                .context("expected 32-byte nonce")?,
         })
     }
 }

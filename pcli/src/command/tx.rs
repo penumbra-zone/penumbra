@@ -777,54 +777,35 @@ impl TxCmd {
             })) => {
                 let fee = Fee::from_staking_token_amount((*fee).into());
 
-                // Use DirectedTradingPair to get the canonical trading pair associated with the direction of the buy order.
                 let trading_pair =
-                    DirectedTradingPair::new(buy_order.price.asset_id, buy_order.desired.asset_id)
-                        .to_canonical();
+                    DirectedTradingPair::new(buy_order.price.asset_id, buy_order.desired.asset_id);
 
                 // This represents an "ask" in the order book, where bids are placed in the asset type without initial reserves.
                 //
                 // The [`Position`] constructor expects the ordering of [`Reserves`] to match the ordering of the assets in the [`TradingPair`].
                 //
                 // When opening a liquidity position, the initial reserves will only be set for one asset.
-                let (p, q, reserves) = if trading_pair.asset_1() == buy_order.desired.asset_id {
-                    (
-                        buy_order.price.amount.clone() * 1_000_000u64.into(),
-                        1_000_000u64.into(),
-                        Reserves {
-                            // r1 will be set to 0 units of the asset being bought
-                            r1: Amount::zero(),
-                            // and r2 will be set to the amount of the asset being sold that would be needed to buy the desired amount of the asset being bought
-                            // (divided by 1_000_000 to correct the scaling)
-                            r2: (buy_order.price.amount * buy_order.desired.amount)
-                                / 10u128.pow(6).into(),
-                        },
-                    )
-                } else {
-                    (
-                        1_000_000u64.into(),
-                        buy_order.price.amount.clone() * 1_000_000u64.into(),
-                        Reserves {
-                            // r1 will be set to the amount of the asset being sold that would be needed to buy the desired amount of the asset being bought
-                            // (divided by 1_000_000 to correct the scaling)
-                            r1: (buy_order.price.amount * buy_order.desired.amount)
-                                / 10u128.pow(6).into(),
-                            // and r2 will be set to 0 units of the asset being bought
-                            r2: Amount::zero(),
-                        },
-                    )
-                };
+                let (p, q, reserves) = (
+                    1_000_000u64.into(),
+                    buy_order.price.amount.clone() * 1_000_000u64.into(),
+                    Reserves {
+                        // r1 will be set to the amount of the asset being sold that would be needed to buy the desired amount of the asset being bought
+                        // (divided by 1_000_000 to correct the scaling)
+                        r1: (buy_order.price.amount * buy_order.desired.amount)
+                            / 10u128.pow(6).into(),
+                        // and r2 will be set to 0 units of the asset being bought
+                        r2: Amount::zero(),
+                    },
+                );
 
                 // `spread` is another name for `fee`, which is at most 10_000 bps.
                 if *spread > 10_000 {
                     anyhow::bail!("spread parameter must be at most 10_000bps (i.e. 100%)");
                 }
 
-                let trading_function = TradingFunction::new(trading_pair, *spread, p, q);
-
-                let position = Position::new(OsRng, trading_function);
+                let position = Position::new(OsRng, trading_pair, *spread, p, q, reserves);
                 let plan = Planner::new(OsRng)
-                    .position_open(position, reserves)
+                    .position_open(position)
                     .fee(fee)
                     .plan(
                         app.view.as_mut().unwrap(),
@@ -911,48 +892,32 @@ impl TxCmd {
                 let trading_pair = DirectedTradingPair::new(
                     sell_order.selling.asset_id,
                     sell_order.price.asset_id,
-                )
-                .to_canonical();
+                );
 
                 // This represents an "ask" in the order book, where bids are placed in the asset type without initial reserves.
                 //
                 // The [`Position`] constructor expects the ordering of [`Reserves`] to match the ordering of the assets in the [`TradingPair`].
                 //
                 // When opening a liquidity position, the initial reserves will only be set for one asset.
-                let (p, q, reserves) = if trading_pair.asset_1() == sell_order.selling.asset_id {
-                    (
-                        1_000_000u64.into(),
-                        sell_order.price.amount.clone() * 1_000_000u64.into(),
-                        Reserves {
-                            // r1 will be set to the amount of the asset being sold
-                            r1: sell_order.selling.amount,
-                            // r2 will be set to 0 units of the asset being bought
-                            r2: Amount::zero(),
-                        },
-                    )
-                } else {
-                    (
-                        sell_order.price.amount.clone() * 1_000_000u64.into(),
-                        1_000_000u64.into(),
-                        Reserves {
-                            // r1 will be set to 0 units of the asset being bought
-                            r1: Amount::zero(),
-                            // r2 will be set to the amount of the asset being sold
-                            r2: sell_order.selling.amount,
-                        },
-                    )
-                };
+                let (p, q, reserves) = (
+                    1_000_000u64.into(),
+                    sell_order.price.amount.clone() * 1_000_000u64.into(),
+                    Reserves {
+                        // r1 will be set to the amount of the asset being sold
+                        r1: sell_order.selling.amount,
+                        // r2 will be set to 0 units of the asset being bought
+                        r2: Amount::zero(),
+                    },
+                );
 
                 // `spread` is another name for `fee`, which is at most 10_000 bps.
                 if *spread > 10_000 {
                     anyhow::bail!("spread parameter must be at most 10_000bps (i.e. 100%)");
                 }
 
-                let trading_function = TradingFunction::new(trading_pair, *spread, p, q);
-
-                let position = Position::new(OsRng, trading_function);
+                let position = Position::new(OsRng, trading_pair, *spread, p, q, reserves);
                 let plan = Planner::new(OsRng)
-                    .position_open(position, reserves)
+                    .position_open(position)
                     .fee(fee)
                     .plan(
                         app.view.as_mut().unwrap(),
@@ -1007,8 +972,6 @@ impl TxCmd {
                     .expect("missing position reserves");
                 let pair = position
                     .data
-                    .expect("missing position metadata")
-                    .position
                     .expect("missing position")
                     .phi
                     .expect("missing position trading function")

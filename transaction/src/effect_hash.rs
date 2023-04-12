@@ -629,8 +629,8 @@ impl EffectingData for PositionOpen {
         // All of these fields are fixed-length, so we can just throw them in the hash one after the
         // other.
         state.update(&self.position.id().0);
-        state.update(&self.initial_reserves.r1.to_le_bytes());
-        state.update(&self.initial_reserves.r2.to_le_bytes());
+        state.update(&self.position.reserves.r1.to_le_bytes());
+        state.update(&self.position.reserves.r2.to_le_bytes());
 
         EffectHash(state.finalize().as_array().clone())
     }
