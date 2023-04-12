@@ -30,6 +30,9 @@ ibc = "0.29"
 ics23 = "0.9.0"
 tendermint = "0.29.0"
 
+[build-dependencies]
+anyhow = "1"
+
 [features]
 rpc = ["dep:tonic", "ibc-proto/client"]
 penumbra-storage = ["dep:penumbra-storage"]
