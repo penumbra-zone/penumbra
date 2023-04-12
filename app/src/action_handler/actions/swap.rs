@@ -19,6 +19,11 @@ use crate::action_handler::ActionHandler;
 #[async_trait]
 impl ActionHandler for Swap {
     async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+        // Check that the trading pair is distinct.
+        if self.body.trading_pair.asset_1() == self.body.trading_pair.asset_2() {
+            return Err(anyhow::anyhow!("Trading pair must be distinct"));
+        }
+
         self.proof.verify(
             &SWAP_PROOF_VERIFICATION_KEY,
             self.balance_commitment(),
@@ -42,8 +47,8 @@ impl ActionHandler for Swap {
         let mut swap_flow = state.swap_flow(&swap.body.trading_pair);
 
         // Add the amount of each asset being swapped to the batch swap flow.
-        swap_flow.0 += MockFlowCiphertext::new(swap.body.delta_1_i.into());
-        swap_flow.1 += MockFlowCiphertext::new(swap.body.delta_2_i.into());
+        swap_flow.0 += MockFlowCiphertext::new(swap.body.delta_1_i);
+        swap_flow.1 += MockFlowCiphertext::new(swap.body.delta_2_i);
 
         // Set the batch swap flow for the trading pair.
         state.put_swap_flow(&swap.body.trading_pair, swap_flow);
