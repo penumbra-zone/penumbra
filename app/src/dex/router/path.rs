@@ -51,7 +51,6 @@ impl<S: StateRead + 'static> Path<S> {
     // Making this consuming forces callers to explicitly fork the path first.
     pub async fn extend_to(mut self, new_end: asset::Id) -> Result<Option<Path<S>>> {
         let target_pair = DirectedTradingPair::new(self.end().clone(), new_end.clone());
-        println!("target_pair: {:?}", target_pair);
         let Some(best_price_position) = self.state.best_position(&target_pair).await? else {
             return Ok(None)
         };
