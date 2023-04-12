@@ -82,26 +82,6 @@ pub struct Ics20Withdrawal {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Ics20WithdrawalPlan {
-    #[prost(string, tag = "1")]
-    pub destination_chain_id: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub destination_chain_address: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "3")]
-    pub denom: ::core::option::Option<super::super::crypto::v1alpha1::Denom>,
-    #[prost(message, optional, tag = "4")]
-    pub amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
-    #[prost(string, tag = "5")]
-    pub source_channel: ::prost::alloc::string::String,
-    #[prost(uint64, tag = "6")]
-    pub timeout_height: u64,
-    #[prost(uint64, tag = "7")]
-    pub timeout_timestamp: u64,
-    #[prost(message, optional, tag = "8")]
-    pub return_address: ::core::option::Option<super::super::crypto::v1alpha1::Address>,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientData {
     #[prost(string, tag = "1")]
     pub client_id: ::prost::alloc::string::String,

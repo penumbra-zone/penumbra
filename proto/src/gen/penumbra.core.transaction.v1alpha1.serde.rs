@@ -431,8 +431,8 @@ impl serde::Serialize for ActionPlan {
                 action_plan::Action::ProposalDepositClaim(v) => {
                     struct_ser.serialize_field("proposalDepositClaim", v)?;
                 }
-                action_plan::Action::WithdrawalPlan(v) => {
-                    struct_ser.serialize_field("withdrawalPlan", v)?;
+                action_plan::Action::Withdrawal(v) => {
+                    struct_ser.serialize_field("withdrawal", v)?;
                 }
                 action_plan::Action::PositionOpen(v) => {
                     struct_ser.serialize_field("positionOpen", v)?;
@@ -495,8 +495,7 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
             "delegatorVote",
             "proposal_deposit_claim",
             "proposalDepositClaim",
-            "withdrawal_plan",
-            "withdrawalPlan",
+            "withdrawal",
             "position_open",
             "positionOpen",
             "position_close",
@@ -530,7 +529,7 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
             ValidatorVote,
             DelegatorVote,
             ProposalDepositClaim,
-            WithdrawalPlan,
+            Withdrawal,
             PositionOpen,
             PositionClose,
             PositionWithdraw,
@@ -573,7 +572,7 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
                             "validatorVote" | "validator_vote" => Ok(GeneratedField::ValidatorVote),
                             "delegatorVote" | "delegator_vote" => Ok(GeneratedField::DelegatorVote),
                             "proposalDepositClaim" | "proposal_deposit_claim" => Ok(GeneratedField::ProposalDepositClaim),
-                            "withdrawalPlan" | "withdrawal_plan" => Ok(GeneratedField::WithdrawalPlan),
+                            "withdrawal" => Ok(GeneratedField::Withdrawal),
                             "positionOpen" | "position_open" => Ok(GeneratedField::PositionOpen),
                             "positionClose" | "position_close" => Ok(GeneratedField::PositionClose),
                             "positionWithdraw" | "position_withdraw" => Ok(GeneratedField::PositionWithdraw),
@@ -683,11 +682,11 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
                             action__ = map.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::ProposalDepositClaim)
 ;
                         }
-                        GeneratedField::WithdrawalPlan => {
+                        GeneratedField::Withdrawal => {
                             if action__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("withdrawalPlan"));
+                                return Err(serde::de::Error::duplicate_field("withdrawal"));
                             }
-                            action__ = map.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::WithdrawalPlan)
+                            action__ = map.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::Withdrawal)
 ;
                         }
                         GeneratedField::PositionOpen => {
