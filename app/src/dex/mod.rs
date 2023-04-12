@@ -5,6 +5,8 @@ mod component;
 pub mod metrics;
 pub mod state_key;
 
+pub mod router;
+
 mod position_manager;
 
 pub use self::metrics::register_metrics;

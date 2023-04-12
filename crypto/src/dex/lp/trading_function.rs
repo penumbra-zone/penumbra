@@ -17,7 +17,7 @@ pub struct TradingFunction {
 }
 
 impl TradingFunction {
-    pub fn new(pair: TradingPair, fee: u32, p: Amount, q: Amount) -> Self {
+    pub(super) fn new(pair: TradingPair, fee: u32, p: Amount, q: Amount) -> Self {
         Self {
             component: BareTradingFunction::new(fee, p, q),
             pair,

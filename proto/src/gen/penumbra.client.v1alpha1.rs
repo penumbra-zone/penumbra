@@ -235,17 +235,13 @@ pub struct LiquidityPositionsRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LiquidityPositionsResponse {
     #[prost(message, optional, tag = "1")]
-    pub data: ::core::option::Option<
-        super::super::core::dex::v1alpha1::PositionMetadata,
-    >,
+    pub data: ::core::option::Option<super::super::core::dex::v1alpha1::Position>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LiquidityPositionByIdResponse {
     #[prost(message, optional, tag = "1")]
-    pub data: ::core::option::Option<
-        super::super::core::dex::v1alpha1::PositionMetadata,
-    >,
+    pub data: ::core::option::Option<super::super::core::dex::v1alpha1::Position>,
 }
 /// Requests specific liquidity position data from the view service.
 #[allow(clippy::derive_partial_eq_without_eq)]

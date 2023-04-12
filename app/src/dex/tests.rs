@@ -3,7 +3,10 @@ mod test {
     use penumbra_crypto::{
         asset,
         dex::{
-            lp::{position, Reserves, TradingFunction},
+            lp::{
+                position::{self, Position},
+                Reserves, TradingFunction,
+            },
             DirectedTradingPair,
         },
         Amount,
@@ -38,20 +41,16 @@ mod test {
             r2: 120_000u64.into(),
         };
 
-        let phi = TradingFunction::new(
-            pair.into(),
-            0u32.into(),
+        let position_1 = Position::new(
+            OsRng,
+            pair,
+            0u32,
             1_000_000u64.into(),
             1_200_000u64.into(),
+            reserves,
         );
 
-        let position_1 = position::Metadata {
-            reserves,
-            position: position::Position::new(OsRng, phi),
-            state: position::State::Opened,
-        };
-
-        let position_1_id = position_1.position.id();
+        let position_1_id = position_1.id();
         state_tx.put_position(position_1.clone());
 
         let mut state_test_1 = state_tx.fork();
@@ -223,47 +222,45 @@ mod test {
         is well-ordered.
         */
 
-        let reserves_1 = Reserves {
+        let reserves = Reserves {
             r1: 0u64.into(),
             r2: 120_000u64.into(),
         };
-        let reserves_2 = reserves_1.clone();
-        let reserves_3 = reserves_1.clone();
-
-        let phi_1 =
-            TradingFunction::new(pair.into(), 9u32, 1_000_000u64.into(), 1_200_000u64.into());
-
-        // Order B's trading function, with a 10 bps fee.
-        let mut phi_2 = phi_1.clone();
-        phi_2.component.fee = 10u32;
-
-        // Order C's trading function with an 11 bps fee
-        let mut phi_3 = phi_1.clone();
-        phi_3.component.fee = 11u32;
 
         // Building positions:
 
-        let position_1 = position::Metadata {
-            reserves: reserves_1,
-            position: position::Position::new(OsRng, phi_1),
-            state: position::State::Opened,
-        };
+        let position_1 = Position::new(
+            OsRng,
+            pair,
+            9u32,
+            1_000_000u64.into(),
+            1_200_000u64.into(),
+            reserves.clone(),
+        );
 
-        let position_2 = position::Metadata {
-            reserves: reserves_2,
-            position: position::Position::new(OsRng, phi_2),
-            state: position::State::Opened,
-        };
+        // Order B's trading function, with a 10 bps fee.
+        let position_2 = Position::new(
+            OsRng,
+            pair,
+            10u32,
+            1_000_000u64.into(),
+            1_200_000u64.into(),
+            reserves.clone(),
+        );
 
-        let position_3 = position::Metadata {
-            reserves: reserves_3,
-            position: position::Position::new(OsRng, phi_3),
-            state: position::State::Opened,
-        };
+        // Order C's trading function with an 11 bps fee
+        let position_3 = Position::new(
+            OsRng,
+            pair,
+            11u32,
+            1_000_000u64.into(),
+            1_200_000u64.into(),
+            reserves.clone(),
+        );
 
-        let position_1_id = position_1.position.id();
-        let position_2_id = position_2.position.id();
-        let position_3_id = position_3.position.id();
+        let position_1_id = position_1.id();
+        let position_2_id = position_2.id();
+        let position_3_id = position_3.id();
 
         // The insertion order shouldn't matter.
         state_tx.put_position(position_2.clone());

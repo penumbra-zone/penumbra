@@ -18,7 +18,7 @@ use std::pin::Pin;
 #[async_trait]
 pub trait PositionRead: StateRead {
     /// Return a stream of all [`position::Metadata`] available.
-    fn all_positions(&self) -> Pin<Box<dyn Stream<Item = Result<position::Metadata>> + Send + '_>> {
+    fn all_positions(&self) -> Pin<Box<dyn Stream<Item = Result<position::Position>> + Send + '_>> {
         let prefix = state_key::all_positions();
         self.prefix(prefix)
             .map(|entry| match entry {
@@ -29,11 +29,11 @@ pub trait PositionRead: StateRead {
     }
 
     /// Returns a stream of [`position::Id`] ordered by effective price.
-    async fn positions_by_price(
+    fn positions_by_price(
         &self,
-        pair: DirectedTradingPair,
+        pair: &DirectedTradingPair,
     ) -> Pin<Box<dyn Stream<Item = Result<position::Id>> + Send + 'static>> {
-        let prefix = state_key::internal::price_index::prefix(&pair);
+        let prefix = state_key::internal::price_index::prefix(pair);
         self.nonconsensus_prefix_raw(&prefix)
             .map(|entry| match entry {
                 Ok((k, _)) => {
@@ -45,7 +45,7 @@ pub trait PositionRead: StateRead {
             .boxed()
     }
 
-    async fn position_by_id(&self, id: &position::Id) -> Result<Option<position::Metadata>> {
+    async fn position_by_id(&self, id: &position::Id) -> Result<Option<position::Position>> {
         self.get(&state_key::position_by_id(id)).await
     }
 
@@ -55,6 +55,17 @@ pub trait PositionRead: StateRead {
             None => Ok(()),
         }
     }
+
+    async fn best_position(
+        &self,
+        pair: &DirectedTradingPair,
+    ) -> Result<Option<position::Position>> {
+        let mut positions_by_price = self.positions_by_price(pair);
+        match positions_by_price.next().await.transpose()? {
+            Some(id) => self.position_by_id(&id).await,
+            None => Ok(None),
+        }
+    }
 }
 impl<T: StateRead + ?Sized> PositionRead for T {}
 
@@ -62,44 +73,44 @@ impl<T: StateRead + ?Sized> PositionRead for T {}
 #[async_trait]
 pub trait PositionManager: StateWrite + PositionRead {
     /// Writes a position to the state, updating all necessary indexes.
-    fn put_position(&mut self, metadata: position::Metadata) {
-        let id = metadata.position.id();
+    fn put_position(&mut self, position: position::Position) {
+        let id = position.id();
         // Clear any existing indexes of the position, since changes to the
         // reserves or the position state might have invalidated them.
-        self.deindex_position(&metadata.position);
+        self.deindex_position(&position);
         // Only index the position's liquidity if it is active.
-        if metadata.state == position::State::Opened {
-            self.index_position(&metadata);
+        if position.state == position::State::Opened {
+            self.index_position(&position);
         }
-        self.put(state_key::position_by_id(&id), metadata);
+        println!("putting position: {:?}", position);
+        self.put(state_key::position_by_id(&id), position);
     }
 
     /// Fill a trade of `input` value against a specific position `id`, writing
     /// the updated reserves to the chain state and returning a pair of `(unfilled, output)`.
     async fn fill_against(&mut self, input: Value, id: &position::Id) -> Result<(Value, Value)> {
-        let mut metadata = self
+        let mut position = self
             .position_by_id(id)
             .await?
             .ok_or_else(|| anyhow::anyhow!("tried to fill against unknown position {:?}", id))?;
 
-        if metadata.state != position::State::Opened {
+        if position.state != position::State::Opened {
             return Err(anyhow::anyhow!(
                 "tried to fill against non-Opened position {:?}",
                 id
             ));
         }
 
-        let (unfilled, new_reserves, output) = metadata
-            .position
+        let (unfilled, new_reserves, output) = position
             .phi
-            .fill(input, &metadata.reserves)
+            .fill(input, &position.reserves)
             .context(format!(
                 "could not fill {:?} against position {:?}",
                 input, id
             ))?;
 
-        metadata.reserves = new_reserves;
-        self.put_position(metadata);
+        position.reserves = new_reserves;
+        self.put_position(position);
 
         Ok((unfilled, output))
     }
@@ -110,7 +121,7 @@ pub trait PositionManager: StateWrite + PositionRead {
     /// TODO(erwan): global slippage parameter should act as a "fail-early" guard here, but we'd
     /// need to get some signal about the phi of the position we're executing against.
     async fn fill(&mut self, input: Value, pair: DirectedTradingPair) -> Result<(Value, Value)> {
-        let mut position_ids = self.positions_by_price(pair).await;
+        let mut position_ids = self.positions_by_price(&pair);
 
         let zero = Value {
             asset_id: input.asset_id,
@@ -139,11 +150,11 @@ pub trait PositionManager: StateWrite + PositionRead {
 impl<T: StateWrite + ?Sized> PositionManager for T {}
 
 #[async_trait]
-trait Inner: StateWrite {
-    fn index_position(&mut self, metadata: &position::Metadata) {
-        let (pair, phi) = (metadata.position.phi.pair, &metadata.position.phi);
-        let id = metadata.position.id();
-        if metadata.reserves.r2 != 0u64.into() {
+pub(super) trait Inner: StateWrite {
+    fn index_position(&mut self, position: &position::Position) {
+        let (pair, phi) = (position.phi.pair, &position.phi);
+        let id = position.id();
+        if position.reserves.r2 != 0u64.into() {
             // Index this position for trades FROM asset 1 TO asset 2, since the position has asset 2 to give out.
             let pair12 = DirectedTradingPair {
                 start: pair.asset_1(),
@@ -155,7 +166,7 @@ trait Inner: StateWrite {
                 vec![],
             );
         }
-        if metadata.reserves.r1 != 0u64.into() {
+        if position.reserves.r1 != 0u64.into() {
             // Index this position for trades FROM asset 2 TO asset 1, since the position has asset 1 to give out.
             let pair21 = DirectedTradingPair {
                 start: pair.asset_2(),

@@ -219,6 +219,8 @@ message Position {
   // be unique, and allows us to track position ownership with a
   // sequence of stateful NFTs based on the `PositionId`.
   bytes nonce = 2;
+  PositionState state = 3;
+  Reserves reserves = 4;
 }
 
 // A hash of a `Position`.
@@ -244,13 +246,6 @@ message PositionState {
     POSITION_STATE_ENUM_CLAIMED = 4;
   }
   PositionStateEnum state = 1;
-}
-
-// The data recorded about a position on-chain.
-message PositionMetadata {
-  Position position = 1;
-  PositionState state = 2;
-  Reserves reserves = 3;
 }
 
 // An LPNFT tracking both ownership and state of a position.
@@ -283,9 +278,6 @@ message PositionOpen {
   // Positions are immutable, so the `PositionData` (and hence the `PositionId`)
   // are unchanged over the entire lifetime of the position.
   Position position = 1;
-  // The initial reserves of the position.  Unlike the `PositionData`, the
-  // reserves evolve over time as trades are executed against the position.
-  Reserves initial_reserves = 2;
 }
 
 // A transaction action that closes a position.

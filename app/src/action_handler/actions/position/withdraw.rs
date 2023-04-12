@@ -22,14 +22,14 @@ impl ActionHandler for PositionWithdraw {
 
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         // Check that the committed reserves in the action match the state.
-        let metadata = state
+        let position = state
             .position_by_id(&self.position_id)
             .await?
             .ok_or_else(|| anyhow!("withdrew from unknown position {}", self.position_id))?;
 
-        let expected_reserves_commitment = metadata
+        let expected_reserves_commitment = position
             .reserves
-            .balance(&metadata.position.phi.pair)
+            .balance(&position.phi.pair)
             .commit(Fr::zero());
 
         if self.reserves_commitment != expected_reserves_commitment {

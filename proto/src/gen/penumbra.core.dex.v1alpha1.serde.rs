@@ -791,12 +791,24 @@ impl serde::Serialize for Position {
         if !self.nonce.is_empty() {
             len += 1;
         }
+        if self.state.is_some() {
+            len += 1;
+        }
+        if self.reserves.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.dex.v1alpha1.Position", len)?;
         if let Some(v) = self.phi.as_ref() {
             struct_ser.serialize_field("phi", v)?;
         }
         if !self.nonce.is_empty() {
             struct_ser.serialize_field("nonce", pbjson::private::base64::encode(&self.nonce).as_str())?;
+        }
+        if let Some(v) = self.state.as_ref() {
+            struct_ser.serialize_field("state", v)?;
+        }
+        if let Some(v) = self.reserves.as_ref() {
+            struct_ser.serialize_field("reserves", v)?;
         }
         struct_ser.end()
     }
@@ -810,12 +822,16 @@ impl<'de> serde::Deserialize<'de> for Position {
         const FIELDS: &[&str] = &[
             "phi",
             "nonce",
+            "state",
+            "reserves",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Phi,
             Nonce,
+            State,
+            Reserves,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -839,6 +855,8 @@ impl<'de> serde::Deserialize<'de> for Position {
                         match value {
                             "phi" => Ok(GeneratedField::Phi),
                             "nonce" => Ok(GeneratedField::Nonce),
+                            "state" => Ok(GeneratedField::State),
+                            "reserves" => Ok(GeneratedField::Reserves),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -860,6 +878,8 @@ impl<'de> serde::Deserialize<'de> for Position {
             {
                 let mut phi__ = None;
                 let mut nonce__ = None;
+                let mut state__ = None;
+                let mut reserves__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::Phi => {
@@ -876,11 +896,25 @@ impl<'de> serde::Deserialize<'de> for Position {
                                 Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::State => {
+                            if state__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("state"));
+                            }
+                            state__ = map.next_value()?;
+                        }
+                        GeneratedField::Reserves => {
+                            if reserves__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("reserves"));
+                            }
+                            reserves__ = map.next_value()?;
+                        }
                     }
                 }
                 Ok(Position {
                     phi: phi__,
                     nonce: nonce__.unwrap_or_default(),
+                    state: state__,
+                    reserves: reserves__,
                 })
             }
         }
@@ -1072,131 +1106,6 @@ impl<'de> serde::Deserialize<'de> for PositionId {
         deserializer.deserialize_struct("penumbra.core.dex.v1alpha1.PositionId", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for PositionMetadata {
-    #[allow(deprecated)]
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        use serde::ser::SerializeStruct;
-        let mut len = 0;
-        if self.position.is_some() {
-            len += 1;
-        }
-        if self.state.is_some() {
-            len += 1;
-        }
-        if self.reserves.is_some() {
-            len += 1;
-        }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.dex.v1alpha1.PositionMetadata", len)?;
-        if let Some(v) = self.position.as_ref() {
-            struct_ser.serialize_field("position", v)?;
-        }
-        if let Some(v) = self.state.as_ref() {
-            struct_ser.serialize_field("state", v)?;
-        }
-        if let Some(v) = self.reserves.as_ref() {
-            struct_ser.serialize_field("reserves", v)?;
-        }
-        struct_ser.end()
-    }
-}
-impl<'de> serde::Deserialize<'de> for PositionMetadata {
-    #[allow(deprecated)]
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        const FIELDS: &[&str] = &[
-            "position",
-            "state",
-            "reserves",
-        ];
-
-        #[allow(clippy::enum_variant_names)]
-        enum GeneratedField {
-            Position,
-            State,
-            Reserves,
-        }
-        impl<'de> serde::Deserialize<'de> for GeneratedField {
-            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
-            where
-                D: serde::Deserializer<'de>,
-            {
-                struct GeneratedVisitor;
-
-                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-                    type Value = GeneratedField;
-
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                        write!(formatter, "expected one of: {:?}", &FIELDS)
-                    }
-
-                    #[allow(unused_variables)]
-                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
-                    where
-                        E: serde::de::Error,
-                    {
-                        match value {
-                            "position" => Ok(GeneratedField::Position),
-                            "state" => Ok(GeneratedField::State),
-                            "reserves" => Ok(GeneratedField::Reserves),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
-                        }
-                    }
-                }
-                deserializer.deserialize_identifier(GeneratedVisitor)
-            }
-        }
-        struct GeneratedVisitor;
-        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = PositionMetadata;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.dex.v1alpha1.PositionMetadata")
-            }
-
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<PositionMetadata, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
-            {
-                let mut position__ = None;
-                let mut state__ = None;
-                let mut reserves__ = None;
-                while let Some(k) = map.next_key()? {
-                    match k {
-                        GeneratedField::Position => {
-                            if position__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("position"));
-                            }
-                            position__ = map.next_value()?;
-                        }
-                        GeneratedField::State => {
-                            if state__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("state"));
-                            }
-                            state__ = map.next_value()?;
-                        }
-                        GeneratedField::Reserves => {
-                            if reserves__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("reserves"));
-                            }
-                            reserves__ = map.next_value()?;
-                        }
-                    }
-                }
-                Ok(PositionMetadata {
-                    position: position__,
-                    state: state__,
-                    reserves: reserves__,
-                })
-            }
-        }
-        deserializer.deserialize_struct("penumbra.core.dex.v1alpha1.PositionMetadata", FIELDS, GeneratedVisitor)
-    }
-}
 impl serde::Serialize for PositionOpen {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
@@ -1208,15 +1117,9 @@ impl serde::Serialize for PositionOpen {
         if self.position.is_some() {
             len += 1;
         }
-        if self.initial_reserves.is_some() {
-            len += 1;
-        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.dex.v1alpha1.PositionOpen", len)?;
         if let Some(v) = self.position.as_ref() {
             struct_ser.serialize_field("position", v)?;
-        }
-        if let Some(v) = self.initial_reserves.as_ref() {
-            struct_ser.serialize_field("initialReserves", v)?;
         }
         struct_ser.end()
     }
@@ -1229,14 +1132,11 @@ impl<'de> serde::Deserialize<'de> for PositionOpen {
     {
         const FIELDS: &[&str] = &[
             "position",
-            "initial_reserves",
-            "initialReserves",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Position,
-            InitialReserves,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -1259,7 +1159,6 @@ impl<'de> serde::Deserialize<'de> for PositionOpen {
                     {
                         match value {
                             "position" => Ok(GeneratedField::Position),
-                            "initialReserves" | "initial_reserves" => Ok(GeneratedField::InitialReserves),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -1280,7 +1179,6 @@ impl<'de> serde::Deserialize<'de> for PositionOpen {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut position__ = None;
-                let mut initial_reserves__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::Position => {
@@ -1289,17 +1187,10 @@ impl<'de> serde::Deserialize<'de> for PositionOpen {
                             }
                             position__ = map.next_value()?;
                         }
-                        GeneratedField::InitialReserves => {
-                            if initial_reserves__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("initialReserves"));
-                            }
-                            initial_reserves__ = map.next_value()?;
-                        }
                     }
                 }
                 Ok(PositionOpen {
                     position: position__,
-                    initial_reserves: initial_reserves__,
                 })
             }
         }

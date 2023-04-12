@@ -7,7 +7,7 @@ use penumbra_chain::KnownAssets;
 use penumbra_crypto::{
     asset::Cache,
     dex::{
-        lp::{position::Metadata, Reserves},
+        lp::{position::Position, Reserves},
         BatchSwapOutputData, TradingPair,
     },
     Asset,
@@ -167,7 +167,7 @@ impl DexCmd {
     ) -> Pin<
         Box<
             dyn Future<
-                    Output = Result<Pin<Box<dyn Stream<Item = Result<Metadata>> + Send + 'static>>>,
+                    Output = Result<Pin<Box<dyn Stream<Item = Result<Position>> + Send + 'static>>>,
                 > + Send
                 + 'static,
         >,
@@ -186,7 +186,7 @@ impl DexCmd {
                         .ok_or(anyhow::anyhow!(
                             "missing liquidity position in response data"
                         ))
-                        .map(|data| Metadata::try_from(data))?
+                        .map(|data| Position::try_from(data))?
                 })
                 .boxed())
         }
@@ -284,7 +284,7 @@ impl DexCmd {
                         anyhow::anyhow!("specific query service did not return liquidity position")
                     })
                 {
-                    let trading_pair = position.position.phi.pair;
+                    let trading_pair = position.phi.pair;
                     let asset_1 = asset_cache
                         .get(&trading_pair.asset_1())
                         .map(|bd| format!("{bd}"))
@@ -294,15 +294,15 @@ impl DexCmd {
                         .map(|bd| format!("{bd}"))
                         .unwrap_or("unknown".to_string());
                     table.add_row(vec![
-                        format!("{}", position.position.id()),
+                        format!("{}", position.id()),
                         format!("({}, {})", asset_1, asset_2),
                         position.state.to_string(),
                         format!("({}, {})", position.reserves.r1, position.reserves.r2),
                         format!(
                             "p: {} q: {} fee: {}",
-                            position.position.phi.component.p,
-                            position.position.phi.component.q,
-                            position.position.phi.component.fee
+                            position.phi.component.p,
+                            position.phi.component.q,
+                            position.phi.component.fee
                         ),
                     ]);
                 }

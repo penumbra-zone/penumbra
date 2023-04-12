@@ -326,6 +326,10 @@ pub struct Position {
     /// sequence of stateful NFTs based on the `PositionId`.
     #[prost(bytes = "vec", tag = "2")]
     pub nonce: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "3")]
+    pub state: ::core::option::Option<PositionState>,
+    #[prost(message, optional, tag = "4")]
+    pub reserves: ::core::option::Option<Reserves>,
 }
 /// A hash of a `Position`.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -397,17 +401,6 @@ pub mod position_state {
         }
     }
 }
-/// The data recorded about a position on-chain.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct PositionMetadata {
-    #[prost(message, optional, tag = "1")]
-    pub position: ::core::option::Option<Position>,
-    #[prost(message, optional, tag = "2")]
-    pub state: ::core::option::Option<PositionState>,
-    #[prost(message, optional, tag = "3")]
-    pub reserves: ::core::option::Option<Reserves>,
-}
 /// An LPNFT tracking both ownership and state of a position.
 ///
 /// Tracking the state as part of the LPNFT means that all LP-related actions can
@@ -444,10 +437,6 @@ pub struct PositionOpen {
     /// are unchanged over the entire lifetime of the position.
     #[prost(message, optional, tag = "1")]
     pub position: ::core::option::Option<Position>,
-    /// The initial reserves of the position.  Unlike the `PositionData`, the
-    /// reserves evolve over time as trades are executed against the position.
-    #[prost(message, optional, tag = "2")]
-    pub initial_reserves: ::core::option::Option<Reserves>,
 }
 /// A transaction action that closes a position.
 ///

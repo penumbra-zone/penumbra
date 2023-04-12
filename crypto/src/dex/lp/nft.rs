@@ -149,32 +149,28 @@ impl From<LpNft> for pb::LpNft {
 
 #[cfg(test)]
 mod tests {
-    use crate::dex::lp::trading_function::TradingFunction;
-
     use super::*;
 
-    use super::super::{super::TradingPair, position::*, BareTradingFunction};
+    use super::super::{super::DirectedTradingPair, position::*};
 
     #[test]
     fn lpnft_denom_parsing_roundtrip() {
-        // XXX: this construction will have to be tweaked slightly
-        // when we fix the TradingPair code to restrict orderings
-        let pair = TradingPair {
-            asset_1: crate::STAKING_TOKEN_ASSET_ID.clone(),
-            asset_2: crate::asset::REGISTRY.parse_denom("cube").unwrap().id(),
-        };
-        let component = BareTradingFunction {
-            fee: 1,
-            p: 1u64.into(),
-            q: 1u64.into(),
+        let pair = DirectedTradingPair {
+            start: crate::STAKING_TOKEN_ASSET_ID.clone(),
+            end: crate::asset::REGISTRY.parse_denom("cube").unwrap().id(),
         };
 
-        let phi = TradingFunction { component, pair };
-
-        let position = Position {
-            phi,
-            nonce: [1u8; 32],
-        };
+        let position = Position::new(
+            rand_core::OsRng,
+            pair,
+            1u32.into(),
+            1u64.into(),
+            1u64.into(),
+            crate::dex::lp::Reserves {
+                r1: 1u64.into(),
+                r2: 1u64.into(),
+            },
+        );
         let position_id = position.id();
 
         let lpnft1 = LpNft::new(position_id, State::Opened);
