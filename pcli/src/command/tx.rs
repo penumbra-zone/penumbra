@@ -844,7 +844,7 @@ impl TxCmd {
                 source_channel,
                 source,
             } => {
-                let fee = Fee::from_staking_token_amount(1_000_000u64.into());
+                let fee = Fee::from_staking_token_amount(Amount::zero());
                 let (ephemeral_return_address, _) = app
                     .fvk
                     .ephemeral_address(OsRng, AddressIndex::from(*source));
