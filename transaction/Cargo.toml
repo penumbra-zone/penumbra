@@ -53,7 +53,7 @@ proptest-derive = "0.3"
 serde_json = "1"
 
 [features]
-default = ["std"]
+default = ["std", "parallel"]
 std = ["ark-ff/std"]
 parallel = ["tokio", "penumbra-crypto/parallel"]
 download-proving-keys = ["penumbra-proof-params/download-proving-keys"]
