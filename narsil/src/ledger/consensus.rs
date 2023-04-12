@@ -27,17 +27,17 @@ fn trace_events(events: &[abci::Event]) {
 }
 
 impl Consensus {
-    pub async fn new(
+    pub fn new(
         storage: Storage,
         queue: mpsc::Receiver<Message<Request, Response, tower::BoxError>>,
-    ) -> Result<Self> {
-        let app = App::new(storage.latest_snapshot()).await?;
+    ) -> Self {
+        let app = App::new(storage.latest_snapshot());
 
-        Ok(Self {
+        Self {
             queue,
             storage,
             app,
-        })
+        }
     }
 
     pub async fn run(mut self) -> Result<(), tower::BoxError> {
