@@ -9,7 +9,7 @@ use std::{
 use anyhow::{anyhow, Context, Result};
 use ark_ff::UniformRand;
 use decaf377::Fr;
-use ibc::core::ics24_host::identifier::ChannelId;
+use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 use penumbra_app::stake::rate::RateData;
 use penumbra_crypto::{
     asset,
@@ -31,6 +31,7 @@ use penumbra_proto::{
     core::dex::v1alpha1::PositionId,
 };
 use penumbra_transaction::{
+    action::Ics20Withdrawal,
     plan::{SwapClaimPlan, UndelegateClaimPlan},
     proposal::ProposalToml,
     vote::Vote,
@@ -184,7 +185,7 @@ pub enum TxCmd {
         timeout_timestamp: u64,
 
         #[clap(long, default_value = "0", display_order = 200)]
-        return_address_index: u32,
+        source: u32,
     },
 }
 
@@ -841,12 +842,12 @@ impl TxCmd {
                 timeout_height,
                 timeout_timestamp,
                 source_channel,
-                return_address_index,
+                source,
             } => {
                 let fee = Fee::from_staking_token_amount(1_000_000u64.into());
                 let (ephemeral_return_address, _) = app
                     .fvk
-                    .ephemeral_address(OsRng, AddressIndex::from(*return_address_index));
+                    .ephemeral_address(OsRng, AddressIndex::from(*source));
                 let account_group_id = app.fvk.account_group_id();
                 let current_height = app.view().status(account_group_id).await?.sync_height;
 
@@ -870,17 +871,20 @@ impl TxCmd {
                 let denom = asset::REGISTRY.parse_denom(denom).unwrap();
                 let amount = Amount::try_from(amount.clone()).unwrap();
 
+                let withdrawal = Ics20Withdrawal {
+                    destination_chain_id: destination_chain_id.clone(),
+                    destination_chain_address: destination_chain_address.clone(),
+                    denom,
+                    amount,
+                    timeout_height,
+                    timeout_time: timeout_timestamp,
+                    return_address: ephemeral_return_address,
+                    source_channel: ChannelId::from_str(source_channel)?,
+                    source_port: PortId::from_str("transfer")?,
+                };
+
                 let plan = Planner::new(OsRng)
-                    .ics20_withdrawal(
-                        destination_chain_id.clone(),
-                        destination_chain_address.clone(),
-                        denom,
-                        amount,
-                        timeout_height,
-                        timeout_timestamp,
-                        ephemeral_return_address,
-                        ChannelId::from_str(source_channel)?,
-                    )
+                    .ics20_withdrawal(withdrawal)
                     .fee(fee)
                     .plan(
                         app.view.as_mut().unwrap(),

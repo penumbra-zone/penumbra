@@ -547,7 +547,7 @@ pub mod action_plan {
             super::super::super::governance::v1alpha1::ProposalDepositClaim,
         ),
         #[prost(message, tag = "23")]
-        WithdrawalPlan(super::super::super::ibc::v1alpha1::Ics20WithdrawalPlan),
+        Withdrawal(super::super::super::ibc::v1alpha1::Ics20Withdrawal),
         #[prost(message, tag = "30")]
         PositionOpen(super::super::super::dex::v1alpha1::PositionOpen),
         #[prost(message, tag = "31")]

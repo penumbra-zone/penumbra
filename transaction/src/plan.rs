@@ -10,8 +10,9 @@ use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 
 use crate::action::{
-    DaoDeposit, DaoOutput, DaoSpend, Delegate, IbcAction, PositionClose, PositionOpen,
-    ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, Undelegate, ValidatorVote,
+    DaoDeposit, DaoOutput, DaoSpend, Delegate, IbcAction, Ics20Withdrawal, PositionClose,
+    PositionOpen, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, Undelegate,
+    ValidatorVote,
 };
 
 mod action;
@@ -21,11 +22,13 @@ mod clue;
 mod memo;
 
 pub use action::{
-    ActionPlan, DelegatorVotePlan, Ics20WithdrawalPlan, OutputPlan, PositionRewardClaimPlan,
-    PositionWithdrawPlan, SpendPlan, SwapClaimPlan, SwapPlan, UndelegateClaimPlan,
+    ActionPlan, DelegatorVotePlan, OutputPlan, SpendPlan, SwapClaimPlan, SwapPlan,
+    UndelegateClaimPlan,
 };
 pub use clue::CluePlan;
 pub use memo::MemoPlan;
+
+pub use self::action::PositionWithdrawPlan;
 
 /// A declaration of a planned [`Transaction`](crate::Transaction),
 /// for use in transaction authorization and creation.
@@ -246,9 +249,9 @@ impl TransactionPlan {
         })
     }
 
-    pub fn ics20_withdrawals(&self) -> impl Iterator<Item = &Ics20WithdrawalPlan> {
+    pub fn ics20_withdrawals(&self) -> impl Iterator<Item = &Ics20Withdrawal> {
         self.actions.iter().filter_map(|action| {
-            if let ActionPlan::WithdrawalPlan(v) = action {
+            if let ActionPlan::Withdrawal(v) = action {
                 Some(v)
             } else {
                 None

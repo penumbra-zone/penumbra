@@ -6,7 +6,6 @@ use std::{
 
 use anyhow::{anyhow, Result};
 
-use ibc::core::ics24_host::identifier::ChannelId;
 use penumbra_app::stake::{rate::RateData, validator};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::{
@@ -28,13 +27,12 @@ use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
 use penumbra_tct as tct;
 use penumbra_transaction::{
     action::{
-        DaoDeposit, PositionClose, PositionOpen, Proposal, ProposalDepositClaim, ProposalSubmit,
-        ProposalWithdraw, ValidatorVote, Vote,
+        DaoDeposit, Ics20Withdrawal, PositionClose, PositionOpen, Proposal, ProposalDepositClaim,
+        ProposalSubmit, ProposalWithdraw, ValidatorVote, Vote,
     },
     plan::{
-        ActionPlan, DelegatorVotePlan, Ics20WithdrawalPlan, MemoPlan, OutputPlan,
-        PositionWithdrawPlan, SpendPlan, SwapClaimPlan, SwapPlan, TransactionPlan,
-        UndelegateClaimPlan,
+        ActionPlan, DelegatorVotePlan, MemoPlan, OutputPlan, PositionWithdrawPlan, SpendPlan,
+        SwapClaimPlan, SwapPlan, TransactionPlan, UndelegateClaimPlan,
     },
     proposal,
 };
@@ -346,27 +344,8 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
     /// Perform an ICS-20 withdrawal
     #[instrument(skip(self))]
-    pub fn ics20_withdrawal(
-        &mut self,
-        destination_chain_id: String,
-        destination_chain_address: String,
-        denom: Denom,
-        amount: Amount,
-        timeout_height: u64,
-        timeout_timestamp: u64,
-        return_address: Address,
-        source_channel: ChannelId,
-    ) -> &mut Self {
-        self.action(ActionPlan::WithdrawalPlan(Ics20WithdrawalPlan {
-            destination_chain_id,
-            destination_chain_address,
-            denom,
-            amount,
-            timeout_height,
-            timeout_timestamp,
-            source_channel,
-            return_address,
-        }));
+    pub fn ics20_withdrawal(&mut self, withdrawal: Ics20Withdrawal) -> &mut Self {
+        self.action(ActionPlan::Withdrawal(withdrawal));
         self
     }
 

@@ -78,16 +78,6 @@ message Ics20Withdrawal {
   string source_channel = 9;
 }
 
-message Ics20WithdrawalPlan {
-  string destination_chain_id = 1;
-  string destination_chain_address = 2;
-  crypto.v1alpha1.Denom denom = 3;
-  crypto.v1alpha1.Amount amount = 4;
-  string source_channel = 5;
-  uint64 timeout_height = 6;
-  uint64 timeout_timestamp = 7;
-  crypto.v1alpha1.Address return_address = 8;
-}
 
 message ClientData {
   string client_id = 1;
