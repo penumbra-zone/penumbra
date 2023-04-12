@@ -9,7 +9,7 @@ use console_subscriber::ConsoleLayer;
 use metrics_tracing_context::{MetricsLayer, TracingContextLayer};
 use metrics_util::layers::Stack;
 
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 use clap::{Parser, Subcommand};
 use futures::stream::TryStreamExt;
 use metrics_exporter_prometheus::PrometheusBuilder;
@@ -50,44 +50,62 @@ struct Opt {
 
 #[derive(Debug, Subcommand)]
 enum RootCommand {
-    /// Start running the ABCI and wallet services.
+    /// Starts the Penumbra daemon.
     Start {
-        /// The path used to store pd-related data, including the Rocks database.
-        #[clap(long, env = "PENUMBRA_PD_HOME")]
+        /// The path used to store all `pd`-related data and configuration.
+        #[clap(long, env = "PENUMBRA_PD_HOME", display_order = 100)]
         home: PathBuf,
         /// Bind the ABCI server to this socket.
+        ///
+        /// The ABCI server is used by Tendermint to drive the application state.
         #[clap(
             short,
             long,
             env = "PENUMBRA_PD_ABCI_BIND",
-            default_value = "127.0.0.1:26658"
+            default_value = "127.0.0.1:26658",
+            display_order = 400
         )]
         abci_bind: SocketAddr,
         /// Bind the gRPC server to this socket.
-        #[clap(
-            short,
-            long,
-            env = "PENUMBRA_PD_GRPC_BIND",
-            default_value = "127.0.0.1:8080"
-        )]
-        grpc_bind: SocketAddr,
-        /// If set, attempt to serve RPC on this domain with auto https.
-        #[clap(long)]
-        grpc_domain: Option<String>,
+        ///
+        /// The gRPC server supports both grpc (HTTP/2) and grpc-web (HTTP/1.1) clients.
+        ///
+        /// If `grpc_auto_https` is set, this defaults to `0.0.0.0:443` and uses HTTPS.
+        ///
+        /// If `grpc_auto_https` is not set, this defaults to `127.0.0.1:8080` without HTTPS.
+        #[clap(short, long, env = "PENUMBRA_PD_GRPC_BIND", display_order = 201)]
+        grpc_bind: Option<SocketAddr>,
+        /// If set, serve gRPC using auto-managed HTTPS with this domain name.
+        ///
+        /// NOTE: This option automatically provisions TLS certificates from
+        /// Let's Encrypt and caches them in the `home` directory.  The
+        /// production LE CA has rate limits, so be careful using this option
+        /// with `pd testnet unsafe-reset-all`, which will delete the certificates
+        /// and force re-issuance, possibly hitting the rate limit.
+        #[clap(long, value_name = "DOMAIN", display_order = 200)]
+        grpc_auto_https: Option<String>,
         /// Bind the metrics endpoint to this socket.
         #[clap(
             short,
             long,
             env = "PENUMBRA_PD_METRICS_BIND",
-            default_value = "127.0.0.1:9000"
+            default_value = "127.0.0.1:9000",
+            display_order = 300
         )]
         metrics_bind: SocketAddr,
-        /// Proxy Tendermint requests against the gRPC server to this URL.
+        /// The JSON-RPC address of the Tendermint node driving this `pd`
+        /// instance.
+        ///
+        /// This is used to proxy requests from the gRPC server to Tendermint,
+        /// so clients only need to connect to one endpoint and don't need to
+        /// worry about the peculiarities of Tendermint's JSON-RPC encoding
+        /// format.
         #[clap(
             short,
             long,
             env = "PENUMBRA_PD_TM_PROXY_URL",
-            default_value = "http://127.0.0.1:26657"
+            default_value = "http://127.0.0.1:26657",
+            display_order = 401
         )]
         tendermint_addr: Url,
     },
@@ -198,14 +216,14 @@ async fn main() -> anyhow::Result<()> {
             home,
             abci_bind,
             grpc_bind,
-            grpc_domain,
+            grpc_auto_https,
             metrics_bind,
             tendermint_addr,
         } => {
             tracing::info!(
                 ?abci_bind,
                 ?grpc_bind,
-                ?grpc_domain,
+                ?grpc_auto_https,
                 ?metrics_bind,
                 "starting pd"
             );
@@ -285,7 +303,7 @@ async fn main() -> anyhow::Result<()> {
                         .with_context(|| "could not configure grpc reflection service")?,
                 ));
 
-            let grpc_server = if let Some(domain) = grpc_domain {
+            let grpc_server = if let Some(domain) = grpc_auto_https {
                 use pd::auto_https::Wrapper;
                 use rustls_acme::{caches::DirCache, AcmeConfig};
                 use tokio_stream::wrappers::TcpListenerStream;
@@ -294,12 +312,7 @@ async fn main() -> anyhow::Result<()> {
                 let mut acme_cache = home.clone();
                 acme_cache.push("rustls_acme_cache");
 
-                if grpc_bind.port() != 443 {
-                    return Err(anyhow!(
-                        "If using TLS, the gRPC port must be 443, but was {}",
-                        grpc_bind.port()
-                    ));
-                }
+                let grpc_bind = grpc_bind.unwrap_or("0.0.0.0:443".parse().unwrap());
                 let listener = TcpListenerStream::new(TcpListener::bind(grpc_bind).await?);
                 // Configure HTTP2 support for the TLS negotiation; we also permit HTTP1.1
                 // for backwards-compatibility, specifically for grpc-web.
@@ -317,6 +330,7 @@ async fn main() -> anyhow::Result<()> {
                     .spawn(grpc_server.serve_with_incoming(tls_incoming))
                     .expect("failed to spawn grpc server")
             } else {
+                let grpc_bind = grpc_bind.unwrap_or("127.0.0.1:8080".parse().unwrap());
                 tokio::task::Builder::new()
                     .name("grpc_server")
                     .spawn(grpc_server.serve(grpc_bind))
