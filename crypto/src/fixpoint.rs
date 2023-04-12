@@ -7,6 +7,10 @@ mod ops;
 #[cfg(test)]
 mod tests;
 
+use ark_r1cs_std::prelude::*;
+use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
+
+use decaf377::{r1cs::FqVar, FieldExt, Fq};
 use ethnum::U256;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -180,4 +184,73 @@ impl U128x128 {
     pub fn saturating_sub(self, rhs: &Self) -> Self {
         U128x128(self.0.saturating_sub(rhs.0))
     }
+}
+
+pub struct U128x128Var {
+    pub lo_var: FqVar,
+    pub hi_var: FqVar,
+}
+
+impl AllocVar<U128x128, Fq> for U128x128Var {
+    fn new_variable<T: std::borrow::Borrow<U128x128>>(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: ark_r1cs_std::prelude::AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        let inner: U128x128 = *f()?.borrow();
+        let (lo, hi) = inner.0.into_words();
+        let mut lo_bytes = [0u8; 32];
+        lo_bytes.copy_from_slice(&lo.to_le_bytes()[..]);
+        let lo_fq = Fq::from_bytes(lo_bytes).expect("can form field element from bytes");
+        let lo_var = FqVar::new_variable(cs.clone(), || Ok(lo_fq), mode)?;
+
+        let mut hi_bytes = [0u8; 32];
+        hi_bytes.copy_from_slice(&hi.to_le_bytes()[..]);
+        let hi_fq = Fq::from_bytes(hi_bytes).expect("can form field element from bytes");
+        let hi_var = FqVar::new_variable(cs, || Ok(hi_fq), mode)?;
+        Ok(Self { lo_var, hi_var })
+    }
+}
+
+impl R1CSVar<Fq> for U128x128Var {
+    type Value = U128x128;
+
+    fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<Fq> {
+        self.lo_var.cs()
+    }
+
+    fn value(&self) -> Result<Self::Value, ark_relations::r1cs::SynthesisError> {
+        let lo = self.lo_var.value()?;
+        let lo_bytes = lo.to_bytes();
+        let hi = self.hi_var.value()?;
+        let hi_bytes = hi.to_bytes();
+
+        let mut bytes = [0u8; 32];
+        bytes.copy_from_slice(&lo_bytes[..]);
+        bytes.copy_from_slice(&hi_bytes[..]);
+
+        Ok(Self::Value::from_bytes(bytes))
+    }
+}
+
+impl U128x128Var {
+    pub fn checked_add(
+        self,
+        rhs: &Self,
+        cs: ConstraintSystemRef<Fq>,
+    ) -> Result<U128x128Var, SynthesisError> {
+        // Result of checked addition can be Some or None
+        let default = U128x128::from_bytes([0u8; 32]);
+        let lhs = self.value().unwrap_or(default);
+        let rhs = rhs.value().unwrap_or(default);
+        // Result can be Some or None
+        let result = (lhs + rhs).expect("result does not overflow");
+
+        // Missing constraints
+        U128x128Var::new_variable(cs, || Ok(result), AllocationMode::Witness)
+    }
+
+    //pub fn checked_sub()
 }
