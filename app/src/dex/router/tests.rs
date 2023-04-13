@@ -12,6 +12,7 @@ use rand_core::OsRng;
 
 #[tokio::test]
 async fn path_extension_basic() {
+    let _ = tracing_subscriber::fmt::try_init();
     let mut state = StateDelta::new(());
 
     // Write some test positions.

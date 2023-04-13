@@ -18,7 +18,7 @@ pub const MAX_FEE_BPS: u32 = 5000;
 
 /// Encapsulates the immutable parts of the position (phi/nonce), along
 /// with the mutable parts (state/reserves).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::Position", into = "pb::Position")]
 pub struct Position {
     pub state: State,
@@ -31,6 +31,17 @@ pub struct Position {
     /// duplicate position [`Id`]s, so it can track position ownership with a
     /// sequence of stateful NFTs based on the [`Id`].
     pub nonce: [u8; 32],
+}
+
+impl std::fmt::Debug for Position {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Position")
+            .field("state", &self.state)
+            .field("reserves", &self.reserves)
+            .field("phi", &self.phi)
+            .field("nonce", &hex::encode(&self.nonce))
+            .finish()
+    }
 }
 
 impl Position {

@@ -4223,6 +4223,7 @@ dependencies = [
  "tokio",
  "tonic",
  "tracing",
+ "tracing-subscriber 0.3.16",
  "vergen",
 ]
 

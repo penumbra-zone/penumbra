@@ -73,8 +73,10 @@ impl<T: StateRead + ?Sized> PositionRead for T {}
 #[async_trait]
 pub trait PositionManager: StateWrite + PositionRead {
     /// Writes a position to the state, updating all necessary indexes.
+    #[tracing::instrument(level = "debug", skip(self, position), fields(id = ?position.id()))]
     fn put_position(&mut self, position: position::Position) {
         let id = position.id();
+        tracing::debug!(?position);
         // Clear any existing indexes of the position, since changes to the
         // reserves or the position state might have invalidated them.
         self.deindex_position(&position);
@@ -164,6 +166,7 @@ pub(super) trait Inner: StateWrite {
                 state_key::internal::price_index::key(&pair12, &phi12, &id),
                 vec![],
             );
+            tracing::debug!(pair = ?pair12, ?id, "indexing position");
         }
         if position.reserves.r1 != 0u64.into() {
             // Index this position for trades FROM asset 2 TO asset 1, since the position has asset 1 to give out.
@@ -176,10 +179,13 @@ pub(super) trait Inner: StateWrite {
                 state_key::internal::price_index::key(&pair21, &phi21, &id),
                 vec![],
             );
+            tracing::debug!(pair = ?pair21, ?id, "indexing position");
         }
     }
 
     fn deindex_position(&mut self, position: &Position) {
+        let id = position.id();
+        tracing::debug!(?id, "deindexing position");
         let pair12 = DirectedTradingPair {
             start: position.phi.pair.asset_1(),
             end: position.phi.pair.asset_2(),
@@ -190,16 +196,8 @@ pub(super) trait Inner: StateWrite {
             end: position.phi.pair.asset_1(),
         };
         let phi21 = position.phi.component.flip();
-        self.nonconsensus_delete(state_key::internal::price_index::key(
-            &pair12,
-            &phi12,
-            &position.id(),
-        ));
-        self.nonconsensus_delete(state_key::internal::price_index::key(
-            &pair21,
-            &phi21,
-            &position.id(),
-        ));
+        self.nonconsensus_delete(state_key::internal::price_index::key(&pair12, &phi12, &id));
+        self.nonconsensus_delete(state_key::internal::price_index::key(&pair21, &phi21, &id));
     }
 }
 impl<T: StateWrite + ?Sized> Inner for T {}
