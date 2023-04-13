@@ -296,6 +296,15 @@ impl BareTradingFunction {
     pub fn gamma(&self) -> U128x128 {
         (U128x128::from(10_000 - self.fee) / U128x128::from(10_000u64)).expect("10_000 != 0")
     }
+
+    /// Compose two trading functions together
+    /// TODO(erwan): might have a use for working out capacity, but probably to deprecate.
+    pub fn compose(&self, phi: BareTradingFunction) -> BareTradingFunction {
+        let fee = self.fee * phi.fee;
+        let r1 = self.p * phi.p;
+        let r2 = self.q * phi.q;
+        BareTradingFunction::new(fee, r1, r2)
+    }
 }
 
 impl DomainType for BareTradingFunction {
@@ -332,8 +341,6 @@ impl From<BareTradingFunction> for pb::BareTradingFunction {
 
 #[cfg(test)]
 mod tests {
-    use proptest::strategy::W;
-
     use super::*;
 
     #[test]
