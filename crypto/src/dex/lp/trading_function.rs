@@ -370,7 +370,7 @@ mod tests {
         let bytes2 = btf.effective_price_key_bytes();
         let price2 = btf.ask_price();
 
-        // Asserts that the lexicographic ordering of the encoded prices matches 
+        // Asserts that the lexicographic ordering of the encoded prices matches
         // their ask price ordering (smaller = better).
         //
         // price1: trading function with 0 bps fee.
