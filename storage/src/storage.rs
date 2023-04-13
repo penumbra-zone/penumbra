@@ -1,6 +1,7 @@
 use std::{path::PathBuf, sync::Arc};
 
 use anyhow::{anyhow, Result};
+use borsh::{BorshDeserialize, BorshSerialize};
 use jmt::{
     storage::{LeafNode, Node, NodeBatch, NodeKey, TreeWriter},
     KeyHash, Sha256Jmt,
@@ -306,8 +307,8 @@ impl TreeWriter for Inner {
             .expect("jmt column family not found");
 
         for (node_key, node) in node_batch.nodes() {
-            let key_bytes = &node_key.encode()?;
-            let node_bytes = &node.encode()?;
+            let key_bytes = &node_key.try_to_vec()?;
+            let node_bytes = &node.try_to_vec()?;
             tracing::trace!(?key_bytes, node_bytes = ?hex::encode(node_bytes));
             self.db.put_cf(jmt_cf, key_bytes, node_bytes)?;
         }
@@ -324,8 +325,8 @@ fn get_rightmost_leaf(db: &DB) -> Result<Option<(NodeKey, LeafNode)>> {
     iter.seek_to_last();
 
     if iter.valid() {
-        let node_key = NodeKey::decode(iter.key().unwrap())?;
-        let node = Node::decode(iter.value().unwrap())?;
+        let node_key = NodeKey::try_from_slice(iter.key().unwrap())?;
+        let node = Node::try_from_slice(iter.value().unwrap())?;
 
         if let Node::Leaf(leaf_node) = node {
             ret = Some((node_key, leaf_node));

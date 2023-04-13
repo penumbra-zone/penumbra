@@ -693,7 +693,7 @@ impl SpecificQueryService for Info {
             return Err(Status::invalid_argument("key is empty"));
         }
 
-        // TODO: we are unconditionally generating the proof here; we shouldn't do that if the
+        // TODO(erwan): we are unconditionally generating the proof here; we shouldn't do that if the
         // request doesn't ask for it
         let (value, proof) = state
             .get_with_proof_to_apphash(request.key.into_bytes())
