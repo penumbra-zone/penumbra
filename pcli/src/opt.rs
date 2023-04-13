@@ -40,7 +40,7 @@ pub struct Opt {
     )]
     node: Url,
     /// Use the Tor network to connect to the node.
-    #[clap(long, default_value = "false", env = "PENUMBRA_USE_TOR")]
+    #[clap(long)]
     use_tor: bool,
     #[clap(subcommand)]
     pub cmd: Command,
