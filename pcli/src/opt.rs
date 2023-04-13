@@ -30,15 +30,18 @@ use url::Url;
     version = env!("VERGEN_GIT_SEMVER"),
 )]
 pub struct Opt {
-    /// The remote URL of the pd gRPC endpoint
+    /// The remote URL of the pd gRPC endpoint.
     #[clap(
         short,
         long,
-        default_value = "http://testnet.penumbra.zone:8080",
+        default_value = "https://pd-tls.penumbra.zone:443",
         env = "PENUMBRA_NODE_PD_URL",
         parse(try_from_str = Url::parse),
     )]
     node: Url,
+    /// Use the Tor network to connect to the node.
+    #[clap(long, default_value = "false", env = "PENUMBRA_USE_TOR")]
+    use_tor: bool,
     #[clap(subcommand)]
     pub cmd: Command,
     /// The directory to store the wallet and view data in.
