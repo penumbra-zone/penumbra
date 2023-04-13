@@ -60,7 +60,7 @@ atty = "0.2"
 tempfile = "3.3.0"
 assert_cmd = "2.0"
 base64 = "0.20"
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.1.x",  version = "0.1.1" }
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.2.x" }
 
 ibc-proto = "0.26"
 

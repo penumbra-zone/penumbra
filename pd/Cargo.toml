@@ -35,14 +35,18 @@ penumbra-ibc = { path = "../crates/ibc" }
 decaf377 = { version = "0.4", features = ["parallel"] }
 tower-abci = "0.5.0"
 tower-actor = "0.1.0"
-jmt = "0.4"
+jmt = "0.5.0"
 
 # External dependencies
 tendermint-config = "0.29.0"
 tendermint-proto = "0.29.0"
 tendermint = "0.29.0"
 tendermint-light-client-verifier = "0.29.0"
+<<<<<<< HEAD
 ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.1.x",  version = "0.1.1" }
+=======
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.2.x" }
+>>>>>>> 0cf9ad68 (storage: tombstone deleted entries in the values cf)
 
 ibc-proto = { version = "0.26", features = ["server"] }
 prost = "0.11"
@@ -50,7 +54,7 @@ toml = "0.5"
 # We don't need this crate at all, but its upstream published a breaking change as
 # 0.7.1 (also prost-related), and depending on an exact version here will exclude
 # the bad update until it's yanked.
-ics23 = "0.9.0"
+ics23 = "0.10.0"
 
 pin-project-lite = "0.2.9"
 ark-ff = { version = "0.4" }

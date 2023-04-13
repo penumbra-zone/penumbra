@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-jmt = "0.4"
+jmt = "0.5.0"
 tokio = { version = "1.21.1", features = ["full", "tracing"] }
 tokio-stream = { version = "0.1.11" }
 tempfile = "3.3.0"
@@ -22,9 +22,10 @@ pin-project = "1.0.12"
 smallvec = { version = "1.10" , features = ["union" , "const_generics"] }
 
 # Tendermint/IBC crates 
-ics23 = "0.9.0"
+ics23 = "0.10.0"
 tendermint = { version = "0.29.0", default-features = false }
 sha2 = "0.10.6"
+borsh = "0.10.3"
 
 [dev-dependencies]
 tempfile = "3.3.0"

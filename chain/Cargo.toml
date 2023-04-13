@@ -17,13 +17,20 @@ penumbra-tct = { path = "../tct" }
 decaf377 = "0.4"
 =======
 decaf377 = "0.3.0"
+<<<<<<< HEAD
 >>>>>>> 7f272cc7 (# This is a combination of 2 commits.)
 jmt = "0.4"
 
 tendermint = "0.29.0"
 ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.1.x",  version = "0.1.1" }
+=======
+jmt = "0.5"
 
-ics23 = "0.9.0"
+tendermint = "0.30.0"
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.2.x" }
+>>>>>>> 0cf9ad68 (storage: tombstone deleted entries in the values cf)
+
+ics23 = "0.10.0"
 
 # Crates.io deps
 ark-ff = { version = "0.4", default_features = false }

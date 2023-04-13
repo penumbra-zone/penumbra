@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use async_trait::async_trait;
 use ibc_types::core::ics23_commitment::merkle::MerkleProof;
 use ibc_types::core::ics23_commitment::{commitment::CommitmentPrefix, specs::ProofSpecs};
@@ -61,6 +62,7 @@ fn apphash_spec() -> ics23::ProofSpec {
         }),
         min_depth: 0,
         max_depth: 1,
+        prehash_key_before_comparison: true,
     }
 }
 
@@ -89,11 +91,14 @@ impl AppHashRead for Snapshot {
         key: Vec<u8>,
     ) -> anyhow::Result<(Vec<u8>, MerkleProof)> {
         let (value, jmt_proof) = self.get_with_proof(key.clone()).await?;
+
+        // TODO(erwan): will immediately follow-up this pr with one that changes
+        // signature to Option<Vec<u8>> here as well, and a `get_without_proof`.
+        // For now, we conserve the semantics of error-ing out on a missing key.
+        let value = value.ok_or_else(|| anyhow!("key not found"))?;
+
         let jmt_root = self.root_hash().await?;
 
-        let jmt_commitment_proof = ics23::CommitmentProof {
-            proof: Some(ics23::commitment_proof::Proof::Exist(jmt_proof)),
-        };
         let root_proof = ics23::CommitmentProof {
             proof: Some(ics23::commitment_proof::Proof::Exist(
                 ics23::ExistenceProof {
@@ -108,7 +113,7 @@ impl AppHashRead for Snapshot {
         Ok((
             value,
             MerkleProof {
-                proofs: vec![jmt_commitment_proof, root_proof],
+                proofs: vec![jmt_proof, root_proof],
             },
         ))
     }

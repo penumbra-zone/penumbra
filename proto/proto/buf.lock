@@ -19,8 +19,13 @@ deps:
   - remote: buf.build
     owner: cosmos
     repository: ibc
+<<<<<<< HEAD
     commit: 234366cdb7d74fcb83846062dc6e85b4
     digest: shake256:329964317ba1382de9a3070b0c056ca61919d37cb3aa546813518a0c18c5f65ee5a375e2a835e3da6820bb41a4fc27411b8c43175d7a9aee606f509855013eb1
+=======
+    digest: shake256:c94ee6a581dfecad456e4c78bd4ef7797b730c0d5650251efb552c912ab600dee1bb97a07e3a9b7cdaa5c5de701bd1bd55cdfa94b87c4213bdaf1e5e828da92c
+    commit: fbb44f5ad3194450af479a615fa715d9
+>>>>>>> 0cf9ad68 (storage: tombstone deleted entries in the values cf)
   - remote: buf.build
     owner: cosmos
     repository: ics23

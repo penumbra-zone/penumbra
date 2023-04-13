@@ -1,9 +1,10 @@
 use std::{any::Any, sync::Arc};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_trait::async_trait;
+use borsh::{ser::BorshSerialize, BorshDeserialize};
 use jmt::{
-    storage::{LeafNode, Node, NodeKey, TreeReader},
+    storage::{HasPreimage, LeafNode, Node, NodeKey, TreeReader},
     KeyHash, OwnedValue, Sha256Jmt,
 };
 use rocksdb::{IteratorMode, ReadOptions};
@@ -58,12 +59,12 @@ impl Snapshot {
         self.0.version
     }
 
-    /// Gets a value by key alongside an ICS23 existence proof of that value.
-    ///
-    /// Errors if the key is not present.
-    /// TODO: change return type to `Option<Vec<u8>>` and an
-    /// existence-or-nonexistence proof.
-    pub async fn get_with_proof(&self, key: Vec<u8>) -> Result<(Vec<u8>, ics23::ExistenceProof)> {
+    /// Gets a value by key alongside an ICS23 existence proof of that value, returns
+    /// a non-existence proof if the key was not present.
+    pub async fn get_with_proof(
+        &self,
+        key: Vec<u8>,
+    ) -> Result<(Option<Vec<u8>>, ics23::CommitmentProof)> {
         let span = Span::current();
         let snapshot = self.clone();
 
@@ -72,8 +73,8 @@ impl Snapshot {
             .spawn_blocking(move || {
                 span.in_scope(|| {
                     let tree: Sha256Jmt<_> = jmt::JellyfishMerkleTree::new(&*snapshot.0);
-                    let proof = tree.get_with_ics23_proof(key, snapshot.version())?;
-                    Ok((proof.value.clone(), proof))
+                    let (value, proof) = tree.get_with_ics23_proof(key, snapshot.version())?;
+                    Ok((value, proof))
                 })
             })?
             .await?
@@ -320,6 +321,17 @@ impl StateRead for Snapshot {
     }
 }
 
+impl HasPreimage for Inner {
+    fn preimage(&self, key_hash: KeyHash) -> Result<Option<Vec<u8>>> {
+        let jmt_keys_by_keyhash = self
+            .db
+            .cf_handle("jmt_keys_by_keyhash")
+            .expect("jmt_values column family not found");
+
+        Ok(self.snapshot.get_cf(jmt_keys_by_keyhash, key_hash.0)?)
+    }
+}
+
 /// A Reader interface for RocksDB.
 ///
 /// Note that it is up to the caller to ensure consistency between the [`rocksdb::DB`] handle,
@@ -388,10 +400,11 @@ impl TreeReader for Inner {
             .db
             .cf_handle("jmt")
             .expect("jmt column family not found");
+
         let value = self
             .snapshot
-            .get_cf(jmt_cf, node_key.encode()?)?
-            .map(|db_slice| Node::decode(&db_slice))
+            .get_cf(jmt_cf, node_key.try_to_vec()?)?
+            .map(|db_slice| Node::try_from_slice(&db_slice))
             .transpose()?;
 
         tracing::trace!(?node_key, ?value);
@@ -407,8 +420,8 @@ impl TreeReader for Inner {
         iter.seek_to_last();
 
         if iter.valid() {
-            let node_key = NodeKey::decode(iter.key().unwrap())?;
-            let node = Node::decode(iter.value().unwrap())?;
+            let node_key = NodeKey::try_from_slice(iter.key().unwrap())?;
+            let node: Node = Node::try_from_slice(iter.value().unwrap())?;
 
             if let Node::Leaf(leaf_node) = node {
                 return Ok(Some((node_key, leaf_node)));
