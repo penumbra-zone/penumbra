@@ -159,7 +159,11 @@ spec:
             - start
             - --home=/home/.tendermint
         - name: pd
+          {{ if contains ":" $.Values.penumbra.version }}
+          image: "{{ $.Values.penumbra.image }}@{{ $.Values.penumbra.version }}"
+          {{ else }}
           image: "{{ $.Values.penumbra.image }}:{{ $.Values.penumbra.version }}"
+          {{ end }}
           imagePullPolicy: Always
           ports:
             - containerPort: 8080

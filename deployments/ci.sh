@@ -90,13 +90,18 @@ else
 fi
 echo "Generating new testnet files..."
 container_cli="$(get_container_cli)"
+if [[ "$PENUMBRA_VERSION" =~ ":" ]]; then
+    IMAGE_SPEC="${IMAGE}@${PENUMBRA_VERSION}"
+else
+    IMAGE_SPEC="${IMAGE}:${PENUMBRA_VERSION}"
+fi
 # Silence shellcheck warning on 'preserve_chain_opt' being an empty string.
 # shellcheck disable=SC2086
 "$container_cli" run --user 0:0 \
     --pull always \
     -v "${WORKDIR}:${CONTAINERHOME}" --rm \
     --entrypoint pd \
-    "${IMAGE}:${PENUMBRA_VERSION}" \
+    "$IMAGE_SPEC" \
     testnet generate \
     $preserve_chain_opt \
     --validators-input-file "${CONTAINERHOME}/vals.json" > /dev/null
