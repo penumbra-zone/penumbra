@@ -129,7 +129,7 @@ pub trait PositionManager: StateWrite + PositionRead {
         input: Value,
         pair: DirectedTradingPair,
     ) -> Result<(Value, Value, Vec<position::Id>)> {
-        let mut position_ids = self.positions_by_price(pair).await;
+        let mut position_ids = self.positions_by_price(&pair);
 
         let zero = Value {
             asset_id: input.asset_id,
