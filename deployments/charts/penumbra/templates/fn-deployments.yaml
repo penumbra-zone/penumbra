@@ -4,8 +4,8 @@
 {{ $pd_name := printf "%s-pd-fn-%d" (include "penumbra.fullname" $) $i }}
 {{ $tm_name := printf "%s-tm-fn-%d" (include "penumbra.fullname" $) $i }}
 ---
-apiVersion: v1
-kind: ReplicationController
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: {{ $fn_name }}
   labels:
@@ -14,7 +14,13 @@ metadata:
 spec:
   replicas: 1
   selector:
-    app: {{ $fn_name }}
+    matchLabels:
+      app: {{ $fn_name }}
+  # We cannot have multiple instances of pd/tm writing to storage concurrently.
+  # The "Recreate" strategy ensures a pod is terminated fully before a replacement
+  # pod is spun up, with new up code, reusing the same storage.
+  strategy:
+    type: Recreate
   template:
     metadata:
       name: {{ $fn_name }}

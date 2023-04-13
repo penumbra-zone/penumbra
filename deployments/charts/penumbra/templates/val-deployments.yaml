@@ -4,8 +4,8 @@
 {{ $pd_name := printf "%s-pd-val-%d" (include "penumbra.fullname" $) $i }}
 {{ $tm_name := printf "%s-tm-val-%d" (include "penumbra.fullname" $) $i }}
 ---
-apiVersion: v1
-kind: ReplicationController
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: {{ $val_name }}
   labels:
@@ -14,7 +14,10 @@ metadata:
 spec:
   replicas: 1
   selector:
-    app: {{ $val_name }}
+    matchLabels:
+      app: {{ $val_name }}
+  strategy:
+    type: Recreate
   template:
     metadata:
       name: {{ $val_name }}

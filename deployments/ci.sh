@@ -53,7 +53,7 @@ mkdir -p "$WORKDIR"
 function helm_uninstall() {
     # TODO: We should probably use "helm uninstall $HELM_RELEASE" here.
     # Delete existing replication controllers.
-    kubectl delete rc -l app.kubernetes.io/instance="$HELM_RELEASE" --wait=false > /dev/null 2>&1
+    kubectl delete deployments -l app.kubernetes.io/instance="$HELM_RELEASE" --wait=false > /dev/null 2>&1
     # Delete all existing PVCs so that fresh testnet is created.
     kubectl delete pvc -l app.kubernetes.io/instance="$HELM_RELEASE" > /dev/null 2>&1
 }
