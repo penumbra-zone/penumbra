@@ -53,7 +53,7 @@ impl<S: StateRead + 'static> Path<S> {
     }
 
     // Making this consuming forces callers to explicitly fork the path first.
-    pub async fn extend_to(mut self, new_end: asset::Id) -> Result<Option<Path<S>>> {
+    pub async fn extend_to(self, new_end: asset::Id) -> Result<Option<Path<S>>> {
         let span = tracing::debug_span!(parent: &self.span, "extend_to", new_end = ?new_end);
         // Passing to an inner function lets us control the span more precisely than if
         // we used the #[instrument] macro (which does something similar to this internally).
@@ -74,9 +74,9 @@ impl<S: StateRead + 'static> Path<S> {
         // Update and return the path.
         // TODO: gross
         let hop_price = if self.end() == &best_price_position.phi.pair.asset_1() {
-            best_price_position.phi.component.effective_price()
+            best_price_position.phi.component.bid_price()
         } else {
-            best_price_position.phi.component.flip().effective_price()
+            best_price_position.phi.component.ask_price()
         };
 
         if let Some(path_price) = self.price * hop_price {
