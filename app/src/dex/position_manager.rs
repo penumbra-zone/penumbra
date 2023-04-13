@@ -93,7 +93,7 @@ pub trait PositionManager: StateWrite + PositionRead {
         let mut position = self
             .position_by_id(id)
             .await?
-            .ok_or_else(|| anyhow::anyhow!("tried to fill against unknown position {:?}", id))?;
+            .ok_or_else(|| anyhow::anyhow!("tried to fill against unknown position {id:?}"))?;
 
         if position.state != position::State::Opened {
             return Err(anyhow::anyhow!(
@@ -117,12 +117,19 @@ pub trait PositionManager: StateWrite + PositionRead {
     }
 
     /// Fill a trade of `input` value against all available positions, until completion, or
-    /// the available liquidity is exhausted. Returns a tuple containing the unfilled amount,
-    /// and the total output of the trade.
+    /// the available liquidity is exhausted.
+    ///
+    /// Returns the unfilled amount, the total output of the trade, and the ids of positions
+    /// that were executed against.
+    ///
     /// TODO(erwan): global slippage parameter should act as a "fail-early" guard here, but we'd
     /// need to get some signal about the phi of the position we're executing against.
-    async fn fill(&mut self, input: Value, pair: DirectedTradingPair) -> Result<(Value, Value)> {
-        let mut position_ids = self.positions_by_price(&pair);
+    async fn fill(
+        &mut self,
+        input: Value,
+        pair: DirectedTradingPair,
+    ) -> Result<(Value, Value, Vec<position::Id>)> {
+        let mut position_ids = self.positions_by_price(pair).await;
 
         let zero = Value {
             asset_id: input.asset_id,
@@ -132,11 +139,16 @@ pub trait PositionManager: StateWrite + PositionRead {
         let mut remaining = input;
         let mut total_output = zero;
 
+        let mut positions = vec![];
+
         while let Some(id) = position_ids.next().await {
             if remaining == zero {
                 break;
             }
-            let (unfilled, output) = self.fill_against(remaining, &id?).await?;
+
+            let id = &id?;
+            positions.push(id.clone());
+            let (unfilled, output) = self.fill_against(remaining, id).await?;
             remaining = unfilled;
             total_output = Value {
                 asset_id: input.asset_id,
@@ -144,7 +156,7 @@ pub trait PositionManager: StateWrite + PositionRead {
             };
         }
 
-        Ok((remaining, total_output))
+        Ok((remaining, total_output, positions))
     }
 }
 
