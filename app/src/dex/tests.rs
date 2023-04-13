@@ -45,8 +45,8 @@ mod test {
             OsRng,
             pair,
             0u32,
-            1_000_000u64.into(),
             1_200_000u64.into(),
+            1_000_000u64.into(),
             reserves,
         );
 
@@ -234,8 +234,8 @@ mod test {
             OsRng,
             pair,
             9u32,
-            1_000_000u64.into(),
             1_200_000u64.into(),
+            1_000_000u64.into(),
             reserves_1,
         );
 
@@ -244,8 +244,8 @@ mod test {
             OsRng,
             pair,
             10u32,
-            1_000_000u64.into(),
             1_200_000u64.into(),
+            1_000_000u64.into(),
             reserves_2,
         );
 
@@ -254,8 +254,8 @@ mod test {
             OsRng,
             pair,
             11u32,
-            1_000_000u64.into(),
             1_200_000u64.into(),
+            1_000_000u64.into(),
             reserves_3,
         );
 
