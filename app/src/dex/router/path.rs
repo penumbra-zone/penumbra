@@ -74,9 +74,9 @@ impl<S: StateRead + 'static> Path<S> {
         // Update and return the path.
         // TODO: gross
         let hop_price = if self.end() == &best_price_position.phi.pair.asset_1() {
-            best_price_position.phi.component.bid_price()
-        } else {
             best_price_position.phi.component.ask_price()
+        } else {
+            best_price_position.phi.component.bid_price()
         };
 
         if let Some(path_price) = self.price * hop_price {
