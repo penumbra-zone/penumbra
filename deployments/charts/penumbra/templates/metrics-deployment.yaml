@@ -5,6 +5,7 @@ kind: Deployment
 metadata:
   name: {{ $depl_name }}
   labels:
+    app.kubernetes.io/component: metrics
     {{- include "penumbra.labels" $ | nindent 4 }}
 spec:
   replicas: 1
