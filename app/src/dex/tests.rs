@@ -222,20 +222,21 @@ mod test {
         is well-ordered.
         */
 
-        let reserves = Reserves {
+        let reserves_1 = Reserves {
             r1: 0u64.into(),
             r2: 120_000u64.into(),
         };
+        let reserves_2 = reserves_1.clone();
+        let reserves_3 = reserves_1.clone();
 
         // Building positions:
-
         let position_1 = Position::new(
             OsRng,
             pair,
             9u32,
             1_000_000u64.into(),
             1_200_000u64.into(),
-            reserves.clone(),
+            reserves_1,
         );
 
         // Order B's trading function, with a 10 bps fee.
@@ -245,7 +246,7 @@ mod test {
             10u32,
             1_000_000u64.into(),
             1_200_000u64.into(),
-            reserves.clone(),
+            reserves_2,
         );
 
         // Order C's trading function with an 11 bps fee
@@ -255,7 +256,7 @@ mod test {
             11u32,
             1_000_000u64.into(),
             1_200_000u64.into(),
-            reserves.clone(),
+            reserves_3,
         );
 
         let position_1_id = position_1.id();
@@ -278,9 +279,12 @@ mod test {
             asset_id: gm.id(),
         };
 
-        let (unfilled, output) = state_test_1
+        let (unfilled, output, positions_touched) = state_test_1
             .fill(delta_1, DirectedTradingPair::new(gm.id(), gn.id()))
             .await?;
+
+        assert_eq!(positions_touched.len(), 1);
+        assert_eq!(positions_touched[0], position_1_id);
 
         assert_eq!(unfilled.amount, Amount::zero());
         assert_eq!(output.amount, 120_000u64.into());
@@ -303,9 +307,13 @@ mod test {
             asset_id: gm.id(),
         };
 
-        let (unfilled, output) = state_test_2
+        let (unfilled, output, positions_touched) = state_test_2
             .fill(delta_1, DirectedTradingPair::new(gm.id(), gn.id()))
             .await?;
+
+        assert_eq!(positions_touched.len(), 2);
+        assert_eq!(positions_touched[0], position_1_id);
+        assert_eq!(positions_touched[1], position_2_id);
 
         assert_eq!(unfilled.amount, Amount::zero());
         assert_eq!(output.amount, 240_000u64.into());
@@ -328,9 +336,14 @@ mod test {
             asset_id: gm.id(),
         };
 
-        let (unfilled, output) = state_test_3
+        let (unfilled, output, positions_touched) = state_test_3
             .fill(delta_1, DirectedTradingPair::new(gm.id(), gn.id()))
             .await?;
+
+        assert_eq!(positions_touched.len(), 3);
+        assert_eq!(positions_touched[0], position_1_id);
+        assert_eq!(positions_touched[1], position_2_id);
+        assert_eq!(positions_touched[2], position_3_id);
 
         assert_eq!(unfilled.amount, Amount::zero());
         assert_eq!(output.amount, 360_000u64.into());
