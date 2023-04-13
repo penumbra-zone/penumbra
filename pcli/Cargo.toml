@@ -47,6 +47,8 @@ ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.1.
 
 ibc-proto = "0.26"
 ark-ff = { version = "0.4", default-features = false }
+# arti-client = { version = "0.8", features = ["tokio", "rustls"] }
+arti-hyper = "0.8"
 ed25519-consensus = "2"
 futures = "0.3"
 async-stream = "0.2"
