@@ -170,12 +170,11 @@ impl BareTradingFunction {
         // executing against it again on a subsequent iteration, even though it
         // was essentially filled.
 
-        // The trade output `lambda_2` is given by `effective_price * delta_1`, however, to avoid
+        // The trade output `lambda_2` is given by `bid_price * delta_1`, however, to avoid
         // rounding loss, we prefer to first compute the numerator `(gamma * delta_1 * q)`, and then
         // perform division.
-        let tentative_lambda_2 = self
-            .effective_price_with_precompute(delta_1.into(), 1u64.into())
-            .unwrap();
+        let delta_1_fp = U128x128::from(delta_1);
+        let tentative_lambda_2 = self.convert_to_lambda_2(delta_1_fp);
 
         if tentative_lambda_2 <= reserves.r2.into() {
             // Observe that for the case when `tentative_lambda_2` equals
@@ -198,42 +197,36 @@ impl BareTradingFunction {
             //
             // Normally, we would have:
             //
-            // lambda_2 = effective_price * delta_1
+            // lambda_2 = bid_price * delta_1
             // since lambda_2 = r2, we have:
             //
-            // r2 = effective_price * delta_1, and since effective_price != 0:
-            // delta_1 = r2 * effective_price^-1
-            // since effective_price = (p/(q*gamma)), we have:
-            // delta_1 = r2 * q * gamma * p^-1
-            //
+            // r2 = bid_price * delta_1, and since bid_price != 0:
+            // delta_1 = r2 * bid_price^-1
+            // since bid_price= (1/ask_price), we have:
+            // delta_1 = r2 * ask_price
+            let r2 = U128x128::from(r2);
+            let fillable_delta_1 = self.convert_to_delta_1(r2);
+
             // We burn the rouding error by apply `ceil` to delta_1:
             //
             // delta_1_star = Ceil(delta_1)
-            let p = U128x128::from(self.p);
-            let q = U128x128::from(self.q);
-            let gamma = self.gamma();
-            let numerator = (gamma * q).unwrap();
-            let numerator = (r2 * numerator).unwrap();
-
-            let fillable_delta_1 = numerator.checked_div(&p).unwrap();
-
             let fillable_delta_1_exact: Amount = fillable_delta_1.round_up().try_into().unwrap();
 
             // How to show that: `unfilled_amount >= 0`:
             // In this branch, we have:
-            //      delta_1 * effective_price > R_2, in other words:
-            //      delta_1 * (p/q)*(1/gamma) > R_2
-            //  <=> delta_1 > R_2 * (effective_price)^-1, in other words:
-            //      delta_1 > R_2 * (q*gamma)/p
+            //      lambda_2 > R_2, where lambda_2 = delta_1 * bid_price:
+            //      delta_1 * bid_price > R_2, in other words:
+            //  <=> delta_1 > R_2 * (bid_price)^-1, in other words:
+            //      delta_1 > R_2 * ask_price
             //
             //  fillable_delta_1_exact = ceil(RHS) is integral (rounded), and
             //  delta_1 is integral by definition.
             //
             //  Therefore, we have:
             //
-            //  delta_1 > fillable_delta_1_exact, or in other words:
+            //  delta_1 >= fillable_delta_1_exact, or in other words:
             //
-            //  unfilled_amount > 0.
+            //  unfilled_amount >= 0.
             let unfilled_amount = delta_1 - fillable_delta_1_exact;
 
             let new_reserves = Reserves {
@@ -250,41 +243,50 @@ impl BareTradingFunction {
     ///
     /// This allows trading functions to be indexed by price using a key-value store.
     pub fn effective_price_key_bytes(&self) -> [u8; 32] {
-        self.effective_price().to_bytes()
+        self.ask_price().to_bytes()
     }
 
-    /// Returns the effective price for the trading function inclusive of fees.
-    ///
-    /// The effective price is the exchange rate between asset 1 and asset 2, after
-    /// applying the fee discount factor (aka. gamma).
-    ///
-    /// A lower effective price means than one gets more of asset 2 per asset 1.
-    /// A higher fee means a lower discount factor, which leads to a higher price.
-    pub fn effective_price(&self) -> U128x128 {
-        self.effective_price_with_precompute(1u64.into(), 1u64.into())
-            .expect("gamma, q != 0")
-    }
-
-    /// Applies the effective price formula with extra-parameters for the numerator
-    /// and denominator. This is useful to conserve precision by operating multiplications
-    /// before the checked division is applied.
-    pub fn effective_price_with_precompute(
-        &self,
-        num: U128x128,
-        denom: U128x128,
-    ) -> Result<U128x128> {
+    /// Returns the exchange rate between 1 and 2, inclusive of fees.
+    pub fn bid_price(&self) -> U128x128 {
         let p = U128x128::from(self.p);
         let q = U128x128::from(self.q);
 
-        let numerator = (num * p).ok_or_else(|| anyhow!("numerator overflow"))?;
-        let denominator = (q * self.gamma()).expect("gamma <= 1, so no overflow is possible");
-        let denominator = (denominator * denom).ok_or_else(|| anyhow!("denominator overflow"))?;
-        numerator
-            .checked_div(&denominator)
-            .ok_or_else(|| anyhow!("failed to perform checked division"))
+        let numerator = (p * self.gamma()).expect("0 < gamma <= 1");
+
+        numerator.checked_div(&q).expect("q != 0")
     }
 
-    /// Returns `gamma` i.e. the discount factor of the fee.
+    /// Returns the exchange rate between 2 and 1, inclusive of fees.
+    pub fn ask_price(&self) -> U128x128 {
+        let p = U128x128::from(self.p);
+        let q = U128x128::from(self.q);
+
+        let denominator = (p * self.gamma()).expect("0 < gamma <= 1");
+
+        q.checked_div(&denominator).expect("q, gamma != 0")
+    }
+
+    /// Converts an amount `delta_1` into `lambda_2`, using the bid price.
+    pub(crate) fn convert_to_lambda_2(&self, delta_1: U128x128) -> U128x128 {
+        let p = U128x128::from(self.p);
+        let q = U128x128::from(self.q);
+
+        let numerator = (p * self.gamma()).expect("0 < gamma <= 1, so no overflow is possible");
+        let numerator = (numerator * delta_1).expect("reserves are at most 112 bits wide");
+        numerator.checked_div(&q).expect("q != 0")
+    }
+
+    /// Converts an amount of `lambda_2` into `delta_1`, using the ask price.
+    pub(crate) fn convert_to_delta_1(&self, lambda_2: U128x128) -> U128x128 {
+        let p = U128x128::from(self.p);
+        let q = U128x128::from(self.q);
+
+        let numerator = (q * lambda_2).expect("reserves are at most 112 bits wide");
+        let denominator = (p * self.gamma()).expect("0 < gamma <= 1, so no overflow is possible");
+        numerator.checked_div(&denominator).expect("p, gamma != 0")
+    }
+
+    /// Returns `gamma` i.e. the complement of the fee percentage.
     /// The fee is expressed in basis points (0 <= fee < 10_000), where 10_000 bps = 100%.
     ///
     /// ## Examples:
@@ -293,14 +295,6 @@ impl BareTradingFunction {
     ///     * A fee of 100% (10_000bps) results in a discount factor of 0.
     pub fn gamma(&self) -> U128x128 {
         (U128x128::from(10_000 - self.fee) / U128x128::from(10_000u64)).expect("10_000 != 0")
-    }
-
-    /// Returns the composition of two trading functions.
-    pub fn compose(&self, phi: BareTradingFunction) -> BareTradingFunction {
-        let fee = self.fee * phi.fee;
-        let r1 = self.p * phi.p;
-        let r2 = self.q * phi.q;
-        BareTradingFunction::new(fee, r1, r2)
     }
 }
 
@@ -338,6 +332,8 @@ impl From<BareTradingFunction> for pb::BareTradingFunction {
 
 #[cfg(test)]
 mod tests {
+    use proptest::strategy::W;
+
     use super::*;
 
     #[test]
@@ -352,11 +348,9 @@ mod tests {
         };
 
         assert_eq!(btf.gamma(), U128x128::from(1u64));
-        assert_eq!(
-            btf.effective_price(),
-            U128x128::ratio(btf.p, btf.q).unwrap()
-        );
+        assert_eq!(btf.bid_price(), U128x128::ratio(btf.p, btf.q).unwrap());
         let bytes1 = btf.effective_price_key_bytes();
+        let price1 = btf.ask_price();
 
         let btf = BareTradingFunction {
             fee: 100,
@@ -370,18 +364,20 @@ mod tests {
         assert_eq!(btf.gamma(), gamma_term,);
 
         let price_without_fee = U128x128::ratio(btf.p, btf.q).unwrap();
-        let reciprocal = (U128x128::from(1u64) / gamma_term).unwrap();
-        let price_with_fee = (price_without_fee * reciprocal).unwrap();
+        let price_with_fee = (price_without_fee * gamma_term).unwrap();
 
-        assert_eq!(btf.effective_price(), price_with_fee);
+        assert_eq!(btf.bid_price(), price_with_fee);
         let bytes2 = btf.effective_price_key_bytes();
+        let price2 = btf.ask_price();
 
-        // Assert that the effective price ordering (cheaper is better) matches the
-        // encoded lexicographic ordering.
+        // Asserts that the lexicographic ordering of the encoded prices matches 
+        // their ask price ordering (smaller = better).
         //
-        // The cheaper price (bytes1) vs. the more expensive price (bytes2)
-
-        assert!(bytes2 > bytes1);
+        // price1: trading function with 0 bps fee.
+        // price2: trading function with 100 bps fee.
+        // price1 is "better" than price2.
+        assert!(price1 < price2);
+        assert!(bytes1 < bytes2);
     }
 
     #[test]
@@ -469,5 +465,21 @@ mod tests {
         // Exact amount checks:
         assert_eq!(lambda_1, 0u64.into());
         assert_eq!(lambda_2, 120u64.into());
+    }
+
+    #[test]
+    /// Test that the `convert_to_delta_1` and `convert_to_lambda_2` helper functions
+    /// are aligned with `bid_price` and `ask_price` calculations.
+    fn test_conversion_helpers() {
+        let btf = BareTradingFunction {
+            fee: 150,
+            p: 12u32.into(),
+            q: 55u32.into(),
+        };
+
+        let one = U128x128::from(1u64);
+
+        assert_eq!(btf.ask_price(), btf.convert_to_delta_1(one));
+        assert_eq!(btf.bid_price(), btf.convert_to_lambda_2(one));
     }
 }
