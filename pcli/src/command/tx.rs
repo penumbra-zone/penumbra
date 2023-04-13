@@ -173,8 +173,8 @@ pub enum TxCmd {
     /// Perform an ICS-20 withdrawal.
     #[clap(display_order = 250)]
     Withdraw {
-        destination_chain_id: String,
-        destination_chain_address: String,
+        // fully qualified address, eg; cosmos1grgelyng2v6v3t8z87wu3sxgt9m5s03xvslewd@cosmoshub-4
+        to: String,
         denom: String, //TODO: should we pull this out of amount
         amount: String,
         source_channel: String,
@@ -835,8 +835,7 @@ impl TxCmd {
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Withdraw {
-                destination_chain_id,
-                destination_chain_address,
+                to,
                 amount,
                 denom,
                 timeout_height,
@@ -844,6 +843,11 @@ impl TxCmd {
                 source_channel,
                 source,
             } => {
+                // TODO: should we be using a standard address parser here?
+                let to_components = to.split('@').collect::<Vec<_>>();
+                let destination_chain_address = to_components[0];
+                let destination_chain_id = to_components[1];
+
                 let fee = Fee::from_staking_token_amount(Amount::zero());
                 let (ephemeral_return_address, _) = app
                     .fvk
@@ -872,8 +876,8 @@ impl TxCmd {
                 let amount = Amount::try_from(amount.clone()).unwrap();
 
                 let withdrawal = Ics20Withdrawal {
-                    destination_chain_id: destination_chain_id.clone(),
-                    destination_chain_address: destination_chain_address.clone(),
+                    destination_chain_id: destination_chain_id.to_string(),
+                    destination_chain_address: destination_chain_address.to_string(),
                     denom,
                     amount,
                     timeout_height,
@@ -889,7 +893,7 @@ impl TxCmd {
                     .plan(
                         app.view.as_mut().unwrap(),
                         app.fvk.account_group_id(),
-                        AddressIndex::new(0),
+                        AddressIndex::new(*source),
                     )
                     .await?;
                 app.build_and_submit_transaction(plan).await?;
