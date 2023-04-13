@@ -15,8 +15,8 @@ async fn path_extension_basic() {
     let _ = tracing_subscriber::fmt::try_init();
     let mut state = StateDelta::new(());
 
-    // Write some test positions.
-    create_test_positions_basic(&mut state);
+    // Write some test positions with a mispriced gn:pusd pair.
+    create_test_positions_basic(&mut state, true);
 
     // Create a new path starting at "gm".
     let gm = asset::REGISTRY.parse_unit("gm");
@@ -57,9 +57,9 @@ async fn path_extension_basic() {
     assert_eq!(path.start, gm.id(), "path starts on gm");
 
     // Extend further to "penumbra".
-    let pusd = asset::REGISTRY.parse_unit("penumbra");
+    let penumbra = asset::REGISTRY.parse_unit("penumbra");
     let path = path
-        .extend_to(pusd.id())
+        .extend_to(penumbra.id())
         .await
         .expect("extend_to failed")
         .expect("path to penumbra not found");
@@ -67,11 +67,44 @@ async fn path_extension_basic() {
     assert_eq!(path.end(), &penumbra.id(), "path ends on penumbra");
     assert_eq!(path.start, gm.id(), "path starts on gm");
 
+    // This price should have taken the cheaper path along the mispriced gn:pusd position.
+    let cheap_price = path.price;
+
+    // Reset the state.
+    let mut state = StateDelta::new(());
+
+    // Write some test positions without the mispriced position.
+    create_test_positions_basic(&mut state, false);
+
+    let path = Path::begin(gm.id(), state)
+        .extend_to(gn.id())
+        .await
+        .expect("extend_to failed")
+        .expect("path to gn not found")
+        .extend_to(pusd.id())
+        .await
+        .expect("extend_to failed")
+        .expect("path to pusd not found")
+        .extend_to(penumbra.id())
+        .await
+        .expect("extend_to failed")
+        .expect("path to penumbra not found");
+
+    // This price should be more expensive since the the cheaper path along the mispriced gn:pusd position no longer exists.
+    let expensive_price = path.price;
+
+    println!("cheap: {}", cheap_price);
+    println!("expensive: {}", expensive_price);
+    assert!(
+        cheap_price < expensive_price,
+        "price should be cheaper with mispriced position"
+    );
+
     // TODO: ensure best-valued path is taken
     // TODO: test synthetic liquidity
 }
 
-fn create_test_positions_basic<S: StateWrite>(s: &mut S) {
+fn create_test_positions_basic<S: StateWrite>(s: &mut S, misprice: bool) {
     let gm = asset::REGISTRY.parse_unit("gm");
     let gn = asset::REGISTRY.parse_unit("gn");
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
@@ -191,6 +224,8 @@ fn create_test_positions_basic<S: StateWrite>(s: &mut S) {
     s.put_position(position_3);
     s.put_position(position_4);
     s.put_position(position_5);
-    s.put_position(position_6);
+    if misprice {
+        s.put_position(position_6);
+    }
     s.put_position(position_7);
 }
