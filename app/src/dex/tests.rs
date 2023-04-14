@@ -358,4 +358,165 @@ mod test {
 
         Ok(())
     }
+
+    fn limit_buy(pair: DirectedTradingPair, amount: Amount, price: (Amount, Amount)) -> Position {
+        Position::new(
+            OsRng,
+            pair,
+            0,
+            // We want a 1:1 ratio of _display_ units, so cross-multiply with the unit<>base ratios:
+            Amount::from(1u64) * gn.unit_amount(),
+            Amount::from(1u64) * gm.unit_amount(),
+            Reserves {
+                r1: gm.parse_value("100").unwrap(),
+                r2: gn.parse_value("120").unwrap(),
+            },
+        );
+    }
+
+    #[tokio::test]
+    async fn test_find_constraint() -> anyhow::Result<()> {
+        let storage = TempStorage::new().await?.apply_default_genesis().await?;
+        let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+        let mut state_tx = state.try_begin_transaction().unwrap();
+
+        let gm = asset::REGISTRY.parse_unit("gm");
+        let gn = asset::REGISTRY.parse_unit("gn");
+        let penumbra = asset::REGISTRY.parse_unit("penumbra");
+        let pusd = asset::REGISTRY.parse_unit("pusd");
+
+        let pair_1 = DirectedTradingPair::new(gm.id(), gn.id());
+        let pair_2 = DirectedTradingPair::new(gn.id(), penumbra.id());
+        let pair_3 = DirectedTradingPair::new(penumbra.id(), pusd.id());
+
+        /*
+            * pair 1: gm <> gn
+                    100gm@1
+                    120gm@1
+                    50gm@1
+                ^-bids---------asks-v
+                    10gn@1
+                    100gn@1
+                    50gn@1
+
+        */
+
+        let position_1 = Position::new(
+            OsRng,
+            pair_1,
+            0,
+            // We want a 1:1 ratio of _display_ units, so cross-multiply with the unit<>base ratios:
+            Amount::from(1u64) * gn.unit_amount(),
+            Amount::from(1u64) * gm.unit_amount(),
+            Reserves {
+                r1: gm.parse_value("50").unwrap(),
+                r2: gn.parse_value("10").unwrap(),
+            },
+        );
+
+        let position_2 = Position::new(
+            OsRng,
+            pair_1,
+            0,
+            // We want a 1:1 ratio of _display_ units, so cross-multiply with the unit<>base ratios:
+            Amount::from(1u64) * gn.unit_amount(),
+            Amount::from(1u64) * gm.unit_amount(),
+            Reserves {
+                r1: gm.parse_value("100").unwrap(),
+                r2: gn.parse_value("120").unwrap(),
+            },
+        );
+
+        let position_2 = Position::new(
+            OsRng,
+            pair_1,
+            0,
+            // We want a 1:1 ratio of _display_ units, so cross-multiply with the unit<>base ratios:
+            Amount::from(1u64) * gn.unit_amount(),
+            Amount::from(1u64) * gm.unit_amount(),
+            Reserves {
+                r1: gm.parse_value("100").unwrap(),
+                r2: gn.parse_value("120").unwrap(),
+            },
+        );
+
+        /*
+
+            * pair 2: gn <> pusd
+                    50gn@100
+                    51gn@100
+                    52gn@100
+                    53gn@100
+                    54gn@100
+                    55gn@100
+                ^-bids---------asks-v
+                     30000pusd@1
+                     50000pusd@1
+
+            * pair 3: pusd <> penumbra
+                    50
+
+
+
+        Setup 1:
+
+            We post three identical orders (buy 100gm@1.2gn), with different fees.
+            Order A: 9 bps fee
+            Order B: 10 bps fee
+            Order C: 11 bps fee
+
+        We are first going to check that we can exhaust Order A, while leaving B and C intact.
+
+        Then, we want to try to fill A and B. And finally, all three orders, ensuring that execution
+        is well-ordered.
+        */
+
+        let reserves_1 = Reserves {
+            r1: 0u64.into(),
+            r2: 120_000u64.into(),
+        };
+        let reserves_2 = reserves_1.clone();
+        let reserves_3 = reserves_1.clone();
+
+        // Building positions:
+        let position_1 = Position::new(
+            OsRng,
+            pair,
+            9u32,
+            1_200_000u64.into(),
+            1_000_000u64.into(),
+            reserves_1,
+        );
+
+        // Order B's trading function, with a 10 bps fee.
+        let position_2 = Position::new(
+            OsRng,
+            pair,
+            10u32,
+            1_200_000u64.into(),
+            1_000_000u64.into(),
+            reserves_2,
+        );
+
+        // Order C's trading function with an 11 bps fee
+        let position_3 = Position::new(
+            OsRng,
+            pair,
+            11u32,
+            1_200_000u64.into(),
+            1_000_000u64.into(),
+            reserves_3,
+        );
+
+        let position_1_id = position_1.id();
+        let position_2_id = position_2.id();
+        let position_3_id = position_3.id();
+
+        // The insertion order shouldn't matter.
+        state_tx.put_position(position_2.clone());
+        state_tx.put_position(position_1.clone());
+        state_tx.put_position(position_3.clone());
+
+        todo!()
+    }
 }
