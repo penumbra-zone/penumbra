@@ -7,7 +7,6 @@ use penumbra_proto::{view::v1alpha1 as pb, DomainType};
 use penumbra_tct as tct;
 
 use serde::{Deserialize, Serialize};
-use sqlx::Row;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(try_from = "pb::SwapRecord", into = "pb::SwapRecord")]
@@ -68,52 +67,52 @@ impl TryFrom<pb::SwapRecord> for SwapRecord {
     }
 }
 
-impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for SwapRecord {
-    fn from_row(row: &'r sqlx::sqlite::SqliteRow) -> Result<Self, sqlx::Error> {
-        // This is not a fun time.
-        // Mostly on account of sqlx::Error.
+// impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for SwapRecord {
+//     fn from_row(row: &'r sqlx::sqlite::SqliteRow) -> Result<Self, sqlx::Error> {
+//         // This is not a fun time.
+//         // Mostly on account of sqlx::Error.
 
-        let swap_commitment = tct::Commitment::try_from(row.get::<'r, &[u8], _>("swap_commitment"))
-            .map_err(|e| sqlx::Error::ColumnDecode {
-                index: "swap_commitment".to_string(),
-                source: e.into(),
-            })?;
-        let swap = SwapPlaintext::decode(row.get::<'r, &[u8], _>("swap")).map_err(|e| {
-            sqlx::Error::ColumnDecode {
-                index: "swap".to_string(),
-                source: e.into(),
-            }
-        })?;
-        let output_data = BatchSwapOutputData::decode(row.get::<'r, &[u8], _>("output_data"))
-            .map_err(|e| sqlx::Error::ColumnDecode {
-                index: "output_data".to_string(),
-                source: e.into(),
-            })?;
-        let nullifier = Nullifier::try_from(row.get::<'r, &[u8], _>("nullifier")).map_err(|e| {
-            sqlx::Error::ColumnDecode {
-                index: "nullifier".to_string(),
-                source: e.into(),
-            }
-        })?;
-        let height_claimed = row
-            .get::<'r, Option<i64>, _>("height_claimed")
-            .map(|v| v as u64);
-        let position = (row.get::<'r, i64, _>("position") as u64).into();
-        let source = NoteSource::try_from(row.get::<'r, &[u8], _>("source")).map_err(|e| {
-            sqlx::Error::ColumnDecode {
-                index: "source".to_string(),
-                source: e.into(),
-            }
-        })?;
+//         let swap_commitment = tct::Commitment::try_from(row.get::<'r, &[u8], _>("swap_commitment"))
+//             .map_err(|e| sqlx::Error::ColumnDecode {
+//                 index: "swap_commitment".to_string(),
+//                 source: e.into(),
+//             })?;
+//         let swap = SwapPlaintext::decode(row.get::<'r, &[u8], _>("swap")).map_err(|e| {
+//             sqlx::Error::ColumnDecode {
+//                 index: "swap".to_string(),
+//                 source: e.into(),
+//             }
+//         })?;
+//         let output_data = BatchSwapOutputData::decode(row.get::<'r, &[u8], _>("output_data"))
+//             .map_err(|e| sqlx::Error::ColumnDecode {
+//                 index: "output_data".to_string(),
+//                 source: e.into(),
+//             })?;
+//         let nullifier = Nullifier::try_from(row.get::<'r, &[u8], _>("nullifier")).map_err(|e| {
+//             sqlx::Error::ColumnDecode {
+//                 index: "nullifier".to_string(),
+//                 source: e.into(),
+//             }
+//         })?;
+//         let height_claimed = row
+//             .get::<'r, Option<i64>, _>("height_claimed")
+//             .map(|v| v as u64);
+//         let position = (row.get::<'r, i64, _>("position") as u64).into();
+//         let source = NoteSource::try_from(row.get::<'r, &[u8], _>("source")).map_err(|e| {
+//             sqlx::Error::ColumnDecode {
+//                 index: "source".to_string(),
+//                 source: e.into(),
+//             }
+//         })?;
 
-        Ok(SwapRecord {
-            swap_commitment,
-            swap,
-            output_data,
-            nullifier,
-            height_claimed,
-            position,
-            source,
-        })
-    }
-}
+//         Ok(SwapRecord {
+//             swap_commitment,
+//             swap,
+//             output_data,
+//             nullifier,
+//             height_claimed,
+//             position,
+//             source,
+//         })
+//     }
+// }

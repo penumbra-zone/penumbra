@@ -75,7 +75,7 @@ impl ViewService {
         fvk: &FullViewingKey,
         node: Url,
     ) -> anyhow::Result<Self> {
-        let storage = Storage::load_or_initialize(storage_path, fvk, node.clone()).await?;
+        let storage = Storage::load_or_initialize(storage_path, fvk, node.clone())?;
 
         Self::new(storage, node).await
     }

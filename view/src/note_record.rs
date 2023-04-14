@@ -6,7 +6,6 @@ use penumbra_proto::{view::v1alpha1 as pb, DomainType};
 use penumbra_tct as tct;
 
 use serde::{Deserialize, Serialize};
-use sqlx::Row;
 
 /// Corresponds to the SpendableNoteRecord proto
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -71,104 +70,104 @@ impl TryFrom<pb::SpendableNoteRecord> for SpendableNoteRecord {
     }
 }
 
-impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for SpendableNoteRecord {
-    fn from_row(row: &'r sqlx::sqlite::SqliteRow) -> Result<Self, sqlx::Error> {
-        // This is not a fun time.
-        // Mostly on account of sqlx::Error.
+// impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for SpendableNoteRecord {
+//     fn from_row(row: &'r sqlx::sqlite::SqliteRow) -> Result<Self, sqlx::Error> {
+//         // This is not a fun time.
+//         // Mostly on account of sqlx::Error.
 
-        let address = Address::try_from(row.get::<'r, &[u8], _>("address")).map_err(|e| {
-            sqlx::Error::ColumnDecode {
-                index: "address".to_string(),
-                source: e.into(),
-            }
-        })?;
+//         let address = Address::try_from(row.get::<'r, &[u8], _>("address")).map_err(|e| {
+//             sqlx::Error::ColumnDecode {
+//                 index: "address".to_string(),
+//                 source: e.into(),
+//             }
+//         })?;
 
-        let address_index = AddressIndex::try_from(row.get::<'r, &[u8], _>("address_index"))
-            .map_err(|e| sqlx::Error::ColumnDecode {
-                index: "address_index".to_string(),
-                source: e.into(),
-            })?;
+//         let address_index = AddressIndex::try_from(row.get::<'r, &[u8], _>("address_index"))
+//             .map_err(|e| sqlx::Error::ColumnDecode {
+//                 index: "address_index".to_string(),
+//                 source: e.into(),
+//             })?;
 
-        let amount = <[u8; 16]>::try_from(row.get::<'r, &[u8], _>("amount")).map_err(|e| {
-            sqlx::Error::ColumnDecode {
-                index: "amount".to_string(),
-                source: e.into(),
-            }
-        })?;
+//         let amount = <[u8; 16]>::try_from(row.get::<'r, &[u8], _>("amount")).map_err(|e| {
+//             sqlx::Error::ColumnDecode {
+//                 index: "amount".to_string(),
+//                 source: e.into(),
+//             }
+//         })?;
 
-        let amount_u128: u128 = u128::from_be_bytes(amount);
+//         let amount_u128: u128 = u128::from_be_bytes(amount);
 
-        let asset_id = asset::Id(
-            Fq::from_bytes(
-                <[u8; 32]>::try_from(row.get::<'r, &[u8], _>("asset_id")).map_err(|e| {
-                    sqlx::Error::ColumnDecode {
-                        index: "asset_id".to_string(),
-                        source: e.into(),
-                    }
-                })?,
-            )
-            .map_err(|e| sqlx::Error::ColumnDecode {
-                index: "asset_id".to_string(),
-                source: e.into(),
-            })?,
-        );
+//         let asset_id = asset::Id(
+//             Fq::from_bytes(
+//                 <[u8; 32]>::try_from(row.get::<'r, &[u8], _>("asset_id")).map_err(|e| {
+//                     sqlx::Error::ColumnDecode {
+//                         index: "asset_id".to_string(),
+//                         source: e.into(),
+//                     }
+//                 })?,
+//             )
+//             .map_err(|e| sqlx::Error::ColumnDecode {
+//                 index: "asset_id".to_string(),
+//                 source: e.into(),
+//             })?,
+//         );
 
-        let rseed = Rseed(
-            <[u8; 32]>::try_from(row.get::<'r, &[u8], _>("rseed")).map_err(|e| {
-                sqlx::Error::ColumnDecode {
-                    index: "rseed".to_string(),
-                    source: e.into(),
-                }
-            })?,
-        );
+//         let rseed = Rseed(
+//             <[u8; 32]>::try_from(row.get::<'r, &[u8], _>("rseed")).map_err(|e| {
+//                 sqlx::Error::ColumnDecode {
+//                     index: "rseed".to_string(),
+//                     source: e.into(),
+//                 }
+//             })?,
+//         );
 
-        let note_commitment = note::Commitment::try_from(
-            row.get::<'r, &[u8], _>("note_commitment"),
-        )
-        .map_err(|e| sqlx::Error::ColumnDecode {
-            index: "note_commitment".to_string(),
-            source: e.into(),
-        })?;
+//         let note_commitment = note::Commitment::try_from(
+//             row.get::<'r, &[u8], _>("note_commitment"),
+//         )
+//         .map_err(|e| sqlx::Error::ColumnDecode {
+//             index: "note_commitment".to_string(),
+//             source: e.into(),
+//         })?;
 
-        let nullifier = Nullifier::try_from(row.get::<'r, &[u8], _>("nullifier")).map_err(|e| {
-            sqlx::Error::ColumnDecode {
-                index: "nullifier".to_string(),
-                source: e.into(),
-            }
-        })?;
+//         let nullifier = Nullifier::try_from(row.get::<'r, &[u8], _>("nullifier")).map_err(|e| {
+//             sqlx::Error::ColumnDecode {
+//                 index: "nullifier".to_string(),
+//                 source: e.into(),
+//             }
+//         })?;
 
-        let height_created = row.get::<'r, i64, _>("height_created") as u64;
-        let height_spent = row
-            .get::<'r, Option<i64>, _>("height_spent")
-            .map(|v| v as u64);
-        let position = (row.get::<'r, i64, _>("position") as u64).into();
+//         let height_created = row.get::<'r, i64, _>("height_created") as u64;
+//         let height_spent = row
+//             .get::<'r, Option<i64>, _>("height_spent")
+//             .map(|v| v as u64);
+//         let position = (row.get::<'r, i64, _>("position") as u64).into();
 
-        let value = Value {
-            amount: amount_u128.into(),
-            asset_id,
-        };
-        let note =
-            Note::from_parts(address, value, rseed).map_err(|e| sqlx::Error::ColumnDecode {
-                index: "note".to_string(),
-                source: e.into(),
-            })?;
+//         let value = Value {
+//             amount: amount_u128.into(),
+//             asset_id,
+//         };
+//         let note =
+//             Note::from_parts(address, value, rseed).map_err(|e| sqlx::Error::ColumnDecode {
+//                 index: "note".to_string(),
+//                 source: e.into(),
+//             })?;
 
-        let source = NoteSource::try_from(row.get::<'r, &[u8], _>("source")).map_err(|e| {
-            sqlx::Error::ColumnDecode {
-                index: "source".to_string(),
-                source: e.into(),
-            }
-        })?;
+//         let source = NoteSource::try_from(row.get::<'r, &[u8], _>("source")).map_err(|e| {
+//             sqlx::Error::ColumnDecode {
+//                 index: "source".to_string(),
+//                 source: e.into(),
+//             }
+//         })?;
 
-        Ok(SpendableNoteRecord {
-            note_commitment,
-            note,
-            address_index,
-            nullifier,
-            position,
-            height_created,
-            height_spent,
-            source,
-        })
-    }
-}
+//         Ok(SpendableNoteRecord {
+//             note_commitment,
+//             note,
+//             address_index,
+//             nullifier,
+//             position,
+//             height_created,
+//             height_spent,
+//             source,
+//         })
+//     }
+// }
