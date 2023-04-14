@@ -59,6 +59,18 @@ pub trait AsyncRead {
     /// The error returned when something goes wrong in a request.
     type Error;
 
+    /// The type of stream returned by [`AsyncRead::hashes`].
+    type HashesStream<'a>: Stream<Item = Result<(Position, u8, Hash), Self::Error>> + Unpin + 'a
+    where
+        Self: 'a;
+
+    /// The type of stream returned by [`AsyncRead::commitments`].
+    type CommitmentsStream<'a>: Stream<Item = Result<(Position, Commitment), Self::Error>>
+        + Unpin
+        + 'a
+    where
+        Self: 'a;
+
     /// Fetch the current position stored.
     async fn position(&mut self) -> Result<StoredPosition, Self::Error>;
 
@@ -69,19 +81,13 @@ pub trait AsyncRead {
     async fn hash(&mut self, position: Position, height: u8) -> Result<Option<Hash>, Self::Error>;
 
     /// Get the full list of all internal hashes stored, indexed by position and height.
-    #[allow(clippy::type_complexity)]
-    fn hashes(
-        &mut self,
-    ) -> Pin<Box<dyn Stream<Item = Result<(Position, u8, Hash), Self::Error>> + Send + '_>>;
+    fn hashes(&mut self) -> Self::HashesStream<'_>;
 
     /// Fetch the commitment at the given position, if it exists.
     async fn commitment(&mut self, position: Position) -> Result<Option<Commitment>, Self::Error>;
 
     /// Get the full list of all commitments stored, indexed by position.
-    #[allow(clippy::type_complexity)]
-    fn commitments(
-        &mut self,
-    ) -> Pin<Box<dyn Stream<Item = Result<(Position, Commitment), Self::Error>> + Send + '_>>;
+    fn commitments(&mut self) -> Self::CommitmentsStream<'_>;
 }
 
 /// An `async` storage backend capable of writing [`struct@Hash`]es and [`Commitment`]s, and
@@ -138,6 +144,16 @@ pub trait Read {
     /// The error returned when something goes wrong in a request.
     type Error;
 
+    /// The type of iterator returned when reading hashes from the database.
+    type HashesIter<'a>: Iterator<Item = Result<(Position, u8, Hash), Self::Error>> + 'a
+    where
+        Self: 'a;
+
+    /// The type of iterator returned when reading commitments from the database.
+    type CommitmentsIter<'a>: Iterator<Item = Result<(Position, Commitment), Self::Error>> + 'a
+    where
+        Self: 'a;
+
     /// Fetch the current position stored.
     fn position(&mut self) -> Result<StoredPosition, Self::Error>;
 
@@ -149,18 +165,14 @@ pub trait Read {
 
     /// Get the full list of all internal hashes stored, indexed by position and height.
     #[allow(clippy::type_complexity)]
-    fn hashes(
-        &mut self,
-    ) -> Box<dyn Iterator<Item = Result<(Position, u8, Hash), Self::Error>> + Send + '_>;
+    fn hashes(&mut self) -> Self::HashesIter<'_>;
 
     /// Fetch a specific commitment at the given position, if it exists.
     fn commitment(&mut self, position: Position) -> Result<Option<Commitment>, Self::Error>;
 
     /// Get the full list of all commitments stored, indexed by position.
     #[allow(clippy::type_complexity)]
-    fn commitments(
-        &mut self,
-    ) -> Box<dyn Iterator<Item = Result<(Position, Commitment), Self::Error>> + Send + '_>;
+    fn commitments(&mut self) -> Self::CommitmentsIter<'_>;
 }
 
 /// A synchronous storage backend capable of writing [`struct@Hash`]es and [`Commitment`]s, and

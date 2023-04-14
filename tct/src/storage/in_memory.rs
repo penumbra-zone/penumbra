@@ -106,6 +106,11 @@ pub enum Error {
 impl Read for InMemory {
     type Error = Error;
 
+    type HashesIter<'a> =
+        Box<dyn Iterator<Item = Result<(Position, u8, Hash), Self::Error>> + Send + 'a>;
+    type CommitmentsIter<'a> =
+        Box<dyn Iterator<Item = Result<(Position, Commitment), Self::Error>> + Send + 'a>;
+
     fn position(&mut self) -> Result<StoredPosition, Self::Error> {
         Ok(self.position)
     }
@@ -122,9 +127,7 @@ impl Read for InMemory {
             .cloned())
     }
 
-    fn hashes(
-        &mut self,
-    ) -> Box<dyn Iterator<Item = Result<(Position, u8, Hash), Self::Error>> + Send + '_> {
+    fn hashes(&mut self) -> Self::HashesIter<'_> {
         Box::new(InMemory::hashes(self).map(Ok))
     }
 
@@ -132,9 +135,7 @@ impl Read for InMemory {
         Ok(self.commitments.get(&position).cloned())
     }
 
-    fn commitments(
-        &mut self,
-    ) -> Box<dyn Iterator<Item = Result<(Position, Commitment), Self::Error>> + Send + '_> {
+    fn commitments(&mut self) -> Self::CommitmentsIter<'_> {
         Box::new(InMemory::commitments(self).map(Ok))
     }
 }
