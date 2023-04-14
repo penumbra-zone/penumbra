@@ -27,7 +27,6 @@ service ObliviousQueryService {
   rpc ChainParameters(ChainParametersRequest) returns (ChainParametersResponse);
   rpc EpochByHeight(EpochByHeightRequest) returns (EpochByHeightResponse);
   rpc ValidatorInfo(ValidatorInfoRequest) returns (stream ValidatorInfoResponse);
-  rpc AssetList(AssetListRequest) returns (AssetListResponse);
   rpc Info(InfoRequest) returns (InfoResponse);
 }
 
@@ -100,17 +99,6 @@ message ValidatorInfoRequest {
 
 message ValidatorInfoResponse {
   core.stake.v1alpha1.ValidatorInfo validator_info = 1;
-}
-
-// Lists all assets in Asset Registry
-message AssetListRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
-}
-
-message AssetListResponse {
-  // TODO: deprecate in favor of SpecificQuery.AssetInfo
-  core.chain.v1alpha1.KnownAssets asset_list = 1;
 }
 
 // Methods for accessing chain state that are "specific" in the sense that they

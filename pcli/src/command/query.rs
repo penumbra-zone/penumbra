@@ -122,6 +122,20 @@ impl QueryCmd {
         Ok(())
     }
 
+    pub fn offline(&self) -> bool {
+        match self {
+            QueryCmd::Dex { .. } => false,
+            QueryCmd::Tx { .. }
+            | QueryCmd::Chain { .. }
+            | QueryCmd::Validator { .. }
+            | QueryCmd::ShieldedPool { .. }
+            | QueryCmd::Governance { .. }
+            | QueryCmd::Dao { .. }
+            | QueryCmd::Key { .. }
+            | QueryCmd::Ibc(_) => true,
+        }
+    }
+
     fn display_value(&self, bytes: &[u8]) -> Result<()> {
         match self {
             QueryCmd::Key { .. } => {

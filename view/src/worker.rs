@@ -5,23 +5,22 @@ use std::{
 
 use penumbra_chain::sync::CompactBlock;
 use penumbra_crypto::{Asset, FullViewingKey, Nullifier};
+use penumbra_proto::client::v1alpha1::specific_query_service_client::SpecificQueryServiceClient;
 use penumbra_proto::{
     self as proto,
     client::v1alpha1::{
         oblivious_query_service_client::ObliviousQueryServiceClient,
-        tendermint_proxy_service_client::TendermintProxyServiceClient, AssetListRequest,
-        CompactBlockRangeRequest, GetBlockByHeightRequest,
+        tendermint_proxy_service_client::TendermintProxyServiceClient, CompactBlockRangeRequest,
+        GetBlockByHeightRequest,
     },
     DomainType,
 };
 use penumbra_transaction::Transaction;
+use proto::client::v1alpha1::AssetInfoRequest;
 use sha2::Digest;
 use tokio::sync::{watch, RwLock};
 use tonic::transport::Channel;
 use url::Url;
-
-#[cfg(feature = "sct-divergence-check")]
-use penumbra_proto::client::v1alpha1::specific_query_service_client::SpecificQueryServiceClient;
 
 use crate::{
     sync::{scan_block, FilteredBlock},
@@ -36,7 +35,6 @@ pub struct Worker {
     error_slot: Arc<Mutex<Option<anyhow::Error>>>,
     sync_height_tx: watch::Sender<u64>,
     tm_client: TendermintProxyServiceClient<Channel>,
-    #[cfg(feature = "sct-divergence-check")]
     specific_client: SpecificQueryServiceClient<Channel>,
 }
 
@@ -72,7 +70,7 @@ impl Worker {
         sync_height_rx.borrow_and_update();
 
         let client = ObliviousQueryServiceClient::connect(node.to_string()).await?;
-        #[cfg(feature = "sct-divergence-check")]
+
         let specific_client = SpecificQueryServiceClient::connect(node.to_string()).await?;
 
         let tm_client = TendermintProxyServiceClient::connect(node.to_string()).await?;
@@ -86,39 +84,12 @@ impl Worker {
                 error_slot: error_slot.clone(),
                 sync_height_tx,
                 tm_client,
-                #[cfg(feature = "sct-divergence-check")]
                 specific_client,
             },
             sct,
             error_slot,
             sync_height_rx,
         ))
-    }
-
-    pub async fn fetch_assets(&mut self) -> Result<(), anyhow::Error> {
-        tracing::info!("fetching assets");
-
-        let chain_id = self.storage.chain_params().await?.chain_id;
-
-        let assets = self
-            .client
-            .asset_list(tonic::Request::new(AssetListRequest { chain_id }))
-            .await?
-            .into_inner()
-            .asset_list
-            .ok_or_else(|| anyhow::anyhow!("empty AssetListResponse message"))?
-            .assets;
-
-        for new_asset in assets {
-            let new_asset = Asset::try_from(new_asset)?;
-
-                self.storage.record_asset(new_asset).await?;
-            
-        }
-
-        tracing::info!("updated asset cache");
-
-        Ok(())
     }
 
     pub async fn fetch_transactions(
@@ -177,6 +148,8 @@ impl Worker {
         // Do a single sync run, up to whatever the latest block height is
         tracing::info!("starting client sync");
 
+        let chain_id = self.storage.chain_params().await?.chain_id;
+
         let start_height = self
             .storage
             .last_sync_height()
@@ -189,7 +162,7 @@ impl Worker {
         let mut stream = self
             .client
             .compact_block_range(tonic::Request::new(CompactBlockRangeRequest {
-                chain_id: self.storage.chain_params().await?.chain_id,
+                chain_id: chain_id.clone(),
                 start_height,
                 end_height: 0,
                 // Instruct the server to keep feeding us blocks as they're created.
@@ -248,6 +221,26 @@ impl Worker {
                 // Download any transactions we detected.
                 let transactions = self.fetch_transactions(&filtered_block).await?;
 
+                // Record any new assets we detected.
+
+                for note_record in &filtered_block.new_notes {
+                    let asset: Asset = self
+                        .specific_client
+                        .asset_info(AssetInfoRequest {
+                            asset_id: Some(note_record.note.asset_id().into()),
+                            chain_id: chain_id.clone(),
+                        })
+                        .await?
+                        .into_inner()
+                        .asset
+                        .unwrap()
+                        .try_into()?;
+
+                    self.storage.record_asset(asset).await?;
+                }
+
+                // Commit the block to the database.
+
                 self.storage
                     .record_block(filtered_block.clone(), transactions, &mut sct_guard)
                     .await?;
@@ -282,7 +275,6 @@ impl Worker {
         // For now, this can be outside of the loop, because assets are only
         // created at genesis. In the future, we'll want to have a way for
         // clients to learn about assets as they're created.
-        self.fetch_assets().await?;
         self.sync().await?;
         Ok(())
     }
