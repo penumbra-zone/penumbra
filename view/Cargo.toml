@@ -28,11 +28,6 @@ penumbra-transaction = { path = "../transaction" }
 penumbra-app = { path = "../app" }
 
 ibc = "0.29"
-sqlx = { version = "0.6", features = [
-    "runtime-tokio-rustls",
-    "offline",
-    "sqlite",
-] }
 tokio = { version = "1.22", features = ["full"] }
 tokio-stream = { version = "0.1.8", features = ["sync"] }
 anyhow = "1"
@@ -57,6 +52,7 @@ async-trait = "0.1"
 tendermint = "0.29.0"
 sha2 = "0.10.1"
 ed25519-consensus = "2.1"
+rusqlite = "0.29"
 
 [build-dependencies]
 vergen = "5"
