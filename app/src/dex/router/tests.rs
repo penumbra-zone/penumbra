@@ -27,6 +27,12 @@ async fn path_search_basic() {
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
 
     let (path, spill) = state.path_search(gm.id(), penumbra.id(), 4).await.unwrap();
+
+    // Now try routing from "penumbra" to "penumbra".
+    let (path, spill) = state
+        .path_search(penumbra.id(), penumbra.id(), 8)
+        .await
+        .unwrap();
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -258,6 +264,23 @@ fn create_test_positions_basic<S: StateWrite>(s: &mut S, misprice: bool) {
             r2: pusd.parse_value("2000").unwrap(),
         },
     );
+    // 1bps fee from Penumbra <-> PUSD at 1:10
+    // We never touch the same position twice during pathfinding, so arbitrage
+    // may require multiple positions on the same pair to find the route. In
+    // practice this shouldn't be an issue since there will probably be more
+    // than 1 person providing liquidity on penumbra.
+    let position_8 = Position::new(
+        OsRng,
+        pen_pusd_pair,
+        1u32,
+        // We want a 1:10 ratio of _display_ units, so cross-multiply with the unit<>base ratios:
+        Amount::from(1u64) * pusd.unit_amount(),
+        Amount::from(10u64) * penumbra.unit_amount(),
+        Reserves {
+            r1: gn.parse_value("2000").unwrap(),
+            r2: pusd.parse_value("2000").unwrap(),
+        },
+    );
 
     s.put_position(position_1);
     s.put_position(position_2);
@@ -268,4 +291,5 @@ fn create_test_positions_basic<S: StateWrite>(s: &mut S, misprice: bool) {
         s.put_position(position_6);
     }
     s.put_position(position_7);
+    s.put_position(position_8);
 }
