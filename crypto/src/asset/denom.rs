@@ -296,6 +296,10 @@ impl Unit {
             .expect("there must be an entry for unit_index")
             .exponent
     }
+
+    pub fn unit_amount(&self) -> asset::Amount {
+        10u128.pow(self.exponent().into()).into()
+    }
 }
 
 impl Hash for Unit {

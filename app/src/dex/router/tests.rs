@@ -6,6 +6,7 @@ use penumbra_crypto::{
         lp::{position::Position, Reserves},
         DirectedTradingPair,
     },
+    Amount,
 };
 use penumbra_storage::{StateDelta, StateWrite};
 use rand_core::OsRng;
@@ -136,87 +137,108 @@ fn create_test_positions_basic<S: StateWrite>(s: &mut S, misprice: bool) {
     // penumbra <-> pusd
     let pen_pusd_pair = DirectedTradingPair::new(penumbra.id(), pusd.id());
 
-    // For basic testing, both sides of the position will have liquidity available.
-    // TODO: test positions with only one side of liquidity available (after fill phase is implemented)
-    let reserves_1 = Reserves {
-        r1: 120_000u64.into(),
-        r2: 120_000u64.into(),
-    };
-
     // Exchange rates:
     //
-    // GM <-> GN: 1:2
-    // GM <-> PUSD: 1:1
-    // GN <-> PUSD: 2:1
-    // PUSD <-> Penumbra: 1:1
+    // GM <-> GN: 1:1
+    // GM <-> PUSD: 1:2
+    // GN <-> PUSD: 1:2
+    // PUSD <-> Penumbra: 10:1
     //
     // Some positions will be mispriced according to the above exchange rates.
 
     // Building positions:
 
-    // 1bps fee from GM <-> GN at 1:2
+    // 10bps fee from GM <-> GN at 1:1
     let position_1 = Position::new(
         OsRng,
         gm_gn_pair,
-        1u32,
-        1_000_000u64.into(),
-        2_000_000u64.into(),
-        reserves_1.clone(),
+        10,
+        // We want a 1:1 ratio of _display_ units, so cross-multiply with the unit<>base ratios:
+        Amount::from(1u64) * gn.unit_amount(),
+        Amount::from(1u64) * gm.unit_amount(),
+        Reserves {
+            r1: gm.parse_value("10").unwrap(),
+            r2: gn.parse_value("10").unwrap(),
+        },
     );
-    // 2bps fee from GM <-> GN at 1:2
+    // 20bps fee from GM <-> GN at 1:1
     let position_2 = Position::new(
         OsRng,
         gm_gn_pair,
-        2u32,
-        1_000_000u64.into(),
-        2_000_000u64.into(),
-        reserves_1.clone(),
+        20,
+        // We want a 1:1 ratio of _display_ units, so cross-multiply with the unit<>base ratios:
+        Amount::from(1u64) * gn.unit_amount(),
+        Amount::from(1u64) * gm.unit_amount(),
+        Reserves {
+            r1: gm.parse_value("20").unwrap(),
+            r2: gn.parse_value("30").unwrap(),
+        },
     );
-    // 1bps fee from GM <-> GN at 1:2
+    // 50bps fee from GM <-> GN at 1:1
     let position_3 = Position::new(
         OsRng,
         gm_gn_pair,
-        1u32,
-        1_000_000u64.into(),
-        2_000_000u64.into(),
-        reserves_1.clone(),
+        50,
+        // We want a 1:1 ratio of _display_ units, so cross-multiply with the unit<>base ratios:
+        Amount::from(1u64) * gn.unit_amount(),
+        Amount::from(1u64) * gm.unit_amount(),
+        Reserves {
+            r1: gm.parse_value("1000").unwrap(),
+            r2: gn.parse_value("1000").unwrap(),
+        },
     );
-    // 1bps fee from GM <-> PUSD at 1:1
+    // 10bps fee from GM <-> PUSD at 1:2
     let position_4 = Position::new(
         OsRng,
         gm_pusd_pair,
-        1u32,
-        1_000_000u64.into(),
-        1_000_000u64.into(),
-        reserves_1.clone(),
+        10,
+        // We want a 1:2 ratio of _display_ units, so cross-multiply with the unit<>base ratios:
+        Amount::from(1u64) * pusd.unit_amount(),
+        Amount::from(2u64) * gm.unit_amount(),
+        Reserves {
+            r1: gm.parse_value("1000").unwrap(),
+            r2: pusd.parse_value("1000").unwrap(),
+        },
     );
-    // 1bps fee from GN <-> PUSD at 2:1
+    // 10bps fee from GN <-> PUSD at 1:2
     let position_5 = Position::new(
         OsRng,
         gn_pusd_pair,
-        1u32,
-        2_000_000u64.into(),
-        1_000_000u64.into(),
-        reserves_1.clone(),
+        10,
+        // We want a 1:2 ratio of _display_ units, so cross-multiply with the unit<>base ratios:
+        Amount::from(1u64) * pusd.unit_amount(),
+        Amount::from(2u64) * gn.unit_amount(),
+        Reserves {
+            r1: gn.parse_value("1000").unwrap(),
+            r2: pusd.parse_value("1000").unwrap(),
+        },
     );
-    // MISPRICED: this position has overvalued PUSD, so it will allow arbitrage.
-    // 1bps fee from GN <-> PUSD at 3:1
+    // MISPRICED: this position has undervalued GN, so it will allow arbitrage.
+    // 10bps fee from GN <-> PUSD at 1:1
     let position_6 = Position::new(
         OsRng,
         gn_pusd_pair,
-        1u32,
-        3_000_000u64.into(),
-        1_000_000u64.into(),
-        reserves_1.clone(),
+        10,
+        // We want a 1:1 ratio of _display_ units, so cross-multiply with the unit<>base ratios:
+        Amount::from(1u64) * pusd.unit_amount(),
+        Amount::from(1u64) * gn.unit_amount(),
+        Reserves {
+            r1: gn.parse_value("10").unwrap(),
+            r2: pusd.parse_value("10").unwrap(),
+        },
     );
-    // 1bps fee from Penumbra <-> PUSD at 1:1
+    // 1bps fee from Penumbra <-> PUSD at 1:10
     let position_7 = Position::new(
         OsRng,
         pen_pusd_pair,
         1u32,
-        1_000_000u64.into(),
-        1_000_000u64.into(),
-        reserves_1.clone(),
+        // We want a 1:10 ratio of _display_ units, so cross-multiply with the unit<>base ratios:
+        Amount::from(1u64) * pusd.unit_amount(),
+        Amount::from(10u64) * penumbra.unit_amount(),
+        Reserves {
+            r1: gn.parse_value("2000").unwrap(),
+            r2: pusd.parse_value("2000").unwrap(),
+        },
     );
 
     s.put_position(position_1);
