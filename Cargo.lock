@@ -4200,6 +4200,7 @@ dependencies = [
  "jmt",
  "metrics",
  "once_cell",
+ "parking_lot 0.12.1",
  "penumbra-chain",
  "penumbra-crypto",
  "penumbra-proof-params",
