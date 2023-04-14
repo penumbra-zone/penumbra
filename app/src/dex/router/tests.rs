@@ -26,9 +26,11 @@ async fn path_search_basic() {
     let gm = asset::REGISTRY.parse_unit("gm");
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
 
+    tracing::info!(src = %gm, dst = %penumbra, "searching for path");
     let (path, spill) = state.path_search(gm.id(), penumbra.id(), 4).await.unwrap();
 
     // Now try routing from "penumbra" to "penumbra".
+    tracing::info!(src = %penumbra, dst = %penumbra, "searching for path");
     let (path, spill) = state
         .path_search(penumbra.id(), penumbra.id(), 8)
         .await
@@ -134,6 +136,10 @@ fn create_test_positions_basic<S: StateWrite>(s: &mut S, misprice: bool) {
     let gn = asset::REGISTRY.parse_unit("gn");
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
     let pusd = asset::REGISTRY.parse_unit("pusd");
+    tracing::debug!(id = ?gm.id(), unit = %gm);
+    tracing::debug!(id = ?gn.id(), unit = %gn);
+    tracing::debug!(id = ?penumbra.id(), unit = %penumbra);
+    tracing::debug!(id = ?pusd.id(), unit = %pusd);
 
     // `pusd` is treated as a numeraire, with gm:pusd, gn:pusd, and penumbra:pusd pairs with different prices.
     // some of the `gn:pusd` positions will be mispriced so we can exercise arbitrage and cycle resolution.
