@@ -15,7 +15,7 @@ use rand_core::OsRng;
 
 use super::PathSearch;
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn path_search_basic() {
     let _ = tracing_subscriber::fmt::try_init();
     let mut state = StateDelta::new(());
@@ -27,11 +27,9 @@ async fn path_search_basic() {
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
 
     let (path, spill) = state.path_search(gm.id(), penumbra.id(), 4).await.unwrap();
-
-    tracing::debug!(?path, ?spill);
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn path_extension_basic() {
     let _ = tracing_subscriber::fmt::try_init();
     let mut state = StateDelta::new(());

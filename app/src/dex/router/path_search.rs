@@ -31,6 +31,7 @@ pub trait PathSearch: StateRead + Clone + 'static {
         if let Some(PathEntry { path, spill, .. }) = entry {
             let nodes = path.nodes;
             let spill_price = spill.map(|p| p.price);
+            tracing::info!(price = %path.price, ?src, ?nodes, spill_price = %spill_price.unwrap_or_else(|| 0u64.into()), "found path");
             Ok((Some(nodes), spill_price))
         } else {
             Ok((None, None))
@@ -43,6 +44,10 @@ impl<S> PathSearch for S where S: StateRead + Clone + 'static {}
 async fn relax_active_paths<S: StateRead + 'static>(cache: SharedPathCache<S>) -> Result<()> {
     let active_paths = cache.lock().extract_active();
     let mut js = JoinSet::new();
+    tracing::debug!(
+        active_paths_len = active_paths.len(),
+        "relaxing active paths"
+    );
     for path in active_paths {
         js.spawn(relax_path(cache.clone(), path));
     }
