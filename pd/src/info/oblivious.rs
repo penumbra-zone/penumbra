@@ -6,15 +6,13 @@ use futures::{
     TryFutureExt,
 };
 use penumbra_app::compactblock::view::StateReadExt as _;
-use penumbra_app::shielded_pool::SupplyRead as _;
 use penumbra_app::stake::{validator, StateReadExt as _};
 use penumbra_chain::StateReadExt as _;
 use penumbra_proto::{
     client::v1alpha1::{
-        oblivious_query_service_server::ObliviousQueryService, AssetListRequest, AssetListResponse,
-        ChainParametersRequest, ChainParametersResponse, CompactBlockRangeRequest,
-        CompactBlockRangeResponse, EpochByHeightRequest, EpochByHeightResponse,
-        ValidatorInfoRequest, ValidatorInfoResponse,
+        oblivious_query_service_server::ObliviousQueryService, ChainParametersRequest,
+        ChainParametersResponse, CompactBlockRangeRequest, CompactBlockRangeResponse,
+        EpochByHeightRequest, EpochByHeightResponse, ValidatorInfoRequest, ValidatorInfoResponse,
     },
     DomainType,
 };
@@ -104,26 +102,6 @@ impl ObliviousQueryService for Info {
                 last_block_app_hash: info.last_block_app_hash.into(),
             },
         ))
-    }
-
-    #[instrument(skip(self, request))]
-    async fn asset_list(
-        &self,
-        request: tonic::Request<AssetListRequest>,
-    ) -> Result<tonic::Response<AssetListResponse>, Status> {
-        let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
-
-        let known_assets = state
-            .known_assets()
-            .await
-            .map_err(|e| tonic::Status::unavailable(format!("error getting known assets: {e}")))?;
-        Ok(tonic::Response::new(AssetListResponse {
-            asset_list: Some(known_assets.into()),
-        }))
     }
 
     #[instrument(skip(self, request))]

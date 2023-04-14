@@ -105,23 +105,6 @@ pub struct ValidatorInfoResponse {
         super::super::core::stake::v1alpha1::ValidatorInfo,
     >,
 }
-/// Lists all assets in Asset Registry
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct AssetListRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct AssetListResponse {
-    /// TODO: deprecate in favor of SpecificQuery.AssetInfo
-    #[prost(message, optional, tag = "1")]
-    pub asset_list: ::core::option::Option<
-        super::super::core::chain::v1alpha1::KnownAssets,
-    >,
-}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionByNoteRequest {
@@ -726,25 +709,6 @@ pub mod oblivious_query_service_client {
             );
             self.inner.server_streaming(request.into_request(), path, codec).await
         }
-        pub async fn asset_list(
-            &mut self,
-            request: impl tonic::IntoRequest<super::AssetListRequest>,
-        ) -> Result<tonic::Response<super::AssetListResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.client.v1alpha1.ObliviousQueryService/AssetList",
-            );
-            self.inner.unary(request.into_request(), path, codec).await
-        }
         pub async fn info(
             &mut self,
             request: impl tonic::IntoRequest<super::InfoRequest>,
@@ -1339,10 +1303,6 @@ pub mod oblivious_query_service_server {
             &self,
             request: tonic::Request<super::ValidatorInfoRequest>,
         ) -> Result<tonic::Response<Self::ValidatorInfoStream>, tonic::Status>;
-        async fn asset_list(
-            &self,
-            request: tonic::Request<super::AssetListRequest>,
-        ) -> Result<tonic::Response<super::AssetListResponse>, tonic::Status>;
         async fn info(
             &self,
             request: tonic::Request<super::InfoRequest>,
@@ -1572,44 +1532,6 @@ pub mod oblivious_query_service_server {
                                 send_compression_encodings,
                             );
                         let res = grpc.server_streaming(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/penumbra.client.v1alpha1.ObliviousQueryService/AssetList" => {
-                    #[allow(non_camel_case_types)]
-                    struct AssetListSvc<T: ObliviousQueryService>(pub Arc<T>);
-                    impl<
-                        T: ObliviousQueryService,
-                    > tonic::server::UnaryService<super::AssetListRequest>
-                    for AssetListSvc<T> {
-                        type Response = super::AssetListResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::AssetListRequest>,
-                        ) -> Self::Future {
-                            let inner = self.0.clone();
-                            let fut = async move { (*inner).asset_list(request).await };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let inner = inner.0;
-                        let method = AssetListSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
-                        let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)

@@ -3,9 +3,8 @@ use std::pin::Pin;
 use anyhow::{Context, Result};
 use comfy_table::{presets, Table};
 use futures::{Future, FutureExt, Stream, StreamExt, TryStreamExt};
-use penumbra_chain::KnownAssets;
+
 use penumbra_crypto::{
-    asset::Cache,
     dex::{
         lp::{position::Position, Reserves},
         BatchSwapOutputData, TradingPair,
@@ -13,10 +12,10 @@ use penumbra_crypto::{
     Asset,
 };
 use penumbra_proto::client::v1alpha1::{
-    specific_query_service_client::SpecificQueryServiceClient, AssetListRequest,
-    BatchSwapOutputDataRequest, ChainParametersRequest, LiquidityPositionsRequest,
-    StubCpmmReservesRequest,
+    specific_query_service_client::SpecificQueryServiceClient, AssetInfoRequest,
+    BatchSwapOutputDataRequest, LiquidityPositionsRequest, StubCpmmReservesRequest,
 };
+use penumbra_view::ViewClient;
 use tonic::transport::Channel;
 
 use crate::App;
@@ -45,47 +44,14 @@ pub enum DexCmd {
 }
 
 impl DexCmd {
-    // TODO: this is duplicated between various pcli q subcommands, is there a single place it could live?
-    async fn get_asset_cache(&self, app: &mut App) -> Result<(String, Cache)> {
-        let mut oblivious_client = app.oblivious_client().await?;
-
-        let chain_params = oblivious_client
-            .chain_parameters(tonic::Request::new(ChainParametersRequest {
-                chain_id: "".to_string(),
-            }))
-            .await?
-            .into_inner()
-            .chain_parameters
-            .ok_or_else(|| anyhow::anyhow!("empty ChainParametersResponse message"))?;
-
-        let chain_id = chain_params.chain_id;
-        let assets = oblivious_client
-            .asset_list(tonic::Request::new(AssetListRequest {
-                chain_id: chain_id.clone(),
-            }))
-            .await?
-            .into_inner()
-            .asset_list
-            .ok_or_else(|| anyhow::anyhow!("empty AssetListResponse message"))?
-            .assets;
-
-        let mut known_assets = KnownAssets(vec![]);
-        for new_asset in assets {
-            let new_asset = Asset::try_from(new_asset)?;
-            known_assets.0.push(new_asset);
-        }
-
-        Ok((chain_id, known_assets.into()))
-    }
-
     pub async fn print_cpmm_reserves(
         &self,
         app: &mut App,
         trading_pair: &TradingPair,
     ) -> Result<()> {
-        let (chain_id, asset_cache) = self.get_asset_cache(app).await?;
-
         let mut client = app.specific_client().await?;
+
+        let chain_id = app.view().chain_params().await?.chain_id;
         let reserves_data: Reserves = client
             .stub_cpmm_reserves(StubCpmmReservesRequest {
                 trading_pair: Some((*trading_pair).into()),
@@ -98,41 +64,45 @@ impl DexCmd {
         println!("Constant-Product Market Maker Reserves:");
         let mut table = Table::new();
 
-        let asset_1 = asset_cache
-            .get(&trading_pair.asset_1())
-            .map(|base_denom| {
-                let display_denom = base_denom.best_unit_for(reserves_data.r1);
-                (
-                    format!("{display_denom}"),
-                    display_denom.format_value(reserves_data.r1),
-                )
+        let asset_1: Asset = client
+            .asset_info(AssetInfoRequest {
+                asset_id: Some(trading_pair.asset_1().into()),
+                chain_id: chain_id.clone(),
             })
-            .unwrap_or_else(|| {
-                (
-                    format!("{}", trading_pair.asset_1()),
-                    reserves_data.r1.to_string(),
-                )
-            });
-        let asset_2 = asset_cache
-            .get(&trading_pair.asset_2())
-            .map(|base_denom| {
-                let display_denom = base_denom.best_unit_for(reserves_data.r2);
-                (
-                    format!("{display_denom}"),
-                    display_denom.format_value(reserves_data.r2),
-                )
+            .await?
+            .into_inner()
+            .asset
+            .unwrap()
+            .try_into()?;
+
+        let display_denom_1 = asset_1.denom.best_unit_for(reserves_data.r1);
+
+        let (denom_1, reserve_amount_1) = (
+            format!("{display_denom_1}"),
+            display_denom_1.format_value(reserves_data.r1),
+        );
+
+        let asset_2: Asset = client
+            .asset_info(AssetInfoRequest {
+                asset_id: Some(trading_pair.asset_2().into()),
+                chain_id: chain_id.clone(),
             })
-            .unwrap_or_else(|| {
-                (
-                    format!("{}", trading_pair.asset_2()),
-                    reserves_data.r2.to_string(),
-                )
-            });
+            .await?
+            .into_inner()
+            .asset
+            .unwrap()
+            .try_into()?;
+        let display_denom_2 = asset_2.denom.best_unit_for(reserves_data.r2);
+        let (denom_2, reserve_amount_2) = (
+            format!("{display_denom_2}"),
+            display_denom_2.format_value(reserves_data.r2),
+        );
+
         table.load_preset(presets::NOTHING);
         table
             .set_header(vec!["Denomination", "Reserve Amount"])
-            .add_row(vec![asset_1.0, asset_1.1])
-            .add_row(vec![asset_2.0, asset_2.1]);
+            .add_row(vec![denom_1, reserve_amount_1])
+            .add_row(vec![denom_2, reserve_amount_2]);
 
         println!("{table}");
 
@@ -183,14 +153,83 @@ impl DexCmd {
                 .map_err(|e| anyhow::anyhow!("error fetching liquidity positions: {}", e))
                 .and_then(|msg| async move {
                     msg.data
-                        .ok_or(anyhow::anyhow!(
-                            "missing liquidity position in response data"
-                        ))
-                        .map(|data| Position::try_from(data))?
+                        .ok_or_else(|| {
+                            anyhow::anyhow!("missing liquidity position in response data")
+                        })
+                        .map(Position::try_from)?
                 })
                 .boxed())
         }
         .boxed()
+    }
+
+    pub async fn print_batch_outputs(
+        &self,
+        app: &mut App,
+        height: &u64,
+        trading_pair: &TradingPair,
+    ) -> Result<()> {
+        let mut client = app.specific_client().await?;
+
+        let chain_id = app.view().chain_params().await?.chain_id;
+
+        let outputs = self
+            .get_batch_outputs(app, chain_id.clone(), height, trading_pair)
+            .await?;
+
+        let asset_1: Asset = client
+            .asset_info(AssetInfoRequest {
+                asset_id: Some(trading_pair.asset_1().into()),
+                chain_id: chain_id.clone(),
+            })
+            .await?
+            .into_inner()
+            .asset
+            .unwrap()
+            .try_into()?;
+
+        let display_denom_1 = asset_1.denom.best_unit_for(std::cmp::max(
+            outputs.delta_1,
+            outputs.lambda_1_1 + outputs.lambda_1_2,
+        ));
+
+        let (denom_1, input_amount_1, output_amount_1) = (
+            format!("{display_denom_1}"),
+            display_denom_1.format_value(outputs.delta_1),
+            display_denom_1.format_value(outputs.lambda_1_1 + outputs.lambda_1_2),
+        );
+        let asset_2: Asset = client
+            .asset_info(AssetInfoRequest {
+                asset_id: Some(trading_pair.asset_2().into()),
+                chain_id: chain_id.clone(),
+            })
+            .await?
+            .into_inner()
+            .asset
+            .unwrap()
+            .try_into()?;
+        let display_denom_2 = asset_2.denom.best_unit_for(std::cmp::max(
+            outputs.delta_2,
+            outputs.lambda_2_1 + outputs.lambda_2_2,
+        ));
+
+        let (denom_2, input_amount_2, output_amount_2) = (
+            format!("{display_denom_2}"),
+            display_denom_2.format_value(outputs.delta_2),
+            display_denom_2.format_value(outputs.lambda_2_1 + outputs.lambda_2_2),
+        );
+
+        println!("Batch Swap Outputs for height {}:", outputs.height);
+        let mut table = Table::new();
+        table.load_preset(presets::NOTHING);
+        table
+            .set_header(vec!["Denomination", "Input Amount", "Output Amount"])
+            .add_row(vec![denom_1, input_amount_1, output_amount_1])
+            .add_row(vec![denom_2, input_amount_2, output_amount_2]);
+
+        println!("{table}");
+
+        Ok(())
     }
 
     pub async fn exec(&self, app: &mut App) -> Result<()> {
@@ -202,70 +241,14 @@ impl DexCmd {
                 height,
                 trading_pair,
             } => {
-                let (chain_id, asset_cache) = self.get_asset_cache(app).await?;
-                let outputs = self
-                    .get_batch_outputs(app, chain_id, height, trading_pair)
-                    .await?;
-
-                let asset_1 = asset_cache
-                    .get(&trading_pair.asset_1())
-                    .map(|base_denom| {
-                        let display_denom = base_denom.best_unit_for(
-                            std::cmp::max(outputs.delta_1, outputs.lambda_1_1 + outputs.lambda_1_2)
-                                .into(),
-                        );
-                        (
-                            format!("{display_denom}"),
-                            display_denom.format_value(outputs.delta_1.into()),
-                            display_denom
-                                .format_value((outputs.lambda_1_1 + outputs.lambda_1_2).into()),
-                        )
-                    })
-                    .unwrap_or_else(|| {
-                        (
-                            format!("{}", trading_pair.asset_1()),
-                            outputs.delta_1.to_string(),
-                            (outputs.lambda_1_1 + outputs.lambda_1_2).to_string(),
-                        )
-                    });
-                let asset_2 = asset_cache
-                    .get(&trading_pair.asset_2())
-                    .map(|base_denom| {
-                        let display_denom = base_denom.best_unit_for(
-                            std::cmp::max(outputs.delta_2, outputs.lambda_2_1 + outputs.lambda_2_2)
-                                .into(),
-                        );
-                        (
-                            format!("{display_denom}"),
-                            display_denom.format_value(outputs.delta_2.into()),
-                            display_denom
-                                .format_value((outputs.lambda_2_1 + outputs.lambda_2_2).into()),
-                        )
-                    })
-                    .unwrap_or_else(|| {
-                        (
-                            format!("{}", trading_pair.asset_2()),
-                            outputs.delta_2.to_string(),
-                            (outputs.lambda_2_1 + outputs.lambda_2_2).to_string(),
-                        )
-                    });
-
-                println!("Batch Swap Outputs for height {}:", outputs.height);
-                let mut table = Table::new();
-                table.load_preset(presets::NOTHING);
-                table
-                    .set_header(vec!["Denomination", "Input Amount", "Output Amount"])
-                    .add_row(vec![asset_1.0, asset_1.1, asset_1.2])
-                    .add_row(vec![asset_2.0, asset_2.1, asset_2.2]);
-
-                println!("{table}");
+                self.print_batch_outputs(app, height, trading_pair).await?;
             }
             DexCmd::LiquidityPositions { only_open } => {
-                let client = app.specific_client().await.unwrap();
-                let (chain_id, asset_cache) = self.get_asset_cache(app).await?;
+                let mut client = app.specific_client().await?;
+                let chain_id = app.view().chain_params().await?.chain_id;
 
                 let mut positions_stream = self
-                    .get_liquidity_positions(client, *only_open, chain_id)
+                    .get_liquidity_positions(client.clone(), *only_open, chain_id.clone())
                     .await
                     .await?;
 
@@ -285,17 +268,33 @@ impl DexCmd {
                     })
                 {
                     let trading_pair = position.phi.pair;
-                    let asset_1 = asset_cache
-                        .get(&trading_pair.asset_1())
-                        .map(|bd| format!("{bd}"))
-                        .unwrap_or("unknown".to_string());
-                    let asset_2 = asset_cache
-                        .get(&trading_pair.asset_2())
-                        .map(|bd| format!("{bd}"))
-                        .unwrap_or("unknown".to_string());
+                    let asset_1: Asset = client
+                        .asset_info(AssetInfoRequest {
+                            asset_id: Some(trading_pair.asset_1().into()),
+                            chain_id: chain_id.clone(),
+                        })
+                        .await?
+                        .into_inner()
+                        .asset
+                        .unwrap()
+                        .try_into()?;
+                    let asset_2: Asset = client
+                        .asset_info(AssetInfoRequest {
+                            asset_id: Some(trading_pair.asset_2().into()),
+                            chain_id: chain_id.clone(),
+                        })
+                        .await?
+                        .into_inner()
+                        .asset
+                        .unwrap()
+                        .try_into()?;
+
+                    let display_denom_1 = asset_1.denom.best_unit_for(position.reserves.r1);
+                    let display_denom_2 = asset_2.denom.best_unit_for(position.reserves.r2);
+
                     table.add_row(vec![
                         format!("{}", position.id()),
-                        format!("({}, {})", asset_1, asset_2),
+                        format!("({}, {})", display_denom_1, display_denom_2),
                         position.state.to_string(),
                         format!("({}, {})", position.reserves.r1, position.reserves.r2),
                         format!(
