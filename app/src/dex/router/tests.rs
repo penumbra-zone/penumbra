@@ -20,7 +20,7 @@ async fn path_extension_basic() {
 
     // Create a new path starting at "gm".
     let gm = asset::REGISTRY.parse_unit("gm");
-    let mut path = Path::begin(gm.id(), state);
+    let path = Path::begin(gm.id(), state);
 
     // Extend the path to "gn".
     let gn = asset::REGISTRY.parse_unit("gn");

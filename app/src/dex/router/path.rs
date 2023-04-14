@@ -72,12 +72,14 @@ impl<S: StateRead + 'static> Path<S> {
         self.state.deindex_position(&best_price_position);
 
         // Update and return the path.
-        // TODO: gross
-        let hop_price = if self.end() == &best_price_position.phi.pair.asset_1() {
-            best_price_position.phi.component.ask_price()
-        } else {
-            best_price_position.phi.component.bid_price()
-        };
+        // Orient the best priced position's canonical trading form to a [`DirectionalTradingPair`]
+        // ending at the path's current end and retrieve the bid price.
+        let hop_price = best_price_position
+            .phi
+            .orient_end(*self.end())
+            .ok_or_else(|| anyhow::anyhow!("path end not in position"))?
+            .component
+            .bid_price();
 
         if let Some(path_price) = self.price * hop_price {
             tracing::debug!(%path_price, %hop_price, id = ?best_price_position.id(), "extended path");

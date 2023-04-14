@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use penumbra_crypto::{
     dex::{
         lp::position::{self, Position},
+        lp::TradingFunctionTrait,
         DirectedTradingPair,
     },
     Value,

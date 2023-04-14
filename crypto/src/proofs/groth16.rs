@@ -88,11 +88,11 @@ mod tests {
 
         let value_1 = Value {
             amount: swap_plaintext.delta_1_i,
-            asset_id: swap_plaintext.trading_pair.asset_1(),
+            asset_id: swap_plaintext.trading_pair.asset_1,
         };
         let value_2 = Value {
             amount: swap_plaintext.delta_2_i,
-            asset_id:  swap_plaintext.trading_pair.asset_2(),
+            asset_id:  swap_plaintext.trading_pair.asset_2,
         };
         let value_fee = Value {
             amount: swap_plaintext.claim_fee.amount(),

@@ -172,3 +172,27 @@ impl fmt::Display for TradingPair {
         write!(f, "{}:{}", self.asset_1, self.asset_2)
     }
 }
+
+pub trait TradingPairTrait {
+    // Should these be named start/end instead?
+    fn asset_1(&self) -> asset::Id;
+    fn asset_2(&self) -> asset::Id;
+}
+
+impl TradingPairTrait for TradingPair {
+    fn asset_1(&self) -> asset::Id {
+        self.asset_1
+    }
+    fn asset_2(&self) -> asset::Id {
+        self.asset_2
+    }
+}
+
+impl TradingPairTrait for DirectedTradingPair {
+    fn asset_1(&self) -> asset::Id {
+        self.start
+    }
+    fn asset_2(&self) -> asset::Id {
+        self.end
+    }
+}

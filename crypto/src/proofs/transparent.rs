@@ -108,7 +108,7 @@ impl SwapClaimProof {
             self.swap_plaintext.claim_address,
             Value {
                 amount: self.lambda_1_i.into(),
-                asset_id: self.swap_plaintext.trading_pair.asset_1(),
+                asset_id: self.swap_plaintext.trading_pair.asset_1,
             },
             output_rseed_1.derive_note_blinding(),
         )?;
@@ -116,7 +116,7 @@ impl SwapClaimProof {
             self.swap_plaintext.claim_address,
             Value {
                 amount: self.lambda_2_i.into(),
-                asset_id: self.swap_plaintext.trading_pair.asset_2(),
+                asset_id: self.swap_plaintext.trading_pair.asset_2,
             },
             output_rseed_2.derive_note_blinding(),
         )?;

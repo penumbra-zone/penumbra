@@ -2,6 +2,9 @@ use anyhow::{anyhow, Result};
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
+use crate::asset;
+use crate::dex::trading_pair::TradingPairTrait;
+use crate::dex::DirectedTradingPair;
 use crate::dex::TradingPair;
 use crate::fixpoint::U128x128;
 use crate::Amount;
@@ -9,11 +12,89 @@ use crate::Value;
 
 use super::Reserves;
 
+/// A trading function in the "canonical" direction (i.e. the direction
+/// specified by the `TradingPair`).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::TradingFunction", into = "pb::TradingFunction")]
 pub struct TradingFunction {
     pub component: BareTradingFunction,
     pub pair: TradingPair,
+}
+
+/// A trading function in any direction.
+pub struct DirectedTradingFunction {
+    pub component: BareTradingFunction,
+    pub pair: DirectedTradingPair,
+}
+
+impl TradingFunctionTrait<DirectedTradingPair> for DirectedTradingFunction {
+    fn pair(&self) -> &DirectedTradingPair {
+        &self.pair
+    }
+
+    fn component(&self) -> &BareTradingFunction {
+        &self.component
+    }
+}
+impl TradingFunctionTrait<TradingPair> for TradingFunction {
+    fn pair(&self) -> &TradingPair {
+        &self.pair
+    }
+
+    fn component(&self) -> &BareTradingFunction {
+        &self.component
+    }
+}
+
+pub trait TradingFunctionTrait<T: TradingPairTrait + std::fmt::Debug> {
+    fn pair(&self) -> &T;
+    fn component(&self) -> &BareTradingFunction;
+
+    /// Fills a trade of an input value against this position, returning the
+    /// unfilled amount of the input asset, the updated reserves, and the output
+    /// amount.
+    ///
+    /// Errors if the asset type of the input does not match either end of this
+    /// `TradingFunction`'s `TradingPair`.
+    fn fill(&self, input: Value, reserves: &Reserves) -> anyhow::Result<(Value, Reserves, Value)> {
+        if input.asset_id == self.pair().asset_1() {
+            let (unfilled, new_reserves, output) = self.component().fill(input.amount, reserves);
+            Ok((
+                Value {
+                    amount: unfilled,
+                    asset_id: self.pair().asset_1(),
+                },
+                new_reserves,
+                Value {
+                    amount: output,
+                    asset_id: self.pair().asset_2(),
+                },
+            ))
+        } else if input.asset_id == self.pair().asset_2() {
+            let flipped_reserves = reserves.flip();
+            let (unfilled, new_reserves, output) = self
+                .component()
+                .flip()
+                .fill(input.amount, &flipped_reserves);
+            Ok((
+                Value {
+                    amount: unfilled,
+                    asset_id: self.pair().asset_2(),
+                },
+                new_reserves.flip(),
+                Value {
+                    amount: output,
+                    asset_id: self.pair().asset_1(),
+                },
+            ))
+        } else {
+            Err(anyhow!(
+                "input asset id {:?} did not match either end of trading pair {:?}",
+                input.asset_id,
+                self.pair()
+            ))
+        }
+    }
 }
 
 impl TradingFunction {
@@ -24,51 +105,39 @@ impl TradingFunction {
         }
     }
 
-    /// Fills a trade of an input value against this position, returning the
-    /// unfilled amount of the input asset, the updated reserves, and the output
-    /// amount.
-    ///
-    /// Errors if the asset type of the input does not match either end of this
-    /// `TradingFunction`'s `TradingPair`.
-    pub fn fill(
-        &self,
-        input: Value,
-        reserves: &Reserves,
-    ) -> anyhow::Result<(Value, Reserves, Value)> {
-        if input.asset_id == self.pair.asset_1() {
-            let (unfilled, new_reserves, output) = self.component.fill(input.amount, reserves);
-            Ok((
-                Value {
-                    amount: unfilled,
-                    asset_id: self.pair.asset_1(),
-                },
-                new_reserves,
-                Value {
-                    amount: output,
-                    asset_id: self.pair.asset_2(),
-                },
-            ))
-        } else if input.asset_id == self.pair.asset_2() {
-            let flipped_reserves = reserves.flip();
-            let (unfilled, new_reserves, output) =
-                self.component.flip().fill(input.amount, &flipped_reserves);
-            Ok((
-                Value {
-                    amount: unfilled,
-                    asset_id: self.pair.asset_2(),
-                },
-                new_reserves.flip(),
-                Value {
-                    amount: output,
-                    asset_id: self.pair.asset_1(),
-                },
-            ))
+    /// Returns the trading function represented as a `DirectedTradingFunction` starting
+    /// on the provided asset.
+    pub fn orient_start(&self, start: asset::Id) -> Option<DirectedTradingFunction> {
+        if start == self.pair.asset_1() {
+            Some(DirectedTradingFunction {
+                component: self.component.clone(),
+                pair: DirectedTradingPair::new(self.pair.asset_1(), self.pair.asset_2()),
+            })
+        } else if start == self.pair.asset_2() {
+            Some(DirectedTradingFunction {
+                component: self.component.flip(),
+                pair: DirectedTradingPair::new(self.pair.asset_2(), self.pair.asset_1()),
+            })
         } else {
-            Err(anyhow!(
-                "input asset id {:?} did not match either end of trading pair {:?}",
-                input.asset_id,
-                self.pair
-            ))
+            None
+        }
+    }
+
+    /// Returns the trading function represented as a `DirectedTradingFunction` ending
+    /// on the provided asset.
+    pub fn orient_end(&self, end: asset::Id) -> Option<DirectedTradingFunction> {
+        if end == self.pair.asset_1() {
+            Some(DirectedTradingFunction {
+                component: self.component.flip(),
+                pair: DirectedTradingPair::new(self.pair.asset_1(), self.pair.asset_2()),
+            })
+        } else if end == self.pair.asset_2() {
+            Some(DirectedTradingFunction {
+                component: self.component.clone(),
+                pair: DirectedTradingPair::new(self.pair.asset_2(), self.pair.asset_1()),
+            })
+        } else {
+            None
         }
     }
 }
