@@ -31,7 +31,7 @@ pub trait PathSearch: StateRead + Clone + 'static {
         if let Some(PathEntry { path, spill, .. }) = entry {
             let nodes = path.nodes;
             let spill_price = spill.map(|p| p.price);
-            tracing::info!(price = %path.price, ?src, ?nodes, spill_price = %spill_price.unwrap_or_else(|| 0u64.into()), "found path");
+            tracing::info!(price = %path.price, spill_price = %spill_price.unwrap_or_else(|| 0u64.into()), ?src, ?nodes, "found path");
             Ok((Some(nodes), spill_price))
         } else {
             Ok((None, None))
