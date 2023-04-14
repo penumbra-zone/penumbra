@@ -898,31 +898,7 @@ impl Storage {
 
         let mut tx = self.pool.begin().await?;
 
-        let note_commitment = note.commit().0.to_bytes().to_vec();
-        let address = note.address().to_vec();
-        let amount = u128::from(note.amount()).to_be_bytes().to_vec();
-        let asset_id = note.asset_id().to_bytes().to_vec();
-        let rseed = note.rseed().to_bytes().to_vec();
-
-        sqlx::query!(
-            "INSERT INTO notes
-                    (
-                        note_commitment,
-                        address,
-                        amount,
-                        asset_id,
-                        rseed
-                    )
-                    VALUES
-                    (?, ?, ?, ?, ?)",
-            note_commitment,
-            address,
-            amount,
-            asset_id,
-            rseed,
-        )
-        .execute(&mut tx)
-        .await?;
+        self.record_note_inner(note, &mut tx).await?;
 
         tx.commit().await?;
 
@@ -1037,6 +1013,43 @@ impl Storage {
         .collect())
     }
 
+    async fn record_note_inner(
+        &self,
+        note: Note,
+        dbtx: &mut sqlx::Transaction<'_, Sqlite>,
+    ) -> anyhow::Result<()> {
+        let note_commitment = note.commit().0.to_bytes().to_vec();
+        let address = note.address().to_vec();
+        let amount = u128::from(note.amount()).to_be_bytes().to_vec();
+        let asset_id = note.asset_id().to_bytes().to_vec();
+        let rseed = note.rseed().to_bytes().to_vec();
+        // We might have already inserted these notes in give_advice
+        // so we use ON CONFLICT DO NOTHING to skip re-inserting them in record_block
+        // in that case.
+        sqlx::query!(
+            "INSERT INTO notes
+                    (
+                        note_commitment,
+                        address,
+                        amount,
+                        asset_id,
+                        rseed
+                    )
+                    VALUES
+                    (?, ?, ?, ?, ?)
+                    ON CONFLICT DO NOTHING",
+            note_commitment,
+            address,
+            amount,
+            asset_id,
+            rseed,
+        )
+        .execute(dbtx)
+        .await?;
+
+        Ok(())
+    }
+
     pub async fn record_block(
         &self,
         filtered_block: FilteredBlock,
@@ -1081,38 +1094,16 @@ impl Storage {
             // any more, even though we did so just fine in the past, e.g.,
             // https://github.com/penumbra-zone/penumbra/blob/e857a7ae2b11b36514a5ac83f8e0b174fa10a65f/pd/src/state/writer.rs#L201-L207
             let note_commitment = note_record.note_commitment.0.to_bytes().to_vec();
-            let height_created = filtered_block.height as i64;
-            let address = note_record.note.address().to_vec();
-            let amount = u128::from(note_record.note.amount()).to_be_bytes().to_vec();
-            let asset_id = note_record.note.asset_id().to_bytes().to_vec();
-            let rseed = note_record.note.rseed().to_bytes().to_vec();
-            let address_index = note_record.address_index.to_bytes().to_vec();
             let nullifier = note_record.nullifier.to_bytes().to_vec();
             let position = (u64::from(note_record.position)) as i64;
+            let height_created = filtered_block.height as i64;
+            let address_index = note_record.address_index.to_bytes().to_vec();
             let source = note_record.source.to_bytes().to_vec();
 
-            // We might have already seen the notes in the form of advice,
-            // so we use ON CONFLICT DO NOTHING to skip re-inserting them
-            // in that case.
-            sqlx::query!(
-                "INSERT INTO notes
-                    (
-                        note_commitment,
-                        address,
-                        amount,
-                        asset_id,
-                        rseed
-                    )
-                VALUES (?, ?, ?, ?, ?)
-                ON CONFLICT DO NOTHING",
-                note_commitment,
-                address,
-                amount,
-                asset_id,
-                rseed,
-            )
-            .execute(&mut dbtx)
-            .await?;
+            // Record the inner note of the note record in the notes table
+
+            self.record_note_inner(note_record.note.clone(), &mut dbtx)
+                .await?;
 
             sqlx::query!(
                 "INSERT INTO spendable_notes

@@ -320,16 +320,6 @@
     },
     "query": "SELECT block_height, tx_hash, tx_bytes\n            FROM tx\n            WHERE tx_hash = ?"
   },
-  "741709fac6ac70295ed4ac0986ea81f230e817a57da49a0c9e2311c91594211f": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 5
-      }
-    },
-    "query": "INSERT INTO notes\n                    (\n                        note_commitment,\n                        address,\n                        amount,\n                        asset_id,\n                        rseed\n                    )\n                    VALUES\n                    (?, ?, ?, ?, ?)"
-  },
   "86a574b87976f52c8d4962dd4d58040c698e39151fc67f867bc160badd260ade": {
     "describe": {
       "columns": [
@@ -401,16 +391,6 @@
       }
     },
     "query": "SELECT block_height, tx_hash, tx_bytes\n            FROM tx\n            WHERE block_height BETWEEN ? AND ?"
-  },
-  "9e8c557eb9aac31f8dbd6df3e4ffaa8cc805663123aed9dda22fad05ab8e2f2e": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 5
-      }
-    },
-    "query": "INSERT INTO notes\n                    (\n                        note_commitment,\n                        address,\n                        amount,\n                        asset_id,\n                        rseed\n                    )\n                VALUES (?, ?, ?, ?, ?)\n                ON CONFLICT DO NOTHING"
   },
   "a92417eee0af9e484d983a1d774ba0b0096865f2ab428157b87e7b1af7623326": {
     "describe": {
@@ -633,6 +613,16 @@
       }
     },
     "query": "SELECT nullifier, height_spent FROM spendable_notes WHERE nullifier = ?"
+  },
+  "fc6067528cbbec37de52074e8e7b9c495b3aa1a8e9841aaabf1d0922d225c2ed": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 5
+      }
+    },
+    "query": "INSERT INTO notes\n                    (\n                        note_commitment,\n                        address,\n                        amount,\n                        asset_id,\n                        rseed\n                    )\n                    VALUES\n                    (?, ?, ?, ?, ?)\n                    ON CONFLICT DO NOTHING"
   },
   "fdb8974407a554416c57c5387c969d53e67c30615c8d84c0887c5adc2dc2e08f": {
     "describe": {
