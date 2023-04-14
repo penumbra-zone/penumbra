@@ -2,6 +2,7 @@ use anyhow::{anyhow, Result};
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
+use crate::asset;
 use crate::dex::TradingPair;
 use crate::fixpoint::U128x128;
 use crate::Amount;
@@ -69,6 +70,26 @@ impl TradingFunction {
                 input.asset_id,
                 self.pair
             ))
+        }
+    }
+
+    pub fn orient_end(&self, end: asset::Id) -> Option<BareTradingFunction> {
+        if end == self.pair.asset_2() {
+            Some(self.component.clone())
+        } else if end == self.pair.asset_1() {
+            Some(self.component.flip())
+        } else {
+            None
+        }
+    }
+
+    pub fn orient_start(&self, start: asset::Id) -> Option<BareTradingFunction> {
+        if start == self.pair.asset_1() {
+            Some(self.component.clone())
+        } else if start == self.pair.asset_2() {
+            Some(self.component.flip())
+        } else {
+            None
         }
     }
 }
