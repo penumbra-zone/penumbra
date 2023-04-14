@@ -97,7 +97,8 @@ impl SpendKey {
             salt.as_bytes(),
             NUM_PBKDF2_ROUNDS,
             &mut spend_seed_bytes,
-        );
+        )
+        .expect("seed phrase hash always succeeds");
         SpendKeyBytes(spend_seed_bytes).into()
     }
 
