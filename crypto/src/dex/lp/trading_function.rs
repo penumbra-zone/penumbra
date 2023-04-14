@@ -243,11 +243,11 @@ impl BareTradingFunction {
     ///
     /// This allows trading functions to be indexed by price using a key-value store.
     pub fn effective_price_key_bytes(&self) -> [u8; 32] {
-        self.ask_price().to_bytes()
+        self.effective_price().to_bytes()
     }
 
-    /// Returns the exchange rate between 1 and 2, inclusive of fees.
-    pub fn bid_price(&self) -> U128x128 {
+    /// Delta_1 * effective_price_inv = Lambda_2
+    pub fn effective_price_inv(&self) -> U128x128 {
         let p = U128x128::from(self.p);
         let q = U128x128::from(self.q);
 
@@ -256,8 +256,8 @@ impl BareTradingFunction {
         numerator.checked_div(&q).expect("q != 0")
     }
 
-    /// Returns the exchange rate between 2 and 1, inclusive of fees.
-    pub fn ask_price(&self) -> U128x128 {
+    /// Delta_1 = Lambda_2 * effective_price
+    pub fn effective_price(&self) -> U128x128 {
         let p = U128x128::from(self.p);
         let q = U128x128::from(self.q);
 
@@ -355,9 +355,12 @@ mod tests {
         };
 
         assert_eq!(btf.gamma(), U128x128::from(1u64));
-        assert_eq!(btf.bid_price(), U128x128::ratio(btf.p, btf.q).unwrap());
+        assert_eq!(
+            btf.effective_price_inv(),
+            U128x128::ratio(btf.p, btf.q).unwrap()
+        );
         let bytes1 = btf.effective_price_key_bytes();
-        let price1 = btf.ask_price();
+        let price1 = btf.effective_price();
 
         let btf = BareTradingFunction {
             fee: 100,
@@ -373,9 +376,9 @@ mod tests {
         let price_without_fee = U128x128::ratio(btf.p, btf.q).unwrap();
         let price_with_fee = (price_without_fee * gamma_term).unwrap();
 
-        assert_eq!(btf.bid_price(), price_with_fee);
+        assert_eq!(btf.effective_price_inv(), price_with_fee);
         let bytes2 = btf.effective_price_key_bytes();
-        let price2 = btf.ask_price();
+        let price2 = btf.effective_price();
 
         // Asserts that the lexicographic ordering of the encoded prices matches
         // their ask price ordering (smaller = better).
@@ -486,7 +489,7 @@ mod tests {
 
         let one = U128x128::from(1u64);
 
-        assert_eq!(btf.ask_price(), btf.convert_to_delta_1(one));
-        assert_eq!(btf.bid_price(), btf.convert_to_lambda_2(one));
+        assert_eq!(btf.effective_price(), btf.convert_to_delta_1(one));
+        assert_eq!(btf.effective_price_inv(), btf.convert_to_lambda_2(one));
     }
 }
