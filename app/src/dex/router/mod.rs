@@ -6,8 +6,8 @@ mod path_cache;
 mod path_search;
 
 use path::Path;
-use path_cache::{PathCache, PathEntry};
-use path_search::PathSearch;
+use path_cache::{PathCache, PathEntry, SharedPathCache};
+pub use path_search::PathSearch;
 
 #[cfg(test)]
 mod tests;

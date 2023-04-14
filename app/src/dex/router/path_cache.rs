@@ -40,11 +40,12 @@ impl<S: StateRead + 'static> From<Path<S>> for PathEntry<S> {
     }
 }
 
-pub(super) struct PathCache<S: StateRead + 'static>(BTreeMap<asset::Id, PathEntry<S>>);
+pub(super) struct PathCache<S: StateRead + 'static>(pub(super) BTreeMap<asset::Id, PathEntry<S>>);
+pub(super) type SharedPathCache<S> = Arc<Mutex<PathCache<S>>>;
 
 impl<S: StateRead + 'static> PathCache<S> {
     /// Initializes a new PathCache with the identity path for the start asset.
-    pub fn begin(start: asset::Id, state: StateDelta<S>) -> Arc<Mutex<Self>> {
+    pub fn begin(start: asset::Id, state: StateDelta<S>) -> SharedPathCache<S> {
         let mut cache = BTreeMap::new();
         cache.insert(
             start.clone(),
@@ -62,7 +63,8 @@ impl<S: StateRead + 'static> PathCache<S> {
         // We can't use the entry combinators because avoiding cloning requires
         // establishing that we'll only do one of the two operations.
         use std::collections::btree_map::Entry;
-        match self.0.entry(*path.end()) {
+        let span = path.span.clone();
+        span.in_scope(|| match self.0.entry(*path.end()) {
             Entry::Occupied(mut entry) => {
                 entry.get_mut().update(path);
             }
@@ -70,11 +72,11 @@ impl<S: StateRead + 'static> PathCache<S> {
                 tracing::debug!("inserting new path");
                 entry.insert(path.into());
             }
-        }
+        })
     }
 
     /// Extract all active paths, marking their existing entries as inactive.
-    pub fn exact_active(&mut self) -> Vec<Path<S>> {
+    pub fn extract_active(&mut self) -> Vec<Path<S>> {
         self.0
             .iter_mut()
             .filter_map(|(_, entry)| {
