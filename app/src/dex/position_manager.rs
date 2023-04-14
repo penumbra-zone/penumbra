@@ -126,6 +126,11 @@ pub trait PositionManager: StateWrite + PositionRead {
         let target = route[route.len() - 1];
         let total_pair = DirectedTradingPair::new(source, target);
 
+        // actual amount filled
+        let total_delta_1_star = todo!();
+        let total_lambda_1_star = todo!();
+        let total_lambda_2_star = todo!();
+
         // Breakdown the route into a sequence of pairs to visit.
         let mut pairs = vec![];
         for i in 0..(route.len() - 1) {
@@ -145,19 +150,15 @@ pub trait PositionManager: StateWrite + PositionRead {
         // manual execution for now:
         let delta_1 = input.amount;
         let (lambda_1, _, lambda_2) = position.phi.component.fill(delta_1, &position.reserves);
+
         let start_price = position.phi.component.effective_price_inv();
         let mut current_price = start_price;
         let mut current_input = lambda_2;
 
-        // start with tracking the pairs
         let mut constraints: Vec<DirectedTradingPair> = vec![];
 
-        for p in pairs.iter() {
-            // just ignore the first one for now
-            if p.start == pair.start && p.end == pair.end {
-                continue;
-            }
-
+        // we ignore the first pair for now
+        for p in pairs.iter().skip(1) {
             let position = self
                 .best_position(&p)
                 .await?
@@ -168,6 +169,9 @@ pub trait PositionManager: StateWrite + PositionRead {
                 .component
                 .fill(current_input, &position.reserves);
 
+            // we weren't able to fill the entire input
+            // we write down this hop as a constraint and proceed.
+            // optimization: there's an opportunity to keep track of the local spill price (i.e. the next best position on that hop)
             if lambda_1 != 0u64.into() {
                 // first track pairs, will add positions.
                 constraints.push(p.clone())
@@ -182,8 +186,55 @@ pub trait PositionManager: StateWrite + PositionRead {
             current_input = lambda_2;
         }
 
-        // here we have a sketch of constraints to handle.
-        // we `seek` the last one and surface the next best position.
+        for constraint in constraints {
+            println!("constraint: {constraint:?}");
+        }
+
+        let execution_price = current_price;
+        // thought: i'd like to be able to score executions, first via some scoring
+        // rule that penalize small distances between execution_price and spill_price,
+        // the second option that's somewhat exciting is to have an offline solver that
+        // generate traces of plausible liquidity graphs, and finds the optimal
+        // solution to generated configurations, then compare the performance of the router+exec
+        // against it with the caveat that the router has to work in a more constrained environment.
+        let price_quality = todo!();
+
+        println!("delta_1 = {input:?}");
+        println!("delta_1_star = {total_delta_1_star:?}");
+        println!("lambda_1_star = {total_lambda_1_star:?}");
+        println!("lambda_2_star = {total_lambda_2_star:?}");
+        println!("spill_price = {spill_price:?}");
+        println!("execution_price = {execution_price:?}");
+        /*
+                         *
+                         * Use the spill price as a bound on how bad we're allowed to go
+                         *
+                         *
+                         * Termination conditions:
+                         * - completely filled amount
+                         * - a partial fill up to spill price
+                         *
+                         * Suppose the path is <a_1, ..., a_n>, such that pair <a_{i-1}, a_i>
+                         * has positions P_i ordered by price.
+                         *
+                         * Write (k_1, ... k_n), the number of positions consumed at each step of the path.
+                         *
+                         * We want to determine which position to consume next as we will.
+                         *
+                         * Simulate test execution of the entire reserves of the active position on the first hop
+                         * through the end of the path.
+                         *
+                         *
+                         * At each step we can estimate the marignal end-to-end price of the active positions, and
+                         * step when this exceeds the spill price. At that point, we now need to compute
+                         *
+                         * While filling, our problem is to determine which position along the route we should consume next
+                         * i.e., which position is the constraining one. We want to do this without assuming the existence of a numeraire,
+                         *  which we can do by simulating a test execution of the entire reserves of the active position on the first hop
+                         * through to the end of the path. At each step, the intermediate output from the previous trade will either be greater
+                         * than or less than the reserves of the active position on the next hop. If the output is less than the reserves of the next position,
+
+        */
         todo!()
     }
 
