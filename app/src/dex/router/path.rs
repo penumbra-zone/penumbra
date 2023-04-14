@@ -71,15 +71,15 @@ impl<S: StateRead + 'static> Path<S> {
         use super::super::position_manager::Inner as _;
         self.state.deindex_position(&best_price_position);
 
-        // Update and return the path.
-        // TODO: gross
-        let hop_price = if self.end() == &best_price_position.phi.pair.asset_1() {
-            best_price_position.phi.component.bid_price()
-        } else {
-            best_price_position.phi.component.ask_price()
-        };
+        // Compute the effective price of a trade in the direction self.end()=>new_end
+        let hop_price = best_price_position
+            .phi
+            .orient_end(new_end)
+            .unwrap()
+            .effective_price();
 
         if let Some(path_price) = self.price * hop_price {
+            // Update and return the path.
             tracing::debug!(%path_price, %hop_price, id = ?best_price_position.id(), "extended path");
             self.price = path_price;
             self.nodes.push(new_end);
