@@ -6,6 +6,7 @@ use penumbra_crypto::{
         lp::position::{self, Position},
         DirectedTradingPair,
     },
+    fixpoint::U128x128,
     Value,
 };
 use penumbra_proto::{StateReadProto, StateWriteProto};
@@ -107,6 +108,83 @@ pub trait PositionManager: StateWrite + PositionRead {
             self.index_position(&position);
         }
         self.put(state_key::position_by_id(&id), position);
+    }
+
+    /// Fill an `input` across a specified route, returning the unfilled amount
+    /// and the output amount.
+    async fn fill_route(
+        &mut self,
+        input: Value,
+        route: Vec<asset::Id>,
+        spill_price: U128x128,
+    ) -> Result<(Value, Value)> {
+        if route.len() < 2 {
+            return Err(anyhow::anyhow!("incomplete route"));
+        }
+
+        let source = route[0];
+        let target = route[route.len() - 1];
+        let total_pair = DirectedTradingPair::new(source, target);
+
+        // Breakdown the route into a sequence of pairs to visit.
+        let mut pairs = vec![];
+        for i in 0..(route.len() - 1) {
+            let start = route[i];
+            let end = route[i + 1];
+            let pair = DirectedTradingPair::new(start, end);
+            pairs.push(pair);
+        }
+
+        let pair = pairs[0]; // tmp
+
+        let position = self
+            .best_position(&pair)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("no positions available"))?;
+
+        // manual execution for now:
+        let delta_1 = input.amount;
+        let (lambda_1, _, lambda_2) = position.phi.component.fill(delta_1, &position.reserves);
+        let start_price = position.phi.component.effective_price_inv();
+        let mut current_price = start_price;
+        let mut current_input = lambda_2;
+
+        // start with tracking the pairs
+        let mut constraints: Vec<DirectedTradingPair> = vec![];
+
+        for p in pairs.iter() {
+            // just ignore the first one for now
+            if p.start == pair.start && p.end == pair.end {
+                continue;
+            }
+
+            let position = self
+                .best_position(&p)
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("no positions available"))?;
+
+            let (lambda_1, _, lambda_2) = position
+                .phi
+                .component
+                .fill(current_input, &position.reserves);
+
+            if lambda_1 != 0u64.into() {
+                // first track pairs, will add positions.
+                constraints.push(p.clone())
+            }
+
+            let hop_price = position.phi.component.effective_price_inv();
+            current_price = (current_price * hop_price).unwrap();
+            if current_price > spill_price {
+                println!("spill hit");
+            }
+
+            current_input = lambda_2;
+        }
+
+        // here we have a sketch of constraints to handle.
+        // we `seek` the last one and surface the next best position.
+        todo!()
     }
 
     /// Fill a trade of `input` value against a specific position `id`, writing
