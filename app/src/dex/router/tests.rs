@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::dex::{router::path::Path, PositionManager};
 
 use penumbra_crypto::{
@@ -10,6 +12,24 @@ use penumbra_crypto::{
 };
 use penumbra_storage::{StateDelta, StateWrite};
 use rand_core::OsRng;
+
+use super::PathSearch;
+
+#[tokio::test]
+async fn path_search_basic() {
+    let _ = tracing_subscriber::fmt::try_init();
+    let mut state = StateDelta::new(());
+    create_test_positions_basic(&mut state, true);
+    let state = Arc::new(state);
+
+    // Try routing from "gm" to "penumbra".
+    let gm = asset::REGISTRY.parse_unit("gm");
+    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+
+    let (path, spill) = state.path_search(gm.id(), penumbra.id(), 4).await.unwrap();
+
+    tracing::debug!(?path, ?spill);
+}
 
 #[tokio::test]
 async fn path_extension_basic() {

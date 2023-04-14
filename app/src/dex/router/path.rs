@@ -42,7 +42,6 @@ impl<S: StateRead + 'static> Path<S> {
 
     // We can't clone, because StateDelta only has an explicit fork() on purpose
     pub fn fork(&mut self) -> Self {
-        self.span.in_scope(|| tracing::debug!("forking path"));
         Self {
             start: self.start.clone(),
             nodes: self.nodes.clone(),

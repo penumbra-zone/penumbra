@@ -22,8 +22,9 @@ pub trait PathSearch: StateRead + Clone + 'static {
         let state = StateDelta::new(self.clone());
 
         let cache = PathCache::begin(src, state);
-        for _ in 0..max_hops {
+        for i in 0..max_hops {
             relax_active_paths(cache.clone()).await?;
+            tracing::debug!(i, "finished relaxing all active paths");
         }
 
         let entry = cache.lock().0.remove(&dst);
@@ -36,6 +37,8 @@ pub trait PathSearch: StateRead + Clone + 'static {
         }
     }
 }
+
+impl<S> PathSearch for S where S: StateRead + Clone + 'static {}
 
 async fn relax_active_paths<S: StateRead + 'static>(cache: SharedPathCache<S>) -> Result<()> {
     let active_paths = cache.lock().extract_active();
