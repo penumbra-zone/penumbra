@@ -1,5 +1,7 @@
 use ibc::core::ics02_client::msgs::create_client::{MsgCreateClient, TYPE_URL as CREATE_CLIENT};
-use ibc::core::ics02_client::msgs::update_client::{MsgUpdateClient, TYPE_URL as UPDATE_CLIENT};
+use ibc::core::ics02_client::msgs::update_client::{
+    MsgUpdateClient, UPDATE_CLIENT_TYPE_URL as UPDATE_CLIENT,
+};
 use ibc::core::ics03_connection::msgs::conn_open_ack::{
     MsgConnectionOpenAck, TYPE_URL as CONNECTION_OPEN_ACK,
 };
@@ -119,13 +121,14 @@ impl IbcAction {
                 tracing::info_span!(parent: parent, "ChannelCloseConfirm", chan_id = %msg.chan_id_on_b)
             }
             IbcAction::RecvPacket(msg) => {
-                tracing::info_span!(parent: parent, "RecvPacket", chan_id = %msg.packet.chan_on_b, seq = %msg.packet.sequence)
+                // TODO: should chan_id be chan_id_on_a or chan_id_on_b? ie. if we are processing RecvPacket, are we A or B?
+                tracing::info_span!(parent: parent, "RecvPacket", chan_id = %msg.packet.chan_id_on_b, seq = %msg.packet.seq_on_a)
             }
             IbcAction::Acknowledgement(msg) => {
-                tracing::info_span!(parent: parent, "Acknowledgement", chan_id = %msg.packet.chan_on_a, seq = %msg.packet.sequence)
+                tracing::info_span!(parent: parent, "Acknowledgement", chan_id = %msg.packet.chan_id_on_a, seq = %msg.packet.seq_on_a)
             }
             IbcAction::Timeout(msg) => {
-                tracing::info_span!(parent: parent, "Timeout", chan_id = %msg.packet.chan_on_a, seq = %msg.packet.sequence)
+                tracing::info_span!(parent: parent, "Timeout", chan_id = %msg.packet.chan_id_on_a, seq = %msg.packet.seq_on_a)
             }
             IbcAction::Unknown(_) => {
                 tracing::info_span!(parent: parent, "Unknown")
@@ -164,7 +167,10 @@ impl TryFrom<pb::IbcAction> for IbcAction {
                 IbcAction::CreateClient(msg)
             }
             UPDATE_CLIENT => {
-                let msg = MsgUpdateClient::decode(raw_action_bytes)?;
+                // we have to do this because the ibc crate made one domain type with two different proto types (??)
+                let msg = <MsgUpdateClient as ibc_proto::protobuf::Protobuf<
+                    ibc_proto::ibc::core::client::v1::MsgUpdateClient,
+                >>::decode(raw_action_bytes)?;
                 IbcAction::UpdateClient(msg)
             }
             CONNECTION_OPEN_INIT => {
@@ -233,7 +239,13 @@ impl From<IbcAction> for pb::IbcAction {
             },
             IbcAction::UpdateClient(msg) => pbjson_types::Any {
                 type_url: UPDATE_CLIENT.to_string(),
-                value: msg.encode_vec().unwrap().into(),
+                // we have to do this because the ibc crate made one domain type with two different proto types (??)
+                value:
+                    <ibc::core::ics02_client::msgs::update_client::MsgUpdateClient as Protobuf<
+                        ibc_proto::ibc::core::client::v1::MsgUpdateClient,
+                    >>::encode_vec(&msg)
+                    .unwrap()
+                    .into(),
             },
             IbcAction::ConnectionOpenInit(msg) => pbjson_types::Any {
                 type_url: CONNECTION_OPEN_INIT.to_string(),
