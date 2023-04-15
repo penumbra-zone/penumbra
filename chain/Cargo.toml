@@ -15,7 +15,7 @@ penumbra-tct = { path = "../tct" }
 decaf377 = "0.3"
 
 tendermint = "0.29.0"
-ibc = "0.29"
+ibc = "0.37"
 ics23 = "0.9.0"
 
 # Crates.io deps

@@ -60,7 +60,7 @@ ed25519-consensus = "2.1"
 tempfile = "3.3.0"
 assert_cmd = "2.0"
 base64 = "0.20"
-ibc = "0.29"
+ibc = "0.37"
 ibc-proto = "0.26"
 
 [build-dependencies]

@@ -37,7 +37,7 @@ decaf377 = {version = "0.3" }
 tendermint = { version = "0.29.0", features = ["rust-crypto"] }
 
 # External dependencies
-ibc = "0.29"
+ibc = "0.37"
 ibc-proto = "0.26"
 ark-ff = { version = "0.3", default-features = false }
 ed25519-consensus = "2"

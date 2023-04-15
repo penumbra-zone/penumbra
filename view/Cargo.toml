@@ -27,7 +27,7 @@ penumbra-transaction = { path = "../transaction" }
 # TODO: replace by a penumbra-app
 penumbra-app = { path = "../app" }
 
-ibc = "0.29"
+ibc = "0.37"
 sqlx = { version = "0.6", features = [
     "runtime-tokio-rustls",
     "offline",

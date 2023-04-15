@@ -17,7 +17,7 @@ penumbra-proof-params = { path = "../proof-params/", features = ["proving-keys"]
 decaf377 = "0.3"
 decaf377-rdsa = { version = "0.5", git = "https://github.com/penumbra-zone/decaf377-rdsa" }
 poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377", branch = "main" }
-ibc = "0.29"
+ibc = "0.37"
 ibc-proto = { version = "0.26", default-features = false, features = ["std"] }
 
 # Crates.io deps
