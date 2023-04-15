@@ -154,23 +154,41 @@ pub trait PositionManager: StateWrite + PositionRead {
 
         // Breakdown the route into a sequence of pairs to visit.
         let mut pairs = vec![];
+        println!("route:");
         for i in 0..(route.len() - 1) {
             let start = route[i];
             let end = route[i + 1];
             let pair = DirectedTradingPair::new(start, end);
+            println!("  {i}: {}-{}", mini_registry[&start], mini_registry[&end]);
             pairs.push(pair);
         }
 
-        let pair = pairs[0]; // tmp
+        let p = pairs[0]; // tmp
 
         let position = self
-            .best_position(&pair)
+            .best_position(&p)
             .await?
             .ok_or_else(|| anyhow::anyhow!("no positions available"))?;
+
+        let r1 = position.reserves.r1;
+        let r2 = position.reserves.r2;
+        let price = position.phi.component.effective_price_inv();
+        println!("  position:");
+        println!("      start: {}", mini_registry[&p.start]);
+        println!("      end: {}", mini_registry[&p.end]);
+        println!("      r1: {r1:?}");
+        println!("      r2: {r2:?}");
+        println!("      pr: {price}");
 
         // manual execution for now:
         let delta_1 = input.amount;
         let (lambda_1, _, lambda_2) = position.phi.component.fill(delta_1, &position.reserves);
+
+        println!(" initial fill...:");
+        println!("      delta_1 = {delta_1:?}");
+        println!("      delta_2 = 0");
+        println!("      lambda_1 = {lambda_1:?}");
+        println!("      lambda_2 = {lambda_2:?}");
 
         let start_price = position.phi.component.effective_price_inv();
         let mut current_price = start_price;
@@ -184,11 +202,32 @@ pub trait PositionManager: StateWrite + PositionRead {
                 .best_position(&p)
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("no positions available"))?;
+            println!(
+                "  pair: {}-{}",
+                mini_registry[&p.start], mini_registry[&p.end]
+            );
+
+            let r1 = position.reserves.r1;
+            let r2 = position.reserves.r2;
+            let price = position.phi.component.effective_price_inv();
+
+            println!("  position:");
+            println!("      start: {}", mini_registry[&p.start]);
+            println!("      end: {}", mini_registry[&p.end]);
+            println!("      r1: {r1:?}");
+            println!("      r2: {r2:?}");
+            println!("      pr: {price}");
 
             let (lambda_1, _, lambda_2) = position
                 .phi
                 .component
                 .fill(current_input, &position.reserves);
+
+            println!("  filling...:");
+            println!("      delta_1 = {current_input:?}");
+            println!("      delta_2 = 0");
+            println!("      lambda_1 = {lambda_1:?}");
+            println!("      lambda_2 = {lambda_2:?}");
 
             // we weren't able to fill the entire input
             // we write down this hop as a constraint and proceed.
@@ -415,7 +454,7 @@ pub(super) trait Inner: StateWrite {
                 state_key::internal::price_index::key(&pair12, &phi12, &id),
                 vec![],
             );
-            tracing::debug!(pair = ?pair12, ?id, "indexing position");
+            tracing::debug!(pair = ?pair12, ?id, "indexing position 12");
         }
         if position.reserves.r1 != 0u64.into() {
             // Index this position for trades FROM asset 2 TO asset 1, since the position has asset 1 to give out.
@@ -428,7 +467,7 @@ pub(super) trait Inner: StateWrite {
                 state_key::internal::price_index::key(&pair21, &phi21, &id),
                 vec![],
             );
-            tracing::debug!(pair = ?pair21, ?id, "indexing position");
+            tracing::debug!(pair = ?pair21, ?id, "indexing position 21");
         }
     }
 

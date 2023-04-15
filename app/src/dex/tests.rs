@@ -18,7 +18,11 @@ mod test {
     use crate::dex::position_manager::PositionManager;
     use crate::dex::position_manager::PositionRead;
     use crate::TempStorageExt;
+    use futures::StreamExt;
     use std::sync::Arc;
+
+    use tracing::{info, Level};
+    use tracing_subscriber::FmtSubscriber;
 
     #[tokio::test]
     /// Builds a simple order book with a single limit order, and tests different
@@ -389,7 +393,102 @@ mod test {
     }
 
     #[tokio::test]
+    async fn put_position_get_best_price() -> anyhow::Result<()> {
+        let subscriber = FmtSubscriber::builder()
+            // all spans/events with a level higher than TRACE (e.g, debug, info, warn, etc.)
+            // will be written to stdout.
+            .with_max_level(Level::TRACE)
+            // completes the builder.
+            .finish();
+
+        tracing::subscriber::set_global_default(subscriber)
+            .expect("setting default subscriber failed");
+
+        let storage = TempStorage::new().await?.apply_default_genesis().await?;
+        let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+        let mut state_tx = state.try_begin_transaction().unwrap();
+        let gn = asset::REGISTRY.parse_unit("gn");
+        let penumbra = asset::REGISTRY.parse_unit("penumbra");
+
+        let mut pair = DirectedTradingPair::new(gn.id(), penumbra.id());
+        let position_1 = Position::new(
+            OsRng,
+            pair,
+            1,
+            1u64.into(),
+            100u64.into(),
+            Reserves {
+                r1: 0u64.into(),
+                r2: 10_000u64.into(),
+            },
+        );
+
+        let position_2 = Position::new(
+            OsRng,
+            pair,
+            0,
+            1u64.into(),
+            101u64.into(),
+            Reserves {
+                r1: 10_001u64.into(),
+                r2: 0u64.into(),
+            },
+        );
+        state_tx.put_position(position_1.clone());
+        state_tx.put_position(position_2.clone());
+
+        let mut positions = state_tx
+            .positions_by_price(&pair)
+            .then(|result| async {
+                let id = result.unwrap();
+                let position = state_tx.position_by_id(&id).await.unwrap().unwrap();
+                position
+            })
+            .collect::<Vec<position::Position>>()
+            .await;
+
+        assert_eq!(positions.len(), 1);
+        assert_eq!(positions[0].reserves.r1, position_1.reserves.r1);
+        assert_eq!(positions[0].reserves.r2, position_1.reserves.r2);
+        assert_eq!(positions[0].phi, position_1.phi);
+        assert_eq!(positions[0].nonce, position_1.nonce);
+
+        let pair = pair.flip();
+
+        let mut positions = state_tx
+            .positions_by_price(&pair)
+            .then(|result| async {
+                let id = result.unwrap();
+                let position = state_tx.position_by_id(&id).await.unwrap().unwrap();
+                position
+            })
+            .collect::<Vec<position::Position>>()
+            .await;
+
+        assert_eq!(positions.len(), 1);
+        assert_eq!(positions[0].reserves.r1, position_2.reserves.r1);
+        assert_eq!(positions[0].reserves.r2, position_2.reserves.r2);
+        assert_eq!(positions[0].phi, position_2.phi);
+        assert_eq!(positions[0].nonce, position_2.nonce);
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn test_find_constraint() -> anyhow::Result<()> {
+        // tracing_subscriber::fmt().try_init().unwrap();
+
+        use tracing::{info, Level};
+        use tracing_subscriber::FmtSubscriber;
+        let subscriber = FmtSubscriber::builder()
+            // all spans/events with a level higher than TRACE (e.g, debug, info, warn, etc.)
+            // will be written to stdout.
+            .with_max_level(Level::TRACE)
+            // completes the builder.
+            .finish();
+
+        tracing::subscriber::set_global_default(subscriber)
+            .expect("setting default subscriber failed");
+
         let storage = TempStorage::new().await?.apply_default_genesis().await?;
         let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
         let mut state_tx = state.try_begin_transaction().unwrap();
@@ -399,21 +498,26 @@ mod test {
         let penumbra = asset::REGISTRY.parse_unit("penumbra");
         let pusd = asset::REGISTRY.parse_unit("pusd");
 
+        println!("gm......: {}", gm.id());
+        println!("gn......: {}", gn.id());
+        println!("penumbra: {}", penumbra.id());
+        println!("pusd....: {}", pusd.id());
+
         let pair_1 = DirectedTradingPair::new(gm.id(), gn.id());
         let pair_2 = DirectedTradingPair::new(gn.id(), penumbra.id());
         let pair_3 = DirectedTradingPair::new(penumbra.id(), pusd.id());
 
         /*
 
-        Pair 1             Pair 2                Pair 3
-        --------------------   -------------------   -------------------
-        Bids       Asks       Bids         Asks       Bids           Asks
-        --------------------   -------------------   -------------------
-        100gm@1    10gn@1     53gn@100    54gn@101   1500penumbra@1445 5penumbra@1500
-        120gm@1    100gn@1    54gn@100    1000gn@102 10penumbra@1450    1000penumbra@1550
-        50gm@1     50gn@1     55gn@100
+                 Pair 1                 Pair 2                Pair 3
+                --------------------   -------------------   -------------------
+                Bids       Asks         Bids         Asks       Bids                Asks
+                --------------------   -------------------   --------------------------
+                50gm@1     10gn@1     55gn@100    54gn@101   1penumbra@1450      5000penumbra@1500
+                120gm@1    100gn@1    54gn@100    1000gn@102 1500penumbra@1445      1penumbra@1550
+                100gm@1    50gn@1     53gn@100
 
-         */
+        */
 
         /*
             * pair 1: gm <> gn
@@ -484,6 +588,8 @@ mod test {
             ^-bids---------asks-v
                 5penumbra@1500
                 1000penumbra@1550
+
+                2023-04-15T02:36:41.342718Z DEBUG put_position{id=plpid1zfuh5n5tqvqevxppw3vcwvd7z248zn5065cz3wg5uxjpa2thm3esyv0f3n}: penumbra_app::dex::position_manager: position=Position { state: Opened, reserves: Reserves { r1: 1000, r2: 0 }, phi: TradingFunction { component: BareTradingFunction { fee: 0, p: 1, q: 102 }, pair: TradingPair { asset_1: passet1984fctenw8m2fpl8a9wzguzp7j34d7vravryuhft808nyt9fdggqxmanqm, asset_2: passet1nupu8yg2kua09ec8qxfsl60xhafp7mmpsjv9pgp50t20hm6pkygscjcqn2 } }, nonce: "a5ef7097a09c31f0e0057058ead299369b7f1845846e2c89a04637f67c067db2" }
         */
 
         let price1450 = (1450u64.into(), 1u64.into());
@@ -494,8 +600,8 @@ mod test {
         let buy_1 = limit_buy(pair_3, 10u64.into(), price1450);
         let buy_2 = limit_buy(pair_3, 1500u64.into(), price1445);
 
-        let sell_1 = limit_sell(pair_3, 5u64.into(), price1500i);
-        let sell_2 = limit_sell(pair_3, 1000u64.into(), price1550i);
+        let sell_1 = limit_sell(pair_3, 5000u64.into(), price1500i);
+        let sell_2 = limit_sell(pair_3, 1u64.into(), price1550i);
 
         state_tx.put_position(buy_1);
         state_tx.put_position(buy_2);
@@ -518,7 +624,8 @@ mod test {
 
         let spill_price = U128x128::from(1_000_000u64);
 
-        state_tx.fill_route(delta_1, route, spill_price).await;
+        //state_tx.fill_route(delta_1, route, spill_price).await;
+        state_tx.fill_route(input, route, spill_price)
         Ok(())
     }
 }
