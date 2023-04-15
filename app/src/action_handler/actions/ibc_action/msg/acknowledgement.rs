@@ -37,7 +37,7 @@ impl ActionHandler for MsgAcknowledgement {
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
         let channel = state
-            .get_channel(&self.packet.chan_on_a, &self.packet.port_on_a)
+            .get_channel(&self.packet.chan_id_on_a, &self.packet.port_id_on_a)
             .await?
             .ok_or_else(|| anyhow::anyhow!("channel not found"))?;
         if !channel.state_matches(&ChannelState::Open) {
@@ -46,7 +46,11 @@ impl ActionHandler for MsgAcknowledgement {
 
         // TODO: capability authentication?
 
-        if channel.counterparty().port_id().ne(&self.packet.port_on_b) {
+        if channel
+            .counterparty()
+            .port_id()
+            .ne(&self.packet.port_id_on_b)
+        {
             return Err(anyhow::anyhow!(
                 "packet destination port does not match channel"
             ));
@@ -73,42 +77,42 @@ impl ActionHandler for MsgAcknowledgement {
 
         if channel.ordering == ChannelOrder::Ordered {
             let next_sequence_ack = state
-                .get_ack_sequence(&self.packet.chan_on_a, &self.packet.port_on_a)
+                .get_ack_sequence(&self.packet.chan_id_on_a, &self.packet.port_id_on_a)
                 .await?;
-            if self.packet.sequence != next_sequence_ack.into() {
+            if self.packet.seq_on_a != next_sequence_ack.into() {
                 return Err(anyhow::anyhow!("packet sequence number does not match"));
             }
         }
 
         let transfer = PortId::transfer();
-        if self.packet.port_on_b == transfer {
+        if self.packet.port_id_on_b == transfer {
             Ics20Transfer::acknowledge_packet_check(&mut state, self).await?;
         } else {
             return Err(anyhow::anyhow!("invalid port id"));
         }
         if channel.ordering == ChannelOrder::Ordered {
             let mut next_sequence_ack = state
-                .get_ack_sequence(&self.packet.chan_on_a, &self.packet.port_on_a)
+                .get_ack_sequence(&self.packet.chan_id_on_a, &self.packet.port_id_on_a)
                 .await?;
             next_sequence_ack += 1;
             state.put_ack_sequence(
-                &self.packet.chan_on_a,
-                &self.packet.port_on_a,
+                &self.packet.chan_id_on_a,
+                &self.packet.port_id_on_a,
                 next_sequence_ack,
             );
         }
 
         // delete our commitment so we can't ack it again
         state.delete_packet_commitment(
-            &self.packet.chan_on_a,
-            &self.packet.port_on_a,
-            self.packet.sequence.into(),
+            &self.packet.chan_id_on_a,
+            &self.packet.port_id_on_a,
+            self.packet.seq_on_a.into(),
         );
 
         state.record(event::acknowledge_packet(&self.packet, &channel));
 
         let transfer = PortId::transfer();
-        if self.packet.port_on_b == transfer {
+        if self.packet.port_id_on_b == transfer {
             Ics20Transfer::acknowledge_packet_execute(state, self).await;
         } else {
             return Err(anyhow::anyhow!("invalid port id"));

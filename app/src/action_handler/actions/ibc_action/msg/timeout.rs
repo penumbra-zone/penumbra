@@ -36,7 +36,7 @@ impl ActionHandler for MsgTimeout {
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
         let mut channel = state
-            .get_channel(&self.packet.chan_on_a, &self.packet.port_on_a)
+            .get_channel(&self.packet.chan_id_on_a, &self.packet.port_id_on_a)
             .await?
             .ok_or_else(|| anyhow::anyhow!("channel not found"))?;
         if !channel.state_matches(&ChannelState::Open) {
@@ -44,7 +44,7 @@ impl ActionHandler for MsgTimeout {
         }
 
         // TODO: capability authentication?
-        if self.packet.chan_on_b.ne(channel
+        if self.packet.chan_id_on_b.ne(channel
             .counterparty()
             .channel_id()
             .ok_or_else(|| anyhow::anyhow!("missing channel id"))?)
@@ -53,7 +53,7 @@ impl ActionHandler for MsgTimeout {
                 "packet destination channel does not match channel"
             ));
         }
-        if self.packet.port_on_b != channel.counterparty().port_id {
+        if self.packet.port_id_on_b != channel.counterparty().port_id {
             return Err(anyhow::anyhow!(
                 "packet destination port does not match channel"
             ));
@@ -87,7 +87,7 @@ impl ActionHandler for MsgTimeout {
 
         if channel.ordering == ChannelOrder::Ordered {
             // ordered channel: check that packet has not been received
-            if self.next_seq_recv_on_b != self.packet.sequence {
+            if self.next_seq_recv_on_b != self.packet.seq_on_a {
                 return Err(anyhow::anyhow!("packet sequence number does not match"));
             }
 
@@ -103,24 +103,24 @@ impl ActionHandler for MsgTimeout {
         }
 
         let transfer = PortId::transfer();
-        if self.packet.port_on_b == transfer {
+        if self.packet.port_id_on_b == transfer {
             Ics20Transfer::timeout_packet_check(&mut state, self).await?;
         } else {
             return Err(anyhow::anyhow!("invalid port id"));
         }
 
         state.delete_packet_commitment(
-            &self.packet.chan_on_a,
-            &self.packet.port_on_a,
-            self.packet.sequence.into(),
+            &self.packet.chan_id_on_a,
+            &self.packet.port_id_on_a,
+            self.packet.seq_on_a.into(),
         );
 
         if channel.ordering == ChannelOrder::Ordered {
             // if the channel is ordered and we get a timeout packet, close the channel
             channel.set_state(ChannelState::Closed);
             state.put_channel(
-                &self.packet.chan_on_a,
-                &self.packet.port_on_a,
+                &self.packet.chan_id_on_a,
+                &self.packet.port_id_on_a,
                 channel.clone(),
             );
         }
@@ -128,7 +128,7 @@ impl ActionHandler for MsgTimeout {
         state.record(event::timeout_packet(&self.packet, &channel));
 
         let transfer = PortId::transfer();
-        if self.packet.port_on_b == transfer {
+        if self.packet.port_id_on_b == transfer {
             Ics20Transfer::timeout_packet_execute(state, self).await;
         } else {
             return Err(anyhow::anyhow!("invalid port id"));

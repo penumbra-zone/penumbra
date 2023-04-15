@@ -148,9 +148,9 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
             .await?;
 
         let commitment_path = CommitmentPath {
-            port_id: msg.packet.port_on_b.clone(),
-            channel_id: msg.packet.chan_on_b.clone(),
-            sequence: msg.packet.sequence,
+            port_id: msg.packet.port_id_on_b.clone(),
+            channel_id: msg.packet.chan_id_on_b.clone(),
+            sequence: msg.packet.seq_on_a,
         };
 
         let commitment_bytes = commit_packet(&msg.packet);
@@ -181,9 +181,9 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
             .await?;
 
         let ack_path = AckPath {
-            port_id: msg.packet.port_on_b.clone(),
-            channel_id: msg.packet.chan_on_b.clone(),
-            sequence: msg.packet.sequence,
+            port_id: msg.packet.port_id_on_b.clone(),
+            channel_id: msg.packet.chan_id_on_b.clone(),
+            sequence: msg.packet.seq_on_a,
         };
 
         verify_merkle_proof(
@@ -216,7 +216,10 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
             .encode(&mut seq_bytes)
             .expect("buffer size too small");
 
-        let seq_path = SeqRecvPath(msg.packet.port_on_b.clone(), msg.packet.chan_on_b.clone());
+        let seq_path = SeqRecvPath(
+            msg.packet.port_id_on_b.clone(),
+            msg.packet.chan_id_on_b.clone(),
+        );
 
         verify_merkle_proof(
             &trusted_client_state.proof_specs,
@@ -244,9 +247,9 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
             .await?;
 
         let receipt_path = ReceiptPath {
-            port_id: msg.packet.port_on_b.clone(),
-            channel_id: msg.packet.chan_on_b.clone(),
-            sequence: msg.packet.sequence,
+            port_id: msg.packet.port_id_on_b.clone(),
+            channel_id: msg.packet.chan_id_on_b.clone(),
+            sequence: msg.packet.seq_on_a,
         };
 
         verify_merkle_absence_proof(

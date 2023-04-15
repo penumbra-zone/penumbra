@@ -77,14 +77,14 @@ pub fn seq_send(channel_id: &ChannelId, port_id: &PortId) -> String {
 pub fn packet_receipt(packet: &Packet) -> String {
     format!(
         "receipts/ports/{}/channels/{}/receipts/{}",
-        packet.port_on_b, packet.chan_on_b, packet.sequence
+        packet.port_id_on_b, packet.chan_id_on_b, packet.seq_on_a
     )
 }
 
 pub fn packet_commitment(packet: &Packet) -> String {
     format!(
         "commitments/ports/{}/channels/{}/packets/{}",
-        packet.port_on_a, packet.chan_on_a, packet.sequence
+        packet.port_id_on_a, packet.chan_id_on_a, packet.seq_on_a
     )
 }
 

@@ -37,7 +37,7 @@ impl ActionHandler for MsgRecvPacket {
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
         let channel = state
-            .get_channel(&self.packet.chan_on_b, &self.packet.port_on_b)
+            .get_channel(&self.packet.chan_id_on_b, &self.packet.port_id_on_b)
             .await?
             .ok_or_else(|| anyhow::anyhow!("channel not found"))?;
         if !channel.state_matches(&ChannelState::Open) {
@@ -46,7 +46,7 @@ impl ActionHandler for MsgRecvPacket {
 
         // TODO: capability authentication?
 
-        if self.packet.port_on_a != channel.counterparty().port_id {
+        if self.packet.port_id_on_a != channel.counterparty().port_id {
             return Err(anyhow::anyhow!("packet source port does not match channel"));
         }
         let counterparty_channel = channel
@@ -54,7 +54,7 @@ impl ActionHandler for MsgRecvPacket {
             .channel_id()
             .ok_or_else(|| anyhow::anyhow!("missing channel id"))?;
 
-        if self.packet.chan_on_a.ne(counterparty_channel) {
+        if self.packet.chan_id_on_a.ne(counterparty_channel) {
             return Err(anyhow::anyhow!(
                 "packet source channel does not match channel"
             ));
@@ -90,10 +90,10 @@ impl ActionHandler for MsgRecvPacket {
 
         if channel.ordering == ChannelOrder::Ordered {
             let next_sequence_recv = state
-                .get_recv_sequence(&self.packet.chan_on_b, &self.packet.port_on_b)
+                .get_recv_sequence(&self.packet.chan_id_on_b, &self.packet.port_id_on_b)
                 .await?;
 
-            if self.packet.sequence != next_sequence_recv.into() {
+            if self.packet.seq_on_a != next_sequence_recv.into() {
                 return Err(anyhow::anyhow!("packet sequence number does not match"));
             }
         } else if state.seen_packet(&self.packet).await? {
@@ -101,7 +101,7 @@ impl ActionHandler for MsgRecvPacket {
         }
 
         let transfer = PortId::transfer();
-        if self.packet.port_on_b == transfer {
+        if self.packet.port_id_on_b == transfer {
             Ics20Transfer::recv_packet_check(&mut state, self).await?;
         } else {
             return Err(anyhow::anyhow!("invalid port id"));
@@ -109,13 +109,13 @@ impl ActionHandler for MsgRecvPacket {
 
         if channel.ordering == ChannelOrder::Ordered {
             let mut next_sequence_recv = state
-                .get_recv_sequence(&self.packet.chan_on_b, &self.packet.port_on_b)
+                .get_recv_sequence(&self.packet.chan_id_on_b, &self.packet.port_id_on_b)
                 .await?;
 
             next_sequence_recv += 1;
             state.put_recv_sequence(
-                &self.packet.chan_on_b,
-                &self.packet.port_on_b,
+                &self.packet.chan_id_on_b,
+                &self.packet.port_id_on_b,
                 next_sequence_recv,
             );
         } else {
@@ -128,7 +128,7 @@ impl ActionHandler for MsgRecvPacket {
         state.record(event::receive_packet(&self.packet, &channel));
 
         let transfer = PortId::transfer();
-        if self.packet.port_on_b == transfer {
+        if self.packet.port_id_on_b == transfer {
             Ics20Transfer::recv_packet_execute(state, self).await;
         } else {
             return Err(anyhow::anyhow!("invalid port id"));

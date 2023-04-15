@@ -466,8 +466,12 @@ mod tests {
         let msg_update_client_stargaze_raw =
             base64::decode(include_str!("../../ibc/test/update_client_1.msg").replace('\n', ""))
                 .unwrap();
+        // we have to do this because the ibc crate made one domain type with two different proto types (??)
         let mut msg_update_stargaze_client =
-            MsgUpdateClient::decode(msg_update_client_stargaze_raw.as_slice()).unwrap();
+            <MsgUpdateClient as ibc_proto::protobuf::Protobuf<
+                ibc_proto::ibc::core::client::v1::MsgUpdateClient,
+            >>::decode(msg_update_client_stargaze_raw.as_slice())
+            .unwrap();
 
         msg_update_stargaze_client.client_id = ClientId::from_str("07-tendermint-0").unwrap();
 
@@ -506,7 +510,11 @@ mod tests {
             base64::decode(include_str!("../../ibc/test/update_client_2.msg").replace('\n', ""))
                 .unwrap();
 
-        let mut second_update = MsgUpdateClient::decode(msg_update_second.as_slice()).unwrap();
+        // we have to do this because the ibc crate made one domain type with two different proto types (??)
+        let mut second_update = <MsgUpdateClient as ibc_proto::protobuf::Protobuf<
+            ibc_proto::ibc::core::client::v1::MsgUpdateClient,
+        >>::decode(msg_update_second.as_slice())
+        .unwrap();
         second_update.client_id = ClientId::from_str("07-tendermint-0").unwrap();
         let second_update_client_action = IbcAction::UpdateClient(second_update);
 

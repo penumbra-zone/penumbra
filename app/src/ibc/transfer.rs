@@ -182,11 +182,11 @@ impl AppHandlerCheck for Ics20Transfer {
         let denom: asset::Denom = packet_data.denom.as_str().try_into()?;
 
         // 2. check if we are the source chain for the denom.
-        if is_source(&msg.packet.port_on_a, &msg.packet.chan_on_a, &denom) {
+        if is_source(&msg.packet.port_id_on_a, &msg.packet.chan_id_on_a, &denom) {
             // check if we have enough balance to unescrow tokens to receiver
             let value_balance: Amount = state
                 .get(&state_key::ics20_value_balance(
-                    &msg.packet.chan_on_a,
+                    &msg.packet.chan_id_on_a,
                     &denom.id(),
                 ))
                 .await?
@@ -207,11 +207,11 @@ impl AppHandlerCheck for Ics20Transfer {
         let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
         let denom: asset::Denom = packet_data.denom.as_str().try_into()?;
 
-        if is_source(&msg.packet.port_on_a, &msg.packet.chan_on_a, &denom) {
+        if is_source(&msg.packet.port_id_on_a, &msg.packet.chan_id_on_a, &denom) {
             // check if we have enough balance to refund tokens to sender
             let value_balance: Amount = state
                 .get(&state_key::ics20_value_balance(
-                    &msg.packet.chan_on_a,
+                    &msg.packet.chan_id_on_a,
                     &denom.id(),
                 ))
                 .await?
