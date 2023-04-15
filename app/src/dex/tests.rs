@@ -404,6 +404,18 @@ mod test {
         let pair_3 = DirectedTradingPair::new(penumbra.id(), pusd.id());
 
         /*
+
+        Pair 1             Pair 2                Pair 3
+        --------------------   -------------------   -------------------
+        Bids       Asks       Bids         Asks       Bids           Asks
+        --------------------   -------------------   -------------------
+        100gm@1    10gn@1     53gn@100    54gn@101   1500penumbra@1445 5penumbra@1500
+        120gm@1    100gn@1    54gn@100    1000gn@102 10penumbra@1450    1000penumbra@1550
+        50gm@1     50gn@1     55gn@100
+
+         */
+
+        /*
             * pair 1: gm <> gn
                     100gm@1
                     120gm@1
@@ -499,7 +511,7 @@ mod test {
 
         let delta_1 = Value {
             asset_id: gm.id(),
-            amount: 100u64.into(),
+            amount: 100_000u64.into(),
         };
 
         let route = vec![gm.id(), gn.id(), penumbra.id(), pusd.id()];
