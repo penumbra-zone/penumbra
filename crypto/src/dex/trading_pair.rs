@@ -21,6 +21,10 @@ impl DirectedTradingPair {
     pub fn to_canonical(&self) -> TradingPair {
         TradingPair::new(self.start, self.end)
     }
+
+    pub fn flip(&self) -> DirectedTradingPair {
+        DirectedTradingPair { start: self.end, end: self.start}
+    }
 }
 
 impl DomainType for DirectedTradingPair {
