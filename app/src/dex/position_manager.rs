@@ -122,6 +122,21 @@ pub trait PositionManager: StateWrite + PositionRead {
             return Err(anyhow::anyhow!("incomplete route"));
         }
 
+        // snip
+        let mut mini_registry: BTreeMap<asset::Id, &'static str> = BTreeMap::new();
+
+        let gm = asset::REGISTRY.parse_unit("gm");
+        let gn = asset::REGISTRY.parse_unit("gn");
+        let penumbra = asset::REGISTRY.parse_unit("penumbra");
+        let pusd = asset::REGISTRY.parse_unit("pusd");
+
+        mini_registry.insert(gm.id(), "gm");
+        mini_registry.insert(gn.id(), "gn");
+        mini_registry.insert(penumbra.id(), "penumbra");
+        mini_registry.insert(pusd.id(), "pusd");
+
+        // snip
+
         let source = route[0];
         let target = route[route.len() - 1];
         let total_pair = DirectedTradingPair::new(source, target);
@@ -193,7 +208,10 @@ pub trait PositionManager: StateWrite + PositionRead {
         }
 
         for constraint in constraints {
-            println!("constraint: {constraint:?}");
+            println!(
+                "constraint: {} {}",
+                mini_registry[&constraint.start], mini_registry[&constraint.end]
+            );
         }
 
         let execution_price = current_price;
