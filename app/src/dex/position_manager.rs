@@ -7,7 +7,7 @@ use penumbra_crypto::{
         DirectedTradingPair,
     },
     fixpoint::U128x128,
-    Value,
+    Amount, Value,
 };
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
@@ -127,9 +127,15 @@ pub trait PositionManager: StateWrite + PositionRead {
         let total_pair = DirectedTradingPair::new(source, target);
 
         // actual amount filled
-        let total_delta_1_star = todo!();
-        let total_lambda_1_star = todo!();
-        let total_lambda_2_star = todo!();
+        let total_delta_1_star = Value {
+            asset_id: source,
+            amount: Amount::zero(),
+        };
+        let total_lambda_1_star = total_delta_1_star.clone();
+        let total_lambda_2_star = Value {
+            asset_id: target,
+            amount: Amount::zero(),
+        };
 
         // Breakdown the route into a sequence of pairs to visit.
         let mut pairs = vec![];
@@ -197,7 +203,7 @@ pub trait PositionManager: StateWrite + PositionRead {
         // generate traces of plausible liquidity graphs, and finds the optimal
         // solution to generated configurations, then compare the performance of the router+exec
         // against it with the caveat that the router has to work in a more constrained environment.
-        let price_quality = todo!();
+        // let price_quality = todo!();
 
         println!("delta_1 = {input:?}");
         println!("delta_1_star = {total_delta_1_star:?}");
@@ -235,7 +241,7 @@ pub trait PositionManager: StateWrite + PositionRead {
                          * than or less than the reserves of the active position on the next hop. If the output is less than the reserves of the next position,
 
         */
-        todo!()
+        Ok((total_lambda_1_star, total_lambda_2_star))
     }
 
     /// Fill a trade of `input` value against a specific position `id`, writing

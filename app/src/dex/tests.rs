@@ -6,6 +6,7 @@ mod test {
             lp::{position::Position, Reserves},
             DirectedTradingPair,
         },
+        fixpoint::U128x128,
         Amount,
     };
     use penumbra_storage::{ArcStateDeltaExt, StateDelta, TempStorage};
@@ -364,14 +365,27 @@ mod test {
             OsRng,
             pair,
             0,
-            // We want a 1:1 ratio of _display_ units, so cross-multiply with the unit<>base ratios:
-            Amount::from(1u64) * gn.unit_amount(),
-            Amount::from(1u64) * gm.unit_amount(),
+            price.0,
+            price.1,
             Reserves {
-                r1: gm.parse_value("100").unwrap(),
-                r2: gn.parse_value("120").unwrap(),
+                r1: amount,
+                r2: 0u64.into(),
             },
-        );
+        )
+    }
+
+    fn limit_sell(pair: DirectedTradingPair, amount: Amount, price: (Amount, Amount)) -> Position {
+        Position::new(
+            OsRng,
+            pair,
+            0,
+            price.1,
+            price.0,
+            Reserves {
+                r1: 0u64.into(),
+                r2: amount,
+            },
+        )
     }
 
     #[tokio::test]
@@ -401,122 +415,98 @@ mod test {
 
         */
 
-        let position_1 = Position::new(
-            OsRng,
-            pair_1,
-            0,
-            // We want a 1:1 ratio of _display_ units, so cross-multiply with the unit<>base ratios:
-            Amount::from(1u64) * gn.unit_amount(),
-            Amount::from(1u64) * gm.unit_amount(),
-            Reserves {
-                r1: gm.parse_value("50").unwrap(),
-                r2: gn.parse_value("10").unwrap(),
-            },
-        );
+        let one = (1u64.into(), 1u64.into());
 
-        let position_2 = Position::new(
-            OsRng,
-            pair_1,
-            0,
-            // We want a 1:1 ratio of _display_ units, so cross-multiply with the unit<>base ratios:
-            Amount::from(1u64) * gn.unit_amount(),
-            Amount::from(1u64) * gm.unit_amount(),
-            Reserves {
-                r1: gm.parse_value("100").unwrap(),
-                r2: gn.parse_value("120").unwrap(),
-            },
-        );
+        let buy_1 = limit_buy(pair_1, 50u64.into(), one);
+        let buy_2 = limit_buy(pair_1, 120u64.into(), one);
+        let buy_3 = limit_buy(pair_1, 100u64.into(), one);
 
-        let position_2 = Position::new(
-            OsRng,
-            pair_1,
-            0,
-            // We want a 1:1 ratio of _display_ units, so cross-multiply with the unit<>base ratios:
-            Amount::from(1u64) * gn.unit_amount(),
-            Amount::from(1u64) * gm.unit_amount(),
-            Reserves {
-                r1: gm.parse_value("100").unwrap(),
-                r2: gn.parse_value("120").unwrap(),
-            },
-        );
+        let sell_1 = limit_sell(pair_1, 10u64.into(), one);
+        let sell_2 = limit_sell(pair_1, 100u64.into(), one);
+        let sell_3 = limit_sell(pair_1, 50u64.into(), one);
+
+        state_tx.put_position(buy_1);
+        state_tx.put_position(buy_2);
+        state_tx.put_position(buy_3);
+
+        state_tx.put_position(sell_1);
+        state_tx.put_position(sell_2);
+        state_tx.put_position(sell_3);
 
         /*
 
-            * pair 2: gn <> pusd
-                    50gn@100
-                    51gn@100
-                    52gn@100
-                    53gn@100
-                    54gn@100
-                    55gn@100
-                ^-bids---------asks-v
-                     30000pusd@1
-                     50000pusd@1
+        * pair 2: gn <> penumbra
+                53gn@100
+                54gn@100
+                55gn@100
+            ^-bids---------asks-v
+                 54gn@101
+                 1000gn@102
+
+
+                 */
+
+        let price100 = (100u64.into(), 1u64.into());
+        let price101i = (1u64.into(), 101u64.into());
+        let price102i = (1u64.into(), 102u64.into());
+
+        let buy_1 = limit_buy(pair_2, 55u64.into(), price100);
+        let buy_2 = limit_buy(pair_2, 54u64.into(), price100);
+        let buy_3 = limit_buy(pair_2, 53u64.into(), price100);
+
+        let sell_1 = limit_sell(pair_2, 54u64.into(), price101i);
+        let sell_2 = limit_sell(pair_2, 1000u64.into(), price102i);
+
+        state_tx.put_position(buy_1);
+        state_tx.put_position(buy_2);
+        state_tx.put_position(buy_3);
+
+        state_tx.put_position(sell_1);
+        state_tx.put_position(sell_2);
+
+        /*
 
             * pair 3: pusd <> penumbra
-                    50
-
-
-
-        Setup 1:
-
-            We post three identical orders (buy 100gm@1.2gn), with different fees.
-            Order A: 9 bps fee
-            Order B: 10 bps fee
-            Order C: 11 bps fee
-
-        We are first going to check that we can exhaust Order A, while leaving B and C intact.
-
-        Then, we want to try to fill A and B. And finally, all three orders, ensuring that execution
-        is well-ordered.
+                1500penumbra@1445
+                10penumbra@1450
+            ^-bids---------asks-v
+                5penumbra@1500
+                1000penumbra@1550
         */
 
-        let reserves_1 = Reserves {
-            r1: 0u64.into(),
-            r2: 120_000u64.into(),
+        let price1450 = (1450u64.into(), 1u64.into());
+        let price1445 = (1445u64.into(), 1u64.into());
+        let price1500i = (1u64.into(), 1500u64.into());
+        let price1550i = (1u64.into(), 1550u64.into());
+
+        let buy_1 = limit_buy(pair_3, 10u64.into(), price1450);
+        let buy_2 = limit_buy(pair_3, 1500u64.into(), price1445);
+
+        let sell_1 = limit_sell(pair_3, 5u64.into(), price1500i);
+        let sell_2 = limit_sell(pair_3, 1000u64.into(), price1550i);
+
+        state_tx.put_position(buy_1);
+        state_tx.put_position(buy_2);
+
+        state_tx.put_position(sell_1);
+        state_tx.put_position(sell_2);
+
+        /*
+
+           Fill route scratchpad:
+
+        */
+
+        let delta_1 = Value {
+            asset_id: gm.id(),
+            amount: 100u64.into(),
         };
-        let reserves_2 = reserves_1.clone();
-        let reserves_3 = reserves_1.clone();
 
-        // Building positions:
-        let position_1 = Position::new(
-            OsRng,
-            pair,
-            9u32,
-            1_200_000u64.into(),
-            1_000_000u64.into(),
-            reserves_1,
-        );
+        let route = vec![gm.id(), gn.id(), penumbra.id(), pusd.id()];
 
-        // Order B's trading function, with a 10 bps fee.
-        let position_2 = Position::new(
-            OsRng,
-            pair,
-            10u32,
-            1_200_000u64.into(),
-            1_000_000u64.into(),
-            reserves_2,
-        );
+        let spill_price = U128x128::from(1_000_000u64);
 
-        // Order C's trading function with an 11 bps fee
-        let position_3 = Position::new(
-            OsRng,
-            pair,
-            11u32,
-            1_200_000u64.into(),
-            1_000_000u64.into(),
-            reserves_3,
-        );
-
-        let position_1_id = position_1.id();
-        let position_2_id = position_2.id();
-        let position_3_id = position_3.id();
-
-        // The insertion order shouldn't matter.
-        state_tx.put_position(position_2.clone());
-        state_tx.put_position(position_1.clone());
-        state_tx.put_position(position_3.clone());
-
-        todo!()
+        state_tx.fill_route(delta_1, route, spill_price).await;
+        Ok(())
     }
 }
