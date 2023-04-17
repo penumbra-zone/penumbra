@@ -383,8 +383,8 @@ mod test {
             OsRng,
             pair,
             0,
-            price.1,
             price.0,
+            price.1,
             Reserves {
                 r1: 0u64.into(),
                 r2: amount,

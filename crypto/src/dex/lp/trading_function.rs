@@ -288,7 +288,7 @@ impl BareTradingFunction {
     }
 
     /// Converts an amount `delta_1` into `lambda_2`, using the bid price.
-    pub(crate) fn convert_to_lambda_2(&self, delta_1: U128x128) -> U128x128 {
+    pub fn convert_to_lambda_2(&self, delta_1: U128x128) -> U128x128 {
         let p = U128x128::from(self.p);
         let q = U128x128::from(self.q);
 
@@ -298,7 +298,7 @@ impl BareTradingFunction {
     }
 
     /// Converts an amount of `lambda_2` into `delta_1`, using the ask price.
-    pub(crate) fn convert_to_delta_1(&self, lambda_2: U128x128) -> U128x128 {
+    pub fn convert_to_delta_1(&self, lambda_2: U128x128) -> U128x128 {
         let p = U128x128::from(self.p);
         let q = U128x128::from(self.q);
 
@@ -321,10 +321,7 @@ impl BareTradingFunction {
     /// Compose two trading functions together
     /// TODO(erwan): might have a use for working out capacity, but probably to deprecate.
     pub fn compose(&self, phi: BareTradingFunction) -> BareTradingFunction {
-        let fee = self.fee * phi.fee;
-        let r1 = self.p * phi.p;
-        let r2 = self.q * phi.q;
-        BareTradingFunction::new(fee, r1, r2)
+        todo!()
     }
 }
 

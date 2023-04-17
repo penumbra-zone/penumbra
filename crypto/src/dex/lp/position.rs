@@ -77,9 +77,7 @@ impl Position {
         if pair.start != canonical_tp.asset_1() {
             // The canonical representation of the trading pair has the start asset as the second
             // asset, so we need to swap the `p` and `q` values.
-            let tmp = p;
-            p = q;
-            q = tmp;
+            std::mem::swap(&mut p, &mut q);
 
             // The ordering of the reserves should also be swapped.
             reserves = Reserves {
