@@ -54,6 +54,8 @@ sha2 = "0.10.1"
 ed25519-consensus = "2.1"
 rusqlite = "0.29"
 genawaiter = "0.99"
+digest = "0.9"
+once_cell = "1"
 
 [build-dependencies]
 vergen = "5"

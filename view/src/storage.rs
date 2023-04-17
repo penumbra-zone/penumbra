@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Context};
 use camino::Utf8Path;
 use futures::Future;
+use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::{
@@ -18,7 +19,7 @@ use penumbra_proto::{
 use penumbra_tct as tct;
 use penumbra_transaction::Transaction;
 use rusqlite::OpenFlags;
-use sha2::Digest;
+use sha2::{Digest, Sha256};
 use std::{collections::BTreeMap, num::NonZeroU64, str::FromStr, sync::Arc};
 use tct::Commitment;
 use tokio::{
@@ -31,6 +32,10 @@ use crate::{sync::FilteredBlock, SpendableNoteRecord, SwapRecord};
 
 mod sct;
 use sct::TreeStore;
+
+/// The hash of the schema for the database.
+static SCHEMA_HASH: Lazy<String> =
+    Lazy::new(|| hex::encode(Sha256::digest(include_str!("storage/schema.sql"))));
 
 #[derive(Clone)]
 pub struct Storage {
@@ -59,12 +64,12 @@ impl Storage {
     ) -> anyhow::Result<Self> {
         if let Some(path) = storage_path.as_ref() {
             if path.as_ref().exists() {
-                return Ok(Self::load(
+                return Self::load(
                     storage_path.expect(
                         "storage path is not `None` because we already matched on it above",
                     ),
                 )
-                .await?);
+                .await;
             }
         };
 
@@ -112,20 +117,28 @@ impl Storage {
         spawn_blocking(move || {
             // Check the version of the software used when first initializing this database.
             // If it doesn't match the current version, we should report the error to the user.
-            let version: String = storage
+            let actual_schema_hash: String = storage
                 .conn
                 .lock()
-                .query_row("SELECT client_version FROM client_version", (), |row| {
+                .query_row("SELECT schema_hash FROM schema_hash", (), |row| {
                     row.get(0)
                 })
-                .context("Failed to query database version")?;
+                .context("failed to query database version")?;
 
-            if version != env!("VERGEN_GIT_SEMVER") {
+            if actual_schema_hash != *SCHEMA_HASH {
+                let database_client_version: String = storage
+                    .conn
+                    .lock()
+                    .query_row("SELECT client_version FROM client_version", (), |row| {
+                        row.get(0)
+                    })
+                    .context("failed to query database version")?;
+
                 return Err(anyhow!(
-                "view database was initialized with version {}, but this software version is {}",
-                version,
-                env!("VERGEN_GIT_SEMVER")
-            ));
+                    "can't load view database created by client version {} using client version {}: they have different schemata",
+                    database_client_version,
+                    env!("VERGEN_GIT_SEMVER"),
+                ));
             }
 
             Ok(storage)
@@ -168,7 +181,13 @@ impl Storage {
             // in last_sync_height.
             tx.execute("INSERT INTO sync_height (height) VALUES (-1)", ())?;
 
-            // Insert the current version of the software
+            // Insert the schema hash into the database
+            tx.execute(
+                "INSERT INTO schema_hash (schema_hash) VALUES (?1)",
+                [&*SCHEMA_HASH],
+            )?;
+
+            // Insert the client version into the database
             tx.execute(
                 "INSERT INTO client_version (client_version) VALUES (?1)",
                 [env!("VERGEN_GIT_SEMVER")],
@@ -326,55 +345,62 @@ impl Storage {
         // have the record, so that we can't miss it if we race a write.
         let mut rx = self.scanned_swaps_tx.subscribe();
 
-        // // Clone the pool handle so that the returned future is 'static
-        // let pool = self.pool.clone();
-        // async move {
-        //     // Check if we already have the note
-        //     if let Some(record) = sqlx::query_as::<_, SwapRecord>(
-        //         format!(
-        //             "SELECT * FROM swaps WHERE swaps.swap_commitment = x'{}'",
-        //             hex::encode(swap_commitment.0.to_bytes())
-        //         )
-        //         .as_str(),
-        //     )
-        //     .fetch_optional(&pool)
-        //     .await?
-        //     {
-        //         return Ok(record);
-        //     }
+        let conn = self.conn.clone();
 
-        //     if !await_detection {
-        //         return Err(anyhow!("swap commitment {} not found", swap_commitment));
-        //     }
+        if let Some(record) = spawn_blocking(move || {
+            let lock = conn.lock();
 
-        //     // Otherwise, wait for newly detected swaps and check whether they're
-        //     // the requested one.
+            // Check if we already have the note
+            let mut stmt = lock.prepare_cached(&format!(
+                "SELECT * FROM swaps
+                WHERE swaps.swap_commitment = x'{}'",
+                hex::encode(swap_commitment.0.to_bytes())
+            ))?;
 
-        //     loop {
-        //         match rx.recv().await {
-        //             Ok(record) => {
-        //                 if record.swap_commitment == swap_commitment {
-        //                     return Ok(record);
-        //                 }
-        //             }
+            // We only care about the first record returned, if it's there, since it will be the
+            // only one (note commitments are unique)
+            let record: Option<SwapRecord> = stmt
+                .query_and_then((), |record| record.try_into())?
+                .next()
+                .transpose()?;
 
-        //             Err(e) => match e {
-        //                 RecvError::Closed => {
-        //                     return Err(anyhow!(
-        //                     "Receiver error during swap detection: closed (no more active senders)"
-        //                 ))
-        //                 }
-        //                 RecvError::Lagged(count) => {
-        //                     return Err(anyhow!(
-        //                         "Receiver error during swap detection: lagged (by {:?} messages)",
-        //                         count
-        //                     ))
-        //                 }
-        //             },
-        //         };
-        //     }
-        // }
-        todo!("swap_by_commitment")
+            Ok::<_, anyhow::Error>(record)
+        })
+        .await??
+        {
+            return Ok(record);
+        }
+
+        if !await_detection {
+            return Err(anyhow!("swap commitment {} not found", swap_commitment));
+        }
+
+        // Otherwise, wait for newly detected swaps and check whether they're
+        // the requested one.
+
+        loop {
+            match rx.recv().await {
+                Ok(record) => {
+                    if record.swap_commitment == swap_commitment {
+                        return Ok(record);
+                    }
+                }
+
+                Err(e) => match e {
+                    RecvError::Closed => {
+                        return Err(anyhow!(
+                            "Receiver error during swap detection: closed (no more active senders)"
+                        ))
+                    }
+                    RecvError::Lagged(count) => {
+                        return Err(anyhow!(
+                            "Receiver error during swap detection: lagged (by {:?} messages)",
+                            count
+                        ))
+                    }
+                },
+            };
+        }
     }
 
     /// Query for a nullifier's status, optionally waiting until the nullifier is detected.

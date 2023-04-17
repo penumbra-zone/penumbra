@@ -1,5 +1,5 @@
--- The exact VERGEN_GIT_SEMVER of the client that created this database
-CREATE TABLE client_version (version TEXT NOT NULL);
+-- The hash of this schema file
+CREATE TABLE schema_hash (schema_hash TEXT NOT NULL);
 
 -- Application state, stored in single-row tables
 CREATE TABLE chain_params (bytes BLOB NOT NULL);
