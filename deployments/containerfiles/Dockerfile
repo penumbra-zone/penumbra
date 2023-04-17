@@ -83,7 +83,7 @@ RUN apt update && apt install -y clang libssl1.1 openssl
 # Absolute path of each library is appended to /root/lib_abs.list for restoring in final image.
 COPY --from=build-env /root/bin /root/bin
 RUN mkdir -p /root/lib_abs && touch /root/lib_abs.list
-RUN bash -c \
+RUN bash -ec \
   'readarray -t LIBS < <( for b in $(ls -1 /root/bin/* | sort -u) ; do ldd $b | awk "{print \$1, \$2, \$3 }" | sort -u; done | sort -u ; ) ; \
     i=0; for LIB in "${LIBS[@]}"; do \
       PATH1=$(echo $LIB | awk "{print \$1}") ; \
@@ -98,6 +98,13 @@ RUN bash -c \
         echo $PATH1 >> /root/lib_abs.list; \
       fi; \
       ((i = i + 1)) ;\
+  done; \
+  ARCH=$(uname -m) ; \
+  for l in libnss_dns.so.2 libresolv.so.2 ; do \
+        p="/lib/${ARCH}-linux-gnu/$l"; \
+        cp $p /root/lib_abs/$i; \
+        echo $p >> /root/lib_abs.list; \
+        ((i = i + 1)) ; \
   done'
 
 # Build final image from scratch
@@ -132,7 +139,7 @@ COPY --from=target-arch-libs /root/lib_abs /root/lib_abs
 COPY --from=target-arch-libs /root/lib_abs.list /root/lib_abs.list
 
 # Move libraries to their absolute locations.
-RUN sh -c 'i=0; while read FILE; do \
+RUN sh -ec 'i=0; while read FILE; do \
       echo "$i: $FILE"; \
       DIR="$(dirname "$FILE")"; \
       mkdir -p "$DIR"; \
