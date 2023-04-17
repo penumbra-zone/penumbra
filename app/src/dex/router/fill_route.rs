@@ -290,12 +290,15 @@ pub trait FillRoute: StateWrite + Sized {
 
                     // There are a couple things to worry about here, let's reason step-by-step:
                     //      + can constraint resolution generate constraints upstream in the path?
+                    //          answer: case1: no, case2:yes
                     //              example:
                     //                      S -> A -> B -> C* -> T
                     //                                      ^_________ C is the constraint
                     //                                          at this point there are two different approaches:
                     //                                              -> first one would be to work out what input would exactly fill the constraining position, working backwards
                     //                                                  to adjust the amount of flow (strictly reducing) and the proceed forward to a filled amount total_lambda_2
+                    //                                                   | we work backwards from C*, determining how much delta_1 would turn the constraint into a perfect fill.
+                    //                                                   | this is equivalent to reversing the path and executing for delta_1_new = lambda_2_old
                     //                                              -> the second one, is to fetch the next order in the book that would let us fill the current flow.
                     //                                                  There are different branches possible here:
                     //                                                   |   + there are not any other order in the book
