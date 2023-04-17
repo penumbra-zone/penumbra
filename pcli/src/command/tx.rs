@@ -14,7 +14,7 @@ use penumbra_app::stake::rate::RateData;
 use penumbra_crypto::{
     asset,
     dex::{
-        lp::{position::Position, Reserves, TradingFunction},
+        lp::{position::Position, Reserves},
         DirectedTradingPair,
     },
     keys::AddressIndex,

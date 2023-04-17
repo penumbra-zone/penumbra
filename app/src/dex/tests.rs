@@ -3,10 +3,7 @@ mod test {
     use penumbra_crypto::{
         asset,
         dex::{
-            lp::{
-                position::{self, Position},
-                Reserves, TradingFunction,
-            },
+            lp::{position::Position, Reserves},
             DirectedTradingPair,
         },
         Amount,

@@ -4,7 +4,7 @@ use penumbra_crypto::{
     balance,
     dex::lp::{
         position::{self, Position},
-        LpNft, Reserves,
+        LpNft,
     },
     Balance, Fr, Value, Zero,
 };

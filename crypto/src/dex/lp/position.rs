@@ -4,6 +4,7 @@ use rand_core::CryptoRngCore;
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    asset,
     dex::{DirectedTradingPair, TradingPair},
     Amount,
 };
@@ -130,6 +131,17 @@ impl Position {
             Err(anyhow!("fee cannot be greater than 50% (5000bps)"))
         } else {
             Ok(())
+        }
+    }
+
+    /// Returns the amount of the given asset that is currently in the position's reserves.
+    pub fn reserves_for(&self, asset: asset::Id) -> Option<Amount> {
+        if asset == self.phi.pair.asset_1() {
+            Some(self.reserves.r1)
+        } else if asset == self.phi.pair.asset_2() {
+            Some(self.reserves.r2)
+        } else {
+            None
         }
     }
 }
