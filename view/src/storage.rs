@@ -190,35 +190,49 @@ impl Storage {
 
     /// Query for account balance by address
     pub async fn balance_by_address(&self, address: Address) -> anyhow::Result<BTreeMap<Id, u128>> {
-        let address = address.to_vec();
+        let conn = self.conn.clone();
 
-        // let result = sqlx::query!(
-        //     "SELECT notes.asset_id,
-        //             notes.amount
-        //     FROM    notes
-        //     JOIN    spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
-        //     WHERE   spendable_notes.height_spent IS NULL
-        //     AND     notes.address IS ?",
-        //     address
-        // )
-        // .fetch_all(&self.pool)
-        // .await?;
+        spawn_blocking(move || {
+            let address = address.to_vec();
 
-        // let mut balance_by_address = BTreeMap::new();
+            let lock = conn.lock();
 
-        // for record in result {
-        //     let amount: [u8; 16] = record.amount.try_into().expect("16 bytes");
+            let mut stmt = lock
+                .prepare_cached(
+                    "SELECT notes.asset_id,
+                            notes.amount
+                    FROM    notes
+                    JOIN    spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
+                    WHERE   spendable_notes.height_spent IS NULL
+                    AND     notes.address IS ?",
+                )
+                .context("Failed to prepare balance_by_address query")?;
 
-        //     let amount_u128: u128 = u128::from_be_bytes(amount);
+            let mut balance_by_address = BTreeMap::new();
 
-        //     balance_by_address
-        //         .entry(Id::try_from(record.asset_id.as_slice())?)
-        //         .and_modify(|x| *x += amount_u128)
-        //         .or_insert(amount_u128);
-        // }
+            let rows = stmt
+                .query_map([address], |row| {
+                    let asset_id: Vec<u8> = row.get(0)?;
+                    let amount: [u8; 16] = row.get(1)?;
 
-        // Ok(balance_by_address)
-        todo!("balance_by_address")
+                    Ok((asset_id, amount))
+                })
+                .context("Failed to execute balance_by_address query")?;
+
+            for result in rows {
+                let (asset_id, amount) = result?;
+
+                let amount_u128: u128 = u128::from_be_bytes(amount);
+
+                balance_by_address
+                    .entry(Id::try_from(asset_id.as_slice())?)
+                    .and_modify(|x| *x += amount_u128)
+                    .or_insert(amount_u128);
+            }
+
+            Ok(balance_by_address)
+        })
+        .await?
     }
 
     /// Query for a note by its note commitment, optionally waiting until the note is detected.
@@ -231,69 +245,75 @@ impl Storage {
         // have the record, so that we can't miss it if we race a write.
         let mut rx = self.scanned_notes_tx.subscribe();
 
-        // Clone the pool handle so that the returned future is 'static
-        // let pool = self.pool.clone();
-        // async move {
-        // Check if we already have the note
-        //     if let Some(record) = sqlx::query_as::<_, SpendableNoteRecord>(
-        //         format!(
-        //             "SELECT
-        //                 notes.note_commitment,
-        //                 spendable_notes.height_created,
-        //                 notes.address,
-        //                 notes.amount,
-        //                 notes.asset_id,
-        //                 notes.rseed,
-        //                 spendable_notes.address_index,
-        //                 spendable_notes.source,
-        //                 spendable_notes.height_spent,
-        //                 spendable_notes.nullifier,
-        //                 spendable_notes.position
-        //             FROM notes
-        //             JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
-        //             WHERE notes.note_commitment = x'{}'",
-        //             hex::encode(note_commitment.0.to_bytes())
-        //         )
-        //         .as_str(),
-        //     )
-        //     .fetch_optional(&pool)
-        //     .await?
-        //     {
-        //         return Ok(record);
-        //     }
+        let conn = self.conn.clone();
 
-        //     if !await_detection {
-        //         return Err(anyhow!("Note commitment {} not found", note_commitment));
-        //     }
+        if let Some(record) = spawn_blocking(move || {
+            let lock = conn.lock();
 
-        //     // Otherwise, wait for newly detected notes and check whether they're
-        //     // the requested one.
+            // Check if we already have the note
+            let mut stmt = lock.prepare_cached(&format!(
+                "SELECT
+                    notes.note_commitment,
+                    spendable_notes.height_created,
+                    notes.address,
+                    notes.amount,
+                    notes.asset_id,
+                    notes.rseed,
+                    spendable_notes.address_index,
+                    spendable_notes.source,
+                    spendable_notes.height_spent,
+                    spendable_notes.nullifier,
+                    spendable_notes.position
+                FROM notes
+                JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
+                WHERE notes.note_commitment = x'{}'",
+                hex::encode(note_commitment.0.to_bytes())
+            ))?;
 
-        //     loop {
-        //         match rx.recv().await {
-        //             Ok(record) => {
-        //                 if record.note_commitment == note_commitment {
-        //                     return Ok(record);
-        //                 }
-        //             }
+            // We only care about the first record returned, if it's there, since it will be the
+            // only one (note commitments are unique)
+            let record: Option<SpendableNoteRecord> = stmt
+                .query_and_then((), |record| record.try_into())?
+                .next()
+                .transpose()?;
 
-        //             Err(e) => match e {
-        //                 RecvError::Closed => {
-        //                     return Err(anyhow!(
-        //                     "Receiver error during note detection: closed (no more active senders)"
-        //                 ))
-        //                 }
-        //                 RecvError::Lagged(count) => {
-        //                     return Err(anyhow!(
-        //                         "Receiver error during note detection: lagged (by {:?} messages)",
-        //                         count
-        //                     ))
-        //                 }
-        //             },
-        //         };
-        //     }
-        // }
-        todo!("note_by_commitment")
+            Ok::<_, anyhow::Error>(record)
+        })
+        .await??
+        {
+            return Ok(record);
+        }
+
+        if !await_detection {
+            return Err(anyhow!("Note commitment {} not found", note_commitment));
+        }
+
+        // Otherwise, wait for newly detected notes and check whether they're
+        // the requested one.
+
+        loop {
+            match rx.recv().await {
+                Ok(record) => {
+                    if record.note_commitment == note_commitment {
+                        return Ok(record);
+                    }
+                }
+
+                Err(e) => match e {
+                    RecvError::Closed => {
+                        return Err(anyhow!(
+                            "Receiver error during note detection: closed (no more active senders)"
+                        ))
+                    }
+                    RecvError::Lagged(count) => {
+                        return Err(anyhow!(
+                            "Receiver error during note detection: lagged (by {:?} messages)",
+                            count
+                        ))
+                    }
+                },
+            };
+        }
     }
 
     /// Query for a swap by its swap commitment, optionally waiting until the note is detected.
