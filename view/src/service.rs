@@ -71,11 +71,11 @@ pub struct ViewService {
 impl ViewService {
     /// Convenience method that calls [`Storage::load_or_initialize`] and then [`Self::new`].
     pub async fn load_or_initialize(
-        storage_path: impl AsRef<Utf8Path>,
+        storage_path: Option<impl AsRef<Utf8Path> + Send + 'static>,
         fvk: &FullViewingKey,
         node: Url,
     ) -> anyhow::Result<Self> {
-        let storage = Storage::load_or_initialize(storage_path, fvk, node.clone())?;
+        let storage = Storage::load_or_initialize(storage_path, fvk, node.clone()).await?;
 
         Self::new(storage, node).await
     }

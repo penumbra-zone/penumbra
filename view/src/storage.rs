@@ -17,10 +17,14 @@ use penumbra_proto::{
 };
 use penumbra_tct as tct;
 use penumbra_transaction::Transaction;
+use rusqlite::OpenFlags;
 use sha2::Digest;
 use std::{collections::BTreeMap, num::NonZeroU64, str::FromStr, sync::Arc};
 use tct::Commitment;
-use tokio::sync::broadcast::{self, error::RecvError};
+use tokio::{
+    sync::broadcast::{self, error::RecvError},
+    task::spawn_blocking,
+};
 use url::Url;
 
 use crate::{sync::FilteredBlock, SpendableNoteRecord, SwapRecord};
@@ -30,7 +34,7 @@ use sct::TreeStore;
 
 #[derive(Clone)]
 pub struct Storage {
-    pool: Arc<Mutex<rusqlite::Connection>>,
+    conn: Arc<Mutex<rusqlite::Connection>>,
 
     /// This allows an optimization where we only commit to the database after
     /// scanning a nonempty block.
@@ -48,121 +52,140 @@ pub struct Storage {
 
 impl Storage {
     /// If the database at `storage_path` exists, [`Self::load`] it, otherwise, [`Self::initialize`] it.
-    pub fn load_or_initialize(
-        storage_path: impl AsRef<Utf8Path>,
+    pub async fn load_or_initialize(
+        storage_path: Option<impl AsRef<Utf8Path> + Send + 'static>,
         fvk: &FullViewingKey,
         node: Url,
     ) -> anyhow::Result<Self> {
-        let storage_path = storage_path.as_ref();
+        if let Some(path) = storage_path.as_ref() {
+            if path.as_ref().exists() {
+                return Ok(Self::load(
+                    storage_path.expect(
+                        "storage path is not `None` because we already matched on it above",
+                    ),
+                )
+                .await?);
+            }
+        };
 
-        // if storage_path.exists() {
-        //     Self::load(storage_path.as_str()).await
-        // } else {
-        //     let mut client = ObliviousQueryServiceClient::connect(node.to_string()).await?;
-        //     let params = client
-        //         .chain_parameters(tonic::Request::new(ChainParametersRequest {
-        //             chain_id: String::new(),
-        //         }))
-        //         .await?
-        //         .into_inner()
-        //         .try_into()?;
+        let mut client = ObliviousQueryServiceClient::connect(node.to_string()).await?;
+        let params = client
+            .chain_parameters(tonic::Request::new(ChainParametersRequest {
+                chain_id: String::new(),
+            }))
+            .await?
+            .into_inner()
+            .try_into()?;
 
-        //     Self::initialize(storage_path, fvk.clone(), params).await
-        // }
-        todo!("load_or_initialize")
+        Self::initialize(storage_path, fvk.clone(), params).await
     }
 
-    fn connect(path: &str) -> anyhow::Result<Arc<Mutex<rusqlite::Connection>>> {
-        // use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous};
+    async fn connect(
+        path: Option<impl AsRef<Utf8Path> + Send + 'static>,
+    ) -> anyhow::Result<Arc<Mutex<rusqlite::Connection>>> {
+        spawn_blocking(move || {
+            let conn = if let Some(path) = path {
+                rusqlite::Connection::open_with_flags(
+                    path.as_ref(),
+                    // Don't allow opening URIs, because they can change the behavior of the database; we
+                    // just want to open normal filepaths.
+                    OpenFlags::default() & !OpenFlags::SQLITE_OPEN_URI,
+                )?
+            } else {
+                rusqlite::Connection::open_in_memory()?
+            };
 
-        /*
-        // "yolo" options for testing
-        let options = SqliteConnectOptions::from_str(path)?
-            .journal_mode(SqliteJournalMode::Memory)
-            .synchronous(SqliteSynchronous::Off);
-        */
-        // let options = SqliteConnectOptions::from_str(path)?
-        //     .journal_mode(SqliteJournalMode::Wal)
-        //     // "Normal" will be consistent, but potentially not durable.
-        //     // Since our data is coming from the chain, durability is not
-        //     // a concern -- if we lose some database transactions, it's as
-        //     // if we rewound syncing a few blocks.
-        //     .synchronous(SqliteSynchronous::Normal)
-        //     // The shared cache allows table-level locking, which makes things faster in concurrent
-        //     // cases, and eliminates database lock errors.
-        //     .shared_cache(true);
-
-        // let pool = Pool::<Sqlite>::connect_with(options).await?;
-
-        // Ok(pool)
-        todo!("connect")
+            Ok(Arc::new(Mutex::new(conn)))
+        })
+        .await?
     }
 
-    pub async fn load(path: impl AsRef<Utf8Path>) -> anyhow::Result<Self> {
-        Ok(Self {
-            pool: Self::connect(path.as_ref().as_str())?,
+    pub async fn load(path: impl AsRef<Utf8Path> + Send + 'static) -> anyhow::Result<Self> {
+        let storage = Self {
+            conn: Self::connect(Some(path)).await?,
             uncommitted_height: Arc::new(Mutex::new(None)),
             scanned_notes_tx: broadcast::channel(10).0,
             scanned_nullifiers_tx: broadcast::channel(10).0,
             scanned_swaps_tx: broadcast::channel(10).0,
+        };
+
+        spawn_blocking(move || {
+            // Check the version of the software used when first initializing this database.
+            // If it doesn't match the current version, we should report the error to the user.
+            let version: String = storage
+                .conn
+                .lock()
+                .query_row("SELECT client_version FROM client_version", (), |row| {
+                    row.get(0)
+                })
+                .context("Failed to query database version")?;
+
+            if version != env!("VERGEN_GIT_SEMVER") {
+                return Err(anyhow!(
+                "view database was initialized with version {}, but this software version is {}",
+                version,
+                env!("VERGEN_GIT_SEMVER")
+            ));
+            }
+
+            Ok(storage)
         })
+        .await?
     }
 
     pub async fn initialize(
-        storage_path: impl AsRef<Utf8Path>,
+        storage_path: Option<impl AsRef<Utf8Path> + Send + 'static>,
         fvk: FullViewingKey,
         params: ChainParameters,
     ) -> anyhow::Result<Self> {
-        let storage_path = storage_path.as_ref();
-        tracing::debug!(%storage_path, ?fvk, ?params);
-        // We don't want to overwrite existing data,
-        // but also, SQLX will complain if the file doesn't already exist
-        if storage_path.exists() {
-            return Err(anyhow!("Database already exists at: {}", storage_path));
-        } else {
-            std::fs::File::create(storage_path)?;
-        }
-        // // Create the SQLite database
-        // sqlx::Sqlite::create_database(storage_path.as_str());
+        tracing::debug!(storage_path = ?storage_path.as_ref().map(AsRef::as_ref), ?fvk, ?params);
 
-        // let pool = Self::connect(storage_path.as_str()).await?;
+        // Connect to the database (or create it)
+        let conn = Self::connect(storage_path).await?;
 
-        // // Run migrations
-        // sqlx::migrate!().run(&pool).await?;
+        spawn_blocking(move || {
+            // In one database transaction, populate everything
+            let mut lock = conn.lock();
+            let tx = lock.transaction()?;
 
-        // // Initialize the database state with: empty SCT, chain params, FVK
-        // let mut tx = pool.begin().await?;
+            // Create the tables
+            tx.execute_batch(include_str!("storage/schema.sql"))?;
 
-        // let chain_params_bytes = &ChainParameters::encode_to_vec(&params)[..];
-        // sqlx::query!(
-        //     "INSERT INTO chain_params (bytes) VALUES (?)",
-        //     chain_params_bytes
-        // )
-        // .execute(&mut tx)
-        // .await?;
+            let chain_params_bytes = &ChainParameters::encode_to_vec(&params)[..];
+            tx.execute(
+                "INSERT INTO chain_params (bytes) VALUES (?1)",
+                [chain_params_bytes],
+            )?;
 
-        // let fvk_bytes = &FullViewingKey::encode_to_vec(&fvk)[..];
-        // sqlx::query!("INSERT INTO full_viewing_key (bytes) VALUES (?)", fvk_bytes)
-        //     .execute(&mut tx)
-        //     .await?;
+            let fvk_bytes = &FullViewingKey::encode_to_vec(&fvk)[..];
+            tx.execute(
+                "INSERT INTO full_viewing_key (bytes) VALUES (?1)",
+                [fvk_bytes],
+            )?;
 
-        // // Insert -1 as a signaling value for pre-genesis.
-        // // We just have to be careful to treat negative values as None
-        // // in last_sync_height.
-        // sqlx::query!("INSERT INTO sync_height (height) VALUES (?)", -1i64)
-        //     .execute(&mut tx)
-        //     .await?;
+            // Insert -1 as a signaling value for pre-genesis.
+            // We just have to be careful to treat negative values as None
+            // in last_sync_height.
+            tx.execute("INSERT INTO sync_height (height) VALUES (-1)", ())?;
 
-        // tx.commit().await?;
+            // Insert the current version of the software
+            tx.execute(
+                "INSERT INTO client_version (client_version) VALUES (?1)",
+                [env!("VERGEN_GIT_SEMVER")],
+            )?;
 
-        // Ok(Storage {
-        //     pool,
-        //     uncommitted_height: Arc::new(Mutex::new(None)),
-        //     scanned_notes_tx: broadcast::channel(128).0,
-        //     scanned_nullifiers_tx: broadcast::channel(512).0,
-        //     scanned_swaps_tx: broadcast::channel(128).0,
-        // })
-        todo!("initialize")
+            tx.commit()?;
+            drop(lock);
+
+            Ok(Storage {
+                conn,
+                uncommitted_height: Arc::new(Mutex::new(None)),
+                scanned_notes_tx: broadcast::channel(128).0,
+                scanned_nullifiers_tx: broadcast::channel(512).0,
+                scanned_swaps_tx: broadcast::channel(128).0,
+            })
+        })
+        .await?
     }
 
     /// Query for account balance by address
@@ -199,11 +222,11 @@ impl Storage {
     }
 
     /// Query for a note by its note commitment, optionally waiting until the note is detected.
-    pub fn note_by_commitment(
+    pub async fn note_by_commitment(
         &self,
         note_commitment: tct::Commitment,
         await_detection: bool,
-    ) -> impl Future<Output = anyhow::Result<SpendableNoteRecord>> {
+    ) -> anyhow::Result<SpendableNoteRecord> {
         // Start subscribing now, before querying for whether we already
         // have the record, so that we can't miss it if we race a write.
         let mut rx = self.scanned_notes_tx.subscribe();
@@ -274,11 +297,11 @@ impl Storage {
     }
 
     /// Query for a swap by its swap commitment, optionally waiting until the note is detected.
-    pub fn swap_by_commitment(
+    pub async fn swap_by_commitment(
         &self,
         swap_commitment: tct::Commitment,
         await_detection: bool,
-    ) -> impl Future<Output = anyhow::Result<SwapRecord>> {
+    ) -> anyhow::Result<SwapRecord> {
         // Start subscribing now, before querying for whether we already
         // have the record, so that we can't miss it if we race a write.
         let mut rx = self.scanned_swaps_tx.subscribe();
@@ -335,17 +358,17 @@ impl Storage {
     }
 
     /// Query for a nullifier's status, optionally waiting until the nullifier is detected.
-    pub fn nullifier_status(
+    pub async fn nullifier_status(
         &self,
         nullifier: Nullifier,
         await_detection: bool,
-    ) -> impl Future<Output = anyhow::Result<bool>> {
+    ) -> anyhow::Result<bool> {
         // Start subscribing now, before querying for whether we already have the nullifier, so we
         // can't miss it if we race a write.
         let mut rx = self.scanned_nullifiers_tx.subscribe();
 
         // Clone the pool handle so that the returned future is 'static
-        let pool = self.pool.clone();
+        let pool = self.conn.clone();
 
         let nullifier_bytes = nullifier.0.to_bytes().to_vec();
 
@@ -494,6 +517,7 @@ impl Storage {
         // Ok(output)
         todo!("transaction_hashes")
     }
+
     /// Returns a tuple of (block height, transaction hash, transaction) for all transactions in a given range of block heights.
     pub async fn transactions(
         &self,
@@ -545,17 +569,17 @@ impl Storage {
     }
 
     // Query for a note by its note commitment, optionally waiting until the note is detected.
-    pub fn note_by_nullifier(
+    pub async fn note_by_nullifier(
         &self,
         nullifier: Nullifier,
         await_detection: bool,
-    ) -> impl Future<Output = anyhow::Result<SpendableNoteRecord>> {
+    ) -> anyhow::Result<SpendableNoteRecord> {
         // Start subscribing now, before querying for whether we already
         // have the record, so that we can't miss it if we race a write.
         let mut rx = self.scanned_notes_tx.subscribe();
 
         // Clone the pool handle so that the returned future is 'static
-        let pool = self.pool.clone();
+        let pool = self.conn.clone();
 
         let nullifier_bytes = nullifier.to_bytes().to_vec();
         // async move {

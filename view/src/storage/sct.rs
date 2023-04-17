@@ -1,6 +1,7 @@
 use std::ops::Range;
 
 use anyhow::Context as _;
+use genawaiter::{rc::gen, yield_};
 use rusqlite::Transaction;
 
 use penumbra_tct::{
@@ -18,12 +19,13 @@ impl Read for TreeStore<'_, '_> {
     where
         Self: 'a;
 
-    type CommitmentsIter<'a> = Box<dyn Iterator<Item = Result<(Position, Commitment), Self::Error>> + 'a>
+    type CommitmentsIter<'a> = Box<dyn Iterator<Item = Result<(Position, Commitment), Self::Error>>
+        + 'a>
     where
         Self: 'a;
 
     fn position(&mut self) -> Result<StoredPosition, Self::Error> {
-        let stmt = self
+        let mut stmt = self
             .0
             .prepare_cached("SELECT position FROM sct_position LIMIT 1")
             .context("failed to prepare position query")?;
@@ -36,7 +38,7 @@ impl Read for TreeStore<'_, '_> {
     }
 
     fn forgotten(&mut self) -> Result<Forgotten, Self::Error> {
-        let stmt = self
+        let mut stmt = self
             .0
             .prepare_cached("SELECT forgotten FROM sct_forgotten LIMIT 1")
             .context("failed to prepare forgotten query")?;
@@ -50,7 +52,7 @@ impl Read for TreeStore<'_, '_> {
     fn hash(&mut self, position: Position, height: u8) -> Result<Option<Hash>, Self::Error> {
         let position = u64::from(position) as i64;
 
-        let stmt = self
+        let mut stmt = self
             .0
             .prepare_cached(
                 "SELECT hash FROM sct_hashes WHERE position = ?1 AND height = ?2 LIMIT 1",
@@ -60,57 +62,69 @@ impl Read for TreeStore<'_, '_> {
             .query_row::<Option<Vec<u8>>, _, _>((&position, &height), |row| row.get(0))
             .context("failed to query hash")?;
 
-        Ok(bytes
+        bytes
             .map(|bytes| {
                 <[u8; 32]>::try_from(bytes)
                     .map_err(|_| anyhow::anyhow!("hash was of incorrect length"))
                     .and_then(|array| Hash::from_bytes(array).map_err(Into::into))
             })
-            .transpose()?)
+            .transpose()
     }
 
     fn hashes(&mut self) -> Self::HashesIter<'_> {
-        let mut stmt = match self
-            .0
-            .prepare_cached("SELECT position, height, hash FROM sct_hashes")
-            .context("failed to prepare hashes query")
-        {
-            Ok(stmt) => stmt,
-            // If an error happens while preparing the statement, shove it inside the first returned
-            // item of the iterator, because we can't return an outer error:
-            Err(e) => return Box::new(std::iter::once(Err(e))),
-        };
+        // The iterator has to *own* the stmt because the rows borrow from it, so we use the
+        // `genawaiter` crate to shove the entire preparation of the iterator into an (implicit)
+        // async block, which handles the desuguaring to properly own the stmt for us.
+        Box::new(
+            gen!({
+                let mut stmt = match self
+                    .0
+                    .prepare_cached("SELECT position, height, hash FROM sct_hashes")
+                    .context("failed to prepare hashes query")
+                {
+                    Ok(stmt) => stmt,
+                    // If an error happens while preparing the statement, shove it inside the first returned
+                    // item of the iterator, because we can't return an outer error:
+                    Err(e) => {
+                        yield_!(Err(e));
+                        return;
+                    }
+                };
 
-        let rows = match stmt
-            .query_map([], |row| {
-                let position: i64 = row.get(0)?;
-                let height: u8 = row.get(1)?;
-                let hash: Vec<u8> = row.get(2)?;
-                Ok((position, height, hash))
-            })
-            .context("couldn't query database")
-        {
-            Ok(rows) => rows,
-            // If an error happens while querying the database, shove it inside the first
-            // returned item of the iterator, because we can't return an outer error:
-            Err(e) => return Box::new(std::iter::once(Err(e))),
-        };
+                let rows = match stmt
+                    .query_and_then([], |row| {
+                        let position: i64 = row.get(0)?;
+                        let height: u8 = row.get(1)?;
+                        let hash: Vec<u8> = row.get(2)?;
+                        let hash = <[u8; 32]>::try_from(hash)
+                            .map_err(|_| anyhow::anyhow!("hash was of incorrect length"))
+                            .and_then(move |array| Hash::from_bytes(array).map_err(Into::into))?;
+                        Ok::<_, anyhow::Error>((Position::from(position as u64), height, hash))
+                    })
+                    .context("couldn't query database")
+                {
+                    Ok(rows) => rows,
+                    // If an error happens while querying the database, shove it inside the first
+                    // returned item of the iterator, because we can't return an outer error:
+                    Err(e) => {
+                        yield_!(Err(e));
+                        return;
+                    }
+                };
 
-        Box::new(rows.map(|result| {
-            let result = result.context("couldn't get position, height, or hash");
-            result.and_then(|(position, height, hash)| {
-                let hash = <[u8; 32]>::try_from(hash)
-                    .map_err(|_| anyhow::anyhow!("hash was of incorrect length"))
-                    .and_then(|array| Hash::from_bytes(array).map_err(Into::into))?;
-                Ok::<_, anyhow::Error>((Position::from(position as u64), height, hash))
+                // Actually iterate through the rows:
+                for row in rows {
+                    yield_!(row);
+                }
             })
-        }))
+            .into_iter(),
+        )
     }
 
     fn commitment(&mut self, position: Position) -> Result<Option<Commitment>, Self::Error> {
         let position = u64::from(position) as i64;
 
-        let stmt = self
+        let mut stmt = self
             .0
             .prepare_cached("SELECT commitment FROM sct_commitments WHERE position = ?1 LIMIT 1")
             .context("failed to prepare commitment query")?;
@@ -119,50 +133,62 @@ impl Read for TreeStore<'_, '_> {
             .query_row::<Option<Vec<u8>>, _, _>((&position,), |row| row.get(0))
             .context("failed to query commitment")?;
 
-        Ok(bytes
+        bytes
             .map(|bytes| {
                 <[u8; 32]>::try_from(bytes)
                     .map_err(|_| anyhow::anyhow!("commitment was of incorrect length"))
                     .and_then(|array| Commitment::try_from(array).map_err(Into::into))
             })
-            .transpose()?)
+            .transpose()
     }
 
     fn commitments(&mut self) -> Self::CommitmentsIter<'_> {
-        let mut stmt = match self
-            .0
-            .prepare_cached("SELECT position, commitment FROM sct_commitments")
-            .context("failed to prepare commitments query")
-        {
-            Ok(stmt) => stmt,
-            // If an error happens while preparing the statement, shove it inside the first returned
-            // item of the iterator, because we can't return an outer error:
-            Err(e) => return Box::new(std::iter::once(Err(e))),
-        };
+        // The iterator has to *own* the stmt because the rows borrow from it, so we use the
+        // `genawaiter` crate to shove the entire preparation of the iterator into an (implicit)
+        // async block, which handles the desuguaring to properly own the stmt for us.
+        Box::new(
+            gen!({
+                let mut stmt = match self
+                    .0
+                    .prepare_cached("SELECT position, commitment FROM sct_commitments")
+                    .context("failed to prepare commitments query")
+                {
+                    Ok(stmt) => stmt,
+                    // If an error happens while preparing the statement, shove it inside the first returned
+                    // item of the iterator, because we can't return an outer error:
+                    Err(e) => {
+                        yield_!(Err(e));
+                        return;
+                    }
+                };
 
-        let rows = match stmt
-            .query_map([], |row| {
-                let position: i64 = row.get(0)?;
-                let commitment: Vec<u8> = row.get(1)?;
-                Ok((position, commitment))
-            })
-            .context("couldn't query database")
-        {
-            Ok(rows) => rows,
-            // If an error happens while querying the database, shove it inside the first
-            // returned item of the iterator, because we can't return an outer error:
-            Err(e) => return Box::new(std::iter::once(Err(e))),
-        };
+                let rows = match stmt
+                    .query_and_then([], |row| {
+                        let position: i64 = row.get(0)?;
+                        let commitment: Vec<u8> = row.get(1)?;
+                        let commitment = <[u8; 32]>::try_from(commitment)
+                            .map_err(|_| anyhow::anyhow!("commitment was of incorrect length"))
+                            .and_then(|array| Commitment::try_from(array).map_err(Into::into))?;
+                        Ok::<_, anyhow::Error>((Position::from(position as u64), commitment))
+                    })
+                    .context("couldn't query database")
+                {
+                    Ok(rows) => rows,
+                    // If an error happens while querying the database, shove it inside the first
+                    // returned item of the iterator, because we can't return an outer error:
+                    Err(e) => {
+                        yield_!(Err(e));
+                        return;
+                    }
+                };
 
-        Box::new(rows.map(|result| {
-            let result = result.context("couldn't get position or commitment");
-            result.and_then(|(position, commitment)| {
-                let commitment = <[u8; 32]>::try_from(commitment)
-                    .map_err(|_| anyhow::anyhow!("commitment was of incorrect length"))
-                    .and_then(|array| Commitment::try_from(array).map_err(Into::into))?;
-                Ok::<_, anyhow::Error>((Position::from(position as u64), commitment))
+                // Actually iterate through the rows:
+                for row in rows {
+                    yield_!(row);
+                }
             })
-        }))
+            .into_iter(),
+        )
     }
 }
 
@@ -173,7 +199,7 @@ impl Write for TreeStore<'_, '_> {
         self.0
             .prepare_cached("UPDATE sct_position SET position = ?1")
             .context("failed to prepare position update")?
-            .execute(&[&position]);
+            .execute([&position])?;
 
         Ok(())
     }
@@ -184,7 +210,7 @@ impl Write for TreeStore<'_, '_> {
         self.0
             .prepare_cached("UPDATE sct_position SET forgotten = ?1")
             .context("failed to prepare forgotten update")?
-            .execute(&[&forgotten]);
+            .execute([&forgotten])?;
 
         Ok(())
     }

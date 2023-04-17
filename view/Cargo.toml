@@ -53,6 +53,7 @@ tendermint = "0.29.0"
 sha2 = "0.10.1"
 ed25519-consensus = "2.1"
 rusqlite = "0.29"
+genawaiter = "0.99"
 
 [build-dependencies]
 vergen = "5"

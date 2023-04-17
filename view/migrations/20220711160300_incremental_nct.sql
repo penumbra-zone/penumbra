@@ -1,6 +1,3 @@
--- don't use the old sct single-blob table
-DROP TABLE IF EXISTS state_commitment_tree;
-
 -- the shape information about the sct
 CREATE TABLE sct_position ( position BIGINT );
 INSERT INTO sct_position VALUES ( 0 ); -- starting position is 0
