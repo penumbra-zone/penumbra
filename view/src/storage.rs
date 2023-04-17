@@ -14,6 +14,7 @@ use penumbra_proto::{
     client::v1alpha1::{
         oblivious_query_service_client::ObliviousQueryServiceClient, ChainParametersRequest,
     },
+    core::transaction::v1alpha1::Spend,
     DomainType,
 };
 use penumbra_tct as tct;
@@ -655,76 +656,77 @@ impl Storage {
         let mut rx = self.scanned_notes_tx.subscribe();
 
         // Clone the pool handle so that the returned future is 'static
-        let pool = self.conn.clone();
+        let conn = self.conn.clone();
 
         let nullifier_bytes = nullifier.to_bytes().to_vec();
-        // async move {
-        //     // Check if we already have the note
-        //     if let Some(record) = sqlx::query_as::<_, SpendableNoteRecord>(
-        //         // TODO: would really be better to use a prepared statement here rather than manually
-        //         // quoting the nullifier bytes. tried to get the `sqlx::query_as!` macro to work
-        //         // but the types didn't work out easily.
-        //         format!(
-        //             "SELECT
-        //                 notes.note_commitment,
-        //                 spendable_notes.height_created,
-        //                 notes.address,
-        //                 notes.amount,
-        //                 notes.asset_id,
-        //                 notes.rseed,
-        //                 spendable_notes.address_index,
-        //                 spendable_notes.source,
-        //                 spendable_notes.height_spent,
-        //                 spendable_notes.nullifier,
-        //                 spendable_notes.position
-        //             FROM notes
-        //             JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
-        //             WHERE hex(spendable_notes.nullifier) = \"{}\"",
-        //             hex::encode_upper(nullifier_bytes)
-        //         )
-        //         .as_str(),
-        //     )
-        //     .fetch_optional(&pool)
-        //     .await?
-        //     {
-        //         return Ok(record);
-        //     }
 
-        //     if !await_detection {
-        //         return Err(anyhow!(
-        //             "Note commitment for nullifier {:?} not found",
-        //             nullifier
-        //         ));
-        //     }
+        if let Some(record) = spawn_blocking(move || {
+            let lock = conn.lock();
 
-        //     // Otherwise, wait for newly detected notes and check whether they're
-        //     // the requested one.
+            let mut stmt = lock.prepare_cached(&format!(
+                "SELECT
+                    notes.note_commitment,
+                    spendable_notes.height_created,
+                    notes.address,
+                    notes.amount,
+                    notes.asset_id,
+                    notes.rseed,
+                    spendable_notes.address_index,
+                    spendable_notes.source,
+                    spendable_notes.height_spent,
+                    spendable_notes.nullifier,
+                    spendable_notes.position
+                FROM notes
+                JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
+                WHERE hex(spendable_notes.nullifier) = \"{}\"",
+                hex::encode_upper(nullifier_bytes)
+            ))?;
 
-        //     loop {
-        //         match rx.recv().await {
-        //             Ok(record) => {
-        //                 if record.nullifier == nullifier {
-        //                     return Ok(record);
-        //                 }
-        //             }
+            let record: Option<SpendableNoteRecord> = stmt
+                .query_and_then((), |row| SpendableNoteRecord::try_from(row))?
+                .next()
+                .transpose()?;
 
-        //             Err(e) => match e {
-        //                 RecvError::Closed => {
-        //                     return Err(anyhow!(
-        //                     "Receiver error during note detection: closed (no more active senders)"
-        //                 ))
-        //                 }
-        //                 RecvError::Lagged(count) => {
-        //                     return Err(anyhow!(
-        //                         "Receiver error during note detection: lagged (by {:?} messages)",
-        //                         count
-        //                     ))
-        //                 }
-        //             },
-        //         };
-        //     }
-        // }
-        todo!("note_by_nullifier")
+            Ok::<_, anyhow::Error>(record)
+        })
+        .await??
+        {
+            return Ok(record);
+        }
+
+        if !await_detection {
+            return Err(anyhow!(
+                "Note commitment for nullifier {:?} not found",
+                nullifier
+            ));
+        }
+
+        // Otherwise, wait for newly detected notes and check whether they're
+        // the requested one.
+
+        loop {
+            match rx.recv().await {
+                Ok(record) => {
+                    if record.nullifier == nullifier {
+                        return Ok(record);
+                    }
+                }
+
+                Err(e) => match e {
+                    RecvError::Closed => {
+                        return Err(anyhow!(
+                            "Receiver error during note detection: closed (no more active senders)"
+                        ))
+                    }
+                    RecvError::Lagged(count) => {
+                        return Err(anyhow!(
+                            "Receiver error during note detection: lagged (by {:?} messages)",
+                            count
+                        ))
+                    }
+                },
+            };
+        }
     }
 
     pub async fn all_assets(&self) -> anyhow::Result<Vec<Asset>> {
