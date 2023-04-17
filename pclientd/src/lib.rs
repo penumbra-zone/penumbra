@@ -120,7 +120,7 @@ impl Opt {
 
         fs::create_dir_all(&self.home)?;
 
-        Ok(Storage::initialize(&self.sqlite_path(), fvk.clone(), params).await?)
+        Storage::initialize(Some(self.sqlite_path()), fvk.clone(), params).await
     }
 
     async fn load_or_init_sqlite(&self, fvk: &FullViewingKey) -> Result<Storage> {
