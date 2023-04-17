@@ -18,7 +18,7 @@ use penumbra_proto::{
 };
 use penumbra_tct as tct;
 use penumbra_transaction::Transaction;
-use rusqlite::OpenFlags;
+use rusqlite::{OpenFlags, OptionalExtension};
 use sha2::{Digest, Sha256};
 use std::{collections::BTreeMap, num::NonZeroU64, str::FromStr, sync::Arc};
 use tct::Commitment;
@@ -352,8 +352,7 @@ impl Storage {
 
             // Check if we already have the note
             let mut stmt = lock.prepare_cached(&format!(
-                "SELECT * FROM swaps
-                WHERE swaps.swap_commitment = x'{}'",
+                "SELECT * FROM swaps WHERE swaps.swap_commitment = x'{}'",
                 hex::encode(swap_commitment.0.to_bytes())
             ))?;
 
@@ -414,44 +413,52 @@ impl Storage {
         let mut rx = self.scanned_nullifiers_tx.subscribe();
 
         // Clone the pool handle so that the returned future is 'static
-        let pool = self.conn.clone();
+        let conn = self.conn.clone();
 
         let nullifier_bytes = nullifier.0.to_bytes().to_vec();
 
-        // async move {
-        //     // Check if we already have the nullifier in the set of spent notes
-        //     if let Some(record) = sqlx::query!(
-        //         "SELECT nullifier, height_spent FROM spendable_notes WHERE nullifier = ?",
-        //         nullifier_bytes,
-        //     )
-        //     .fetch_optional(&pool)
-        //     .await?
-        //     {
-        //         let spent = record.height_spent.is_some();
+        // Check if we already have the nullifier in the set of spent notes
+        if let Some(height_spent) = spawn_blocking(move || {
+            let lock = conn.lock();
 
-        //         // If we're awaiting detection and the nullifier isn't yet spent, don't return just yet
-        //         if !await_detection || spent {
-        //             return Ok(spent);
-        //         }
-        //     }
+            let mut stmt = lock
+                .prepare_cached("SELECT height_spent FROM spendable_notes WHERE nullifier = ?1")?;
 
-        //     // After checking the database, if we didn't find it, return `false` unless we are to
-        //     // await detection
-        //     if !await_detection {
-        //         return Ok(false);
-        //     }
+            let record: Option<Option<u64>> = stmt
+                .query_and_then([nullifier_bytes], |row| {
+                    let height_spent: Option<u64> = row.get(1)?;
+                    Ok::<_, anyhow::Error>(height_spent)
+                })?
+                .next()
+                .transpose()?;
 
-        //     // Otherwise, wait for newly detected nullifiers and check whether they're the requested
-        //     // one.
-        //     loop {
-        //         let new_nullifier = rx.recv().await.context("Change subscriber failed")?;
+            Ok::<_, anyhow::Error>(record)
+        })
+        .await??
+        {
+            let spent = height_spent.is_some();
 
-        //         if new_nullifier == nullifier {
-        //             return Ok(true);
-        //         }
-        //     }
-        // }
-        todo!("nullifier_status")
+            // If we're awaiting detection and the nullifier isn't yet spent, don't return just yet
+            if !await_detection || spent {
+                return Ok(spent);
+            }
+        }
+
+        // After checking the database, if we didn't find it, return `false` unless we are to
+        // await detection
+        if !await_detection {
+            return Ok(false);
+        }
+
+        // Otherwise, wait for newly detected nullifiers and check whether they're the requested
+        // one.
+        loop {
+            let new_nullifier = rx.recv().await.context("Change subscriber failed")?;
+
+            if new_nullifier == nullifier {
+                return Ok(true);
+            }
+        }
     }
 
     /// The last block height we've scanned to, if any.
@@ -461,70 +468,72 @@ impl Storage {
             return Ok(Some(height.get()));
         }
 
-        // let result = sqlx::query!(
-        //     r#"
-        //     SELECT height
-        //     FROM sync_height
-        //     ORDER BY height DESC
-        //     LIMIT 1
-        // "#
-        // )
-        // .fetch_one(&self.pool)
-        // .await?;
+        let conn = self.conn.clone();
 
-        // // Special-case negative values to None
-        // Ok(u64::try_from(
-        //     result
-        //         .height
-        //         .ok_or_else(|| anyhow!("missing sync height"))?,
-        // )
-        // .ok())
-        todo!("last_sync_height")
+        spawn_blocking(move || {
+            let lock = conn.lock();
+
+            let mut stmt =
+                lock.prepare_cached("SELECT height FROM sync_height ORDER BY height DESC LIMIT 1")?;
+
+            let height: Option<i64> = stmt.query_row([], |row| row.get::<_, Option<i64>>(0))?;
+
+            Ok::<_, anyhow::Error>(
+                u64::try_from(height.ok_or_else(|| anyhow!("missing sync height"))?).ok(),
+            )
+        })
+        .await?
     }
 
     pub async fn chain_params(&self) -> anyhow::Result<ChainParameters> {
-        // let result = query!(
-        //     r#"
-        //     SELECT bytes
-        //     FROM chain_params
-        //     LIMIT 1
-        // "#
-        // )
-        // .fetch_one(&self.pool)
-        // .await?;
+        let conn = self.conn.clone();
 
-        // ChainParameters::decode(result.bytes.as_slice())
-        todo!("chain_params")
+        spawn_blocking(move || {
+            let lock = conn.lock();
+
+            let mut stmt = lock.prepare_cached("SELECT bytes FROM chain_params LIMIT 1")?;
+
+            let result: Option<Vec<u8>> = stmt.query_row([], |row| row.get(0))?;
+
+            let bytes = result.ok_or_else(|| anyhow!("missing chain params"))?;
+
+            ChainParameters::decode(bytes.as_slice())
+        })
+        .await?
     }
 
     pub async fn fmd_parameters(&self) -> anyhow::Result<FmdParameters> {
-        // let result = query!(
-        //     r#"
-        //     SELECT bytes
-        //     FROM fmd_parameters
-        //     LIMIT 1
-        // "#
-        // )
-        // .fetch_one(&self.pool)
-        // .await?;
+        let conn = self.conn.clone();
 
-        // FmdParameters::decode(result.bytes.as_slice())
-        todo!("fmd_parameters")
+        spawn_blocking(move || {
+            let lock = conn.lock();
+
+            let mut stmt = lock.prepare_cached("SELECT bytes FROM fmd_parameters LIMIT 1")?;
+
+            let result: Option<Vec<u8>> = stmt.query_row([], |row| row.get(0))?;
+
+            let bytes = result.ok_or_else(|| anyhow!("missing fmd parameters"))?;
+
+            FmdParameters::decode(bytes.as_slice())
+        })
+        .await?
     }
 
     pub async fn full_viewing_key(&self) -> anyhow::Result<FullViewingKey> {
-        // let result = query!(
-        //     r#"
-        //     SELECT bytes
-        //     FROM full_viewing_key
-        //     LIMIT 1
-        //     "#
-        // )
-        // .fetch_one(&self.pool)
-        // .await?;
+        let conn = self.conn.clone();
 
-        // FullViewingKey::decode(result.bytes.as_slice())
-        todo!("full_viewing_key")
+        spawn_blocking(move || {
+            let lock = conn.lock();
+
+            let mut stmt = lock.prepare_cached("SELECT bytes FROM full_viewing_key LIMIT 1")?;
+
+            let result: Option<Vec<u8>> = stmt.query_row([], |row| row.get(0))?;
+
+            let bytes = result.ok_or_else(|| anyhow!("missing full viewing key"))?;
+
+            FullViewingKey::decode(bytes.as_slice())
+        })
+        .await?
     }
 
     pub async fn state_commitment_tree(&self) -> anyhow::Result<tct::Tree> {
@@ -547,24 +556,28 @@ impl Storage {
         let starting_block = start_height.unwrap_or(0) as i64;
         let ending_block = end_height.unwrap_or(self.last_sync_height().await?.unwrap_or(0)) as i64;
 
-        // let result = sqlx::query!(
-        //     "SELECT block_height, tx_hash
-        //     FROM tx
-        //     WHERE block_height BETWEEN ? AND ?",
-        //     starting_block,
-        //     ending_block
-        // )
-        // .fetch_all(&self.pool)
-        // .await?;
+        let conn = self.conn.clone();
 
-        // let mut output: Vec<(u64, Vec<u8>)> = Vec::new();
+        spawn_blocking(move || {
+            let lock = conn.lock();
 
-        // for record in result {
-        //     output.push((record.block_height as u64, record.tx_hash));
-        // }
+            let mut stmt = lock.prepare_cached(
+                "SELECT block_height, tx_hash
+                FROM tx
+                WHERE block_height BETWEEN ?1 AND ?2",
+            )?;
 
-        // Ok(output)
-        todo!("transaction_hashes")
+            let result = stmt
+                .query_and_then([starting_block, ending_block], |row| {
+                    let block_height: u64 = row.get(0)?;
+                    let tx_hash: Vec<u8> = row.get(1)?;
+                    Ok::<_, anyhow::Error>((block_height, tx_hash))
+                })?
+                .collect::<anyhow::Result<Vec<_>>>()?;
+
+            Ok::<_, anyhow::Error>(result)
+        })
+        .await?
     }
 
     /// Returns a tuple of (block height, transaction hash, transaction) for all transactions in a given range of block heights.
@@ -576,45 +589,59 @@ impl Storage {
         let starting_block = start_height.unwrap_or(0) as i64;
         let ending_block = end_height.unwrap_or(self.last_sync_height().await?.unwrap_or(0)) as i64;
 
-        // let result = sqlx::query!(
-        //     "SELECT block_height, tx_hash, tx_bytes
-        //     FROM tx
-        //     WHERE block_height BETWEEN ? AND ?",
-        //     starting_block,
-        //     ending_block
-        // )
-        // .fetch_all(&self.pool)
-        // .await?;
+        let conn = self.conn.clone();
 
-        // let mut output: Vec<(u64, Vec<u8>, Transaction)> = Vec::new();
+        spawn_blocking(move || {
+            let lock = conn.lock();
 
-        // for record in result {
-        //     output.push((
-        //         record.block_height as u64,
-        //         record.tx_hash,
-        //         Transaction::decode(record.tx_bytes.as_slice())?,
-        //     ));
-        // }
+            let mut stmt = lock.prepare_cached(
+                "SELECT block_height, tx_hash, tx_bytes
+                FROM tx
+                WHERE block_height BETWEEN ?1 AND ?2",
+            )?;
 
-        // Ok(output)
-        todo!("transactions")
+            let result = stmt
+                .query_and_then([starting_block, ending_block], |row| {
+                    let block_height: u64 = row.get(0)?;
+                    let tx_hash: Vec<u8> = row.get(1)?;
+                    let tx_bytes: Vec<u8> = row.get(2)?;
+                    let tx = Transaction::decode(tx_bytes.as_slice())?;
+                    Ok::<_, anyhow::Error>((block_height, tx_hash, tx))
+                })?
+                .collect::<anyhow::Result<Vec<_>>>()?;
+
+            Ok::<_, anyhow::Error>(result)
+        })
+        .await?
     }
 
     pub async fn transaction_by_hash(&self, tx_hash: &[u8]) -> anyhow::Result<Option<Transaction>> {
-        // let result = sqlx::query!(
-        //     "SELECT block_height, tx_hash, tx_bytes
-        //     FROM tx
-        //     WHERE tx_hash = ?",
-        //     tx_hash
-        // )
-        // .fetch_optional(&self.pool)
-        // .await?;
+        let conn = self.conn.clone();
+        let tx_hash = tx_hash.to_vec();
 
-        // Ok(match result {
-        //     Some(record) => Some(Transaction::decode(record.tx_bytes.as_slice())?),
-        //     None => None,
-        // })
-        todo!("transaction_by_hash")
+        spawn_blocking(move || {
+            let lock = conn.lock();
+
+            let mut stmt = lock.prepare_cached(
+                "SELECT block_height, tx_hash, tx_bytes
+                FROM tx
+                WHERE tx_hash = ?1",
+            )?;
+
+            let result: Option<(u64, Vec<u8>, Vec<u8>)> = stmt
+                .query_row([tx_hash], |row| {
+                    let block_height: u64 = row.get(0)?;
+                    let tx_hash: Vec<u8> = row.get(1)?;
+                    let tx_bytes: Vec<u8> = row.get(2)?;
+                    Ok((block_height, tx_hash, tx_bytes))
+                })
+                .optional()?;
+
+            Ok::<_, anyhow::Error>(
+                result.map(|(_, _, tx_bytes)| Transaction::decode(tx_bytes.as_slice()).unwrap()),
+            )
+        })
+        .await?
     }
 
     // Query for a note by its note commitment, optionally waiting until the note is detected.
