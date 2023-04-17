@@ -23,7 +23,10 @@ impl DirectedTradingPair {
     }
 
     pub fn flip(&self) -> DirectedTradingPair {
-        DirectedTradingPair { start: self.end, end: self.start}
+        DirectedTradingPair {
+            start: self.end,
+            end: self.start,
+        }
     }
 }
 

@@ -15,8 +15,8 @@ mod test {
 
     use penumbra_crypto::Value;
 
-    use crate::dex::position_manager::PositionManager;
     use crate::dex::position_manager::PositionRead;
+    use crate::dex::{position_manager::PositionManager, router::FillRoute};
     use crate::TempStorageExt;
     use futures::StreamExt;
     use std::sync::Arc;
@@ -624,8 +624,18 @@ mod test {
 
         let spill_price = U128x128::from(1_000_000u64);
 
+        println!("filling route with spill_price = {spill_price}");
+
+        println!("delta_1 = {}", delta_1.amount);
+        println!("delta_2 = 0");
+
         //state_tx.fill_route(delta_1, route, spill_price).await;
-        state_tx.fill_route(input, route, spill_price)
+        let (unfilled, output) =
+            FillRoute::fill_route2(&mut state_tx, delta_1, &route, spill_price)
+                .await
+                .unwrap();
+        println!("total_lambda_1 = {unfilled:?}");
+        println!("total_lambda_2 = {output:?}");
         Ok(())
     }
 }
