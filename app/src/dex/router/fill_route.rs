@@ -288,6 +288,25 @@ pub trait FillRoute: StateWrite + Sized {
                     let r1 = constraining_position.reserves.r1;
                     let r2 = constraining_position.reserves.r2;
 
+                    // There are a couple things to worry about here, let's reason step-by-step:
+                    //      + can constraint resolution generate constraints upstream in the path?
+                    //              example:
+                    //                      S -> A -> B -> C* -> T
+                    //                                      ^_________ C is the constraint
+                    //                                          at this point there are two different approaches:
+                    //                                              -> first one would be to work out what input would exactly fill the constraining position, working backwards
+                    //                                                  to adjust the amount of flow (strictly reducing) and the proceed forward to a filled amount total_lambda_2
+                    //                                              -> the second one, is to fetch the next order in the book that would let us fill the current flow.
+                    //                                                  There are different branches possible here:
+                    //                                                   |   + there are not any other order in the book
+                    //                                                   )   + there are other orders in the book:
+                    //                                                          > there is not enough depth to fill us
+                    //                                                          > there is enough depth:
+                    //                                                                  * the effective_price is similar
+                    //                                                                  * the effective_price is worse:
+                    //                                                                      i.) we fill and get above the spill price
+                    //                                                                      ii) we fill and we're still below the spill price.
+
                     // can we use effective_price?
                     // todo: do we need to save a vec of prices for each hop to
                     // be able to work backwards, rounding up each time?
