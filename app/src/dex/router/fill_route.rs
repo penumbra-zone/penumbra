@@ -9,6 +9,7 @@ use penumbra_crypto::{
     Amount, Value,
 };
 use penumbra_storage::{StateDelta, StateWrite};
+use sha2::digest::consts::U1;
 use tracing::debug;
 
 use crate::dex::{PositionManager, PositionRead};
@@ -143,11 +144,12 @@ pub trait FillRoute: StateWrite + Sized {
         &mut self,
         input: Value,
         route: &[asset::Id],
-    ) -> Result<(Vec<(usize, position::Position)>, U128x128)> {
+    ) -> Result<(Vec<(usize, position::Position)>, Vec<position::Position>)> {
         let mut tmp_state = StateDelta::new(&self);
         let mut constraints: Vec<(usize, position::Position)> = vec![];
         let mut current_input = input.clone();
         let mut effective_price = U128x128::from(1u64);
+        let mut positions: Vec<position::Position> = vec![];
         for (i, next_asset) in route.iter().enumerate().skip(1) {
             println!("{i} with {next_asset:?}");
             let Some(position) = tmp_state
@@ -170,6 +172,7 @@ pub trait FillRoute: StateWrite + Sized {
 
             // Record (and ignore, for now) the effective price along the path.
             effective_price = (effective_price * position_price).unwrap();
+            positions.push(position.clone());
 
             let (unfilled, output) = tmp_state
                 .fill_against(current_input, &position.id())
@@ -196,7 +199,7 @@ pub trait FillRoute: StateWrite + Sized {
             }
             current_input = output;
         }
-        Ok((constraints, effective_price))
+        Ok((constraints, positions))
     }
 
     /// Breaksdown a route into a collection of `DirectedTradingPair`, this is mostly useful
@@ -269,7 +272,12 @@ pub trait FillRoute: StateWrite + Sized {
             // by simulating execution of the max amount on an ephemeral state fork.
             // Writing the results to the new StateDelta ensures that if the path has a cycle,
             // we'll see our own execution changes later in the path.
-            let (constraints, effective_price) = self.find_constraints(input, route).await?;
+            let (constraints, positions) = self.find_constraints(input, route).await?;
+            let effective_price = positions
+                .into_iter()
+                .fold(U128x128::from(1u64), |acc, pos| {
+                    (acc * pos.phi.component.effective_price()).unwrap()
+                });
 
             println!("constraints found!");
 
@@ -316,13 +324,26 @@ pub trait FillRoute: StateWrite + Sized {
                     // how do we simultaneously guarantee that:
                     // - we consume the constraining position's reserves exactly
                     // - we never exceed any other position's reserves when rounding up
-                    todo!("work backwards from reserves_of(route[constraining_index])")
+
+                    let mut lambda_2 = r2;
+                    let segment = &route[0..*constraining_index];
+                    for i in (0..*constraining_index).rev() {
+                        let fillable_delta_1 = constraining_position
+                            .phi
+                            .component
+                            .convert_to_delta_1(lambda_2.into())
+                            .round_up();
+                        lambda_2 = fillable_delta_1.try_into()?;
+                    }
+                    lambda_2
                 }
                 None => {
                     // There's no capacity constraint, we can execute the entire input.
                     input.amount
                 }
             };
+
+            println!("min-flow: delta_1_star = {lambda_2:?}");
 
             // Now execute along the path on the actual state
             let mut current_value = Value {
