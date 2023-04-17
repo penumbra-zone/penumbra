@@ -482,11 +482,14 @@ impl Storage {
     }
 
     pub async fn state_commitment_tree(&self) -> anyhow::Result<tct::Tree> {
-        // let mut tx = self.pool.begin().await?;
-        // let tree = tct::Tree::from_async_reader(&mut TreeStore(&mut tx)).await?;
-        // tx.commit().await?;
-        // Ok(tree)
-        todo!("state_commitment_tree")
+        let conn = self.conn.clone();
+        spawn_blocking(move || {
+            let mut lock = conn.lock();
+            let mut tx = lock.transaction()?;
+            let tree = tct::Tree::from_reader(&mut TreeStore(&mut tx))?;
+            Ok(tree)
+        })
+        .await?
     }
 
     /// Returns a tuple of (block height, transaction hash) for all transactions in a given range of block heights.
