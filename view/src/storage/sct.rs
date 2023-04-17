@@ -208,7 +208,7 @@ impl Write for TreeStore<'_, '_> {
         let forgotten = u64::from(forgotten) as i64;
 
         self.0
-            .prepare_cached("UPDATE sct_position SET forgotten = ?1")
+            .prepare_cached("UPDATE sct_forgotten SET forgotten = ?1")
             .context("failed to prepare forgotten update")?
             .execute([&forgotten])?;
 
@@ -268,5 +268,46 @@ impl Write for TreeStore<'_, '_> {
             .context("failed to delete hashes")?;
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::TreeStore;
+
+    use penumbra_tct::{Commitment, Witness};
+
+    #[test]
+    fn tree_store_spot_check() {
+        // Set up the database:
+        let mut db = rusqlite::Connection::open_in_memory().unwrap();
+        let mut tx = db.transaction().unwrap();
+        tx.execute_batch(include_str!("schema.sql")).unwrap();
+
+        // Now we're exclusively going to talk to the db through the TreeStore:
+        let mut store = TreeStore(&mut tx);
+
+        // Check that the currently stored tree is the empty tree:
+        let deserialized = penumbra_tct::Tree::from_reader(&mut store).unwrap();
+        assert_eq!(deserialized, penumbra_tct::Tree::new());
+
+        // Make some kind of tree:
+        let mut tree = penumbra_tct::Tree::new();
+        tree.insert(Witness::Keep, Commitment::try_from([0; 32]).unwrap())
+            .unwrap();
+        tree.end_block().unwrap();
+        tree.insert(Witness::Forget, Commitment::try_from([1; 32]).unwrap())
+            .unwrap();
+        tree.end_epoch().unwrap();
+        tree.insert(Witness::Keep, Commitment::try_from([2; 32]).unwrap())
+            .unwrap();
+
+        // Write the tree to the database:
+        tree.to_writer(&mut store).unwrap();
+
+        // Read the tree back from the database:
+        let deserialized = penumbra_tct::Tree::from_reader(&mut store).unwrap();
+
+        assert_eq!(tree, deserialized);
     }
 }
