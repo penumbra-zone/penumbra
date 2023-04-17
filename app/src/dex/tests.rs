@@ -492,6 +492,19 @@ mod test {
         let storage = TempStorage::new().await?.apply_default_genesis().await?;
         let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
         let mut state_tx = state.try_begin_transaction().unwrap();
+        /*
+                ------------------------------------------------------------------------------------------------------------
+                |       Pair 1: gm <> gn       |       Pair 2: gn <> penumbra        |       Pair 3: pusd <> penumbra      |
+                ------------------------------------------------------------------------------------------------------------
+                |       100gm@1                |       53gn@100                      |       1500penumbra@1445             |
+                |       120gm@1                |       54gn@100                      |       10penumbra@1450               |
+                |       50gm@1                 |       55gn@100                      |                                     |
+                | ^-bids---------asks-v        |   ^-bids---------asks-v             |   ^-bids---------asks-v             |
+                |       10gn@1                 |       54gn@101                      |       5000penumbra@1500             |
+                |       100gn@1                |       1000gn@102                    |       1penumbra@1550                |
+                |       50gn@1                 |                                     |                                     |
+                ------------------------------------------------------------------------------------------------------------
+        */
 
         let gm = asset::REGISTRY.parse_unit("gm");
         let gn = asset::REGISTRY.parse_unit("gn");
@@ -508,19 +521,7 @@ mod test {
         let pair_3 = DirectedTradingPair::new(penumbra.id(), pusd.id());
 
         /*
-
-                 Pair 1                 Pair 2                Pair 3
-                --------------------   -------------------   -------------------
-                Bids       Asks         Bids         Asks       Bids                Asks
-                --------------------   -------------------   --------------------------
-                50gm@1     10gn@1     55gn@100    54gn@101   1penumbra@1450      5000penumbra@1500
-                120gm@1    100gn@1    54gn@100    1000gn@102 1500penumbra@1445      1penumbra@1550
-                100gm@1    50gn@1     53gn@100
-
-        */
-
-        /*
-            * pair 1: gm <> gn
+         * pair 1: gm <> gn
                     100gm@1
                     120gm@1
                     50gm@1
@@ -528,7 +529,6 @@ mod test {
                     10gn@1
                     100gn@1
                     50gn@1
-
         */
 
         let one = (1u64.into(), 1u64.into());
@@ -552,15 +552,14 @@ mod test {
         /*
 
         * pair 2: gn <> penumbra
-                53gn@100
-                54gn@100
-                55gn@100
-            ^-bids---------asks-v
-                 54gn@101
-                 1000gn@102
+             53gn@100
+             54gn@100
+             55gn@100
+         ^-bids---------asks-v
+              54gn@101
+              1000gn@102
 
-
-                 */
+        */
 
         let price100 = (100u64.into(), 1u64.into());
         let price101i = (1u64.into(), 101u64.into());
@@ -582,14 +581,13 @@ mod test {
 
         /*
 
-            * pair 3: pusd <> penumbra
+
+        * pair 3: pusd <> penumbra
                 1500penumbra@1445
                 10penumbra@1450
             ^-bids---------asks-v
-                5penumbra@1500
-                1000penumbra@1550
-
-                2023-04-15T02:36:41.342718Z DEBUG put_position{id=plpid1zfuh5n5tqvqevxppw3vcwvd7z248zn5065cz3wg5uxjpa2thm3esyv0f3n}: penumbra_app::dex::position_manager: position=Position { state: Opened, reserves: Reserves { r1: 1000, r2: 0 }, phi: TradingFunction { component: BareTradingFunction { fee: 0, p: 1, q: 102 }, pair: TradingPair { asset_1: passet1984fctenw8m2fpl8a9wzguzp7j34d7vravryuhft808nyt9fdggqxmanqm, asset_2: passet1nupu8yg2kua09ec8qxfsl60xhafp7mmpsjv9pgp50t20hm6pkygscjcqn2 } }, nonce: "a5ef7097a09c31f0e0057058ead299369b7f1845846e2c89a04637f67c067db2" }
+                5000penumbra@1500
+                1penumbra@1550
         */
 
         let price1450 = (1450u64.into(), 1u64.into());
