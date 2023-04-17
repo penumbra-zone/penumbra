@@ -274,6 +274,7 @@ pub trait FillRoute: StateWrite + Sized {
             // we'll see our own execution changes later in the path.
             let (constraints, positions) = self.find_constraints(input, route).await?;
             let effective_price = positions
+                .clone()
                 .into_iter()
                 .fold(U128x128::from(1u64), |acc, pos| {
                     (acc * pos.phi.component.effective_price()).unwrap()
@@ -324,17 +325,19 @@ pub trait FillRoute: StateWrite + Sized {
                     // how do we simultaneously guarantee that:
                     // - we consume the constraining position's reserves exactly
                     // - we never exceed any other position's reserves when rounding up
-
                     let mut lambda_2 = r2;
-                    let segment = &route[0..*constraining_index];
-                    for i in (0..*constraining_index).rev() {
-                        let fillable_delta_1 = constraining_position
+                    let segment = &positions[0..*constraining_index];
+                    for p in segment.iter().rev() {
+                        println!("with {p:?}");
+                        let fillable_delta_1 = p
                             .phi
                             .component
                             .convert_to_delta_1(lambda_2.into())
                             .round_up();
+                        println!("for lambda_2: {lambda_2:?}, delta_1 = {fillable_delta_1:?}");
                         lambda_2 = fillable_delta_1.try_into()?;
                     }
+                    println!("min-flow: delta_1_star = {lambda_2:?}");
                     lambda_2
                 }
                 None => {
@@ -343,14 +346,12 @@ pub trait FillRoute: StateWrite + Sized {
                 }
             };
 
-            println!("min-flow: delta_1_star = {lambda_2:?}");
-
             // Now execute along the path on the actual state
             let mut current_value = Value {
                 amount: input_capacity,
                 asset_id: input.asset_id,
             };
-            for next_asset in route.iter() {
+            for next_asset in route.iter().skip(1) {
                 let position = self
                     .best_position(&DirectedTradingPair {
                         start: current_value.asset_id,
@@ -359,7 +360,11 @@ pub trait FillRoute: StateWrite + Sized {
                     .await?
                     .ok_or_else(|| anyhow::anyhow!("unexpectedly missing position"))?;
 
-                let (unfilled, output) = self.fill_against(input, &position.id()).await?;
+                println!("delta_1={input:?}");
+                println!("delta_2=0");
+                let (unfilled, output) = self.fill_against(current_value, &position.id()).await?;
+                println!("lambda_1={unfilled:?}");
+                println!("lambda_2={output:?}");
                 // If there's an unfilled input, that means we were constrained on this leg of the path.
                 if unfilled.amount > 0u64.into() {
                     return Err(anyhow::anyhow!(
