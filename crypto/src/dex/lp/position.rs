@@ -326,3 +326,149 @@ impl TryFrom<pb::Position> for Position {
         })
     }
 }
+
+#[cfg(test)]
+mod test {
+    use ark_ff::Zero;
+    use rand_core::OsRng;
+
+    use super::*;
+
+    fn assert_position_similar(p1: Position, p2: Position) {
+        assert_eq!(p1.reserves.r1, p2.reserves.r1);
+        assert_eq!(p1.reserves.r2, p2.reserves.r2);
+        assert_eq!(p1.phi.component.p, p2.phi.component.p);
+        assert_eq!(p1.phi.component.q, p2.phi.component.q);
+    }
+
+    fn assert_position_not_similar(p1: Position, p2: Position) {
+        let different_reserves = p1.reserves.r1 != p2.reserves.r1;
+        let different_reserves = different_reserves || p1.reserves.r2 != p2.reserves.r2;
+        let different_prices = p1.phi.component.p != p2.phi.component.p;
+        let different_prices = different_prices || p1.phi.component.q != p2.phi.component.q;
+        assert!(different_prices || different_reserves);
+    }
+    #[test]
+    fn test_position() {
+        let small_id = crate::asset::Id(crate::Fq::zero());
+        let big_id = crate::asset::Id(crate::Fq::from(1u64));
+
+        let pair_1 = DirectedTradingPair::new(small_id, big_id);
+        let pair_2 = DirectedTradingPair::new(big_id, small_id);
+
+        let price100i: (Amount, Amount) = (1u64.into(), 100u64.into());
+
+        /*
+           We create four positions per pair, where id(A) < id(B):
+               + Case 1: for pair 1 (A -> B):
+                   * position 1: provisions 150 units of asset 1 (A) at a price of 1/100.
+                   * position 2: provisions 150 units of asset 2 (B) at a price of 100.
+                   * position 3: provisions 150 units of asset 1 (A) at a price of 100.
+                   * position 4: provisions 150 units of asset 2 (B) at a price of 1/100.
+               + Case 2: for pair 2 (B -> A):
+                   * position 1: provisions 150 units of asset 1 (B) at a price of 1/100.
+                   * position 2: provisions 150 units fo asset 2 (A) at a price of 100.
+                   * position 3: provisions 150 units of asset 1 (B) at a price of 100.
+                   * position 4: provisions 150 units of asset 2 (A) at a price of 1/100.
+
+           We want to check that:
+               1. Case_1.p1 != Case_2.p2
+               2. Case_1.p2 != Case_2.p1
+               3. Case_1.p3 == Case_2.p2
+               4. Case_1.p4 == Case_2.p1
+               5. Case_2.p3 == Case_1.p2
+               6. Case_2.p4 == Case_1.p1
+        */
+
+        let reserves_1 = Reserves {
+            r1: 150u64.into(),
+            r2: 0u64.into(),
+        };
+
+        let reserves_2 = reserves_1.flip();
+
+        let a_position_1 = Position::new(
+            OsRng,
+            pair_1,
+            0u32,
+            price100i.0,
+            price100i.1,
+            reserves_1.clone(),
+        );
+        let a_position_2 = Position::new(
+            OsRng,
+            pair_1,
+            0u32,
+            price100i.0,
+            price100i.1,
+            reserves_2.clone(),
+        );
+
+        let a_position_3 = Position::new(
+            OsRng,
+            pair_1,
+            0u32,
+            price100i.1,
+            price100i.0,
+            reserves_1.clone(),
+        );
+        let a_position_4 = Position::new(
+            OsRng,
+            pair_1,
+            0u32,
+            price100i.1,
+            price100i.0,
+            reserves_2.clone(),
+        );
+
+        let b_position_1 = Position::new(
+            OsRng,
+            pair_2,
+            0u32,
+            price100i.0,
+            price100i.1,
+            reserves_1.clone(),
+        );
+        let b_position_2 = Position::new(
+            OsRng,
+            pair_2,
+            0u32,
+            price100i.0,
+            price100i.1,
+            reserves_2.clone(),
+        );
+
+        let b_position_3 = Position::new(
+            OsRng,
+            pair_2,
+            0u32,
+            price100i.1,
+            price100i.0,
+            reserves_1.clone(),
+        );
+        let b_position_4 = Position::new(
+            OsRng,
+            pair_2,
+            0u32,
+            price100i.1,
+            price100i.0,
+            reserves_2.clone(),
+        );
+
+        /*
+                We want to check that:
+                1. Case_1.p1 != Case_2.p2
+                2. Case_1.p2 != Case_2.p1
+                3. Case_1.p3 == Case_2.p2
+                4. Case_1.p4 == Case_2.p1
+                5. Case_2.p3 == Case_1.p2
+                6. Case_2.p4 == Case_1.p1
+        */
+        assert_position_not_similar(a_position_1.clone(), b_position_2.clone());
+        assert_position_not_similar(a_position_2.clone(), b_position_1.clone());
+        assert_position_similar(a_position_3, b_position_2);
+        assert_position_similar(a_position_4, b_position_1);
+        assert_position_similar(b_position_3, a_position_2);
+        assert_position_similar(b_position_4, a_position_1);
+    }
+}
