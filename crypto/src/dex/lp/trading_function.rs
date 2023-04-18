@@ -36,7 +36,9 @@ impl TradingFunction {
         input: Value,
         reserves: &Reserves,
     ) -> anyhow::Result<(Value, Reserves, Value)> {
+        print!("@@@@@@ input.asset_id {:?}", input.asset_id);
         if input.asset_id == self.pair.asset_1() {
+            println!("is asset_1 of pair");
             let (unfilled, new_reserves, output) = self.component.fill(input.amount, reserves);
             Ok((
                 Value {
@@ -50,6 +52,7 @@ impl TradingFunction {
                 },
             ))
         } else if input.asset_id == self.pair.asset_2() {
+            println!("is asset_2 of pair");
             let flipped_reserves = reserves.flip();
             let (unfilled, new_reserves, output) =
                 self.component.flip().fill(input.amount, &flipped_reserves);
@@ -68,6 +71,39 @@ impl TradingFunction {
             Err(anyhow!(
                 "input asset id {:?} did not match either end of trading pair {:?}",
                 input.asset_id,
+                self.pair
+            ))
+        }
+    }
+
+    pub fn back_fill(&self, output: Value) -> anyhow::Result<Value> {
+        print!("@@@@@@ output.asset_id {:?}", output.asset_id);
+        if output.asset_id == self.pair.asset_1() {
+            println!("is asset_1 of pair");
+            let f = self
+                .component
+                .convert_to_lambda_2(U128x128::from(output.amount))
+                .round_up()
+                .try_into()?;
+            Ok(Value {
+                amount: f,
+                asset_id: self.pair.asset_2(),
+            })
+        } else if output.asset_id == self.pair.asset_2() {
+            println!("is asset_2 of pair");
+            let fillable_delta_1 = self
+                .component
+                .convert_to_delta_1(U128x128::from(output.amount))
+                .round_up()
+                .try_into()?;
+            Ok(Value {
+                amount: fillable_delta_1,
+                asset_id: self.pair.asset_1(),
+            })
+        } else {
+            Err(anyhow!(
+                "output asset id {:?} did not match either end of trading pair {:?}",
+                output.asset_id,
                 self.pair
             ))
         }
@@ -196,8 +232,11 @@ impl BareTradingFunction {
         // perform division.
         let delta_1_fp = U128x128::from(delta_1);
         let tentative_lambda_2 = self.convert_to_lambda_2(delta_1_fp);
+        println!("tentative_lambda_2: {tentative_lambda_2}");
+        println!("reserves: {:?}", reserves.r2);
 
         if tentative_lambda_2 <= reserves.r2.into() {
+            println!("here");
             // Observe that for the case when `tentative_lambda_2` equals
             // `reserves.r1`, rounding it down does not change anything since
             // `reserves.r1` is integral. Therefore `reserves.r1 - lambda_2 >= 0`.
@@ -359,6 +398,10 @@ impl From<BareTradingFunction> for pb::BareTradingFunction {
 
 #[cfg(test)]
 mod tests {
+    use ark_ff::{BigInteger256, FftField, Zero};
+
+    use crate::asset::Id;
+
     use super::*;
 
     #[test]
@@ -509,5 +552,66 @@ mod tests {
 
         assert_eq!(btf.effective_price(), btf.convert_to_delta_1(one));
         assert_eq!(btf.effective_price_inv(), btf.convert_to_lambda_2(one));
+    }
+
+    #[test]
+    /// Test that the `TradingFunction` fills work correctly.
+    fn test_fill_trading_function() {
+        //    pub fn fill(&self, delta_1: Amount, reserves: &Reserves) -> (Amount, Reserves, Amount)
+        let a = Id(crate::Fq::zero());
+        let b = Id(crate::Fq::new(1u64.into()));
+        let c = Id(crate::Fq::new(2u64.into()));
+
+        assert!(a < b);
+        assert!(b < c);
+
+        // First, we test that everything works well when we do a fill from A to B
+        // where id(A) < id(B).
+        let p = Amount::from(1u64);
+        let q = Amount::from(2u64);
+        let phi = TradingFunction::new(TradingPair::new(a, b), 0u32, p, q);
+        let delta_1 = Value {
+            amount: 100u64.into(),
+            asset_id: a,
+        };
+
+        let reserves = Reserves {
+            r1: 0u64.into(),
+            r2: 100u64.into(),
+        };
+
+        let (lambda_1, new_reserves, lambda_2) = phi.fill(delta_1, &reserves).unwrap();
+
+        assert_eq!(lambda_1.amount, Amount::zero());
+        assert_eq!(lambda_1.asset_id, delta_1.asset_id);
+
+        assert_eq!(lambda_2.amount, delta_1.amount);
+        assert_eq!(lambda_2.asset_id, b);
+
+        assert_eq!(new_reserves.r1, Amount::from(100u64));
+        assert_eq!(new_reserves.r2, Amount::zero());
+
+        // Now, we check that we fill correctly from B to A:
+        // where id(A) < id(B).
+        let delta_2 = Value {
+            amount: 100u64.into(),
+            asset_id: b,
+        };
+
+        let reserves = Reserves {
+            r1: 100u64.into(),
+            r2: 0u64.into(),
+        };
+
+        let (lambda_2, new_reserves, lambda_1) = phi.fill(delta_2, &reserves).unwrap();
+
+        assert_eq!(lambda_2.amount, Amount::zero());
+        assert_eq!(lambda_2.asset_id, b);
+
+        assert_eq!(lambda_1.amount, Amount::from(100u64));
+        assert_eq!(lambda_1.asset_id, a);
+
+        assert_eq!(new_reserves.r1, Amount::zero());
+        assert_eq!(new_reserves.r2, Amount::from(100u64));
     }
 }
