@@ -908,35 +908,24 @@ impl Storage {
     }
 
     pub async fn record_asset(&self, asset: Asset) -> anyhow::Result<()> {
-        // let mut tx = self.pool.begin().await?;
-
         let asset_id = asset.id.to_bytes().to_vec();
         let denom = asset.denom.to_string();
 
-        // sqlx::query!(
-        //     "INSERT OR IGNORE INTO assets
-        //             (
-        //                 asset_id,
-        //                 denom
-        //             )
-        //             VALUES
-        //             (
-        //                 ?,
-        //                 ?
-        //             )",
-        //     asset_id,
-        //     denom,
-        // )
-        // .execute(&mut tx)
-        // .await?;
+        let conn = self.conn.clone();
 
-        // tx.commit().await?;
+        spawn_blocking(move || {
+            conn.lock().execute(
+                "INSERT OR IGNORE INTO assets (asset_id, denom) VALUES (?1, ?2)",
+                (asset_id, denom),
+            )
+        })
+        .await??;
 
         Ok(())
     }
 
     pub async fn record_empty_block(&self, height: u64) -> anyhow::Result<()> {
-        //Check that the incoming block height follows the latest recorded height
+        // Check that the incoming block height follows the latest recorded height
         let last_sync_height = self.last_sync_height().await?.ok_or_else(|| {
             anyhow::anyhow!("invalid: tried to record empty block as genesis block")
         })?;
@@ -954,13 +943,10 @@ impl Storage {
     }
 
     pub async fn give_advice(&self, note: Note) -> anyhow::Result<()> {
-        //Do not insert advice for zero amounts, simply return Ok because this is fine
-
+        // Do not insert advice for zero amounts, simply return Ok because this is fine
         if u128::from(note.amount()) == 0u128 {
             return Ok(());
         }
-
-        // let mut tx = self.pool.begin().await?;
 
         let note_commitment = note.commit().0.to_bytes().to_vec();
         let address = note.address().to_vec();
@@ -968,27 +954,15 @@ impl Storage {
         let asset_id = note.asset_id().to_bytes().to_vec();
         let rseed = note.rseed().to_bytes().to_vec();
 
-        // sqlx::query!(
-        //     "INSERT INTO notes
-        //             (
-        //                 note_commitment,
-        //                 address,
-        //                 amount,
-        //                 asset_id,
-        //                 rseed
-        //             )
-        //             VALUES
-        //             (?, ?, ?, ?, ?)",
-        //     note_commitment,
-        //     address,
-        //     amount,
-        //     asset_id,
-        //     rseed,
-        // )
-        // .execute(&mut tx)
-        // .await?;
+        let conn = self.conn.clone();
 
-        // tx.commit().await?;
+        spawn_blocking(move || {
+            conn.lock().execute(
+                "INSERT INTO notes (note_commitment, address, amount, asset_id, rseed) VALUES (?1, ?2, ?3, ?4, ?5)",
+                (note_commitment, address, amount, asset_id, rseed),
+            )
+        })
+        .await??;
 
         Ok(())
     }
