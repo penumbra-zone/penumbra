@@ -857,54 +857,60 @@ impl Storage {
             .map(|d| format!("x'{}'", hex::encode(d.to_bytes())))
             .unwrap_or_else(|| "address_index".to_string());
 
-        // let spendable_note_records = sqlx::query_as::<_, SpendableNoteRecord>(
-        //     format!(
-        //         "SELECT notes.note_commitment,
-        //                 spendable_notes.height_created,
-        //                 notes.address,
-        //                 notes.amount,
-        //                 notes.asset_id,
-        //                 notes.rseed,
-        //                 spendable_notes.address_index,
-        //                 spendable_notes.source,
-        //                 spendable_notes.height_spent,
-        //                 spendable_notes.nullifier,
-        //                 spendable_notes.position
-        //         FROM
-        //             notes JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
-        //         WHERE
-        //             spendable_notes.address_index IS {address_clause}
-        //             AND notes.asset_id IN (
-        //                 SELECT asset_id FROM assets WHERE denom LIKE '_delegation\\_%' ESCAPE '\\'
-        //             )
-        //             AND ((spendable_notes.height_spent IS NULL) OR (spendable_notes.height_spent > {votable_at_height}))
-        //             AND (spendable_notes.height_created < {votable_at_height})
-        //         ",
-        //     )
-        //     .as_str(),
-        // )
-        // .fetch_all(&self.pool)
-        // .await?;
+        let conn = self.conn.clone();
 
-        // // TODO: this could be internalized into the SQL query in principle, but it's easier to do
-        // // it this way; if it becomes slow, we can do it better
-        // let mut results = Vec::new();
-        // for record in spendable_note_records {
-        //     let asset_id = record.note.asset_id().to_bytes().to_vec();
-        //     let denom = sqlx::query!("SELECT denom FROM assets WHERE asset_id = ?", asset_id)
-        //         .fetch_one(&self.pool)
-        //         .await?
-        //         .denom;
+        spawn_blocking(move || {
+            let mut lock = conn.lock();
+            let dbtx = lock.transaction()?;
 
-        //     let identity_key = DelegationToken::from_str(&denom)
-        //         .context("invalid delegation token denom")?
-        //         .validator();
+            let spendable_note_records: Vec<SpendableNoteRecord> = dbtx
+                .prepare(&format!(
+                    "SELECT notes.note_commitment,
+                        spendable_notes.height_created,
+                        notes.address,
+                        notes.amount,
+                        notes.asset_id,
+                        notes.rseed,
+                        spendable_notes.address_index,
+                        spendable_notes.source,
+                        spendable_notes.height_spent,
+                        spendable_notes.nullifier,
+                        spendable_notes.position
+                    FROM
+                        notes JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
+                    WHERE
+                        spendable_notes.address_index IS {address_clause}
+                        AND notes.asset_id IN (
+                            SELECT asset_id FROM assets WHERE denom LIKE '_delegation\\_%' ESCAPE '\\'
+                        )
+                        AND ((spendable_notes.height_spent IS NULL) OR (spendable_notes.height_spent > {votable_at_height}))
+                        AND (spendable_notes.height_created < {votable_at_height})
+                    ",
+                ))?
+                .query_and_then((), |row| row.try_into())?
+                .collect::<Result<Vec<_>, anyhow::Error>>()?;
 
-        //     results.push((record, identity_key));
-        // }
+            // TODO: this could be internalized into the SQL query in principle, but it's easier to
+            // do it this way; if it becomes slow, we can do it better
+            let mut results = Vec::new();
+            for record in spendable_note_records {
+                let asset_id = record.note.asset_id().to_bytes().to_vec();
+                let denom: String = dbtx.query_row_and_then(
+                    "SELECT denom FROM assets WHERE asset_id = ?1",
+                    [asset_id],
+                    |row| row.get("asset_id")
+                )?;
 
-        // Ok(results)
-        todo!("notes_for_voting")
+                let identity_key = DelegationToken::from_str(&denom)
+                    .context("invalid delegation token denom")?
+                    .validator();
+
+                results.push((record, identity_key));
+            }
+
+            Ok(results)
+
+        }).await?
     }
 
     pub async fn record_asset(&self, asset: Asset) -> anyhow::Result<()> {
