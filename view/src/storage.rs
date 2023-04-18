@@ -776,71 +776,74 @@ impl Storage {
          */
         let address_clause = "address_index".to_string();
 
-        // let result = sqlx::query_as::<_, SpendableNoteRecord>(
-        //     format!(
-        //         "SELECT notes.note_commitment,
-        //                 spendable_notes.height_created,
-        //                 notes.address,
-        //                 notes.amount,
-        //                 notes.asset_id,
-        //                 notes.rseed,
-        //                 spendable_notes.address_index,
-        //                 spendable_notes.source,
-        //                 spendable_notes.height_spent,
-        //                 spendable_notes.nullifier,
-        //                 spendable_notes.position
-        //     FROM notes
-        //     JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
-        //     WHERE spendable_notes.height_spent IS {spent_clause}
-        //     AND notes.asset_id IS {asset_clause}
-        //     AND spendable_notes.address_index IS {address_clause}"
-        //     )
-        //     .as_str(),
-        // )
-        // .fetch_all(&self.pool)
-        // .await?;
+        // If set, stop returning notes once the total exceeds this amount.
+        //
+        // Ignored if `asset_id` is unset or if `include_spent` is set.
+        // uint64 amount_to_spend = 5;
+        //TODO: figure out a clever way to only return notes up to the sum using SQL
+        let amount_cutoff = (amount_to_spend != 0) && !(include_spent || asset_id.is_none());
+        let mut amount_total = Amount::zero();
 
-        // // If set, stop returning notes once the total exceeds this amount.
-        // //
-        // // Ignored if `asset_id` is unset or if `include_spent` is set.
-        // // uint64 amount_to_spend = 5;
-        // //TODO: figure out a clever way to only return notes up to the sum using SQL
-        // let amount_cutoff = (amount_to_spend != 0) && !(include_spent || asset_id.is_none());
-        // let mut amount_total = Amount::zero();
+        let conn = self.conn.clone();
 
-        // let mut output: Vec<SpendableNoteRecord> = Vec::new();
+        spawn_blocking(move || {
+            let mut output: Vec<SpendableNoteRecord> = Vec::new();
 
-        // for record in result.into_iter() {
-        //     // Skip notes that don't match the account, since we're
-        //     // not doing account filtering in SQL as a temporary hack (see above)
-        //     if let Some(address_index) = address_index {
-        //         if record.address_index.account != address_index.account {
-        //             continue;
-        //         }
-        //     }
-        //     let amount = record.note.amount();
-        //     output.push(record);
-        //     // If we're tracking amounts, accumulate the value of the note
-        //     // and check if we should break out of the loop.
-        //     if amount_cutoff {
-        //         // We know all the notes are of the same type, so adding raw quantities makes sense.
-        //         amount_total = amount_total + amount;
-        //         if amount_total >= amount_to_spend.into() {
-        //             break;
-        //         }
-        //     }
-        // }
+            for result in conn
+                .lock()
+                .prepare(&format!(
+                    "SELECT notes.note_commitment,
+                        spendable_notes.height_created,
+                        notes.address,
+                        notes.amount,
+                        notes.asset_id,
+                        notes.rseed,
+                        spendable_notes.address_index,
+                        spendable_notes.source,
+                        spendable_notes.height_spent,
+                        spendable_notes.nullifier,
+                        spendable_notes.position
+                FROM notes
+                JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
+                WHERE spendable_notes.height_spent IS {spent_clause}
+                AND notes.asset_id IS {asset_clause}
+                AND spendable_notes.address_index IS {address_clause}"
+                ))?
+                .query_and_then((), |row| SpendableNoteRecord::try_from(row))?
+            {
+                let record = result?;
 
-        // if amount_total < amount_to_spend.into() {
-        //     return Err(anyhow!(
-        //         "requested amount of {} exceeds total of {}",
-        //         amount_to_spend,
-        //         amount_total
-        //     ));
-        // }
+                // Skip notes that don't match the account, since we're
+                // not doing account filtering in SQL as a temporary hack (see above)
+                if let Some(address_index) = address_index {
+                    if record.address_index.account != address_index.account {
+                        continue;
+                    }
+                }
+                let amount = record.note.amount();
+                output.push(record);
+                // If we're tracking amounts, accumulate the value of the note
+                // and check if we should break out of the loop.
+                if amount_cutoff {
+                    // We know all the notes are of the same type, so adding raw quantities makes sense.
+                    amount_total = amount_total + amount;
+                    if amount_total >= amount_to_spend.into() {
+                        break;
+                    }
+                }
+            }
 
-        // Ok(output)
-        todo!("notes")
+            if amount_total < amount_to_spend.into() {
+                return Err(anyhow!(
+                    "requested amount of {} exceeds total of {}",
+                    amount_to_spend,
+                    amount_total
+                ));
+            }
+
+            Ok::<_, anyhow::Error>(output)
+        })
+        .await?
     }
 
     pub async fn notes_for_voting(
