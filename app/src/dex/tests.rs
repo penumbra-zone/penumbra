@@ -1,7 +1,7 @@
 mod test {
     use anyhow::Ok;
     use penumbra_crypto::{
-        asset,
+        asset::{self, Unit},
         dex::{
             lp::{position::Position, Reserves},
             DirectedTradingPair,
@@ -364,36 +364,51 @@ mod test {
         Ok(())
     }
 
-    /// Creates a ~limit buy order for a directed trading pair, using the `asset_2` as the numeraire.
-    /// and a tuple of `Amount` representing a price.
-    /// The output of this function is a `Position` that specifies a limit buy for the specified `amount`
-    /// of `asset_1` at a price of `price` units of numeraire.
-    fn limit_buy(pair: DirectedTradingPair, amount: Amount, price: Amount) -> Position {
-        let one: Amount = 1u64.into();
+    #[derive(Clone, Debug)]
+    struct Market {
+        start: Unit,
+        end: Unit,
+    }
+
+    impl Market {
+        fn new(start: Unit, end: Unit) -> Self {
+            Self { start, end }
+        }
+        fn into_directed_trading_pair(&self) -> DirectedTradingPair {
+            DirectedTradingPair {
+                start: self.start.id(),
+                end: self.end.id(),
+            }
+        }
+    }
+
+    /// Create a `Position` that seeks to acquire `asset_1` at a `price` denominated in
+    /// numeraire (`asset_2`), by provisioning enough numeraire.
+    fn limit_buy(market: Market, quantity: Amount, price_in_numeraire: Amount) -> Position {
         Position::new(
             OsRng,
-            pair,
-            0,
-            price,
-            one,
+            market.into_directed_trading_pair(),
+            0u32,
+            price_in_numeraire,
+            1u64.into(),
             Reserves {
-                r1: 0u64.into(),
-                r2: amount * price,
+                r1: Amount::zero(),
+                r2: quantity * market.end.unit_amount() * price_in_numeraire,
             },
         )
     }
 
-    /// Limit sell
-    fn limit_sell(pair: DirectedTradingPair, amount: Amount, price: Amount) -> Position {
-        let one: Amount = 1u64.into();
+    /// Create a `Position` that seeks to shed `asset_1` at a `price` denominated in
+    /// numeraire (`asset_2`).
+    fn limit_sell(market: Market, quantity: Amount, price_in_numeraire: Amount) -> Position {
         Position::new(
             OsRng,
-            pair,
-            0,
-            price,
-            one,
+            market.into_directed_trading_pair(),
+            0u32,
+            price_in_numeraire,
+            1u64.into(),
             Reserves {
-                r1: amount,
+                r1: quantity * market.start.unit_amount(),
                 r2: Amount::zero(),
             },
         )
@@ -481,7 +496,7 @@ mod test {
     }
 
     #[tokio::test]
-    async fn test_find_constraint() -> anyhow::Result<()> {
+    async fn fill_route_constraint_1() -> anyhow::Result<()> {
         // tracing_subscriber::fmt().try_init().unwrap();
 
         use tracing::{info, Level};
@@ -503,11 +518,11 @@ mod test {
                 ------------------------------------------------------------------------------------------------------------
                 |       Pair 1: gm <> gn       |       Pair 2: gn <> penumbra        |       Pair 3: penumbra <> pusd      |
                 ------------------------------------------------------------------------------------------------------------
-                |       100gm@1                |       53gn@100                      |       1500penumbra@1445             |
-                |       120gm@1                |       54gn@100                      |       10penumbra@1450               |
+                |       100gm@1                |       5300gn@92                     |       15penumbra@1445             |
+                |       120gm@1                |       54gn@100                      |       1penumbra@1450               |
                 |       50gm@1                 |       55gn@100                      |                                     |
                 | ^-bids---------asks-v        |   ^-bids---------asks-v             |   ^-bids---------asks-v             |
-                |       10gn@1                 |       54gn@101                      |       5000penumbra@1500             |
+                |       10gn@1                 |       54gn@101                      |       5penumbra@1500             |
                 |       100gn@1                |       1000gn@102                    |       1penumbra@1550                |
                 |       50gn@1                 |                                     |                                     |
                 ------------------------------------------------------------------------------------------------------------
@@ -523,10 +538,14 @@ mod test {
         println!("penumbra: {}", penumbra.id());
         println!("pusd....: {}", pusd.id());
 
-        let pair_1 = DirectedTradingPair::new(gm.id(), gn.id());
-        let pair_2 = DirectedTradingPair::new(gn.id(), penumbra.id());
-        let pair_3 = DirectedTradingPair::new(penumbra.id(), pusd.id());
+        let pair_1 = Market::new(gm.clone(), gn.clone());
+        let pair_2 = Market::new(gn.clone(), penumbra.clone());
+        let pair_3 = Market::new(penumbra.clone(), pusd.clone());
 
+        println!("gm units: {}", gm.unit_amount());
+        println!("gn units: {}", gn.unit_amount());
+        println!("penumbra units: {}", penumbra.unit_amount());
+        println!("pusd units: {}", pusd.unit_amount());
         /*
          * pair 1: gm <> gn
                     100gm@1
@@ -537,16 +556,15 @@ mod test {
                     100gn@1
                     50gn@1
         */
-
         let one = 1u64.into();
 
-        let buy_1 = limit_buy(pair_1, 50u64.into(), one);
-        let buy_2 = limit_buy(pair_1, 120u64.into(), one);
-        let buy_3 = limit_buy(pair_1, 100u64.into(), one);
+        let buy_1 = limit_buy(pair_1.clone(), 50u64.into(), one);
+        let buy_2 = limit_buy(pair_1.clone(), 120u64.into(), one);
+        let buy_3 = limit_buy(pair_1.clone(), 100u64.into(), one);
 
-        let sell_1 = limit_sell(pair_1, 10u64.into(), one);
-        let sell_2 = limit_sell(pair_1, 100u64.into(), one);
-        let sell_3 = limit_sell(pair_1, 50u64.into(), one);
+        let sell_1 = limit_sell(pair_1.clone(), 10u64.into(), one);
+        let sell_2 = limit_sell(pair_1.clone(), 100u64.into(), one);
+        let sell_3 = limit_sell(pair_1.clone(), 50u64.into(), one);
 
         state_tx.put_position(buy_1);
         state_tx.put_position(buy_2);
@@ -559,7 +577,7 @@ mod test {
         /*
 
         * pair 2: gn <> penumbra
-             53gn@100
+             5300gn@92
              54gn@100
              55gn@100
          ^-bids---------asks-v
@@ -570,13 +588,14 @@ mod test {
         let price100 = 100u64.into();
         let price101 = 101u64.into();
         let price102 = 102u64.into();
+        let price92 = 92u64.into();
 
-        let buy_1 = limit_buy(pair_2, 55u64.into(), price100);
-        let buy_2 = limit_buy(pair_2, 54u64.into(), price100);
-        let buy_3 = limit_buy(pair_2, 53u64.into(), price100);
+        let buy_1 = limit_buy(pair_2.clone(), 55u64.into(), price100);
+        let buy_2 = limit_buy(pair_2.clone(), 54u64.into(), price100);
+        let buy_3 = limit_buy(pair_2.clone(), 5300u64.into(), price92);
 
-        let sell_1 = limit_sell(pair_2, 54u64.into(), price101);
-        let sell_2 = limit_sell(pair_2, 1000u64.into(), price102);
+        let sell_1 = limit_sell(pair_2.clone(), 54u64.into(), price101);
+        let sell_2 = limit_sell(pair_2.clone(), 1000u64.into(), price102);
 
         state_tx.put_position(buy_1);
         state_tx.put_position(buy_2);
@@ -594,19 +613,18 @@ mod test {
                 10penumbra@1550
                 100penumbra@1800
         */
-
         let price1445 = 1445u64.into();
         let price1450 = 1450u64.into();
         let price1500 = 1500u64.into();
         let price1550 = 1550u64.into();
         let price1800 = 1800u64.into();
 
-        let buy_1 = limit_buy(pair_3, 10u64.into(), price1450);
-        let buy_2 = limit_buy(pair_3, 1500u64.into(), price1445);
+        let buy_1 = limit_buy(pair_3.clone(), 1u64.into(), price1450);
+        let buy_2 = limit_buy(pair_3.clone(), 1u64.into(), price1445);
 
-        let sell_1 = limit_sell(pair_3, 1u64.into(), price1500);
-        let sell_2 = limit_sell(pair_3, 10u64.into(), price1550);
-        let sell_3 = limit_sell(pair_3, 100u64.into(), price1800);
+        let sell_1 = limit_sell(pair_3.clone(), 1u64.into(), price1500);
+        let sell_2 = limit_sell(pair_3.clone(), 1u64.into(), price1550);
+        let sell_3 = limit_sell(pair_3.clone(), 1u64.into(), price1800);
 
         state_tx.put_position(buy_1);
         state_tx.put_position(buy_2);
@@ -623,13 +641,109 @@ mod test {
 
         let delta_1 = Value {
             asset_id: gm.id(),
-            amount: 100_000u64.into(),
+            amount: Amount::from(1u64) * gm.unit_amount(),
         };
 
         let route = vec![gm.id(), gn.id(), penumbra.id(), pusd.id()];
 
         let spill_price = U128x128::from(1_000_000u64);
 
+        println!("filling route with spill_price = {spill_price}");
+        let (unfilled, output) =
+            FillRoute::fill_route2(&mut state_tx, delta_1, &route, spill_price)
+                .await
+                .unwrap();
+
+        println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+        println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+        println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+        println!(
+            "delta_1 = {}",
+            U128x128::ratio(delta_1.amount, gm.unit_amount()).unwrap()
+        );
+        println!("delta_2 = 0");
+        println!(
+            "total_lambda_1 = {}",
+            U128x128::ratio(unfilled.amount, gm.unit_amount()).unwrap()
+        );
+        println!(
+            "total_lambda_2 = {}",
+            U128x128::ratio(output.amount, pusd.unit_amount()).unwrap()
+        );
+        println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+        println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+        println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn fill_route_unconstrained() -> anyhow::Result<()> {
+        // tracing_subscriber::fmt().try_init().unwrap();
+
+        use tracing::{info, Level};
+        use tracing_subscriber::FmtSubscriber;
+        let subscriber = FmtSubscriber::builder()
+            // all spans/events with a level higher than TRACE (e.g, debug, info, warn, etc.)
+            // will be written to stdout.
+            .with_max_level(Level::TRACE)
+            // completes the builder.
+            .finish();
+
+        tracing::subscriber::set_global_default(subscriber)
+            .expect("setting default subscriber failed");
+
+        let storage = TempStorage::new().await?.apply_default_genesis().await?;
+        let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+        let mut state_tx = state.try_begin_transaction().unwrap();
+        /*
+                ------------------------------------------------------------------------------------------------------------
+                |       Pair 1: gm <> gn       |       Pair 2: gn <> penumbra        |       Pair 3: penumbra <> pusd      |
+                ------------------------------------------------------------------------------------------------------------
+                |                              |                                     |                                     |
+                | ^-bids---------asks-v        |   ^-bids---------asks-v             |   ^-bids---------asks-v             |
+                |        1gm@1                 |          1gn@101                    |         1penumbra@1500              |
+                ------------------------------------------------------------------------------------------------------------
+        */
+
+        let gm = asset::REGISTRY.parse_unit("gm");
+        let gn = asset::REGISTRY.parse_unit("gn");
+        let penumbra = asset::REGISTRY.parse_unit("penumbra");
+        let pusd = asset::REGISTRY.parse_unit("pusd");
+
+        println!("gm......: {}", gm.id());
+        println!("gn......: {}", gn.id());
+        println!("penumbra: {}", penumbra.id());
+        println!("pusd....: {}", pusd.id());
+
+        let pair_1 = Market::new(gm.clone(), gn.clone());
+        let pair_2 = Market::new(gn.clone(), penumbra.clone());
+        let pair_3 = Market::new(penumbra.clone(), pusd.clone());
+
+        println!("gm units: {}", gm.unit_amount());
+        println!("gn units: {}", gn.unit_amount());
+        println!("penumbra units: {}", penumbra.unit_amount());
+
+        let one = 1u64.into();
+        let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), one);
+        state_tx.put_position(buy_1);
+
+        let price101 = 101u64.into();
+        let buy_1 = limit_buy(pair_2.clone(), 1u64.into(), price101);
+        state_tx.put_position(buy_1);
+
+        let price1500 = 1500u64.into();
+        let buy_1 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
+        state_tx.put_position(buy_1);
+
+        let delta_1 = Value {
+            asset_id: gm.id(),
+            amount: Amount::from(1u64) * gm.unit_amount(),
+        };
+
+        let route = vec![gm.id(), gn.id(), penumbra.id(), pusd.id()];
+
+        let spill_price = U128x128::from(1_000_000_000_000u64);
         println!("filling route with spill_price = {spill_price}");
 
         let (unfilled, output) =
@@ -640,10 +754,19 @@ mod test {
         println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
         println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
         println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-        println!("delta_1 = {}", delta_1.amount);
+        println!(
+            "delta_1 = {}",
+            U128x128::ratio(delta_1.amount, gm.unit_amount()).unwrap()
+        );
         println!("delta_2 = 0");
-        println!("total_lambda_1 = {unfilled:?}");
-        println!("total_lambda_2 = {output:?}");
+        println!(
+            "total_lambda_1 = {}",
+            U128x128::ratio(unfilled.amount, gm.unit_amount()).unwrap()
+        );
+        println!(
+            "total_lambda_2 = {}",
+            U128x128::ratio(output.amount, pusd.unit_amount()).unwrap()
+        );
         println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
         println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
         println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
