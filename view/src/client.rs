@@ -33,6 +33,7 @@ use crate::{SpendableNoteRecord, StatusStreamResponse, SwapRecord};
 /// 2. It's easier to write as a trait bound than the `CustodyProtocolClient`,
 ///   which requires complex bounds on its inner type to
 ///   enforce that it is a tower `Service`.
+#[allow(clippy::type_complexity)]
 pub trait ViewClient {
     /// Get the current status of chain sync.
     fn status(
@@ -369,7 +370,7 @@ where
             let req = self2.notes(tonic::Request::new(request));
             let pb_notes: Vec<_> = req.await?.into_inner().try_collect().await?;
 
-            let notes: Result<Vec<SpendableNoteRecord>> = pb_notes
+            pb_notes
                 .into_iter()
                 .map(|note_rsp| {
                     let note_record = note_rsp
@@ -381,8 +382,7 @@ where
                         Err(e) => Err(e),
                     }
                 })
-                .collect();
-            Ok(notes?)
+                .collect()
         }
         .boxed()
     }
@@ -398,7 +398,7 @@ where
             let req = self2.notes_for_voting(tonic::Request::new(request));
             let pb_notes: Vec<_> = req.await?.into_inner().try_collect().await?;
 
-            let notes: Result<Vec<(SpendableNoteRecord, IdentityKey)>> = pb_notes
+            pb_notes
                 .into_iter()
                 .map(|note_rsp| {
                     let note_record = note_rsp
@@ -413,8 +413,7 @@ where
 
                     Ok((note_record, identity_key))
                 })
-                .collect();
-            Ok(notes?)
+                .collect()
         }
         .boxed()
     }
