@@ -6,7 +6,7 @@ use penumbra_crypto::{
 use penumbra_proto::{view::v1alpha1 as pb, DomainType};
 use penumbra_tct as tct;
 
-use rusqlite::Row;
+use r2d2_sqlite::rusqlite::Row;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

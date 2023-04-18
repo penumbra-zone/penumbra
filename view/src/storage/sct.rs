@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use anyhow::Context as _;
 use genawaiter::{rc::gen, yield_};
-use rusqlite::Transaction;
+use r2d2_sqlite::rusqlite::Transaction;
 
 use penumbra_tct::{
     storage::{Read, StoredPosition, Write},
@@ -273,14 +273,14 @@ impl Write for TreeStore<'_, '_> {
 
 #[cfg(test)]
 mod test {
-    use super::TreeStore;
+    use super::*;
 
     use penumbra_tct::{Commitment, Witness};
 
     #[test]
     fn tree_store_spot_check() {
         // Set up the database:
-        let mut db = rusqlite::Connection::open_in_memory().unwrap();
+        let mut db = r2d2_sqlite::rusqlite::Connection::open_in_memory().unwrap();
         let mut tx = db.transaction().unwrap();
         tx.execute_batch(include_str!("schema.sql")).unwrap();
 

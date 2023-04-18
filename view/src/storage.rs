@@ -17,7 +17,10 @@ use penumbra_proto::{
 };
 use penumbra_tct as tct;
 use penumbra_transaction::Transaction;
-use rusqlite::{OpenFlags, OptionalExtension};
+use r2d2_sqlite::{
+    rusqlite::{OpenFlags, OptionalExtension},
+    SqliteConnectionManager,
+};
 use sha2::{Digest, Sha256};
 use std::{collections::BTreeMap, num::NonZeroU64, str::FromStr, sync::Arc};
 use tct::Commitment;
@@ -38,7 +41,7 @@ static SCHEMA_HASH: Lazy<String> =
 
 #[derive(Clone)]
 pub struct Storage {
-    conn: Arc<Mutex<rusqlite::Connection>>,
+    pool: r2d2::Pool<SqliteConnectionManager>,
 
     /// This allows an optimization where we only commit to the database after
     /// scanning a nonempty block.
@@ -84,29 +87,32 @@ impl Storage {
         Self::initialize(storage_path, fvk.clone(), params).await
     }
 
-    async fn connect(
+    fn connect(
         path: Option<impl AsRef<Utf8Path> + Send + 'static>,
-    ) -> anyhow::Result<Arc<Mutex<rusqlite::Connection>>> {
-        spawn_blocking(move || {
-            let conn = if let Some(path) = path {
-                rusqlite::Connection::open_with_flags(
-                    path.as_ref(),
+    ) -> anyhow::Result<r2d2::Pool<SqliteConnectionManager>> {
+        let manager = if let Some(path) = path {
+            SqliteConnectionManager::file(path.as_ref())
+                .with_flags(
                     // Don't allow opening URIs, because they can change the behavior of the database; we
                     // just want to open normal filepaths.
                     OpenFlags::default() & !OpenFlags::SQLITE_OPEN_URI,
-                )?
-            } else {
-                rusqlite::Connection::open_in_memory()?
-            };
+                )
+                .with_init(|conn| {
+                    // We use `prepare_cached` a fair amount: this is an overestimate of the number
+                    // of cached prepared statements likely to be used.
+                    conn.set_prepared_statement_cache_capacity(32);
+                    Ok(())
+                })
+        } else {
+            SqliteConnectionManager::memory()
+        };
 
-            Ok(Arc::new(Mutex::new(conn)))
-        })
-        .await?
+        Ok(r2d2::Pool::new(manager)?)
     }
 
     pub async fn load(path: impl AsRef<Utf8Path> + Send + 'static) -> anyhow::Result<Self> {
         let storage = Self {
-            conn: Self::connect(Some(path)).await?,
+            pool: Self::connect(Some(path))?,
             uncommitted_height: Arc::new(Mutex::new(None)),
             scanned_notes_tx: broadcast::channel(10).0,
             scanned_nullifiers_tx: broadcast::channel(10).0,
@@ -117,8 +123,8 @@ impl Storage {
             // Check the version of the software used when first initializing this database.
             // If it doesn't match the current version, we should report the error to the user.
             let actual_schema_hash: String = storage
-                .conn
-                .lock()
+                .pool
+                .get()?
                 .query_row("SELECT schema_hash FROM schema_hash", (), |row| {
                     row.get("schema_hash")
                 })
@@ -126,8 +132,8 @@ impl Storage {
 
             if actual_schema_hash != *SCHEMA_HASH {
                 let database_client_version: String = storage
-                    .conn
-                    .lock()
+                    .pool
+                    .get()?
                     .query_row("SELECT client_version FROM client_version", (), |row| {
                         row.get("client_version")
                     })
@@ -153,12 +159,12 @@ impl Storage {
         tracing::debug!(storage_path = ?storage_path.as_ref().map(AsRef::as_ref), ?fvk, ?params);
 
         // Connect to the database (or create it)
-        let conn = Self::connect(storage_path).await?;
+        let pool = Self::connect(storage_path)?;
 
         spawn_blocking(move || {
             // In one database transaction, populate everything
-            let mut lock = conn.lock();
-            let tx = lock.transaction()?;
+            let mut conn = pool.get()?;
+            let tx = conn.transaction()?;
 
             // Create the tables
             tx.execute_batch(include_str!("storage/schema.sql"))?;
@@ -193,10 +199,10 @@ impl Storage {
             )?;
 
             tx.commit()?;
-            drop(lock);
+            drop(conn);
 
             Ok(Storage {
-                conn,
+                pool,
                 uncommitted_height: Arc::new(Mutex::new(None)),
                 scanned_notes_tx: broadcast::channel(128).0,
                 scanned_nullifiers_tx: broadcast::channel(512).0,
@@ -208,14 +214,14 @@ impl Storage {
 
     /// Query for account balance by address
     pub async fn balance_by_address(&self, address: Address) -> anyhow::Result<BTreeMap<Id, u128>> {
-        let conn = self.conn.clone();
+        let pool = self.pool.clone();
 
         spawn_blocking(move || {
             let address = address.to_vec();
 
             let mut balance_by_address = BTreeMap::new();
 
-            for result in conn.lock()
+            for result in pool.get()?
                 .prepare_cached(
                     "SELECT notes.asset_id, notes.amount
                     FROM    notes
@@ -254,11 +260,11 @@ impl Storage {
         // have the record, so that we can't miss it if we race a write.
         let mut rx = self.scanned_notes_tx.subscribe();
 
-        let conn = self.conn.clone();
+        let pool = self.pool.clone();
 
         if let Some(record) = spawn_blocking(move || {
             // Check if we already have the record
-            conn.lock()
+            pool.get()?
                 .prepare(&format!(
                     "SELECT
                         notes.note_commitment,
@@ -328,12 +334,12 @@ impl Storage {
         // have the record, so that we can't miss it if we race a write.
         let mut rx = self.scanned_swaps_tx.subscribe();
 
-        let conn = self.conn.clone();
+        let pool = self.pool.clone();
 
         if let Some(record) = spawn_blocking(move || {
             // Check if we already have the swap record
-            conn.lock()
-                .prepare_cached(&format!(
+            pool.get()?
+                .prepare(&format!(
                     "SELECT * FROM swaps WHERE swaps.swap_commitment = x'{}'",
                     hex::encode(swap_commitment.0.to_bytes())
                 ))?
@@ -389,13 +395,13 @@ impl Storage {
         let mut rx = self.scanned_nullifiers_tx.subscribe();
 
         // Clone the pool handle so that the returned future is 'static
-        let conn = self.conn.clone();
+        let pool = self.pool.clone();
 
         let nullifier_bytes = nullifier.0.to_bytes().to_vec();
 
         // Check if we already have the nullifier in the set of spent notes
         if let Some(height_spent) = spawn_blocking(move || {
-            conn.lock()
+            pool.get()?
                 .prepare_cached("SELECT height_spent FROM spendable_notes WHERE nullifier = ?1")?
                 .query_and_then([nullifier_bytes], |row| {
                     let height_spent: Option<u64> = row.get("height_spent")?;
@@ -438,11 +444,11 @@ impl Storage {
             return Ok(Some(height.get()));
         }
 
-        let conn = self.conn.clone();
+        let pool = self.pool.clone();
 
         spawn_blocking(move || {
-            let height: Option<i64> = conn
-                .lock()
+            let height: Option<i64> = pool
+                .get()?
                 .prepare_cached("SELECT height FROM sync_height ORDER BY height DESC LIMIT 1")?
                 .query_row([], |row| row.get::<_, Option<i64>>(0))?;
 
@@ -454,11 +460,11 @@ impl Storage {
     }
 
     pub async fn chain_params(&self) -> anyhow::Result<ChainParameters> {
-        let conn = self.conn.clone();
+        let pool = self.pool.clone();
 
         spawn_blocking(move || {
-            let bytes = conn
-                .lock()
+            let bytes = pool
+                .get()?
                 .prepare_cached("SELECT bytes FROM chain_params LIMIT 1")?
                 .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
                 .ok_or_else(|| anyhow!("missing chain params"))?;
@@ -469,11 +475,11 @@ impl Storage {
     }
 
     pub async fn fmd_parameters(&self) -> anyhow::Result<FmdParameters> {
-        let conn = self.conn.clone();
+        let pool = self.pool.clone();
 
         spawn_blocking(move || {
-            let bytes = conn
-                .lock()
+            let bytes = pool
+                .get()?
                 .prepare_cached("SELECT bytes FROM fmd_parameters LIMIT 1")?
                 .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
                 .ok_or_else(|| anyhow!("missing fmd parameters"))?;
@@ -484,11 +490,11 @@ impl Storage {
     }
 
     pub async fn full_viewing_key(&self) -> anyhow::Result<FullViewingKey> {
-        let conn = self.conn.clone();
+        let pool = self.pool.clone();
 
         spawn_blocking(move || {
-            let bytes = conn
-                .lock()
+            let bytes = pool
+                .get()?
                 .prepare_cached("SELECT bytes FROM full_viewing_key LIMIT 1")?
                 .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
                 .ok_or_else(|| anyhow!("missing full viewing key"))?;
@@ -499,9 +505,9 @@ impl Storage {
     }
 
     pub async fn state_commitment_tree(&self) -> anyhow::Result<tct::Tree> {
-        let conn = self.conn.clone();
+        let pool = self.pool.clone();
         spawn_blocking(move || {
-            tct::Tree::from_reader(&mut TreeStore(&mut conn.lock().transaction()?))
+            tct::Tree::from_reader(&mut TreeStore(&mut pool.get()?.transaction()?))
         })
         .await?
     }
@@ -515,10 +521,10 @@ impl Storage {
         let starting_block = start_height.unwrap_or(0) as i64;
         let ending_block = end_height.unwrap_or(self.last_sync_height().await?.unwrap_or(0)) as i64;
 
-        let conn = self.conn.clone();
+        let pool = self.pool.clone();
 
         spawn_blocking(move || {
-            conn.lock()
+            pool.get()?
                 .prepare_cached(
                     "SELECT block_height, tx_hash
                     FROM tx
@@ -543,10 +549,10 @@ impl Storage {
         let starting_block = start_height.unwrap_or(0) as i64;
         let ending_block = end_height.unwrap_or(self.last_sync_height().await?.unwrap_or(0)) as i64;
 
-        let conn = self.conn.clone();
+        let pool = self.pool.clone();
 
         spawn_blocking(move || {
-            conn.lock()
+            pool.get()?
                 .prepare_cached(
                     "SELECT block_height, tx_hash, tx_bytes
                     FROM tx
@@ -565,12 +571,12 @@ impl Storage {
     }
 
     pub async fn transaction_by_hash(&self, tx_hash: &[u8]) -> anyhow::Result<Option<Transaction>> {
-        let conn = self.conn.clone();
+        let pool = self.pool.clone();
         let tx_hash = tx_hash.to_vec();
 
         spawn_blocking(move || {
-            if let Some(tx_bytes) = conn
-                .lock()
+            if let Some(tx_bytes) = pool
+                .get()?
                 .prepare_cached("SELECT tx_bytes FROM tx WHERE tx_hash = ?1")?
                 .query_row([tx_hash], |row| {
                     let tx_bytes: Vec<u8> = row.get("tx_bytes")?;
@@ -598,14 +604,14 @@ impl Storage {
         let mut rx = self.scanned_notes_tx.subscribe();
 
         // Clone the pool handle so that the returned future is 'static
-        let conn = self.conn.clone();
+        let pool = self.pool.clone();
 
         let nullifier_bytes = nullifier.to_bytes().to_vec();
 
         if let Some(record) = spawn_blocking(move || {
-            let record = conn
-                .lock()
-                .prepare_cached(&format!(
+            let record = pool
+                .get()?
+                .prepare(&format!(
                     "SELECT
                         notes.note_commitment,
                         spendable_notes.height_created,
@@ -670,10 +676,10 @@ impl Storage {
     }
 
     pub async fn all_assets(&self) -> anyhow::Result<Vec<Asset>> {
-        let conn = self.conn.clone();
+        let pool = self.pool.clone();
 
         spawn_blocking(move || {
-            conn.lock()
+            pool.get()?
                 .prepare_cached("SELECT * FROM assets")?
                 .query_and_then([], |row| {
                     let asset_id: Vec<u8> = row.get("asset_id")?;
@@ -694,10 +700,10 @@ impl Storage {
     pub async fn asset_by_id(&self, id: &Id) -> anyhow::Result<Option<Asset>> {
         let id = id.to_bytes().to_vec();
 
-        let conn = self.conn.clone();
+        let pool = self.pool.clone();
 
         spawn_blocking(move || {
-            conn.lock()
+            pool.get()?
                 .prepare_cached("SELECT * FROM assets WHERE asset_id = ?1")?
                 .query_and_then([id], |row| {
                     let asset_id: Vec<u8> = row.get("asset_id")?;
@@ -721,10 +727,10 @@ impl Storage {
     pub async fn assets_matching(&self, pattern: String) -> anyhow::Result<Vec<Asset>> {
         let pattern = pattern.to_owned();
 
-        let conn = self.conn.clone();
+        let pool = self.pool.clone();
 
         spawn_blocking(move || {
-            conn.lock()
+            pool.get()?
                 .prepare_cached("SELECT * FROM assets WHERE denom LIKE ?1 ESCAPE '\\'")?
                 .query_and_then([pattern], |row| {
                     let asset_id: Vec<u8> = row.get("asset_id")?;
@@ -782,13 +788,13 @@ impl Storage {
         let amount_cutoff = (amount_to_spend != 0) && !(include_spent || asset_id.is_none());
         let mut amount_total = Amount::zero();
 
-        let conn = self.conn.clone();
+        let pool = self.pool.clone();
 
         spawn_blocking(move || {
             let mut output: Vec<SpendableNoteRecord> = Vec::new();
 
-            for result in conn
-                .lock()
+            for result in pool
+                .get()?
                 .prepare(&format!(
                     "SELECT notes.note_commitment,
                         spendable_notes.height_created,
@@ -855,10 +861,10 @@ impl Storage {
             .map(|d| format!("x'{}'", hex::encode(d.to_bytes())))
             .unwrap_or_else(|| "address_index".to_string());
 
-        let conn = self.conn.clone();
+        let pool = self.pool.clone();
 
         spawn_blocking(move || {
-            let mut lock = conn.lock();
+            let mut lock = pool.get()?;
             let dbtx = lock.transaction()?;
 
             let spendable_note_records: Vec<SpendableNoteRecord> = dbtx
@@ -915,13 +921,15 @@ impl Storage {
         let asset_id = asset.id.to_bytes().to_vec();
         let denom = asset.denom.to_string();
 
-        let conn = self.conn.clone();
+        let pool = self.pool.clone();
 
         spawn_blocking(move || {
-            conn.lock().execute(
-                "INSERT OR IGNORE INTO assets (asset_id, denom) VALUES (?1, ?2)",
-                (asset_id, denom),
-            )
+            pool.get()?
+                .execute(
+                    "INSERT OR IGNORE INTO assets (asset_id, denom) VALUES (?1, ?2)",
+                    (asset_id, denom),
+                )
+                .map_err(anyhow::Error::from)
         })
         .await??;
 
@@ -958,13 +966,13 @@ impl Storage {
         let asset_id = note.asset_id().to_bytes().to_vec();
         let rseed = note.rseed().to_bytes().to_vec();
 
-        let conn = self.conn.clone();
+        let pool = self.pool.clone();
 
         spawn_blocking(move || {
-            conn.lock().execute(
+            pool.get()?.execute(
                 "INSERT INTO notes (note_commitment, address, amount, asset_id, rseed) VALUES (?1, ?2, ?3, ?4, ?5)",
                 (note_commitment, address, amount, asset_id, rseed),
-            )
+            ).map_err(anyhow::Error::from)
         })
         .await??;
 
@@ -984,10 +992,10 @@ impl Storage {
             return Ok(BTreeMap::new());
         }
 
-        let conn = self.conn.clone();
+        let pool = self.pool.clone();
 
         spawn_blocking(move || {
-            conn.lock()
+            pool.get()?
                 .prepare(&format!(
                     "SELECT notes.note_commitment,
                         notes.address,
@@ -1032,10 +1040,10 @@ impl Storage {
             return Ok(Vec::new());
         }
 
-        let conn = self.conn.clone();
+        let pool = self.pool.clone();
 
         spawn_blocking(move || {
-            conn.lock()
+            pool.get()?
                 .prepare(&format!(
                     "SELECT nullifier FROM spendable_notes WHERE nullifier IN ({})",
                     nullifiers
@@ -1077,7 +1085,7 @@ impl Storage {
             ));
         }
 
-        let conn = self.conn.clone();
+        let pool = self.pool.clone();
         let uncommitted_height = self.uncommitted_height.clone();
         let scanned_notes_tx = self.scanned_notes_tx.clone();
         let scanned_nullifiers_tx = self.scanned_nullifiers_tx.clone();
@@ -1093,7 +1101,7 @@ impl Storage {
         let mut new_sct = sct.clone();
 
         *sct = spawn_blocking(move || {
-            let mut lock = conn.lock();
+            let mut lock = pool.get()?;
             let mut dbtx = lock.transaction()?;
 
             // If the chain parameters have changed, update them.
