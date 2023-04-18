@@ -7,7 +7,7 @@ use penumbra_crypto::{
     asset::{self, Id},
     note,
     stake::{DelegationToken, IdentityKey},
-    Address, Amount, Asset, FieldExt, FullViewingKey, Note, Nullifier,
+    Address, Amount, Asset, FieldExt, Fq, FullViewingKey, Note, Nullifier, Rseed, Value,
 };
 use penumbra_proto::{
     client::v1alpha1::{
@@ -984,61 +984,43 @@ impl Storage {
             return Ok(BTreeMap::new());
         }
 
-        // let rows = sqlx::query(
-        //     format!(
-        //         "SELECT notes.address,
-        //                 notes.amount,
-        //                 notes.asset_id,
-        //                 notes.rseed
-        //         FROM notes
-        //         LEFT OUTER JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
-        //         WHERE (spendable_notes.note_commitment IS NULL) AND (notes.note_commitment IN ({}))",
-        //         note_commitments
-        //             .iter()
-        //             .map(|cm| format!("x'{}'", hex::encode(cm.0.to_bytes())))
-        //             .collect::<Vec<_>>()
-        //             .join(", ")
-        //     )
-        //     .as_str(),
-        // )
-        // .fetch_all(&self.pool)
-        // .await?;
+        let conn = self.conn.clone();
 
-        // let mut notes = BTreeMap::new();
-        // for row in rows {
-        //     let address = Address::try_from(row.get::<&[u8], _>("address"))?;
-
-        //     let amount = <[u8; 16]>::try_from(row.get::<&[u8], _>("amount")).map_err(|e| {
-        //         sqlx::Error::ColumnDecode {
-        //             index: "amount".to_string(),
-        //             source: e.into(),
-        //         }
-        //     })?;
-
-        //     let amount_u128: u128 = u128::from_be_bytes(amount);
-
-        //     let asset_id = asset::Id(Fq::from_bytes(
-        //         row.get::<&[u8], _>("asset_id")
-        //             .try_into()
-        //             .expect("32 bytes"),
-        //     )?);
-        //     let rseed = Rseed(row.get::<&[u8], _>("rseed").try_into().expect("32 bytes"));
-
-        //     let note = Note::from_parts(
-        //         address,
-        //         Value {
-        //             amount: amount_u128.into(),
-        //             asset_id,
-        //         },
-        //         rseed,
-        //     )
-        //     .unwrap();
-
-        //     notes.insert(note.commit(), note);
-        // }
-
-        // Ok(notes)
-        todo!("scan_advice")
+        spawn_blocking(move || {
+            conn.lock()
+                .prepare(&format!(
+                    "SELECT notes.note_commitment,
+                        notes.address,
+                        notes.amount,
+                        notes.asset_id,
+                        notes.rseed
+                    FROM notes
+                    LEFT OUTER JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
+                    WHERE (spendable_notes.note_commitment IS NULL) AND (notes.note_commitment IN ({}))",
+                    note_commitments
+                        .iter()
+                        .map(|cm| format!("x'{}'", hex::encode(cm.0.to_bytes())))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                ))?
+                .query_and_then((), |row| {
+                    let address = Address::try_from(row.get::<_, Vec<u8>>("address")?)?;
+                    let amount = row.get::<_, [u8; 16]>("amount")?;
+                    let amount_u128: u128 = u128::from_be_bytes(amount);
+                    let asset_id = asset::Id(Fq::from_bytes(row.get::<_, [u8; 32]>("asset_id")?)?);
+                    let rseed = Rseed(row.get::<_, [u8; 32]>("rseed")?);
+                    let note = Note::from_parts(
+                        address,
+                        Value {
+                            amount: amount_u128.into(),
+                            asset_id,
+                        },
+                        rseed,
+                    )?;
+                    Ok::<_, anyhow::Error>((note.commit(), note))
+                })?
+                .collect::<Result<BTreeMap<_, _>, anyhow::Error>>()
+        }).await?
     }
 
     /// Filters for nullifiers whose notes we control
@@ -1293,6 +1275,7 @@ impl Storage {
             let latest_sync_height = filtered_block.height as i64;
             dbtx.execute("UPDATE sync_height SET height = ?1", [latest_sync_height])?;
 
+            // Commit the changes to the database
             dbtx.commit()?;
 
             // IMPORTANT: NO PANICS OR ERRORS PAST THIS POINT
