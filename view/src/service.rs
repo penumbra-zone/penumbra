@@ -71,7 +71,7 @@ pub struct ViewService {
 impl ViewService {
     /// Convenience method that calls [`Storage::load_or_initialize`] and then [`Self::new`].
     pub async fn load_or_initialize(
-        storage_path: Option<impl AsRef<Utf8Path> + Send + 'static>,
+        storage_path: Option<impl AsRef<Utf8Path>>,
         fvk: &FullViewingKey,
         node: Url,
     ) -> anyhow::Result<Self> {

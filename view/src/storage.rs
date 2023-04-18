@@ -60,7 +60,7 @@ pub struct Storage {
 impl Storage {
     /// If the database at `storage_path` exists, [`Self::load`] it, otherwise, [`Self::initialize`] it.
     pub async fn load_or_initialize(
-        storage_path: Option<impl AsRef<Utf8Path> + Send + 'static>,
+        storage_path: Option<impl AsRef<Utf8Path>>,
         fvk: &FullViewingKey,
         node: Url,
     ) -> anyhow::Result<Self> {
@@ -88,7 +88,7 @@ impl Storage {
     }
 
     fn connect(
-        path: Option<impl AsRef<Utf8Path> + Send + 'static>,
+        path: Option<impl AsRef<Utf8Path>>,
     ) -> anyhow::Result<r2d2::Pool<SqliteConnectionManager>> {
         let manager = if let Some(path) = path {
             SqliteConnectionManager::file(path.as_ref())
@@ -110,7 +110,7 @@ impl Storage {
         Ok(r2d2::Pool::new(manager)?)
     }
 
-    pub async fn load(path: impl AsRef<Utf8Path> + Send + 'static) -> anyhow::Result<Self> {
+    pub async fn load(path: impl AsRef<Utf8Path>) -> anyhow::Result<Self> {
         let storage = Self {
             pool: Self::connect(Some(path))?,
             uncommitted_height: Arc::new(Mutex::new(None)),
@@ -152,7 +152,7 @@ impl Storage {
     }
 
     pub async fn initialize(
-        storage_path: Option<impl AsRef<Utf8Path> + Send + 'static>,
+        storage_path: Option<impl AsRef<Utf8Path>>,
         fvk: FullViewingKey,
         params: ChainParameters,
     ) -> anyhow::Result<Self> {
