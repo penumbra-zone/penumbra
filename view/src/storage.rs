@@ -1,6 +1,5 @@
 use anyhow::{anyhow, Context};
 use camino::Utf8Path;
-use futures::Future;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use penumbra_chain::params::{ChainParameters, FmdParameters};
@@ -8,13 +7,12 @@ use penumbra_crypto::{
     asset::{self, Id},
     note,
     stake::{DelegationToken, IdentityKey},
-    Address, Amount, Asset, FieldExt, Fq, FullViewingKey, Note, Nullifier, Rseed, Value,
+    Address, Amount, Asset, FieldExt, FullViewingKey, Note, Nullifier,
 };
 use penumbra_proto::{
     client::v1alpha1::{
         oblivious_query_service_client::ObliviousQueryServiceClient, ChainParametersRequest,
     },
-    core::transaction::v1alpha1::Spend,
     DomainType,
 };
 use penumbra_tct as tct;
