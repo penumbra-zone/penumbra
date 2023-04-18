@@ -1045,36 +1045,26 @@ impl Storage {
         if nullifiers.is_empty() {
             return Ok(Vec::new());
         }
-        // Ok(sqlx::query_as::<_, SpendableNoteRecord>(
-        //     format!(
-        //         "SELECT notes.note_commitment,
-        //                 spendable_notes.height_created,
-        //                 notes.address,
-        //                 notes.amount,
-        //                 notes.asset_id,
-        //                 notes.rseed,
-        //                 spendable_notes.address_index,
-        //                 spendable_notes.source,
-        //                 spendable_notes.height_spent,
-        //                 spendable_notes.nullifier,
-        //                 spendable_notes.position
-        //         FROM notes
-        //         JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
-        //         WHERE spendable_notes.nullifier IN ({})",
-        //         nullifiers
-        //             .iter()
-        //             .map(|x| format!("x'{}'", hex::encode(x.0.to_bytes())))
-        //             .collect::<Vec<String>>()
-        //             .join(",")
-        //     )
-        //     .as_str(),
-        // )
-        // .fetch_all(&self.pool)
-        // .await?
-        // .iter()
-        // .map(|x| x.nullifier)
-        // .collect())
-        todo!("filter_nullifiers")
+
+        let conn = self.conn.clone();
+
+        spawn_blocking(move || {
+            conn.lock()
+                .prepare(&format!(
+                    "SELECT nullifier FROM spendable_notes WHERE nullifier IN ({})",
+                    nullifiers
+                        .iter()
+                        .map(|x| format!("x'{}'", hex::encode(x.0.to_bytes())))
+                        .collect::<Vec<String>>()
+                        .join(",")
+                ))?
+                .query_and_then((), |row| {
+                    let nullifier: Vec<u8> = row.get("nullifier")?;
+                    nullifier.as_slice().try_into()
+                })?
+                .collect()
+        })
+        .await?
     }
 
     pub async fn record_block(
@@ -1100,258 +1090,243 @@ impl Storage {
                 last_sync_height
             ));
         }
-        // let mut dbtx = self.pool.begin().await?;
 
-        // If the chain parameters have changed, update them.
-        // if let Some(params) = filtered_block.chain_parameters {
-        //     let chain_params_bytes = &ChainParameters::encode_to_vec(&params)[..];
-        //     sqlx::query!(
-        //         "INSERT INTO chain_params (bytes) VALUES (?)",
-        //         chain_params_bytes
-        //     )
-        //     .execute(&mut dbtx)
-        //     .await?;
-        // }
+        let conn = self.conn.clone();
+        let uncommitted_height = self.uncommitted_height.clone();
+        let scanned_notes_tx = self.scanned_notes_tx.clone();
+        let scanned_nullifiers_tx = self.scanned_nullifiers_tx.clone();
+        let scanned_swaps_tx = self.scanned_swaps_tx.clone();
 
-        // // Insert new note records into storage
-        // for note_record in &filtered_block.new_notes {
-        //     // https://github.com/launchbadge/sqlx/issues/1430
-        //     // https://github.com/launchbadge/sqlx/issues/1151
-        //     // For some reason we can't use any temporaries with the query! macro
-        //     // any more, even though we did so just fine in the past, e.g.,
-        //     // https://github.com/penumbra-zone/penumbra/blob/e857a7ae2b11b36514a5ac83f8e0b174fa10a65f/pd/src/state/writer.rs#L201-L207
-        //     let note_commitment = note_record.note_commitment.0.to_bytes().to_vec();
-        //     let height_created = filtered_block.height as i64;
-        //     let address = note_record.note.address().to_vec();
-        //     let amount = u128::from(note_record.note.amount()).to_be_bytes().to_vec();
-        //     let asset_id = note_record.note.asset_id().to_bytes().to_vec();
-        //     let rseed = note_record.note.rseed().to_bytes().to_vec();
-        //     let address_index = note_record.address_index.to_bytes().to_vec();
-        //     let nullifier = note_record.nullifier.to_bytes().to_vec();
-        //     let position = (u64::from(note_record.position)) as i64;
-        //     let source = note_record.source.to_bytes().to_vec();
+        // Cloning the SCT is cheap because it's a copy-on-write structure, so we move an owned copy
+        // into the spawned thread. This means that if for any reason the thread panics or throws an
+        // error, the changes to the SCT will be discarded, just like any changes to the database,
+        // so the two stay transactionally in sync, even in the case of errors. This would not be
+        // the case if we `std::mem::take` the SCT and move it into the spawned thread, because then
+        // an error would mean the updated version would never be put back, and the outcome would be
+        // a cleared SCT but a non-empty database.
+        let mut new_sct = sct.clone();
 
-        //     // We might have already seen the notes in the form of advice,
-        //     // so we use ON CONFLICT DO NOTHING to skip re-inserting them
-        //     // in that case.
-        //     sqlx::query!(
-        //         "INSERT INTO notes
-        //             (
-        //                 note_commitment,
-        //                 address,
-        //                 amount,
-        //                 asset_id,
-        //                 rseed
-        //             )
-        //         VALUES (?, ?, ?, ?, ?)
-        //         ON CONFLICT DO NOTHING",
-        //         note_commitment,
-        //         address,
-        //         amount,
-        //         asset_id,
-        //         rseed,
-        //     )
-        //     .execute(&mut dbtx)
-        //     .await?;
+        *sct = spawn_blocking(move || {
+            let mut lock = conn.lock();
+            let mut dbtx = lock.transaction()?;
 
-        //     sqlx::query!(
-        //         "INSERT INTO spendable_notes
-        //             (
-        //                 note_commitment,
-        //                 nullifier,
-        //                 position,
-        //                 height_created,
-        //                 address_index,
-        //                 source,
-        //                 height_spent
-        //             )
-        //             VALUES
-        //             (?, ?, ?, ?, ?, ?, NULL)",
-        //         note_commitment,
-        //         nullifier,
-        //         position,
-        //         height_created,
-        //         address_index,
-        //         source,
-        //         // height_spent is NULL
-        //     )
-        //     .execute(&mut dbtx)
-        //     .await?;
-        // }
+            // If the chain parameters have changed, update them.
+            if let Some(params) = filtered_block.chain_parameters {
+                let chain_params_bytes = &ChainParameters::encode_to_vec(&params)[..];
+                dbtx.execute(
+                    "INSERT INTO chain_params (bytes) VALUES (?1)",
+                    [chain_params_bytes],
+                )?;
+            }
 
-        // for swap in &filtered_block.new_swaps {
-        //     let swap_commitment = swap.swap_commitment.0.to_bytes().to_vec();
-        //     let swap_bytes = swap.swap.encode_to_vec();
-        //     let position = (u64::from(swap.position)) as i64;
-        //     let nullifier = swap.nullifier.to_bytes().to_vec();
-        //     let source = swap.source.to_bytes().to_vec();
-        //     let output_data = swap.output_data.encode_to_vec();
+            // Insert new note records into storage
+            for note_record in &filtered_block.new_notes {
+                let note_commitment = note_record.note_commitment.0.to_bytes().to_vec();
+                let height_created = filtered_block.height as i64;
+                let address = note_record.note.address().to_vec();
+                let amount = u128::from(note_record.note.amount()).to_be_bytes().to_vec();
+                let asset_id = note_record.note.asset_id().to_bytes().to_vec();
+                let rseed = note_record.note.rseed().to_bytes().to_vec();
+                let address_index = note_record.address_index.to_bytes().to_vec();
+                let nullifier = note_record.nullifier.to_bytes().to_vec();
+                let position = (u64::from(note_record.position)) as i64;
+                let source = note_record.source.to_bytes().to_vec();
 
-        //     sqlx::query!(
-        //         "INSERT INTO swaps (swap_commitment, swap, position, nullifier, output_data, height_claimed, source)
-        //         VALUES (?, ?, ?, ?, ?, NULL, ?)",
-        //         swap_commitment,
-        //         swap_bytes,
-        //         position,
-        //         nullifier,
-        //         output_data,
-        //         // height_claimed is NULL
-        //         source,
-        //     ).execute(&mut dbtx).await?;
-        // }
+                // We might have already seen the notes in the form of advice, so we use ON CONFLICT
+                // DO NOTHING to skip re-inserting them in that case.
+                dbtx.execute(
+                    "INSERT INTO notes (note_commitment, address, amount, asset_id, rseed)
+                    VALUES (?1, ?2, ?3, ?4, ?5)
+                    ON CONFLICT DO NOTHING",
+                    [&note_commitment, &address, &amount, &asset_id, &rseed],
+                )?;
 
-        // // Update any rows of the table with matching nullifiers to have height_spent
-        // for nullifier in &filtered_block.spent_nullifiers {
-        //     // https://github.com/launchbadge/sqlx/issues/1430
-        //     // https://github.com/launchbadge/sqlx/issues/1151
-        //     // For some reason we can't use any temporaries with the query! macro
-        //     // any more, even though we did so just fine in the past, e.g.,
-        //     // https://github.com/penumbra-zone/penumbra/blob/e857a7ae2b11b36514a5ac83f8e0b174fa10a65f/pd/src/state/writer.rs#L201-L207
-        //     let height_spent = filtered_block.height as i64;
-        //     let nullifier = nullifier.to_bytes().to_vec();
-        //     let spent_commitment_bytes = sqlx::query!(
-        //         "UPDATE spendable_notes SET height_spent = ? WHERE nullifier = ? RETURNING note_commitment",
-        //         height_spent,
-        //         nullifier,
-        //     )
-        //     .fetch_optional(&mut dbtx)
-        //     .await?;
+                dbtx.execute(
+                    "INSERT INTO spendable_notes
+                    (note_commitment, nullifier, position, height_created, address_index, source, height_spent)
+                    VALUES (?1, ?2, ?3, ?4, ?5, ?6, NULL)",
+                    (
+                        &note_commitment,
+                        &nullifier,
+                        &position,
+                        &height_created,
+                        &address_index,
+                        &source,
+                        // height_spent is NULL because the note is newly discovered
+                    ),
+                )?;
+            }
 
-        //     let swap_commitment_bytes = sqlx::query!(
-        //         "UPDATE swaps SET height_claimed = ? WHERE nullifier = ? RETURNING swap_commitment",
-        //         height_spent,
-        //         nullifier,
-        //     )
-        //     .fetch_optional(&mut dbtx)
-        //     .await?;
+            // Insert new swap records into storage
+            for swap in &filtered_block.new_swaps {
+                let swap_commitment = swap.swap_commitment.0.to_bytes().to_vec();
+                let swap_bytes = swap.swap.encode_to_vec();
+                let position = (u64::from(swap.position)) as i64;
+                let nullifier = swap.nullifier.to_bytes().to_vec();
+                let source = swap.source.to_bytes().to_vec();
+                let output_data = swap.output_data.encode_to_vec();
 
-        //     // Check denom type
-        //     let spent_denom: String = sqlx::query!(
-        //                 "SELECT assets.denom
-        //                 FROM spendable_notes JOIN notes LEFT JOIN assets ON notes.asset_id == assets.asset_id
-        //                 WHERE nullifier = ?",
-        //                 nullifier,
-        //             )
-        //             .fetch_one(&mut dbtx)
-        //             .await?
-        //             .denom
-        //             .ok_or_else(|| anyhow!("denom must exist for note we know about"))?;
+                dbtx.execute(
+                    "INSERT INTO swaps (swap_commitment, swap, position, nullifier, output_data, height_claimed, source)
+                    VALUES (?1, ?2, ?3, ?4, ?5, NULL, ?6)",
+                    (
+                        &swap_commitment,
+                        &swap_bytes,
+                        &position,
+                        &nullifier,
+                        &output_data,
+                        // height_claimed is NULL because the swap is newly discovered
+                        &source,
+                    ),
+                )?;
+            }
 
-        //     if let Some(bytes) = spent_commitment_bytes {
-        //         // Forget spent note commitments from the SCT unless they are delegation tokens,
-        //         // which must be saved to allow voting on proposals that might or might not be open
-        //         // presently
+            // Update any rows of the table with matching nullifiers to have height_spent
+            for nullifier in &filtered_block.spent_nullifiers {
+                let height_spent = filtered_block.height as i64;
+                let nullifier = nullifier.to_bytes().to_vec();
 
-        //         if DelegationToken::from_str(&spent_denom).is_ok() {
-        //             let spent_commitment = Commitment::try_from(
-        //                 bytes
-        //                     .note_commitment
-        //                     .ok_or_else(|| anyhow!("missing note commitment"))?
-        //                     .as_slice(),
-        //             )?;
-        //             sct.forget(spent_commitment);
-        //         }
-        //     };
+                let spent_commitment: Option<Commitment> = dbtx.prepare_cached(
+                    "UPDATE spendable_notes SET height_spent = ?1 WHERE nullifier = ?2 RETURNING note_commitment"
+                )?
+                .query_and_then(
+                    (height_spent, &nullifier),
+                    |row| {
+                        let bytes: Vec<u8> = row.get("note_commitment")?;
+                        Commitment::try_from(&bytes[..]).context("invalid commitment bytes")
+                    }
+                )?
+                .next()
+                .transpose()?;
 
-        //     // Mark spent swaps as spent
+                let swap_commitment: Option<Commitment> = dbtx.prepare_cached(
+                        "UPDATE swaps SET height_claimed = ?1 WHERE nullifier = ?2 RETURNING swap_commitment"
+                    )?
+                    .query_and_then(
+                        (height_spent, &nullifier),
+                        |row| {
+                            let bytes: Vec<u8> = row.get("swap_commitment")?;
+                            Commitment::try_from(&bytes[..]).context("invalid commitment bytes")
+                        }
+                    )?
+                    .next()
+                    .transpose()?;
 
-        //     if let Some(bytes) = swap_commitment_bytes {
-        //         // Forget spent swap commitments from the SCT unless they are delegation tokens,
-        //         // which must be saved to allow voting on proposals that might or might not be open
-        //         // presently
+                // Check denom type
+                let spent_denom: String = dbtx.prepare_cached(
+                        "SELECT assets.denom
+                        FROM spendable_notes JOIN notes LEFT JOIN assets ON notes.asset_id == assets.asset_id
+                        WHERE nullifier = ?1"
+                    )?
+                    .query_and_then(
+                        [&nullifier],
+                        |row| row.get("denom")
+                    )?
+                    .next()
+                    .transpose()?
+                    .ok_or_else(|| anyhow!("denom must exist for note we know about"))?;
 
-        //         if DelegationToken::from_str(&spent_denom).is_ok() {
-        //             let spent_swap_commitment = Commitment::try_from(
-        //                 bytes
-        //                     .swap_commitment
-        //                     .ok_or_else(|| anyhow!("missing note commitment"))?
-        //                     .as_slice(),
-        //             )?;
-        //             sct.forget(spent_swap_commitment);
-        //         }
-        //     };
-        // }
+                // Mark spent notes as spent
+                if let Some(spent_commitment) = spent_commitment {
+                    // Forget spent note commitments from the SCT unless they are delegation tokens,
+                    // which must be saved to allow voting on proposals that might or might not be
+                    // open presently
 
-        // // Update SCT table with current SCT state
-        // sct.to_async_writer(&mut TreeStore(&mut dbtx)).await?;
+                    if DelegationToken::from_str(&spent_denom).is_ok() {
+                        new_sct.forget(spent_commitment);
+                    }
+                };
 
-        // // Record all transactions
-        // for transaction in transactions {
-        //     let tx_bytes = transaction.encode_to_vec();
-        //     // We have to create an explicit temporary borrow, because the sqlx api is bad (see above)
-        //     let tx_hash_owned = sha2::Sha256::digest(&tx_bytes);
-        //     let tx_hash = tx_hash_owned.as_slice();
-        //     let tx_block_height = filtered_block.height as i64;
+                // Mark spent swaps as spent
+                if let Some(spent_swap_commitment) = swap_commitment {
+                    // Forget spent swap commitments from the SCT unless they are delegation tokens,
+                    // which must be saved to allow voting on proposals that might or might not be open
+                    // presently
 
-        //     tracing::debug!(tx_hash = ?hex::encode(tx_hash), "recording extended transaction");
+                    if DelegationToken::from_str(&spent_denom).is_ok() {
+                        new_sct.forget(spent_swap_commitment);
+                    }
+                };
+            }
 
-        //     sqlx::query!(
-        //         "INSERT INTO tx (tx_hash, tx_bytes, block_height) VALUES (?, ?, ?)",
-        //         tx_hash,
-        //         tx_bytes,
-        //         tx_block_height,
-        //     )
-        //     .execute(&mut dbtx)
-        //     .await?;
+            // Update SCT table with current SCT state
+            new_sct.to_writer(&mut TreeStore(&mut dbtx))?;
 
-        //     // Associate all of the spent nullifiers with the transaction by hash.
-        //     for nf in transaction.spent_nullifiers() {
-        //         let nf_bytes = nf.0.to_bytes().to_vec();
-        //         sqlx::query!(
-        //             "INSERT INTO tx_by_nullifier (nullifier, tx_hash) VALUES (?, ?)",
-        //             nf_bytes,
-        //             tx_hash,
-        //         )
-        //         .execute(&mut dbtx)
-        //         .await?;
-        //     }
-        // }
+            // Record all transactions
+            for transaction in transactions {
+                let tx_bytes = transaction.encode_to_vec();
+                // We have to create an explicit temporary borrow, because the sqlx api is bad (see above)
+                let tx_hash_owned = sha2::Sha256::digest(&tx_bytes);
+                let tx_hash = tx_hash_owned.as_slice();
+                let tx_block_height = filtered_block.height as i64;
 
-        // // Update FMD parameters if they've changed.
-        // if filtered_block.fmd_parameters.is_some() {
-        //     let fmd_parameters_bytes =
-        //         &FmdParameters::encode_to_vec(&filtered_block.fmd_parameters.unwrap())[..];
+                tracing::debug!(tx_hash = ?hex::encode(tx_hash), "recording extended transaction");
 
-        //     sqlx::query!(
-        //         "INSERT INTO fmd_parameters (bytes) VALUES (?)",
-        //         fmd_parameters_bytes
-        //     )
-        //     .execute(&mut dbtx)
-        //     .await?;
-        // }
+                dbtx.execute(
+                    "INSERT INTO tx (tx_hash, tx_bytes, block_height) VALUES (?1, ?2, ?3)",
+                    (&tx_hash, &tx_bytes, tx_block_height),
+                )?;
 
-        // // Record block height as latest synced height
+                // Associate all of the spent nullifiers with the transaction by hash.
+                for nf in transaction.spent_nullifiers() {
+                    let nf_bytes = nf.0.to_bytes().to_vec();
+                    dbtx.execute(
+                        "INSERT INTO tx_by_nullifier (nullifier, tx_hash) VALUES (?1, ?2)",
+                        (&nf_bytes, &tx_hash),
+                    )?;
+                }
+            }
 
-        // let latest_sync_height = filtered_block.height as i64;
-        // sqlx::query!("UPDATE sync_height SET height = ?", latest_sync_height)
-        //     .execute(&mut dbtx)
-        //     .await?;
+            // Update FMD parameters if they've changed.
+            if filtered_block.fmd_parameters.is_some() {
+                let fmd_parameters_bytes =
+                    &FmdParameters::encode_to_vec(&filtered_block.fmd_parameters.unwrap())[..];
 
-        // dbtx.commit().await?;
-        // // It's critical to reset the uncommitted height here, since we've just
-        // // invalidated it by committing.
-        // self.uncommitted_height.lock().take();
+                dbtx.execute("INSERT INTO fmd_parameters (bytes) VALUES (?1)", [&fmd_parameters_bytes])?;
+            }
 
-        // // Broadcast all committed note records to channel
-        // // Done following tx.commit() to avoid notifying of a new SpendableNoteRecord before it is actually committed to the database
+            // Record block height as latest synced height
+            let latest_sync_height = filtered_block.height as i64;
+            dbtx.execute("UPDATE sync_height SET height = ?1", [latest_sync_height])?;
 
-        // for note_record in &filtered_block.new_notes {
-        //     // This will fail to be broadcast if there is no active receiver (such as on initial sync)
-        //     // The error is ignored, as this isn't a problem, because if there is no active receiver there is nothing to do
-        //     let _ = self.scanned_notes_tx.send(note_record.clone());
-        // }
+            dbtx.commit()?;
 
-        // for nullifier in filtered_block.spent_nullifiers.iter() {
-        //     // This will fail to be broadcast if there is no active receiver (such as on initial sync)
-        //     // The error is ignored, as this isn't a problem, because if there is no active receiver there is nothing to do
-        //     let _ = self.scanned_nullifiers_tx.send(*nullifier);
-        // }
+            // IMPORTANT: NO PANICS OR ERRORS PAST THIS POINT
+            // If there is a panic or error past this point, the database will be left in out of
+            // sync with the in-memory copy of the SCT, which means that it will become corrupted as
+            // synchronization continues.
 
-        // for swap_record in filtered_block.new_swaps {
-        //     // This will fail to be broadcast if there is no active receiver (such as on initial sync)
-        //     // The error is ignored, as this isn't a problem, because if there is no active receiver there is nothing to do
-        //     let _ = self.scanned_swaps_tx.send(swap_record.clone());
-        // }
+            // It's critical to reset the uncommitted height here, since we've just
+            // invalidated it by committing.
+            uncommitted_height.lock().take();
+
+            // Broadcast all committed note records to channel
+            // Done following tx.commit() to avoid notifying of a new SpendableNoteRecord before it is actually committed to the database
+
+            for note_record in &filtered_block.new_notes {
+                // This will fail to be broadcast if there is no active receiver (such as on initial
+                // sync) The error is ignored, as this isn't a problem, because if there is no
+                // active receiver there is nothing to do
+                let _ = scanned_notes_tx.send(note_record.clone());
+            }
+
+            for nullifier in filtered_block.spent_nullifiers.iter() {
+                // This will fail to be broadcast if there is no active receiver (such as on initial
+                // sync) The error is ignored, as this isn't a problem, because if there is no
+                // active receiver there is nothing to do
+                let _ = scanned_nullifiers_tx.send(*nullifier);
+            }
+
+            for swap_record in filtered_block.new_swaps {
+                // This will fail to be broadcast if there is no active rece∑iver (such as on initial
+                // sync) The error is ignored, as this isn't a problem, because if there is no
+                // active receiver there is nothing to do
+                let _ = scanned_swaps_tx.send(swap_record.clone());
+            }
+
+            Ok::<_, anyhow::Error>(new_sct)
+        })
+        .await??;
 
         Ok(())
     }
