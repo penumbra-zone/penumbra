@@ -199,6 +199,7 @@ pub trait FillRoute: StateWrite + Sized {
             }
             current_input = output;
         }
+
         Ok((constraints, positions))
     }
 
@@ -285,6 +286,7 @@ pub trait FillRoute: StateWrite + Sized {
             // If the effective price exceeds the spill price, stop filling.
             if effective_price > spill_price {
                 tracing::debug!(?effective_price, ?spill_price, "spill price hit.");
+                println!("spill hit!");
                 break 'filling;
             }
 
@@ -294,9 +296,6 @@ pub trait FillRoute: StateWrite + Sized {
             // progress.
             let input_capacity = match constraints.last() {
                 Some((constraining_index, constraining_position)) => {
-                    let r1 = constraining_position.reserves.r1;
-                    let r2 = constraining_position.reserves.r2;
-
                     // There are a couple things to worry about here, let's reason step-by-step:
                     //      + can constraint resolution generate constraints upstream in the path?
                     //          answer: case1: no, case2:yes
@@ -325,17 +324,19 @@ pub trait FillRoute: StateWrite + Sized {
                     // how do we simultaneously guarantee that:
                     // - we consume the constraining position's reserves exactly
                     // - we never exceed any other position's reserves when rounding up
-                    let mut lambda_2 = r2;
+                    let mut lambda_2 = constraining_position
+                        .reserves_of(pairs[*constraining_index-1].end)
+                        .unwrap();
                     let segment = &positions[0..*constraining_index];
-                    for p in segment.iter().rev() {
-                        println!("with {p:?}");
-                        let fillable_delta_1 = p
-                            .phi
-                            .component
-                            .convert_to_delta_1(lambda_2.into())
-                            .round_up();
+                    println!("starting with LAMBDA_2 = {lambda_2:?}");
+                    for (i, p) in segment.iter().enumerate().rev() {
+                        let fillable_delta_1 = p.phi.back_fill(Value {
+                            amount: lambda_2,
+                            asset_id: pairs[i].end,
+                        })?;
+                        let fillable_delta_1 = fillable_delta_1.amount;
                         println!("for lambda_2: {lambda_2:?}, delta_1 = {fillable_delta_1:?}");
-                        lambda_2 = fillable_delta_1.try_into()?;
+                        lambda_2 = fillable_delta_1;
                     }
                     println!("min-flow: delta_1_star = {lambda_2:?}");
                     lambda_2
@@ -351,6 +352,9 @@ pub trait FillRoute: StateWrite + Sized {
                 amount: input_capacity,
                 asset_id: input.asset_id,
             };
+
+            println!("current_value: {current_value:?}");
+
             for next_asset in route.iter().skip(1) {
                 let position = self
                     .best_position(&DirectedTradingPair {
@@ -359,8 +363,11 @@ pub trait FillRoute: StateWrite + Sized {
                     })
                     .await?
                     .ok_or_else(|| anyhow::anyhow!("unexpectedly missing position"))?;
+                println!("the best position found is {position:?}");
+                println!("start: {:?}", current_value.asset_id);
+                println!("end..: {:?}", *next_asset);
 
-                println!("delta_1={input:?}");
+                println!("delta_1={:?}", current_value.amount);
                 println!("delta_2=0");
                 let (unfilled, output) = self.fill_against(current_value, &position.id()).await?;
                 println!("lambda_1={unfilled:?}");
@@ -376,7 +383,9 @@ pub trait FillRoute: StateWrite + Sized {
             }
 
             if current_value.amount == 0u64.into() {
-                // TODO can this every happen?
+                println!("zero current value.");
+                // TODO can this every A
+                // Note: this can be hit during dust fills 
                 break 'filling;
             }
 
