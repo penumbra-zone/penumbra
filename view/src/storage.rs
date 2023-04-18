@@ -215,31 +215,22 @@ impl Storage {
         spawn_blocking(move || {
             let address = address.to_vec();
 
-            let lock = conn.lock();
+            let mut balance_by_address = BTreeMap::new();
 
-            let mut stmt = lock
+            for result in conn.lock()
                 .prepare_cached(
-                    "SELECT notes.asset_id,
-                            notes.amount
+                    "SELECT notes.asset_id, notes.amount
                     FROM    notes
                     JOIN    spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
                     WHERE   spendable_notes.height_spent IS NULL
-                    AND     notes.address IS ?",
-                )
-                .context("Failed to prepare balance_by_address query")?;
-
-            let mut balance_by_address = BTreeMap::new();
-
-            let rows = stmt
+                    AND     notes.address IS ?1",
+                )?
                 .query_map([address], |row| {
                     let asset_id: Vec<u8> = row.get("asset_id")?;
                     let amount: [u8; 16] = row.get("amount")?;
-
                     Ok((asset_id, amount))
-                })
-                .context("Failed to execute balance_by_address query")?;
+                })? {
 
-            for result in rows {
                 let (asset_id, amount) = result?;
 
                 let amount_u128: u128 = u128::from_be_bytes(amount);
@@ -268,36 +259,29 @@ impl Storage {
         let conn = self.conn.clone();
 
         if let Some(record) = spawn_blocking(move || {
-            let lock = conn.lock();
-
-            // Check if we already have the note
-            let mut stmt = lock.prepare_cached(&format!(
-                "SELECT
-                    notes.note_commitment,
-                    spendable_notes.height_created,
-                    notes.address,
-                    notes.amount,
-                    notes.asset_id,
-                    notes.rseed,
-                    spendable_notes.address_index,
-                    spendable_notes.source,
-                    spendable_notes.height_spent,
-                    spendable_notes.nullifier,
-                    spendable_notes.position
-                FROM notes
-                JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
-                WHERE notes.note_commitment = x'{}'",
-                hex::encode(note_commitment.0.to_bytes())
-            ))?;
-
-            // We only care about the first record returned, if it's there, since it will be the
-            // only one (note commitments are unique)
-            let record: Option<SpendableNoteRecord> = stmt
+            // Check if we already have the record
+            conn.lock()
+                .prepare(&format!(
+                    "SELECT
+                        notes.note_commitment,
+                        spendable_notes.height_created,
+                        notes.address,
+                        notes.amount,
+                        notes.asset_id,
+                        notes.rseed,
+                        spendable_notes.address_index,
+                        spendable_notes.source,
+                        spendable_notes.height_spent,
+                        spendable_notes.nullifier,
+                        spendable_notes.position
+                    FROM notes
+                    JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
+                    WHERE notes.note_commitment = x'{}'",
+                    hex::encode(note_commitment.0.to_bytes())
+                ))?
                 .query_and_then((), |record| record.try_into())?
                 .next()
-                .transpose()?;
-
-            Ok::<_, anyhow::Error>(record)
+                .transpose()
         })
         .await??
         {
@@ -349,22 +333,15 @@ impl Storage {
         let conn = self.conn.clone();
 
         if let Some(record) = spawn_blocking(move || {
-            let lock = conn.lock();
-
-            // Check if we already have the note
-            let mut stmt = lock.prepare_cached(&format!(
-                "SELECT * FROM swaps WHERE swaps.swap_commitment = x'{}'",
-                hex::encode(swap_commitment.0.to_bytes())
-            ))?;
-
-            // We only care about the first record returned, if it's there, since it will be the
-            // only one (note commitments are unique)
-            let record: Option<SwapRecord> = stmt
+            // Check if we already have the swap record
+            conn.lock()
+                .prepare_cached(&format!(
+                    "SELECT * FROM swaps WHERE swaps.swap_commitment = x'{}'",
+                    hex::encode(swap_commitment.0.to_bytes())
+                ))?
                 .query_and_then((), |record| record.try_into())?
                 .next()
-                .transpose()?;
-
-            Ok::<_, anyhow::Error>(record)
+                .transpose()
         })
         .await??
         {
@@ -420,20 +397,14 @@ impl Storage {
 
         // Check if we already have the nullifier in the set of spent notes
         if let Some(height_spent) = spawn_blocking(move || {
-            let lock = conn.lock();
-
-            let mut stmt = lock
-                .prepare_cached("SELECT height_spent FROM spendable_notes WHERE nullifier = ?1")?;
-
-            let record: Option<Option<u64>> = stmt
+            conn.lock()
+                .prepare_cached("SELECT height_spent FROM spendable_notes WHERE nullifier = ?1")?
                 .query_and_then([nullifier_bytes], |row| {
                     let height_spent: Option<u64> = row.get("height_spent")?;
                     Ok::<_, anyhow::Error>(height_spent)
                 })?
                 .next()
-                .transpose()?;
-
-            Ok::<_, anyhow::Error>(record)
+                .transpose()
         })
         .await??
         {
@@ -454,7 +425,7 @@ impl Storage {
         // Otherwise, wait for newly detected nullifiers and check whether they're the requested
         // one.
         loop {
-            let new_nullifier = rx.recv().await.context("Change subscriber failed")?;
+            let new_nullifier = rx.recv().await.context("change subscriber failed")?;
 
             if new_nullifier == nullifier {
                 return Ok(true);
@@ -472,12 +443,10 @@ impl Storage {
         let conn = self.conn.clone();
 
         spawn_blocking(move || {
-            let lock = conn.lock();
-
-            let mut stmt =
-                lock.prepare_cached("SELECT height FROM sync_height ORDER BY height DESC LIMIT 1")?;
-
-            let height: Option<i64> = stmt.query_row([], |row| row.get::<_, Option<i64>>(0))?;
+            let height: Option<i64> = conn
+                .lock()
+                .prepare_cached("SELECT height FROM sync_height ORDER BY height DESC LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<i64>>(0))?;
 
             Ok::<_, anyhow::Error>(
                 u64::try_from(height.ok_or_else(|| anyhow!("missing sync height"))?).ok(),
@@ -490,11 +459,11 @@ impl Storage {
         let conn = self.conn.clone();
 
         spawn_blocking(move || {
-            let lock = conn.lock();
-
-            let mut stmt = lock.prepare_cached("SELECT bytes FROM chain_params LIMIT 1")?;
-            let result: Option<Vec<u8>> = stmt.query_row([], |row| row.get("bytes"))?;
-            let bytes = result.ok_or_else(|| anyhow!("missing chain params"))?;
+            let bytes = conn
+                .lock()
+                .prepare_cached("SELECT bytes FROM chain_params LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
+                .ok_or_else(|| anyhow!("missing chain params"))?;
 
             ChainParameters::decode(bytes.as_slice())
         })
@@ -505,11 +474,11 @@ impl Storage {
         let conn = self.conn.clone();
 
         spawn_blocking(move || {
-            let lock = conn.lock();
-
-            let mut stmt = lock.prepare_cached("SELECT bytes FROM fmd_parameters LIMIT 1")?;
-            let result: Option<Vec<u8>> = stmt.query_row([], |row| row.get("bytes"))?;
-            let bytes = result.ok_or_else(|| anyhow!("missing fmd parameters"))?;
+            let bytes = conn
+                .lock()
+                .prepare_cached("SELECT bytes FROM fmd_parameters LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
+                .ok_or_else(|| anyhow!("missing fmd parameters"))?;
 
             FmdParameters::decode(bytes.as_slice())
         })
@@ -520,11 +489,11 @@ impl Storage {
         let conn = self.conn.clone();
 
         spawn_blocking(move || {
-            let lock = conn.lock();
-
-            let mut stmt = lock.prepare_cached("SELECT bytes FROM full_viewing_key LIMIT 1")?;
-            let result: Option<Vec<u8>> = stmt.query_row([], |row| row.get("bytes"))?;
-            let bytes = result.ok_or_else(|| anyhow!("missing full viewing key"))?;
+            let bytes = conn
+                .lock()
+                .prepare_cached("SELECT bytes FROM full_viewing_key LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
+                .ok_or_else(|| anyhow!("missing full viewing key"))?;
 
             FullViewingKey::decode(bytes.as_slice())
         })
@@ -534,10 +503,7 @@ impl Storage {
     pub async fn state_commitment_tree(&self) -> anyhow::Result<tct::Tree> {
         let conn = self.conn.clone();
         spawn_blocking(move || {
-            let mut lock = conn.lock();
-            let mut tx = lock.transaction()?;
-            let tree = tct::Tree::from_reader(&mut TreeStore(&mut tx))?;
-            Ok(tree)
+            tct::Tree::from_reader(&mut TreeStore(&mut conn.lock().transaction()?))
         })
         .await?
     }
@@ -554,23 +520,18 @@ impl Storage {
         let conn = self.conn.clone();
 
         spawn_blocking(move || {
-            let lock = conn.lock();
-
-            let mut stmt = lock.prepare_cached(
-                "SELECT block_height, tx_hash
-                FROM tx
-                WHERE block_height BETWEEN ?1 AND ?2",
-            )?;
-
-            let result = stmt
+            conn.lock()
+                .prepare_cached(
+                    "SELECT block_height, tx_hash
+                    FROM tx
+                    WHERE block_height BETWEEN ?1 AND ?2",
+                )?
                 .query_and_then([starting_block, ending_block], |row| {
                     let block_height: u64 = row.get("block_height")?;
                     let tx_hash: Vec<u8> = row.get("tx_hash")?;
                     Ok::<_, anyhow::Error>((block_height, tx_hash))
                 })?
-                .collect::<anyhow::Result<Vec<_>>>()?;
-
-            Ok::<_, anyhow::Error>(result)
+                .collect::<anyhow::Result<Vec<_>>>()
         })
         .await?
     }
@@ -587,15 +548,12 @@ impl Storage {
         let conn = self.conn.clone();
 
         spawn_blocking(move || {
-            let lock = conn.lock();
-
-            let mut stmt = lock.prepare_cached(
-                "SELECT block_height, tx_hash, tx_bytes
-                FROM tx
-                WHERE block_height BETWEEN ?1 AND ?2",
-            )?;
-
-            let result = stmt
+            conn.lock()
+                .prepare_cached(
+                    "SELECT block_height, tx_hash, tx_bytes
+                    FROM tx
+                    WHERE block_height BETWEEN ?1 AND ?2",
+                )?
                 .query_and_then([starting_block, ending_block], |row| {
                     let block_height: u64 = row.get("block_height")?;
                     let tx_hash: Vec<u8> = row.get("tx_hash")?;
@@ -603,9 +561,7 @@ impl Storage {
                     let tx = Transaction::decode(tx_bytes.as_slice())?;
                     Ok::<_, anyhow::Error>((block_height, tx_hash, tx))
                 })?
-                .collect::<anyhow::Result<Vec<_>>>()?;
-
-            Ok::<_, anyhow::Error>(result)
+                .collect::<anyhow::Result<Vec<_>>>()
         })
         .await?
     }
@@ -615,26 +571,20 @@ impl Storage {
         let tx_hash = tx_hash.to_vec();
 
         spawn_blocking(move || {
-            let lock = conn.lock();
-
-            let mut stmt = lock.prepare_cached(
-                "SELECT block_height, tx_hash, tx_bytes
-                FROM tx
-                WHERE tx_hash = ?1",
-            )?;
-
-            let result: Option<(u64, Vec<u8>, Vec<u8>)> = stmt
+            if let Some(tx_bytes) = conn
+                .lock()
+                .prepare_cached("SELECT tx_bytes FROM tx WHERE tx_hash = ?1")?
                 .query_row([tx_hash], |row| {
-                    let block_height: u64 = row.get("block_height")?;
-                    let tx_hash: Vec<u8> = row.get("tx_hash")?;
                     let tx_bytes: Vec<u8> = row.get("tx_bytes")?;
-                    Ok((block_height, tx_hash, tx_bytes))
+                    Ok(tx_bytes)
                 })
-                .optional()?;
-
-            Ok::<_, anyhow::Error>(
-                result.map(|(_, _, tx_bytes)| Transaction::decode(tx_bytes.as_slice()).unwrap()),
-            )
+                .optional()?
+            {
+                let tx = Transaction::decode(tx_bytes.as_slice())?;
+                Ok(Some(tx))
+            } else {
+                Ok(None)
+            }
         })
         .await?
     }
@@ -655,28 +605,26 @@ impl Storage {
         let nullifier_bytes = nullifier.to_bytes().to_vec();
 
         if let Some(record) = spawn_blocking(move || {
-            let lock = conn.lock();
-
-            let mut stmt = lock.prepare_cached(&format!(
-                "SELECT
-                    notes.note_commitment,
-                    spendable_notes.height_created,
-                    notes.address,
-                    notes.amount,
-                    notes.asset_id,
-                    notes.rseed,
-                    spendable_notes.address_index,
-                    spendable_notes.source,
-                    spendable_notes.height_spent,
-                    spendable_notes.nullifier,
-                    spendable_notes.position
-                FROM notes
-                JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
-                WHERE hex(spendable_notes.nullifier) = \"{}\"",
-                hex::encode_upper(nullifier_bytes)
-            ))?;
-
-            let record: Option<SpendableNoteRecord> = stmt
+            let record = conn
+                .lock()
+                .prepare_cached(&format!(
+                    "SELECT
+                        notes.note_commitment,
+                        spendable_notes.height_created,
+                        notes.address,
+                        notes.amount,
+                        notes.asset_id,
+                        notes.rseed,
+                        spendable_notes.address_index,
+                        spendable_notes.source,
+                        spendable_notes.height_spent,
+                        spendable_notes.nullifier,
+                        spendable_notes.position
+                    FROM notes
+                    JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
+                    WHERE hex(spendable_notes.nullifier) = \"{}\"",
+                    hex::encode_upper(nullifier_bytes)
+                ))?
                 .query_and_then((), |row| SpendableNoteRecord::try_from(row))?
                 .next()
                 .transpose()?;
@@ -727,14 +675,8 @@ impl Storage {
         let conn = self.conn.clone();
 
         spawn_blocking(move || {
-            let lock = conn.lock();
-
-            let mut stmt = lock.prepare_cached(
-                "SELECT *
-                FROM assets",
-            )?;
-
-            let result = stmt
+            conn.lock()
+                .prepare_cached("SELECT * FROM assets")?
                 .query_and_then([], |row| {
                     let asset_id: Vec<u8> = row.get("asset_id")?;
                     let denom: String = row.get("denom")?;
@@ -746,36 +688,34 @@ impl Storage {
                     };
                     Ok::<_, anyhow::Error>(asset)
                 })?
-                .collect::<anyhow::Result<Vec<_>>>()?;
-
-            Ok::<_, anyhow::Error>(result)
+                .collect::<anyhow::Result<Vec<_>>>()
         })
         .await?
-
-        // let result = sqlx::query!(
-        //     "SELECT *
-        //     FROM assets"
-        // )
-        // .fetch_all(&self.pool)
-        // .await?;
-
-        // let mut output: Vec<Asset> = Vec::new();
-
-        // for record in result {
-        //     let asset = Asset {
-        //         id: Id::try_from(record.asset_id.as_slice())?,
-        //         denom: asset::REGISTRY
-        //             .parse_denom(&record.denom)
-        //             .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", record.denom))?,
-        //     };
-        //     output.push(asset);
-        // }
-
-        // Ok(output)
     }
 
     pub async fn asset_by_id(&self, id: &Id) -> anyhow::Result<Option<Asset>> {
         let id = id.to_bytes().to_vec();
+
+        let conn = self.conn.clone();
+
+        spawn_blocking(move || {
+            conn.lock()
+                .prepare_cached("SELECT * FROM assets WHERE asset_id = ?1")?
+                .query_and_then([id], |row| {
+                    let asset_id: Vec<u8> = row.get("asset_id")?;
+                    let denom: String = row.get("denom")?;
+                    let asset = Asset {
+                        id: Id::try_from(asset_id.as_slice())?,
+                        denom: asset::REGISTRY
+                            .parse_denom(&denom)
+                            .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", denom))?,
+                    };
+                    Ok::<_, anyhow::Error>(asset)
+                })?
+                .next()
+                .transpose()
+        })
+        .await?
 
         // let result = sqlx::query!(
         //     "SELECT *
@@ -796,7 +736,6 @@ impl Storage {
         //         })
         //     })
         //     .transpose()
-        todo!("asset_by_id")
     }
 
     // Get assets whose denoms match the given SQL LIKE pattern, with the `_` and `%` wildcards,
