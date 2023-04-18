@@ -30,7 +30,7 @@ impl Read for TreeStore<'_, '_> {
             .prepare_cached("SELECT position FROM sct_position LIMIT 1")
             .context("failed to prepare position query")?;
         let position = stmt
-            .query_row::<Option<u64>, _, _>([], |row| row.get(0))
+            .query_row::<Option<u64>, _, _>([], |row| row.get("position"))
             .context("failed to query position")?
             .map(Position::from)
             .into();
@@ -43,7 +43,7 @@ impl Read for TreeStore<'_, '_> {
             .prepare_cached("SELECT forgotten FROM sct_forgotten LIMIT 1")
             .context("failed to prepare forgotten query")?;
         let forgotten = stmt
-            .query_row::<u64, _, _>([], |row| row.get(0))
+            .query_row::<u64, _, _>([], |row| row.get("forgotten"))
             .context("failed to query forgotten")?
             .into();
         Ok(forgotten)
@@ -59,7 +59,7 @@ impl Read for TreeStore<'_, '_> {
             )
             .context("failed to prepare hash query")?;
         let bytes = stmt
-            .query_row::<Option<Vec<u8>>, _, _>((&position, &height), |row| row.get(0))
+            .query_row::<Option<Vec<u8>>, _, _>((&position, &height), |row| row.get("hash"))
             .context("failed to query hash")?;
 
         bytes
@@ -93,9 +93,9 @@ impl Read for TreeStore<'_, '_> {
 
                 let rows = match stmt
                     .query_and_then([], |row| {
-                        let position: i64 = row.get(0)?;
-                        let height: u8 = row.get(1)?;
-                        let hash: Vec<u8> = row.get(2)?;
+                        let position: i64 = row.get("position")?;
+                        let height: u8 = row.get("height")?;
+                        let hash: Vec<u8> = row.get("hash")?;
                         let hash = <[u8; 32]>::try_from(hash)
                             .map_err(|_| anyhow::anyhow!("hash was of incorrect length"))
                             .and_then(move |array| Hash::from_bytes(array).map_err(Into::into))?;
@@ -130,7 +130,7 @@ impl Read for TreeStore<'_, '_> {
             .context("failed to prepare commitment query")?;
 
         let bytes = stmt
-            .query_row::<Option<Vec<u8>>, _, _>((&position,), |row| row.get(0))
+            .query_row::<Option<Vec<u8>>, _, _>((&position,), |row| row.get("commitment"))
             .context("failed to query commitment")?;
 
         bytes
@@ -164,8 +164,8 @@ impl Read for TreeStore<'_, '_> {
 
                 let rows = match stmt
                     .query_and_then([], |row| {
-                        let position: i64 = row.get(0)?;
-                        let commitment: Vec<u8> = row.get(1)?;
+                        let position: i64 = row.get("position")?;
+                        let commitment: Vec<u8> = row.get("commitment")?;
                         let commitment = <[u8; 32]>::try_from(commitment)
                             .map_err(|_| anyhow::anyhow!("commitment was of incorrect length"))
                             .and_then(|array| Commitment::try_from(array).map_err(Into::into))?;

@@ -122,7 +122,7 @@ impl Storage {
                 .conn
                 .lock()
                 .query_row("SELECT schema_hash FROM schema_hash", (), |row| {
-                    row.get(0)
+                    row.get("schema_hash")
                 })
                 .context("failed to query database version")?;
 
@@ -131,7 +131,7 @@ impl Storage {
                     .conn
                     .lock()
                     .query_row("SELECT client_version FROM client_version", (), |row| {
-                        row.get(0)
+                        row.get("client_version")
                     })
                     .context("failed to query database version")?;
 
@@ -232,8 +232,8 @@ impl Storage {
 
             let rows = stmt
                 .query_map([address], |row| {
-                    let asset_id: Vec<u8> = row.get(0)?;
-                    let amount: [u8; 16] = row.get(1)?;
+                    let asset_id: Vec<u8> = row.get("asset_id")?;
+                    let amount: [u8; 16] = row.get("amount")?;
 
                     Ok((asset_id, amount))
                 })
@@ -427,7 +427,7 @@ impl Storage {
 
             let record: Option<Option<u64>> = stmt
                 .query_and_then([nullifier_bytes], |row| {
-                    let height_spent: Option<u64> = row.get(1)?;
+                    let height_spent: Option<u64> = row.get("height_spent")?;
                     Ok::<_, anyhow::Error>(height_spent)
                 })?
                 .next()
@@ -493,9 +493,7 @@ impl Storage {
             let lock = conn.lock();
 
             let mut stmt = lock.prepare_cached("SELECT bytes FROM chain_params LIMIT 1")?;
-
-            let result: Option<Vec<u8>> = stmt.query_row([], |row| row.get(0))?;
-
+            let result: Option<Vec<u8>> = stmt.query_row([], |row| row.get("bytes"))?;
             let bytes = result.ok_or_else(|| anyhow!("missing chain params"))?;
 
             ChainParameters::decode(bytes.as_slice())
@@ -510,9 +508,7 @@ impl Storage {
             let lock = conn.lock();
 
             let mut stmt = lock.prepare_cached("SELECT bytes FROM fmd_parameters LIMIT 1")?;
-
-            let result: Option<Vec<u8>> = stmt.query_row([], |row| row.get(0))?;
-
+            let result: Option<Vec<u8>> = stmt.query_row([], |row| row.get("bytes"))?;
             let bytes = result.ok_or_else(|| anyhow!("missing fmd parameters"))?;
 
             FmdParameters::decode(bytes.as_slice())
@@ -527,9 +523,7 @@ impl Storage {
             let lock = conn.lock();
 
             let mut stmt = lock.prepare_cached("SELECT bytes FROM full_viewing_key LIMIT 1")?;
-
-            let result: Option<Vec<u8>> = stmt.query_row([], |row| row.get(0))?;
-
+            let result: Option<Vec<u8>> = stmt.query_row([], |row| row.get("bytes"))?;
             let bytes = result.ok_or_else(|| anyhow!("missing full viewing key"))?;
 
             FullViewingKey::decode(bytes.as_slice())
@@ -570,8 +564,8 @@ impl Storage {
 
             let result = stmt
                 .query_and_then([starting_block, ending_block], |row| {
-                    let block_height: u64 = row.get(0)?;
-                    let tx_hash: Vec<u8> = row.get(1)?;
+                    let block_height: u64 = row.get("block_height")?;
+                    let tx_hash: Vec<u8> = row.get("tx_hash")?;
                     Ok::<_, anyhow::Error>((block_height, tx_hash))
                 })?
                 .collect::<anyhow::Result<Vec<_>>>()?;
@@ -603,9 +597,9 @@ impl Storage {
 
             let result = stmt
                 .query_and_then([starting_block, ending_block], |row| {
-                    let block_height: u64 = row.get(0)?;
-                    let tx_hash: Vec<u8> = row.get(1)?;
-                    let tx_bytes: Vec<u8> = row.get(2)?;
+                    let block_height: u64 = row.get("block_height")?;
+                    let tx_hash: Vec<u8> = row.get("tx_hash")?;
+                    let tx_bytes: Vec<u8> = row.get("tx_bytes")?;
                     let tx = Transaction::decode(tx_bytes.as_slice())?;
                     Ok::<_, anyhow::Error>((block_height, tx_hash, tx))
                 })?
@@ -631,9 +625,9 @@ impl Storage {
 
             let result: Option<(u64, Vec<u8>, Vec<u8>)> = stmt
                 .query_row([tx_hash], |row| {
-                    let block_height: u64 = row.get(0)?;
-                    let tx_hash: Vec<u8> = row.get(1)?;
-                    let tx_bytes: Vec<u8> = row.get(2)?;
+                    let block_height: u64 = row.get("block_height")?;
+                    let tx_hash: Vec<u8> = row.get("tx_hash")?;
+                    let tx_bytes: Vec<u8> = row.get("tx_bytes")?;
                     Ok((block_height, tx_hash, tx_bytes))
                 })
                 .optional()?;
@@ -730,6 +724,34 @@ impl Storage {
     }
 
     pub async fn all_assets(&self) -> anyhow::Result<Vec<Asset>> {
+        let conn = self.conn.clone();
+
+        spawn_blocking(move || {
+            let lock = conn.lock();
+
+            let mut stmt = lock.prepare_cached(
+                "SELECT *
+                FROM assets",
+            )?;
+
+            let result = stmt
+                .query_and_then([], |row| {
+                    let asset_id: Vec<u8> = row.get("asset_id")?;
+                    let denom: String = row.get("denom")?;
+                    let asset = Asset {
+                        id: Id::try_from(asset_id.as_slice())?,
+                        denom: asset::REGISTRY
+                            .parse_denom(&denom)
+                            .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", denom))?,
+                    };
+                    Ok::<_, anyhow::Error>(asset)
+                })?
+                .collect::<anyhow::Result<Vec<_>>>()?;
+
+            Ok::<_, anyhow::Error>(result)
+        })
+        .await?
+
         // let result = sqlx::query!(
         //     "SELECT *
         //     FROM assets"
@@ -750,7 +772,6 @@ impl Storage {
         // }
 
         // Ok(output)
-        todo!("all_assets")
     }
 
     pub async fn asset_by_id(&self, id: &Id) -> anyhow::Result<Option<Asset>> {
