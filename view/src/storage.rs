@@ -122,7 +122,7 @@ impl Storage {
                 .query_row("SELECT schema_hash FROM schema_hash", (), |row| {
                     row.get("schema_hash")
                 })
-                .context("failed to query database version")?;
+                .context("failed to query database schema version: the database was probably created by an old client version, and needs to be reset and resynchronized")?;
 
             if actual_schema_hash != *SCHEMA_HASH {
                 let database_client_version: String = storage
@@ -131,10 +131,10 @@ impl Storage {
                     .query_row("SELECT client_version FROM client_version", (), |row| {
                         row.get("client_version")
                     })
-                    .context("failed to query database version")?;
+                    .context("failed to query client version: the database was probably created by an old client version, and needs to be reset and resynchronized")?;
 
                 return Err(anyhow!(
-                    "can't load view database created by client version {} using client version {}: they have different schemata",
+                    "can't load view database created by client version {} using client version {}: they have different schemata, so you need to reset your view database and resynchronize",
                     database_client_version,
                     env!("VERGEN_GIT_SEMVER"),
                 ));
