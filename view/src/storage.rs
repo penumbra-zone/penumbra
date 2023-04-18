@@ -531,7 +531,7 @@ impl Storage {
                     let tx_hash: Vec<u8> = row.get("tx_hash")?;
                     Ok::<_, anyhow::Error>((block_height, tx_hash))
                 })?
-                .collect::<anyhow::Result<Vec<_>>>()
+                .collect()
         })
         .await?
     }
@@ -561,7 +561,7 @@ impl Storage {
                     let tx = Transaction::decode(tx_bytes.as_slice())?;
                     Ok::<_, anyhow::Error>((block_height, tx_hash, tx))
                 })?
-                .collect::<anyhow::Result<Vec<_>>>()
+                .collect()
         })
         .await?
     }
@@ -688,7 +688,7 @@ impl Storage {
                     };
                     Ok::<_, anyhow::Error>(asset)
                 })?
-                .collect::<anyhow::Result<Vec<_>>>()
+                .collect()
         })
         .await?
     }
@@ -716,55 +716,32 @@ impl Storage {
                 .transpose()
         })
         .await?
-
-        // let result = sqlx::query!(
-        //     "SELECT *
-        //     FROM assets
-        //     WHERE asset_id = ?",
-        //     id
-        // )
-        // .fetch_optional(&self.pool)
-        // .await?;
-
-        // result
-        //     .map(|record| {
-        //         Ok(Asset {
-        //             id: Id::try_from(record.asset_id.as_slice())?,
-        //             denom: asset::REGISTRY
-        //                 .parse_denom(&record.denom)
-        //                 .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", record.denom))?,
-        //         })
-        //     })
-        //     .transpose()
     }
 
     // Get assets whose denoms match the given SQL LIKE pattern, with the `_` and `%` wildcards,
     // where `\` is the escape character.
-    pub async fn assets_matching(&self, pattern: &str) -> anyhow::Result<Vec<Asset>> {
-        // let result = sqlx::query!(
-        //     "SELECT *
-        //     FROM assets
-        //     WHERE denom LIKE ?
-        //     ESCAPE '\'",
-        //     pattern
-        // )
-        // .fetch_all(&self.pool)
-        // .await?;
+    pub async fn assets_matching(&self, pattern: String) -> anyhow::Result<Vec<Asset>> {
+        let pattern = pattern.to_owned();
 
-        // let mut output: Vec<Asset> = Vec::new();
+        let conn = self.conn.clone();
 
-        // for record in result {
-        //     let asset = Asset {
-        //         id: Id::try_from(record.asset_id.as_slice())?,
-        //         denom: asset::REGISTRY
-        //             .parse_denom(&record.denom)
-        //             .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", record.denom))?,
-        //     };
-        //     output.push(asset);
-        // }
-
-        // Ok(output)
-        todo!("assets_matching")
+        spawn_blocking(move || {
+            conn.lock()
+                .prepare_cached("SELECT * FROM assets WHERE denom LIKE ?1 ESCAPE '\\'")?
+                .query_and_then([pattern], |row| {
+                    let asset_id: Vec<u8> = row.get("asset_id")?;
+                    let denom: String = row.get("denom")?;
+                    let asset = Asset {
+                        id: Id::try_from(asset_id.as_slice())?,
+                        denom: asset::REGISTRY
+                            .parse_denom(&denom)
+                            .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", denom))?,
+                    };
+                    Ok::<_, anyhow::Error>(asset)
+                })?
+                .collect()
+        })
+        .await?
     }
 
     pub async fn notes(

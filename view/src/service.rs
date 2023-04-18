@@ -941,9 +941,14 @@ impl ViewProtocolService for ViewService {
                 (include_voting_receipt_tokens, "voted\\_on\\_%"),
             ] {
                 if *include {
-                    assets.extend(self.storage.assets_matching(pattern).await.map_err(|e| {
-                        tonic::Status::unavailable(format!("error fetching assets: {e}"))
-                    })?);
+                    assets.extend(
+                        self.storage
+                            .assets_matching(pattern.to_string())
+                            .await
+                            .map_err(|e| {
+                                tonic::Status::unavailable(format!("error fetching assets: {e}"))
+                            })?,
+                    );
                 }
             }
             assets
