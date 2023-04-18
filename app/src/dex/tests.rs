@@ -364,30 +364,37 @@ mod test {
         Ok(())
     }
 
-    fn limit_buy(pair: DirectedTradingPair, amount: Amount, price: (Amount, Amount)) -> Position {
+    /// Creates a ~limit buy order for a directed trading pair, using the `asset_2` as the numeraire.
+    /// and a tuple of `Amount` representing a price.
+    /// The output of this function is a `Position` that specifies a limit buy for the specified `amount`
+    /// of `asset_1` at a price of `price` units of numeraire.
+    fn limit_buy(pair: DirectedTradingPair, amount: Amount, price: Amount) -> Position {
+        let one: Amount = 1u64.into();
         Position::new(
             OsRng,
             pair,
             0,
-            price.0,
-            price.1,
+            price,
+            one,
             Reserves {
-                r1: amount,
-                r2: 0u64.into(),
+                r1: 0u64.into(),
+                r2: amount * price,
             },
         )
     }
 
-    fn limit_sell(pair: DirectedTradingPair, amount: Amount, price: (Amount, Amount)) -> Position {
+    /// Limit sell
+    fn limit_sell(pair: DirectedTradingPair, amount: Amount, price: Amount) -> Position {
+        let one: Amount = 1u64.into();
         Position::new(
             OsRng,
             pair,
             0,
-            price.0,
-            price.1,
+            price,
+            one,
             Reserves {
-                r1: 0u64.into(),
-                r2: amount,
+                r1: amount,
+                r2: Amount::zero(),
             },
         )
     }
@@ -494,7 +501,7 @@ mod test {
         let mut state_tx = state.try_begin_transaction().unwrap();
         /*
                 ------------------------------------------------------------------------------------------------------------
-                |       Pair 1: gm <> gn       |       Pair 2: gn <> penumbra        |       Pair 3: pusd <> penumbra      |
+                |       Pair 1: gm <> gn       |       Pair 2: gn <> penumbra        |       Pair 3: penumbra <> pusd      |
                 ------------------------------------------------------------------------------------------------------------
                 |       100gm@1                |       53gn@100                      |       1500penumbra@1445             |
                 |       120gm@1                |       54gn@100                      |       10penumbra@1450               |
@@ -531,7 +538,7 @@ mod test {
                     50gn@1
         */
 
-        let one = (1u64.into(), 1u64.into());
+        let one = 1u64.into();
 
         let buy_1 = limit_buy(pair_1, 50u64.into(), one);
         let buy_2 = limit_buy(pair_1, 120u64.into(), one);
@@ -560,17 +567,16 @@ mod test {
               1000gn@102
 
         */
-
-        let price100 = (100u64.into(), 1u64.into());
-        let price101i = (1u64.into(), 101u64.into());
-        let price102i = (1u64.into(), 102u64.into());
+        let price100 = 100u64.into();
+        let price101 = 101u64.into();
+        let price102 = 102u64.into();
 
         let buy_1 = limit_buy(pair_2, 55u64.into(), price100);
         let buy_2 = limit_buy(pair_2, 54u64.into(), price100);
         let buy_3 = limit_buy(pair_2, 53u64.into(), price100);
 
-        let sell_1 = limit_sell(pair_2, 54u64.into(), price101i);
-        let sell_2 = limit_sell(pair_2, 1000u64.into(), price102i);
+        let sell_1 = limit_sell(pair_2, 54u64.into(), price101);
+        let sell_2 = limit_sell(pair_2, 1000u64.into(), price102);
 
         state_tx.put_position(buy_1);
         state_tx.put_position(buy_2);
@@ -580,32 +586,34 @@ mod test {
         state_tx.put_position(sell_2);
 
         /*
-
-
-        * pair 3: pusd <> penumbra
+        * pair 3: penumbra <> pusd
                 1500penumbra@1445
                 10penumbra@1450
             ^-bids---------asks-v
-                5000penumbra@1500
-                1penumbra@1550
+                1penumbra@1500
+                10penumbra@1550
+                100penumbra@1800
         */
 
-        let price1450 = (1450u64.into(), 1u64.into());
-        let price1445 = (1445u64.into(), 1u64.into());
-        let price1500i = (1u64.into(), 1500u64.into());
-        let price1550i = (1u64.into(), 1550u64.into());
+        let price1445 = 1445u64.into();
+        let price1450 = 1450u64.into();
+        let price1500 = 1500u64.into();
+        let price1550 = 1550u64.into();
+        let price1800 = 1800u64.into();
 
         let buy_1 = limit_buy(pair_3, 10u64.into(), price1450);
         let buy_2 = limit_buy(pair_3, 1500u64.into(), price1445);
 
-        let sell_1 = limit_sell(pair_3, 5000u64.into(), price1500i);
-        let sell_2 = limit_sell(pair_3, 1u64.into(), price1550i);
+        let sell_1 = limit_sell(pair_3, 1u64.into(), price1500);
+        let sell_2 = limit_sell(pair_3, 10u64.into(), price1550);
+        let sell_3 = limit_sell(pair_3, 100u64.into(), price1800);
 
         state_tx.put_position(buy_1);
         state_tx.put_position(buy_2);
 
         state_tx.put_position(sell_1);
         state_tx.put_position(sell_2);
+        state_tx.put_position(sell_3);
 
         /*
 
@@ -624,16 +632,22 @@ mod test {
 
         println!("filling route with spill_price = {spill_price}");
 
-        println!("delta_1 = {}", delta_1.amount);
-        println!("delta_2 = 0");
-
-        //state_tx.fill_route(delta_1, route, spill_price).await;
         let (unfilled, output) =
             FillRoute::fill_route2(&mut state_tx, delta_1, &route, spill_price)
                 .await
                 .unwrap();
+
+        println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+        println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+        println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+        println!("delta_1 = {}", delta_1.amount);
+        println!("delta_2 = 0");
         println!("total_lambda_1 = {unfilled:?}");
         println!("total_lambda_2 = {output:?}");
+        println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+        println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+        println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+
         Ok(())
     }
 }
