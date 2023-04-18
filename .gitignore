@@ -35,3 +35,7 @@ target/
 
 # Ignoring lock file for the parameter-setup tool.
 tools/parameter-setup/Cargo.lock
+
+# Relayer config referencing local devnet, will always be unique
+# to current host env.
+deployments/relayer/configs/penumbra-local.json

@@ -3,7 +3,7 @@ set -euo pipefail
 
 
 if [[ $# -lt 1 ]] ; then
-    >&2 echo "ERROR: no network declared. Use either 'testnet' or 'preview'."
+    >&2 echo "ERROR: no network declared. Use one of: testnet, preview, or local."
     >&2 echo "Usage: $0 <network>"
     exit 1
 fi
