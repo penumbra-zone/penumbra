@@ -722,8 +722,11 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
             ------------------------------------------------------------------------------------------------------------
             |                              |                                     |                                     |
             | ^-bids---------asks-v        |   ^-bids---------asks-v             |   ^-bids---------asks-v             |
-            |        1gm@1                 |          1gn@1                      |         1penumbra@1500              |
-            |        1gm@1                 |          1gn@1                      |         1penumbra@1500              |
+            |        1gm@1                 |          1gn@2                      |         1penumbra@1500              |
+            |        1gm@1                 |          1gn@2                      |         1penumbra@1500              |
+            |                              |                                     |         1penumbra@1500              |
+            |                              |                                     |         1penumbra@1500              |
+            |                              |                                     |         1penumbra@1500              |
             ------------------------------------------------------------------------------------------------------------
     */
 
@@ -732,18 +735,9 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
     let pusd = asset::REGISTRY.parse_unit("pusd");
 
-    println!("gm......: {}", gm.id());
-    println!("gn......: {}", gn.id());
-    println!("penumbra: {}", penumbra.id());
-    println!("pusd....: {}", pusd.id());
-
     let pair_1 = Market::new(gm.clone(), gn.clone());
     let pair_2 = Market::new(gn.clone(), penumbra.clone());
     let pair_3 = Market::new(penumbra.clone(), pusd.clone());
-
-    println!("gm units: {}", gm.unit_amount());
-    println!("gn units: {}", gn.unit_amount());
-    println!("penumbra units: {}", penumbra.unit_amount());
 
     let one = 1u64.into();
     let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), one);
@@ -783,48 +777,12 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
         .await
         .unwrap();
 
-    // snip
-    let mut mini_registry: BTreeMap<asset::Id, &'static str> = BTreeMap::new();
+    let desired_output = Amount::from(3000u64) * pusd.unit_amount();
 
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let gn = asset::REGISTRY.parse_unit("gn");
-    let penumbra = asset::REGISTRY.parse_unit("penumbra");
-    let pusd = asset::REGISTRY.parse_unit("pusd");
-
-    mini_registry.insert(gm.id(), "gm");
-    mini_registry.insert(gn.id(), "gn");
-    mini_registry.insert(penumbra.id(), "penumbra");
-    mini_registry.insert(pusd.id(), "pusd");
-
-    // snip
-    println!("##########-- ROUTE --###################");
-    route.windows(2).for_each(|assets| {
-        println!(
-            "{} -> {}",
-            mini_registry[&assets[0]], mini_registry[&assets[1]]
-        )
-    });
-    println!("################################");
-    println!("infinite spill price");
-    println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-    println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-    println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-    println!(
-        "delta_1 = {}",
-        U128x128::ratio(delta_1.amount, gm.unit_amount()).unwrap()
-    );
-    println!("delta_2 = 0");
-    println!(
-        "total_lambda_1 = {}",
-        U128x128::ratio(unfilled.amount, gm.unit_amount()).unwrap()
-    );
-    println!(
-        "total_lambda_2 = {}",
-        U128x128::ratio(output.amount, pusd.unit_amount()).unwrap()
-    );
-    println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-    println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-    println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+    assert_eq!(unfilled.amount, Amount::zero());
+    assert_eq!(unfilled.asset_id, gm.id());
+    assert_eq!(output.amount, desired_output);
+    assert_eq!(output.asset_id, pusd.id());
 
     Ok(())
 }
