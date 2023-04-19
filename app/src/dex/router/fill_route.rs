@@ -157,7 +157,7 @@ pub trait FillRoute: StateWrite + Sized {
                     //                                            ii) we fill and we're still below the spill price.
 
                     let lambda_2 = constraining_position
-                        .reserves_of(pairs[*constraining_index - 1].end)
+                        .reserves_for(pairs[*constraining_index - 1].end)
                         .unwrap();
                     let delta_1_star = (U128x128::from(lambda_2) * inv_effective_price).unwrap();
                     delta_1_star.round_up().try_into()?
