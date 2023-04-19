@@ -5,6 +5,8 @@ use penumbra_storage::{StateDelta, StateRead};
 use tokio::task::JoinSet;
 use tracing::instrument;
 
+use crate::dex::PositionManager;
+
 use super::{Path, PathCache, PathEntry, SharedPathCache};
 
 #[async_trait]
@@ -62,8 +64,10 @@ async fn relax_path<S: StateRead + 'static>(
     cache: SharedPathCache<S>,
     mut path: Path<S>,
 ) -> Result<()> {
-    // TODO: replace
-    let candidates = hardcoded_candidates();
+    let candidates = path
+        .state
+        .candidate_set(*path.end(), hardcoded_candidates())
+        .await?;
 
     let mut js = JoinSet::new();
     for new_end in candidates {
@@ -85,8 +89,6 @@ async fn relax_path<S: StateRead + 'static>(
 
 fn hardcoded_candidates() -> Vec<asset::Id> {
     vec![
-        asset::REGISTRY.parse_unit("gm").id(),
-        asset::REGISTRY.parse_unit("gn").id(),
         asset::REGISTRY.parse_unit("pusd").id(),
         asset::REGISTRY.parse_unit("penumbra").id(),
     ]

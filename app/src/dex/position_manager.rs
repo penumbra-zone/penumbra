@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use penumbra_crypto::{
+    asset,
     dex::{
         lp::position::{self, Position},
         DirectedTradingPair,
@@ -13,7 +14,11 @@ use penumbra_storage::{StateRead, StateWrite};
 use super::state_key;
 use futures::Stream;
 use futures::StreamExt;
-use std::pin::Pin;
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    iter::FromIterator,
+    pin::Pin,
+};
 
 #[async_trait]
 pub trait PositionRead: StateRead {
@@ -23,6 +28,23 @@ pub trait PositionRead: StateRead {
         self.prefix(prefix)
             .map(|entry| match entry {
                 Ok((_, metadata)) => Ok(metadata),
+                Err(e) => Err(e),
+            })
+            .boxed()
+    }
+
+    /// Return a stream of all [`position::Id`] available based on a starting asset.
+    fn all_positions_from(
+        &self,
+        from: &asset::Id,
+    ) -> Pin<Box<dyn Stream<Item = Result<position::Id>> + Send + '_>> {
+        let prefix = state_key::internal::price_index::from_asset_prefix(from);
+        self.nonconsensus_prefix_raw(&prefix)
+            .map(|entry| match entry {
+                Ok((k, _)) => {
+                    let raw_id = <&[u8; 32]>::try_from(&k[103..135])?.to_owned();
+                    Ok(position::Id(raw_id))
+                }
                 Err(e) => Err(e),
             })
             .boxed()
@@ -157,6 +179,68 @@ pub trait PositionManager: StateWrite + PositionRead {
         }
 
         Ok((remaining, total_output, positions))
+    }
+
+    /// Returns the list of candidate assets to route through for a trade from `from`.
+    /// Combines a list of fixed candidates with a list of liquidity-based candidates.
+    /// This ensures that the fixed candidates are always considered, minimizing
+    /// the risk of attacks on routing.
+    async fn candidate_set(
+        &self,
+        from: asset::Id,
+        fixed_candidates: Vec<asset::Id>,
+    ) -> Result<Vec<asset::Id>> {
+        // query the state for liquidity-based candidates
+        let mut position_ids = self.all_positions_from(&from);
+
+        let mut positions = BTreeSet::from_iter(fixed_candidates.iter().cloned());
+
+        // Bucket all positions "from" this asset and order by available liquidity of the "to" asset.
+        let mut buckets = BTreeMap::new();
+
+        // TODO: would it be more efficient to index trading pairs by liquidity somewhere in non-consensus storage?
+        while let Some(id) = position_ids.next().await {
+            let id = &id?;
+            let position = self
+                .position_by_id(&id)
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("position id {:?} not found in state", id))?;
+
+            let to = if position.phi.pair.asset_1() == from {
+                position.phi.pair.asset_2()
+            } else {
+                position.phi.pair.asset_1()
+            };
+
+            // Increment the total reserves for the "to" asset in the bucket.
+            let position_reserves = position.reserves_for(to).ok_or_else(|| {
+                anyhow::anyhow!(
+                    "position {:?} does not contain reserves for asset {:?}",
+                    id,
+                    to
+                )
+            })?;
+            buckets
+                .entry(to)
+                .and_modify(|reserves| *reserves = *reserves + position_reserves)
+                .or_insert(position_reserves);
+        }
+
+        // Now we have buckets corresponding to the "to" assets directly routable from the "from" asset, containing liquidity.
+        // Sort by liquidity:
+        let mut v = Vec::from_iter(buckets);
+        v.sort_by(|&(_, a), &(_, b)| b.cmp(&a));
+
+        // Add the top buckets until we reach the maximum number of candidates.
+        for (to, _) in v {
+            // TODO: make this size a chain parameter?
+            if positions.len() >= 5 {
+                break;
+            }
+            positions.insert(to);
+        }
+
+        Ok(positions.into_iter().collect())
     }
 }
 
