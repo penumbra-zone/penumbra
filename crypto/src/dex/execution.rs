@@ -1,6 +1,6 @@
-use crate::asset;
 use crate::dex::lp::{BareTradingFunction, TradingFunction};
 use crate::dex::trading_pair::DirectedTradingPair;
+use crate::{asset, Value};
 use anyhow::Result;
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
@@ -79,6 +79,109 @@ impl From<Path> for pb::Path {
             pair: Some(path.pair.into()),
             route: path.route.into_iter().map(Into::into).collect(),
             phi: Some(path.phi.into()),
+        }
+    }
+}
+
+/// Contains the summary data of a trade, for client consumption.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "pb::SwapExecution", into = "pb::SwapExecution")]
+pub struct SwapExecution {
+    traces: Vec<TradeTrace>,
+}
+
+impl DomainType for SwapExecution {
+    type Proto = pb::SwapExecution;
+}
+
+impl TryFrom<pb::SwapExecution> for SwapExecution {
+    type Error = anyhow::Error;
+    fn try_from(se: pb::SwapExecution) -> Result<Self> {
+        Ok(Self {
+            traces: se
+                .traces
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<Vec<_>>>()?,
+        })
+    }
+}
+
+impl From<SwapExecution> for pb::SwapExecution {
+    fn from(se: SwapExecution) -> Self {
+        pb::SwapExecution {
+            traces: se.traces.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
+/// Contains all individual steps consisting of a trade trace.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "pb::TradeTrace", into = "pb::TradeTrace")]
+pub struct TradeTrace {
+    steps: Vec<TradeTraceStep>,
+}
+
+impl DomainType for TradeTrace {
+    type Proto = pb::TradeTrace;
+}
+
+impl TryFrom<pb::TradeTrace> for TradeTrace {
+    type Error = anyhow::Error;
+    fn try_from(tt: pb::TradeTrace) -> Result<Self> {
+        Ok(Self {
+            steps: tt
+                .steps
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<Vec<_>>>()?,
+        })
+    }
+}
+
+impl From<TradeTrace> for pb::TradeTrace {
+    fn from(se: TradeTrace) -> Self {
+        pb::TradeTrace {
+            steps: se.steps.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
+/// An individual step within a trade trace.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "pb::TradeTraceStep", into = "pb::TradeTraceStep")]
+pub struct TradeTraceStep {
+    /// The input asset and amount.
+    input: Value,
+    /// The output asset and amount.
+    output: Value,
+}
+
+impl DomainType for TradeTraceStep {
+    type Proto = pb::TradeTraceStep;
+}
+
+impl TryFrom<pb::TradeTraceStep> for TradeTraceStep {
+    type Error = anyhow::Error;
+    fn try_from(tts: pb::TradeTraceStep) -> Result<Self> {
+        Ok(Self {
+            input: tts
+                .input
+                .ok_or_else(|| anyhow::anyhow!("missing input"))?
+                .try_into()?,
+            output: tts
+                .output
+                .ok_or_else(|| anyhow::anyhow!("missing output"))?
+                .try_into()?,
+        })
+    }
+}
+
+impl From<TradeTraceStep> for pb::TradeTraceStep {
+    fn from(tts: TradeTraceStep) -> Self {
+        pb::TradeTraceStep {
+            input: Some(tts.input.into()),
+            output: Some(tts.output.into()),
         }
     }
 }

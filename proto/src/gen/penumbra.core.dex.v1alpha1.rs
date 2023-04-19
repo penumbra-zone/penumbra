@@ -501,26 +501,31 @@ pub struct Path {
     #[prost(message, optional, tag = "3")]
     pub phi: ::core::option::Option<BareTradingFunction>,
 }
-/// A path and the amount of the assets on either side that were traded.
+/// Contains all individual steps consisting of a trade trace.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Trade {
-    /// The path taken by the trade.
+pub struct TradeTrace {
+    /// Each step in the trade trace.
+    #[prost(message, repeated, tag = "1")]
+    pub steps: ::prost::alloc::vec::Vec<TradeTraceStep>,
+}
+/// An individual step within a trade trace.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TradeTraceStep {
+    /// The input asset and amount.
     #[prost(message, optional, tag = "1")]
-    pub path: ::core::option::Option<Path>,
-    /// The amount of the start asset being traded.
+    pub input: ::core::option::Option<super::super::crypto::v1alpha1::Value>,
+    /// The output asset and amount.
     #[prost(message, optional, tag = "2")]
-    pub start_amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
-    /// The amount of end asset being received.
-    #[prost(message, optional, tag = "3")]
-    pub end_amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
+    pub output: ::core::option::Option<super::super::crypto::v1alpha1::Value>,
 }
 /// Contains the entire execution of a particular swap.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapExecution {
     #[prost(message, repeated, tag = "1")]
-    pub trades: ::prost::alloc::vec::Vec<Trade>,
+    pub traces: ::prost::alloc::vec::Vec<TradeTrace>,
 }
 /// Contains private and public data for withdrawing funds from a closed position.
 #[allow(clippy::derive_partial_eq_without_eq)]
