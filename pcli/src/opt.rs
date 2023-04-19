@@ -127,7 +127,7 @@ impl Opt {
             let path = self.data_path.join(crate::VIEW_FILE_NAME);
             tracing::info!(%path, "using local view service");
 
-            let svc = ViewService::load_or_initialize(path, fvk, self.node.clone()).await?;
+            let svc = ViewService::load_or_initialize(Some(path), fvk, self.node.clone()).await?;
 
             // Now build the view and custody clients, doing gRPC with ourselves
             let svc = ViewProtocolServiceServer::new(svc);

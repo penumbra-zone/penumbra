@@ -71,7 +71,7 @@ pub struct ViewService {
 impl ViewService {
     /// Convenience method that calls [`Storage::load_or_initialize`] and then [`Self::new`].
     pub async fn load_or_initialize(
-        storage_path: impl AsRef<Utf8Path>,
+        storage_path: Option<impl AsRef<Utf8Path>>,
         fvk: &FullViewingKey,
         node: Url,
     ) -> anyhow::Result<Self> {
@@ -941,9 +941,14 @@ impl ViewProtocolService for ViewService {
                 (include_voting_receipt_tokens, "voted\\_on\\_%"),
             ] {
                 if *include {
-                    assets.extend(self.storage.assets_matching(pattern).await.map_err(|e| {
-                        tonic::Status::unavailable(format!("error fetching assets: {e}"))
-                    })?);
+                    assets.extend(
+                        self.storage
+                            .assets_matching(pattern.to_string())
+                            .await
+                            .map_err(|e| {
+                                tonic::Status::unavailable(format!("error fetching assets: {e}"))
+                            })?,
+                    );
                 }
             }
             assets
