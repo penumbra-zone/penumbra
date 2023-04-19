@@ -461,7 +461,7 @@ async fn put_position_get_best_price() -> anyhow::Result<()> {
     state_tx.put_position(position_1.clone());
     state_tx.put_position(position_2.clone());
 
-    let mut positions = state_tx
+    let positions = state_tx
         .positions_by_price(&pair)
         .then(|result| async {
             let id = result.unwrap();
@@ -479,7 +479,7 @@ async fn put_position_get_best_price() -> anyhow::Result<()> {
 
     let pair = pair.flip();
 
-    let mut positions = state_tx
+    let positions = state_tx
         .positions_by_price(&pair)
         .then(|result| async {
             let id = result.unwrap();
@@ -534,7 +534,7 @@ async fn test_multiple_similar_position() -> anyhow::Result<()> {
     p_2.reserves = p_2.reserves.flip();
     state_tx.put_position(p_2);
 
-    let mut p_3 = assert!(state_tx
+    let p_3 = assert!(state_tx
         .best_position(&pair_1.into_directed_trading_pair())
         .await
         .unwrap()
@@ -579,19 +579,10 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
     let pusd = asset::REGISTRY.parse_unit("pusd");
 
-    println!("gm......: {}", gm.id());
-    println!("gn......: {}", gn.id());
-    println!("penumbra: {}", penumbra.id());
-    println!("pusd....: {}", pusd.id());
-
     let pair_1 = Market::new(gm.clone(), gn.clone());
     let pair_2 = Market::new(gn.clone(), penumbra.clone());
     let pair_3 = Market::new(penumbra.clone(), pusd.clone());
 
-    println!("gm units: {}", gm.unit_amount());
-    println!("gn units: {}", gn.unit_amount());
-    println!("penumbra units: {}", penumbra.unit_amount());
-    println!("pusd units: {}", pusd.unit_amount());
     /*
      * pair 1: gm <> gn
                 100gm@1
@@ -694,53 +685,15 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
 
     let spill_price = U128x128::from(1_000_000u64);
 
-    println!("3 constraints scenario");
-    println!("filling route with spill_price = {spill_price}");
     let (unfilled, output) = FillRoute::fill_route(&mut state_tx, delta_1, &route, spill_price)
         .await
         .unwrap();
-    // snip
-    let mut mini_registry: BTreeMap<asset::Id, &'static str> = BTreeMap::new();
 
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let gn = asset::REGISTRY.parse_unit("gn");
-    let penumbra = asset::REGISTRY.parse_unit("penumbra");
-    let pusd = asset::REGISTRY.parse_unit("pusd");
+    assert_eq!(unfilled.asset_id, gm.id());
+    assert_eq!(unfilled.amount, Amount::zero());
 
-    mini_registry.insert(gm.id(), "gm");
-    mini_registry.insert(gn.id(), "gn");
-    mini_registry.insert(penumbra.id(), "penumbra");
-    mini_registry.insert(pusd.id(), "pusd");
-
-    // snip
-    println!("################################");
-    route.windows(2).for_each(|assets| {
-        println!(
-            "{} -> {}",
-            mini_registry[&assets[0]], mini_registry[&assets[1]]
-        )
-    });
-    println!("################################");
-
-    println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-    println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-    println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-    println!(
-        "delta_1 = {}",
-        U128x128::ratio(delta_1.amount, gm.unit_amount()).unwrap()
-    );
-    println!("delta_2 = 0");
-    println!(
-        "total_lambda_1 = {}",
-        U128x128::ratio(unfilled.amount, gm.unit_amount()).unwrap()
-    );
-    println!(
-        "total_lambda_2 = {}",
-        U128x128::ratio(output.amount, pusd.unit_amount()).unwrap()
-    );
-    println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-    println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-    println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+    assert_eq!(output.asset_id, pusd.id());
+    assert_eq!(output.amount, 3u64.into());
 
     Ok(())
 }
