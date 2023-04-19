@@ -38,6 +38,12 @@ impl Amount {
             inner: u128::from_le_bytes(bytes),
         }
     }
+
+    pub fn checked_sub(&self, rhs: &Self) -> Option<Self> {
+        self.inner
+            .checked_sub(rhs.inner)
+            .map(|inner| Self { inner })
+    }
 }
 
 #[derive(Clone)]

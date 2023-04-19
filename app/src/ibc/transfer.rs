@@ -1,6 +1,9 @@
+use std::str::FromStr;
+
 use crate::ibc::component::state_key;
 use crate::ibc::ibc_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute};
 use crate::ibc::packet::{IBCPacket, Unchecked};
+use crate::shielded_pool::NoteManager;
 use crate::Component;
 use anyhow::Result;
 use async_trait::async_trait;
@@ -19,7 +22,7 @@ use ibc::core::ics04_channel::Version;
 use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 use penumbra_chain::genesis;
 use penumbra_crypto::asset::Denom;
-use penumbra_crypto::{asset, Amount};
+use penumbra_crypto::{asset, Address, Amount, Value};
 use penumbra_proto::core::ibc::v1alpha1::FungibleTokenPacketData;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
@@ -236,6 +239,7 @@ impl AppHandlerCheck for Ics20Transfer {
     }
 }
 
+// NOTE: should these be fallible, now that our enclosing state machine is fallible in execution?
 #[async_trait]
 impl AppHandlerExecute for Ics20Transfer {
     async fn chan_open_init_execute<S: StateWrite>(_state: S, _msg: &MsgChannelOpenInit) {}
@@ -244,8 +248,76 @@ impl AppHandlerExecute for Ics20Transfer {
     async fn chan_open_confirm_execute<S: StateWrite>(_state: S, _msg: &MsgChannelOpenConfirm) {}
     async fn chan_close_confirm_execute<S: StateWrite>(_state: S, _msg: &MsgChannelCloseConfirm) {}
     async fn chan_close_init_execute<S: StateWrite>(_state: S, _msg: &MsgChannelCloseInit) {}
-    async fn recv_packet_execute<S: StateWrite>(_state: S, _msg: &MsgRecvPacket) {
+    async fn recv_packet_execute<S: StateWrite>(state: S, msg: &MsgRecvPacket) {
         // parse if we are source or dest, and mint or burn accordingly
+        //
+        // see this part of the spec for this logic:
+        //
+        // https://github.com/cosmos/ibc/tree/main/spec/app/ics-020-fungible-token-transfer (onRecvPacket)
+        //
+        let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
+        let denom: asset::Denom = packet_data.denom.as_str().try_into().unwrap();
+        let receiver_amount: Amount = packet_data.amount.try_into().unwrap();
+        let receiver_address = Address::from_str(&packet_data.receiver).unwrap();
+
+        let value: Value = Value {
+            amount: receiver_amount,
+            asset_id: denom.id(),
+        };
+
+        // NOTE: here we assume we are chain A.
+
+        // 2. check if we are the source chain for the denom.
+        if is_source(&msg.packet.port_on_a, &msg.packet.chan_on_a, &denom) {
+            // assume AppHandlerCheck has already been called, and we have enough balance to mint tokens to receiver
+
+            // mint tokens to receiver in the amount of packet_data.amount in the denom of denom
+            state
+                .mint_note(
+                    value,
+                    &receiver_address,
+                    penumbra_chain::NoteSource::Unknown, // TODO
+                )
+                .await
+                .unwrap();
+
+            // update the value balance
+            let value_balance: Amount = state
+                .get(&state_key::ics20_value_balance(
+                    &msg.packet.chan_on_a,
+                    &denom.id(),
+                ))
+                .await
+                .unwrap()
+                .unwrap_or_else(Amount::zero);
+
+            // NOTE: this arithmetic was checked in `recv_packet_check`
+            let new_value_balance = value_balance.checked_sub(&receiver_amount).unwrap();
+            state.put(
+                state_key::ics20_value_balance(&msg.packet.chan_on_a, &denom.id()),
+                new_value_balance,
+            );
+        } else {
+            // create new denom:
+            //
+            // prefix = "{packet.destPort}/{packet.destChannel}/"
+            // prefixedDenomination = prefix + data.denom
+            //
+            // then mint that denom to packet_data.receiver in packet_data.amount
+            // no value balance to update here since this is an exogenous denom
+            //
+
+            let prefixed_denomination = format!(
+                "{}/{}/{}",
+                msg.packet.port_on_b, msg.packet.chan_on_b, packet_data.denom
+            );
+
+            let denom: asset::Denom = prefixed_denomination.as_str().try_into().unwrap();
+            let value = Value {
+                amount: receiver_amount,
+                asset_id: denom.id(),
+            };
+        }
     }
     async fn timeout_packet_execute<S: StateWrite>(_state: S, _msg: &MsgTimeout) {}
     async fn acknowledge_packet_execute<S: StateWrite>(_state: S, _msg: &MsgAcknowledgement) {}
