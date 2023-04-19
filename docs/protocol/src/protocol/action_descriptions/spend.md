@@ -1,6 +1,6 @@
 # Spend Descriptions
 
-Each output contains an SpendBody and a zk-SNARK spend proof.
+Each spend contains an SpendBody and a zk-SNARK spend proof.
 
 ## Spend zk-SNARK Statements
 

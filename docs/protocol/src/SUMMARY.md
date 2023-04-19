@@ -70,7 +70,7 @@
     - [Undelegate Descriptions]()
     - [Commission Descriptions]()
     - [Proposal Descriptions]()
-    - [Vote Descriptions]()
+    - [Delegator Vote Descriptions](./protocol/action_descriptions/delegator_vote.md)
   - [Transaction Cryptography](./protocol/transaction_crypto.md)
   - [Flow Encryption and Consensus](./protocol/flow-consensus.md)
 - [Chain State]()
