@@ -7,7 +7,9 @@ mod ops;
 #[cfg(test)]
 mod tests;
 
+use ark_ff::Field;
 use ark_r1cs_std::prelude::*;
+use ark_r1cs_std::{bits::uint64::UInt64, ToConstraintFieldGadget};
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 
 use decaf377::{r1cs::FqVar, FieldExt, Fq};
@@ -187,7 +189,7 @@ impl U128x128 {
 }
 
 pub struct U128x128Var {
-    pub limbs: [FqVar; 4],
+    pub limbs: [UInt64<Fq>; 4],
 }
 
 impl AllocVar<U128x128, Fq> for U128x128Var {
@@ -264,52 +266,82 @@ impl U128x128Var {
         // x = x0 + x1 * 2^64 + x2 * 2^128 + x3 * 2^192
         // y = [y0, y1, y2, y3]
         // y = y0 + y1 * 2^64 + y2 * 2^128 + y3 * 2^192
+        let x0 = convert_uint64_to_fqvar(&self.limbs[0]);
+        let x1 = convert_uint64_to_fqvar(&self.limbs[1]);
+        let x2 = convert_uint64_to_fqvar(&self.limbs[2]);
+        let x3 = convert_uint64_to_fqvar(&self.limbs[3]);
+
+        let y0 = convert_uint64_to_fqvar(&rhs.limbs[0]);
+        let y1 = convert_uint64_to_fqvar(&rhs.limbs[1]);
+        let y2 = convert_uint64_to_fqvar(&rhs.limbs[2]);
+        let y3 = convert_uint64_to_fqvar(&rhs.limbs[3]);
+
         // z = x * y
         // z = [z0, z1, z2, z3, z4, z5, z6, z7]
         // zi is 128 bits
-        // z0 = x0 * y0
-        // z1 = x0 * y1 + x1 * y0
-        // z2 = x0 * y2 + x1 * y1 + x2 * y0
-        // z3 = x0 * y3 + x1 * y2 + x2 * y1 + x3 * y0
-        // z4 = x1 * y3 + x2 * y2 + x3 * y1
-        // z5 = x2 * y3 + x3 * y2
-        // z6 = x3 * y3
+        let z0 = x0.clone() * y0.clone();
+        let z1 = x0.clone() * y1.clone() + x1.clone() * y0.clone();
+        let z2 = x0.clone() * y2.clone() + x1.clone() * y1.clone() + x2.clone() * y0.clone();
+        let z3 =
+            x0 * y3.clone() + x1.clone() * y2.clone() + x2.clone() * y1.clone() + x3.clone() * y0;
+        let z4 = x1 * y3.clone() + x2.clone() * y2.clone() + x3.clone() * y1;
+        let z5 = x2 * y3.clone() + x3.clone() * y2;
+        let z6 = x3 * y3;
         // z7 = 0
         // z = z0 + z1 * 2^64 + z2 * 2^128 + z3 * 2^192 + z4 * 2^256 + z5 * 2^320 + z6 * 2^384
         // z*2^-128 = z0*2^-128 + z1*2^-64 + z2 + z3*2^64 + z4*2^128 + z5*2^192 + z6*2^256
         //
+        // w represents the limbs of the reduced result (z)
         // w = [w0, w1, w2, w3]
         // w0
         // wi are 64 bits like xi and yi
         //
-        // t0 = z0 + z1 * 2^64
+        // ti represents some temporary value (indices not necessarily meaningful)
+        let t0 = z0 + z1 * Fq::from(1u128 << 64);
+        let t0_bits = fqvar_to_bits(t0, 193)?;
         // t0 fits in 193 bits
-        // t0 we bit constrain
+        // t0 we bit constrain to be 193 bits or less
+
         // t1 = (t0 >> 128) + z2
+        let t1 = z2 + convert_le_bits_to_fqvar(&t0_bits[128..193]);
         // t1 fits in 129 bits
+        let t1_bits = fqvar_to_bits(t1, 129)?;
 
         // w0 = t0 & 2^64 - 1
+        let w0 = UInt64::from_bits_le(&t0_bits[0..64]);
 
         // t2 = (t1 >> 64) + z3
+        let t2 = z3 + convert_le_bits_to_fqvar(&t1_bits[64..129]);
         // t2 fits in 129 bits
+        let t2_bits = fqvar_to_bits(t2, 129)?;
+
         // w1 = t2 & 2^64 - 1
+        let w1 = UInt64::from_bits_le(&t2_bits[0..64]);
 
         // t3 = (t2 >> 64) + z4
+        let t3 = z4 + convert_le_bits_to_fqvar(&t2_bits[64..129]);
         // t3 fits in 129 bits
+        let t3_bits = fqvar_to_bits(t3, 129)?;
+
         // w2 = t3 & 2^64 - 1
+        let w2 = UInt64::from_bits_le(&t3_bits[0..64]);
 
         // t4 = (t3 >> 64) + z5
-        // t4 fits in 129 bits
+        let t4 = z5 + convert_le_bits_to_fqvar(&t3_bits[64..129]);
+        // t4 fits in 64 bits
+        let t4_bits = fqvar_to_bits(t4, 64)?;
         // If we didn't overflow, it will fit in 64 bits.
-        // w3 = t4 & 2^64 - 1
 
-        // t5 = (t4 >> 64) + z6
-        // Overflow condition. Constrain t5 = 0.
+        // w3 = t4 & 2^64 - 1
+        let w3 = UInt64::from_bits_le(&t4_bits[0..64]);
+
+        // Overflow condition. Constrain z6 = 0.
+        z6.enforce_equal(&FqVar::zero())?;
 
         // Internal rep: 4 Uint64
-
-        let x0 = self.limbs[0].clone();
-        todo!()
+        Ok(U128x128Var {
+            limbs: [w0, w1, w2, w3],
+        })
     }
 
     pub fn checked_div(
@@ -317,6 +349,67 @@ impl U128x128Var {
         rhs: &Self,
         cs: ConstraintSystemRef<Fq>,
     ) -> Result<U128x128Var, SynthesisError> {
+        // Similar to AmountVar::quo_rem
+        // x = q * n + r
+        // Constrain 0 <= r
+        // Constrain r < n
+        // n will be 256 bits wide
+        // x will be 384 bits wide
+        // so may need wide(r) multiplication
+
+        // x = self (logical 128-bit)
+        // q = rhs (logical 128-bit)
+        // xbar = x * 2^128 (representative 256-bit)
+        // qbar = q * 2^128 (representative 256-bit)
+
+        // y = x / q
+        // ybar = y * 2^128 (256 bit value)
+
+        // xbar / qbar = x / q * 1
+        // ybar = xbar / qbar * 2^128
+        // xbar * 2^128 = qbar * ybar + r
+
+        // we get ybar (256 bit)
+        // r at most (256 bit)
+        // division oracle = OOC computation
+
+        // Need: 384-bit multiplication for qbar * ybar + r
+        // Need: Constrain 256-bit values
+
         todo!()
     }
+}
+
+// Move to upstream
+// Add tests for the below function
+
+/// Convert Uint64 into an FqVar (make generic)
+pub fn convert_uint64_to_fqvar(value: &UInt64<Fq>) -> FqVar {
+    convert_le_bits_to_fqvar(&value.to_bits_le())
+}
+
+pub fn convert_le_bits_to_fqvar(value: &[Boolean<Fq>]) -> FqVar {
+    let mut acc = FqVar::zero();
+    for (i, bit) in value.into_iter().enumerate() {
+        let bit = bit
+            .to_constraint_field()
+            .expect("can convert to FqVar")
+            .into_iter()
+            .next()
+            .expect("should be one element in the vector");
+        acc += bit * Fq::from(1u128 << i);
+    }
+    acc
+}
+
+/// Bit constrain for FqVar and number of bits
+pub fn fqvar_to_bits(value: FqVar, n: usize) -> Result<Vec<Boolean<Fq>>, SynthesisError> {
+    // Figure out what to do for setup phase in the below
+    let inner = value.value()?;
+
+    // Get only first n bits based on that value (OOC)
+    // Allocate Boolean vars
+    // Call convert_le_bits_to_fqvar
+    // Assert eq
+    todo!()
 }
