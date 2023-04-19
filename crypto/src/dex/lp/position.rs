@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Context};
 use penumbra_proto::{core::dex::v1alpha1 as pb, serializers::bech32str, DomainType};
-use rand_core::CryptoRngCore;
+use rand_core::{CryptoRngCore, OsRng};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -329,10 +329,8 @@ impl TryFrom<pb::Position> for Position {
 
 #[cfg(test)]
 mod test {
-    use ark_ff::Zero;
-    use rand_core::OsRng;
-
     use super::*;
+    use ark_ff::Zero;
 
     fn assert_position_similar(p1: Position, p2: Position) {
         assert_eq!(p1.reserves.r1, p2.reserves.r1);

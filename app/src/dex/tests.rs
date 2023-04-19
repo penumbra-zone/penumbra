@@ -22,7 +22,7 @@ use crate::dex::position_manager::PositionRead;
 use crate::dex::{position_manager::PositionManager, router::FillRoute};
 use crate::TempStorageExt;
 use futures::StreamExt;
-use std::sync::Arc;
+use std::{collections::BTreeMap, sync::Arc};
 
 use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
@@ -694,10 +694,33 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
 
     let spill_price = U128x128::from(1_000_000u64);
 
+    println!("3 constraints scenario");
     println!("filling route with spill_price = {spill_price}");
-    let (unfilled, output) = FillRoute::fill_route2(&mut state_tx, delta_1, &route, spill_price)
+    let (unfilled, output) = FillRoute::fill_route(&mut state_tx, delta_1, &route, spill_price)
         .await
         .unwrap();
+    // snip
+    let mut mini_registry: BTreeMap<asset::Id, &'static str> = BTreeMap::new();
+
+    let gm = asset::REGISTRY.parse_unit("gm");
+    let gn = asset::REGISTRY.parse_unit("gn");
+    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+    let pusd = asset::REGISTRY.parse_unit("pusd");
+
+    mini_registry.insert(gm.id(), "gm");
+    mini_registry.insert(gn.id(), "gn");
+    mini_registry.insert(penumbra.id(), "penumbra");
+    mini_registry.insert(pusd.id(), "pusd");
+
+    // snip
+    println!("################################");
+    route.windows(2).for_each(|assets| {
+        println!(
+            "{} -> {}",
+            mini_registry[&assets[0]], mini_registry[&assets[1]]
+        )
+    });
+    println!("################################");
 
     println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
     println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
@@ -746,8 +769,8 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
             ------------------------------------------------------------------------------------------------------------
             |                              |                                     |                                     |
             | ^-bids---------asks-v        |   ^-bids---------asks-v             |   ^-bids---------asks-v             |
-            |        1gm@1                 |          1gn@101                    |         1penumbra@1500              |
-            |        1gm@1                 |          1gn@101                    |         1penumbra@1500              |
+            |        1gm@1                 |          1gn@1                      |         1penumbra@1500              |
+            |        1gm@1                 |          1gn@1                      |         1penumbra@1500              |
             ------------------------------------------------------------------------------------------------------------
     */
 
@@ -775,17 +798,23 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
     state_tx.put_position(buy_1);
     state_tx.put_position(buy_2);
 
-    let price101 = 101u64.into();
-    let buy_1 = limit_buy(pair_2.clone(), 1u64.into(), price101);
-    let buy_2 = limit_buy(pair_2.clone(), 1u64.into(), price101);
+    let price2 = 2u64.into();
+    let buy_1 = limit_buy(pair_2.clone(), 1u64.into(), price2);
+    let buy_2 = limit_buy(pair_2.clone(), 1u64.into(), price2);
     state_tx.put_position(buy_1);
     state_tx.put_position(buy_2);
 
     let price1500 = 1500u64.into();
     let buy_1 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
-    let buy_2 = limit_buy(pair_3.clone(), 2u64.into(), price1500);
+    let buy_2 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
+    let buy_3 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
+    let buy_4 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
+    let buy_5 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
     state_tx.put_position(buy_1);
     state_tx.put_position(buy_2);
+    state_tx.put_position(buy_3);
+    state_tx.put_position(buy_4);
+    state_tx.put_position(buy_5);
 
     let delta_1 = Value {
         asset_id: gm.id(),
@@ -796,12 +825,34 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
 
     let spill_price =
         (U128x128::from(1_000_000_000_000u64) * U128x128::from(pusd.unit_amount())).unwrap();
-    println!("filling route with spill_price = {spill_price}");
 
-    let (unfilled, output) = FillRoute::fill_route2(&mut state_tx, delta_1, &route, spill_price)
+    let (unfilled, output) = FillRoute::fill_route(&mut state_tx, delta_1, &route, spill_price)
         .await
         .unwrap();
 
+    // snip
+    let mut mini_registry: BTreeMap<asset::Id, &'static str> = BTreeMap::new();
+
+    let gm = asset::REGISTRY.parse_unit("gm");
+    let gn = asset::REGISTRY.parse_unit("gn");
+    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+    let pusd = asset::REGISTRY.parse_unit("pusd");
+
+    mini_registry.insert(gm.id(), "gm");
+    mini_registry.insert(gn.id(), "gn");
+    mini_registry.insert(penumbra.id(), "penumbra");
+    mini_registry.insert(pusd.id(), "pusd");
+
+    // snip
+    println!("##########-- ROUTE --###################");
+    route.windows(2).for_each(|assets| {
+        println!(
+            "{} -> {}",
+            mini_registry[&assets[0]], mini_registry[&assets[1]]
+        )
+    });
+    println!("################################");
+    println!("infinite spill price");
     println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
     println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
     println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
