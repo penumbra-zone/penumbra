@@ -36,9 +36,7 @@ impl TradingFunction {
         input: Value,
         reserves: &Reserves,
     ) -> anyhow::Result<(Value, Reserves, Value)> {
-        print!("@@@@@@ input.asset_id {:?}", input.asset_id);
         if input.asset_id == self.pair.asset_1() {
-            println!("is asset_1 of pair");
             let (unfilled, new_reserves, output) = self.component.fill(input.amount, reserves);
             Ok((
                 Value {
@@ -52,7 +50,6 @@ impl TradingFunction {
                 },
             ))
         } else if input.asset_id == self.pair.asset_2() {
-            println!("is asset_2 of pair");
             let flipped_reserves = reserves.flip();
             let (unfilled, new_reserves, output) =
                 self.component.flip().fill(input.amount, &flipped_reserves);
@@ -76,26 +73,26 @@ impl TradingFunction {
         }
     }
 
-    pub fn back_fill(&self, output: Value) -> anyhow::Result<Value> {
-        print!("@@@@@@ output.asset_id {:?}", output.asset_id);
+    pub fn backfill(&self, output: Value) -> anyhow::Result<Value> {
         if output.asset_id == self.pair.asset_1() {
-            println!("is asset_1 of pair");
             let f = self
                 .component
-                .convert_to_lambda_2(U128x128::from(output.amount))
-                .round_up()
-                .try_into()?;
+                .convert_to_lambda_2(U128x128::from(output.amount));
+            println!("1before rounding: {f}");
+            let f = f.round_up().try_into()?;
+            println!("1after rounding: {f:?}");
             Ok(Value {
                 amount: f,
                 asset_id: self.pair.asset_2(),
             })
         } else if output.asset_id == self.pair.asset_2() {
-            println!("is asset_2 of pair");
             let fillable_delta_1 = self
                 .component
-                .convert_to_delta_1(U128x128::from(output.amount))
-                .round_up()
-                .try_into()?;
+                .convert_to_delta_1(U128x128::from(output.amount));
+
+            println!("2before rounding: {fillable_delta_1}");
+            let fillable_delta_1 = fillable_delta_1.round_up().try_into()?;
+            println!("2after rounding: {fillable_delta_1:?}");
             Ok(Value {
                 amount: fillable_delta_1,
                 asset_id: self.pair.asset_1(),
@@ -232,11 +229,8 @@ impl BareTradingFunction {
         // perform division.
         let delta_1_fp = U128x128::from(delta_1);
         let tentative_lambda_2 = self.convert_to_lambda_2(delta_1_fp);
-        println!("tentative_lambda_2: {tentative_lambda_2}");
-        println!("reserves: {:?}", reserves.r2);
 
         if tentative_lambda_2 <= reserves.r2.into() {
-            println!("here");
             // Observe that for the case when `tentative_lambda_2` equals
             // `reserves.r1`, rounding it down does not change anything since
             // `reserves.r1` is integral. Therefore `reserves.r1 - lambda_2 >= 0`.
