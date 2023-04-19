@@ -551,7 +551,6 @@ mod tests {
     #[test]
     /// Test that the `TradingFunction` fills work correctly.
     fn test_fill_trading_function() {
-        //    pub fn fill(&self, delta_1: Amount, reserves: &Reserves) -> (Amount, Reserves, Amount)
         let a = Id(crate::Fq::zero());
         let b = Id(crate::Fq::new(1u64.into()));
         let c = Id(crate::Fq::new(2u64.into()));
@@ -564,31 +563,32 @@ mod tests {
         let p = Amount::from(1u64);
         let q = Amount::from(2u64);
         let phi = TradingFunction::new(TradingPair::new(a, b), 0u32, p, q);
-        let delta_1 = Value {
-            amount: 100u64.into(),
-            asset_id: a,
-        };
-
         let reserves = Reserves {
             r1: 0u64.into(),
             r2: 100u64.into(),
         };
 
+        let delta_1 = Value {
+            amount: 200u64.into(),
+            asset_id: a,
+        };
+
+        // TradingFunction::fill returns the unfilled amount, the new reserves, and the output:
         let (lambda_1, new_reserves, lambda_2) = phi.fill(delta_1, &reserves).unwrap();
 
         assert_eq!(lambda_1.amount, Amount::zero());
         assert_eq!(lambda_1.asset_id, delta_1.asset_id);
 
-        assert_eq!(lambda_2.amount, delta_1.amount);
+        assert_eq!(lambda_2.amount, reserves.r2);
         assert_eq!(lambda_2.asset_id, b);
 
-        assert_eq!(new_reserves.r1, Amount::from(100u64));
+        assert_eq!(new_reserves.r1, Amount::from(200u64));
         assert_eq!(new_reserves.r2, Amount::zero());
 
         // Now, we check that we fill correctly from B to A:
         // where id(A) < id(B).
         let delta_2 = Value {
-            amount: 100u64.into(),
+            amount: 50u64.into(),
             asset_id: b,
         };
 
@@ -606,6 +606,6 @@ mod tests {
         assert_eq!(lambda_1.asset_id, a);
 
         assert_eq!(new_reserves.r1, Amount::zero());
-        assert_eq!(new_reserves.r2, Amount::from(100u64));
+        assert_eq!(new_reserves.r2, Amount::from(50u64));
     }
 }
