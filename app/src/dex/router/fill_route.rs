@@ -39,7 +39,7 @@ pub trait FillRoute: StateWrite + Sized {
                     end: *next_asset,
                 })
                 .await? else {
-                    break;
+                    panic!("no positions!");
                 };
 
             let position_price = position
@@ -90,10 +90,6 @@ pub trait FillRoute: StateWrite + Sized {
         route: &[asset::Id],
         spill_price: U128x128,
     ) -> Result<(Value, Value)> {
-        let source = route[0];
-        let target = route[route.len() - 1];
-        let total_pair: DirectedTradingPair = DirectedTradingPair::new(source, target);
-
         // Breakdown the route into a sequence of pairs to visit.
         let mut pairs = self.breakdown_route(route)?;
 
@@ -124,6 +120,7 @@ pub trait FillRoute: StateWrite + Sized {
 
             // If the effective price exceeds the spill price, stop filling.
             if effective_price > spill_price {
+                println!("spill price hit");
                 tracing::debug!(?effective_price, ?spill_price, "spill price hit.");
                 break 'filling;
             }
@@ -159,6 +156,19 @@ pub trait FillRoute: StateWrite + Sized {
                     let lambda_2 = constraining_position
                         .reserves_for(pairs[*constraining_index - 1].end)
                         .unwrap();
+
+                    // What happens if there are "stacked constraints"?
+                    // => We know that solving the constraint by strictly min-max'ing the flow across the path
+                    // lets us stay below the spill price. But, what happens when lifting the last constraint
+                    // is not sufficient i.e. there is a preceding constraint that's even more constraining.
+                    // This should be optimized, but I believe the solution is to take advantage of the fact that
+                    // by strictly reducing the flow we know we haven't created any _new_ constraint, therefore
+                    // we can individually visit previously recorded constraints, check and solve those that remain
+                    // bottlenecky.
+                    constraints.iter().for_each(|position| {
+                        println!("position: {position:?}");
+                    });
+
                     let delta_1_star = (U128x128::from(lambda_2) * inv_effective_price).unwrap();
                     delta_1_star.round_up().try_into()?
                 }
@@ -174,6 +184,10 @@ pub trait FillRoute: StateWrite + Sized {
                 asset_id: input.asset_id,
             };
 
+            println!("delta_1_star = {current_value:?}");
+
+            // Now that we know `delta_1_star`, we can execute along the route,
+            // knowing that the ultimate constraint has been lifted.
             for next_asset in route.iter().skip(1) {
                 let position = self
                     .best_position(&DirectedTradingPair {
@@ -184,22 +198,24 @@ pub trait FillRoute: StateWrite + Sized {
                     .ok_or_else(|| anyhow::anyhow!("unexpectedly missing position"))?;
                 let (unfilled, output) = self.fill_against(current_value, &position.id()).await?;
 
-                // TODO(erwan): We can't really get perfect fills because of rounding, so commenting this out for now.
                 // If there's an unfilled input, that means we were constrained on this leg of the path.
-                // if unfilled.amount > 0u64.into() {
-                //     return Err(anyhow::anyhow!(
-                //         "internal error: unfilled amount after filling against {:?}",
-                //         position.id(),
-                //     ));
-                // }
+                if unfilled.amount > 0u64.into() {
+                    tracing::warn!(?unfilled, "residual unfilled amount here");
+                    println!("residual unfilled: {unfilled:?}");
+                    //                    return Err(anyhow::anyhow!(
+                    //                        "internal error: unfilled amount after filling against {:?}",
+                    //                        position.id(),
+                    //                    ));
+                }
                 current_value = output;
+                println!("output={current_value:?}");
             }
 
             if current_value.amount == 0u64.into() {
                 println!("zero current value.");
                 // Note: this can be hit during dust fills
                 // TODO(erwan): craft `test_dust_fill_zero_value` to prove this.
-                panic!("zero current value");
+                // panic!("zero current value");
                 break 'filling;
             }
 
