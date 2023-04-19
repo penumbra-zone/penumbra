@@ -79,7 +79,7 @@ impl TryFrom<&Row<'_>> for SwapRecord {
             nullifier: row.get::<_, Vec<u8>>("nullifier")?[..].try_into()?,
             output_data: BatchSwapOutputData::decode(&row.get::<_, Vec<u8>>("output_data")?[..])?,
             source: row.get::<_, Vec<u8>>("source")?[..].try_into()?,
-            swap: row.get::<_, Vec<u8>>("swap")?[..].try_into()?,
+            swap: SwapPlaintext::decode(&row.get::<_, Vec<u8>>("swap")?[..])?,
         })
     }
 }
