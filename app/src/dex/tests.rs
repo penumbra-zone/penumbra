@@ -1,6 +1,5 @@
-mod test {
-    use anyhow::Ok;
-    use penumbra_crypto::{
+use anyhow::Ok;
+use penumbra_crypto::{
     asset::{self, Unit},
     dex::{
         lp::{
@@ -388,21 +387,16 @@ impl Market {
 
 /// Create a `Position` that seeks to acquire `asset_1` at a `price` denominated in
 /// numeraire (`asset_2`), by provisioning enough numeraire.
-fn limit_buy(market: Market, quantity: Amount, price_in_numeraire: (Amount, Amount)) -> Position {
-    let numeraire_base: Amount = U128x128::ratio(market.end.unit_amount(), price_in_numeraire.1)
-        .unwrap()
-        .try_into()
-        .unwrap();
-
+fn limit_buy(market: Market, quantity: Amount, price_in_numeraire: Amount) -> Position {
     Position::new(
         OsRng,
         market.into_directed_trading_pair(),
         0u32,
-        price_in_numeraire.0 * numeraire_base,
+        price_in_numeraire * market.end.unit_amount(),
         Amount::from(1u64) * market.start.unit_amount(),
         Reserves {
             r1: Amount::zero(),
-            r2: quantity * price_in_numeraire.0 * numeraire_base,
+            r2: quantity * price_in_numeraire * market.end.unit_amount(),
         },
     )
 }
@@ -414,8 +408,8 @@ fn limit_sell(market: Market, quantity: Amount, price_in_numeraire: Amount) -> P
         OsRng,
         market.into_directed_trading_pair(),
         0u32,
-        Amount::from(1u64) * market.end.unit_amount(),
-        price_in_numeraire * market.start.unit_amount(),
+        price_in_numeraire * market.end.unit_amount(),
+        Amount::from(1u64) * market.start.unit_amount(),
         Reserves {
             r1: quantity * market.start.unit_amount(),
             r2: Amount::zero(),
@@ -515,7 +509,7 @@ async fn test_multiple_similar_position() -> anyhow::Result<()> {
     let pair_1 = Market::new(gm.clone(), gn.clone());
 
     let one = 1u64.into();
-    let price1 = (one, one);
+    let price1 = one;
     let mut buy_1 = limit_buy(pair_1.clone(), 1u64.into(), price1);
     let mut buy_2 = limit_buy(pair_1.clone(), 1u64.into(), price1);
     buy_1.nonce = [1u8; 32];
@@ -565,14 +559,14 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
             |       Pair 1: gm <> gn       |       Pair 2: gn <> penumbra        |       Pair 3: penumbra <> pusd      |
             ------------------------------------------------------------------------------------------------------------
             | ^-bids---------asks-v        |    ^-bids---------asks-v             |       ^-bids---------asks-v        |
-            |           5gm@1              |          1gn@0.001                  |           1penumbra@2000           |
-            |                              |          50gn@0.001                  |          1penumbra@2500          |
-            |                              |          50gn@0.001                  |          1penumbra@3000          |
-            |                              |          50gn@0.001                  |           1penumbra 3100           |
-            |                              |                                      |           1penumbra@10000          |
+            |         200gm@1              |          50gn@2                      |           1penumbra@10000          |
+            |                              |          50gn@2                      |            1penumbra@3100          |
+            |                              |          50gn@2                      |          198penumbra@3000          |
+            |                              |          50gn@2                      |           1penumbra@2500           |
+            |                              |                                      |           1penumbra@2000           |
             ------------------------------------------------------------------------------------------------------------
-
-            Delta_1 = 200gm
+            * marginal price
+            Delta_1 = 4gm
             Lambda_2 = 2000 + 2500
     */
 
@@ -581,25 +575,32 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
     let pusd = asset::REGISTRY.parse_unit("pusd");
 
+    println!("unit {} gm: {}", gm.unit_amount(), gm.id());
+    println!("unit {} gn: {}", gn.unit_amount(), gn.id());
+    println!(
+        "unit {} penumbra: {}",
+        penumbra.unit_amount(),
+        penumbra.id()
+    );
+    println!("unit {} pusd: {}", pusd.unit_amount(), pusd.id());
     let pair_1 = Market::new(gm.clone(), gn.clone());
     let pair_2 = Market::new(gn.clone(), penumbra.clone());
     let pair_3 = Market::new(penumbra.clone(), pusd.clone());
 
     let one: Amount = 1u64.into();
 
-    let price1 = (one, one);
+    let price1 = one;
 
     let buy_1 = limit_buy(pair_1.clone(), 200u64.into(), price1);
     state_tx.put_position(buy_1);
 
     /* pair 2 */
+    let price2 = Amount::from(2u64);
 
-    let price100i = (one, 100u64.into());
-
-    let buy_1 = limit_buy(pair_2.clone(), 50u64.into(), price100i);
-    let buy_2 = limit_buy(pair_2.clone(), 50u64.into(), price100i);
-    let buy_3 = limit_buy(pair_2.clone(), 50u64.into(), price100i);
-    let buy_4 = limit_buy(pair_2.clone(), 50u64.into(), price100i);
+    let buy_1 = limit_buy(pair_2.clone(), 50u64.into(), price2);
+    let buy_2 = limit_buy(pair_2.clone(), 50u64.into(), price2);
+    let buy_3 = limit_buy(pair_2.clone(), 50u64.into(), price2);
+    let buy_4 = limit_buy(pair_2.clone(), 50u64.into(), price2);
 
     state_tx.put_position(buy_1);
     state_tx.put_position(buy_2);
@@ -607,16 +608,15 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
     state_tx.put_position(buy_4);
 
     /* pair 3 */
-
-    let price2000 = (2000u64.into(), one);
-    let price2500 = (2500u64.into(), one);
-    let price3000 = (3000u64.into(), one);
-    let price3100 = (3100u64.into(), one);
-    let price10000 = (10_000u64.into(), one);
+    let price2000 = 2000u64.into();
+    let price2500 = 2500u64.into();
+    let price3000 = 3000u64.into();
+    let price3100 = 3100u64.into();
+    let price10000 = 10_000u64.into();
 
     let buy_1 = limit_buy(pair_3.clone(), 1u64.into(), price2000);
     let buy_2 = limit_buy(pair_3.clone(), 1u64.into(), price2500);
-    let buy_3 = limit_buy(pair_3.clone(), 1u64.into(), price3000);
+    let buy_3 = limit_buy(pair_3.clone(), 198u64.into(), price3000);
     let buy_4 = limit_buy(pair_3.clone(), 1u64.into(), price3100);
     let buy_5 = limit_buy(pair_3.clone(), 1u64.into(), price10000);
 
@@ -628,7 +628,7 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
 
     let delta_1 = Value {
         asset_id: gm.id(),
-        amount: Amount::from(200u64) * gm.unit_amount(),
+        amount: Amount::from(4u64) * gm.unit_amount(),
     };
 
     let route = vec![gm.id(), gn.id(), penumbra.id(), pusd.id()];
@@ -639,7 +639,11 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
         .await
         .unwrap();
 
-    let desired_output: Amount = Amount::from(4500u64)* pusd.unit_amount();
+    // let output_cal = U128x128::ratio(output.amount, pusd.unit_amount()).unwrap();
+    let desired_output: Amount = (Amount::from(10_000u64)
+        + Amount::from(3100u64)
+        + Amount::from(6u64) * Amount::from(3000u64))
+        * pusd.unit_amount();
 
     assert_eq!(unfilled.asset_id, gm.id());
     assert_eq!(unfilled.amount, Amount::zero());
@@ -685,19 +689,19 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
     let pair_3 = Market::new(penumbra.clone(), pusd.clone());
 
     let one = 1u64.into();
-    let price1 = (one, one);
+    let price1 = one;
     let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), price1);
     let buy_2 = limit_buy(pair_1.clone(), 1u64.into(), price1);
     state_tx.put_position(buy_1);
     state_tx.put_position(buy_2);
 
-    let price2 = (2u64.into(), one);
+    let price2 = 2u64.into();
     let buy_1 = limit_buy(pair_2.clone(), 1u64.into(), price2);
     let buy_2 = limit_buy(pair_2.clone(), 1u64.into(), price2);
     state_tx.put_position(buy_1);
     state_tx.put_position(buy_2);
 
-    let price1500 = (1500u64.into(), one);
+    let price1500 = 1500u64.into();
     let buy_1 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
     let buy_2 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
     let buy_3 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
@@ -731,5 +735,4 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
     assert_eq!(output.asset_id, pusd.id());
 
     Ok(())
-}
 }
