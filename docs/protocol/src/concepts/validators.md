@@ -16,11 +16,11 @@ Validators in Penumbra undergo various transitions depending on chain activity.
       Validator      │      ┏━━━━━━━━━┓              ╔══════╗       │                                   ┏━━━━━━━━━━━┓
 │     Definition     ──────▶┃Inactive ┃─────────────▶║Active║───────┼────────────────────────────────┬─▶┃ Disabled  ┃
    (in transaction)  │      ┗━━━━━━━━━┛              ╚══════╝       │                                │  ┗━━━━━━━━━━━┛
-└ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─            ▲                                  │       ┏━━━━━━━━━━━━━━━━━━━━━┓  │
-                                 │                                  └──────▶┃ Jailed (Inactivity) ┃──┘
-                                 │                                          ┗━━━━━━━━━━━━━━━━━━━━━┛
-                                 │                                                     │
-                                 └─────────────────────────────────────────────────────┘
+└ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─            ▲                                  │       ┏━━━━━━━━━━━━━━━━━━━━━┓  │        │
+                                 │                                  └──────▶┃ Jailed (Inactivity) ┃──┘        │
+                                 │                                          ┗━━━━━━━━━━━━━━━━━━━━━┛           │
+                                 │                                                     │                      │
+                                 └─────────────────────────────────────────────────────┴──────────────────────┘
 ```
 
 Single lines represent unbonded stake, and double lines represent bonded stake.
