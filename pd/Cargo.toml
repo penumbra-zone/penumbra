@@ -57,7 +57,7 @@ csv = "1.1"
 directories = "4.0"
 tokio = { version = "1.22", features = ["full"] }
 tokio-stream = "0.1"
-tokio-util = "0.7"
+tokio-util = { version = "0.7", features = ["compat"] }
 tower = { version = "0.4", features = ["full"] }
 tower-service = "0.3.2"
 tracing = "0.1"
