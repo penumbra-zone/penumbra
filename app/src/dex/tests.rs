@@ -17,6 +17,7 @@ use penumbra_storage::{ArcStateDeltaExt, StateDelta, TempStorage};
 use rand_core::OsRng;
 
 use penumbra_crypto::Value;
+use sha2::digest::consts::U1;
 
 use crate::dex::position_manager::PositionRead;
 use crate::dex::{position_manager::PositionManager, router::FillRoute};
@@ -387,16 +388,21 @@ impl Market {
 
 /// Create a `Position` that seeks to acquire `asset_1` at a `price` denominated in
 /// numeraire (`asset_2`), by provisioning enough numeraire.
-fn limit_buy(market: Market, quantity: Amount, price_in_numeraire: Amount) -> Position {
+fn limit_buy(market: Market, quantity: Amount, price_in_numeraire: (Amount, Amount)) -> Position {
+    let numeraire_base: Amount = U128x128::ratio(market.end.unit_amount(), price_in_numeraire.1)
+        .unwrap()
+        .try_into()
+        .unwrap();
+
     Position::new(
         OsRng,
         market.into_directed_trading_pair(),
         0u32,
-        price_in_numeraire * market.end.unit_amount(),
+        price_in_numeraire.0 * numeraire_base,
         Amount::from(1u64) * market.start.unit_amount(),
         Reserves {
             r1: Amount::zero(),
-            r2: quantity * market.end.unit_amount() * price_in_numeraire,
+            r2: quantity * price_in_numeraire.0 * numeraire_base,
         },
     )
 }
@@ -509,8 +515,9 @@ async fn test_multiple_similar_position() -> anyhow::Result<()> {
     let pair_1 = Market::new(gm.clone(), gn.clone());
 
     let one = 1u64.into();
-    let mut buy_1 = limit_buy(pair_1.clone(), 1u64.into(), one);
-    let mut buy_2 = limit_buy(pair_1.clone(), 1u64.into(), one);
+    let price1 = (one, one);
+    let mut buy_1 = limit_buy(pair_1.clone(), 1u64.into(), price1);
+    let mut buy_2 = limit_buy(pair_1.clone(), 1u64.into(), price1);
     buy_1.nonce = [1u8; 32];
     buy_2.nonce = [2u8; 32];
     state_tx.put_position(buy_1.clone());
@@ -544,15 +551,8 @@ async fn test_multiple_similar_position() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn fill_route_constraint_1() -> anyhow::Result<()> {
-    // tracing_subscriber::fmt().try_init().unwrap();
-
-    use tracing::{info, Level};
-    use tracing_subscriber::FmtSubscriber;
     let subscriber = FmtSubscriber::builder()
-        // all spans/events with a level higher than TRACE (e.g, debug, info, warn, etc.)
-        // will be written to stdout.
         .with_max_level(Level::TRACE)
-        // completes the builder.
         .finish();
 
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
@@ -564,14 +564,16 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
             ------------------------------------------------------------------------------------------------------------
             |       Pair 1: gm <> gn       |       Pair 2: gn <> penumbra        |       Pair 3: penumbra <> pusd      |
             ------------------------------------------------------------------------------------------------------------
-            |       100gm@1                |       5300gn@92                     |       15penumbra@1445             |
-            |       120gm@1                |       54gn@100                      |       1penumbra@1450               |
-            |       50gm@1                 |       55gn@100                      |                                     |
-            | ^-bids---------asks-v        |   ^-bids---------asks-v             |   ^-bids---------asks-v             |
-            |       10gn@1                 |       54gn@101                      |       5penumbra@1500             |
-            |       100gn@1                |       1000gn@102                    |       1penumbra@1550                |
-            |       50gn@1                 |                                     |                                     |
+            | ^-bids---------asks-v        |    ^-bids---------asks-v             |       ^-bids---------asks-v        |
+            |           5gm@1              |          1gn@0.001                  |           1penumbra@2000           |
+            |                              |          50gn@0.001                  |          1penumbra@2500          |
+            |                              |          50gn@0.001                  |          1penumbra@3000          |
+            |                              |          50gn@0.001                  |           1penumbra 3100           |
+            |                              |                                      |           1penumbra@10000          |
             ------------------------------------------------------------------------------------------------------------
+
+            Delta_1 = 200gm
+            Lambda_2 = 2000 + 2500
     */
 
     let gm = asset::REGISTRY.parse_unit("gm");
@@ -583,132 +585,75 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
     let pair_2 = Market::new(gn.clone(), penumbra.clone());
     let pair_3 = Market::new(penumbra.clone(), pusd.clone());
 
-    /*
-     * pair 1: gm <> gn
-                100gm@1
-                120gm@1
-                50gm@1
-            ^-bids---------asks-v
-                10gn@1
-                100gn@1
-                50gn@1
-    */
-    let one = 1u64.into();
+    let one: Amount = 1u64.into();
 
-    let buy_1 = limit_buy(pair_1.clone(), 50u64.into(), one);
-    let buy_2 = limit_buy(pair_1.clone(), 120u64.into(), one);
-    let buy_3 = limit_buy(pair_1.clone(), 100u64.into(), one);
+    let price1 = (one, one);
 
-    let sell_1 = limit_sell(pair_1.clone(), 10u64.into(), one);
-    let sell_2 = limit_sell(pair_1.clone(), 100u64.into(), one);
-    let sell_3 = limit_sell(pair_1.clone(), 50u64.into(), one);
+    let buy_1 = limit_buy(pair_1.clone(), 200u64.into(), price1);
+    state_tx.put_position(buy_1);
+
+    /* pair 2 */
+
+    let price100i = (one, 100u64.into());
+
+    let buy_1 = limit_buy(pair_2.clone(), 50u64.into(), price100i);
+    let buy_2 = limit_buy(pair_2.clone(), 50u64.into(), price100i);
+    let buy_3 = limit_buy(pair_2.clone(), 50u64.into(), price100i);
+    let buy_4 = limit_buy(pair_2.clone(), 50u64.into(), price100i);
 
     state_tx.put_position(buy_1);
     state_tx.put_position(buy_2);
     state_tx.put_position(buy_3);
+    state_tx.put_position(buy_4);
 
-    state_tx.put_position(sell_1);
-    state_tx.put_position(sell_2);
-    state_tx.put_position(sell_3);
+    /* pair 3 */
 
-    /*
+    let price2000 = (2000u64.into(), one);
+    let price2500 = (2500u64.into(), one);
+    let price3000 = (3000u64.into(), one);
+    let price3100 = (3100u64.into(), one);
+    let price10000 = (10_000u64.into(), one);
 
-    * pair 2: gn <> penumbra
-         5300gn@92
-         54gn@100
-         55gn@100
-     ^-bids---------asks-v
-          54gn@101
-          1000gn@102
-
-    */
-    let price100 = 100u64.into();
-    let price101 = 101u64.into();
-    let price102 = 102u64.into();
-    let price92 = 92u64.into();
-
-    let buy_1 = limit_buy(pair_2.clone(), 55u64.into(), price100);
-    let buy_2 = limit_buy(pair_2.clone(), 54u64.into(), price100);
-    let buy_3 = limit_buy(pair_2.clone(), 5300u64.into(), price92);
-
-    let sell_1 = limit_sell(pair_2.clone(), 54u64.into(), price101);
-    let sell_2 = limit_sell(pair_2.clone(), 1000u64.into(), price102);
+    let buy_1 = limit_buy(pair_3.clone(), 1u64.into(), price2000);
+    let buy_2 = limit_buy(pair_3.clone(), 1u64.into(), price2500);
+    let buy_3 = limit_buy(pair_3.clone(), 1u64.into(), price3000);
+    let buy_4 = limit_buy(pair_3.clone(), 1u64.into(), price3100);
+    let buy_5 = limit_buy(pair_3.clone(), 1u64.into(), price10000);
 
     state_tx.put_position(buy_1);
     state_tx.put_position(buy_2);
     state_tx.put_position(buy_3);
-
-    state_tx.put_position(sell_1);
-    state_tx.put_position(sell_2);
-
-    /*
-    * pair 3: penumbra <> pusd
-            1500penumbra@1445
-            10penumbra@1450
-        ^-bids---------asks-v
-            1penumbra@1500
-            10penumbra@1550
-            100penumbra@1800
-    */
-    let price1445 = 1445u64.into();
-    let price1450 = 1450u64.into();
-    let price1500 = 1500u64.into();
-    let price1550 = 1550u64.into();
-    let price1800 = 1800u64.into();
-
-    let buy_1 = limit_buy(pair_3.clone(), 1u64.into(), price1450);
-    let buy_2 = limit_buy(pair_3.clone(), 1u64.into(), price1445);
-
-    let sell_1 = limit_sell(pair_3.clone(), 1u64.into(), price1500);
-    let sell_2 = limit_sell(pair_3.clone(), 1u64.into(), price1550);
-    let sell_3 = limit_sell(pair_3.clone(), 1u64.into(), price1800);
-
-    state_tx.put_position(buy_1);
-    state_tx.put_position(buy_2);
-
-    state_tx.put_position(sell_1);
-    state_tx.put_position(sell_2);
-    state_tx.put_position(sell_3);
-
-    /*
-
-       Fill route scratchpad:
-
-    */
+    state_tx.put_position(buy_4);
+    state_tx.put_position(buy_5);
 
     let delta_1 = Value {
         asset_id: gm.id(),
-        amount: Amount::from(1u64) * gm.unit_amount(),
+        amount: Amount::from(200u64) * gm.unit_amount(),
     };
 
     let route = vec![gm.id(), gn.id(), penumbra.id(), pusd.id()];
 
-    let spill_price = U128x128::from(1_000_000u64);
+    let spill_price = U128x128::from(Amount::from(1_000_000_000u64) * pusd.unit_amount());
 
     let (unfilled, output) = FillRoute::fill_route(&mut state_tx, delta_1, &route, spill_price)
         .await
         .unwrap();
 
+    let desired_output: Amount = Amount::from(4500u64)* pusd.unit_amount();
+
     assert_eq!(unfilled.asset_id, gm.id());
     assert_eq!(unfilled.amount, Amount::zero());
 
     assert_eq!(output.asset_id, pusd.id());
-    assert_eq!(output.amount, 3u64.into());
+    assert_eq!(output.amount, desired_output);
 
     Ok(())
 }
 
 #[tokio::test]
 async fn fill_route_unconstrained() -> anyhow::Result<()> {
-    // tracing_subscriber::fmt().try_init().unwrap();
-
-    use tracing::{info, Level};
-    use tracing_subscriber::FmtSubscriber;
     let subscriber = FmtSubscriber::builder()
-        // all spans/events with a level higher than TRACE (e.g, debug, info, warn, etc.)
-        // will be written to stdout.
         .with_max_level(Level::TRACE)
-        // completes the builder.
         .finish();
 
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
@@ -740,18 +685,19 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
     let pair_3 = Market::new(penumbra.clone(), pusd.clone());
 
     let one = 1u64.into();
-    let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), one);
-    let buy_2 = limit_buy(pair_1.clone(), 1u64.into(), one);
+    let price1 = (one, one);
+    let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), price1);
+    let buy_2 = limit_buy(pair_1.clone(), 1u64.into(), price1);
     state_tx.put_position(buy_1);
     state_tx.put_position(buy_2);
 
-    let price2 = 2u64.into();
+    let price2 = (2u64.into(), one);
     let buy_1 = limit_buy(pair_2.clone(), 1u64.into(), price2);
     let buy_2 = limit_buy(pair_2.clone(), 1u64.into(), price2);
     state_tx.put_position(buy_1);
     state_tx.put_position(buy_2);
 
-    let price1500 = 1500u64.into();
+    let price1500 = (1500u64.into(), one);
     let buy_1 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
     let buy_2 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
     let buy_3 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
