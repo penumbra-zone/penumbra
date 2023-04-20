@@ -90,7 +90,7 @@ pub fn packet_commitment(packet: &Packet) -> String {
 
 pub fn packet_acknowledgement(port_id: &PortId, channel_id: &ChannelId, sequence: u64) -> String {
     format!(
-        "acks/ports/{}/channels/{}/acks/{}",
+        "acks/ports/{}/channels/{}/sequences/{}",
         port_id, channel_id, sequence
     )
 }
