@@ -26,7 +26,7 @@ on:
         default: '1000:1000'
   push:
     tags:
-      - '[0-9][0-9][0-9]-*'
+      - '*-?v[0-9]+*'
 jobs:
   # Before deploying, we must wait for the container build to complete,
   # so that the relevant tag is present in container registry.
