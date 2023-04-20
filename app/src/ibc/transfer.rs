@@ -242,21 +242,36 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
         .context("couldnt decode amount in ICS20 transfer")?;
     let receiver_address = Address::from_str(&packet_data.receiver)?;
 
-    let value: Value = Value {
-        amount: receiver_amount,
-        asset_id: denom.id(),
-    };
-
     // NOTE: here we assume we are chain A.
 
     // 2. check if we are the source chain for the denom.
     if is_source(&msg.packet.port_on_a, &msg.packet.chan_on_a, &denom) {
+        // mint tokens to receiver in the amount of packet_data.amount in the denom of denom (with
+        // the source removed, since we're the source)
+        let prefix = format!(
+            "{source_port}/{source_chan}/",
+            source_port = msg.packet.port_on_a,
+            source_chan = msg.packet.chan_on_a
+        );
+
+        let unprefixed_denom: asset::Denom = packet_data
+            .denom
+            .replace(&prefix, "")
+            .as_str()
+            .try_into()
+            .context("couldnt decode denom in ICS20 transfer")?;
+
+        let value: Value = Value {
+            amount: receiver_amount,
+            asset_id: unprefixed_denom.id(),
+        };
+
         // assume AppHandlerCheck has already been called, and we have enough balance to mint tokens to receiver
         // check if we have enough balance to unescrow tokens to receiver
         let value_balance: Amount = state
             .get(&state_key::ics20_value_balance(
                 &msg.packet.chan_on_a,
-                &denom.id(),
+                &unprefixed_denom.id(),
             ))
             .await?
             .unwrap_or_else(Amount::zero);
@@ -266,12 +281,11 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
             return Err(anyhow::anyhow!("transfer coins failed"));
         }
 
-        // mint tokens to receiver in the amount of packet_data.amount in the denom of denom
         state
             .mint_note(
                 value,
                 &receiver_address,
-                penumbra_chain::NoteSource::Unknown, // TODO
+                penumbra_chain::NoteSource::Ics20Transfer, // TODO
             )
             .await
             .unwrap();
@@ -280,7 +294,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
         let value_balance: Amount = state
             .get(&state_key::ics20_value_balance(
                 &msg.packet.chan_on_a,
-                &denom.id(),
+                &unprefixed_denom.id(),
             ))
             .await?
             .unwrap_or_else(Amount::zero);
@@ -314,7 +328,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
             .mint_note(
                 value,
                 &receiver_address,
-                penumbra_chain::NoteSource::Unknown, // TODO
+                penumbra_chain::NoteSource::Ics20Transfer,
             )
             .await
             .context("failed to mint notes in ibc transfer")?;
