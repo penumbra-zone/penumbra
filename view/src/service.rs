@@ -545,17 +545,31 @@ impl ViewProtocolService for ViewService {
                     }
                 }
                 Action::SwapClaim(claim) => {
-                    let claim_advice = self
+                    let output_1_record = self
                         .storage
-                        .scan_advice(vec![
-                            claim.body.output_1_commitment,
-                            claim.body.output_2_commitment,
-                        ])
+                        .note_by_commitment(claim.body.output_1_commitment, false)
                         .await
                         .map_err(|e| {
-                            tonic::Status::internal(format!("Error retrieving advice: {:#}", e))
+                            tonic::Status::internal(format!(
+                                "Error retrieving first SwapClaim output note record: {:#}",
+                                e
+                            ))
                         })?;
-                    txp.advice_notes.extend(claim_advice);
+                    let output_2_record = self
+                        .storage
+                        .note_by_commitment(claim.body.output_2_commitment, false)
+                        .await
+                        .map_err(|e| {
+                            tonic::Status::internal(format!(
+                                "Error retrieving second SwapClaim output note record: {:#}",
+                                e
+                            ))
+                        })?;
+
+                    txp.advice_notes
+                        .insert(claim.body.output_1_commitment, output_1_record.note);
+                    txp.advice_notes
+                        .insert(claim.body.output_2_commitment, output_2_record.note);
                 }
                 _ => {}
             }
