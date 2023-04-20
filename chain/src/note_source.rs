@@ -10,6 +10,7 @@ pub enum NoteSource {
     Genesis,
     FundingStreamReward { epoch_index: u64 },
     DaoOutput,
+    Ics20Transfer,
 }
 
 impl Default for NoteSource {
@@ -48,6 +49,11 @@ impl NoteSource {
                 bytes[CODE_INDEX] = 3;
                 bytes
             }
+            Self::Ics20Transfer => {
+                let mut bytes = [0u8; 32];
+                bytes[CODE_INDEX] = 4;
+                bytes
+            }
         }
     }
 }
@@ -67,6 +73,7 @@ impl TryFrom<[u8; 32]> for NoteSource {
                     Ok(Self::FundingStreamReward { epoch_index })
                 }
                 (3, &[0, 0, 0, 0, 0, 0, 0, 0]) => Ok(Self::DaoOutput),
+                (4, &[0, 0, 0, 0, 0, 0, 0, 0]) => Ok(Self::Ics20Transfer),
                 (code, data) => Err(anyhow!(
                     "unknown note source with code {} and data {:?}",
                     code,
@@ -122,6 +129,7 @@ impl std::fmt::Debug for NoteSource {
                 "NoteSource::FundingStreamReward({epoch_index})"
             )),
             NoteSource::DaoOutput => f.write_fmt(format_args!("NoteSource::DaoOutput")),
+            NoteSource::Ics20Transfer => f.write_fmt(format_args!("NoteSource::Ics20Transfer")),
         }
     }
 }
