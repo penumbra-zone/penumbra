@@ -2,6 +2,7 @@ use super::component::channel::StateReadExt as _;
 use super::component::channel::StateWriteExt as _;
 use super::component::client::StateReadExt as _;
 use super::component::connection::StateReadExt as _;
+use super::event;
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc::core::ics02_client::client_state::ClientState;
@@ -175,4 +176,36 @@ pub trait SendPacketWrite: StateWrite {
 impl<T: StateWrite + ?Sized> SendPacketWrite for T {}
 
 #[async_trait]
-pub trait WriteAcknowledgement: StateWrite {}
+pub trait WriteAcknowledgement: StateWrite {
+    // see: https://github.com/cosmos/ibc/blob/8326e26e7e1188b95c32481ff00348a705b23700/spec/core/ics-004-channel-and-packet-semantics/README.md?plain=1#L779
+    async fn write_acknowledgement(&mut self, packet: &Packet, ack_bytes: &[u8]) -> Result<()> {
+        if ack_bytes.is_empty() {
+            return Err(anyhow::anyhow!("acknowledgement cannot be empty"));
+        }
+
+        let exists_prev_ack = self
+            .get_packet_acknowledgement(
+                &packet.port_on_b,
+                &packet.chan_on_b,
+                packet.sequence.into(),
+            )
+            .await?
+            .is_none();
+        if exists_prev_ack {
+            return Err(anyhow::anyhow!("acknowledgement already exists"));
+        }
+
+        self.put_packet_acknowledgement(
+            &packet.port_on_b,
+            &packet.chan_on_b,
+            packet.sequence.into(),
+            ack_bytes,
+        );
+
+        self.record(event::write_acknowledgement(packet, ack_bytes));
+
+        Ok(())
+    }
+}
+
+impl<T: StateWrite + ?Sized> WriteAcknowledgement for T {}

@@ -370,6 +370,27 @@ pub fn acknowledge_packet(packet: &Packet, channel: &ChannelEnd) -> Event {
     )
 }
 
+pub fn write_acknowledgement(packet: &Packet, ack_bytes: &[u8]) -> Event {
+    Event::new(
+        "write_acknowledgement",
+        vec![
+            ("packet_data", hex::encode(packet.data.clone())).index(),
+            ("timeout_height", packet.timeout_height_on_b.to_string()).index(),
+            (
+                "timeout_timestamp",
+                packet.timeout_timestamp_on_b.to_string(),
+            )
+                .index(),
+            ("sequence", packet.sequence.to_string()).index(),
+            ("src_port", packet.port_on_a.to_string()).index(),
+            ("src_channel", packet.chan_on_a.to_string()).index(),
+            ("dst_port", packet.port_on_b.to_string()).index(),
+            ("dst_channel", packet.chan_on_b.to_string()).index(),
+            ("acknowledgement", hex::encode(ack_bytes)).index(),
+        ],
+    )
+}
+
 pub fn timeout_packet(packet: &Packet, channel: &ChannelEnd) -> Event {
     Event::new(
         "timeout_packet",

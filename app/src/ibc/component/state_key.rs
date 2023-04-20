@@ -88,6 +88,13 @@ pub fn packet_commitment(packet: &Packet) -> String {
     )
 }
 
+pub fn packet_acknowledgement(port_id: &PortId, channel_id: &ChannelId, sequence: u64) -> String {
+    format!(
+        "acks/ports/{}/channels/{}/acks/{}",
+        port_id, channel_id, sequence
+    )
+}
+
 pub fn packet_commitment_by_port(
     port_id: &PortId,
     channel_id: &ChannelId,
