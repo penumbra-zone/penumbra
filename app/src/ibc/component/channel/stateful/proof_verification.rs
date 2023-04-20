@@ -53,6 +53,13 @@ pub fn commit_packet(packet: &Packet) -> Vec<u8> {
     Sha256::digest(&commit).to_vec()
 }
 
+// NOTE: this is underspecified.
+// using the same implementation here as ibc-go:
+// https://github.com/cosmos/ibc-go/blob/main/modules/core/04-channel/types/packet.go#L38
+pub fn commit_acknowledgement(ack_data: &[u8]) -> Vec<u8> {
+    Sha256::digest(ack_data).to_vec()
+}
+
 fn verify_merkle_absence_proof(
     proof_specs: &ProofSpecs,
     prefix: &CommitmentPrefix,

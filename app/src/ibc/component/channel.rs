@@ -1,3 +1,5 @@
+use self::stateful::proof_verification::commit_acknowledgement;
+
 use super::state_key;
 use anyhow::Result;
 use async_trait::async_trait;
@@ -70,6 +72,19 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
             vec![],
         );
     }
+
+    fn put_packet_acknowledgement(
+        &mut self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: u64,
+        acknowledgement: &[u8],
+    ) {
+        self.put_proto::<Vec<u8>>(
+            state_key::packet_acknowledgement(port_id, channel_id, sequence),
+            commit_acknowledgement(acknowledgement),
+        );
+    }
 }
 
 impl<T: StateWrite + ?Sized> StateWriteExt for T {}
@@ -127,6 +142,18 @@ pub trait StateReadExt: StateRead {
         }
 
         Ok(commitment)
+    }
+
+    async fn get_packet_acknowledgement(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: u64,
+    ) -> Result<Option<Vec<u8>>> {
+        self.get_proto::<Vec<u8>>(&state_key::packet_acknowledgement(
+            port_id, channel_id, sequence,
+        ))
+        .await
     }
 }
 

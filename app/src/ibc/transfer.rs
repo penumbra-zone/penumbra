@@ -2,11 +2,13 @@ use std::str::FromStr;
 
 use crate::ibc::component::state_key;
 use crate::ibc::ibc_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute};
+use crate::ibc::packet::WriteAcknowledgement as _;
 use crate::ibc::packet::{IBCPacket, Unchecked};
 use crate::shielded_pool::NoteManager;
 use crate::Component;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_trait::async_trait;
+use ibc::applications::transfer::acknowledgement::TokenTransferAcknowledgement;
 use ibc::applications::transfer::VERSION;
 use ibc::core::ics04_channel::channel::Order as ChannelOrder;
 use ibc::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
@@ -179,30 +181,8 @@ impl AppHandlerCheck for Ics20Transfer {
         return Err(anyhow::anyhow!("ics20 always aborts on close init"));
     }
 
-    async fn recv_packet_check<S: StateRead>(state: S, msg: &MsgRecvPacket) -> Result<()> {
-        // 1. parse a FungibleTokenPacketData from msg.packet.data
-        let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
-        let denom: asset::Denom = packet_data.denom.as_str().try_into()?;
-
-        // 2. check if we are the source chain for the denom.
-        if is_source(&msg.packet.port_on_a, &msg.packet.chan_on_a, &denom) {
-            // check if we have enough balance to unescrow tokens to receiver
-            let value_balance: Amount = state
-                .get(&state_key::ics20_value_balance(
-                    &msg.packet.chan_on_a,
-                    &denom.id(),
-                ))
-                .await?
-                .unwrap_or_else(Amount::zero);
-
-            let amount_penumbra: Amount = packet_data.amount.try_into()?;
-            if value_balance < amount_penumbra {
-                return Err(anyhow::anyhow!(
-                    "insufficient balance to unescrow tokens to receiver"
-                ));
-            }
-        }
-
+    async fn recv_packet_check<S: StateRead>(_state: S, _msg: &MsgRecvPacket) -> Result<()> {
+        // all checks on recv_packet done in execute
         Ok(())
     }
 
@@ -239,6 +219,110 @@ impl AppHandlerCheck for Ics20Transfer {
     }
 }
 
+// the main entry point for ICS20 transfer packet handling
+async fn recv_transfer_packet_inner<S: StateWrite>(
+    mut state: S,
+    msg: &MsgRecvPacket,
+) -> Result<()> {
+    // parse if we are source or dest, and mint or burn accordingly
+    //
+    // see this part of the spec for this logic:
+    //
+    // https://github.com/cosmos/ibc/tree/main/spec/app/ics-020-fungible-token-transfer (onRecvPacket)
+    //
+    let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
+    let denom: asset::Denom = packet_data
+        .denom
+        .as_str()
+        .try_into()
+        .context("couldnt decode denom in ICS20 transfer")?;
+    let receiver_amount: Amount = packet_data
+        .amount
+        .try_into()
+        .context("couldnt decode amount in ICS20 transfer")?;
+    let receiver_address = Address::from_str(&packet_data.receiver)?;
+
+    let value: Value = Value {
+        amount: receiver_amount,
+        asset_id: denom.id(),
+    };
+
+    // NOTE: here we assume we are chain A.
+
+    // 2. check if we are the source chain for the denom.
+    if is_source(&msg.packet.port_on_a, &msg.packet.chan_on_a, &denom) {
+        // assume AppHandlerCheck has already been called, and we have enough balance to mint tokens to receiver
+        // check if we have enough balance to unescrow tokens to receiver
+        let value_balance: Amount = state
+            .get(&state_key::ics20_value_balance(
+                &msg.packet.chan_on_a,
+                &denom.id(),
+            ))
+            .await?
+            .unwrap_or_else(Amount::zero);
+
+        if value_balance < receiver_amount {
+            // error text here is from the ics20 spec
+            return Err(anyhow::anyhow!("transfer coins failed"));
+        }
+
+        // mint tokens to receiver in the amount of packet_data.amount in the denom of denom
+        state
+            .mint_note(
+                value,
+                &receiver_address,
+                penumbra_chain::NoteSource::Unknown, // TODO
+            )
+            .await
+            .unwrap();
+
+        // update the value balance
+        let value_balance: Amount = state
+            .get(&state_key::ics20_value_balance(
+                &msg.packet.chan_on_a,
+                &denom.id(),
+            ))
+            .await?
+            .unwrap_or_else(Amount::zero);
+
+        // note: this arithmetic was checked above, but we do it again anyway.
+        let new_value_balance = value_balance.checked_sub(&receiver_amount).unwrap();
+        state.put(
+            state_key::ics20_value_balance(&msg.packet.chan_on_a, &denom.id()),
+            new_value_balance,
+        );
+    } else {
+        // create new denom:
+        //
+        // prefix = "{packet.destPort}/{packet.destChannel}/"
+        // prefixedDenomination = prefix + data.denom
+        //
+        // then mint that denom to packet_data.receiver in packet_data.amount
+        // no value balance to update here since this is an exogenous denom
+        let prefixed_denomination = format!(
+            "{}/{}/{}",
+            msg.packet.port_on_b, msg.packet.chan_on_b, packet_data.denom
+        );
+
+        let denom: asset::Denom = prefixed_denomination.as_str().try_into().unwrap();
+        let value = Value {
+            amount: receiver_amount,
+            asset_id: denom.id(),
+        };
+
+        state
+            .mint_note(
+                value,
+                &receiver_address,
+                penumbra_chain::NoteSource::Unknown, // TODO
+            )
+            .await
+            .context("failed to mint notes in ibc transfer")?;
+    }
+
+    Ok(())
+}
+
 // NOTE: should these be fallible, now that our enclosing state machine is fallible in execution?
 #[async_trait]
 impl AppHandlerExecute for Ics20Transfer {
@@ -248,76 +332,24 @@ impl AppHandlerExecute for Ics20Transfer {
     async fn chan_open_confirm_execute<S: StateWrite>(_state: S, _msg: &MsgChannelOpenConfirm) {}
     async fn chan_close_confirm_execute<S: StateWrite>(_state: S, _msg: &MsgChannelCloseConfirm) {}
     async fn chan_close_init_execute<S: StateWrite>(_state: S, _msg: &MsgChannelCloseInit) {}
-    async fn recv_packet_execute<S: StateWrite>(state: S, msg: &MsgRecvPacket) {
-        // parse if we are source or dest, and mint or burn accordingly
-        //
-        // see this part of the spec for this logic:
-        //
-        // https://github.com/cosmos/ibc/tree/main/spec/app/ics-020-fungible-token-transfer (onRecvPacket)
-        //
-        let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
-        let denom: asset::Denom = packet_data.denom.as_str().try_into().unwrap();
-        let receiver_amount: Amount = packet_data.amount.try_into().unwrap();
-        let receiver_address = Address::from_str(&packet_data.receiver).unwrap();
-
-        let value: Value = Value {
-            amount: receiver_amount,
-            asset_id: denom.id(),
+    async fn recv_packet_execute<S: StateWrite>(mut state: S, msg: &MsgRecvPacket) {
+        // recv packet should never fail a transaction, but it should record a failure acknowledgement.
+        let ack: Vec<u8> = match recv_transfer_packet_inner(&mut state, msg).await {
+            Ok(_) => {
+                // record packet acknowledgement without error
+                TokenTransferAcknowledgement::success().into()
+            }
+            Err(e) => {
+                // record packet acknowledgement with error
+                TokenTransferAcknowledgement::Error(e.to_string()).into()
+            }
         };
 
-        // NOTE: here we assume we are chain A.
-
-        // 2. check if we are the source chain for the denom.
-        if is_source(&msg.packet.port_on_a, &msg.packet.chan_on_a, &denom) {
-            // assume AppHandlerCheck has already been called, and we have enough balance to mint tokens to receiver
-
-            // mint tokens to receiver in the amount of packet_data.amount in the denom of denom
-            state
-                .mint_note(
-                    value,
-                    &receiver_address,
-                    penumbra_chain::NoteSource::Unknown, // TODO
-                )
-                .await
-                .unwrap();
-
-            // update the value balance
-            let value_balance: Amount = state
-                .get(&state_key::ics20_value_balance(
-                    &msg.packet.chan_on_a,
-                    &denom.id(),
-                ))
-                .await
-                .unwrap()
-                .unwrap_or_else(Amount::zero);
-
-            // NOTE: this arithmetic was checked in `recv_packet_check`
-            let new_value_balance = value_balance.checked_sub(&receiver_amount).unwrap();
-            state.put(
-                state_key::ics20_value_balance(&msg.packet.chan_on_a, &denom.id()),
-                new_value_balance,
-            );
-        } else {
-            // create new denom:
-            //
-            // prefix = "{packet.destPort}/{packet.destChannel}/"
-            // prefixedDenomination = prefix + data.denom
-            //
-            // then mint that denom to packet_data.receiver in packet_data.amount
-            // no value balance to update here since this is an exogenous denom
-            //
-
-            let prefixed_denomination = format!(
-                "{}/{}/{}",
-                msg.packet.port_on_b, msg.packet.chan_on_b, packet_data.denom
-            );
-
-            let denom: asset::Denom = prefixed_denomination.as_str().try_into().unwrap();
-            let value = Value {
-                amount: receiver_amount,
-                asset_id: denom.id(),
-            };
-        }
+        state
+            .write_acknowledgement(&msg.packet, &ack)
+            .await
+            .context("critical: failed to write acknowledgement")
+            .unwrap();
     }
     async fn timeout_packet_execute<S: StateWrite>(_state: S, _msg: &MsgTimeout) {}
     async fn acknowledge_packet_execute<S: StateWrite>(_state: S, _msg: &MsgAcknowledgement) {}
