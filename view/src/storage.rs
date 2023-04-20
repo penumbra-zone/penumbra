@@ -954,27 +954,39 @@ impl Storage {
         Ok(())
     }
 
-    pub async fn give_advice(&self, note: Note) -> anyhow::Result<()> {
-        // Do not insert advice for zero amounts, simply return Ok because this is fine
-        if u128::from(note.amount()) == 0u128 {
-            return Ok(());
-        }
-
+    fn record_note_inner(
+        dbtx: &r2d2_sqlite::rusqlite::Transaction<'_>,
+        note: &Note,
+    ) -> anyhow::Result<()> {
         let note_commitment = note.commit().0.to_bytes().to_vec();
         let address = note.address().to_vec();
         let amount = u128::from(note.amount()).to_be_bytes().to_vec();
         let asset_id = note.asset_id().to_bytes().to_vec();
         let rseed = note.rseed().to_bytes().to_vec();
 
-        let pool = self.pool.clone();
+        dbtx.execute(
+            "INSERT INTO notes (note_commitment, address, amount, asset_id, rseed) 
+                VALUES (?1, ?2, ?3, ?4, ?5) 
+                ON CONFLICT DO NOTHING",
+            (note_commitment, address, amount, asset_id, rseed),
+        )?;
 
-        spawn_blocking(move || {
-            pool.get()?.execute(
-                "INSERT INTO notes (note_commitment, address, amount, asset_id, rseed) VALUES (?1, ?2, ?3, ?4, ?5)",
-                (note_commitment, address, amount, asset_id, rseed),
-            ).map_err(anyhow::Error::from)
-        })
-        .await??;
+        Ok(())
+    }
+
+    pub async fn give_advice(&self, note: Note) -> anyhow::Result<()> {
+        // Do not insert advice for zero amounts, simply return Ok because this is fine
+        if u128::from(note.amount()) == 0u128 {
+            return Ok(());
+        }
+
+        let pool = self.pool.clone();
+        let mut lock = pool.get()?;
+        let dbtx = lock.transaction()?;
+
+        Storage::record_note_inner(&dbtx, &note)?;
+
+        dbtx.commit()?;
 
         Ok(())
     }
@@ -1117,23 +1129,14 @@ impl Storage {
             for note_record in &filtered_block.new_notes {
                 let note_commitment = note_record.note_commitment.0.to_bytes().to_vec();
                 let height_created = filtered_block.height as i64;
-                let address = note_record.note.address().to_vec();
-                let amount = u128::from(note_record.note.amount()).to_be_bytes().to_vec();
-                let asset_id = note_record.note.asset_id().to_bytes().to_vec();
-                let rseed = note_record.note.rseed().to_bytes().to_vec();
                 let address_index = note_record.address_index.to_bytes().to_vec();
                 let nullifier = note_record.nullifier.to_bytes().to_vec();
                 let position = (u64::from(note_record.position)) as i64;
                 let source = note_record.source.to_bytes().to_vec();
 
-                // We might have already seen the notes in the form of advice, so we use ON CONFLICT
-                // DO NOTHING to skip re-inserting them in that case.
-                dbtx.execute(
-                    "INSERT INTO notes (note_commitment, address, amount, asset_id, rseed)
-                    VALUES (?1, ?2, ?3, ?4, ?5)
-                    ON CONFLICT DO NOTHING",
-                    [&note_commitment, &address, &amount, &asset_id, &rseed],
-                )?;
+                // Record the inner note data in the notes table
+
+                Storage::record_note_inner(&dbtx,&note_record.note)?;
 
                 dbtx.execute(
                     "INSERT INTO spendable_notes
