@@ -131,6 +131,7 @@ pub trait FillRoute: StateWrite + Sized {
             if effective_price > spill_price {
                 println!("spill price hit");
                 tracing::debug!(?effective_price, ?spill_price, "spill price hit.");
+                panic!("spill price hit");
                 break 'filling;
             }
 
@@ -178,12 +179,8 @@ pub trait FillRoute: StateWrite + Sized {
                     // When multiple constraints are found on different hops, we have to consider the case when
                     // the last constraint is not the smallest. So we want to select the smallest upper bound on
                     // `delta_1_star` that allows every constraint to be satisfied.
-                    let inv_effective_price = (U128x128::from(1u64) / effective_price).unwrap();
-                    let delta_1_star = (U128x128::from(lambda_2) * inv_effective_price).unwrap();
-                    let delta_1_star: Amount = delta_1_star.round_up().try_into()?;
-
                     let min_delta_1_star = constraining_hops.iter().fold(
-                        delta_1_star,
+                        saturating_input.clone(),
                         |current_min, (_, saturating_input, _)| {
                             Amount::min(current_min, saturating_input.clone())
                         },
@@ -234,7 +231,7 @@ pub trait FillRoute: StateWrite + Sized {
                 println!("zero current value.");
                 // Note: this can be hit during dust fills
                 // TODO(erwan): craft `test_dust_fill_zero_value` to prove this.
-                // panic!("zero current value");
+                panic!("zero current value");
                 break 'filling;
             }
 
