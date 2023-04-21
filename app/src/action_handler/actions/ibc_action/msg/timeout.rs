@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc::core::ics04_channel::msgs::timeout::MsgTimeout;
-use ibc::core::ics24_host::identifier::PortId;
+use ibc_types::core::ics04_channel::msgs::timeout::MsgTimeout;
+use ibc_types::core::ics24_host::identifier::PortId;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Transaction;
 
@@ -17,8 +17,8 @@ use crate::ibc::component::connection::StateReadExt as _;
 use crate::ibc::event;
 use crate::ibc::ibc_handler::{AppHandlerCheck, AppHandlerExecute};
 use crate::ibc::transfer::Ics20Transfer;
-use ibc::core::ics04_channel::channel::Order as ChannelOrder;
-use ibc::core::ics04_channel::channel::State as ChannelState;
+use ibc_types::core::ics04_channel::channel::Order as ChannelOrder;
+use ibc_types::core::ics04_channel::channel::State as ChannelState;
 
 #[async_trait]
 impl ActionHandler for MsgTimeout {

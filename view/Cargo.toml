@@ -27,7 +27,8 @@ penumbra-transaction = { path = "../transaction" }
 # TODO: replace by a penumbra-app
 penumbra-app = { path = "../app" }
 
-ibc = "0.29"
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "main" }
+
 tokio = { version = "1.22", features = ["full"] }
 tokio-stream = { version = "0.1.8", features = ["sync"] }
 anyhow = "1"
@@ -54,7 +55,9 @@ sha2 = "0.10.1"
 ed25519-consensus = "2.1"
 r2d2 = "0.8"
 # Depending on our fork of r2d2-sqlite, which updates the rusqlite dependency to 0.29
-r2d2_sqlite = { version = "0.22", git = "https://github.com/penumbra-zone/r2d2-sqlite.git" , features = ["bundled"] }
+r2d2_sqlite = { version = "0.22", git = "https://github.com/penumbra-zone/r2d2-sqlite.git", features = [
+    "bundled",
+] }
 genawaiter = "0.99"
 digest = "0.9"
 once_cell = "1"

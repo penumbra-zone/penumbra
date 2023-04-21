@@ -1,4 +1,4 @@
-use ibc::core::{
+use ibc_types::core::{
     ics02_client::client_state::ClientState,
     ics03_connection::connection::ConnectionEnd,
     ics03_connection::connection::Counterparty,
@@ -7,8 +7,8 @@ use ibc::core::{
     ics24_host::identifier::{ChannelId, ConnectionId, PortId},
 };
 // TODO(erwan): generalize this
-use ibc::clients::ics07_tendermint as tm;
 use ibc_proto::protobuf::Protobuf;
+use ibc_types::clients::ics07_tendermint as tm;
 use tendermint::abci::{Event, EventAttributeIndexExt};
 
 pub fn create_client(client_id: ClientId, client_state: tm::client_state::ClientState) -> Event {
@@ -33,9 +33,10 @@ pub fn update_client(
     header: tm::header::Header,
 ) -> Event {
     // AYFKM
-    let header_hex_proto_bytes = <ibc::clients::ics07_tendermint::header::Header as Protobuf<
-        ibc_proto::ibc::lightclients::tendermint::v1::Header,
-    >>::encode_to_hex_string(&header);
+    let header_hex_proto_bytes =
+        <ibc_types::clients::ics07_tendermint::header::Header as Protobuf<
+            ibc_proto::ibc::lightclients::tendermint::v1::Header,
+        >>::encode_to_hex_string(&header);
     Event::new(
         "update_client",
         vec![

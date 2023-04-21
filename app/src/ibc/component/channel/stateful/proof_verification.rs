@@ -3,24 +3,24 @@ use crate::ibc::component::client::StateReadExt;
 // NOTE: where should this code live after the refactor to actionhandlers?
 
 use super::super::*;
-use ibc::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
-use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
-use ibc::core::ics02_client::client_state::ClientState;
-use ibc::core::ics04_channel::context::calculate_block_delay;
-use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
-use ibc::core::ics23_commitment::commitment::CommitmentProofBytes;
-use ibc::core::ics23_commitment::commitment::CommitmentRoot;
-use ibc::core::ics23_commitment::merkle::apply_prefix;
-use ibc::core::ics23_commitment::merkle::MerkleProof;
-use ibc::core::ics23_commitment::specs::ProofSpecs;
-use ibc::core::ics24_host::identifier::ClientId;
-use ibc::core::ics24_host::path::AckPath;
-use ibc::core::ics24_host::path::ChannelEndPath;
-use ibc::core::ics24_host::path::CommitmentPath;
-use ibc::core::ics24_host::path::ReceiptPath;
-use ibc::core::ics24_host::path::SeqRecvPath;
-use ibc::core::ics24_host::Path;
-use ibc::Height;
+use ibc_types::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
+use ibc_types::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
+use ibc_types::core::ics02_client::client_state::ClientState;
+use ibc_types::core::ics04_channel::context::calculate_block_delay;
+use ibc_types::core::ics23_commitment::commitment::CommitmentPrefix;
+use ibc_types::core::ics23_commitment::commitment::CommitmentProofBytes;
+use ibc_types::core::ics23_commitment::commitment::CommitmentRoot;
+use ibc_types::core::ics23_commitment::merkle::apply_prefix;
+use ibc_types::core::ics23_commitment::merkle::MerkleProof;
+use ibc_types::core::ics23_commitment::specs::ProofSpecs;
+use ibc_types::core::ics24_host::identifier::ClientId;
+use ibc_types::core::ics24_host::path::AckPath;
+use ibc_types::core::ics24_host::path::ChannelEndPath;
+use ibc_types::core::ics24_host::path::CommitmentPath;
+use ibc_types::core::ics24_host::path::ReceiptPath;
+use ibc_types::core::ics24_host::path::SeqRecvPath;
+use ibc_types::core::ics24_host::Path;
+use ibc_types::Height;
 
 use anyhow::Context;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
@@ -278,7 +278,7 @@ mod inner {
         async fn get_trusted_client_and_consensus_state(
             &self,
             client_id: &ClientId,
-            height: &ibc::Height,
+            height: &ibc_types::Height,
             connection: &ConnectionEnd,
         ) -> anyhow::Result<(TendermintClientState, TendermintConsensusState)> {
             let trusted_client_state = self.get_client_state(client_id).await?;
@@ -312,7 +312,7 @@ mod inner {
 
             TendermintClientState::verify_delay_passed(
                 current_timestamp.into(),
-                ibc::Height::new(0, current_height)?,
+                ibc_types::Height::new(0, current_height)?,
                 processed_time,
                 processed_height,
                 delay_period_time,

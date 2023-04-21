@@ -15,7 +15,8 @@ penumbra-tct = { path = "../tct" }
 decaf377 = "0.3"
 
 tendermint = "0.29.0"
-ibc = "0.29"
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "main" }
+
 ics23 = "0.9.0"
 
 # Crates.io deps
@@ -32,4 +33,4 @@ tracing = "0.1"
 [features]
 default = ["std", "penumbra-storage"]
 std = ["ark-ff/std"]
-penumbra-storage = ["dep:penumbra-storage", "penumbra-proto/penumbra-storage" ]
+penumbra-storage = ["dep:penumbra-storage", "penumbra-proto/penumbra-storage"]

@@ -1,12 +1,12 @@
 use anyhow::anyhow;
 
-use ibc::core::ics02_client::client_state::ClientState;
+use ibc_types::core::ics02_client::client_state::ClientState;
 
-use ibc::core::ics02_client::height::Height;
-use ibc::core::ics02_client::trust_threshold::TrustThreshold;
-use ibc::core::ics24_host::identifier::ChainId;
-use ibc::core::ics24_host::identifier::ConnectionId;
 use ibc_proto::google::protobuf::Any;
+use ibc_types::core::ics02_client::height::Height;
+use ibc_types::core::ics02_client::trust_threshold::TrustThreshold;
+use ibc_types::core::ics24_host::identifier::ChainId;
+use ibc_types::core::ics24_host::identifier::ConnectionId;
 use penumbra_proto::{core::ibc::v1alpha1 as pb, DomainType};
 
 #[derive(Clone, Debug)]
@@ -96,14 +96,14 @@ impl From<ClientConnections> for pb::ClientConnections {
 
 pub(crate) mod ics02_validation {
     use anyhow::{anyhow, Result};
-    use ibc::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
-    use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
-    use ibc::clients::ics07_tendermint::header::Header as TendermintHeader;
-    use ibc::clients::ics07_tendermint::{
+    use ibc_proto::google::protobuf::Any;
+    use ibc_types::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
+    use ibc_types::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
+    use ibc_types::clients::ics07_tendermint::header::Header as TendermintHeader;
+    use ibc_types::clients::ics07_tendermint::{
         client_state::TENDERMINT_CLIENT_STATE_TYPE_URL,
         consensus_state::TENDERMINT_CONSENSUS_STATE_TYPE_URL, header::TENDERMINT_HEADER_TYPE_URL,
     };
-    use ibc_proto::google::protobuf::Any;
 
     pub fn is_tendermint_header_state(header: &Any) -> bool {
         header.type_url.as_str() == TENDERMINT_HEADER_TYPE_URL

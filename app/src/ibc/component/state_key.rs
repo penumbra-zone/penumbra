@@ -1,4 +1,4 @@
-use ibc::{
+use ibc_types::{
     core::{
         ics04_channel::packet::Packet,
         ics24_host::identifier::{ChannelId, ClientId, PortId},
@@ -30,7 +30,7 @@ pub fn client_processed_times(client_id: &ClientId, height: &Height) -> String {
 }
 
 pub mod connections {
-    use ibc::core::ics24_host::identifier::{ClientId, ConnectionId};
+    use ibc_types::core::ics24_host::identifier::{ClientId, ConnectionId};
 
     use std::string::String;
 

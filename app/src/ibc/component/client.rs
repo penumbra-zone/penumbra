@@ -1,9 +1,9 @@
 use crate::ibc::client::ics02_validation;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use ibc::clients::ics07_tendermint;
+use ibc_types::clients::ics07_tendermint;
 
-use ibc::{
+use ibc_types::{
     clients::ics07_tendermint::{
         client_state::ClientState as TendermintClientState,
         consensus_state::ConsensusState as TendermintConsensusState,
@@ -221,7 +221,8 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         );
 
         let current_height = self.get_block_height().await?;
-        let current_time: ibc::timestamp::Timestamp = self.get_block_timestamp().await?.into();
+        let current_time: ibc_types::timestamp::Timestamp =
+            self.get_block_timestamp().await?.into();
 
         self.put_proto::<u64>(
             state_key::client_processed_times(&client_id, &height),
@@ -230,7 +231,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
 
         self.put(
             state_key::client_processed_heights(&client_id, &height),
-            ibc::Height::new(0, current_height)?,
+            ibc_types::Height::new(0, current_height)?,
         );
 
         // update verified heights
@@ -315,7 +316,7 @@ pub trait StateReadExt: StateRead {
         &self,
         client_id: &ClientId,
         height: &Height,
-    ) -> Result<ibc::Height> {
+    ) -> Result<ibc_types::Height> {
         self.get(&state_key::client_processed_heights(client_id, height))
             .await?
             .ok_or_else(|| {
@@ -329,7 +330,7 @@ pub trait StateReadExt: StateRead {
         &self,
         client_id: &ClientId,
         height: &Height,
-    ) -> Result<ibc::timestamp::Timestamp> {
+    ) -> Result<ibc_types::timestamp::Timestamp> {
         let timestamp_nanos = self
             .get_proto::<u64>(&state_key::client_processed_times(client_id, height))
             .await?
@@ -339,7 +340,7 @@ pub trait StateReadExt: StateRead {
                 )
             })?;
 
-        ibc::timestamp::Timestamp::from_nanoseconds(timestamp_nanos)
+        ibc_types::timestamp::Timestamp::from_nanoseconds(timestamp_nanos)
             .context("invalid client update time")
     }
 
@@ -416,8 +417,8 @@ mod tests {
     use crate::TempStorageExt;
 
     use super::*;
-    use ibc::core::ics02_client::msgs::create_client::MsgCreateClient;
     use ibc_proto::protobuf::Protobuf;
+    use ibc_types::core::ics02_client::msgs::create_client::MsgCreateClient;
     use penumbra_chain::StateWriteExt;
     use penumbra_storage::{ArcStateDeltaExt, StateDelta, TempStorage};
     use penumbra_transaction::{action::IbcAction, Transaction};

@@ -2,16 +2,16 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use ibc::core::ics02_client::client_state::ClientState;
-use ibc::core::ics02_client::msgs::update_client::MsgUpdateClient;
-use ibc::core::ics24_host::identifier::ClientId;
+use ibc_types::core::ics02_client::client_state::ClientState;
+use ibc_types::core::ics02_client::msgs::update_client::MsgUpdateClient;
+use ibc_types::core::ics24_host::identifier::ClientId;
 use penumbra_chain::StateReadExt as _;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Transaction;
 
-use ibc::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
-use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
-use ibc::clients::ics07_tendermint::header::Header as TendermintHeader;
+use ibc_types::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
+use ibc_types::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
+use ibc_types::clients::ics07_tendermint::header::Header as TendermintHeader;
 use tendermint::validator;
 use tendermint_light_client_verifier::types::{TrustedBlockState, UntrustedBlockState};
 use tendermint_light_client_verifier::{ProdVerifier, Verdict, Verifier};

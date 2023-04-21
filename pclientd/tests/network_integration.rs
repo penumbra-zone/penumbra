@@ -94,8 +94,8 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
     let msg_create_client_stargaze_raw =
         base64::decode(include_str!("../../app/src/ibc/test/create_client.msg").replace('\n', ""))
             .unwrap();
-    use ibc::core::ics02_client::msgs::create_client::MsgCreateClient;
     use ibc_proto::protobuf::Protobuf;
+    use ibc_types::core::ics02_client::msgs::create_client::MsgCreateClient;
     let msg_create_stargaze_client =
         MsgCreateClient::decode(msg_create_client_stargaze_raw.as_slice()).unwrap();
     let create_client_action: IbcAction = msg_create_stargaze_client.into();
