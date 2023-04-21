@@ -43,7 +43,7 @@ decaf377 = { version = "0.3" }
 tendermint = { version = "0.29.0", features = ["rust-crypto"] }
 
 # External dependencies
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "main" }
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", version = "0.1.1" }
 
 ibc-proto = "0.26"
 ark-ff = { version = "0.3", default-features = false }

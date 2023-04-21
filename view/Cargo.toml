@@ -27,7 +27,7 @@ penumbra-transaction = { path = "../transaction" }
 # TODO: replace by a penumbra-app
 penumbra-app = { path = "../app" }
 
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "main" }
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", version = "0.1.1" }
 
 tokio = { version = "1.22", features = ["full"] }
 tokio-stream = { version = "0.1.8", features = ["sync"] }
