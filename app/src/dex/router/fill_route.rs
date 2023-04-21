@@ -9,28 +9,30 @@ use penumbra_crypto::{
     Amount, Value,
 };
 use penumbra_storage::{StateDelta, StateWrite};
-use sha2::digest::consts::U1;
-use tracing::debug;
+use sha2::digest::consts::U12;
 
 use crate::dex::{PositionManager, PositionRead};
 use futures::StreamExt;
 
 #[async_trait]
 pub trait FillRoute: StateWrite + Sized {
-    // to keep the main logic decluttered, this shouldn't be part of the final production
-    /// Returns a tuple containing:
-    ///     - an order list of constraining positions
-    ///     - the effective price along the route.
+    /// Finds the constraining hops alongside a given route for a specified input amount, and
+    /// returns a tuple of:
+    ///         - an ordered list of `Position`s corresponding to constraining hops
+    ///         - an ordered list of the best `Position`s for every hop on the route.
     async fn find_constraints(
         &mut self,
         input: Value,
         route: &[asset::Id],
-    ) -> Result<(Vec<(usize, position::Position)>, Vec<position::Position>)> {
+    ) -> Result<(
+        Vec<(usize, Amount, position::Position)>,
+        Vec<position::Position>,
+    )> {
         let mut tmp_state = StateDelta::new(&self);
-        let mut constraints: Vec<(usize, position::Position)> = vec![];
+        let mut constraining_positions: Vec<(usize, Amount, position::Position)> = vec![];
         let mut current_input = input.clone();
-        let mut effective_price = U128x128::from(1u64);
-        let mut positions: Vec<position::Position> = vec![];
+        let mut best_positions: Vec<position::Position> = vec![];
+        let mut accumulated_effective_price = U128x128::from(1u64);
 
         for (i, next_asset) in route.iter().enumerate().skip(1) {
             let Some(position) = tmp_state
@@ -42,30 +44,38 @@ pub trait FillRoute: StateWrite + Sized {
                     panic!("no positions!");
                 };
 
+            best_positions.push(position.clone());
+
+            let (unfilled, output) = tmp_state
+                .fill_against(current_input, &position.id())
+                .await?;
             let position_price = position
                 .phi
                 .orient_end(*next_asset)
                 .unwrap()
                 .effective_price();
 
-            // Record (and ignore, for now) the effective price along the path.
-            effective_price = (effective_price * position_price).unwrap();
-            positions.push(position.clone());
-
-            let (unfilled, output) = tmp_state
-                .fill_against(current_input, &position.id())
-                .await?;
+            accumulated_effective_price = (accumulated_effective_price * position_price)
+                .expect("TODO(erwan): think through why this is not overflowable.");
 
             // We have found a hop in the path that bottlenecks execution.
             if unfilled.amount > 0u64.into() {
-                constraints.push((i, position))
-            } else {
-                // log perfect fill
+                let lambda_2 = position
+                    .reserves_for(*next_asset)
+                    .expect("the position has reserves for its numeraire");
+
+                let delta_1_star = (U128x128::from(lambda_2) * accumulated_effective_price)
+                    .expect("TODO(erwan): write up why this cannot overflow");
+
+                let saturating_input: Amount = delta_1_star.round_up().try_into()?;
+
+                constraining_positions.push((i, saturating_input, position));
             }
+
             current_input = output;
         }
 
-        Ok((constraints, positions))
+        Ok((constraining_positions, best_positions))
     }
 
     /// Breaksdown a route into a collection of `DirectedTradingPair`, this is mostly useful
@@ -106,8 +116,8 @@ pub trait FillRoute: StateWrite + Sized {
             // by simulating execution of the max amount on an ephemeral state fork.
             // Writing the results to the new StateDelta ensures that if the path has a cycle,
             // we'll see our own execution changes later in the path.
-            let (constraints, positions) = self.find_constraints(input, route).await?;
-            let effective_price = positions
+            let (constraining_hops, best_positions) = self.find_constraints(input, route).await?;
+            let effective_price = best_positions
                 .clone()
                 .into_iter()
                 .fold(U128x128::from(1u64), |acc, pos| {
@@ -115,8 +125,7 @@ pub trait FillRoute: StateWrite + Sized {
                 });
 
             tracing::debug!(?effective_price, "effective price across the route");
-            tracing::debug!(num = constraints.len(), "found constraints");
-            let inv_effective_price = (U128x128::from(1u64) / effective_price).unwrap();
+            tracing::debug!(num = constraining_hops.len(), "found constraints");
 
             // If the effective price exceeds the spill price, stop filling.
             if effective_price > spill_price {
@@ -129,8 +138,8 @@ pub trait FillRoute: StateWrite + Sized {
             // constraining.  We want to ensure that we use its entire reserves,
             // not leaving any dust, so that we continue making forward
             // progress.
-            let input_capacity = match constraints.last() {
-                Some((constraining_index, constraining_position)) => {
+            let input_capacity = match constraining_hops.last() {
+                Some((constraining_index, saturating_input, constraining_position)) => {
                     // There are a couple things to worry about here, let's reason step-by-step:
                     //      + can constraint resolution generate constraints upstream in the path?
                     //          answer: case1: no, case2:yes
@@ -165,12 +174,22 @@ pub trait FillRoute: StateWrite + Sized {
                     // by strictly reducing the flow we know we haven't created any _new_ constraint, therefore
                     // we can individually visit previously recorded constraints, check and solve those that remain
                     // bottlenecky.
-                    constraints.iter().for_each(|position| {
-                        println!("position: {position:?}");
-                    });
 
+                    // When multiple constraints are found on different hops, we have to consider the case when
+                    // the last constraint is not the smallest. So we want to select the smallest upper bound on
+                    // `delta_1_star` that allows every constraint to be satisfied.
+                    let inv_effective_price = (U128x128::from(1u64) / effective_price).unwrap();
                     let delta_1_star = (U128x128::from(lambda_2) * inv_effective_price).unwrap();
-                    delta_1_star.round_up().try_into()?
+                    let delta_1_star: Amount = delta_1_star.round_up().try_into()?;
+
+                    let min_delta_1_star = constraining_hops.iter().fold(
+                        delta_1_star,
+                        |current_min, (_, saturating_input, _)| {
+                            Amount::min(current_min, saturating_input.clone())
+                        },
+                    );
+
+                    min_delta_1_star
                 }
                 None => {
                     // There's no capacity constraint, we can execute the entire input.
