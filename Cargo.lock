@@ -2849,7 +2849,7 @@ dependencies = [
 [[package]]
 name = "ibc-types"
 version = "0.1.1"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#44659096eb3d44e9992588f12a1a2b6ef74c2bf3"
+source = "git+https://github.com/penumbra-zone/ibc-types#44659096eb3d44e9992588f12a1a2b6ef74c2bf3"
 dependencies = [
  "bytes",
  "derive_more",
