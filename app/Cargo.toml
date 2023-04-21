@@ -16,7 +16,7 @@ penumbra-tct = { path = "../tct" }
 penumbra-proof-params = { path = "../proof-params" }
 
 # Penumbra dependencies
-decaf377 = {version = "0.3"}
+decaf377 = { version = "0.3" }
 jmt = "0.3"
 tokio = { version = "1.21.1", features = ["full", "tracing"] }
 async-trait = "0.1.52"
@@ -47,7 +47,7 @@ parking_lot = "0.12"
 tendermint = "0.29.0"
 tendermint-proto = "0.29.0"
 tendermint-light-client-verifier = "0.29.0"
-ibc = "0.29"
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "main" }
 ibc-proto = "0.26"
 
 [dev-dependencies]

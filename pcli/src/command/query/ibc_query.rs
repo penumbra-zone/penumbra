@@ -1,8 +1,8 @@
 use anyhow::Result;
 use colored_json::prelude::*;
-use ibc::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
-use ibc::core::ics03_connection::connection::ConnectionEnd;
-use ibc::core::ics04_channel::channel::ChannelEnd;
+use ibc_types::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
+use ibc_types::core::ics03_connection::connection::ConnectionEnd;
+use ibc_types::core::ics04_channel::channel::ChannelEnd;
 
 use penumbra_proto::client::v1alpha1::KeyValueRequest;
 use penumbra_proto::DomainType;

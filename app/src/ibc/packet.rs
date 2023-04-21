@@ -5,12 +5,12 @@ use super::component::connection::StateReadExt as _;
 use super::event;
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc::core::ics02_client::client_state::ClientState;
-use ibc::core::ics02_client::height::Height;
-use ibc::core::ics04_channel::channel::State as ChannelState;
-use ibc::core::ics04_channel::packet::Packet;
-use ibc::core::ics24_host::identifier::ChannelId;
-use ibc::core::ics24_host::identifier::PortId;
+use ibc_types::core::ics02_client::client_state::ClientState;
+use ibc_types::core::ics02_client::height::Height;
+use ibc_types::core::ics04_channel::channel::State as ChannelState;
+use ibc_types::core::ics04_channel::packet::Packet;
+use ibc_types::core::ics24_host::identifier::ChannelId;
+use ibc_types::core::ics24_host::identifier::PortId;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::action::Ics20Withdrawal;
 
@@ -60,7 +60,7 @@ impl From<Ics20Withdrawal> for IBCPacket<Unchecked> {
         Self {
             source_port: withdrawal.source_port.clone(),
             source_channel: withdrawal.source_channel.clone(),
-            timeout_height: ibc::Height::new(0, withdrawal.timeout_height).unwrap(),
+            timeout_height: ibc_types::Height::new(0, withdrawal.timeout_height).unwrap(),
             timeout_timestamp: withdrawal.timeout_time,
             data: withdrawal.packet_data(),
 
@@ -161,7 +161,7 @@ pub trait SendPacketWrite: StateWrite {
             port_on_b: PortId::default(),
 
             timeout_height_on_b: packet.timeout_height.into(),
-            timeout_timestamp_on_b: ibc::timestamp::Timestamp::from_nanoseconds(
+            timeout_timestamp_on_b: ibc_types::timestamp::Timestamp::from_nanoseconds(
                 packet.timeout_timestamp,
             )
             .unwrap(),

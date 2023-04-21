@@ -1,41 +1,45 @@
-use ibc::core::ics02_client::msgs::create_client::{MsgCreateClient, TYPE_URL as CREATE_CLIENT};
-use ibc::core::ics02_client::msgs::update_client::{MsgUpdateClient, TYPE_URL as UPDATE_CLIENT};
-use ibc::core::ics03_connection::msgs::conn_open_ack::{
+use ibc_proto::protobuf::Protobuf;
+use ibc_types::core::ics02_client::msgs::create_client::{
+    MsgCreateClient, TYPE_URL as CREATE_CLIENT,
+};
+use ibc_types::core::ics02_client::msgs::update_client::{
+    MsgUpdateClient, TYPE_URL as UPDATE_CLIENT,
+};
+use ibc_types::core::ics03_connection::msgs::conn_open_ack::{
     MsgConnectionOpenAck, TYPE_URL as CONNECTION_OPEN_ACK,
 };
-use ibc::core::ics03_connection::msgs::conn_open_confirm::{
+use ibc_types::core::ics03_connection::msgs::conn_open_confirm::{
     MsgConnectionOpenConfirm, TYPE_URL as CONNECTION_OPEN_CONFIRM,
 };
-use ibc::core::ics03_connection::msgs::conn_open_init::{
+use ibc_types::core::ics03_connection::msgs::conn_open_init::{
     MsgConnectionOpenInit, TYPE_URL as CONNECTION_OPEN_INIT,
 };
-use ibc::core::ics03_connection::msgs::conn_open_try::{
+use ibc_types::core::ics03_connection::msgs::conn_open_try::{
     MsgConnectionOpenTry, TYPE_URL as CONNECTION_OPEN_TRY,
 };
-use ibc::core::ics04_channel::msgs::acknowledgement::{
+use ibc_types::core::ics04_channel::msgs::acknowledgement::{
     MsgAcknowledgement, TYPE_URL as ACKNOWLEDGEMENT,
 };
-use ibc::core::ics04_channel::msgs::chan_close_confirm::{
+use ibc_types::core::ics04_channel::msgs::chan_close_confirm::{
     MsgChannelCloseConfirm, TYPE_URL as CHANNEL_CLOSE_CONFIRM,
 };
-use ibc::core::ics04_channel::msgs::chan_close_init::{
+use ibc_types::core::ics04_channel::msgs::chan_close_init::{
     MsgChannelCloseInit, TYPE_URL as CHANNEL_CLOSE_INIT,
 };
-use ibc::core::ics04_channel::msgs::chan_open_ack::{
+use ibc_types::core::ics04_channel::msgs::chan_open_ack::{
     MsgChannelOpenAck, TYPE_URL as CHANNEL_OPEN_ACK,
 };
-use ibc::core::ics04_channel::msgs::chan_open_confirm::{
+use ibc_types::core::ics04_channel::msgs::chan_open_confirm::{
     MsgChannelOpenConfirm, TYPE_URL as CHANNEL_OPEN_CONFIRM,
 };
-use ibc::core::ics04_channel::msgs::chan_open_init::{
+use ibc_types::core::ics04_channel::msgs::chan_open_init::{
     MsgChannelOpenInit, TYPE_URL as CHANNEL_OPEN_INIT,
 };
-use ibc::core::ics04_channel::msgs::chan_open_try::{
+use ibc_types::core::ics04_channel::msgs::chan_open_try::{
     MsgChannelOpenTry, TYPE_URL as CHANNEL_OPEN_TRY,
 };
-use ibc::core::ics04_channel::msgs::recv_packet::{MsgRecvPacket, TYPE_URL as RECV_PACKET};
-use ibc::core::ics04_channel::msgs::timeout::{MsgTimeout, TYPE_URL as TIMEOUT};
-use ibc_proto::protobuf::Protobuf;
+use ibc_types::core::ics04_channel::msgs::recv_packet::{MsgRecvPacket, TYPE_URL as RECV_PACKET};
+use ibc_types::core::ics04_channel::msgs::timeout::{MsgTimeout, TYPE_URL as TIMEOUT};
 use penumbra_proto::{
     core::ibc::v1alpha1::{self as pb},
     DomainType,
@@ -76,7 +80,7 @@ impl IbcAction {
         match self {
             IbcAction::CreateClient(msg) => {
                 // HACK: not a better way to get tm light client data
-                match ibc::clients::ics07_tendermint::client_state::ClientState::try_from(
+                match ibc_types::clients::ics07_tendermint::client_state::ClientState::try_from(
                     msg.client_state.clone(),
                 ) {
                     Ok(tm_client) => {

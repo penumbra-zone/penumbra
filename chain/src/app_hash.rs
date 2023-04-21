@@ -1,6 +1,6 @@
 use async_trait::async_trait;
-use ibc::core::ics23_commitment::merkle::MerkleProof;
-use ibc::core::ics23_commitment::{commitment::CommitmentPrefix, specs::ProofSpecs};
+use ibc_types::core::ics23_commitment::merkle::MerkleProof;
+use ibc_types::core::ics23_commitment::{commitment::CommitmentPrefix, specs::ProofSpecs};
 use once_cell::sync::Lazy;
 use penumbra_proto::Message;
 use penumbra_storage::{RootHash, Snapshot};
@@ -144,8 +144,8 @@ mod tests {
     /*
     use super::super::*;
     use super::*;
-    use ibc::core::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
-    use ibc::core::ics23_commitment::merkle::{apply_prefix, MerkleProof};
+    use ibc_types::core::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
+    use ibc_types::core::ics23_commitment::merkle::{apply_prefix, MerkleProof};
     use tempfile::tempdir;
 
     // simulate a round-trip multiproof verification

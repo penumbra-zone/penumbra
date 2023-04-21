@@ -152,7 +152,7 @@ impl TryFrom<crate::core::crypto::v1alpha1::ConsensusKey> for tendermint::Public
 
 // IBC-rs impls
 
-extern crate ibc as ibc_rs;
+extern crate ibc_types as ibc_rs;
 
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
@@ -182,7 +182,7 @@ impl DomainType for ics07_tendermint::consensus_state::ConsensusState {
 
 impl<T> From<T> for IbcAction
 where
-    T: ibc::tx_msg::Msg,
+    T: ibc_types::tx_msg::Msg,
 {
     fn from(v: T) -> Self {
         let any = pbjson_types::Any {

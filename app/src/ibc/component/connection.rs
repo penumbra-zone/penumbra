@@ -2,10 +2,10 @@ use crate::ibc::ConnectionCounter;
 use anyhow::Result;
 use async_trait::async_trait;
 // TODO(erwan): remove in polish MERGEBLOCK
-// use ibc::core::ics02_client::client_def::AnyClient;
-// use ibc::core::ics02_client::client_def::ClientDef;
-use ibc::core::ics03_connection::connection::ConnectionEnd;
-use ibc::core::ics24_host::identifier::ConnectionId;
+// use ibc_types::core::ics02_client::client_def::AnyClient;
+// use ibc_types::core::ics02_client::client_def::ClientDef;
+use ibc_types::core::ics03_connection::connection::ConnectionEnd;
+use ibc_types::core::ics24_host::identifier::ConnectionId;
 use penumbra_storage::{StateRead, StateWrite};
 
 use super::state_key;

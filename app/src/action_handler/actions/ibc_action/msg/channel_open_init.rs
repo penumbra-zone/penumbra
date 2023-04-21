@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc::core::ics04_channel::channel::{ChannelEnd, Counterparty, State};
-use ibc::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
-use ibc::core::ics24_host::identifier::{ChannelId, PortId};
+use ibc_types::core::ics04_channel::channel::{ChannelEnd, Counterparty, State};
+use ibc_types::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
+use ibc_types::core::ics24_host::identifier::{ChannelId, PortId};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Transaction;
 

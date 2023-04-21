@@ -2,11 +2,11 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc::core::ics02_client::client_state::ClientState;
-use ibc::core::ics02_client::consensus_state::ConsensusState;
-use ibc::core::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
-use ibc::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
-use ibc::core::ics24_host::path::ConnectionPath;
+use ibc_types::core::ics02_client::client_state::ClientState;
+use ibc_types::core::ics02_client::consensus_state::ConsensusState;
+use ibc_types::core::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
+use ibc_types::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
+use ibc_types::core::ics24_host::path::ConnectionPath;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Transaction;
 

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc::core::{
+use ibc_types::core::{
     ics02_client::{client_state::ClientState, consensus_state::ConsensusState},
     ics03_connection::{
         connection::ConnectionEnd,
@@ -29,7 +29,7 @@ use crate::{
         event, validate_penumbra_client_state, SUPPORTED_VERSIONS,
     },
 };
-use ibc::Height as IBCHeight;
+use ibc_types::Height as IBCHeight;
 
 #[async_trait]
 impl ActionHandler for MsgConnectionOpenTry {

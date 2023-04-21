@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc::core::ics03_connection::connection::State as ConnectionState;
-use ibc::core::ics04_channel::channel::State as ChannelState;
-use ibc::core::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
-use ibc::core::ics24_host::identifier::PortId;
+use ibc_types::core::ics03_connection::connection::State as ConnectionState;
+use ibc_types::core::ics04_channel::channel::State as ChannelState;
+use ibc_types::core::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
+use ibc_types::core::ics24_host::identifier::PortId;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Transaction;
 

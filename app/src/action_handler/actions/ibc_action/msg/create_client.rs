@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc::core::ics02_client::client_state::ClientState;
-use ibc::core::ics02_client::msgs::create_client::MsgCreateClient;
-use ibc::core::ics24_host::identifier::ClientId;
+use ibc_types::core::ics02_client::client_state::ClientState;
+use ibc_types::core::ics02_client::msgs::create_client::MsgCreateClient;
+use ibc_types::core::ics24_host::identifier::ClientId;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Transaction;
 

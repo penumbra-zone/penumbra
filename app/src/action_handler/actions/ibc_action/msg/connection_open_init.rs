@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc::core::{
+use ibc_types::core::{
     ics03_connection::{
         connection::ConnectionEnd, msgs::conn_open_init::MsgConnectionOpenInit, version::Version,
     },
@@ -14,7 +14,7 @@ use crate::ibc::component::client::StateReadExt as _;
 use crate::ibc::component::connection::{StateReadExt as _, StateWriteExt as _};
 use crate::ibc::SUPPORTED_VERSIONS;
 use crate::{action_handler::ActionHandler, ibc::event};
-use ibc::core::ics03_connection::connection::State as ConnectionState;
+use ibc_types::core::ics03_connection::connection::State as ConnectionState;
 use penumbra_storage::{StateRead, StateWrite};
 
 #[async_trait]
