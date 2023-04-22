@@ -3,6 +3,8 @@ use crate::ibc::component::client::StateReadExt;
 // NOTE: where should this code live after the refactor to actionhandlers?
 
 use super::super::*;
+use ibc_proto::ibc::core::commitment::v1::MerklePath;
+use ibc_proto::ibc::core::commitment::v1::MerkleRoot;
 use ibc_types::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
 use ibc_types::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use ibc_types::core::ics02_client::client_state::ClientState;
@@ -10,6 +12,7 @@ use ibc_types::core::ics04_channel::context::calculate_block_delay;
 use ibc_types::core::ics23_commitment::commitment::CommitmentPrefix;
 use ibc_types::core::ics23_commitment::commitment::CommitmentProofBytes;
 use ibc_types::core::ics23_commitment::commitment::CommitmentRoot;
+use ibc_types::core::ics23_commitment::error::CommitmentError;
 use ibc_types::core::ics23_commitment::merkle::apply_prefix;
 use ibc_types::core::ics23_commitment::merkle::MerkleProof;
 use ibc_types::core::ics23_commitment::specs::ProofSpecs;
@@ -24,6 +27,7 @@ use ibc_types::Height;
 
 use anyhow::Context;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
+use ics23::NonExistenceProof;
 use penumbra_chain::StateReadExt as _;
 use prost::Message;
 use sha2::{Digest, Sha256};
@@ -54,12 +58,142 @@ pub fn commit_packet(packet: &Packet) -> Vec<u8> {
 }
 
 // NOTE: this is underspecified.
-// using the same implementation here as ibc-go:
 // https://github.com/cosmos/ibc-go/blob/main/modules/core/04-channel/types/packet.go#L38
 pub fn commit_acknowledgement(ack_data: &[u8]) -> Vec<u8> {
     Sha256::digest(ack_data).to_vec()
 }
 
+pub fn verify_membership(
+    proof: MerkleProof,
+    specs: &ProofSpecs,
+    root: MerkleRoot,
+    keys: MerklePath,
+    value: Vec<u8>,
+    start_index: usize,
+) -> Result<(), CommitmentError> {
+    // validate arguments
+    if proof.proofs.is_empty() {
+        return Err(CommitmentError::EmptyMerkleProof);
+    }
+    if root.hash.is_empty() {
+        return Err(CommitmentError::EmptyMerkleRoot);
+    }
+    let num = proof.proofs.len();
+    let ics23_specs = Vec::<ics23::ProofSpec>::from(specs.clone());
+    if ics23_specs.len() != num {
+        return Err(CommitmentError::NumberOfSpecsMismatch);
+    }
+    if keys.key_path.len() != num {
+        return Err(CommitmentError::NumberOfKeysMismatch);
+    }
+    if value.is_empty() {
+        return Err(CommitmentError::EmptyVerifiedValue);
+    }
+
+    let mut subroot = value.clone();
+    let mut value = value;
+    // keys are represented from root-to-leaf
+    for ((proof, spec), key) in proof
+        .proofs
+        .iter()
+        .zip(ics23_specs.iter())
+        .zip(keys.key_path.iter().rev())
+        .skip(start_index)
+    {
+        match &proof.proof {
+            Some(ics23::commitment_proof::Proof::Exist(existence_proof)) => {
+                subroot =
+                    ics23::calculate_existence_root::<ics23::HostFunctionsManager>(existence_proof)
+                        .map_err(|_| CommitmentError::InvalidMerkleProof)?;
+
+                if !ics23::verify_membership::<ics23::HostFunctionsManager>(
+                    proof,
+                    spec,
+                    &subroot,
+                    key.as_bytes(),
+                    &value,
+                ) {
+                    return Err(CommitmentError::VerificationFailure);
+                }
+                value = subroot.clone();
+            }
+            _ => return Err(CommitmentError::InvalidMerkleProof),
+        }
+    }
+
+    if root.hash != subroot {
+        return Err(CommitmentError::VerificationFailure);
+    }
+
+    Ok(())
+}
+// TODO move to ics23
+fn calculate_non_existence_root(proof: &NonExistenceProof) -> Result<Vec<u8>, CommitmentError> {
+    if let Some(left) = &proof.left {
+        ics23::calculate_existence_root::<ics23::HostFunctionsManager>(left)
+            .map_err(|_| CommitmentError::InvalidMerkleProof)
+    } else if let Some(right) = &proof.right {
+        ics23::calculate_existence_root::<ics23::HostFunctionsManager>(right)
+            .map_err(|_| CommitmentError::InvalidMerkleProof)
+    } else {
+        Err(CommitmentError::InvalidMerkleProof)
+    }
+}
+
+pub fn verify_non_membership(
+    nonmembership_proof: MerkleProof,
+    specs: &ProofSpecs,
+    root: MerkleRoot,
+    keys: MerklePath,
+) -> Result<(), CommitmentError> {
+    // validate arguments
+    if nonmembership_proof.proofs.is_empty() {
+        return Err(CommitmentError::EmptyMerkleProof);
+    }
+    if root.hash.is_empty() {
+        return Err(CommitmentError::EmptyMerkleRoot);
+    }
+    let num = nonmembership_proof.proofs.len();
+    let ics23_specs = Vec::<ics23::ProofSpec>::from(specs.clone());
+    if ics23_specs.len() != num {
+        return Err(CommitmentError::NumberOfSpecsMismatch);
+    }
+    if keys.key_path.len() != num {
+        return Err(CommitmentError::NumberOfKeysMismatch);
+    }
+
+    // verify the absence of key in lowest subtree
+    let proof = nonmembership_proof
+        .proofs
+        .get(0)
+        .ok_or(CommitmentError::InvalidMerkleProof)?;
+    let spec = ics23_specs
+        .get(0)
+        .ok_or(CommitmentError::InvalidMerkleProof)?;
+    // keys are represented from root-to-leaf
+    let key = keys
+        .key_path
+        .get(num - 1)
+        .ok_or(CommitmentError::InvalidMerkleProof)?;
+    match &proof.proof {
+        Some(ics23::commitment_proof::Proof::Nonexist(non_existence_proof)) => {
+            let subroot = calculate_non_existence_root(non_existence_proof)?;
+
+            if !ics23::verify_non_membership::<ics23::HostFunctionsManager>(
+                proof,
+                spec,
+                &subroot,
+                key.as_bytes(),
+            ) {
+                return Err(CommitmentError::VerificationFailure);
+            }
+
+            // verify membership proofs starting from index 1 with value = subroot
+            verify_membership(nonmembership_proof, specs, root, keys, subroot, 1)
+        }
+        _ => Err(CommitmentError::InvalidMerkleProof),
+    }
+}
 fn verify_merkle_absence_proof(
     proof_specs: &ProofSpecs,
     prefix: &CommitmentPrefix,
@@ -72,7 +206,7 @@ fn verify_merkle_absence_proof(
         .context("invalid merkle proof")?
         .into();
 
-    merkle_proof.verify_non_membership(proof_specs, root.clone().into(), merkle_path)?;
+    verify_non_membership(merkle_proof, proof_specs, root.clone().into(), merkle_path)?;
 
     Ok(())
 }
@@ -90,7 +224,14 @@ fn verify_merkle_proof(
         .context("invalid merkle proof")?
         .into();
 
-    merkle_proof.verify_membership(proof_specs, root.clone().into(), merkle_path, value, 0)?;
+    verify_membership(
+        merkle_proof,
+        proof_specs,
+        root.clone().into(),
+        merkle_path,
+        value,
+        0,
+    )?;
 
     Ok(())
 }
