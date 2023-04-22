@@ -9,10 +9,8 @@ use penumbra_crypto::{
     Amount, Value,
 };
 use penumbra_storage::{StateDelta, StateWrite};
-use sha2::digest::consts::U12;
 
 use crate::dex::{PositionManager, PositionRead};
-use futures::StreamExt;
 
 #[async_trait]
 pub trait FillRoute: StateWrite + Sized {
@@ -41,7 +39,7 @@ pub trait FillRoute: StateWrite + Sized {
                     end: *next_asset,
                 })
                 .await? else {
-                    panic!("no positions!");
+                    return Err(anyhow!("exhausted positions on hop {}-{}", current_input.asset_id, *next_asset))
                 };
 
             best_positions.push(position.clone());
@@ -49,6 +47,7 @@ pub trait FillRoute: StateWrite + Sized {
             let (unfilled, output) = tmp_state
                 .fill_against(current_input, &position.id())
                 .await?;
+
             let position_price = position
                 .phi
                 .orient_end(*next_asset)
@@ -112,10 +111,11 @@ pub trait FillRoute: StateWrite + Sized {
         };
 
         'filling: while input.amount > 0u64.into() {
-            // First, try to determine the capacity at the current price,
-            // by simulating execution of the max amount on an ephemeral state fork.
-            // Writing the results to the new StateDelta ensures that if the path has a cycle,
-            // we'll see our own execution changes later in the path.
+            // Our method is based on the assurance provided by the routing algorithm: there exist a route with
+            // a positive capacity and an effective price that's similar or better than the specified `spill_price`.
+            // The role of the fill-phase is to try maximize the amount of flow up to the `spill_price`.
+            // We naively try to route as much input as possible on the first pass to identify constraining hops.
+            // For every constraint, we find the correspond input capacity for which they are "saturated".
             let (constraining_hops, best_positions) = self.find_constraints(input, route).await?;
             let effective_price = best_positions
                 .clone()
@@ -128,57 +128,21 @@ pub trait FillRoute: StateWrite + Sized {
             tracing::debug!(num = constraining_hops.len(), "found constraints");
 
             // If the effective price exceeds the spill price, stop filling.
+            // TODO(erwan): having a measure of marginal price per capacity (or depth) over the route
+            //              should be useful here. For example, we could hit the `spill_priover ce` trying to
+            //              route `input` on the route but it might be possible to route some inventory
+            //              that's smaller than `input`.
             if effective_price > spill_price {
-                println!("spill price hit");
-                tracing::debug!(?effective_price, ?spill_price, "spill price hit.");
-                panic!("spill price hit");
+                tracing::debug!(?effective_price, ?spill_price, "spill price hit!");
                 break 'filling;
             }
 
-            // Now `constraining_index` tells us which leg of the path was
-            // constraining.  We want to ensure that we use its entire reserves,
-            // not leaving any dust, so that we continue making forward
-            // progress.
             let input_capacity = match constraining_hops.last() {
-                Some((constraining_index, saturating_input, constraining_position)) => {
-                    // There are a couple things to worry about here, let's reason step-by-step:
-                    //      + can constraint resolution generate constraints upstream in the path?
-                    //          answer: case1: no, case2:yes
-                    //              example:
-                    //      S -> A -> B -> C* -> T
-                    //                     ^_ C is the constraint
-                    //                at this point there are two different approaches:
-                    //                    -> first one would be to work out what input would exactly fill the constraining position, working backwards
-                    //                        to adjust the amount of flow (strictly reducing) and the proceed forward to a filled amount total_lambda_2
-                    //                         | we work backwards from C*, determining how much delta_1 would turn the constraint into a perfect fill.
-                    //                         | this is equivalent to reversing the path and executing for delta_1_new = lambda_2_old
-                    //                     -> the second one, is to fetch the next order in the book that would let us fill the current flow.
-                    //                        There are different branches possible here:
-                    //                         |   + there are not any other order in the book
-                    //                         )   + there are other orders in the book:
-                    //                                > there is not enough depth to fill us
-                    //                                > there is enough depth:
-                    //                                        * the effective_price is similar
-                    //                                        * the effective_price is worse:
-                    //                                            i.) we fill and get above the spill price
-                    //                                            ii) we fill and we're still below the spill price.
-
-                    let lambda_2 = constraining_position
-                        .reserves_for(pairs[*constraining_index - 1].end)
-                        .unwrap();
-
-                    // What happens if there are "stacked constraints"?
-                    // => We know that solving the constraint by strictly min-max'ing the flow across the path
-                    // lets us stay below the spill price. But, what happens when lifting the last constraint
-                    // is not sufficient i.e. there is a preceding constraint that's even more constraining.
-                    // This should be optimized, but I believe the solution is to take advantage of the fact that
-                    // by strictly reducing the flow we know we haven't created any _new_ constraint, therefore
-                    // we can individually visit previously recorded constraints, check and solve those that remain
-                    // bottlenecky.
-
-                    // When multiple constraints are found on different hops, we have to consider the case when
-                    // the last constraint is not the smallest. So we want to select the smallest upper bound on
-                    // `delta_1_star` that allows every constraint to be satisfied.
+                Some((_constraining_index, saturating_input, _constraining_position)) => {
+                    // It is not sufficient to pick the last constrait and lift it, because an earlier constraint in the route may be
+                    // more restraining. Instead, we must identity the largest "saturating input" that we can push through the route such
+                    // that we are able to lift the most limiting constraint.
+                    // TODO(erwan): should fold this into a `find_and_solve` routine.
                     let min_delta_1_star = constraining_hops.iter().fold(
                         saturating_input.clone(),
                         |current_min, (_, saturating_input, _)| {
@@ -194,13 +158,10 @@ pub trait FillRoute: StateWrite + Sized {
                 }
             };
 
-            // Now execute along the path on the actual state
             let mut current_value = Value {
                 amount: input_capacity,
                 asset_id: input.asset_id,
             };
-
-            println!("delta_1_star = {current_value:?}");
 
             // Now that we know `delta_1_star`, we can execute along the route,
             // knowing that the ultimate constraint has been lifted.
@@ -216,15 +177,18 @@ pub trait FillRoute: StateWrite + Sized {
 
                 // If there's an unfilled input, that means we were constrained on this leg of the path.
                 if unfilled.amount > 0u64.into() {
-                    tracing::warn!(?unfilled, "residual unfilled amount here");
-                    println!("residual unfilled: {unfilled:?}");
-                    //                    return Err(anyhow::anyhow!(
-                    //                        "internal error: unfilled amount after filling against {:?}",
-                    //                        position.id(),
-                    //                    ));
+                    tracing::error!(
+                        ?unfilled,
+                        ?position,
+                        ?current_value,
+                        "residual unfilled amount here"
+                    );
+                    return Err(anyhow::anyhow!(
+                        "internal error: unfilled amount after filling against {:?}",
+                        position.id(),
+                    ));
                 }
                 current_value = output;
-                println!("output={current_value:?}");
             }
 
             if current_value.amount == 0u64.into() {
