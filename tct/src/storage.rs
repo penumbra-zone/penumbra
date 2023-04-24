@@ -4,7 +4,6 @@ use std::{
     collections::{btree_map::Entry, BTreeMap},
     fmt::Debug,
     ops::Range,
-    pin::Pin,
 };
 
 use futures::Stream;

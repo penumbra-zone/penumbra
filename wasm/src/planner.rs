@@ -362,7 +362,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         fvk: &FullViewingKey,
         source: AddressIndex,
         spendable_notes: Vec<SpendableNoteRecord>,
-        votable_notes: Vec<Vec<(SpendableNoteRecord, IdentityKey)>>,
+        _votable_notes: Vec<Vec<(SpendableNoteRecord, IdentityKey)>>,
     ) -> anyhow::Result<TransactionPlan> {
         // Fill in the chain id based on the view service
         self.plan.chain_id = chain_params.chain_id.clone();
