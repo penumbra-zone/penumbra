@@ -18,7 +18,6 @@ use penumbra_storage::TempStorage;
 use penumbra_storage::{StateDelta, StateWrite};
 use rand_core::OsRng;
 use std::sync::Arc;
-use tracing::Level;
 
 use super::PathSearch;
 
@@ -34,11 +33,11 @@ async fn path_search_basic() {
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
 
     tracing::info!(src = %gm, dst = %penumbra, "searching for path");
-    let (path, spill) = state.path_search(gm.id(), penumbra.id(), 4).await.unwrap();
+    let (_path, _spill) = state.path_search(gm.id(), penumbra.id(), 4).await.unwrap();
 
     // Now try routing from "penumbra" to "penumbra".
     tracing::info!(src = %penumbra, dst = %penumbra, "searching for path");
-    let (path, spill) = state
+    let (_path, _spill) = state
         .path_search(penumbra.id(), penumbra.id(), 8)
         .await
         .unwrap();
@@ -54,7 +53,7 @@ async fn path_extension_basic() {
 
     // Create a new path starting at "gm".
     let gm = asset::REGISTRY.parse_unit("gm");
-    let mut path = Path::begin(gm.id(), state);
+    let path = Path::begin(gm.id(), state);
 
     // Extend the path to "gn".
     let gn = asset::REGISTRY.parse_unit("gn");

@@ -353,7 +353,7 @@ impl BareTradingFunction {
 
     /// Compose two trading functions together
     /// TODO(erwan): might have a use for working out capacity, but probably to deprecate.
-    pub fn compose(&self, phi: BareTradingFunction) -> BareTradingFunction {
+    pub fn compose(&self, _phi: BareTradingFunction) -> BareTradingFunction {
         todo!()
     }
 }
@@ -392,7 +392,7 @@ impl From<BareTradingFunction> for pb::BareTradingFunction {
 
 #[cfg(test)]
 mod tests {
-    use ark_ff::{BigInteger256, FftField, Zero};
+    use ark_ff::Zero;
 
     use crate::asset::Id;
 

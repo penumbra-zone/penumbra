@@ -28,7 +28,7 @@ pub trait FillRoute: StateWrite + Sized {
         let mut best_positions: Vec<position::Position> = vec![];
         let mut accumulated_effective_price = U128x128::from(1u64);
 
-        for (i, next_asset) in route.iter().enumerate().skip(1) {
+        for (_i, next_asset) in route.iter().enumerate().skip(1) {
             let Some(position) = tmp_state
                 .best_position(&DirectedTradingPair {
                     start: current_input.asset_id,
@@ -96,7 +96,7 @@ pub trait FillRoute: StateWrite + Sized {
         spill_price: U128x128,
     ) -> Result<(Value, Value)> {
         // Breakdown the route into a sequence of pairs to visit.
-        let mut pairs = self.breakdown_route(route)?;
+        let _pairs = self.breakdown_route(route)?;
 
         let mut output = Value {
             amount: 0u64.into(),
