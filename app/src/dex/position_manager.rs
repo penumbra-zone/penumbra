@@ -6,8 +6,7 @@ use penumbra_crypto::{
         lp::position::{self, Position},
         DirectedTradingPair,
     },
-    fixpoint::U128x128,
-    Amount, Value,
+    Value,
 };
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
