@@ -1006,6 +1006,9 @@ impl Storage {
 
         let pool = self.pool.clone();
 
+        // This query gives advice about notes which are known but which have not already been recorded as spendable,
+        // in part to avoid revealing information about which notes have been spent.
+
         spawn_blocking(move || {
             pool.get()?
                 .prepare(&format!(
