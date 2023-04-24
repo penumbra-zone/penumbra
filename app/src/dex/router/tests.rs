@@ -1,17 +1,24 @@
-use std::sync::Arc;
-
-use crate::dex::{router::path::Path, PositionManager};
-
+use crate::dex::position_manager::PositionRead;
+use crate::dex::{router::path::Path, router::FillRoute, PositionManager};
+use crate::temp_storage_ext::TempStorageExt;
+use futures::StreamExt;
+use penumbra_crypto::dex::lp::position::Position;
 use penumbra_crypto::{
     asset,
+    asset::Unit,
     dex::{
-        lp::{position::Position, Reserves},
+        lp::{position, Reserves},
         DirectedTradingPair,
     },
-    Amount,
+    fixpoint::U128x128,
+    Amount, Value,
 };
+use penumbra_storage::ArcStateDeltaExt;
+use penumbra_storage::TempStorage;
 use penumbra_storage::{StateDelta, StateWrite};
 use rand_core::OsRng;
+use std::sync::Arc;
+use tracing::Level;
 
 use super::PathSearch;
 
@@ -298,4 +305,540 @@ fn create_test_positions_basic<S: StateWrite>(s: &mut S, misprice: bool) {
     }
     s.put_position(position_7);
     s.put_position(position_8);
+}
+
+#[derive(Clone, Debug)]
+struct Market {
+    start: Unit,
+    end: Unit,
+}
+
+impl Market {
+    fn new(start: Unit, end: Unit) -> Self {
+        Self { start, end }
+    }
+    fn into_directed_trading_pair(&self) -> DirectedTradingPair {
+        DirectedTradingPair {
+            start: self.start.id(),
+            end: self.end.id(),
+        }
+    }
+}
+
+/// Create a `Position` to buy `asset_1` using `asset_2`.
+/// e.g. "Buy `quantity` of `asset_1` for `price` units of `asset_2` each.
+fn limit_buy(market: Market, quantity: Amount, price_in_numeraire: Amount) -> Position {
+    Position::new(
+        OsRng,
+        market.into_directed_trading_pair(),
+        0u32,
+        price_in_numeraire * market.end.unit_amount(),
+        Amount::from(1u64) * market.start.unit_amount(),
+        Reserves {
+            r1: Amount::zero(),
+            r2: quantity * price_in_numeraire * market.end.unit_amount(),
+        },
+    )
+}
+
+/// Create a `Position` to sell `asset_1` into `asset_2`.
+fn limit_sell(market: Market, quantity: Amount, price_in_numeraire: Amount) -> Position {
+    Position::new(
+        OsRng,
+        market.into_directed_trading_pair(),
+        0u32,
+        price_in_numeraire * market.end.unit_amount(),
+        Amount::from(1u64) * market.start.unit_amount(),
+        Reserves {
+            r1: quantity * market.start.unit_amount(),
+            r2: Amount::zero(),
+        },
+    )
+}
+
+#[tokio::test]
+/// Test that the best positions are surfaced first.
+async fn position_get_best_price() -> anyhow::Result<()> {
+    let storage = TempStorage::new().await?.apply_default_genesis().await?;
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+    let mut state_tx = state.try_begin_transaction().unwrap();
+    let gn = asset::REGISTRY.parse_unit("gn");
+    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+
+    let pair = DirectedTradingPair::new(gn.id(), penumbra.id());
+    let position_1 = Position::new(
+        OsRng,
+        pair,
+        1,
+        1u64.into(),
+        100u64.into(),
+        Reserves {
+            r1: 0u64.into(),
+            r2: 10_000u64.into(),
+        },
+    );
+
+    let position_2 = Position::new(
+        OsRng,
+        pair,
+        0,
+        1u64.into(),
+        101u64.into(),
+        Reserves {
+            r1: 10_001u64.into(),
+            r2: 0u64.into(),
+        },
+    );
+    state_tx.put_position(position_1.clone());
+    state_tx.put_position(position_2.clone());
+
+    let positions = state_tx
+        .positions_by_price(&pair)
+        .then(|result| async {
+            let id = result.unwrap();
+            let position = state_tx.position_by_id(&id).await.unwrap().unwrap();
+            position
+        })
+        .collect::<Vec<position::Position>>()
+        .await;
+
+    assert_eq!(positions.len(), 1);
+    assert_eq!(positions[0].reserves.r1, position_1.reserves.r1);
+    assert_eq!(positions[0].reserves.r2, position_1.reserves.r2);
+    assert_eq!(positions[0].phi, position_1.phi);
+    assert_eq!(positions[0].nonce, position_1.nonce);
+
+    let pair = pair.flip();
+
+    let positions = state_tx
+        .positions_by_price(&pair)
+        .then(|result| async {
+            let id = result.unwrap();
+            let position = state_tx.position_by_id(&id).await.unwrap().unwrap();
+            position
+        })
+        .collect::<Vec<position::Position>>()
+        .await;
+
+    assert_eq!(positions.len(), 1);
+    assert_eq!(positions[0].reserves.r1, position_2.reserves.r1);
+    assert_eq!(positions[0].reserves.r2, position_2.reserves.r2);
+    assert_eq!(positions[0].phi, position_2.phi);
+    assert_eq!(positions[0].nonce, position_2.nonce);
+    Ok(())
+}
+
+#[tokio::test]
+/// Test that positions are fetched in-order and that updating reserves
+/// deindex them correctly.
+async fn test_multiple_similar_position() -> anyhow::Result<()> {
+    let storage = TempStorage::new().await?.apply_default_genesis().await?;
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+    let mut state_tx = state.try_begin_transaction().unwrap();
+
+    let gm = asset::REGISTRY.parse_unit("gm");
+    let gn = asset::REGISTRY.parse_unit("gn");
+
+    let pair_1 = Market::new(gm.clone(), gn.clone());
+
+    let one = 1u64.into();
+    let price1 = one;
+    let mut buy_1 = limit_buy(pair_1.clone(), 1u64.into(), price1);
+    let mut buy_2 = limit_buy(pair_1.clone(), 1u64.into(), price1);
+    buy_1.nonce = [1u8; 32];
+    buy_2.nonce = [2u8; 32];
+    state_tx.put_position(buy_1.clone());
+    state_tx.put_position(buy_2.clone());
+
+    let mut p_1 = state_tx
+        .best_position(&pair_1.into_directed_trading_pair())
+        .await
+        .unwrap()
+        .expect("we just posted two positions");
+    assert_eq!(p_1.nonce, buy_1.nonce);
+    p_1.reserves = p_1.reserves.flip();
+    state_tx.put_position(p_1);
+
+    let mut p_2 = state_tx
+        .best_position(&pair_1.into_directed_trading_pair())
+        .await
+        .unwrap()
+        .expect("there is one position remaining");
+    assert_eq!(p_2.nonce, buy_2.nonce);
+    p_2.reserves = p_2.reserves.flip();
+    state_tx.put_position(p_2);
+
+    assert!(state_tx
+        .best_position(&pair_1.into_directed_trading_pair())
+        .await
+        .unwrap()
+        .is_none());
+    Ok(())
+}
+#[tokio::test]
+async fn fill_route_constraint_stacked() -> anyhow::Result<()> {
+    let storage = TempStorage::new().await?.apply_default_genesis().await?;
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+    let mut state_tx = state.try_begin_transaction().unwrap();
+    /*
+            ------------------------------------------------------------------------------------------------------------
+            |       Pair 1: gm <> gn       |       Pair 2: gn <> penumbra        |       Pair 3: penumbra <> pusd      |
+            ------------------------------------------------------------------------------------------------------------
+            | ^-bids---------asks-v        |    ^-bids---------asks-v             |       ^-bids---------asks-v        |
+            |           3gm@2              |           1gn@2                      |           1penumbra@10000          |
+            |           2gm@1              |          50gn@1                      |            1penumbra@3100          |
+            |                              |          50gn@1                      |          198penumbra@3000          |
+            |                              |          50gn@1                      |           1penumbra@2500           |
+            |                              |                                      |           1penumbra@2000           |
+            ------------------------------------------------------------------------------------------------------------
+            * marginal price
+            Delta_1 = 4gm
+            Lambda_2 = 2000 + 2500
+    */
+
+    let gm = asset::REGISTRY.parse_unit("gm");
+    let gn = asset::REGISTRY.parse_unit("gn");
+    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+    let pusd = asset::REGISTRY.parse_unit("pusd");
+
+    println!("unit {} gm: {}", gm.unit_amount(), gm.id());
+    println!("unit {} gn: {}", gn.unit_amount(), gn.id());
+    println!(
+        "unit {} penumbra: {}",
+        penumbra.unit_amount(),
+        penumbra.id()
+    );
+    println!("unit {} pusd: {}", pusd.unit_amount(), pusd.id());
+    let pair_1 = Market::new(gm.clone(), gn.clone());
+    let pair_2 = Market::new(gn.clone(), penumbra.clone());
+    let pair_3 = Market::new(penumbra.clone(), pusd.clone());
+
+    let one: Amount = 1u64.into();
+
+    let price1 = one;
+    let price2 = 2u64.into();
+
+    let buy_1 = limit_buy(pair_1.clone(), 3u64.into(), price2);
+    let buy_2 = limit_buy(pair_1.clone(), 1u64.into(), price1);
+    state_tx.put_position(buy_1);
+    state_tx.put_position(buy_2);
+
+    /* pair 2 */
+    let price2 = Amount::from(2u64);
+
+    let buy_1 = limit_buy(pair_2.clone(), 1u64.into(), price2);
+    let buy_2 = limit_buy(pair_2.clone(), 50u64.into(), price1);
+    let buy_3 = limit_buy(pair_2.clone(), 50u64.into(), price1);
+    let buy_4 = limit_buy(pair_2.clone(), 50u64.into(), price1);
+
+    state_tx.put_position(buy_1);
+    state_tx.put_position(buy_2);
+    state_tx.put_position(buy_3);
+    state_tx.put_position(buy_4);
+
+    /* pair 3 */
+    let price2000 = 2000u64.into();
+    let price2500 = 2500u64.into();
+    let price3000 = 3000u64.into();
+    let price3100 = 3100u64.into();
+    let price10000 = 10_000u64.into();
+
+    let buy_1 = limit_buy(pair_3.clone(), 1u64.into(), price2000);
+    let buy_2 = limit_buy(pair_3.clone(), 1u64.into(), price2500);
+    let buy_3 = limit_buy(pair_3.clone(), 198u64.into(), price3000);
+    let buy_4 = limit_buy(pair_3.clone(), 1u64.into(), price3100);
+    let buy_5 = limit_buy(pair_3.clone(), 1u64.into(), price10000);
+
+    state_tx.put_position(buy_1);
+    state_tx.put_position(buy_2);
+    state_tx.put_position(buy_3);
+    state_tx.put_position(buy_4);
+    state_tx.put_position(buy_5);
+
+    let delta_1 = Value {
+        asset_id: gm.id(),
+        amount: Amount::from(4u64) * gm.unit_amount(),
+    };
+
+    let route = vec![gm.id(), gn.id(), penumbra.id(), pusd.id()];
+
+    let spill_price = U128x128::from(Amount::from(1_000_000_000u64) * pusd.unit_amount());
+
+    let (unfilled, output) = FillRoute::fill_route(&mut state_tx, delta_1, &route, spill_price)
+        .await
+        .unwrap();
+
+    // let output_cal = U128x128::ratio(output.amount, pusd.unit_amount()).unwrap();
+    let desired_output: Amount = (Amount::from(10_000u64)
+        + Amount::from(3100u64)
+        + Amount::from(6u64) * Amount::from(3000u64))
+        * pusd.unit_amount();
+
+    assert_eq!(unfilled.asset_id, gm.id());
+    assert_eq!(unfilled.amount, Amount::zero());
+
+    assert_eq!(output.asset_id, pusd.id());
+    assert_eq!(output.amount, desired_output);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn fill_route_constraint_1() -> anyhow::Result<()> {
+    let storage = TempStorage::new().await?.apply_default_genesis().await?;
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+    let mut state_tx = state.try_begin_transaction().unwrap();
+    /*
+            ------------------------------------------------------------------------------------------------------------
+            |       Pair 1: gm <> gn       |       Pair 2: gn <> penumbra        |       Pair 3: penumbra <> pusd      |
+            ------------------------------------------------------------------------------------------------------------
+            | ^-bids---------asks-v        |    ^-bids---------asks-v             |       ^-bids---------asks-v        |
+            |         200gm@1              |          50gn@2                      |           1penumbra@10000          |
+            |                              |          50gn@2                      |            1penumbra@3100          |
+            |                              |          50gn@2                      |          198penumbra@3000          |
+            |                              |          50gn@2                      |           1penumbra@2500           |
+            |                              |                                      |           1penumbra@2000           |
+            ------------------------------------------------------------------------------------------------------------
+            * marginal price
+            Delta_1 = 4gm
+            Lambda_2 = 2000 + 2500
+    */
+
+    let gm = asset::REGISTRY.parse_unit("gm");
+    let gn = asset::REGISTRY.parse_unit("gn");
+    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+    let pusd = asset::REGISTRY.parse_unit("pusd");
+
+    println!("unit {} gm: {}", gm.unit_amount(), gm.id());
+    println!("unit {} gn: {}", gn.unit_amount(), gn.id());
+    println!(
+        "unit {} penumbra: {}",
+        penumbra.unit_amount(),
+        penumbra.id()
+    );
+    println!("unit {} pusd: {}", pusd.unit_amount(), pusd.id());
+    let pair_1 = Market::new(gm.clone(), gn.clone());
+    let pair_2 = Market::new(gn.clone(), penumbra.clone());
+    let pair_3 = Market::new(penumbra.clone(), pusd.clone());
+
+    let one: Amount = 1u64.into();
+
+    let price1 = one;
+
+    let buy_1 = limit_buy(pair_1.clone(), 200u64.into(), price1);
+    state_tx.put_position(buy_1);
+
+    /* pair 2 */
+    let price2 = Amount::from(2u64);
+
+    let buy_1 = limit_buy(pair_2.clone(), 50u64.into(), price2);
+    let buy_2 = limit_buy(pair_2.clone(), 50u64.into(), price2);
+    let buy_3 = limit_buy(pair_2.clone(), 50u64.into(), price2);
+    let buy_4 = limit_buy(pair_2.clone(), 50u64.into(), price2);
+
+    state_tx.put_position(buy_1);
+    state_tx.put_position(buy_2);
+    state_tx.put_position(buy_3);
+    state_tx.put_position(buy_4);
+
+    /* pair 3 */
+    let price2000 = 2000u64.into();
+    let price2500 = 2500u64.into();
+    let price3000 = 3000u64.into();
+    let price3100 = 3100u64.into();
+    let price10000 = 10_000u64.into();
+
+    let buy_1 = limit_buy(pair_3.clone(), 1u64.into(), price2000);
+    let buy_2 = limit_buy(pair_3.clone(), 1u64.into(), price2500);
+    let buy_3 = limit_buy(pair_3.clone(), 198u64.into(), price3000);
+    let buy_4 = limit_buy(pair_3.clone(), 1u64.into(), price3100);
+    let buy_5 = limit_buy(pair_3.clone(), 1u64.into(), price10000);
+
+    state_tx.put_position(buy_1);
+    state_tx.put_position(buy_2);
+    state_tx.put_position(buy_3);
+    state_tx.put_position(buy_4);
+    state_tx.put_position(buy_5);
+
+    let delta_1 = Value {
+        asset_id: gm.id(),
+        amount: Amount::from(4u64) * gm.unit_amount(),
+    };
+
+    let route = vec![gm.id(), gn.id(), penumbra.id(), pusd.id()];
+
+    let spill_price = U128x128::from(Amount::from(1_000_000_000u64) * pusd.unit_amount());
+
+    let (unfilled, output) = FillRoute::fill_route(&mut state_tx, delta_1, &route, spill_price)
+        .await
+        .unwrap();
+
+    // let output_cal = U128x128::ratio(output.amount, pusd.unit_amount()).unwrap();
+    let desired_output: Amount = (Amount::from(10_000u64)
+        + Amount::from(3100u64)
+        + Amount::from(6u64) * Amount::from(3000u64))
+        * pusd.unit_amount();
+
+    assert_eq!(unfilled.asset_id, gm.id());
+    assert_eq!(unfilled.amount, Amount::zero());
+
+    assert_eq!(output.asset_id, pusd.id());
+    assert_eq!(output.amount, desired_output);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn fill_route_unconstrained() -> anyhow::Result<()> {
+    let storage = TempStorage::new().await?.apply_default_genesis().await?;
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+    let mut state_tx = state.try_begin_transaction().unwrap();
+    /*
+            ------------------------------------------------------------------------------------------------------------
+            |       Pair 1: gm <> gn       |       Pair 2: gn <> penumbra        |       Pair 3: penumbra <> pusd      |
+            ------------------------------------------------------------------------------------------------------------
+            |                              |                                     |                                     |
+            | ^-bids---------asks-v        |   ^-bids---------asks-v             |   ^-bids---------asks-v             |
+            |        1gm@1                 |          1gn@2                      |         1penumbra@1500              |
+            |        1gm@1                 |          1gn@2                      |         1penumbra@1500              |
+            |                              |                                     |         1penumbra@1500              |
+            |                              |                                     |         1penumbra@1500              |
+            |                              |                                     |         1penumbra@1500              |
+            ------------------------------------------------------------------------------------------------------------
+    */
+
+    let gm = asset::REGISTRY.parse_unit("gm");
+    let gn = asset::REGISTRY.parse_unit("gn");
+    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+    let pusd = asset::REGISTRY.parse_unit("pusd");
+
+    let pair_1 = Market::new(gm.clone(), gn.clone());
+    let pair_2 = Market::new(gn.clone(), penumbra.clone());
+    let pair_3 = Market::new(penumbra.clone(), pusd.clone());
+
+    let one = 1u64.into();
+    let price1 = one;
+    let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), price1);
+    let buy_2 = limit_buy(pair_1.clone(), 1u64.into(), price1);
+    state_tx.put_position(buy_1);
+    state_tx.put_position(buy_2);
+
+    let price2 = 2u64.into();
+    let buy_1 = limit_buy(pair_2.clone(), 1u64.into(), price2);
+    let buy_2 = limit_buy(pair_2.clone(), 1u64.into(), price2);
+    state_tx.put_position(buy_1);
+    state_tx.put_position(buy_2);
+
+    let price1500 = 1500u64.into();
+    let buy_1 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
+    let buy_2 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
+    let buy_3 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
+    let buy_4 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
+    let buy_5 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
+    state_tx.put_position(buy_1);
+    state_tx.put_position(buy_2);
+    state_tx.put_position(buy_3);
+    state_tx.put_position(buy_4);
+    state_tx.put_position(buy_5);
+
+    let delta_1 = Value {
+        asset_id: gm.id(),
+        amount: Amount::from(1u64) * gm.unit_amount(),
+    };
+
+    let route = vec![gm.id(), gn.id(), penumbra.id(), pusd.id()];
+
+    let spill_price =
+        (U128x128::from(1_000_000_000_000u64) * U128x128::from(pusd.unit_amount())).unwrap();
+
+    let (unfilled, output) = FillRoute::fill_route(&mut state_tx, delta_1, &route, spill_price)
+        .await
+        .unwrap();
+
+    let desired_output = Amount::from(3000u64) * pusd.unit_amount();
+
+    assert_eq!(unfilled.amount, Amount::zero());
+    assert_eq!(unfilled.asset_id, gm.id());
+    assert_eq!(output.amount, desired_output);
+    assert_eq!(output.asset_id, pusd.id());
+
+    Ok(())
+}
+
+#[tokio::test]
+/// Test that we only fill up to the specified spill price.
+async fn fill_route_hit_spill_price() -> anyhow::Result<()> {
+    let storage = TempStorage::new().await?.apply_default_genesis().await?;
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+    let mut state_tx = state.try_begin_transaction().unwrap();
+    /*
+            ------------------------------------------------------------------------------------------------------------
+            |       Pair 1: gm <> gn       |       Pair 2: gn <> penumbra        |       Pair 3: penumbra <> pusd      |
+            ------------------------------------------------------------------------------------------------------------
+            |                              |                                     |                                     |
+            | ^-bids---------asks-v        |   ^-bids---------asks-v             |   ^-bids---------asks-v             |
+            |        1gm@1                 |          1gn@2                      |         1penumbra@1500              |
+            |        1gm@1                 |          1gn@2                      |         1penumbra@1500              |
+            |                              |                                     |         1penumbra@1500              |
+            |                              |                                     |         1penumbra@1500              |
+            |                              |                                     |         1penumbra@1500              |
+            ------------------------------------------------------------------------------------------------------------
+    */
+
+    let gm = asset::REGISTRY.parse_unit("gm");
+    let gn = asset::REGISTRY.parse_unit("gn");
+    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+    let pusd = asset::REGISTRY.parse_unit("pusd");
+
+    let pair_1 = Market::new(gm.clone(), gn.clone());
+    let pair_2 = Market::new(gn.clone(), penumbra.clone());
+    let pair_3 = Market::new(penumbra.clone(), pusd.clone());
+
+    let one = 1u64.into();
+    let price1 = one;
+    let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), price1);
+    let buy_2 = limit_buy(pair_1.clone(), 1u64.into(), price1);
+    state_tx.put_position(buy_1);
+    state_tx.put_position(buy_2);
+
+    let price2 = 2u64.into();
+    let buy_1 = limit_buy(pair_2.clone(), 1u64.into(), price2);
+    let buy_2 = limit_buy(pair_2.clone(), 1u64.into(), price2);
+    state_tx.put_position(buy_1);
+    state_tx.put_position(buy_2);
+
+    let price1500 = 1500u64.into();
+    let buy_1 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
+    let buy_2 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
+    let buy_3 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
+    let buy_4 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
+    let buy_5 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
+    state_tx.put_position(buy_1);
+    state_tx.put_position(buy_2);
+    state_tx.put_position(buy_3);
+    state_tx.put_position(buy_4);
+    state_tx.put_position(buy_5);
+
+    let delta_1 = Value {
+        asset_id: gm.id(),
+        amount: Amount::from(1u64) * gm.unit_amount(),
+    };
+
+    let route = vec![gm.id(), gn.id(), penumbra.id(), pusd.id()];
+
+    let spill_price =
+        (U128x128::from(1_000_000_000_000u64) * U128x128::from(pusd.unit_amount())).unwrap();
+
+    let (unfilled, output) = FillRoute::fill_route(&mut state_tx, delta_1, &route, spill_price)
+        .await
+        .unwrap();
+
+    let desired_output = Amount::from(3000u64) * pusd.unit_amount();
+
+    assert_eq!(unfilled.amount, Amount::zero());
+    assert_eq!(unfilled.asset_id, gm.id());
+    assert_eq!(output.amount, desired_output);
+    assert_eq!(output.asset_id, pusd.id());
+
+    Ok(())
 }
