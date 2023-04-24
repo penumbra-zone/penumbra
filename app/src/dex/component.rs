@@ -1,15 +1,22 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+use std::{collections::BTreeMap, sync::Arc};
+
+use crate::{
+    compactblock::view::{StateReadExt as _, StateWriteExt as _},
+    dex::router::{FillRoute, PathSearch},
+    Component,
+};
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::genesis;
 use penumbra_component::Component;
 use penumbra_crypto::{
     dex::{BatchSwapOutputData, TradingPair},
-    SwapFlow,
+    SwapFlow, Value,
 };
-use penumbra_proto::StateReadProto;
+use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 use tendermint::abci;
 use tracing::instrument;
@@ -34,32 +41,53 @@ impl Component for Dex {
 
     #[instrument(name = "dex", skip(_state, _end_block))]
     async fn end_block<S: StateWrite + 'static>(
-        _state: &mut Arc<S>,
-        _end_block: &abci::request::EndBlock,
+        state: &mut Arc<S>,
+        end_block: &abci::request::EndBlock,
     ) {
         // For each batch swap during the block, calculate clearing prices and set in the JMT.
         for (trading_pair, swap_flows) in state.swap_flows() {
             let (delta_1, delta_2) = (swap_flows.0.mock_decrypt(), swap_flows.1.mock_decrypt());
 
             tracing::debug!(?delta_1, ?delta_2, ?trading_pair);
-            // Currently the stub CPMM supports only simple one-directional trades
-            // that either completely succeed or completely fail.
-            //
-            // This does not match the semantics of the real swap mechanism wherein
-            // two directional trades are performed with fractional outputs. We
-            // simulate that behavior here based on the success bit.
-            let (lambda_1, lambda_2, success) =
-                match state.stub_cpmm_reserves(&trading_pair).await.unwrap() {
-                    Some(reserves) => {
-                        tracing::debug!(?reserves, "stub cpmm is present");
-                        let mut amm = StubCpmm { reserves };
-                        let (lambda_1, lambda_2) = amm.trade_netted((delta_1, delta_2));
-                        tracing::debug!(?lambda_1, ?lambda_2, new_reserves = ?amm.reserves);
-                        state.set_stub_cpmm_reserves(&trading_pair, amm.reserves);
-                        (lambda_1, lambda_2, true)
-                    }
-                    None => (0u64.into(), 0u64.into(), false),
-                };
+
+            // Find the best route between the two assets in the trading pair.
+            let (path, spill_price) = state
+                // TODO: max hops should not be hardcoded
+                .path_search(trading_pair.asset_1(), trading_pair.asset_2(), 4)
+                .await
+                .unwrap();
+
+            let (lambda_1, lambda_2, success) = match path {
+                Some(path) => {
+                    tracing::debug!(?path);
+                    // path found, fill as much as we can
+                    // TODO: what if one of delta_1/delta_2 is zero? don't we need to fill based on the other?
+                    let delta_1 = Value {
+                        amount: delta_1,
+                        asset_id: trading_pair.asset_1(),
+                    };
+                    let delta_2 = Value {
+                        amount: delta_2,
+                        asset_id: trading_pair.asset_2(),
+                    };
+                    let (unfilled_1, lambda_2) = state
+                        .fill_route(delta_1, &path, spill_price.unwrap_or_default())
+                        .await
+                        .unwrap();
+                    let (unfilled_2, lambda_1) = state
+                        .fill_route(delta_2, &path, spill_price.unwrap_or_default())
+                        .await
+                        .unwrap();
+                    assert_eq!(lambda_1.asset_id, trading_pair.asset_1());
+                    assert_eq!(lambda_2.asset_id, trading_pair.asset_2());
+                    let lambda_1 = lambda_1.amount;
+                    let lambda_2 = lambda_2.amount;
+                    // TODO: don't we need to loop here to spill over and use up as much unfilled remaining assets as possible?
+                    tracing::debug!(?lambda_1, ?lambda_2, ?unfilled_1, ?unfilled_2);
+                    (lambda_1, lambda_2, true)
+                }
+                None => (0u64.into(), 0u64.into(), false),
+            };
 
             let (lambda_1_1, lambda_2_2, lambda_2_1, lambda_1_2) = if success {
                 (0u64.into(), 0u64.into(), lambda_2, lambda_1)
