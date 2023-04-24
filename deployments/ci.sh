@@ -148,8 +148,8 @@ function wait_for_external_ips() {
 
 function wait_for_pods_to_be_running() {
     echo "Waiting for pods to be running..."
-    kubectl get pods -l app.kubernetes.io/instance="$HELM_RELEASE" -o name \
-        | xargs -r kubectl wait --for=condition=ready --timeout=5m
+    kubectl wait --for=condition=ready pods --timeout=5m \
+        -l app.kubernetes.io/instance="$HELM_RELEASE"
 }
 
 function collect_local_config_values() {
