@@ -87,7 +87,7 @@ impl From<Path> for pb::Path {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "pb::SwapExecution", into = "pb::SwapExecution")]
 pub struct SwapExecution {
-    traces: Vec<TradeTrace>,
+    pub traces: Vec<TradeTrace>,
 }
 
 impl DomainType for SwapExecution {
@@ -119,7 +119,7 @@ impl From<SwapExecution> for pb::SwapExecution {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "pb::TradeTrace", into = "pb::TradeTrace")]
 pub struct TradeTrace {
-    steps: Vec<TradeTraceStep>,
+    pub steps: Vec<TradeTraceStep>,
 }
 
 impl DomainType for TradeTrace {
@@ -152,9 +152,9 @@ impl From<TradeTrace> for pb::TradeTrace {
 #[serde(try_from = "pb::TradeTraceStep", into = "pb::TradeTraceStep")]
 pub struct TradeTraceStep {
     /// The input asset and amount.
-    input: Value,
+    pub input: Value,
     /// The output asset and amount.
-    output: Value,
+    pub output: Value,
 }
 
 impl DomainType for TradeTraceStep {
