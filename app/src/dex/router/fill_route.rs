@@ -12,21 +12,19 @@ use crate::dex::{PositionManager, PositionRead};
 
 #[async_trait]
 pub trait FillRoute: StateWrite + Sized {
-    /// Finds the constraining hops alongside a given route for a specified input amount, and
-    /// returns a tuple of:
-    ///         - an ordered list of `Position`s corresponding to constraining hops
-    ///         - an ordered list of the best `Position`s for every hop on the route.
+    /// Finds the constraining hops for a given route and input,
+    /// and returns a tuple consisting of:
+    ///     - an ordered list of `Position` and their respective saturating input
+    ///     - the best `Position` for each hop of the route
     async fn find_constraints(
         &mut self,
         input: Value,
         route: &[asset::Id],
-    ) -> Result<(
-        Vec<(usize, Amount, position::Position)>,
-        Vec<position::Position>,
-    )> {
+    ) -> Result<(Vec<(position::Position, Amount)>, Vec<position::Position>)> {
         let mut tmp_state = StateDelta::new(&self);
-        let mut constraining_positions: Vec<(usize, Amount, position::Position)> = vec![];
         let mut current_input = input.clone();
+
+        let mut constraining_positions: Vec<(position::Position, Amount)> = vec![];
         let mut best_positions: Vec<position::Position> = vec![];
         let mut accumulated_effective_price = U128x128::from(1u64);
 
@@ -52,21 +50,21 @@ pub trait FillRoute: StateWrite + Sized {
                 .unwrap()
                 .effective_price();
 
-            accumulated_effective_price = (accumulated_effective_price * position_price)
-                .expect("TODO(erwan): think through why this is not overflowable.");
+            accumulated_effective_price =
+                (accumulated_effective_price * position_price).expect("TODO(erwan): write proof");
 
             // We have found a hop in the path that bottlenecks execution.
-            if unfilled.amount > 0u64.into() {
+            if unfilled.amount > Amount::zero() {
                 let lambda_2 = position
                     .reserves_for(*next_asset)
                     .expect("the position has reserves for its numeraire");
 
                 let delta_1_star = (U128x128::from(lambda_2) * accumulated_effective_price)
-                    .expect("TODO(erwan): write up why this cannot overflow");
+                    .expect("TODO(erwan): write proof");
 
                 let saturating_input: Amount = delta_1_star.round_up().try_into()?;
 
-                constraining_positions.push((i, saturating_input, position));
+                constraining_positions.push((position, saturating_input));
             }
 
             current_input = output;
@@ -136,14 +134,14 @@ pub trait FillRoute: StateWrite + Sized {
             }
 
             let input_capacity = match constraining_hops.last() {
-                Some((_constraining_index, saturating_input, _constraining_position)) => {
+                Some((_constraining_position, saturating_input)) => {
                     // It is not sufficient to pick the last constrait and lift it, because an earlier constraint in the route may be
                     // more restraining. Instead, we must identity the largest "saturating input" that we can push through the route such
                     // that we are able to lift the most limiting constraint.
                     // TODO(erwan): should fold this into a `find_and_solve` routine.
                     let min_delta_1_star = constraining_hops.iter().fold(
                         saturating_input.clone(),
-                        |current_min, (_, saturating_input, _)| {
+                        |current_min, (_, saturating_input)| {
                             Amount::min(current_min, saturating_input.clone())
                         },
                     );
