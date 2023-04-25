@@ -106,25 +106,20 @@ impl ViewService {
         })
     }
 
-    async fn check_fvk(&self, fvk: Option<&pbc::AccountGroupId>) -> Result<(), tonic::Status> {
-        // Takes an Option to avoid making the caller handle missing fields,
-        // should error on None or wrong account ID
-        match fvk {
-            Some(fvk) => {
-                if fvk != &self.account_group_id.into() {
-                    return Err(tonic::Status::new(
-                        tonic::Code::InvalidArgument,
-                        "Invalid account ID",
-                    ));
-                }
-
-                Ok(())
+    /// Checks that the account group ID, if present, matches the one for this service.
+    async fn check_account_group_id(
+        &self,
+        fvk: Option<&pbc::AccountGroupId>,
+    ) -> Result<(), tonic::Status> {
+        if let Some(fvk) = fvk {
+            if fvk != &self.account_group_id.into() {
+                return Err(tonic::Status::new(
+                    tonic::Code::InvalidArgument,
+                    "Invalid account ID",
+                ));
             }
-            None => Err(tonic::Status::new(
-                tonic::Code::InvalidArgument,
-                "Missing FVK",
-            )),
         }
+        Ok(())
     }
 
     async fn check_worker(&self) -> Result<(), tonic::Status> {
@@ -654,7 +649,7 @@ impl ViewProtocolService for ViewService {
         request: tonic::Request<pb::SwapByCommitmentRequest>,
     ) -> Result<tonic::Response<pb::SwapByCommitmentResponse>, tonic::Status> {
         self.check_worker().await?;
-        self.check_fvk(request.get_ref().account_group_id.as_ref())
+        self.check_account_group_id(request.get_ref().account_group_id.as_ref())
             .await?;
 
         let request = request.into_inner();
@@ -722,7 +717,7 @@ impl ViewProtocolService for ViewService {
         request: tonic::Request<pb::NoteByCommitmentRequest>,
     ) -> Result<tonic::Response<pb::NoteByCommitmentResponse>, tonic::Status> {
         self.check_worker().await?;
-        self.check_fvk(request.get_ref().account_group_id.as_ref())
+        self.check_account_group_id(request.get_ref().account_group_id.as_ref())
             .await?;
 
         let request = request.into_inner();
@@ -754,7 +749,7 @@ impl ViewProtocolService for ViewService {
         request: tonic::Request<pb::NullifierStatusRequest>,
     ) -> Result<tonic::Response<pb::NullifierStatusResponse>, tonic::Status> {
         self.check_worker().await?;
-        self.check_fvk(request.get_ref().account_group_id.as_ref())
+        self.check_account_group_id(request.get_ref().account_group_id.as_ref())
             .await?;
 
         let request = request.into_inner();
@@ -779,7 +774,7 @@ impl ViewProtocolService for ViewService {
         request: tonic::Request<pb::StatusRequest>,
     ) -> Result<tonic::Response<pb::StatusResponse>, tonic::Status> {
         self.check_worker().await?;
-        self.check_fvk(request.get_ref().account_group_id.as_ref())
+        self.check_account_group_id(request.get_ref().account_group_id.as_ref())
             .await?;
 
         Ok(tonic::Response::new(self.status().await.map_err(|e| {
@@ -792,7 +787,7 @@ impl ViewProtocolService for ViewService {
         request: tonic::Request<pb::StatusStreamRequest>,
     ) -> Result<tonic::Response<Self::StatusStreamStream>, tonic::Status> {
         self.check_worker().await?;
-        self.check_fvk(request.get_ref().account_group_id.as_ref())
+        self.check_account_group_id(request.get_ref().account_group_id.as_ref())
             .await?;
 
         let (latest_known_block_height, _) =
@@ -825,7 +820,7 @@ impl ViewProtocolService for ViewService {
         request: tonic::Request<pb::NotesRequest>,
     ) -> Result<tonic::Response<Self::NotesStream>, tonic::Status> {
         self.check_worker().await?;
-        self.check_fvk(request.get_ref().account_group_id.as_ref())
+        self.check_account_group_id(request.get_ref().account_group_id.as_ref())
             .await?;
 
         let include_spent = request.get_ref().include_spent;
@@ -878,7 +873,7 @@ impl ViewProtocolService for ViewService {
         request: tonic::Request<pb::NotesForVotingRequest>,
     ) -> Result<tonic::Response<Self::NotesForVotingStream>, tonic::Status> {
         self.check_worker().await?;
-        self.check_fvk(request.get_ref().account_group_id.as_ref())
+        self.check_account_group_id(request.get_ref().account_group_id.as_ref())
             .await?;
 
         let address_index = request
@@ -1070,7 +1065,7 @@ impl ViewProtocolService for ViewService {
         request: tonic::Request<pb::WitnessRequest>,
     ) -> Result<tonic::Response<WitnessResponse>, tonic::Status> {
         self.check_worker().await?;
-        self.check_fvk(request.get_ref().account_group_id.as_ref())
+        self.check_account_group_id(request.get_ref().account_group_id.as_ref())
             .await?;
 
         // Acquire a read lock for the SCT that will live for the entire request,
