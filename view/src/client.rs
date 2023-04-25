@@ -11,10 +11,9 @@ use penumbra_proto::view::v1alpha1::{
     self as pb, view_protocol_service_client::ViewProtocolServiceClient, WitnessRequest,
 };
 
+use penumbra_transaction::view::TransactionInfo;
 use penumbra_transaction::AuthorizationData;
-use penumbra_transaction::{
-    plan::TransactionPlan, Transaction, TransactionPerspective, WitnessData,
-};
+use penumbra_transaction::{plan::TransactionPlan, Transaction, WitnessData};
 
 use tonic::codegen::Bytes;
 use tracing::instrument;
@@ -146,32 +145,18 @@ pub trait ViewClient {
     /// Queries for all known assets.
     fn assets(&mut self) -> Pin<Box<dyn Future<Output = Result<asset::Cache>> + Send + 'static>>;
 
-    /// Queries for transaction hashes in a range of block heights
-    fn transaction_hashes(
-        &mut self,
-        start_height: Option<u64>,
-        end_height: Option<u64>,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<(u64, Vec<u8>)>>> + Send + 'static>>;
-
-    /// Queries for a transaction hashes by its transaction hash
-
-    fn transaction_by_hash(
-        &mut self,
-        tx_hash: tendermint::hash::Hash,
-    ) -> Pin<Box<dyn Future<Output = Result<Option<Transaction>>> + Send + 'static>>;
-
     /// Generates a full perspective for a selected transaction using a full viewing key
-    fn transaction_perspective(
+    fn transaction_info_by_hash(
         &mut self,
-        tx_hash: tendermint::hash::Hash,
-    ) -> Pin<Box<dyn Future<Output = Result<TransactionPerspective>> + Send + 'static>>;
+        id: penumbra_transaction::Id,
+    ) -> Pin<Box<dyn Future<Output = Result<TransactionInfo>> + Send + 'static>>;
 
     /// Queries for transactions in a range of block heights
-    fn transactions(
+    fn transaction_info(
         &mut self,
         start_height: Option<u64>,
         end_height: Option<u64>,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<(u64, Transaction)>>> + Send + 'static>>;
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<TransactionInfo>>> + Send + 'static>>;
 
     fn broadcast_transaction(
         &mut self,
@@ -648,82 +633,47 @@ where
         .boxed()
     }
 
-    fn transaction_hashes(
+    fn transaction_info_by_hash(
         &mut self,
-        start_height: Option<u64>,
-        end_height: Option<u64>,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<(u64, Vec<u8>)>>> + Send + 'static>> {
+        id: penumbra_transaction::Id,
+    ) -> Pin<Box<dyn Future<Output = Result<TransactionInfo>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
-            let rsp = self2.transaction_hashes(tonic::Request::new(pb::TransactionHashesRequest {
-                start_height,
-                end_height,
-            }));
-            let pb_txs: Vec<_> = rsp.await?.into_inner().try_collect().await?;
-
-            let txs = pb_txs
-                .into_iter()
-                .map(|x| (x.block_height, x.tx_hash))
-                .collect();
-
-            Ok(txs)
-        }
-        .boxed()
-    }
-
-    fn transaction_by_hash(
-        &mut self,
-        tx_hash: tendermint::hash::Hash,
-    ) -> Pin<Box<dyn Future<Output = Result<Option<Transaction>>> + Send + 'static>> {
-        let mut self2 = self.clone();
-        async move {
-            let rsp = ViewProtocolServiceClient::transaction_by_hash(
+            let rsp = ViewProtocolServiceClient::transaction_info_by_hash(
                 &mut self2,
-                tonic::Request::new(pb::TransactionByHashRequest {
-                    tx_hash: tx_hash.as_bytes().to_vec(),
+                tonic::Request::new(pb::TransactionInfoByHashRequest {
+                    id: Some(id.into()),
                 }),
-            );
-            rsp.await?
-                .into_inner()
-                .tx
-                .map(|tx| tx.try_into())
-                .map_or(Ok(None), |v| v.map(Some))
-        }
-        .boxed()
-    }
-
-    fn transaction_perspective(
-        &mut self,
-        tx_hash: tendermint::hash::Hash,
-    ) -> Pin<Box<dyn Future<Output = Result<TransactionPerspective>> + Send + 'static>> {
-        let mut self2 = self.clone();
-        async move {
-            let rsp = ViewProtocolServiceClient::transaction_perspective(
-                &mut self2,
-                tonic::Request::new(pb::TransactionPerspectiveRequest {
-                    tx_hash: tx_hash.as_bytes().to_vec(),
-                }),
-            );
+            )
+            .await?
+            .into_inner();
             // If no txp was supplied, use the default (empty) perspective.
-            Ok(rsp
-                .await?
-                .into_inner()
-                .txp
-                .map(|txp| txp.try_into())
-                .transpose()?
-                .unwrap_or_default())
+
+            let transaction = rsp.transaction.unwrap_or_default();
+            let perspective = rsp.perspective.unwrap_or_default();
+            let view = rsp.view.unwrap_or_default();
+
+            let tx_info = TransactionInfo {
+                height: rsp.height.unwrap().into(),
+                id: rsp.id.unwrap().try_into()?,
+                transaction: transaction.try_into()?,
+                perspective: perspective.try_into()?,
+                view: view.try_into()?,
+            };
+
+            Ok(tx_info)
         }
         .boxed()
     }
 
-    fn transactions(
+    fn transaction_info(
         &mut self,
         start_height: Option<u64>,
         end_height: Option<u64>,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<(u64, Transaction)>>> + Send + 'static>> {
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<TransactionInfo>>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
-            let rsp = self2.transactions(tonic::Request::new(pb::TransactionsRequest {
+            let rsp = self2.transaction_info(tonic::Request::new(pb::TransactionInfoRequest {
                 start_height,
                 end_height,
             }));
@@ -732,12 +682,20 @@ where
             pb_txs
                 .into_iter()
                 .map(|tx_rsp| {
-                    let tx = tx_rsp
-                        .tx
-                        .ok_or_else(|| anyhow::anyhow!("empty TransactionsResponse message"))?
-                        .try_into()?;
-                    let height = tx_rsp.block_height;
-                    Ok((height, tx))
+                    let tx_info = TransactionInfo {
+                        height: tx_rsp.height.unwrap().into(),
+                        transaction: tx_rsp
+                            .transaction
+                            .ok_or_else(|| {
+                                anyhow::anyhow!("empty TransactionInfoResponse message")
+                            })?
+                            .try_into()?,
+                        id: tx_rsp.id.unwrap().try_into()?,
+                        perspective: tx_rsp.perspective.unwrap().try_into()?,
+                        view: tx_rsp.view.unwrap().try_into()?,
+                    };
+
+                    Ok(tx_info)
                 })
                 .collect()
         }

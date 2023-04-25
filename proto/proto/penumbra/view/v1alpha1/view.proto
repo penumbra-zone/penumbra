@@ -67,17 +67,11 @@ service ViewProtocolService {
   // Query for whether a nullifier has been spent, optionally waiting until it is spent.
   rpc NullifierStatus(NullifierStatusRequest) returns (NullifierStatusResponse);
 
-  // Query for the transaction hashes in the given range of blocks.
-  rpc TransactionHashes(TransactionHashesRequest) returns (stream TransactionHashesResponse);
-
-  // Query for a given transaction hash.
-  rpc TransactionByHash(TransactionByHashRequest) returns (TransactionByHashResponse);
+  // Query for a given transaction by its hash.
+  rpc TransactionInfoByHash(TransactionInfoByHashRequest) returns (TransactionInfoResponse);
 
   // Query for the full transactions in the given range of blocks.
-  rpc Transactions(TransactionsRequest) returns (stream TransactionsResponse);
-
-  // Query for the transaction perspective of the given transaction
-  rpc TransactionPerspective(TransactionPerspectiveRequest) returns (TransactionPerspectiveResponse);
+  rpc TransactionInfo(TransactionInfoRequest) returns (stream TransactionInfoResponse);
 
   // Query for a transaction plan
   rpc TransactionPlanner(TransactionPlannerRequest) returns (TransactionPlannerResponse);
@@ -347,50 +341,33 @@ message NullifierStatusResponse {
   bool spent = 1;
 }
 
-message TransactionHashesRequest {
-  // If present, return only transactions after this height.
-  optional uint64 start_height = 1;
-  // If present, return only transactions before this height.
-  optional uint64 end_height = 2;
-}
-
-message TransactionHashesResponse {
-  uint64 block_height = 1;
-  bytes tx_hash = 2;
-}
-
-message TransactionByHashRequest {
+message TransactionInfoByHashRequest {
   // The transaction hash to query for.
-  bytes tx_hash = 1;
+    core.transaction.v1alpha1.Id id = 2;
 }
 
-// A full transaction response
-message TransactionByHashResponse {
-  core.transaction.v1alpha1.Transaction tx = 1;
-}
-
-message TransactionsRequest {
+message TransactionInfoRequest {
   // If present, return only transactions after this height.
   optional uint64 start_height = 1;
   // If present, return only transactions before this height.
   optional uint64 end_height = 2;
 }
 
-// A streaming full transaction response
-message TransactionsResponse {
-  uint64 block_height = 1;
-  bytes tx_hash = 2;
-  core.transaction.v1alpha1.Transaction tx = 3;
+message TransactionInfo {
+    // The height the transaction was included in a block, if known.
+    optional uint64 height = 1;
+    // The hash of the transaction.
+    core.transaction.v1alpha1.Id id = 2;
+    // The transaction data itself.
+    core.transaction.v1alpha1.Transaction transaction = 3;
+    // The transaction perspective, as seen by this view server.
+    core.transaction.v1alpha1.TransactionPerspective perspective = 4;
+    // A precomputed transaction view of `transaction` from `perspective`, included for convenience of clients that don't have support for viewing transactions on their own.
+    core.transaction.v1alpha1.TransactionView  view = 5;
 }
 
-message TransactionPerspectiveRequest {
-  bytes tx_hash = 1;
-}
-
-message TransactionPerspectiveResponse {
-  core.transaction.v1alpha1.TransactionPerspective txp = 1;
-  core.transaction.v1alpha1.Transaction tx = 2;
-  core.transaction.v1alpha1.TransactionView txv = 3;
+message TransactionInfoResponse {
+   TransactionInfo tx_info = 1;
 }
 
 message NotesResponse {
