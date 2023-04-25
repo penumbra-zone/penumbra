@@ -1,6 +1,6 @@
 [package]
 name = "penumbra-view"
-version = "0.51.0"
+version = "0.51.1"
 authors = ["Penumbra Labs <team@penumbra.zone>"]
 edition = "2021"
 description = "The view RPC library for the Penumbra Zone"
