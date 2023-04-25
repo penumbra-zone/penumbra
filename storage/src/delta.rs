@@ -137,6 +137,23 @@ impl<S: StateRead + StateWrite> StateDelta<S> {
     }
 }
 
+impl<S: StateRead + StateWrite> StateDelta<Arc<S>> {
+    pub fn try_apply(self) -> Result<(S, Vec<abci::Event>), anyhow::Error> {
+        let (arc_state, mut changes) = self.flatten();
+        let events = std::mem::take(&mut changes.events);
+
+        if let Ok(mut state) = Arc::try_unwrap(arc_state) {
+            // Apply the flattened changes to the underlying state.
+            changes.apply_to(&mut state);
+
+            // Finally, return ownership of the state back to the caller.
+            Ok((state, events))
+        } else {
+            Err(anyhow::anyhow!("did not have unique ownership of Arc<S>"))
+        }
+    }
+}
+
 impl<S: StateRead> StateRead for StateDelta<S> {
     type GetRawFut = CacheFuture<S::GetRawFut>;
     type PrefixRawStream = StateDeltaPrefixRawStream<S::PrefixRawStream>;

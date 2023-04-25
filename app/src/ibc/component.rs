@@ -31,7 +31,10 @@ impl Component for IBCComponent {
     }
 
     #[instrument(name = "ibc", skip(state, begin_block))]
-    async fn begin_block<S: StateWrite>(mut state: S, begin_block: &abci::request::BeginBlock) {
+    async fn begin_block<S: StateWrite + 'static>(
+        mut state: &mut Arc<S>,
+        begin_block: &abci::request::BeginBlock,
+    ) {
         // In BeginBlock, we want to save a copy of our consensus state to our
         // own state tree, so that when we get a message from our
         // counterparties, we can verify that they are committing the correct
@@ -53,9 +56,13 @@ impl Component for IBCComponent {
     }
 
     #[instrument(name = "ibc", skip(_state, _end_block))]
-    async fn end_block<S: StateWrite>(mut _state: S, _end_block: &abci::request::EndBlock) {}
+    async fn end_block<S: StateWrite + 'static>(
+        mut _state: &mut Arc<S>,
+        _end_block: &abci::request::EndBlock,
+    ) {
+    }
 
-    async fn end_epoch<S: StateWrite>(mut _state: S) -> Result<()> {
+    async fn end_epoch<S: StateWrite + 'static>(mut _state: &mut Arc<S>) -> Result<()> {
         Ok(())
     }
 }

@@ -8,7 +8,7 @@ use penumbra_chain::{genesis, AppHash, StateReadExt, StateWriteExt as _};
 use penumbra_proto::{DomainType, StateWriteProto};
 use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, StateWrite, Storage};
 use penumbra_transaction::Transaction;
-use tendermint::abci;
+use tendermint::abci::{self, Event};
 use tendermint::validator::Update;
 use tracing::Instrument;
 
@@ -28,7 +28,7 @@ pub mod state_key;
 /// it constructs the components and exposes a [`commit`](App::commit) that
 /// commits the changes to the persistent storage and resets its subcomponents.
 pub struct App {
-    state: Arc<StateDelta<Snapshot>>,
+    state: Option<Arc<StateDelta<Snapshot>>>,
 }
 
 impl App {
@@ -37,16 +37,44 @@ impl App {
 
         // We perform the `Arc` wrapping of `State` here to ensure
         // there should be no unexpected copies elsewhere.
-        let state = Arc::new(StateDelta::new(snapshot));
+        let state = Some(Arc::new(StateDelta::new(snapshot)));
 
         // If the state says that the chain is halted, we should not proceed. This is a safety check
         // to ensure that automatic restarts by software like systemd do not cause the chain to come
         // back up again after a halt.
-        if state.is_chain_halted(TOTAL_HALT_COUNT).await? {
+        if state
+            .as_ref()
+            .unwrap()
+            .is_chain_halted(TOTAL_HALT_COUNT)
+            .await?
+        {
             anyhow::bail!("chain is halted, refusing to restart");
         }
 
         Ok(Self { state })
+    }
+
+    fn block_state(&self) -> &Arc<StateDelta<Snapshot>> {
+        self.state.as_ref().expect("no current state transactions")
+    }
+
+    fn try_begin_transaction(&mut self) -> Option<StateDelta<Arc<StateDelta<Snapshot>>>> {
+        if let Some(state) = self.state.take() {
+            // TODO: should we check the strong/weak counts here?
+            Some(StateDelta::new(state))
+        } else {
+            None
+        }
+    }
+
+    fn apply(&mut self, state_tx: StateDelta<Arc<StateDelta<Snapshot>>>) -> Vec<abci::Event> {
+        let (state, events) = state_tx
+            .try_apply()
+            .expect("one unique reference to Arc<S>");
+
+        self.state = Some(Arc::new(state));
+
+        events
     }
 
     pub async fn init_chain(&mut self, app_state: &genesis::AppState) {
@@ -112,10 +140,14 @@ impl App {
         &mut self,
         begin_block: &abci::request::BeginBlock,
     ) -> Vec<abci::Event> {
+        /*
         let mut state_tx = self
             .state
             .try_begin_transaction()
             .expect("state Arc should not be referenced elsewhere");
+            */
+
+        let mut state_tx = self.try_begin_transaction();
 
         // store the block height
         state_tx.put_block_height(begin_block.header.height.into());
@@ -135,23 +167,26 @@ impl App {
         }
 
         // Run each of the begin block handlers for each component, in sequence:
-        Staking::begin_block(&mut state_tx, begin_block).await;
-        IBCComponent::begin_block(&mut state_tx, begin_block).await;
-        StubDex::begin_block(&mut state_tx, begin_block).await;
-        Dex::begin_block(&mut state_tx, begin_block).await;
-        Governance::begin_block(&mut state_tx, begin_block).await;
+        let mut arc_tx = Arc::new(state_tx);
+        Staking::begin_block(&mut arc_tx, begin_block).await;
+        IBCComponent::begin_block(&mut arc_tx, begin_block).await;
+        StubDex::begin_block(&mut arc_tx, begin_block).await;
+        Dex::begin_block(&mut arc_tx, begin_block).await;
+        Governance::begin_block(&mut arc_tx, begin_block).await;
+        ShieldedPool::begin_block(&mut arc_tx, begin_block).await;
 
-        ShieldedPool::begin_block(&mut state_tx, begin_block).await;
+        let state_tx =
+            Arc::try_unwrap(arc_tx).expect("components did not retain copies of shared state");
 
         // Apply the state from `begin_block` and return the events (we'll append to them if
         // necessary based on the results of applying the DAO transactions queued)
-        let mut events = state_tx.apply().1;
+        let mut events = self.apply(state_tx);
 
         // Deliver DAO transactions here, before any other block processing (effectively adding
         // synthetic transactions slotted in after the start of the block but before any user
         // transactions)
         let pending_transactions = self
-            .state
+            .block_state()
             .pending_dao_transactions()
             .await
             .expect("DAO transactions should always be readable");
@@ -213,9 +248,10 @@ impl App {
                 .instrument(tracing::Span::current()),
         );
         let tx2 = tx.clone();
-        let state = self.state.clone();
+        let block_state = self.block_state().clone();
         let stateful = tokio::spawn(
-            async move { tx2.check_stateful(state).await }.instrument(tracing::Span::current()),
+            async move { tx2.check_stateful(block_state).await }
+                .instrument(tracing::Span::current()),
         );
 
         stateless.await??;
@@ -224,15 +260,14 @@ impl App {
         // At this point, the stateful checks should have completed,
         // leaving us with exclusive access to the Arc<State>.
         let mut state_tx = self
-            .state
             .try_begin_transaction()
-            .expect("state Arc should not be referenced elsewhere");
+            .expect("state Arc should be present and unique");
         tx.execute(&mut state_tx).await?;
 
         // At this point, we've completed execution successfully with no errors,
         // so we can apply the transaction to the State. Otherwise, we'd have
         // bubbled up an error and dropped the StateTransaction.
-        Ok(state_tx.apply().1)
+        Ok(self.apply(state_tx))
     }
 
     pub async fn end_block(&mut self, end_block: &abci::request::EndBlock) -> Vec<abci::Event> {

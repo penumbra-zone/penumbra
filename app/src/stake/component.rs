@@ -3,6 +3,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     future::Future,
     pin::Pin,
+    sync::Arc,
 };
 
 use crate::{dao::view::StateWriteExt as _, stake::funding_stream::Recipient, Component};
@@ -930,7 +931,10 @@ impl Component for Staking {
     }
 
     #[instrument(name = "staking", skip(state, begin_block))]
-    async fn begin_block<S: StateWrite>(mut state: S, begin_block: &abci::request::BeginBlock) {
+    async fn begin_block<S: StateWrite + 'static>(
+        mut state: &mut Arc<S>,
+        begin_block: &abci::request::BeginBlock,
+    ) {
         // For each validator identified as byzantine by tendermint, update its
         // state to be slashed
         for evidence in begin_block.byzantine_validators.iter() {
@@ -944,7 +948,10 @@ impl Component for Staking {
     }
 
     #[instrument(name = "staking", skip(state, end_block))]
-    async fn end_block<S: StateWrite>(mut state: S, end_block: &abci::request::EndBlock) {
+    async fn end_block<S: StateWrite + 'static>(
+        mut state: &mut Arc<S>,
+        end_block: &abci::request::EndBlock,
+    ) {
         // Write the delegation changes for this block.
         state
             .set_delegation_changes(
@@ -955,7 +962,7 @@ impl Component for Staking {
     }
 
     #[instrument(name = "staking", skip(state))]
-    async fn end_epoch<S: StateWrite>(mut state: S) -> anyhow::Result<()> {
+    async fn end_epoch<S: StateWrite + 'static>(mut state: &mut Arc<S>) -> anyhow::Result<()> {
         let cur_epoch = state.get_current_epoch().await.unwrap();
         state.end_epoch(cur_epoch).await?;
         // Since we only update the validator set at epoch boundaries,
