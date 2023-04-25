@@ -1,6 +1,6 @@
 [package]
 name = "penumbra-wasm"
-version = "0.51.1"
+version = "0.51.2"
 authors = ["Valentine <valentine@zpoken.io>"]
 edition = "2021"
 

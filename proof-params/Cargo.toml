@@ -1,6 +1,6 @@
 [package]
 name = "penumbra-proof-params"
-version = "0.51.1"
+version = "0.51.2"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
