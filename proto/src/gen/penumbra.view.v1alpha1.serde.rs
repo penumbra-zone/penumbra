@@ -1577,9 +1577,6 @@ impl serde::Serialize for NoteByCommitmentRequest {
         if self.account_group_id.is_some() {
             len += 1;
         }
-        if self.token.is_some() {
-            len += 1;
-        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.NoteByCommitmentRequest", len)?;
         if let Some(v) = self.note_commitment.as_ref() {
             struct_ser.serialize_field("noteCommitment", v)?;
@@ -1589,9 +1586,6 @@ impl serde::Serialize for NoteByCommitmentRequest {
         }
         if let Some(v) = self.account_group_id.as_ref() {
             struct_ser.serialize_field("accountGroupId", v)?;
-        }
-        if let Some(v) = self.token.as_ref() {
-            struct_ser.serialize_field("token", v)?;
         }
         struct_ser.end()
     }
@@ -1609,7 +1603,6 @@ impl<'de> serde::Deserialize<'de> for NoteByCommitmentRequest {
             "awaitDetection",
             "account_group_id",
             "accountGroupId",
-            "token",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -1617,7 +1610,6 @@ impl<'de> serde::Deserialize<'de> for NoteByCommitmentRequest {
             NoteCommitment,
             AwaitDetection,
             AccountGroupId,
-            Token,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -1642,7 +1634,6 @@ impl<'de> serde::Deserialize<'de> for NoteByCommitmentRequest {
                             "noteCommitment" | "note_commitment" => Ok(GeneratedField::NoteCommitment),
                             "awaitDetection" | "await_detection" => Ok(GeneratedField::AwaitDetection),
                             "accountGroupId" | "account_group_id" => Ok(GeneratedField::AccountGroupId),
-                            "token" => Ok(GeneratedField::Token),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -1665,7 +1656,6 @@ impl<'de> serde::Deserialize<'de> for NoteByCommitmentRequest {
                 let mut note_commitment__ = None;
                 let mut await_detection__ = None;
                 let mut account_group_id__ = None;
-                let mut token__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::NoteCommitment => {
@@ -1686,19 +1676,12 @@ impl<'de> serde::Deserialize<'de> for NoteByCommitmentRequest {
                             }
                             account_group_id__ = map.next_value()?;
                         }
-                        GeneratedField::Token => {
-                            if token__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("token"));
-                            }
-                            token__ = map.next_value()?;
-                        }
                     }
                 }
                 Ok(NoteByCommitmentRequest {
                     note_commitment: note_commitment__,
                     await_detection: await_detection__.unwrap_or_default(),
                     account_group_id: account_group_id__,
-                    token: token__,
                 })
             }
         }
@@ -1814,9 +1797,6 @@ impl serde::Serialize for NotesForVotingRequest {
         if self.account_group_id.is_some() {
             len += 1;
         }
-        if self.token.is_some() {
-            len += 1;
-        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.NotesForVotingRequest", len)?;
         if self.votable_at_height != 0 {
             struct_ser.serialize_field("votableAtHeight", ToString::to_string(&self.votable_at_height).as_str())?;
@@ -1826,9 +1806,6 @@ impl serde::Serialize for NotesForVotingRequest {
         }
         if let Some(v) = self.account_group_id.as_ref() {
             struct_ser.serialize_field("accountGroupId", v)?;
-        }
-        if let Some(v) = self.token.as_ref() {
-            struct_ser.serialize_field("token", v)?;
         }
         struct_ser.end()
     }
@@ -1846,7 +1823,6 @@ impl<'de> serde::Deserialize<'de> for NotesForVotingRequest {
             "addressIndex",
             "account_group_id",
             "accountGroupId",
-            "token",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -1854,7 +1830,6 @@ impl<'de> serde::Deserialize<'de> for NotesForVotingRequest {
             VotableAtHeight,
             AddressIndex,
             AccountGroupId,
-            Token,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -1879,7 +1854,6 @@ impl<'de> serde::Deserialize<'de> for NotesForVotingRequest {
                             "votableAtHeight" | "votable_at_height" => Ok(GeneratedField::VotableAtHeight),
                             "addressIndex" | "address_index" => Ok(GeneratedField::AddressIndex),
                             "accountGroupId" | "account_group_id" => Ok(GeneratedField::AccountGroupId),
-                            "token" => Ok(GeneratedField::Token),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -1902,7 +1876,6 @@ impl<'de> serde::Deserialize<'de> for NotesForVotingRequest {
                 let mut votable_at_height__ = None;
                 let mut address_index__ = None;
                 let mut account_group_id__ = None;
-                let mut token__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::VotableAtHeight => {
@@ -1925,19 +1898,12 @@ impl<'de> serde::Deserialize<'de> for NotesForVotingRequest {
                             }
                             account_group_id__ = map.next_value()?;
                         }
-                        GeneratedField::Token => {
-                            if token__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("token"));
-                            }
-                            token__ = map.next_value()?;
-                        }
                     }
                 }
                 Ok(NotesForVotingRequest {
                     votable_at_height: votable_at_height__.unwrap_or_default(),
                     address_index: address_index__,
                     account_group_id: account_group_id__,
-                    token: token__,
                 })
             }
         }
@@ -2077,9 +2043,6 @@ impl serde::Serialize for NotesRequest {
         if self.account_group_id.is_some() {
             len += 1;
         }
-        if self.token.is_some() {
-            len += 1;
-        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.NotesRequest", len)?;
         if self.include_spent {
             struct_ser.serialize_field("includeSpent", &self.include_spent)?;
@@ -2095,9 +2058,6 @@ impl serde::Serialize for NotesRequest {
         }
         if let Some(v) = self.account_group_id.as_ref() {
             struct_ser.serialize_field("accountGroupId", v)?;
-        }
-        if let Some(v) = self.token.as_ref() {
-            struct_ser.serialize_field("token", v)?;
         }
         struct_ser.end()
     }
@@ -2119,7 +2079,6 @@ impl<'de> serde::Deserialize<'de> for NotesRequest {
             "amountToSpend",
             "account_group_id",
             "accountGroupId",
-            "token",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -2129,7 +2088,6 @@ impl<'de> serde::Deserialize<'de> for NotesRequest {
             AddressIndex,
             AmountToSpend,
             AccountGroupId,
-            Token,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -2156,7 +2114,6 @@ impl<'de> serde::Deserialize<'de> for NotesRequest {
                             "addressIndex" | "address_index" => Ok(GeneratedField::AddressIndex),
                             "amountToSpend" | "amount_to_spend" => Ok(GeneratedField::AmountToSpend),
                             "accountGroupId" | "account_group_id" => Ok(GeneratedField::AccountGroupId),
-                            "token" => Ok(GeneratedField::Token),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -2181,7 +2138,6 @@ impl<'de> serde::Deserialize<'de> for NotesRequest {
                 let mut address_index__ = None;
                 let mut amount_to_spend__ = None;
                 let mut account_group_id__ = None;
-                let mut token__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::IncludeSpent => {
@@ -2216,12 +2172,6 @@ impl<'de> serde::Deserialize<'de> for NotesRequest {
                             }
                             account_group_id__ = map.next_value()?;
                         }
-                        GeneratedField::Token => {
-                            if token__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("token"));
-                            }
-                            token__ = map.next_value()?;
-                        }
                     }
                 }
                 Ok(NotesRequest {
@@ -2230,7 +2180,6 @@ impl<'de> serde::Deserialize<'de> for NotesRequest {
                     address_index: address_index__,
                     amount_to_spend: amount_to_spend__.unwrap_or_default(),
                     account_group_id: account_group_id__,
-                    token: token__,
                 })
             }
         }
@@ -2346,9 +2295,6 @@ impl serde::Serialize for NullifierStatusRequest {
         if self.account_group_id.is_some() {
             len += 1;
         }
-        if self.token.is_some() {
-            len += 1;
-        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.NullifierStatusRequest", len)?;
         if let Some(v) = self.nullifier.as_ref() {
             struct_ser.serialize_field("nullifier", v)?;
@@ -2358,9 +2304,6 @@ impl serde::Serialize for NullifierStatusRequest {
         }
         if let Some(v) = self.account_group_id.as_ref() {
             struct_ser.serialize_field("accountGroupId", v)?;
-        }
-        if let Some(v) = self.token.as_ref() {
-            struct_ser.serialize_field("token", v)?;
         }
         struct_ser.end()
     }
@@ -2377,7 +2320,6 @@ impl<'de> serde::Deserialize<'de> for NullifierStatusRequest {
             "awaitDetection",
             "account_group_id",
             "accountGroupId",
-            "token",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -2385,7 +2327,6 @@ impl<'de> serde::Deserialize<'de> for NullifierStatusRequest {
             Nullifier,
             AwaitDetection,
             AccountGroupId,
-            Token,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -2410,7 +2351,6 @@ impl<'de> serde::Deserialize<'de> for NullifierStatusRequest {
                             "nullifier" => Ok(GeneratedField::Nullifier),
                             "awaitDetection" | "await_detection" => Ok(GeneratedField::AwaitDetection),
                             "accountGroupId" | "account_group_id" => Ok(GeneratedField::AccountGroupId),
-                            "token" => Ok(GeneratedField::Token),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -2433,7 +2373,6 @@ impl<'de> serde::Deserialize<'de> for NullifierStatusRequest {
                 let mut nullifier__ = None;
                 let mut await_detection__ = None;
                 let mut account_group_id__ = None;
-                let mut token__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::Nullifier => {
@@ -2454,19 +2393,12 @@ impl<'de> serde::Deserialize<'de> for NullifierStatusRequest {
                             }
                             account_group_id__ = map.next_value()?;
                         }
-                        GeneratedField::Token => {
-                            if token__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("token"));
-                            }
-                            token__ = map.next_value()?;
-                        }
                     }
                 }
                 Ok(NullifierStatusRequest {
                     nullifier: nullifier__,
                     await_detection: await_detection__.unwrap_or_default(),
                     account_group_id: account_group_id__,
-                    token: token__,
                 })
             }
         }
@@ -2795,15 +2727,9 @@ impl serde::Serialize for StatusRequest {
         if self.account_group_id.is_some() {
             len += 1;
         }
-        if self.token.is_some() {
-            len += 1;
-        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.StatusRequest", len)?;
         if let Some(v) = self.account_group_id.as_ref() {
             struct_ser.serialize_field("accountGroupId", v)?;
-        }
-        if let Some(v) = self.token.as_ref() {
-            struct_ser.serialize_field("token", v)?;
         }
         struct_ser.end()
     }
@@ -2817,13 +2743,11 @@ impl<'de> serde::Deserialize<'de> for StatusRequest {
         const FIELDS: &[&str] = &[
             "account_group_id",
             "accountGroupId",
-            "token",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             AccountGroupId,
-            Token,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -2846,7 +2770,6 @@ impl<'de> serde::Deserialize<'de> for StatusRequest {
                     {
                         match value {
                             "accountGroupId" | "account_group_id" => Ok(GeneratedField::AccountGroupId),
-                            "token" => Ok(GeneratedField::Token),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -2867,7 +2790,6 @@ impl<'de> serde::Deserialize<'de> for StatusRequest {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut account_group_id__ = None;
-                let mut token__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::AccountGroupId => {
@@ -2876,17 +2798,10 @@ impl<'de> serde::Deserialize<'de> for StatusRequest {
                             }
                             account_group_id__ = map.next_value()?;
                         }
-                        GeneratedField::Token => {
-                            if token__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("token"));
-                            }
-                            token__ = map.next_value()?;
-                        }
                     }
                 }
                 Ok(StatusRequest {
                     account_group_id: account_group_id__,
-                    token: token__,
                 })
             }
         }
@@ -3016,15 +2931,9 @@ impl serde::Serialize for StatusStreamRequest {
         if self.account_group_id.is_some() {
             len += 1;
         }
-        if self.token.is_some() {
-            len += 1;
-        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.StatusStreamRequest", len)?;
         if let Some(v) = self.account_group_id.as_ref() {
             struct_ser.serialize_field("accountGroupId", v)?;
-        }
-        if let Some(v) = self.token.as_ref() {
-            struct_ser.serialize_field("token", v)?;
         }
         struct_ser.end()
     }
@@ -3038,13 +2947,11 @@ impl<'de> serde::Deserialize<'de> for StatusStreamRequest {
         const FIELDS: &[&str] = &[
             "account_group_id",
             "accountGroupId",
-            "token",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             AccountGroupId,
-            Token,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -3067,7 +2974,6 @@ impl<'de> serde::Deserialize<'de> for StatusStreamRequest {
                     {
                         match value {
                             "accountGroupId" | "account_group_id" => Ok(GeneratedField::AccountGroupId),
-                            "token" => Ok(GeneratedField::Token),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -3088,7 +2994,6 @@ impl<'de> serde::Deserialize<'de> for StatusStreamRequest {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut account_group_id__ = None;
-                let mut token__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::AccountGroupId => {
@@ -3097,17 +3002,10 @@ impl<'de> serde::Deserialize<'de> for StatusStreamRequest {
                             }
                             account_group_id__ = map.next_value()?;
                         }
-                        GeneratedField::Token => {
-                            if token__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("token"));
-                            }
-                            token__ = map.next_value()?;
-                        }
                     }
                 }
                 Ok(StatusStreamRequest {
                     account_group_id: account_group_id__,
-                    token: token__,
                 })
             }
         }
@@ -3245,9 +3143,6 @@ impl serde::Serialize for SwapByCommitmentRequest {
         if self.account_group_id.is_some() {
             len += 1;
         }
-        if self.token.is_some() {
-            len += 1;
-        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.SwapByCommitmentRequest", len)?;
         if let Some(v) = self.swap_commitment.as_ref() {
             struct_ser.serialize_field("swapCommitment", v)?;
@@ -3257,9 +3152,6 @@ impl serde::Serialize for SwapByCommitmentRequest {
         }
         if let Some(v) = self.account_group_id.as_ref() {
             struct_ser.serialize_field("accountGroupId", v)?;
-        }
-        if let Some(v) = self.token.as_ref() {
-            struct_ser.serialize_field("token", v)?;
         }
         struct_ser.end()
     }
@@ -3277,7 +3169,6 @@ impl<'de> serde::Deserialize<'de> for SwapByCommitmentRequest {
             "awaitDetection",
             "account_group_id",
             "accountGroupId",
-            "token",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -3285,7 +3176,6 @@ impl<'de> serde::Deserialize<'de> for SwapByCommitmentRequest {
             SwapCommitment,
             AwaitDetection,
             AccountGroupId,
-            Token,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -3310,7 +3200,6 @@ impl<'de> serde::Deserialize<'de> for SwapByCommitmentRequest {
                             "swapCommitment" | "swap_commitment" => Ok(GeneratedField::SwapCommitment),
                             "awaitDetection" | "await_detection" => Ok(GeneratedField::AwaitDetection),
                             "accountGroupId" | "account_group_id" => Ok(GeneratedField::AccountGroupId),
-                            "token" => Ok(GeneratedField::Token),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -3333,7 +3222,6 @@ impl<'de> serde::Deserialize<'de> for SwapByCommitmentRequest {
                 let mut swap_commitment__ = None;
                 let mut await_detection__ = None;
                 let mut account_group_id__ = None;
-                let mut token__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::SwapCommitment => {
@@ -3354,19 +3242,12 @@ impl<'de> serde::Deserialize<'de> for SwapByCommitmentRequest {
                             }
                             account_group_id__ = map.next_value()?;
                         }
-                        GeneratedField::Token => {
-                            if token__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("token"));
-                            }
-                            token__ = map.next_value()?;
-                        }
                     }
                 }
                 Ok(SwapByCommitmentRequest {
                     swap_commitment: swap_commitment__,
                     await_detection: await_detection__.unwrap_or_default(),
                     account_group_id: account_group_id__,
-                    token: token__,
                 })
             }
         }
@@ -4316,9 +4197,6 @@ impl serde::Serialize for TransactionPlannerRequest {
         if self.account_group_id.is_some() {
             len += 1;
         }
-        if self.token.is_some() {
-            len += 1;
-        }
         if !self.outputs.is_empty() {
             len += 1;
         }
@@ -4346,9 +4224,6 @@ impl serde::Serialize for TransactionPlannerRequest {
         }
         if let Some(v) = self.account_group_id.as_ref() {
             struct_ser.serialize_field("accountGroupId", v)?;
-        }
-        if let Some(v) = self.token.as_ref() {
-            struct_ser.serialize_field("token", v)?;
         }
         if !self.outputs.is_empty() {
             struct_ser.serialize_field("outputs", &self.outputs)?;
@@ -4381,7 +4256,6 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             "memo",
             "account_group_id",
             "accountGroupId",
-            "token",
             "outputs",
             "swaps",
             "delegations",
@@ -4396,7 +4270,6 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             Fee,
             Memo,
             AccountGroupId,
-            Token,
             Outputs,
             Swaps,
             Delegations,
@@ -4427,7 +4300,6 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             "fee" => Ok(GeneratedField::Fee),
                             "memo" => Ok(GeneratedField::Memo),
                             "accountGroupId" | "account_group_id" => Ok(GeneratedField::AccountGroupId),
-                            "token" => Ok(GeneratedField::Token),
                             "outputs" => Ok(GeneratedField::Outputs),
                             "swaps" => Ok(GeneratedField::Swaps),
                             "delegations" => Ok(GeneratedField::Delegations),
@@ -4456,7 +4328,6 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                 let mut fee__ = None;
                 let mut memo__ = None;
                 let mut account_group_id__ = None;
-                let mut token__ = None;
                 let mut outputs__ = None;
                 let mut swaps__ = None;
                 let mut delegations__ = None;
@@ -4489,12 +4360,6 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                                 return Err(serde::de::Error::duplicate_field("accountGroupId"));
                             }
                             account_group_id__ = map.next_value()?;
-                        }
-                        GeneratedField::Token => {
-                            if token__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("token"));
-                            }
-                            token__ = map.next_value()?;
                         }
                         GeneratedField::Outputs => {
                             if outputs__.is_some() {
@@ -4533,7 +4398,6 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                     fee: fee__,
                     memo: memo__.unwrap_or_default(),
                     account_group_id: account_group_id__,
-                    token: token__,
                     outputs: outputs__.unwrap_or_default(),
                     swaps: swaps__.unwrap_or_default(),
                     delegations: delegations__.unwrap_or_default(),
@@ -5808,9 +5672,6 @@ impl serde::Serialize for WitnessRequest {
         if self.account_group_id.is_some() {
             len += 1;
         }
-        if self.token.is_some() {
-            len += 1;
-        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.WitnessRequest", len)?;
         if !self.note_commitments.is_empty() {
             struct_ser.serialize_field("noteCommitments", &self.note_commitments)?;
@@ -5820,9 +5681,6 @@ impl serde::Serialize for WitnessRequest {
         }
         if let Some(v) = self.account_group_id.as_ref() {
             struct_ser.serialize_field("accountGroupId", v)?;
-        }
-        if let Some(v) = self.token.as_ref() {
-            struct_ser.serialize_field("token", v)?;
         }
         struct_ser.end()
     }
@@ -5840,7 +5698,6 @@ impl<'de> serde::Deserialize<'de> for WitnessRequest {
             "transactionPlan",
             "account_group_id",
             "accountGroupId",
-            "token",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -5848,7 +5705,6 @@ impl<'de> serde::Deserialize<'de> for WitnessRequest {
             NoteCommitments,
             TransactionPlan,
             AccountGroupId,
-            Token,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -5873,7 +5729,6 @@ impl<'de> serde::Deserialize<'de> for WitnessRequest {
                             "noteCommitments" | "note_commitments" => Ok(GeneratedField::NoteCommitments),
                             "transactionPlan" | "transaction_plan" => Ok(GeneratedField::TransactionPlan),
                             "accountGroupId" | "account_group_id" => Ok(GeneratedField::AccountGroupId),
-                            "token" => Ok(GeneratedField::Token),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -5896,7 +5751,6 @@ impl<'de> serde::Deserialize<'de> for WitnessRequest {
                 let mut note_commitments__ = None;
                 let mut transaction_plan__ = None;
                 let mut account_group_id__ = None;
-                let mut token__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::NoteCommitments => {
@@ -5917,19 +5771,12 @@ impl<'de> serde::Deserialize<'de> for WitnessRequest {
                             }
                             account_group_id__ = map.next_value()?;
                         }
-                        GeneratedField::Token => {
-                            if token__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("token"));
-                            }
-                            token__ = map.next_value()?;
-                        }
                     }
                 }
                 Ok(WitnessRequest {
                     note_commitments: note_commitments__.unwrap_or_default(),
                     transaction_plan: transaction_plan__,
                     account_group_id: account_group_id__,
-                    token: token__,
                 })
             }
         }

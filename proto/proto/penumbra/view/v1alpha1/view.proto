@@ -13,10 +13,8 @@ import "penumbra/core/ibc/v1alpha1/ibc.proto";
 // responsible for synchronizing and scanning the public chain state with one or
 // more full viewing keys.
 //
-// View protocol requests include a hash of the full viewing key, used to
-// identify which set of data to query.  This also works as a pseudo-auth system
-// (assuming transport security, the client has to know the FVK to request its
-// data).  (TODO: refine this)
+// View protocol requests optionally include the account group ID, used to
+// identify which set of data to query.
 service ViewProtocolService {
   // Get current status of chain sync
   rpc Status(StatusRequest) returns (StatusResponse);
@@ -107,10 +105,8 @@ message TransactionPlannerRequest {
     core.crypto.v1alpha1.Fee fee = 2;
     // The memo for the requested TransactionPlan
     string memo = 3;
-    // Identifies the FVK for the notes to query.
+    // Identifies the account group to query.
     optional core.crypto.v1alpha1.AccountGroupId account_group_id = 14;
-    // Authorizes the request.
-    optional ViewAuthToken token = 15;
 
   // Request contents
   repeated Output outputs = 20;
@@ -177,8 +173,6 @@ message BalanceByAddressResponse {
 }
 
 // Scaffolding for bearer-token authentication for the ViewService.
-// The `account_group_id` and `token` fields are both optional,
-// and numbered as 14 & 15 throughout the view service protocol.
 message ViewAuthToken {
   bytes inner = 1;
 }
@@ -197,10 +191,8 @@ service ViewAuthService {
 
 // Requests sync status of the view service.
 message StatusRequest {
-  // Identifies the FVK for the notes to query.
+  // Identifies the account group to query.
   optional core.crypto.v1alpha1.AccountGroupId account_group_id = 14;
-  // Authorizes the request.
-  optional ViewAuthToken token = 15;
 }
 
 // Returns the status of the view service and whether it is synchronized with the chain state.
@@ -213,10 +205,8 @@ message StatusResponse {
 
 // Requests streaming updates on the sync height until the view service is synchronized.
 message StatusStreamRequest {
-  // Identifies the FVK for the notes to query.
+  // Identifies the account group to query.
   optional core.crypto.v1alpha1.AccountGroupId account_group_id = 14;
-  // Authorizes the request.
-  optional ViewAuthToken token = 15;
 }
 
 // A streaming sync status update
@@ -244,10 +234,8 @@ message NotesRequest {
   // Ignored if `asset_id` is unset or if `include_spent` is set.
   uint64 amount_to_spend = 5;
 
-  // Identifies the FVK for the notes to query.
+  // Identifies the account group to query.
   optional core.crypto.v1alpha1.AccountGroupId account_group_id = 14;
-  // Authorizes the request.
-  optional ViewAuthToken token = 15;
 }
 
 // A query for notes to be used for voting on a proposal.
@@ -258,10 +246,8 @@ message NotesForVotingRequest {
   // If set, only return notes with the specified asset id.
   core.crypto.v1alpha1.AddressIndex address_index = 3;
 
-  // Identifies the FVK for the notes to query.
+  // Identifies the account group to query.
   optional core.crypto.v1alpha1.AccountGroupId account_group_id = 14;
-  // Authorizes the request.
-  optional ViewAuthToken token = 15;
 }
 
 message WitnessRequest {
@@ -271,10 +257,8 @@ message WitnessRequest {
   // The transaction plan to witness
   core.transaction.v1alpha1.TransactionPlan transaction_plan = 3;
 
-  // Identifies the FVK for the notes to query.
+  // Identifies the account group to query.
   optional core.crypto.v1alpha1.AccountGroupId account_group_id = 14;
-  // Authorizes the request.
-  optional ViewAuthToken token = 15;
 }
 
 message WitnessResponse {
@@ -332,10 +316,8 @@ message NoteByCommitmentRequest {
   core.crypto.v1alpha1.StateCommitment note_commitment = 2;
   // If set to true, waits to return until the requested note is detected.
   bool await_detection = 3;
-  // Identifies the FVK for the notes to query.
+  // Identifies the account group to query.
   optional core.crypto.v1alpha1.AccountGroupId account_group_id = 14;
-  // Authorizes the request.
-  optional ViewAuthToken token = 15;
 }
 
 message NoteByCommitmentResponse {
@@ -346,10 +328,8 @@ message SwapByCommitmentRequest {
   core.crypto.v1alpha1.StateCommitment swap_commitment = 2;
   // If set to true, waits to return until the requested swap is detected.
   bool await_detection = 3;
-  // Identifies the FVK for the notes to query.
+  // Identifies the account group to query.
   optional core.crypto.v1alpha1.AccountGroupId account_group_id = 14;
-  // Authorizes the request.
-  optional ViewAuthToken token = 15;
 }
 
 message SwapByCommitmentResponse {
@@ -359,10 +339,8 @@ message SwapByCommitmentResponse {
 message NullifierStatusRequest {
   core.crypto.v1alpha1.Nullifier nullifier = 2;
   bool await_detection = 3;
-  // Identifies the FVK for the notes to query.
+  // Identifies the account group to query.
   optional core.crypto.v1alpha1.AccountGroupId account_group_id = 14;
-  // Authorizes the request.
-  optional ViewAuthToken token = 15;
 }
 
 message NullifierStatusResponse {

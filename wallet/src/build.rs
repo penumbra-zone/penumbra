@@ -20,7 +20,7 @@ where
     // Get the authorization data from the custody service...
     let auth_data: AuthorizationData = custody
         .authorize(AuthorizeRequest {
-            account_group_id: fvk.account_group_id(),
+            account_group_id: Some(fvk.account_group_id()),
             plan: plan.clone(),
             pre_authorizations: Vec::new(),
         })

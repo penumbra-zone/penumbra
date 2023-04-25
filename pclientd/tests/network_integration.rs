@@ -103,7 +103,6 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
     // 5.1. Generate a transaction plan sending funds to an address.
     let plan = view_client
         .transaction_planner(TransactionPlannerRequest {
-            account_group_id: Some(test_keys::ACCOUNT_ID.clone().into()),
             outputs: vec![tpr::Output {
                 address: Some(test_keys::ADDRESS_1.clone().into()),
                 value: Some(
@@ -126,8 +125,8 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
     let auth_data = custody_client
         .authorize(AuthorizeRequest {
             plan: Some(plan.clone()),
-            account_group_id: Some(test_keys::ACCOUNT_ID.clone().into()),
             pre_authorizations: Vec::new(),
+            ..Default::default()
         })
         .await?
         .into_inner()
