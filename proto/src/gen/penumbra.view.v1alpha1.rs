@@ -29,14 +29,11 @@ pub struct TransactionPlannerRequest {
     /// The memo for the requested TransactionPlan
     #[prost(string, tag = "3")]
     pub memo: ::prost::alloc::string::String,
-    /// Identifies the FVK for the notes to query.
+    /// Identifies the account group to query.
     #[prost(message, optional, tag = "14")]
     pub account_group_id: ::core::option::Option<
         super::super::core::crypto::v1alpha1::AccountGroupId,
     >,
-    /// Authorizes the request.
-    #[prost(message, optional, tag = "15")]
-    pub token: ::core::option::Option<ViewAuthToken>,
     /// Request contents
     #[prost(message, repeated, tag = "20")]
     pub outputs: ::prost::alloc::vec::Vec<transaction_planner_request::Output>,
@@ -169,8 +166,6 @@ pub struct BalanceByAddressResponse {
     pub amount: ::core::option::Option<super::super::core::crypto::v1alpha1::Amount>,
 }
 /// Scaffolding for bearer-token authentication for the ViewService.
-/// The `account_group_id` and `token` fields are both optional,
-/// and numbered as 14 & 15 throughout the view service protocol.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ViewAuthToken {
@@ -195,14 +190,11 @@ pub struct ViewAuthResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatusRequest {
-    /// Identifies the FVK for the notes to query.
+    /// Identifies the account group to query.
     #[prost(message, optional, tag = "14")]
     pub account_group_id: ::core::option::Option<
         super::super::core::crypto::v1alpha1::AccountGroupId,
     >,
-    /// Authorizes the request.
-    #[prost(message, optional, tag = "15")]
-    pub token: ::core::option::Option<ViewAuthToken>,
 }
 /// Returns the status of the view service and whether it is synchronized with the chain state.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -219,14 +211,11 @@ pub struct StatusResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatusStreamRequest {
-    /// Identifies the FVK for the notes to query.
+    /// Identifies the account group to query.
     #[prost(message, optional, tag = "14")]
     pub account_group_id: ::core::option::Option<
         super::super::core::crypto::v1alpha1::AccountGroupId,
     >,
-    /// Authorizes the request.
-    #[prost(message, optional, tag = "15")]
-    pub token: ::core::option::Option<ViewAuthToken>,
 }
 /// A streaming sync status update
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -260,14 +249,11 @@ pub struct NotesRequest {
     /// Ignored if `asset_id` is unset or if `include_spent` is set.
     #[prost(uint64, tag = "5")]
     pub amount_to_spend: u64,
-    /// Identifies the FVK for the notes to query.
+    /// Identifies the account group to query.
     #[prost(message, optional, tag = "14")]
     pub account_group_id: ::core::option::Option<
         super::super::core::crypto::v1alpha1::AccountGroupId,
     >,
-    /// Authorizes the request.
-    #[prost(message, optional, tag = "15")]
-    pub token: ::core::option::Option<ViewAuthToken>,
 }
 /// A query for notes to be used for voting on a proposal.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -281,14 +267,11 @@ pub struct NotesForVotingRequest {
     pub address_index: ::core::option::Option<
         super::super::core::crypto::v1alpha1::AddressIndex,
     >,
-    /// Identifies the FVK for the notes to query.
+    /// Identifies the account group to query.
     #[prost(message, optional, tag = "14")]
     pub account_group_id: ::core::option::Option<
         super::super::core::crypto::v1alpha1::AccountGroupId,
     >,
-    /// Authorizes the request.
-    #[prost(message, optional, tag = "15")]
-    pub token: ::core::option::Option<ViewAuthToken>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -303,14 +286,11 @@ pub struct WitnessRequest {
     pub transaction_plan: ::core::option::Option<
         super::super::core::transaction::v1alpha1::TransactionPlan,
     >,
-    /// Identifies the FVK for the notes to query.
+    /// Identifies the account group to query.
     #[prost(message, optional, tag = "14")]
     pub account_group_id: ::core::option::Option<
         super::super::core::crypto::v1alpha1::AccountGroupId,
     >,
-    /// Authorizes the request.
-    #[prost(message, optional, tag = "15")]
-    pub token: ::core::option::Option<ViewAuthToken>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -410,14 +390,11 @@ pub struct NoteByCommitmentRequest {
     /// If set to true, waits to return until the requested note is detected.
     #[prost(bool, tag = "3")]
     pub await_detection: bool,
-    /// Identifies the FVK for the notes to query.
+    /// Identifies the account group to query.
     #[prost(message, optional, tag = "14")]
     pub account_group_id: ::core::option::Option<
         super::super::core::crypto::v1alpha1::AccountGroupId,
     >,
-    /// Authorizes the request.
-    #[prost(message, optional, tag = "15")]
-    pub token: ::core::option::Option<ViewAuthToken>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -435,14 +412,11 @@ pub struct SwapByCommitmentRequest {
     /// If set to true, waits to return until the requested swap is detected.
     #[prost(bool, tag = "3")]
     pub await_detection: bool,
-    /// Identifies the FVK for the notes to query.
+    /// Identifies the account group to query.
     #[prost(message, optional, tag = "14")]
     pub account_group_id: ::core::option::Option<
         super::super::core::crypto::v1alpha1::AccountGroupId,
     >,
-    /// Authorizes the request.
-    #[prost(message, optional, tag = "15")]
-    pub token: ::core::option::Option<ViewAuthToken>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -459,14 +433,11 @@ pub struct NullifierStatusRequest {
     >,
     #[prost(bool, tag = "3")]
     pub await_detection: bool,
-    /// Identifies the FVK for the notes to query.
+    /// Identifies the account group to query.
     #[prost(message, optional, tag = "14")]
     pub account_group_id: ::core::option::Option<
         super::super::core::crypto::v1alpha1::AccountGroupId,
     >,
-    /// Authorizes the request.
-    #[prost(message, optional, tag = "15")]
-    pub token: ::core::option::Option<ViewAuthToken>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -639,10 +610,8 @@ pub mod view_protocol_service_client {
     /// responsible for synchronizing and scanning the public chain state with one or
     /// more full viewing keys.
     ///
-    /// View protocol requests include a hash of the full viewing key, used to
-    /// identify which set of data to query.  This also works as a pseudo-auth system
-    /// (assuming transport security, the client has to know the FVK to request its
-    /// data).  (TODO: refine this)
+    /// View protocol requests optionally include the account group ID, used to
+    /// identify which set of data to query.
     #[derive(Debug, Clone)]
     pub struct ViewProtocolServiceClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -1442,10 +1411,8 @@ pub mod view_protocol_service_server {
     /// responsible for synchronizing and scanning the public chain state with one or
     /// more full viewing keys.
     ///
-    /// View protocol requests include a hash of the full viewing key, used to
-    /// identify which set of data to query.  This also works as a pseudo-auth system
-    /// (assuming transport security, the client has to know the FVK to request its
-    /// data).  (TODO: refine this)
+    /// View protocol requests optionally include the account group ID, used to
+    /// identify which set of data to query.
     #[derive(Debug)]
     pub struct ViewProtocolServiceServer<T: ViewProtocolService> {
         inner: _Inner<T>,
