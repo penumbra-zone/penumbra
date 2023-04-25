@@ -5,25 +5,12 @@ name: Deploy testnet.penumbra.zone
 on:
   workflow_dispatch:
     inputs:
-      nvals:
-        description: 'Number of validators at genesis'
-        required: true
-        default: '2'
-      nfullnodes:
-        description: 'Number of fullnodes at genesis'
-        required: true
-        default: '2'
-      image_repository:
-        description: 'Docker image to deploy'
-        required: true
-        default: 'ghcr.io/penumbra-zone/penumbra'
       image_tag:
         description: 'Docker image tag to deploy'
+        # We cannot set a meaningful default here, because we always want the latest tag.
+        # Inputs cannot reference special variables like `github.ref_name`, so we default
+        # to the value of `github.ref_name` when exporting the env var in the deploy step.
         required: true
-      image_uid_gid:
-        description: 'Docker image user uid:gid'
-        required: true
-        default: '1000:1000'
   push:
     tags:
       - '*-?v[0-9]+*'
@@ -64,10 +51,6 @@ jobs:
       - name: deploy
         run: |-
           cd deployments/
-          export NVALS='${{ github.event.inputs.nvals }}'
-          export NFULLNODES='${{ github.event.inputs.nfullnodes }}'
-          export IMAGE='${{ github.event.inputs.image_repository }}'
-          export PENUMBRA_VERSION='${{ github.event.inputs.image_tag }}'
-          export PENUMBRA_UID_GID='${{ github.event.inputs.image_uid_gid }}'
+          export PENUMBRA_VERSION='${{ github.event.inputs.image_tag || github.ref_name }}'
           export HELM_RELEASE='penumbra-testnet'
           ./ci.sh
