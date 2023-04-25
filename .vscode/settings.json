@@ -1,4 +1,5 @@
 {
+    "rust-analyzer.showUnlinkedFileNotification": false
     /*
     // Setting this variable will cause rust-analyzer to perform
     // compile-time checks against the sqlite instance in this location.

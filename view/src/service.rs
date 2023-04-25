@@ -25,8 +25,7 @@ use penumbra_proto::{
         view_protocol_service_client::ViewProtocolServiceClient,
         view_protocol_service_server::{ViewProtocolService, ViewProtocolServiceServer},
         ChainParametersResponse, FmdParametersResponse, NoteByCommitmentResponse, StatusResponse,
-        SwapByCommitmentResponse, TransactionHashesResponse, TransactionPlannerResponse,
-        TransactionsResponse, WitnessResponse,
+        SwapByCommitmentResponse, TransactionPlannerResponse, WitnessResponse,
     },
     DomainType,
 };
@@ -286,13 +285,8 @@ impl ViewProtocolService for ViewService {
     type StatusStreamStream = Pin<
         Box<dyn futures::Stream<Item = Result<pb::StatusStreamResponse, tonic::Status>> + Send>,
     >;
-    type TransactionHashesStream = Pin<
-        Box<
-            dyn futures::Stream<Item = Result<pb::TransactionHashesResponse, tonic::Status>> + Send,
-        >,
-    >;
-    type TransactionsStream = Pin<
-        Box<dyn futures::Stream<Item = Result<pb::TransactionsResponse, tonic::Status>> + Send>,
+    type TransactionInfoStream = Pin<
+        Box<dyn futures::Stream<Item = Result<pb::TransactionInfoResponse, tonic::Status>> + Send>,
     >;
     type BalanceByAddressStream = Pin<
         Box<dyn futures::Stream<Item = Result<pb::BalanceByAddressResponse, tonic::Status>> + Send>,
@@ -488,10 +482,10 @@ impl ViewProtocolService for ViewService {
         }))
     }
 
-    async fn transaction_perspective(
+    async fn transaction_info_by_hash(
         &self,
-        request: tonic::Request<pb::TransactionPerspectiveRequest>,
-    ) -> Result<tonic::Response<pb::TransactionPerspectiveResponse>, tonic::Status> {
+        request: tonic::Request<pb::TransactionInfoByHashRequest>,
+    ) -> Result<tonic::Response<pb::TransactionInfoResponse>, tonic::Status> {
         self.check_worker().await?;
 
         let request = request.into_inner();
@@ -503,17 +497,17 @@ impl ViewProtocolService for ViewService {
 
         let maybe_tx = self
             .storage
-            .transaction_by_hash(&request.tx_hash)
+            .transaction_by_hash(&request.id.clone().unwrap().hash)
             .await
             .map_err(|_| {
                 tonic::Status::failed_precondition(format!(
                     "Error retrieving transaction by hash {}",
-                    hex::encode(&request.tx_hash)
+                    hex::encode(&request.id.unwrap().hash)
                 ))
             })?;
 
         let Some(tx) = maybe_tx else {
-            return Ok(tonic::Response::new(pb::TransactionPerspectiveResponse::default()));
+            return Ok(tonic::Response::new(pb::TransactionInfoResponse::default()));
         };
 
         // First, create a TxP with the payload keys visible to our FVK and no other data.
@@ -634,11 +628,12 @@ impl ViewProtocolService for ViewService {
         // Finally, compute the full TxV from the full TxP:
         let txv = tx.view_from_perspective(&txp);
 
-        // TODO: change response to include txv
-        let response = pb::TransactionPerspectiveResponse {
-            txp: Some(txp.into()),
-            tx: Some(tx.into()),
-            txv: Some(txv.into()),
+        let response = pb::TransactionInfoResponse {
+            height: None,
+            id: Some(tx.id().into()),
+            perspective: Some(txp.into()),
+            transaction: Some(tx.into()),
+            view: Some(txv.into()),
         };
 
         Ok(tonic::Response::new(response))
@@ -981,40 +976,10 @@ impl ViewProtocolService for ViewService {
         ))
     }
 
-    async fn transaction_hashes(
+    async fn transaction_info(
         &self,
-        request: tonic::Request<pb::TransactionHashesRequest>,
-    ) -> Result<tonic::Response<Self::TransactionHashesStream>, tonic::Status> {
-        self.check_worker().await?;
-        // Fetch transactions from storage.
-        let txs = self
-            .storage
-            .transaction_hashes(request.get_ref().start_height, request.get_ref().end_height)
-            .await
-            .map_err(|e| tonic::Status::unavailable(format!("error fetching transactions: {e}")))?;
-
-        let stream = try_stream! {
-            for tx in txs {
-                yield TransactionHashesResponse {
-                    block_height: tx.0,
-                    tx_hash: tx.1,
-                }
-            }
-        };
-
-        Ok(tonic::Response::new(
-            stream
-                .map_err(|e: anyhow::Error| {
-                    tonic::Status::unavailable(format!("error getting transactions: {e}"))
-                })
-                .boxed(),
-        ))
-    }
-
-    async fn transactions(
-        &self,
-        request: tonic::Request<pb::TransactionsRequest>,
-    ) -> Result<tonic::Response<Self::TransactionsStream>, tonic::Status> {
+        request: tonic::Request<pb::TransactionInfoRequest>,
+    ) -> Result<tonic::Response<Self::TransactionInfoStream>, tonic::Status> {
         self.check_worker().await?;
         // Fetch transactions from storage.
         let txs = self
@@ -1025,11 +990,12 @@ impl ViewProtocolService for ViewService {
 
         let stream = try_stream! {
             for tx in txs {
-                yield TransactionsResponse {
-                    block_height: tx.0,
-                    tx_hash: tx.1,
-                    tx: Some(tx.2.into())
-                }
+
+                let tx_info = self.transaction_info_by_hash(tonic::Request::new(pb::TransactionInfoByHashRequest {
+                    id: Some(tx.2.id().into()),
+                })).await?.into_inner();
+
+                yield tx_info;
             }
         };
 
@@ -1040,24 +1006,6 @@ impl ViewProtocolService for ViewService {
                 })
                 .boxed(),
         ))
-    }
-
-    async fn transaction_by_hash(
-        &self,
-        request: tonic::Request<pb::TransactionByHashRequest>,
-    ) -> Result<tonic::Response<pb::TransactionByHashResponse>, tonic::Status> {
-        self.check_worker().await?;
-
-        // Fetch transactions from storage.
-        let tx = self
-            .storage
-            .transaction_by_hash(&request.get_ref().tx_hash)
-            .await
-            .map_err(|e| tonic::Status::unavailable(format!("error fetching transaction: {e}")))?;
-
-        Ok(tonic::Response::new(pb::TransactionByHashResponse {
-            tx: tx.map(Into::into),
-        }))
     }
 
     async fn witness(

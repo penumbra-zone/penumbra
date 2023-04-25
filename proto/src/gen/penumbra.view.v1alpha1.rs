@@ -447,41 +447,14 @@ pub struct NullifierStatusResponse {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TransactionHashesRequest {
-    /// If present, return only transactions after this height.
-    #[prost(uint64, optional, tag = "1")]
-    pub start_height: ::core::option::Option<u64>,
-    /// If present, return only transactions before this height.
-    #[prost(uint64, optional, tag = "2")]
-    pub end_height: ::core::option::Option<u64>,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TransactionHashesResponse {
-    #[prost(uint64, tag = "1")]
-    pub block_height: u64,
-    #[prost(bytes = "vec", tag = "2")]
-    pub tx_hash: ::prost::alloc::vec::Vec<u8>,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TransactionByHashRequest {
+pub struct TransactionInfoByHashRequest {
     /// The transaction hash to query for.
-    #[prost(bytes = "vec", tag = "1")]
-    pub tx_hash: ::prost::alloc::vec::Vec<u8>,
-}
-/// A full transaction response
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TransactionByHashResponse {
-    #[prost(message, optional, tag = "1")]
-    pub tx: ::core::option::Option<
-        super::super::core::transaction::v1alpha1::Transaction,
-    >,
+    #[prost(message, optional, tag = "2")]
+    pub id: ::core::option::Option<super::super::core::transaction::v1alpha1::Id>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TransactionsRequest {
+pub struct TransactionInfoRequest {
     /// If present, return only transactions after this height.
     #[prost(uint64, optional, tag = "1")]
     pub start_height: ::core::option::Option<u64>,
@@ -489,38 +462,28 @@ pub struct TransactionsRequest {
     #[prost(uint64, optional, tag = "2")]
     pub end_height: ::core::option::Option<u64>,
 }
-/// A streaming full transaction response
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TransactionsResponse {
-    #[prost(uint64, tag = "1")]
-    pub block_height: u64,
-    #[prost(bytes = "vec", tag = "2")]
-    pub tx_hash: ::prost::alloc::vec::Vec<u8>,
+pub struct TransactionInfoResponse {
+    /// The height the transaction was included in a block, if known.
+    #[prost(uint64, optional, tag = "1")]
+    pub height: ::core::option::Option<u64>,
+    /// The hash of the transaction.
+    #[prost(message, optional, tag = "2")]
+    pub id: ::core::option::Option<super::super::core::transaction::v1alpha1::Id>,
+    /// The transaction data itself.
     #[prost(message, optional, tag = "3")]
-    pub tx: ::core::option::Option<
+    pub transaction: ::core::option::Option<
         super::super::core::transaction::v1alpha1::Transaction,
     >,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TransactionPerspectiveRequest {
-    #[prost(bytes = "vec", tag = "1")]
-    pub tx_hash: ::prost::alloc::vec::Vec<u8>,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TransactionPerspectiveResponse {
-    #[prost(message, optional, tag = "1")]
-    pub txp: ::core::option::Option<
+    /// The transaction perspective, as seen by this view server.
+    #[prost(message, optional, tag = "4")]
+    pub perspective: ::core::option::Option<
         super::super::core::transaction::v1alpha1::TransactionPerspective,
     >,
-    #[prost(message, optional, tag = "2")]
-    pub tx: ::core::option::Option<
-        super::super::core::transaction::v1alpha1::Transaction,
-    >,
-    #[prost(message, optional, tag = "3")]
-    pub txv: ::core::option::Option<
+    /// A precomputed transaction view of `transaction` from `perspective`, included for convenience of clients that don't have support for viewing transactions on their own.
+    #[prost(message, optional, tag = "5")]
+    pub view: ::core::option::Option<
         super::super::core::transaction::v1alpha1::TransactionView,
     >,
 }
@@ -1014,14 +977,11 @@ pub mod view_protocol_service_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
-        /// Query for the transaction hashes in the given range of blocks.
-        pub async fn transaction_hashes(
+        /// Query for a given transaction by its hash.
+        pub async fn transaction_info_by_hash(
             &mut self,
-            request: impl tonic::IntoRequest<super::TransactionHashesRequest>,
-        ) -> Result<
-            tonic::Response<tonic::codec::Streaming<super::TransactionHashesResponse>>,
-            tonic::Status,
-        > {
+            request: impl tonic::IntoRequest<super::TransactionInfoByHashRequest>,
+        ) -> Result<tonic::Response<super::TransactionInfoResponse>, tonic::Status> {
             self.inner
                 .ready()
                 .await
@@ -1033,36 +993,16 @@ pub mod view_protocol_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocolService/TransactionHashes",
-            );
-            self.inner.server_streaming(request.into_request(), path, codec).await
-        }
-        /// Query for a given transaction hash.
-        pub async fn transaction_by_hash(
-            &mut self,
-            request: impl tonic::IntoRequest<super::TransactionByHashRequest>,
-        ) -> Result<tonic::Response<super::TransactionByHashResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocolService/TransactionByHash",
+                "/penumbra.view.v1alpha1.ViewProtocolService/TransactionInfoByHash",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
         /// Query for the full transactions in the given range of blocks.
-        pub async fn transactions(
+        pub async fn transaction_info(
             &mut self,
-            request: impl tonic::IntoRequest<super::TransactionsRequest>,
+            request: impl tonic::IntoRequest<super::TransactionInfoRequest>,
         ) -> Result<
-            tonic::Response<tonic::codec::Streaming<super::TransactionsResponse>>,
+            tonic::Response<tonic::codec::Streaming<super::TransactionInfoResponse>>,
             tonic::Status,
         > {
             self.inner
@@ -1076,32 +1016,9 @@ pub mod view_protocol_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocolService/Transactions",
+                "/penumbra.view.v1alpha1.ViewProtocolService/TransactionInfo",
             );
             self.inner.server_streaming(request.into_request(), path, codec).await
-        }
-        /// Query for the transaction perspective of the given transaction
-        pub async fn transaction_perspective(
-            &mut self,
-            request: impl tonic::IntoRequest<super::TransactionPerspectiveRequest>,
-        ) -> Result<
-            tonic::Response<super::TransactionPerspectiveResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocolService/TransactionPerspective",
-            );
-            self.inner.unary(request.into_request(), path, codec).await
         }
         /// Query for a transaction plan
         pub async fn transaction_planner(
@@ -1360,41 +1277,22 @@ pub mod view_protocol_service_server {
             &self,
             request: tonic::Request<super::NullifierStatusRequest>,
         ) -> Result<tonic::Response<super::NullifierStatusResponse>, tonic::Status>;
-        /// Server streaming response type for the TransactionHashes method.
-        type TransactionHashesStream: futures_core::Stream<
-                Item = Result<super::TransactionHashesResponse, tonic::Status>,
-            >
-            + Send
-            + 'static;
-        /// Query for the transaction hashes in the given range of blocks.
-        async fn transaction_hashes(
+        /// Query for a given transaction by its hash.
+        async fn transaction_info_by_hash(
             &self,
-            request: tonic::Request<super::TransactionHashesRequest>,
-        ) -> Result<tonic::Response<Self::TransactionHashesStream>, tonic::Status>;
-        /// Query for a given transaction hash.
-        async fn transaction_by_hash(
-            &self,
-            request: tonic::Request<super::TransactionByHashRequest>,
-        ) -> Result<tonic::Response<super::TransactionByHashResponse>, tonic::Status>;
-        /// Server streaming response type for the Transactions method.
-        type TransactionsStream: futures_core::Stream<
-                Item = Result<super::TransactionsResponse, tonic::Status>,
+            request: tonic::Request<super::TransactionInfoByHashRequest>,
+        ) -> Result<tonic::Response<super::TransactionInfoResponse>, tonic::Status>;
+        /// Server streaming response type for the TransactionInfo method.
+        type TransactionInfoStream: futures_core::Stream<
+                Item = Result<super::TransactionInfoResponse, tonic::Status>,
             >
             + Send
             + 'static;
         /// Query for the full transactions in the given range of blocks.
-        async fn transactions(
+        async fn transaction_info(
             &self,
-            request: tonic::Request<super::TransactionsRequest>,
-        ) -> Result<tonic::Response<Self::TransactionsStream>, tonic::Status>;
-        /// Query for the transaction perspective of the given transaction
-        async fn transaction_perspective(
-            &self,
-            request: tonic::Request<super::TransactionPerspectiveRequest>,
-        ) -> Result<
-            tonic::Response<super::TransactionPerspectiveResponse>,
-            tonic::Status,
-        >;
+            request: tonic::Request<super::TransactionInfoRequest>,
+        ) -> Result<tonic::Response<Self::TransactionInfoStream>, tonic::Status>;
         /// Query for a transaction plan
         async fn transaction_planner(
             &self,
@@ -2110,27 +2008,67 @@ pub mod view_protocol_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.view.v1alpha1.ViewProtocolService/TransactionHashes" => {
+                "/penumbra.view.v1alpha1.ViewProtocolService/TransactionInfoByHash" => {
                     #[allow(non_camel_case_types)]
-                    struct TransactionHashesSvc<T: ViewProtocolService>(pub Arc<T>);
+                    struct TransactionInfoByHashSvc<T: ViewProtocolService>(pub Arc<T>);
+                    impl<
+                        T: ViewProtocolService,
+                    > tonic::server::UnaryService<super::TransactionInfoByHashRequest>
+                    for TransactionInfoByHashSvc<T> {
+                        type Response = super::TransactionInfoResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::TransactionInfoByHashRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).transaction_info_by_hash(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = TransactionInfoByHashSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1alpha1.ViewProtocolService/TransactionInfo" => {
+                    #[allow(non_camel_case_types)]
+                    struct TransactionInfoSvc<T: ViewProtocolService>(pub Arc<T>);
                     impl<
                         T: ViewProtocolService,
                     > tonic::server::ServerStreamingService<
-                        super::TransactionHashesRequest,
-                    > for TransactionHashesSvc<T> {
-                        type Response = super::TransactionHashesResponse;
-                        type ResponseStream = T::TransactionHashesStream;
+                        super::TransactionInfoRequest,
+                    > for TransactionInfoSvc<T> {
+                        type Response = super::TransactionInfoResponse;
+                        type ResponseStream = T::TransactionInfoStream;
                         type Future = BoxFuture<
                             tonic::Response<Self::ResponseStream>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::TransactionHashesRequest>,
+                            request: tonic::Request<super::TransactionInfoRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move {
-                                (*inner).transaction_hashes(request).await
+                                (*inner).transaction_info(request).await
                             };
                             Box::pin(fut)
                         }
@@ -2140,7 +2078,7 @@ pub mod view_protocol_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = TransactionHashesSvc(inner);
+                        let method = TransactionInfoSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -2148,127 +2086,6 @@ pub mod view_protocol_service_server {
                                 send_compression_encodings,
                             );
                         let res = grpc.server_streaming(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/penumbra.view.v1alpha1.ViewProtocolService/TransactionByHash" => {
-                    #[allow(non_camel_case_types)]
-                    struct TransactionByHashSvc<T: ViewProtocolService>(pub Arc<T>);
-                    impl<
-                        T: ViewProtocolService,
-                    > tonic::server::UnaryService<super::TransactionByHashRequest>
-                    for TransactionByHashSvc<T> {
-                        type Response = super::TransactionByHashResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::TransactionByHashRequest>,
-                        ) -> Self::Future {
-                            let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).transaction_by_hash(request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let inner = inner.0;
-                        let method = TransactionByHashSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/penumbra.view.v1alpha1.ViewProtocolService/Transactions" => {
-                    #[allow(non_camel_case_types)]
-                    struct TransactionsSvc<T: ViewProtocolService>(pub Arc<T>);
-                    impl<
-                        T: ViewProtocolService,
-                    > tonic::server::ServerStreamingService<super::TransactionsRequest>
-                    for TransactionsSvc<T> {
-                        type Response = super::TransactionsResponse;
-                        type ResponseStream = T::TransactionsStream;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::ResponseStream>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::TransactionsRequest>,
-                        ) -> Self::Future {
-                            let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).transactions(request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let inner = inner.0;
-                        let method = TransactionsSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
-                        let res = grpc.server_streaming(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/penumbra.view.v1alpha1.ViewProtocolService/TransactionPerspective" => {
-                    #[allow(non_camel_case_types)]
-                    struct TransactionPerspectiveSvc<T: ViewProtocolService>(pub Arc<T>);
-                    impl<
-                        T: ViewProtocolService,
-                    > tonic::server::UnaryService<super::TransactionPerspectiveRequest>
-                    for TransactionPerspectiveSvc<T> {
-                        type Response = super::TransactionPerspectiveResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::TransactionPerspectiveRequest>,
-                        ) -> Self::Future {
-                            let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).transaction_perspective(request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let inner = inner.0;
-                        let method = TransactionPerspectiveSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
-                        let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
