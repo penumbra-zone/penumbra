@@ -8,4 +8,4 @@ configs:
 
 run:
     ./configure-relayer
-    ./run-relayer
+    ./build-path
