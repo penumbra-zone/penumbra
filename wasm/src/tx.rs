@@ -14,10 +14,10 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 
-use crate::mock_client::{load_tree, StoredTree};
 use crate::note_record::SpendableNoteRecord;
 use crate::planner::Planner;
 use crate::utils;
+use crate::view_server::{load_tree, StoredTree};
 use web_sys::console as web_console;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
