@@ -1,11 +1,11 @@
 extern crate core;
 
-mod mock_client;
 mod note_record;
 mod planner;
 mod swap_record;
 mod tx;
 mod utils;
+mod view_server;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, serializers::bech32str, DomainType};
 
 use penumbra_crypto::{Address, FullViewingKey};
@@ -18,8 +18,8 @@ use wasm_bindgen::prelude::*;
 
 use penumbra_transaction::Transaction;
 
-pub use mock_client::ViewClient;
 pub use tx::send_plan;
+pub use view_server::ViewServer;
 
 #[wasm_bindgen]
 pub fn generate_spend_key(seed_phrase: &str) -> JsValue {

@@ -49,7 +49,7 @@ impl ScanBlockResult {
 }
 
 #[wasm_bindgen]
-pub struct ViewClient {
+pub struct ViewServer {
     latest_height: u64,
     epoch_duration: u64,
     fvk: FullViewingKey,
@@ -59,9 +59,9 @@ pub struct ViewClient {
 }
 
 #[wasm_bindgen]
-impl ViewClient {
+impl ViewServer {
     #[wasm_bindgen(constructor)]
-    pub fn new(full_viewing_key: &str, epoch_duration: u64, stored_tree: JsValue) -> ViewClient {
+    pub fn new(full_viewing_key: &str, epoch_duration: u64, stored_tree: JsValue) -> ViewServer {
         utils::set_panic_hook();
         let fvk = FullViewingKey::from_str(full_viewing_key.as_ref())
             .context("The provided string is not a valid FullViewingKey")
