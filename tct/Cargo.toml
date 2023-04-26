@@ -18,7 +18,7 @@ serde = { version = "1.0", features = ["derive", "rc"] }
 parking_lot = "0.12"
 ark-ff = { version = "0.3", default_features = false }
 ark-serialize = "0.3"
-poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377", branch = "main" }
+poseidon377 = { version = "0.3", features = ["r1cs"] }
 decaf377 = { version = "0.3" }
 tracing = { version = "0.1" }
 async-trait = { version = "0.1" }
