@@ -33,7 +33,6 @@ cargo $nightly_opt doc --no-deps \
   -p jmt@0.3.0 \
   -p ark-ff \
   -p ark-serialize \
-  -p ark-sponge \
   -p poseidon377 \
   -p poseidon-paramgen@0.2.0 \
   -p poseidon-permutation \
