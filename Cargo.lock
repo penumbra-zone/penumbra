@@ -384,24 +384,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ark-sponge"
-version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/sponge?branch=r1cs#113469aef48a9c5f458dbf523a509d4769affbf2"
-dependencies = [
- "ark-ec",
- "ark-ff",
- "ark-nonnative-field",
- "ark-r1cs-std",
- "ark-relations",
- "ark-serialize",
- "ark-std",
- "derivative",
- "digest 0.9.0",
- "rand_chacha 0.3.1",
- "tracing",
-]
-
-[[package]]
 name = "ark-std"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4813,7 +4795,8 @@ dependencies = [
 [[package]]
 name = "poseidon-parameters"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/poseidon377?branch=main#f7e82aec42baf59725e5bb44280e33cb66543adc"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2203cb335a37803ce2f0a9636cc9c8fce8693f3c311d1ae9966c08416dc44b77"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4823,7 +4806,8 @@ dependencies = [
 [[package]]
 name = "poseidon-paramgen"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/poseidon377?branch=main#f7e82aec42baf59725e5bb44280e33cb66543adc"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c1755566b7d2a79fdd92209494f6df141a444b068397954e6a30c0d45570529a"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4839,7 +4823,8 @@ dependencies = [
 [[package]]
 name = "poseidon-permutation"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/poseidon377?branch=main#f7e82aec42baf59725e5bb44280e33cb66543adc"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "88db31e2f6b41beaf91f26e37d400f9505df790f9df84736b4c865a2bcbea1ad"
 dependencies = [
  "ark-ff",
  "ark-std",
@@ -4848,22 +4833,27 @@ dependencies = [
 
 [[package]]
 name = "poseidon377"
-version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/poseidon377?branch=main#f7e82aec42baf59725e5bb44280e33cb66543adc"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fae1c5138bae17b9f78ba7dfaaabdea0848a782d9c9030a2dd7c0b89b00ff81e"
 dependencies = [
+ "ark-ec",
  "ark-ed-on-bls12-377",
  "ark-ff",
  "ark-groth16",
+ "ark-nonnative-field",
  "ark-r1cs-std",
  "ark-relations",
+ "ark-serialize",
  "ark-snark",
- "ark-sponge",
+ "ark-std",
  "decaf377",
  "num-bigint",
  "once_cell",
  "poseidon-parameters",
  "poseidon-paramgen",
  "poseidon-permutation",
+ "tracing",
 ]
 
 [[package]]
