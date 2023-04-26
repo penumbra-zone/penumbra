@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate serde_with;
 
+use std::sync::Arc;
+
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::genesis;
@@ -38,7 +40,18 @@ pub trait Component {
 
     /// Begins a new block, optionally inspecting the ABCI
     /// [`BeginBlock`](abci::request::BeginBlock) request.
-    async fn begin_block<S: StateWrite>(state: S, begin_block: &abci::request::BeginBlock);
+    ///
+    /// # Invariants
+    ///
+    /// The `&mut Arc<S>` allows the implementor to optionally share state with
+    /// its subtasks.  The implementor SHOULD assume that when the method is
+    /// called, `state.get_mut().is_some()`, i.e., the `Arc` is not shared.  The
+    /// implementor MUST ensure that any clones of the `Arc` are dropped before
+    /// it returns, so that `state.get_mut().is_some()` on completion.
+    async fn begin_block<S: StateWrite + 'static>(
+        state: &mut Arc<S>,
+        begin_block: &abci::request::BeginBlock,
+    );
 
     /// Ends the block, optionally inspecting the ABCI
     /// [`EndBlock`](abci::request::EndBlock) request, and performing any batch
@@ -48,8 +61,25 @@ pub trait Component {
     ///
     /// This method should only be called after [`Component::begin_block`].
     /// No methods should be called following this method.
-    async fn end_block<S: StateWrite>(state: S, end_block: &abci::request::EndBlock);
+    ///
+    /// The `&mut Arc<S>` allows the implementor to optionally share state with
+    /// its subtasks.  The implementor SHOULD assume that when the method is
+    /// called, `state.get_mut().is_some()`, i.e., the `Arc` is not shared.  The
+    /// implementor MUST ensure that any clones of the `Arc` are dropped before
+    /// it returns, so that `state.get_mut().is_some()` on completion.
+    async fn end_block<S: StateWrite + 'static>(
+        state: &mut Arc<S>,
+        end_block: &abci::request::EndBlock,
+    );
 
     /// Ends the epoch, applying component-specific state transitions that should occur when an epoch ends.
-    async fn end_epoch<S: StateWrite>(state: S) -> Result<()>;
+    ///
+    /// # Invariants
+    ///
+    /// The `&mut Arc<S>` allows the implementor to optionally share state with
+    /// its subtasks.  The implementor SHOULD assume that when the method is
+    /// called, `state.get_mut().is_some()`, i.e., the `Arc` is not shared.  The
+    /// implementor MUST ensure that any clones of the `Arc` are dropped before
+    /// it returns, so that `state.get_mut().is_some()` on completion.
+    async fn end_epoch<S: StateWrite + 'static>(state: &mut Arc<S>) -> Result<()>;
 }

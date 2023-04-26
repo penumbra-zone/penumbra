@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use penumbra_chain::{genesis, StateReadExt};
@@ -21,10 +23,18 @@ impl Component for Governance {
     }
 
     #[instrument(name = "governance", skip(_state, _begin_block))]
-    async fn begin_block<S: StateWrite>(_state: S, _begin_block: &abci::request::BeginBlock) {}
+    async fn begin_block<S: StateWrite + 'static>(
+        _state: &mut Arc<S>,
+        _begin_block: &abci::request::BeginBlock,
+    ) {
+    }
 
     #[instrument(name = "governance", skip(state, _end_block))]
-    async fn end_block<S: StateWrite>(mut state: S, _end_block: &abci::request::EndBlock) {
+    async fn end_block<S: StateWrite + 'static>(
+        state: &mut Arc<S>,
+        _end_block: &abci::request::EndBlock,
+    ) {
+        let mut state = Arc::get_mut(state).expect("state should be unique");
         // Then, enact any proposals that have passed, after considering the tallies to determine what
         // proposals have passed. Note that this occurs regardless of whether it's the end of an
         // epoch, because proposals can finish at any time.
@@ -34,7 +44,8 @@ impl Component for Governance {
     }
 
     #[instrument(name = "governance", skip(state))]
-    async fn end_epoch<S: StateWrite>(mut state: S) -> Result<()> {
+    async fn end_epoch<S: StateWrite + 'static>(state: &mut Arc<S>) -> Result<()> {
+        let state = Arc::get_mut(state).expect("state should be unique");
         state.tally_delegator_votes(None).await?;
         Ok(())
     }

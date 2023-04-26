@@ -8,7 +8,7 @@ use penumbra_chain::{genesis, AppHash, StateReadExt, StateWriteExt as _};
 use penumbra_proto::{DomainType, StateWriteProto};
 use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, StateWrite, Storage};
 use penumbra_transaction::Transaction;
-use tendermint::abci;
+use tendermint::abci::{self, Event};
 use tendermint::validator::Update;
 use tracing::Instrument;
 
@@ -22,13 +22,17 @@ use crate::stubdex::StubDex;
 use crate::Component;
 
 pub mod state_key;
+
+/// The inter-block state being written to by the application.
+type InterBlockState = Arc<StateDelta<Snapshot>>;
+
 /// The Penumbra application, written as a bundle of [`Component`]s.
 ///
 /// The [`App`] is not a [`Component`], but
 /// it constructs the components and exposes a [`commit`](App::commit) that
 /// commits the changes to the persistent storage and resets its subcomponents.
 pub struct App {
-    state: Arc<StateDelta<Snapshot>>,
+    state: InterBlockState,
 }
 
 impl App {
@@ -47,6 +51,27 @@ impl App {
         }
 
         Ok(Self { state })
+    }
+
+    // StateDelta::apply only works when the StateDelta wraps an underlying
+    // StateWrite.  But if we want to share the StateDelta with spawned tasks,
+    // we usually can't wrap a StateWrite instance, which requires exclusive
+    // access. This method "externally" applies the state delta to the
+    // inter-block state.
+    //
+    // Invariant: state_tx and self.state are the only two references to the
+    // inter-block state.
+    fn apply(&mut self, state_tx: StateDelta<InterBlockState>) -> Vec<Event> {
+        let (state2, mut cache) = state_tx.flatten();
+        std::mem::drop(state2);
+        // Now there is only one reference to the inter-block state: self.state
+
+        let events = cache.take_events();
+        cache.apply_to(
+            Arc::get_mut(&mut self.state).expect("no other references to inter-block state"),
+        );
+
+        events
     }
 
     pub async fn init_chain(&mut self, app_state: &genesis::AppState) {
@@ -112,10 +137,7 @@ impl App {
         &mut self,
         begin_block: &abci::request::BeginBlock,
     ) -> Vec<abci::Event> {
-        let mut state_tx = self
-            .state
-            .try_begin_transaction()
-            .expect("state Arc should not be referenced elsewhere");
+        let mut state_tx = StateDelta::new(self.state.clone());
 
         // store the block height
         state_tx.put_block_height(begin_block.header.height.into());
@@ -135,17 +157,20 @@ impl App {
         }
 
         // Run each of the begin block handlers for each component, in sequence:
-        Staking::begin_block(&mut state_tx, begin_block).await;
-        IBCComponent::begin_block(&mut state_tx, begin_block).await;
-        StubDex::begin_block(&mut state_tx, begin_block).await;
-        Dex::begin_block(&mut state_tx, begin_block).await;
-        Governance::begin_block(&mut state_tx, begin_block).await;
+        let mut arc_state_tx = Arc::new(state_tx);
+        Staking::begin_block(&mut arc_state_tx, begin_block).await;
+        IBCComponent::begin_block(&mut arc_state_tx, begin_block).await;
+        StubDex::begin_block(&mut arc_state_tx, begin_block).await;
+        Dex::begin_block(&mut arc_state_tx, begin_block).await;
+        Governance::begin_block(&mut arc_state_tx, begin_block).await;
+        ShieldedPool::begin_block(&mut arc_state_tx, begin_block).await;
 
-        ShieldedPool::begin_block(&mut state_tx, begin_block).await;
+        let state_tx = Arc::try_unwrap(arc_state_tx)
+            .expect("components did not retain copies of shared state");
 
         // Apply the state from `begin_block` and return the events (we'll append to them if
         // necessary based on the results of applying the DAO transactions queued)
-        let mut events = state_tx.apply().1;
+        let mut events = self.apply(state_tx);
 
         // Deliver DAO transactions here, before any other block processing (effectively adding
         // synthetic transactions slotted in after the start of the block but before any user
@@ -213,9 +238,9 @@ impl App {
                 .instrument(tracing::Span::current()),
         );
         let tx2 = tx.clone();
-        let state = self.state.clone();
+        let state2 = self.state.clone();
         let stateful = tokio::spawn(
-            async move { tx2.check_stateful(state).await }.instrument(tracing::Span::current()),
+            async move { tx2.check_stateful(state2).await }.instrument(tracing::Span::current()),
         );
 
         stateless.await??;
@@ -226,7 +251,7 @@ impl App {
         let mut state_tx = self
             .state
             .try_begin_transaction()
-            .expect("state Arc should not be referenced elsewhere");
+            .expect("state Arc should be present and unique");
         tx.execute(&mut state_tx).await?;
 
         // At this point, we've completed execution successfully with no errors,
@@ -236,17 +261,17 @@ impl App {
     }
 
     pub async fn end_block(&mut self, end_block: &abci::request::EndBlock) -> Vec<abci::Event> {
-        let mut state_tx = self
-            .state
-            .try_begin_transaction()
-            .expect("state Arc should not be referenced elsewhere");
+        let state_tx = StateDelta::new(self.state.clone());
 
-        Staking::end_block(&mut state_tx, end_block).await;
-        IBCComponent::end_block(&mut state_tx, end_block).await;
-        StubDex::end_block(&mut state_tx, end_block).await;
-        Dex::end_block(&mut state_tx, end_block).await;
-        Governance::end_block(&mut state_tx, end_block).await;
-        ShieldedPool::end_block(&mut state_tx, end_block).await;
+        let mut arc_state_tx = Arc::new(state_tx);
+        Staking::end_block(&mut arc_state_tx, end_block).await;
+        IBCComponent::end_block(&mut arc_state_tx, end_block).await;
+        StubDex::end_block(&mut arc_state_tx, end_block).await;
+        Dex::end_block(&mut arc_state_tx, end_block).await;
+        Governance::end_block(&mut arc_state_tx, end_block).await;
+        ShieldedPool::end_block(&mut arc_state_tx, end_block).await;
+        let mut state_tx = Arc::try_unwrap(arc_state_tx)
+            .expect("components did not retain copies of shared state");
 
         let current_height = state_tx.get_block_height().await.unwrap();
         let current_epoch = state_tx.epoch().await.unwrap();
@@ -258,12 +283,17 @@ impl App {
         if end_epoch {
             tracing::info!(?current_height, "ending epoch");
 
-            Staking::end_epoch(&mut state_tx).await.unwrap();
-            IBCComponent::end_epoch(&mut state_tx).await.unwrap();
-            StubDex::end_epoch(&mut state_tx).await.unwrap();
-            Dex::end_epoch(&mut state_tx).await.unwrap();
-            Governance::end_epoch(&mut state_tx).await.unwrap();
-            ShieldedPool::end_epoch(&mut state_tx).await.unwrap();
+            let mut arc_state_tx = Arc::new(state_tx);
+
+            Staking::end_epoch(&mut arc_state_tx).await.unwrap();
+            IBCComponent::end_epoch(&mut arc_state_tx).await.unwrap();
+            StubDex::end_epoch(&mut arc_state_tx).await.unwrap();
+            Dex::end_epoch(&mut arc_state_tx).await.unwrap();
+            Governance::end_epoch(&mut arc_state_tx).await.unwrap();
+            ShieldedPool::end_epoch(&mut arc_state_tx).await.unwrap();
+
+            let mut state_tx = Arc::try_unwrap(arc_state_tx)
+                .expect("components did not retain copies of shared state");
 
             App::finish_sct_epoch(&mut state_tx).await;
 
@@ -275,13 +305,15 @@ impl App {
                     start_height: current_height + 1,
                 },
             );
+
+            self.apply(state_tx)
         } else {
             // set the epoch for the next block
             state_tx.put_epoch_by_height(current_height + 1, current_epoch);
             App::finish_sct_block(&mut state_tx).await;
-        }
 
-        state_tx.apply().1
+            self.apply(state_tx)
+        }
     }
 
     /// Finish an SCT block and use the resulting roots to finalize the current `CompactBlock`.

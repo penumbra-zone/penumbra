@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 use crate::compactblock::view::{StateReadExt as _, StateWriteExt as _};
 use crate::Component;
@@ -56,10 +57,18 @@ impl Component for StubDex {
     }
 
     #[instrument(name = "stubdex", skip(_state, _begin_block))]
-    async fn begin_block<S: StateWrite>(_state: S, _begin_block: &abci::request::BeginBlock) {}
+    async fn begin_block<S: StateWrite + 'static>(
+        _state: &mut Arc<S>,
+        _begin_block: &abci::request::BeginBlock,
+    ) {
+    }
 
     #[instrument(name = "stubdex", skip(state, end_block))]
-    async fn end_block<S: StateWrite>(mut state: S, end_block: &abci::request::EndBlock) {
+    async fn end_block<S: StateWrite + 'static>(
+        state: &mut Arc<S>,
+        end_block: &abci::request::EndBlock,
+    ) {
+        let state = Arc::get_mut(state).expect("state should be unique");
         // For each batch swap during the block, calculate clearing prices and set in the JMT.
         for (trading_pair, swap_flows) in state.swap_flows() {
             let (delta_1, delta_2) = (swap_flows.0.mock_decrypt(), swap_flows.1.mock_decrypt());
@@ -106,7 +115,7 @@ impl Component for StubDex {
     }
 
     #[instrument(name = "stubdex", skip(_state))]
-    async fn end_epoch<S: StateWrite>(mut _state: S) -> Result<()> {
+    async fn end_epoch<S: StateWrite + 'static>(mut _state: &mut Arc<S>) -> Result<()> {
         Ok(())
     }
 }

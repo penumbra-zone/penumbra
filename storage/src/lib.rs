@@ -45,7 +45,7 @@ mod snapshot_cache;
 mod storage;
 mod write;
 
-use cache::Cache;
+pub use cache::Cache;
 
 pub use crate::metrics::register_metrics;
 pub use delta::{ArcStateDeltaExt, StateDelta};
