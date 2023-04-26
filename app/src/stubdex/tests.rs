@@ -74,10 +74,10 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
     let end_block = abci::request::EndBlock {
         height: height.try_into().unwrap(),
     };
-    let mut state_tx = state.try_begin_transaction().unwrap();
     // Execute EndBlock for the Dex, to actually execute the swaps...
-    StubDex::end_block(&mut state_tx, &end_block).await;
-    ShieldedPool::end_block(&mut state_tx, &end_block).await;
+    StubDex::end_block(&mut state, &end_block).await;
+    ShieldedPool::end_block(&mut state, &end_block).await;
+    let mut state_tx = state.try_begin_transaction().unwrap();
     // ... and for the App, to correctly write out the SCT with the data we'll use next.
     App::finish_sct_block(&mut state_tx).await;
 
@@ -180,10 +180,10 @@ async fn swap_with_nonzero_fee() -> anyhow::Result<()> {
     let end_block = abci::request::EndBlock {
         height: height.try_into().unwrap(),
     };
-    let mut state_tx = state.try_begin_transaction().unwrap();
     // Execute EndBlock for the Dex, to actually execute the swaps...
-    StubDex::end_block(&mut state_tx, &end_block).await;
-    ShieldedPool::end_block(&mut state_tx, &end_block).await;
+    StubDex::end_block(&mut state, &end_block).await;
+    ShieldedPool::end_block(&mut state, &end_block).await;
+    let mut state_tx = state.try_begin_transaction().unwrap();
     App::finish_sct_block(&mut state_tx).await;
     state_tx.apply();
 
