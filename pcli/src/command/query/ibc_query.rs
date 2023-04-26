@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use colored_json::prelude::*;
 use ibc_types::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
 use ibc_types::core::ics03_connection::connection::ConnectionEnd;
@@ -31,7 +31,8 @@ impl IbcCmd {
                         key,
                         ..Default::default()
                     })
-                    .await?
+                    .await
+                    .context(format!("Failed to find client {client_id}"))?
                     .into_inner()
                     .value;
 
@@ -46,7 +47,8 @@ impl IbcCmd {
                         key,
                         ..Default::default()
                     })
-                    .await?
+                    .await
+                    .context(format!("Failed to find connection {connection_id}"))?
                     .into_inner()
                     .value;
 
@@ -61,7 +63,8 @@ impl IbcCmd {
                         key,
                         ..Default::default()
                     })
-                    .await?
+                    .await
+                    .context(format!("Failed to find channel {port}:{channel_id}"))?
                     .into_inner()
                     .value;
 
