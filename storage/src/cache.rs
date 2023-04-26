@@ -6,7 +6,7 @@ use crate::StateWrite;
 
 /// A cache of changes to the state of the blockchain.
 ///
-/// Used internally by `State` and `StateTransaction`.
+/// A [`StateDelta`](crate::StateDelta) is `Cache` above a `StateRead`.
 #[derive(Default, Debug)]
 pub struct Cache {
     /// Unwritten changes to the consensus-critical state (stored in the JMT).
@@ -65,5 +65,10 @@ impl Cache {
         !(self.unwritten_changes.is_empty()
             && self.nonconsensus_changes.is_empty()
             && self.ephemeral_objects.is_empty())
+    }
+
+    /// Extracts and returns the ABCI events contained in this cache.
+    pub fn take_events(&mut self) -> Vec<abci::Event> {
+        std::mem::take(&mut self.events)
     }
 }

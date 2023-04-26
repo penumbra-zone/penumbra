@@ -95,7 +95,13 @@ impl<S: StateRead> StateDelta<S> {
         }
     }
 
-    pub(crate) fn flatten(self) -> (S, Cache) {
+    /// Flatten all changes in this branch of the tree into a single [`Cache`],
+    /// invalidating all other branches of the tree and releasing the underlying
+    /// state back to the caller.
+    ///
+    /// The [`apply`](Self::apply) method is a convenience wrapper around this
+    /// that applies the changes to the underlying state.
+    pub fn flatten(self) -> (S, Cache) {
         // Take ownership of the underlying state, immediately invalidating all
         // other delta stacks in the same family.
         let state = self
@@ -127,7 +133,7 @@ impl<S: StateRead + StateWrite> StateDelta<S> {
     /// the tree.
     pub fn apply(self) -> (S, Vec<abci::Event>) {
         let (mut state, mut changes) = self.flatten();
-        let events = std::mem::take(&mut changes.events);
+        let events = changes.take_events();
 
         // Apply the flattened changes to the underlying state.
         changes.apply_to(&mut state);
