@@ -96,7 +96,7 @@ pub trait FillRoute: StateWrite + Sized {
         spill_price: U128x128,
     ) -> Result<(Value, Value)> {
         // Breakdown the route into a sequence of pairs to visit.
-        let _pairs = self.breakdown_route(route)?;
+        let pairs = self.breakdown_route(route)?;
 
         let mut output = Value {
             amount: 0u64.into(),
@@ -113,12 +113,12 @@ pub trait FillRoute: StateWrite + Sized {
             // We naively try to route as much input as possible on the first pass to identify constraining hops.
             // For every constraint, we find the correspond input capacity for which they are "saturated".
             let (constraining_hops, best_positions) = self.find_constraints(input, route).await?;
-            let effective_price = best_positions
-                .clone()
-                .into_iter()
-                .fold(U128x128::from(1u64), |acc, pos| {
-                    (acc * pos.phi.component.effective_price()).unwrap()
-                });
+            let effective_price = best_positions.clone().into_iter().zip(pairs.clone()).fold(
+                U128x128::from(1u64),
+                |acc, (pos, pair)| {
+                    (acc * pos.phi.orient_end(pair.end).unwrap().effective_price()).unwrap()
+                },
+            );
 
             tracing::debug!(?effective_price, "effective price across the route");
             tracing::debug!(num = constraining_hops.len(), "found constraints");
