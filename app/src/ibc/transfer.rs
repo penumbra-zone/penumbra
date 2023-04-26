@@ -1,32 +1,37 @@
 use std::str::FromStr;
 
-use crate::ibc::component::state_key;
-use crate::ibc::ibc_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute};
-use crate::ibc::packet::WriteAcknowledgement as _;
-use crate::ibc::packet::{IBCPacket, Unchecked};
-use crate::shielded_pool::NoteManager;
-use crate::Component;
+use crate::{
+    ibc::{
+        component::state_key,
+        ibc_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute},
+        packet::{IBCPacket, Unchecked, WriteAcknowledgement as _},
+    },
+    shielded_pool::NoteManager,
+    Component,
+};
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use ibc_types::applications::transfer::acknowledgement::TokenTransferAcknowledgement;
-use ibc_types::applications::transfer::VERSION;
-use ibc_types::core::ics04_channel::channel::Order as ChannelOrder;
-use ibc_types::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
-use ibc_types::core::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
-use ibc_types::core::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
-use ibc_types::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
-use ibc_types::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
-use ibc_types::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
-use ibc_types::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
-use ibc_types::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
-use ibc_types::core::ics04_channel::msgs::timeout::MsgTimeout;
-use ibc_types::core::ics04_channel::Version;
-use ibc_types::core::ics24_host::identifier::{ChannelId, PortId};
+use ibc_types::{
+    applications::transfer::{acknowledgement::TokenTransferAcknowledgement, VERSION},
+    core::{
+        ics04_channel::{
+            channel::Order as ChannelOrder,
+            msgs::{
+                acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
+                chan_close_init::MsgChannelCloseInit, chan_open_ack::MsgChannelOpenAck,
+                chan_open_confirm::MsgChannelOpenConfirm, chan_open_init::MsgChannelOpenInit,
+                chan_open_try::MsgChannelOpenTry, recv_packet::MsgRecvPacket, timeout::MsgTimeout,
+            },
+            Version,
+        },
+        ics24_host::identifier::{ChannelId, PortId},
+    },
+};
 use penumbra_chain::genesis;
-use penumbra_crypto::asset::Denom;
-use penumbra_crypto::{asset, Address, Amount, Value};
-use penumbra_proto::core::ibc::v1alpha1::FungibleTokenPacketData;
-use penumbra_proto::{StateReadProto, StateWriteProto};
+use penumbra_crypto::{asset, asset::Denom, Address, Amount, Value};
+use penumbra_proto::{
+    core::ibc::v1alpha1::FungibleTokenPacketData, StateReadProto, StateWriteProto,
+};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::action::Ics20Withdrawal;
 use prost::Message;

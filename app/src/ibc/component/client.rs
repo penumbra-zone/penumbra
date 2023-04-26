@@ -413,8 +413,7 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 mod tests {
     use std::sync::Arc;
 
-    use crate::action_handler::ActionHandler;
-    use crate::TempStorageExt;
+    use crate::{action_handler::ActionHandler, TempStorageExt};
 
     use super::*;
     use ibc_proto::protobuf::Protobuf;

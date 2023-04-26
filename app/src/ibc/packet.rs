@@ -1,16 +1,18 @@
-use super::component::channel::StateReadExt as _;
-use super::component::channel::StateWriteExt as _;
-use super::component::client::StateReadExt as _;
-use super::component::connection::StateReadExt as _;
-use super::event;
+use super::{
+    component::{
+        channel::{StateReadExt as _, StateWriteExt as _},
+        client::StateReadExt as _,
+        connection::StateReadExt as _,
+    },
+    event,
+};
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc_types::core::ics02_client::client_state::ClientState;
-use ibc_types::core::ics02_client::height::Height;
-use ibc_types::core::ics04_channel::channel::State as ChannelState;
-use ibc_types::core::ics04_channel::packet::Packet;
-use ibc_types::core::ics24_host::identifier::ChannelId;
-use ibc_types::core::ics24_host::identifier::PortId;
+use ibc_types::core::{
+    ics02_client::{client_state::ClientState, height::Height},
+    ics04_channel::{channel::State as ChannelState, packet::Packet},
+    ics24_host::identifier::{ChannelId, PortId},
+};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::action::Ics20Withdrawal;
 

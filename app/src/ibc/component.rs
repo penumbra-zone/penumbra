@@ -8,13 +8,16 @@ pub(crate) mod client;
 pub(crate) mod connection;
 pub(crate) mod state_key;
 
-use crate::ibc::component::client::StateWriteExt as _;
-use crate::ibc::ClientCounter;
-use crate::Component;
+use crate::{
+    ibc::{component::client::StateWriteExt as _, ClientCounter},
+    Component,
+};
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc_types::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
-use ibc_types::core::ics02_client::height::Height;
+use ibc_types::{
+    clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState,
+    core::ics02_client::height::Height,
+};
 use penumbra_chain::genesis;
 use penumbra_storage::StateWrite;
 use tendermint::abci;

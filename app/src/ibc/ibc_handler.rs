@@ -8,15 +8,12 @@
 /// token transfers.
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc_types::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
-use ibc_types::core::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
-use ibc_types::core::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
-use ibc_types::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
-use ibc_types::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
-use ibc_types::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
-use ibc_types::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
-use ibc_types::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
-use ibc_types::core::ics04_channel::msgs::timeout::MsgTimeout;
+use ibc_types::core::ics04_channel::msgs::{
+    acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
+    chan_close_init::MsgChannelCloseInit, chan_open_ack::MsgChannelOpenAck,
+    chan_open_confirm::MsgChannelOpenConfirm, chan_open_init::MsgChannelOpenInit,
+    chan_open_try::MsgChannelOpenTry, recv_packet::MsgRecvPacket, timeout::MsgTimeout,
+};
 use penumbra_storage::{StateRead, StateWrite};
 
 /// AppHandlerCheck defines the interface for an IBC application to consume IBC channel and packet

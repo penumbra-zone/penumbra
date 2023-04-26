@@ -3,27 +3,29 @@ use crate::ibc::component::client::StateReadExt;
 // NOTE: where should this code live after the refactor to actionhandlers?
 
 use super::super::*;
-use ibc_proto::ibc::core::commitment::v1::MerklePath;
-use ibc_proto::ibc::core::commitment::v1::MerkleRoot;
-use ibc_types::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
-use ibc_types::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
-use ibc_types::core::ics02_client::client_state::ClientState;
-use ibc_types::core::ics04_channel::context::calculate_block_delay;
-use ibc_types::core::ics23_commitment::commitment::CommitmentPrefix;
-use ibc_types::core::ics23_commitment::commitment::CommitmentProofBytes;
-use ibc_types::core::ics23_commitment::commitment::CommitmentRoot;
-use ibc_types::core::ics23_commitment::error::CommitmentError;
-use ibc_types::core::ics23_commitment::merkle::apply_prefix;
-use ibc_types::core::ics23_commitment::merkle::MerkleProof;
-use ibc_types::core::ics23_commitment::specs::ProofSpecs;
-use ibc_types::core::ics24_host::identifier::ClientId;
-use ibc_types::core::ics24_host::path::AckPath;
-use ibc_types::core::ics24_host::path::ChannelEndPath;
-use ibc_types::core::ics24_host::path::CommitmentPath;
-use ibc_types::core::ics24_host::path::ReceiptPath;
-use ibc_types::core::ics24_host::path::SeqRecvPath;
-use ibc_types::core::ics24_host::Path;
-use ibc_types::Height;
+use ibc_proto::ibc::core::commitment::v1::{MerklePath, MerkleRoot};
+use ibc_types::{
+    clients::ics07_tendermint::{
+        client_state::ClientState as TendermintClientState,
+        consensus_state::ConsensusState as TendermintConsensusState,
+    },
+    core::{
+        ics02_client::client_state::ClientState,
+        ics04_channel::context::calculate_block_delay,
+        ics23_commitment::{
+            commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot},
+            error::CommitmentError,
+            merkle::{apply_prefix, MerkleProof},
+            specs::ProofSpecs,
+        },
+        ics24_host::{
+            identifier::ClientId,
+            path::{AckPath, ChannelEndPath, CommitmentPath, ReceiptPath, SeqRecvPath},
+            Path,
+        },
+    },
+    Height,
+};
 
 use anyhow::Context;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;

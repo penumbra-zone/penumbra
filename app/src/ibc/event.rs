@@ -1,10 +1,8 @@
 use ibc_types::core::{
     ics02_client::client_state::ClientState,
-    ics03_connection::connection::ConnectionEnd,
-    ics03_connection::connection::Counterparty,
+    ics03_connection::connection::{ConnectionEnd, Counterparty},
     ics04_channel::{channel::ChannelEnd, packet::Packet},
-    ics24_host::identifier::ClientId,
-    ics24_host::identifier::{ChannelId, ConnectionId, PortId},
+    ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 };
 // TODO(erwan): generalize this
 use ibc_proto::protobuf::Protobuf;

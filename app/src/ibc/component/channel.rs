@@ -4,18 +4,20 @@ use super::state_key;
 use anyhow::Result;
 use async_trait::async_trait;
 
-use ibc_types::core::ics02_client::consensus_state::ConsensusState;
-use ibc_types::core::ics03_connection::connection::ConnectionEnd;
-use ibc_types::core::ics04_channel::channel::ChannelEnd;
-use ibc_types::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
-use ibc_types::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
-use ibc_types::core::ics04_channel::msgs::timeout::MsgTimeout;
-use ibc_types::core::ics04_channel::packet::Packet;
-use ibc_types::core::ics24_host::identifier::ChannelId;
-use ibc_types::core::ics24_host::identifier::PortId;
+use ibc_types::core::{
+    ics02_client::consensus_state::ConsensusState,
+    ics03_connection::connection::ConnectionEnd,
+    ics04_channel::{
+        channel::ChannelEnd,
+        msgs::{
+            acknowledgement::MsgAcknowledgement, recv_packet::MsgRecvPacket, timeout::MsgTimeout,
+        },
+        packet::Packet,
+    },
+    ics24_host::identifier::{ChannelId, PortId},
+};
 use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_storage::StateRead;
-use penumbra_storage::StateWrite;
+use penumbra_storage::{StateRead, StateWrite};
 
 pub(crate) mod stateful;
 
