@@ -31,9 +31,10 @@ impl Component for Governance {
 
     #[instrument(name = "governance", skip(state, _end_block))]
     async fn end_block<S: StateWrite + 'static>(
-        mut state: &mut Arc<S>,
+        state: &mut Arc<S>,
         _end_block: &abci::request::EndBlock,
     ) {
+        let mut state = Arc::get_mut(state).expect("state should be unique");
         // Then, enact any proposals that have passed, after considering the tallies to determine what
         // proposals have passed. Note that this occurs regardless of whether it's the end of an
         // epoch, because proposals can finish at any time.
@@ -43,7 +44,8 @@ impl Component for Governance {
     }
 
     #[instrument(name = "governance", skip(state))]
-    async fn end_epoch<S: StateWrite + 'static>(mut state: &mut Arc<S>) -> Result<()> {
+    async fn end_epoch<S: StateWrite + 'static>(state: &mut Arc<S>) -> Result<()> {
+        let state = Arc::get_mut(state).expect("state should be unique");
         state.tally_delegator_votes(None).await?;
         Ok(())
     }

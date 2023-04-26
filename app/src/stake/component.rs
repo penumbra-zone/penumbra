@@ -932,9 +932,10 @@ impl Component for Staking {
 
     #[instrument(name = "staking", skip(state, begin_block))]
     async fn begin_block<S: StateWrite + 'static>(
-        mut state: &mut Arc<S>,
+        state: &mut Arc<S>,
         begin_block: &abci::request::BeginBlock,
     ) {
+        let state = Arc::get_mut(state).expect("state should be unique");
         // For each validator identified as byzantine by tendermint, update its
         // state to be slashed
         for evidence in begin_block.byzantine_validators.iter() {
@@ -949,9 +950,10 @@ impl Component for Staking {
 
     #[instrument(name = "staking", skip(state, end_block))]
     async fn end_block<S: StateWrite + 'static>(
-        mut state: &mut Arc<S>,
+        state: &mut Arc<S>,
         end_block: &abci::request::EndBlock,
     ) {
+        let state = Arc::get_mut(state).expect("state should be unique");
         // Write the delegation changes for this block.
         state
             .set_delegation_changes(
@@ -962,7 +964,8 @@ impl Component for Staking {
     }
 
     #[instrument(name = "staking", skip(state))]
-    async fn end_epoch<S: StateWrite + 'static>(mut state: &mut Arc<S>) -> anyhow::Result<()> {
+    async fn end_epoch<S: StateWrite + 'static>(state: &mut Arc<S>) -> anyhow::Result<()> {
+        let state = Arc::get_mut(state).expect("state should be unique");
         let cur_epoch = state.get_current_epoch().await.unwrap();
         state.end_epoch(cur_epoch).await?;
         // Since we only update the validator set at epoch boundaries,

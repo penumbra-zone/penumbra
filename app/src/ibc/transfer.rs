@@ -5,7 +5,6 @@ use crate::ibc::ibc_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute};
 use crate::ibc::packet::WriteAcknowledgement as _;
 use crate::ibc::packet::{IBCPacket, Unchecked};
 use crate::shielded_pool::NoteManager;
-use crate::Component;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use ibc_types::applications::transfer::acknowledgement::TokenTransferAcknowledgement;
@@ -22,7 +21,6 @@ use ibc_types::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use ibc_types::core::ics04_channel::msgs::timeout::MsgTimeout;
 use ibc_types::core::ics04_channel::Version;
 use ibc_types::core::ics24_host::identifier::{ChannelId, PortId};
-use penumbra_chain::genesis;
 use penumbra_crypto::asset::Denom;
 use penumbra_crypto::{asset, Address, Amount, Value};
 use penumbra_proto::core::ibc::v1alpha1::FungibleTokenPacketData;
@@ -30,9 +28,6 @@ use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::action::Ics20Withdrawal;
 use prost::Message;
-
-use tendermint::abci;
-use tracing::instrument;
 
 // returns a bool indicating if the provided denom was issued locally or if it was bridged in.
 // this logic is a bit tricky, and adapted from https://github.com/cosmos/ibc/tree/main/spec/app/ics-020-fungible-token-transfer (sendFungibleTokens).
@@ -370,20 +365,3 @@ impl AppHandlerExecute for Ics20Transfer {
 }
 
 impl AppHandler for Ics20Transfer {}
-
-#[async_trait]
-impl Component for Ics20Transfer {
-    #[instrument(name = "ics20_transfer", skip(_state, _app_state))]
-    async fn init_chain<S: StateWrite>(_state: S, _app_state: &genesis::AppState) {}
-
-    #[instrument(name = "ics20_transfer", skip(_state, _begin_block))]
-    async fn begin_block<S: StateWrite>(_state: S, _begin_block: &abci::request::BeginBlock) {}
-
-    #[instrument(name = "ics20_channel", skip(_state, _end_block))]
-    async fn end_block<S: StateWrite>(_state: S, _end_block: &abci::request::EndBlock) {}
-
-    #[instrument(name = "ics20_channel", skip(_state))]
-    async fn end_epoch<S: StateWrite>(mut _state: S) -> anyhow::Result<()> {
-        Ok(())
-    }
-}

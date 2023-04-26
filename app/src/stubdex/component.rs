@@ -65,9 +65,10 @@ impl Component for StubDex {
 
     #[instrument(name = "stubdex", skip(state, end_block))]
     async fn end_block<S: StateWrite + 'static>(
-        mut state: &mut Arc<S>,
+        state: &mut Arc<S>,
         end_block: &abci::request::EndBlock,
     ) {
+        let state = Arc::get_mut(state).expect("state should be unique");
         // For each batch swap during the block, calculate clearing prices and set in the JMT.
         for (trading_pair, swap_flows) in state.swap_flows() {
             let (delta_1, delta_2) = (swap_flows.0.mock_decrypt(), swap_flows.1.mock_decrypt());
