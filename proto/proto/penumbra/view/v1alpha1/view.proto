@@ -68,7 +68,7 @@ service ViewProtocolService {
   rpc NullifierStatus(NullifierStatusRequest) returns (NullifierStatusResponse);
 
   // Query for a given transaction by its hash.
-  rpc TransactionInfoByHash(TransactionInfoByHashRequest) returns (TransactionInfoResponse);
+  rpc TransactionInfoByHash(TransactionInfoByHashRequest) returns (TransactionInfoByHashResponse);
 
   // Query for the full transactions in the given range of blocks.
   rpc TransactionInfo(TransactionInfoRequest) returns (stream TransactionInfoResponse);
@@ -367,6 +367,10 @@ message TransactionInfo {
 }
 
 message TransactionInfoResponse {
+   TransactionInfo tx_info = 1;
+}
+
+message TransactionInfoByHashResponse {
    TransactionInfo tx_info = 1;
 }
 

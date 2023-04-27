@@ -464,7 +464,7 @@ pub struct TransactionInfoRequest {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TransactionInfoResponse {
+pub struct TransactionInfo {
     /// The height the transaction was included in a block, if known.
     #[prost(uint64, optional, tag = "1")]
     pub height: ::core::option::Option<u64>,
@@ -486,6 +486,18 @@ pub struct TransactionInfoResponse {
     pub view: ::core::option::Option<
         super::super::core::transaction::v1alpha1::TransactionView,
     >,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransactionInfoResponse {
+    #[prost(message, optional, tag = "1")]
+    pub tx_info: ::core::option::Option<TransactionInfo>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransactionInfoByHashResponse {
+    #[prost(message, optional, tag = "1")]
+    pub tx_info: ::core::option::Option<TransactionInfo>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -981,7 +993,10 @@ pub mod view_protocol_service_client {
         pub async fn transaction_info_by_hash(
             &mut self,
             request: impl tonic::IntoRequest<super::TransactionInfoByHashRequest>,
-        ) -> Result<tonic::Response<super::TransactionInfoResponse>, tonic::Status> {
+        ) -> Result<
+            tonic::Response<super::TransactionInfoByHashResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -1281,7 +1296,10 @@ pub mod view_protocol_service_server {
         async fn transaction_info_by_hash(
             &self,
             request: tonic::Request<super::TransactionInfoByHashRequest>,
-        ) -> Result<tonic::Response<super::TransactionInfoResponse>, tonic::Status>;
+        ) -> Result<
+            tonic::Response<super::TransactionInfoByHashResponse>,
+            tonic::Status,
+        >;
         /// Server streaming response type for the TransactionInfo method.
         type TransactionInfoStream: futures_core::Stream<
                 Item = Result<super::TransactionInfoResponse, tonic::Status>,
@@ -2015,7 +2033,7 @@ pub mod view_protocol_service_server {
                         T: ViewProtocolService,
                     > tonic::server::UnaryService<super::TransactionInfoByHashRequest>
                     for TransactionInfoByHashSvc<T> {
-                        type Response = super::TransactionInfoResponse;
+                        type Response = super::TransactionInfoByHashResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,

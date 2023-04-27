@@ -645,7 +645,9 @@ where
                 }),
             )
             .await?
-            .into_inner();
+            .into_inner()
+            .tx_info
+            .ok_or_else(|| anyhow::anyhow!("empty TransactionInfoByHashResponse message"))?;
 
             let tx_info = TransactionInfo {
                 height: rsp
@@ -689,12 +691,15 @@ where
 
             pb_txs
                 .into_iter()
-                .map(|tx_rsp| {
+                .map(|rsp| {
+                    let tx_rsp = rsp
+                        .tx_info
+                        .ok_or_else(|| anyhow::anyhow!("empty TransactionInfoResponse message"))?;
+
                     let tx_info = TransactionInfo {
                         height: tx_rsp
                             .height
-                            .ok_or_else(|| anyhow::anyhow!("missing height"))?
-                            .into(),
+                            .ok_or_else(|| anyhow::anyhow!("missing height"))?,
                         transaction: tx_rsp
                             .transaction
                             .ok_or_else(|| {
