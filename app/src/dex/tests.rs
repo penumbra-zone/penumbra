@@ -357,3 +357,31 @@ async fn multiple_limit_orders() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+/// Test that submitting a position that provisions no inventory fails.
+async fn empty_order_fails() -> anyhow::Result<()> {
+    let gm = asset::REGISTRY.parse_unit("gm");
+    let gn = asset::REGISTRY.parse_unit("gn");
+
+    let pair = DirectedTradingPair::new(gm.id(), gn.id());
+
+    /* position_1: Limit Buy 100gm@1.2gn */
+    let reserves = Reserves {
+        r1: 0u64.into(),
+        r2: 0u64.into(),
+    };
+
+    let position_1 = Position::new(
+        OsRng,
+        pair,
+        0u32,
+        1_200_000u64.into(),
+        1_000_000u64.into(),
+        reserves,
+    );
+
+    assert!(position_1.check_stateless().is_err());
+
+    Ok(())
+}
