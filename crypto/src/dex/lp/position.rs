@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Context};
 use penumbra_proto::{core::dex::v1alpha1 as pb, serializers::bech32str, DomainType};
-use rand_core::{CryptoRngCore, OsRng};
+use rand_core::CryptoRngCore;
 use serde::{Deserialize, Serialize};
 
 use crate::{
