@@ -29,7 +29,7 @@ mod tests {
         stake::{IdentityKey, Penalty, UnbondingToken},
         Address, Amount, Balance, Fee, Rseed,
     };
-    use ark_groth16::{Groth16, ProvingKey, VerifyingKey};
+    use ark_groth16::{r1cs_to_qap::LibsnarkReduction, Groth16, ProvingKey, VerifyingKey};
     use ark_r1cs_std::prelude::*;
     use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
     use ark_snark::SNARK;
@@ -807,8 +807,10 @@ mod tests {
                 state_commitment_proof,
                 anchor,
             };
-            let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
-                .expect("can perform circuit specific setup");
+            let (pk, vk) = Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(
+                circuit, &mut OsRng,
+            )
+            .expect("can perform circuit specific setup");
             (pk, vk)
         }
     }
@@ -846,10 +848,14 @@ mod tests {
                 state_commitment_proof,
                 anchor,
             };
-            let proof =
-                Groth16::prove(&pk, circuit, &mut rng).expect("should be able to form proof");
+            let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
+                .expect("should be able to form proof");
 
-            let proof_result = Groth16::verify_with_processed_vk(&vk, &[Fq::from(anchor)], &proof);
+            let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
+                &vk,
+                &[Fq::from(anchor)],
+                &proof,
+            );
             assert!(proof_result.is_ok());
         }
 
@@ -868,10 +874,14 @@ mod tests {
                 state_commitment_proof,
                 anchor,
             };
-            let proof =
-                Groth16::prove(&pk, circuit, &mut rng).expect("should be able to form proof");
+            let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
+                .expect("should be able to form proof");
 
-            let proof_result = Groth16::verify_with_processed_vk(&vk, &[Fq::from(anchor)], &proof);
+            let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
+                &vk,
+                &[Fq::from(anchor)],
+                &proof,
+            );
             assert!(proof_result.is_ok());
         }
 
@@ -890,10 +900,14 @@ mod tests {
                 state_commitment_proof,
                 anchor,
             };
-            let proof =
-                Groth16::prove(&pk, circuit, &mut rng).expect("should be able to form proof");
+            let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
+                .expect("should be able to form proof");
 
-            let proof_result = Groth16::verify_with_processed_vk(&vk, &[Fq::from(anchor)], &proof);
+            let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
+                &vk,
+                &[Fq::from(anchor)],
+                &proof,
+            );
             assert!(proof_result.is_ok());
         }
     }

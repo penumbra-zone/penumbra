@@ -1,3 +1,4 @@
+use ark_groth16::r1cs_to_qap::LibsnarkReduction;
 use ark_r1cs_std::uint8::UInt8;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use decaf377::FieldExt;
@@ -69,8 +70,9 @@ impl ParameterSetup for UndelegateClaimCircuit {
             balance_commitment,
             unbonding_id,
         };
-        let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
-            .expect("can perform circuit specific setup");
+        let (pk, vk) =
+            Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(circuit, &mut OsRng)
+                .expect("can perform circuit specific setup");
         (pk, vk)
     }
 }
@@ -96,7 +98,8 @@ impl UndelegateClaimProof {
             unbonding_id,
             penalty,
         };
-        let proof = Groth16::prove(pk, circuit, rng).map_err(|err| anyhow::anyhow!(err))?;
+        let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(pk, circuit, rng)
+            .map_err(|err| anyhow::anyhow!(err))?;
         Ok(Self(proof))
     }
 
@@ -116,8 +119,12 @@ impl UndelegateClaimProof {
 
         tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();
-        let proof_result = Groth16::verify_with_processed_vk(vk, public_inputs.as_slice(), &self.0)
-            .map_err(|err| anyhow::anyhow!(err))?;
+        let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
+            vk,
+            public_inputs.as_slice(),
+            &self.0,
+        )
+        .map_err(|err| anyhow::anyhow!(err))?;
         tracing::debug!(?proof_result, elapsed = ?start.elapsed());
         proof_result
             .then_some(())
@@ -132,7 +139,7 @@ impl DomainType for UndelegateClaimProof {
 impl From<UndelegateClaimProof> for pb::ZkUndelegateClaimProof {
     fn from(proof: UndelegateClaimProof) -> Self {
         let mut proof_bytes = [0u8; GROTH16_PROOF_LENGTH_BYTES];
-        Proof::serialize(&proof.0, &mut proof_bytes[..]).expect("can serialize Proof");
+        Proof::serialize_compressed(&proof.0, &mut proof_bytes[..]).expect("can serialize Proof");
         pb::ZkUndelegateClaimProof {
             inner: proof_bytes.to_vec(),
         }
@@ -144,7 +151,7 @@ impl TryFrom<pb::ZkUndelegateClaimProof> for UndelegateClaimProof {
 
     fn try_from(proto: pb::ZkUndelegateClaimProof) -> Result<Self, Self::Error> {
         Ok(UndelegateClaimProof(
-            Proof::deserialize(&proto.inner[..]).map_err(|e| anyhow::anyhow!(e))?,
+            Proof::deserialize_compressed(&proto.inner[..]).map_err(|e| anyhow::anyhow!(e))?,
         ))
     }
 }

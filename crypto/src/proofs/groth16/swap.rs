@@ -1,5 +1,7 @@
 use ark_ff::ToConstraintField;
-use ark_groth16::{Groth16, PreparedVerifyingKey, Proof, ProvingKey, VerifyingKey};
+use ark_groth16::{
+    r1cs_to_qap::LibsnarkReduction, Groth16, PreparedVerifyingKey, Proof, ProvingKey, VerifyingKey,
+};
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
@@ -114,8 +116,9 @@ impl ParameterSetup for SwapCircuit {
             fee_commitment: balance::Commitment(decaf377::basepoint()),
             balance_commitment: balance::Commitment(decaf377::basepoint()),
         };
-        let (pk, vk) = Groth16::circuit_specific_setup(circuit, &mut OsRng)
-            .expect("can perform circuit specific setup");
+        let (pk, vk) =
+            Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(circuit, &mut OsRng)
+                .expect("can perform circuit specific setup");
         (pk, vk)
     }
 }
@@ -141,7 +144,8 @@ impl SwapProof {
             swap_commitment,
             fee_commitment,
         };
-        let proof = Groth16::prove(pk, circuit, rng).map_err(|err| anyhow::anyhow!(err))?;
+        let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(pk, circuit, rng)
+            .map_err(|err| anyhow::anyhow!(err))?;
         Ok(Self(proof))
     }
 
@@ -170,8 +174,12 @@ impl SwapProof {
 
         tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();
-        let proof_result = Groth16::verify_with_processed_vk(vk, public_inputs.as_slice(), &self.0)
-            .map_err(|err| anyhow::anyhow!(err))?;
+        let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
+            vk,
+            public_inputs.as_slice(),
+            &self.0,
+        )
+        .map_err(|err| anyhow::anyhow!(err))?;
         tracing::debug!(?proof_result, elapsed = ?start.elapsed());
         proof_result
             .then_some(())
@@ -186,7 +194,7 @@ impl DomainType for SwapProof {
 impl From<SwapProof> for pb::ZkSwapProof {
     fn from(proof: SwapProof) -> Self {
         let mut proof_bytes = [0u8; GROTH16_PROOF_LENGTH_BYTES];
-        Proof::serialize(&proof.0, &mut proof_bytes[..]).expect("can serialize Proof");
+        Proof::serialize_compressed(&proof.0, &mut proof_bytes[..]).expect("can serialize Proof");
         pb::ZkSwapProof {
             inner: proof_bytes.to_vec(),
         }
@@ -198,7 +206,7 @@ impl TryFrom<pb::ZkSwapProof> for SwapProof {
 
     fn try_from(proto: pb::ZkSwapProof) -> Result<Self, Self::Error> {
         Ok(SwapProof(
-            Proof::deserialize(&proto.inner[..]).map_err(|e| anyhow::anyhow!(e))?,
+            Proof::deserialize_compressed(&proto.inner[..]).map_err(|e| anyhow::anyhow!(e))?,
         ))
     }
 }

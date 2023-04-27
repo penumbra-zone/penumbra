@@ -20,7 +20,7 @@ pub trait VerifyingKeyExt {
 impl VerifyingKeyExt for VerifyingKey<Bls12_377> {
     fn debug_id(&self) -> String {
         let mut buf = Vec::new();
-        self.serialize(&mut buf).unwrap();
+        self.serialize_compressed(&mut buf).unwrap();
         use sha2::Digest;
         let hash = sha2::Sha256::digest(&buf);
         use bech32::ToBase32;
@@ -41,7 +41,7 @@ pub trait ProvingKeyExt {
 impl ProvingKeyExt for ProvingKey<Bls12_377> {
     fn debug_id(&self) -> String {
         let mut buf = Vec::new();
-        self.serialize(&mut buf).unwrap();
+        self.serialize_compressed(&mut buf).unwrap();
         use sha2::Digest;
         let hash = sha2::Sha256::digest(&buf);
         use bech32::ToBase32;
