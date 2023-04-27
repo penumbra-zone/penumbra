@@ -10,7 +10,7 @@ use penumbra_transaction::{
     view::action_view::{OutputView, SpendView, SwapClaimView, SwapView},
     Transaction,
 };
-use penumbra_view::ViewClient;
+use penumbra_view::{TransactionInfo, ViewClient};
 
 use crate::App;
 
@@ -190,8 +190,8 @@ impl TxCmd {
             .context("invalid transaction hash")?;
 
         // Retrieve Transaction from the view service first, or else the fullnode
-        let tx = if let Some(tx) = app.view().transaction_by_hash(hash).await? {
-            tx
+        let tx_info = if let Ok(tx_info) = app.view().transaction_info_by_hash(hash).await {
+            tx_info
         } else {
             println!("Transaction not found in view service, fetching from fullnode...");
             // Fall back to fetching from fullnode
@@ -205,18 +205,23 @@ impl TxCmd {
 
             let rsp = rsp.into_inner();
             let tx = Transaction::decode(rsp.tx.as_slice())?;
-            tx
+            let txp = Default::default();
+            let txv = tx.view_from_perspective(&txp);
+
+            TransactionInfo {
+                height: rsp.height,
+                id: hash,
+                transaction: tx,
+                perspective: txp,
+                view: txv,
+            }
         };
-        // Retrieve full TxP
-        let txp = app.view().transaction_perspective(hash).await?;
-        // Generate TxV using TxP
-        let txv = tx.view_from_perspective(&txp);
 
         if self.raw {
             use colored_json::prelude::*;
             println!(
                 "{}",
-                serde_json::to_string_pretty(&txv)?.to_colored_json_auto()?
+                serde_json::to_string_pretty(&tx_info.view)?.to_colored_json_auto()?
             );
         } else {
             // Initialize the tables
@@ -231,7 +236,7 @@ impl TxCmd {
             let asset_cache = app.view().assets().await?;
             // Iterate over the ActionViews in the TxV & display as appropriate
 
-            for av in txv.body_view.action_views {
+            for av in tx_info.view.body_view.action_views {
                 actions_table.add_row(match av {
                     penumbra_transaction::ActionView::Swap(SwapView::Visible {
                         swap: _,
@@ -350,10 +355,10 @@ impl TxCmd {
 
             metadata_table.add_row(vec![
                 "Transaction Fee",
-                &txv.body_view.fee.value().format(&asset_cache),
+                &tx_info.view.body_view.fee.value().format(&asset_cache),
             ]);
 
-            let memo_view = txv.body_view.memo_view;
+            let memo_view = tx_info.view.body_view.memo_view;
 
             if let Some(memo_view) = memo_view {
                 match memo_view {
@@ -373,7 +378,7 @@ impl TxCmd {
 
             metadata_table.add_row(vec![
                 "Transaction Expiration Height",
-                &format!("{}", txv.body_view.expiry_height),
+                &format!("{}", tx_info.view.body_view.expiry_height),
             ]);
 
             // Print table of actions and their descriptions

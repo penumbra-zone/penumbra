@@ -23,15 +23,15 @@ impl TransactionHashesCmd {
         table.load_preset(presets::NOTHING);
 
         let txs = view
-            .transaction_hashes(self.start_height, self.end_height)
+            .transaction_info(self.start_height, self.end_height)
             .await?;
 
         table.set_header(vec!["Block Height", "Transaction Hash"]);
 
-        for tx in txs {
+        for tx_info in txs {
             table.add_row(vec![
-                format!("{}", u128::from(tx.0)),
-                format!("{}", hex::encode(tx.1)),
+                format!("{}", tx_info.height),
+                format!("{}", hex::encode(&tx_info.id)),
             ]);
         }
 
