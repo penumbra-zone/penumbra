@@ -2205,7 +2205,8 @@ dependencies = [
 [[package]]
 name = "frost377"
 version = "0.1.0"
-source = "git+https://github.com/penumbra-zone/frost377#f82f57d848e814fc895947ee5741eba818027c7f"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e0aee7f17df05fbd19dc05edfef32ba68727ce2bc15cfb2cb208958d4c1457a4"
 dependencies = [
  "anyhow",
  "ark-ff",

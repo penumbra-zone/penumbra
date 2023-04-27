@@ -59,7 +59,7 @@ ark-nonnative-field = "0.3"
 [dev-dependencies]
 proptest = "1"
 serde_json = "1"
-frost377 = { git = "https://github.com/penumbra-zone/frost377", default-features=false }
+frost377 = { version = "0.1", default-features=false }
 
 [features]
 default = []
