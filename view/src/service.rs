@@ -485,7 +485,7 @@ impl ViewProtocolService for ViewService {
     async fn transaction_info_by_hash(
         &self,
         request: tonic::Request<pb::TransactionInfoByHashRequest>,
-    ) -> Result<tonic::Response<pb::TransactionInfoResponse>, tonic::Status> {
+    ) -> Result<tonic::Response<pb::TransactionInfoByHashResponse>, tonic::Status> {
         self.check_worker().await?;
 
         let request = request.into_inner();
@@ -507,7 +507,7 @@ impl ViewProtocolService for ViewService {
             })?;
 
         let Some((height, tx)) = maybe_tx else {
-            return Ok(tonic::Response::new(pb::TransactionInfoResponse::default()));
+            return Ok(tonic::Response::new(pb::TransactionInfoByHashResponse::default()));
         };
 
         // First, create a TxP with the payload keys visible to our FVK and no other data.
@@ -628,12 +628,14 @@ impl ViewProtocolService for ViewService {
         // Finally, compute the full TxV from the full TxP:
         let txv = tx.view_from_perspective(&txp);
 
-        let response = pb::TransactionInfoResponse {
-            height: Some(height),
-            id: Some(tx.id().into()),
-            perspective: Some(txp.into()),
-            transaction: Some(tx.into()),
-            view: Some(txv.into()),
+        let response = pb::TransactionInfoByHashResponse {
+            tx_info: Some(pb::TransactionInfo {
+                height: Some(height),
+                id: Some(tx.id().into()),
+                perspective: Some(txp.into()),
+                transaction: Some(tx.into()),
+                view: Some(txv.into()),
+            }),
         };
 
         Ok(tonic::Response::new(response))
@@ -992,11 +994,13 @@ impl ViewProtocolService for ViewService {
         let stream = try_stream! {
             for tx in txs {
 
-                let tx_info = self2.transaction_info_by_hash(tonic::Request::new(pb::TransactionInfoByHashRequest {
+                let rsp = self2.transaction_info_by_hash(tonic::Request::new(pb::TransactionInfoByHashRequest {
                     id: Some(tx.2.id().into()),
                 })).await?.into_inner();
 
-                yield tx_info;
+                yield pb::TransactionInfoResponse {
+                    tx_info: rsp.tx_info,
+                }
             }
         };
 

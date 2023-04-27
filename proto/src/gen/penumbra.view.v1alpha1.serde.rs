@@ -3545,6 +3545,167 @@ impl<'de> serde::Deserialize<'de> for SwapRecord {
         deserializer.deserialize_struct("penumbra.view.v1alpha1.SwapRecord", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for TransactionInfo {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.height.is_some() {
+            len += 1;
+        }
+        if self.id.is_some() {
+            len += 1;
+        }
+        if self.transaction.is_some() {
+            len += 1;
+        }
+        if self.perspective.is_some() {
+            len += 1;
+        }
+        if self.view.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.TransactionInfo", len)?;
+        if let Some(v) = self.height.as_ref() {
+            struct_ser.serialize_field("height", ToString::to_string(&v).as_str())?;
+        }
+        if let Some(v) = self.id.as_ref() {
+            struct_ser.serialize_field("id", v)?;
+        }
+        if let Some(v) = self.transaction.as_ref() {
+            struct_ser.serialize_field("transaction", v)?;
+        }
+        if let Some(v) = self.perspective.as_ref() {
+            struct_ser.serialize_field("perspective", v)?;
+        }
+        if let Some(v) = self.view.as_ref() {
+            struct_ser.serialize_field("view", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for TransactionInfo {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "height",
+            "id",
+            "transaction",
+            "perspective",
+            "view",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Height,
+            Id,
+            Transaction,
+            Perspective,
+            View,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "height" => Ok(GeneratedField::Height),
+                            "id" => Ok(GeneratedField::Id),
+                            "transaction" => Ok(GeneratedField::Transaction),
+                            "perspective" => Ok(GeneratedField::Perspective),
+                            "view" => Ok(GeneratedField::View),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = TransactionInfo;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1alpha1.TransactionInfo")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<TransactionInfo, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut height__ = None;
+                let mut id__ = None;
+                let mut transaction__ = None;
+                let mut perspective__ = None;
+                let mut view__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::Height => {
+                            if height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("height"));
+                            }
+                            height__ = 
+                                map.next_value::<::std::option::Option<::pbjson::private::NumberDeserialize<_>>>()?.map(|x| x.0)
+                            ;
+                        }
+                        GeneratedField::Id => {
+                            if id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("id"));
+                            }
+                            id__ = map.next_value()?;
+                        }
+                        GeneratedField::Transaction => {
+                            if transaction__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("transaction"));
+                            }
+                            transaction__ = map.next_value()?;
+                        }
+                        GeneratedField::Perspective => {
+                            if perspective__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("perspective"));
+                            }
+                            perspective__ = map.next_value()?;
+                        }
+                        GeneratedField::View => {
+                            if view__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("view"));
+                            }
+                            view__ = map.next_value()?;
+                        }
+                    }
+                }
+                Ok(TransactionInfo {
+                    height: height__,
+                    id: id__,
+                    transaction: transaction__,
+                    perspective: perspective__,
+                    view: view__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1alpha1.TransactionInfo", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for TransactionInfoByHashRequest {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
@@ -3634,6 +3795,98 @@ impl<'de> serde::Deserialize<'de> for TransactionInfoByHashRequest {
             }
         }
         deserializer.deserialize_struct("penumbra.view.v1alpha1.TransactionInfoByHashRequest", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for TransactionInfoByHashResponse {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.tx_info.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.TransactionInfoByHashResponse", len)?;
+        if let Some(v) = self.tx_info.as_ref() {
+            struct_ser.serialize_field("txInfo", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for TransactionInfoByHashResponse {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "tx_info",
+            "txInfo",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            TxInfo,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "txInfo" | "tx_info" => Ok(GeneratedField::TxInfo),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = TransactionInfoByHashResponse;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1alpha1.TransactionInfoByHashResponse")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<TransactionInfoByHashResponse, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut tx_info__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::TxInfo => {
+                            if tx_info__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("txInfo"));
+                            }
+                            tx_info__ = map.next_value()?;
+                        }
+                    }
+                }
+                Ok(TransactionInfoByHashResponse {
+                    tx_info: tx_info__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1alpha1.TransactionInfoByHashResponse", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for TransactionInfoRequest {
@@ -3758,36 +4011,12 @@ impl serde::Serialize for TransactionInfoResponse {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.height.is_some() {
-            len += 1;
-        }
-        if self.id.is_some() {
-            len += 1;
-        }
-        if self.transaction.is_some() {
-            len += 1;
-        }
-        if self.perspective.is_some() {
-            len += 1;
-        }
-        if self.view.is_some() {
+        if self.tx_info.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.TransactionInfoResponse", len)?;
-        if let Some(v) = self.height.as_ref() {
-            struct_ser.serialize_field("height", ToString::to_string(&v).as_str())?;
-        }
-        if let Some(v) = self.id.as_ref() {
-            struct_ser.serialize_field("id", v)?;
-        }
-        if let Some(v) = self.transaction.as_ref() {
-            struct_ser.serialize_field("transaction", v)?;
-        }
-        if let Some(v) = self.perspective.as_ref() {
-            struct_ser.serialize_field("perspective", v)?;
-        }
-        if let Some(v) = self.view.as_ref() {
-            struct_ser.serialize_field("view", v)?;
+        if let Some(v) = self.tx_info.as_ref() {
+            struct_ser.serialize_field("txInfo", v)?;
         }
         struct_ser.end()
     }
@@ -3799,20 +4028,13 @@ impl<'de> serde::Deserialize<'de> for TransactionInfoResponse {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "height",
-            "id",
-            "transaction",
-            "perspective",
-            "view",
+            "tx_info",
+            "txInfo",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            Height,
-            Id,
-            Transaction,
-            Perspective,
-            View,
+            TxInfo,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -3834,11 +4056,7 @@ impl<'de> serde::Deserialize<'de> for TransactionInfoResponse {
                         E: serde::de::Error,
                     {
                         match value {
-                            "height" => Ok(GeneratedField::Height),
-                            "id" => Ok(GeneratedField::Id),
-                            "transaction" => Ok(GeneratedField::Transaction),
-                            "perspective" => Ok(GeneratedField::Perspective),
-                            "view" => Ok(GeneratedField::View),
+                            "txInfo" | "tx_info" => Ok(GeneratedField::TxInfo),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -3858,53 +4076,19 @@ impl<'de> serde::Deserialize<'de> for TransactionInfoResponse {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut height__ = None;
-                let mut id__ = None;
-                let mut transaction__ = None;
-                let mut perspective__ = None;
-                let mut view__ = None;
+                let mut tx_info__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
-                        GeneratedField::Height => {
-                            if height__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("height"));
+                        GeneratedField::TxInfo => {
+                            if tx_info__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("txInfo"));
                             }
-                            height__ = 
-                                map.next_value::<::std::option::Option<::pbjson::private::NumberDeserialize<_>>>()?.map(|x| x.0)
-                            ;
-                        }
-                        GeneratedField::Id => {
-                            if id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("id"));
-                            }
-                            id__ = map.next_value()?;
-                        }
-                        GeneratedField::Transaction => {
-                            if transaction__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("transaction"));
-                            }
-                            transaction__ = map.next_value()?;
-                        }
-                        GeneratedField::Perspective => {
-                            if perspective__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("perspective"));
-                            }
-                            perspective__ = map.next_value()?;
-                        }
-                        GeneratedField::View => {
-                            if view__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("view"));
-                            }
-                            view__ = map.next_value()?;
+                            tx_info__ = map.next_value()?;
                         }
                     }
                 }
                 Ok(TransactionInfoResponse {
-                    height: height__,
-                    id: id__,
-                    transaction: transaction__,
-                    perspective: perspective__,
-                    view: view__,
+                    tx_info: tx_info__,
                 })
             }
         }
