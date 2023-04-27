@@ -646,18 +646,27 @@ where
             )
             .await?
             .into_inner();
-            // If no txp was supplied, use the default (empty) perspective.
-
-            let transaction = rsp.transaction.unwrap_or_default();
-            let perspective = rsp.perspective.unwrap_or_default();
-            let view = rsp.view.unwrap_or_default();
 
             let tx_info = TransactionInfo {
-                height: rsp.height.unwrap().into(),
-                id: rsp.id.unwrap().try_into()?,
-                transaction: transaction.try_into()?,
-                perspective: perspective.try_into()?,
-                view: view.try_into()?,
+                height: rsp
+                    .height
+                    .ok_or_else(|| anyhow::anyhow!("missing height"))?,
+                id: rsp
+                    .id
+                    .ok_or_else(|| anyhow::anyhow!("missing id"))?
+                    .try_into()?,
+                transaction: rsp
+                    .transaction
+                    .ok_or_else(|| anyhow::anyhow!("missing transaction"))?
+                    .try_into()?,
+                perspective: rsp
+                    .perspective
+                    .ok_or_else(|| anyhow::anyhow!("missing perspective"))?
+                    .try_into()?,
+                view: rsp
+                    .view
+                    .ok_or_else(|| anyhow::anyhow!("missing view"))?
+                    .try_into()?,
             };
 
             Ok(tx_info)
@@ -682,16 +691,28 @@ where
                 .into_iter()
                 .map(|tx_rsp| {
                     let tx_info = TransactionInfo {
-                        height: tx_rsp.height.unwrap().into(),
+                        height: tx_rsp
+                            .height
+                            .ok_or_else(|| anyhow::anyhow!("missing height"))?
+                            .into(),
                         transaction: tx_rsp
                             .transaction
                             .ok_or_else(|| {
                                 anyhow::anyhow!("empty TransactionInfoResponse message")
                             })?
                             .try_into()?,
-                        id: tx_rsp.id.unwrap().try_into()?,
-                        perspective: tx_rsp.perspective.unwrap().try_into()?,
-                        view: tx_rsp.view.unwrap().try_into()?,
+                        id: tx_rsp
+                            .id
+                            .ok_or_else(|| anyhow::anyhow!("missing id"))?
+                            .try_into()?,
+                        perspective: tx_rsp
+                            .perspective
+                            .ok_or_else(|| anyhow::anyhow!("missing perspective"))?
+                            .try_into()?,
+                        view: tx_rsp
+                            .view
+                            .ok_or_else(|| anyhow::anyhow!("missing view"))?
+                            .try_into()?,
                     };
 
                     Ok(tx_info)
