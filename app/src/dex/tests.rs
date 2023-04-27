@@ -361,17 +361,16 @@ async fn multiple_limit_orders() -> anyhow::Result<()> {
 #[tokio::test]
 /// Test that submitting a position that provisions no inventory fails.
 async fn empty_order_fails() -> anyhow::Result<()> {
+    use crate::ActionHandler;
     let gm = asset::REGISTRY.parse_unit("gm");
     let gn = asset::REGISTRY.parse_unit("gn");
 
     let pair = DirectedTradingPair::new(gm.id(), gn.id());
 
-    /* position_1: Limit Buy 100gm@1.2gn */
     let reserves = Reserves {
         r1: 0u64.into(),
         r2: 0u64.into(),
     };
-
     let position_1 = Position::new(
         OsRng,
         pair,
@@ -381,7 +380,12 @@ async fn empty_order_fails() -> anyhow::Result<()> {
         reserves,
     );
 
-    assert!(position_1.check_stateless().is_err());
+    let position_action = penumbra_transaction::action::PositionOpen {
+        position: position_1,
+    };
+
+    let tx = penumbra_transaction::Transaction::default();
+    assert!(position_action.check_stateless(Arc::new(tx)).await.is_err());
 
     Ok(())
 }

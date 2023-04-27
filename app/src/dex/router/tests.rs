@@ -983,7 +983,7 @@ async fn fill_route_with_dust() -> anyhow::Result<()> {
         OsRng,
         pair_3.into_directed_trading_pair(),
         0u32,
-        one * pair_3.end.unit_amount() ,
+        one * pair_3.end.unit_amount(),
         Amount::from(10u64) * pair_3.start.unit_amount(),
         Reserves {
             r1: Amount::zero(),
