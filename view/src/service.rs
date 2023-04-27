@@ -988,10 +988,11 @@ impl ViewProtocolService for ViewService {
             .await
             .map_err(|e| tonic::Status::unavailable(format!("error fetching transactions: {e}")))?;
 
+        let self2 = self.clone();
         let stream = try_stream! {
             for tx in txs {
 
-                let tx_info = self.transaction_info_by_hash(tonic::Request::new(pb::TransactionInfoByHashRequest {
+                let tx_info = self2.transaction_info_by_hash(tonic::Request::new(pb::TransactionInfoByHashRequest {
                     id: Some(tx.2.id().into()),
                 })).await?.into_inner();
 
