@@ -12,18 +12,15 @@ use crate::dex::{PositionManager, PositionRead};
 /// Debits the initial reserves and credits an opened position NFT.
 impl ActionHandler for PositionOpen {
     async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+        // TODO(chris, erwan, henry): brainstorm safety on `TradingFunction`.
         // Check:
         //  + reserves are at most 112 bits wide,
         //  + at least some assets are provisioned.
-        self.position.reserves.check_bounds()?;
-        // Check:
         //  + the trading function coefficients are at most 112 bits wide.
         //  + the trading function coefficients are non-zero,
         //  + the trading function doesn't specify a cyclic pair,
         //  + the fee is <=50%.
         self.position.check_stateless()?;
-
-        // TODO(chris, erwan, henry): brainstorm safety on `TradingFunction`.
         Ok(())
     }
 

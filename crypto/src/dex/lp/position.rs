@@ -115,7 +115,17 @@ impl Position {
     }
 
     pub fn check_stateless(&self) -> anyhow::Result<()> {
-        if self.phi.component.p == 0u64.into() || self.phi.component.q == 0u64.into() {
+        if self.reserves.r1.value() as u128 > MAX_RESERVE_AMOUNT
+            || self.reserves.r2.value() as u128 > MAX_RESERVE_AMOUNT
+        {
+            Err(anyhow::anyhow!(format!(
+                "Reserve amounts are out-of-bounds (limit: {MAX_RESERVE_AMOUNT})"
+            )))
+        } else if self.reserves.r1.value() == 0 && self.reserves.r2.value() == 0 {
+            Err(anyhow::anyhow!(
+                "initial reserves must provision some amount of either asset",
+            ))
+        } else if self.phi.component.p == 0u64.into() || self.phi.component.q == 0u64.into() {
             Err(anyhow::anyhow!(
                 "trading function coefficients must be nonzero"
             ))
@@ -331,6 +341,7 @@ impl TryFrom<pb::Position> for Position {
 mod test {
     use super::*;
     use ark_ff::Zero;
+    use rand_core::OsRng;
 
     fn assert_position_similar(p1: Position, p2: Position) {
         assert_eq!(p1.reserves.r1, p2.reserves.r1);
