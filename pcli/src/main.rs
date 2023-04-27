@@ -14,11 +14,11 @@ use url::Url;
 
 mod box_grpc_svc;
 mod command;
+mod dex_utils;
 mod legacy;
 mod network;
 mod opt;
 mod warning;
-mod dex_utils;
 
 use opt::Opt;
 use penumbra_wallet::KeyStore;
