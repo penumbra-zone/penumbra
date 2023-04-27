@@ -6,6 +6,6 @@ publish = false
 
 [dependencies]
 penumbra-crypto = { path = "../../crypto/" }
-ark-groth16 = "0.3"
-ark-serialize = "0.3"
-decaf377 = { version = "0.3", features = ["r1cs"] }
+ark-groth16 = "0.4"
+ark-serialize = "0.4"
+decaf377 = { version = "0.4", features = ["r1cs"] }
