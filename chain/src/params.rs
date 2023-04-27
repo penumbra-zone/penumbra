@@ -204,8 +204,8 @@ impl Default for ChainParameters {
             // 3bps -> 11% return over 365 epochs
             base_reward_rate: 3_0000,
             ibc_enabled: true,
-            inbound_ics20_transfers_enabled: false,
-            outbound_ics20_transfers_enabled: false,
+            inbound_ics20_transfers_enabled: true,
+            outbound_ics20_transfers_enabled: true,
             // governance
             proposal_voting_blocks: 17_280, // 24 hours, at a 5 second block time
             proposal_deposit_amount: 10_000_000u64.into(), // 10,000,000 upenumbra = 10 penumbra
