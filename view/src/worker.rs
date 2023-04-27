@@ -4,7 +4,10 @@ use std::{
 };
 
 use penumbra_chain::sync::CompactBlock;
-use penumbra_crypto::{Asset, FullViewingKey, Nullifier};
+use penumbra_crypto::{
+    dex::lp::{position, LpNft},
+    Asset, FullViewingKey, Nullifier,
+};
 use penumbra_proto::client::v1alpha1::specific_query_service_client::SpecificQueryServiceClient;
 use penumbra_proto::{
     self as proto,
@@ -221,9 +224,57 @@ impl Worker {
                 // Download any transactions we detected.
                 let transactions = self.fetch_transactions(&filtered_block).await?;
 
-                // Record any new assets we detected.
+                // LPNFT asset IDs won't be known to the chain, so we need to pre-populate them in the local
+                // registry based on transaction contents.
+                for transaction in &transactions {
+                    for action in transaction.actions() {
+                        match action {
+                            penumbra_transaction::Action::PositionOpen(position_open) => {
+                                let position_id = position_open.position.id();
 
+                                // Record every possible permutation.
+                                let lp_nft = LpNft::new(position_id, position::State::Opened);
+                                let id = lp_nft.asset_id();
+                                let denom = lp_nft.denom();
+                                let asset = Asset { id, denom };
+                                self.storage.record_asset(asset).await?;
+
+                                let lp_nft = LpNft::new(position_id, position::State::Closed);
+                                let id = lp_nft.asset_id();
+                                let denom = lp_nft.denom();
+                                let asset = Asset { id, denom };
+                                self.storage.record_asset(asset).await?;
+
+                                let lp_nft = LpNft::new(position_id, position::State::Withdrawn);
+                                let id = lp_nft.asset_id();
+                                let denom = lp_nft.denom();
+                                let asset = Asset { id, denom };
+                                self.storage.record_asset(asset).await?;
+
+                                let lp_nft = LpNft::new(position_id, position::State::Claimed);
+                                let id = lp_nft.asset_id();
+                                let denom = lp_nft.denom();
+                                let asset = Asset { id, denom };
+                                self.storage.record_asset(asset).await?;
+                            }
+                            _ => {} // noop
+                        };
+                    }
+                }
+
+                // Record any new assets we detected.
                 for note_record in &filtered_block.new_notes {
+                    // If the asset is already known, skip it.
+
+                    if self
+                        .storage
+                        .asset_by_id(&note_record.note.asset_id())
+                        .await?
+                        .is_some()
+                    {
+                        continue;
+                    }
+
                     let asset: Asset = self
                         .specific_client
                         .asset_info(AssetInfoRequest {
@@ -233,7 +284,7 @@ impl Worker {
                         .await?
                         .into_inner()
                         .asset
-                        .unwrap()
+                        .ok_or_else(|| anyhow::anyhow!("asset not found"))?
                         .try_into()?;
 
                     self.storage.record_asset(asset).await?;
