@@ -11,14 +11,13 @@ use penumbra_proto::view::v1alpha1::{
     self as pb, view_protocol_service_client::ViewProtocolServiceClient, WitnessRequest,
 };
 
-use penumbra_transaction::view::TransactionInfo;
 use penumbra_transaction::AuthorizationData;
 use penumbra_transaction::{plan::TransactionPlan, Transaction, WitnessData};
 
 use tonic::codegen::Bytes;
 use tracing::instrument;
 
-use crate::{SpendableNoteRecord, StatusStreamResponse, SwapRecord};
+use crate::{SpendableNoteRecord, StatusStreamResponse, SwapRecord, TransactionInfo};
 
 /// The view protocol is used by a view client, who wants to do some
 /// transaction-related actions, to request data from a view service, which is
