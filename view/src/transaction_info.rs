@@ -1,4 +1,4 @@
-use crate::{Id, Transaction, TransactionPerspective, TransactionView};
+use penumbra_transaction::{Id, Transaction, TransactionPerspective, TransactionView};
 
 #[derive(Debug, Clone)]
 pub struct TransactionInfo {

@@ -8,6 +8,7 @@ mod status;
 mod storage;
 mod swap_record;
 mod sync;
+mod transaction_info;
 mod worker;
 
 use worker::Worker;
@@ -20,3 +21,4 @@ pub use service::ViewService;
 pub use status::StatusStreamResponse;
 pub use storage::Storage;
 pub use swap_record::SwapRecord;
+pub use transaction_info::TransactionInfo;

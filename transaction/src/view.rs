@@ -11,8 +11,6 @@ use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType};
 use serde::{Deserialize, Serialize};
 
 pub mod action_view;
-mod transaction_info;
-pub use transaction_info::TransactionInfo;
 mod transaction_perspective;
 
 pub use action_view::ActionView;
