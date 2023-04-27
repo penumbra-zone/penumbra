@@ -18,6 +18,7 @@ mod legacy;
 mod network;
 mod opt;
 mod warning;
+mod dex_utils;
 
 use opt::Opt;
 use penumbra_wallet::KeyStore;
