@@ -17,7 +17,7 @@ penumbra-proof-params = { path = "../proof-params/", features = [
 
 # Git deps
 decaf377 = "0.3"
-decaf377-rdsa = { version = "0.5", git = "https://github.com/penumbra-zone/decaf377-rdsa" }
+decaf377-rdsa = { version = "0.5" }
 poseidon377 = { version = "0.3", features = ["r1cs"] }
 ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", version = "0.1.1" }
 

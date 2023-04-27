@@ -1847,7 +1847,8 @@ dependencies = [
 [[package]]
 name = "decaf377-rdsa"
 version = "0.5.0"
-source = "git+https://github.com/penumbra-zone/decaf377-rdsa#bb66a8b16ea242a5d9015bd18b46601c37838bf7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8f545f77f6c02fe6da862233531a63c71a1c8993f701a61cd692f788216fb57e"
 dependencies = [
  "ark-ff",
  "ark-serialize",
@@ -2204,7 +2205,8 @@ dependencies = [
 [[package]]
 name = "frost377"
 version = "0.1.0"
-source = "git+https://github.com/penumbra-zone/frost377#f82f57d848e814fc895947ee5741eba818027c7f"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e0aee7f17df05fbd19dc05edfef32ba68727ce2bc15cfb2cb208958d4c1457a4"
 dependencies = [
  "anyhow",
  "ark-ff",
