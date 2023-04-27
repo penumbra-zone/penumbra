@@ -71,30 +71,36 @@ pub mod delegator_vote {
     include!("gen/delegator_vote_id.rs");
 }
 
-// Note: Here we are using `CanonicalDeserialize::deserialize_unchecked` as the
+// Note: Here we are using `CanonicalDeserialize::deserialize_uncompressed_unchecked` as the
 // parameters are being loaded from a trusted source (our source code).
+// TODO: Migrate to `CanonicalDeserialize::deserialize_compressed_unchecked` to save space.
 
 fn spend_verification_parameters() -> VerifyingKey<Bls12_377> {
     let vk_params = include_bytes!("gen/spend_vk.param");
-    VerifyingKey::deserialize_unchecked(&vk_params[..]).expect("can deserialize VerifyingKey")
+    VerifyingKey::deserialize_uncompressed_unchecked(&vk_params[..])
+        .expect("can deserialize VerifyingKey")
 }
 
 fn output_verification_parameters() -> VerifyingKey<Bls12_377> {
     let vk_params = include_bytes!("gen/output_vk.param");
-    VerifyingKey::deserialize_unchecked(&vk_params[..]).expect("can deserialize VerifyingKey")
+    VerifyingKey::deserialize_uncompressed_unchecked(&vk_params[..])
+        .expect("can deserialize VerifyingKey")
 }
 
 fn swap_verification_parameters() -> VerifyingKey<Bls12_377> {
     let vk_params = include_bytes!("gen/swap_vk.param");
-    VerifyingKey::deserialize_unchecked(&vk_params[..]).expect("can deserialize VerifyingKey")
+    VerifyingKey::deserialize_uncompressed_unchecked(&vk_params[..])
+        .expect("can deserialize VerifyingKey")
 }
 
 fn undelegateclaim_verification_parameters() -> VerifyingKey<Bls12_377> {
     let vk_params = include_bytes!("gen/undelegateclaim_vk.param");
-    VerifyingKey::deserialize_unchecked(&vk_params[..]).expect("can deserialize VerifyingKey")
+    VerifyingKey::deserialize_uncompressed_unchecked(&vk_params[..])
+        .expect("can deserialize VerifyingKey")
 }
 
 fn delegator_vote_verification_parameters() -> VerifyingKey<Bls12_377> {
     let vk_params = include_bytes!("gen/delegator_vote_vk.param");
-    VerifyingKey::deserialize_unchecked(&vk_params[..]).expect("can deserialize VerifyingKey")
+    VerifyingKey::deserialize_uncompressed_unchecked(&vk_params[..])
+        .expect("can deserialize VerifyingKey")
 }
