@@ -7,7 +7,7 @@ use std::{
     ops::RangeInclusive,
 };
 
-use ark_ff::{fields::PrimeField, BigInt, Fp256, One, Zero};
+use ark_ff::{fields::PrimeField, BigInteger256, Fp256, One, Zero};
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
 use poseidon377::{hash_1, hash_4, Fq};
@@ -142,7 +142,7 @@ impl Hash {
     /// A stand-in hash that is out-of-range for `Fq`, to be used during intermediate construction
     /// of the tree as a sentinel value for uninitialized nodes.
     pub(crate) fn uninitialized() -> Hash {
-        Self(Fp256::new(BigInt::<4>::new([u64::MAX; 4])))
+        Self(Fp256::new(BigInteger256::new([u64::MAX; 4])))
     }
 
     /// Checks if the hash is uninitialized.
@@ -270,6 +270,9 @@ impl From<u64> for Forgotten {
 
 #[cfg(any(test, feature = "arbitrary"))]
 mod arbitrary {
+    use ark_ff::BigInteger256;
+    use poseidon377::Fq;
+
     use super::Hash;
 
     impl proptest::arbitrary::Arbitrary for Hash {
@@ -302,9 +305,9 @@ mod arbitrary {
                 rng.next_u64(),
                 rng.next_u64(),
             ];
-            Ok(proptest::strategy::Just(Hash(decaf377::Fq::new(
-                ark_ff::BigInt::<4>::new(parts),
-            ))))
+            Ok(proptest::strategy::Just(Hash(Fq::new(BigInteger256::new(
+                parts,
+            )))))
         }
     }
 }
