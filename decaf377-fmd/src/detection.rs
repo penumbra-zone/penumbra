@@ -88,7 +88,7 @@ impl DetectionKey {
             return false;
         };
 
-        let y = if let Ok(y) = Fr::deserialize(&clue.0[32..64]) {
+        let y = if let Ok(y) = Fr::deserialize_compressed(&clue.0[32..64]) {
             y
         } else {
             // Invalid y encoding => not a match
