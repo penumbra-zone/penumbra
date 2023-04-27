@@ -506,7 +506,7 @@ impl ViewProtocolService for ViewService {
                 ))
             })?;
 
-        let Some(tx) = maybe_tx else {
+        let Some((height, tx)) = maybe_tx else {
             return Ok(tonic::Response::new(pb::TransactionInfoResponse::default()));
         };
 
@@ -629,7 +629,7 @@ impl ViewProtocolService for ViewService {
         let txv = tx.view_from_perspective(&txp);
 
         let response = pb::TransactionInfoResponse {
-            height: None,
+            height: Some(height),
             id: Some(tx.id().into()),
             perspective: Some(txp.into()),
             transaction: Some(tx.into()),

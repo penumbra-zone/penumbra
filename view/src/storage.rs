@@ -570,22 +570,26 @@ impl Storage {
         .await?
     }
 
-    pub async fn transaction_by_hash(&self, tx_hash: &[u8]) -> anyhow::Result<Option<Transaction>> {
+    pub async fn transaction_by_hash(
+        &self,
+        tx_hash: &[u8],
+    ) -> anyhow::Result<Option<(u64, Transaction)>> {
         let pool = self.pool.clone();
         let tx_hash = tx_hash.to_vec();
 
         spawn_blocking(move || {
-            if let Some(tx_bytes) = pool
+            if let Some((block_height, tx_bytes)) = pool
                 .get()?
-                .prepare_cached("SELECT tx_bytes FROM tx WHERE tx_hash = ?1")?
+                .prepare_cached("SELECT block_height, tx_bytes FROM tx WHERE tx_hash = ?1")?
                 .query_row([tx_hash], |row| {
+                    let block_height: u64 = row.get("block_height")?;
                     let tx_bytes: Vec<u8> = row.get("tx_bytes")?;
-                    Ok(tx_bytes)
+                    Ok((block_height, tx_bytes))
                 })
                 .optional()?
             {
                 let tx = Transaction::decode(tx_bytes.as_slice())?;
-                Ok(Some(tx))
+                Ok(Some((block_height, tx)))
             } else {
                 Ok(None)
             }
