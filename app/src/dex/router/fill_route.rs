@@ -107,11 +107,16 @@ pub trait FillRoute: StateWrite + Sized {
         };
 
         'filling: while input.amount > 0u64.into() {
-            // Our method is based on the assurance provided by the routing algorithm: there exist a route with
-            // a positive capacity and an effective price that's similar or better than the specified `spill_price`.
-            // The role of the fill-phase is to try maximize the amount of flow up to the `spill_price`.
-            // We naively try to route as much input as possible on the first pass to identify constraining hops.
-            // For every constraint, we find the correspond input capacity for which they are "saturated".
+            // Our approach is based on the assurance provided by the routing phase,
+            // that there exist a route with a positive capacity, and an end-to-end
+            // price that is similar or better than the `spill_price`.
+            // The role of routing execution is to maximize the amount of flow up to
+            // that specified `spill_price`. First, we naively try to route as much
+            // input as the inventory of the best position of the first hop allows.
+            // Simulating execution for that input lets us identify these nodes that
+            // are limiting the flow aka. "constraints". For every such constraint,
+            // there's an input capacity that maximize its output without causing an
+            // overflow.
             let (constraining_hops, best_positions) = self.find_constraints(input, route).await?;
             let effective_price = best_positions.clone().into_iter().zip(pairs.clone()).fold(
                 U128x128::from(1u64),
@@ -123,11 +128,7 @@ pub trait FillRoute: StateWrite + Sized {
             tracing::debug!(?effective_price, "effective price across the route");
             tracing::debug!(num = constraining_hops.len(), "found constraints");
 
-            // If the effective price exceeds the spill price, stop filling.
-            // TODO(erwan): having a measure of marginal price per capacity (or depth) over the route
-            //              should be useful here. For example, we could hit the `spill_priover ce` trying to
-            //              route `input` on the route but it might be possible to route some inventory
-            //              that's smaller than `input`.
+            //  Stop filling if the effective price exceeds the spill price.
             if effective_price > spill_price {
                 tracing::debug!(?effective_price, ?spill_price, "spill price hit!");
                 break 'filling;
@@ -135,9 +136,11 @@ pub trait FillRoute: StateWrite + Sized {
 
             let input_capacity = match constraining_hops.last() {
                 Some((_constraining_position, saturating_input)) => {
-                    // It is not sufficient to pick the last constrait and lift it, because an earlier constraint in the route may be
-                    // more restraining. Instead, we must identity the largest "saturating input" that we can push through the route such
-                    // that we are able to lift the most limiting constraint.
+                    // It is not sufficient to pick the last constrait and lift it,
+                    // because an earlier constraint in the route might be more
+                    // limiting. Instead, we identifiy the largest saturating input
+                    // that we can push through the route such that the most limiting
+                    // constraint is lifted.
                     // TODO(erwan): should fold this into a `find_and_solve` routine.
                     let min_delta_1_star = constraining_hops.iter().fold(
                         saturating_input.clone(),
@@ -153,14 +156,14 @@ pub trait FillRoute: StateWrite + Sized {
                     input.amount
                 }
             };
-
             let mut current_value = Value {
                 amount: input_capacity,
                 asset_id: input.asset_id,
             };
 
-            // Now that we know `delta_1_star`, we can execute along the route,
-            // knowing that the ultimate constraint has been lifted.
+            // Now, we can execute along the route knowing that the most limiting 
+            // constraint is lifted. This means that this specific input is exactly 
+            // the maximum flow for the composed positions.
             for next_asset in route.iter().skip(1) {
                 let position = self
                     .best_position(&DirectedTradingPair {
@@ -171,9 +174,11 @@ pub trait FillRoute: StateWrite + Sized {
                     .ok_or_else(|| anyhow::anyhow!("unexpectedly missing position"))?;
                 let (unfilled, output) = self.fill_against(current_value, &position.id()).await?;
 
-                // If there's an unfilled input, that means we were constrained on this leg of the path.
+                // This should not happen, since the `current_capacity` is the 
+                // saturating input for the route.
                 if unfilled.amount > 0u64.into() {
                     tracing::error!(
+                        ?next_asset,
                         ?unfilled,
                         ?position,
                         ?current_value,
