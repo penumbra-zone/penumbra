@@ -23,8 +23,7 @@ impl ActionHandler for PositionOpen {
         //  + the fee is <=50%.
         self.position.check_stateless()?;
 
-        // TODO: any other checks of the trading function that should be performed?
-
+        // TODO(chris, erwan, henry): brainstorm safety on `TradingFunction`.
         Ok(())
     }
 

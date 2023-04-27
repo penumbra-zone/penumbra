@@ -266,6 +266,7 @@ pub(super) trait Inner: StateWrite {
             );
             tracing::debug!(pair = ?pair12, ?id, "indexing position 12");
         }
+
         if position.reserves.r1 != 0u64.into() {
             // Index this position for trades FROM asset 2 TO asset 1, since the position has asset 1 to give out.
             let pair21 = DirectedTradingPair {
