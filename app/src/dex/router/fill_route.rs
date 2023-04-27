@@ -214,11 +214,16 @@ pub trait FillRoute: StateWrite + Sized {
                 // loop requires that `input.amount > 0`. The only other possible
                 // source of a `current_value.amount == 0` is from the saturating
                 // input calculation (lifting the limiting constraint).
-                println!("zero current value.");
-                // Note: this can be hit during dust fills
-                // TODO(erwan): craft `test_dust_fill_zero_value` to prove this.
-                panic!("zero current value");
-                break 'filling;
+                // There are two reasons why no saturating can be zero:
+                // + delta_1_star = ceil(delta_1), so unless delta_1 == 0, we
+                // have delta_1_star > 0.
+                // + delta_1 = lambda_2 * accumulated_effective_price
+                // And lambda_2 != 0, since lambda_2 = r2 and r2 != 0 because
+                // otherwise it would not have been indexed for that pair's
+                // direction.
+                // + accumulated_effective_price != 0, because for each position
+                //   we have p, q != 0.
+                unreachable!("current_value is nonzero")
             }
 
             // Now record the input we consumed and the output we gained:
