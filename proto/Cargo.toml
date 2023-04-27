@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 decaf377-fmd = { path = "../decaf377-fmd" }
-decaf377-rdsa = { version = "0.5", git = "https://github.com/penumbra-zone/decaf377-rdsa" }
+decaf377-rdsa = { version = "0.5" }
 bytes = { version = "1", features = ["serde"] }
 prost = "0.11"
 tonic = { version = "0.8.1", optional = true }
