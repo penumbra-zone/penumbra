@@ -50,7 +50,7 @@ impl Component for Dex {
         end_block: &abci::request::EndBlock,
     ) {
         // For each batch swap during the block, calculate clearing prices and set in the JMT.
-        for (trading_pair, swap_flows) in state.lock().await.swap_flows() {
+        for (trading_pair, swap_flows) in state.swap_flows() {
             let (delta_1, delta_2) = (swap_flows.0.mock_decrypt(), swap_flows.1.mock_decrypt());
 
             tracing::debug!(?delta_1, ?delta_2, ?trading_pair);
@@ -58,8 +58,6 @@ impl Component for Dex {
             // Find the best route between the two assets in the trading pair.
             let (path, spill_price) = state
                 // TODO: max hops should not be hardcoded
-                .lock()
-                .await
                 .path_search(trading_pair.asset_1(), trading_pair.asset_2(), 4)
                 .await
                 .unwrap();
@@ -77,15 +75,13 @@ impl Component for Dex {
                     amount: delta_2,
                     asset_id: trading_pair.asset_2(),
                 };
-                let (unfilled_1, lambda_2) = state
-                    .lock()
-                    .await
+                let (unfilled_1, lambda_2) = Arc::get_mut(state)
+                    .expect("expected state to have no other refs")
                     .fill_route(delta_1, &path, spill_price.unwrap_or_default())
                     .await
                     .unwrap();
-                let (unfilled_2, lambda_1) = state
-                    .lock()
-                    .await
+                let (unfilled_2, lambda_1) = Arc::get_mut(state)
+                    .expect("expected state to have no other refs")
                     .fill_route(delta_2, &path, spill_price.unwrap_or_default())
                     .await
                     .unwrap();
@@ -117,7 +113,9 @@ impl Component for Dex {
                 lambda_2_1,
             };
             tracing::debug!(?output_data);
-            state.lock().await.set_output_data(output_data);
+            Arc::get_mut(state)
+                .expect("expected state to have no other refs")
+                .set_output_data(output_data);
         }
     }
 
