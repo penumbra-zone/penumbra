@@ -178,7 +178,8 @@ impl TryFrom<pb::FullViewingKey> for FullViewingKey {
 
         let ak = ak_bytes.try_into()?;
         let nk = NullifierKey(
-            Fq::deserialize(&nk_bytes[..]).context("could not deserialize nullifier key")?,
+            Fq::deserialize_compressed(&nk_bytes[..])
+                .context("could not deserialize nullifier key")?,
         );
 
         Ok(FullViewingKey::from_components(ak, nk))

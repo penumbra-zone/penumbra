@@ -57,7 +57,7 @@ impl TryFrom<&[u8]> for Id {
     type Error = anyhow::Error;
 
     fn try_from(slice: &[u8]) -> Result<Id, Self::Error> {
-        Ok(Id(Fq::deserialize(slice)?))
+        Ok(Id(Fq::deserialize_compressed(slice)?))
     }
 }
 

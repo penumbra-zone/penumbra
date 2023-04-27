@@ -1,7 +1,7 @@
 use ark_ff::PrimeField;
 use rand_core::{CryptoRng, RngCore};
 
-use ark_nonnative_field::NonNativeFieldVar;
+use ark_r1cs_std::fields::nonnative::NonNativeFieldVar;
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use decaf377::{

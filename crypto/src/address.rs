@@ -62,7 +62,7 @@ impl Address {
     ) -> Option<Self> {
         // XXX ugly -- better way to get our hands on the s value?
         // add to decaf377::Encoding? there's compress_to_field already...
-        if let Ok(transmission_key_s) = Fq::deserialize(&pk_d.0[..]) {
+        if let Ok(transmission_key_s) = Fq::deserialize_compressed(&pk_d.0[..]) {
             // don't need an error type here, caller will probably .expect anyways
             Some(Self {
                 d,
