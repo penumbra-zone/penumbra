@@ -62,6 +62,23 @@ pub trait FillRoute: StateWrite + Sized {
                 let delta_1_star = (U128x128::from(lambda_2) * accumulated_effective_price)
                     .expect("TODO(erwan): write proof");
 
+                // SAFETY: There are two important reasons to round up the saturating
+                // input here. The first one is because of asset conservation:
+                // -> The first reason has to do with "asset conservation":
+                // If we rounded down delta_1, we would "leak" the error term which
+                // can be catastrophic: d_1 = floor(0.1), l_2 = 2
+                //                      d_1 = 0, l_2 = 2
+                // Instead, we want to "burn" the complement of the error term:
+                //                      d_1 = ceil(0.1), l_2 = 2
+                //                      d_1 = 1, l_2 = 2
+                // -> The second reason is that routing execution assumes that
+                // saturating inputs are positive, and in particular, nonzero.
+                // Unlike preserving the asset conservation law, this is not a
+                // driving the decision of rounding up here, but any changes to
+                // this computation percolates into routing execution behavior.
+                // Therefore, it is necessary to make sure that this assumption
+                // isn't broken without making the necessary changes in the routing
+                // execution logic.
                 let saturating_input: Amount = delta_1_star.round_up().try_into()?;
 
                 constraining_positions.push((position, saturating_input));
@@ -161,8 +178,8 @@ pub trait FillRoute: StateWrite + Sized {
                 asset_id: input.asset_id,
             };
 
-            // Now, we can execute along the route knowing that the most limiting 
-            // constraint is lifted. This means that this specific input is exactly 
+            // Now, we can execute along the route knowing that the most limiting
+            // constraint is lifted. This means that this specific input is exactly
             // the maximum flow for the composed positions.
             for next_asset in route.iter().skip(1) {
                 let position = self
@@ -174,7 +191,7 @@ pub trait FillRoute: StateWrite + Sized {
                     .ok_or_else(|| anyhow::anyhow!("unexpectedly missing position"))?;
                 let (unfilled, output) = self.fill_against(current_value, &position.id()).await?;
 
-                // This should not happen, since the `current_capacity` is the 
+                // This should not happen, since the `current_capacity` is the
                 // saturating input for the route.
                 if unfilled.amount > 0u64.into() {
                     tracing::error!(
@@ -193,6 +210,10 @@ pub trait FillRoute: StateWrite + Sized {
             }
 
             if current_value.amount == 0u64.into() {
+                // While the `input` to `fill_route` can be zero, the 'filling
+                // loop requires that `input.amount > 0`. The only other possible
+                // source of a `current_value.amount == 0` is from the saturating
+                // input calculation (lifting the limiting constraint).
                 println!("zero current value.");
                 // Note: this can be hit during dust fills
                 // TODO(erwan): craft `test_dust_fill_zero_value` to prove this.
