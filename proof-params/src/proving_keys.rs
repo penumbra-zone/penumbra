@@ -32,7 +32,7 @@ pub fn delegator_vote_proving_parameters() -> ProvingKey<Bls12_377> {
 /// Given a byte slice, deserialize it into a proving key.
 pub fn load_proving_parameters(bytes: &[u8], expected_id: &str) -> ProvingKey<Bls12_377> {
     let pk =
-        ProvingKey::deserialize_uncompressed_unchecked(bytes).expect("can deserialize ProvingKey");
+        ProvingKey::deserialize_compressed_unchecked(bytes).expect("can deserialize ProvingKey");
     let pk_id = pk.debug_id();
     // Double-check that the ID of the proving key we loaded matches the hardcoded one,
     // in case there was some problem with git-lfs updating the file, or something.
