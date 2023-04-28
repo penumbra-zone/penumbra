@@ -62,6 +62,8 @@ impl Component for Dex {
                 .await
                 .unwrap();
 
+            tracing::debug!("path is some? {}", path.is_some());
+
             let (lambda_1, lambda_2, success) = if path.is_some() {
                 let path = path.unwrap();
                 tracing::debug!(?path);

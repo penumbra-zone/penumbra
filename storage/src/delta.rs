@@ -121,6 +121,7 @@ impl<S: StateRead> StateDelta<S> {
             changes.merge(cache);
         }
         // Last, apply the changes in the leaf cache.
+        println!("Flatten");
         changes.merge(self.leaf_cache.write().take().unwrap());
 
         (state, changes)
@@ -354,6 +355,7 @@ impl<S: StateRead> StateWrite for StateDelta<S> {
     }
 
     fn nonconsensus_put_raw(&mut self, key: Vec<u8>, value: Vec<u8>) {
+        println!("insert nonconsensus change: {:?} -> {:?}", key, value);
         self.leaf_cache
             .write()
             .as_mut()
