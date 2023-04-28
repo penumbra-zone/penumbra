@@ -797,10 +797,9 @@ impl TxCmd {
                         r2: Amount::zero(),
                     },
                 );
-
-                // `spread` is another name for `fee`, which is at most 10_000 bps.
-                if *spread > 10_000 {
-                    anyhow::bail!("spread parameter must be at most 10_000bps (i.e. 100%)");
+                // `spread` is another name for `fee`, which is at most 5000 bps.
+                if *spread > 5000 {
+                    anyhow::bail!("spread parameter must be at most 5000bps (i.e. 50%)");
                 }
 
                 let position = Position::new(OsRng, trading_pair, *spread, p, q, reserves);
@@ -910,9 +909,9 @@ impl TxCmd {
                     },
                 );
 
-                // `spread` is another name for `fee`, which is at most 10_000 bps.
-                if *spread > 10_000 {
-                    anyhow::bail!("spread parameter must be at most 10_000bps (i.e. 100%)");
+                // `spread` is another name for `fee`, which is at most 5000 bps.
+                if *spread > 5000 {
+                    anyhow::bail!("spread parameter must be at most 5000bps (i.e. 50%)");
                 }
 
                 let position = Position::new(OsRng, trading_pair, *spread, p, q, reserves);
