@@ -19,7 +19,7 @@ penumbra-proof-params = { path = "../proof-params/", features = [
 decaf377 = "0.3"
 decaf377-rdsa = { version = "0.5" }
 poseidon377 = { version = "0.3", features = ["r1cs"] }
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", version = "0.1.1" }
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.1.x",  version = "0.1.1" }
 
 ibc-proto = { version = "0.26", default-features = false, features = ["std"] }
 
