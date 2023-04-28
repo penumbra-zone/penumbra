@@ -9,7 +9,7 @@ use std::{cell::RefCell, collections::BTreeMap, sync::Arc};
 
 use crate::{
     compactblock::view::{StateReadExt as _, StateWriteExt as _},
-    dex::router::{FillRoute, PathSearch},
+    dex::router::{FillRoute, PathSearch, RouteAndFill},
     Component,
 };
 use anyhow::Result;
@@ -51,73 +51,18 @@ impl Component for Dex {
     ) {
         // For each batch swap during the block, calculate clearing prices and set in the JMT.
         for (trading_pair, swap_flows) in state.swap_flows() {
-            let (delta_1, delta_2) = (swap_flows.0.mock_decrypt(), swap_flows.1.mock_decrypt());
-
-            tracing::debug!(?delta_1, ?delta_2, ?trading_pair);
-
-            // Find the best route between the two assets in the trading pair.
-            let (path, spill_price) = state
-                // TODO: max hops should not be hardcoded
-                .path_search(trading_pair.asset_1(), trading_pair.asset_2(), 4)
+            // Arc::get_mut(state)
+            //     .expect("one state ref only")
+            state
+                // TODO: pass a correct price_limit
+                .handle_batch_swaps(
+                    trading_pair,
+                    swap_flows,
+                    1u32.into(),
+                    end_block.height.try_into().expect("missing height"),
+                )
                 .await
-                .unwrap();
-
-            tracing::debug!("path is some? {}", path.is_some());
-
-            let (lambda_1, lambda_2, success) = if path.is_some() {
-                let path = path.unwrap();
-                tracing::debug!(?path);
-                // path found, fill as much as we can
-                // TODO: what if one of delta_1/delta_2 is zero? don't we need to fill based on the other?
-                let delta_1 = Value {
-                    amount: delta_1,
-                    asset_id: trading_pair.asset_1(),
-                };
-                let delta_2 = Value {
-                    amount: delta_2,
-                    asset_id: trading_pair.asset_2(),
-                };
-                let (unfilled_1, lambda_2) = Arc::get_mut(state)
-                    .expect("expected state to have no other refs")
-                    .fill_route(delta_1, &path, spill_price.unwrap_or_default())
-                    .await
-                    .unwrap();
-                let (unfilled_2, lambda_1) = Arc::get_mut(state)
-                    .expect("expected state to have no other refs")
-                    .fill_route(delta_2, &path, spill_price.unwrap_or_default())
-                    .await
-                    .unwrap();
-                assert_eq!(lambda_1.asset_id, trading_pair.asset_1());
-                assert_eq!(lambda_2.asset_id, trading_pair.asset_2());
-                let lambda_1 = lambda_1.amount;
-                let lambda_2 = lambda_2.amount;
-                // TODO: don't we need to loop here to spill over and use up as much unfilled remaining assets as possible?
-                tracing::debug!(?lambda_1, ?lambda_2, ?unfilled_1, ?unfilled_2);
-                (lambda_1, lambda_2, true)
-            } else {
-                (0u64.into(), 0u64.into(), false)
-            };
-
-            let (lambda_1_1, lambda_2_2, lambda_2_1, lambda_1_2) = if success {
-                (0u64.into(), 0u64.into(), lambda_2, lambda_1)
-            } else {
-                (delta_1, delta_2, 0u64.into(), 0u64.into())
-            };
-
-            let output_data = BatchSwapOutputData {
-                height: end_block.height.try_into().unwrap(),
-                trading_pair,
-                delta_1,
-                delta_2,
-                lambda_1_1,
-                lambda_2_2,
-                lambda_1_2,
-                lambda_2_1,
-            };
-            tracing::debug!(?output_data);
-            Arc::get_mut(state)
-                .expect("expected state to have no other refs")
-                .set_output_data(output_data);
+                .expect("unable to process batch swaps");
         }
     }
 
