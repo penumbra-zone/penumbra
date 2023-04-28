@@ -269,7 +269,7 @@ pub(super) trait Inner: StateWrite {
             };
             let phi12 = phi.component.clone();
             let k = state_key::internal::price_index::key(&pair12, &phi12, &id);
-            println!("indexing to k: {:?}", k);
+            println!("indexing to k (1): {:?}", k);
             self.nonconsensus_put_raw(
                 state_key::internal::price_index::key(&pair12, &phi12, &id),
                 vec![],
@@ -286,7 +286,7 @@ pub(super) trait Inner: StateWrite {
             };
             let phi21 = phi.component.flip();
             let k = state_key::internal::price_index::key(&pair21, &phi21, &id);
-            println!("indexing to k: {:?}", k);
+            println!("indexing to k (2): {:?}", k);
             self.nonconsensus_put_raw(
                 state_key::internal::price_index::key(&pair21, &phi21, &id),
                 vec![],

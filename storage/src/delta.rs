@@ -346,6 +346,7 @@ impl<S: StateRead> StateWrite for StateDelta<S> {
     }
 
     fn nonconsensus_delete(&mut self, key: Vec<u8>) {
+        println!("nonconsensus delete key: {:?}", key);
         self.leaf_cache
             .write()
             .as_mut()
