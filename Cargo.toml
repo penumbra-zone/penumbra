@@ -7,6 +7,9 @@ exclude = [
 
 # Also remember to add to deployments/scripts/rust-docs
 members = [
+  "crates/component",
+  # Legacy: move these directories into `crates/` heirarchy
+  # as it becomes possible (no in flight changes)
   "decaf377-fmd",
   "decaf377-ka",
   "eddy",
@@ -14,7 +17,6 @@ members = [
   "chain",
   "app",
   "crypto",
-  "component",
   "custody",
   "measure",
   "narsil",
