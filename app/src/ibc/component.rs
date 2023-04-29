@@ -17,7 +17,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use ibc_types::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use ibc_types::core::ics02_client::height::Height;
-use penumbra_chain::genesis;
+
 use penumbra_storage::StateWrite;
 use tendermint::abci;
 use tracing::instrument;
@@ -26,8 +26,10 @@ pub struct IBCComponent {}
 
 #[async_trait]
 impl Component for IBCComponent {
+    type AppState = ();
+
     #[instrument(name = "ibc", skip(state, _app_state))]
-    async fn init_chain<S: StateWrite>(mut state: S, _app_state: &genesis::AppState) {
+    async fn init_chain<S: StateWrite>(mut state: S, _app_state: &()) {
         // set the initial client count
         state.put_client_counter(ClientCounter(0));
     }

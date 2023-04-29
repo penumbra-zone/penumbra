@@ -5,7 +5,7 @@ use crate::compactblock::view::{StateReadExt as _, StateWriteExt as _};
 use crate::Component;
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_chain::genesis;
+
 use penumbra_crypto::dex::lp::Reserves;
 use penumbra_crypto::{
     asset,
@@ -24,8 +24,10 @@ pub struct StubDex {}
 
 #[async_trait]
 impl Component for StubDex {
+    type AppState = ();
+
     #[instrument(name = "stubdex", skip(state, _app_state))]
-    async fn init_chain<S: StateWrite>(mut state: S, _app_state: &genesis::AppState) {
+    async fn init_chain<S: StateWrite>(mut state: S, _app_state: &()) {
         // Hardcode some AMMs
         let gm = asset::REGISTRY.parse_unit("gm");
         let gn = asset::REGISTRY.parse_unit("gn");

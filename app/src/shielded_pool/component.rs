@@ -19,6 +19,8 @@ pub struct ShieldedPool {}
 
 #[async_trait]
 impl Component for ShieldedPool {
+    type AppState = genesis::AppState;
+
     // #[instrument(name = "shielded_pool", skip(state, app_state))]
     async fn init_chain<S: StateWrite>(mut state: S, app_state: &genesis::AppState) {
         // Register a denom for each asset in the genesis state

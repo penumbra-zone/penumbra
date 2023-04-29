@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use penumbra_chain::{genesis, StateReadExt};
+use penumbra_chain::StateReadExt;
 use penumbra_storage::StateWrite;
 use penumbra_transaction::proposal;
 use tendermint::abci;
@@ -15,8 +15,10 @@ pub struct Governance {}
 
 #[async_trait]
 impl Component for Governance {
+    type AppState = ();
+
     #[instrument(name = "governance", skip(state, _app_state))]
-    async fn init_chain<S: StateWrite>(mut state: S, _app_state: &genesis::AppState) {
+    async fn init_chain<S: StateWrite>(mut state: S, _app_state: &()) {
         // Clients need to be able to read the next proposal number, even when no proposals have
         // been submitted yet
         state.init_proposal_counter();

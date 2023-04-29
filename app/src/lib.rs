@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_chain::genesis;
+
 use penumbra_storage::StateWrite;
 use tendermint::abci;
 
@@ -31,12 +31,16 @@ pub mod stubdex;
 /// A component of the Penumbra application.
 #[async_trait]
 pub trait Component {
+    /// A serialized representation of the component's application state,
+    /// passed in to [`Component::init_chain`].
+    type AppState;
+
     /// Performs initialization, given the genesis state.
     ///
     /// This method is called once per chain, and should only perform
     /// writes, since the backing tree for the [`State`] will
     /// be empty.
-    async fn init_chain<S: StateWrite>(state: S, app_state: &genesis::AppState);
+    async fn init_chain<S: StateWrite>(state: S, app_state: &Self::AppState);
 
     /// Begins a new block, optionally inspecting the ABCI
     /// [`BeginBlock`](abci::request::BeginBlock) request.
