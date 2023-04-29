@@ -5,7 +5,6 @@ use futures::{
     stream::{StreamExt, TryStreamExt},
     TryFutureExt,
 };
-use penumbra_app::compactblock::view::StateReadExt as _;
 use penumbra_app::stake::{validator, StateReadExt as _};
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::{

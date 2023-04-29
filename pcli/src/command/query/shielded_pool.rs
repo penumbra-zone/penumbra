@@ -40,14 +40,15 @@ pub enum ShieldedPool {
 
 impl ShieldedPool {
     pub fn key(&self) -> String {
-        use penumbra_app::compactblock::state_key as cpb_state_key;
-        use penumbra_app::sct::state_key as sct_state_key;
         use penumbra_app::shielded_pool::state_key;
+        use penumbra_chain::state_key as chain_state_key;
         match self {
-            ShieldedPool::Anchor { height } => sct_state_key::anchor_by_height(*height),
-            ShieldedPool::BlockAnchor { height } => sct_state_key::block_anchor_by_height(*height),
-            ShieldedPool::EpochAnchor { epoch } => sct_state_key::epoch_anchor_by_index(*epoch),
-            ShieldedPool::CompactBlock { height } => cpb_state_key::compact_block(*height),
+            ShieldedPool::Anchor { height } => chain_state_key::anchor_by_height(*height),
+            ShieldedPool::BlockAnchor { height } => {
+                chain_state_key::block_anchor_by_height(*height)
+            }
+            ShieldedPool::EpochAnchor { epoch } => chain_state_key::epoch_anchor_by_index(*epoch),
+            ShieldedPool::CompactBlock { height } => chain_state_key::compact_block(*height),
             ShieldedPool::Commitment { commitment } => state_key::note_source(commitment),
             ShieldedPool::Nullifier { nullifier } => state_key::spent_nullifier_lookup(nullifier),
         }
