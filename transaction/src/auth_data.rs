@@ -1,7 +1,8 @@
-use penumbra_crypto::rdsa::{Signature, SpendAuth};
+use penumbra_crypto::{
+    rdsa::{Signature, SpendAuth},
+    EffectHash,
+};
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
-
-use crate::EffectHash;
 
 /// Authorization data returned in response to a
 /// [`TransactionDescription`](crate::TransactionDescription).

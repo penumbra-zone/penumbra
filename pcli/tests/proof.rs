@@ -9,8 +9,7 @@ use penumbra_crypto::{
     keys::{SeedPhrase, SpendKey},
     proofs::groth16::{OutputProof, SpendProof, SwapProof},
     rdsa::{SpendAuth, VerificationKey},
-    transaction::Fee,
-    Amount, Balance, Note, Value,
+    Amount, Balance, Fee, Note, Value,
 };
 use penumbra_proof_params::{
     OUTPUT_PROOF_PROVING_KEY, OUTPUT_PROOF_VERIFICATION_KEY, SPEND_PROOF_PROVING_KEY,

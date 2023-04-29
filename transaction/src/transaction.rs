@@ -11,8 +11,7 @@ use penumbra_crypto::{
     memo::{MemoCiphertext, MemoPlaintext},
     note::Commitment,
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
-    transaction::Fee,
-    Fr, FullViewingKey, Note, Nullifier, PayloadKey,
+    Fee, Fr, FullViewingKey, Note, Nullifier, PayloadKey, TransactionContext,
 };
 use penumbra_proto::{
     core::stake::v1alpha1 as pbs, core::transaction::v1alpha1 as pbt, DomainType, Message,
@@ -58,6 +57,13 @@ impl Default for Transaction {
 }
 
 impl Transaction {
+    pub fn context(&self) -> TransactionContext {
+        TransactionContext {
+            anchor: self.anchor,
+            effect_hash: self.effect_hash(),
+        }
+    }
+
     pub fn num_proofs(&self) -> usize {
         self.transaction_body
             .actions

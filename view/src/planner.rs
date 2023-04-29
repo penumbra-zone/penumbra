@@ -19,8 +19,7 @@ use penumbra_crypto::{
     keys::{AccountGroupId, AddressIndex},
     memo::MemoPlaintext,
     stake::IdentityKey,
-    transaction::Fee,
-    Address, Note, Value,
+    Address, Fee, Note, Value,
 };
 use penumbra_crypto::{dex::lp::Reserves, Balance};
 use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};

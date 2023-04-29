@@ -3,7 +3,7 @@ use crate::{ActionView, IsAction, TransactionPerspective};
 use anyhow::Context;
 use ark_ff::Zero;
 use penumbra_crypto::dex::BatchSwapOutputData;
-use penumbra_crypto::transaction::Fee;
+use penumbra_crypto::Fee;
 use penumbra_crypto::{proofs::transparent::SwapClaimProof, Fr};
 use penumbra_crypto::{Balance, Nullifier};
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};

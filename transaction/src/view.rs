@@ -4,7 +4,7 @@ use decaf377_fmd::Clue;
 use decaf377_rdsa::{Binding, Signature};
 use penumbra_crypto::{
     memo::{MemoCiphertext, MemoPlaintext},
-    transaction::Fee,
+    Fee,
 };
 use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType};
 

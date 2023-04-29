@@ -2,26 +2,24 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use penumbra_crypto::TransactionContext;
 use penumbra_proof_params::SPEND_PROOF_VERIFICATION_KEY;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::{action::Spend, Transaction};
+use penumbra_transaction::action::Spend;
 
 use crate::shielded_pool::StateReadExt;
 use crate::{action_handler::ActionHandler, shielded_pool::NoteManager};
 
 #[async_trait]
 impl ActionHandler for Spend {
-    type CheckStatelessContext = Arc<Transaction>;
-    async fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
+    type CheckStatelessContext = TransactionContext;
+    async fn check_stateless(&self, context: TransactionContext) -> Result<()> {
         let spend = self;
-        let effect_hash = context.transaction_body().effect_hash();
-        let anchor = context.anchor;
-
         // 2. Check spend auth signature using provided spend auth key.
         spend
             .body
             .rk
-            .verify(effect_hash.as_ref(), &spend.auth_sig)
+            .verify(context.effect_hash.as_ref(), &spend.auth_sig)
             .context("spend auth signature failed to verify")?;
 
         // 3. Check that the proof verifies.
@@ -29,7 +27,7 @@ impl ActionHandler for Spend {
             .proof
             .verify(
                 &SPEND_PROOF_VERIFICATION_KEY,
-                anchor,
+                context.anchor,
                 spend.body.balance_commitment,
                 spend.body.nullifier,
                 spend.body.rk,
@@ -56,11 +54,10 @@ impl ActionHandler for Spend {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
 
     use anyhow::Result;
     use penumbra_chain::test_keys;
-    use penumbra_crypto::{transaction::Fee, Note, Value, STAKING_TOKEN_ASSET_ID};
+    use penumbra_crypto::{Fee, Note, Value, STAKING_TOKEN_ASSET_ID};
     use penumbra_tct as tct;
     use penumbra_transaction::{
         plan::{OutputPlan, SpendPlan, TransactionPlan},
@@ -137,7 +134,7 @@ mod tests {
             .authorize(&mut rng, &auth_data)
             .expect("can authorize transaction");
 
-        let context = Arc::new(tx.clone());
+        let context = tx.context();
 
         // On the verifier side, perform stateless verification.
         for action in tx.transaction_body().actions {
@@ -204,9 +201,8 @@ mod tests {
         // Set the anchor to the wrong root.
         tx.anchor = wrong_root;
 
-        let context = Arc::new(tx.clone());
         // On the verifier side, perform stateless verification.
-        let result = tx.check_stateless(context.clone()).await;
+        let result = tx.check_stateless(()).await;
         assert!(result.is_err());
 
         Ok(())

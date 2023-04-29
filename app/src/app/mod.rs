@@ -234,8 +234,7 @@ impl App {
         // and I/O-bound stateful checks at the same time.
         let tx2 = tx.clone();
         let stateless = tokio::spawn(
-            async move { tx2.check_stateless(tx2.clone()).await }
-                .instrument(tracing::Span::current()),
+            async move { tx2.check_stateless(()).await }.instrument(tracing::Span::current()),
         );
         let tx2 = tx.clone();
         let state2 = self.state.clone();

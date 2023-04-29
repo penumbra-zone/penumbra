@@ -165,7 +165,7 @@ impl ActionHandler for ProposalSubmit {
                 let tx = build_dao_transaction(transaction_plan.clone())
                     .await
                     .context("failed to build submitted DAO spend transaction plan")?;
-                tx.check_stateless(Arc::new(tx.clone()))
+                tx.check_stateless(())
                     .await
                     .context("submitted DAO spend transaction failed stateless checks")?;
                 tx.check_stateful(state.clone())

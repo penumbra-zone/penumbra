@@ -9,7 +9,7 @@ use penumbra_app::stake::{
     validator::{Validator, ValidatorToml},
     FundingStream, FundingStreams,
 };
-use penumbra_crypto::{keys::AddressIndex, stake::IdentityKey, transaction::Fee, GovernanceKey};
+use penumbra_crypto::{keys::AddressIndex, stake::IdentityKey, Fee, GovernanceKey};
 use penumbra_proto::{core::stake::v1alpha1::Validator as ProtoValidator, DomainType, Message};
 use penumbra_transaction::action::{ValidatorVote, ValidatorVoteBody, Vote};
 use penumbra_wallet::plan;

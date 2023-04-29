@@ -10,6 +10,8 @@ pub mod asset;
 pub mod balance;
 pub mod dex;
 pub mod eddy;
+mod effect_hash;
+mod fee;
 pub mod fixpoint;
 mod flow;
 mod governance;
@@ -23,13 +25,15 @@ pub mod proofs;
 pub mod rseed;
 pub mod stake;
 pub mod symmetric;
-pub mod transaction;
+mod transaction;
 pub mod value;
 
 pub use address::{Address, AddressView};
 pub use asset::Amount;
 pub use asset::Asset;
 pub use balance::Balance;
+pub use effect_hash::EffectHash;
+pub use fee::Fee;
 pub use flow::{MockFlowCiphertext, SwapFlow};
 pub use governance::{
     key::GovernanceKey,
@@ -42,6 +46,7 @@ pub use note_payload::NotePayload;
 pub use nullifier::Nullifier;
 pub use rseed::Rseed;
 pub use symmetric::PayloadKey;
+pub use transaction::TransactionContext;
 pub use value::{Value, ValueVar, ValueView};
 
 fn fmt_hex<T: AsRef<[u8]>>(data: T, f: &mut std::fmt::Formatter) -> std::fmt::Result {

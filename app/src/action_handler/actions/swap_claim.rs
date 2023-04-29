@@ -3,8 +3,9 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use penumbra_chain::{sync::StatePayload, StateReadExt as _};
+use penumbra_crypto::TransactionContext;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::{action::SwapClaim, Transaction};
+use penumbra_transaction::action::SwapClaim;
 
 use crate::{
     action_handler::ActionHandler, shielded_pool::NoteManager, shielded_pool::StateReadExt as _,
@@ -13,8 +14,8 @@ use crate::{
 
 #[async_trait]
 impl ActionHandler for SwapClaim {
-    type CheckStatelessContext = Arc<Transaction>;
-    async fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
+    type CheckStatelessContext = TransactionContext;
+    async fn check_stateless(&self, context: TransactionContext) -> Result<()> {
         self.proof
             .verify(
                 context.anchor,

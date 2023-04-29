@@ -7,8 +7,7 @@ use penumbra_app::stake::validator;
 use penumbra_crypto::{
     keys::{AccountGroupId, AddressIndex},
     memo::MemoPlaintext,
-    transaction::Fee,
-    Address, Amount, FullViewingKey, Value,
+    Address, Amount, Fee, FullViewingKey, Value,
 };
 use penumbra_proto::{
     client::v1alpha1::specific_query_service_client::SpecificQueryServiceClient,

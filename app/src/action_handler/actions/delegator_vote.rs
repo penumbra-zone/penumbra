@@ -4,12 +4,10 @@ use anyhow::{Context, Result};
 use ark_ff::Zero;
 use async_trait::async_trait;
 use decaf377::Fr;
+use penumbra_crypto::TransactionContext;
 use penumbra_proof_params::DELEGATOR_VOTE_PROOF_VERIFICATION_KEY;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::{
-    action::{DelegatorVote, DelegatorVoteBody},
-    Transaction,
-};
+use penumbra_transaction::action::{DelegatorVote, DelegatorVoteBody};
 
 use crate::{
     governance::{StateReadExt as _, StateWriteExt as _},
@@ -18,9 +16,9 @@ use crate::{
 
 #[async_trait]
 impl ActionHandler for DelegatorVote {
-    type CheckStatelessContext = Arc<Transaction>;
+    type CheckStatelessContext = TransactionContext;
 
-    async fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
+    async fn check_stateless(&self, context: TransactionContext) -> Result<()> {
         let DelegatorVote {
             auth_sig,
             proof,
@@ -37,18 +35,15 @@ impl ActionHandler for DelegatorVote {
                 },
         } = self;
 
-        let effect_hash = context.transaction_body().effect_hash();
-        let anchor = context.anchor;
-
         // 1. Check spend auth signature using provided spend auth key.
-        rk.verify(effect_hash.as_ref(), auth_sig)
+        rk.verify(context.effect_hash.as_ref(), auth_sig)
             .context("delegator vote auth signature failed to verify")?;
 
         // 2. Verify the proof against the provided anchor and start position:
         proof
             .verify(
                 &DELEGATOR_VOTE_PROOF_VERIFICATION_KEY,
-                anchor,
+                context.anchor,
                 value.commit(Fr::zero()),
                 *nullifier,
                 *rk,

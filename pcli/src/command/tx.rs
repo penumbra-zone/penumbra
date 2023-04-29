@@ -20,8 +20,7 @@ use penumbra_crypto::{
     keys::AddressIndex,
     memo::MemoPlaintext,
     stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken},
-    transaction::Fee,
-    Amount, Value, STAKING_TOKEN_ASSET_ID,
+    Amount, Fee, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::{
     client::v1alpha1::{
