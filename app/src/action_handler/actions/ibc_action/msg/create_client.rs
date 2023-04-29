@@ -6,7 +6,6 @@ use ibc_types::core::ics02_client::client_state::ClientState;
 use ibc_types::core::ics02_client::msgs::create_client::MsgCreateClient;
 use ibc_types::core::ics24_host::identifier::ClientId;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::Transaction;
 
 use crate::action_handler::ActionHandler;
 use crate::ibc::client::ics02_validation;
@@ -15,7 +14,8 @@ use crate::ibc::{event, ClientCounter};
 
 #[async_trait]
 impl ActionHandler for MsgCreateClient {
-    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    type CheckStatelessContext = ();
+    async fn check_stateless(&self, _context: ()) -> Result<()> {
         client_state_is_tendermint(self)?;
         consensus_state_is_tendermint(self)?;
 

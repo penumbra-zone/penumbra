@@ -7,7 +7,7 @@ use penumbra_proto::DomainType;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{
     action::{ValidatorVote, ValidatorVoteBody},
-    proposal, Transaction,
+    proposal,
 };
 
 use crate::{
@@ -17,7 +17,8 @@ use crate::{
 
 #[async_trait]
 impl ActionHandler for ValidatorVote {
-    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    type CheckStatelessContext = ();
+    async fn check_stateless(&self, _context: ()) -> Result<()> {
         let ValidatorVote { body, auth_sig } = self;
 
         // Check the signature using the GOVERNANCE KEY:

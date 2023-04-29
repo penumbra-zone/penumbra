@@ -384,8 +384,7 @@ async fn empty_order_fails() -> anyhow::Result<()> {
         position: position_1,
     };
 
-    let tx = penumbra_transaction::Transaction::default();
-    assert!(position_action.check_stateless(Arc::new(tx)).await.is_err());
+    assert!(position_action.check_stateless(()).await.is_err());
 
     Ok(())
 }

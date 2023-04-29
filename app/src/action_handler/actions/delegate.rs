@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::{action::Delegate, Transaction};
+use penumbra_transaction::action::Delegate;
 
 use crate::{
     action_handler::ActionHandler,
@@ -12,7 +12,8 @@ use crate::{
 
 #[async_trait]
 impl ActionHandler for Delegate {
-    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    type CheckStatelessContext = ();
+    async fn check_stateless(&self, _context: ()) -> Result<()> {
         // There are no stateless checks specific to this action.
         Ok(())
     }

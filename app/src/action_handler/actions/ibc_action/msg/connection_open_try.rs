@@ -17,7 +17,6 @@ use ibc_types::core::{
 };
 use penumbra_chain::StateReadExt as _;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::Transaction;
 
 use crate::{
     action_handler::ActionHandler,
@@ -33,7 +32,8 @@ use ibc_types::Height as IBCHeight;
 
 #[async_trait]
 impl ActionHandler for MsgConnectionOpenTry {
-    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    type CheckStatelessContext = ();
+    async fn check_stateless(&self, _context: ()) -> Result<()> {
         // basic checks are performed by the ibc-rs crate when deserializing domain types.
         Ok(())
     }

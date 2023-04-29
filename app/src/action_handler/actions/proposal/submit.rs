@@ -40,7 +40,8 @@ pub const PROPOSAL_DESCRIPTION_LIMIT: usize = 10_000; // ⚠️ DON'T CHANGE THI
 
 #[async_trait]
 impl ActionHandler for ProposalSubmit {
-    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    type CheckStatelessContext = ();
+    async fn check_stateless(&self, _context: ()) -> Result<()> {
         let ProposalSubmit {
             proposal,
             deposit_amount: _, // we don't check the deposit amount because it's defined by state

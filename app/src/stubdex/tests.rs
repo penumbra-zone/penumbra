@@ -61,9 +61,7 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
 
     // 3. Simulate execution of the Swap action
 
-    // We don't use the context in the Swap::check_stateless impl, so use a dummy one.
-    let dummy_context = Arc::new(Transaction::default());
-    swap.check_stateless(dummy_context.clone()).await?;
+    swap.check_stateless(()).await?;
     swap.check_stateful(state.clone()).await?;
     let mut state_tx = state.try_begin_transaction().unwrap();
     swap.execute(&mut state_tx).await?;
@@ -167,9 +165,7 @@ async fn swap_with_nonzero_fee() -> anyhow::Result<()> {
 
     // 3. Simulate execution of the Swap action
 
-    // We don't use the context in the Swap::check_stateless impl, so use a dummy one.
-    let dummy_context = Arc::new(Transaction::default());
-    swap.check_stateless(dummy_context.clone()).await?;
+    swap.check_stateless(()).await?;
     swap.check_stateful(state.clone()).await?;
     let mut state_tx = state.try_begin_transaction().unwrap();
     swap.execute(&mut state_tx).await?;

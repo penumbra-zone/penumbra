@@ -8,7 +8,6 @@ use ibc_types::core::ics03_connection::connection::{ConnectionEnd, Counterparty,
 use ibc_types::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 use ibc_types::core::ics24_host::path::ConnectionPath;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::Transaction;
 
 use crate::action_handler::ActionHandler;
 use crate::ibc::component::client::StateReadExt as _;
@@ -17,7 +16,8 @@ use crate::ibc::event;
 
 #[async_trait]
 impl ActionHandler for MsgConnectionOpenConfirm {
-    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    type CheckStatelessContext = ();
+    async fn check_stateless(&self, _context: ()) -> Result<()> {
         // NOTE: other than that the message is a well formed ConnectionOpenConfirm,
         // there is no other stateless validation to perform.
 

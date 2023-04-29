@@ -12,7 +12,6 @@ use ibc_types::core::ics24_host::path::{
 };
 use penumbra_chain::StateReadExt as _;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::Transaction;
 
 use crate::action_handler::ActionHandler;
 use crate::ibc::component::client::StateReadExt as _;
@@ -21,7 +20,8 @@ use crate::ibc::{event, validate_penumbra_client_state};
 
 #[async_trait]
 impl ActionHandler for MsgConnectionOpenAck {
-    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    type CheckStatelessContext = ();
+    async fn check_stateless(&self, _context: ()) -> Result<()> {
         Ok(())
     }
 

@@ -421,7 +421,7 @@ mod tests {
     use ibc_types::core::ics02_client::msgs::create_client::MsgCreateClient;
     use penumbra_chain::StateWriteExt;
     use penumbra_storage::{ArcStateDeltaExt, StateDelta, TempStorage};
-    use penumbra_transaction::{action::IbcAction, Transaction};
+    use penumbra_transaction::action::IbcAction;
     use std::str::FromStr;
     use tendermint::Time;
 
@@ -475,15 +475,7 @@ mod tests {
         let create_client_action = IbcAction::CreateClient(msg_create_stargaze_client);
         let update_client_action = IbcAction::UpdateClient(msg_update_stargaze_client);
 
-        // The ActionHandler trait provides the transaction the action was part
-        // of as context available during verification.  This is used, for instance,
-        // to allow spend and output proofs to access the (transaction-wide) anchor.
-        // Since the context is not used by the IBC action handlers, we can pass a dummy transaction.
-        let dummy_context = Arc::new(Transaction::default());
-
-        create_client_action
-            .check_stateless(dummy_context.clone())
-            .await?;
+        create_client_action.check_stateless(()).await?;
         create_client_action.check_stateful(state.clone()).await?;
         let mut state_tx = state.try_begin_transaction().unwrap();
         create_client_action.execute(&mut state_tx).await?;
@@ -493,9 +485,7 @@ mod tests {
         assert_eq!(state.client_counter().await.unwrap().0, 1);
 
         // Now we update the client and confirm that the update landed in state.
-        update_client_action
-            .check_stateless(dummy_context.clone())
-            .await?;
+        update_client_action.check_stateless(()).await?;
         update_client_action.check_stateful(state.clone()).await?;
         let mut state_tx = state.try_begin_transaction().unwrap();
         update_client_action.execute(&mut state_tx).await?;
@@ -511,9 +501,7 @@ mod tests {
         second_update.client_id = ClientId::from_str("07-tendermint-0").unwrap();
         let second_update_client_action = IbcAction::UpdateClient(second_update);
 
-        second_update_client_action
-            .check_stateless(dummy_context.clone())
-            .await?;
+        second_update_client_action.check_stateless(()).await?;
         second_update_client_action
             .check_stateful(state.clone())
             .await?;

@@ -3,7 +3,6 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::Transaction;
 
 mod actions;
 mod transaction;
@@ -21,7 +20,7 @@ mod transaction;
 ///
 /// The validation logic in the `ActionHandler` trait is split into three phases:
 ///
-/// * [`ActionHandler::check_stateless`], which has no access to state, only to the transaction the action is part of;
+/// * [`ActionHandler::check_stateless`], which has no access to chain state, only to the [`CheckStatelessContext`];
 /// * [`ActionHandler::check_stateful`], which has read access to a snapshot of state prior to transaction execution;
 /// * [`ActionHandler::execute`], which has write access to the state and read access to its own writes.
 ///
@@ -32,6 +31,8 @@ mod transaction;
 /// work as possible should be pushed up the stack, where greater parallelism is
 /// available, with checks performed in `execute` only as a last resort.
 pub trait ActionHandler {
+    /// Context for stateless validity checks, like the transaction containing the action.
+    type CheckStatelessContext: Clone + Send + Sync + 'static;
     /// Performs all of this action's stateless validity checks in the
     /// `context` of some [`Transaction`].
     ///
@@ -40,13 +41,11 @@ pub trait ActionHandler {
     /// easily spawn tasks internally.
     ///
     /// Supplying the `context` means that stateless checks can use
-    /// transaction-wide data like the SCT anchor.  Supplying it as an
-    /// `Arc<Transaction>` makes it easy to share the context with internally
-    /// spawned tasks.
+    /// transaction-wide data like the SCT anchor.
     ///
     /// As much work as possible should be done in `check_stateless`, as it can
     /// be run in parallel across all transactions in a block.
-    async fn check_stateless(&self, context: Arc<Transaction>) -> Result<()>;
+    async fn check_stateless(&self, context: Self::CheckStatelessContext) -> Result<()>;
 
     /// Performs all of this action's stateful validity checks.
     ///

@@ -5,13 +5,14 @@ use async_trait::async_trait;
 
 use penumbra_chain::NoteSource;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::{action::DaoOutput, Transaction};
+use penumbra_transaction::action::DaoOutput;
 
 use crate::{shielded_pool::NoteManager, ActionHandler};
 
 #[async_trait]
 impl ActionHandler for DaoOutput {
-    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    type CheckStatelessContext = ();
+    async fn check_stateless(&self, _context: ()) -> Result<()> {
         // Any output from the DAO is valid (it's just a transparent output).
         Ok(())
     }

@@ -13,6 +13,7 @@ use crate::{
 
 #[async_trait]
 impl ActionHandler for SwapClaim {
+    type CheckStatelessContext = Arc<Transaction>;
     async fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
         self.proof
             .verify(

@@ -21,6 +21,8 @@ use stateless::{no_duplicate_nullifiers, valid_binding_signature};
 
 #[async_trait]
 impl ActionHandler for Transaction {
+    type CheckStatelessContext = Arc<Transaction>;
+
     // We only instrument the top-level `check_stateless`, so we get one span for each transaction.
     #[instrument(skip(self, context))]
     async fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {

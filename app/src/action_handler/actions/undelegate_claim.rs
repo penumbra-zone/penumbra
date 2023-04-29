@@ -6,13 +6,14 @@ use penumbra_chain::StateReadExt;
 use penumbra_crypto::stake::UnbondingToken;
 use penumbra_proof_params::UNDELEGATECLAIM_PROOF_VERIFICATION_KEY;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::{action::UndelegateClaim, Transaction};
+use penumbra_transaction::action::UndelegateClaim;
 
 use crate::{action_handler::ActionHandler, stake::StateReadExt as _};
 
 #[async_trait]
 impl ActionHandler for UndelegateClaim {
-    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    type CheckStatelessContext = ();
+    async fn check_stateless(&self, _context: ()) -> Result<()> {
         let unbonding_id =
             UnbondingToken::new(self.body.validator_identity, self.body.start_epoch_index).id();
 
