@@ -16,12 +16,13 @@ use penumbra_crypto::{
     stake::IdentityKey,
     Address, Fee, FullViewingKey, Note, Value,
 };
+use penumbra_shielded_pool::{OutputPlan, SpendPlan};
 use penumbra_tct as tct;
 use penumbra_transaction::{
     action::{Proposal, ProposalSubmit, ProposalWithdraw, ValidatorVote, Vote},
     plan::{
-        ActionPlan, DelegatorVotePlan, MemoPlan, OutputPlan, SpendPlan, SwapClaimPlan, SwapPlan,
-        TransactionPlan, UndelegateClaimPlan,
+        ActionPlan, DelegatorVotePlan, MemoPlan, SwapClaimPlan, SwapPlan, TransactionPlan,
+        UndelegateClaimPlan,
     },
 };
 

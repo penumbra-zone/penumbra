@@ -2,12 +2,12 @@ use std::sync::Arc;
 
 use anyhow::{ensure, Result};
 use async_trait::async_trait;
+use penumbra_shielded_pool::component::SupplyWrite;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::action::Undelegate;
 
 use crate::{
     action_handler::ActionHandler,
-    shielded_pool::SupplyWrite,
     stake::{component::StateWriteExt as _, StateReadExt as _},
 };
 

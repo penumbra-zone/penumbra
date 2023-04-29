@@ -26,11 +26,8 @@ pub trait ActionHandler {
 
 use penumbra_component::ActionHandler as ComponentActionHandler;
 
-/// Compat wrapper for using a penumbra_component::ActionHandler as an ActionHandler
-pub struct AhCompat<'a, T>(&'a T);
-
 #[async_trait]
-impl<'a, T: ComponentActionHandler + Sync> ActionHandler for AhCompat<'a, T> {
+impl<'a, T: ComponentActionHandler + Sync> ActionHandler for crate::Compat<'a, T> {
     type CheckStatelessContext = T::CheckStatelessContext;
     async fn check_stateless(&self, context: Self::CheckStatelessContext) -> Result<()> {
         ComponentActionHandler::check_stateless(self.0, context).await

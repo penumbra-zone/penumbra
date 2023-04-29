@@ -3,13 +3,13 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_crypto::ProposalNft;
+use penumbra_shielded_pool::component::SupplyWrite;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::ProposalWithdraw, proposal};
 
 use crate::{
     action_handler::ActionHandler,
     governance::{StateReadExt, StateWriteExt},
-    shielded_pool::SupplyWrite,
 };
 
 #[async_trait]

@@ -22,6 +22,7 @@ penumbra-crypto = { path = "../crypto", features = ["parallel"] }
 penumbra-transaction = { path = "../transaction" }
 penumbra-storage = { path = "../storage" }
 penumbra-app = { path = "../app" }
+penumbra-shielded-pool = { path = "../crates/shielded-pool" }
 penumbra-wallet = { path = "../wallet" }
 penumbra-tower-trace = { path = "../tower-trace" }
 penumbra-tendermint-proxy = { path = "../tendermint-proxy" }

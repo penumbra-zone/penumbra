@@ -5,23 +5,22 @@ use ark_ff::PrimeField;
 use async_trait::async_trait;
 use decaf377::Fq;
 use once_cell::sync::Lazy;
-use rand_chacha::{rand_core::SeedableRng, ChaCha20Rng};
-
 use penumbra_chain::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_crypto::{
     keys::{FullViewingKey, NullifierKey},
     rdsa::{VerificationKey, VerificationKeyBytes},
 };
 use penumbra_crypto::{ProposalNft, VotingReceiptToken, STAKING_TOKEN_DENOM};
+use penumbra_shielded_pool::component::SupplyWrite;
 use penumbra_storage::{StateDelta, StateRead, StateWrite};
 use penumbra_transaction::plan::TransactionPlan;
 use penumbra_transaction::proposal::{self, Proposal, ProposalPayload};
 use penumbra_transaction::{action::ProposalSubmit, Transaction};
 use penumbra_transaction::{AuthorizationData, WitnessData};
+use rand_chacha::{rand_core::SeedableRng, ChaCha20Rng};
 
 use crate::action_handler::ActionHandler;
 use crate::governance::{StateReadExt as _, StateWriteExt as _};
-use crate::shielded_pool::SupplyWrite;
 
 // IMPORTANT: these length limits are enforced by consensus! Changing them will change which
 // transactions are accepted by the network, and so they *cannot* be changed without a network

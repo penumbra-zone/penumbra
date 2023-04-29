@@ -6,64 +6,16 @@ use penumbra_crypto::{
     balance,
     proofs::groth16::OutputProof,
     symmetric::{OvkWrappedKey, WrappedMemoKey},
-    Note, NotePayload,
+    EffectHash, EffectingData, FieldExt, NotePayload,
 };
 use penumbra_proto::{
     core::crypto::v1alpha1 as pbc, core::transaction::v1alpha1 as pb, DomainType,
 };
 
-use crate::{view::action_view::OutputView, ActionView, TransactionPerspective};
-
-use super::IsAction;
-
 #[derive(Clone, Debug)]
 pub struct Output {
     pub body: Body,
     pub proof: OutputProof,
-}
-
-impl IsAction for Output {
-    fn balance_commitment(&self) -> balance::Commitment {
-        self.body.balance_commitment
-    }
-
-    fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {
-        let note_commitment = self.body.note_payload.note_commitment;
-        let epk = self.body.note_payload.ephemeral_key;
-        // Retrieve payload key for associated note commitment
-        let output_view = if let Some(payload_key) = txp.payload_keys.get(&note_commitment) {
-            let decrypted_note = Note::decrypt_with_payload_key(
-                &self.body.note_payload.encrypted_note,
-                payload_key,
-                &epk,
-            );
-
-            let decrypted_memo_key = self.body.wrapped_memo_key.decrypt_outgoing(payload_key);
-
-            if let (Ok(decrypted_note), Ok(decrypted_memo_key)) =
-                (decrypted_note, decrypted_memo_key)
-            {
-                // Neither decryption failed, so return the visible ActionView
-                OutputView::Visible {
-                    output: self.to_owned(),
-                    note: txp.view_note(decrypted_note),
-                    payload_key: decrypted_memo_key,
-                }
-            } else {
-                // One or both of the note or memo key is missing, so return the opaque ActionView
-                OutputView::Opaque {
-                    output: self.to_owned(),
-                }
-            }
-        } else {
-            // There was no payload key found, so return the opaque ActionView
-            OutputView::Opaque {
-                output: self.to_owned(),
-            }
-        };
-
-        ActionView::Output(output_view)
-    }
 }
 
 #[derive(Clone, Debug)]
@@ -72,6 +24,25 @@ pub struct Body {
     pub balance_commitment: balance::Commitment,
     pub ovk_wrapped_key: OvkWrappedKey,
     pub wrapped_memo_key: WrappedMemoKey,
+}
+
+impl EffectingData for Body {
+    fn effect_hash(&self) -> EffectHash {
+        let mut state = blake2b_simd::Params::default()
+            .personal(b"PAH:output_body")
+            .to_state();
+
+        // All of these fields are fixed-length, so we can just throw them
+        // in the hash one after the other.
+        state.update(&self.note_payload.note_commitment.0.to_bytes());
+        state.update(&self.note_payload.ephemeral_key.0);
+        state.update(&self.note_payload.encrypted_note.0);
+        state.update(&self.balance_commitment.to_bytes());
+        state.update(&self.wrapped_memo_key.0);
+        state.update(&self.ovk_wrapped_key.0);
+
+        EffectHash(state.finalize().as_array().clone())
+    }
 }
 
 impl DomainType for Output {

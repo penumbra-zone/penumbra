@@ -10,6 +10,7 @@ use penumbra_crypto::{
     dex::{swap::SwapPlaintext, TradingPair},
     Address, Amount, Fee,
 };
+use penumbra_shielded_pool::component::ShieldedPool;
 use penumbra_storage::{ArcStateDeltaExt, StateDelta, TempStorage};
 use penumbra_transaction::{
     plan::{SwapClaimPlan, SwapPlan},
@@ -19,7 +20,7 @@ use rand_core::SeedableRng;
 use tendermint::abci;
 
 use crate::app::App;
-use crate::{shielded_pool::ShieldedPool, ActionHandler, MockClient, TempStorageExt};
+use crate::{ActionHandler, MockClient, TempStorageExt};
 
 use super::{StateReadExt as _, StubDex};
 

@@ -1,20 +1,18 @@
 use std::sync::Arc;
 
-use crate::{
-    shielded_pool::NoteManager,
-    stubdex::{StateReadExt as _, StateWriteExt as _},
-};
 use anyhow::Result;
-
 use async_trait::async_trait;
-
 use penumbra_chain::sync::StatePayload;
 use penumbra_crypto::MockFlowCiphertext;
 use penumbra_proof_params::SWAP_PROOF_VERIFICATION_KEY;
+use penumbra_shielded_pool::component::NoteManager;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::Swap, IsAction};
 
-use crate::action_handler::ActionHandler;
+use crate::{
+    action_handler::ActionHandler,
+    stubdex::{StateReadExt as _, StateWriteExt as _},
+};
 
 #[async_trait]
 impl ActionHandler for Swap {

@@ -23,6 +23,7 @@ use penumbra_crypto::{
 };
 use penumbra_crypto::{dex::lp::Reserves, Balance};
 use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
+use penumbra_shielded_pool::{OutputPlan, SpendPlan};
 use penumbra_tct as tct;
 use penumbra_transaction::{
     action::{
@@ -30,8 +31,8 @@ use penumbra_transaction::{
         ProposalSubmit, ProposalWithdraw, ValidatorVote, Vote,
     },
     plan::{
-        ActionPlan, DelegatorVotePlan, MemoPlan, OutputPlan, PositionWithdrawPlan, SpendPlan,
-        SwapClaimPlan, SwapPlan, TransactionPlan, UndelegateClaimPlan,
+        ActionPlan, DelegatorVotePlan, MemoPlan, PositionWithdrawPlan, SwapClaimPlan, SwapPlan,
+        TransactionPlan, UndelegateClaimPlan,
     },
     proposal,
 };

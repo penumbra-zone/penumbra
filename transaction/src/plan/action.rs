@@ -2,20 +2,17 @@ use penumbra_crypto::Balance;
 use penumbra_proto::{
     core::stake::v1alpha1 as pb_stake, core::transaction::v1alpha1 as pb_t, DomainType,
 };
+use penumbra_shielded_pool::{OutputPlan, SpendPlan};
 use serde::{Deserialize, Serialize};
 
 mod delegator_vote;
-mod output;
 mod position;
-mod spend;
 mod swap;
 mod swap_claim;
 mod undelegate_claim;
 
 pub use delegator_vote::DelegatorVotePlan;
-pub use output::OutputPlan;
 pub use position::{PositionRewardClaimPlan, PositionWithdrawPlan};
-pub use spend::SpendPlan;
 pub use swap::SwapPlan;
 pub use swap_claim::SwapClaimPlan;
 pub use undelegate_claim::UndelegateClaimPlan;

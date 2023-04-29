@@ -2,7 +2,7 @@ use penumbra_crypto::NoteView;
 use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType};
 use serde::{Deserialize, Serialize};
 
-use crate::action::Spend;
+use crate::Spend;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(try_from = "pbt::SpendView", into = "pbt::SpendView")]

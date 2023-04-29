@@ -24,6 +24,7 @@ use penumbra_proto::{
     state::future::{DomainFuture, ProtoFuture},
     StateReadProto, StateWriteProto,
 };
+use penumbra_shielded_pool::component::{NoteManager, SupplyRead, SupplyWrite};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::action::{Delegate, Undelegate};
 use sha2::{Digest, Sha256};
@@ -49,8 +50,6 @@ use crate::stake::{
 };
 
 use crate::dao::view::StateWriteExt as _;
-
-use crate::shielded_pool::{NoteManager, SupplyRead, SupplyWrite};
 
 // Max validator power is 1152921504606846975 (i64::MAX / 8)
 // https://github.com/tendermint/tendermint/blob/master/types/validator_set.go#L25

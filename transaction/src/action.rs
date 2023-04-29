@@ -10,19 +10,17 @@ mod delegate;
 mod delegator_vote;
 mod ibc_action;
 mod ics20_withdrawal;
-pub mod output;
 mod position;
 mod proposal_deposit_claim;
 mod proposal_submit;
 mod proposal_withdraw;
-pub mod spend;
 pub mod swap;
 pub mod swap_claim;
 mod undelegate;
 mod undelegate_claim;
 mod validator_vote;
 
-use crate::{ActionView, TransactionPerspective};
+use crate::{ActionView, IsAction, TransactionPerspective};
 
 pub use crate::proposal::{Proposal, ProposalKind, ProposalPayload};
 pub use crate::vote::Vote;
@@ -33,30 +31,22 @@ pub use delegate::Delegate;
 pub use delegator_vote::{DelegatorVote, DelegatorVoteBody};
 pub use ibc_action::IbcAction;
 pub use ics20_withdrawal::Ics20Withdrawal;
-pub use output::Output;
 pub use position::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw};
 pub use proposal_deposit_claim::ProposalDepositClaim;
 pub use proposal_submit::ProposalSubmit;
 pub use proposal_withdraw::ProposalWithdraw;
-pub use spend::Spend;
 pub use swap::Swap;
 pub use swap_claim::SwapClaim;
 pub use undelegate::Undelegate;
 pub use undelegate_claim::{UndelegateClaim, UndelegateClaimBody};
 pub use validator_vote::{ValidatorVote, ValidatorVoteBody};
 
-/// Common behavior between Penumbra actions.
-pub trait IsAction {
-    fn balance_commitment(&self) -> balance::Commitment;
-    fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView;
-}
-
 /// An action performed by a Penumbra transaction.
 #[derive(Clone, Debug)]
 #[allow(clippy::large_enum_variant)]
 pub enum Action {
-    Output(output::Output),
-    Spend(spend::Spend),
+    Output(penumbra_shielded_pool::Output),
+    Spend(penumbra_shielded_pool::Spend),
     ValidatorDefinition(pbs::ValidatorDefinition),
     IbcAction(IbcAction),
     Swap(Swap),

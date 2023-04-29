@@ -6,6 +6,7 @@ use penumbra_crypto::{Address, Fee};
 use penumbra_proto::{
     core::stake::v1alpha1 as pb_stake, core::transaction::v1alpha1 as pb, DomainType,
 };
+use penumbra_shielded_pool::{OutputPlan, SpendPlan};
 use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 
@@ -21,10 +22,7 @@ mod build;
 mod clue;
 mod memo;
 
-pub use action::{
-    ActionPlan, DelegatorVotePlan, OutputPlan, SpendPlan, SwapClaimPlan, SwapPlan,
-    UndelegateClaimPlan,
-};
+pub use action::{ActionPlan, DelegatorVotePlan, SwapClaimPlan, SwapPlan, UndelegateClaimPlan};
 pub use clue::CluePlan;
 pub use memo::MemoPlan;
 

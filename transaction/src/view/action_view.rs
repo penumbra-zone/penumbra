@@ -3,14 +3,12 @@ use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType};
 use serde::{Deserialize, Serialize};
 
 pub mod delegator_vote_view;
-pub mod output_view;
-pub mod spend_view;
 pub mod swap_claim_view;
 pub mod swap_view;
 
 pub use delegator_vote_view::DelegatorVoteView;
-pub use output_view::OutputView;
-pub use spend_view::SpendView;
+pub use penumbra_shielded_pool::OutputView;
+pub use penumbra_shielded_pool::SpendView;
 pub use swap_claim_view::SwapClaimView;
 pub use swap_view::SwapView;
 

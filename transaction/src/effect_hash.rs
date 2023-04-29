@@ -6,7 +6,7 @@ use penumbra_proto::{DomainType, Message};
 
 use crate::{
     action::{
-        output, spend, swap, swap_claim, DaoDeposit, DaoOutput, DaoSpend, Delegate, DelegatorVote,
+        swap, swap_claim, DaoDeposit, DaoOutput, DaoSpend, Delegate, DelegatorVote,
         DelegatorVoteBody, Ics20Withdrawal, PositionClose, PositionOpen, PositionRewardClaim,
         PositionWithdraw, Proposal, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw,
         Undelegate, UndelegateClaimBody, ValidatorVote, ValidatorVoteBody, Vote,
@@ -15,8 +15,17 @@ use crate::{
     proposal, Action, Transaction, TransactionBody,
 };
 
+use penumbra_crypto::EffectingData as _;
+
+// Note: temporarily duplicate of crypto/EffectingData
 pub trait EffectingData {
     fn effect_hash(&self) -> EffectHash;
+}
+
+impl<'a, T: penumbra_crypto::EffectingData> EffectingData for crate::Compat<'a, T> {
+    fn effect_hash(&self) -> EffectHash {
+        self.0.effect_hash()
+    }
 }
 
 impl Transaction {
@@ -202,8 +211,8 @@ fn chain_id_effect_hash(chain_id: &str) -> Hash {
 impl EffectingData for Action {
     fn effect_hash(&self) -> EffectHash {
         match self {
-            Action::Output(output) => output.body.effect_hash(),
-            Action::Spend(spend) => spend.body.effect_hash(),
+            Action::Output(output) => crate::Compat(&output.body).effect_hash(),
+            Action::Spend(spend) => crate::Compat(&spend.body).effect_hash(),
             Action::Delegate(delegate) => delegate.effect_hash(),
             Action::Undelegate(undelegate) => undelegate.effect_hash(),
             Action::UndelegateClaim(claim) => claim.body.effect_hash(),
@@ -239,41 +248,6 @@ impl EffectingData for Action {
             Action::DaoOutput(d) => d.effect_hash(),
             Action::DaoDeposit(d) => d.effect_hash(),
         }
-    }
-}
-
-impl EffectingData for output::Body {
-    fn effect_hash(&self) -> EffectHash {
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:output_body")
-            .to_state();
-
-        // All of these fields are fixed-length, so we can just throw them
-        // in the hash one after the other.
-        state.update(&self.note_payload.note_commitment.0.to_bytes());
-        state.update(&self.note_payload.ephemeral_key.0);
-        state.update(&self.note_payload.encrypted_note.0);
-        state.update(&self.balance_commitment.to_bytes());
-        state.update(&self.wrapped_memo_key.0);
-        state.update(&self.ovk_wrapped_key.0);
-
-        EffectHash(state.finalize().as_array().clone())
-    }
-}
-
-impl EffectingData for spend::Body {
-    fn effect_hash(&self) -> EffectHash {
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:spend_body")
-            .to_state();
-
-        // All of these fields are fixed-length, so we can just throw them
-        // in the hash one after the other.
-        state.update(&self.balance_commitment.to_bytes());
-        state.update(&self.nullifier.0.to_bytes());
-        state.update(&self.rk.to_bytes());
-
-        EffectHash(state.finalize().as_array().clone())
     }
 }
 
@@ -742,11 +716,12 @@ mod tests {
         memo::MemoPlaintext,
         Address, Fee, Note, Value, STAKING_TOKEN_ASSET_ID,
     };
+    use penumbra_shielded_pool::{OutputPlan, SpendPlan};
     use penumbra_tct as tct;
     use rand_core::OsRng;
 
     use crate::{
-        plan::{CluePlan, MemoPlan, OutputPlan, SpendPlan, SwapPlan, TransactionPlan},
+        plan::{CluePlan, MemoPlan, SwapPlan, TransactionPlan},
         WitnessData,
     };
 
@@ -846,7 +821,7 @@ mod tests {
             anchor: sct.root(),
             state_commitment_proofs: plan
                 .spend_plans()
-                .map(|spend| {
+                .map(|spend: &SpendPlan| {
                     (
                         spend.note.commit(),
                         sct.witness(spend.note.commit()).unwrap(),

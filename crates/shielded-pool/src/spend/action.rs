@@ -6,13 +6,9 @@ use penumbra_crypto::{
     balance,
     proofs::groth16::SpendProof,
     rdsa::{Signature, SpendAuth, VerificationKey},
-    Nullifier,
+    EffectHash, EffectingData, FieldExt, Nullifier,
 };
 use penumbra_proto::{core::transaction::v1alpha1 as transaction, DomainType};
-
-use crate::{view::action_view::SpendView, ActionView, TransactionPerspective};
-
-use super::IsAction;
 
 #[derive(Clone, Debug)]
 pub struct Spend {
@@ -21,23 +17,26 @@ pub struct Spend {
     pub proof: SpendProof,
 }
 
-impl IsAction for Spend {
-    fn balance_commitment(&self) -> balance::Commitment {
-        self.body.balance_commitment
-    }
+#[derive(Clone, Debug)]
+pub struct Body {
+    pub balance_commitment: balance::Commitment,
+    pub nullifier: Nullifier,
+    pub rk: VerificationKey<SpendAuth>,
+}
 
-    fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {
-        let spend_view = match txp.spend_nullifiers.get(&self.body.nullifier) {
-            Some(note) => SpendView::Visible {
-                spend: self.to_owned(),
-                note: txp.view_note(note.to_owned()),
-            },
-            None => SpendView::Opaque {
-                spend: self.to_owned(),
-            },
-        };
+impl EffectingData for Body {
+    fn effect_hash(&self) -> EffectHash {
+        let mut state = blake2b_simd::Params::default()
+            .personal(b"PAH:spend_body")
+            .to_state();
 
-        ActionView::Spend(spend_view)
+        // All of these fields are fixed-length, so we can just throw them
+        // in the hash one after the other.
+        state.update(&self.balance_commitment.to_bytes());
+        state.update(&self.nullifier.0.to_bytes());
+        state.update(&self.rk.to_bytes());
+
+        EffectHash(state.finalize().as_array().clone())
     }
 }
 
@@ -81,13 +80,6 @@ impl TryFrom<transaction::Spend> for Spend {
             proof,
         })
     }
-}
-
-#[derive(Clone, Debug)]
-pub struct Body {
-    pub balance_commitment: balance::Commitment,
-    pub nullifier: Nullifier,
-    pub rk: VerificationKey<SpendAuth>,
 }
 
 impl DomainType for Body {
