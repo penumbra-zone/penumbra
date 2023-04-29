@@ -23,6 +23,7 @@ ics23 = "0.9.0"
 # Crates.io deps
 ark-ff = { version = "0.3", default_features = false }
 anyhow = "1"
+bincode = "1.3.3"
 bytes = "1"
 hex = "0.4"
 once_cell = "1.8"

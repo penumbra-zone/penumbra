@@ -1,12 +1,9 @@
 use std::collections::BTreeMap;
 
-use penumbra_chain::{CompactBlock, StatePayload};
+use penumbra_chain::{component::StateReadExt as _, CompactBlock, StatePayload};
 use penumbra_crypto::{dex::swap::SwapPlaintext, note, FullViewingKey, Note};
 use penumbra_storage::StateRead;
 use penumbra_tct as tct;
-
-use crate::compactblock::view::StateReadExt as _;
-use crate::sct::view::StateReadExt as _;
 
 /// A bare-bones mock client for use exercising the state machine.
 pub struct MockClient {

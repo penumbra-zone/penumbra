@@ -1,15 +1,13 @@
 use std::sync::Arc;
 
-use crate::compactblock::view::{StateReadExt as _, StateWriteExt as _};
-use crate::sct::view::{StateReadExt as _, StateWriteExt as _};
 use anyhow::Result;
 use penumbra_chain::params::FmdParameters;
 use penumbra_chain::{
-    component::{AppHash, StateReadExt, StateWriteExt as _},
+    component::{AppHash, StateReadExt as _, StateWriteExt as _},
     genesis,
 };
 use penumbra_component::Component;
-use penumbra_proto::{DomainType, StateWriteProto};
+use penumbra_proto::DomainType;
 use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, StateWrite, Storage};
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, Event};

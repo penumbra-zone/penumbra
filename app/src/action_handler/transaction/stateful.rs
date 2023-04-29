@@ -3,7 +3,6 @@ use penumbra_chain::component::StateReadExt as _;
 use penumbra_storage::StateRead;
 use penumbra_transaction::Transaction;
 
-use crate::sct::view::StateReadExt as _;
 use crate::shielded_pool::consensus_rules;
 
 pub(super) async fn claimed_anchor_is_valid<S: StateRead>(
