@@ -10,7 +10,10 @@ use ::metrics::{decrement_gauge, gauge, increment_gauge};
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use futures::{FutureExt, StreamExt, TryFutureExt, TryStreamExt};
-use penumbra_chain::{genesis, Epoch, NoteSource, StateReadExt as _, StateWriteExt as _};
+use penumbra_chain::{
+    component::{StateReadExt as _, StateWriteExt as _},
+    genesis, Epoch, NoteSource,
+};
 use penumbra_component::Component;
 use penumbra_crypto::stake::Penalty;
 use penumbra_crypto::{

@@ -2,17 +2,12 @@
 # Rebuild Rust crate documentation
 set -euo pipefail
 
-
-# The index.html can only be rebuilt via nightly rust.
-REGENERATE_INDEX="${REGENERATE_INDEX:-}"
-if [[ -n "$REGENERATE_INDEX" ]]; then
-    >&2 echo "Rebuilding index.html via nightly cargo..."
-    export RUSTDOCFLAGS="--enable-index-page -Zunstable-options"
-    nightly_opt="+nightly"
-else
-    >&2 echo "Env var REGENERATE_INDEX not found, skipping index.html creation..."
-    nightly_opt=""
-fi
+# Set:
+# --enable-index-page -Zunstable-options
+#     to generate the index page
+# --cfg docsrs
+#     to enable nightly-only doc_cfg annotations
+export RUSTDOCFLAGS="--enable-index-page -Zunstable-options --cfg docsrs"
 
 # Explicitly specify which crates should be included.
 # Guidelines:
@@ -27,7 +22,7 @@ fi
 
 # Silence shellcheck warning on 'nightly_opt' being an empty string.
 # shellcheck disable=SC2086
-cargo $nightly_opt doc --no-deps \
+cargo +nightly doc --no-deps \
   -p tendermint \
   -p tower-abci \
   -p jmt@0.3.0 \
@@ -58,7 +53,5 @@ cargo $nightly_opt doc --no-deps \
   -p pcli \
   -p narsil
 
-if [[ -n "$REGENERATE_INDEX" ]]; then
-    >&2 echo "Copying newly built index file to version-controlled path:"
-    cp -v target/doc/index.html docs/rustdoc/index.html
-fi
+>&2 echo "Copying newly built index file to version-controlled path:"
+cp -v target/doc/index.html docs/rustdoc/index.html

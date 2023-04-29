@@ -10,7 +10,8 @@ use ibc_types::core::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck
 use ibc_types::core::ics24_host::path::{
     ClientConsensusStatePath, ClientStatePath, ConnectionPath,
 };
-use penumbra_chain::StateReadExt as _;
+use penumbra_chain::component::StateReadExt as _;
+use penumbra_chain::component::PENUMBRA_COMMITMENT_PREFIX;
 use penumbra_storage::{StateRead, StateWrite};
 
 use crate::action_handler::ActionHandler;
@@ -58,9 +59,9 @@ impl ActionHandler for MsgConnectionOpenAck {
         // verify that the counterparty committed a TRYOPEN connection with us as the
         // counterparty
         let expected_counterparty = Counterparty::new(
-            connection.client_id().clone(),  // client ID (local)
-            Some(self.conn_id_on_a.clone()), // connection ID (local)
-            penumbra_chain::PENUMBRA_COMMITMENT_PREFIX.clone(), // commitment prefix (local)
+            connection.client_id().clone(),     // client ID (local)
+            Some(self.conn_id_on_a.clone()),    // connection ID (local)
+            PENUMBRA_COMMITMENT_PREFIX.clone(), // commitment prefix (local)
         );
 
         // the connection we expect the counterparty to have committed

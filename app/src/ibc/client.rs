@@ -7,6 +7,7 @@ use ibc_types::core::ics02_client::height::Height;
 use ibc_types::core::ics02_client::trust_threshold::TrustThreshold;
 use ibc_types::core::ics24_host::identifier::ChainId;
 use ibc_types::core::ics24_host::identifier::ConnectionId;
+use penumbra_chain::component::PENUMBRA_PROOF_SPECS;
 use penumbra_proto::{core::ibc::v1alpha1 as pb, DomainType};
 
 #[derive(Clone, Debug)]
@@ -221,7 +222,7 @@ pub fn validate_penumbra_client_state(
     }
 
     // check client proof specs match penumbra proof specs
-    if penumbra_chain::PENUMBRA_PROOF_SPECS.clone() != tm_client_state.proof_specs {
+    if PENUMBRA_PROOF_SPECS.clone() != tm_client_state.proof_specs {
         return Err(anyhow::anyhow!(
             "invalid client state: proof specs do not match"
         ));

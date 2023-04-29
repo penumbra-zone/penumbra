@@ -7,7 +7,7 @@ use futures::{
 };
 use penumbra_app::compactblock::view::StateReadExt as _;
 use penumbra_app::stake::{validator, StateReadExt as _};
-use penumbra_chain::StateReadExt as _;
+use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::{
     client::v1alpha1::{
         oblivious_query_service_server::ObliviousQueryService, ChainParametersRequest,

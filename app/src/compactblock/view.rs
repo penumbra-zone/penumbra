@@ -1,7 +1,7 @@
 use crate::compactblock::state_key;
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_chain::{sync::CompactBlock, StateReadExt as _};
+use penumbra_chain::{component::StateReadExt as _, sync::CompactBlock};
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 

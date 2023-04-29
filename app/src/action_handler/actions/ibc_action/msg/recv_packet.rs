@@ -8,7 +8,7 @@ use ibc_types::core::ics04_channel::channel::Order as ChannelOrder;
 use ibc_types::core::ics04_channel::channel::State as ChannelState;
 use ibc_types::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use ibc_types::core::ics24_host::identifier::PortId;
-use penumbra_chain::StateReadExt;
+use penumbra_chain::component::StateReadExt;
 use penumbra_storage::{StateRead, StateWrite};
 
 use crate::action_handler::ActionHandler;

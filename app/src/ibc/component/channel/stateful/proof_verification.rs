@@ -24,7 +24,7 @@ use ibc_types::Height;
 
 use anyhow::Context;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
-use penumbra_chain::StateReadExt as _;
+use penumbra_chain::component::StateReadExt as _;
 use prost::Message;
 use sha2::{Digest, Sha256};
 

@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use ibc_types::core::ics02_client::client_state::ClientState;
 use ibc_types::core::ics02_client::msgs::update_client::MsgUpdateClient;
 use ibc_types::core::ics24_host::identifier::ClientId;
-use penumbra_chain::StateReadExt as _;
+use penumbra_chain::component::StateReadExt as _;
 use penumbra_storage::{StateRead, StateWrite};
 
 use ibc_types::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;

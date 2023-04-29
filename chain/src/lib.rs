@@ -1,22 +1,17 @@
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
 mod epoch;
 mod known_assets;
 mod note_source;
 
-#[cfg(feature = "penumbra-storage")]
-mod view;
-
-#[cfg(feature = "penumbra-storage")]
-pub mod app_hash;
+#[cfg_attr(docsrs, doc(cfg(feature = "component")))]
+#[cfg(feature = "component")]
+pub mod component;
 
 pub mod genesis;
 pub mod params;
 pub mod state_key;
 pub mod sync;
-
-#[cfg(feature = "penumbra-storage")]
-pub use app_hash::{AppHash, AppHashRead, PENUMBRA_COMMITMENT_PREFIX, PENUMBRA_PROOF_SPECS};
-#[cfg(feature = "penumbra-storage")]
-pub use view::{StateReadExt, StateWriteExt};
 
 pub use epoch::Epoch;
 pub use known_assets::KnownAssets;

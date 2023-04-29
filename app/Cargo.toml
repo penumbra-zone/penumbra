@@ -12,7 +12,7 @@ penumbra-component = { path = "../crates/component" }
 penumbra-proto = { path = "../proto", features = ["penumbra-storage"] }
 penumbra-transaction = { path = "../transaction" }
 penumbra-storage = { path = "../storage" }
-penumbra-chain = { path = "../chain" }
+penumbra-chain = { path = "../chain", features = ["component"] }
 penumbra-tct = { path = "../tct" }
 penumbra-proof-params = { path = "../proof-params" }
 

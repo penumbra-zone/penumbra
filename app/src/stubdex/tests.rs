@@ -1,6 +1,9 @@
 use std::{ops::Deref, sync::Arc};
 
-use penumbra_chain::{test_keys, StateReadExt, StateWriteExt};
+use penumbra_chain::{
+    component::{StateReadExt, StateWriteExt},
+    test_keys,
+};
 use penumbra_component::Component;
 use penumbra_crypto::{
     asset,

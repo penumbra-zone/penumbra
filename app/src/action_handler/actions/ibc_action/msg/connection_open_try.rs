@@ -15,7 +15,8 @@ use ibc_types::core::{
         path::{ClientConsensusStatePath, ClientStatePath, ConnectionPath},
     },
 };
-use penumbra_chain::StateReadExt as _;
+use penumbra_chain::component::StateReadExt as _;
+use penumbra_chain::component::PENUMBRA_COMMITMENT_PREFIX;
 use penumbra_storage::{StateRead, StateWrite};
 
 use crate::{
@@ -90,7 +91,7 @@ impl ActionHandler for MsgConnectionOpenTry {
             Counterparty::new(
                 self.counterparty.client_id().clone(),
                 None,
-                penumbra_chain::PENUMBRA_COMMITMENT_PREFIX.clone(),
+                PENUMBRA_COMMITMENT_PREFIX.clone(),
             ),
             self.versions_on_a.clone(),
             self.delay_period,
