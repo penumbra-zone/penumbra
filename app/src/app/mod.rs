@@ -89,9 +89,6 @@ impl App {
         state_tx.put_current_fmd_parameters(FmdParameters::default());
         state_tx.put_previous_fmd_parameters(FmdParameters::default());
 
-        // TODO: do we actually need to store the app state here?
-        state_tx.put(state_key::app_state().into(), app_state.clone());
-
         // The genesis block height is 0
         state_tx.put_block_height(0);
 
