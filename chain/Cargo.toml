@@ -8,7 +8,7 @@ edition = "2021"
 penumbra-proto = { path = "../proto", default-features = false }
 penumbra-storage = { path = "../storage", optional = true }
 penumbra-component = { path = "../crates/component", optional = true }
-penumbra-crypto = { path = "../crypto" }
+penumbra-crypto = { path = "../crypto", default-features = false }
 # penumbra-transaction = { path = "../transaction" }
 penumbra-tct = { path = "../tct" }
 
