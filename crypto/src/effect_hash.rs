@@ -1,5 +1,10 @@
 use penumbra_proto::{core::crypto::v1alpha1 as pb_crypto, DomainType};
 
+/// Something that can be hashed to produce an [`EffectHash`].
+pub trait EffectingData {
+    fn effect_hash(&self) -> EffectHash;
+}
+
 /// A hash of a transaction's _effecting data_, describing its effects on the
 /// chain state.
 ///

@@ -24,6 +24,7 @@ penumbra-chain = { path = "../chain" }
 penumbra-crypto = { path = "../crypto" }
 penumbra-tct = { path = "../tct" }
 penumbra-transaction = { path = "../transaction" }
+penumbra-shielded-pool = { path = "../crates/shielded-pool", default-features = false, features = ["proving-keys"] }
 # TODO: replace by a penumbra-app
 penumbra-app = { path = "../app" }
 

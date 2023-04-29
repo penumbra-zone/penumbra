@@ -4,13 +4,12 @@ use penumbra_crypto::{
     proofs::groth16::SpendProof, Address, FieldExt, Fr, FullViewingKey, Note, Nullifier, Rseed,
     Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_proof_params::SPEND_PROOF_PROVING_KEY;
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
 use penumbra_tct as tct;
 use rand_core::{CryptoRng, OsRng, RngCore};
 use serde::{Deserialize, Serialize};
 
-use crate::action::{spend, Spend};
+use super::{Body, Spend};
 
 /// A planned [`Spend`](Spend).
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -69,8 +68,8 @@ impl SpendPlan {
     }
 
     /// Construct the [`spend::Body`] described by this [`SpendPlan`].
-    pub fn spend_body(&self, fvk: &FullViewingKey) -> spend::Body {
-        spend::Body {
+    pub fn spend_body(&self, fvk: &FullViewingKey) -> Body {
+        Body {
             balance_commitment: self.balance().commit(self.value_blinding),
             nullifier: self.nullifier(fvk),
             rk: self.rk(fvk),
@@ -88,6 +87,8 @@ impl SpendPlan {
     }
 
     /// Construct the [`SpendProof`] required by the [`spend::Body`] described by this [`SpendPlan`].
+    #[cfg_attr(docsrs, doc(cfg(feature = "proving-keys")))]
+    #[cfg(feature = "proving-keys")]
     pub fn spend_proof(
         &self,
         fvk: &FullViewingKey,
@@ -95,7 +96,7 @@ impl SpendPlan {
     ) -> SpendProof {
         SpendProof::prove(
             &mut OsRng,
-            &SPEND_PROOF_PROVING_KEY,
+            &penumbra_proof_params::SPEND_PROOF_PROVING_KEY,
             state_commitment_proof.clone(),
             self.note.clone(),
             self.value_blinding,

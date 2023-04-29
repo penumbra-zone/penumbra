@@ -1,4 +1,3 @@
-use super::{event, state_key, SupplyWrite};
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::{
@@ -11,6 +10,10 @@ use penumbra_proto::StateWriteProto;
 use penumbra_storage::StateWrite;
 use penumbra_tct as tct;
 use tracing::instrument;
+
+use crate::{event, state_key};
+
+use super::SupplyWrite;
 
 /// Manages the addition of new notes to the chain state.
 #[async_trait]

@@ -16,6 +16,7 @@ use penumbra_crypto::{
     GovernanceKey, Nullifier, Value, STAKING_TOKEN_DENOM,
 };
 use penumbra_proto::{StateReadProto, StateWriteProto};
+use penumbra_shielded_pool::component::{StateReadExt as _, SupplyRead};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_tct as tct;
 use penumbra_transaction::{
@@ -26,11 +27,7 @@ use penumbra_transaction::{
 use tokio::task::JoinSet;
 use tracing::instrument;
 
-use crate::{
-    shielded_pool::StateReadExt as _,
-    shielded_pool::SupplyRead,
-    stake::{rate::RateData, validator, StateReadExt as _},
-};
+use crate::stake::{rate::RateData, validator, StateReadExt as _};
 
 use super::{state_key, tally::Tally};
 

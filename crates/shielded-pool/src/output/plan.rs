@@ -6,12 +6,11 @@ use penumbra_crypto::{
     symmetric::WrappedMemoKey,
     Address, FieldExt, Fr, Note, PayloadKey, Rseed, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_proof_params::OUTPUT_PROOF_PROVING_KEY;
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
 use rand_core::{CryptoRng, OsRng, RngCore};
 use serde::{Deserialize, Serialize};
 
-use crate::action::{output, Output};
+use super::{Body, Output};
 
 /// A planned [`Output`](Output).
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -69,13 +68,15 @@ impl OutputPlan {
 
     /// Construct the [`OutputProof`] required by the [`output::Body`] described
     /// by this plan.
+    #[cfg_attr(docsrs, doc(cfg(feature = "proving-keys")))]
+    #[cfg(feature = "proving-keys")]
     pub fn output_proof(&self) -> OutputProof {
         let note = self.output_note();
         let balance_commitment = self.balance().commit(self.value_blinding);
         let note_commitment = note.commit();
         OutputProof::prove(
             &mut OsRng,
-            &OUTPUT_PROOF_PROVING_KEY,
+            &penumbra_proof_params::OUTPUT_PROOF_PROVING_KEY,
             note.clone(),
             self.value_blinding,
             balance_commitment,
@@ -85,7 +86,7 @@ impl OutputPlan {
     }
 
     /// Construct the [`output::Body`] described by this plan.
-    pub fn output_body(&self, ovk: &OutgoingViewingKey, memo_key: &PayloadKey) -> output::Body {
+    pub fn output_body(&self, ovk: &OutgoingViewingKey, memo_key: &PayloadKey) -> Body {
         // Prepare the output note and commitment.
         let note = self.output_note();
         let balance_commitment = self.balance().commit(self.value_blinding);
@@ -102,7 +103,7 @@ impl OutputPlan {
             &note.diversified_generator(),
         );
 
-        output::Body {
+        Body {
             note_payload: note.payload(),
             balance_commitment,
             ovk_wrapped_key,

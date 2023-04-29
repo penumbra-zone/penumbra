@@ -32,7 +32,7 @@ pub use address::{Address, AddressView};
 pub use asset::Amount;
 pub use asset::Asset;
 pub use balance::Balance;
-pub use effect_hash::EffectHash;
+pub use effect_hash::{EffectHash, EffectingData};
 pub use fee::Fee;
 pub use flow::{MockFlowCiphertext, SwapFlow};
 pub use governance::{

@@ -5,8 +5,6 @@ use futures::StreamExt;
 use futures::TryStreamExt;
 use penumbra_app::dex::PositionRead;
 use penumbra_app::governance::StateReadExt as _;
-use penumbra_app::shielded_pool::StateReadExt as _;
-use penumbra_app::shielded_pool::SupplyRead as _;
 use penumbra_app::stake::rate::RateData;
 use penumbra_app::stake::StateReadExt as _;
 use penumbra_app::stubdex::StateReadExt as _;
@@ -24,6 +22,7 @@ use penumbra_proto::{
     },
     StateReadProto as _,
 };
+use penumbra_shielded_pool::component::{StateReadExt as _, SupplyRead as _};
 
 use penumbra_storage::StateRead;
 use proto::client::v1alpha1::BatchSwapOutputDataResponse;

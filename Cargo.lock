@@ -3930,6 +3930,7 @@ dependencies = [
  "penumbra-custody",
  "penumbra-proof-params",
  "penumbra-proto",
+ "penumbra-shielded-pool",
  "penumbra-tct",
  "penumbra-transaction",
  "penumbra-view",
@@ -4048,6 +4049,7 @@ dependencies = [
  "penumbra-chain",
  "penumbra-crypto",
  "penumbra-proto",
+ "penumbra-shielded-pool",
  "penumbra-storage",
  "penumbra-tendermint-proxy",
  "penumbra-tower-trace",
@@ -4160,6 +4162,7 @@ dependencies = [
  "penumbra-crypto",
  "penumbra-proof-params",
  "penumbra-proto",
+ "penumbra-shielded-pool",
  "penumbra-storage",
  "penumbra-tct",
  "penumbra-transaction",
@@ -4386,6 +4389,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "penumbra-shielded-pool"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "ark-ff",
+ "async-trait",
+ "blake2b_simd 0.5.11",
+ "bytes",
+ "decaf377-rdsa",
+ "metrics",
+ "penumbra-chain",
+ "penumbra-component",
+ "penumbra-crypto",
+ "penumbra-proof-params",
+ "penumbra-proto",
+ "penumbra-storage",
+ "penumbra-tct",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "serde",
+ "tendermint",
+ "tracing",
+]
+
+[[package]]
 name = "penumbra-storage"
 version = "0.51.0"
 dependencies = [
@@ -4563,6 +4591,7 @@ dependencies = [
  "penumbra-crypto",
  "penumbra-proof-params",
  "penumbra-proto",
+ "penumbra-shielded-pool",
  "penumbra-tct",
  "poseidon377",
  "proptest",
@@ -4601,6 +4630,7 @@ dependencies = [
  "penumbra-chain",
  "penumbra-crypto",
  "penumbra-proto",
+ "penumbra-shielded-pool",
  "penumbra-tct",
  "penumbra-transaction",
  "prost",
@@ -4666,6 +4696,7 @@ dependencies = [
  "penumbra-chain",
  "penumbra-crypto",
  "penumbra-proto",
+ "penumbra-shielded-pool",
  "penumbra-tct",
  "penumbra-transaction",
  "rand_core 0.6.4",

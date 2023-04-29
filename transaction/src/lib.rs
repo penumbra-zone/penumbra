@@ -19,6 +19,7 @@ mod auth_hash;
 mod effect_hash;
 mod error;
 mod id;
+mod is_action;
 mod transaction;
 mod witness_data;
 
@@ -28,12 +29,17 @@ pub mod proposal;
 pub mod view;
 pub mod vote;
 
-pub use action::{Action, IsAction};
+pub use action::Action;
 pub use auth_data::AuthorizationData;
 pub use auth_hash::{AuthHash, AuthorizingData};
 pub use effect_hash::EffectingData;
 pub use error::Error;
 pub use id::Id;
+pub use is_action::IsAction;
 pub use transaction::{Transaction, TransactionBody};
 pub use view::{ActionView, MemoView, TransactionPerspective, TransactionView};
 pub use witness_data::WitnessData;
+
+/// A compatibility wrapper for trait implementations that are temporarily duplicated
+/// in multiple crates as an orphan rule work around until we finish splitting crates (#2288).
+pub struct Compat<'a, T>(pub &'a T);

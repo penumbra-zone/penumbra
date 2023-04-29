@@ -16,13 +16,14 @@ use penumbra_crypto::{
 use penumbra_proto::{
     core::stake::v1alpha1 as pbs, core::transaction::v1alpha1 as pbt, DomainType, Message,
 };
+use penumbra_shielded_pool::{Output, Spend};
 use penumbra_tct as tct;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     action::{
-        DaoDeposit, DaoOutput, DaoSpend, Delegate, DelegatorVote, IbcAction, Output, PositionClose,
-        PositionOpen, ProposalSubmit, ProposalWithdraw, Spend, Swap, Undelegate, ValidatorVote,
+        DaoDeposit, DaoOutput, DaoSpend, Delegate, DelegatorVote, IbcAction, PositionClose,
+        PositionOpen, ProposalSubmit, ProposalWithdraw, Swap, Undelegate, ValidatorVote,
     },
     view::{action_view::OutputView, MemoView, TransactionBodyView},
     Action, ActionView, Id, IsAction, TransactionPerspective, TransactionView,

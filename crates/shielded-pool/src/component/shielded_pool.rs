@@ -12,7 +12,9 @@ use penumbra_storage::StateRead;
 use penumbra_storage::StateWrite;
 use tendermint::abci;
 
-use super::{state_key, NoteManager, SupplyWrite};
+use crate::state_key;
+
+use super::{NoteManager, SupplyWrite};
 
 pub struct ShieldedPool {}
 

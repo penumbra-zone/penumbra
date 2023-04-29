@@ -21,7 +21,7 @@ pub fn register_metrics() {
     penumbra_storage::register_metrics();
     penumbra_app::stake::register_metrics();
     // penumbra_app::ibc::register_metrics();
-    penumbra_app::shielded_pool::register_metrics();
+    penumbra_shielded_pool::component::register_metrics();
 
     register_counter!(MEMPOOL_CHECKTX_TOTAL);
     describe_counter!(

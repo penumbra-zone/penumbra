@@ -4,13 +4,11 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use penumbra_chain::{component::StateReadExt as _, sync::StatePayload};
 use penumbra_crypto::TransactionContext;
+use penumbra_shielded_pool::component::{NoteManager, StateReadExt as _};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::action::SwapClaim;
 
-use crate::{
-    action_handler::ActionHandler, shielded_pool::NoteManager, shielded_pool::StateReadExt as _,
-    stubdex::StateReadExt as _,
-};
+use crate::{action_handler::ActionHandler, stubdex::StateReadExt as _};
 
 #[async_trait]
 impl ActionHandler for SwapClaim {

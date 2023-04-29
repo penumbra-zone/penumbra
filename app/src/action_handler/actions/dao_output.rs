@@ -4,10 +4,11 @@ use anyhow::Result;
 use async_trait::async_trait;
 
 use penumbra_chain::NoteSource;
+use penumbra_shielded_pool::component::NoteManager;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::action::DaoOutput;
 
-use crate::{shielded_pool::NoteManager, ActionHandler};
+use crate::ActionHandler;
 
 #[async_trait]
 impl ActionHandler for DaoOutput {

@@ -8,6 +8,7 @@ use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Action;
 
 use super::ActionHandler;
+use penumbra_component::ActionHandler as _;
 
 mod dao_deposit;
 mod dao_output;
@@ -16,10 +17,8 @@ mod delegate;
 mod delegator_vote;
 mod ibc_action;
 mod ics20;
-mod output;
 mod position;
 mod proposal;
-mod spend;
 mod swap;
 mod swap_claim;
 mod undelegate;

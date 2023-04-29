@@ -10,7 +10,7 @@ use penumbra_storage::{StateRead, StateWrite};
 
 use tracing::instrument;
 
-use super::state_key;
+use crate::state_key;
 
 #[async_trait]
 pub trait SupplyRead: StateRead {
