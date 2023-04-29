@@ -871,6 +871,8 @@ impl<T: StateWrite + StateWriteExt + ?Sized> StakingImpl for T {}
 
 #[async_trait]
 impl Component for Staking {
+    type AppState = genesis::AppState;
+
     #[instrument(name = "staking", skip(state, app_state))]
     async fn init_chain<S: StateWrite>(mut state: S, app_state: &genesis::AppState) {
         let starting_height = state.get_block_height().await.unwrap();

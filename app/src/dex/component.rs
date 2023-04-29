@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::Component;
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_chain::genesis;
+
 use penumbra_storage::{StateRead, StateWrite};
 use tendermint::abci;
 use tracing::instrument;
@@ -12,8 +12,10 @@ pub struct Dex {}
 
 #[async_trait]
 impl Component for Dex {
+    type AppState = ();
+
     #[instrument(name = "dex", skip(_state, _app_state))]
-    async fn init_chain<S: StateWrite>(_state: S, _app_state: &genesis::AppState) {}
+    async fn init_chain<S: StateWrite>(_state: S, _app_state: &()) {}
 
     #[instrument(name = "dex", skip(_state, _begin_block))]
     async fn begin_block<S: StateWrite + 'static>(

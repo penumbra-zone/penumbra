@@ -111,10 +111,10 @@ impl App {
         );
 
         Staking::init_chain(&mut state_tx, app_state).await;
-        IBCComponent::init_chain(&mut state_tx, app_state).await;
-        Dex::init_chain(&mut state_tx, app_state).await;
-        StubDex::init_chain(&mut state_tx, app_state).await;
-        Governance::init_chain(&mut state_tx, app_state).await;
+        IBCComponent::init_chain(&mut state_tx, &()).await;
+        Dex::init_chain(&mut state_tx, &()).await;
+        StubDex::init_chain(&mut state_tx, &()).await;
+        Governance::init_chain(&mut state_tx, &()).await;
         ShieldedPool::init_chain(&mut state_tx, app_state).await;
 
         let mut compact_block = state_tx.stub_compact_block();
