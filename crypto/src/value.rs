@@ -316,8 +316,7 @@ mod tests {
     use crate::{
         balance::commitment::VALUE_BLINDING_GENERATOR,
         dex::{swap::SwapPlaintext, TradingPair},
-        transaction::Fee,
-        Address, Balance,
+        Address, Balance, Fee,
     };
 
     use super::*;

@@ -11,8 +11,7 @@ use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_crypto::{
     asset::{self},
     keys::{AccountGroupId, AddressIndex, FullViewingKey},
-    transaction::Fee,
-    Amount, Asset,
+    Amount, Asset, Fee,
 };
 use penumbra_proto::{
     client::v1alpha1::{
@@ -150,7 +149,7 @@ impl ViewService {
 
         // 1. Pre-check the transaction for (stateless) validity.
         transaction
-            .check_stateless(std::sync::Arc::new(transaction.clone()))
+            .check_stateless(())
             .await
             .context("transaction pre-submission checks failed")?;
 

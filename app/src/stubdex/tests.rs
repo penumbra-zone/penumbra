@@ -4,8 +4,7 @@ use penumbra_chain::{test_keys, StateReadExt, StateWriteExt};
 use penumbra_crypto::{
     asset,
     dex::{swap::SwapPlaintext, TradingPair},
-    transaction::Fee,
-    Address, Amount,
+    Address, Amount, Fee,
 };
 use penumbra_storage::{ArcStateDeltaExt, StateDelta, TempStorage};
 use penumbra_transaction::{
@@ -110,10 +109,11 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
     // 7. Execute the SwapClaim action
 
     // The SwapClaim ActionHandler uses the transaction's anchor to check proofs:
-    let context = Arc::new(Transaction {
+    let context = Transaction {
         anchor: client.latest_height_and_sct_root().1,
         ..Default::default()
-    });
+    }
+    .context();
 
     claim.check_stateless(context).await?;
     claim.check_stateful(state.clone()).await?;

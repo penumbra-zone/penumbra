@@ -27,8 +27,7 @@ mod tests {
         keys::{SeedPhrase, SpendKey},
         rdsa,
         stake::{IdentityKey, Penalty, UnbondingToken},
-        transaction::Fee,
-        Address, Amount, Balance, Rseed,
+        Address, Amount, Balance, Fee, Rseed,
     };
     use ark_groth16::{Groth16, ProvingKey, VerifyingKey};
     use ark_r1cs_std::prelude::*;

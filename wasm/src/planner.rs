@@ -14,8 +14,7 @@ use penumbra_crypto::{
     dex::{swap::SwapPlaintext, TradingPair},
     keys::AddressIndex,
     stake::IdentityKey,
-    transaction::Fee,
-    Address, FullViewingKey, Note, Value,
+    Address, Fee, FullViewingKey, Note, Value,
 };
 use penumbra_tct as tct;
 use penumbra_transaction::{

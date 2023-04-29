@@ -31,7 +31,7 @@ pub mod vote;
 pub use action::{Action, IsAction};
 pub use auth_data::AuthorizationData;
 pub use auth_hash::{AuthHash, AuthorizingData};
-pub use effect_hash::{EffectHash, EffectingData};
+pub use effect_hash::EffectingData;
 pub use error::Error;
 pub use id::Id;
 pub use transaction::{Transaction, TransactionBody};

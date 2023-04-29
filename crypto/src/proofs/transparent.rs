@@ -13,9 +13,7 @@ use crate::proofs::transparent_gadgets as gadgets;
 use crate::{
     dex::{swap::SwapPlaintext, BatchSwapOutputData},
     keys::{self, NullifierKey},
-    note,
-    transaction::Fee,
-    Amount, Fq, Nullifier, Value,
+    note, Amount, Fee, Fq, Nullifier, Value,
 };
 
 /// Transparent proof for claiming swapped assets.

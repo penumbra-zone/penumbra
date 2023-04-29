@@ -2,7 +2,7 @@
 //! creation.
 
 use anyhow::Result;
-use penumbra_crypto::{transaction::Fee, Address};
+use penumbra_crypto::{Address, Fee};
 use penumbra_proto::{
     core::stake::v1alpha1 as pb_stake, core::transaction::v1alpha1 as pb, DomainType,
 };

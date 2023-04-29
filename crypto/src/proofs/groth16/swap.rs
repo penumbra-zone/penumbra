@@ -21,8 +21,7 @@ use crate::{
     ka,
     keys::Diversifier,
     note::StateCommitmentVar,
-    transaction::Fee,
-    Address, Fq, Fr, Rseed, Value,
+    Address, Fee, Fq, Fr, Rseed, Value,
 };
 
 use super::{ParameterSetup, GROTH16_PROOF_LENGTH_BYTES};

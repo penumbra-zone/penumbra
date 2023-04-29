@@ -3,8 +3,9 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::StateReadExt as _;
+use penumbra_crypto::TransactionContext;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::{Action, Transaction};
+use penumbra_transaction::Action;
 
 use super::ActionHandler;
 
@@ -28,9 +29,9 @@ mod validator_vote;
 
 #[async_trait]
 impl ActionHandler for Action {
-    type CheckStatelessContext = Arc<Transaction>;
+    type CheckStatelessContext = TransactionContext;
 
-    async fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
+    async fn check_stateless(&self, context: TransactionContext) -> Result<()> {
         match self {
             // These actions require a context
             Action::SwapClaim(action) => action.check_stateless(context),

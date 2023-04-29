@@ -21,11 +21,11 @@ use stateless::{no_duplicate_nullifiers, valid_binding_signature};
 
 #[async_trait]
 impl ActionHandler for Transaction {
-    type CheckStatelessContext = Arc<Transaction>;
+    type CheckStatelessContext = ();
 
     // We only instrument the top-level `check_stateless`, so we get one span for each transaction.
-    #[instrument(skip(self, context))]
-    async fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
+    #[instrument(skip(self, _context))]
+    async fn check_stateless(&self, _context: ()) -> Result<()> {
         // TODO: add a check that ephemeral_key is not identity to prevent scanning dos attack ?
 
         // TODO: unify code organization
@@ -33,6 +33,8 @@ impl ActionHandler for Transaction {
         no_duplicate_nullifiers(self)?;
         consensus_rules::stateless::num_clues_equal_to_num_outputs(self)?;
         consensus_rules::stateless::check_memo_exists_if_outputs_absent_if_not(self)?;
+
+        let context = self.context();
 
         // Currently, we need to clone the component actions so that the spawned
         // futures can have 'static lifetimes. In the future, we could try to
