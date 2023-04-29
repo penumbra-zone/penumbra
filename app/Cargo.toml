@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 # Workspace dependencies
 penumbra-crypto = { path = "../crypto" }
+penumbra-component = { path = "../component" }
 penumbra-proto = { path = "../proto", features = ["penumbra-storage"] }
 penumbra-transaction = { path = "../transaction" }
 penumbra-storage = { path = "../storage" }

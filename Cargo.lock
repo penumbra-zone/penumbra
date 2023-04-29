@@ -4156,6 +4156,7 @@ dependencies = [
  "once_cell",
  "parking_lot 0.12.1",
  "penumbra-chain",
+ "penumbra-component",
  "penumbra-crypto",
  "penumbra-proof-params",
  "penumbra-proto",
@@ -4203,6 +4204,16 @@ dependencies = [
  "sha2 0.9.9",
  "tendermint",
  "tracing",
+]
+
+[[package]]
+name = "penumbra-component"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "penumbra-storage",
+ "tendermint",
 ]
 
 [[package]]

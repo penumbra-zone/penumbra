@@ -1,11 +1,9 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use crate::compactblock::view::{StateReadExt as _, StateWriteExt as _};
-use crate::Component;
 use anyhow::Result;
 use async_trait::async_trait;
-
+use penumbra_component::Component;
 use penumbra_crypto::dex::lp::Reserves;
 use penumbra_crypto::{
     asset,
@@ -16,6 +14,8 @@ use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 use tendermint::abci;
 use tracing::instrument;
+
+use crate::compactblock::view::{StateReadExt as _, StateWriteExt as _};
 
 use super::state_key;
 use super::StubCpmm;

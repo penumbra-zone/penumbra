@@ -9,7 +9,7 @@ use tendermint::abci;
 use tracing::instrument;
 
 use super::{tally, StateReadExt as _, StateWriteExt as _};
-use crate::Component;
+use penumbra_component::Component;
 
 pub struct Governance {}
 

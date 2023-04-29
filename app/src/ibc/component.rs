@@ -12,12 +12,12 @@ use std::sync::Arc;
 
 use crate::ibc::component::client::StateWriteExt as _;
 use crate::ibc::ClientCounter;
-use crate::Component;
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc_types::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use ibc_types::core::ics02_client::height::Height;
 
+use penumbra_component::Component;
 use penumbra_storage::StateWrite;
 use tendermint::abci;
 use tracing::instrument;
