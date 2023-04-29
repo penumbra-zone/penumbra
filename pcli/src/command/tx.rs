@@ -22,6 +22,7 @@ use penumbra_crypto::{
     stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken},
     Amount, Fee, Value, STAKING_TOKEN_ASSET_ID,
 };
+use penumbra_ibc::Ics20Withdrawal;
 use penumbra_proto::{
     client::v1alpha1::{
         EpochByHeightRequest, LiquidityPositionByIdRequest, ProposalInfoRequest,
@@ -30,7 +31,6 @@ use penumbra_proto::{
     core::dex::v1alpha1::PositionId,
 };
 use penumbra_transaction::{
-    action::Ics20Withdrawal,
     plan::{SwapClaimPlan, UndelegateClaimPlan},
     proposal::ProposalToml,
     vote::Vote,

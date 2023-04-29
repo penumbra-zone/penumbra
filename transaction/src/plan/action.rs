@@ -1,4 +1,5 @@
 use penumbra_crypto::Balance;
+use penumbra_ibc::{IbcAction, Ics20Withdrawal};
 use penumbra_proto::{
     core::stake::v1alpha1 as pb_stake, core::transaction::v1alpha1 as pb_t, DomainType,
 };
@@ -18,9 +19,8 @@ pub use swap_claim::SwapClaimPlan;
 pub use undelegate_claim::UndelegateClaimPlan;
 
 use crate::action::{
-    DaoDeposit, DaoOutput, DaoSpend, Delegate, IbcAction, Ics20Withdrawal, PositionClose,
-    PositionOpen, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, Undelegate,
-    ValidatorVote,
+    DaoDeposit, DaoOutput, DaoSpend, Delegate, PositionClose, PositionOpen, ProposalDepositClaim,
+    ProposalSubmit, ProposalWithdraw, Undelegate, ValidatorVote,
 };
 
 /// A declaration of a planned [`Action`], for use in transaction creation.

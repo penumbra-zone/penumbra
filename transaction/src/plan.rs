@@ -3,6 +3,7 @@
 
 use anyhow::Result;
 use penumbra_crypto::{Address, Fee};
+use penumbra_ibc::{IbcAction, Ics20Withdrawal};
 use penumbra_proto::{
     core::stake::v1alpha1 as pb_stake, core::transaction::v1alpha1 as pb, DomainType,
 };
@@ -11,9 +12,8 @@ use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 
 use crate::action::{
-    DaoDeposit, DaoOutput, DaoSpend, Delegate, IbcAction, Ics20Withdrawal, PositionClose,
-    PositionOpen, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, Undelegate,
-    ValidatorVote,
+    DaoDeposit, DaoOutput, DaoSpend, Delegate, PositionClose, PositionOpen, ProposalDepositClaim,
+    ProposalSubmit, ProposalWithdraw, Undelegate, ValidatorVote,
 };
 
 mod action;

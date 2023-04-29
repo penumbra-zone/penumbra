@@ -22,13 +22,14 @@ use penumbra_crypto::{
     Address, Fee, Note, Value,
 };
 use penumbra_crypto::{dex::lp::Reserves, Balance};
+use penumbra_ibc::Ics20Withdrawal;
 use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
 use penumbra_shielded_pool::{OutputPlan, SpendPlan};
 use penumbra_tct as tct;
 use penumbra_transaction::{
     action::{
-        DaoDeposit, Ics20Withdrawal, PositionClose, PositionOpen, Proposal, ProposalDepositClaim,
-        ProposalSubmit, ProposalWithdraw, ValidatorVote, Vote,
+        DaoDeposit, PositionClose, PositionOpen, Proposal, ProposalDepositClaim, ProposalSubmit,
+        ProposalWithdraw, ValidatorVote, Vote,
     },
     plan::{
         ActionPlan, DelegatorVotePlan, MemoPlan, PositionWithdrawPlan, SwapClaimPlan, SwapPlan,

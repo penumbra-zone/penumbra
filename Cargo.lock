@@ -3928,6 +3928,7 @@ dependencies = [
  "penumbra-chain",
  "penumbra-crypto",
  "penumbra-custody",
+ "penumbra-ibc",
  "penumbra-proof-params",
  "penumbra-proto",
  "penumbra-shielded-pool",
@@ -4160,6 +4161,7 @@ dependencies = [
  "penumbra-chain",
  "penumbra-component",
  "penumbra-crypto",
+ "penumbra-ibc",
  "penumbra-proof-params",
  "penumbra-proto",
  "penumbra-shielded-pool",
@@ -4309,6 +4311,36 @@ dependencies = [
  "rand_core 0.6.4",
  "thiserror",
  "tokio",
+]
+
+[[package]]
+name = "penumbra-ibc"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "ark-ff",
+ "async-trait",
+ "base64 0.20.0",
+ "blake2b_simd 0.5.11",
+ "hex",
+ "ibc-proto",
+ "ibc-types",
+ "metrics",
+ "once_cell",
+ "pbjson-types",
+ "penumbra-chain",
+ "penumbra-component",
+ "penumbra-crypto",
+ "penumbra-proto",
+ "penumbra-shielded-pool",
+ "penumbra-storage",
+ "prost",
+ "serde",
+ "sha2 0.10.6",
+ "tendermint",
+ "tendermint-light-client-verifier",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -4589,6 +4621,7 @@ dependencies = [
  "pbjson-types",
  "penumbra-chain",
  "penumbra-crypto",
+ "penumbra-ibc",
  "penumbra-proof-params",
  "penumbra-proto",
  "penumbra-shielded-pool",
@@ -4629,6 +4662,7 @@ dependencies = [
  "penumbra-app",
  "penumbra-chain",
  "penumbra-crypto",
+ "penumbra-ibc",
  "penumbra-proto",
  "penumbra-shielded-pool",
  "penumbra-tct",

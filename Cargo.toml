@@ -9,6 +9,7 @@ exclude = [
 members = [
   "crates/shielded-pool",
   "crates/component",
+  "crates/ibc",
   # Legacy: move these directories into `crates/` heirarchy
   # as it becomes possible (no in flight changes)
   "decaf377-fmd",

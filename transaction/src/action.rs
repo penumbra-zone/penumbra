@@ -8,8 +8,6 @@ mod dao_output;
 mod dao_spend;
 mod delegate;
 mod delegator_vote;
-mod ibc_action;
-mod ics20_withdrawal;
 mod position;
 mod proposal_deposit_claim;
 mod proposal_submit;
@@ -29,8 +27,6 @@ pub use dao_output::DaoOutput;
 pub use dao_spend::DaoSpend;
 pub use delegate::Delegate;
 pub use delegator_vote::{DelegatorVote, DelegatorVoteBody};
-pub use ibc_action::IbcAction;
-pub use ics20_withdrawal::Ics20Withdrawal;
 pub use position::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw};
 pub use proposal_deposit_claim::ProposalDepositClaim;
 pub use proposal_submit::ProposalSubmit;
@@ -48,7 +44,7 @@ pub enum Action {
     Output(penumbra_shielded_pool::Output),
     Spend(penumbra_shielded_pool::Spend),
     ValidatorDefinition(pbs::ValidatorDefinition),
-    IbcAction(IbcAction),
+    IbcAction(penumbra_ibc::IbcAction),
     Swap(Swap),
     SwapClaim(SwapClaim),
     ProposalSubmit(ProposalSubmit),
@@ -66,7 +62,7 @@ pub enum Action {
     Undelegate(Undelegate),
     UndelegateClaim(UndelegateClaim),
 
-    Ics20Withdrawal(Ics20Withdrawal),
+    Ics20Withdrawal(penumbra_ibc::Ics20Withdrawal),
 
     DaoSpend(DaoSpend),
     DaoOutput(DaoOutput),

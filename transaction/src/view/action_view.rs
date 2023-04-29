@@ -1,3 +1,4 @@
+use penumbra_ibc::{IbcAction, Ics20Withdrawal};
 use penumbra_proto::core::stake::v1alpha1::ValidatorDefinition;
 use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType};
 use serde::{Deserialize, Serialize};
@@ -13,9 +14,9 @@ pub use swap_claim_view::SwapClaimView;
 pub use swap_view::SwapView;
 
 use crate::action::{
-    DaoDeposit, DaoOutput, DaoSpend, Delegate, IbcAction, Ics20Withdrawal, PositionClose,
-    PositionOpen, PositionRewardClaim, PositionWithdraw, ProposalDepositClaim, ProposalSubmit,
-    ProposalWithdraw, Undelegate, UndelegateClaim, ValidatorVote,
+    DaoDeposit, DaoOutput, DaoSpend, Delegate, PositionClose, PositionOpen, PositionRewardClaim,
+    PositionWithdraw, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, Undelegate,
+    UndelegateClaim, ValidatorVote,
 };
 use crate::Action;
 
