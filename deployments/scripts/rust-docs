@@ -38,6 +38,7 @@ cargo +nightly doc --no-deps \
   -p penumbra-proto \
   -p penumbra-proof-params \
   -p penumbra-chain \
+  -p penumbra-component \
   -p penumbra-app \
   -p penumbra-crypto \
   -p penumbra-custody \
