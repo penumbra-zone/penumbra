@@ -560,7 +560,7 @@ async fn fill_route_constraint_stacked() -> anyhow::Result<()> {
         amount: Amount::from(4u64) * gm.unit_amount(),
     };
 
-    let route = vec![gm.id(), gn.id(), penumbra.id(), pusd.id()];
+    let route = vec![gn.id(), penumbra.id(), pusd.id()];
 
     let spill_price = U128x128::from(Amount::from(1_000_000_000u64) * pusd.unit_amount());
 
@@ -666,7 +666,7 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
         amount: Amount::from(4u64) * gm.unit_amount(),
     };
 
-    let route = vec![gm.id(), gn.id(), penumbra.id(), pusd.id()];
+    let route = vec![gn.id(), penumbra.id(), pusd.id()];
 
     let spill_price = U128x128::from(Amount::from(1_000_000_000u64) * pusd.unit_amount());
 
@@ -747,7 +747,7 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
         amount: Amount::from(1u64) * gm.unit_amount(),
     };
 
-    let route = vec![gm.id(), gn.id(), penumbra.id(), pusd.id()];
+    let route = vec![gn.id(), penumbra.id(), pusd.id()];
 
     let spill_price =
         (U128x128::from(1_000_000_000_000u64) * U128x128::from(pusd.unit_amount())).unwrap();
@@ -825,7 +825,7 @@ async fn fill_route_hit_spill_price() -> anyhow::Result<()> {
         amount: Amount::from(3u64) * gm.unit_amount(),
     };
 
-    let route = vec![gm.id(), gn.id(), penumbra.id(), pusd.id()];
+    let route = vec![gn.id(), penumbra.id(), pusd.id()];
 
     let valuation_penumbra =
         (U128x128::from(price1400) * U128x128::from(pusd.unit_amount())).unwrap();
