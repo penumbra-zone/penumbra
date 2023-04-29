@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use penumbra_chain::StateReadExt;
+use penumbra_chain::component::StateReadExt;
 use penumbra_storage::StateWrite;
 use penumbra_transaction::proposal;
 use tendermint::abci;

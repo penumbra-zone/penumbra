@@ -10,8 +10,8 @@ use penumbra_app::shielded_pool::SupplyRead as _;
 use penumbra_app::stake::rate::RateData;
 use penumbra_app::stake::StateReadExt as _;
 use penumbra_app::stubdex::StateReadExt as _;
-use penumbra_chain::AppHashRead;
-use penumbra_chain::StateReadExt as _;
+use penumbra_chain::component::AppHashRead;
+use penumbra_chain::component::StateReadExt as _;
 use penumbra_crypto::asset::{self, Asset};
 use penumbra_crypto::dex::lp::position;
 use penumbra_proto::{

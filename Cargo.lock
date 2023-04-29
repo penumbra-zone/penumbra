@@ -4196,6 +4196,7 @@ dependencies = [
  "ibc-types",
  "ics23",
  "once_cell",
+ "penumbra-component",
  "penumbra-crypto",
  "penumbra-proto",
  "penumbra-storage",

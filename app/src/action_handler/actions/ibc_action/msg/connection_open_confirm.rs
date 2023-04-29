@@ -7,6 +7,7 @@ use ibc_types::core::ics02_client::consensus_state::ConsensusState;
 use ibc_types::core::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use ibc_types::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 use ibc_types::core::ics24_host::path::ConnectionPath;
+use penumbra_chain::component::PENUMBRA_COMMITMENT_PREFIX;
 use penumbra_storage::{StateRead, StateWrite};
 
 use crate::action_handler::ActionHandler;
@@ -52,7 +53,7 @@ impl ActionHandler for MsgConnectionOpenConfirm {
             Counterparty::new(
                 connection.client_id().clone(),
                 Some(self.conn_id_on_b.clone()),
-                penumbra_chain::PENUMBRA_COMMITMENT_PREFIX.clone(),
+                PENUMBRA_COMMITMENT_PREFIX.clone(),
             ),
             connection.versions().to_vec(),
             connection.delay_period(),

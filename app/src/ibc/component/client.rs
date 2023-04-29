@@ -17,7 +17,7 @@ use ibc_types::{
         ics24_host::identifier::ClientId,
     },
 };
-use penumbra_chain::StateReadExt as _;
+use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 
@@ -419,7 +419,7 @@ mod tests {
     use super::*;
     use ibc_proto::protobuf::Protobuf;
     use ibc_types::core::ics02_client::msgs::create_client::MsgCreateClient;
-    use penumbra_chain::StateWriteExt;
+    use penumbra_chain::component::StateWriteExt;
     use penumbra_storage::{ArcStateDeltaExt, StateDelta, TempStorage};
     use penumbra_transaction::action::IbcAction;
     use std::str::FromStr;

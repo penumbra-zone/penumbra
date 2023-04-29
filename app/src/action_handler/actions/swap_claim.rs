@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use penumbra_chain::{sync::StatePayload, StateReadExt as _};
+use penumbra_chain::{component::StateReadExt as _, sync::StatePayload};
 use penumbra_crypto::TransactionContext;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::action::SwapClaim;

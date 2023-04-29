@@ -7,7 +7,7 @@ use decaf377::Fq;
 use once_cell::sync::Lazy;
 use rand_chacha::{rand_core::SeedableRng, ChaCha20Rng};
 
-use penumbra_chain::StateReadExt as _;
+use penumbra_chain::component::StateReadExt as _;
 use penumbra_crypto::{
     keys::{FullViewingKey, NullifierKey},
     rdsa::{VerificationKey, VerificationKeyBytes},

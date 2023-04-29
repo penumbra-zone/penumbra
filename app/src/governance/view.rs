@@ -6,7 +6,10 @@ use std::{
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use futures::{StreamExt, TryStreamExt};
-use penumbra_chain::{params::ChainParameters, StateReadExt as _, StateWriteExt as _};
+use penumbra_chain::{
+    component::{StateReadExt as _, StateWriteExt as _},
+    params::ChainParameters,
+};
 use penumbra_crypto::{
     asset::{self, Amount},
     stake::{DelegationToken, IdentityKey},

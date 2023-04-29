@@ -4,7 +4,7 @@ use std::sync::Arc;
 // TODO: we should not have dependencies on penumbra_chain in narsil
 // and instead implement narsil-specific state accessors or extract
 // the common accessors elsewhere to avoid mingling penumbra-specific logic.
-use penumbra_chain::{genesis, AppHash};
+use penumbra_chain::{component::AppHash, genesis};
 use penumbra_proto::{core::transaction::v1alpha1::Transaction, Message};
 use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, Storage};
 use tendermint::{abci, validator::Update};

@@ -14,7 +14,7 @@ publish = false
 [dependencies]
 # Workspace dependencies
 # TODO: remove dependency on penumbra-chain
-penumbra-chain = { path = "../chain" }
+penumbra-chain = { path = "../chain" , features = ["component"] }
 penumbra-proto = { path = "../proto" , features = ["rpc"] }
 penumbra-storage = { path = "../storage" }
 penumbra-tower-trace = { path = "../tower-trace" }
