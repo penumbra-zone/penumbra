@@ -36,6 +36,7 @@ penumbra-view = { path = "../view" }
 penumbra-custody = { path = "../custody" }
 penumbra-tct = { path = "../tct" }
 penumbra-shielded-pool = { path = "../crates/shielded-pool", default-features = false }
+penumbra-ibc = { path = "../crates/ibc", default-features = false }
 # TODO: replace by a penumbra-app
 penumbra-app = { path = "../app" }
 

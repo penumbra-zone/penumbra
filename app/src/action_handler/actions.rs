@@ -15,8 +15,6 @@ mod dao_output;
 mod dao_spend;
 mod delegate;
 mod delegator_vote;
-mod ibc_action;
-mod ics20;
 mod position;
 mod proposal;
 mod swap;

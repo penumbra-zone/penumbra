@@ -91,9 +91,10 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
     // base64 encoded MsgCreateClient that was used to create the currently in-use Stargaze
     // light client on the cosmos hub:
     // https://cosmos.bigdipper.live/transactions/13C1ECC54F088473E2925AD497DDCC092101ADE420BC64BADE67D34A75769CE9
-    let msg_create_client_stargaze_raw =
-        base64::decode(include_str!("../../app/src/ibc/test/create_client.msg").replace('\n', ""))
-            .unwrap();
+    let msg_create_client_stargaze_raw = base64::decode(
+        include_str!("../../crates/ibc/src/component/test/create_client.msg").replace('\n', ""),
+    )
+    .unwrap();
     use ibc_proto::protobuf::Protobuf;
     use ibc_types::core::ics02_client::msgs::create_client::MsgCreateClient;
     let msg_create_stargaze_client =

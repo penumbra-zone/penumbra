@@ -7,6 +7,7 @@ use penumbra_chain::{
     genesis,
 };
 use penumbra_component::Component;
+use penumbra_ibc::component::IBCComponent;
 use penumbra_proto::DomainType;
 use penumbra_shielded_pool::component::ShieldedPool;
 use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, StateWrite, Storage};
@@ -18,7 +19,6 @@ use tracing::Instrument;
 use crate::action_handler::ActionHandler;
 use crate::dex::Dex;
 use crate::governance::{Governance, StateReadExt as _};
-use crate::ibc::IBCComponent;
 use crate::stake::component::{Staking, ValidatorUpdates};
 use crate::stubdex::StubDex;
 

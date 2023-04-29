@@ -13,7 +13,6 @@ pub mod app;
 pub mod dao;
 pub mod dex;
 pub mod governance;
-pub mod ibc;
 pub mod stake;
 pub mod stubdex;
 

@@ -1,6 +1,8 @@
-use crate::{ActionView, TransactionPerspective};
-use penumbra_crypto::{balance, Note};
+use penumbra_crypto::{balance, Fr, Note, Zero};
+use penumbra_ibc::{IbcAction, Ics20Withdrawal};
 use penumbra_shielded_pool::{Output, OutputView, Spend, SpendView};
+
+use crate::{ActionView, TransactionPerspective};
 
 // TODO: how do we have this be implemented in the component crates?
 // currently can't because of txp
@@ -74,5 +76,25 @@ impl IsAction for Spend {
         };
 
         ActionView::Spend(spend_view)
+    }
+}
+
+impl IsAction for IbcAction {
+    fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
+        Default::default()
+    }
+
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        ActionView::IbcAction(self.clone())
+    }
+}
+
+impl IsAction for Ics20Withdrawal {
+    fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
+        self.balance().commit(Fr::zero())
+    }
+
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        ActionView::Ics20Withdrawal(self.to_owned())
     }
 }

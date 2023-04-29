@@ -7,9 +7,9 @@ use penumbra_proto::{DomainType, Message};
 use crate::{
     action::{
         swap, swap_claim, DaoDeposit, DaoOutput, DaoSpend, Delegate, DelegatorVote,
-        DelegatorVoteBody, Ics20Withdrawal, PositionClose, PositionOpen, PositionRewardClaim,
-        PositionWithdraw, Proposal, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw,
-        Undelegate, UndelegateClaimBody, ValidatorVote, ValidatorVoteBody, Vote,
+        DelegatorVoteBody, PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw,
+        Proposal, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, Undelegate,
+        UndelegateClaimBody, ValidatorVote, ValidatorVoteBody, Vote,
     },
     plan::TransactionPlan,
     proposal, Action, Transaction, TransactionBody,
@@ -586,29 +586,6 @@ impl EffectingData for PositionRewardClaim {
         state.update(&self.position_id.0);
         state.update(&self.rewards_commitment.to_bytes());
 
-        EffectHash(state.finalize().as_array().clone())
-    }
-}
-
-impl EffectingData for Ics20Withdrawal {
-    fn effect_hash(&self) -> EffectHash {
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:ics20wthdrwl")
-            .to_state();
-
-        let destination_chain_id_hash =
-            blake2b_simd::Params::default().hash(self.destination_chain_id.as_bytes());
-        let destination_chain_address_hash =
-            blake2b_simd::Params::default().hash(self.destination_chain_address.as_bytes());
-
-        state.update(destination_chain_id_hash.as_bytes());
-        state.update(&self.value().amount.to_le_bytes());
-        state.update(&self.value().asset_id.to_bytes());
-        state.update(destination_chain_address_hash.as_bytes());
-        //This is safe because the return address has a constant length of 80 bytes.
-        state.update(&self.return_address.to_vec());
-        state.update(&self.timeout_height.to_le_bytes());
-        state.update(&self.timeout_time.to_le_bytes());
         EffectHash(state.finalize().as_array().clone())
     }
 }
