@@ -19,8 +19,12 @@ pub trait FillRoute: StateWrite + Sized {
     async fn find_constraints(
         &mut self,
         input: Value,
-        route: &[asset::Id],
+        hops: &[asset::Id],
     ) -> Result<(Vec<(position::Position, Amount)>, Vec<position::Position>)> {
+        let mut route = hops.to_vec();
+        route.insert(0, input.asset_id);
+        let pairs = self.breakdown_route(&route)?;
+
         let mut tmp_state = StateDelta::new(&self);
         let mut current_input = input.clone();
 
@@ -28,14 +32,11 @@ pub trait FillRoute: StateWrite + Sized {
         let mut best_positions: Vec<position::Position> = vec![];
         let mut accumulated_effective_price = U128x128::from(1u64);
 
-        for (_i, next_asset) in route.iter().enumerate().skip(1) {
+        for pair in pairs {
             let Some(position) = tmp_state
-                .best_position(&DirectedTradingPair {
-                    start: current_input.asset_id,
-                    end: *next_asset,
-                })
+                .best_position(&pair)
                 .await? else {
-                    return Err(anyhow!("exhausted positions on hop {}-{}", current_input.asset_id, *next_asset))
+                    return Err(anyhow!("exhausted positions on hop {}-{}", current_input.asset_id, pair.end))
                 };
 
             best_positions.push(position.clone());
@@ -44,11 +45,7 @@ pub trait FillRoute: StateWrite + Sized {
                 .fill_against(current_input, &position.id())
                 .await?;
 
-            let position_price = position
-                .phi
-                .orient_end(*next_asset)
-                .unwrap()
-                .effective_price();
+            let position_price = position.phi.orient_end(pair.end).unwrap().effective_price();
 
             accumulated_effective_price =
                 (accumulated_effective_price * position_price).expect("TODO(erwan): write proof");
@@ -56,7 +53,7 @@ pub trait FillRoute: StateWrite + Sized {
             // We have found a hop in the path that bottlenecks execution.
             if unfilled.amount > Amount::zero() {
                 let lambda_2 = position
-                    .reserves_for(*next_asset)
+                    .reserves_for(pair.end)
                     .expect("the position has reserves for its numeraire");
 
                 let delta_1_star = (U128x128::from(lambda_2) * accumulated_effective_price)
@@ -109,11 +106,14 @@ pub trait FillRoute: StateWrite + Sized {
     async fn fill_route(
         &mut self,
         mut input: Value,
-        route: &[asset::Id],
+        hops: &[asset::Id],
         spill_price: U128x128,
     ) -> Result<(Value, Value)> {
+        let mut route = hops.to_vec();
+        route.insert(0, input.asset_id);
+
         // Breakdown the route into a sequence of pairs to visit.
-        let pairs = self.breakdown_route(route)?;
+        let pairs = self.breakdown_route(&route)?;
 
         let mut output = Value {
             amount: 0u64.into(),
@@ -134,7 +134,7 @@ pub trait FillRoute: StateWrite + Sized {
             // are limiting the flow aka. "constraints". For every such constraint,
             // there's an input capacity that maximize its output without causing an
             // overflow.
-            let (constraining_hops, best_positions) = self.find_constraints(input, route).await?;
+            let (constraining_hops, best_positions) = self.find_constraints(input, hops).await?;
             let effective_price = best_positions.clone().into_iter().zip(pairs.clone()).fold(
                 U128x128::from(1u64),
                 |acc, (pos, pair)| {
@@ -181,11 +181,12 @@ pub trait FillRoute: StateWrite + Sized {
             // Now, we can execute along the route knowing that the most limiting
             // constraint is lifted. This means that this specific input is exactly
             // the maximum flow for the composed positions.
-            for next_asset in route.iter().skip(1) {
+            for pair in pairs.iter() {
+                assert_eq!(current_value.asset_id, pair.start);
                 let position = self
                     .best_position(&DirectedTradingPair {
                         start: current_value.asset_id,
-                        end: *next_asset,
+                        end: pair.end,
                     })
                     .await?
                     .ok_or_else(|| anyhow::anyhow!("unexpectedly missing position"))?;
@@ -195,7 +196,7 @@ pub trait FillRoute: StateWrite + Sized {
                 // saturating input for the route.
                 if unfilled.amount > 0u64.into() {
                     tracing::error!(
-                        ?next_asset,
+                        ?pair,
                         ?unfilled,
                         ?position,
                         ?current_value,
