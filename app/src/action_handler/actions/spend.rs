@@ -11,6 +11,7 @@ use crate::{action_handler::ActionHandler, shielded_pool::NoteManager};
 
 #[async_trait]
 impl ActionHandler for Spend {
+    type CheckStatelessContext = Arc<Transaction>;
     async fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
         let spend = self;
         let effect_hash = context.transaction_body().effect_hash();

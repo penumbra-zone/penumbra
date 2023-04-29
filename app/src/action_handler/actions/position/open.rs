@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::{action::PositionOpen, Transaction};
+use penumbra_transaction::action::PositionOpen;
 
 use crate::action_handler::ActionHandler;
 use crate::dex::{PositionManager, PositionRead};
@@ -11,7 +11,8 @@ use crate::dex::{PositionManager, PositionRead};
 #[async_trait]
 /// Debits the initial reserves and credits an opened position NFT.
 impl ActionHandler for PositionOpen {
-    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    type CheckStatelessContext = ();
+    async fn check_stateless(&self, _context: ()) -> Result<()> {
         // TODO(chris, erwan, henry): brainstorm safety on `TradingFunction`.
         // Check:
         //  + reserves are at most 112 bits wide,

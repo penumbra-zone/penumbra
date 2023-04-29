@@ -12,13 +12,14 @@ use penumbra_chain::sync::StatePayload;
 use penumbra_crypto::MockFlowCiphertext;
 use penumbra_proof_params::SWAP_PROOF_VERIFICATION_KEY;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::{action::Swap, IsAction, Transaction};
+use penumbra_transaction::{action::Swap, IsAction};
 
 use crate::action_handler::ActionHandler;
 
 #[async_trait]
 impl ActionHandler for Swap {
-    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    type CheckStatelessContext = ();
+    async fn check_stateless(&self, _context: ()) -> Result<()> {
         // Check that the trading pair is distinct.
         if self.body.trading_pair.asset_1() == self.body.trading_pair.asset_2() {
             return Err(anyhow::anyhow!("Trading pair must be distinct"));

@@ -4,7 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_crypto::dex::lp::position;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::{action::PositionClose, Transaction};
+use penumbra_transaction::action::PositionClose;
 
 use crate::action_handler::ActionHandler;
 use crate::dex::{PositionManager, PositionRead};
@@ -12,7 +12,8 @@ use crate::dex::{PositionManager, PositionRead};
 #[async_trait]
 /// Debits an opened position NFT and credits a closed position NFT.
 impl ActionHandler for PositionClose {
-    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    type CheckStatelessContext = ();
+    async fn check_stateless(&self, _context: ()) -> Result<()> {
         // Nothing to do: the only validation is of the state change,
         // and that's done by the value balance mechanism.
         Ok(())

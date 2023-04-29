@@ -10,7 +10,6 @@ use ibc_types::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use ibc_types::core::ics24_host::identifier::PortId;
 use penumbra_chain::StateReadExt;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::Transaction;
 
 use crate::action_handler::ActionHandler;
 use crate::ibc::component::channel::stateful::proof_verification::PacketProofVerifier;
@@ -23,7 +22,8 @@ use crate::ibc::transfer::Ics20Transfer;
 
 #[async_trait]
 impl ActionHandler for MsgRecvPacket {
-    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    type CheckStatelessContext = ();
+    async fn check_stateless(&self, _context: ()) -> Result<()> {
         // NOTE: no additional stateless validation is possible
 
         Ok(())

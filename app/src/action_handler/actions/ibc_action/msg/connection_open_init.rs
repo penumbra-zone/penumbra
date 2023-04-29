@@ -8,7 +8,6 @@ use ibc_types::core::{
     },
     ics24_host::identifier::ConnectionId,
 };
-use penumbra_transaction::Transaction;
 
 use crate::ibc::component::client::StateReadExt as _;
 use crate::ibc::component::connection::{StateReadExt as _, StateWriteExt as _};
@@ -19,7 +18,8 @@ use penumbra_storage::{StateRead, StateWrite};
 
 #[async_trait]
 impl ActionHandler for MsgConnectionOpenInit {
-    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    type CheckStatelessContext = ();
+    async fn check_stateless(&self, _context: ()) -> Result<()> {
         version_is_supported(self)?;
 
         Ok(())

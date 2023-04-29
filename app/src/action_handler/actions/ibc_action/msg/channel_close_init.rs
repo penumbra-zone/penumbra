@@ -7,7 +7,6 @@ use ibc_types::core::ics04_channel::channel::State as ChannelState;
 use ibc_types::core::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
 use ibc_types::core::ics24_host::identifier::PortId;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::Transaction;
 
 use crate::action_handler::ActionHandler;
 use crate::ibc::component::channel::{StateReadExt as _, StateWriteExt as _};
@@ -18,7 +17,8 @@ use crate::ibc::transfer::Ics20Transfer;
 
 #[async_trait]
 impl ActionHandler for MsgChannelCloseInit {
-    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    type CheckStatelessContext = ();
+    async fn check_stateless(&self, _context: ()) -> Result<()> {
         // NOTE: no additional stateless validation is possible
 
         Ok(())

@@ -4,13 +4,14 @@ use anyhow::Result;
 use async_trait::async_trait;
 
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::{action::DaoSpend, Transaction};
+use penumbra_transaction::action::DaoSpend;
 
 use crate::{dao::view::StateWriteExt, ActionHandler};
 
 #[async_trait]
 impl ActionHandler for DaoSpend {
-    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    type CheckStatelessContext = ();
+    async fn check_stateless(&self, _context: ()) -> Result<()> {
         // We can't statelessly check that the DAO has enough funds to spend, because we don't know
         // what its state is here.
         Ok(())

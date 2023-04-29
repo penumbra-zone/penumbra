@@ -18,6 +18,8 @@ use crate::{
 
 #[async_trait]
 impl ActionHandler for DelegatorVote {
+    type CheckStatelessContext = Arc<Transaction>;
+
     async fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
         let DelegatorVote {
             auth_sig,

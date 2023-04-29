@@ -7,7 +7,6 @@ use ibc_types::core::ics02_client::msgs::update_client::MsgUpdateClient;
 use ibc_types::core::ics24_host::identifier::ClientId;
 use penumbra_chain::StateReadExt as _;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::Transaction;
 
 use ibc_types::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
 use ibc_types::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
@@ -24,7 +23,8 @@ use crate::ibc::event;
 
 #[async_trait]
 impl ActionHandler for MsgUpdateClient {
-    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    type CheckStatelessContext = ();
+    async fn check_stateless(&self, _context: ()) -> Result<()> {
         header_is_tendermint(self)?;
 
         Ok(())

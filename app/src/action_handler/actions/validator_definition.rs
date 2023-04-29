@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use penumbra_chain::StateReadExt as _;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::Transaction;
+
 use std::sync::Arc;
 
 use penumbra_proto::{core::stake::v1alpha1::ValidatorDefinition, DomainType};
@@ -14,7 +14,8 @@ use crate::{
 
 #[async_trait]
 impl ActionHandler for ValidatorDefinition {
-    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    type CheckStatelessContext = ();
+    async fn check_stateless(&self, _context: ()) -> Result<()> {
         // Check that validator definition is correctly signed and well-formed:
         let definition = validator::Definition::try_from(self.clone())
             .context("supplied proto is not a valid definition")?;

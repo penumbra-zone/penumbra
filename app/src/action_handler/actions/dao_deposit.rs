@@ -4,14 +4,15 @@ use anyhow::Result;
 use async_trait::async_trait;
 
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::{action::DaoDeposit, Transaction};
+use penumbra_transaction::action::DaoDeposit;
 
 use crate::dao::view::StateWriteExt;
 use crate::ActionHandler;
 
 #[async_trait]
 impl ActionHandler for DaoDeposit {
-    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    type CheckStatelessContext = ();
+    async fn check_stateless(&self, _context: ()) -> Result<()> {
         // Any deposit into the DAO is valid.
         Ok(())
     }

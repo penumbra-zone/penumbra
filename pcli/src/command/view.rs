@@ -5,7 +5,7 @@ use balance::BalanceCmd;
 mod address;
 use address::AddressCmd;
 mod staked;
-use penumbra_crypto::fixpoint::U128x128;
+
 use staked::StakedCmd;
 pub mod transaction_hashes;
 use transaction_hashes::TransactionHashesCmd;

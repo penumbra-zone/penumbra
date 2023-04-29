@@ -4,8 +4,8 @@ use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_crypto::ProposalNft;
 use penumbra_storage::{StateRead, StateWrite};
+use penumbra_transaction::action::ProposalDepositClaim;
 use penumbra_transaction::proposal::{self, Outcome};
-use penumbra_transaction::{action::ProposalDepositClaim, Transaction};
 
 use crate::action_handler::ActionHandler;
 use crate::governance::{StateReadExt as _, StateWriteExt as _};
@@ -13,7 +13,8 @@ use crate::shielded_pool::SupplyWrite;
 
 #[async_trait]
 impl ActionHandler for ProposalDepositClaim {
-    async fn check_stateless(&self, _context: Arc<Transaction>) -> Result<()> {
+    type CheckStatelessContext = ();
+    async fn check_stateless(&self, _context: ()) -> Result<()> {
         // No stateless checks are required for this action (all checks require state access)
         Ok(())
     }

@@ -28,30 +28,34 @@ mod validator_vote;
 
 #[async_trait]
 impl ActionHandler for Action {
+    type CheckStatelessContext = Arc<Transaction>;
+
     async fn check_stateless(&self, context: Arc<Transaction>) -> Result<()> {
         match self {
-            Action::Delegate(action) => action.check_stateless(context),
-            Action::Undelegate(action) => action.check_stateless(context),
-            Action::UndelegateClaim(action) => action.check_stateless(context),
-            Action::ValidatorDefinition(action) => action.check_stateless(context),
-            Action::DelegatorVote(action) => action.check_stateless(context),
-            Action::ValidatorVote(action) => action.check_stateless(context),
-            Action::PositionClose(action) => action.check_stateless(context),
-            Action::PositionOpen(action) => action.check_stateless(context),
-            Action::PositionRewardClaim(action) => action.check_stateless(context),
-            Action::PositionWithdraw(action) => action.check_stateless(context),
-            Action::ProposalSubmit(action) => action.check_stateless(context),
-            Action::ProposalWithdraw(action) => action.check_stateless(context),
-            Action::ProposalDepositClaim(action) => action.check_stateless(context),
-            Action::Swap(action) => action.check_stateless(context),
+            // These actions require a context
             Action::SwapClaim(action) => action.check_stateless(context),
             Action::Spend(action) => action.check_stateless(context),
-            Action::Output(action) => action.check_stateless(context),
-            Action::IbcAction(action) => action.check_stateless(context),
-            Action::Ics20Withdrawal(action) => action.check_stateless(context),
-            Action::DaoSpend(action) => action.check_stateless(context),
-            Action::DaoOutput(action) => action.check_stateless(context),
-            Action::DaoDeposit(action) => action.check_stateless(context),
+            Action::DelegatorVote(action) => action.check_stateless(context),
+            // These actions don't require a context
+            Action::Delegate(action) => action.check_stateless(()),
+            Action::Undelegate(action) => action.check_stateless(()),
+            Action::UndelegateClaim(action) => action.check_stateless(()),
+            Action::ValidatorDefinition(action) => action.check_stateless(()),
+            Action::ValidatorVote(action) => action.check_stateless(()),
+            Action::PositionClose(action) => action.check_stateless(()),
+            Action::PositionOpen(action) => action.check_stateless(()),
+            Action::PositionRewardClaim(action) => action.check_stateless(()),
+            Action::PositionWithdraw(action) => action.check_stateless(()),
+            Action::ProposalSubmit(action) => action.check_stateless(()),
+            Action::ProposalWithdraw(action) => action.check_stateless(()),
+            Action::ProposalDepositClaim(action) => action.check_stateless(()),
+            Action::Swap(action) => action.check_stateless(()),
+            Action::Output(action) => action.check_stateless(()),
+            Action::IbcAction(action) => action.check_stateless(()),
+            Action::Ics20Withdrawal(action) => action.check_stateless(()),
+            Action::DaoSpend(action) => action.check_stateless(()),
+            Action::DaoOutput(action) => action.check_stateless(()),
+            Action::DaoDeposit(action) => action.check_stateless(()),
         }
         .await
     }
