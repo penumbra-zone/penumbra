@@ -6,12 +6,12 @@ use std::{
     sync::Arc,
 };
 
-use crate::{dao::view::StateWriteExt as _, stake::funding_stream::Recipient, Component};
 use ::metrics::{decrement_gauge, gauge, increment_gauge};
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use futures::{FutureExt, StreamExt, TryFutureExt, TryStreamExt};
 use penumbra_chain::{genesis, Epoch, NoteSource, StateReadExt as _, StateWriteExt as _};
+use penumbra_component::Component;
 use penumbra_crypto::stake::Penalty;
 use penumbra_crypto::{
     stake::{DelegationToken, IdentityKey},
@@ -36,16 +36,18 @@ use tokio::task::JoinSet;
 use tracing::{instrument, Instrument};
 
 use crate::stake::{
+    event,
+    funding_stream::Recipient,
     metrics,
     rate::{BaseRateData, RateData},
     state_key,
     validator::{self, Validator},
-    DelegationChanges, Uptime,
+    CurrentConsensusKeys, DelegationChanges, Uptime,
 };
 
-use crate::shielded_pool::{NoteManager, SupplyRead, SupplyWrite};
+use crate::dao::view::StateWriteExt as _;
 
-use super::{event, CurrentConsensusKeys};
+use crate::shielded_pool::{NoteManager, SupplyRead, SupplyWrite};
 
 // Max validator power is 1152921504606846975 (i64::MAX / 8)
 // https://github.com/tendermint/tendermint/blob/master/types/validator_set.go#L25

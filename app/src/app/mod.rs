@@ -5,6 +5,7 @@ use crate::sct::view::{StateReadExt as _, StateWriteExt as _};
 use anyhow::Result;
 use penumbra_chain::params::FmdParameters;
 use penumbra_chain::{genesis, AppHash, StateReadExt, StateWriteExt as _};
+use penumbra_component::Component;
 use penumbra_proto::{DomainType, StateWriteProto};
 use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, StateWrite, Storage};
 use penumbra_transaction::Transaction;
@@ -19,7 +20,6 @@ use crate::ibc::IBCComponent;
 use crate::shielded_pool::ShieldedPool;
 use crate::stake::component::{Staking, ValidatorUpdates};
 use crate::stubdex::StubDex;
-use crate::Component;
 
 pub mod state_key;
 

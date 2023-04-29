@@ -14,6 +14,7 @@ members = [
   "chain",
   "app",
   "crypto",
+  "component",
   "custody",
   "measure",
   "narsil",

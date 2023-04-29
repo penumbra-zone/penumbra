@@ -1,9 +1,8 @@
 use std::sync::Arc;
 
-use crate::Component;
 use anyhow::Result;
 use async_trait::async_trait;
-
+use penumbra_component::Component;
 use penumbra_storage::{StateRead, StateWrite};
 use tendermint::abci;
 use tracing::instrument;

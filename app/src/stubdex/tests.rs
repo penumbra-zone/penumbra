@@ -1,6 +1,7 @@
 use std::{ops::Deref, sync::Arc};
 
 use penumbra_chain::{test_keys, StateReadExt, StateWriteExt};
+use penumbra_component::Component;
 use penumbra_crypto::{
     asset,
     dex::{swap::SwapPlaintext, TradingPair},
@@ -15,7 +16,7 @@ use rand_core::SeedableRng;
 use tendermint::abci;
 
 use crate::app::App;
-use crate::{shielded_pool::ShieldedPool, ActionHandler, Component, MockClient, TempStorageExt};
+use crate::{shielded_pool::ShieldedPool, ActionHandler, MockClient, TempStorageExt};
 
 use super::{StateReadExt as _, StubDex};
 

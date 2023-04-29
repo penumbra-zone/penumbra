@@ -1,11 +1,10 @@
 use std::sync::Arc;
 
-use crate::shielded_pool::state_key;
-use crate::Component;
 use anyhow::anyhow;
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::{genesis, NoteSource, SpendInfo};
+use penumbra_component::Component;
 use penumbra_crypto::{asset, Value};
 use penumbra_crypto::{note, Nullifier};
 use penumbra_proto::StateReadProto;
@@ -13,7 +12,7 @@ use penumbra_storage::StateRead;
 use penumbra_storage::StateWrite;
 use tendermint::abci;
 
-use super::{NoteManager, SupplyWrite};
+use super::{state_key, NoteManager, SupplyWrite};
 
 pub struct ShieldedPool {}
 
