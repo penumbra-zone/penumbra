@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc_types::core::{
@@ -7,7 +5,7 @@ use ibc_types::core::{
     ics04_channel::{channel::State as ChannelState, msgs::chan_close_init::MsgChannelCloseInit},
     ics24_host::identifier::PortId,
 };
-use penumbra_storage::{StateRead, StateWrite};
+use penumbra_storage::StateWrite;
 
 use crate::{
     component::{
@@ -15,26 +13,20 @@ use crate::{
         channel::{StateReadExt as _, StateWriteExt as _},
         connection::StateReadExt as _,
         transfer::Ics20Transfer,
-        ActionHandler,
+        MsgHandler,
     },
     event,
 };
 
 #[async_trait]
-impl ActionHandler for MsgChannelCloseInit {
-    type CheckStatelessContext = ();
-    async fn check_stateless(&self, _context: ()) -> Result<()> {
+impl MsgHandler for MsgChannelCloseInit {
+    async fn check_stateless(&self) -> Result<()> {
         // NOTE: no additional stateless validation is possible
 
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, _state: Arc<S>) -> Result<()> {
-        // No-op: IBC actions merge check_stateful and execute.
-        Ok(())
-    }
-
-    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
         // TODO: capability authentication?
         //

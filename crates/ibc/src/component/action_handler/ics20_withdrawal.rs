@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_storage::{StateRead, StateWrite};
 use penumbra_component::ActionHandler;
+use penumbra_storage::{StateRead, StateWrite};
 
 use crate::{
     component::transfer::{Ics20TransferReadExt as _, Ics20TransferWriteExt as _},

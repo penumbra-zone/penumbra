@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc_types::core::{
@@ -18,26 +16,20 @@ use crate::{
         channel::{stateful::proof_verification::ChannelProofVerifier, StateWriteExt},
         connection::StateReadExt,
         transfer::Ics20Transfer,
-        ActionHandler,
+        MsgHandler,
     },
     event,
 };
 
 #[async_trait]
-impl ActionHandler for MsgChannelOpenTry {
-    type CheckStatelessContext = ();
-    async fn check_stateless(&self, _context: ()) -> Result<()> {
+impl MsgHandler for MsgChannelOpenTry {
+    async fn check_stateless(&self) -> Result<()> {
         connection_hops_eq_1(self)?;
 
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, _state: Arc<S>) -> Result<()> {
-        // No-op: IBC actions merge check_stateful and execute.
-        Ok(())
-    }
-
-    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
         let connection_on_b = verify_connections_open(&state, self).await?;
 

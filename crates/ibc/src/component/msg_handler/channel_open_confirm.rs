@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc_types::core::{
@@ -10,7 +8,7 @@ use ibc_types::core::{
     },
     ics24_host::identifier::PortId,
 };
-use penumbra_storage::{StateRead, StateWrite};
+use penumbra_storage::StateWrite;
 
 use crate::{
     component::{
@@ -21,26 +19,20 @@ use crate::{
         },
         connection::StateReadExt as _,
         transfer::Ics20Transfer,
-        ActionHandler,
+        MsgHandler,
     },
     event,
 };
 
 #[async_trait]
-impl ActionHandler for MsgChannelOpenConfirm {
-    type CheckStatelessContext = ();
-    async fn check_stateless(&self, _context: ()) -> Result<()> {
+impl MsgHandler for MsgChannelOpenConfirm {
+    async fn check_stateless(&self) -> Result<()> {
         // NOTE: no additional stateless validation is possible
 
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, _state: Arc<S>) -> Result<()> {
-        // No-op: IBC actions merge check_stateful and execute.
-        Ok(())
-    }
-
-    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
         let mut channel = state
             .get_channel(&self.chan_id_on_b, &self.port_id_on_b)

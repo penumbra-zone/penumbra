@@ -1,6 +1,5 @@
-use ark_ff::Zero;
 use ibc_types::core::ics24_host::identifier::{ChannelId, PortId};
-use penumbra_crypto::{asset, value, Address, Amount, Balance, EffectHash, EffectingData, Fr};
+use penumbra_crypto::{asset, value, Address, Amount, Balance, EffectHash, EffectingData};
 use penumbra_proto::{
     core::ibc::v1alpha1::{self as pb, FungibleTokenPacketData},
     DomainType, Message,

@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use ibc_types::core::{
@@ -18,24 +16,18 @@ use crate::{
         client::StateReadExt as _,
         client_counter::validate_penumbra_client_state,
         connection::{StateReadExt as _, StateWriteExt as _},
-        ActionHandler,
+        MsgHandler,
     },
     event,
 };
 
 #[async_trait]
-impl ActionHandler for MsgConnectionOpenAck {
-    type CheckStatelessContext = ();
-    async fn check_stateless(&self, _context: ()) -> Result<()> {
+impl MsgHandler for MsgConnectionOpenAck {
+    async fn check_stateless(&self) -> Result<()> {
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, _state: Arc<S>) -> Result<()> {
-        // No-op: IBC actions merge check_stateful and execute.
-        Ok(())
-    }
-
-    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
         // Validate a ConnectionOpenAck message, which is sent to us by a counterparty chain that
         // has committed a Connection to us expected to be in the TRYOPEN state. Before executing a
