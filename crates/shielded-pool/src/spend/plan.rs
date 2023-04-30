@@ -54,6 +54,8 @@ impl SpendPlan {
     }
 
     /// Convenience method to construct the [`Spend`] described by this [`SpendPlan`].
+    #[cfg_attr(docsrs, doc(cfg(feature = "proving-keys")))]
+    #[cfg(feature = "proving-keys")]
     pub fn spend(
         &self,
         fvk: &FullViewingKey,
