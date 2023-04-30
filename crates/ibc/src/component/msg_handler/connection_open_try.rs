@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc_types::{
@@ -26,25 +24,19 @@ use crate::{
         client_counter::validate_penumbra_client_state,
         connection::{StateReadExt as _, StateWriteExt as _},
         connection_counter::SUPPORTED_VERSIONS,
-        ActionHandler,
+        MsgHandler,
     },
     event,
 };
 
 #[async_trait]
-impl ActionHandler for MsgConnectionOpenTry {
-    type CheckStatelessContext = ();
-    async fn check_stateless(&self, _context: ()) -> Result<()> {
+impl MsgHandler for MsgConnectionOpenTry {
+    async fn check_stateless(&self) -> Result<()> {
         // basic checks are performed by the ibc-rs crate when deserializing domain types.
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, _state: Arc<S>) -> Result<()> {
-        // IBC actions merge check_stateful and execute.
-        Ok(())
-    }
-
-    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
 
         // Validate a ConnectionOpenTry message, which is sent to us by a counterparty chain that

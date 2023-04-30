@@ -13,3 +13,15 @@ mod create_client;
 mod recv_packet;
 mod timeout;
 mod update_client;
+
+use anyhow::Result;
+use async_trait::async_trait;
+use penumbra_storage::StateWrite;
+
+/// Variant of ActionHandler defined locally (so it can be implemented for IBC
+/// message types) and tweaked (removing the separate check_stateless step).
+#[async_trait]
+pub(crate) trait MsgHandler {
+    async fn check_stateless(&self) -> Result<()>;
+    async fn try_execute<S: StateWrite>(&self, state: S) -> Result<()>;
+}

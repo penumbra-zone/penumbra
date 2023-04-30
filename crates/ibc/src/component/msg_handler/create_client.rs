@@ -1,34 +1,26 @@
-use std::sync::Arc;
-
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc_types::core::{
     ics02_client::{client_state::ClientState, msgs::create_client::MsgCreateClient},
     ics24_host::identifier::ClientId,
 };
-use penumbra_storage::{StateRead, StateWrite};
+use penumbra_storage::StateWrite;
 
 use crate::{
     component::{
         client::{StateReadExt as _, StateWriteExt as _},
         client_counter::{ics02_validation, ClientCounter},
-        ActionHandler,
+        MsgHandler,
     },
     event,
 };
 
 #[async_trait]
-impl ActionHandler for MsgCreateClient {
-    type CheckStatelessContext = ();
-    async fn check_stateless(&self, _context: ()) -> Result<()> {
+impl MsgHandler for MsgCreateClient {
+    async fn check_stateless(&self) -> Result<()> {
         client_state_is_tendermint(self)?;
         consensus_state_is_tendermint(self)?;
 
-        Ok(())
-    }
-
-    async fn check_stateful<S: StateRead + 'static>(&self, _state: Arc<S>) -> Result<()> {
-        // No-op: IBC actions merge check_stateful and execute.
         Ok(())
     }
 
@@ -39,7 +31,7 @@ impl ActionHandler for MsgCreateClient {
     // - client type
     // - consensus state
     // - processed time and height
-    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
         let client_state =
             ics02_validation::get_tendermint_client_state(self.client_state.clone())?;

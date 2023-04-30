@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc_types::core::{
@@ -14,29 +12,23 @@ use crate::{
         client::StateReadExt as _,
         connection::{StateReadExt as _, StateWriteExt as _},
         connection_counter::SUPPORTED_VERSIONS,
-        ActionHandler,
+        MsgHandler,
     },
     event,
 };
 
 use ibc_types::core::ics03_connection::connection::State as ConnectionState;
-use penumbra_storage::{StateRead, StateWrite};
+use penumbra_storage::StateWrite;
 
 #[async_trait]
-impl ActionHandler for MsgConnectionOpenInit {
-    type CheckStatelessContext = ();
-    async fn check_stateless(&self, _context: ()) -> Result<()> {
+impl MsgHandler for MsgConnectionOpenInit {
+    async fn check_stateless(&self) -> Result<()> {
         version_is_supported(self)?;
 
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, _state: Arc<S>) -> Result<()> {
-        // No-op: IBC actions merge check_stateful and execute.
-        Ok(())
-    }
-
-    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
 
         // check that the client with the specified ID exists
