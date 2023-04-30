@@ -3,7 +3,7 @@ use penumbra_crypto::asset;
 
 /// IBC token respresents a token that was created through IBC.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct IBCToken {
+pub struct IbcToken {
     channel_id: ChannelId,
     port_id: PortId,
     original_denom: String,
@@ -11,7 +11,7 @@ pub struct IBCToken {
     base_denom: asset::Denom,
 }
 
-impl IBCToken {
+impl IbcToken {
     pub fn new(channel_id: &ChannelId, port_id: &PortId, denom: &str) -> Self {
         let transfer_path = format!("{port_id}/{channel_id}/{denom}");
 
@@ -19,7 +19,7 @@ impl IBCToken {
             .parse_denom(&transfer_path)
             .expect("IBC denom is invalid");
 
-        IBCToken {
+        IbcToken {
             channel_id: channel_id.clone(),
             port_id: port_id.clone(),
             original_denom: denom.to_string(),
@@ -61,7 +61,7 @@ mod tests {
     #[test]
     fn test_derive_ibc_denom() {
         let expected_transfer_path = "transfer/channel-31/uatom";
-        let ibctoken = IBCToken::new(&ChannelId::new(31), &PortId::transfer(), "uatom");
+        let ibctoken = IbcToken::new(&ChannelId::new(31), &PortId::transfer(), "uatom");
         println!("denom: {}, id: {}", ibctoken.denom(), ibctoken.id());
         assert_eq!(expected_transfer_path, ibctoken.transfer_path());
     }
