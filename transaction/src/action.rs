@@ -3,9 +3,6 @@ use std::convert::{TryFrom, TryInto};
 use penumbra_crypto::balance;
 use penumbra_proto::{core::stake::v1alpha1 as pbs, core::transaction::v1alpha1 as pb, DomainType};
 
-mod dao_deposit;
-mod dao_output;
-mod dao_spend;
 mod delegate;
 mod delegator_vote;
 mod position;
@@ -22,9 +19,6 @@ use crate::{ActionView, IsAction, TransactionPerspective};
 
 pub use crate::proposal::{Proposal, ProposalKind, ProposalPayload};
 pub use crate::vote::Vote;
-pub use dao_deposit::DaoDeposit;
-pub use dao_output::DaoOutput;
-pub use dao_spend::DaoSpend;
 pub use delegate::Delegate;
 pub use delegator_vote::{DelegatorVote, DelegatorVoteBody};
 pub use position::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw};
@@ -64,9 +58,9 @@ pub enum Action {
 
     Ics20Withdrawal(penumbra_ibc::Ics20Withdrawal),
 
-    DaoSpend(DaoSpend),
-    DaoOutput(DaoOutput),
-    DaoDeposit(DaoDeposit),
+    DaoSpend(penumbra_dao::DaoSpend),
+    DaoOutput(penumbra_dao::DaoOutput),
+    DaoDeposit(penumbra_dao::DaoDeposit),
 }
 
 impl Action {

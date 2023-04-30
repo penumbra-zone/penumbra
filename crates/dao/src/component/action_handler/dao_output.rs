@@ -2,13 +2,12 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-
 use penumbra_chain::NoteSource;
+use penumbra_component::ActionHandler;
 use penumbra_shielded_pool::component::NoteManager;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::action::DaoOutput;
 
-use crate::ActionHandler;
+use crate::DaoOutput;
 
 #[async_trait]
 impl ActionHandler for DaoOutput {

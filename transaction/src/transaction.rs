@@ -13,6 +13,7 @@ use penumbra_crypto::{
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
     Fee, Fr, FullViewingKey, Note, Nullifier, PayloadKey, TransactionContext,
 };
+use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
 use penumbra_ibc::IbcAction;
 use penumbra_proto::{
     core::stake::v1alpha1 as pbs, core::transaction::v1alpha1 as pbt, DomainType, Message,
@@ -23,8 +24,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     action::{
-        DaoDeposit, DaoOutput, DaoSpend, Delegate, DelegatorVote, PositionClose, PositionOpen,
-        ProposalSubmit, ProposalWithdraw, Swap, Undelegate, ValidatorVote,
+        Delegate, DelegatorVote, PositionClose, PositionOpen, ProposalSubmit, ProposalWithdraw,
+        Swap, Undelegate, ValidatorVote,
     },
     view::{action_view::OutputView, MemoView, TransactionBodyView},
     Action, ActionView, Id, IsAction, TransactionPerspective, TransactionView,
