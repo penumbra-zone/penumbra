@@ -15,5 +15,5 @@ mod ibc_token;
 mod ics20_withdrawal;
 
 pub use ibc_action::IbcAction;
-pub use ibc_token::IBCToken;
+pub use ibc_token::IbcToken;
 pub use ics20_withdrawal::Ics20Withdrawal;
