@@ -54,6 +54,8 @@ impl OutputPlan {
 
     /// Convenience method to construct the [`Output`] described by this
     /// [`OutputPlan`].
+    #[cfg_attr(docsrs, doc(cfg(feature = "proving-keys")))]
+    #[cfg(feature = "proving-keys")]
     pub fn output(&self, ovk: &OutgoingViewingKey, memo_key: &PayloadKey) -> Output {
         Output {
             body: self.output_body(ovk, memo_key),
