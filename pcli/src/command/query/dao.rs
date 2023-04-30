@@ -1,5 +1,6 @@
 use anyhow::Result;
-use penumbra_app::dao;
+//use penumbra_app::dao;
+use penumbra_dao::component::state_key;
 
 use penumbra_crypto::{asset::Denom, Amount, Value};
 
@@ -34,7 +35,7 @@ impl DaoCmd {
 
         let mut client = app.specific_client().await?;
         if let Some(asset_id) = asset_id {
-            let key = dao::state_key::balance_for_asset(asset_id);
+            let key = state_key::balance_for_asset(asset_id);
             let amount: Amount = client.key_domain(&key).await?;
             let value = Value { asset_id, amount };
             let string = format!("{:?}", value);

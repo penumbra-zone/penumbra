@@ -20,6 +20,7 @@ use penumbra_crypto::{
     stake::{DelegationToken, IdentityKey},
     Value, STAKING_TOKEN_ASSET_ID,
 };
+use penumbra_dao::component::StateWriteExt as _;
 use penumbra_proto::{
     state::future::{DomainFuture, ProtoFuture},
     StateReadProto, StateWriteProto,
@@ -48,8 +49,6 @@ use crate::stake::{
     validator::{self, Validator},
     CurrentConsensusKeys, DelegationChanges, Uptime,
 };
-
-use crate::dao::view::StateWriteExt as _;
 
 // Max validator power is 1152921504606846975 (i64::MAX / 8)
 // https://github.com/tendermint/tendermint/blob/master/types/validator_set.go#L25

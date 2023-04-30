@@ -2,11 +2,10 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-
+use penumbra_component::ActionHandler;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::action::DaoSpend;
 
-use crate::{dao::view::StateWriteExt, ActionHandler};
+use crate::{component::StateWriteExt as _, DaoSpend};
 
 #[async_trait]
 impl ActionHandler for DaoSpend {

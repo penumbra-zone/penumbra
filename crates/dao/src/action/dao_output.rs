@@ -1,14 +1,8 @@
 use std::convert::{TryFrom, TryInto};
 
 use anyhow::{Context, Error};
-use ark_ff::Zero;
-use decaf377::Fr;
-use penumbra_crypto::{balance, Address, Balance, Value};
+use penumbra_crypto::{Address, Balance, EffectHash, EffectingData, Value};
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType};
-
-use crate::{ActionView, TransactionPerspective};
-
-use super::IsAction;
 
 #[derive(Clone, Debug)]
 pub struct DaoOutput {
@@ -16,14 +10,17 @@ pub struct DaoOutput {
     pub address: Address,
 }
 
-impl IsAction for DaoOutput {
-    fn balance_commitment(&self) -> balance::Commitment {
-        // Outputs from the DAO require value
-        self.balance().commit(Fr::zero())
-    }
+impl EffectingData for DaoOutput {
+    fn effect_hash(&self) -> EffectHash {
+        let mut state = blake2b_simd::Params::default()
+            .personal(b"PAH:daooutput")
+            .to_state();
 
-    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
-        ActionView::DaoOutput(self.clone())
+        state.update(&self.address.encode_to_vec());
+        state.update(&self.value.amount.to_le_bytes());
+        state.update(&self.value.asset_id.to_bytes());
+
+        EffectHash(state.finalize().as_array().clone())
     }
 }
 

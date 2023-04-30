@@ -6,10 +6,9 @@ use penumbra_proto::{DomainType, Message};
 
 use crate::{
     action::{
-        swap, swap_claim, DaoDeposit, DaoOutput, DaoSpend, Delegate, DelegatorVote,
-        DelegatorVoteBody, PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw,
-        Proposal, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, Undelegate,
-        UndelegateClaimBody, ValidatorVote, ValidatorVoteBody, Vote,
+        swap, swap_claim, Delegate, DelegatorVote, DelegatorVoteBody, PositionClose, PositionOpen,
+        PositionRewardClaim, PositionWithdraw, Proposal, ProposalDepositClaim, ProposalSubmit,
+        ProposalWithdraw, Undelegate, UndelegateClaimBody, ValidatorVote, ValidatorVoteBody, Vote,
     },
     plan::TransactionPlan,
     proposal, Action, Transaction, TransactionBody,
@@ -585,46 +584,6 @@ impl EffectingData for PositionRewardClaim {
 
         state.update(&self.position_id.0);
         state.update(&self.rewards_commitment.to_bytes());
-
-        EffectHash(state.finalize().as_array().clone())
-    }
-}
-
-impl EffectingData for DaoSpend {
-    fn effect_hash(&self) -> EffectHash {
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:daospend")
-            .to_state();
-
-        state.update(&self.value.amount.to_le_bytes());
-        state.update(&self.value.asset_id.to_bytes());
-
-        EffectHash(state.finalize().as_array().clone())
-    }
-}
-
-impl EffectingData for DaoDeposit {
-    fn effect_hash(&self) -> EffectHash {
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:daodeposit")
-            .to_state();
-
-        state.update(&self.value.amount.to_le_bytes());
-        state.update(&self.value.asset_id.to_bytes());
-
-        EffectHash(state.finalize().as_array().clone())
-    }
-}
-
-impl EffectingData for DaoOutput {
-    fn effect_hash(&self) -> EffectHash {
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:daooutput")
-            .to_state();
-
-        state.update(&self.address.encode_to_vec());
-        state.update(&self.value.amount.to_le_bytes());
-        state.update(&self.value.asset_id.to_bytes());
 
         EffectHash(state.finalize().as_array().clone())
     }

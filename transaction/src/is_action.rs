@@ -1,4 +1,5 @@
 use penumbra_crypto::{balance, Fr, Note, Zero};
+use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
 use penumbra_shielded_pool::{Output, OutputView, Spend, SpendView};
 
@@ -96,5 +97,36 @@ impl IsAction for Ics20Withdrawal {
 
     fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
         ActionView::Ics20Withdrawal(self.to_owned())
+    }
+}
+
+impl IsAction for DaoDeposit {
+    fn balance_commitment(&self) -> balance::Commitment {
+        self.balance().commit(Fr::zero())
+    }
+
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        ActionView::DaoDeposit(self.clone())
+    }
+}
+
+impl IsAction for DaoOutput {
+    fn balance_commitment(&self) -> balance::Commitment {
+        // Outputs from the DAO require value
+        self.balance().commit(Fr::zero())
+    }
+
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        ActionView::DaoOutput(self.clone())
+    }
+}
+
+impl IsAction for DaoSpend {
+    fn balance_commitment(&self) -> balance::Commitment {
+        self.balance().commit(Fr::zero())
+    }
+
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        ActionView::DaoSpend(self.clone())
     }
 }
