@@ -1,32 +1,19 @@
-<<<<<<< HEAD
-use std::collections::BTreeMap;
-use std::sync::Arc;
-
 use std::{collections::BTreeMap, sync::Arc};
-=======
-use std::{cell::RefCell, collections::BTreeMap, sync::Arc};
->>>>>>> bd722f1d (WIP)
 
-use crate::{
-    compactblock::view::{StateReadExt as _, StateWriteExt as _},
-    dex::router::{FillRoute, PathSearch, RouteAndFill},
-    Component,
-};
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_chain::genesis;
+use penumbra_chain::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_component::Component;
 use penumbra_crypto::{
     dex::{BatchSwapOutputData, TradingPair},
-    SwapFlow, Value,
+    SwapFlow,
 };
 use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_storage::{StateDelta, StateRead, StateWrite};
+use penumbra_storage::{StateRead, StateWrite};
 use tendermint::abci;
-use tokio::sync::Mutex;
 use tracing::instrument;
 
-use super::state_key;
+use super::{router::RouteAndFill, state_key};
 
 pub struct Dex {}
 
