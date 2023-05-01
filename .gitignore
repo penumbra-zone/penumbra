@@ -29,6 +29,7 @@ target/
 # editor
 .swp
 .idea
+.vscode
 
 # Python3
 .venv
