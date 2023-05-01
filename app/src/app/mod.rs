@@ -9,6 +9,7 @@ use penumbra_chain::{
 use penumbra_component::Component;
 use penumbra_ibc::component::IBCComponent;
 use penumbra_proto::DomainType;
+use penumbra_sct::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_shielded_pool::component::ShieldedPool;
 use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, StateWrite, Storage};
 use penumbra_transaction::Transaction;

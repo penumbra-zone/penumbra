@@ -10,6 +10,7 @@ edition = "2021"
 penumbra-crypto = { path = "../crypto" }
 penumbra-component = { path = "../crates/component" }
 penumbra-shielded-pool = { path = "../crates/shielded-pool" }
+penumbra-sct = { path = "../crates/sct" }
 penumbra-dao = { path = "../crates/dao" }
 penumbra-ibc = { path = "../crates/ibc" }
 penumbra-proto = { path = "../proto", features = ["penumbra-storage"] }

@@ -5,6 +5,7 @@ use penumbra_chain::{
     sync::{StatePayload, StatePayloadDebugKind},
     NoteSource, SpendInfo,
 };
+use penumbra_sct::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_crypto::{Address, Note, Nullifier, Rseed, Value};
 use penumbra_proto::StateWriteProto;
 use penumbra_storage::StateWrite;

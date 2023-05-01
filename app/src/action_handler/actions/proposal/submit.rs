@@ -11,6 +11,7 @@ use penumbra_crypto::{
     rdsa::{VerificationKey, VerificationKeyBytes},
 };
 use penumbra_crypto::{ProposalNft, VotingReceiptToken, STAKING_TOKEN_DENOM};
+use penumbra_sct::component::StateReadExt as _;
 use penumbra_shielded_pool::component::SupplyWrite;
 use penumbra_storage::{StateDelta, StateRead, StateWrite};
 use penumbra_transaction::plan::TransactionPlan;
