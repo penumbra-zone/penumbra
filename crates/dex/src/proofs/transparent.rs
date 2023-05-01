@@ -4,18 +4,31 @@ use anyhow::{anyhow, ensure, Error, Ok, Result};
 use std::convert::{TryFrom, TryInto};
 
 use decaf377::FieldExt;
+use penumbra_crypto::{keys, note, Nullifier};
 use penumbra_proto::{
     core::transparent_proofs::v1alpha1 as transparent_proofs, DomainType, Message,
 };
 use penumbra_tct as tct;
 
-use crate::proofs::transparent_gadgets as gadgets;
 use crate::{
     dex::{swap::SwapPlaintext, BatchSwapOutputData},
     keys::{self, NullifierKey},
     note, Amount, Fee, Fq, Nullifier, Value,
 };
 
+/// Check the integrity of the nullifier.
+pub(crate) fn nullifier_integrity(
+    public_nullifier: Nullifier,
+    nk: keys::NullifierKey,
+    position: tct::Position,
+    note_commitment: note::Commitment,
+) -> Result<()> {
+    if public_nullifier != nk.derive_nullifier(position, &note_commitment) {
+        Err(anyhow!("bad nullifier"))
+    } else {
+        Ok(())
+    }
+}
 /// Transparent proof for claiming swapped assets.
 ///
 /// SwapClaim consumes an existing Swap NFT so they are most similar to Spend operations,
@@ -63,7 +76,7 @@ impl SwapClaimProof {
             .map_err(|_| anyhow!("merkle root mismatch"))?;
 
         // Swap commitment nullifier integrity. Ensure the nullifier is correctly formed.
-        gadgets::nullifier_integrity(
+        nullifier_integrity(
             nullifier,
             self.nk,
             self.swap_commitment_proof.position(),

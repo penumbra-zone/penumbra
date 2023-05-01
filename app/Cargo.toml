@@ -12,6 +12,7 @@ penumbra-component = { path = "../crates/component" }
 penumbra-shielded-pool = { path = "../crates/shielded-pool" }
 penumbra-dao = { path = "../crates/dao" }
 penumbra-ibc = { path = "../crates/ibc" }
+penumbra-dex = { path = "../crates/dex" }
 penumbra-proto = { path = "../proto", features = ["penumbra-storage"] }
 penumbra-transaction = { path = "../transaction" }
 penumbra-storage = { path = "../storage" }

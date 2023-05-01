@@ -4163,6 +4163,7 @@ dependencies = [
  "penumbra-component",
  "penumbra-crypto",
  "penumbra-dao",
+ "penumbra-dex",
  "penumbra-ibc",
  "penumbra-proof-params",
  "penumbra-proto",
@@ -4323,6 +4324,31 @@ dependencies = [
  "tendermint",
  "tendermint-light-client-verifier",
  "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "penumbra-dex"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "ark-ff",
+ "async-trait",
+ "blake2b_simd 0.5.11",
+ "bytes",
+ "decaf377-rdsa",
+ "metrics",
+ "penumbra-chain",
+ "penumbra-component",
+ "penumbra-crypto",
+ "penumbra-proof-params",
+ "penumbra-proto",
+ "penumbra-storage",
+ "penumbra-tct",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "serde",
+ "tendermint",
  "tracing",
 ]
 
@@ -4653,6 +4679,7 @@ dependencies = [
  "penumbra-chain",
  "penumbra-crypto",
  "penumbra-dao",
+ "penumbra-dex",
  "penumbra-ibc",
  "penumbra-proof-params",
  "penumbra-proto",

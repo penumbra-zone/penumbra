@@ -12,10 +12,7 @@ use penumbra_component::ActionHandler as _;
 
 mod delegate;
 mod delegator_vote;
-mod position;
 mod proposal;
-mod swap;
-mod swap_claim;
 mod undelegate;
 mod undelegate_claim;
 mod validator_definition;
