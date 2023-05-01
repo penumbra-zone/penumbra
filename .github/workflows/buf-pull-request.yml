@@ -16,7 +16,7 @@ jobs:
           input: 'proto'
           buf_token: ${{ secrets.BUF_TOKEN }}
 
-      - name: Check for module path changes (1/2)
+      - name: Check for module path changes
         shell: bash
         run: |
           cd proto/proto
@@ -30,12 +30,13 @@ jobs:
               echo "OK: no changes required to buf.lock"
           fi
 
-      # Disabled because we don't have any changes to compare against
-      # - uses: bufbuild/buf-breaking-action@v1
-      #   with:
-      #     # The 'main' branch of the GitHub repository that defines the module.
-      #     against: 'https://github.com/${GITHUB_REPOSITORY}.git#branch=main'
-      #     input: 'proto'
+      - name: Check for breaking changes
+        uses: bufbuild/buf-breaking-action@v1
+        with:
+          input: 'proto'
+          # The 'main' branch of the GitHub repository that defines the module.
+          against: 'https://github.com/${GITHUB_REPOSITORY}.git#branch=main,subdir=proto'
+
   protobuf-fresh:
     name: Compile protobuf specs to rust code
     runs-on: buildjet-16vcpu-ubuntu-2004
