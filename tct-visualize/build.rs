@@ -1,8 +1,8 @@
 fn main() {
     // Inform cargo about the resources that are baked into the binary
     let resources = [
-        "examples/key-control.js",
-        "examples/tct-live-edit-help.html",
+        "src/bin/key-control.js",
+        "src/bin/tct-live-edit-help.html",
         "src/live/view/index.html",
         "src/live/view/index.js",
         "src/live/view/reset.css",
