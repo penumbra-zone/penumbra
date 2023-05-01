@@ -87,7 +87,7 @@ impl From<Path> for pb::Path {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "pb::SwapExecution", into = "pb::SwapExecution")]
 pub struct SwapExecution {
-    pub traces: Vec<TradeTrace>,
+    pub traces: Vec<Vec<Value>>,
 }
 
 impl DomainType for SwapExecution {
@@ -101,7 +101,12 @@ impl TryFrom<pb::SwapExecution> for SwapExecution {
             traces: se
                 .traces
                 .into_iter()
-                .map(TryInto::try_into)
+                .map(|vt| {
+                    vt.value
+                        .into_iter()
+                        .map(TryInto::try_into)
+                        .collect::<Result<Vec<_>>>()
+                })
                 .collect::<Result<Vec<_>>>()?,
         })
     }
@@ -110,78 +115,13 @@ impl TryFrom<pb::SwapExecution> for SwapExecution {
 impl From<SwapExecution> for pb::SwapExecution {
     fn from(se: SwapExecution) -> Self {
         pb::SwapExecution {
-            traces: se.traces.into_iter().map(Into::into).collect(),
-        }
-    }
-}
-
-/// Contains all individual steps consisting of a trade trace.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(try_from = "pb::TradeTrace", into = "pb::TradeTrace")]
-pub struct TradeTrace {
-    pub steps: Vec<TradeTraceStep>,
-}
-
-impl DomainType for TradeTrace {
-    type Proto = pb::TradeTrace;
-}
-
-impl TryFrom<pb::TradeTrace> for TradeTrace {
-    type Error = anyhow::Error;
-    fn try_from(tt: pb::TradeTrace) -> Result<Self> {
-        Ok(Self {
-            steps: tt
-                .steps
+            traces: se
+                .traces
                 .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<Vec<_>>>()?,
-        })
-    }
-}
-
-impl From<TradeTrace> for pb::TradeTrace {
-    fn from(se: TradeTrace) -> Self {
-        pb::TradeTrace {
-            steps: se.steps.into_iter().map(Into::into).collect(),
-        }
-    }
-}
-
-/// An individual step within a trade trace.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(try_from = "pb::TradeTraceStep", into = "pb::TradeTraceStep")]
-pub struct TradeTraceStep {
-    /// The input asset and amount.
-    pub input: Value,
-    /// The output asset and amount.
-    pub output: Value,
-}
-
-impl DomainType for TradeTraceStep {
-    type Proto = pb::TradeTraceStep;
-}
-
-impl TryFrom<pb::TradeTraceStep> for TradeTraceStep {
-    type Error = anyhow::Error;
-    fn try_from(tts: pb::TradeTraceStep) -> Result<Self> {
-        Ok(Self {
-            input: tts
-                .input
-                .ok_or_else(|| anyhow::anyhow!("missing input"))?
-                .try_into()?,
-            output: tts
-                .output
-                .ok_or_else(|| anyhow::anyhow!("missing output"))?
-                .try_into()?,
-        })
-    }
-}
-
-impl From<TradeTraceStep> for pb::TradeTraceStep {
-    fn from(tts: TradeTraceStep) -> Self {
-        pb::TradeTraceStep {
-            input: Some(tts.input.into()),
-            output: Some(tts.output.into()),
+                .map(|vt| pb::swap_execution::Trace {
+                    value: vt.into_iter().map(Into::into).collect(),
+                })
+                .collect(),
         }
     }
 }

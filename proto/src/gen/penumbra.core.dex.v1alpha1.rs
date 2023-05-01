@@ -501,31 +501,25 @@ pub struct Path {
     #[prost(message, optional, tag = "3")]
     pub phi: ::core::option::Option<BareTradingFunction>,
 }
-/// Contains all individual steps consisting of a trade trace.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TradeTrace {
-    /// Each step in the trade trace.
-    #[prost(message, repeated, tag = "1")]
-    pub steps: ::prost::alloc::vec::Vec<TradeTraceStep>,
-}
-/// An individual step within a trade trace.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TradeTraceStep {
-    /// The input asset and amount.
-    #[prost(message, optional, tag = "1")]
-    pub input: ::core::option::Option<super::super::crypto::v1alpha1::Value>,
-    /// The output asset and amount.
-    #[prost(message, optional, tag = "2")]
-    pub output: ::core::option::Option<super::super::crypto::v1alpha1::Value>,
-}
 /// Contains the entire execution of a particular swap.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapExecution {
     #[prost(message, repeated, tag = "1")]
-    pub traces: ::prost::alloc::vec::Vec<TradeTrace>,
+    pub traces: ::prost::alloc::vec::Vec<swap_execution::Trace>,
+}
+/// Nested message and enum types in `SwapExecution`.
+pub mod swap_execution {
+    /// Contains all individual steps consisting of a trade trace.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Trace {
+        /// Each step in the trade trace.
+        #[prost(message, repeated, tag = "1")]
+        pub value: ::prost::alloc::vec::Vec<
+            super::super::super::crypto::v1alpha1::Value,
+        >,
+    }
 }
 /// Contains private and public data for withdrawing funds from a closed position.
 #[allow(clippy::derive_partial_eq_without_eq)]
