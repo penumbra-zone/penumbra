@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use penumbra_chain::{component::StateReadExt as _, CompactBlock, StatePayload};
 use penumbra_crypto::{dex::swap::SwapPlaintext, note, FullViewingKey, Note};
+use penumbra_sct::component::StateReadExt as _;
 use penumbra_storage::StateRead;
 use penumbra_tct as tct;
 

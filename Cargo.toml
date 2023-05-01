@@ -11,6 +11,7 @@ members = [
   "crates/component",
   "crates/ibc",
   "crates/dao",
+  "crates/sct",
   # Legacy: move these directories into `crates/` heirarchy
   # as it becomes possible (no in flight changes)
   "decaf377-fmd",

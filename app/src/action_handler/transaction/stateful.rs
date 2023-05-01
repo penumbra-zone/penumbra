@@ -1,6 +1,7 @@
 use anyhow::Result;
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_chain::params::FmdParameters;
+use penumbra_sct::component::StateReadExt as _;
 use penumbra_storage::StateRead;
 use penumbra_transaction::Transaction;
 
