@@ -2,7 +2,7 @@ use std::{collections::BTreeMap, sync::Arc};
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_chain::component::{StateReadExt as _, StateWriteExt as _};
+use penumbra_compact_block::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_component::Component;
 use penumbra_crypto::{
     dex::{BatchSwapOutputData, TradingPair},

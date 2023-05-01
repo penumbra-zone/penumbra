@@ -11,12 +11,10 @@ pub mod component;
 pub mod genesis;
 pub mod params;
 pub mod state_key;
-pub mod sync;
 
 pub use epoch::Epoch;
 pub use known_assets::KnownAssets;
 pub use note_source::{NoteSource, SpendInfo};
-pub use sync::{CompactBlock, StatePayload};
 
 /// Hardcoded test data used by the `Default` genesis state.
 pub mod test_keys {

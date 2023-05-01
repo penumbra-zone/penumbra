@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 penumbra-proto = { path = "../proto", features = ["rpc"] }
 penumbra-chain = { path = "../chain" }
+penumbra-compact-block = { path = "../crates/compact-block", default-features = false }
 
 tokio = { version = "1.21.1", features = ["full"] }
 tonic = "0.8.1"

@@ -1,13 +1,13 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_chain::{
+use penumbra_chain::{component::StateReadExt as _, NoteSource, SpendInfo};
+use penumbra_compact_block::{
     component::{StateReadExt as _, StateWriteExt as _},
-    sync::{StatePayload, StatePayloadDebugKind},
-    NoteSource, SpendInfo,
+    StatePayload, StatePayloadDebugKind,
 };
-use penumbra_sct::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_crypto::{Address, Note, Nullifier, Rseed, Value};
 use penumbra_proto::StateWriteProto;
+use penumbra_sct::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_storage::StateWrite;
 use penumbra_tct as tct;
 use tracing::instrument;
@@ -75,7 +75,7 @@ pub trait NoteManager: StateWrite {
         tracing::debug!(payload = ?StatePayloadDebugKind(&payload));
 
         // 0. Record an ABCI event for transaction indexing.
-        self.record(event::state_payload(&payload));
+        //self.record(event::state_payload(&payload));
 
         // 1. Insert it into the SCT
         let mut sct = self.stub_state_commitment_tree().await;
@@ -108,7 +108,7 @@ pub trait NoteManager: StateWrite {
             // here lets us find out what transaction spent the nullifier.
             SpendInfo {
                 note_source: source,
-                spend_height: self.height().await,
+                spend_height: self.get_block_height().await.expect("block height is set"),
             },
         );
         // Also record an ABCI event for transaction indexing.

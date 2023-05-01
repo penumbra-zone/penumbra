@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use penumbra_chain::{component::StateReadExt as _, sync::StatePayload};
+use penumbra_chain::component::StateReadExt as _;
+use penumbra_compact_block::StatePayload;
 use penumbra_crypto::TransactionContext;
 use penumbra_shielded_pool::component::{NoteManager, StateReadExt as _};
 use penumbra_storage::{StateRead, StateWrite};

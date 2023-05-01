@@ -1,18 +1,12 @@
 [package]
-name = "penumbra-shielded-pool"
+name = "penumbra-compact-block"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-component = [
-    "penumbra-component", 
-    "penumbra-storage", 
-    "penumbra-proto/penumbra-storage", 
-    "penumbra-chain/component", 
-    "penumbra-sct/component"
-]
+component = ["penumbra-component", "penumbra-storage", "penumbra-proto/penumbra-storage", "penumbra-chain/component"]
 proving-keys = ["penumbra-proof-params/proving-keys"]
 default = ["std", "component", "proving-keys"]
 std = ["ark-ff/std"]
@@ -22,9 +16,6 @@ docsrs = []
 # Workspace dependencies
 penumbra-crypto = { path = "../../crypto", default-features = false }
 penumbra-proto = { path = "../../proto", default-features = false }
-penumbra-sct = { path = "../sct", default-features = false }
-# TODO: invert
-penumbra-compact-block = { path = "../compact-block", default-features = false }
 penumbra-component = { path = "../component", optional = true }
 penumbra-storage = { path = "../../storage", optional = true }
 penumbra-chain = { path = "../../chain", default-features = false }

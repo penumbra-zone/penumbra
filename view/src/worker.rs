@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use penumbra_chain::sync::CompactBlock;
+use penumbra_compact_block::CompactBlock;
 use penumbra_crypto::{
     dex::lp::{position, LpNft},
     Asset, FullViewingKey, Nullifier,
