@@ -7,7 +7,7 @@ mod ops;
 #[cfg(test)]
 mod tests;
 
-use ark_ff::Field;
+use ark_ff::{BigInteger, Field, PrimeField};
 use ark_r1cs_std::prelude::*;
 use ark_r1cs_std::{bits::uint64::UInt64, ToConstraintFieldGadget};
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
@@ -380,8 +380,8 @@ impl U128x128Var {
     }
 }
 
-// Move to upstream
-// Add tests for the below function
+// Move to upstream?
+// Add tests for the below functions
 
 /// Convert Uint64 into an FqVar (make generic)
 pub fn convert_uint64_to_fqvar(value: &UInt64<Fq>) -> FqVar {
@@ -408,8 +408,19 @@ pub fn fqvar_to_bits(value: FqVar, n: usize) -> Result<Vec<Boolean<Fq>>, Synthes
     let inner = value.value()?;
 
     // Get only first n bits based on that value (OOC)
-    // Allocate Boolean vars
-    // Call convert_le_bits_to_fqvar
-    // Assert eq
-    todo!()
+    let inner_bigint = inner.into_repr();
+    let bits = &inner_bigint.to_bits_le()[0..n];
+
+    // Allocate Boolean vars for first n bits
+    let mut boolean_constraints = Vec::new();
+    for bit in bits {
+        let boolean = Boolean::new_witness(value.cs().clone(), || Ok(bit))?;
+        boolean_constraints.push(boolean);
+    }
+
+    // Construct an FqVar from those n Boolean constraints, and constrain it to be equal to the original value
+    let constructed_fqvar = convert_le_bits_to_fqvar(&boolean_constraints);
+    constructed_fqvar.enforce_equal(&value)?;
+
+    Ok(boolean_constraints)
 }
