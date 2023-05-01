@@ -19,13 +19,18 @@ fn setup_testnet_config() -> anyhow::Result<()> {
         .join("testnets");
 
     // Get the most recent testnet name and its configuration directory
-    let (latest_testnet_name, latest_testnet_dir) = latest_testnet(&testnets_path)?;
+    let (latest_testnet_name, latest_testnet_dirname) = latest_testnet(&testnets_path)?;
+
+    let latest_testnet_dirpath = Path::join(&testnets_path, &latest_testnet_dirname);
 
     // Output the name of the most recent testnet as a build-time environment variable
-    println!("cargo:rustc-env=PD_LATEST_TESTNET_NAME={latest_testnet_name}");
+    println!("cargo:rustc-env=PD_LATEST_TESTNET_NAME={latest_testnet_dirname}");
 
     // Ensure that changes to the allocations files trigger a rebuild of pd.
-    println!("cargo:rerun-if-changed={latest_testnet_dir}");
+    println!(
+        "cargo:rerun-if-changed={}",
+        latest_testnet_dirpath.display()
+    );
 
     // For each association of environment variable to filename, set the full path to that file in
     // the environment variable, so that we can include its contents at build time
@@ -33,7 +38,7 @@ fn setup_testnet_config() -> anyhow::Result<()> {
         ("PD_LATEST_TESTNET_ALLOCATIONS", "allocations.csv"),
         ("PD_LATEST_TESTNET_VALIDATORS", "validators.json"),
     ] {
-        let path = testnets_path.join(&latest_testnet_dir).join(filename);
+        let path = testnets_path.join(&latest_testnet_dirname).join(filename);
         println!(
             "cargo:rustc-env={}={}",
             env_var,
