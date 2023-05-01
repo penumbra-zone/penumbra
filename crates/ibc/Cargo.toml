@@ -24,7 +24,7 @@ ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.1.
 ibc-proto = { version = "0.26", default-features = false }
 
 # Crates.io deps
-ark-ff = { version = "0.3", default_features = false }
+ark-ff = { version = "0.4", default_features = false }
 async-trait = "0.1.52"
 hex = "0.4"
 anyhow = "1"
