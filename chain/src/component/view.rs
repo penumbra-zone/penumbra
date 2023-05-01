@@ -8,9 +8,7 @@ use tendermint::Time;
 
 use crate::{
     params::{ChainParameters, FmdParameters},
-    state_key,
-    sync::CompactBlock,
-    Epoch,
+    state_key, Epoch,
 };
 
 /// This trait provides read access to common parts of the Penumbra
@@ -153,17 +151,6 @@ pub trait StateReadExt: StateRead {
             .await?
             .unwrap_or_default())
     }
-
-    // formerly compact block methods
-
-    async fn compact_block(&self, height: u64) -> Result<Option<CompactBlock>> {
-        self.get(&state_key::compact_block(height)).await
-    }
-
-    fn stub_compact_block(&self) -> CompactBlock {
-        self.object_get(state_key::stub_compact_block())
-            .unwrap_or_default()
-    }
 }
 
 impl<T: StateRead + ?Sized> StateReadExt for T {}
@@ -227,23 +214,6 @@ pub trait StateWriteExt: StateWrite {
     // Signals that the epoch should end this block.
     fn signal_end_epoch(&mut self) {
         self.object_put(state_key::end_epoch_early(), true)
-    }
-
-    // formerly compact block methods
-
-    fn stub_put_compact_block(&mut self, compact_block: CompactBlock) {
-        self.object_put(state_key::stub_compact_block(), compact_block);
-    }
-
-    fn set_compact_block(&mut self, compact_block: CompactBlock) {
-        let height = compact_block.height;
-        self.put(state_key::compact_block(height), compact_block);
-    }
-
-    async fn height(&self) -> u64 {
-        self.get_block_height()
-            .await
-            .expect("block height must be set")
     }
 }
 

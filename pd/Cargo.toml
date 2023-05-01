@@ -23,6 +23,7 @@ penumbra-transaction = { path = "../transaction" }
 penumbra-storage = { path = "../storage" }
 penumbra-app = { path = "../app" }
 penumbra-shielded-pool = { path = "../crates/shielded-pool" }
+penumbra-compact-block = { path = "../crates/compact-block" }
 penumbra-wallet = { path = "../wallet" }
 penumbra-tower-trace = { path = "../tower-trace" }
 penumbra-tendermint-proxy = { path = "../tendermint-proxy" }

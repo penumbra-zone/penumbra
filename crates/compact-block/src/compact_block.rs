@@ -1,6 +1,7 @@
 use std::{collections::BTreeMap, convert::TryFrom};
 
 use anyhow::Result;
+use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::{
     dex::{BatchSwapOutputData, TradingPair},
     Nullifier,
@@ -10,8 +11,6 @@ use penumbra_proto::{
 };
 use penumbra_tct::builder::{block, epoch};
 use serde::{Deserialize, Serialize};
-
-use crate::params::{ChainParameters, FmdParameters};
 
 use super::StatePayload;
 

@@ -17,6 +17,7 @@ penumbra-transaction = { path = "../transaction", default-features = false }
 penumbra-proto = { path = "../proto", default-features = false }
 penumbra-chain = { path = "../chain", default-features = false }
 penumbra-shielded-pool = { path = "../crates/shielded-pool", default-features = false, features = ["proving-keys"] }
+penumbra-compact-block = { path = "../crates/compact-block", default-features = false }
 
 anyhow = "1"
 hex = "0.4"

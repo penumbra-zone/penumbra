@@ -2,8 +2,9 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use penumbra_chain::{
     params::{ChainParameters, FmdParameters},
-    CompactBlock, NoteSource, StatePayload,
+    NoteSource,
 };
+use penumbra_compact_block::{CompactBlock, StatePayload};
 use penumbra_crypto::{
     dex::swap::{SwapPayload, SwapPlaintext},
     FullViewingKey, Note, NotePayload, Nullifier,

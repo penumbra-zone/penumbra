@@ -6,7 +6,7 @@ use penumbra_proto::core::chain::v1alpha1::{self as pb};
 
 use serde::{Deserialize, Serialize};
 
-use crate::NoteSource;
+use penumbra_chain::NoteSource;
 
 /// A note payload annotated with the source of the note.
 #[derive(Clone, Debug, Serialize, Deserialize)]

@@ -6,6 +6,7 @@ use penumbra_chain::{
     component::{AppHash, StateReadExt as _, StateWriteExt as _},
     genesis,
 };
+use penumbra_compact_block::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_component::Component;
 use penumbra_ibc::component::IBCComponent;
 use penumbra_proto::DomainType;

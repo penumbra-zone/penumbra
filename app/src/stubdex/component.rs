@@ -15,7 +15,7 @@ use penumbra_storage::{StateRead, StateWrite};
 use tendermint::abci;
 use tracing::instrument;
 
-use penumbra_chain::component::{StateReadExt as _, StateWriteExt as _};
+use penumbra_compact_block::component::{StateReadExt as _, StateWriteExt as _};
 
 use super::state_key;
 use super::StubCpmm;

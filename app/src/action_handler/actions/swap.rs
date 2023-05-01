@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_chain::sync::StatePayload;
+use penumbra_compact_block::StatePayload;
 use penumbra_crypto::MockFlowCiphertext;
 use penumbra_proof_params::SWAP_PROOF_VERIFICATION_KEY;
 use penumbra_shielded_pool::component::NoteManager;

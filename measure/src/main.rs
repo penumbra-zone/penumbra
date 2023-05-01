@@ -4,7 +4,8 @@ extern crate tracing;
 use clap::Parser;
 use tracing_subscriber::EnvFilter;
 
-use penumbra_chain::{params::ChainParameters, sync::CompactBlock};
+use penumbra_chain::params::ChainParameters;
+use penumbra_compact_block::CompactBlock;
 use penumbra_proto::{
     client::v1alpha1::{
         oblivious_query_service_client::ObliviousQueryServiceClient, ChainParametersRequest,
@@ -101,7 +102,7 @@ impl Opt {
                 let mut sp_note_count = 0;
                 let mut sp_swap_count = 0;
 
-                use penumbra_chain::sync::StatePayload;
+                use penumbra_compact_block::StatePayload;
 
                 while let Some(block_rsp) = stream.message().await? {
                     cb_count += 1;

@@ -1,5 +1,5 @@
 use anyhow::Context;
-use penumbra_chain::{CompactBlock, StatePayload};
+use penumbra_compact_block::{CompactBlock, StatePayload};
 use penumbra_crypto::{note, FullViewingKey};
 use penumbra_tct as tct;
 use penumbra_tct::Witness::*;
