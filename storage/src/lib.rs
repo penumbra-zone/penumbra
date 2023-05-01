@@ -38,6 +38,7 @@
 
 mod cache;
 mod delta;
+mod escaped_byte_slice;
 mod metrics;
 mod read;
 mod snapshot;
@@ -45,10 +46,10 @@ mod snapshot_cache;
 mod storage;
 mod write;
 
-pub use cache::Cache;
-
 pub use crate::metrics::register_metrics;
+pub use cache::Cache;
 pub use delta::{ArcStateDeltaExt, StateDelta};
+pub use escaped_byte_slice::EscapedByteSlice;
 pub use jmt::{ics23_spec, RootHash};
 pub use read::StateRead;
 pub use snapshot::Snapshot;
