@@ -327,19 +327,14 @@ message Path {
     BareTradingFunction phi = 3;
 }
 
-// A path and the amount of the assets on either side that were traded.
-message Trade {
-  // The path taken by the trade.
-  Path path = 1;
-  // The amount of the start asset being traded.
-  crypto.v1alpha1.Amount start_amount = 2;
-  // The amount of end asset being received.
-  crypto.v1alpha1.Amount end_amount = 3;
-}
-
 // Contains the entire execution of a particular swap.
 message SwapExecution {
-  repeated Trade trades = 1;
+  // Contains all individual steps consisting of a trade trace.
+  message Trace {
+    // Each step in the trade trace.
+    repeated crypto.v1alpha1.Value value = 1;
+  }
+  repeated Trace traces = 1;
 }
 
 // Contains private and public data for withdrawing funds from a closed position.

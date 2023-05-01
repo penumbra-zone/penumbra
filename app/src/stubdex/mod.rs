@@ -1,6 +1,6 @@
 //! The stubdex component contains implementations of a stubbed CPMM with fixed genesis token supplies.
-//! It will run in parallel along with the [dex] component until the [dex] component implementation is complete
-//! and the [dex] component can process [penumbra_transaction::Action::Swap] and [penumbra_transaction::Action::SwapClaim] actions.
+//! It will run in parallel along with the [crate::dex] component until the [crate::dex] component implementation is complete
+//! and the [crate::dex] component can process [penumbra_transaction::Action::Swap] and [penumbra_transaction::Action::SwapClaim] actions.
 mod component;
 pub mod metrics;
 pub mod state_key;
