@@ -62,6 +62,7 @@ impl<S: StateRead + 'static> Path<S> {
     async fn extend_to_inner(mut self, new_end: asset::Id) -> Result<Option<Path<S>>> {
         let target_pair = DirectedTradingPair::new(self.end().clone(), new_end.clone());
         let Some(best_price_position) = self.state.best_position(&target_pair).await? else {
+            println!("no best position for target pair {:?}", target_pair);
             tracing::debug!("no best position, failing to extend path");
             return Ok(None)
         };

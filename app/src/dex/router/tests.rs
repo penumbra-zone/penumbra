@@ -855,3 +855,58 @@ async fn fill_route_hit_spill_price() -> anyhow::Result<()> {
 async fn fill_route_underflow_effective_price() -> anyhow::Result<()> {
     Ok(())
 }
+
+// TODO: remove this ignore once the test passes
+#[ignore]
+#[tokio::test]
+async fn simple_route() -> anyhow::Result<()> {
+    let _ = tracing_subscriber::fmt::try_init();
+    let storage = TempStorage::new().await?.apply_default_genesis().await?;
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+    let mut state_tx = state.try_begin_transaction().unwrap();
+
+    let gn = asset::REGISTRY.parse_unit("gn");
+    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+
+    let pair_1 = Market::new(gn.clone(), penumbra.clone());
+
+    // Create a single 1:1 gn:penumbra position (i.e. buy 1 gn at 1 penumbra).
+    let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), 1u64.into());
+    state_tx.put_position(buy_1);
+
+    // We should be able to call path_search and route through that position.
+    let (path, _spill) = state.path_search(gn.id(), penumbra.id(), 1).await.unwrap();
+
+    assert!(path.is_some(), "path exists between gn<->penumbra");
+    assert!(path.clone().unwrap().len() == 1, "path is of length 1");
+    assert!(path.unwrap()[0] == penumbra.id(), "path[0] is penumbra");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn best_position_route() -> anyhow::Result<()> {
+    let _ = tracing_subscriber::fmt::try_init();
+    let storage = TempStorage::new().await?.apply_default_genesis().await?;
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+    let mut state_tx = state.try_begin_transaction().unwrap();
+
+    let gn = asset::REGISTRY.parse_unit("gn");
+    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+
+    let pair_1 = Market::new(gn.clone(), penumbra.clone());
+
+    // Create a single 1:1 gn:penumbra position (i.e. buy 1 gn at 1 penumbra).
+    let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), 1u64.into());
+    state_tx.put_position(buy_1);
+    state_tx.apply();
+
+    // We should be able to call path_search and route through that position.
+    let (path, _spill) = state.path_search(gn.id(), penumbra.id(), 1).await.unwrap();
+
+    assert!(path.is_some(), "path exists between gn<->penumbra");
+    assert!(path.clone().unwrap().len() == 1, "path is of length 1");
+    assert!(path.unwrap()[0] == penumbra.id(), "path[0] is penumbra");
+
+    Ok(())
+}

@@ -56,13 +56,17 @@ pub trait PositionRead: StateRead {
         pair: &DirectedTradingPair,
     ) -> Pin<Box<dyn Stream<Item = Result<position::Id>> + Send + 'static>> {
         let prefix = state_key::internal::price_index::prefix(pair);
+        println!("prefix is {:?}", prefix);
         self.nonconsensus_prefix_raw(&prefix)
-            .map(|entry| match entry {
-                Ok((k, _)) => {
-                    let raw_id = <&[u8; 32]>::try_from(&k[103..135])?.to_owned();
-                    Ok(position::Id(raw_id))
+            .map(|entry| {
+                println!("looking at entry");
+                match entry {
+                    Ok((k, _)) => {
+                        let raw_id = <&[u8; 32]>::try_from(&k[103..135])?.to_owned();
+                        Ok(position::Id(raw_id))
+                    }
+                    Err(e) => Err(e),
                 }
-                Err(e) => Err(e),
             })
             .boxed()
     }
@@ -106,6 +110,10 @@ pub trait PositionManager: StateWrite + PositionRead {
         if position.state == position::State::Opened {
             self.index_position(&position);
         }
+        println!(
+            "store position in consensus storage key: {:?}",
+            state_key::position_by_id(&id)
+        );
         self.put(state_key::position_by_id(&id), position);
     }
 
@@ -260,10 +268,13 @@ pub(super) trait Inner: StateWrite {
                 end: pair.asset_2(),
             };
             let phi12 = phi.component.clone();
+            let k = state_key::internal::price_index::key(&pair12, &phi12, &id);
+            println!("indexing to k (1): {:?}", k);
             self.nonconsensus_put_raw(
                 state_key::internal::price_index::key(&pair12, &phi12, &id),
                 vec![],
             );
+            println!("done putting");
             tracing::debug!(pair = ?pair12, ?id, "indexing position 12");
         }
 
@@ -274,10 +285,13 @@ pub(super) trait Inner: StateWrite {
                 end: pair.asset_1(),
             };
             let phi21 = phi.component.flip();
+            let k = state_key::internal::price_index::key(&pair21, &phi21, &id);
+            println!("indexing to k (2): {:?}", k);
             self.nonconsensus_put_raw(
                 state_key::internal::price_index::key(&pair21, &phi21, &id),
                 vec![],
             );
+            println!("done putting");
             tracing::debug!(pair = ?pair21, ?id, "indexing position 21");
         }
     }

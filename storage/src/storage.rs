@@ -158,7 +158,10 @@ impl Storage {
                             .expect("nonconsensus column family not found");
 
                         match v {
-                            Some(v) => inner.db.put_cf(nonconsensus_cf, k, &v)?,
+                            Some(v) => {
+                                println!("put nonconsensus key: {:?} value: {:?}", k, v);
+                                inner.db.put_cf(nonconsensus_cf, k, &v)?;
+                            }
                             None => {
                                 inner.db.delete_cf(nonconsensus_cf, k)?;
                             }
