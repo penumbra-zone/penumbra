@@ -9,7 +9,7 @@ use crate::{
         CacheFuture, StateDeltaNonconsensusPrefixRawStream, StateDeltaPrefixKeysStream,
         StateDeltaPrefixRawStream,
     },
-    Cache, StateRead, StateWrite,
+    Cache, EscapedByteSlice, StateRead, StateWrite,
 };
 
 /// An arbitrarily-deeply nested stack of delta updates to an underlying state.
@@ -102,6 +102,7 @@ impl<S: StateRead> StateDelta<S> {
     /// The [`apply`](Self::apply) method is a convenience wrapper around this
     /// that applies the changes to the underlying state.
     pub fn flatten(self) -> (S, Cache) {
+        tracing::trace!("flattening branch");
         // Take ownership of the underlying state, immediately invalidating all
         // other delta stacks in the same family.
         let state = self
@@ -121,7 +122,6 @@ impl<S: StateRead> StateDelta<S> {
             changes.merge(cache);
         }
         // Last, apply the changes in the leaf cache.
-        println!("Flatten");
         changes.merge(self.leaf_cache.write().take().unwrap());
 
         (state, changes)
@@ -346,7 +346,7 @@ impl<S: StateRead> StateWrite for StateDelta<S> {
     }
 
     fn nonconsensus_delete(&mut self, key: Vec<u8>) {
-        println!("nonconsensus delete key: {:?}", key);
+        tracing::trace!(key = ?EscapedByteSlice(&key), "deleting key");
         self.leaf_cache
             .write()
             .as_mut()
@@ -356,7 +356,7 @@ impl<S: StateRead> StateWrite for StateDelta<S> {
     }
 
     fn nonconsensus_put_raw(&mut self, key: Vec<u8>, value: Vec<u8>) {
-        println!("insert nonconsensus change: {:?} -> {:?}", key, value);
+        tracing::trace!(key = ?EscapedByteSlice(&key), value = ?EscapedByteSlice(&value), "insert nonconsensus change");
         self.leaf_cache
             .write()
             .as_mut()

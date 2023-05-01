@@ -10,7 +10,7 @@ use rocksdb::{Options, DB};
 use tokio::sync::watch;
 use tracing::Span;
 
-use crate::{cache::Cache, snapshot::Snapshot};
+use crate::{cache::Cache, snapshot::Snapshot, EscapedByteSlice};
 use crate::{snapshot_cache::SnapshotCache, StateDelta};
 
 mod temp;
@@ -159,7 +159,7 @@ impl Storage {
 
                         match v {
                             Some(v) => {
-                                println!("put nonconsensus key: {:?} value: {:?}", k, v);
+                                tracing::trace!(key = ?EscapedByteSlice(&k), value = ?EscapedByteSlice(&v), "put nonconsensus key");
                                 inner.db.put_cf(nonconsensus_cf, k, &v)?;
                             }
                             None => {
