@@ -65,6 +65,7 @@
     - [Fee Descriptions]()
     - [Spend Descriptions](./protocol/action_descriptions/spend.md)
     - [Output Descriptions](./protocol/action_descriptions/outputs.md)
+    - [Swap Descriptions](./protocol/action_descriptions/swap.md)
     - [Transfer Descriptions]()
     - [Delegate Descriptions]()
     - [Undelegate Descriptions]()
