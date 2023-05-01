@@ -20,7 +20,7 @@ penumbra-crypto = { path = "../../crypto", default-features = false }
 penumbra-shielded-pool = { path = "../shielded-pool", default-features = false }
 
 # Crates.io deps
-ark-ff = { version = "0.3", default_features = false }
+ark-ff = { version = "0.4", default_features = false }
 async-trait = "0.1.52"
 hex = "0.4"
 anyhow = "1"
