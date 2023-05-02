@@ -45,7 +45,6 @@ impl SwapClaimProof {
         anchor: tct::Root,
         nullifier: Nullifier,
         output_data: BatchSwapOutputData,
-        epoch_duration: u64,
         note_commitment_1: note::Commitment,
         note_commitment_2: note::Commitment,
         fee: Fee,
@@ -73,9 +72,7 @@ impl SwapClaimProof {
         // Validate the swap commitment's height matches the output data's height.
         let position = self.swap_commitment_proof.position();
         let block = position.block();
-        let epoch = position.epoch();
-        let note_commitment_block_height: u64 =
-            epoch_duration * u64::from(epoch) + u64::from(block);
+        let note_commitment_block_height: u64 = output_data.epoch_height + u64::from(block);
         ensure!(
             note_commitment_block_height == output_data.height,
             "note commitment was not for clearing price height"
