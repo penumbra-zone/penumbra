@@ -8,11 +8,13 @@ use anyhow::{anyhow, Context};
 use async_stream::try_stream;
 use camino::Utf8Path;
 use futures::stream::{StreamExt, TryStreamExt};
+use penumbra_app::stake::rate::RateData;
 use penumbra_crypto::{
     asset::{self},
     keys::{AccountGroupId, AddressIndex, FullViewingKey},
     Amount, Asset, Fee,
 };
+
 use penumbra_proto::{
     client::v1alpha1::{
         tendermint_proxy_service_client::TendermintProxyServiceClient, BroadcastTxSyncRequest,
@@ -358,25 +360,87 @@ impl ViewProtocolService for ViewService {
             planner.output(value, address);
         }
 
-        #[allow(clippy::never_loop)]
-        for _swap in prq.swaps {
-            return Err(tonic::Status::unimplemented(
-                "Swaps are not yet implemented, sorry!",
-            ));
+        for swap in prq.swaps {
+            let input_value: penumbra_crypto::Value = swap
+                .value
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing input value"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse input value: {e:#}"))
+                })?;
+
+            let into_denom: penumbra_crypto::asset::Denom = swap
+                .target_asset
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing asset"))?
+                .denom
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing denom"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse denom: {e:#}"))
+                })?;
+
+            let swap_claim_fee: penumbra_crypto::Fee = swap
+                .fee
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing fee"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse fee: {e:#}"))
+                })?;
+
+            let claim_address: penumbra_crypto::Address = swap
+                .claim_address
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing claim address"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse claim address: {e:#}"))
+                })?;
+
+            planner
+                .swap(input_value, into_denom, swap_claim_fee, claim_address)
+                .map_err(|e| tonic::Status::internal(format!("Could not perform swap: {e:#}")))?;
+        }
+
+        for delegation in prq.delegations {
+            let unbonded_amount: penumbra_crypto::Amount = delegation
+                .amount
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing unbonded amount"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!(
+                        "Could not parse unbonded amount: {e:#}"
+                    ))
+                })?;
+
+            let rate_data: penumbra_app::stake::rate::RateData = delegation
+                .rate_data
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing rate data"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse rate data: {e:#}"))
+                })?;
+            planner.delegate(unbonded_amount.into(), rate_data);
         }
 
         #[allow(clippy::never_loop)]
-        for _delegation in prq.delegations {
-            return Err(tonic::Status::unimplemented(
-                "Delegations are not yet implemented, sorry!",
-            ));
-        }
+        for undelegation in prq.undelegations {
+            let delegation_value: penumbra_crypto::Value = undelegation
+                .value
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing undelegation value"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!(
+                        "Could not parse undelegation value: {e:#}"
+                    ))
+                })?;
 
-        #[allow(clippy::never_loop)]
-        for _undelegation in prq.undelegations {
-            return Err(tonic::Status::unimplemented(
-                "Undelegations are not yet implemented, sorry!",
-            ));
+            let rate_data: penumbra_app::stake::rate::RateData = undelegation
+                .rate_data
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing rate data"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse rate data: {e:#}"))
+                })?;
+            planner.undelegate(delegation_value.amount, rate_data);
         }
 
         let mut client_of_self =

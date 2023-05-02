@@ -7,6 +7,7 @@ import "penumbra/core/crypto/v1alpha1/crypto.proto";
 import "penumbra/core/dex/v1alpha1/dex.proto";
 import "penumbra/core/transaction/v1alpha1/transaction.proto";
 import "penumbra/core/ibc/v1alpha1/ibc.proto";
+import "penumbra/core/stake/v1alpha1/stake.proto";
 
 // The view protocol is used by a view client, who wants to do some
 // transaction-related actions, to request data from a view service, which is
@@ -116,15 +117,18 @@ message TransactionPlannerRequest {
   }
   message Swap {
     core.crypto.v1alpha1.Value value = 1;
-    core.crypto.v1alpha1.AssetId target_asset = 2;
+    core.crypto.v1alpha1.Asset target_asset = 2;
     core.crypto.v1alpha1.Fee fee = 3;
+    core.crypto.v1alpha1.Address claim_address = 4;
   }
   message Delegate {
     core.crypto.v1alpha1.Amount amount = 1;
-    core.crypto.v1alpha1.IdentityKey identity_key = 2;
+    core.stake.v1alpha1.RateData rate_data = 2;
+    
   }
   message Undelegate {
     core.crypto.v1alpha1.Value value = 1;
+    core.stake.v1alpha1.RateData rate_data = 2;
   }
 }
 

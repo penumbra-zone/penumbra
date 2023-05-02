@@ -72,11 +72,15 @@ pub mod transaction_planner_request {
         >,
         #[prost(message, optional, tag = "2")]
         pub target_asset: ::core::option::Option<
-            super::super::super::core::crypto::v1alpha1::AssetId,
+            super::super::super::core::crypto::v1alpha1::Asset,
         >,
         #[prost(message, optional, tag = "3")]
         pub fee: ::core::option::Option<
             super::super::super::core::crypto::v1alpha1::Fee,
+        >,
+        #[prost(message, optional, tag = "4")]
+        pub claim_address: ::core::option::Option<
+            super::super::super::core::crypto::v1alpha1::Address,
         >,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -87,8 +91,8 @@ pub mod transaction_planner_request {
             super::super::super::core::crypto::v1alpha1::Amount,
         >,
         #[prost(message, optional, tag = "2")]
-        pub identity_key: ::core::option::Option<
-            super::super::super::core::crypto::v1alpha1::IdentityKey,
+        pub rate_data: ::core::option::Option<
+            super::super::super::core::stake::v1alpha1::RateData,
         >,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -97,6 +101,10 @@ pub mod transaction_planner_request {
         #[prost(message, optional, tag = "1")]
         pub value: ::core::option::Option<
             super::super::super::core::crypto::v1alpha1::Value,
+        >,
+        #[prost(message, optional, tag = "2")]
+        pub rate_data: ::core::option::Option<
+            super::super::super::core::stake::v1alpha1::RateData,
         >,
     }
 }
