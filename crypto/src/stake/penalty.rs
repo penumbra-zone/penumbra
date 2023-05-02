@@ -4,7 +4,7 @@ use ark_ff::ToConstraintField;
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use decaf377::{r1cs::FqVar, FieldExt, Fq};
-use penumbra_proto::{core::stake::v1alpha1 as pbs, DomainType};
+use penumbra_proto::{core::stake::v1alpha1 as pbs, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -171,6 +171,10 @@ impl std::fmt::Display for Penalty {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
+}
+
+impl TypeUrl for Penalty {
+    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha.Penalty";
 }
 
 impl DomainType for Penalty {

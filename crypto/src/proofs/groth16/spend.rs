@@ -17,7 +17,7 @@ use ark_r1cs_std::prelude::AllocVar;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
 use decaf377_rdsa::{SpendAuth, VerificationKey};
-use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
@@ -291,6 +291,10 @@ impl SpendProof {
             .then_some(())
             .ok_or_else(|| anyhow::anyhow!("spend proof did not verify"))
     }
+}
+
+impl TypeUrl for SpendProof {
+    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.ZKSpendProof";
 }
 
 impl DomainType for SpendProof {

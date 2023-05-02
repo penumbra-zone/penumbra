@@ -1,7 +1,7 @@
 use ark_ff::ToConstraintField;
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
-use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, iter::Sum, num::NonZeroU128, ops};
 
@@ -237,6 +237,10 @@ impl TryFrom<std::string::String> for Amount {
         let inner = s.parse::<u128>()?;
         Ok(Amount { inner })
     }
+}
+
+impl TypeUrl for Amount {
+    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.Amount";
 }
 
 impl DomainType for Amount {

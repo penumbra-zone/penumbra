@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
 
@@ -168,6 +168,10 @@ impl From<TradingFunction> for pb::TradingFunction {
             pair: Some(phi.pair.into()),
         }
     }
+}
+
+impl TypeUrl for TradingFunction {
+    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.TradingFunction";
 }
 
 impl DomainType for TradingFunction {
@@ -426,6 +430,10 @@ impl BareTradingFunction {
     pub fn compose(&self, _phi: BareTradingFunction) -> BareTradingFunction {
         todo!()
     }
+}
+
+impl TypeUrl for BareTradingFunction {
+    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.BareTradingFunction";
 }
 
 impl DomainType for BareTradingFunction {

@@ -6,7 +6,7 @@ use std::{
 };
 
 use ark_ff::fields::PrimeField;
-use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 use crate::{asset, Fq, Value};
@@ -34,6 +34,10 @@ pub(super) struct Inner {
     uri_hash: String,
     /// Sorted by priority order.
     pub(super) units: Vec<UnitData>,
+}
+
+impl TypeUrl for DenomMetadata {
+    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.DenomMetadata";
 }
 
 impl DomainType for DenomMetadata {

@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Context};
-use penumbra_proto::{core::dex::v1alpha1 as pb, serializers::bech32str, DomainType};
+use penumbra_proto::{core::dex::v1alpha1 as pb, serializers::bech32str, DomainType, TypeUrl};
 use rand_core::CryptoRngCore;
 use serde::{Deserialize, Serialize};
 
@@ -248,8 +248,16 @@ impl std::str::FromStr for State {
 
 // ==== Protobuf impls
 
+impl TypeUrl for Position {
+    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.Position";
+}
+
 impl DomainType for Position {
     type Proto = pb::Position;
+}
+
+impl TypeUrl for Id {
+    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.PositionId";
 }
 
 impl DomainType for Id {
@@ -276,6 +284,10 @@ impl From<Id> for pb::PositionId {
             inner: value.0.to_vec(),
         }
     }
+}
+
+impl TypeUrl for State {
+    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.PositionState";
 }
 
 impl DomainType for State {

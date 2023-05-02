@@ -4,7 +4,7 @@ use ark_ff::PrimeField;
 use decaf377::Fq;
 use once_cell::sync::Lazy;
 use penumbra_proto::{
-    client::v1alpha1::BatchSwapOutputDataResponse, core::dex::v1alpha1 as pb, DomainType,
+    client::v1alpha1::BatchSwapOutputDataResponse, core::dex::v1alpha1 as pb, DomainType, TypeUrl,
 };
 use serde::{Deserialize, Serialize};
 
@@ -91,6 +91,10 @@ impl BatchSwapOutputData {
                 .expect("rounded amount is integral"),
         )
     }
+}
+
+impl TypeUrl for BatchSwapOutputData {
+    const TYPE_URL: &'static str = "/penumbra.dex.v1alpha1.BatchSwapOutputData";
 }
 
 impl DomainType for BatchSwapOutputData {
