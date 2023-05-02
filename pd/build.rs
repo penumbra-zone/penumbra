@@ -24,7 +24,7 @@ fn setup_testnet_config() -> anyhow::Result<()> {
     let latest_testnet_dirpath = Path::join(&testnets_path, &latest_testnet_dirname);
 
     // Output the name of the most recent testnet as a build-time environment variable
-    println!("cargo:rustc-env=PD_LATEST_TESTNET_NAME={latest_testnet_dirname}");
+    println!("cargo:rustc-env=PD_LATEST_TESTNET_NAME={latest_testnet_name}");
 
     // Ensure that changes to the allocations files trigger a rebuild of pd.
     println!(
