@@ -68,7 +68,7 @@
     - [Swap Descriptions](./protocol/action_descriptions/swap.md)
     - [Transfer Descriptions]()
     - [Delegate Descriptions]()
-    - [Undelegate Descriptions]()
+    - [Undelegate Claim Descriptions](./protocol/action_descriptions/undelegate_claim.md)
     - [Commission Descriptions]()
     - [Proposal Descriptions]()
     - [Delegator Vote Descriptions](./protocol/action_descriptions/delegator_vote.md)
