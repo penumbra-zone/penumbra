@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use penumbra_chain::component::StateReadExt as _;
 use penumbra_component::Component;
 use penumbra_crypto::dex::lp::Reserves;
 use penumbra_crypto::{
@@ -101,8 +102,12 @@ impl Component for StubDex {
                 (delta_1, delta_2, 0u64.into(), 0u64.into())
             };
 
+            let height = end_block.height.try_into().unwrap();
+            let current_epoch = state.get_current_epoch().await.unwrap();
+            let epoch_height: u64 = current_epoch.start_height;
+
             let output_data = BatchSwapOutputData {
-                height: end_block.height.try_into().unwrap(),
+                height,
                 trading_pair,
                 delta_1,
                 delta_2,
@@ -110,6 +115,7 @@ impl Component for StubDex {
                 lambda_2_2,
                 lambda_1_2,
                 lambda_2_1,
+                epoch_height,
             };
             tracing::debug!(?output_data);
             state.set_output_data(output_data);
