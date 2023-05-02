@@ -390,21 +390,13 @@ impl ViewProtocolService for ViewService {
             .context("could not plan requested transaction")
             .map_err(|e| tonic::Status::invalid_argument(format!("{e:#}")))?;
 
-        // Finally, insert all the requested IBC actions.  This is just stuffing
-        // the protos in, since IBC actions are just data relaying, and have no
-        // effect on the transaction's value balance etc.  TODO: after
-        // implementing fees, this will need to be supported as part of the
-        // Planner API, since the IBC actions will affect the required fees and
-        // thus the value balance.
+        // Finally, insert all the requested IBC actions.
         for ibc_action in prq.ibc_actions {
-            plan.actions
-                .push(ActionPlan::IbcAction(ibc_action.try_into().map_err(
-                    |e| {
-                        tonic::Status::invalid_argument(format!(
-                            "Could not parse IBC action: {e:#}"
-                        ))
-                    },
-                )?));
+            planner.ibc_action(
+                ibc_action
+                    .try_into()
+                    .map_err(|e| tonic::Status::invalid_argument(format!("{e:#}")))?,
+            );
         }
 
         Ok(tonic::Response::new(TransactionPlannerResponse {
