@@ -2,7 +2,7 @@ use crate::dex::lp::{BareTradingFunction, TradingFunction};
 use crate::dex::trading_pair::DirectedTradingPair;
 use crate::{asset, Value};
 use anyhow::Result;
-use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 /// Contains a path for a trade, including the trading pair (with direction), the trading
@@ -48,6 +48,10 @@ impl Path {
     }
 }
 
+impl TypeUrl for Path {
+    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.Path";
+}
+
 impl DomainType for Path {
     type Proto = pb::Path;
 }
@@ -88,6 +92,10 @@ impl From<Path> for pb::Path {
 #[serde(try_from = "pb::SwapExecution", into = "pb::SwapExecution")]
 pub struct SwapExecution {
     pub traces: Vec<Vec<Value>>,
+}
+
+impl TypeUrl for SwapExecution {
+    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.SwapExecution";
 }
 
 impl DomainType for SwapExecution {

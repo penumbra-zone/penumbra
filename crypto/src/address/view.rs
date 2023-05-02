@@ -1,4 +1,4 @@
-use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 use crate::keys::{AccountGroupId, AddressIndex};
@@ -30,6 +30,10 @@ impl AddressView {
             AddressView::Visible { address, .. } => *address,
         }
     }
+}
+
+impl TypeUrl for AddressView {
+    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.AddressView";
 }
 
 impl DomainType for AddressView {

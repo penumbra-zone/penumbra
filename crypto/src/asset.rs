@@ -1,6 +1,8 @@
 //! Asset types and identifiers.
 
-use penumbra_proto::{core::crypto::v1alpha1 as pb, view::v1alpha1::AssetsResponse, DomainType};
+use penumbra_proto::{
+    core::crypto::v1alpha1 as pb, view::v1alpha1::AssetsResponse, DomainType, TypeUrl,
+};
 use serde::{Deserialize, Serialize};
 
 mod amount;
@@ -22,6 +24,10 @@ pub use registry::{Registry, REGISTRY};
 pub struct Asset {
     pub id: Id,
     pub denom: Denom,
+}
+
+impl TypeUrl for Asset {
+    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.Asset";
 }
 
 impl DomainType for Asset {

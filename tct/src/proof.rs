@@ -135,6 +135,10 @@ impl TryFrom<pb::StateCommitmentProof> for Proof {
     }
 }
 
+impl penumbra_proto::TypeUrl for Proof {
+    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.StateCommitmentProof";
+}
+
 impl penumbra_proto::DomainType for Proof {
     type Proto = pb::StateCommitmentProof;
 }

@@ -1,5 +1,5 @@
 use penumbra_proto::{
-    client::v1alpha1::StubCpmmReservesResponse, core::dex::v1alpha1 as pb, DomainType,
+    client::v1alpha1::StubCpmmReservesResponse, core::dex::v1alpha1 as pb, DomainType, TypeUrl,
 };
 
 use crate::asset::Amount;
@@ -62,6 +62,10 @@ impl Reserves {
             r2: self.r1,
         }
     }
+}
+
+impl TypeUrl for Reserves {
+    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.Reserves";
 }
 
 impl DomainType for Reserves {

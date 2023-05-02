@@ -1,6 +1,6 @@
 use anyhow::anyhow;
 use decaf377::FieldExt;
-use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
 
@@ -28,6 +28,10 @@ impl DirectedTradingPair {
             end: self.start,
         }
     }
+}
+
+impl TypeUrl for DirectedTradingPair {
+    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.DirectedTradingPair";
 }
 
 impl DomainType for DirectedTradingPair {
@@ -119,6 +123,10 @@ impl TryFrom<[u8; 64]> for TradingPair {
                 .map_err(|_| anyhow::anyhow!("invalid asset_2 bytes in TradingPair"))?,
         })
     }
+}
+
+impl TypeUrl for TradingPair {
+    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.TradingPair";
 }
 
 impl DomainType for TradingPair {

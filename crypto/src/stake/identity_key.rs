@@ -2,7 +2,7 @@ use penumbra_proto::{
     client::v1alpha1::NextValidatorRateRequest,
     core::crypto::v1alpha1 as pb,
     serializers::bech32str::{self, validator_identity_key::BECH32_PREFIX},
-    DomainType,
+    DomainType, TypeUrl,
 };
 use serde::{Deserialize, Serialize};
 
@@ -45,6 +45,10 @@ impl std::fmt::Debug for IdentityKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         <IdentityKey as std::fmt::Display>::fmt(self, f)
     }
+}
+
+impl TypeUrl for IdentityKey {
+    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.IdentityKey";
 }
 
 impl DomainType for IdentityKey {

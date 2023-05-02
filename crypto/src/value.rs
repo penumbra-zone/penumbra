@@ -9,7 +9,7 @@ use std::{
     str::FromStr,
 };
 
-use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
@@ -101,8 +101,16 @@ impl From<ValueView> for Value {
     }
 }
 
+impl TypeUrl for Value {
+    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.Value";
+}
+
 impl DomainType for Value {
     type Proto = pb::Value;
+}
+
+impl TypeUrl for ValueView {
+    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.ValueView";
 }
 
 impl DomainType for ValueView {

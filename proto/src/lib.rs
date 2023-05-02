@@ -25,6 +25,7 @@ pub mod serializers;
 
 mod protobuf;
 pub use protobuf::DomainType;
+pub use protobuf::TypeUrl;
 
 #[cfg(feature = "penumbra-storage")]
 pub mod state;

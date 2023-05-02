@@ -1,7 +1,7 @@
 use std::ops::{Add, AddAssign, Deref, DerefMut};
 
 use anyhow::anyhow;
-use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 use crate::Amount;
@@ -42,6 +42,10 @@ impl AddAssign for MockFlowCiphertext {
     fn add_assign(&mut self, other: Self) {
         *self = self.clone() + other;
     }
+}
+
+impl TypeUrl for MockFlowCiphertext {
+    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.MockFlowCiphertext";
 }
 
 impl DomainType for MockFlowCiphertext {

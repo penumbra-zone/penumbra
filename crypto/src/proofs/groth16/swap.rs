@@ -8,7 +8,7 @@ use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
 use decaf377::{Bls12_377, FieldExt};
 use decaf377_fmd as fmd;
-use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
@@ -185,6 +185,10 @@ impl SwapProof {
             .then_some(())
             .ok_or_else(|| anyhow::anyhow!("proof did not verify"))
     }
+}
+
+impl TypeUrl for SwapProof {
+    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.ZKSwapProof";
 }
 
 impl DomainType for SwapProof {

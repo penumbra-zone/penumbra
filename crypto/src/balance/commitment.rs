@@ -9,7 +9,7 @@ use decaf377::Fq;
 use decaf377::Fr;
 use once_cell::sync::Lazy;
 use penumbra_proto::core::crypto::v1alpha1 as pb;
-use penumbra_proto::DomainType;
+use penumbra_proto::{DomainType, TypeUrl};
 
 use crate::value::ValueVar;
 use crate::Value;
@@ -178,6 +178,10 @@ impl TryFrom<&[u8]> for Commitment {
 
         Ok(Commitment(inner))
     }
+}
+
+impl TypeUrl for Commitment {
+    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.BalanceCommitment";
 }
 
 impl DomainType for Commitment {

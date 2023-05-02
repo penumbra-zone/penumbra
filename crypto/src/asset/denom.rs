@@ -6,7 +6,7 @@ use std::{
 };
 
 use ark_ff::fields::PrimeField;
-use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 use crate::{asset, Fq, Value};
@@ -18,6 +18,10 @@ use crate::{asset, Fq, Value};
 #[serde(try_from = "pb::Denom", into = "pb::Denom")]
 pub struct Denom {
     pub(super) inner: Arc<Inner>,
+}
+
+impl TypeUrl for Denom {
+    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.Denom";
 }
 
 impl DomainType for Denom {
