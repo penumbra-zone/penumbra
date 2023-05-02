@@ -23,7 +23,7 @@ use penumbra_crypto::{
 };
 use penumbra_crypto::{dex::lp::Reserves, Balance};
 use penumbra_dao::DaoDeposit;
-use penumbra_ibc::Ics20Withdrawal;
+use penumbra_ibc::{IbcAction, Ics20Withdrawal};
 use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
 use penumbra_shielded_pool::{OutputPlan, SpendPlan};
 use penumbra_tct as tct;
@@ -50,6 +50,7 @@ pub struct Planner<R: RngCore + CryptoRng> {
     balance: Balance,
     vote_intents: BTreeMap<u64, VoteIntent>,
     plan: TransactionPlan,
+    ibc_actions: Vec<IbcAction>,
     // IMPORTANT: if you add more fields here, make sure to clear them when the planner is finished
 }
 
@@ -78,6 +79,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             balance: Balance::default(),
             vote_intents: BTreeMap::default(),
             plan: TransactionPlan::default(),
+            ibc_actions: Vec::new(),
         }
     }
 
@@ -348,6 +350,13 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self
     }
 
+    /// Perform an IBC action
+    #[instrument(skip(self))]
+    pub fn ibc_action(&mut self, ibc_action: IbcAction) -> &mut Self {
+        self.action(ActionPlan::IbcAction(ibc_action));
+        self
+    }
+
     /// Vote with all possible vote weight on a given proposal.
     ///
     /// Voting twice on the same proposal in the same planner will overwrite the previous vote.
@@ -473,6 +482,10 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         for record in spendable_notes {
             self.spend(record.note, record.position);
         }
+        // Add any IBC actions to the planner
+        for ibc_action in self.ibc_actions.clone() {
+            self.ibc_action(ibc_action);
+        }
 
         // Add the required votes to the planner
         for (
@@ -573,6 +586,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         // Clear the planner and pull out the plan to return
         self.balance = Balance::zero();
         self.vote_intents = BTreeMap::new();
+        self.ibc_actions = Vec::new();
         let plan = mem::take(&mut self.plan);
 
         Ok(plan)
