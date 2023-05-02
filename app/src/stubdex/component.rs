@@ -104,8 +104,7 @@ impl Component for StubDex {
 
             let height = end_block.height.try_into().unwrap();
             let current_epoch = state.get_current_epoch().await.unwrap();
-            let epoch_height = current_epoch.start_height;
-            let intra_epoch_height = height - current_epoch.start_height;
+            let epoch_height: u64 = current_epoch.start_height;
 
             let output_data = BatchSwapOutputData {
                 height,
@@ -117,7 +116,6 @@ impl Component for StubDex {
                 lambda_1_2,
                 lambda_2_1,
                 epoch_height,
-                intra_epoch_height,
             };
             tracing::debug!(?output_data);
             state.set_output_data(output_data);
