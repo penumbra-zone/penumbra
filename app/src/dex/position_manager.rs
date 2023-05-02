@@ -56,7 +56,7 @@ pub trait PositionRead: StateRead {
         pair: &DirectedTradingPair,
     ) -> Pin<Box<dyn Stream<Item = Result<position::Id>> + Send + 'static>> {
         let prefix = state_key::internal::price_index::prefix(pair);
-        println!("prefix is {:?}", prefix);
+        tracing::debug!(?prefix);
         self.nonconsensus_prefix_raw(&prefix)
             .map(|entry| {
                 println!("looking at entry");

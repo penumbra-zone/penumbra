@@ -36,7 +36,8 @@ pub trait FillRoute: StateWrite + Sized {
             let Some(position) = tmp_state
                 .best_position(&pair)
                 .await? else {
-                    return Err(anyhow!("exhausted positions on hop {}-{}", current_input.asset_id, pair.end))
+                    return Ok((vec![], vec![]));
+                    // return Err(anyhow!("exhausted positions on hop {}-{}", current_input.asset_id, pair.end))
                 };
 
             best_positions.push(position.clone());
@@ -135,6 +136,11 @@ pub trait FillRoute: StateWrite + Sized {
             // there's an input capacity that maximize its output without causing an
             // overflow.
             let (constraining_hops, best_positions) = self.find_constraints(input, hops).await?;
+            if best_positions.is_empty() {
+                // If we run out of positions, we can't fill anymore.
+                break;
+            }
+
             let effective_price = best_positions.clone().into_iter().zip(pairs.clone()).fold(
                 U128x128::from(1u64),
                 |acc, (pos, pair)| {
