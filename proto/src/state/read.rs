@@ -51,7 +51,7 @@ pub trait StateReadProto: StateRead + Send + Sync {
     fn prefix<'a, D>(
         &'a self,
         prefix: &'a str,
-    ) -> Pin<Box<dyn Stream<Item = Result<(String, D)>> + Send + 'a>>
+    ) -> Pin<Box<dyn Stream<Item = Result<(String, D)>> + Send + 'static>>
     where
         D: DomainType,
         <D as TryFrom<D::Proto>>::Error: Into<anyhow::Error> + Send + Sync + 'static,
@@ -70,7 +70,7 @@ pub trait StateReadProto: StateRead + Send + Sync {
     fn prefix_proto<'a, P>(
         &'a self,
         prefix: &'a str,
-    ) -> Pin<Box<dyn Stream<Item = Result<(String, P)>> + Send + 'a>>
+    ) -> Pin<Box<dyn Stream<Item = Result<(String, P)>> + Send + 'static>>
     where
         P: Message + Default,
     {

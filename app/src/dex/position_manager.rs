@@ -24,7 +24,9 @@ use std::{
 #[async_trait]
 pub trait PositionRead: StateRead {
     /// Return a stream of all [`position::Metadata`] available.
-    fn all_positions(&self) -> Pin<Box<dyn Stream<Item = Result<position::Position>> + Send + '_>> {
+    fn all_positions(
+        &self,
+    ) -> Pin<Box<dyn Stream<Item = Result<position::Position>> + Send + 'static>> {
         let prefix = state_key::all_positions();
         self.prefix(prefix)
             .map(|entry| match entry {
