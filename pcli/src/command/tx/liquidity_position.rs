@@ -2,7 +2,19 @@ use std::str::FromStr;
 
 use anyhow::{anyhow, Result};
 
-use penumbra_crypto::{dex::lp::position, Value};
+use penumbra_crypto::{
+    asset,
+    dex::{
+        lp::{
+            position::{self, Position},
+            Reserves,
+        },
+        DirectedTradingPair,
+    },
+    fixpoint::U128x128,
+    Value,
+};
+use rand_core::CryptoRngCore;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum PositionCmd {
@@ -124,4 +136,102 @@ pub enum OrderCmd {
         #[clap(long, default_value = "0")]
         source: u32,
     },
+}
+
+impl OrderCmd {
+    pub fn fee(&self) -> u64 {
+        match self {
+            OrderCmd::Buy { fee, .. } => *fee,
+            OrderCmd::Sell { fee, .. } => *fee,
+        }
+    }
+
+    pub fn source(&self) -> u32 {
+        match self {
+            OrderCmd::Buy { source, .. } => *source,
+            OrderCmd::Sell { source, .. } => *source,
+        }
+    }
+
+    pub fn into_position<R: CryptoRngCore>(
+        &self,
+        asset_cache: &asset::Cache,
+        rng: R,
+    ) -> Result<Position> {
+        let (pair, p, q, reserves) = match self {
+            OrderCmd::Buy { buy_order, .. } => {
+                let pair =
+                    DirectedTradingPair::new(buy_order.price.asset_id, buy_order.desired.asset_id);
+
+                let desired_unit = asset_cache
+                    .get(&buy_order.desired.asset_id)
+                    .ok_or_else(|| anyhow!("unknown asset {}", buy_order.desired.asset_id))?
+                    .default_unit();
+
+                // We're buying 1 unit of the desired asset...
+                let p = desired_unit.unit_amount();
+                // ... for the given amount of the price asset.
+                let q = buy_order.price.amount;
+
+                // we want to end up with (r1, r2) = (0, desired)
+                // amm is p * r1 + q * r2 = k
+                // => k = q * desired (set r1 = 0)
+                // => when r2 = 0, p * r1 = q * desired
+                // =>              r1 = q * desired / p
+                let q_over_p = (U128x128::from(q) / U128x128::from(p))
+                    .ok_or_else(|| anyhow::anyhow!("supplied zero buy price"))?;
+                let r1 = (U128x128::from(buy_order.desired.amount) * q_over_p)
+                    .ok_or_else(|| anyhow::anyhow!("overflow computing r1"))?
+                    .round_up()
+                    .try_into()
+                    .expect("rounded to integer");
+
+                (
+                    pair,
+                    p,
+                    q,
+                    Reserves {
+                        r1,
+                        r2: 0u64.into(),
+                    },
+                )
+            }
+            OrderCmd::Sell { sell_order, .. } => {
+                let pair = DirectedTradingPair::new(
+                    sell_order.selling.asset_id,
+                    sell_order.price.asset_id,
+                );
+
+                let selling_unit = asset_cache
+                    .get(&sell_order.selling.asset_id)
+                    .ok_or_else(|| anyhow!("unknown asset {}", sell_order.selling.asset_id))?
+                    .default_unit();
+
+                // We're selling 1 unit of the selling asset...
+                let p = selling_unit.unit_amount();
+                // ... for the given amount of the price asset.
+                let q = sell_order.price.amount;
+
+                (
+                    pair,
+                    p,
+                    q,
+                    Reserves {
+                        r1: sell_order.selling.amount,
+                        r2: 0u64.into(),
+                    },
+                )
+            }
+        };
+
+        let spread = match self {
+            OrderCmd::Buy { spread, .. } | OrderCmd::Sell { spread, .. } => *spread,
+        };
+        // `spread` is another name for `fee`, which is at most 5000 bps.
+        if spread > 5000 {
+            anyhow::bail!("spread parameter must be at most 5000bps (i.e. 50%)");
+        }
+
+        Ok(Position::new(rng, pair, spread, p, q, reserves))
+    }
 }
