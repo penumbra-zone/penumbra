@@ -218,6 +218,7 @@ impl StateRead for Snapshot {
                         let v = self2
                             .get_jmt(k.as_bytes().into())?
                             .expect("keys in jmt_keys should have a corresponding value in jmt");
+                        tracing::debug!(%k, "prefix_raw");
                         tx.blocking_send(Ok((k, v)))?;
                     }
                     Ok::<(), anyhow::Error>(())

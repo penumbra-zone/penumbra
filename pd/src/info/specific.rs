@@ -67,7 +67,8 @@ impl SpecificQueryService for Info {
         let s = try_stream! {
             for item in stream_iter
                 .map(|item| item.map_err(|e| tonic::Status::internal(e.to_string()))) {
-                    let item = item.unwrap();
+                    let item = item?;
+                    tracing::debug!(?item, "yielding liquidity position");
                     if (request.get_ref().only_open && item.state == penumbra_crypto::dex::lp::position::State::Opened) || request.get_ref().only_open == false {
                         yield LiquidityPositionsResponse { data: Some(item.into()) }
                     }

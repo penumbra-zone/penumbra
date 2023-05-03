@@ -28,7 +28,10 @@ pub trait PositionRead: StateRead {
         let prefix = state_key::all_positions();
         self.prefix(prefix)
             .map(|entry| match entry {
-                Ok((_, metadata)) => Ok(metadata),
+                Ok((_, metadata)) => {
+                    tracing::debug!(?metadata, "found position");
+                    Ok(metadata)
+                }
                 Err(e) => Err(e),
             })
             .boxed()

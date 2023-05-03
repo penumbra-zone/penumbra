@@ -1,4 +1,5 @@
 use anyhow::Ok;
+use futures::{FutureExt, StreamExt};
 use penumbra_crypto::{
     asset::{self},
     dex::{
@@ -385,6 +386,77 @@ async fn empty_order_fails() -> anyhow::Result<()> {
     };
 
     assert!(position_action.check_stateless(()).await.is_err());
+
+    Ok(())
+}
+
+#[tokio::test]
+/// Test that positions are created and returned as expected.
+async fn position_create_and_retrieve() -> anyhow::Result<()> {
+    let _ = tracing_subscriber::fmt::try_init();
+    let storage = TempStorage::new().await?.apply_default_genesis().await?;
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+    let mut state_tx = state.try_begin_transaction().unwrap();
+
+    let gm = asset::REGISTRY.parse_unit("gm");
+    let gn = asset::REGISTRY.parse_unit("gn");
+
+    let price1: Amount = 1u64.into();
+    let buy_1 = Position::new(
+        OsRng,
+        DirectedTradingPair {
+            start: gm.clone().id(),
+            end: gn.clone().id(),
+        },
+        0u32,
+        price1 * gn.clone().unit_amount(),
+        Amount::from(1u64) * gm.clone().unit_amount(),
+        Reserves {
+            r1: Amount::zero(),
+            r2: Amount::from(1u64) * price1 * gn.clone().unit_amount(),
+        },
+    );
+    state_tx.put_position(buy_1.clone());
+    state_tx.apply();
+
+    let stream = state.all_positions();
+    let all_positions = stream.map(|p| p.unwrap()).collect::<Vec<_>>().await;
+    assert!(all_positions.len() == 1);
+    assert!(all_positions[0].id() == buy_1.id());
+
+    let mut state_tx = state.try_begin_transaction().unwrap();
+
+    let price2: Amount = 2u64.into();
+    let buy_2 = Position::new(
+        OsRng,
+        DirectedTradingPair {
+            start: gm.clone().id(),
+            end: gn.clone().id(),
+        },
+        0u32,
+        price2 * gn.clone().unit_amount(),
+        Amount::from(1u64) * gm.clone().unit_amount(),
+        Reserves {
+            r1: Amount::zero(),
+            r2: Amount::from(1u64) * price2 * gn.clone().unit_amount(),
+        },
+    );
+    state_tx.put_position(buy_2.clone());
+    state_tx.apply();
+
+    let stream = state.all_positions();
+    let all_positions = stream.map(|p| p.unwrap()).collect::<Vec<_>>().await;
+    assert!(all_positions.len() == 2);
+    assert!(all_positions
+        .iter()
+        .map(|p| p.id())
+        .collect::<Vec<_>>()
+        .contains(&buy_1.id()));
+    assert!(all_positions
+        .iter()
+        .map(|p| p.id())
+        .collect::<Vec<_>>()
+        .contains(&buy_2.id()));
 
     Ok(())
 }
