@@ -1,5 +1,12 @@
 mod tests {
     use crate::dex_utils::approximate::xyk;
+    const PRECISION_BOUND: f64 = 0.0001;
+
+    fn approx_eq(a: f64, b: f64) -> bool {
+        let ab_abs_diff = f64::abs(a - b);
+        ab_abs_diff <= PRECISION_BOUND
+    }
+
     #[test]
     /// Tests that the approximation work with a known solution obtained using LAPACK.
     fn test_xyk_solver() -> anyhow::Result<()> {
@@ -24,7 +31,7 @@ mod tests {
             .iter()
             .zip(known_solution)
             .for_each(|(solution_found, solution_known)| {
-                assert!(approx::abs_diff_eq!(*solution_found, solution_known))
+                assert!(approx_eq(*solution_found, solution_known))
             });
 
         Ok(())
