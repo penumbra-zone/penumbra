@@ -909,7 +909,7 @@ async fn best_position_route_and_fill() -> anyhow::Result<()> {
         .unwrap()
         .put_swap_flow(&trading_pair, swap_flow.clone());
     state
-        .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), 0)
+        .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), 0, 0)
         .await
         .expect("unable to process batch swaps");
 
