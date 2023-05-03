@@ -97,7 +97,6 @@ penumbra-proof-params = { path = "../proof-params", features = [
     "proving-keys",
     "download-proving-keys",
 ] }
-approx = "0.5.1"
 
 [package.metadata.dist]
 dist = true
