@@ -77,30 +77,30 @@ pub mod delegator_vote {
 
 fn spend_verification_parameters() -> VerifyingKey<Bls12_377> {
     let vk_params = include_bytes!("gen/spend_vk.param");
-    VerifyingKey::deserialize_compressed_unchecked(&vk_params[..])
+    VerifyingKey::deserialize_uncompressed_unchecked(&vk_params[..])
         .expect("can deserialize VerifyingKey")
 }
 
 fn output_verification_parameters() -> VerifyingKey<Bls12_377> {
     let vk_params = include_bytes!("gen/output_vk.param");
-    VerifyingKey::deserialize_compressed_unchecked(&vk_params[..])
+    VerifyingKey::deserialize_uncompressed_unchecked(&vk_params[..])
         .expect("can deserialize VerifyingKey")
 }
 
 fn swap_verification_parameters() -> VerifyingKey<Bls12_377> {
     let vk_params = include_bytes!("gen/swap_vk.param");
-    VerifyingKey::deserialize_compressed_unchecked(&vk_params[..])
+    VerifyingKey::deserialize_uncompressed_unchecked(&vk_params[..])
         .expect("can deserialize VerifyingKey")
 }
 
 fn undelegateclaim_verification_parameters() -> VerifyingKey<Bls12_377> {
     let vk_params = include_bytes!("gen/undelegateclaim_vk.param");
-    VerifyingKey::deserialize_compressed_unchecked(&vk_params[..])
+    VerifyingKey::deserialize_uncompressed_unchecked(&vk_params[..])
         .expect("can deserialize VerifyingKey")
 }
 
 fn delegator_vote_verification_parameters() -> VerifyingKey<Bls12_377> {
     let vk_params = include_bytes!("gen/delegator_vote_vk.param");
-    VerifyingKey::deserialize_compressed_unchecked(&vk_params[..])
+    VerifyingKey::deserialize_uncompressed_unchecked(&vk_params[..])
         .expect("can deserialize VerifyingKey")
 }
