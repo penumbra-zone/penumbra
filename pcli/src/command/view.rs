@@ -101,7 +101,7 @@ impl ViewCmd {
                     ));
                 } else {
                     let _positions =
-                        crate::dex_utils::approximate::approximate_xyk(quantity, 0u64.into());
+                        crate::dex_utils::approximate::xyk::approximate(quantity, 0u64.into());
                 }
             }
             ViewCmd::Approximate(_) => {
