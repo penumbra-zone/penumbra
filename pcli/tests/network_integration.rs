@@ -282,28 +282,10 @@ fn swap() {
             "swap",
             "--into",
             "gn",
-            "1penumbra",
+            "1upenumbra",
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     swap_cmd.assert().success();
-
-    // HACK: remove once #1749 is fixed
-    thread::sleep(std::time::Duration::from_secs(10));
-
-    // Cleanup: Swap the gn back (will fail if we received no gn in the above swap).
-    let mut swap_back_cmd = Command::cargo_bin("pcli").unwrap();
-    swap_back_cmd
-        .args([
-            "--data-path",
-            tmpdir.path().to_str().unwrap(),
-            "tx",
-            "swap",
-            "--into",
-            "penumbra",
-            "0.9gn",
-        ])
-        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-    swap_back_cmd.assert().success();
 }
 
 #[ignore]
