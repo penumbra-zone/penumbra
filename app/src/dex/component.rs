@@ -46,8 +46,6 @@ impl Component for Dex {
                 .handle_batch_swaps(
                     trading_pair,
                     swap_flows,
-                    // TODO: pass a correct price_limit
-                    1u32.into(),
                     end_block.height.try_into().expect("missing height"),
                     current_epoch.start_height,
                 )

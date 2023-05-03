@@ -1,5 +1,5 @@
 use anyhow::Ok;
-use futures::{FutureExt, StreamExt};
+use futures::StreamExt;
 use penumbra_crypto::{
     asset::{self},
     dex::{

@@ -18,7 +18,6 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     iter::FromIterator,
     pin::Pin,
-    sync::Arc,
 };
 
 #[async_trait]
@@ -290,7 +289,6 @@ pub(super) trait Inner: StateWrite {
                 end: pair.asset_2(),
             };
             let phi12 = phi.component.clone();
-            let k = state_key::internal::price_index::key(&pair12, &phi12, &id);
             self.nonconsensus_put_raw(
                 state_key::internal::price_index::key(&pair12, &phi12, &id),
                 vec![],
@@ -305,7 +303,6 @@ pub(super) trait Inner: StateWrite {
                 end: pair.asset_1(),
             };
             let phi21 = phi.component.flip();
-            let k = state_key::internal::price_index::key(&pair21, &phi21, &id);
             self.nonconsensus_put_raw(
                 state_key::internal::price_index::key(&pair21, &phi21, &id),
                 vec![],

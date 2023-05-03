@@ -8,8 +8,6 @@ use tracing::instrument;
 use crate::dex::PositionManager;
 
 use super::{Path, PathCache, PathEntry, SharedPathCache};
-use crate::dex::PositionRead;
-use penumbra_crypto::dex::DirectedTradingPair;
 
 #[async_trait]
 pub trait PathSearch: StateRead + Clone + 'static {
@@ -22,19 +20,6 @@ pub trait PathSearch: StateRead + Clone + 'static {
         max_hops: usize,
     ) -> Result<(Option<Vec<asset::Id>>, Option<U128x128>)> {
         tracing::debug!(?src, ?dst, ?max_hops, "searching for path");
-
-        /*
-
-
-        If I query the stream here, do i get the best position
-
-        */
-
-        let pair = DirectedTradingPair {
-            start: src,
-            end: dst,
-        };
-        let best_position = self.best_position(&pair).await;
 
         // Work in a new stack of state changes, which we can completely discard
         // at the end of routing
