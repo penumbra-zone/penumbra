@@ -44,6 +44,7 @@ pub enum PositionCmd {
         position_id: position::Id,
     },
     /// Debits a withdrawn position NFT and credits a claimed position NFT and any liquidity incentives.
+    #[clap(hide(true))] // remove when reward claims exist
     RewardClaim {},
 }
 
