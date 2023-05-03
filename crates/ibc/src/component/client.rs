@@ -265,14 +265,14 @@ pub trait StateReadExt: StateRead {
     async fn get_client_type(&self, client_id: &ClientId) -> Result<ClientType> {
         self.get_proto(&state_key::client_type(client_id))
             .await?
-            .ok_or_else(|| anyhow::anyhow!("client not found"))
+            .context("could not find client type")
             .map(ClientType::new)
     }
 
     async fn get_client_state(&self, client_id: &ClientId) -> Result<TendermintClientState> {
         let client_state = self.get(&state_key::client_state(client_id)).await?;
 
-        client_state.ok_or_else(|| anyhow::anyhow!("client not found"))
+        client_state.context("could not find client state")
     }
 
     async fn get_verified_heights(&self, client_id: &ClientId) -> Result<Option<VerifiedHeights>> {
