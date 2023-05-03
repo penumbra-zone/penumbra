@@ -22,7 +22,6 @@ use crate::action_handler::ActionHandler;
 use crate::dex::Dex;
 use crate::governance::{Governance, StateReadExt as _};
 use crate::stake::component::{Staking, ValidatorUpdates};
-use crate::stubdex::StubDex;
 
 pub mod state_key;
 
@@ -113,7 +112,6 @@ impl App {
         Staking::init_chain(&mut state_tx, app_state).await;
         IBCComponent::init_chain(&mut state_tx, &()).await;
         Dex::init_chain(&mut state_tx, &()).await;
-        StubDex::init_chain(&mut state_tx, &()).await;
         Governance::init_chain(&mut state_tx, &()).await;
         ShieldedPool::init_chain(&mut state_tx, app_state).await;
 
@@ -160,8 +158,6 @@ impl App {
         let mut arc_state_tx = Arc::new(state_tx);
         Staking::begin_block(&mut arc_state_tx, begin_block).await;
         IBCComponent::begin_block(&mut arc_state_tx, begin_block).await;
-        StubDex::begin_block(&mut arc_state_tx, begin_block).await;
-        Dex::begin_block(&mut arc_state_tx, begin_block).await;
         Governance::begin_block(&mut arc_state_tx, begin_block).await;
         ShieldedPool::begin_block(&mut arc_state_tx, begin_block).await;
 
@@ -265,7 +261,6 @@ impl App {
         let mut arc_state_tx = Arc::new(state_tx);
         Staking::end_block(&mut arc_state_tx, end_block).await;
         IBCComponent::end_block(&mut arc_state_tx, end_block).await;
-        StubDex::end_block(&mut arc_state_tx, end_block).await;
         Dex::end_block(&mut arc_state_tx, end_block).await;
         Governance::end_block(&mut arc_state_tx, end_block).await;
         ShieldedPool::end_block(&mut arc_state_tx, end_block).await;
@@ -286,7 +281,6 @@ impl App {
 
             Staking::end_epoch(&mut arc_state_tx).await.unwrap();
             IBCComponent::end_epoch(&mut arc_state_tx).await.unwrap();
-            StubDex::end_epoch(&mut arc_state_tx).await.unwrap();
             Dex::end_epoch(&mut arc_state_tx).await.unwrap();
             Governance::end_epoch(&mut arc_state_tx).await.unwrap();
             ShieldedPool::end_epoch(&mut arc_state_tx).await.unwrap();

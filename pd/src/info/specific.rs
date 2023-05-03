@@ -4,10 +4,10 @@ use async_stream::try_stream;
 use futures::StreamExt;
 use futures::TryStreamExt;
 use penumbra_app::dex::PositionRead;
+use penumbra_app::dex::StateReadExt;
 use penumbra_app::governance::StateReadExt as _;
 use penumbra_app::stake::rate::RateData;
 use penumbra_app::stake::StateReadExt as _;
-use penumbra_app::stubdex::StateReadExt as _;
 use penumbra_chain::component::AppHashRead;
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_crypto::asset::{self, Asset};
@@ -259,35 +259,13 @@ impl SpecificQueryService for Info {
         }
     }
 
-    #[instrument(skip(self, request))]
-    /// Get the batch swap data associated with a given trading pair and height.
+    #[instrument(skip(self, _request))]
+    /// TODO: remove in followup
     async fn stub_cpmm_reserves(
         &self,
-        request: tonic::Request<StubCpmmReservesRequest>,
+        _request: tonic::Request<StubCpmmReservesRequest>,
     ) -> Result<tonic::Response<StubCpmmReservesResponse>, Status> {
-        let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
-        let request_inner = request.into_inner();
-        let trading_pair = request_inner
-            .trading_pair
-            .ok_or_else(|| Status::invalid_argument("missing trading_pair"))?
-            .try_into()
-            .map_err(|_| Status::invalid_argument("invalid trading_pair"))?;
-
-        let cpmm_reserves = state
-            .stub_cpmm_reserves(&trading_pair)
-            .await
-            .map_err(|e| tonic::Status::internal(e.to_string()))?;
-
-        match cpmm_reserves {
-            Some(reserves) => Ok(tonic::Response::new(StubCpmmReservesResponse {
-                reserves: Some(reserves.into()),
-            })),
-            None => Err(Status::not_found("CPMM reserves not found")),
-        }
+        Err(tonic::Status::internal("stub cpmm disabled".to_string()))
     }
 
     #[instrument(skip(self, request))]

@@ -129,8 +129,6 @@ async fn path_extension_basic() {
     // This price should be more expensive since the the cheaper path along the mispriced gn:pusd position no longer exists.
     let expensive_price = path.price;
 
-    println!("cheap: {}", cheap_price);
-    println!("expensive: {}", expensive_price);
     assert!(
         cheap_price < expensive_price,
         "price should be cheaper with mispriced position"
@@ -504,14 +502,6 @@ async fn fill_route_constraint_stacked() -> anyhow::Result<()> {
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
     let pusd = asset::REGISTRY.parse_unit("pusd");
 
-    println!("unit {} gm: {}", gm.unit_amount(), gm.id());
-    println!("unit {} gn: {}", gn.unit_amount(), gn.id());
-    println!(
-        "unit {} penumbra: {}",
-        penumbra.unit_amount(),
-        penumbra.id()
-    );
-    println!("unit {} pusd: {}", pusd.unit_amount(), pusd.id());
     let pair_1 = Market::new(gm.clone(), gn.clone());
     let pair_2 = Market::new(gn.clone(), penumbra.clone());
     let pair_3 = Market::new(penumbra.clone(), pusd.clone());
@@ -613,14 +603,6 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
     let pusd = asset::REGISTRY.parse_unit("pusd");
 
-    println!("unit {} gm: {}", gm.unit_amount(), gm.id());
-    println!("unit {} gn: {}", gn.unit_amount(), gn.id());
-    println!(
-        "unit {} penumbra: {}",
-        penumbra.unit_amount(),
-        penumbra.id()
-    );
-    println!("unit {} pusd: {}", pusd.unit_amount(), pusd.id());
     let pair_1 = Market::new(gm.clone(), gn.clone());
     let pair_2 = Market::new(gn.clone(), penumbra.clone());
     let pair_3 = Market::new(penumbra.clone(), pusd.clone());
@@ -905,7 +887,7 @@ async fn best_position_route_and_fill() -> anyhow::Result<()> {
     state_tx.apply();
 
     // We should be able to call path_search and route through that position.
-    let (path, _spill) = state.path_search(gn.id(), penumbra.id(), 1).await.unwrap();
+    let (path, _spill) = state.path_search(gn.id(), penumbra.id(), 4).await.unwrap();
 
     assert!(path.is_some(), "path exists between gn<->penumbra");
     assert!(path.clone().unwrap().len() == 1, "path is of length 1");
@@ -945,7 +927,7 @@ async fn best_position_route_and_fill() -> anyhow::Result<()> {
     // 1 penumbra out for gn -> penumbra
     assert_eq!(output_data.lambda_1_2, 1u64.into());
     // 0 unfilled gn
-    assert_eq!(output_data.lambda_2_2, 1u64.into());
+    assert_eq!(output_data.lambda_2_2, 0u64.into());
 
     Ok(())
 }

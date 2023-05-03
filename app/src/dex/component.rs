@@ -41,10 +41,10 @@ impl Component for Dex {
             // Arc::get_mut(state)
             //     .expect("one state ref only")
             state
-                // TODO: pass a correct price_limit
                 .handle_batch_swaps(
                     trading_pair,
                     swap_flows,
+                    // TODO: pass a correct price_limit
                     1u32.into(),
                     end_block.height.try_into().expect("missing height"),
                 )

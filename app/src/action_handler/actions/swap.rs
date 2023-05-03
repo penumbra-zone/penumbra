@@ -11,7 +11,7 @@ use penumbra_transaction::{action::Swap, IsAction};
 
 use crate::{
     action_handler::ActionHandler,
-    stubdex::{StateReadExt as _, StateWriteExt as _},
+    dex::{StateReadExt, StateWriteExt},
 };
 
 #[async_trait]

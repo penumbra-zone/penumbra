@@ -66,16 +66,10 @@ impl<S: StateRead + 'static> PathCache<S> {
         let span = path.span.clone();
         span.in_scope(|| match self.0.entry(*path.end()) {
             Entry::Occupied(mut entry) => {
-                println!("updating old path");
-                println!("path start: {:?}", path.start);
-                println!("path nodes: {:?}", path.nodes);
                 entry.get_mut().update(path);
             }
             Entry::Vacant(entry) => {
                 tracing::debug!("inserting new path");
-                println!("inserting new path");
-                println!("path start: {:?}", path.start);
-                println!("path nodes: {:?}", path.nodes);
                 entry.insert(path.into());
             }
         })
