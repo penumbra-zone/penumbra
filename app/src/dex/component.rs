@@ -49,7 +49,7 @@ impl Component for Dex {
                     // TODO: pass a correct price_limit
                     1u32.into(),
                     end_block.height.try_into().expect("missing height"),
-                    current_epoch.index,
+                    current_epoch.start_height,
                 )
                 .await
                 .expect("unable to process batch swaps");
