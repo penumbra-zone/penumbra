@@ -29,9 +29,9 @@ cargo +nightly doc --no-deps \
   -p ark-ff \
   -p ark-serialize \
   -p poseidon377 \
-  -p poseidon-paramgen@0.2.0 \
+  -p poseidon-paramgen \
   -p poseidon-permutation \
-  -p decaf377@0.3.0 \
+  -p decaf377 \
   -p decaf377-rdsa \
   -p decaf377-fmd \
   -p decaf377-ka \

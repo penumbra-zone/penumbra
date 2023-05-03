@@ -26,6 +26,7 @@ pub trait RouteAndFill: StateWrite + Sized {
         // TODO: use price_limit to clamp spill price or set to 1 for arb
         price_limit: Amount,
         block_height: u64,
+        epoch_index: u64,
     ) -> Result<()>
     where
         Self: 'static,
@@ -89,6 +90,8 @@ pub trait RouteAndFill: StateWrite + Sized {
 
         let output_data = BatchSwapOutputData {
             height: block_height,
+            // TODO: should be called epoch_index
+            epoch_height: epoch_index,
             trading_pair,
             delta_1,
             delta_2,

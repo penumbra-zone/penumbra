@@ -20,7 +20,6 @@ impl ActionHandler for SwapClaim {
                 context.anchor,
                 self.body.nullifier,
                 self.body.output_data,
-                self.epoch_duration,
                 self.body.output_1_commitment,
                 self.body.output_2_commitment,
                 self.body.fee.clone(),

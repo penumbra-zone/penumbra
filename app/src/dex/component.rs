@@ -2,6 +2,7 @@ use std::{collections::BTreeMap, sync::Arc};
 
 use anyhow::Result;
 use async_trait::async_trait;
+use penumbra_chain::component::StateReadExt as _;
 use penumbra_compact_block::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_component::Component;
 use penumbra_crypto::{
@@ -36,6 +37,7 @@ impl Component for Dex {
         state: &mut Arc<S>,
         end_block: &abci::request::EndBlock,
     ) {
+        let current_epoch = state.epoch().await.unwrap();
         // For each batch swap during the block, calculate clearing prices and set in the JMT.
         for (trading_pair, swap_flows) in state.swap_flows() {
             // Arc::get_mut(state)
@@ -47,6 +49,7 @@ impl Component for Dex {
                     // TODO: pass a correct price_limit
                     1u32.into(),
                     end_block.height.try_into().expect("missing height"),
+                    current_epoch.index,
                 )
                 .await
                 .expect("unable to process batch swaps");

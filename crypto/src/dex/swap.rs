@@ -47,6 +47,8 @@ pub struct BatchSwapOutputData {
     pub height: u64,
     /// The trading pair associated with the batch swap.
     pub trading_pair: TradingPair,
+    /// The starting block height of the epoch for which the batch swap data is valid.
+    pub epoch_height: u64,
 }
 
 impl BatchSwapOutputData {
@@ -106,6 +108,7 @@ impl From<BatchSwapOutputData> for pb::BatchSwapOutputData {
             lambda_2_1: Some(s.lambda_2_1.into()),
             lambda_1_2: Some(s.lambda_1_2.into()),
             lambda_2_2: Some(s.lambda_2_2.into()),
+            epoch_height: s.epoch_height,
         }
     }
 }
@@ -151,6 +154,7 @@ impl TryFrom<pb::BatchSwapOutputData> for BatchSwapOutputData {
                 .trading_pair
                 .ok_or_else(|| anyhow!("Missing trading_pair"))?
                 .try_into()?,
+            epoch_height: s.epoch_height,
         })
     }
 }

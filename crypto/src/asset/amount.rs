@@ -272,6 +272,12 @@ impl From<Amount> for u32 {
     }
 }
 
+impl From<Amount> for f64 {
+    fn from(amount: Amount) -> f64 {
+        amount.inner as f64
+    }
+}
+
 impl Display for Amount {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", self.inner)
